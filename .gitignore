@@ -1,0 +1,44 @@
+# Optional local feasibility research reference
+.research/
+
+# Gradle and Kotlin build state
+.gradle/
+**/build/
+**/.kotlin/
+
+# Apple build and signing state
+**/.build/
+**/.build-*/
+**/.swiftpm/
+**/DerivedData/
+**/DerivedData-*/
+*.xcresult
+*.resultbundle
+*.mobileprovision
+*.p12
+*.cer
+*.pem
+*.key
+
+# Machine-local configuration
+local.properties
+*.local.properties
+*.local.json
+*.local.xcconfig
+.env
+.env.local
+.env.*.local
+
+# Captures and logs
+captures/
+*.pcap
+*.pcapng
+*.har
+*.trace
+*.device.log
+*.network.log
+
+# IDE and operating-system state
+.DS_Store
+.idea/
+*.iml
