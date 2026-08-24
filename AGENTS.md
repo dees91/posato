@@ -77,8 +77,8 @@ and then older synthesis. Keep contradictions and evidence limits visible.
 - Do not claim production readiness, platform coverage, privacy, security, or
   distribution eligibility beyond verified evidence.
 - Before the first release, require a separate readiness review covering Git
-  history,
-  license, notices, clean-clone setup, CI, security reporting, and privacy.
+  history, license, notices, clean-clone setup, CI, security reporting, and
+  privacy.
 
 ## MVP implementation boundary
 
@@ -88,3 +88,11 @@ identifiers are explicitly accepted. The intended direction is Kotlin-first
 Kotlin Multiplatform with Compose Multiplatform and narrow semantic platform
 boundaries. Exact modules, dependencies, helper implementation, and native
 ownership remain decisions rather than assumptions inherited from the PoC.
+
+The active preparation route to the first production-code pull request is
+[`tasks/first-mvp-pr-preparation-plan.md`](tasks/first-mvp-pr-preparation-plan.md),
+with gate state in
+[`tasks/first-mvp-pr-preparation-todo.md`](tasks/first-mvp-pr-preparation-todo.md).
+Continue the first incomplete gate unless the user explicitly changes the
+milestone. Do not scaffold application code until the "Ready to open PR #1"
+checkpoint is complete and explicitly accepted.

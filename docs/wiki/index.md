@@ -10,6 +10,10 @@ This index routes product and engineering work for Blocker MVP.
 - [sources/feasibility-research-seed.md](sources/feasibility-research-seed.md) —
   provenance and scope of the initial synchronization PoC and enforcement
   spike knowledge seed.
+- [../../tasks/first-mvp-pr-preparation-plan.md](../../tasks/first-mvp-pr-preparation-plan.md)
+  — accepted preparation route to the first MVP code pull request.
+- [../../tasks/first-mvp-pr-preparation-todo.md](../../tasks/first-mvp-pr-preparation-todo.md)
+  — active state and acceptance criteria for its seven preparation gates.
 
 ## Product and architecture
 
@@ -21,7 +25,7 @@ This index routes product and engineering work for Blocker MVP.
   Kotlin-first ownership, interfaces, `expect`/`actual`, native leaves, and the
   macOS process boundary.
 - [topics/mvp-open-questions.md](topics/mvp-open-questions.md) — prioritized
-  decisions required before the first MVP code PR and later open work.
+  decisions, accepted gate order, PR #1 boundary, and later open work.
 
 ## Feasibility knowledge
 

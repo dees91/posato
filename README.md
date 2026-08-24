@@ -44,10 +44,22 @@ These are direction constraints, not a complete architecture or feature scope.
 - [Product framing](docs/wiki/topics/product-framing.md)
 - [Feasibility results and limits](docs/wiki/topics/feasibility-results-and-limits.md)
 - [MVP open questions](docs/wiki/topics/mvp-open-questions.md)
+- [First MVP PR preparation plan](tasks/first-mvp-pr-preparation-plan.md)
+- [First MVP PR preparation checklist](tasks/first-mvp-pr-preparation-todo.md)
 
-## Before the first MVP code PR
+## Next milestone: the first MVP code PR
 
-The repository still needs explicit decisions for MVP scope, working product
-identity, minimal design, production architecture, quality gates, Apple target
-identifiers, and licensing. The first code PR should follow those decisions and
-must not adopt the PoC module graph or probe surfaces as a production baseline.
+The next milestone is a small pull request containing the first production
+application code. Seven gates precede implementation: MVP scope, product
+identity, minimal product and design baseline, architecture baseline, quality
+contract, PR decomposition, and one manual Apple resource setup task.
+
+The immediate next work is to define the MVP scope and minimum product identity.
+The accepted route and verification criteria live in the
+[preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
+[checklist](tasks/first-mvp-pr-preparation-todo.md).
+
+PR #1 will add fresh KMP application modules, accepted identifiers, one minimal
+shared Compose screen running on macOS and iOS, small semantic platform
+contracts with fakes, baseline tests, and CI. It will not implement blocking or
+synchronization and will not adopt the PoC module graph as its starting point.

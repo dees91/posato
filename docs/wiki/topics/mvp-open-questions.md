@@ -3,6 +3,20 @@
 This page is the decision queue for starting product code. It separates gates
 for the first MVP pull request from questions that can remain incremental.
 
+## Current handoff
+
+`user-confirmed` (2026-08-24): the next milestone is the first pull request
+containing production application code. Seven gates precede it: MVP scope,
+minimum product identity, minimum product and design baseline, architecture
+baseline, engineering quality contract, vertical PR decomposition, and manual
+Apple resource setup.
+
+The active [preparation plan](../../../tasks/first-mvp-pr-preparation-plan.md)
+and [checklist](../../../tasks/first-mvp-pr-preparation-todo.md) are the
+execution authority for this milestone. The immediate next work is MVP scope
+and product identity. The sections below retain the decisions each gate must
+resolve and the questions that may remain incremental.
+
 ## Gate 0: product identity and first slice
 
 `open`: accept the product's working identity before registering durable
@@ -113,18 +127,15 @@ not gate the Apple-first MVP. Before those implementations begin, decide:
 - background-execution and scheduling constraints;
 - how much UI and lifecycle behavior can remain shared.
 
-## Minimum decisions before the first code PR
+## Accepted route to the first code PR
 
-The first code PR should wait only for:
+The first code PR waits for the seven gates in the
+[preparation checklist](../../../tasks/first-mvp-pr-preparation-todo.md),
+including the manual Apple Task 0 after the product identity and target graph
+are known. Everything not required by PR #1 or its immediate dependants should
+be decided as late as the corresponding small vertical slice requires it.
 
-1. accepted working product name and identifier namespace;
-2. accepted one-sentence promise and first vertical slice;
-3. accepted initial platform and OS baseline;
-4. accepted minimal architecture and module decision;
-5. accepted quality, review, and CI baseline;
-6. accepted temporary visual seed sufficient for application identity;
-7. confirmation that the slice does not require an unresolved entitlement or,
-   if it does, an explicit development-only boundary.
-
-Everything else should be decided as late as the corresponding small MVP slice
-requires it.
+`user-confirmed`: PR #1 creates fresh production modules, uses accepted target
+identifiers, runs one minimal shared Compose screen on macOS and iOS, introduces
+small semantic platform contracts with fakes, and establishes baseline tests
+and CI. It implements neither blocking nor synchronization.
