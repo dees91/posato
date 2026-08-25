@@ -174,3 +174,10 @@
   dated decision provenance.
 - Left Gate 2 open for domain-control confirmation and acceptance of the stable
   reverse-DNS namespace and component naming pattern.
+
+## [2026-08-25] correction | Align repository path references with Posato
+
+- Removed stale statements that the repository still used the historical
+  `blocker-mvp` directory name.
+- Retained **Blocker** only where it identifies research history or dated
+  decision provenance.

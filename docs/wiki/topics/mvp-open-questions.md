@@ -36,8 +36,8 @@ platform order, relative OS support baseline, primary flow, and measurable
 outcome are accepted. Exact deployment-target numbers remain part of the
 architecture baseline.
 
-The repository name `blocker-mvp` is temporary and does not settle the product
-name.
+The repository now uses the accepted `posato` name. **Blocker** remains only
+where it identifies historical research or decision provenance.
 
 ### Naming candidate screening
 

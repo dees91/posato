@@ -2,8 +2,7 @@
 
 Posato is an open-source application intended to interrupt habitual access to
 selected websites and applications across personal devices while minimizing
-collected data and maintenance burden. The repository path `blocker-mvp`
-retains the historical working name and does not define the public identity.
+collected data and maintenance burden.
 
 ## Status
 
