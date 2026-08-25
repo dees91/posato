@@ -20,6 +20,12 @@ is the minimum product and design baseline. The sections below retain the
 decisions each remaining gate must resolve and the questions that may remain
 incremental.
 
+`inferred` (2026-08-25): a complete
+[Gate 3 candidate](brand-and-design-baseline.md) now covers the brand
+foundation, visual direction, platform and accessibility constraints, six
+low-fidelity flows, and exact PR #1 shell content. It remains working
+synthesis until the maintainer accepts or corrects it.
+
 ## Gate 2: product identity (complete)
 
 `user-confirmed` (2026-08-25): Gate 2 is complete. **Posato** is the product

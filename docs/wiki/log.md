@@ -194,3 +194,16 @@
   Gate 7 rather than inferring either from the naming decision.
 - Marked Gate 2 complete and advanced the active handoff to the minimum product
   and design baseline.
+
+## [2026-08-25] proposal | Define the Gate 3 brand and design candidate
+
+- Proposed a brand foundation centered on calm self-directed agency, truthful
+  state, privacy by omission, and a quiet interval between impulse and action.
+- Proposed a restrained warm-neutral, Moss, and Clay palette; system
+  typography; and an open-interval placeholder icon direction without
+  promoting any of them into an accepted product contract.
+- Added platform-fit and accessibility constraints derived from current Apple
+  Human Interface Guidelines and recorded the reviewed primary sources.
+- Added low-fidelity flows for onboarding, paused-item management, manual
+  sessions, active blocking, synchronization, and action-required recovery.
+- Kept Gate 3 open pending explicit maintainer acceptance or correction.

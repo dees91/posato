@@ -12,6 +12,9 @@ provenance rather than a parallel public brand.
 - [sources/feasibility-research-seed.md](sources/feasibility-research-seed.md) —
   provenance and scope of the initial synchronization PoC and enforcement
   spike knowledge seed.
+- [sources/apple-design-guidance.md](sources/apple-design-guidance.md) —
+  current authoritative Apple guidance used by the Gate 3 brand and product
+  design candidate.
 - [../../tasks/first-mvp-pr-preparation-plan.md](../../tasks/first-mvp-pr-preparation-plan.md)
   — accepted preparation route to the first MVP code pull request.
 - [../../tasks/first-mvp-pr-preparation-todo.md](../../tasks/first-mvp-pr-preparation-todo.md)
@@ -30,6 +33,9 @@ provenance rather than a parallel public brand.
 - [topics/product-framing.md](topics/product-framing.md) — problem, intended
   audience, product principles, platform sequencing, accepted scope, and open
   product measures.
+- [topics/brand-and-design-baseline.md](topics/brand-and-design-baseline.md) —
+  proposed Gate 3 brand foundation, visual direction, accessibility baseline,
+  low-fidelity flows, and PR #1 shell content awaiting maintainer acceptance.
 - [topics/architecture-direction.md](topics/architecture-direction.md) —
   accepted technical directions and production decisions still open.
 - [topics/kotlin-apple-boundaries.md](topics/kotlin-apple-boundaries.md) —
