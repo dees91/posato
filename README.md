@@ -7,8 +7,9 @@ personal devices while minimizing collected data and maintenance burden.
 ## Status
 
 This repository currently contains an initial product knowledge base only. It
-has no MVP application code, accepted MVP scope, final product name, registered
-product identifiers, selected license, release, or production-readiness claim.
+has no MVP application code, final product name, registered product identifiers,
+selected license, release, or production-readiness claim. The accepted MVP
+scope is recorded under `docs/product/`.
 
 Two completed feasibility efforts inform the project:
 
@@ -31,17 +32,22 @@ qualification. Their exact limits are documented in
 - Kotlin-first domain, orchestration, and shared UI.
 - Narrow semantic boundaries around native Apple APIs.
 - No product-operated user-data backend or in-app provider credentials.
+- Apple MVP synchronization uses one **Sync with iCloud** action per
+  installation and no Blocker QR or cross-device approval.
+- Application-layer encryption remains common to CloudKit and the later
+  portable-folder transport.
 - No browsing-history collection as a default product boundary.
 - Android, Linux, and a user-selected portable synchronization folder remain
   later directions rather than MVP parity gates.
 
-These are direction constraints, not a complete architecture or feature scope.
+These are direction constraints, not a complete architecture.
 
 ## Start here
 
 - [Wiki operating contract](docs/wiki/README.md)
 - [Wiki index](docs/wiki/index.md)
 - [Product framing](docs/wiki/topics/product-framing.md)
+- [Accepted MVP scope](docs/product/mvp-scope.md)
 - [Feasibility results and limits](docs/wiki/topics/feasibility-results-and-limits.md)
 - [MVP open questions](docs/wiki/topics/mvp-open-questions.md)
 - [First MVP PR preparation plan](tasks/first-mvp-pr-preparation-plan.md)
@@ -54,7 +60,8 @@ application code. Seven gates precede implementation: MVP scope, product
 identity, minimal product and design baseline, architecture baseline, quality
 contract, PR decomposition, and one manual Apple resource setup task.
 
-The immediate next work is to define the MVP scope and minimum product identity.
+The MVP scope is accepted. The immediate next work is to select the minimum
+product identity.
 The accepted route and verification criteria live in the
 [preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
 [checklist](tasks/first-mvp-pr-preparation-todo.md).

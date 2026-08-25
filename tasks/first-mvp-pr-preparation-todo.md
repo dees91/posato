@@ -10,17 +10,17 @@ which are deliberately deferred.
 
 **Acceptance criteria:**
 
-- [ ] Website blocking, application blocking, manual sessions, schedules,
+- [x] Website blocking, application blocking, manual sessions, schedules,
   synchronization, onboarding, and recovery are each classified as MVP,
   later, or out of scope.
-- [ ] Initial platform order, supported OS baseline, primary user flow, and
+- [x] Initial platform order, supported OS baseline, primary user flow, and
   measurable MVP outcome are accepted.
-- [ ] Explicit non-goals prevent the first milestone from expanding silently.
+- [x] Explicit non-goals prevent the first milestone from expanding silently.
 
 **Verification:**
 
-- [ ] The accepted scope and non-goals are recorded under `docs/product/`.
-- [ ] `docs/wiki/topics/product-framing.md` links to the accepted scope.
+- [x] The accepted scope and non-goals are recorded under `docs/product/`.
+- [x] `docs/wiki/topics/product-framing.md` links to the accepted scope.
 
 **Dependencies:** None.
 

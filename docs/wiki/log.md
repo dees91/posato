@@ -30,3 +30,35 @@
   with fakes, baseline tests, and CI.
 - Excluded blocking and synchronization implementation from PR #1 and routed
   current work to MVP scope and minimum product identity.
+
+## [2026-08-25] decision | Accept the first MVP scope
+
+- Included website and application blocking, bounded manual sessions, Apple
+  synchronization, and first- and second-device onboarding on macOS and iOS.
+- Required exact domain synchronization and semantic application-policy
+  synchronization with device-local platform selections.
+- Allowed intentional early session termination while deferring stronger UX
+  friction, schedules, and total-key-loss recovery.
+- Accepted a current-plus-previous-major OS support policy and a physical Mac
+  and iPhone end-to-end product-flow measure.
+- Excluded product accounts and relays, behavioral tracking, Android and Linux
+  implementation, cloud-delivery guarantees, and administrator-resistant
+  claims.
+
+## [2026-08-25] decision | Separate synchronization trust by workspace mode
+
+- Accepted CloudKit Private Database transport, synchronizable-Keychain
+  workspace-key delivery, and Apple Account/iCloud Keychain membership for the
+  Apple MVP.
+- Replaced Blocker QR and cross-device approval in Apple onboarding with one
+  **Sync with iCloud** action per installation and a required missing-key
+  waiting state.
+- Retained one common application-encrypted, authenticated, and signed
+  operation format for CloudKit and portable-folder transports.
+- Retained explicit device identity, membership, QR approval, per-device
+  wrapping, key epochs, revocation, and optional recovery for later portable
+  mode.
+- Required a new portable workspace and key epoch for migration, with no live
+  bridge, dual-write, or parallel CloudKit-folder authority.
+- Recorded the production decision in ADR 0002 while preserving feasibility
+  ADR 0001 and PoC results as historical evidence.

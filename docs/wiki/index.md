@@ -17,8 +17,14 @@ This index routes product and engineering work for Blocker MVP.
 
 ## Product and architecture
 
+- [../product/mvp-scope.md](../product/mvp-scope.md) — accepted MVP capability
+  classification, platform baseline, primary flow, outcome, and non-goals.
+- [ADR 0002: Synchronization Trust and Workspace Modes](../decisions/0002-synchronization-trust-and-workspace-modes.md)
+  — accepted separation of transport, payload encryption, key delivery, and
+  device admission for Apple and portable workspaces.
 - [topics/product-framing.md](topics/product-framing.md) — problem, intended
-  audience, product principles, platform sequencing, and candidate scope.
+  audience, product principles, platform sequencing, accepted scope, and open
+  product measures.
 - [topics/architecture-direction.md](topics/architecture-direction.md) —
   accepted technical directions and production decisions still open.
 - [topics/kotlin-apple-boundaries.md](topics/kotlin-apple-boundaries.md) —
@@ -33,8 +39,8 @@ This index routes product and engineering work for Blocker MVP.
   — what the synchronization PoC and enforcement spike proved and did not
   prove.
 - [topics/cross-device-synchronization.md](topics/cross-device-synchronization.md)
-  — local-first model, CloudKit path, encryption, membership, lifecycle, and
-  portability boundary.
+  — local-first model, CloudKit and folder transports, common E2EE, mode-specific
+  key delivery and membership, lifecycle, and migration boundary.
 - [topics/macos-enforcement.md](topics/macos-enforcement.md) — local proxy,
   browser presentation, application enforcement, recovery, and limitations.
 - [topics/ios-enforcement.md](topics/ios-enforcement.md) — Family Controls,

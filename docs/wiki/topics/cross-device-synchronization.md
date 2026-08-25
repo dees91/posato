@@ -2,17 +2,49 @@
 
 ## Direction
 
-- `user-confirmed`: the first workspace is Apple-only and uses CloudKit Private
-  Database across a person's Macs and iPhones using the same Apple Account.
+- `user-confirmed` (2026-08-25): transport, payload encryption, workspace-key
+  delivery, and device admission are independent concerns. Their accepted
+  production boundary is
+  [ADR 0002](../../decisions/0002-synchronization-trust-and-workspace-modes.md).
+- `user-confirmed`: the first workspace uses CloudKit Private Database as the
+  transport, synchronizable Keychain for workspace-key delivery, and Apple
+  Account/iCloud Keychain trust for membership across one Mac and one iPhone.
+- `user-confirmed`: each Apple installation exposes one **Sync with iCloud**
+  action. Blocker adds no QR, invitation, or approval by another Blocker
+  installation; Apple may still require its own system-level device approval.
 - `user-confirmed`: the application performs no provider login and operates no
-  shared user-data backend.
+  product account, product-operated shared user-data backend, or
+  synchronization relay.
+- `user-confirmed`: application-layer E2EE, signed operations, validation, and
+  one compatible operation format apply to every transport.
 - `user-confirmed`: a later portable workspace may use one user-selected
-  synchronized directory across Apple, Android, and Linux.
+  synchronized directory across Apple, Android, and Linux. It uses explicit
+  Blocker membership, QR enrollment, per-device key wrapping, key epochs,
+  prospective revocation, and optional recovery.
 - `user-confirmed`: each workspace has one active transport. Moving to a
-  portable transport requires explicit migration to a new transport epoch;
-  there is no live CloudKit-to-folder bridge.
-- `user-confirmed`: synchronization is eventual, exposes a manual **Sync now**
-  action, and promises neither device wake-up nor a delivery SLA.
+  portable transport creates a new workspace and key epoch through explicit
+  export/import; there is no live bridge, dual-write, or parallel authority.
+- `user-confirmed`: synchronization uses an eventually convergent model when
+  delivery succeeds, exposes a manual **Sync now** action, and promises neither
+  device wake-up nor a delivery SLA.
+
+## Accepted MVP boundary
+
+`user-confirmed` (2026-08-25): the MVP synchronizes exact domain policy,
+semantic application policy, and active-session intent between one Mac and one
+iPhone after **Sync with iCloud** is chosen on each installation. Opaque
+platform application selections remain local and attach to the synchronized
+semantic policy. Schedules and total-key-loss recovery are later work.
+
+If CloudKit contains a workspace but the synchronizable workspace key has not
+arrived, the installation waits and reports that state. It must not interpret
+the workspace as empty, generate a replacement key, or create a parallel
+workspace.
+
+The accepted product contract describes delivery as best-effort and retryable.
+The earlier direction's use of "eventual" describes the convergence model when
+delivery succeeds; it is not a promise that every change will eventually reach
+a sleeping, offline, misconfigured, or permanently unavailable device.
 
 ## Bounded PoC result
 
@@ -56,9 +88,15 @@ key epoch, and typed payload. A deterministic reducer validated authorship,
 membership, sequence continuity, target scope, and operation ordering before
 publishing an effective policy.
 
-`inferred`: the operation vocabulary and tests are strong design inputs, but
-the MVP must confirm policy and membership semantics before freezing a wire
-format.
+`user-confirmed`: the encrypted bundle, signed operation, validation, and
+reduction model remains common to Apple and portable transports. Policy and
+session operations are shared. Explicit membership, per-device wrapping,
+revocation, and recovery operations are required by portable mode but are not
+an Apple MVP enrollment ceremony.
+
+`open`: the production vocabulary, automatic Apple-mode author registration,
+portable membership operations, and compatibility policy must be specified
+before freezing wire-format version 1.
 
 ## Persistence and atomicity
 
@@ -109,13 +147,18 @@ encoding, format versions, nonce policy, key wrapping, and dependency versions
 must be selected through the production threat model. No plaintext fallback is
 acceptable.
 
+`user-confirmed`: CloudKit and portable folders use one compatible
+application-encrypted and signed payload format. Apple-mode simplification
+changes workspace-key delivery and device admission; it does not create a
+plaintext CloudKit protocol or remove application-layer E2EE.
+
 Application-layer encryption does not make CloudKit metadata anonymous. The
 provider may still observe account, container, timing, sizes, record counts,
 and the metadata required for mailbox routing.
 
-## Keys, enrollment, recovery, and revocation
+## Mode-specific key delivery and device admission
 
-The feasibility design separated:
+`observed`: the feasibility design separated:
 
 - synchronizable workspace material shared through Keychain;
 - device-local signing and key-agreement identity;
@@ -130,8 +173,36 @@ to active members. It prevents a removed identity from decrypting or authoring
 accepted future operations. It is not remote wipe and cannot erase historical
 plaintext, keys, screenshots, or archives already copied by another device.
 
-The MVP must decide whether multi-device enrollment, recovery, and membership
-management belong in its first scope.
+`superseded` (2026-08-25): the earlier Gate 1 scope required an existing
+Blocker installation to approve the second Apple installation. That approval
+is no longer part of Apple MVP onboarding.
+
+`user-confirmed` (2026-08-25): Apple and portable workspaces use different
+admission policies:
+
+| Workspace | Workspace-key delivery | Device admission |
+| --- | --- | --- |
+| Apple MVP | Synchronizable Keychain | Apple Account and iCloud Keychain trust; one **Sync with iCloud** action on each Blocker installation |
+| Portable, later | Per-device key wrapping | Existing Blocker member approval, QR exchange, and signed membership operations |
+
+In Apple mode, a new device may still need Apple-managed approval or recovery
+before iCloud Keychain releases synchronizable items. Blocker exposes that as a
+system prerequisite and does not duplicate it. Blocker also gives up
+independent admission and prospective revocation of one Apple installation
+while it remains trusted by Apple. The exact signed-author registration rule
+must preserve operation authenticity without reintroducing cross-device
+Blocker approval.
+
+In portable mode, selecting the same Dropbox, OneDrive, iCloud Drive, or other
+File Provider folder grants access to bytes, not membership. Independent device
+keys, explicit approval, QR replay protection, per-device wrapping, signed
+membership operations, key epochs, revocation, and optional recovery remain
+required design inputs from the PoC.
+
+Each workspace has one active transport. CloudKit-to-folder migration creates
+a new portable workspace and key epoch, makes the exporting Apple device the
+first portable member, enrolls later devices explicitly, and retires CloudKit
+as the active authority. There is no live bridge or dual-write.
 
 ## Lifecycle and user-visible status
 
@@ -147,6 +218,7 @@ Useful status distinctions are:
 - syncing;
 - last completed local attempt;
 - retryable failure;
+- waiting for the synchronizable workspace key;
 - action-required failure.
 
 A local success means the local synchronization transaction completed. It must
@@ -154,13 +226,21 @@ not claim that every other device has received the update.
 
 ## Open production questions
 
-- Is synchronization in the first MVP slice or a later vertical slice?
+- `user-confirmed`: Apple synchronization belongs in the MVP; its position in
+  the ordered vertical pull-request roadmap remains open.
 - What exact policy operations and conflict semantics become format version 1?
 - Which cryptographic providers and encodings satisfy all selected targets?
+- How are Apple-mode signed authors registered and validated automatically
+  without a Blocker approval ceremony?
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?
-- What onboarding and recovery promises can be explained safely to users?
+- Which synchronizable-Keychain attributes, access groups, account-change
+  rules, and reset behaviors satisfy the accepted waiting-state invariant?
+- How does deterministic bootstrap prevent parallel workspaces when CloudKit
+  and Keychain propagation race?
 - What retry policy is appropriate without a delivery SLA?
-- How are archive export, import, workspace deletion, and transport migration
-  presented and tested?
+- How do portable authenticated completeness metadata and high-water marks
+  distinguish rollback or deletion from incomplete first synchronization?
+- How are portable enrollment, recovery, revocation, export, import, deletion,
+  and transport migration presented and tested?
 - When should portable-folder provider experiments begin?

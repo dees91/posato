@@ -45,7 +45,8 @@ Use an interface when:
 - operation outcomes and failure categories are part of product behavior.
 
 Likely examples include an enforcer, mailbox, secure store, clock, randomness,
-recovery presenter, enrollment scanner, and browser presentation capability.
+portable recovery presenter, portable enrollment scanner, and browser
+presentation capability.
 
 ### Prefer IPC
 

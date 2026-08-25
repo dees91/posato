@@ -9,8 +9,14 @@
   people beyond the original maintainer.
 - `user-confirmed`: Apple platforms are first. Android, Linux, and a portable
   synchronization path remain later directions and are not MVP parity gates.
-- `open`: the final product name, visual identity, MVP feature scope,
-  distribution path, and license have not been selected.
+- `user-confirmed`: the first MVP scope is accepted in the
+  [MVP scope contract](../../product/mvp-scope.md).
+- `user-confirmed` (2026-08-25): Apple MVP synchronization uses one
+  **Sync with iCloud** action per installation, Apple Account/iCloud Keychain
+  trust for membership, and no Blocker QR or cross-device approval. See
+  [ADR 0002](../../decisions/0002-synchronization-trust-and-workspace-modes.md).
+- `open`: the final product name, visual identity, distribution path, and
+  license have not been selected.
 
 ## Problem
 
@@ -37,67 +43,83 @@ specified rather than described as absolute blocking.
 - **Cross-device intent:** participating devices should converge on the same
   policy while continuing to enforce valid local schedules and session expiry
   offline.
-- **Privacy by omission:** policy and membership state may synchronize, but
-  browsing history, allowed navigations, and usage counters are outside the
-  default data model.
+- **Privacy by omission:** policy and mode-specific security state may
+  synchronize, but browsing history, allowed navigations, and usage counters
+  are outside the default data model.
 - **No product account:** the preferred Apple path uses the system Apple
   Account and the user's private cloud storage rather than a product-operated
   identity or data service.
 - **Honest platform differences:** shared policy intent does not imply identical
   enforcement capabilities on every operating system.
 
-## Candidate MVP capabilities
+## Accepted MVP boundary
 
-These are candidate inputs, not an accepted MVP specification:
+`user-confirmed` (2026-08-25): the MVP includes website blocking, application
+blocking, bounded manual sessions, Apple synchronization, and first- and
+second-installation onboarding on macOS and iOS. Each installation uses one
+**Sync with iCloud** action; Blocker performs no application-level pairing.
+Domain targets synchronize exactly, and application policies synchronize with
+device-local platform selections. A person may intentionally end a session
+early.
 
-- select domains to block on macOS and iOS;
-- select applications to block on macOS and iOS;
-- create bounded blocking sessions with an explicit end;
-- define recurring schedules;
-- show a clear blocked-state destination or system shield;
-- synchronize policies and session intent between a person's Apple devices;
-- continue valid local enforcement while cloud synchronization is unavailable;
-- show local-only, pending, syncing, retryable, and action-required states;
-- enroll another device through explicit approval;
-- offer an optional recovery path with an irreversible-loss warning;
-- stop and remove restrictions predictably when the user is authorized to do
-  so.
-
-Whether every item belongs in the first MVP slice remains open. A smaller
-vertical slice may ship domain blocking before application blocking,
-scheduling, enrollment, or recovery.
+Schedules, total-key-loss recovery, and stronger UX friction for
+early termination are later work. The accepted capability table, platform
+support policy, primary flow, measurable outcome, and explicit non-goals are
+maintained in the [MVP scope contract](../../product/mvp-scope.md).
 
 ## Platform sequence
 
 ### Apple workspace
 
 The preferred first workspace covers macOS and iOS devices using the same
-Apple Account. CloudKit Private Database is the candidate mailbox transport;
-synchronizable Keychain is the preferred smooth path for shared key material.
-The application performs no provider login.
+Apple Account. CloudKit Private Database is the selected transport,
+synchronizable Keychain delivers the workspace key, and Apple Account/iCloud
+Keychain trust admits devices. The application performs no provider login and
+retains Blocker-level E2EE for synchronized payloads.
 
 ### Portable workspace
 
 A later workspace may use one user-selected synchronized folder across Apple,
-Android, and Linux devices. A workspace has one active transport. Moving from
-an Apple workspace to a portable workspace requires an explicit migration to a
-new transport epoch rather than a live bridge between transports.
+Android, and Linux devices. Folder access does not grant Blocker membership;
+portable mode uses explicit approval, QR exchange, per-device wrapping, signed
+membership operations, key epochs, revocation, and optional recovery. A
+workspace has one active transport. Moving from an Apple workspace to a new
+portable workspace requires explicit export/import and a new key epoch rather
+than a live bridge or dual-write.
 
 This later direction has not passed provider-specific or cross-platform
 feasibility testing and must not enlarge the Apple-first MVP.
 
-## Candidate non-goals
+## Accepted non-goals
 
 - monitoring or uploading browsing history;
 - a product-operated synchronization relay or identity service;
-- covert controls or claims of protection from the device administrator;
-- remote erasure of historical copies already held by another device;
-- guaranteed cloud-delivery latency or waking sleeping devices;
-- immediate four-platform feature parity;
+- claims of protection from the device administrator or unremovable control;
+- guaranteed cloud delivery, eventual delivery, delivery latency, or waking
+  sleeping devices;
+- Android or Linux implementation or immediate four-platform feature parity.
+
+The complete accepted list is maintained in the
+[MVP scope contract](../../product/mvp-scope.md).
+
+## Candidate product boundaries
+
+These remain useful candidates rather than accepted Gate 1 decisions:
+
+- no promise to erase historical copies already held by another device;
 - treating every browser or network client as supported without an explicit
   compatibility contract.
 
-## Outcome measures still needed
+## Outcome measures
+
+`user-confirmed`: the MVP product-flow measure is a controlled pass/fail test
+on one supported physical Mac and iPhone covering **Sync with iCloud** on each
+installation without Blocker pairing, delayed-Keychain waiting behavior, shared
+domain policy, device-local application mappings, cross-device session
+activation, enforcement, normal expiry, and intentional early termination
+without manual state repair.
+
+Additional measures remain open:
 
 - maximum acceptable time before a blocked page is interrupted;
 - number or duration of deliberate steps required to bypass an active session;

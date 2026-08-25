@@ -31,11 +31,13 @@ The successful path used system Screen Time APIs:
 The tested path used no browser extension, content blocker, Network Extension,
 local VPN, DNS mutation, configuration profile, or TLS interception.
 
-Opaque application and web-domain values are platform capabilities, not shared
-domain identifiers. They must remain in the native platform boundary. Shared
-Kotlin may refer to a semantic selection or policy handle but must not inspect,
-serialize into public logs, or synchronize an opaque Apple token unless a
-future platform contract explicitly and safely supports it.
+Opaque application selections and any opaque web-domain selection values are
+platform capabilities, not shared identifiers. They must remain in the native
+platform boundary. Exact domain strings in the accepted product policy are a
+separate shared concept. Shared Kotlin may refer to a semantic selection or
+policy handle but must not inspect, serialize into public logs, or synchronize
+an opaque Apple token unless a future platform contract explicitly and safely
+supports it.
 
 ## Kotlin/native boundary
 
@@ -65,16 +67,20 @@ Objective-C-compatible boundary cleanly.
 ## Selection and synchronization asymmetry
 
 An opaque iOS application selection does not naturally equal a bundle ID used
-by macOS, Android, or Linux. The product must decide whether:
+by macOS, Android, or Linux.
 
-- each device owns a local target selection associated with one semantic policy;
-- policies expose platform-specific members;
-- an application policy is intentionally platform-local;
-- enrollment requires mapping a shared intent to a fresh local selection.
+`user-confirmed` (2026-08-25): the MVP synchronizes one semantic application
+policy while each device owns its local platform selection or mapping. An iOS
+opaque selection remains local and is not treated as a portable application
+identifier or automatic macOS match. The onboarding flow requires a local
+selection on each platform.
 
-The same asymmetry can apply to website tokens selected through Screen Time
-APIs. A portable shared policy model should not pretend that opaque platform
-capabilities are universal identifiers.
+The same asymmetry may apply to website tokens selected through Screen Time
+APIs, but the accepted product contract requires exact domain policy to
+synchronize. The production boundary must satisfy that contract without
+pretending that opaque platform capabilities are universal identifiers. The
+storage representation, invalid-selection lifecycle, and remapping UX remain
+open.
 
 ## Extensions and background behavior
 

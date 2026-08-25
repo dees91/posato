@@ -13,6 +13,11 @@
 - `user-confirmed`: no separate architecture spike will precede MVP work. The
   first relevant vertical MVP PR may settle a native boundary before dependent
   PRs build on it.
+- `user-confirmed` (2026-08-25):
+  [ADR 0002](../../decisions/0002-synchronization-trust-and-workspace-modes.md)
+  separates transport, payload encryption, workspace-key delivery, and device
+  admission. Apple and portable transports share one encrypted operation model
+  but use mode-specific key delivery and admission.
 
 These constraints are accepted directions. They do not select a complete
 module graph, dependency set, build layout, or production process model.
@@ -41,7 +46,8 @@ Shared code should own behavior that expresses product meaning:
 - identifiers, validation, deterministic ordering, merge, and conflict rules;
 - local-first state, pending work, and transport-independent sync orchestration;
 - encryption workflow and canonical product data formats;
-- membership, enrollment, recovery, and revocation policy once accepted;
+- Apple automatic author registration and portable membership, enrollment,
+  recovery, and revocation policy;
 - truthful presentation state and shared Compose UI;
 - semantic platform contracts and fakes.
 
@@ -53,6 +59,7 @@ leaking implementation details:
 - Apple lifecycle and application host integration;
 - entitlements, signing, provisioning, and extension targets;
 - CloudKit and Keychain calls;
+- user-selected folder access and provider-specific filesystem mechanics;
 - Family Controls, Managed Settings, system proxy settings, application
   observation, and browser-specific presentation;
 - conversion between Apple framework values and platform-neutral values;
@@ -72,6 +79,9 @@ SDK call is nearby.
   explicit, bounded, and safe to repeat.
 - Local state remains authoritative. A cloud transport or native helper must
   not become a second hidden domain queue.
+- Transport, payload protection, workspace-key delivery, and device admission
+  remain separate semantic capabilities. A platform adapter must not silently
+  define another workspace authority or cryptographic format.
 - A failed sync or enforcement update must preserve the last valid local state
   and expose a truthful failure category.
 - Process boundaries require bounded frames, timeouts, request identity,
@@ -98,6 +108,10 @@ not an application skeleton.
 - dependency injection and lifecycle ownership;
 - persistence schema and migration policy;
 - production cryptographic encoding and pinned providers;
+- deterministic Apple bootstrap across delayed CloudKit and Keychain delivery;
+- Apple signed-author registration without Blocker-level approval;
+- portable membership, folder-integrity, high-water-mark, and migration
+  contracts;
 - minimum operating-system and architecture support;
 - CI, signing, notarization, TestFlight, and App Store boundaries;
 - versioning of local database, sync data, IPC, and exported recovery material.

@@ -7,7 +7,7 @@
   application code
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** define the MVP scope and minimum product identity
+- **Next work:** select the minimum product identity
 
 ## Objective
 
@@ -54,10 +54,10 @@ Product identity ─┴───────────────────
                                                 Ready to open PR #1
 ```
 
-MVP scope and product identity are the immediate next activities and may
-advance together. Architecture and design should stay minimal: settle what PR
-#1 and its immediate dependants need, then make later decisions in the smallest
-vertical pull request that requires them.
+The MVP scope is accepted. Product identity is the immediate next activity.
+Architecture and design should stay minimal: settle what PR #1 and its
+immediate dependants need, then make later decisions in the smallest vertical
+pull request that requires them.
 
 ## Seven gates
 
