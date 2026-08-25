@@ -51,6 +51,7 @@ These are direction constraints, not a complete architecture.
 - [Product framing](docs/wiki/topics/product-framing.md)
 - [Accepted MVP scope](docs/product/mvp-scope.md)
 - [Accepted product identity](docs/product/product-identity.md)
+- [Accepted design system](DESIGN.md)
 - [Feasibility results and limits](docs/wiki/topics/feasibility-results-and-limits.md)
 - [MVP open questions](docs/wiki/topics/mvp-open-questions.md)
 - [First MVP PR preparation plan](tasks/first-mvp-pr-preparation-plan.md)
@@ -63,8 +64,9 @@ application code. Seven gates precede implementation: MVP scope, product
 identity, minimal product and design baseline, architecture baseline, quality
 contract, PR decomposition, and one manual Apple resource setup task.
 
-The MVP scope and product identity are accepted. The immediate next work is to
-accept the minimum product and design baseline in Gate 3.
+The MVP scope, product identity, and minimum brand and product design baseline
+are accepted. The immediate next work is to accept the architecture baseline
+in Gate 4.
 The accepted route and verification criteria live in the
 [preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
 [checklist](tasks/first-mvp-pr-preparation-todo.md).

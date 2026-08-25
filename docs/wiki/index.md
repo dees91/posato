@@ -19,6 +19,8 @@ provenance rather than a parallel public brand.
   — accepted preparation route to the first MVP code pull request.
 - [../../tasks/first-mvp-pr-preparation-todo.md](../../tasks/first-mvp-pr-preparation-todo.md)
   — active state and acceptance criteria for its seven preparation gates.
+- [../../DESIGN.md](../../DESIGN.md) — accepted, tool-neutral Posato brand and
+  product design system for the Apple MVP.
 
 ## Product and architecture
 
@@ -33,9 +35,11 @@ provenance rather than a parallel public brand.
 - [topics/product-framing.md](topics/product-framing.md) — problem, intended
   audience, product principles, platform sequencing, accepted scope, and open
   product measures.
+- [../product/design-baseline.md](../product/design-baseline.md) — accepted
+  Gate 3 decision record and routing to the canonical design contract.
 - [topics/brand-and-design-baseline.md](topics/brand-and-design-baseline.md) —
-  proposed Gate 3 brand foundation, visual direction, accessibility baseline,
-  low-fidelity flows, and PR #1 shell content awaiting maintainer acceptance.
+  accepted Gate 3 synthesis, visual direction, accessibility baseline,
+  low-fidelity flows, and proposal provenance.
 - [topics/architecture-direction.md](topics/architecture-direction.md) —
   accepted technical directions and production decisions still open.
 - [topics/kotlin-apple-boundaries.md](topics/kotlin-apple-boundaries.md) —

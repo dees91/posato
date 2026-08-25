@@ -16,13 +16,17 @@
   and `app.posato` as the stable reverse-DNS root. See the accepted naming
   pattern in the
   [product identity contract](../../product/product-identity.md).
+- `user-confirmed` (2026-08-25): the minimum brand and product design baseline
+  is accepted in [DESIGN.md](../../../DESIGN.md), including positioning,
+  audience, tone, palette, typography, placeholder icon direction,
+  accessibility constraints, low-fidelity flows, and PR #1 shell copy.
 - `user-confirmed` (2026-08-25): Apple MVP synchronization uses one
   **Sync with iCloud** action per installation, Apple Account/iCloud Keychain
   trust for membership, and no application-level QR or cross-device approval.
   See
   [ADR 0002](../../decisions/0002-synchronization-trust-and-workspace-modes.md).
-- `open`: the complete visual identity, distribution path, and license have not
-  been selected.
+- `open`: the final logo and complete visual identity, distribution path, and
+  license have not been selected.
 
 ## Problem
 

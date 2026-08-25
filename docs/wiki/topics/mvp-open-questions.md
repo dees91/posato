@@ -13,18 +13,19 @@ Apple resource setup.
 
 The active [preparation plan](../../../tasks/first-mvp-pr-preparation-plan.md)
 and [checklist](../../../tasks/first-mvp-pr-preparation-todo.md) are the
-execution authority for this milestone. Gates 1 and 2 are complete in the
+execution authority for this milestone. Gates 1 through 3 are complete in the
 accepted [MVP scope](../../product/mvp-scope.md) and
-[product identity](../../product/product-identity.md). The immediate next work
-is the minimum product and design baseline. The sections below retain the
+[product identity](../../product/product-identity.md), with the accepted brand
+and product design authority in [DESIGN.md](../../../DESIGN.md). The immediate
+next work is the MVP architecture baseline. The sections below retain the
 decisions each remaining gate must resolve and the questions that may remain
 incremental.
 
-`inferred` (2026-08-25): a complete
-[Gate 3 candidate](brand-and-design-baseline.md) now covers the brand
+`user-confirmed` (2026-08-25): the maintainer accepted the complete
+[Gate 3 baseline](brand-and-design-baseline.md), including the brand
 foundation, visual direction, platform and accessibility constraints, six
-low-fidelity flows, and exact PR #1 shell content. It remains working
-synthesis until the maintainer accepts or corrects it.
+low-fidelity flows, and exact PR #1 shell content. The canonical tool-neutral
+contract is [DESIGN.md](../../../DESIGN.md).
 
 ## Gate 2: product identity (complete)
 

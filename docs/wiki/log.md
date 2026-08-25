@@ -207,3 +207,17 @@
 - Added low-fidelity flows for onboarding, paused-item management, manual
   sessions, active blocking, synchronization, and action-required recovery.
 - Kept Gate 3 open pending explicit maintainer acceptance or correction.
+
+## [2026-08-25] decision | Accept the minimum brand and product design
+
+- Recorded the maintainer's acceptance of the rendered Gate 3 direction and
+  promoted it into the tool-neutral root `DESIGN.md` contract.
+- Accepted the positioning, audience, promise, language, palette, system
+  typography, open-interval placeholder mark, interface hierarchy, platform
+  constraints, accessibility baseline, six low-fidelity flows, and exact PR #1
+  shell content.
+- Preserved unknown spacing, radius, shadow, navigation, responsive, final-logo,
+  and implemented-accessibility details instead of deriving false precision
+  from one brand-board rendering.
+- Added product and wiki routing, marked Gate 3 complete, and advanced the
+  active handoff to the MVP architecture baseline.

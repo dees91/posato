@@ -1,20 +1,18 @@
-# Brand and Product Design Baseline Candidate
+# Brand and Product Design Baseline
 
 ## Status and boundary
 
-- **Status:** Proposed for Gate 3 acceptance
-- **Prepared:** 2026-08-25
-- **Provenance:** `inferred` from accepted product scope, identity, privacy
-  boundaries, and current Apple design guidance
-- **Decision authority:** none until the maintainer explicitly accepts or
-  corrects this candidate
+- **Status:** Accepted
+- **Accepted:** 2026-08-25
+- **Provenance:** `user-confirmed`
+- **Decision authority:** [DESIGN.md](../../../DESIGN.md)
 
-This candidate defines only enough brand and product design to keep the first
+This baseline defines only enough brand and product design to keep the first
 application shell and near-term MVP flows coherent. It does not finalize a
 logo, custom typeface, illustration system, marketing site, launch campaign,
 or complete component library.
 
-## Recommended brand foundation
+## Accepted brand foundation
 
 ### Positioning
 
@@ -71,7 +69,7 @@ Use **session**, **paused**, **ends at**, **on this device**, **waiting**, and
 support contexts where precision outweighs tone. Do not use **detox**,
 **addiction**, **discipline**, **streak**, or **failure** to describe a person.
 
-## Recommended visual direction
+## Accepted visual direction
 
 ### Concept: the calm interval
 
@@ -281,7 +279,7 @@ flowchart TD
   H --> I[Return to truthful current status]
 ```
 
-## PR #1 design contract candidate
+## PR #1 design contract
 
 The application-skeleton screen can use the following exact content without
 pretending that unfinished controls work:
@@ -295,13 +293,9 @@ Use the system background and label colors, system typography, and Posato Moss
 as the sole tint. Do not add a navigation shell, dashboard cards, fake session
 controls, gradients, illustrations, or the unfinished app icon to PR #1.
 
-## Acceptance request
+## Deferred work
 
-Gate 3 remains open until the maintainer explicitly accepts or corrects:
-
-1. the positioning, audience, promise, and working line;
-2. the personality, voice, and product vocabulary;
-3. the palette, typography, and placeholder icon direction;
-4. the shared hierarchy and platform-specific constraints;
-5. the accessibility baseline and six low-fidelity flows; and
-6. the exact PR #1 shell content.
+Final logo and app-icon production, custom typography, a complete identity
+system, marketing design, exact component geometry, and platform navigation
+remain later decisions. They must not silently alter the accepted brand
+foundation, language, accessibility boundary, or PR #1 shell contract.

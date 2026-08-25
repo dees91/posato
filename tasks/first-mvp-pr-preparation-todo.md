@@ -55,18 +55,18 @@ design coherent application shells without blocking on final branding.
 
 **Acceptance criteria:**
 
-- [ ] One-sentence positioning, primary audience, product tone, base colors,
+- [x] One-sentence positioning, primary audience, product tone, base colors,
   typography, and placeholder icon direction are accepted.
-- [ ] Low-fidelity flows cover onboarding, block-list management, manual
+- [x] Low-fidelity flows cover onboarding, block-list management, manual
   session, active blocking, synchronization, and failure or action-required
   states.
-- [ ] Accessibility and platform-convention constraints are stated for the
+- [x] Accessibility and platform-convention constraints are stated for the
   first application shell.
 
 **Verification:**
 
-- [ ] The baseline and flow references are recorded under `docs/product/`.
-- [ ] PR #1 can implement a minimal screen without inventing product language
+- [x] The baseline and flow references are recorded under `docs/product/`.
+- [x] PR #1 can implement a minimal screen without inventing product language
   or visual conventions in code review.
 
 **Dependencies:** Gates 1 and 2.
