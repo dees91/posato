@@ -28,11 +28,11 @@ provenance rather than a parallel public brand.
 - [../development/engineering-quality-contract.md](../development/engineering-quality-contract.md)
   — accepted formatting, static-analysis, testing, review, CI, and Definition
   of Done authority.
-- [../../tasks/README.md](../../tasks/README.md) — accepted repository-local
-  task specification, execution record, review loop, dependency, wave, and
-  parallel-work process.
+- [../../tasks/README.md](../../tasks/README.md) — accepted proportional review,
+  just-in-time task brief, concise execution record, wave, and parallel-work
+  process.
 - [../../tasks/mvp-roadmap.md](../../tasks/mvp-roadmap.md) — accepted Gate 6
-  MVP epic, task, dependency, wave, evidence, and pull-request authority.
+  MVP task-stub, dependency, wave, evidence, and integration-group authority.
 - [../../DESIGN.md](../../DESIGN.md) — accepted, tool-neutral Posato brand and
   product design system for the Apple MVP.
 

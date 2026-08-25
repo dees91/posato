@@ -13,7 +13,7 @@ Apple resource setup.
 
 The active [preparation plan](../../../tasks/first-mvp-pr-preparation-plan.md)
 and [checklist](../../../tasks/first-mvp-pr-preparation-todo.md) are the
-execution authority for this milestone. Gates 1 through 5 are complete in the
+execution authority for this milestone. Gates 1 through 6 are complete in the
 accepted [MVP scope](../../product/mvp-scope.md) and
 [product identity](../../product/product-identity.md), with the accepted brand
 and product design authority in [DESIGN.md](../../../DESIGN.md) and the
@@ -22,8 +22,8 @@ accepted architecture in
 The engineering quality baseline is also accepted in the
 [quality contract](../../development/engineering-quality-contract.md) and
 [task workflow](../../../tasks/README.md). The
-[Gate 6 MVP roadmap](../../../tasks/mvp-roadmap.md) and its linked revision 1
-task specifications are accepted. Gate 7 task `APPLE-001` is the immediate
+[Gate 6 MVP roadmap](../../../tasks/mvp-roadmap.md) is accepted at revision 2
+with concise future task stubs. Gate 7 task `APPLE-001` is the immediate
 handoff and production scaffolding remains blocked. The sections below retain
 the decisions that later tasks must resolve and the questions that may remain
 incremental.
@@ -285,12 +285,13 @@ and [repository task workflow](../../../tasks/README.md) establish:
 - warning-free repository-owned source, no new-code lint baselines, and narrow
   documented exceptions for unavoidable external or generated warnings;
 - applicable unit, contract, integration, Compose UI, platform, simulator,
-  physical-device, and manual verification layers, each evidenced or marked
-  `N/A` with a reason;
-- outcome-only task specifications plus separate execution records containing
-  exact plans, independent plan review, implementation review, corrections,
-  and final evidence;
-- a project-wide Definition of Done with task-local evidence for every item;
+  physical-device, and manual verification chosen for the change rather than
+  copied into an applicability matrix;
+- Trivial self-checks, Standard completed-change review, and an additional
+  brief plan review only for named High-risk work;
+- just-in-time 20–40 line task briefs and concise execution records containing
+  only the actual plan, result, review, checks, and blockers;
+- five standing Definition of Done principles without per-task duplication;
 - small task and pull-request boundaries, explicit dependency waves, isolated
   worktrees, and at most three concurrent implementation tasks initially; and
 - proportional dependency, license, security, privacy, provenance, and PoC
@@ -304,16 +305,16 @@ fresh local verification evidence is mandatory.
 ## Gate 6 roadmap (complete)
 
 `user-confirmed` (2026-08-25): the accepted
-[MVP roadmap](../../../tasks/mvp-roadmap.md) decomposes the accepted Apple MVP
-into 36 work items: one manual Gate 7 task, three independently reviewed tasks
-grouped in PR #1, 31 later one-task pull requests through physical MVP
+[MVP roadmap](../../../tasks/mvp-roadmap.md) retains 36 outcome stubs: one
+manual Gate 7 task, three PR #1 milestones, 31 later tasks through physical MVP
 acceptance, and one separate release-readiness task.
 
-The roadmap keeps all work serialized until credential-free CI and the
-holistic PR #1 review pass. Later waves expose only concurrency candidates;
+The roadmap keeps all work serialized until credential-free CI and the one
+completed-change review for PR #1 pass. The three PR #1 milestones share one
+brief and execution cycle. Later waves expose only concurrency candidates;
 exact plans must still prove disjoint write surfaces, frozen contracts,
-isolated worktrees, reviewer availability, and integration order. Dedicated
-decision tasks own the threat model, diagnostics policy, macOS helper
+isolated worktrees, and integration order when activated. Dedicated decision
+tasks own the threat model, diagnostics policy, macOS helper
 lifecycle, macOS browser support, encrypted-operation contract, and Apple
 workspace bootstrap before implementation consumers start.
 
@@ -323,10 +324,9 @@ play behavior, fixtures, geometry, and web implementation do not change the
 accepted [DESIGN.md](../../../DESIGN.md) contract or become production
 requirements.
 
-The roadmap and all linked revision 1 task specifications are accepted. Gate 6
-is complete, and `APPLE-001` is the first incomplete Gate 7 task. This
-acceptance does not authorize application scaffolding or bypass task-local
-planning and review.
+Roadmap revision 2 is accepted. Future work remains as stubs until a concise
+brief is needed. Gate 6 is complete, and `APPLE-001` is the first incomplete
+Gate 7 task. This acceptance does not authorize application scaffolding.
 
 ## Apple identity and distribution
 
@@ -341,6 +341,11 @@ the roadmap:
   App Group and Keychain access group;
 - entitlement availability and explicit blockers for later physical tasks.
 
+The maintainer performs these checks manually in Apple Developer and Xcode,
+guided one resource at a time. Credentials and private account values stay out
+of Git; no preflight script, parser, wizard, or local configuration layer is
+required.
+
 Notarization, App Store or direct-distribution strategy, update delivery,
 privacy disclosures, and public support readiness belong to the separate
 `RELEASE-001` review. They are not inferred from Gate 7 or MVP behavior.
@@ -351,9 +356,9 @@ No PoC development identifier should be reused automatically.
 
 The roadmap assigns these decisions to `MACOS-001`, `MACOS-002`,
 `TARGETS-003`, `TARGETS-004`, `MACOS-003` through `MACOS-005`, and `IOS-001`
-through `IOS-002`. Their specifications are accepted, but the product and
-architecture questions remain open until the decision tasks record
-maintainer-approved authorities.
+through `IOS-002`. Their roadmap stubs are accepted, but the product and
+architecture questions remain open until just-in-time briefs and decision
+tasks record maintainer-approved authorities.
 
 - Which accepted blocking capability belongs in the first enforcement slice?
 - Which macOS browsers are supported, and is browser presentation part of the
@@ -430,14 +435,15 @@ The first code PR waits for the seven gates in the
 [preparation checklist](../../../tasks/first-mvp-pr-preparation-todo.md),
 including the manual Apple Task 0 after the product identity and target graph
 are known. The accepted roadmap makes Gate 7 `APPLE-001` and groups
-`FOUNDATION-001`, `QUALITY-001`, and `CI-001` into PR #1, each with its own
-plan and reviews followed by a holistic integration review. Everything not
-required by PR #1 or its immediate dependants is decided as late as the
-corresponding small task requires it.
+`FOUNDATION-001`, `QUALITY-001`, and `CI-001` into one PR #1 brief,
+execution record, and completed-change review. Everything not required by PR
+#1 or its immediate dependants is decided as late as the corresponding small
+task requires it.
 
 `user-confirmed`: PR #1 creates fresh production modules, uses accepted target
 identifiers, runs one minimal shared Compose screen on macOS and iOS,
 introduces small semantic platform contracts with fakes, and establishes
-baseline tests and CI. Gate 5 does not configure CI; Gate 6 must represent it
-as a separate task completed before PR #1 merges or parallel implementation
-begins. PR #1 implements neither blocking nor synchronization.
+baseline tests and CI. Gate 5 does not configure CI; Gate 6 retains CI as a
+milestone in the shared PR #1 cycle that completes before PR #1 merges or
+parallel implementation begins. PR #1 implements neither blocking nor
+synchronization.

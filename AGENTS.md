@@ -26,11 +26,13 @@ Before brand, product-design, UI, or application-shell work, also read
 pages retain synthesis, evidence, flow diagrams, and proposal history rather
 than a competing design contract.
 
-After work produces a durable conclusion, correction, decision candidate,
-experiment result, or open question, update the relevant page under
-`docs/wiki/topics/` or `docs/wiki/sources/`, update `docs/wiki/index.md` when
-page routing changes, and append a parseable entry to `docs/wiki/log.md` using
-`## [YYYY-MM-DD] type | Short title`.
+After work produces an accepted durable conclusion, a material reusable
+correction or experiment result, or an open question that changes future
+decisions, update the relevant page under `docs/wiki/topics/` or
+`docs/wiki/sources/`. Update `docs/wiki/index.md` only when page routing
+changes, and append one parseable entry to `docs/wiki/log.md` using
+`## [YYYY-MM-DD] type | Short title`. Routine task status, review bookkeeping,
+and verification output do not require wiki updates.
 
 The wiki is maintained synthesis, not decision authority. Do not promote an
 inference or PoC choice into an ADR, product requirement, plan, or
@@ -44,28 +46,29 @@ work, read:
 
 1. [`docs/development/engineering-quality-contract.md`](docs/development/engineering-quality-contract.md);
 2. [`tasks/README.md`](tasks/README.md); and
-3. the accepted task specification and its linked authorities.
+3. the active task brief, or its accepted roadmap stub when a brief has not
+   yet been created, and the linked authorities.
 
-Drafting a new task specification or Gate 6 roadmap under an explicitly
-authorized parent gate is planning, so it does not require another task
-specification. It may not start the described implementation or promote a new
-durable decision. Once the draft itself changes durable repository governance,
-give that governance change its own accepted specification and execution
-record before declaring it complete.
+Gate 6 keeps short roadmap stubs. Create a task brief just before its work
+starts; do not pre-expand every future task. A brief records only the outcome,
+boundaries, dependencies, acceptance criteria, and applicable verification.
+The execution record contains only the actual plan, result, blockers, review,
+and checks used for that change.
 
-Repository Markdown is the durable task source of truth. Keep outcome, scope,
-dependencies, non-goals, and acceptance criteria in the task specification.
-Keep exact implementation details, plan review, implementation review,
-corrections, and final evidence in the separate execution record. Do not add
-implementation details to an accepted task specification during execution.
+Follow the proportional review tier in `tasks/README.md`. Trivial changes use a
+self-check. Standard changes require one independent completed-change review.
+High-risk changes additionally require a brief independent plan review before
+implementation. Resolve all Critical and Required findings and rerun affected
+verification after the last correction. Recommended and Optional findings do
+not expand scope automatically.
 
-Non-trivial work requires an implementation plan approved by a different agent
-before implementation and a completed-change review by a different agent after
-implementation. Resolve all Critical and Required findings, rerun affected
-verification after the last correction, and record task-specific acceptance
-and Definition of Done evidence before marking work done. Parallel implementing
-agents require isolated Git worktrees and the dependency and write-surface
-conditions in `tasks/README.md`.
+For a one-off manual task, guide the maintainer with a short checklist or chat
+instructions. Do not create a script, parser, wizard, or configuration layer
+unless the maintainer explicitly requests it or a named repeated consumer
+needs it. When human action is the blocker, stop and explain the next action.
+
+Parallel implementing agents require isolated Git worktrees and the dependency
+and write-surface conditions in `tasks/README.md`.
 
 ## Feasibility research reference
 

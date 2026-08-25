@@ -69,10 +69,10 @@ contract, PR decomposition, and one manual Apple resource setup task.
 The MVP scope, product identity, minimum brand and product design baseline,
 [MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md),
 and [engineering quality contract](docs/development/engineering-quality-contract.md)
-are accepted. The [Gate 6 MVP roadmap](tasks/mvp-roadmap.md) and its linked
-revision 1 task specifications are also accepted. The immediate next work is
-Gate 7 Apple resource registration and secret-free preflight; production
-implementation remains blocked until the readiness checkpoint is accepted.
+are accepted. [Gate 6 MVP roadmap revision 2](tasks/mvp-roadmap.md) retains
+future work as concise task stubs. The immediate next work is the manual
+Gate 7 Apple resource checklist; production implementation remains blocked
+until the readiness checkpoint is accepted.
 The accepted route and verification criteria live in the
 [preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
 [checklist](tasks/first-mvp-pr-preparation-todo.md).
@@ -82,6 +82,7 @@ shared Compose screen running on macOS and iOS, small semantic platform
 contracts with fakes, baseline tests, and CI. It will not implement blocking or
 synchronization and will not adopt the PoC module graph as its starting point.
 
-Gate 5 does not configure CI. The accepted roadmap assigns that outcome to
-`CI-001`, grouped into PR #1 and due before PR #1 merges or any parallel
+Gate 5 does not configure CI. The accepted roadmap groups `FOUNDATION-001`,
+`QUALITY-001`, and `CI-001` into one PR #1 brief, execution record, and
+completed-change review. CI is due before PR #1 merges or any parallel
 implementation wave begins.

@@ -342,3 +342,14 @@
 - Preserved task-local plan, independent review, dependency, evidence, and
   readiness-checkpoint requirements; acceptance does not authorize production
   scaffolding.
+
+## [2026-08-25] correction | Streamline the engineering workflow
+
+- Replaced universal plan review and exhaustive evidence matrices with
+  Trivial, Standard, and High-risk review tiers and five Definition of Done
+  principles.
+- Reduced inactive Gate 6 work to 36 roadmap stubs and made task briefs
+  just-in-time; the three PR #1 milestones now share one execution and review
+  cycle.
+- Reframed APPLE-001 as a manual Apple Developer and Xcode checklist without
+  scripts, parsers, wizards, or local configuration layers.

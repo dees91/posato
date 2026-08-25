@@ -70,13 +70,18 @@ Before reusable work:
 4. If the ignored `.research/blocker` path exists, consult it only when exact
    PoC or spike code, tests, or evidence would change the answer.
 
-After reusable work:
+After reusable work that produces an accepted durable conclusion, a material
+reusable correction or experiment result, or an open question that changes
+future decisions:
 
 1. Update an existing page before creating an overlapping page.
 2. Record evidence limits, contradictions, and open questions.
 3. Update `index.md` when routing changes.
 4. Append one entry to `log.md`.
 5. Promote a conclusion into a durable decision only after explicit acceptance.
+
+Routine task status, review bookkeeping, and command output remain in the task
+execution record and do not trigger a wiki update.
 
 ## Repository boundary
 

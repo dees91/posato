@@ -12,10 +12,10 @@
 `user-confirmed` (2026-08-25): the accepted
 [engineering quality contract](../development/engineering-quality-contract.md)
 defines required quality and CI outcomes while leaving exact versions,
-commands, Gradle wiring, CI jobs, and runner images to reviewed PR #1 task
-plans. Gate 5 does not configure CI. CI remains part of the PR #1 outcome as a
-separate implementation task and must complete before PR #1 merges or the
-first parallel implementation wave begins, whichever happens first.
+commands, Gradle wiring, CI jobs, and runner images to the shared PR #1
+execution cycle. Gate 5 does not configure CI. CI remains a PR #1 milestone
+and must complete before PR #1 merges or the first parallel implementation
+wave begins, whichever happens first.
 
 This amendment supersedes the original wording that implied Gate 5 would
 select exact commands and CI jobs or that a CI image had to be selected before
@@ -290,9 +290,9 @@ PR #1 must prove, at minimum:
   recorded sanitation diff.
 
 Gate 5 accepts the automated-check outcomes, review protocol, and CI deadline.
-Exact commands and CI jobs are selected in their reviewed PR #1 task plans.
-Production code remains blocked until all seven preparation gates and the
-ready checkpoint are complete.
+Exact commands and CI jobs are selected in the shared PR #1 brief and execution
+record. Production code remains blocked until all seven preparation gates and
+the ready checkpoint are complete.
 
 ## Open implementation decisions
 

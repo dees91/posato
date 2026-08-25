@@ -1,6 +1,6 @@
 # `GOVERNANCE-001`: Establish the Posato engineering workflow
 
-- **Specification status:** `accepted`
+- **Specification status:** `superseded`
 - **Specification revision:** `1`
 - **Accepted on:** 2026-08-25
 - **Accepted by:** Project maintainer
@@ -11,6 +11,9 @@
 - **Roadmap reference:** Not assigned; this task completes Gate 5 before the
   Gate 6 roadmap exists.
 - **Risk:** medium
+
+> Historical record. The active workflow is revision 2 in
+> [`GOVERNANCE-002`](governance-002-streamline-engineering-workflow.md).
 
 ## Outcome
 

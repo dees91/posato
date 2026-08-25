@@ -3,256 +3,183 @@
 ## Status and authority
 
 - **Status:** Accepted
+- **Revision:** 2
 - **Accepted:** 2026-08-25
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
-This file is the process authority for planning and executing work in Posato.
-Repository Markdown is the durable source of truth. External issues or pull
-requests may mirror and link to these records, but they do not silently replace
-them.
+This file defines the smallest process needed to produce reliable Posato
+software. Evidence should support an engineering decision, not exist merely to
+confirm that another record exists.
 
-The standing quality bar is defined in the
+The standing quality bar is the
 [engineering quality contract](../docs/development/engineering-quality-contract.md).
 
-## Source-of-truth hierarchy
-
-Each concern has one authority:
+## Sources of truth
 
 | Concern | Authority |
 | --- | --- |
-| Work process, states, review protocol, and artifact roles | This file |
-| Standing engineering quality and Definition of Done | `docs/development/engineering-quality-contract.md` |
+| Workflow, review tiers, and artifact roles | This file |
+| Standing quality and Definition of Done | Engineering quality contract |
 | Preparation-gate state before PR #1 | `first-mvp-pr-preparation-todo.md` |
-| MVP epic membership, phase, wave, parallel-lane, derived dependency graph, and pull-request ordering | Gate 6 roadmap, once created |
-| Task outcome, scope, non-goals, direct blocking dependencies, stable concurrency constraints, and acceptance criteria | The accepted task specification under `tasks/specifications/` |
-| Current task execution state, exact write surface, technical plan, reviews, corrections, and evidence | The task execution record under `tasks/executions/` |
-| Accepted product, design, architecture, security, or development decision | Its named authority under `docs/` |
+| MVP ordering, dependencies, waves, and integration groups | `mvp-roadmap.md` |
+| Active task outcome and boundaries | Its brief under `specifications/` |
+| Actual plan, result, review, checks, and blockers | Its execution record under `executions/` |
+| Product, design, architecture, security, or privacy decision | Its accepted authority under `docs/` |
 | Maintained synthesis and evidence routing | `docs/wiki/` |
 
-The roadmap may summarize task state for readability, but the linked execution
-record is authoritative. A task specification has a specification lifecycle;
-it does not duplicate execution status.
+The roadmap is enough to retain future work. A full brief is created just in
+time, when a task becomes active. Do not write speculative briefs for every
+roadmap row.
 
-The roadmap derives its graph from task-owned direct dependencies and owns
-epic membership plus changeable scheduling decisions such as phase, wave,
-lane, integration order, and pull-request grouping. A task specification may
-link to its current roadmap location for navigation, but that reference is
-non-authoritative. Exact files and write surfaces are discovered in technical
-planning and belong only in the execution record.
+## Review tiers
 
-## Planning hierarchy
+Choose one tier before work starts. **Standard is the default.** A higher tier
+needs a named reason; a lower tier must genuinely fit its definition.
 
-- An **epic** groups tasks that produce one durable product or engineering
-  capability.
-- A **phase** is a dependency-ordered segment ending in an explicit checkpoint.
-- A **wave** contains tasks eligible to run concurrently after their
-  dependencies and shared contracts are complete.
-- A **task** produces one independently verifiable outcome.
-- A **pull request** is the review and integration boundary. It normally maps
-  to one implementation task.
+### Trivial
 
-The Gate 6 roadmap must show the dependency graph, critical path, phases,
-waves, parallel lanes, manual gates, and pull-request grouping. Sequence comes
-from real dependencies, not from document order or epic numbering alone.
+Use for a typo, an unambiguous link fix, mechanical formatting, or another
+change with no behavioral or durable-governance effect.
 
-## Required task artifacts
+- No task brief or execution record.
+- The author performs the relevant self-check.
+- Escalate to Standard as soon as judgment, broader scope, or risk appears.
 
-Creating a draft task specification or Gate 6 roadmap under an explicitly
-authorized parent gate is planning and does not require a recursive parent task
-specification. The draft cannot authorize its own implementation or promote a
-durable product, architecture, security, or governance decision. The maintainer
-must accept the specification before execution can enter `ready`.
+### Standard
 
-The Gate 5 workflow documentation is the bootstrap governance task for this
-system. Its accepted specification and actual review history are preserved in
-`tasks/specifications/governance-001-engineering-workflow.md` and
-`tasks/executions/governance-001-engineering-workflow.md`.
-`user-confirmed` (2026-08-25): GOVERNANCE-001 has one recorded transition exception
-because its initial documentation drafts preceded formal approval of the
-corrected plan. The exception does not apply to any subsequent task; the full
-plan gate is mandatory after GOVERNANCE-001.
+Use for ordinary implementation, configuration, tests, and meaningful
+documentation.
 
-### Task specification
+- Create a concise task brief and execution record.
+- Implement after the plan is understood; a separate plan-review ceremony is
+  not required.
+- A different agent reviews the completed change once.
 
-Create `tasks/specifications/<task-id>.md` from
-[the task specification template](templates/task-specification.md).
+### High-risk
 
-The specification is an outcome contract. It contains context, scope,
-non-goals, dependencies, acceptance criteria, and required evidence categories.
-It must not prescribe exact files, class names, APIs, dependency versions,
-algorithms, or implementation steps unless an already accepted authority makes
-that detail a constraint.
+Use when a named risk justifies review before action: authentication or
+authorization, cryptography, privacy or sensitive data, destructive migration,
+signing or account-level resources, release operations, an exposed trust
+boundary, or another explicitly identified irreversible or costly failure.
 
-Specification states are `draft`, `accepted`, and `superseded`. The file
-records a numbered revision, acceptance date, accepting owner, and provenance.
-Only an accepted revision may become ready for implementation. A scope,
-dependency, concurrency-constraint, or acceptance change increments the
-revision and returns it to `draft` until the maintainer accepts it. Acceptance
-results are never checked off in the specification; they live in the execution
-record.
+- Use the Standard artifacts.
+- A different agent reviews the brief plan before implementation.
+- A different agent reviews the completed change. The same reviewer may perform
+  both reviews.
 
-### Execution record
+The implementer resolves Critical and Required findings. Recommended and
+Optional findings are advisory and never expand the task automatically.
+Reviewers should challenge needless scripts, abstraction layers, generalized
+configuration, and evidence created only for its own sake.
 
-Create `tasks/executions/<task-id>.md` from
-[the execution record template](templates/execution-record.md) when work on an
-accepted task is authorized.
+## Task brief
 
-The execution record is the only home for:
+Create `tasks/specifications/<task-id>.md` from the
+[brief template](templates/task-specification.md) only when the task is about
+to start.
 
-- the current execution state;
-- repository findings and assumptions;
-- exact technical implementation plan;
-- plan-review findings, corrections, and verdict;
-- implementation summary and deviations from the approved plan;
-- code-review findings and resolution rounds;
-- fresh acceptance-criteria and Definition of Done evidence; and
-- the final verdict.
+A normal brief contains 20–40 lines of unique content:
 
-Keep it concise and auditable. Record verdicts, actionable findings,
-corrections, commands, and results rather than raw agent transcripts or hidden
-reasoning.
+- task ID, review tier and reason, dependencies, and integration group;
+- one observable outcome;
+- boundaries and non-goals;
+- two to five acceptance criteria;
+- only the verification that is expected to matter; and
+- a real decision or blocker, if one exists.
 
-## Task readiness
+Do not copy the global quality contract, a generic risk matrix, the roadmap, or
+implementation detail into the brief. A roadmap stub may be clarified without
+maintainer re-acceptance when the outcome and boundaries do not change.
+Escalate product, architecture, privacy, scope, or irreversible-action choices
+to the maintainer.
 
-A task may enter `ready` only when:
+## Execution record
 
-- its specification is accepted;
-- its outcome is small enough for one focused implementation session;
-- acceptance criteria are observable and testable;
-- product, architecture, security, privacy, or design decisions needed to
-  define the outcome are already accepted;
-- all blocking dependencies are done;
-- the affected verification categories are known; and
-- its write surface does not conflict with another authorized parallel task.
+Create `tasks/executions/<task-id>.md` from the
+[execution template](templates/execution-record.md) for Standard and High-risk
+work. Keep only:
 
-An unresolved implementation choice belongs in the technical plan. An
-unresolved product or durable architecture choice blocks readiness and is
-escalated to the maintainer.
+- status: `active`, `blocked`, or `done`;
+- a short actual plan;
+- the result and material deviations;
+- Critical or Required review findings and their resolutions;
+- checks actually run and their results; and
+- blockers, accepted risks, or follow-up work that materially affects use.
 
-## Execution state machine
+Do not copy every Definition of Done item or test category. Do not add an
+`N/A` matrix. A missing irrelevant row communicates nothing.
 
-```text
-ready → planning ↔ plan-review → implementation → code-review ↔ corrections
-                                                           ↓
-                                                final-verification → done
+Several roadmap tasks in one pull request use one shared brief, execution
+record, and completed-change review when they form one coherent increment.
+For PR #1, `FOUNDATION-001`, `QUALITY-001`, and `CI-001` are milestones in
+one execution and review cycle stored as `pr-1-production-skeleton.md` under
+both artifact directories.
 
-any active state → blocked
-blocked → the prior state, or ready, after its clearing condition is met
-```
+## Execution
 
-The execution record uses exactly these states:
+Before implementation:
 
-- `blocked`
-- `ready`
-- `planning`
-- `plan-review`
-- `implementation`
-- `code-review`
-- `corrections`
-- `final-verification`
-- `done`
+1. Confirm dependencies and accepted authorities.
+2. Choose the review tier and write only the brief needed now.
+3. Record the short plan and relevant checks.
+4. For High-risk work, obtain plan approval from a different agent.
 
-Any state may become `blocked` when a missing decision, dependency, authority,
-environment, or external resource prevents safe progress. The record names the
-blocker and the condition that clears it.
+During implementation, keep the change scoped and record only material
+deviations. If a missing human action, external resource, or durable decision
+blocks progress, set the task to `blocked`, state the clearing condition, and
+stop. Do not manufacture tooling to remain busy.
 
-## Plan gate
+After implementation:
 
-The assigned implementation agent prepares the technical plan in the execution
-record. The plan includes:
+1. Run the checks that can detect a defect in this change.
+2. Obtain the tier's completed-change review.
+3. Resolve Critical and Required findings.
+4. Rerun checks affected by the last correction.
+5. Record the result, remaining blocker, or final evidence and mark the task
+   `done` only when the outcome is met.
 
-- current repository evidence and applicable authorities;
-- assumptions and unresolved questions;
-- exact files, contracts, dependencies, and migrations expected to change;
-- test-first or other verification strategy;
-- exact local verification commands available at that point;
-- security, privacy, compatibility, and provenance considerations; and
-- risk, rollback, recovery, or migration handling when applicable.
+## Human and one-off work
 
-A different agent reviews the plan before implementation. The reviewer checks
-specification compliance, dependency order, scope, architecture, testability,
-risk, and unnecessary implementation prescription. Implementation begins only
-after all Critical and Required plan findings are resolved and the reviewer
-records approval.
+Use a concise chat sequence or Markdown checklist for actions that only the
+maintainer can perform. Guide one resource or decision at a time and wait for
+the result.
 
-## Implementation and code-review gate
+Create a script, wizard, parser, or reusable configuration surface only when:
 
-The implementing agent follows the approved plan, keeps the change scoped, and
-records material deviations. A different agent then reviews the completed
-change against the task specification, approved plan, repository authorities,
-tests, and the five quality axes: correctness, readability, architecture,
-security, and performance.
+- the maintainer explicitly requests that artifact; or
+- a named repeated consumer will use it often enough to justify maintenance.
 
-Review findings use the severities defined in the
-[quality contract](../docs/development/engineering-quality-contract.md):
-Critical, Required, Recommended, and Optional. Critical and Required findings
-block completion. Recommended and Optional findings are recorded but do not
-silently expand the task.
+An imagined future consumer is not enough.
 
-The implementer resolves blocking findings and the same reviewer normally
-checks the corrections. Every correction invalidates earlier final-verification
-evidence for affected checks. After three unsuccessful review rounds, work is
-escalated to a fresh reviewer or maintainer adjudication instead of looping
-indefinitely. An override is valid only when the maintainer records the reason.
+## Parallel work and pull requests
 
-## Final verification and completion
+Parallel implementation requires complete blocking dependencies, frozen shared
+contracts, disjoint write surfaces, and an isolated branch and worktree for
+each writer. Review-only agents may inspect concurrently. Shared Gradle, Xcode,
+schema, navigation, dependency-injection, and public-contract ownership
+normally serializes work.
 
-After the last material correction, the implementing agent runs fresh
-verification and records:
+The initial maximum is three implementation tasks, with two preferred when
+integration risk is non-trivial. The roadmap records waves and integration
+groups; reviewer availability is arranged when a wave is activated, not months
+in advance.
 
-- one evidence entry for every task acceptance criterion;
-- `pass` evidence for every unconditional Definition of Done item and a
-  justified `N/A` only for an applicability-dependent test or runtime item;
-- applicable tests, builds, static analysis, formatting, compiler-warning,
-  runtime, simulator, device, visual, accessibility, and manual results;
-- unresolved non-blocking findings and accepted risks; and
-- the independent code-review verdict.
+One pull request should be one coherent review boundary. It may satisfy several
+roadmap milestones through one brief, execution record, and review. CI must be
+working before PR #1 merges or before the first parallel implementation wave,
+whichever happens first.
 
-The agent must not infer success from an earlier run, an unchanged-looking
-diff, or another agent's statement. A task becomes `done` only when no Critical
-or Required finding remains and all acceptance criteria and applicable
-Definition of Done items pass.
+## Wiki threshold
 
-## Parallel work
+Update the wiki only for an accepted durable conclusion, a material reusable
+correction or experiment result, or an open question that changes future
+decisions. Task status, routine review comments, command output, and ordinary
+verification stay in the execution record.
 
-Parallel implementation is allowed only when:
+## Historical records
 
-- blocking dependencies are done;
-- shared contracts are accepted and frozen for the wave;
-- tasks have disjoint write surfaces or explicit file ownership;
-- each implementation uses an isolated branch and Git worktree; and
-- integration order and reviewer availability are recorded in the roadmap.
-
-Root Gradle configuration, the version catalog, Xcode project files, shared
-schemas, navigation or dependency-injection composition roots, and cross-task
-public contracts normally serialize work. Review-only agents may inspect a
-working tree concurrently because they do not write.
-
-The initial maximum is three concurrent implementation tasks, with two
-preferred when integration risk is non-trivial. Increasing the limit requires
-evidence that review latency and merge conflicts remain controlled.
-
-## Pull-request mapping
-
-One task normally produces one pull request. Several tasks may share a pull
-request only when the Gate 6 roadmap explicitly groups them into one coherent
-increment and each task independently reaches `done` before the pull request's
-holistic review.
-
-The pull request description links the task specification and execution
-record, summarizes user-visible or engineering impact, and lists final
-verification. Pull-request review does not replace task-level plan and code
-review.
-
-CI configuration is a separate Gate 6 task. Under the accepted quality
-contract it must complete before PR #1 merges or before the first parallel
-implementation wave starts, whichever happens first.
-
-## Agent and repository authority
-
-Applicable agent skills may guide execution, including
-`android-compose-engineering` for Kotlin and Compose Multiplatform work. Skills,
-generator defaults, and external workflow tools are advisory. This repository's
-accepted task specification, quality contract, design authority, ADRs, and
-security or product documents always take precedence.
+`GOVERNANCE-001` and `PLANNING-001` preserve how the original workflow and
+Gate 6 roadmap were introduced. Their longer records are history, not templates
+for new work. This revision is implemented by
+[`GOVERNANCE-002`](specifications/governance-002-streamline-engineering-workflow.md).

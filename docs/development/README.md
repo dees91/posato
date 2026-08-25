@@ -11,9 +11,9 @@ requirements. No production build has been scaffolded yet.
 
 The accepted module, target, Metro, native-helper, extension, deployment, and
 generator-import boundaries are in
-[ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md). Gate 5
-is accepted. Gate 6, the outcome-oriented decomposition into epics, phases,
-waves, tasks, and pull requests, is the first incomplete preparation gate.
+[ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md). Gates
+5 and 6 are accepted. Gate 7, the manual Apple resource checklist, is the first
+incomplete preparation gate.
 
 ## First production pull request
 
@@ -25,10 +25,11 @@ waves, tasks, and pull requests, is the first incomplete preparation gate.
 - small semantic platform contracts with test fakes;
 - baseline tests, formatting, static checks, and CI for the introduced targets.
 
-Gate 5 defines the required CI outcome but does not configure a pipeline. CI
-is a separate Gate 6 task and must complete before PR #1 merges or the first
-parallel implementation wave begins, whichever happens first. Until then,
-fresh local evidence is mandatory for every applicable check.
+Gate 5 defines the required CI outcome but does not configure a pipeline.
+`FOUNDATION-001`, `QUALITY-001`, and `CI-001` share one PR #1 brief,
+execution record, and completed-change review. CI must complete before PR #1
+merges or the first parallel implementation wave begins, whichever happens
+first.
 
 PR #1 does not implement website blocking, application blocking,
 synchronization, enrollment, recovery, or production helpers. Implementation

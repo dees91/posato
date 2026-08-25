@@ -122,20 +122,18 @@ request must satisfy from the first line of code.
 ## Gate 6: Decompose the MVP into pull requests
 
 **Description:** Turn the accepted scope into epics, phases, parallel waves,
-small outcome-oriented tasks, and coherent pull requests without prescribing
-implementation details in task specifications.
+short outcome stubs, and coherent pull requests. Expand only the work that is
+about to start.
 
-**Accepted authority:** [MVP roadmap](mvp-roadmap.md), with linked accepted
-revision 1 task specifications (`user-confirmed`, 2026-08-25).
+**Accepted authority:** [MVP roadmap revision 2](mvp-roadmap.md)
+(`user-confirmed`, 2026-08-25).
 
 **Acceptance criteria:**
 
 - [x] Each pull request delivers one coherent, reviewable increment and has
   acceptance and verification criteria.
-- [x] Each task has an accepted outcome-only specification, explicit
-  dependencies, acceptance criteria, and required evidence categories, and is
-  routed to a separate execution record created only after that task is
-  accepted and authorized.
+- [x] Every future task has a short outcome, dependency, wave, and integration
+  stub; a concise brief and execution record are created just in time.
 - [x] Foundation work is limited to what a named vertical slice needs; there
   is no broad "implement MVP" pull request.
 - [x] PR #1 is fixed to the production skeleton contract in
@@ -143,12 +141,11 @@ revision 1 task specifications (`user-confirmed`, 2026-08-25).
 
 **Verification:**
 
-- [x] The roadmap names the critical path, dependencies, phases, waves,
-  parallel lanes, write-surface conflicts, PR boundaries, required manual
-  gates, and physical-device checks.
-- [x] The roadmap follows `tasks/README.md`, including independent plan and
-  implementation review, correction loops, final evidence, and the CI task
-  deadline.
+- [x] The roadmap names dependencies, phases, waves, integration groups,
+  required manual gates, and physical-device checks without speculative
+  reviewer assignments or repeated process text.
+- [x] The roadmap follows `tasks/README.md`, including proportional review,
+  concise evidence, and the CI deadline.
 
 **Dependencies:** Gates 1 through 5.
 
@@ -161,19 +158,19 @@ stage before autonomous PR #1 implementation.
 **Acceptance criteria:**
 
 - [ ] Bundle identifiers exist for the macOS and iOS applications, native
-  helper, and required Screen Time extensions.
+  helper, and required activity-monitor extension.
 - [ ] The App Group, Keychain access group, CloudKit container, entitlements,
-  and provisioning profiles required by the accepted first slices exist.
-- [ ] Non-secret identifiers and clean-checkout configuration are documented;
+  and development profiles required by the accepted Gate 7 target graph exist.
+- [ ] Non-secret identifiers and manual results are documented;
   credentials, profiles, signing identities, and account-specific secrets
   remain outside Git.
 
 **Verification:**
 
-- [ ] A read-only preflight confirms every required identifier, entitlement,
-  and profile without printing sensitive values into tracked artifacts.
-- [ ] A clean checkout can discover the documented local configuration path
-  and fail clearly when it is absent.
+- [ ] Manual Apple Developer inspection records pass or blocked for every
+  required identifier, capability, and development profile.
+- [ ] Xcode shows the intended team and resources without copying private
+  account values into tracked artifacts.
 
 **Dependencies:** Gates 2, 4, and 6.
 
@@ -182,8 +179,8 @@ stage before autonomous PR #1 implementation.
 - [ ] Gates 1 through 7 are complete.
 - [x] The maintainer explicitly accepts the scope, identity, design,
   architecture, quality contract, and PR roadmap.
-- [ ] The exact PR #1 acceptance criteria and verification commands are copied
-  into its branch plan or pull-request description.
+- [ ] One concise PR #1 brief and execution record state its acceptance
+  criteria and applicable verification commands.
 - [ ] No unresolved entitlement or identifier blocks the application skeleton.
 - [ ] Production implementation may begin on a short-lived branch from clean
   `main`.

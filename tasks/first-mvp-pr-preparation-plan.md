@@ -7,7 +7,7 @@
   application code
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** complete Gate 7 Apple resource registration and preflight
+- **Next work:** complete the Gate 7 Apple resource checklist
 - **Accepted Gate 6 authority:** [mvp-roadmap.md](mvp-roadmap.md)
 
 ## Objective
@@ -61,10 +61,10 @@ The maintainer controls `posato.app`, `app.posato` is the stable technical root,
 and [DESIGN.md](../DESIGN.md) is the design authority. The
 [engineering quality contract](../docs/development/engineering-quality-contract.md)
 and [task workflow](README.md) are accepted. The
-[Gate 6 MVP roadmap](mvp-roadmap.md) and its linked revision 1 task
-specifications are accepted. Gate 7 Apple resource registration is now the
-first incomplete gate. Architecture details deferred by ADR 0003 remain with
-the smallest named task that requires them.
+[Gate 6 MVP roadmap](mvp-roadmap.md) is accepted at revision 2 and retains
+future work as concise task stubs. Gate 7 Apple resource registration is now
+the first incomplete gate. Architecture details deferred by ADR 0003 remain
+with the smallest named task that requires them.
 
 [architecture-baseline]: ../docs/decisions/0003-mvp-application-architecture-baseline.md
 
@@ -106,17 +106,19 @@ later as independently reviewable vertical slices.
   Swift, helper, extension, and transport choices in the first production slice
   that needs them.
 - Require review before every merge, including generated project scaffolding.
-- Follow the independent plan-review, implementation-review, correction, and
-  final-evidence protocol in `tasks/README.md` for every non-trivial task.
+- Follow the proportional review tiers in `tasks/README.md`: self-check
+  Trivial changes, one completed-change review for Standard work, and add a
+  brief plan review only for named High-risk work.
 - Reuse PoC code only after provenance, licensing, architecture, security, and
   test review.
 - Keep Apple credentials, signing identities, profiles, and account-specific
   values out of Git.
 - Keep each implementation pull request independently buildable and
   reviewable; there is no single "implement MVP" pull request.
-- Treat CI as a separate Gate 6 implementation task. Gate 5 does not configure
-  it, but it must complete before PR #1 merges or the first parallel
-  implementation wave begins, whichever happens first.
+- Treat `FOUNDATION-001`, `QUALITY-001`, and `CI-001` as three roadmap
+  milestones in one shared PR #1 brief, execution record, and review cycle.
+  CI must complete before PR #1 merges or the first parallel implementation
+  wave begins, whichever happens first.
 
 ## Deliberately deferred
 

@@ -282,12 +282,13 @@ it and then recorded as an ADR before parallel consumers depend on it.
 `user-confirmed` (2026-08-25): the
 [engineering quality contract](../../development/engineering-quality-contract.md)
 defines ktlint formatting, Detekt analysis, Compose Rules through Detekt,
-warning-free owned source, applicable test layers, independent plan and code
-review, task-local evidence, and the standing Definition of Done. The
-[task workflow](../../../tasks/README.md) keeps outcome-only task
-specifications separate from technical plans and execution evidence.
+warning-free owned source, applicable test layers, proportional review, concise
+task-local evidence, and the standing Definition of Done. The
+[task workflow](../../../tasks/README.md) keeps future work as roadmap stubs,
+creates briefs just in time, and requires a pre-implementation review only for
+named High-risk work.
 
 Gate 5 records the CI outcome but does not configure a pipeline. The Gate 6
-roadmap must include CI as a separate implementation task completed before PR
-#1 merges or the first parallel implementation wave starts, whichever occurs
-first.
+roadmap groups the foundation, local quality, and CI milestones into one PR #1
+execution and review cycle completed before PR #1 merges or the first parallel
+implementation wave starts, whichever occurs first.
