@@ -1,6 +1,6 @@
-# Blocker MVP LLM Wiki
+# Posato LLM Wiki
 
-This directory is the maintained knowledge layer for Blocker MVP. It begins
+This directory is the maintained knowledge layer for Posato. It begins
 with durable conclusions from the synchronization PoC and enforcement spike
 and grows alongside the MVP implementation.
 

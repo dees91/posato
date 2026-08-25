@@ -1,15 +1,17 @@
-# Blocker MVP
+# Posato
 
-Blocker MVP is the working-name repository for an open-source application that
-aims to interrupt habitual access to selected websites and applications across
-personal devices while minimizing collected data and maintenance burden.
+Posato is an open-source application intended to interrupt habitual access to
+selected websites and applications across personal devices while minimizing
+collected data and maintenance burden. The repository path `blocker-mvp`
+retains the historical working name and does not define the public identity.
 
 ## Status
 
 This repository currently contains an initial product knowledge base only. It
-has no MVP application code, final product name, registered product identifiers,
-selected license, release, or production-readiness claim. The accepted MVP
-scope is recorded under `docs/product/`.
+has no MVP application code, registered product identifiers, selected license,
+release, or production-readiness claim. The accepted public name is **Posato**,
+and `posato.app` is the selected canonical domain; registrar control has not
+yet been confirmed. The accepted contracts are recorded under `docs/product/`.
 
 Two completed feasibility efforts inform the project:
 
@@ -33,7 +35,7 @@ qualification. Their exact limits are documented in
 - Narrow semantic boundaries around native Apple APIs.
 - No product-operated user-data backend or in-app provider credentials.
 - Apple MVP synchronization uses one **Sync with iCloud** action per
-  installation and no Blocker QR or cross-device approval.
+  installation and no application-level QR or cross-device approval.
 - Application-layer encryption remains common to CloudKit and the later
   portable-folder transport.
 - No browsing-history collection as a default product boundary.
@@ -48,6 +50,7 @@ These are direction constraints, not a complete architecture.
 - [Wiki index](docs/wiki/index.md)
 - [Product framing](docs/wiki/topics/product-framing.md)
 - [Accepted MVP scope](docs/product/mvp-scope.md)
+- [Accepted product identity](docs/product/product-identity.md)
 - [Feasibility results and limits](docs/wiki/topics/feasibility-results-and-limits.md)
 - [MVP open questions](docs/wiki/topics/mvp-open-questions.md)
 - [First MVP PR preparation plan](tasks/first-mvp-pr-preparation-plan.md)
@@ -60,8 +63,9 @@ application code. Seven gates precede implementation: MVP scope, product
 identity, minimal product and design baseline, architecture baseline, quality
 contract, PR decomposition, and one manual Apple resource setup task.
 
-The MVP scope is accepted. The immediate next work is to select the minimum
-product identity.
+The MVP scope and public identity are accepted. The immediate next work is to
+confirm control of `posato.app` and accept the stable technical namespace that
+completes Gate 2.
 The accepted route and verification criteria live in the
 [preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
 [checklist](tasks/first-mvp-pr-preparation-todo.md).

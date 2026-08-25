@@ -1,6 +1,8 @@
 # Wiki Index
 
-This index routes product and engineering work for Blocker MVP.
+This index routes product and engineering work for Posato. Historical Blocker
+references identify the repository's former working name or preserved research
+provenance rather than a parallel public brand.
 
 ## Start here
 
@@ -19,6 +21,9 @@ This index routes product and engineering work for Blocker MVP.
 
 - [../product/mvp-scope.md](../product/mvp-scope.md) — accepted MVP capability
   classification, platform baseline, primary flow, outcome, and non-goals.
+- [../product/product-identity.md](../product/product-identity.md) — accepted
+  **Posato** public name, selected `posato.app` canonical domain, collision
+  evidence, branding boundary, and open technical-namespace work.
 - [ADR 0002: Synchronization Trust and Workspace Modes](../decisions/0002-synchronization-trust-and-workspace-modes.md)
   — accepted separation of transport, payload encryption, key delivery, and
   device admission for Apple and portable workspaces.

@@ -31,17 +31,17 @@ and platform resources without requiring final branding.
 
 **Acceptance criteria:**
 
-- [ ] Working product name, display name, and one short fallback are accepted.
+- [x] Working product name, display name, and one short fallback are accepted.
 - [ ] A stable reverse-DNS namespace and naming scheme for applications,
   helpers, and extensions are accepted.
-- [ ] Name, repository, and domain collision checks are recorded with their
+- [x] Name, repository, and domain collision checks are recorded with their
   date and scope.
 
 **Verification:**
 
-- [ ] The identity contract is recorded under `docs/product/` without account
+- [x] The identity contract is recorded under `docs/product/` without account
   credentials or signing data.
-- [ ] The contract distinguishes changeable public branding from identifiers
+- [x] The contract distinguishes changeable public branding from identifiers
   whose migration would be expensive.
 
 **Dependencies:** None. Start alongside Gate 1.

@@ -62,3 +62,115 @@
   bridge, dual-write, or parallel CloudKit-folder authority.
 - Recorded the production decision in ADR 0002 while preserving feasibility
   ADR 0001 and PoC results as historical evidence.
+
+## [2026-08-25] research | Screen product identity naming candidates
+
+- Compared five naming directions against the accepted self-directed,
+  privacy-preserving friction model and English/Polish usability.
+- Performed preliminary Apple storefront, GitHub repository-name, RDAP domain,
+  and general-web collision checks without treating them as trademark or
+  purchase clearance.
+- Recorded **Kind Friction** as the strongest current recommendation and
+  **Manual Mode** as the clearest alternative, both still awaiting maintainer
+  acceptance.
+- Retained **Blocker** only as a historical working name because direct product
+  and open-source collisions make it unsuitable as the recommended public
+  identity.
+
+## [2026-08-25] correction | Narrow product name finalists
+
+- Recorded the maintainer's shortlist of **Kind Friction** and **Rallent**;
+  the other screened names are no longer finalists.
+- Compared both names in the same active-session context with equal visual
+  weight: warm, human, and values-led for **Kind Friction**; cool, rhythmic,
+  and more ownable for **Rallent**.
+- Kept the visual concepts as decision aids rather than accepted Gate 3 design
+  direction or final logo work.
+
+## [2026-08-25] research | Add pronunciation and domain criteria
+
+- Added Polish pronunciation ease and domain availability as maintainer-set
+  criteria for choosing between **Kind Friction** and **Rallent**.
+- Rechecked `.com`, `.app`, `.org`, `.dev`, `.io`, and `.pl`: both `.com`
+  domains are registered, while the remaining checked names returned no
+  registration record at the time of the check.
+- Recorded **Rallent** as the current recommendation because its Polish
+  pronunciation and spoken spelling are substantially easier; retained the
+  final choice as open and the domain result as a point-in-time screen.
+
+## [2026-08-25] research | Explore Rallent-derived names and domain hacks
+
+- Explored **Ralento**, **Rallento**, **Ralent**, **Ralenti**, and **Ralendo**
+  for Polish pronunciation, semantic fit, preliminary collisions, and current
+  registration state.
+- Found no registration object for `ralen.to` or `rallen.to`; recorded
+  `ralen.to` as the strongest coherent hack, but only as a possible redirect
+  rather than a canonical-domain recommendation.
+- Identified **Ralento** as the strongest phonetic refinement but recorded its
+  active safe-driving `.com` collision and nonstandard Italian spelling.
+- Kept **Kind Friction** and **Rallent** as the only maintainer-confirmed
+  finalists; no derivative was promoted by the research alone.
+
+## [2026-08-25] research | Explore names adjacent to the Rallent idea
+
+- Expanded the search from the **Rallent** spelling family to measured pace,
+  calm reflection, voluntary resistance, and gradual slowing.
+- Screened direct musical terms and rejected names with active adjacent
+  products or crowded namespaces, including **Cadento**, **Retempo**, and
+  **Calando**.
+- Identified **Posato** as the strongest new spoken and emotional candidate and
+  **Misurato** as the strongest measured-limits concept; found no registration
+  object for their `.app` domains or for `misura.to` at the time of checking.
+- Preserved the existing maintainer-confirmed shortlist and recorded both new
+  names as advisor recommendations awaiting selection, not accepted identity.
+
+## [2026-08-25] correction | Retain Posato from the adjacent-name pass
+
+- Retained **Posato** as the only name from the conceptually adjacent
+  exploration for continued comparison.
+- Left **Misurato**, **Pacato**, **Volento**, and **Calando** as research
+  history rather than live candidates.
+- Recommended a three-direction comparison of **Kind Friction**, **Rallent**,
+  and **Posato**, with no fourth name added merely for symmetry.
+- Clarified that `ralen.to` spells **Ralento** and therefore belongs to a
+  nested variant experiment rather than serving as a matching **Rallent**
+  domain.
+
+## [2026-08-25] correction | Set the four-name final comparison
+
+- Confirmed **Kind Friction**, **Rallent**, **Ralento**, and **Posato** as four
+  separate proposals for the final comparison.
+- Reclassified **Ralento** from a nested spelling experiment to an independent
+  proposal and associated `ralen.to` with that proposal.
+- Rechecked a common domain set and recorded the active `ralento.com` consumer
+  collision, the `posato.io` registration, and the no-object result for
+  `ralen.to`.
+- Recorded the weighted advisor assessment and recommendation allocation:
+  **Posato** 38%, **Rallent** 30%, **Kind Friction** 22%, and **Ralento** 10%,
+  with the final product-name decision still open.
+
+## [2026-08-25] research | Recommend canonical domains for the finalists
+
+- Rechecked `kindfriction.app`, `rallent.app`, `ralento.app`, and `posato.app`;
+  registry RDAP returned no registration object for all four at the time of
+  checking.
+- Recommended the matching `.app` domain as the canonical address for each
+  proposal to preserve exact public spelling and one consistent product-domain
+  pattern.
+- Retained `ralen.to` only as a possible **Ralento** redirect and kept registrar
+  purchase, pricing, premium-name, reservation, and legal checks open.
+
+## [2026-08-25] decision | Select Posato product identity
+
+- Accepted **Posato** as the product name, display name, and unchanged short
+  fallback; retired **Blocker** to historical working-name provenance.
+- Selected `posato.app` as the canonical public domain without claiming that
+  registrar purchase or maintainer control has completed.
+- Promoted the accepted public identity, dated collision evidence, and the
+  branding-versus-durable-identifier boundary to
+  `docs/product/product-identity.md`.
+- Updated current repository and wiki handoffs to **Posato** while preserving
+  **Blocker** where it identifies the repository path, research history, or
+  dated decision provenance.
+- Left Gate 2 open for domain-control confirmation and acceptance of the stable
+  reverse-DNS namespace and component naming pattern.

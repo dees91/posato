@@ -7,7 +7,8 @@
   application code
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** select the minimum product identity
+- **Next work:** confirm `posato.app` control and accept the stable technical
+  namespace to complete product identity
 
 ## Objective
 
@@ -54,10 +55,11 @@ Product identity ─┴───────────────────
                                                 Ready to open PR #1
 ```
 
-The MVP scope is accepted. Product identity is the immediate next activity.
-Architecture and design should stay minimal: settle what PR #1 and its
-immediate dependants need, then make later decisions in the smallest vertical
-pull request that requires them.
+The MVP scope and **Posato** public identity are accepted. Product identity
+remains the immediate activity until `posato.app` control and the stable
+technical namespace are accepted. Architecture and design should stay minimal:
+settle what PR #1 and its immediate dependants need, then make later decisions
+in the smallest vertical pull request that requires them.
 
 ## Seven gates
 

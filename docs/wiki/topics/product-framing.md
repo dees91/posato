@@ -11,12 +11,17 @@
   synchronization path remain later directions and are not MVP parity gates.
 - `user-confirmed`: the first MVP scope is accepted in the
   [MVP scope contract](../../product/mvp-scope.md).
+- `user-confirmed` (2026-08-25): the product and display name is **Posato**,
+  with `posato.app` selected as the canonical public domain. Registrar control
+  and the stable technical namespace remain open in the
+  [product identity contract](../../product/product-identity.md).
 - `user-confirmed` (2026-08-25): Apple MVP synchronization uses one
   **Sync with iCloud** action per installation, Apple Account/iCloud Keychain
-  trust for membership, and no Blocker QR or cross-device approval. See
+  trust for membership, and no application-level QR or cross-device approval.
+  See
   [ADR 0002](../../decisions/0002-synchronization-trust-and-workspace-modes.md).
-- `open`: the final product name, visual identity, distribution path, and
-  license have not been selected.
+- `open`: the complete visual identity, distribution path, and license have not
+  been selected.
 
 ## Problem
 
