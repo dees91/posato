@@ -9,8 +9,9 @@ collected data and maintenance burden.
 This repository currently contains an initial product knowledge base only. It
 has no MVP application code, registered product identifiers, selected license,
 release, or production-readiness claim. The accepted public name is **Posato**,
-and `posato.app` is the selected canonical domain; registrar control has not
-yet been confirmed. The accepted contracts are recorded under `docs/product/`.
+`posato.app` is the maintainer-controlled canonical domain, and `app.posato` is
+the accepted stable technical root. The accepted contracts are recorded under
+`docs/product/`.
 
 Two completed feasibility efforts inform the project:
 
@@ -62,9 +63,8 @@ application code. Seven gates precede implementation: MVP scope, product
 identity, minimal product and design baseline, architecture baseline, quality
 contract, PR decomposition, and one manual Apple resource setup task.
 
-The MVP scope and public identity are accepted. The immediate next work is to
-confirm control of `posato.app` and accept the stable technical namespace that
-completes Gate 2.
+The MVP scope and product identity are accepted. The immediate next work is to
+accept the minimum product and design baseline in Gate 3.
 The accepted route and verification criteria live in the
 [preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
 [checklist](tasks/first-mvp-pr-preparation-todo.md).

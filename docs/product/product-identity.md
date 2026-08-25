@@ -5,8 +5,7 @@
 - **Public identity:** Accepted
 - **Accepted:** 2026-08-25
 - **Provenance:** `user-confirmed`
-- **Gate 2:** Incomplete pending domain-control confirmation and the stable
-  technical namespace
+- **Gate 2:** Complete
 
 This document is the product authority for the accepted public identity. It
 does not claim ownership of external resources or accept Apple identifiers
@@ -19,18 +18,38 @@ that have not yet been registered.
 | Product name | **Posato** |
 | Display name | **Posato** |
 | Short fallback | **Posato**; the name is already short, so no abbreviation or alternate spelling is introduced |
-| Selected canonical public domain | `posato.app` |
+| Canonical public domain | `posato.app`; maintainer control confirmed on 2026-08-25 |
+| Reverse-DNS root | `app.posato` |
 | Historical working name | **Blocker**; retained only in repository history and research provenance |
 
 The public name is **Posato** in every product-facing context unless a later
 explicit decision supersedes this contract. **Blocker** must not be used as a
 parallel public brand.
 
-The domain `posato.app` is selected as the canonical public address. Registry
-screening found no current registration object, but registrar purchase,
-pricing, premium or reserved status, and maintainer control have not been
-verified. Do not publish the address or derive durable identifiers from domain
-ownership until control is confirmed.
+`user-confirmed` (2026-08-25): the maintainer purchased `posato.app` and
+controls it through a registrar. This records control only; registrar, account,
+payment, and renewal details remain outside the repository.
+
+The stable reverse-DNS root is `app.posato`. It deliberately derives from the
+controlled canonical domain. A later public rebrand does not by itself require
+identifier migration: the project should retain control of `posato.app` and
+continue treating existing technical identifiers as durable unless a separate
+migration decision is accepted.
+
+## Technical naming contract
+
+New product-owned Apple identifiers follow these logical patterns:
+
+| Component | Pattern |
+| --- | --- |
+| Platform application | `app.posato.<platform>` |
+| Platform helper or extension | `app.posato.<platform>.<role>` |
+
+`<platform>` and `<role>` are stable lowercase identifier segments selected
+from the accepted target graph. Gate 4 defines the required applications,
+helpers, and extensions; Gate 7 registers their exact bundle identifiers and
+the related App Group, Keychain access group, and CloudKit container. This
+contract does not pre-register those resources or inherit any PoC identifier.
 
 ## Product meaning
 
@@ -76,15 +95,9 @@ Keychain access groups, CloudKit containers, helper identifiers, and persisted
 protocol identifiers are durable technical identifiers. Their migration is
 more expensive and must not be inferred from the public name alone.
 
-## Open items required to complete Gate 2
-
-- Confirm maintainer control of `posato.app` through a registrar without
-  recording account or payment data in the repository.
-- Accept a stable reverse-DNS root and naming pattern for applications,
-  helpers, and extensions.
-- Decide whether the technical root may rely on the controlled `posato.app`
-  domain or should use a maintainer-owned namespace that survives a future
-  public rebrand.
+## Deferred identity work
 
 Exact Apple resources remain Gate 7 work after the target graph and pull-request
-roadmap are accepted. No PoC identifier is inherited by this contract.
+roadmap are accepted. Final logo work, complete visual identity, trademark
+review, and public-release readiness are outside Gate 2. No PoC identifier is
+inherited by this contract.

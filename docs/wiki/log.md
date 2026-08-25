@@ -181,3 +181,16 @@
   `blocker-mvp` directory name.
 - Retained **Blocker** only where it identifies research history or dated
   decision provenance.
+
+## [2026-08-25] decision | Complete the minimum product identity
+
+- Recorded the maintainer's confirmation that `posato.app` was purchased and
+  is under maintainer control without storing registrar, account, payment, or
+  renewal details.
+- Accepted `app.posato` as the stable reverse-DNS root, with
+  `app.posato.<platform>` for applications and
+  `app.posato.<platform>.<role>` for helpers and extensions.
+- Kept exact target roles in Gate 4 and exact Apple resource registration in
+  Gate 7 rather than inferring either from the naming decision.
+- Marked Gate 2 complete and advanced the active handoff to the minimum product
+  and design baseline.

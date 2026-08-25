@@ -20,11 +20,11 @@ gates:
 6. ordered vertical pull-request roadmap;
 7. manual Apple resource setup for the accepted target graph.
 
-Gate 1 is accepted in the [MVP scope](mvp-scope.md). The public name and
-selected canonical domain are accepted in the
-[product identity](product-identity.md). Gate 2 remains open for confirmation
-of domain control and acceptance of the stable technical namespace. The active
-execution contract is the
+Gates 1 and 2 are accepted in the [MVP scope](mvp-scope.md) and
+[product identity](product-identity.md). The maintainer controls the canonical
+domain, and the stable technical namespace is accepted. Gate 3, the minimum
+product and design baseline, is the first incomplete gate. The active execution
+contract is the
 [first MVP PR preparation plan](../../tasks/first-mvp-pr-preparation-plan.md)
 and its [gate checklist](../../tasks/first-mvp-pr-preparation-todo.md). Accepted
 outputs from the first three gates are promoted back into this directory.

@@ -22,8 +22,8 @@ provenance rather than a parallel public brand.
 - [../product/mvp-scope.md](../product/mvp-scope.md) — accepted MVP capability
   classification, platform baseline, primary flow, outcome, and non-goals.
 - [../product/product-identity.md](../product/product-identity.md) — accepted
-  **Posato** public name, selected `posato.app` canonical domain, collision
-  evidence, branding boundary, and open technical-namespace work.
+  **Posato** public name, controlled `posato.app` canonical domain, stable
+  `app.posato` technical namespace, naming pattern, and branding boundary.
 - [ADR 0002: Synchronization Trust and Workspace Modes](../decisions/0002-synchronization-trust-and-workspace-modes.md)
   — accepted separation of transport, payload encryption, key delivery, and
   device admission for Apple and portable workspaces.

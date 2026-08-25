@@ -32,7 +32,9 @@ and platform resources without requiring final branding.
 **Acceptance criteria:**
 
 - [x] Working product name, display name, and one short fallback are accepted.
-- [ ] A stable reverse-DNS namespace and naming scheme for applications,
+- [x] Maintainer control of the canonical public domain is confirmed without
+  recording registrar account or payment data.
+- [x] A stable reverse-DNS namespace and naming scheme for applications,
   helpers, and extensions are accepted.
 - [x] Name, repository, and domain collision checks are recorded with their
   date and scope.

@@ -12,8 +12,9 @@
 - `user-confirmed`: the first MVP scope is accepted in the
   [MVP scope contract](../../product/mvp-scope.md).
 - `user-confirmed` (2026-08-25): the product and display name is **Posato**,
-  with `posato.app` selected as the canonical public domain. Registrar control
-  and the stable technical namespace remain open in the
+  with the maintainer-controlled `posato.app` as the canonical public domain
+  and `app.posato` as the stable reverse-DNS root. See the accepted naming
+  pattern in the
   [product identity contract](../../product/product-identity.md).
 - `user-confirmed` (2026-08-25): Apple MVP synchronization uses one
   **Sync with iCloud** action per installation, Apple Account/iCloud Keychain

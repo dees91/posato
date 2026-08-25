@@ -13,23 +13,24 @@ Apple resource setup.
 
 The active [preparation plan](../../../tasks/first-mvp-pr-preparation-plan.md)
 and [checklist](../../../tasks/first-mvp-pr-preparation-todo.md) are the
-execution authority for this milestone. Gate 1 is complete in the accepted
-[MVP scope](../../product/mvp-scope.md). The immediate next work is product
-identity. The sections below retain the decisions each gate must resolve and
-the questions that may remain incremental.
+execution authority for this milestone. Gates 1 and 2 are complete in the
+accepted [MVP scope](../../product/mvp-scope.md) and
+[product identity](../../product/product-identity.md). The immediate next work
+is the minimum product and design baseline. The sections below retain the
+decisions each remaining gate must resolve and the questions that may remain
+incremental.
 
-## Gate 2: product identity
+## Gate 2: product identity (complete)
 
-`open`: accept the product's working identity before registering durable
-external identifiers.
+`user-confirmed` (2026-08-25): Gate 2 is complete. **Posato** is the product
+and display name, `posato.app` is purchased and controlled by the maintainer,
+and `app.posato` is the stable reverse-DNS root. Platform applications use
+`app.posato.<platform>`; helpers and extensions use
+`app.posato.<platform>.<role>`. Exact target roles remain Gate 4 work and exact
+Apple resource registration remains Gate 7 work.
 
-- Working product name.
-- Display name and one short fallback.
-- Stable reverse-DNS namespace and naming scheme for applications, helpers,
-  and extensions.
-- Dated name, repository, and domain collision checks.
-- A distinction between changeable public branding and identifiers whose
-  migration would be expensive.
+The repository records only the control confirmation. Registrar, account,
+payment, and renewal details remain outside it.
 
 `user-confirmed` (2026-08-25): the MVP scope, explicit non-goals, Apple-first
 platform order, relative OS support baseline, primary flow, and measurable
@@ -215,12 +216,12 @@ ranking and comparison directions are `superseded` as selection tools but
 remain research history. They are not an accepted Gate 3 visual baseline or
 final logo.
 
-`observed`: registry screening found no current `posato.app` registration
-object. `open`: registrar purchase and maintainer control have not been
-verified, and the stable reverse-DNS namespace and naming pattern remain the
-last product-identity decisions required for Gate 2. Trademark and broader
-release clearance remain later readiness work rather than grounds to reopen
-the accepted working identity automatically.
+`observed`: the earlier registry screening found no `posato.app` registration
+object at the time of the check. `user-confirmed` (2026-08-25): the maintainer
+subsequently purchased and controls the domain and accepted `app.posato` plus
+the component naming pattern, completing Gate 2. Trademark and broader release
+clearance remain later readiness work rather than grounds to reopen the
+accepted working identity automatically.
 
 ## Architecture baseline
 
