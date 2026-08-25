@@ -230,3 +230,16 @@
   than competing with the accepted design contract.
 - Replaced the stale Gate 3 `candidate` label in the wiki index with the
   accepted-baseline status.
+
+## [2026-08-25] proposal | Add Gate 4 scaffolding and Metro inputs
+
+- Recorded the maintainer's intent to bootstrap the production skeleton with
+  Compose Multiplatform Wizard and use the `android-compose-engineering` skill
+  for agent-authored Compose Multiplatform code when available.
+- Recorded the maintainer's Metro selection as the only dependency-injection
+  framework for the greenfield graph.
+- Audited wizard revision `e639d668a45f04c2ec11b382c1ccb745b185271f`,
+  including its module topology, displayed versions, generated identifiers,
+  sample content, and safe-import boundary.
+- Added a proposed minimal module, source-set, Metro, Apple target, deployment,
+  dependency, and toolchain baseline without marking Gate 4 complete.

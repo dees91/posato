@@ -15,6 +15,9 @@ provenance rather than a parallel public brand.
 - [sources/apple-design-guidance.md](sources/apple-design-guidance.md) —
   current authoritative Apple guidance used by the accepted Gate 3 brand and
   product design baseline.
+- [sources/compose-multiplatform-wizard.md](sources/compose-multiplatform-wizard.md)
+  — reviewed generator topology, versions, import risks, and proposed Posato
+  configuration for the production skeleton.
 - [../../tasks/first-mvp-pr-preparation-plan.md](../../tasks/first-mvp-pr-preparation-plan.md)
   — accepted preparation route to the first MVP code pull request.
 - [../../tasks/first-mvp-pr-preparation-todo.md](../../tasks/first-mvp-pr-preparation-todo.md)
@@ -41,7 +44,8 @@ provenance rather than a parallel public brand.
   accepted Gate 3 synthesis, visual direction, accessibility baseline,
   low-fidelity flows, and proposal provenance.
 - [topics/architecture-direction.md](topics/architecture-direction.md) —
-  accepted technical directions and production decisions still open.
+  accepted technical directions, current Gate 4 candidate, and production
+  decisions still open.
 - [topics/kotlin-apple-boundaries.md](topics/kotlin-apple-boundaries.md) —
   Kotlin-first ownership, interfaces, `expect`/`actual`, native leaves, and the
   macOS process boundary.

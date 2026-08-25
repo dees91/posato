@@ -238,6 +238,14 @@ sit behind small semantic interfaces. Swift is reserved for integration that
 is materially less practical in Kotlin/Native. Apple framework types do not
 cross into `commonMain`.
 
+`user-confirmed` (2026-08-25): the maintainer wants to generate the initial
+skeleton with Compose Multiplatform Wizard, use Metro as the only DI framework,
+and apply the named `android-compose-engineering` skill to agent-authored
+Compose Multiplatform code when available. The maintained repository rules,
+not the locally installed skill or generator defaults, remain durable
+authority. The current proposal is recorded in
+[architecture direction](architecture-direction.md).
+
 `user-confirmed` (2026-08-25):
 [ADR 0002](../../decisions/0002-synchronization-trust-and-workspace-modes.md)
 selects CloudKit Private Database, synchronizable-Keychain workspace-key
