@@ -178,6 +178,62 @@ supporting information, not an animated spectacle.
 - Make early termination deliberate through clear copy and confirmation, not
   through inaccessible gesture, tiny target, hidden focus, or time pressure.
 
+### macOS large-window prototype experiment
+
+- `observed`: fullscreen review of the throwaway interaction prototype exposed
+  a mobile-style flexible spacer that separated sparse task content from its
+  primary action and stretched supporting notices across the desktop surface.
+- `user-confirmed`: the maintainer requested a macOS-specific prototype
+  revision after reviewing the sparse welcome and privacy surfaces at
+  fullscreen size.
+- `hypothesis`: grouping each macOS task within a constrained content canvas,
+  keeping its action adjacent to the final content block, and constraining
+  supporting notices and lists will feel calm without weakening task
+  continuity. The iPhone variant retains its bottom-reachable action pattern.
+- `open`: the exact content width, large-window placement, and spacing remain
+  prototype parameters. They are not accepted product tokens and require
+  maintainer review across sparse and information-dense surfaces before any
+  update to `DESIGN.md`.
+
+### Interaction-prototype workbench boundary
+
+- `user-confirmed`: Free play is an inspection tool, so every listed action
+  must be selectable in any order. A Free play action may prepare a
+  deterministic prerequisite state when the current state would reject it.
+- `observed`: browser checks ran all 33 Free play actions individually from a
+  reset state without a blocked result. A Free play click also returns visual
+  focus to the Current product surface so the resulting screen is immediately
+  visible.
+- `observed`: Product surface actions and Guided walkthroughs still use the
+  strict reducer. The intentionally invalid start attempt in the Action
+  required walkthrough remains blocked until its repair steps are complete.
+- `inferred`: prerequisite preparation and automatic scrolling belong to the
+  disposable workbench, not to the product state model or accepted application
+  UX. They do not relax the low-fidelity flow order or change `DESIGN.md`.
+
+### Paused-item configuration prototype experiment
+
+- `user-confirmed`: the interaction prototype must not imply that the MVP is
+  limited to one hardcoded website and one hardcoded application. It must
+  expose custom website entry, a synthetic application picker, editing and
+  removal, and separate Mac and iPhone application mappings.
+- `observed`: browser checks added a pasted website URL, normalized it to its
+  exact hostname, rejected invalid and duplicate input, preserved the previous
+  valid domain during a failed edit, replaced it after valid input, and removed
+  it from the shared policy.
+- `observed`: the synthetic picker exposes four fictional applications per
+  platform, supports multiple selections, preserves the last valid mapping
+  during invalid input, and keeps Mac and iPhone mappings independent while
+  shared domains remain unchanged.
+- `observed`: the configuration surfaces had no horizontal overflow at 320,
+  768, 1024, or 1440 CSS pixels, supported keyboard form submission, and
+  produced no automated axe-core violations in the checked browser state.
+- `inferred`: the synthetic application names and exact prototype domain
+  normalization rules are conversation fixtures, not accepted production
+  validation or Apple-picker contracts. Native selection behavior, opaque
+  identifier handling, and final edit or deletion confirmation remain later
+  implementation evidence.
+
 ## Low-fidelity flows
 
 These diagrams specify state and action order, not final navigation, layout, or

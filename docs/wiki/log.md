@@ -285,3 +285,38 @@
   implementation wave begins, whichever happens first.
 - Completed Gate 5 and advanced the active preparation handoff to Gate 6 MVP
   decomposition.
+
+## [2026-08-25] experiment | Group macOS prototype tasks in large windows
+
+- Recorded fullscreen prototype evidence that a flexible mobile-style spacer
+  detached sparse macOS task content from its primary action and allowed
+  supporting elements to stretch across the window.
+- Added a macOS-only layout hypothesis that groups task content and actions,
+  constrains notices and lists, and preserves the iPhone action placement.
+- Kept exact geometry open pending maintainer review and did not promote the
+  prototype values into the accepted `DESIGN.md` contract.
+
+## [2026-08-25] experiment | Separate Free play from strict product flows
+
+- Recorded the maintainer's confirmation that Free play should allow every
+  action in any order and return attention to the Current product surface.
+- Added deterministic prerequisite preparation only to Free play while keeping
+  Product surface actions and Guided walkthroughs on the strict reducer.
+- Verified all 30 Free play actions individually from reset and retained the
+  intentional blocked start attempt in the Action required walkthrough.
+- Kept the workbench convenience outside the accepted product interaction
+  contract and left `DESIGN.md` unchanged.
+
+## [2026-08-25] experiment | Exercise configurable paused items
+
+- Recorded the maintainer's correction that the prototype must not imply a
+  hardcoded website-and-application limit.
+- Added custom website entry, local validation and normalization, editing,
+  removal, and a synthetic multi-application picker.
+- Exposed independent Mac and iPhone application mappings while keeping exact
+  website domains shared across devices.
+- Verified invalid and duplicate input, previous-value preservation, keyboard
+  submission, responsive overflow, all 33 Free play actions, and automated
+  browser accessibility checks.
+- Kept synthetic application names, exact domain rules, and native picker
+  behavior outside the accepted production contract; `DESIGN.md` is unchanged.

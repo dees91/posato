@@ -1,0 +1,2870 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>Posato MVP interaction-flow prototype</title>
+  <style>
+    :root {
+      --ink: #18231f;
+      --paper: #f5f2ea;
+      --moss: #2e5d50;
+      --clay: #a54b35;
+      --mist: #dce4df;
+      --canvas: #fbfaf7;
+      --surface: #ffffff;
+      --surface-raised: #ffffff;
+      --preview-stage: #e6e2d9;
+      --app-frame-border: #87938d;
+      --app-chrome: #f0f1ed;
+      --app-frame-shadow: 0 28px 72px rgba(24, 35, 31, 0.24);
+      --text: #18231f;
+      --secondary: #5f6965;
+      --border: #cbd2ce;
+      --border-strong: #aab5af;
+      --focus: #146cbe;
+      --success: #23633f;
+      --warning: #8a5a00;
+      --danger: #b42318;
+      --danger-surface: #fff2f0;
+      --warning-surface: #fff7e5;
+      --success-surface: #edf7f0;
+      --radius-small: 8px;
+      --radius-medium: 14px;
+      --radius-large: 22px;
+      --shadow: 0 18px 50px rgba(24, 35, 31, 0.12);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      background: var(--canvas);
+      color: var(--text);
+    }
+
+    body {
+      margin: 0;
+      min-width: 320px;
+      background: var(--canvas);
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.45;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button:focus-visible,
+    input:focus-visible,
+    [role="tab"]:focus-visible {
+      outline: 3px solid color-mix(in srgb, var(--focus) 65%, transparent);
+      outline-offset: 3px;
+    }
+
+    .page-shell {
+      width: min(1480px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .prototype-header {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 24px;
+      align-items: start;
+      padding: 10px 0 30px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      margin: 0 0 12px;
+      padding: 3px 9px;
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      color: var(--secondary);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      max-width: 880px;
+      margin-bottom: 12px;
+      font-size: clamp(30px, 4vw, 52px);
+      font-weight: 600;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+    }
+
+    h2 {
+      margin-bottom: 8px;
+      font-size: clamp(22px, 2.2vw, 30px);
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+    }
+
+    h3 {
+      margin-bottom: 6px;
+      font-size: 17px;
+      font-weight: 600;
+    }
+
+    .prototype-question {
+      max-width: 900px;
+      margin: 0;
+      color: var(--secondary);
+      font-size: 18px;
+    }
+
+    .boundary-note {
+      width: min(340px, 100%);
+      margin: 0;
+      padding: 14px 16px;
+      border-left: 3px solid var(--moss);
+      background: color-mix(in srgb, var(--mist) 60%, transparent);
+      color: var(--secondary);
+      font-size: 13px;
+    }
+
+    .boundary-note strong {
+      color: var(--text);
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(500px, 1.35fr) minmax(320px, 0.65fr);
+      gap: 24px;
+      align-items: start;
+      padding: 30px 0;
+    }
+
+    .panel {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-large);
+      background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-heading {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-heading p,
+    .panel-heading h2 {
+      margin: 0;
+    }
+
+    .panel-heading p {
+      color: var(--secondary);
+      font-size: 13px;
+    }
+
+    .preview-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .preview-device-toggle {
+      display: inline-flex;
+      padding: 3px;
+      border: 1px solid var(--border);
+      border-radius: 11px;
+      background: color-mix(in srgb, var(--canvas) 78%, var(--surface));
+    }
+
+    .preview-toggle-button,
+    .preview-fullscreen-button {
+      min-height: 44px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: var(--secondary);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .preview-toggle-button {
+      border: 0;
+      background: transparent;
+    }
+
+    .preview-toggle-button[aria-pressed="true"] {
+      background: var(--surface);
+      box-shadow: 0 0 0 1px var(--border-strong);
+      color: var(--text);
+    }
+
+    .preview-fullscreen-button {
+      border: 1px solid var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .preview-toggle-button:hover,
+    .preview-fullscreen-button:hover {
+      border-color: var(--moss);
+      color: var(--text);
+    }
+
+    .preview-fullscreen-button[hidden] {
+      display: none;
+    }
+
+    .preview-stage {
+      min-height: 690px;
+      padding: clamp(18px, 4vw, 42px);
+      background: var(--preview-stage);
+      border-radius: 0 0 var(--radius-large) var(--radius-large);
+    }
+
+    .app-frame {
+      position: relative;
+      overflow: hidden;
+      margin: 0 auto;
+      border: 1px solid var(--app-frame-border);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--app-frame-shadow);
+    }
+
+    .app-frame[data-platform="macos"] {
+      width: min(100%, 760px);
+      min-height: 560px;
+      border-radius: 16px;
+    }
+
+    .app-frame[data-platform="ios"] {
+      width: min(100%, 390px);
+      min-height: 720px;
+      border-radius: 34px;
+      border-width: 7px;
+      border-color: #26312d;
+    }
+
+    .app-chrome {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      min-height: 46px;
+      padding: 9px 15px;
+      border-bottom: 1px solid var(--border);
+      background: var(--app-chrome);
+      color: var(--secondary);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .app-frame[data-platform="ios"] .app-chrome {
+      min-height: 56px;
+      padding-top: 17px;
+      border-bottom: 0;
+      background: var(--surface);
+    }
+
+    .app-wordmark {
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .app-content {
+      display: flex;
+      min-height: 514px;
+      flex-direction: column;
+      padding: clamp(24px, 6vw, 54px);
+    }
+
+    .app-frame[data-platform="ios"] .app-content {
+      min-height: 650px;
+      padding: 28px 22px 30px;
+    }
+
+    .surface-kicker {
+      margin: 0 0 8px;
+      color: var(--moss);
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.035em;
+      text-transform: uppercase;
+    }
+
+    .surface-title {
+      max-width: 620px;
+      margin: 0 0 14px;
+      font-size: clamp(28px, 5vw, 46px);
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1.06;
+    }
+
+    .app-frame[data-platform="ios"] .surface-title {
+      font-size: 34px;
+    }
+
+    .surface-copy {
+      max-width: 600px;
+      margin: 0 0 28px;
+      color: var(--secondary);
+      font-size: 16px;
+    }
+
+    .surface-spacer {
+      min-height: 24px;
+    }
+
+    .app-frame[data-platform="ios"] .surface-spacer {
+      flex: 1;
+    }
+
+    /* Prototype hypothesis: keep each macOS task grouped as the window grows. */
+    .app-frame[data-platform="macos"] .surface-spacer {
+      flex: 0 0 8px;
+      min-height: 8px;
+    }
+
+    .app-frame[data-platform="macos"] .status-line {
+      width: 100%;
+      max-width: 620px;
+    }
+
+    .app-frame[data-platform="macos"] .surface-list,
+    .app-frame[data-platform="macos"] .choice-grid {
+      width: 100%;
+      max-width: 720px;
+    }
+
+    .primary-button,
+    .secondary-button,
+    .quiet-button,
+    .danger-button,
+    .choice-button,
+    .walkthrough-step,
+    .free-play-button,
+    .tab-button {
+      min-height: 44px;
+      border: 1px solid transparent;
+      border-radius: var(--radius-small);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .primary-button,
+    .danger-button,
+    .secondary-button,
+    .quiet-button {
+      width: fit-content;
+      max-width: 100%;
+      padding: 10px 16px;
+    }
+
+    .primary-button {
+      background: var(--moss);
+      color: white;
+    }
+
+    .primary-button:hover {
+      background: color-mix(in srgb, var(--moss) 88%, black);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+
+    .secondary-button {
+      border-color: var(--border-strong);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .quiet-button {
+      padding-inline: 4px;
+      background: transparent;
+      color: var(--moss);
+      text-align: left;
+      text-decoration: underline;
+      text-underline-offset: 4px;
+    }
+
+    .danger-button {
+      background: var(--danger);
+      color: white;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .surface-list {
+      display: grid;
+      gap: 1px;
+      margin: 12px 0 26px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-medium);
+      background: var(--border);
+    }
+
+    .surface-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: center;
+      padding: 13px 14px;
+      background: var(--surface);
+    }
+
+    .surface-row strong,
+    .surface-row span {
+      display: block;
+    }
+
+    .surface-row span,
+    .surface-row small {
+      color: var(--secondary);
+    }
+
+    .configuration-section {
+      margin: 8px 0 24px;
+    }
+
+    .configuration-section + .configuration-section {
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .configuration-heading {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      margin-bottom: 10px;
+    }
+
+    .configuration-heading h4,
+    .configuration-heading p {
+      margin: 0;
+    }
+
+    .configuration-heading h4 {
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .configuration-heading p,
+    .configuration-note {
+      color: var(--secondary);
+      font-size: 13px;
+    }
+
+    .configuration-note {
+      margin: -12px 0 24px;
+    }
+
+    .row-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 5px;
+    }
+
+    .row-button {
+      min-height: 36px;
+      padding: 6px 9px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .row-button:hover {
+      border-color: var(--moss);
+      background: color-mix(in srgb, var(--mist) 35%, var(--surface));
+    }
+
+    .configuration-form {
+      width: min(100%, 620px);
+    }
+
+    .field-label,
+    .field-helper,
+    .field-error {
+      display: block;
+    }
+
+    .field-label,
+    .picker-legend {
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .text-input {
+      width: 100%;
+      min-height: 44px;
+      padding: 10px 12px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-small);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .text-input[aria-invalid="true"] {
+      border-color: var(--danger);
+    }
+
+    .field-helper,
+    .field-error {
+      margin: 7px 0 0;
+      font-size: 13px;
+    }
+
+    .field-helper {
+      color: var(--secondary);
+    }
+
+    .field-error {
+      color: var(--danger);
+      font-weight: 500;
+    }
+
+    .configuration-form .button-row {
+      margin-top: 22px;
+    }
+
+    .picker-fieldset {
+      min-width: 0;
+      margin: 0;
+      padding: 0;
+      border: 0;
+    }
+
+    .app-options {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .app-option {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 11px;
+      align-items: center;
+      min-height: 52px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-small);
+      background: var(--surface);
+      cursor: pointer;
+    }
+
+    .app-option:has(input:checked) {
+      border-color: var(--moss);
+      background: color-mix(in srgb, var(--mist) 55%, var(--surface));
+    }
+
+    .app-option input {
+      width: 20px;
+      height: 20px;
+      accent-color: var(--moss);
+    }
+
+    .app-option strong,
+    .app-option small {
+      display: block;
+    }
+
+    .app-option small {
+      color: var(--secondary);
+    }
+
+    .status-line {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      margin: 10px 0 24px;
+      padding: 12px 14px;
+      border-left: 3px solid var(--border-strong);
+      background: color-mix(in srgb, var(--mist) 35%, transparent);
+      color: var(--secondary);
+      font-size: 14px;
+    }
+
+    .status-line[data-tone="warning"] {
+      border-color: var(--warning);
+      background: var(--warning-surface);
+      color: color-mix(in srgb, var(--warning) 85%, var(--text));
+    }
+
+    .status-line[data-tone="danger"] {
+      border-color: var(--danger);
+      background: var(--danger-surface);
+      color: color-mix(in srgb, var(--danger) 85%, var(--text));
+    }
+
+    .status-line[data-tone="success"] {
+      border-color: var(--success);
+      background: var(--success-surface);
+      color: color-mix(in srgb, var(--success) 85%, var(--text));
+    }
+
+    .status-dot {
+      width: 9px;
+      height: 9px;
+      flex: 0 0 9px;
+      margin-top: 5px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin: 4px 0 26px;
+    }
+
+    .choice-button {
+      padding: 12px;
+      border-color: var(--border);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .choice-button[aria-pressed="true"] {
+      border-color: var(--moss);
+      background: color-mix(in srgb, var(--mist) 60%, var(--surface));
+      color: var(--moss);
+    }
+
+    .state-panel {
+      position: sticky;
+      top: 18px;
+      overflow: hidden;
+    }
+
+    .state-body {
+      padding: 8px 18px 18px;
+    }
+
+    .state-list {
+      margin: 0;
+    }
+
+    .state-row {
+      display: grid;
+      grid-template-columns: minmax(112px, 0.8fr) minmax(0, 1.2fr);
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .state-row:last-child {
+      border-bottom: 0;
+    }
+
+    .state-row dt {
+      color: var(--secondary);
+      font-size: 13px;
+    }
+
+    .state-row dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .outcome {
+      margin: 14px 0 0;
+      padding: 12px;
+      border-left: 3px solid var(--moss);
+      background: color-mix(in srgb, var(--mist) 45%, transparent);
+      color: var(--secondary);
+      font-size: 13px;
+    }
+
+    .outcome[data-tone="blocked"],
+    .outcome[data-tone="warning"] {
+      border-color: var(--warning);
+      background: var(--warning-surface);
+    }
+
+    .outcome[data-tone="success"] {
+      border-color: var(--success);
+      background: var(--success-surface);
+    }
+
+    .workbench {
+      display: grid;
+      gap: 24px;
+      padding-bottom: 60px;
+    }
+
+    .workbench-panel {
+      overflow: hidden;
+    }
+
+    .tab-list {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      padding: 10px 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab-button {
+      flex: 0 0 auto;
+      padding: 10px 13px;
+      border-radius: var(--radius-small) var(--radius-small) 0 0;
+      background: transparent;
+      color: var(--secondary);
+    }
+
+    .tab-button[aria-selected="true"] {
+      border-color: var(--border);
+      border-bottom-color: var(--surface);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .walkthrough-body {
+      padding: 22px;
+    }
+
+    .walkthrough-intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 20px;
+    }
+
+    .walkthrough-intro p {
+      max-width: 760px;
+      margin-bottom: 0;
+      color: var(--secondary);
+    }
+
+    .walkthrough-steps {
+      display: grid;
+      gap: 8px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .walkthrough-step {
+      display: grid;
+      width: 100%;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-color: var(--border);
+      background: var(--surface);
+      color: var(--text);
+      text-align: left;
+    }
+
+    .walkthrough-step:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .walkthrough-step[data-complete="true"] {
+      border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+      background: var(--success-surface);
+    }
+
+    .step-number {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      place-items: center;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--secondary);
+      font-size: 12px;
+    }
+
+    .walkthrough-step[data-complete="true"] .step-number {
+      border-color: var(--success);
+      color: var(--success);
+    }
+
+    .step-copy strong,
+    .step-copy small {
+      display: block;
+    }
+
+    .step-copy small {
+      margin-top: 3px;
+      color: var(--secondary);
+      font-weight: 400;
+    }
+
+    .step-state {
+      color: var(--secondary);
+      font-size: 12px;
+    }
+
+    .free-play-body {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 20px;
+      padding: 22px;
+    }
+
+    .action-group h3 {
+      margin-bottom: 10px;
+    }
+
+    .action-stack {
+      display: grid;
+      gap: 7px;
+    }
+
+    .free-play-button {
+      width: 100%;
+      padding: 9px 11px;
+      border-color: var(--border);
+      background: var(--surface);
+      color: var(--text);
+      text-align: left;
+      font-size: 13px;
+    }
+
+    .free-play-button:hover,
+    .walkthrough-step:not(:disabled):hover,
+    .choice-button:hover,
+    .secondary-button:hover {
+      border-color: var(--moss);
+      background: color-mix(in srgb, var(--mist) 35%, var(--surface));
+    }
+
+    .prototype-footer {
+      padding: 22px 0 10px;
+      border-top: 1px solid var(--border);
+      color: var(--secondary);
+      font-size: 13px;
+    }
+
+    @media (max-width: 1040px) {
+      .prototype-header,
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .boundary-note {
+        width: 100%;
+      }
+
+      .state-panel {
+        position: static;
+      }
+
+      .free-play-body {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page-shell {
+        padding: 14px;
+      }
+
+      .prototype-header {
+        padding-bottom: 22px;
+      }
+
+      .workspace {
+        padding: 20px 0;
+      }
+
+      .preview-stage,
+      .walkthrough-body,
+      .free-play-body {
+        padding: 14px;
+      }
+
+      .preview-stage {
+        min-height: 0;
+      }
+
+      .app-frame[data-platform="ios"],
+      .app-frame[data-platform="macos"] {
+        width: 100%;
+        min-height: 600px;
+        border-radius: 16px;
+        border-width: 1px;
+      }
+
+      .app-frame[data-platform="ios"] .app-content,
+      .app-content {
+        min-height: 544px;
+        padding: 24px 18px;
+      }
+
+      .walkthrough-intro,
+      .free-play-body {
+        grid-template-columns: 1fr;
+      }
+
+      .walkthrough-step {
+        grid-template-columns: 34px minmax(0, 1fr);
+      }
+
+      .step-state {
+        grid-column: 2;
+      }
+
+      .state-row {
+        grid-template-columns: 1fr;
+        gap: 2px;
+      }
+
+      .surface-row {
+        grid-template-columns: 1fr;
+      }
+
+      .row-actions {
+        justify-content: flex-start;
+      }
+
+      .choice-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .app-frame[data-platform="macos"]:fullscreen {
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      border: 0;
+      border-radius: 0;
+      background: var(--surface);
+      box-shadow: none;
+    }
+
+    .app-frame[data-platform="macos"]:fullscreen .app-content {
+      width: min(100%, 1120px);
+      height: calc(100% - 46px);
+      min-height: 0;
+      margin-inline: auto;
+      padding: clamp(40px, 7vh, 84px) clamp(32px, 5vw, 72px);
+      overflow: auto;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --canvas: #121a17;
+        --surface: #18211e;
+        --surface-raised: #18211e;
+        --preview-stage: #2b3732;
+        --app-frame-border: #829088;
+        --app-chrome: #222e29;
+        --app-frame-shadow: 0 30px 86px rgba(0, 0, 0, 0.58);
+        --text: #f7f5ef;
+        --secondary: #b7c1bc;
+        --border: #3d4a45;
+        --border-strong: #5d6b65;
+        --moss: #76b29e;
+        --paper: #17211d;
+        --mist: #2b4038;
+        --danger-surface: #3a201d;
+        --warning-surface: #392f1e;
+        --success-surface: #1d3528;
+        --warning: #f3bf5d;
+        --danger: #ff8f84;
+        --success: #7bd49c;
+        --shadow: 0 18px 50px rgba(0, 0, 0, 0.34);
+      }
+
+      .primary-button,
+      .danger-button {
+        color: #101714;
+      }
+
+      .app-frame[data-platform="ios"] {
+        border-color: #738079;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        transition: none !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page-shell">
+    <header class="prototype-header">
+      <div>
+        <p class="eyebrow">Disposable interaction prototype</p>
+        <h1>Can the Posato MVP flow stay clear when state becomes awkward?</h1>
+        <p class="prototype-question">
+          This prototype tests whether onboarding, local mappings, a manual session,
+          truthful synchronization, recovery, and intentional early termination form
+          one understandable interaction model across a Mac and an iPhone.
+        </p>
+      </div>
+      <p class="boundary-note">
+        <strong>Question, not specification.</strong><br>
+        The web layout is a conversation aid. It is not production code, final Apple
+        geometry, accessibility evidence, or approval of a navigation model.
+      </p>
+    </header>
+
+    <section class="workspace" aria-label="Prototype workspace">
+      <article id="product-surface" class="panel" aria-labelledby="preview-heading">
+        <div class="panel-heading">
+          <div>
+            <h2 id="preview-heading">Current product surface</h2>
+            <p id="preview-caption">The same state is rendered as a calm, status-led screen.</p>
+          </div>
+          <div class="preview-toolbar">
+            <div class="preview-device-toggle" role="group" aria-label="Preview device">
+              <button class="preview-toggle-button" type="button" data-preview-platform="macos" aria-pressed="true">MacBook</button>
+              <button class="preview-toggle-button" type="button" data-preview-platform="ios" aria-pressed="false">iPhone</button>
+            </div>
+            <button id="preview-fullscreen" class="preview-fullscreen-button" type="button" aria-pressed="false">Full screen</button>
+          </div>
+        </div>
+        <div class="preview-stage">
+          <div id="app-preview" class="app-frame" data-platform="macos"></div>
+        </div>
+      </article>
+
+      <aside class="panel state-panel" aria-labelledby="state-heading">
+        <div class="panel-heading">
+          <div>
+            <h2 id="state-heading">Current state</h2>
+            <p>Updated after every action.</p>
+          </div>
+        </div>
+        <div class="state-body">
+          <dl id="state-list" class="state-list"></dl>
+          <p id="outcome" class="outcome" aria-live="polite"></p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="workbench" aria-label="Prototype controls">
+      <article class="panel workbench-panel" aria-labelledby="walkthrough-heading">
+        <div class="panel-heading">
+          <div>
+            <h2 id="walkthrough-heading">Guided walkthroughs</h2>
+            <p>Start with the happy path, then push the model through failure and recovery.</p>
+          </div>
+        </div>
+        <div id="scenario-tabs" class="tab-list" role="tablist" aria-label="Prototype scenarios"></div>
+        <div id="walkthrough" class="walkthrough-body"></div>
+      </article>
+
+      <article class="panel workbench-panel" aria-labelledby="free-play-heading">
+        <div class="panel-heading">
+          <div>
+            <h2 id="free-play-heading">Free play</h2>
+            <p>Choose any action. When needed, Free play prepares the required starting context.</p>
+          </div>
+        </div>
+        <div id="free-play" class="free-play-body"></div>
+      </article>
+    </section>
+
+    <footer class="prototype-footer">
+      Synthetic domains, applications, devices, and times only. The prototype does not
+      record browsing history, allowed navigation, or application-usage events.
+    </footer>
+  </main>
+
+  <script>
+    // Pure state model: no DOM access belongs above the UI adapter section.
+    const Actions = Object.freeze({
+      RESET: "RESET",
+      SHOW_PRIVACY: "SHOW_PRIVACY",
+      SYNC_WITH_ICLOUD: "SYNC_WITH_ICLOUD",
+      DISCOVER_EMPTY_WORKSPACE: "DISCOVER_EMPTY_WORKSPACE",
+      DISCOVER_KEY_DELAYED: "DISCOVER_KEY_DELAYED",
+      KEY_ARRIVED: "KEY_ARRIVED",
+      GRANT_PERMISSION: "GRANT_PERMISSION",
+      ADD_DOMAIN: "ADD_DOMAIN",
+      MAP_APP: "MAP_APP",
+      FINISH_ONBOARDING: "FINISH_ONBOARDING",
+      OPEN_SESSION_SETUP: "OPEN_SESSION_SETUP",
+      SET_DURATION: "SET_DURATION",
+      REVIEW_SESSION: "REVIEW_SESSION",
+      START_SESSION: "START_SESSION",
+      OPEN_BLOCKED_PRESENTATION: "OPEN_BLOCKED_PRESENTATION",
+      OPEN_POSATO: "OPEN_POSATO",
+      REQUEST_EARLY_END: "REQUEST_EARLY_END",
+      CANCEL_EARLY_END: "CANCEL_EARLY_END",
+      CONFIRM_EARLY_END: "CONFIRM_EARLY_END",
+      EXPIRE_SESSION: "EXPIRE_SESSION",
+      SYNC_NOW: "SYNC_NOW",
+      SYNC_SUCCESS: "SYNC_SUCCESS",
+      SYNC_FAILURE: "SYNC_FAILURE",
+      RETRY_SYNC: "RETRY_SYNC",
+      REVOKE_PERMISSION: "REVOKE_PERMISSION",
+      REPAIR_PERMISSION: "REPAIR_PERMISSION",
+      REMOVE_MAPPING: "REMOVE_MAPPING",
+      REMAP_APP: "REMAP_APP",
+      OPEN_ITEMS_MANAGER: "OPEN_ITEMS_MANAGER",
+      CLOSE_ITEMS_MANAGER: "CLOSE_ITEMS_MANAGER",
+      OPEN_DOMAIN_EDITOR: "OPEN_DOMAIN_EDITOR",
+      SAVE_DOMAIN: "SAVE_DOMAIN",
+      REMOVE_DOMAIN: "REMOVE_DOMAIN",
+      OPEN_APP_PICKER: "OPEN_APP_PICKER",
+      SAVE_APP_MAPPING: "SAVE_APP_MAPPING",
+      REMOVE_APP_MAPPING: "REMOVE_APP_MAPPING",
+      CANCEL_CONFIGURATION: "CANCEL_CONFIGURATION",
+      SWITCH_TO_MAC: "SWITCH_TO_MAC",
+      SWITCH_TO_IPHONE: "SWITCH_TO_IPHONE"
+    });
+
+    const platformNames = Object.freeze({
+      macos: "Mac",
+      ios: "iPhone"
+    });
+
+    const syntheticApplications = Object.freeze({
+      macos: Object.freeze([
+        Object.freeze({ id: "mac-example-social", name: "Example Social" }),
+        Object.freeze({ id: "mac-community-desk", name: "Community Desk" }),
+        Object.freeze({ id: "mac-loop-video", name: "Loop Video" }),
+        Object.freeze({ id: "mac-chat-stream", name: "Chat Stream" })
+      ]),
+      ios: Object.freeze([
+        Object.freeze({ id: "ios-example-social", name: "Example Social" }),
+        Object.freeze({ id: "ios-pocket-community", name: "Pocket Community" }),
+        Object.freeze({ id: "ios-short-video", name: "Short Video" }),
+        Object.freeze({ id: "ios-chat-stream", name: "Chat Stream" })
+      ])
+    });
+
+    function actionType(action) {
+      return typeof action === "string" ? action : action.type;
+    }
+
+    function normalizeDomain(rawValue) {
+      const input = String(rawValue || "").trim();
+      if (!input) {
+        return { value: "", error: "Enter a domain or website URL." };
+      }
+
+      let parsed;
+      try {
+        parsed = new URL(input.includes("://") ? input : `https://${input}`);
+      } catch {
+        return { value: input, error: "Use a valid domain such as reddit.com." };
+      }
+
+      if (!["http:", "https:"].includes(parsed.protocol) || parsed.username || parsed.password) {
+        return { value: input, error: "Use a public website domain without credentials." };
+      }
+
+      const domain = parsed.hostname.toLowerCase().replace(/\.$/, "");
+      const labels = domain.split(".");
+      const hasValidLabels = labels.length > 1 && labels.every(label =>
+        label.length > 0
+        && label.length <= 63
+        && /^[a-z0-9-]+$/.test(label)
+        && !label.startsWith("-")
+        && !label.endsWith("-")
+      );
+      const isIpv4Address = /^\d{1,3}(?:\.\d{1,3}){3}$/.test(domain);
+
+      if (!hasValidLabels || domain.length > 253 || isIpv4Address) {
+        return { value: input, error: "Use a valid domain such as reddit.com." };
+      }
+
+      return { value: domain, error: null };
+    }
+
+    function initialState(platform = "macos") {
+      return {
+        platform,
+        surface: "welcome",
+        onboardingComplete: false,
+        workspace: {
+          status: "not connected",
+          key: "not requested",
+          remotePolicyAvailable: false
+        },
+        permission: "not requested",
+        policy: {
+          domains: [],
+          appPolicy: null,
+          localMappings: {
+            macos: [],
+            ios: []
+          }
+        },
+        configuration: {
+          returnSurface: "targets",
+          originalDomain: null,
+          domainValue: "",
+          domainError: null,
+          appSelection: [],
+          appError: null
+        },
+        session: {
+          status: "inactive",
+          durationMinutes: 25,
+          endsAt: null
+        },
+        sync: {
+          status: "local only",
+          pendingWork: false,
+          lastCompletedOnDevice: null
+        },
+        lastOutcome: {
+          tone: "info",
+          message: "Prototype ready. Choose a walkthrough or use the free-play actions."
+        }
+      };
+    }
+
+    function readyState(platform = "macos") {
+      const state = initialState(platform);
+      return {
+        ...state,
+        surface: "home",
+        onboardingComplete: true,
+        workspace: {
+          status: "connected",
+          key: "ready",
+          remotePolicyAvailable: true
+        },
+        permission: "granted",
+        policy: {
+          domains: ["news.example"],
+          appPolicy: "Social feeds",
+          localMappings: {
+            macos: ["Example Social"],
+            ios: ["Example Social"]
+          }
+        },
+        sync: {
+          status: "completed on this device",
+          pendingWork: false,
+          lastCompletedOnDevice: "18:02"
+        },
+        lastOutcome: {
+          tone: "success",
+          message: "Setup is complete on this device. No session is active."
+        }
+      };
+    }
+
+    function activeState(platform = "macos") {
+      const state = readyState(platform);
+      return {
+        ...state,
+        surface: "active",
+        session: {
+          status: "active",
+          durationMinutes: 45,
+          endsAt: "18:30"
+        },
+        lastOutcome: {
+          tone: "success",
+          message: "The session is active on this device until 18:30."
+        }
+      };
+    }
+
+    function secondDeviceState() {
+      const state = initialState("ios");
+      return {
+        ...state,
+        workspace: {
+          ...state.workspace,
+          remotePolicyAvailable: true
+        },
+        lastOutcome: {
+          tone: "info",
+          message: "This is a second installation. An Apple workspace already exists."
+        }
+      };
+    }
+
+    function actionRequiredState() {
+      const state = readyState("ios");
+      return {
+        ...state,
+        permission: "revoked",
+        policy: {
+          ...state.policy,
+          localMappings: {
+            ...state.policy.localMappings,
+            ios: []
+          }
+        },
+        sync: {
+          ...state.sync,
+          status: "action required"
+        },
+        lastOutcome: {
+          tone: "warning",
+          message: "Screen Time access and the local app mapping need attention on this iPhone."
+        }
+      };
+    }
+
+    function cloneState(state) {
+      return JSON.parse(JSON.stringify(state));
+    }
+
+    function withOutcome(state, message, tone = "info") {
+      return {
+        ...state,
+        lastOutcome: { tone, message }
+      };
+    }
+
+    function blocked(state, message) {
+      return withOutcome(state, `Nothing changed. ${message}`, "blocked");
+    }
+
+    function currentMapping(state) {
+      return state.policy.localMappings[state.platform];
+    }
+
+    function effectiveItems(state) {
+      return state.policy.domains.length + currentMapping(state).length;
+    }
+
+    function reviewIssues(state) {
+      const issues = [];
+      if (state.permission !== "granted") {
+        issues.push(`Allow Posato to pause selected items on this ${platformNames[state.platform]}.`);
+      }
+      if (state.policy.appPolicy && currentMapping(state).length === 0) {
+        issues.push(`Choose local apps for “${state.policy.appPolicy}” on this ${platformNames[state.platform]}.`);
+      }
+      if (effectiveItems(state) === 0) {
+        issues.push("Add at least one website or local application before starting.");
+      }
+      return issues;
+    }
+
+    function markPending(state, message) {
+      return {
+        ...state,
+        sync: {
+          ...state.sync,
+          status: "pending local work",
+          pendingWork: true
+        },
+        lastOutcome: {
+          tone: "info",
+          message
+        }
+      };
+    }
+
+    function reducer(state, action) {
+      const type = actionType(action);
+      switch (type) {
+        case Actions.RESET:
+          return initialState(state.platform);
+
+        case Actions.SHOW_PRIVACY:
+          if (state.surface !== "welcome") {
+            return blocked(state, "The privacy introduction starts from the welcome surface.");
+          }
+          return withOutcome({ ...state, surface: "privacy" }, "Purpose and privacy are shown before iCloud or permission prompts.");
+
+        case Actions.SYNC_WITH_ICLOUD:
+          if (state.surface !== "privacy") {
+            return blocked(state, "Sync with iCloud is introduced after purpose and privacy.");
+          }
+          return withOutcome({
+            ...state,
+            surface: "workspace-check",
+            workspace: { ...state.workspace, status: "checking" },
+            sync: { ...state.sync, status: "syncing" }
+          }, "Posato is checking for an Apple workspace. No product account is created.");
+
+        case Actions.DISCOVER_EMPTY_WORKSPACE:
+          if (state.surface !== "workspace-check") {
+            return blocked(state, "Workspace discovery must be running first.");
+          }
+          return withOutcome({
+            ...state,
+            surface: "permission",
+            workspace: {
+              status: "connected",
+              key: "ready",
+              remotePolicyAvailable: false
+            },
+            sync: {
+              status: "completed on this device",
+              pendingWork: false,
+              lastCompletedOnDevice: "18:02"
+            }
+          }, "No workspace existed, so the Apple workspace is ready on this first installation.", "success");
+
+        case Actions.DISCOVER_KEY_DELAYED:
+          if (state.surface !== "workspace-check") {
+            return blocked(state, "Workspace discovery must be running first.");
+          }
+          return withOutcome({
+            ...state,
+            surface: "key-wait",
+            workspace: {
+              status: "found",
+              key: "waiting for iCloud Keychain",
+              remotePolicyAvailable: true
+            },
+            sync: { ...state.sync, status: "waiting" }
+          }, "An existing workspace was found. Posato is waiting instead of creating another workspace.", "warning");
+
+        case Actions.KEY_ARRIVED: {
+          if (state.workspace.key !== "waiting for iCloud Keychain") {
+            return blocked(state, "There is no delayed workspace key to receive.");
+          }
+          const policy = state.workspace.remotePolicyAvailable
+            ? {
+                domains: ["news.example"],
+                appPolicy: "Social feeds",
+                localMappings: {
+                  ...state.policy.localMappings,
+                  [state.platform]: []
+                }
+              }
+            : state.policy;
+          return withOutcome({
+            ...state,
+            surface: "permission",
+            workspace: { ...state.workspace, status: "connected", key: "ready" },
+            policy,
+            sync: {
+              status: "completed on this device",
+              pendingWork: false,
+              lastCompletedOnDevice: "18:02"
+            }
+          }, "The existing workspace key is available. Shared policy is now readable on this device.", "success");
+        }
+
+        case Actions.GRANT_PERMISSION:
+          if (!state.workspace.key.includes("ready")) {
+            return blocked(state, "The Apple workspace must be ready before platform setup continues.");
+          }
+          return withOutcome({ ...state, surface: "targets", permission: "granted" }, `Permission is available on this ${platformNames[state.platform]}.`);
+
+        case Actions.ADD_DOMAIN:
+          if (state.permission !== "granted" || state.workspace.key !== "ready") {
+            return blocked(state, "The workspace and platform permission must be ready before adding items.");
+          }
+          if (state.policy.domains.includes("news.example")) {
+            return blocked(state, "The synthetic domain is already in the shared policy.");
+          }
+          return markPending({
+            ...state,
+            policy: {
+              ...state.policy,
+              domains: [...state.policy.domains, "news.example"]
+            }
+          }, "news.example is valid locally. The encrypted change is pending synchronization.");
+
+        case Actions.MAP_APP:
+        case Actions.REMAP_APP:
+          if (state.permission !== "granted" || state.workspace.key !== "ready") {
+            return blocked(state, "Permission and the workspace must be ready before choosing local apps.");
+          }
+          if (currentMapping(state).includes("Example Social")) {
+            return blocked(state, "Example Social is already mapped on this device.");
+          }
+          return markPending({
+            ...state,
+            surface: state.surface === "recovery" ? (state.session.status === "active" ? "active" : "home") : state.surface,
+            policy: {
+              ...state.policy,
+              appPolicy: state.policy.appPolicy || "Social feeds",
+              localMappings: {
+                ...state.policy.localMappings,
+                [state.platform]: [...currentMapping(state), "Example Social"]
+              }
+            }
+          }, `Example Social is mapped locally on this ${platformNames[state.platform]}.`);
+
+        case Actions.OPEN_ITEMS_MANAGER:
+          if (!state.onboardingComplete || state.session.status !== "inactive") {
+            return blocked(state, "Paused-item management is available after onboarding and outside an active session.");
+          }
+          return withOutcome({ ...state, surface: "items" }, "Shared websites and this device's application mapping are ready to manage.");
+
+        case Actions.CLOSE_ITEMS_MANAGER:
+          if (state.surface !== "items") {
+            return blocked(state, "The paused-item manager is not open.");
+          }
+          return withOutcome({ ...state, surface: "home" }, "Paused-item changes are reflected in the current device state.");
+
+        case Actions.OPEN_DOMAIN_EDITOR: {
+          if (!["targets", "items"].includes(state.surface)) {
+            return blocked(state, "Website editing starts from paused-item setup or management.");
+          }
+          const originalDomain = action.domain || null;
+          if (originalDomain && !state.policy.domains.includes(originalDomain)) {
+            return blocked(state, "The selected website is no longer in the shared policy.");
+          }
+          return withOutcome({
+            ...state,
+            surface: "domain-editor",
+            configuration: {
+              ...state.configuration,
+              returnSurface: state.surface,
+              originalDomain,
+              domainValue: originalDomain || "",
+              domainError: null
+            }
+          }, originalDomain ? `Editing ${originalDomain}. The saved value remains effective until its replacement is valid.` : "Enter a website domain or paste a website URL.");
+        }
+
+        case Actions.SAVE_DOMAIN: {
+          if (state.surface !== "domain-editor") {
+            return blocked(state, "Open the website editor before saving a domain.");
+          }
+          const result = normalizeDomain(action.value);
+          const originalDomain = state.configuration.originalDomain;
+          const otherDomains = state.policy.domains.filter(domain => domain !== originalDomain);
+          const duplicate = !result.error && otherDomains.includes(result.value);
+          const error = result.error || (duplicate ? "That domain is already in the shared policy." : null);
+
+          if (error) {
+            return withOutcome({
+              ...state,
+              configuration: {
+                ...state.configuration,
+                domainValue: action.value,
+                domainError: error
+              }
+            }, error, "warning");
+          }
+
+          const domains = originalDomain
+            ? state.policy.domains.map(domain => domain === originalDomain ? result.value : domain)
+            : [...state.policy.domains, result.value];
+          const next = {
+            ...state,
+            surface: state.configuration.returnSurface,
+            policy: { ...state.policy, domains },
+            configuration: {
+              ...state.configuration,
+              originalDomain: null,
+              domainValue: "",
+              domainError: null
+            }
+          };
+
+          if (originalDomain === result.value) {
+            return withOutcome(next, `${result.value} is unchanged.`);
+          }
+          return markPending(next, originalDomain
+            ? `${originalDomain} was replaced with ${result.value}. The encrypted change is pending synchronization.`
+            : `${result.value} is valid locally. The encrypted change is pending synchronization.`);
+        }
+
+        case Actions.REMOVE_DOMAIN: {
+          const domain = action.domain;
+          if (!["targets", "items"].includes(state.surface) || !state.policy.domains.includes(domain)) {
+            return blocked(state, "The selected website is not available to remove here.");
+          }
+          return markPending({
+            ...state,
+            policy: {
+              ...state.policy,
+              domains: state.policy.domains.filter(candidate => candidate !== domain)
+            }
+          }, `${domain} was removed from the shared policy. The encrypted change is pending synchronization.`);
+        }
+
+        case Actions.OPEN_APP_PICKER:
+          if (!["targets", "items", "recovery", "session-review"].includes(state.surface)) {
+            return blocked(state, "Application selection starts from setup, paused-item management, or a repair surface.");
+          }
+          if (state.permission !== "granted" || state.workspace.key !== "ready") {
+            return blocked(state, "Permission and the workspace must be ready before choosing local apps.");
+          }
+          return withOutcome({
+            ...state,
+            surface: "app-picker",
+            configuration: {
+              ...state.configuration,
+              returnSurface: state.surface,
+              appSelection: [...currentMapping(state)],
+              appError: null
+            }
+          }, `Choose synthetic applications for this ${platformNames[state.platform]}. The selection stays local to this device.`);
+
+        case Actions.SAVE_APP_MAPPING: {
+          if (state.surface !== "app-picker") {
+            return blocked(state, "Open the application picker before saving a local mapping.");
+          }
+          const available = syntheticApplications[state.platform];
+          const selectedIds = Array.isArray(action.appIds) ? [...new Set(action.appIds)] : [];
+          const selectedApps = selectedIds
+            .map(id => available.find(app => app.id === id))
+            .filter(Boolean)
+            .map(app => app.name);
+
+          if (selectedApps.length === 0) {
+            const error = "Choose at least one application on this device.";
+            return withOutcome({
+              ...state,
+              configuration: {
+                ...state.configuration,
+                appSelection: [],
+                appError: error
+              }
+            }, error, "warning");
+          }
+
+          const returnSurface = state.configuration.returnSurface === "recovery"
+            ? (state.session.status === "active" ? "active" : "home")
+            : state.configuration.returnSurface;
+          return markPending({
+            ...state,
+            surface: returnSurface,
+            policy: {
+              ...state.policy,
+              appPolicy: state.policy.appPolicy || "Social feeds",
+              localMappings: {
+                ...state.policy.localMappings,
+                [state.platform]: selectedApps
+              }
+            },
+            configuration: {
+              ...state.configuration,
+              appSelection: [],
+              appError: null
+            }
+          }, `${selectedApps.join(", ")} ${selectedApps.length === 1 ? "is" : "are"} mapped locally on this ${platformNames[state.platform]}.`);
+        }
+
+        case Actions.REMOVE_APP_MAPPING: {
+          const app = action.app;
+          if (!["targets", "items"].includes(state.surface) || !currentMapping(state).includes(app)) {
+            return blocked(state, "The selected local application mapping is not available to remove here.");
+          }
+          return markPending({
+            ...state,
+            policy: {
+              ...state.policy,
+              localMappings: {
+                ...state.policy.localMappings,
+                [state.platform]: currentMapping(state).filter(candidate => candidate !== app)
+              }
+            }
+          }, `${app} was removed from this ${platformNames[state.platform]}. The shared application policy remains unchanged.`);
+        }
+
+        case Actions.CANCEL_CONFIGURATION:
+          if (!["domain-editor", "app-picker"].includes(state.surface)) {
+            return blocked(state, "There is no configuration editor to close.");
+          }
+          return withOutcome({
+            ...state,
+            surface: state.configuration.returnSurface,
+            configuration: {
+              ...state.configuration,
+              originalDomain: null,
+              domainValue: "",
+              domainError: null,
+              appSelection: [],
+              appError: null
+            }
+          }, "The previous valid configuration remains unchanged.");
+
+        case Actions.FINISH_ONBOARDING:
+          if (state.workspace.key !== "ready" || state.permission !== "granted") {
+            return blocked(state, "The workspace and platform permission still need attention.");
+          }
+          if (state.policy.domains.length === 0 || !state.policy.appPolicy || currentMapping(state).length === 0) {
+            return blocked(state, "Add a shared domain and choose a local app before finishing this walkthrough.");
+          }
+          return withOutcome({ ...state, surface: "home", onboardingComplete: true }, "Setup is complete on this device. No session is active.", "success");
+
+        case Actions.OPEN_SESSION_SETUP:
+          if (!state.onboardingComplete || state.session.status !== "inactive") {
+            return blocked(state, "Session setup is available after onboarding and while no session is active.");
+          }
+          return withOutcome({ ...state, surface: "session-setup" }, "Choose a duration or end time before reviewing the session.");
+
+        case Actions.SET_DURATION:
+          if (state.surface !== "session-setup") {
+            return blocked(state, "Open session setup before changing the duration.");
+          }
+          return withOutcome({
+            ...state,
+            session: { ...state.session, durationMinutes: 45, endsAt: "18:30" }
+          }, "The proposed end time is 18:30. Review the effective local items next.");
+
+        case Actions.REVIEW_SESSION: {
+          if (state.surface !== "session-setup" && state.surface !== "session-review") {
+            return blocked(state, "Open session setup before reviewing it.");
+          }
+          const issues = reviewIssues(state);
+          return withOutcome({ ...state, surface: "session-review" }, issues.length
+            ? `${issues.length} item${issues.length === 1 ? "" : "s"} need attention before the session can start.`
+            : "The resolved end time and effective local items are ready for confirmation.",
+          issues.length ? "warning" : "success");
+        }
+
+        case Actions.START_SESSION: {
+          if (state.surface !== "session-review") {
+            return blocked(state, "Review the session before starting it.");
+          }
+          const issues = reviewIssues(state);
+          if (issues.length) {
+            return blocked(state, "Resolve every action-required item shown in the review.");
+          }
+          return markPending({
+            ...state,
+            surface: "active",
+            session: {
+              status: "active",
+              durationMinutes: state.session.durationMinutes,
+              endsAt: state.session.endsAt || "18:30"
+            }
+          }, "The session is active on this device. Its intent is pending synchronization.");
+        }
+
+        case Actions.OPEN_BLOCKED_PRESENTATION:
+          if (state.session.status !== "active" || state.permission !== "granted" || effectiveItems(state) === 0) {
+            return blocked(state, "A locally enforceable active session is required to show the paused presentation.");
+          }
+          return withOutcome({ ...state, surface: "blocked" }, "A selected item is paused. No attempted URL or usage event was added to state.");
+
+        case Actions.OPEN_POSATO:
+          if (state.surface !== "blocked") {
+            return blocked(state, "Open Posato is offered from the platform-owned paused presentation.");
+          }
+          return withOutcome({ ...state, surface: "active" }, "Posato shows the truthful active-session state.");
+
+        case Actions.REQUEST_EARLY_END:
+          if (state.session.status !== "active") {
+            return blocked(state, "There is no active session to end.");
+          }
+          return withOutcome({ ...state, surface: "early-end" }, "Early termination requires a clear confirmation.", "warning");
+
+        case Actions.CANCEL_EARLY_END:
+          if (state.surface !== "early-end") {
+            return blocked(state, "The early-end confirmation is not open.");
+          }
+          return withOutcome({ ...state, surface: "active" }, "The session remains active until 18:30.");
+
+        case Actions.CONFIRM_EARLY_END:
+          if (state.surface !== "early-end" || state.session.status !== "active") {
+            return blocked(state, "Open the early-end confirmation before ending the session.");
+          }
+          return markPending({
+            ...state,
+            surface: "home",
+            session: { ...state.session, status: "inactive", endsAt: null }
+          }, "Restrictions stopped on this device. The early end is pending synchronization.");
+
+        case Actions.EXPIRE_SESSION:
+          if (state.session.status !== "active") {
+            return blocked(state, "Only an active session can expire.");
+          }
+          return markPending({
+            ...state,
+            surface: "home",
+            session: { ...state.session, status: "inactive", endsAt: null }
+          }, "The selected end time passed. Local restrictions were removed and the state is pending synchronization.");
+
+        case Actions.SYNC_NOW:
+        case Actions.RETRY_SYNC:
+          if (!state.sync.pendingWork && state.sync.status !== "retryable") {
+            return blocked(state, "There is no pending or retryable local work to synchronize.");
+          }
+          return withOutcome({
+            ...state,
+            sync: { ...state.sync, status: "syncing" }
+          }, type === Actions.RETRY_SYNC ? "Retrying the pending local work." : "Synchronizing pending local work.");
+
+        case Actions.SYNC_SUCCESS:
+          if (state.sync.status !== "syncing") {
+            return blocked(state, "A local sync attempt must be running first.");
+          }
+          return withOutcome({
+            ...state,
+            sync: {
+              status: "completed on this device",
+              pendingWork: false,
+              lastCompletedOnDevice: "18:02"
+            }
+          }, "Last sync completed on this device at 18:02. Delivery to another device is not claimed.", "success");
+
+        case Actions.SYNC_FAILURE:
+          if (state.sync.status !== "syncing") {
+            return blocked(state, "A local sync attempt must be running before it can fail.");
+          }
+          return withOutcome({
+            ...state,
+            sync: { ...state.sync, status: "retryable", pendingWork: true }
+          }, "The local attempt could not complete. Valid state and pending work are preserved.", "warning");
+
+        case Actions.REVOKE_PERMISSION:
+          if (state.permission !== "granted") {
+            return blocked(state, "Permission is not currently granted on this device.");
+          }
+          return withOutcome({
+            ...state,
+            surface: "recovery",
+            permission: "revoked",
+            sync: { ...state.sync, status: "action required" }
+          }, `Permission was revoked on this ${platformNames[state.platform]}. The previous valid policy remains visible.`, "warning");
+
+        case Actions.REPAIR_PERMISSION:
+          if (state.permission !== "revoked") {
+            return blocked(state, "Permission does not currently need repair.");
+          }
+          return withOutcome({
+            ...state,
+            surface: state.surface === "session-review"
+              ? "session-review"
+              : state.session.status === "active" ? "active" : "home",
+            permission: "granted",
+            sync: {
+              ...state.sync,
+              status: state.sync.pendingWork ? "pending local work" : "completed on this device"
+            }
+          }, `Permission is available again on this ${platformNames[state.platform]}.`, "success");
+
+        case Actions.REMOVE_MAPPING:
+          if (!state.policy.appPolicy || currentMapping(state).length === 0) {
+            return blocked(state, "There is no local app mapping to remove on this device.");
+          }
+          return markPending({
+            ...state,
+            surface: state.session.status === "active" ? "recovery" : state.surface,
+            policy: {
+              ...state.policy,
+              localMappings: {
+                ...state.policy.localMappings,
+                [state.platform]: []
+              }
+            }
+          }, `The shared “${state.policy.appPolicy}” policy remains, but this ${platformNames[state.platform]} needs a new local app mapping.`);
+
+        case Actions.SWITCH_TO_MAC:
+        case Actions.SWITCH_TO_IPHONE: {
+          const platform = type === Actions.SWITCH_TO_MAC ? "macos" : "ios";
+          if (state.platform === platform) {
+            return blocked(state, `${platformNames[platform]} is already the current device.`);
+          }
+          const next = {
+            ...state,
+            platform,
+            configuration: state.surface === "app-picker"
+              ? {
+                  ...state.configuration,
+                  appSelection: [...state.policy.localMappings[platform]],
+                  appError: null
+                }
+              : state.configuration
+          };
+          const hasMissingMapping = next.policy.appPolicy && currentMapping(next).length === 0;
+          return withOutcome(next, hasMissingMapping
+            ? `The shared app policy is visible, but this ${platformNames[platform]} needs its own local mapping.`
+            : `Viewing the same product state on the ${platformNames[platform]}.`,
+          hasMissingMapping ? "warning" : "info");
+        }
+
+        default:
+          return blocked(state, "The prototype does not recognize that action.");
+      }
+    }
+
+    const actionLabels = Object.freeze({
+      [Actions.RESET]: "Reset first installation",
+      [Actions.SHOW_PRIVACY]: "Read purpose and privacy",
+      [Actions.SYNC_WITH_ICLOUD]: "Sync with iCloud",
+      [Actions.DISCOVER_EMPTY_WORKSPACE]: "Continue — no workspace found",
+      [Actions.DISCOVER_KEY_DELAYED]: "Continue — key is delayed",
+      [Actions.KEY_ARRIVED]: "Check again — key arrived",
+      [Actions.GRANT_PERMISSION]: "Allow on this device",
+      [Actions.ADD_DOMAIN]: "Add synthetic news.example",
+      [Actions.MAP_APP]: "Map synthetic Example Social",
+      [Actions.FINISH_ONBOARDING]: "Finish setup",
+      [Actions.OPEN_SESSION_SETUP]: "Start a session",
+      [Actions.SET_DURATION]: "Set 45 minutes",
+      [Actions.REVIEW_SESSION]: "Review session",
+      [Actions.START_SESSION]: "Start session",
+      [Actions.OPEN_BLOCKED_PRESENTATION]: "Open a selected item",
+      [Actions.OPEN_POSATO]: "Open Posato",
+      [Actions.REQUEST_EARLY_END]: "End session early",
+      [Actions.CANCEL_EARLY_END]: "Keep session",
+      [Actions.CONFIRM_EARLY_END]: "Confirm early end",
+      [Actions.EXPIRE_SESSION]: "Let the session expire",
+      [Actions.SYNC_NOW]: "Sync now",
+      [Actions.SYNC_SUCCESS]: "Complete local sync attempt",
+      [Actions.SYNC_FAILURE]: "Simulate retryable sync result",
+      [Actions.RETRY_SYNC]: "Retry sync",
+      [Actions.REVOKE_PERMISSION]: "Revoke permission",
+      [Actions.REPAIR_PERMISSION]: "Repair permission",
+      [Actions.REMOVE_MAPPING]: "Invalidate local app mapping",
+      [Actions.REMAP_APP]: "Choose replacement app",
+      [Actions.OPEN_ITEMS_MANAGER]: "Manage paused items",
+      [Actions.OPEN_DOMAIN_EDITOR]: "Enter a custom website",
+      [Actions.OPEN_APP_PICKER]: "Open the synthetic app picker",
+      [Actions.SWITCH_TO_MAC]: "View on Mac",
+      [Actions.SWITCH_TO_IPHONE]: "View on iPhone"
+    });
+
+    const scenarios = Object.freeze([
+      {
+        id: "happy-path",
+        label: "First session",
+        title: "First installation to normal expiry",
+        description: "Watch whether purpose, setup, review, active status, local sync truth, and the paused presentation form one calm sequence.",
+        start: () => initialState("macos"),
+        steps: [
+          [Actions.SHOW_PRIVACY, "Understand the boundary", "Purpose and privacy come before service or permission prompts."],
+          [Actions.SYNC_WITH_ICLOUD, "Choose Sync with iCloud", "There is no product account or in-app pairing."],
+          [Actions.DISCOVER_EMPTY_WORKSPACE, "Create the first Apple workspace", "The system found no existing workspace."],
+          [Actions.GRANT_PERMISSION, "Allow local enforcement", "The rationale is visible before the simulated system result."],
+          [Actions.ADD_DOMAIN, "Add a shared website", "The exact domain becomes pending encrypted work."],
+          [Actions.MAP_APP, "Choose a local application", "The semantic policy can sync; the app selection stays local."],
+          [Actions.FINISH_ONBOARDING, "Finish this device", "The home surface leads with current session status."],
+          [Actions.OPEN_SESSION_SETUP, "Open session setup", "Only duration or end time is chosen here."],
+          [Actions.SET_DURATION, "Choose 45 minutes", "The prototype resolves that to 18:30."],
+          [Actions.REVIEW_SESSION, "Review effective local items", "Missing permission or mapping would appear before the start action."],
+          [Actions.START_SESSION, "Start the session", "Local restrictions begin and the intent becomes pending work."],
+          [Actions.SYNC_NOW, "Synchronize now", "The action starts a local attempt only."],
+          [Actions.SYNC_SUCCESS, "Complete the local attempt", "The copy does not claim delivery to every device."],
+          [Actions.OPEN_BLOCKED_PRESENTATION, "Open a selected item", "The paused presentation stores no attempted URL."],
+          [Actions.OPEN_POSATO, "Return to Posato", "The active state and end time remain dominant."],
+          [Actions.EXPIRE_SESSION, "Reach the selected end", "Local restrictions are removed and the state becomes pending work."]
+        ]
+      },
+      {
+        id: "second-device",
+        label: "Delayed key",
+        title: "Second installation while the workspace key is delayed",
+        description: "Check that an existing workspace remains unchanged, no parallel workspace is created, and the local app mapping is requested only after shared policy becomes readable.",
+        start: secondDeviceState,
+        steps: [
+          [Actions.SHOW_PRIVACY, "Understand purpose and privacy", "The second installation receives the same product explanation."],
+          [Actions.SYNC_WITH_ICLOUD, "Choose Sync with iCloud", "Apple trust is used; Posato performs no QR flow."],
+          [Actions.DISCOVER_KEY_DELAYED, "Find the workspace, but not its key", "The correct result is waiting, not an empty workspace."],
+          [Actions.FINISH_ONBOARDING, "Try to continue", "This intentionally illegal step should preserve the existing workspace."],
+          [Actions.KEY_ARRIVED, "Receive the existing key", "Shared domains and semantic policy become readable."],
+          [Actions.GRANT_PERMISSION, "Allow on this iPhone", "Platform permission remains local and contextual."],
+          [Actions.MAP_APP, "Choose the iPhone application", "The shared policy gets an opaque local selection on this device."],
+          [Actions.FINISH_ONBOARDING, "Finish the second device", "No session is active, and the shared state remains intact."]
+        ]
+      },
+      {
+        id: "action-required",
+        label: "Action required",
+        title: "Session review catches two local problems",
+        description: "The shared policy is valid, but Screen Time access was revoked and this iPhone lost its local app mapping. Verify that review names both problems without discarding valid state.",
+        start: actionRequiredState,
+        steps: [
+          [Actions.OPEN_SESSION_SETUP, "Open session setup", "Setup is still available so the exact blockers can be reviewed."],
+          [Actions.SET_DURATION, "Choose 45 minutes", "Duration stays separate from platform repair."],
+          [Actions.REVIEW_SESSION, "Review the proposed session", "Both action-required conditions should be visible."],
+          [Actions.START_SESSION, "Try to start", "This intentionally illegal action must not create a session."],
+          [Actions.REPAIR_PERMISSION, "Restore Screen Time access", "The previous policy remains unchanged."],
+          [Actions.REMAP_APP, "Choose a replacement app", "Only the local mapping is repaired."],
+          [Actions.REVIEW_SESSION, "Review again", "The same end time and now-effective local items are shown."],
+          [Actions.START_SESSION, "Start after repair", "The session can start only after every local condition is valid."]
+        ]
+      },
+      {
+        id: "early-end",
+        label: "Early end",
+        title: "Intentional early end followed by a retryable sync result",
+        description: "Verify that early termination is visible and reversible before confirmation, then that a failed local sync attempt preserves the stopped local state and pending work.",
+        start: () => activeState("macos"),
+        steps: [
+          [Actions.REQUEST_EARLY_END, "Ask to end early", "The route is clear rather than hidden or punitive."],
+          [Actions.CANCEL_EARLY_END, "Keep the session", "Canceling returns to the unchanged active state."],
+          [Actions.REQUEST_EARLY_END, "Ask again", "The same clear confirmation is shown."],
+          [Actions.CONFIRM_EARLY_END, "Confirm early end", "Restrictions stop locally and the change becomes pending work."],
+          [Actions.SYNC_NOW, "Synchronize the stop", "A local attempt begins."],
+          [Actions.SYNC_FAILURE, "Receive a retryable result", "Valid local state and pending work remain."],
+          [Actions.RETRY_SYNC, "Retry the local attempt", "The product does not promise a delivery time."],
+          [Actions.SYNC_SUCCESS, "Complete the retry", "Only completion on this device is reported."]
+        ]
+      }
+    ]);
+
+    const freePlayGroups = Object.freeze([
+      {
+        title: "Onboarding",
+        actions: [
+          Actions.RESET,
+          Actions.SHOW_PRIVACY,
+          Actions.SYNC_WITH_ICLOUD,
+          Actions.DISCOVER_EMPTY_WORKSPACE,
+          Actions.DISCOVER_KEY_DELAYED,
+          Actions.KEY_ARRIVED,
+          Actions.GRANT_PERMISSION,
+          Actions.ADD_DOMAIN,
+          Actions.MAP_APP,
+          Actions.FINISH_ONBOARDING,
+          Actions.OPEN_ITEMS_MANAGER,
+          Actions.OPEN_DOMAIN_EDITOR,
+          Actions.OPEN_APP_PICKER
+        ]
+      },
+      {
+        title: "Session",
+        actions: [
+          Actions.OPEN_SESSION_SETUP,
+          Actions.SET_DURATION,
+          Actions.REVIEW_SESSION,
+          Actions.START_SESSION,
+          Actions.OPEN_BLOCKED_PRESENTATION,
+          Actions.OPEN_POSATO,
+          Actions.EXPIRE_SESSION
+        ]
+      },
+      {
+        title: "Early end and sync",
+        actions: [
+          Actions.REQUEST_EARLY_END,
+          Actions.CANCEL_EARLY_END,
+          Actions.CONFIRM_EARLY_END,
+          Actions.SYNC_NOW,
+          Actions.SYNC_FAILURE,
+          Actions.RETRY_SYNC,
+          Actions.SYNC_SUCCESS
+        ]
+      },
+      {
+        title: "Device and recovery",
+        actions: [
+          Actions.SWITCH_TO_MAC,
+          Actions.SWITCH_TO_IPHONE,
+          Actions.REVOKE_PERMISSION,
+          Actions.REPAIR_PERMISSION,
+          Actions.REMOVE_MAPPING,
+          Actions.REMAP_APP
+        ]
+      }
+    ]);
+
+    // UI adapter: the DOM calls the pure model and renders its returned state.
+    let state = initialState("macos");
+    let activeScenarioId = scenarios[0].id;
+    let guidedProgress = 0;
+
+    const appPreview = document.querySelector("#app-preview");
+    const productSurface = document.querySelector("#product-surface");
+    const previewPlatformButtons = document.querySelectorAll("[data-preview-platform]");
+    const previewFullscreenButton = document.querySelector("#preview-fullscreen");
+    const stateList = document.querySelector("#state-list");
+    const outcome = document.querySelector("#outcome");
+    const scenarioTabs = document.querySelector("#scenario-tabs");
+    const walkthrough = document.querySelector("#walkthrough");
+    const freePlay = document.querySelector("#free-play");
+
+    function escapeHtml(value) {
+      return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function button(label, action, kind = "primary-button") {
+      return `<button class="${kind}" type="button" data-action="${action}">${escapeHtml(label)}</button>`;
+    }
+
+    function syncDescription(current) {
+      switch (current.sync.status) {
+        case "local only":
+          return "Sync with iCloud has not been enabled.";
+        case "pending local work":
+          return "Local work is pending synchronization.";
+        case "syncing":
+          return "A local sync attempt is in progress.";
+        case "completed on this device":
+          return `Last sync completed on this device${current.sync.lastCompletedOnDevice ? ` at ${current.sync.lastCompletedOnDevice}` : ""}.`;
+        case "waiting":
+          return "Waiting for iCloud Keychain. The existing workspace remains unchanged.";
+        case "retryable":
+          return "The local attempt did not complete. Pending work is preserved.";
+        case "action required":
+          return "Local setup needs attention before enforcement can be reliable.";
+        default:
+          return current.sync.status;
+      }
+    }
+
+    function syncTone(current) {
+      if (current.sync.status === "completed on this device") return "success";
+      if (["waiting", "retryable", "action required"].includes(current.sync.status)) return "warning";
+      return "info";
+    }
+
+    function renderedPolicyRows(current) {
+      const domains = current.policy.domains.length
+        ? current.policy.domains.map(domain => `
+          <div class="surface-row">
+            <div><strong>${escapeHtml(domain)}</strong><span>Shared website</span></div>
+            <small>Exact domain</small>
+          </div>`).join("")
+        : `
+          <div class="surface-row">
+            <div><strong>No websites yet</strong><span>Add an exact domain.</span></div>
+          </div>`;
+
+      const appPolicy = current.policy.appPolicy
+        ? `
+          <div class="surface-row">
+            <div>
+              <strong>${escapeHtml(current.policy.appPolicy)}</strong>
+              <span>${currentMapping(current).length
+                ? escapeHtml(currentMapping(current).join(", "))
+                : `Choose apps on this ${escapeHtml(platformNames[current.platform])}`}</span>
+            </div>
+            <small>Local mapping</small>
+          </div>`
+        : `
+          <div class="surface-row">
+            <div><strong>No application policy yet</strong><span>Choose a local application.</span></div>
+          </div>`;
+
+      return domains + appPolicy;
+    }
+
+    function renderedConfigurationSections(current) {
+      const platform = platformNames[current.platform];
+      const domainRows = current.policy.domains.length
+        ? current.policy.domains.map(domain => `
+          <div class="surface-row">
+            <div><strong>${escapeHtml(domain)}</strong><span>Shared exact domain</span></div>
+            <div class="row-actions">
+              <button class="row-button" type="button" data-action="${Actions.OPEN_DOMAIN_EDITOR}" data-domain="${escapeHtml(domain)}" aria-label="Edit ${escapeHtml(domain)}">Edit</button>
+              <button class="row-button" type="button" data-action="${Actions.REMOVE_DOMAIN}" data-domain="${escapeHtml(domain)}" aria-label="Remove ${escapeHtml(domain)}">Remove</button>
+            </div>
+          </div>`).join("")
+        : `
+          <div class="surface-row">
+            <div><strong>No websites yet</strong><span>Add a domain you want Posato to pause.</span></div>
+          </div>`;
+      const mappingRows = currentMapping(current).length
+        ? currentMapping(current).map(app => `
+          <div class="surface-row">
+            <div><strong>${escapeHtml(app)}</strong><span>Local mapping on this ${escapeHtml(platform)}</span></div>
+            <div class="row-actions">
+              <button class="row-button" type="button" data-action="${Actions.REMOVE_APP_MAPPING}" data-app="${escapeHtml(app)}" aria-label="Remove ${escapeHtml(app)} from this ${escapeHtml(platform)}">Remove</button>
+            </div>
+          </div>`).join("")
+        : `
+          <div class="surface-row">
+            <div><strong>No apps selected on this ${escapeHtml(platform)}</strong><span>The shared policy remains available for a local mapping.</span></div>
+          </div>`;
+
+      return `
+        <section class="configuration-section" aria-labelledby="website-section-heading">
+          <div class="configuration-heading">
+            <div>
+              <h4 id="website-section-heading">Websites</h4>
+              <p>Exact domains synchronize between participating devices.</p>
+            </div>
+            <button class="secondary-button" type="button" data-action="${Actions.OPEN_DOMAIN_EDITOR}">Add website</button>
+          </div>
+          <div class="surface-list">${domainRows}</div>
+        </section>
+        <section class="configuration-section" aria-labelledby="application-section-heading">
+          <div class="configuration-heading">
+            <div>
+              <h4 id="application-section-heading">Applications on this ${escapeHtml(platform)}</h4>
+              <p>“${escapeHtml(current.policy.appPolicy || "Social feeds")}" is shared; application choices stay local.</p>
+            </div>
+            <button class="secondary-button" type="button" data-action="${Actions.OPEN_APP_PICKER}">${currentMapping(current).length ? "Change apps" : "Choose apps"}</button>
+          </div>
+          <div class="surface-list">${mappingRows}</div>
+        </section>
+        <p class="configuration-note">Switch the preview device to configure its separate local application mapping.</p>`;
+    }
+
+    function renderedDomainEditor(current) {
+      const editing = Boolean(current.configuration.originalDomain);
+      const error = current.configuration.domainError;
+      const describedBy = error ? "domain-helper domain-error" : "domain-helper";
+      return `
+        <p class="surface-kicker">Shared website</p>
+        <h3 class="surface-title">${editing ? "Edit this website." : "Add a website."}</h3>
+        <p class="surface-copy">Paste a domain or website URL. Posato saves only the exact hostname, not the page path you visited.</p>
+        <form class="configuration-form" data-domain-form novalidate>
+          <label class="field-label" for="domain-input">Domain or website URL</label>
+          <input
+            class="text-input"
+            id="domain-input"
+            name="domain"
+            type="text"
+            inputmode="url"
+            autocomplete="url"
+            spellcheck="false"
+            placeholder="reddit.com"
+            value="${escapeHtml(current.configuration.domainValue)}"
+            aria-describedby="${describedBy}"
+            aria-invalid="${Boolean(error)}"
+          >
+          <span class="field-helper" id="domain-helper">For example, a pasted URL becomes its hostname. Paths and browsing history are not stored.</span>
+          ${error ? `<span class="field-error" id="domain-error" role="alert">${escapeHtml(error)}</span>` : ""}
+          <div class="button-row">
+            <button class="primary-button" type="submit">${editing ? "Save website" : "Add website"}</button>
+            <button class="secondary-button" type="button" data-action="${Actions.CANCEL_CONFIGURATION}">Cancel</button>
+          </div>
+        </form>`;
+    }
+
+    function renderedAppPicker(current) {
+      const platform = platformNames[current.platform];
+      const selectedApps = current.configuration.appSelection;
+      const error = current.configuration.appError;
+      return `
+        <p class="surface-kicker">Local application mapping · ${escapeHtml(platform)}</p>
+        <h3 class="surface-title">Choose apps on this ${escapeHtml(platform)}.</h3>
+        <p class="surface-copy">This synthetic picker represents the platform-owned selector. Posato stores an opaque local choice, not a portable application identifier.</p>
+        <form class="configuration-form" data-app-picker-form novalidate>
+          <fieldset class="picker-fieldset" aria-describedby="app-picker-helper${error ? " app-picker-error" : ""}">
+            <legend class="picker-legend">Applications for “${escapeHtml(current.policy.appPolicy || "Social feeds")}"</legend>
+            <p class="field-helper" id="app-picker-helper">Choose one or more synthetic applications. The iPhone and Mac mappings are independent.</p>
+            <div class="app-options">
+              ${syntheticApplications[current.platform].map(app => `
+                <label class="app-option">
+                  <input type="checkbox" name="app" value="${escapeHtml(app.id)}" ${selectedApps.includes(app.name) ? "checked" : ""}>
+                  <span><strong>${escapeHtml(app.name)}</strong><small>Synthetic ${escapeHtml(platform)} application</small></span>
+                </label>`).join("")}
+            </div>
+            ${error ? `<span class="field-error" id="app-picker-error" role="alert">${escapeHtml(error)}</span>` : ""}
+          </fieldset>
+          <div class="button-row">
+            <button class="primary-button" type="submit">Save local apps</button>
+            <button class="secondary-button" type="button" data-action="${Actions.CANCEL_CONFIGURATION}">Cancel</button>
+          </div>
+        </form>`;
+    }
+
+    function renderSurface(current) {
+      const platform = platformNames[current.platform];
+      const localIssues = reviewIssues(current);
+      const permissionCopy = current.platform === "ios"
+        ? "Posato needs Screen Time access to pause selected apps on this iPhone."
+        : "Posato needs local permission to pause selected websites and apps on this Mac.";
+
+      switch (current.surface) {
+        case "welcome":
+          return `
+            <p class="surface-kicker">Posato</p>
+            <h3 class="surface-title">Pause.<br>Then choose.</h3>
+            <p class="surface-copy">A quiet pause between impulse and action, across your own Apple devices.</p>
+            <div class="surface-spacer"></div>
+            ${button("Continue", Actions.SHOW_PRIVACY)}`;
+
+        case "privacy":
+          return `
+            <p class="surface-kicker">Before setup</p>
+            <h3 class="surface-title">Your choices stay yours.</h3>
+            <p class="surface-copy">Posato has no product account. It synchronizes selected policy and session intent through your private iCloud storage. It does not collect browsing history, allowed navigation, or usage counters.</p>
+            <div class="status-line"><span class="status-dot"></span><span>Apple may ask for its own iCloud Keychain approval outside Posato.</span></div>
+            <div class="surface-spacer"></div>
+            ${button("Sync with iCloud", Actions.SYNC_WITH_ICLOUD)}`;
+
+        case "workspace-check":
+          return `
+            <p class="surface-kicker">Sync with iCloud</p>
+            <h3 class="surface-title">Checking for your workspace.</h3>
+            <p class="surface-copy">Posato is looking in your private iCloud storage. It will create a workspace only when none exists.</p>
+            <div class="status-line"><span class="status-dot"></span><span>No product login or Posato-to-Posato approval is required.</span></div>
+            <div class="surface-spacer"></div>
+            <div class="button-row">
+              ${button("Continue — no workspace found", Actions.DISCOVER_EMPTY_WORKSPACE)}
+              ${button("Simulate delayed key", Actions.DISCOVER_KEY_DELAYED, "secondary-button")}
+            </div>`;
+
+        case "key-wait":
+          return `
+            <p class="surface-kicker">Workspace found</p>
+            <h3 class="surface-title">Waiting for iCloud Keychain.</h3>
+            <p class="surface-copy">Your existing workspace remains unchanged. Posato will not create an empty or parallel workspace while its key is delayed.</p>
+            <div class="status-line" data-tone="warning"><span class="status-dot"></span><span>Apple may require device approval in System Settings.</span></div>
+            <div class="surface-spacer"></div>
+            ${button("Check again", Actions.KEY_ARRIVED, "secondary-button")}`;
+
+        case "permission":
+          return `
+            <p class="surface-kicker">Local setup · ${escapeHtml(platform)}</p>
+            <h3 class="surface-title">Allow Posato to pause selected items.</h3>
+            <p class="surface-copy">${escapeHtml(permissionCopy)} Posato asks in context and never imitates System Settings.</p>
+            <div class="surface-spacer"></div>
+            ${button(`Allow on this ${platform}`, Actions.GRANT_PERMISSION)}`;
+
+        case "targets":
+          return `
+            <p class="surface-kicker">Paused items · ${escapeHtml(platform)}</p>
+            <h3 class="surface-title">Choose what to pause.</h3>
+            <p class="surface-copy">Websites synchronize exactly. Application policy synchronizes, while each device keeps its own local app selection.</p>
+            ${renderedConfigurationSections(current)}
+            <button class="primary-button" type="button" data-action="${Actions.FINISH_ONBOARDING}" ${current.policy.domains.length && current.policy.appPolicy && currentMapping(current).length ? "" : "disabled"}>Finish setup</button>`;
+
+        case "domain-editor":
+          return renderedDomainEditor(current);
+
+        case "app-picker":
+          return renderedAppPicker(current);
+
+        case "items":
+          return `
+            <p class="surface-kicker">Paused items · ${escapeHtml(platform)}</p>
+            <h3 class="surface-title">Choose what to pause.</h3>
+            <p class="surface-copy">Edit shared websites here and choose a separate local application mapping on each device.</p>
+            ${renderedConfigurationSections(current)}
+            ${button("Done", Actions.CLOSE_ITEMS_MANAGER)}`;
+
+        case "home":
+          return `
+            <p class="surface-kicker">Current status · ${escapeHtml(platform)}</p>
+            <h3 class="surface-title">No session active.</h3>
+            <p class="surface-copy">${!effectiveItems(current)
+              ? "No items are selected on this device. Choose at least one website or application before starting."
+              : localIssues.length
+                ? "The shared policy is visible, but local setup needs attention before a session can start."
+                : "Selected items are ready on this device. Start a bounded session when you want a quiet pause."}</p>
+            <div class="surface-list">${renderedPolicyRows(current)}</div>
+            <div class="status-line" data-tone="${syncTone(current)}"><span class="status-dot"></span><span>${escapeHtml(syncDescription(current))}</span></div>
+            <div class="surface-spacer"></div>
+            <div class="button-row">
+              ${effectiveItems(current) ? button("Start a session", Actions.OPEN_SESSION_SETUP) : button("Choose paused items", Actions.OPEN_ITEMS_MANAGER)}
+              ${effectiveItems(current) ? button("Manage paused items", Actions.OPEN_ITEMS_MANAGER, "secondary-button") : ""}
+              ${current.sync.pendingWork ? button("Sync now", Actions.SYNC_NOW, "secondary-button") : ""}
+            </div>`;
+
+        case "session-setup":
+          return `
+            <p class="surface-kicker">New session</p>
+            <h3 class="surface-title">Choose when this pause ends.</h3>
+            <p class="surface-copy">Set a duration or a specific end time. You can intentionally end the session early later.</p>
+            <div class="choice-grid" aria-label="Session duration">
+              <button class="choice-button" type="button" aria-label="25 minutes, outside this prototype path" aria-pressed="${current.session.durationMinutes === 25}" disabled>25 minutes</button>
+              <button class="choice-button" type="button" data-action="${Actions.SET_DURATION}" aria-pressed="${current.session.durationMinutes === 45}">45 minutes</button>
+              <button class="choice-button" type="button" aria-label="Specific end time, outside this prototype path" aria-pressed="false" disabled>End time</button>
+            </div>
+            <div class="status-line"><span class="status-dot"></span><span>Resolved end: ${escapeHtml(current.session.endsAt || "Choose a duration")}</span></div>
+            <div class="surface-spacer"></div>
+            ${button("Review session", Actions.REVIEW_SESSION)}`;
+
+        case "session-review": {
+          const issues = reviewIssues(current);
+          return `
+            <p class="surface-kicker">Session review · ${escapeHtml(platform)}</p>
+            <h3 class="surface-title">${issues.length ? "Needs your attention." : `Ready until ${escapeHtml(current.session.endsAt || "18:30")}.`}</h3>
+            <p class="surface-copy">Review the resolved end time and what can be paused on this device before starting.</p>
+            ${issues.length ? `
+              <div class="surface-list">${issues.map(issue => `
+                <div class="surface-row">
+                  <div><strong>Action required</strong><span>${escapeHtml(issue)}</span></div>
+                  <small>Local</small>
+                </div>`).join("")}</div>` : `
+              <div class="surface-list">${renderedPolicyRows(current)}</div>`}
+            <div class="status-line" data-tone="${issues.length ? "warning" : "success"}"><span class="status-dot"></span><span>${issues.length ? "Valid shared policy is preserved while local setup is repaired." : `Session will end at ${escapeHtml(current.session.endsAt || "18:30")}.`}</span></div>
+            <div class="surface-spacer"></div>
+            <div class="button-row">
+              ${issues.includes(`Allow Posato to pause selected items on this ${platform}.`) ? button("Repair permission", Actions.REPAIR_PERMISSION, "secondary-button") : ""}
+              ${issues.some(issue => issue.startsWith("Choose local apps")) && current.permission === "granted" ? button("Choose replacement app", Actions.OPEN_APP_PICKER, "secondary-button") : ""}
+              ${issues.length
+                ? '<button class="secondary-button" type="button" disabled>Start session</button>'
+                : button("Start session", Actions.START_SESSION)}
+            </div>`;
+        }
+
+        case "active":
+          return `
+            <p class="surface-kicker">Current status · ${escapeHtml(platform)}</p>
+            <h3 class="surface-title">Session active until ${escapeHtml(current.session.endsAt || "18:30")}.</h3>
+            <p class="surface-copy">Selected items are paused on this device. A synchronized device applies its own effective local mapping.</p>
+            <div class="surface-list">${renderedPolicyRows(current)}</div>
+            <div class="status-line" data-tone="${syncTone(current)}"><span class="status-dot"></span><span>${escapeHtml(syncDescription(current))}</span></div>
+            <div class="surface-spacer"></div>
+            <div class="button-row">
+              ${current.sync.pendingWork ? button("Sync now", Actions.SYNC_NOW) : ""}
+              ${button("End session early", Actions.REQUEST_EARLY_END, "quiet-button")}
+            </div>`;
+
+        case "blocked":
+          return `
+            <p class="surface-kicker">Posato</p>
+            <h3 class="surface-title">This site is paused until ${escapeHtml(current.session.endsAt || "18:30")}.</h3>
+            <p class="surface-copy">A quiet pause between impulse and action. Posato does not retain the attempted address.</p>
+            <div class="surface-spacer"></div>
+            ${button("Open Posato", Actions.OPEN_POSATO)}`;
+
+        case "early-end":
+          return `
+            <p class="surface-kicker">Confirm change</p>
+            <h3 class="surface-title">End session early?</h3>
+            <p class="surface-copy">Restrictions will stop on this ${escapeHtml(platform)} now. Posato will mark the change for synchronization without promising when another device receives it.</p>
+            <div class="status-line" data-tone="warning"><span class="status-dot"></span><span>The session currently ends at ${escapeHtml(current.session.endsAt || "18:30")}.</span></div>
+            <div class="surface-spacer"></div>
+            <div class="button-row">
+              ${button("Keep session", Actions.CANCEL_EARLY_END)}
+              ${button("End session early", Actions.CONFIRM_EARLY_END, "danger-button")}
+            </div>`;
+
+        case "recovery": {
+          const issues = reviewIssues(current);
+          return `
+            <p class="surface-kicker">Needs your attention · ${escapeHtml(platform)}</p>
+            <h3 class="surface-title">Local setup needs repair.</h3>
+            <p class="surface-copy">The previous valid policy remains. Repair only the bounded condition shown below.</p>
+            <div class="surface-list">${issues.map(issue => `
+              <div class="surface-row">
+                <div><strong>Action required</strong><span>${escapeHtml(issue)}</span></div>
+                <small>Local</small>
+              </div>`).join("")}</div>
+            <div class="surface-spacer"></div>
+            <div class="button-row">
+              ${current.permission === "revoked" ? button("Repair permission", Actions.REPAIR_PERMISSION) : ""}
+              ${current.policy.appPolicy && currentMapping(current).length === 0 ? button("Choose replacement app", Actions.OPEN_APP_PICKER, "secondary-button") : ""}
+            </div>`;
+        }
+
+        default:
+          return `
+            <p class="surface-kicker">Prototype state</p>
+            <h3 class="surface-title">Surface unavailable.</h3>
+            <p class="surface-copy">Reset the prototype to continue.</p>
+            ${button("Reset", Actions.RESET)}`;
+      }
+    }
+
+    function renderApp() {
+      const platform = platformNames[state.platform];
+      appPreview.dataset.platform = state.platform;
+      appPreview.innerHTML = `
+        <div class="app-chrome">
+          <span class="app-wordmark">Posato</span>
+          <span>${escapeHtml(platform)} · Prototype</span>
+        </div>
+        <div class="app-content">${renderSurface(state)}</div>`;
+    }
+
+    function renderPreviewControls() {
+      const isMacBook = state.platform === "macos";
+      const isFullscreen = document.fullscreenElement === appPreview;
+
+      previewPlatformButtons.forEach(deviceButton => {
+        deviceButton.setAttribute("aria-pressed", String(deviceButton.dataset.previewPlatform === state.platform));
+      });
+
+      previewFullscreenButton.hidden = !isMacBook;
+      previewFullscreenButton.setAttribute("aria-pressed", String(isFullscreen));
+      previewFullscreenButton.textContent = isFullscreen ? "Exit full screen" : "Full screen";
+    }
+
+    async function togglePreviewFullscreen() {
+      if (state.platform !== "macos") return;
+      if (document.fullscreenElement === appPreview) {
+        await document.exitFullscreen();
+        return;
+      }
+      await appPreview.requestFullscreen();
+    }
+
+    function stateValue(value, fallback = "None") {
+      if (Array.isArray(value)) return value.length ? value.join(", ") : fallback;
+      if (value === null || value === undefined || value === "") return fallback;
+      return String(value);
+    }
+
+    function renderState() {
+      const values = [
+        ["Surface", state.surface],
+        ["Device", platformNames[state.platform]],
+        ["Workspace", state.workspace.status],
+        ["Workspace key", state.workspace.key],
+        ["Permission", state.permission],
+        ["Shared websites", stateValue(state.policy.domains)],
+        ["Shared app policy", stateValue(state.policy.appPolicy)],
+        ["Mac app mapping", stateValue(state.policy.localMappings.macos)],
+        ["iPhone app mapping", stateValue(state.policy.localMappings.ios)],
+        ["Session", state.session.status],
+        ["Ends", stateValue(state.session.endsAt, "Not active")],
+        ["Sync", state.sync.status],
+        ["Pending work", state.sync.pendingWork ? "Yes" : "No"],
+        ["Last local sync", stateValue(state.sync.lastCompletedOnDevice, "Not yet")]
+      ];
+      stateList.innerHTML = values.map(([label, value]) => `
+        <div class="state-row">
+          <dt>${escapeHtml(label)}</dt>
+          <dd>${escapeHtml(value)}</dd>
+        </div>`).join("");
+      outcome.dataset.tone = state.lastOutcome.tone;
+      outcome.textContent = state.lastOutcome.message;
+    }
+
+    function currentScenario() {
+      return scenarios.find(scenario => scenario.id === activeScenarioId);
+    }
+
+    function renderTabs() {
+      scenarioTabs.innerHTML = scenarios.map(scenario => {
+        const selected = scenario.id === activeScenarioId;
+        return `<button
+          class="tab-button"
+          id="tab-${scenario.id}"
+          type="button"
+          role="tab"
+          aria-selected="${selected}"
+          aria-controls="scenario-panel"
+          tabindex="${selected ? "0" : "-1"}"
+          data-scenario="${scenario.id}"
+        >${escapeHtml(scenario.label)}</button>`;
+      }).join("");
+    }
+
+    function renderWalkthrough() {
+      const scenario = currentScenario();
+      walkthrough.innerHTML = `
+        <div id="scenario-panel" role="tabpanel" aria-labelledby="tab-${scenario.id}">
+          <div class="walkthrough-intro">
+            <div>
+              <h3>${escapeHtml(scenario.title)}</h3>
+              <p>${escapeHtml(scenario.description)}</p>
+            </div>
+            <button class="secondary-button" type="button" data-restart-scenario>Restart walkthrough</button>
+          </div>
+          <ol class="walkthrough-steps">
+            ${scenario.steps.map(([action, label, note], index) => {
+              const complete = index < guidedProgress;
+              const current = index === guidedProgress;
+              return `<li>
+                <button
+                  class="walkthrough-step"
+                  type="button"
+                  data-guided-step="${index}"
+                  data-action="${action}"
+                  data-complete="${complete}"
+                  ${index > guidedProgress ? "disabled" : ""}
+                >
+                  <span class="step-number">${complete ? "✓" : index + 1}</span>
+                  <span class="step-copy"><strong>${escapeHtml(label)}</strong><small>${escapeHtml(note)}</small></span>
+                  <span class="step-state">${complete ? "Done" : current ? "Next" : "Later"}</span>
+                </button>
+              </li>`;
+            }).join("")}
+          </ol>
+        </div>`;
+    }
+
+    function renderFreePlay() {
+      freePlay.innerHTML = freePlayGroups.map(group => `
+        <section class="action-group">
+          <h3>${escapeHtml(group.title)}</h3>
+          <div class="action-stack">
+            ${group.actions.map(action => `<button class="free-play-button" type="button" data-action="${action}">${escapeHtml(actionLabels[action])}</button>`).join("")}
+          </div>
+        </section>`).join("");
+    }
+
+    function render() {
+      renderApp();
+      renderPreviewControls();
+      renderState();
+      renderTabs();
+      renderWalkthrough();
+      renderFreePlay();
+    }
+
+    function focusConfigurationSurface() {
+      const selector = state.surface === "domain-editor"
+        ? "#domain-input"
+        : state.surface === "app-picker" ? "#app-preview input[type=checkbox]" : null;
+      if (!selector) return;
+      document.querySelector(selector)?.focus({ preventScroll: true });
+    }
+
+    function dispatch(action) {
+      state = reducer(state, action);
+      render();
+      focusConfigurationSurface();
+    }
+
+    function dispatchConfigurationAction(action, guidedEquivalents) {
+      const previousSurface = state.surface;
+      const nextState = reducer(state, action);
+      const completed = nextState.surface !== previousSurface;
+      state = nextState;
+
+      const expectedGuidedAction = currentScenario().steps[guidedProgress]?.[0];
+      if (completed && guidedEquivalents.includes(expectedGuidedAction)) {
+        guidedProgress += 1;
+      }
+
+      render();
+      focusConfigurationSurface();
+    }
+
+    function actionFromButton(actionButton) {
+      const type = actionButton.dataset.action;
+      if (type === Actions.OPEN_DOMAIN_EDITOR || type === Actions.REMOVE_DOMAIN) {
+        return { type, domain: actionButton.dataset.domain || null };
+      }
+      if (type === Actions.REMOVE_APP_MAPPING) {
+        return { type, app: actionButton.dataset.app || null };
+      }
+      return type;
+    }
+
+    function freePlayStateBefore(action) {
+      const platform = state.platform;
+      const through = (seed, actions) => actions.reduce(
+        (current, nextAction) => reducer(current, nextAction),
+        seed
+      );
+      const workspaceCheck = () => through(initialState(platform), [
+        Actions.SHOW_PRIVACY,
+        Actions.SYNC_WITH_ICLOUD
+      ]);
+      const permissionSetup = () => reducer(workspaceCheck(), Actions.DISCOVER_EMPTY_WORKSPACE);
+      const targetSetup = () => reducer(permissionSetup(), Actions.GRANT_PERMISSION);
+      const sessionSetup = () => reducer(readyState(platform), Actions.OPEN_SESSION_SETUP);
+      const sessionReview = () => through(sessionSetup(), [
+        Actions.SET_DURATION,
+        Actions.REVIEW_SESSION
+      ]);
+      const earlyEnd = () => reducer(activeState(platform), Actions.REQUEST_EARLY_END);
+      const pendingSync = () => markPending(
+        readyState(platform),
+        "Free play prepared pending local work."
+      );
+      const activeSync = () => reducer(pendingSync(), Actions.SYNC_NOW);
+
+      switch (action) {
+        case Actions.SHOW_PRIVACY:
+          return initialState(platform);
+        case Actions.SYNC_WITH_ICLOUD:
+          return reducer(initialState(platform), Actions.SHOW_PRIVACY);
+        case Actions.DISCOVER_EMPTY_WORKSPACE:
+        case Actions.DISCOVER_KEY_DELAYED:
+          return workspaceCheck();
+        case Actions.KEY_ARRIVED:
+          return reducer(workspaceCheck(), Actions.DISCOVER_KEY_DELAYED);
+        case Actions.GRANT_PERMISSION:
+          return permissionSetup();
+        case Actions.ADD_DOMAIN:
+        case Actions.MAP_APP:
+          return targetSetup();
+        case Actions.FINISH_ONBOARDING:
+          return through(targetSetup(), [Actions.ADD_DOMAIN, Actions.MAP_APP]);
+        case Actions.OPEN_ITEMS_MANAGER:
+          return readyState(platform);
+        case Actions.OPEN_DOMAIN_EDITOR:
+        case Actions.OPEN_APP_PICKER:
+          return reducer(readyState(platform), Actions.OPEN_ITEMS_MANAGER);
+        case Actions.OPEN_SESSION_SETUP:
+          return readyState(platform);
+        case Actions.SET_DURATION:
+        case Actions.REVIEW_SESSION:
+          return sessionSetup();
+        case Actions.START_SESSION:
+          return sessionReview();
+        case Actions.OPEN_BLOCKED_PRESENTATION:
+          return activeState(platform);
+        case Actions.OPEN_POSATO:
+          return reducer(activeState(platform), Actions.OPEN_BLOCKED_PRESENTATION);
+        case Actions.REQUEST_EARLY_END:
+        case Actions.EXPIRE_SESSION:
+          return activeState(platform);
+        case Actions.CANCEL_EARLY_END:
+        case Actions.CONFIRM_EARLY_END:
+          return earlyEnd();
+        case Actions.SYNC_NOW:
+          return pendingSync();
+        case Actions.SYNC_FAILURE:
+        case Actions.SYNC_SUCCESS:
+          return activeSync();
+        case Actions.RETRY_SYNC:
+          return reducer(activeSync(), Actions.SYNC_FAILURE);
+        case Actions.REVOKE_PERMISSION:
+        case Actions.REMOVE_MAPPING:
+          return readyState(platform);
+        case Actions.REPAIR_PERMISSION:
+          return reducer(readyState(platform), Actions.REVOKE_PERMISSION);
+        case Actions.REMAP_APP:
+          return reducer(readyState(platform), Actions.REMOVE_MAPPING);
+        case Actions.SWITCH_TO_MAC:
+          return readyState("ios");
+        case Actions.SWITCH_TO_IPHONE:
+          return readyState("macos");
+        default:
+          return state;
+      }
+    }
+
+    function runFreePlayAction(action) {
+      const directResult = reducer(state, action);
+      if (directResult.lastOutcome.tone !== "blocked") {
+        state = directResult;
+      } else {
+        const preparedResult = reducer(freePlayStateBefore(action), action);
+        state = withOutcome(
+          preparedResult,
+          `Free play prepared the required context. ${preparedResult.lastOutcome.message}`,
+          preparedResult.lastOutcome.tone
+        );
+      }
+
+      render();
+      focusConfigurationSurface();
+      productSurface.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        block: "start"
+      });
+    }
+
+    function selectScenario(id) {
+      const scenario = scenarios.find(candidate => candidate.id === id);
+      if (!scenario) return;
+      activeScenarioId = scenario.id;
+      guidedProgress = 0;
+      state = cloneState(scenario.start());
+      render();
+    }
+
+    function runGuidedStep(index, action) {
+      if (index !== guidedProgress) return;
+      state = reducer(state, action);
+      guidedProgress += 1;
+      render();
+    }
+
+    document.addEventListener("submit", event => {
+      const domainForm = event.target.closest("[data-domain-form]");
+      if (domainForm) {
+        event.preventDefault();
+        dispatchConfigurationAction({
+          type: Actions.SAVE_DOMAIN,
+          value: new FormData(domainForm).get("domain")
+        }, [Actions.ADD_DOMAIN]);
+        return;
+      }
+
+      const appPickerForm = event.target.closest("[data-app-picker-form]");
+      if (appPickerForm) {
+        event.preventDefault();
+        dispatchConfigurationAction({
+          type: Actions.SAVE_APP_MAPPING,
+          appIds: new FormData(appPickerForm).getAll("app")
+        }, [Actions.MAP_APP, Actions.REMAP_APP]);
+      }
+    });
+
+    document.addEventListener("click", async event => {
+      const previewPlatformButton = event.target.closest("[data-preview-platform]");
+      if (previewPlatformButton) {
+        const nextPlatform = previewPlatformButton.dataset.previewPlatform;
+        if (nextPlatform === state.platform) return;
+        if (nextPlatform === "ios" && document.fullscreenElement === appPreview) {
+          await document.exitFullscreen();
+        }
+        dispatch(nextPlatform === "macos" ? Actions.SWITCH_TO_MAC : Actions.SWITCH_TO_IPHONE);
+        return;
+      }
+
+      if (event.target.closest("#preview-fullscreen")) {
+        await togglePreviewFullscreen();
+        return;
+      }
+
+      const scenarioButton = event.target.closest("[data-scenario]");
+      if (scenarioButton) {
+        selectScenario(scenarioButton.dataset.scenario);
+        return;
+      }
+
+      if (event.target.closest("[data-restart-scenario]")) {
+        selectScenario(activeScenarioId);
+        return;
+      }
+
+      const actionButton = event.target.closest("[data-action]");
+      if (!actionButton) return;
+
+      if (actionButton.hasAttribute("data-guided-step")) {
+        runGuidedStep(Number(actionButton.dataset.guidedStep), actionButton.dataset.action);
+        return;
+      }
+
+      if (actionButton.closest("#free-play")) {
+        runFreePlayAction(actionButton.dataset.action);
+        return;
+      }
+
+      const expectedGuidedAction = currentScenario().steps[guidedProgress]?.[0];
+      if (actionButton.closest("#app-preview") && actionButton.dataset.action === expectedGuidedAction) {
+        runGuidedStep(guidedProgress, actionButton.dataset.action);
+        return;
+      }
+
+      dispatch(actionFromButton(actionButton));
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      renderPreviewControls();
+    });
+
+    scenarioTabs.addEventListener("keydown", event => {
+      if (!["ArrowLeft", "ArrowRight"].includes(event.key)) return;
+      const index = scenarios.findIndex(scenario => scenario.id === activeScenarioId);
+      const direction = event.key === "ArrowRight" ? 1 : -1;
+      const nextIndex = (index + direction + scenarios.length) % scenarios.length;
+      selectScenario(scenarios[nextIndex].id);
+      document.querySelector(`#tab-${scenarios[nextIndex].id}`).focus();
+    });
+
+    render();
+  </script>
+</body>
+</html>
