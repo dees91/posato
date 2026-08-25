@@ -320,3 +320,25 @@
   browser accessibility checks.
 - Kept synthetic application names, exact domain rules, and native picker
   behavior outside the accepted production contract; `DESIGN.md` is unchanged.
+
+## [2026-08-25] proposal | Prepare the Gate 6 MVP roadmap
+
+- Recorded the disposable interaction prototype as pinned UX evidence without
+  promoting its workbench, fixtures, geometry, or web implementation into the
+  accepted product or design contract.
+- Prepared a draft 36-item Apple MVP roadmap with explicit epics, dependencies,
+  serialized decision gates, concurrency-candidate waves, conflict classes,
+  PR groups, physical evidence, and a separate release-readiness track.
+- Added one outcome-only draft specification per work item with acceptance
+  criteria, evidence categories, review applicability, and decision gates.
+- Kept Gate 6 incomplete and production implementation blocked pending
+  maintainer acceptance of the roadmap and linked specifications.
+
+## [2026-08-25] decision | Accept the Gate 6 MVP roadmap
+
+- Recorded the maintainer's acceptance of roadmap revision 1 and all 36 linked
+  outcome-only task specifications.
+- Completed Gate 6 and made `APPLE-001` the first incomplete Gate 7 task.
+- Preserved task-local plan, independent review, dependency, evidence, and
+  readiness-checkpoint requirements; acceptance does not authorize production
+  scaffolding.

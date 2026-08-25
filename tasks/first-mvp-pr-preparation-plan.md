@@ -7,7 +7,8 @@
   application code
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** decompose the MVP into outcome-oriented tasks and pull requests
+- **Next work:** complete Gate 7 Apple resource registration and preflight
+- **Accepted Gate 6 authority:** [mvp-roadmap.md](mvp-roadmap.md)
 
 ## Objective
 
@@ -59,9 +60,11 @@ baseline, and [MVP architecture baseline][architecture-baseline] are accepted.
 The maintainer controls `posato.app`, `app.posato` is the stable technical root,
 and [DESIGN.md](../DESIGN.md) is the design authority. The
 [engineering quality contract](../docs/development/engineering-quality-contract.md)
-and [task workflow](README.md) are accepted. Gate 6 decomposition is now the
+and [task workflow](README.md) are accepted. The
+[Gate 6 MVP roadmap](mvp-roadmap.md) and its linked revision 1 task
+specifications are accepted. Gate 7 Apple resource registration is now the
 first incomplete gate. Architecture details deferred by ADR 0003 remain with
-the smallest named vertical pull request that requires them.
+the smallest named task that requires them.
 
 [architecture-baseline]: ../docs/decisions/0003-mvp-application-architecture-baseline.md
 

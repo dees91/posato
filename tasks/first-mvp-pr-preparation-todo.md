@@ -125,24 +125,28 @@ request must satisfy from the first line of code.
 small outcome-oriented tasks, and coherent pull requests without prescribing
 implementation details in task specifications.
 
+**Accepted authority:** [MVP roadmap](mvp-roadmap.md), with linked accepted
+revision 1 task specifications (`user-confirmed`, 2026-08-25).
+
 **Acceptance criteria:**
 
-- [ ] Each pull request delivers one coherent, reviewable increment and has
+- [x] Each pull request delivers one coherent, reviewable increment and has
   acceptance and verification criteria.
-- [ ] Each task has an accepted outcome-only specification, explicit
-  dependencies, acceptance criteria, required evidence categories, and a
-  separate execution record for technical planning and review evidence.
-- [ ] Foundation work is limited to what a named vertical slice needs; there
+- [x] Each task has an accepted outcome-only specification, explicit
+  dependencies, acceptance criteria, and required evidence categories, and is
+  routed to a separate execution record created only after that task is
+  accepted and authorized.
+- [x] Foundation work is limited to what a named vertical slice needs; there
   is no broad "implement MVP" pull request.
-- [ ] PR #1 is fixed to the production skeleton contract in
+- [x] PR #1 is fixed to the production skeleton contract in
   `tasks/first-mvp-pr-preparation-plan.md`.
 
 **Verification:**
 
-- [ ] The roadmap names the critical path, dependencies, phases, waves,
+- [x] The roadmap names the critical path, dependencies, phases, waves,
   parallel lanes, write-surface conflicts, PR boundaries, required manual
   gates, and physical-device checks.
-- [ ] The roadmap follows `tasks/README.md`, including independent plan and
+- [x] The roadmap follows `tasks/README.md`, including independent plan and
   implementation review, correction loops, final evidence, and the CI task
   deadline.
 
@@ -176,7 +180,7 @@ stage before autonomous PR #1 implementation.
 ## Checkpoint: Ready to open PR #1
 
 - [ ] Gates 1 through 7 are complete.
-- [ ] The maintainer explicitly accepts the scope, identity, design,
+- [x] The maintainer explicitly accepts the scope, identity, design,
   architecture, quality contract, and PR roadmap.
 - [ ] The exact PR #1 acceptance criteria and verification commands are copied
   into its branch plan or pull-request description.

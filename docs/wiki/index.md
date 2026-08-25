@@ -18,6 +18,9 @@ provenance rather than a parallel public brand.
 - [sources/compose-multiplatform-wizard.md](sources/compose-multiplatform-wizard.md)
   — reviewed generator topology, versions, import risks, and accepted Posato
   configuration for the production skeleton.
+- [sources/mvp-interaction-prototype.md](sources/mvp-interaction-prototype.md)
+  — pinned provenance, observed flows, and evidence limits for the disposable
+  interactive MVP UX prototype.
 - [../../tasks/first-mvp-pr-preparation-plan.md](../../tasks/first-mvp-pr-preparation-plan.md)
   — accepted preparation route to the first MVP code pull request.
 - [../../tasks/first-mvp-pr-preparation-todo.md](../../tasks/first-mvp-pr-preparation-todo.md)
@@ -28,6 +31,8 @@ provenance rather than a parallel public brand.
 - [../../tasks/README.md](../../tasks/README.md) — accepted repository-local
   task specification, execution record, review loop, dependency, wave, and
   parallel-work process.
+- [../../tasks/mvp-roadmap.md](../../tasks/mvp-roadmap.md) — accepted Gate 6
+  MVP epic, task, dependency, wave, evidence, and pull-request authority.
 - [../../DESIGN.md](../../DESIGN.md) — accepted, tool-neutral Posato brand and
   product design system for the Apple MVP.
 

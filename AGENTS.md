@@ -3,8 +3,9 @@
 ## Scope and language
 
 These instructions apply to the entire repository. This repository is the
-product home for the working-name Blocker MVP. Completed feasibility work
-lives in a separate reference repository and is not production code.
+product home for the Posato Apple MVP. **Blocker** identifies the former
+working name and preserved feasibility provenance only. Completed feasibility
+work lives in a separate reference repository and is not production code.
 
 Write all agent-authored repository content in English, including source,
 tests, plans, documentation, wiki pages, identifiers, comments, and commit
