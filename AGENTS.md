@@ -20,6 +20,11 @@ experiment work:
 2. Read [`docs/wiki/index.md`](docs/wiki/index.md).
 3. Open the relevant topic and source pages before drawing a conclusion.
 
+Before brand, product-design, UI, or application-shell work, also read
+[`DESIGN.md`](DESIGN.md). It is the accepted design authority; the related wiki
+pages retain synthesis, evidence, flow diagrams, and proposal history rather
+than a competing design contract.
+
 After work produces a durable conclusion, correction, decision candidate,
 experiment result, or open question, update the relevant page under
 `docs/wiki/topics/` or `docs/wiki/sources/`, update `docs/wiki/index.md` when

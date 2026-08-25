@@ -7,6 +7,10 @@
 - **Provenance:** `user-confirmed`
 - **Decision authority:** [DESIGN.md](../../../DESIGN.md)
 
+Agents must use `DESIGN.md` as the canonical contract for future brand,
+product-design, UI, and application-shell work. This page retains the synthesis,
+evidence, low-fidelity flows, and proposal history that support that contract.
+
 This baseline defines only enough brand and product design to keep the first
 application shell and near-term MVP flows coherent. It does not finalize a
 logo, custom typeface, illustration system, marketing site, launch campaign,

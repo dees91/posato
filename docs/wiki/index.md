@@ -13,8 +13,8 @@ provenance rather than a parallel public brand.
   provenance and scope of the initial synchronization PoC and enforcement
   spike knowledge seed.
 - [sources/apple-design-guidance.md](sources/apple-design-guidance.md) —
-  current authoritative Apple guidance used by the Gate 3 brand and product
-  design candidate.
+  current authoritative Apple guidance used by the accepted Gate 3 brand and
+  product design baseline.
 - [../../tasks/first-mvp-pr-preparation-plan.md](../../tasks/first-mvp-pr-preparation-plan.md)
   — accepted preparation route to the first MVP code pull request.
 - [../../tasks/first-mvp-pr-preparation-todo.md](../../tasks/first-mvp-pr-preparation-todo.md)

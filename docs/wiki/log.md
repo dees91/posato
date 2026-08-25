@@ -221,3 +221,12 @@
   from one brand-board rendering.
 - Added product and wiki routing, marked Gate 3 complete, and advanced the
   active handoff to the MVP architecture baseline.
+
+## [2026-08-25] correction | Make design authority routing explicit
+
+- Added a direct `AGENTS.md` requirement to read the root `DESIGN.md` before
+  brand, product-design, UI, or application-shell work.
+- Clarified that the related wiki topic retains synthesis and provenance rather
+  than competing with the accepted design contract.
+- Replaced the stale Gate 3 `candidate` label in the wiki index with the
+  accepted-baseline status.
