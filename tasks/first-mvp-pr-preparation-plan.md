@@ -7,7 +7,7 @@
   application code
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** accept the engineering quality contract
+- **Next work:** decompose the MVP into outcome-oriented tasks and pull requests
 
 ## Objective
 
@@ -57,10 +57,11 @@ Product identity ─┴───────────────────
 The MVP scope, **Posato** product identity, minimum brand and product design
 baseline, and [MVP architecture baseline][architecture-baseline] are accepted.
 The maintainer controls `posato.app`, `app.posato` is the stable technical root,
-and [DESIGN.md](../DESIGN.md) is the design authority. The engineering quality
-contract is now the first incomplete gate. Architecture details deferred by
-ADR 0003 remain with the smallest named vertical pull request that requires
-them.
+and [DESIGN.md](../DESIGN.md) is the design authority. The
+[engineering quality contract](../docs/development/engineering-quality-contract.md)
+and [task workflow](README.md) are accepted. Gate 6 decomposition is now the
+first incomplete gate. Architecture details deferred by ADR 0003 remain with
+the smallest named vertical pull request that requires them.
 
 [architecture-baseline]: ../docs/decisions/0003-mvp-application-architecture-baseline.md
 
@@ -102,12 +103,17 @@ later as independently reviewable vertical slices.
   Swift, helper, extension, and transport choices in the first production slice
   that needs them.
 - Require review before every merge, including generated project scaffolding.
+- Follow the independent plan-review, implementation-review, correction, and
+  final-evidence protocol in `tasks/README.md` for every non-trivial task.
 - Reuse PoC code only after provenance, licensing, architecture, security, and
   test review.
 - Keep Apple credentials, signing identities, profiles, and account-specific
   values out of Git.
 - Keep each implementation pull request independently buildable and
   reviewable; there is no single "implement MVP" pull request.
+- Treat CI as a separate Gate 6 implementation task. Gate 5 does not configure
+  it, but it must complete before PR #1 merges or the first parallel
+  implementation wave begins, whichever happens first.
 
 ## Deliberately deferred
 

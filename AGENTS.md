@@ -36,6 +36,36 @@ inference or PoC choice into an ADR, product requirement, plan, or
 source file without explicit user acceptance. Durable accepted decisions live
 under `docs/decisions/`, `docs/product/`, or `docs/security/` as appropriate.
 
+## Mandatory work execution
+
+Before non-trivial implementation, build, configuration, or documentation
+work, read:
+
+1. [`docs/development/engineering-quality-contract.md`](docs/development/engineering-quality-contract.md);
+2. [`tasks/README.md`](tasks/README.md); and
+3. the accepted task specification and its linked authorities.
+
+Drafting a new task specification or Gate 6 roadmap under an explicitly
+authorized parent gate is planning, so it does not require another task
+specification. It may not start the described implementation or promote a new
+durable decision. Once the draft itself changes durable repository governance,
+give that governance change its own accepted specification and execution
+record before declaring it complete.
+
+Repository Markdown is the durable task source of truth. Keep outcome, scope,
+dependencies, non-goals, and acceptance criteria in the task specification.
+Keep exact implementation details, plan review, implementation review,
+corrections, and final evidence in the separate execution record. Do not add
+implementation details to an accepted task specification during execution.
+
+Non-trivial work requires an implementation plan approved by a different agent
+before implementation and a completed-change review by a different agent after
+implementation. Resolve all Critical and Required findings, rerun affected
+verification after the last correction, and record task-specific acceptance
+and Definition of Done evidence before marking work done. Parallel implementing
+agents require isolated Git worktrees and the dependency and write-surface
+conditions in `tasks/README.md`.
+
 ## Feasibility research reference
 
 Maintainer checkouts may provide the ignored path `.research/blocker`, pointing
@@ -105,3 +135,8 @@ with gate state in
 Continue the first incomplete gate unless the user explicitly changes the
 milestone. Do not scaffold application code until the "Ready to open PR #1"
 checkpoint is complete and explicitly accepted.
+
+Use the `android-compose-engineering` skill when it is available for
+agent-authored Kotlin or Compose Multiplatform implementation. The repository's
+accepted architecture, design, quality, and task contracts remain authoritative
+when the skill is absent or conflicts with repository-specific decisions.

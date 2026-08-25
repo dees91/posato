@@ -7,6 +7,20 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## Gate 5 amendment
+
+`user-confirmed` (2026-08-25): the accepted
+[engineering quality contract](../development/engineering-quality-contract.md)
+defines required quality and CI outcomes while leaving exact versions,
+commands, Gradle wiring, CI jobs, and runner images to reviewed PR #1 task
+plans. Gate 5 does not configure CI. CI remains part of the PR #1 outcome as a
+separate implementation task and must complete before PR #1 merges or the
+first parallel implementation wave begins, whichever happens first.
+
+This amendment supersedes the original wording that implied Gate 5 would
+select exact commands and CI jobs or that a CI image had to be selected before
+reviewed generator files could enter the working branch.
+
 ## Context
 
 The accepted MVP scope, Posato identity, and design baseline are sufficient to
@@ -174,7 +188,9 @@ decisions for the first slice that needs them.
 - The Apple-only graph has no Android Gradle Plugin.
 - PR #1 uses JDK 21 and emits JVM 17 bytecode.
 - PR #1 must select, compatibility-check, and pin one stable Kotlin, Compose,
-  Gradle, Metro, Xcode, and CI-image set before generated files are accepted.
+  Gradle, Metro, and Xcode set before generated files are accepted. The
+  separate CI task selects a compatible runner image before its accepted
+  deadline.
 
 At the reviewed wizard revision, the generation candidates were Kotlin 2.4.10,
 Compose Multiplatform 1.12.0, Gradle 9.7.1, and Metro 1.4.2. These are observed
@@ -273,9 +289,10 @@ PR #1 must prove, at minimum:
 - the imported file set is traceable to the reviewed wizard revision and its
   recorded sanitation diff.
 
-The exact automated commands and CI jobs are accepted in Gate 5. Production
-code remains blocked until all seven preparation gates and the ready checkpoint
-are complete.
+Gate 5 accepts the automated-check outcomes, review protocol, and CI deadline.
+Exact commands and CI jobs are selected in their reviewed PR #1 task plans.
+Production code remains blocked until all seven preparation gates and the
+ready checkpoint are complete.
 
 ## Open implementation decisions
 

@@ -52,6 +52,8 @@ These are direction constraints, not a complete architecture.
 - [Accepted MVP scope](docs/product/mvp-scope.md)
 - [Accepted product identity](docs/product/product-identity.md)
 - [Accepted design system](DESIGN.md)
+- [Engineering quality contract](docs/development/engineering-quality-contract.md)
+- [Task workflow](tasks/README.md)
 - [Feasibility results and limits](docs/wiki/topics/feasibility-results-and-limits.md)
 - [MVP open questions](docs/wiki/topics/mvp-open-questions.md)
 - [First MVP PR preparation plan](tasks/first-mvp-pr-preparation-plan.md)
@@ -64,10 +66,12 @@ application code. Seven gates precede implementation: MVP scope, product
 identity, minimal product and design baseline, architecture baseline, quality
 contract, PR decomposition, and one manual Apple resource setup task.
 
-The MVP scope, product identity, minimum brand and product design baseline, and
-[MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md)
-are accepted. The immediate next work is to accept the engineering quality
-contract in Gate 5.
+The MVP scope, product identity, minimum brand and product design baseline,
+[MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md),
+and [engineering quality contract](docs/development/engineering-quality-contract.md)
+are accepted. The immediate next work is Gate 6: decompose the MVP into small,
+outcome-oriented tasks and pull requests with explicit phases, waves,
+dependencies, and review gates.
 The accepted route and verification criteria live in the
 [preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
 [checklist](tasks/first-mvp-pr-preparation-todo.md).
@@ -76,3 +80,7 @@ PR #1 will add fresh KMP application modules, accepted identifiers, one minimal
 shared Compose screen running on macOS and iOS, small semantic platform
 contracts with fakes, baseline tests, and CI. It will not implement blocking or
 synchronization and will not adopt the PoC module graph as its starting point.
+
+Gate 5 does not configure CI. The Gate 6 roadmap must include it as a separate
+task due before PR #1 merges or the first parallel implementation wave begins,
+whichever happens first.

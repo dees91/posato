@@ -1,7 +1,10 @@
 # Development Baseline
 
-This directory will contain the accepted toolchain, module map, code-quality
-rules, test strategy, CI contract, local setup, and Definition of Done.
+The accepted [engineering quality contract](engineering-quality-contract.md)
+is the standing authority for code quality, tests, review, dependencies,
+security and privacy applicability, local verification, CI timing, and the
+Definition of Done. Task planning and evidence follow the
+[repository task workflow](../../tasks/README.md).
 
 PoC tool versions and module boundaries are evidence, not automatic MVP
 requirements. No production build has been scaffolded yet.
@@ -9,8 +12,8 @@ requirements. No production build has been scaffolded yet.
 The accepted module, target, Metro, native-helper, extension, deployment, and
 generator-import boundaries are in
 [ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md). Gate 5
-is the first incomplete preparation gate and will establish the engineering
-quality contract used to verify PR #1.
+is accepted. Gate 6, the outcome-oriented decomposition into epics, phases,
+waves, tasks, and pull requests, is the first incomplete preparation gate.
 
 ## First production pull request
 
@@ -21,6 +24,11 @@ quality contract used to verify PR #1.
 - one minimal shared Compose screen running in the macOS and iOS applications;
 - small semantic platform contracts with test fakes;
 - baseline tests, formatting, static checks, and CI for the introduced targets.
+
+Gate 5 defines the required CI outcome but does not configure a pipeline. CI
+is a separate Gate 6 task and must complete before PR #1 merges or the first
+parallel implementation wave begins, whichever happens first. Until then,
+fresh local evidence is mandatory for every applicable check.
 
 PR #1 does not implement website blocking, application blocking,
 synchronization, enrollment, recovery, or production helpers. Implementation

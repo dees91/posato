@@ -147,8 +147,9 @@ Apple MVP consumer.
   1.12.0, Gradle 9.7.1, and Metro 1.4.2; these are not production pins.
 - PR #1 uses JDK 21 and JVM bytecode target 17.
 - no Android Gradle Plugin in the Apple-only graph.
-- the exact stable Xcode version and CI image are selected in PR #1 after a
-  clean compatibility check against the pinned Kotlin and Compose versions.
+- the exact stable Xcode version is selected in the skeleton task after a clean
+  compatibility check against the pinned Kotlin and Compose versions; the
+  compatible CI image is selected in the separate PR #1 CI task.
 
 The wizard is a one-time source generator, not an update mechanism. PR #1
 records the reviewed wizard revision or archive hash and then owns every
@@ -268,9 +269,25 @@ not an application skeleton.
   synchronization pull request;
 - portable membership, folder-integrity, high-water-mark, and migration
   contracts in the portable-synchronization pull requests;
-- CI details in Gate 5; and
+- exact CI jobs and runner details in the Gate 6 CI implementation task under
+  the accepted Gate 5 deadline; and
 - signing, notarization, TestFlight, App Store, and release-readiness details
   in the corresponding distribution and release reviews.
 
 Each decision should be made at the smallest point where downstream code needs
 it and then recorded as an ADR before parallel consumers depend on it.
+
+## Accepted engineering execution boundary
+
+`user-confirmed` (2026-08-25): the
+[engineering quality contract](../../development/engineering-quality-contract.md)
+defines ktlint formatting, Detekt analysis, Compose Rules through Detekt,
+warning-free owned source, applicable test layers, independent plan and code
+review, task-local evidence, and the standing Definition of Done. The
+[task workflow](../../../tasks/README.md) keeps outcome-only task
+specifications separate from technical plans and execution evidence.
+
+Gate 5 records the CI outcome but does not configure a pipeline. The Gate 6
+roadmap must include CI as a separate implementation task completed before PR
+#1 merges or the first parallel implementation wave starts, whichever occurs
+first.

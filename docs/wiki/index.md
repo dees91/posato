@@ -22,6 +22,12 @@ provenance rather than a parallel public brand.
   — accepted preparation route to the first MVP code pull request.
 - [../../tasks/first-mvp-pr-preparation-todo.md](../../tasks/first-mvp-pr-preparation-todo.md)
   — active state and acceptance criteria for its seven preparation gates.
+- [../development/engineering-quality-contract.md](../development/engineering-quality-contract.md)
+  — accepted formatting, static-analysis, testing, review, CI, and Definition
+  of Done authority.
+- [../../tasks/README.md](../../tasks/README.md) — accepted repository-local
+  task specification, execution record, review loop, dependency, wave, and
+  parallel-work process.
 - [../../DESIGN.md](../../DESIGN.md) — accepted, tool-neutral Posato brand and
   product design system for the Apple MVP.
 

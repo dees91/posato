@@ -13,15 +13,17 @@ Apple resource setup.
 
 The active [preparation plan](../../../tasks/first-mvp-pr-preparation-plan.md)
 and [checklist](../../../tasks/first-mvp-pr-preparation-todo.md) are the
-execution authority for this milestone. Gates 1 through 4 are complete in the
+execution authority for this milestone. Gates 1 through 5 are complete in the
 accepted [MVP scope](../../product/mvp-scope.md) and
 [product identity](../../product/product-identity.md), with the accepted brand
 and product design authority in [DESIGN.md](../../../DESIGN.md) and the
 accepted architecture in
 [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md).
-The immediate next work is the engineering quality baseline. The sections
-below retain the decisions each remaining gate must resolve and the questions
-that may remain incremental.
+The engineering quality baseline is also accepted in the
+[quality contract](../../development/engineering-quality-contract.md) and
+[task workflow](../../../tasks/README.md). Gate 6 decomposition is the
+immediate next work. The sections below retain the decisions each remaining
+gate must resolve and the questions that may remain incremental.
 
 `user-confirmed` (2026-08-25): the maintainer accepted the complete
 [Gate 3 baseline](brand-and-design-baseline.md), including the brand
@@ -269,13 +271,32 @@ ADR. A separate broad architecture spike is not required.
 
 ## Engineering quality baseline
 
-- Code style and formatter.
-- Static analysis and compiler-warning policy.
-- Unit, integration, UI, native-boundary, and physical-device test layers.
-- Pull-request size, review checklist, and merge requirements.
-- Continuous-integration targets and credential boundary.
-- Documentation and architecture-decision rules.
-- Versioning, changelog, and release-readiness conventions.
+`user-confirmed` (2026-08-25): Gate 5 is complete. The accepted
+[engineering quality contract](../../development/engineering-quality-contract.md)
+and [repository task workflow](../../../tasks/README.md) establish:
+
+- ktlint as the formatting and mechanical-style authority;
+- Detekt as the static-analysis authority, with
+  `io.nlopez.compose.rules` loaded through Detekt rather than duplicated in
+  ktlint;
+- warning-free repository-owned source, no new-code lint baselines, and narrow
+  documented exceptions for unavoidable external or generated warnings;
+- applicable unit, contract, integration, Compose UI, platform, simulator,
+  physical-device, and manual verification layers, each evidenced or marked
+  `N/A` with a reason;
+- outcome-only task specifications plus separate execution records containing
+  exact plans, independent plan review, implementation review, corrections,
+  and final evidence;
+- a project-wide Definition of Done with task-local evidence for every item;
+- small task and pull-request boundaries, explicit dependency waves, isolated
+  worktrees, and at most three concurrent implementation tasks initially; and
+- proportional dependency, license, security, privacy, provenance, and PoC
+  reuse review without claiming release readiness.
+
+Gate 5 defines the CI outcome and credential boundary but does not configure a
+pipeline. CI is a separate Gate 6 task due before PR #1 merges or the first
+parallel implementation wave starts, whichever occurs first. Until then,
+fresh local verification evidence is mandatory.
 
 ## Apple identity and distribution
 
@@ -365,6 +386,8 @@ are known. Everything not required by PR #1 or its immediate dependants should
 be decided as late as the corresponding small vertical slice requires it.
 
 `user-confirmed`: PR #1 creates fresh production modules, uses accepted target
-identifiers, runs one minimal shared Compose screen on macOS and iOS, introduces
-small semantic platform contracts with fakes, and establishes baseline tests
-and CI. It implements neither blocking nor synchronization.
+identifiers, runs one minimal shared Compose screen on macOS and iOS,
+introduces small semantic platform contracts with fakes, and establishes
+baseline tests and CI. Gate 5 does not configure CI; Gate 6 must represent it
+as a separate task completed before PR #1 merges or parallel implementation
+begins. PR #1 implements neither blocking nor synchronization.

@@ -102,30 +102,36 @@ request must satisfy from the first line of code.
 
 **Acceptance criteria:**
 
-- [ ] Definition of Done, mandatory pre-merge review, pull-request sizing, and
+- [x] Definition of Done, mandatory pre-merge review, pull-request sizing, and
   required test layers are accepted.
-- [ ] Formatting, linting, static analysis, compiler-warning policy, and CI for
-  JVM, iOS, and macOS are defined for the targets introduced by each PR.
-- [ ] Dependency, license, security, privacy, and PoC-reuse review rules are
+- [x] Formatting, linting, static analysis, compiler-warning policy, local
+  verification, and the deferred CI contract for JVM, iOS, and macOS are
+  defined for the targets introduced by each PR.
+- [x] Dependency, license, security, privacy, and PoC-reuse review rules are
   accepted.
 
 **Verification:**
 
-- [ ] The quality contract is recorded under `docs/development/`.
-- [ ] PR #1 has concrete automated checks and a review checklist rather than a
-  promise to add quality controls later.
+- [x] The quality contract is recorded under `docs/development/`.
+- [x] The required PR #1 checks, review protocol, evidence rules, and CI
+  deadline are concrete while exact commands and jobs remain reviewed
+  implementation-plan details.
 
 **Dependencies:** Gate 4 for the initial target and build matrix.
 
 ## Gate 6: Decompose the MVP into pull requests
 
-**Description:** Turn the accepted scope into a sequence of small vertical
-changes with explicit dependencies and acceptance criteria.
+**Description:** Turn the accepted scope into epics, phases, parallel waves,
+small outcome-oriented tasks, and coherent pull requests without prescribing
+implementation details in task specifications.
 
 **Acceptance criteria:**
 
 - [ ] Each pull request delivers one coherent, reviewable increment and has
   acceptance and verification criteria.
+- [ ] Each task has an accepted outcome-only specification, explicit
+  dependencies, acceptance criteria, required evidence categories, and a
+  separate execution record for technical planning and review evidence.
 - [ ] Foundation work is limited to what a named vertical slice needs; there
   is no broad "implement MVP" pull request.
 - [ ] PR #1 is fixed to the production skeleton contract in
@@ -133,9 +139,12 @@ changes with explicit dependencies and acceptance criteria.
 
 **Verification:**
 
-- [ ] The ordered PR roadmap names dependencies, required manual gates, and
-  physical-device checks.
-- [ ] The roadmap has an explicit review checkpoint before implementation.
+- [ ] The roadmap names the critical path, dependencies, phases, waves,
+  parallel lanes, write-surface conflicts, PR boundaries, required manual
+  gates, and physical-device checks.
+- [ ] The roadmap follows `tasks/README.md`, including independent plan and
+  implementation review, correction loops, final evidence, and the CI task
+  deadline.
 
 **Dependencies:** Gates 1 through 5.
 

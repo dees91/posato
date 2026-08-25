@@ -260,3 +260,28 @@
   repository authority.
 - Promoted the decision to ADR 0003, completed Gate 4, and advanced the active
   preparation handoff to the Gate 5 engineering quality contract.
+
+## [2026-08-25] decision | Accept the engineering quality and task workflow
+
+- Accepted ktlint for formatting, Detekt for static analysis, Compose Rules
+  through Detekt, warning-free owned source, and a reproducible aggregate local
+  quality gate whose exact implementation is selected in PR #1 task planning.
+- Accepted applicable test layers, independent plan and implementation review,
+  bounded correction loops, task-local acceptance and Definition of Done
+  evidence, and proportional dependency, security, privacy, and PoC-reuse
+  review.
+- Made repository Markdown the durable task source of truth, with outcome-only
+  task specifications separated from technical plans and execution records.
+- Added reusable specification and execution templates plus the accepted
+  bootstrap governance task and its actual review record.
+- Recorded the maintainer-accepted one-time GOVERNANCE-001 transition
+  exception: its
+  initial documentation drafts preceded corrected-plan approval, the chronology
+  remains explicit, and no later task inherits the exception.
+- Accepted epics, phases, dependency waves, worktree-isolated parallel work,
+  and an initial limit of three concurrent implementation tasks.
+- Deferred CI configuration from Gate 5 into a separate Gate 6 task while
+  retaining it as a PR #1 outcome due before PR #1 merges or the first parallel
+  implementation wave begins, whichever happens first.
+- Completed Gate 5 and advanced the active preparation handoff to Gate 6 MVP
+  decomposition.
