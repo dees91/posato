@@ -78,19 +78,19 @@ first vertical slices and prevent accidental inheritance from the PoC.
 
 **Acceptance criteria:**
 
-- [ ] KMP modules, target applications, and `commonMain`, `iosMain`, and
+- [x] KMP modules, target applications, and `commonMain`, `iosMain`, and
   desktop/JVM source-set ownership are defined.
-- [ ] The rule for `expect`/`actual` versus injected interfaces, the macOS
+- [x] The rule for `expect`/`actual` versus injected interfaces, the macOS
   helper and IPC boundary, and required iOS application or extension targets
   are defined at the minimum useful level.
-- [ ] Production enforcement and synchronization mechanisms, minimum OS
+- [x] Production enforcement and synchronization mechanisms, minimum OS
   versions, and pinned toolchain policy are either selected or explicitly
   deferred to a named vertical pull request.
 
 **Verification:**
 
-- [ ] Accepted architecture decisions are recorded under `docs/decisions/`.
-- [ ] The decisions contain enough module and target detail to review PR #1
+- [x] Accepted architecture decisions are recorded under `docs/decisions/`.
+- [x] The decisions contain enough module and target detail to review PR #1
   without reopening the overall stack direction.
 
 **Dependencies:** Gate 1. Coordinate naming-sensitive targets with Gate 2.

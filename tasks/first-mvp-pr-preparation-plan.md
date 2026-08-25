@@ -7,7 +7,7 @@
   application code
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** accept the MVP architecture baseline
+- **Next work:** accept the engineering quality contract
 
 ## Objective
 
@@ -54,13 +54,15 @@ Product identity ─┴───────────────────
                                                 Ready to open PR #1
 ```
 
-The MVP scope, **Posato** product identity, and minimum brand and product design
-baseline are accepted. The maintainer controls `posato.app`, `app.posato` is
-the stable technical root, and [DESIGN.md](../DESIGN.md) is the design
-authority. The MVP architecture baseline is now the first incomplete gate.
-Architecture should stay minimal: settle what PR #1 and its immediate
-dependants need, then make later decisions in the smallest vertical pull
-request that requires them.
+The MVP scope, **Posato** product identity, minimum brand and product design
+baseline, and [MVP architecture baseline][architecture-baseline] are accepted.
+The maintainer controls `posato.app`, `app.posato` is the stable technical root,
+and [DESIGN.md](../DESIGN.md) is the design authority. The engineering quality
+contract is now the first incomplete gate. Architecture details deferred by
+ADR 0003 remain with the smallest named vertical pull request that requires
+them.
+
+[architecture-baseline]: ../docs/decisions/0003-mvp-application-architecture-baseline.md
 
 ## Seven gates
 

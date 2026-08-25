@@ -1,0 +1,304 @@
+# ADR 0003: Establish the MVP Application Architecture Baseline
+
+## Status
+
+- **Status:** Accepted
+- **Date:** 2026-08-25
+- **Decision owner:** Project maintainer
+- **Provenance:** `user-confirmed`
+
+## Context
+
+The accepted MVP scope, Posato identity, and design baseline are sufficient to
+define the first production application shell. The architecture must now make
+the initial module and target boundaries reviewable without importing the
+feasibility repository's module graph or treating a project generator as
+ongoing authority.
+
+The maintainer selected Kotlin Multiplatform, Compose Multiplatform, and Metro.
+The first product release is Apple-first, with an iOS application and an
+arm64-only macOS application. The accepted product behavior later requires
+system-owned iOS expiry callbacks and native macOS enforcement mechanisms that
+cannot live inside the desktop JVM process.
+
+The [Compose Multiplatform Wizard audit](../wiki/sources/compose-multiplatform-wizard.md)
+records the exact generator evidence and sanitation boundary used for this
+decision. The wizard is a bootstrap input, not an architecture authority.
+
+## Decision
+
+### Initial module and host graph
+
+The first production skeleton uses this graph:
+
+```text
+iosApp (Xcode host)
+    -> :shared (KMP, Compose, and Metro plugin)
+           commonMain
+           commonTest
+           iosMain
+           jvmMain
+    <- :desktopApp (JVM entry point and macOS packaging)
+
+Later native targets, not PR #1 dependencies:
+    iosActivityMonitorExtension
+    macosHelper
+```
+
+`:shared` is initially the only KMP production module. It owns the application
+composable, shared product and presentation types, semantic platform
+contracts, and test fakes. It is split only when a production dependency
+boundary requires it; the skeleton does not create empty domain, data, feature,
+or utility modules.
+
+`:desktopApp` owns the JVM entry point, application window, macOS packaging,
+and desktop composition root. `iosApp` owns the Swift application lifecycle
+and embeds the static framework produced by `:shared`. Both hosts delegate to
+shared UI and do not own product policy.
+
+### Source-set, injection, and platform-boundary rules
+
+- `commonMain` owns shared UI, product state, typed outcomes,
+  platform-neutral interfaces, and an unannotated canonical Metro graph
+  contract.
+- `commonTest` owns fakes and contract tests.
+- `iosMain` owns the Compose controller factory, iOS adapters, and the final
+  `@DependencyGraph` that extends the common graph contract.
+- `jvmMain` owns desktop adapters and its final `@DependencyGraph`.
+- Each application host creates one platform graph at its composition root and
+  exposes only the required entry surface to shared Compose.
+
+Metro is the only dependency-injection framework. Dependencies use
+constructor injection. Runtime platform values enter through explicit graph
+factory inputs or platform binding containers; product code does not call a
+service locator. Both platform graphs must pass compile-time validation.
+
+Use a common interface and injection when a capability has runtime ownership,
+permissions, lifecycle, multiple implementations, structured product
+outcomes, or a test fake. Use `expect`/`actual` only for a small compile-time
+platform difference with exactly one implementation per target, no injected
+test substitute, and no platform type in the common signature. Neither
+mechanism replaces IPC when another process owns the operation.
+
+Construction remains inert. Activation, cancellation, and cleanup are
+explicit, bounded, and safe to repeat. Native framework values, opaque Apple
+tokens, native errors, and system-settings objects do not cross into
+`commonMain`.
+
+### Platform targets and identifiers
+
+| Target | Identifier | PR #1 | Ownership |
+| --- | --- | --- | --- |
+| iOS application | `app.posato.ios` | Created | Swift host and shared Compose framework |
+| macOS application | `app.posato.macos` | Created | Compose Desktop/JVM application |
+| iOS Device Activity monitor extension | `app.posato.ios.activitymonitor` | Deferred | Xcode-owned expiry callback and minimum shared App Group state |
+| macOS native helper | `app.posato.macos.helper` | Deferred | Signed native process behind authenticated, versioned local IPC |
+
+The first skeleton has no Android, Web, custom shield-action, custom
+shield-configuration, or Device Activity report target. Gate 7 registers the
+accepted Apple identifiers and required capabilities before production
+implementation begins, even though the extension and helper implementation
+arrive after PR #1.
+
+### iOS enforcement boundary
+
+The iOS application owns authorization, selection, and foreground interaction
+with Family Controls and Managed Settings. Default system shields are
+sufficient for the MVP; custom shield extensions are not required.
+
+An Xcode-owned Device Activity monitor extension handles the normal session-
+expiry opportunity when the main application is suspended. It clears only
+Posato-owned restrictions and exchanges only the minimum required local state
+with the application through an App Group. Apple documents Device Activity
+callbacks as occurring when the device is in use, so the product and its tests
+must not promise execution at the exact wall-clock end instant.
+
+The application and extension are separate entitlement, signing,
+provisioning, and distribution boundaries. Their production implementation,
+App Group schema, and entitlement validation belong to the first iOS
+enforcement pull request and Apple Task 0, not PR #1.
+
+### macOS enforcement boundary
+
+The macOS application remains a Compose Desktop JVM process. A separate signed
+native helper owns system-level or native enforcement mechanics, including
+system-proxy mutation and application observation. Shared Kotlin owns
+enforcement intent and product policy.
+
+The helper exposes an allowlisted local IPC protocol with bounded and versioned
+frames, request identity, timeouts, structured outcomes, peer authentication,
+and safe repeatable cleanup. Every request is untrusted: the helper validates
+its version, size, schema, operation, caller identity, authorization, and
+current state before acting, and it fails closed on unknown or malformed input.
+It is not a general shell-command service and it does not own synchronization
+or product business logic. Sensitive values do not enter process arguments or
+logs, and allowed navigation or application-observation events are not retained
+as browsing or usage history.
+
+Any privileged installation uses least privilege and authorizes every
+privileged operation rather than trusting a previously authenticated channel.
+The helper snapshots and restores only Posato-owned system mutations, rejects
+replay or stale ownership, and must leave unrestricted networking recoverable
+after application, helper, or IPC failure.
+
+The helper implementation language, exact privilege model, installation,
+update, watchdog, and recovery lifecycle are deferred to the first macOS
+enforcement pull request. That pull request must preserve the accepted process
+boundary and re-establish production security and test coverage rather than
+copying the feasibility helper wholesale.
+
+### Persistence, navigation, and synchronization
+
+[ADR 0002](0002-synchronization-trust-and-workspace-modes.md) remains the
+authority for CloudKit Private Database transport, synchronizable-Keychain
+workspace-key delivery, common application-layer E2EE, and the later portable
+workspace mode. Those mechanisms do not imply an HTTP client, so Ktor is not a
+baseline dependency.
+
+PR #1 adds Compose and Metro only. Navigation 3 is the default candidate for
+the first multi-screen flow, AndroidX Multiplatform ViewModel for the first
+stateful screen, and SQLDelight for the first local-replica slice. Each is
+added only with production code that uses it and after its exact version and
+target compatibility are verified in that named pull request. Persistence
+schema, migrations, concurrency ownership, and production serialization remain
+decisions for the first slice that needs them.
+
+### Platform and toolchain baseline
+
+- The iOS deployment target is 18.0.
+- The macOS deployment target is 15.0 on arm64 only. Adding x86-64 requires a
+  separate acceptance decision.
+- Both deployment targets are rechecked against the release support policy
+  before the first release; this decision does not claim future store
+  eligibility.
+- The Apple-only graph has no Android Gradle Plugin.
+- PR #1 uses JDK 21 and emits JVM 17 bytecode.
+- PR #1 must select, compatibility-check, and pin one stable Kotlin, Compose,
+  Gradle, Metro, Xcode, and CI-image set before generated files are accepted.
+
+At the reviewed wizard revision, the generation candidates were Kotlin 2.4.10,
+Compose Multiplatform 1.12.0, Gradle 9.7.1, and Metro 1.4.2. These are observed
+generator inputs, not independently accepted production pins. The repository's
+version catalog and Gradle wrapper become the version authority after PR #1.
+
+### Wizard import boundary
+
+Generate the project in an isolated temporary directory with **Posato**,
+`app.posato`, iOS, Desktop, and Metro selected. Leave Android, Web, generated
+`AGENTS.MD`, sample tests, and every other optional library unselected. Never
+extract the archive over the repository.
+
+Before reviewed files enter PR #1:
+
+- rename `sharedUI` to `shared` and update Gradle and Xcode references;
+- replace generated suffixes with the accepted target identifiers;
+- retain only DMG/macOS desktop packaging;
+- remove sample UI, theme toggle, custom font, external link, generated test,
+  generated README and agent instructions, and unused resources;
+- remove the generated rocket icon and packaging references until an accepted
+  production icon exists;
+- implement only the accepted PR #1 shell from `DESIGN.md`;
+- adapt retained Kotlin declarations to repository code rules; and
+- verify both platform graphs, shared tests, the JVM build, an iOS Simulator
+  build, and a structural diff against the generated archive.
+
+The wizard is a one-time generator. Future updates are explicit reviewed
+changes, not regeneration.
+
+## Alternatives considered
+
+### Import the wizard archive directly
+
+Rejected. It would import sample behavior, unnecessary dependencies and
+resources, generated documentation, and incorrect identifier suffixes. It can
+also conflict with existing repository files on a case-insensitive filesystem.
+
+### Select every available platform and library
+
+Rejected. Android and Web are outside the Apple-first MVP, and speculative
+libraries would create ownership and update cost before a consumer exists.
+
+### Use Koin alongside or instead of Metro
+
+Rejected for the greenfield application graph. The maintainer selected Metro
+as the only DI framework, and compile-time platform graphs fit the accepted
+composition-root boundary.
+
+### Use broad `expect`/`actual` services
+
+Rejected. Runtime-owned capabilities require injection, test substitutes, and
+structured availability or permission outcomes. `expect`/`actual` remains a
+narrow compile-time tool.
+
+### Keep native macOS mechanisms inside the JVM process
+
+Rejected as the baseline. JNI or JNA would introduce an in-process native ABI
+boundary without removing packaging, signing, privilege, crash, and recovery
+requirements. The separate helper makes those responsibilities explicit.
+
+### Omit the iOS Device Activity monitor extension
+
+Rejected. Foreground application lifecycle alone cannot satisfy normal
+scheduled expiry when the main application is suspended. The extension is the
+minimum accepted background callback boundary, subject to Apple's execution
+semantics.
+
+## Consequences
+
+- PR #1 has a small graph: one KMP module, one JVM launcher, and one Xcode host.
+- The helper and extension are known Apple resources without becoming empty
+  code targets in the skeleton.
+- Shared product behavior remains testable without platform frameworks.
+- Metro graph errors are caught separately for iOS and desktop.
+- Native process and extension lifecycle risks remain visible and must be
+  resolved in their named enforcement slices.
+- The arm64-only macOS baseline narrows the first compatibility matrix and
+  deliberately excludes Intel Macs.
+- Tool versions remain unpinned until PR #1 verifies them together; the
+  generator's displayed versions are not silently treated as production
+  authority.
+
+## Required PR #1 verification
+
+PR #1 must prove, at minimum:
+
+- a clean checkout resolves only the reviewed and pinned dependencies;
+- `:shared` common tests pass;
+- both Metro platform graphs compile and validate;
+- the macOS application builds and renders the accepted minimal shell;
+- the iOS Simulator application builds and renders the same shell;
+- no Android or Web target, enforcement implementation, synchronization
+  implementation, helper executable, or extension executable has entered the
+  skeleton; and
+- the imported file set is traceable to the reviewed wizard revision and its
+  recorded sanitation diff.
+
+The exact automated commands and CI jobs are accepted in Gate 5. Production
+code remains blocked until all seven preparation gates and the ready checkpoint
+are complete.
+
+## Open implementation decisions
+
+- macOS helper language, privilege, installation, update, watchdog, recovery,
+  and uninstall behavior in the first macOS enforcement pull request;
+- iOS App Group schema, extension lifecycle details, and entitlement
+  verification in Apple Task 0 and the first iOS enforcement pull request;
+- SQLDelight schema, migration policy, and transaction ownership in the first
+  local-replica pull request;
+- state-holder and coroutine ownership in the first stateful-screen pull
+  request;
+- production cryptographic primitives, providers, encoding, and versioning in
+  the synchronization foundation pull request;
+- deterministic CloudKit and Keychain bootstrap in the Apple synchronization
+  pull request; and
+- signing, notarization, TestFlight, App Store, and release-readiness details
+  in their corresponding distribution and release reviews.
+
+## Sources checked on 2026-08-25
+
+- [Apple Device Activity monitor](https://developer.apple.com/documentation/deviceactivity/deviceactivitymonitor)
+- [Apple interval-end callback](https://developer.apple.com/documentation/deviceactivity/deviceactivitymonitor/intervaldidend(for:))
+- [Apple Family Controls entitlement request](https://developer.apple.com/documentation/familycontrols/requesting-the-family-controls-entitlement)
+- [Metro multiplatform dependency graphs](https://zacsweers.github.io/metro/latest/multiplatform/)
+- [Metro Kotlin compatibility](https://zacsweers.github.io/metro/latest/compatibility/)
+- [Compose Multiplatform compatibility and versioning](https://www.jetbrains.com/help/kotlin-multiplatform-dev/compose-compatibility-and-versioning.html)

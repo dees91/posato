@@ -243,3 +243,20 @@
   sample content, and safe-import boundary.
 - Added a proposed minimal module, source-set, Metro, Apple target, deployment,
   dependency, and toolchain baseline without marking Gate 4 complete.
+
+## [2026-08-25] decision | Accept the MVP architecture baseline
+
+- Accepted the initial `:shared`, `:desktopApp`, and `iosApp` graph with one
+  common Metro contract and compile-time platform graphs in `iosMain` and
+  `jvmMain`.
+- Accepted `app.posato.ios`, `app.posato.macos`, the deferred
+  `app.posato.ios.activitymonitor` extension, and the deferred
+  `app.posato.macos.helper` native process over authenticated, versioned IPC.
+- Accepted iOS 18.0 and arm64-only macOS 15.0 deployment baselines, with a
+  release-time support recheck and PR #1 responsibility for compatible stable
+  toolchain pins.
+- Accepted the isolated Compose Multiplatform Wizard import and sanitation
+  boundary while keeping the generator and local coding skill subordinate to
+  repository authority.
+- Promoted the decision to ADR 0003, completed Gate 4, and advanced the active
+  preparation handoff to the Gate 5 engineering quality contract.

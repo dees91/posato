@@ -20,6 +20,13 @@ injected Swift service implementations. The desktop application was JVM-based,
 so it could not directly call native Apple frameworks through Kotlin/JVM; it
 used a separate signed native helper.
 
+`user-confirmed` (2026-08-25):
+[ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
+accepts one unannotated common Metro graph contract with final platform
+`@DependencyGraph` implementations in `iosMain` and `jvmMain`. Each host owns
+one composition root. Constructor injection and explicit platform graph inputs
+are required; a service locator is not part of the application graph.
+
 ## Selection rule
 
 ### Prefer `expect`/`actual`
@@ -70,17 +77,15 @@ exporting platform tokens.
 
 ## macOS direction
 
-Compose Desktop currently implies a JVM process. Native macOS APIs therefore
-need one of these mechanisms:
+Compose Desktop uses a JVM process. `user-confirmed` (2026-08-25): native
+macOS enforcement APIs therefore live in a separate signed native helper behind
+authenticated, versioned local IPC. JNI, JNA, and a different desktop host are
+not the accepted baseline.
 
-1. a separate native helper with local IPC;
-2. a native library reached through JNI or JNA;
-3. a different desktop target or host architecture.
-
-The PoC proved the first option with Swift. The first relevant MVP slice may
-evaluate a Kotlin/Native helper and retain a small Swift or Objective-C shim
-only where required. That evaluation should be part of a production vertical
-slice, not a throwaway language-count experiment.
+The PoC proved the separate-process option with Swift. The first relevant MVP
+slice may evaluate a Kotlin/Native helper and retain a small Swift or
+Objective-C shim only where required. That evaluation should be part of a
+production vertical slice, not a throwaway language-count experiment.
 
 The decision must consider packaging, signatures, privileges, crash recovery,
 ABI risk, process authentication, update compatibility, debugging, and the
@@ -105,7 +110,7 @@ cost of operating JVM and native runtimes.
 - Which iOS flows require a SwiftUI or Xcode-owned leaf?
 - Can a Kotlin/Native macOS helper replace most PoC Swift without making
   build, packaging, and IPC more complex?
-- Which boundaries need interfaces and which are simple enough for
-  `expect`/`actual`?
+- Which individual compile-time leaves satisfy the accepted narrow
+  `expect`/`actual` rule when their first consumer appears?
 - How will platform callbacks, cancellation, and lifecycle opportunities enter
   shared orchestration?

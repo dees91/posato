@@ -9,8 +9,11 @@ maintainer explicitly accepts it for the MVP.
 
 Numbering continues the feasibility decision history without copying the
 feasibility ADR into this repository. ADR 0001 remains historical source
-evidence at the revision recorded in the wiki. The first product ADR is:
+evidence at the revision recorded in the wiki. Accepted product ADRs are:
 
 - [ADR 0002: Separate Synchronization Trust and Workspace Modes](0002-synchronization-trust-and-workspace-modes.md)
   — accepted Apple and portable transport, encryption, key-delivery, device
   admission, and migration boundaries.
+- [ADR 0003: Establish the MVP Application Architecture Baseline](0003-mvp-application-architecture-baseline.md)
+  — accepted module, source-set, Metro, Apple target, native-process,
+  deployment, generator-import, and toolchain-selection boundaries.

@@ -19,14 +19,16 @@
   admission. Apple and portable transports share one encrypted operation model
   but use mode-specific key delivery and admission.
 
-These constraints are accepted directions. They do not select a complete
-module graph, dependency set, build layout, or production process model.
+These constraints and the Gate 4 baseline select the initial production graph.
+They do not preselect every later dependency, persistence detail, native-helper
+implementation, or distribution process.
 
-## Current Gate 4 candidate
+## Accepted Gate 4 baseline
 
-- **Status:** Proposed; not accepted
-- **Prepared:** 2026-08-25
-- **Decision authority:** none until explicit maintainer acceptance
+- **Status:** Accepted
+- **Accepted:** 2026-08-25
+- **Decision authority:**
+  [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
 
 ### User-confirmed inputs
 
@@ -43,7 +45,7 @@ module graph, dependency set, build layout, or production process model.
 The reviewed generator evidence and import limits are recorded in the
 [wizard source audit](../sources/compose-multiplatform-wizard.md).
 
-### Proposed initial module graph
+### Initial module graph
 
 ```text
 iosApp (Xcode host)
@@ -69,7 +71,7 @@ desktop composition root. `iosApp` owns the Swift application lifecycle and
 embeds the static framework produced by `:shared`. Both hosts delegate
 immediately to shared UI and do not own product decisions.
 
-### Proposed source-set and Metro ownership
+### Source-set and Metro ownership
 
 - `commonMain` owns shared UI, product state, typed outcomes, platform-neutral
   interfaces, and an unannotated canonical graph contract.
@@ -86,9 +88,9 @@ factory inputs or platform binding containers. UI, domain, and data code do not
 call a service locator. Compile-time graph validation is required for both
 `iosMain` and `jvmMain`.
 
-### Proposed platform target graph
+### Platform target graph
 
-| Target | Identifier candidate | PR #1 | Boundary |
+| Target | Identifier | PR #1 | Boundary |
 | --- | --- | --- | --- |
 | iOS application | `app.posato.ios` | Created | Swift host and shared Compose framework |
 | macOS application | `app.posato.macos` | Created | Compose Desktop/JVM application |
@@ -97,17 +99,18 @@ call a service locator. Compile-time graph validation is required for both
 
 No Android, Web, custom shield-action, custom shield-configuration, or Device
 Activity report target enters the MVP skeleton. The activity-monitor extension
-is proposed because Apple documents `DeviceActivityMonitor` as the entry point
+is required because Apple documents `DeviceActivityMonitor` as the entry point
 for scheduled interval callbacks, while the accepted MVP requires restrictions
 to clear after normal expiry even when the main application is not running.
 Apple also states that callbacks occur when the device is in use, so UI and
 tests must not claim wall-clock background execution at the exact end instant.
 
 The iOS application and activity-monitor extension require separate Family
-Controls distribution approval. `inferred`: their minimum shared local state
-also requires an App Group. Gate 7 registers identifiers and capabilities after
-this target graph is accepted. Default system shields remain sufficient;
-custom shield extensions are not an MVP requirement.
+Controls distribution approval. Their minimum shared local state uses an App
+Group whose exact schema and identifier are settled in Apple Task 0 and the
+first iOS enforcement pull request. Gate 7 registers identifiers and
+capabilities. Default system shields remain sufficient; custom shield
+extensions are not an MVP requirement.
 
 The macOS helper owns only native mechanisms such as system-proxy mutation and
 application observation. Shared Kotlin owns enforcement intent. IPC uses
@@ -116,7 +119,7 @@ peer authentication, and safe repeatable cleanup. Helper language, privilege
 installation, update, and recovery details are deferred to the first macOS
 enforcement pull request.
 
-### Proposed wizard and dependency selection
+### Wizard and dependency selection
 
 Generate in an isolated temporary directory with **Posato**, `app.posato`, iOS,
 Desktop, and Metro selected. Leave Android, Web, generated `AGENTS.MD`, sample
@@ -128,20 +131,21 @@ AndroidX ViewModel, coroutines, serialization, Ktor, SQLDelight, image loading,
 settings, date-time, logging, or build-config libraries without production code
 that uses them.
 
-The proposed later defaults are Navigation 3 for the first multi-screen flow,
+The accepted later defaults are Navigation 3 for the first multi-screen flow,
 AndroidX Multiplatform ViewModel for the first stateful screen, and SQLDelight
 for the first local-replica slice. Exact coordinates are selected and verified
 in those named pull requests. Ktor is not implied by CloudKit and has no current
 Apple MVP consumer.
 
-### Proposed platform and toolchain baseline
+### Platform and toolchain baseline
 
 - iOS deployment target: 18.0, rechecked against the current-and-previous-major
   product policy before release.
 - macOS deployment target: 15.0 on arm64 for the first MVP, with x86-64 support
   requiring a separate acceptance decision.
-- generation-time candidates: Kotlin 2.4.10, Compose Multiplatform 1.12.0,
-  Gradle 9.7.1, Metro 1.4.2, JDK 21, and JVM bytecode target 17.
+- observed generation-time candidates: Kotlin 2.4.10, Compose Multiplatform
+  1.12.0, Gradle 9.7.1, and Metro 1.4.2; these are not production pins.
+- PR #1 uses JDK 21 and JVM bytecode target 17.
 - no Android Gradle Plugin in the Apple-only graph.
 - the exact stable Xcode version and CI image are selected in PR #1 after a
   clean compatibility check against the pinned Kotlin and Compose versions.
@@ -151,7 +155,7 @@ records the reviewed wizard revision or archive hash and then owns every
 generated file. Versions live in the Gradle version catalog and wrapper;
 updates are explicit reviewed changes rather than regeneration.
 
-### Proposed PR #1 sanitation
+### PR #1 sanitation
 
 Before any generated file enters the repository:
 
@@ -167,10 +171,12 @@ Before any generated file enters the repository:
 - verify the two platform graphs, shared tests, JVM build, iOS simulator build,
   and a structural diff against the generated archive.
 
-This candidate does not complete Gate 4. The maintainer must accept or correct
-the module name and graph, target identifiers, activity-monitor extension,
-arm64-only macOS boundary, deployment targets, and toolchain policy before the
-decision is promoted under `docs/decisions/`.
+`user-confirmed` (2026-08-25): the maintainer accepted the module and source-set
+graph, Metro ownership, target identifiers, Device Activity monitor extension,
+separate macOS helper and IPC boundary, arm64-only macOS support, deployment
+targets, wizard-import limits, and toolchain-selection policy. Gate 4 is
+complete; [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
+is the durable authority.
 
 ## PoC feasibility observation
 
@@ -248,23 +254,23 @@ probe surfaces. Experimental runners, synthetic policies, command-driven app
 entry points, development signing assumptions, and cleanup infrastructure are
 not an application skeleton.
 
-## Decisions required before dependent implementation
+## Decisions deferred to named implementation work
 
-- source-set and Gradle module graph;
-- desktop application target and packaging model;
-- macOS native/helper language, privilege model, installation, update, and
-  recovery lifecycle;
-- iOS host and required extension targets;
-- dependency injection and lifecycle ownership;
-- persistence schema and migration policy;
-- production cryptographic encoding and pinned providers;
-- deterministic Apple bootstrap across delayed CloudKit and Keychain delivery;
-- Apple signed-author registration without Blocker-level approval;
+- macOS helper language, privilege model, installation, update, recovery, and
+  uninstall lifecycle in the first macOS enforcement pull request;
+- App Group schema, extension lifecycle details, and entitlement validation in
+  Apple Task 0 and the first iOS enforcement pull request;
+- persistence schema, migration policy, and transaction ownership in the first
+  local-replica pull request;
+- production cryptographic encoding and pinned providers in the
+  synchronization foundation pull request;
+- deterministic Apple bootstrap and signed-author registration in the Apple
+  synchronization pull request;
 - portable membership, folder-integrity, high-water-mark, and migration
-  contracts;
-- minimum operating-system and architecture support;
-- CI, signing, notarization, TestFlight, and App Store boundaries;
-- versioning of local database, sync data, IPC, and exported recovery material.
+  contracts in the portable-synchronization pull requests;
+- CI details in Gate 5; and
+- signing, notarization, TestFlight, App Store, and release-readiness details
+  in the corresponding distribution and release reviews.
 
 Each decision should be made at the smallest point where downstream code needs
 it and then recorded as an ADR before parallel consumers depend on it.

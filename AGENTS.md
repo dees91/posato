@@ -91,8 +91,12 @@ Production code starts only after the MVP scope, product identity, minimal
 design baseline, architecture baseline, quality gates, and required Apple
 identifiers are explicitly accepted. The intended direction is Kotlin-first
 Kotlin Multiplatform with Compose Multiplatform and narrow semantic platform
-boundaries. Exact modules, dependencies, helper implementation, and native
-ownership remain decisions rather than assumptions inherited from the PoC.
+boundaries. The accepted initial modules, targets, Metro ownership, helper and
+extension process boundaries, and deployment baseline are authoritative in
+[ADR 0003](docs/decisions/0003-mvp-application-architecture-baseline.md).
+Exact deferred dependency versions and helper implementation details remain
+decisions for their named pull requests rather than assumptions inherited from
+the PoC.
 
 The active preparation route to the first production-code pull request is
 [`tasks/first-mvp-pr-preparation-plan.md`](tasks/first-mvp-pr-preparation-plan.md),

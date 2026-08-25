@@ -6,6 +6,12 @@ rules, test strategy, CI contract, local setup, and Definition of Done.
 PoC tool versions and module boundaries are evidence, not automatic MVP
 requirements. No production build has been scaffolded yet.
 
+The accepted module, target, Metro, native-helper, extension, deployment, and
+generator-import boundaries are in
+[ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md). Gate 5
+is the first incomplete preparation gate and will establish the engineering
+quality contract used to verify PR #1.
+
 ## First production pull request
 
 `user-confirmed` (2026-08-24): PR #1 is a small production skeleton. It adds:

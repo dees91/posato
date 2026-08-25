@@ -13,13 +13,15 @@ Apple resource setup.
 
 The active [preparation plan](../../../tasks/first-mvp-pr-preparation-plan.md)
 and [checklist](../../../tasks/first-mvp-pr-preparation-todo.md) are the
-execution authority for this milestone. Gates 1 through 3 are complete in the
+execution authority for this milestone. Gates 1 through 4 are complete in the
 accepted [MVP scope](../../product/mvp-scope.md) and
 [product identity](../../product/product-identity.md), with the accepted brand
-and product design authority in [DESIGN.md](../../../DESIGN.md). The immediate
-next work is the MVP architecture baseline. The sections below retain the
-decisions each remaining gate must resolve and the questions that may remain
-incremental.
+and product design authority in [DESIGN.md](../../../DESIGN.md) and the
+accepted architecture in
+[ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md).
+The immediate next work is the engineering quality baseline. The sections
+below retain the decisions each remaining gate must resolve and the questions
+that may remain incremental.
 
 `user-confirmed` (2026-08-25): the maintainer accepted the complete
 [Gate 3 baseline](brand-and-design-baseline.md), including the brand
@@ -33,8 +35,9 @@ contract is [DESIGN.md](../../../DESIGN.md).
 and display name, `posato.app` is purchased and controlled by the maintainer,
 and `app.posato` is the stable reverse-DNS root. Platform applications use
 `app.posato.<platform>`; helpers and extensions use
-`app.posato.<platform>.<role>`. Exact target roles remain Gate 4 work and exact
-Apple resource registration remains Gate 7 work.
+`app.posato.<platform>.<role>`. Gate 4 accepted the exact application, helper,
+and Device Activity monitor extension identifiers; exact Apple resource
+registration remains Gate 7 work.
 
 The repository records only the control confirmation. Registrar, account,
 payment, and renewal details remain outside it.
@@ -230,7 +233,7 @@ the component naming pattern, completing Gate 2. Trademark and broader release
 clearance remain later readiness work rather than grounds to reopen the
 accepted working identity automatically.
 
-## Architecture baseline
+## Architecture baseline (complete)
 
 `user-confirmed`: Kotlin Multiplatform and Compose Multiplatform are the product
 direction. Shared product logic and orchestration are Kotlin-first. Apple APIs
@@ -238,13 +241,19 @@ sit behind small semantic interfaces. Swift is reserved for integration that
 is materially less practical in Kotlin/Native. Apple framework types do not
 cross into `commonMain`.
 
-`user-confirmed` (2026-08-25): the maintainer wants to generate the initial
-skeleton with Compose Multiplatform Wizard, use Metro as the only DI framework,
-and apply the named `android-compose-engineering` skill to agent-authored
-Compose Multiplatform code when available. The maintained repository rules,
-not the locally installed skill or generator defaults, remain durable
-authority. The current proposal is recorded in
-[architecture direction](architecture-direction.md).
+`user-confirmed` (2026-08-25):
+[ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
+accepts the initial `:shared`, `:desktopApp`, and `iosApp` graph, platform Metro
+graphs, semantic interface and narrow `expect`/`actual` rules, iOS Device
+Activity monitor extension, separate macOS native helper over IPC, target
+identifiers, iOS 18.0 and arm64 macOS 15.0 baselines, reviewed wizard-import
+boundary, and PR #1 toolchain-selection policy.
+
+The maintainer wants to generate the initial skeleton with Compose
+Multiplatform Wizard and apply the named `android-compose-engineering` skill to
+agent-authored Compose Multiplatform code when available. The maintained
+repository rules and ADR, not the locally installed skill or generator
+defaults, remain durable authority.
 
 `user-confirmed` (2026-08-25):
 [ADR 0002](../../decisions/0002-synchronization-trust-and-workspace-modes.md)
@@ -252,18 +261,11 @@ selects CloudKit Private Database, synchronizable-Keychain workspace-key
 delivery, Apple Account/iCloud Keychain membership, common application E2EE,
 explicit later portable membership, and one-active-transport migration.
 
-`open`: the first architecture decision must make the following concrete:
-
-- initial modules and source sets;
-- dependency direction and composition root per application;
-- interface versus `expect`/`actual` criteria;
-- macOS application-to-helper process and IPC boundary;
-- state, concurrency, error, and lifecycle conventions;
-- persistence, serialization, migration, and test strategy;
-- dependency and version-selection policy.
-
-This decision belongs in the first small reviewed slices. A separate broad
-architecture spike is not required.
+The implementation language and privilege lifecycle of the macOS helper, the
+iOS App Group schema and extension lifecycle details, persistence and
+migration, concurrency ownership, production serialization, and exact later
+dependency versions remain assigned to the named vertical pull requests in the
+ADR. A separate broad architecture spike is not required.
 
 ## Engineering quality baseline
 
@@ -277,13 +279,14 @@ architecture spike is not required.
 
 ## Apple identity and distribution
 
-Decide only after the product name and ownership model are accepted:
+The accepted architecture supplies the target graph. Gate 7 must now register
+and verify the corresponding Apple resources:
 
-- bundle identifier namespace and individual application identifiers;
 - development team and signing ownership;
 - CloudKit container and environment strategy for the accepted synchronization
   scope;
-- app-group, Keychain access-group, helper, and extension identifiers;
+- accepted application, helper, and extension bundle identifiers plus the
+  App Group and Keychain access group;
 - entitlement request and fallback plan;
 - notarization, App Store, direct distribution, and update strategy;
 - privacy disclosures and data-handling declarations.

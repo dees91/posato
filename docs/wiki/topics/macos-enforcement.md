@@ -85,9 +85,22 @@ The spike used a temporary, narrowly scoped privilege path to modify and restore
 system proxy settings. That setup was deliberately not a daemon or production
 installer.
 
-Production requires a separate decision covering:
+`user-confirmed` (2026-08-25): the production boundary is a separate signed
+native helper, `app.posato.macos.helper`, reached from the Compose Desktop JVM
+application through narrow local IPC. The helper owns native mechanisms such
+as system-proxy mutation and application observation; shared Kotlin owns
+enforcement intent and product policy. The IPC is bounded, versioned,
+authenticated, timeout-aware, and returns structured outcomes. It is not an
+arbitrary command runner and owns neither synchronization nor business logic.
 
-- whether a privileged helper is required;
+The helper language, exact privilege model, installation, update, watchdog,
+recovery, and uninstall behavior remain assigned to the first macOS
+enforcement pull request. The accepted process boundary is authoritative in
+[ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md).
+
+That implementation decision must cover:
+
+- whether and which operations require privilege;
 - installation and update authorization;
 - code-signing and parent/helper identity checks;
 - the exact operations the helper may perform;

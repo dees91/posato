@@ -64,9 +64,10 @@ application code. Seven gates precede implementation: MVP scope, product
 identity, minimal product and design baseline, architecture baseline, quality
 contract, PR decomposition, and one manual Apple resource setup task.
 
-The MVP scope, product identity, and minimum brand and product design baseline
-are accepted. The immediate next work is to accept the architecture baseline
-in Gate 4.
+The MVP scope, product identity, minimum brand and product design baseline, and
+[MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md)
+are accepted. The immediate next work is to accept the engineering quality
+contract in Gate 5.
 The accepted route and verification criteria live in the
 [preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
 [checklist](tasks/first-mvp-pr-preparation-todo.md).

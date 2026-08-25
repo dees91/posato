@@ -85,14 +85,28 @@ open.
 ## Extensions and background behavior
 
 The spike used the application target and default system shielding for bounded
-manual activation. A production design may need Screen Time extensions for
-scheduled monitoring, custom shield appearance, or shield actions. Every
-extension adds an identifier, entitlement, process, lifecycle, shared-state,
-testing, and distribution boundary.
+manual activation.
 
-The exact target graph must be selected before registering production Apple
-identifiers. Do not create extension targets merely because the framework
-offers them; tie each target to an accepted user-visible capability.
+`user-confirmed` (2026-08-25): the production target graph includes one Xcode-
+owned Device Activity monitor extension,
+`app.posato.ios.activitymonitor`. It supplies the normal session-expiry
+callback opportunity when the main application is suspended and clears only
+Posato-owned restrictions. The application and extension exchange only the
+minimum required local state through an App Group. The exact schema belongs to
+Apple Task 0 and the first iOS enforcement pull request.
+
+`source-claim`: Apple documents Device Activity callbacks as occurring when the
+device is in use. The product and tests therefore must not promise callback
+execution at the exact wall-clock end instant.
+
+Default system shields remain the accepted MVP presentation. Custom shield
+configuration, shield action, and Device Activity report extensions are not
+part of the MVP target graph. Every later extension proposal requires a
+user-visible capability and a separate identifier, entitlement, process,
+lifecycle, shared-state, testing, and distribution review.
+
+The accepted boundary and identifier are authoritative in
+[ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md).
 
 ## Failure and cleanup requirements
 
@@ -110,9 +124,8 @@ offers them; tie each target to an accepted user-visible capability.
 
 - Which Family Controls entitlement and distribution paths are available for
   the intended public product at implementation time?
-- Are custom shield configuration and action extensions part of MVP?
-- Are recurring schedules implemented through Device Activity, application
-  lifecycle opportunities, or a smaller first-slice contract?
+- What App Group state and callback protocol is the minimum safe implementation
+  for scheduled expiry?
 - Which iOS browsers are included in the support promise?
 - How are local opaque selections associated with synchronized semantic policy?
 - What should happen when authorization is revoked, the selection becomes

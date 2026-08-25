@@ -36,15 +36,15 @@ the supplied project ID.
 `user-confirmed`: the maintainer wants to use the wizard to create the initial
 application skeleton.
 
-`inferred`: generation must occur in an isolated temporary directory. A
-reviewed subset is then adapted into the repository; the archive must not be
-expanded over the checkout. This prevents case-insensitive replacement of the
-existing `README.md`, replacement of repository instructions, and accidental
-acceptance of generated branding or identifiers.
+`user-confirmed` (2026-08-25): generation occurs in an isolated temporary
+directory. A reviewed subset is then adapted into the repository; the archive
+must not be expanded over the checkout. This prevents case-insensitive
+replacement of the existing `README.md`, replacement of repository
+instructions, and accidental acceptance of generated branding or identifiers.
 
-The proposed wizard configuration is:
+The accepted wizard configuration is:
 
-| Setting | Proposed value | Reason |
+| Setting | Accepted value | Reason |
 | --- | --- | --- |
 | Project name | `Posato` | Accepted public and display name |
 | Project ID | `app.posato` | Accepted reverse-DNS root; final bundle IDs are corrected after generation |
@@ -57,11 +57,12 @@ The proposed wizard configuration is:
 | Metro | Selected | `user-confirmed` Gate 4 DI choice |
 | Other optional dependencies | Not selected | Dependencies enter only with the vertical slice that uses them |
 
-After Gate 4 acceptance, the generated module is renamed from `sharedUI` to the
-accepted module name. Generated sample UI, theme, font, links, icons, comments,
-platform packaging, and README content are removed or replaced. Exact bundle
-identifiers use the accepted `app.posato.<platform>` pattern rather than
-generated suffixes.
+The generated module is renamed from `sharedUI` to `shared`. Generated sample
+UI, theme, font, links, icons, comments, unused packaging, and README content
+are removed or replaced. Exact bundle identifiers use `app.posato.ios` and
+`app.posato.macos` rather than generated suffixes. The complete accepted import
+boundary is authoritative in
+[ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md).
 
 ## Current compatibility checks
 
