@@ -400,3 +400,15 @@
 - Retained Compose Desktop's JDK vendor safeguard after it rejected Homebrew's
   JDK distribution, then passed the Foundation build from a JBR 25 launcher
   with a Temurin 21 daemon.
+
+## [2026-08-26] decision | Accept the temporary Detekt prerelease exception
+
+- Added `./gradlew quality` as the aggregate local formatting, analysis,
+  warning, test, build, packaging, and report boundary for PR #1.
+- Pinned ktlint Gradle plugin 14.2.0, ktlint 1.8.0, Detekt 2.0.0-alpha.6, and
+  Compose Rules 0.6.4 after compatibility and license review.
+- Accepted Detekt's prerelease only as build-time quality tooling because no
+  stable Detekt release supports Kotlin 2.4.10 metadata; the first compatible
+  stable Detekt 2 release is the removal trigger.
+- Confirmed Compose Rules enforcement with a controlled `ModifierMissing`
+  failure and retained no lint baseline or failure-tolerant mode.

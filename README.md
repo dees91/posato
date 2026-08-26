@@ -63,7 +63,8 @@ These are direction constraints, not a complete architecture.
 
 The first production pull request is active. Its seven preparation gates and
 ready checkpoint are complete. `FOUNDATION-001` has added the Apple-only
-application shell; `QUALITY-001` is the next milestone inside the same PR.
+application shell, `QUALITY-001` has added `./gradlew quality`, and `CI-001` is
+the next milestone inside the same PR.
 
 The MVP scope, product identity, minimum brand and product design baseline,
 [MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md),
@@ -75,9 +76,10 @@ The accepted route and verification criteria live in the
 [checklist](tasks/first-mvp-pr-preparation-todo.md).
 
 PR #1 uses fresh KMP application modules, accepted identifiers, and one minimal
-shared Compose screen running on macOS and iOS. It will add the aggregate
-quality gate and CI before completion. It does not implement blocking or
-synchronization and does not adopt the PoC module graph as its starting point.
+shared Compose screen running on macOS and iOS. It has one aggregate local
+quality gate and will add CI before completion. It does not implement blocking
+or synchronization and does not adopt the PoC module graph as its starting
+point.
 
 Gate 5 does not configure CI. The accepted roadmap groups `FOUNDATION-001`,
 `QUALITY-001`, and `CI-001` into one PR #1 brief, execution record, and

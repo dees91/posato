@@ -3,12 +3,10 @@
 ## Status
 
 - **Accepted direction:** 2026-08-24
-- **Current milestone:** prepare the first pull request containing production
-  application code
+- **Current milestone:** complete the first production pull-request increment
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** complete and explicitly accept the Ready to open PR #1
-  checkpoint; do not scaffold application code before that acceptance
+- **Next work:** implement `CI-001`, then complete the integrated PR #1 review
 - **Accepted Gate 6 authority:** [mvp-roadmap.md](mvp-roadmap.md)
 
 ## Objective
@@ -64,10 +62,10 @@ and [DESIGN.md](../DESIGN.md) is the design authority. The
 and [task workflow](README.md) are accepted. The
 [Gate 6 MVP roadmap](mvp-roadmap.md) is accepted at revision 2 and retains
 future work as concise task stubs. Gate 7 Apple resource registration is
-complete. The Ready to open PR #1 checkpoint is the first incomplete handoff,
-and production scaffolding remains blocked until it is explicitly accepted.
-Architecture details deferred by ADR 0003 remain with the smallest named task
-that requires them.
+complete. The Ready to open PR #1 checkpoint is complete and explicitly
+accepted; the production skeleton and local quality gate are implemented on the
+active PR #1 branch. Architecture details deferred by ADR 0003 remain with the
+smallest named task that requires them.
 
 [architecture-baseline]: ../docs/decisions/0003-mvp-application-architecture-baseline.md
 

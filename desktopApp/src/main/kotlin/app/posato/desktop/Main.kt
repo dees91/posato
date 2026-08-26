@@ -4,7 +4,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import app.posato.di.createDesktopApplicationGraph
 
-fun main(): Unit {
+fun main() {
     val applicationGraph = createDesktopApplicationGraph()
 
     application {

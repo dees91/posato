@@ -6,6 +6,4 @@ import dev.zacsweers.metro.createGraph
 @DependencyGraph
 interface IosApplicationGraph : ApplicationGraph
 
-fun createIosApplicationGraph(): IosApplicationGraph {
-    return createGraph()
-}
+fun createIosApplicationGraph(): IosApplicationGraph = createGraph()

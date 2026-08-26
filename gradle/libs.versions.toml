@@ -1,6 +1,10 @@
 [versions]
 compose = "1.10.3"
+compose-rules = "0.6.4"
+detekt = "2.0.0-alpha.6"
 kotlin = "2.4.10"
+ktlint = "1.8.0"
+ktlint-gradle = "14.2.0"
 metro = "1.4.2"
 
 [libraries]
@@ -8,6 +12,7 @@ compose-desktop-macos-arm64 = { module = "org.jetbrains.compose.desktop:desktop-
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
 compose-material = { module = "org.jetbrains.compose.material:material", version.ref = "compose" }
 compose-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
+compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "compose-rules" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
 compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose" }
@@ -15,6 +20,8 @@ compose-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 compose-multiplatform = { id = "org.jetbrains.compose", version.ref = "compose" }
+detekt = { id = "dev.detekt", version.ref = "detekt" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint-gradle" }
 metro = { id = "dev.zacsweers.metro", version.ref = "metro" }

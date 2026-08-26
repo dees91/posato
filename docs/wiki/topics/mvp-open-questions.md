@@ -304,6 +304,21 @@ pipeline. CI is a separate Gate 6 task due before PR #1 merges or the first
 parallel implementation wave starts, whichever occurs first. Until then,
 fresh local verification evidence is mandatory.
 
+`observed` (2026-08-26): PR #1 now exposes `./gradlew quality` as the local
+aggregate boundary. It pins ktlint Gradle plugin 14.2.0 with ktlint 1.8.0,
+Detekt 2.0.0-alpha.6, and Compose Rules 0.6.4; generates ktlint and Detekt
+reports; runs shared JVM and desktop tests; compiles both iOS targets with
+warnings as errors; and creates the macOS distributable. A controlled invalid
+composable was rejected by the Compose `ModifierMissing` rule. Generated
+Compose Resources Kotlin is excluded from ktlint and no baseline exists.
+
+`user-confirmed` (2026-08-26): the Detekt prerelease is a narrow build-time
+exception because no stable Detekt release supports the accepted Kotlin 2.4.10
+compiler metadata. The first compatible stable Detekt 2 release is the removal
+trigger. An explicit `.research/blocker` search found only compiler
+warnings-as-errors evidence, not a production-quality lint or aggregate gate
+configuration to reuse.
+
 ## Gate 6 roadmap (complete)
 
 `user-confirmed` (2026-08-25): the accepted

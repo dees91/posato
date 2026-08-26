@@ -31,7 +31,8 @@ execution record, and completed-change review. CI must complete before PR #1
 merges or the first parallel implementation wave begins, whichever happens
 first.
 
-`FOUNDATION-001` is complete. The active next milestone is `QUALITY-001`.
+`FOUNDATION-001` and `QUALITY-001` are complete. The active next milestone is
+`CI-001`.
 
 ## Foundation local use
 
@@ -75,3 +76,26 @@ synchronization, enrollment, recovery, or production helpers. Implementation
 starts only after all seven gates and the ready checkpoint in the
 [first MVP PR preparation checklist](../../tasks/first-mvp-pr-preparation-todo.md)
 are complete and explicitly accepted.
+
+## Local quality gate
+
+Run the repository-owned aggregate gate from the repository root:
+
+```shell
+./gradlew quality
+```
+
+It checks root and module Kotlin formatting with ktlint, analyzes both
+application modules with Detekt and Compose Rules, compiles warning-free JVM
+and iOS source, runs the shared JVM and desktop test tasks, and creates the
+macOS distributable. Detekt writes Checkstyle, HTML, Markdown, and SARIF
+reports under each module's `build/reports/detekt/`; ktlint writes plain-text
+and Checkstyle reports under `build/reports/ktlint/` in each checked project.
+Gradle writes test reports under the owning module's `build/reports/tests/`.
+
+The pinned quality set is ktlint Gradle plugin 14.2.0, ktlint 1.8.0, Detekt
+2.0.0-alpha.6, and Compose Rules 0.6.4. The Detekt prerelease is the narrow
+maintainer-accepted exception recorded in the quality contract and must be
+replaced by the first compatible stable Detekt 2 release. Generated Compose
+Resources source is excluded from ktlint; repository-owned Kotlin has no lint
+baseline.

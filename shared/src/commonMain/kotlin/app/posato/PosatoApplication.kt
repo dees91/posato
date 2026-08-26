@@ -7,9 +7,8 @@ import dev.zacsweers.metro.Inject
 
 @Inject
 class PosatoApplication {
-
     @Composable
-    fun Content(): Unit {
+    fun Content() {
         PosatoTheme {
             ApplicationShell()
         }

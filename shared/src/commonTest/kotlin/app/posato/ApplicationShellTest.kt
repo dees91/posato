@@ -7,10 +7,9 @@ import app.posato.di.ApplicationGraph
 import kotlin.test.Test
 
 class ApplicationShellTest {
-
     @OptIn(ExperimentalTestApi::class)
     @Test
-    fun application_shell_renders_the_accepted_content(): Unit {
+    fun application_shell_renders_the_accepted_content() {
         val applicationGraph: ApplicationGraph = FakeApplicationGraph()
 
         runComposeUiTest {

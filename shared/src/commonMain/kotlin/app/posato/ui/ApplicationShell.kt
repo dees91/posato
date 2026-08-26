@@ -28,7 +28,7 @@ import app.posato.generated.resources.product_name
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-internal fun ApplicationShell(): Unit {
+internal fun ApplicationShell() {
     Surface(
         color = MaterialTheme.colors.background,
         contentColor = MaterialTheme.colors.onBackground,
@@ -36,10 +36,11 @@ internal fun ApplicationShell(): Unit {
     ) {
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(horizontal = 24.dp, vertical = 20.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -47,17 +48,19 @@ internal fun ApplicationShell(): Unit {
             ) {
                 Text(
                     text = stringResource(Res.string.product_name),
-                    style = MaterialTheme.typography.subtitle1.copy(
-                        fontWeight = FontWeight.SemiBold,
-                    ),
+                    style =
+                        MaterialTheme.typography.subtitle1.copy(
+                            fontWeight = FontWeight.SemiBold,
+                        ),
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(12.dp))
                 Text(
                     text = stringResource(Res.string.product_line),
-                    style = MaterialTheme.typography.h4.copy(
-                        fontWeight = FontWeight.SemiBold,
-                    ),
+                    style =
+                        MaterialTheme.typography.h4.copy(
+                            fontWeight = FontWeight.SemiBold,
+                        ),
                     textAlign = TextAlign.Center,
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -80,12 +83,13 @@ internal fun ApplicationShell(): Unit {
 }
 
 @Composable
-internal fun PosatoTheme(content: @Composable () -> Unit): Unit {
-    val colors = if (androidx.compose.foundation.isSystemInDarkTheme()) {
-        DarkColors
-    } else {
-        LightColors
-    }
+internal fun PosatoTheme(content: @Composable () -> Unit) {
+    val colors =
+        if (androidx.compose.foundation.isSystemInDarkTheme()) {
+            DarkColors
+        } else {
+            LightColors
+        }
 
     MaterialTheme(
         colors = colors,
@@ -93,18 +97,20 @@ internal fun PosatoTheme(content: @Composable () -> Unit): Unit {
     )
 }
 
-private val DarkColors = androidx.compose.material.darkColors(
-    background = Color.Black,
-    onBackground = Color.White,
-    onSurface = Color.White,
-    primary = Color(0xFF76B29E),
-    surface = Color.Black,
-)
+private val DarkColors =
+    androidx.compose.material.darkColors(
+        background = Color.Black,
+        onBackground = Color.White,
+        onSurface = Color.White,
+        primary = Color(0xFF76B29E),
+        surface = Color.Black,
+    )
 
-private val LightColors = androidx.compose.material.lightColors(
-    background = Color.White,
-    onBackground = Color.Black,
-    onSurface = Color.Black,
-    primary = Color(0xFF2E5D50),
-    surface = Color.White,
-)
+private val LightColors =
+    androidx.compose.material.lightColors(
+        background = Color.White,
+        onBackground = Color.Black,
+        onSurface = Color.Black,
+        primary = Color(0xFF2E5D50),
+        surface = Color.White,
+    )

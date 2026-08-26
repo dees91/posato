@@ -6,6 +6,4 @@ import dev.zacsweers.metro.createGraph
 @DependencyGraph
 interface DesktopApplicationGraph : ApplicationGraph
 
-fun createDesktopApplicationGraph(): DesktopApplicationGraph {
-    return createGraph()
-}
+fun createDesktopApplicationGraph(): DesktopApplicationGraph = createGraph()

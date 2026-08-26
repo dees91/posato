@@ -43,9 +43,9 @@ remain authoritative for their concerns.
 
 The 36 rows below are the complete Gate 6 task set. Future rows stay as stubs.
 [`APPLE-001`](specifications/apple-001-register-apple-resources.md) is the
-completed Gate 7 brief. The Ready to open PR #1 checkpoint remains incomplete.
-Direct dependencies preserve revision 1; wave barriers add the phase ordering
-stated above.
+completed Gate 7 brief. The Ready to open PR #1 checkpoint is complete and the
+PR #1 implementation cycle is active. Direct dependencies preserve revision 1;
+wave barriers add the phase ordering stated above.
 
 | Task | Outcome | Epic | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- |
