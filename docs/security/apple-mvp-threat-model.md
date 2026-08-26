@@ -10,9 +10,10 @@
   bounded feasibility evidence
 - **Task:** [`SECURITY-001`](../../tasks/specifications/security-001-mvp-threat-model.md)
 
-The maintainer explicitly accepted this authority and its five residual risks
-on 2026-08-26. It governs Apple MVP security work together with the accepted
-product and architecture authorities.
+The maintainer explicitly accepted this authority and its original five
+residual risks on 2026-08-26. The later user-confirmed MACOS-002 amendment adds
+`R-06`. This authority governs Apple MVP security work together with the
+accepted product and architecture authorities.
 
 ## Scope
 
@@ -89,17 +90,24 @@ it never changes a production control to verified.
 | `A-06` | Encrypted mailbox bundles and bounded routing fields | Exchange immutable operations through CloudKit Private Database | Private CloudKit records and local transport state | Protected payload plus provider-visible metadata: authenticate context, bound fields and size, minimize metadata, reject unknown versions | `SYNC-001`, `SYNC-007`, `SYNC-008` |
 | `A-07` | macOS proxy snapshot, helper ownership state, selected process identity, and iOS Managed Settings/App Group state | Apply and safely remove only Posato-owned enforcement | Local helper, protected application storage, named Managed Settings store, and minimum App Group state | Security state: exact scope, least privilege, versioning where shared, independent apply/restore verification, repeatable cleanup | `MACOS-001`–`MACOS-005`, `IOS-001`, `IOS-002` |
 | `A-08` | Diagnostic, crash, support, and test evidence | Explain failures without reconstructing behavior | Permitted surfaces only: current safe status, explicit bounded local capture, previewed user export, and synthetic tracked evidence | Accepted allowlisted support data with bounded local expiry and cleanup; no automatic remote collection or domains, applications, accounts, devices, keys, tokens, URLs, content, browsing, or usage events | `DIAGNOSTICS-001`, every producing task, `RELEASE-001` |
-| `A-09` | User networking, unselected applications/domains, and unrelated Apple or local data | Preserve system availability and non-Posato resources | Operating-system settings and resources outside Posato namespaces | Operational asset: snapshot before mutation, mutate exact owned fields, preserve concurrent unrelated changes, restore safely | `MACOS-001`–`MACOS-005`, `IOS-001`, `IOS-002` |
+| `A-09` | User networking, transient macOS enforcement traffic, unselected applications/domains, and unrelated Apple or local data | Make bounded on-device deny and presentation decisions while preserving system availability and non-Posato resources | Operating-system settings plus volatile normal-user helper buffers for HTTP relay, HTTPS tunneling, and one current-tab check; never root durable state or diagnostics | Operational and sensitive transient data: bound processing, avoid semantic inspection beyond routing and presentation, release promptly, mutate exact owned fields, preserve concurrent unrelated changes, and restore safely | `MACOS-001`–`MACOS-005`, `IOS-001`, `IOS-002` |
 | `A-10` | Application, helper, extension, build graph, signing relationship, and dependency graph | Ensure installed code matches reviewed Posato code and privileges | Source, CI, signed artifacts, installed processes, Apple provisioning and distribution | Integrity asset: minimal dependencies and entitlements, pinned reviewed inputs, reproducible checks, no tracked private signing values | `QUALITY-001`, `CI-001`, every dependency or target owner, `RELEASE-001` |
 
 Browsing history, allowed navigation events, full URLs, paths, query strings,
 page content, cookies, headers, TLS plaintext, application-use timelines,
-behavioral analytics, provider credentials, unrelated process or device
-inventory are outside the product data model. Raw opaque platform values are
-outside the shared, synchronized, diagnostic, and public models; `A-03` permits
-only the minimum local protected selection or mapping required for enforcement.
-An owning task must update this authority before collecting or retaining any
-other excluded class.
+behavioral analytics, provider credentials, and unrelated process or device
+inventory are outside every stored, synchronized, diagnostic, and public
+product model. ADR 0005 permits only two volatile normal-user helper processing
+exceptions: bounded cleartext HTTP transit buffers required for safe relay and
+one current top-level URL after a host-free blocked signal required for guarded
+Safari or Chrome presentation. Those values are never retained as records,
+sent to the root daemon, or exposed through IPC outcomes or diagnostics.
+Browser-owned history and runtime copies remain outside Posato control. Raw
+opaque platform values are outside the shared, synchronized, diagnostic, and
+public models; `A-03` permits only the minimum local protected selection or
+mapping required for enforcement. An owning task must update this authority
+before collecting, retaining, or adding another processing exception for any
+excluded class.
 
 ## Trust boundaries
 
@@ -109,7 +117,7 @@ other excluded class.
 | `TB-02` Application → local database and Keychain | Plaintext policy, replica state, keys, identities, selectors | Use app-private/exact storage, atomic transactions, explicit corruption and account outcomes, no plaintext secret fallback | `MODEL-001`, `SYNC-002`–`SYNC-006` |
 | `TB-03` Shared application → iOS native APIs and activity-monitor extension | Semantic commands, opaque selections, minimum expiry state, native outcomes | Keep Apple types native; use a versioned minimum App Group contract; authenticate ownership by entitlement; clear only Posato state | `TARGETS-004`, `IOS-001`, `IOS-002` |
 | `TB-04` Desktop JVM application → signed native helper | Enforcement commands and structured results over local IPC | Fixed helper, peer authentication and authorization, bounded versioned allowlist, freshness/replay defense, timeouts, redacted failures | `MACOS-001`, `MACOS-003` |
-| `TB-05` macOS helper/proxy → operating system, browsers, and applications | Proxy settings, bounded host decisions, browser presentation, process actions | Loopback only; no TLS interception; exact owned mutation and identity; safe coexistence, rollback, cleanup, and no general command surface | `MACOS-001`, `MACOS-002`, `MACOS-004`, `MACOS-005` |
+| `TB-05` macOS helper/proxy → operating system, browsers, and applications | Proxy settings, bounded host decisions, bounded HTTP transit and opaque tunnel chunks, one transient current-tab URL, fixed browser presentation, and process actions | Loopback only; no TLS interception; transient data never becomes a record or diagnostic; exact owned mutation and identity; safe coexistence, rollback, cleanup, and no general command surface | `MACOS-001`, `MACOS-002`, `MACOS-004`, `MACOS-005` |
 | `TB-06` Applications → CloudKit and synchronizable Keychain | Encrypted bundles, bounded metadata, workspace key | Treat transport input as hostile; isolate accounts and exact resources; represent unavailable/delayed services truthfully | `SYNC-003`, `SYNC-005`–`SYNC-010` |
 | `TB-07` Apple-trusted installation → shared workspace | Workspace-key access and signed operations | Treat Apple trust as membership, validate automatic authors, and never imply independent Posato admission or revocation | `SYNC-001`, `SYNC-003`, `SYNC-009` |
 | `TB-08` Source/dependency/signing chain → installed process | Code, build tools, dependencies, entitlements, signatures, updates | Review and pin inputs, minimize entitlements, verify identities and artifacts, keep credentials outside source and routine CI | `QUALITY-001`, `CI-001`, target owners, `RELEASE-001` |
@@ -126,9 +134,9 @@ other excluded class.
 | `T-06` | `I/D` | Apple or the network observes metadata, or CloudKit/account/network/quota/background lifecycle delays or denies synchronization | Minimize and bound routing metadata; keep durable local work; expose retry/wait/action-required states; make local enforcement independent of delivery | `SYNC-003`, `SYNC-004`, `SYNC-007`–`SYNC-010`, `SYNC-012` | Accepted: account association, timing, sizes, record counts, and service availability remain observable or provider-controlled; no delivery SLA or wake promise |
 | `T-07` | `S/T/D/E` | A local process substitutes the helper or sends malformed, replayed, stale, oversized, unknown, unauthorized, or hanging IPC | Fixed signed helper relationship; authenticate and authorize every request; bounded/versioned allowlist, freshness, request identity, timeout, structured redacted outcomes, and bounded cancellation or recovery of only the authenticated Posato-owned endpoint or process selected by `MACOS-001` | `MACOS-001`, `MACOS-003` | A compromised correctly authorized helper can exercise its granted capabilities |
 | `T-08` | `T/D/E` | Helper privilege, a crash, or concurrent system changes leave a proxy active, overwrite unrelated settings, kill the wrong process, or become an arbitrary command path | Least privilege per operation; no shell surface; exact identities and fields; snapshot/apply/verify/restore ownership; preserve unrelated edits; repeatable recovery and removal | `MACOS-001`, `MACOS-003`–`MACOS-005` | Administrator/root can bypass or alter enforcement; abrupt termination of a selected app may still affect unsaved work and needs truthful product treatment |
-| `T-09` | `I/E` | The macOS proxy or browser presentation becomes browsing surveillance, decrypts TLS, exposes private URLs, or permits traffic when presentation fails | Loopback-only bounded host decision; no TLS interception; discard request state; no history or allowed-event logs; fixed presentation destination separated from denial | `MACOS-002`, `MACOS-004`, `DIAGNOSTICS-001` | The proxy necessarily sees the minimum destination host needed for an on-device decision while active |
+| `T-09` | `I/E` | The macOS proxy or browser presentation becomes browsing surveillance, decrypts TLS, exposes private URLs, or permits traffic when presentation fails | Loopback-only bounded parsing and relay; no TLS interception; promptly discard HTTP transit and current-tab URL state; no navigation records, counters, or logs; host-free signal and fixed target-free presentation separated from denial | `MACOS-002`, `MACOS-004`, `DIAGNOSTICS-001` | Cleartext HTTP necessarily exposes bounded request transit data to the normal-user helper, the guarded adapter sees one current top-level URL, browser/runtime copies cannot be completely erased, and presentation retains a narrow Apple Events race |
 | `T-10` | `T/I/E` | Opaque iOS selection or App Group state is synchronized, logged, exposed to the wrong target, partially replaced, or cleared outside Posato ownership | Keep opaque values local and protected; minimum versioned App Group schema; entitlement-bound access; named Managed Settings ownership; preserve prior valid selection; idempotent exact cleanup | `TARGETS-004`, `IOS-001`, `IOS-002` | Apple owns framework authorization and callback availability; exact wall-clock expiry execution is not guaranteed |
-| `T-11` | `T/D/E` | Enforcement affects an unselected domain/application, conflicts with another proxy/VPN, or cannot restore unrestricted behavior | Explicit support/coexistence contract, exact allowlists, independent controls, fail-before-mutation preflight, truthful degradation, and cleanup after every failure path | `MACOS-001`, `MACOS-002`, `MACOS-004`, `MACOS-005`, `IOS-001`, `IOS-002` | Browser, VPN, proxy, entitlement, and lifecycle coverage remains limited to the later accepted support matrix |
+| `T-11` | `T/D/E` | Enforcement affects an unselected domain/application, conflicts with another proxy/VPN, or cannot restore unrestricted behavior | Explicit support/coexistence contract, exact allowlists, complete no-fallback proxy-chain checks, independent controls, fail-before-mutation preflight, truthful degradation, and cleanup after every failure path | `MACOS-001`, `MACOS-002`, `MACOS-004`, `MACOS-005`, `IOS-001`, `IOS-002` | ADR 0005 limits browser, port, proxy, VPN, captive-portal, cache, and lifecycle coverage; MACOS-004 must prove each positive claim |
 | `T-12` | `R/I` | Secrets, policy, domains, applications, account/device identity, opaque tokens, or behavior leak through logs, crash reports, support bundles, process metadata, tests, or public evidence | No secret arguments/environment; stable redacted error categories; explicit field allowlist, purpose, consent, retention, deletion, processor review, and user preview before any support export | `DIAGNOSTICS-001`, every producing task, `RELEASE-001` | The accepted policy permits only safe current status, explicit bounded local capture, and previewed user-controlled export; automatic telemetry, analytics, crash upload, support storage, and processors remain disabled |
 | `T-13` | `S/T/I/E` | A compromised dependency, build input, signing path, update, or over-entitled binary defeats application checks | Minimal reviewed dependencies; pinned reproducible inputs; credential-free CI; least entitlements; helper/parent identity checks; signing, update, license, and security review before release | `QUALITY-001`, `CI-001`, every dependency/target owner, `RELEASE-001` | Compromised installed code has the plaintext and privileges of its process; Posato does not claim protection from itself |
 | `T-14` | `T/I/D/E` | Reset, deletion, uninstall, account change, or recovery removes unrelated resources, leaves protected data behind, or is described as remote wipe | Exact namespaces and selectors; explicit destructive intent; idempotent deletion; independent absence and outside-scope preservation checks; safe account isolation and uninstall recovery | `MODEL-001`, `SYNC-003`, `SYNC-005`–`SYNC-010`, `MACOS-001`, `IOS-001`, `IOS-002`, `RELEASE-001` | Provider or backup retention may outlive immediate deletion; data already copied to another device cannot be remotely erased |
@@ -148,20 +156,24 @@ The maintainer accepts these MVP limits:
 | `R-02` Administrator/root, debugger, compromised OS, or equivalent Posato process reads plaintext or bypasses enforcement | Accepted product limit; Posato remains removable and early end remains intentional | `MVP-001` verifies truthful behavior; `RELEASE-001` rechecks public claims |
 | `R-03` Apple or network infrastructure observes bounded metadata or denies/delays service | No anonymity, delivery, wake, or provider-availability guarantee | `SYNC-001`, `SYNC-003`, `SYNC-007`–`SYNC-010`, and `SYNC-012` minimize exposure and preserve local safety; `RELEASE-001` rechecks disclosure |
 | `R-04` Ciphertext or plaintext already copied elsewhere cannot be remotely erased, and every workspace key may be lost | No remote-wipe or total-key-loss recovery claim in the MVP | `SYNC-003`, `SYNC-005`, `SYNC-006`, `SYNC-009`, `ONBOARDING-001`, and `ONBOARDING-002` preserve truthful states; `RELEASE-001` rechecks disclosure |
-| `R-05` Managed runtimes or platform frameworks retain secret copies outside an application's complete erasure control | Minimize lifetime and clear owned mutable buffers where supported; do not claim guaranteed memory erasure | `SYNC-002`, `SYNC-005`, `SYNC-006`, and `MACOS-003` apply the rule; `RELEASE-001` rechecks the claim |
+| `R-05` Managed runtimes or platform frameworks retain secret copies outside an application's complete erasure control | Minimize lifetime and clear owned mutable buffers where supported; do not claim guaranteed memory erasure | `SYNC-002`, `SYNC-005`, `SYNC-006`, `MACOS-003`, and `MACOS-004` apply the rule; `RELEASE-001` rechecks the claim |
+| `R-06` System-proxy coverage, browser state, cached content, or Apple Events behavior escapes the bounded macOS claim | Accept only Safari and Chrome on verified versions, ports 80 and 443, no content-erasure or administrator-resistance promise, and one disclosed presentation race | `MACOS-004` proves the exact matrix and failure paths; `RELEASE-001` rechecks versions and public disclosure |
 
-These are not accepted blanket support claims. Browser coverage, proxy/VPN
-coexistence, application-termination behavior, iOS entitlement/distribution,
-App Group schema, cryptographic primitives and format, automatic signed-author
-registration, and non-diagnostic data retention/deletion remain blocked on
-their named tasks. `user-confirmed` (2026-08-26):
+These are not accepted blanket support claims. `user-confirmed` (2026-08-26):
 [ADR 0004](../decisions/0004-macos-helper-ownership-and-lifecycle.md) accepts
 the macOS helper ownership, privilege, authorization, lifecycle, and recovery
-architecture; its production controls remain unverified until MACOS-003 and
-the downstream enforcement tasks supply their required evidence. Diagnostic
-producers remain unimplemented and must satisfy the accepted diagnostic policy
-in their own tasks. `RELEASE-001` must recheck both the residuals and those
-feature gates before any public-release claim.
+architecture, while
+[ADR 0005](../decisions/0005-macos-browser-enforcement-and-coexistence.md)
+accepts the narrow Safari and Chrome browser, exact-domain, coexistence,
+transient-data, presentation, and network-transition contract. Their production
+controls and positive browser claims remain unverified until MACOS-003,
+MACOS-004, and the named downstream enforcement tasks supply their required
+evidence. Application termination, iOS entitlement/distribution, App Group
+schema, cryptographic primitives and format, automatic signed-author
+registration, and non-diagnostic data retention/deletion remain blocked on
+their named tasks. Diagnostic producers remain unimplemented and must satisfy
+the accepted diagnostic policy in their own tasks. `RELEASE-001` must recheck
+the residuals and feature gates before any public-release claim.
 
 ## Change and review rule
 

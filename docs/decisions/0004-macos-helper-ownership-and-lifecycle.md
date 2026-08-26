@@ -7,6 +7,16 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-002 amendment
+
+`user-confirmed` (2026-08-26):
+[ADR 0005](0005-macos-browser-enforcement-and-coexistence.md) resolves the
+deferred macOS browser matrix, exact-domain proxy behavior, fixed presentation,
+proxy and network coexistence, transient-data, failure, and network-transition
+contract. This amendment changes no process, privilege, IPC, authorization, or
+durable ownership boundary accepted here. MACOS-004 owns implementation and
+physical evidence for ADR 0005.
+
 ## Context
 
 The arm64 macOS 15-or-later MVP runs its product UI, policy, and orchestration
@@ -406,9 +416,9 @@ that can make an already removed or disabled service execute cleanup.
   enforce two signed peer relationships.
 - A root daemon and Authorization Services exclude an App Sandbox architecture
   unless a later accepted decision replaces this mechanism.
-- Exact browser coverage, proxy/VPN/PAC coexistence, selected-application
-  identity, and presentation behavior remain open rather than being inferred
-  from the spike.
+- [ADR 0005](0005-macos-browser-enforcement-and-coexistence.md) now governs
+  exact browser coverage, proxy/VPN/PAC coexistence, exact-domain behavior, and
+  presentation; selected-application identity remains open.
 - Out-of-band daemon disablement or application removal can require repair or
   manual proxy recovery; the product must state that limit before enabling the
   mechanism.
@@ -422,9 +432,8 @@ that can make an already removed or disabled service execute cleanup.
 - concrete IPC schemas, size limits, deadlines, cancellation points, capability
   negotiation, state serialization, storage location, and redacted outcome
   codes in MACOS-003;
-- supported browsers, proxy/VPN/PAC/autodiscovery coexistence, captive portal,
-  network-service behavior, and presentation contract in MACOS-002 and
-  MACOS-004;
+- concrete browser, proxy, captive-portal, network-transition, and presentation
+  implementation plus physical verification in MACOS-004 under ADR 0005;
 - selected-application identity and termination behavior in TARGETS-003 and
   MACOS-005; and
 - signing, notarization, update delivery, distribution eligibility, manual

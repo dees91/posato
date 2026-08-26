@@ -507,3 +507,15 @@
 - Limited automatic restoration claims to paths where the exact daemon can run
   and routed browser and proxy coexistence, concrete IPC and packaging,
   application identity, and distribution to their existing downstream tasks.
+
+## [2026-08-26] decision | Accept macOS browser enforcement and coexistence
+
+- Accepted Safari and Chrome Stable as the only positive macOS browser claims,
+  with exact release-version evidence required for network denial and fixed
+  same-tab presentation in regular and private contexts.
+- Bounded exact-domain enforcement to HTTP port 80 and HTTPS port 443, required
+  a complete no-fallback proxy chain, and rejected conflicting proxy automation
+  or detected routing overlays without modifying them.
+- Accepted the two necessary volatile data boundaries, the Apple Events
+  presentation race, content-erasure limit, restoration on network transitions,
+  and downstream MACOS-004 physical and privacy-canary evidence gate.

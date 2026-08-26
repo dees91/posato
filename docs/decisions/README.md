@@ -20,3 +20,6 @@ evidence at the revision recorded in the wiki. Accepted product ADRs are:
 - [ADR 0004: Define macOS Helper Ownership and Lifecycle](0004-macos-helper-ownership-and-lifecycle.md)
   — accepted macOS process, privilege, IPC, authorization, proxy ownership,
   recovery, update, and removal boundaries.
+- [ADR 0005: Bound macOS Browser Enforcement and Coexistence](0005-macos-browser-enforcement-and-coexistence.md)
+  — accepted Safari and Chrome support, exact-domain denial, fixed browser
+  presentation, proxy coexistence, privacy, failure, and recovery boundaries.

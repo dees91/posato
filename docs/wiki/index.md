@@ -52,6 +52,10 @@ provenance rather than a parallel public brand.
 - [ADR 0004: macOS Helper Ownership and Lifecycle](../decisions/0004-macos-helper-ownership-and-lifecycle.md)
   — accepted macOS process, privilege, IPC, authorization, atomic proxy
   ownership, recovery, update, and removal boundaries.
+- [ADR 0005: macOS Browser Enforcement and Coexistence](../decisions/0005-macos-browser-enforcement-and-coexistence.md)
+  — accepted Safari and Chrome support, exact-domain network denial, fixed
+  presentation, proxy coexistence, transient-data, failure, and recovery
+  boundaries.
 - [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
   assets and data classification, trust boundaries, threats, required controls,
   downstream owners, and residual risks.

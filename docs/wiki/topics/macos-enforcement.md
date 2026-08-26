@@ -59,6 +59,52 @@ Product consequences:
 - presentation failure must not silently convert a denied host into allowed
   traffic.
 
+`user-confirmed` (2026-08-26):
+[ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md)
+accepts Safari and Google Chrome Stable as the only positive macOS browser
+claims. Network denial and fixed same-tab presentation cover regular and
+private/incognito contexts only after MACOS-004 passes their separate physical
+rows on the exact release versions. Firefox remains unsupported because its
+follow-up required a modified disposable profile; Posato does not inspect or
+change an ordinary profile. Other browsers and any client override that ignores
+system proxy settings remain outside the claim.
+
+The accepted presentation is one self-contained, target-free local page served
+through an exact loopback-only `GET /blocked` route. A host-free signal triggers
+the browser adapter. The adapter uses only the frontmost captured tab, checks
+its current canonical host against in-memory policy, and writes the fixed page.
+Presentation is not enforcement, requires Automation permission, and retains a
+rare accepted Apple Events race because URL validation and mutation are not
+atomic. Detectable mismatch or failure causes no further navigation and never
+permits the denied route.
+
+## Accepted exact-domain and coexistence contract
+
+ADR 0005 supports cleartext HTTP on port 80 and HTTPS `CONNECT` on port 443.
+The future TARGETS-001 boundary supplies lowercase ASCII canonical
+`ExactDomain` values. The proxy revalidates authority, permits one terminal dot
+on the wire, compares equality only, never includes subdomains or IP literals,
+and rejects malformed, duplicate, or conflicting authority without falling
+back direct. A selected host is denied before the port check. Allowed HTTPS is
+an opaque tunnel and the helper uses direct upstream sockets to avoid proxy
+recursion.
+
+The complete candidate and effective proxy-resolution chains for each selected
+domain and both schemes must contain exactly the Posato loopback route. Any
+`DIRECT`, PAC, alternate proxy, or later fallback rejects activation or enters
+restoration before an active claim. Existing enabled HTTP, HTTPS, SOCKS,
+managed/global proxy, PAC, or autodiscovery state is incompatible. Detected
+VPNs, network relays or filters that change routing, and iCloud Private Relay
+are also incompatible and are never disabled by Posato.
+
+Supported activation starts on one stable primary Wi-Fi or Ethernet service.
+Captive-portal coexistence is unsupported and adds no probe or automatic sign-
+in. Sleep, wake, or primary-service change ends the active claim, restores the
+recorded service, and requires an explicit fresh Retry rather than silently
+transferring enforcement. Existing rendered, cached, service-worker, offline,
+downloaded, or resident content is not erased; denial starts at the first
+routed request after activation.
+
 ## Application enforcement
 
 The spike observed launch state for one exact disposable application identity
@@ -134,10 +180,20 @@ Durable safety properties from the spike:
 
 ## Privacy boundary
 
-The blocker needs only a bounded host decision. It should not retain allowed
-requests, browsing history, full URLs, paths, query strings, page content, or
-TLS plaintext. Diagnostics should use counts, stable categories, and redacted
-host-policy identifiers where possible.
+`user-confirmed` (2026-08-26): the normal-user proxy must transiently hold a
+bounded cleartext HTTP request line and headers plus body chunks to relay HTTP.
+The Safari or Chrome presentation adapter must transiently hold one current
+top-level URL after a host-free blocked signal to avoid replacing an unrelated
+tab. HTTPS exposes only CONNECT authority plus opaque tunnel chunks; there is
+no TLS plaintext inspection.
+
+Those values are transit buffers, not product records. They are released
+promptly and never enter the root daemon, durable state, IPC outcomes, OSLog,
+diagnostics, crash metadata, support export, or request/target counters. Posato
+retains no allowed or blocked navigation event, history, URL, path, query,
+header, cookie, endpoint, or tab timeline. Browser-owned history and runtime
+copies remain outside Posato control, and no complete memory-erasure claim is
+made.
 
 Application launch observations are also behavioral data. Production logging
 must minimize them and define retention before any telemetry or support capture
@@ -145,13 +201,11 @@ is introduced.
 
 ## Open questions
 
-- Which browsers are supported in the MVP?
-- Is a fixed browser presentation part of the first slice or is clear network
-  denial sufficient?
-- How will system proxy use interact with VPNs, other local proxies, PAC files,
-  captive portals, development tools, and network-service changes?
-- What persistence and bypass-resistance level is required?
-- What exact daemon and Mach identifiers, launchd policy, IPC schemas, and
-  packaged layout will MACOS-003 implement?
-- How are signed installation, update, notarization, supported removal, and
-  manual recovery verified for the selected release channel?
+- What exact daemon and Mach identifiers, launchd policy, IPC schemas, bounds,
+  and packaged layout will MACOS-003 implement?
+- Does MACOS-004 pass every accepted automated and physical browser,
+  coexistence, privacy-canary, transition, failure, and cleanup row on the
+  release versions?
+- How are signed installation, update, notarization, supported removal, public
+  support disclosure, and manual recovery verified for the selected release
+  channel?

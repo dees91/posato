@@ -452,18 +452,22 @@ No PoC development identifier should be reused automatically.
 ## Enforcement product choices
 
 MACOS-001 is complete in
-[ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md). The
-roadmap assigns the remaining decisions to `MACOS-002`, `TARGETS-003`,
-`TARGETS-004`, `MACOS-003` through `MACOS-005`, and `IOS-001` through
-`IOS-002`. Their roadmap stubs are accepted, but the remaining product and
-architecture questions stay open until just-in-time briefs and decision tasks
-record maintainer-approved authorities.
+[ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md), and
+MACOS-002 is complete in
+[ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md).
+The accepted first macOS website slice uses exact-domain network denial for
+Safari and Chrome Stable on ports 80 and 443, plus a separate fixed same-tab
+presentation contract. Existing proxy automation and detected routing overlays
+are incompatible; captive portals are unsupported; and sleep, wake, or primary-
+service change restores before an explicit Retry. MACOS-004 must still prove
+the complete automated and physical release matrix.
 
-- Which accepted blocking capability belongs in the first enforcement slice?
-- Which macOS browsers are supported, and is browser presentation part of the
-  promise or an optional enhancement?
-- How should proxy conflicts, VPNs, network-service changes, and captive portals
-  be handled?
+The roadmap assigns the remaining decisions to `TARGETS-003`, `TARGETS-004`,
+`MACOS-003` through `MACOS-005`, and `IOS-001` through `IOS-002`. Their roadmap
+stubs are accepted, but the remaining product and architecture questions stay
+open until just-in-time briefs and decision tasks record maintainer-approved
+authorities.
+
 - What exact IPC schemas, daemon and Mach identifiers, launchd policy, embedded
   layout, and release packaging implement the accepted helper contract?
 - Which iOS authorization and entitlement path is viable for public
@@ -473,7 +477,7 @@ record maintainer-approved authorities.
   lifecycle remains open.
 - `user-confirmed`: an MVP session has a simple, deliberate early-termination
   flow and does not claim administrator resistance. The later UX friction and
-  exact supported-browser contract remain open.
+  implementation evidence remain open.
 
 ## Synchronization product choices
 

@@ -26,6 +26,11 @@
   [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
   accepts the macOS session-helper and root proxy-settings-daemon ownership,
   privilege, IPC, authorization, recovery, update, and removal boundary.
+- `user-confirmed` (2026-08-26):
+  [ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md)
+  accepts the narrow Safari and Chrome browser, exact-domain, proxy
+  coexistence, transient-data, fixed-presentation, failure, and network-
+  transition boundary.
 - `open`: the public privacy notice, production cryptographic design, and
   non-diagnostic data retention and deletion rules are not accepted.
 
@@ -42,15 +47,18 @@ The accepted residuals are Apple Account and iCloud Keychain as the complete
 Apple-workspace membership boundary; administrator, debugger, compromised-OS,
 and equivalent-process access; provider-visible metadata and service denial;
 no remote wipe or total-key-loss recovery; and no guarantee of complete secret
-erasure from managed-runtime or platform memory.
+erasure from managed-runtime or platform memory. MACOS-002 additionally accepts
+the bounded system-proxy and browser-coverage limits, lack of content erasure,
+and the disclosed Apple Events presentation race recorded as `R-06`.
 
-Browser coverage and coexistence, implementation evidence for the accepted
-macOS helper and recovery contract, iOS entitlement and App Group details,
-cryptographic primitives and signed-author registration, non-diagnostic
-retention and deletion, and public-release claims remain with their named
-roadmap tasks. Diagnostic producers remain unimplemented and must satisfy the
-accepted diagnostic policy. Acceptance of these authorities does not make a
-production-readiness claim.
+MACOS-002 now accepts browser coverage and coexistence, but MACOS-003 and
+MACOS-004 still own implementation and physical evidence for the helper,
+recovery, proxy, presentation, and privacy controls. iOS entitlement and App
+Group details, cryptographic primitives and signed-author registration, non-
+diagnostic retention and deletion, and public-release claims remain with their
+named roadmap tasks. Diagnostic producers remain unimplemented and must
+satisfy the accepted diagnostic policy. Acceptance of these authorities does
+not make a production-readiness claim.
 
 ## Data the product may need
 
@@ -84,9 +92,15 @@ retention rule, deletion behavior, and diagnostic policy before production.
 - raw opaque platform tokens in logs, crash reports, or public issue templates;
 - support conversations or automatic capture of user screens.
 
-The macOS proxy should decide from the minimum host information available and
-discard request-level state after the bounded decision. Browser presentation
-should receive a fixed product destination, not the attempted private URL.
+These classes remain outside every stored, synchronized, diagnostic, and public
+model. ADR 0005 permits two volatile processing exceptions in the normal-user
+macOS helper: bounded cleartext HTTP transit buffers required to relay a
+request safely, and one current top-level Safari or Chrome URL after a host-free
+blocked signal required to guard fixed same-tab presentation. The helper uses
+them only for framing, authority, relay, or exact current-tab confirmation,
+releases them promptly, and never sends them to the root daemon, diagnostics,
+or durable state. Browser-owned history and runtime copies remain outside
+Posato control.
 
 ## Trust boundaries
 
@@ -222,9 +236,8 @@ never a dependency of commits, builds, tests, or documentation.
 
 ## Remaining security and privacy questions
 
-- Which exact browser, bypass, and coexistence controls satisfy the accepted
-  outcomes on each supported platform, and which MACOS-003 implementation
-  evidence verifies the accepted helper contract?
+- Which MACOS-003 and MACOS-004 implementation evidence proves the accepted
+  helper, browser, no-fallback, privacy-canary, and recovery contracts?
 - What authenticated completeness claim can portable mode make about deletions
   to a fresh replica versus rollback below an existing local high-water mark?
 - What exact retention, deletion, export, and public-notice rules apply to
