@@ -19,17 +19,19 @@ CREATE TABLE exact_domain_policy (
 );
 
 selectSchemaVersion:
-SELECT schema_version
+SELECT COALESCE(schema_version, -1)
 FROM policy_schema
-WHERE singleton = 1;
+WHERE singleton = 1
+LIMIT 2;
 
 selectRevision:
-SELECT revision
+SELECT COALESCE(revision, -1)
 FROM local_policy_metadata
-WHERE singleton = 1;
+WHERE singleton = 1
+LIMIT 2;
 
 selectDomains:
-SELECT canonical_domain
+SELECT COALESCE(canonical_domain, '')
 FROM exact_domain_policy
 ORDER BY canonical_domain
 LIMIT :maximum_row_count;

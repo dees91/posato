@@ -559,3 +559,15 @@
 - Preserved the physical-corruption contract and added cross-runtime regression
   coverage for failures in integrity, schema-presence, and schema-version
   queries without changing or deleting the database file.
+
+## [2026-08-26] correction | Recover interrupted policy schema creation
+
+- Made fresh SQLDelight schema creation transactional so interrupted DDL leaves
+  no user-defined SQLite object and a later open can safely recover.
+- Limited recovery to integrity-valid files with no user-defined table, index,
+  trigger, or view; unknown non-empty schemas remain preserved and rejected.
+- Extended corruption classification to post-open queries while retaining
+  explicit corruption results for invalid metadata cardinality, nullable or
+  non-canonical domains, and row-bound violations.
+- Passed the 21-test real-SQLite contract on JVM and the iOS Simulator, the
+  aggregate quality gate, and the signing-disabled iOS host build.

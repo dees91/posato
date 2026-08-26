@@ -15,6 +15,8 @@ internal interface LocalPolicyTestDatabase {
 
     fun createUnsupportedSchema()
 
+    fun createViewOnlySchema()
+
     fun corruptPolicyTablePage()
 
     fun corruptionMarkerIsPresent(): Boolean

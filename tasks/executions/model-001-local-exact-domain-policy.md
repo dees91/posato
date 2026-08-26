@@ -67,6 +67,15 @@
 - Distinguished validation-query execution failures from confirmed SQLite
   corruption through narrow platform error-code classifiers. Transient or
   unclassified failures now remain `STORAGE_FAILURE`.
+- Made fresh schema creation one transaction. A failed first creation rolls
+  back every user-defined object, and a later open may initialize an existing
+  integrity-valid file only when it still contains no user-defined table,
+  index, trigger, or view. Non-empty unknown schemas remain preserved and
+  rejected.
+- Applied the same execution-failure classification to post-open reads and the
+  final read inside replacement. Singleton metadata reads are bounded to two
+  rows and validated explicitly, while nullable values from weakened schemas
+  become invalid sentinels instead of escaping through generated nullability.
 - Tightened Detekt so anonymous empty catch blocks cannot bypass analysis and
   swallowed exceptions require an explicit `expected...` boundary name. All
   MODEL-001 production functions use block bodies with explicit returns.
@@ -146,7 +155,9 @@
 | Platform graph and async API compile | `pass` | `:shared:compileKotlinJvm`, `:shared:compileKotlinIosArm64`, and `:shared:compileKotlinIosSimulatorArm64` compile async schema/query use and both Metro factory bindings. |
 | Correction aggregate `./gradlew quality` | `pass` | Ktlint, Detekt, JVM tests, 14 iOS Simulator tests, both iOS target compiles, both Metro graphs, desktop tests, runtime checks, and the macOS distribution completed in 9 seconds after resolving the re-review findings. |
 | Static-framework SQLite host linkage | `pass` | The signing-disabled iOS Simulator host initially failed with undefined `_sqlite3_*` symbols. The same CI invocation reproduced locally, then passed for Debug and Release after both host configurations inherited `-lsqlite3`; `./gradlew quality` also remained green. |
-| Validation failure classification | `pass` | The new contract test first failed because validation-query exceptions were reported as `CORRUPTION`. JVM and iOS now pass 15 tests each: injected quick-check, schema-lookup, and schema-version execution failures return `STORAGE_FAILURE` without changing the file, while physical SQLite corruption still returns `CORRUPTION`. |
+| Validation failure classification | `pass` | The new contract test first failed because validation-query exceptions were reported as `CORRUPTION`. Injected quick-check, schema-lookup, schema-version, revision, and domain-query execution failures now return `STORAGE_FAILURE`, while physical SQLite corruption still returns `CORRUPTION`. |
+| Atomic schema recovery and bounded metadata validation | `pass` | The interrupted-DDL and post-open-query tests failed before the correction. JVM and iOS now pass 21 tests each: failed fresh creation leaves zero user-defined objects and the next open recovers; invalid fresh schema metadata is a storage failure; an unknown view-only database is preserved and rejected; missing or duplicate revision metadata, a nullable domain, and over-limit rows fail closed. |
+| Corrected aggregate and iOS host build | `pass` | `./gradlew quality` passed Ktlint, Detekt, both runtime contracts, both iOS compiles, desktop checks, and distribution. The CI-equivalent signing-disabled iOS Simulator host build also passed with SQLite linked. |
 
 ## CI linkage correction review
 
@@ -170,6 +181,27 @@
 - **Follow-up:** `approved`; no Critical, Required, Recommended, or Optional
   finding. The independent reviewer reproduced 15 passing tests per runtime,
   the aggregate quality gate, and the diff check.
+
+## Second hosted review correction
+
+- **Findings:** `2 P2`: interrupted fresh schema creation could leave a
+  partially initialized file that every later open rejected, and post-open
+  read exceptions were still reported as corruption without proof.
+- **Resolution:** Fresh schema creation is now transactional. Recovery is
+  limited to integrity-valid existing files with no user-defined SQLite schema
+  objects, so even a view-only unknown database is preserved and rejected.
+  Post-open query execution uses the platform corruption classifier; logical
+  cardinality, sentinel, policy, and row-bound violations remain corruption,
+  while transient and unclassified failures remain storage failures and roll
+  back replacement.
+- **Regression evidence:** The shared contract covers interrupted DDL and
+  recovery, invalid fresh metadata classification, view-only preservation,
+  post-open read failure, replacement rollback, invalid revision cardinality,
+  and nullable stored domains on both runtimes.
+- **Independent completed-change follow-up:** `approved`; no remaining
+  Critical, Required, Recommended, or Optional finding. The reviewer
+  reproduced 21 passing tests on both runtimes and confirmed the aggregate
+  quality and diff checks.
 
 ## Blockers and accepted risks
 

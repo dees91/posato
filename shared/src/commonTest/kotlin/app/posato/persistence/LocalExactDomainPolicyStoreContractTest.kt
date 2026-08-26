@@ -221,7 +221,7 @@ class LocalExactDomainPolicyStoreContractTest {
                     listOf(
                         "PRAGMA quick_check",
                         "SELECT COUNT(*) FROM sqlite_master",
-                        "SELECT schema_version",
+                        "FROM policy_schema",
                     )
                 validationQueries.forEach { failingSqlFragment ->
                     val failure =
@@ -239,6 +239,184 @@ class LocalExactDomainPolicyStoreContractTest {
                 val reopened = testDatabase.openStore()
                 assertState(reopened.read(), 1, listOf("preserved.example"))
                 reopened.close()
+            }
+        }
+
+    @Test
+    fun rollsBackInterruptedFreshSchemaAndRecoversOnNextOpen() =
+        runTest {
+            withTestDatabase("interrupted-schema.db") { testDatabase ->
+                val failure =
+                    assertIs<LocalPolicyResult.Failure>(
+                        testDatabase.open(
+                            driverDecorator = { driver ->
+                                FailingExecuteSqlDriver(driver, "CREATE TABLE local_policy_metadata")
+                            },
+                        ),
+                    )
+                assertEquals(LocalPolicyFailure.STORAGE_FAILURE, failure.reason)
+                assertTrue(testDatabase.exists())
+                testDatabase.withRawDriver { driver ->
+                    assertEquals(
+                        emptyList(),
+                        driver.queryStrings(
+                            "SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name",
+                        ),
+                    )
+                }
+
+                val recovered = testDatabase.openStore()
+                assertState(recovered.read(), 0, emptyList())
+                recovered.close()
+            }
+        }
+
+    @Test
+    fun mapsInvalidFreshSchemaMetadataToStorageFailure() =
+        runTest {
+            withTestDatabase("invalid-fresh-schema-metadata.db") { testDatabase ->
+                val failure =
+                    assertIs<LocalPolicyResult.Failure>(
+                        testDatabase.open(
+                            driverDecorator = { driver ->
+                                SkippingExecuteSqlDriver(driver, "INSERT INTO policy_schema")
+                            },
+                        ),
+                    )
+                assertEquals(LocalPolicyFailure.STORAGE_FAILURE, failure.reason)
+                assertTrue(testDatabase.exists())
+            }
+        }
+
+    @Test
+    fun rejectsAndPreservesAViewOnlyExistingDatabase() =
+        runTest {
+            withTestDatabase("view-only.db") { testDatabase ->
+                testDatabase.createViewOnlySchema()
+
+                val failure = assertIs<LocalPolicyResult.Failure>(testDatabase.open())
+                assertEquals(LocalPolicyFailure.UNSUPPORTED_SCHEMA, failure.reason)
+                assertTrue(testDatabase.exists())
+                testDatabase.withRawDriver { driver ->
+                    assertEquals(
+                        listOf("orphan_view"),
+                        driver.queryStrings(
+                            "SELECT name FROM sqlite_master WHERE name NOT LIKE 'sqlite_%' ORDER BY name",
+                        ),
+                    )
+                }
+            }
+        }
+
+    @Test
+    fun mapsPostOpenQueryFailuresAndRollsBackReplacement() =
+        runTest {
+            withTestDatabase("post-open-query-failure.db") { testDatabase ->
+                var failingDriver: FailingQuerySqlDriver? = null
+                val store =
+                    testDatabase.openStore(
+                        driverDecorator = { driver ->
+                            FailingQuerySqlDriver(driver).also { decorated -> failingDriver = decorated }
+                        },
+                    )
+                assertState(store.replace(0, policy("preserved.example")), 1, listOf("preserved.example"))
+
+                checkNotNull(failingDriver).failingSqlFragment = "FROM local_policy_metadata"
+                val readFailure = assertIs<LocalPolicyResult.Failure>(store.read())
+                assertEquals(LocalPolicyFailure.STORAGE_FAILURE, readFailure.reason)
+
+                checkNotNull(failingDriver).failingSqlFragment = null
+                assertState(store.read(), 1, listOf("preserved.example"))
+
+                checkNotNull(failingDriver).failingSqlFragment = "FROM exact_domain_policy"
+                val replaceFailure =
+                    assertIs<LocalPolicyResult.Failure>(
+                        store.replace(1, policy("discarded.example")),
+                    )
+                assertEquals(LocalPolicyFailure.STORAGE_FAILURE, replaceFailure.reason)
+
+                checkNotNull(failingDriver).failingSqlFragment = null
+                assertState(store.read(), 1, listOf("preserved.example"))
+                store.close()
+            }
+        }
+
+    @Test
+    fun rejectsInvalidRevisionCardinality() =
+        runTest {
+            withTestDatabase("invalid-revision-cardinality.db") { testDatabase ->
+                val store = testDatabase.openStore()
+                store.close()
+                testDatabase.withRawDriver { driver ->
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "DELETE FROM local_policy_metadata",
+                            parameters = 0,
+                        ).value
+                }
+
+                val missingFailure = assertIs<LocalPolicyResult.Failure>(testDatabase.open())
+                assertEquals(LocalPolicyFailure.CORRUPTION, missingFailure.reason)
+
+                testDatabase.withRawDriver { driver ->
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "DROP TABLE local_policy_metadata",
+                            parameters = 0,
+                        ).value
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "CREATE TABLE local_policy_metadata (singleton INTEGER, revision INTEGER)",
+                            parameters = 0,
+                        ).value
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql =
+                                "INSERT INTO local_policy_metadata(singleton, revision) " +
+                                    "VALUES (1, 0), (1, 1), (1, 2)",
+                            parameters = 0,
+                        ).value
+                }
+
+                val duplicateFailure = assertIs<LocalPolicyResult.Failure>(testDatabase.open())
+                assertEquals(LocalPolicyFailure.CORRUPTION, duplicateFailure.reason)
+            }
+        }
+
+    @Test
+    fun rejectsANullableStoredDomain() =
+        runTest {
+            withTestDatabase("nullable-domain.db") { testDatabase ->
+                val store = testDatabase.openStore()
+                store.close()
+                testDatabase.withRawDriver { driver ->
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "DROP TABLE exact_domain_policy",
+                            parameters = 0,
+                        ).value
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "CREATE TABLE exact_domain_policy (canonical_domain TEXT)",
+                            parameters = 0,
+                        ).value
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "INSERT INTO exact_domain_policy(canonical_domain) VALUES (NULL)",
+                            parameters = 0,
+                        ).value
+                }
+
+                val failure = assertIs<LocalPolicyResult.Failure>(testDatabase.open())
+                assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
+                assertTrue(testDatabase.exists())
             }
         }
 
@@ -561,7 +739,7 @@ private fun SqlDriver.queryStrings(sql: String): List<String> =
 
 private class FailingQuerySqlDriver(
     private val delegate: SqlDriver,
-    private val failingSqlFragment: String,
+    var failingSqlFragment: String? = null,
 ) : SqlDriver by delegate {
     override fun <R> executeQuery(
         identifier: Int?,
@@ -570,9 +748,45 @@ private class FailingQuerySqlDriver(
         parameters: Int,
         binders: (SqlPreparedStatement.() -> Unit)?,
     ): QueryResult<R> {
-        if (sql.contains(failingSqlFragment)) {
+        val fragment = failingSqlFragment
+        if (fragment != null && sql.contains(fragment)) {
             error("Synthetic validation execution failure")
         }
         return delegate.executeQuery(identifier, sql, mapper, parameters, binders)
+    }
+}
+
+private class FailingExecuteSqlDriver(
+    private val delegate: SqlDriver,
+    private val failingSqlFragment: String,
+) : SqlDriver by delegate {
+    override fun execute(
+        identifier: Int?,
+        sql: String,
+        parameters: Int,
+        binders: (SqlPreparedStatement.() -> Unit)?,
+    ): QueryResult<Long> {
+        if (sql.contains(failingSqlFragment)) {
+            error("Synthetic schema creation failure")
+        }
+        return delegate.execute(identifier, sql, parameters, binders)
+    }
+}
+
+private class SkippingExecuteSqlDriver(
+    private val delegate: SqlDriver,
+    private val skippedSqlFragment: String,
+) : SqlDriver by delegate {
+    override fun execute(
+        identifier: Int?,
+        sql: String,
+        parameters: Int,
+        binders: (SqlPreparedStatement.() -> Unit)?,
+    ): QueryResult<Long> {
+        return if (sql.contains(skippedSqlFragment)) {
+            QueryResult.Value(0L)
+        } else {
+            delegate.execute(identifier, sql, parameters, binders)
+        }
     }
 }

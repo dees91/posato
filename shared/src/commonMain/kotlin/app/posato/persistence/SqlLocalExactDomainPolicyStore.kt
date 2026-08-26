@@ -1,7 +1,6 @@
 package app.posato.persistence
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
-import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.persistence.db.PosatoDatabase
@@ -28,6 +27,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
     private val driver: SqlDriver,
     private val database: PosatoDatabase,
     private val databaseDispatcher: DatabaseDispatcher,
+    private val corruptionClassifier: LocalPolicyCorruptionClassifier,
 ) : LocalExactDomainPolicyStore {
     private var closed: Boolean = false
 
@@ -43,7 +43,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
             } catch (failure: LocalPolicyStoreException) {
                 LocalPolicyResult.Failure(failure.reason)
             } catch (expectedReadFailure: Exception) {
-                LocalPolicyResult.Failure(LocalPolicyFailure.CORRUPTION)
+                LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
             }
         }
     }
@@ -103,14 +103,20 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
     }
 
     private suspend fun readStateOrThrow(): LocalExactDomainPolicyState {
-        val revision = database.localExactDomainPolicyQueries.selectRevision().awaitAsOne()
-        if (revision < 0) {
+        val revisions =
+            executeReadQuery {
+                database.localExactDomainPolicyQueries.selectRevision().awaitAsList()
+            }
+        if (revisions.size != 1 || revisions.single() < 0) {
             fail(LocalPolicyFailure.CORRUPTION)
         }
+        val revision = revisions.single()
         val canonicalDomains =
-            database.localExactDomainPolicyQueries
-                .selectDomains(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT.toLong() + 1)
-                .awaitAsList()
+            executeReadQuery {
+                database.localExactDomainPolicyQueries
+                    .selectDomains(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT.toLong() + 1)
+                    .awaitAsList()
+            }
         if (canonicalDomains.size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
             fail(LocalPolicyFailure.CORRUPTION)
         }
@@ -125,6 +131,16 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
                 }
             }
         return LocalExactDomainPolicyState(revision, policy)
+    }
+
+    private suspend fun <Value : Any> executeReadQuery(query: suspend () -> List<Value>): List<Value> {
+        return try {
+            query()
+        } catch (expectedCancellation: CancellationException) {
+            throw expectedCancellation
+        } catch (expectedQueryFailure: Exception) {
+            fail(corruptionClassifier.queryFailure(expectedQueryFailure))
+        }
     }
 
     companion object {
@@ -182,7 +198,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
             databaseDispatcher.record(DatabaseContextOperation.DRIVER_OPEN)
             val opened = owner.acquire(factory.open(), databaseDispatcher)
             if (!opened.existedBeforeOpen) {
-                PosatoDatabase.Schema.create(opened.driver).await()
+                createFreshSchema(opened.driver)
             }
             validateOpenedStorage(opened)
             val database = PosatoDatabase(opened.driver)
@@ -194,6 +210,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
                 driver = opened.driver,
                 database = database,
                 databaseDispatcher = databaseDispatcher,
+                corruptionClassifier = opened.corruptionClassifier,
             )
         }
 
@@ -201,39 +218,49 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
             database: PosatoDatabase,
             opened: OpenedLocalPolicyDriver,
         ): Long {
-            return try {
-                database.localExactDomainPolicyQueries.selectSchemaVersion().awaitAsOne()
-            } catch (expectedCancellation: CancellationException) {
-                throw expectedCancellation
-            } catch (expectedSchemaFailure: Exception) {
-                fail(opened.validationFailure(expectedSchemaFailure))
+            val schemaVersions =
+                executeValidationQuery(opened) {
+                    database.localExactDomainPolicyQueries.selectSchemaVersion().awaitAsList()
+                }
+            if (schemaVersions.size != 1 || schemaVersions.single() < 0) {
+                fail(opened.invalidStorageFailure())
             }
+            return schemaVersions.single()
         }
 
         private suspend fun validateOpenedStorage(opened: OpenedLocalPolicyDriver) {
-            val integrityValid =
-                try {
-                    quickCheck(opened.driver)
-                } catch (expectedCancellation: CancellationException) {
-                    throw expectedCancellation
-                } catch (expectedIntegrityFailure: Exception) {
-                    fail(opened.validationFailure(expectedIntegrityFailure))
-                }
+            val integrityValid = executeValidationQuery(opened) { quickCheck(opened.driver) }
             if (!integrityValid) {
                 fail(opened.invalidStorageFailure())
             }
             if (opened.existedBeforeOpen) {
-                val schemaPresent =
-                    try {
-                        hasPolicySchema(opened.driver)
-                    } catch (expectedCancellation: CancellationException) {
-                        throw expectedCancellation
-                    } catch (expectedSchemaLookupFailure: Exception) {
-                        fail(opened.validationFailure(expectedSchemaLookupFailure))
-                    }
+                val schemaPresent = executeValidationQuery(opened) { hasPolicySchema(opened.driver) }
                 if (!schemaPresent) {
-                    fail(LocalPolicyFailure.UNSUPPORTED_SCHEMA)
+                    val userSchemaPresent = executeValidationQuery(opened) { hasUserDefinedSchema(opened.driver) }
+                    if (userSchemaPresent) {
+                        fail(LocalPolicyFailure.UNSUPPORTED_SCHEMA)
+                    }
+                    createFreshSchema(opened.driver)
                 }
+            }
+        }
+
+        private suspend fun <Value> executeValidationQuery(
+            opened: OpenedLocalPolicyDriver,
+            query: suspend () -> Value,
+        ): Value {
+            return try {
+                query()
+            } catch (expectedCancellation: CancellationException) {
+                throw expectedCancellation
+            } catch (expectedValidationFailure: Exception) {
+                fail(opened.validationFailure(expectedValidationFailure))
+            }
+        }
+
+        private suspend fun createFreshSchema(driver: SqlDriver) {
+            PosatoDatabase(driver).transaction {
+                PosatoDatabase.Schema.create(driver).await()
             }
         }
 
@@ -267,6 +294,19 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
                     parameters = 0,
                 ).await()
         }
+
+        private suspend fun hasUserDefinedSchema(driver: SqlDriver): Boolean {
+            return driver
+                .executeQuery(
+                    identifier = null,
+                    sql = "SELECT COUNT(*) FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'",
+                    mapper = { cursor ->
+                        check(cursor.next().value)
+                        QueryResult.Value(cursor.getLong(0) != 0L)
+                    },
+                    parameters = 0,
+                ).await()
+        }
     }
 }
 
@@ -288,6 +328,14 @@ private fun OpenedLocalPolicyDriver.invalidStorageFailure(): LocalPolicyFailure 
 
 private fun OpenedLocalPolicyDriver.validationFailure(failure: Exception): LocalPolicyFailure {
     return if (existedBeforeOpen && corruptionClassifier.isCorruption(failure)) {
+        LocalPolicyFailure.CORRUPTION
+    } else {
+        LocalPolicyFailure.STORAGE_FAILURE
+    }
+}
+
+private fun LocalPolicyCorruptionClassifier.queryFailure(failure: Exception): LocalPolicyFailure {
+    return if (isCorruption(failure)) {
         LocalPolicyFailure.CORRUPTION
     } else {
         LocalPolicyFailure.STORAGE_FAILURE

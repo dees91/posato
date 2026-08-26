@@ -44,6 +44,18 @@ private class JvmLocalPolicyTestDatabase(
         withRawDriver(::initializeUnsupportedPolicySchema)
     }
 
+    override fun createViewOnlySchema() {
+        check(!exists())
+        withRawDriver { driver ->
+            driver
+                .execute(
+                    identifier = null,
+                    sql = "CREATE VIEW orphan_view AS SELECT 1 AS value",
+                    parameters = 0,
+                ).value
+        }
+    }
+
     override fun corruptPolicyTablePage() {
         val pageSize = withRawLongQuery("PRAGMA page_size")
         val rootPage =

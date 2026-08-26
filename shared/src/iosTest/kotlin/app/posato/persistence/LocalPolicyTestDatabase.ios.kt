@@ -109,6 +109,22 @@ private class IosLocalPolicyTestDatabase(
         }
     }
 
+    override fun createViewOnlySchema() {
+        check(!exists())
+        ensureDirectory()
+        val driver = NativeSqliteDriver(existingConfiguration())
+        try {
+            driver
+                .execute(
+                    identifier = null,
+                    sql = "CREATE VIEW orphan_view AS SELECT 1 AS value",
+                    parameters = 0,
+                ).value
+        } finally {
+            driver.close()
+        }
+    }
+
     override fun corruptPolicyTablePage() {
         val pageSize = withRawLongQuery("PRAGMA page_size")
         val rootPage =
