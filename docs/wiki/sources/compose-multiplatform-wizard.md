@@ -80,6 +80,45 @@ boundary is authoritative in
   dependency graph when common and platform source sets both contribute
   bindings.
 
+## Foundation import observation
+
+`observed` (2026-08-26): the supplied Wizard archive has SHA-256
+`640c003612495bad53d17807dbb8bc1eb4a3ef320dcda113cb4510ad4f9e92f1`.
+It contained Android, Web, sample UI, icons, optional libraries, and a local
+properties file in addition to the Apple hosts. The import retained and
+adapted only the wrapper conventions and Xcode-host skeleton. Posato owns the
+fresh `:shared` and `:desktopApp` definitions, shared shell, Metro graphs, test,
+identifiers, versions, and deployment settings. No PoC source was copied.
+
+`observed` (2026-08-26): Compose Multiplatform 1.12.0 with Skiko 0.150.1 and
+Compose Multiplatform 1.11.1 with Skiko 0.144.6 both supplied
+`libicu.icudtl_dat.o` for the arm64 iOS Simulator with `minos 18.5`. Linking
+either at Posato's accepted iOS 18.0 target produced an external-object linker
+warning despite the compatibility guide's broader iOS support claim. Stable
+Compose Multiplatform 1.10.3 uses Skiko 0.9.37.4 whose equivalent object
+declares `minos 17.2`; it links without that warning at iOS 18.0. Posato
+therefore pins Compose 1.10.3 for PR #1 rather than raising the accepted
+deployment target or suppressing the warning.
+
+`observed` (2026-08-26): Gradle 9.5.0, Kotlin 2.4.10, Compose Multiplatform
+1.10.3, Metro 1.4.2, JDK 21, JVM 17 bytecode, and local Xcode 26.6 passed the
+shared UI test, desktop and iOS graph compilation, an unsigned iOS Simulator
+build and launch, and a macOS application-image build and launch. Both hosts
+rendered the exact four-line `DESIGN.md` shell. The Xcode result is bounded
+local evidence because Kotlin 2.4.10 documents support only through Xcode
+26.4.
+
+`observed` (2026-08-26): the initial runtime guard alone let Android Studio
+select its bundled JBR 25 as the project daemon and then fail before the
+maintainer could persist JDK 21 through the IDE. The checked-in Gradle daemon
+JVM criteria now pins Eclipse Temurin 21 and records Foojay provisioning URLs.
+The Gradle-owned Foojay resolver convention plugin 1.0.0 generates those URLs;
+it is a settings-only Apache-2.0 build dependency with no application runtime
+role. A build launched by Android Studio's JBR 25 selected a Temurin 21 daemon
+and passed the shared tests, both iOS compilations, and macOS application-image
+packaging. Compose Desktop rejected Homebrew's JDK distribution for packaging,
+so Posato retains the vendor criterion rather than disabling that safeguard.
+
 ## Evidence limits
 
 The wizard repository publishes no release tags at the reviewed date, and its

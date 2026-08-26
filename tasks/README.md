@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 2
-- **Accepted:** 2026-08-25
+- **Revision:** 3
+- **Accepted:** 2026-08-26
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -152,6 +152,36 @@ Create a script, wizard, parser, or reusable configuration surface only when:
 
 An imagined future consumer is not enough.
 
+## Pull request feedback loop
+
+After a pull-request push, hosted CI and review may run in parallel. Human
+inline comments are the primary feedback channel. The local implementation
+agent reads unresolved GitHub threads, evaluates each finding against the task
+and repository authorities, applies accepted Critical and Required fixes,
+runs affected verification, commits and pushes the correction, and replies
+with concise evidence. The reviewer decides whether its thread is resolved.
+
+Use a manually requested `@codex review` as an additional independent pass
+when the repository is connected to Codex Cloud. Request it once after the
+latest substantive code or configuration change. Do not request hosted review
+for documentation-only changes, including task status, execution evidence,
+wiki logs, and review bookkeeping. Such a follow-up does not invalidate the
+preceding hosted review or require another request. Repeat hosted review only
+after code or configuration changes again, including corrections made for a
+substantive finding.
+
+Documentation still follows the proportional review tiers: routine status and
+bookkeeping use a Trivial self-check, while meaningful documentation receives
+its required human or local independent review without a hosted GitHub Codex
+pass. Automatic AI reviews remain disabled until representative pull requests
+show that manual substantive reviews add useful signal without recurring
+noise. Cloud review remains read-only for this workflow; the local
+implementation agent owns corrections.
+
+Neither AI review nor green CI authorizes merge. The required proportional
+review tier still applies, no unresolved Critical or Required finding may
+remain, and the maintainer owns the final merge decision.
+
 ## Parallel work and pull requests
 
 Parallel implementation requires complete blocking dependencies, frozen shared
@@ -182,4 +212,6 @@ verification stay in the execution record.
 `GOVERNANCE-001` and `PLANNING-001` preserve how the original workflow and
 Gate 6 roadmap were introduced. Their longer records are history, not templates
 for new work. This revision is implemented by
-[`GOVERNANCE-002`](specifications/governance-002-streamline-engineering-workflow.md).
+[`GOVERNANCE-002`](specifications/governance-002-streamline-engineering-workflow.md),
+with the revision 3 pull-request feedback loop explicitly accepted during the
+PR #1 integration cycle.

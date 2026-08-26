@@ -70,6 +70,23 @@ needs it. When human action is the blocker, stop and explain the next action.
 Parallel implementing agents require isolated Git worktrees and the dependency
 and write-surface conditions in `tasks/README.md`.
 
+## Code Review Rules
+
+- Report only actionable defects introduced by the reviewed diff. Map P0 to
+  `Critical` and P1 to `Required`; do not turn advisory preferences or
+  pre-existing out-of-scope work into blocking findings.
+- Require automated tests only for important business, state, policy,
+  validation, parsing, and boundary behavior. Do not request tests for static
+  UI rendering, copy, theme mapping, or framework wiring.
+- Flag credentials, personal paths, wholesale PoC reuse, and violations of the
+  accepted product, architecture, security, privacy, or process boundaries.
+  `.research/blocker` must remain read-only evidence and an optional checkout.
+- Request hosted `@codex review` only after the latest substantive code or
+  configuration change. Do not request it for documentation-only changes,
+  including status, evidence, wiki-log, and review-bookkeeping updates. A
+  documentation-only follow-up does not invalidate the preceding hosted
+  review; repeat that review only after code or configuration changes again.
+
 ## Feasibility research reference
 
 Maintainer checkouts may provide the ignored path `.research/blocker`, pointing

@@ -377,3 +377,92 @@
   provisioning, signing, and verification path to `SYNC-006`.
 - Completed the Gate 7 resource and non-Keychain portal-capability evidence
   while preserving the separate Ready to open PR #1 checkpoint.
+
+## [2026-08-26] event | Import the Foundation application skeleton
+
+- Recorded the supplied Wizard archive digest and selectively retained the
+  Apple host and wrapper structure while excluding Android, Web, sample,
+  optional dependency, icon, and local configuration surfaces.
+- Added the fresh accepted `:shared`, `:desktopApp`, and `iosApp` topology with
+  Metro platform graphs and the exact four-line shared shell.
+- Selected Compose Multiplatform 1.10.3 after controlled inspection found that
+  the 1.11.1 and 1.12.0 Skiko ICU objects exceeded the accepted iOS 18.0
+  deployment target.
+- Passed shared tests, platform graph compilation, credential-free Xcode 26.6
+  Simulator build and launch, and macOS application-image build and launch.
+
+## [2026-08-26] correction | Pin the Gradle daemon to Temurin 21
+
+- Supplemented the runtime JDK guard with a checked-in daemon JVM criterion
+  that takes precedence over Android Studio's JBR 25 launcher.
+- Added the Gradle-owned Foojay resolver convention plugin 1.0.0 to generate
+  portable Eclipse Temurin 21 provisioning URLs.
+- Retained Compose Desktop's JDK vendor safeguard after it rejected Homebrew's
+  JDK distribution, then passed the Foundation build from a JBR 25 launcher
+  with a Temurin 21 daemon.
+
+## [2026-08-26] decision | Accept the temporary Detekt prerelease exception
+
+- Added `./gradlew quality` as the aggregate local formatting, analysis,
+  warning, test, build, packaging, and report boundary for PR #1.
+- Pinned ktlint Gradle plugin 14.2.0, ktlint 1.8.0, Detekt 2.0.0-alpha.6, and
+  Compose Rules 0.6.4 after compatibility and license review.
+- Accepted Detekt's prerelease only as build-time quality tooling because no
+  stable Detekt release supports Kotlin 2.4.10 metadata; the first compatible
+  stable Detekt 2 release is the removal trigger.
+- Confirmed Compose Rules enforcement with a controlled `ModifierMissing`
+  failure and retained no lint baseline or failure-tolerant mode.
+
+## [2026-08-26] event | Configure credential-free CI
+
+- Added one GitHub Actions job that runs `./gradlew quality` and a separate
+  signing-disabled iOS Simulator host build on the arm64 `macos-15` runner.
+- Selected Temurin 21 and Xcode 26.3 explicitly, pinned GitHub-maintained
+  actions by immutable release commit, disabled checkout credential
+  persistence, and limited repository permissions to read access.
+- Recorded that no PoC workflow existed to reuse and kept `CI-001` open until
+  the first hosted workflow run can be observed from a connected GitHub
+  repository.
+
+## [2026-08-26] decision | Limit automated tests to important logic
+
+- Removed static application-shell and platform-theme UI tests that protected
+  framework wiring and fixed copy rather than important product behavior.
+- Limited pre-stabilization automated coverage to business, state, policy,
+  validation, parsing, and boundary logic with regression value.
+- Deferred golden UI testing, with Paparazzi named as a possible approach, to a
+  separate post-MVP decision; platform builds and proportionate manual
+  inspection remain the current UI verification boundary.
+
+## [2026-08-26] correction | Align the shell with platform appearance
+
+- Replaced fixed Material typography and black, white, and opacity styling
+  with a narrow platform theme boundary using semantic system backgrounds,
+  labels, and text sizes.
+- Corrected UIKit dynamic-color conversion after manual Simulator inspection
+  exposed a launch crash for an extended monochrome color space.
+- Confirmed the corrected iOS launch and both desktop appearance branches; one
+  opaque label color now preserves contrast while type and spacing carry the
+  four-line hierarchy.
+
+## [2026-08-26] decision | Adopt a human-owned pull request review loop
+
+- Recorded the first successful hosted PR #1 quality run and closed `CI-001`
+  without adding signing material or application credentials.
+- Kept human inline comments as the primary feedback channel and added a
+  manually requested `@codex review` as an independent, read-only pass.
+- Assigned corrections and verification to the local implementation agent,
+  thread resolution to the reviewer, and the final merge decision to the
+  maintainer; automatic AI reviews remain disabled pending useful evidence.
+- Observed the first manual hosted Codex review complete without a major issue
+  or inline finding while the reviewed commit's hosted `Quality` job passed.
+
+## [2026-08-26] correction | Stop hosted review loops for documentation
+
+- Reserved hosted `@codex review` for the latest substantive code or
+  configuration change.
+- Excluded documentation-only status, evidence, wiki-log, and review
+  bookkeeping from hosted review without weakening proportional local or human
+  review for meaningful documentation.
+- Made documentation-only closeout non-invalidating so recording a review
+  result cannot recursively trigger another review request.

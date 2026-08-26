@@ -188,8 +188,8 @@ external-build entitlement, provisioning, signing, and verification path.
 - [x] Gates 1 through 7 are complete.
 - [x] The maintainer explicitly accepts the scope, identity, design,
   architecture, quality contract, and PR roadmap.
-- [ ] One concise PR #1 brief and execution record state its acceptance
+- [x] One concise PR #1 brief and execution record state its acceptance
   criteria and applicable verification commands.
 - [x] No unresolved entitlement or identifier blocks the application skeleton.
-- [ ] Production implementation may begin on a short-lived branch from clean
+- [x] Production implementation may begin on a short-lived branch from clean
   `main`.

@@ -169,8 +169,9 @@ Before any generated file enters the repository:
   production icon exists;
 - implement only the four accepted shell text elements from `DESIGN.md`;
 - adapt every retained Kotlin declaration to repository code rules; and
-- verify the two platform graphs, shared tests, JVM build, iOS simulator build,
-  and a structural diff against the generated archive.
+- verify the two platform graphs, behavior-focused shared tests when
+  applicable, JVM build, iOS simulator build, and a structural diff against
+  the generated archive.
 
 `user-confirmed` (2026-08-25): the maintainer accepted the module and source-set
 graph, Metro ownership, target identifiers, Device Activity monitor extension,

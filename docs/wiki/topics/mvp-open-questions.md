@@ -286,7 +286,7 @@ and [repository task workflow](../../../tasks/README.md) establish:
   ktlint;
 - warning-free repository-owned source, no new-code lint baselines, and narrow
   documented exceptions for unavoidable external or generated warnings;
-- applicable unit, contract, integration, Compose UI, platform, simulator,
+- applicable unit, contract, integration, platform, simulator,
   physical-device, and manual verification chosen for the change rather than
   copied into an applicability matrix;
 - Trivial self-checks, Standard completed-change review, and an additional
@@ -299,10 +299,63 @@ and [repository task workflow](../../../tasks/README.md) establish:
 - proportional dependency, license, security, privacy, provenance, and PoC
   reuse review without claiming release readiness.
 
-Gate 5 defines the CI outcome and credential boundary but does not configure a
-pipeline. CI is a separate Gate 6 task due before PR #1 merges or the first
-parallel implementation wave starts, whichever occurs first. Until then,
-fresh local verification evidence is mandatory.
+Gate 5 defines the CI outcome and credential boundary. `observed` (2026-08-26):
+PR #1 now contains a GitHub Actions workflow that runs the aggregate gate and
+a signing-disabled iOS Simulator host build on the arm64 `macos-15` runner.
+The workflow selects Temurin 21 and Xcode 26.3 explicitly, grants read-only
+repository access, disables checkout credential persistence, and pins its
+GitHub-maintained actions to immutable commits. Current official runner-image
+inventory lists Xcode 26.3 on that image; this stays within Kotlin 2.4.10's
+documented Xcode compatibility ceiling.
+
+`observed` (2026-08-26): PR #1 is open in a private GitHub repository and its
+first hosted `Quality` job passed in 6 minutes 52 seconds. The run exercised
+the aggregate gate, the signing-disabled iOS Simulator host build with Xcode
+26.3, and report upload on the selected arm64 `macos-15` runner. `CI-001` is
+complete without introducing signing material or an application credential.
+
+`observed` (2026-08-26): PR #1 now exposes `./gradlew quality` as the local
+aggregate boundary. It pins ktlint Gradle plugin 14.2.0 with ktlint 1.8.0,
+Detekt 2.0.0-alpha.6, and Compose Rules 0.6.4; generates ktlint and Detekt
+reports; retains shared JVM and desktop test tasks for future behavior-bearing
+logic; compiles both iOS targets with warnings as errors; and creates the macOS
+distributable. The current static shell has no automated tests. A controlled
+invalid composable was rejected by the Compose `ModifierMissing` rule.
+Generated Compose Resources Kotlin is excluded from ktlint and no baseline
+exists.
+
+`user-confirmed` (2026-08-26): pre-stabilization UI tests that assert static
+copy, rendering, theme-token mapping, or shell wiring are maintenance burden
+without protecting important product logic. They are excluded through the MVP;
+UI changes use platform builds and proportionate manual inspection. Golden
+testing, with Paparazzi named as a possible approach, remains a separate
+post-MVP decision.
+
+`user-confirmed` (2026-08-26): the Detekt prerelease is a narrow build-time
+exception because no stable Detekt release supports the accepted Kotlin 2.4.10
+compiler metadata. The first compatible stable Detekt 2 release is the removal
+trigger. An explicit `.research/blocker` search found only compiler
+warnings-as-errors evidence, not a production-quality lint or aggregate gate
+configuration to reuse.
+
+`user-confirmed` (2026-08-26): pull requests use human inline comments as the
+primary feedback channel, followed by a manually requested `@codex review` as
+an additional independent pass. The local implementation agent owns accepted
+corrections and verification; the reviewer controls thread resolution and the
+maintainer owns merge. Automatic AI review remains disabled until manual runs
+demonstrate useful signal without recurring noise.
+
+`observed` (2026-08-26): the first manual hosted Codex review examined PR #1
+at commit `e4eb8f4`, reported no major issue, and added no inline finding. The
+same commit passed the hosted `Quality` job in 4 minutes 39 seconds. Automatic
+AI review remained disabled; the maintainer still owns the merge decision.
+
+`user-confirmed` (2026-08-26): hosted GitHub Codex review is reserved for the
+latest substantive code or configuration change. Documentation-only status,
+evidence, wiki-log, and review-bookkeeping updates do not invalidate that
+review and must not trigger another request. Routine closeout uses a self-check;
+meaningful documentation keeps its proportional human or local independent
+review without creating a hosted-review loop.
 
 ## Gate 6 roadmap (complete)
 
@@ -480,14 +533,16 @@ task requires it.
 
 `user-confirmed`: PR #1 creates fresh production modules, uses accepted target
 identifiers, runs one minimal shared Compose screen on macOS and iOS,
-introduces small semantic platform contracts with fakes, and establishes
-baseline tests and CI. Gate 5 does not configure CI; Gate 6 retains CI as a
-milestone in the shared PR #1 cycle that completes before PR #1 merges or
+introduces small semantic platform contracts, and establishes behavior-focused
+tests when applicable plus CI. Gate 5 did not configure CI; Gate 6 retains CI
+as a milestone in the shared PR #1 cycle that completes before PR #1 merges or
 parallel implementation begins. PR #1 implements neither blocking nor
 synchronization.
 
 `user-confirmed` (2026-08-26): APPLE-001's registered resources,
 non-Keychain portal capabilities, associations, team visibility, and retained
 Keychain suffix all pass. Gate 7 is complete without claiming Keychain
-functionality, provisioning authorization, or signed entitlements. The next
-handoff is the still-blocking Ready to open PR #1 checkpoint.
+functionality, provisioning authorization, or signed entitlements. The Ready
+to open PR #1 checkpoint was subsequently accepted. Hosted `CI-001` now passes;
+the manual Codex review also passes, and the active external handoff is the
+maintainer merge decision.

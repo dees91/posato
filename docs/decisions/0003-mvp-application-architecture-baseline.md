@@ -215,8 +215,9 @@ Before reviewed files enter PR #1:
   production icon exists;
 - implement only the accepted PR #1 shell from `DESIGN.md`;
 - adapt retained Kotlin declarations to repository code rules; and
-- verify both platform graphs, shared tests, the JVM build, an iOS Simulator
-  build, and a structural diff against the generated archive.
+- verify both platform graphs, behavior-focused shared tests when applicable,
+  the JVM build, an iOS Simulator build, and a structural diff against the
+  generated archive.
 
 The wizard is a one-time generator. Future updates are explicit reviewed
 changes, not regeneration.

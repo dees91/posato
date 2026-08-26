@@ -353,6 +353,16 @@ Use the system background and label colors, system typography, and Posato Moss
 as the sole tint. Do not add a navigation shell, dashboard cards, fake session
 controls, gradients, illustrations, or the unfinished app icon to PR #1.
 
+`observed` (2026-08-26): the PR #1 implementation uses one opaque system label
+color for all four lines; semantic size, weight, and spacing carry the visual
+hierarchy without low-contrast disabled-label colors. Its UIKit boundary
+resolves dynamic semantic colors through `UIColor.getRed`, which safely
+normalizes both extended monochrome and RGB color spaces. The desktop boundary
+reads Compose's system appearance and adapts the JDK's AWT window and label
+semantics for light and dark presentation. Manual Simulator inspection
+confirmed that the UIKit theme also reacts to a live Light-to-Dark appearance
+change.
+
 ## Deferred work
 
 Final logo and app-icon production, custom typography, a complete identity
