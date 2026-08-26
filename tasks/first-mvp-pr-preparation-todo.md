@@ -157,30 +157,39 @@ stage before autonomous PR #1 implementation.
 
 **Acceptance criteria:**
 
-- [ ] Bundle identifiers exist for the macOS and iOS applications, native
+- [x] Bundle identifiers exist for the macOS and iOS applications, native
   helper, and required activity-monitor extension.
-- [ ] The App Group, Keychain access group, CloudKit container, entitlements,
-  and development profiles required by the accepted Gate 7 target graph exist.
-- [ ] Non-secret identifiers and manual results are documented;
+- [x] The App Group and CloudKit container exist; required non-Keychain portal
+  capabilities are available and assigned to their owning App IDs, and the
+  accepted public Keychain access-group suffix is retained for later target
+  configuration.
+- [x] Non-secret identifiers and manual results are documented;
   credentials, profiles, signing identities, and account-specific secrets
   remain outside Git.
 
 **Verification:**
 
-- [ ] Manual Apple Developer inspection records pass or blocked for every
-  required identifier, capability, and development profile.
-- [ ] Xcode shows the intended team and resources without copying private
-  account values into tracked artifacts.
+- [x] Manual Apple Developer inspection records pass or blocked for every
+  registered resource and required portal capability association; CloudKit
+  Console shows the container.
+- [x] Xcode shows the intended team without copying private account values into
+  tracked artifacts.
+
+Target entitlement, signing, and development-profile verification starts only
+when the owning target and capability exist. It is not a Gate 7 prerequisite
+for the credential-free PR #1 skeleton. `SYNC-005` owns iOS Keychain Sharing
+target configuration and verification. `SYNC-006` owns the equivalent macOS
+external-build entitlement, provisioning, signing, and verification path.
 
 **Dependencies:** Gates 2, 4, and 6.
 
 ## Checkpoint: Ready to open PR #1
 
-- [ ] Gates 1 through 7 are complete.
+- [x] Gates 1 through 7 are complete.
 - [x] The maintainer explicitly accepts the scope, identity, design,
   architecture, quality contract, and PR roadmap.
 - [ ] One concise PR #1 brief and execution record state its acceptance
   criteria and applicable verification commands.
-- [ ] No unresolved entitlement or identifier blocks the application skeleton.
+- [x] No unresolved entitlement or identifier blocks the application skeleton.
 - [ ] Production implementation may begin on a short-lived branch from clean
   `main`.

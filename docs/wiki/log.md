@@ -353,3 +353,27 @@
   cycle.
 - Reframed APPLE-001 as a manual Apple Developer and Xcode checklist without
   scripts, parsers, wizards, or local configuration layers.
+
+## [2026-08-26] correction | Correct the APPLE-001 pre-scaffold boundary
+
+- Recorded the maintainer's acceptance that Gate 7 registers four explicit App
+  IDs, one App Group, and one CloudKit container while retaining
+  `app.posato.sync` as a public entitlement suffix rather than a portal
+  resource.
+- Limited pre-scaffold Xcode verification to intended-team visibility and
+  routed resource, capability, and container checks to Apple Developer and
+  CloudKit Console.
+- Moved target entitlement, signing, and development-profile verification to
+  the tasks that configure the owning targets and capabilities, preserving a
+  credential-free PR #1 skeleton.
+
+## [2026-08-26] correction | Route Keychain Sharing to application packaging
+
+- Recorded the maintainer's current portal observation and acceptance that
+  APPLE-001 requires no Keychain action in Certificates, Identifiers &
+  Profiles.
+- Retained `app.posato.sync` as the public suffix and assigned iOS target
+  configuration to `SYNC-005` and the macOS external-build entitlement,
+  provisioning, signing, and verification path to `SYNC-006`.
+- Completed the Gate 7 resource and non-Keychain portal-capability evidence
+  while preserving the separate Ready to open PR #1 checkpoint.

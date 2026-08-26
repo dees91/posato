@@ -23,9 +23,11 @@ The engineering quality baseline is also accepted in the
 [quality contract](../../development/engineering-quality-contract.md) and
 [task workflow](../../../tasks/README.md). The
 [Gate 6 MVP roadmap](../../../tasks/mvp-roadmap.md) is accepted at revision 2
-with concise future task stubs. Gate 7 task `APPLE-001` is the immediate
-handoff and production scaffolding remains blocked. The sections below retain
-the decisions that later tasks must resolve and the questions that may remain
+with concise future task stubs. All seven preparation gates now have their
+accepted inputs and evidence. Production scaffolding remains blocked until the
+Ready to open PR #1 checkpoint, shared PR #1 brief and execution record, and
+explicit maintainer acceptance are complete. The sections below retain the
+decisions that later tasks must resolve and the questions that may remain
 incremental.
 
 `user-confirmed` (2026-08-25): the maintainer accepted the complete
@@ -325,8 +327,9 @@ accepted [DESIGN.md](../../../DESIGN.md) contract or become production
 requirements.
 
 Roadmap revision 2 is accepted. Future work remains as stubs until a concise
-brief is needed. Gate 6 is complete, and `APPLE-001` is the first incomplete
-Gate 7 task. This acceptance does not authorize application scaffolding.
+brief is needed. Gates 6 and 7 are complete, but this does not authorize
+application scaffolding before the separate Ready to open PR #1 checkpoint is
+explicitly accepted.
 
 ## Apple identity and distribution
 
@@ -335,16 +338,51 @@ Gate 7 task `APPLE-001` registers and verifies the Apple resources required by
 the roadmap:
 
 - development team and signing ownership;
-- CloudKit container and environment strategy for the accepted synchronization
-  scope;
-- accepted application, helper, and extension bundle identifiers plus the
-  App Group and Keychain access group;
-- entitlement availability and explicit blockers for later physical tasks.
+- four accepted application, helper, and extension bundle identifiers;
+- the App Group and CloudKit container plus the accepted public Keychain
+  access-group suffix; and
+- development-capability availability, resource associations, and explicit
+  blockers for later physical tasks.
 
-The maintainer performs these checks manually in Apple Developer and Xcode,
-guided one resource at a time. Credentials and private account values stay out
-of Git; no preflight script, parser, wizard, or local configuration layer is
-required.
+The maintainer performs these checks manually in Apple Developer and CloudKit
+Console, with Xcode used only to confirm intended-team visibility before target
+scaffolding. Work proceeds one resource at a time. Credentials and private
+account values stay out of Git; no preflight script, parser, wizard, or local
+configuration layer is required.
+
+`user-confirmed` (2026-08-26): the corrected pre-scaffold Gate 7 boundary
+registers six external resources: four explicit App IDs, one App Group, and one
+CloudKit container. `app.posato.sync` remains the accepted public Keychain
+access-group suffix but is configured later in target entitlements rather than
+registered as a separate portal resource. APPLE-001 verifies resources and
+capability associations in Apple Developer, the container in CloudKit Console,
+and only intended-team visibility in Xcode. Target entitlements, signing, and
+development profiles are verified by the tasks that configure the owning
+application packaging paths; they do not block the credential-free PR #1
+skeleton.
+
+The source boundary was rechecked against Apple's current guidance for
+[adding target capabilities](https://developer.apple.com/documentation/xcode/adding-capabilities-to-your-app),
+[configuring Keychain Sharing](https://developer.apple.com/documentation/xcode/configuring-keychain-sharing),
+[the Keychain Access Groups entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/keychain-access-groups),
+[enabling App ID capabilities](https://developer.apple.com/help/account/identifiers/enable-app-capabilities/),
+[supported iOS capabilities](https://developer.apple.com/help/account/reference/supported-capabilities-ios/),
+[supported macOS capabilities](https://developer.apple.com/help/account/reference/supported-capabilities-macos/),
+[creating development profiles](https://developer.apple.com/help/account/provisioning-profiles/create-a-development-provisioning-profile/),
+[signing externally built macOS code](https://developer.apple.com/documentation/xcode/creating-distribution-signed-code-for-the-mac/),
+and [enabling CloudKit](https://developer.apple.com/documentation/cloudkit/enabling-cloudkit-in-your-app).
+
+`user-confirmed` (2026-08-26): the current App ID capability list exposed no
+entry whose name contains `Keychain`, and no substitute portal capability was
+selected. APPLE-001 therefore enumerates its required portal capabilities as
+Family Controls development, App Groups, and iCloud/CloudKit. No Keychain
+portal action is part of Gate 7. The exact public `app.posato.sync` suffix is
+retained for later application configuration. `SYNC-005` owns iOS Keychain
+Sharing target configuration, provisioning authorization, and signed-
+entitlement verification. Because the accepted macOS host is Compose
+Desktop/JVM rather than an Xcode target, `SYNC-006` owns the equivalent
+external-build entitlement, provisioning, signing, and verification path.
+Neither later check blocks the credential-free PR #1 skeleton.
 
 Notarization, App Store or direct-distribution strategy, update delivery,
 privacy disclosures, and public support readiness belong to the separate
@@ -447,3 +485,9 @@ baseline tests and CI. Gate 5 does not configure CI; Gate 6 retains CI as a
 milestone in the shared PR #1 cycle that completes before PR #1 merges or
 parallel implementation begins. PR #1 implements neither blocking nor
 synchronization.
+
+`user-confirmed` (2026-08-26): APPLE-001's registered resources,
+non-Keychain portal capabilities, associations, team visibility, and retained
+Keychain suffix all pass. Gate 7 is complete without claiming Keychain
+functionality, provisioning authorization, or signed entitlements. The next
+handoff is the still-blocking Ready to open PR #1 checkpoint.

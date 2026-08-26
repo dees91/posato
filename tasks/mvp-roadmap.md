@@ -43,8 +43,9 @@ remain authoritative for their concerns.
 
 The 36 rows below are the complete Gate 6 task set. Future rows stay as stubs.
 [`APPLE-001`](specifications/apple-001-register-apple-resources.md) is the
-only active Gate 7 brief. Direct dependencies preserve revision 1; wave
-barriers add the phase ordering stated above.
+completed Gate 7 brief. The Ready to open PR #1 checkpoint remains incomplete.
+Direct dependencies preserve revision 1; wave barriers add the phase ordering
+stated above.
 
 | Task | Outcome | Epic | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- |
@@ -110,7 +111,7 @@ integrated increment, not three task cycles plus another holistic review.
 
 | Gate | Owner | Completion rule |
 | --- | --- | --- |
-| Apple team, identifiers, groups, container, development capabilities, and profiles | `APPLE-001` | Manual Apple Developer and Xcode rows pass without tracked private values. |
+| Apple team, four App IDs, App Group, CloudKit container, Keychain suffix, and Family Controls, App Groups, and iCloud/CloudKit portal capabilities | `APPLE-001` | Apple Developer and CloudKit Console resource rows plus Xcode team visibility pass without tracked private values; Keychain target configuration, provisioning authorization, and signed-entitlement verification remain with `SYNC-005` and `SYNC-006`. |
 | Family Controls distribution availability | `TARGETS-004` / `IOS-001` | Later distribution work records pass or a clearing condition. |
 | iOS suspended expiry opportunity | `IOS-002` | A physical callback clears owned restrictions without promising exact wake time. |
 | macOS helper signing and privilege path | `MACOS-003` | Physical authentication, authorization, failure, and removal/recovery evidence passes. |
@@ -126,6 +127,7 @@ value enters tracked evidence.
 ## Activation rule
 
 Gate 6 acceptance makes these rows planning authority, not implementation
-authorization. Continue with APPLE-001. For later work, create the brief only
-when its dependencies and wave barrier are clear, then apply the proportional
-review tier and evidence rules in `tasks/README.md`.
+authorization. Complete and explicitly accept the Ready to open PR #1
+checkpoint before production scaffolding. For later work, create the brief
+only when its dependencies and wave barrier are clear, then apply the
+proportional review tier and evidence rules in `tasks/README.md`.

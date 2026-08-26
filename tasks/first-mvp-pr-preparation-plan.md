@@ -7,7 +7,8 @@
   application code
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** complete the Gate 7 Apple resource checklist
+- **Next work:** complete and explicitly accept the Ready to open PR #1
+  checkpoint; do not scaffold application code before that acceptance
 - **Accepted Gate 6 authority:** [mvp-roadmap.md](mvp-roadmap.md)
 
 ## Objective
@@ -62,9 +63,11 @@ and [DESIGN.md](../DESIGN.md) is the design authority. The
 [engineering quality contract](../docs/development/engineering-quality-contract.md)
 and [task workflow](README.md) are accepted. The
 [Gate 6 MVP roadmap](mvp-roadmap.md) is accepted at revision 2 and retains
-future work as concise task stubs. Gate 7 Apple resource registration is now
-the first incomplete gate. Architecture details deferred by ADR 0003 remain
-with the smallest named task that requires them.
+future work as concise task stubs. Gate 7 Apple resource registration is
+complete. The Ready to open PR #1 checkpoint is the first incomplete handoff,
+and production scaffolding remains blocked until it is explicitly accepted.
+Architecture details deferred by ADR 0003 remain with the smallest named task
+that requires them.
 
 [architecture-baseline]: ../docs/decisions/0003-mvp-application-architecture-baseline.md
 
