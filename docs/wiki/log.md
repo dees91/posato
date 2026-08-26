@@ -412,3 +412,35 @@
   stable Detekt 2 release is the removal trigger.
 - Confirmed Compose Rules enforcement with a controlled `ModifierMissing`
   failure and retained no lint baseline or failure-tolerant mode.
+
+## [2026-08-26] event | Configure credential-free CI
+
+- Added one GitHub Actions job that runs `./gradlew quality` and a separate
+  signing-disabled iOS Simulator host build on the arm64 `macos-15` runner.
+- Selected Temurin 21 and Xcode 26.3 explicitly, pinned GitHub-maintained
+  actions by immutable release commit, disabled checkout credential
+  persistence, and limited repository permissions to read access.
+- Recorded that no PoC workflow existed to reuse and kept `CI-001` open until
+  the first hosted workflow run can be observed from a connected GitHub
+  repository.
+
+## [2026-08-26] decision | Limit automated tests to important logic
+
+- Removed static application-shell and platform-theme UI tests that protected
+  framework wiring and fixed copy rather than important product behavior.
+- Limited pre-stabilization automated coverage to business, state, policy,
+  validation, parsing, and boundary logic with regression value.
+- Deferred golden UI testing, with Paparazzi named as a possible approach, to a
+  separate post-MVP decision; platform builds and proportionate manual
+  inspection remain the current UI verification boundary.
+
+## [2026-08-26] correction | Align the shell with platform appearance
+
+- Replaced fixed Material typography and black, white, and opacity styling
+  with a narrow platform theme boundary using semantic system backgrounds,
+  labels, and text sizes.
+- Corrected UIKit dynamic-color conversion after manual Simulator inspection
+  exposed a launch crash for an extended monochrome color space.
+- Confirmed the corrected iOS launch and both desktop appearance branches; one
+  opaque label color now preserves contrast while type and spacing carry the
+  four-line hierarchy.

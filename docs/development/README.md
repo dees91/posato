@@ -22,8 +22,10 @@ seven preparation gates and the ready checkpoint are complete.
 - fresh KMP application modules independent of the PoC module graph;
 - accepted application and target identifiers;
 - one minimal shared Compose screen running in the macOS and iOS applications;
-- small semantic platform contracts with test fakes;
-- baseline tests, formatting, static checks, and CI for the introduced targets.
+- small semantic platform contracts, with test fakes when behavior requires
+  them;
+- behavior-focused tests when applicable, formatting, static checks, and CI
+  for the introduced targets.
 
 Gate 5 defines the required CI outcome but does not configure a pipeline.
 `FOUNDATION-001`, `QUALITY-001`, and `CI-001` share one PR #1 brief,
@@ -31,8 +33,8 @@ execution record, and completed-change review. CI must complete before PR #1
 merges or the first parallel implementation wave begins, whichever happens
 first.
 
-`FOUNDATION-001` and `QUALITY-001` are complete. The active next milestone is
-`CI-001`.
+`FOUNDATION-001` and `QUALITY-001` are complete. `CI-001` is implemented
+locally and remains open until its first hosted GitHub Actions run passes.
 
 ## Foundation local use
 
@@ -87,11 +89,11 @@ Run the repository-owned aggregate gate from the repository root:
 
 It checks root and module Kotlin formatting with ktlint, analyzes both
 application modules with Detekt and Compose Rules, compiles warning-free JVM
-and iOS source, runs the shared JVM and desktop test tasks, and creates the
-macOS distributable. Detekt writes Checkstyle, HTML, Markdown, and SARIF
+and iOS source, runs the shared JVM and desktop test tasks when test sources
+exist, and creates the macOS distributable. The current static shell has no
+behavior-focused tests. Detekt writes Checkstyle, HTML, Markdown, and SARIF
 reports under each module's `build/reports/detekt/`; ktlint writes plain-text
 and Checkstyle reports under `build/reports/ktlint/` in each checked project.
-Gradle writes test reports under the owning module's `build/reports/tests/`.
 
 The pinned quality set is ktlint Gradle plugin 14.2.0, ktlint 1.8.0, Detekt
 2.0.0-alpha.6, and Compose Rules 0.6.4. The Detekt prerelease is the narrow

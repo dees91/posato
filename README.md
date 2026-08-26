@@ -63,8 +63,8 @@ These are direction constraints, not a complete architecture.
 
 The first production pull request is active. Its seven preparation gates and
 ready checkpoint are complete. `FOUNDATION-001` has added the Apple-only
-application shell, `QUALITY-001` has added `./gradlew quality`, and `CI-001` is
-the next milestone inside the same PR.
+application shell, `QUALITY-001` has added `./gradlew quality`, and the local
+`CI-001` implementation is awaiting its first hosted GitHub Actions run.
 
 The MVP scope, product identity, minimum brand and product design baseline,
 [MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md),
@@ -77,11 +77,12 @@ The accepted route and verification criteria live in the
 
 PR #1 uses fresh KMP application modules, accepted identifiers, and one minimal
 shared Compose screen running on macOS and iOS. It has one aggregate local
-quality gate and will add CI before completion. It does not implement blocking
+quality gate and a credential-free CI workflow. It does not implement blocking
 or synchronization and does not adopt the PoC module graph as its starting
-point.
+point. The current static shell has no business behavior that warrants an
+automated test.
 
-Gate 5 does not configure CI. The accepted roadmap groups `FOUNDATION-001`,
+Gate 5 did not configure CI. The accepted roadmap groups `FOUNDATION-001`,
 `QUALITY-001`, and `CI-001` into one PR #1 brief, execution record, and
-completed-change review. CI is due before PR #1 merges or any parallel
-implementation wave begins.
+completed-change review. The first hosted CI run must pass before PR #1 merges
+or any parallel implementation wave begins.

@@ -6,7 +6,8 @@
 - **Current milestone:** complete the first production pull-request increment
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** implement `CI-001`, then complete the integrated PR #1 review
+- **Next work:** observe the first hosted `CI-001` run, then close the
+  integrated PR #1 cycle
 - **Accepted Gate 6 authority:** [mvp-roadmap.md](mvp-roadmap.md)
 
 ## Objective
@@ -90,9 +91,10 @@ The first production-code pull request is deliberately small. It should add:
   starting point;
 - the accepted application and target identifiers;
 - one minimal shared Compose screen running in the macOS and iOS applications;
-- small semantic platform contracts with test fakes;
-- baseline tests, formatting, static checks, and working CI for the introduced
-  targets.
+- small semantic platform contracts, with test fakes when behavior requires
+  them;
+- behavior-focused tests when applicable, formatting, static checks, and
+  working CI for the introduced targets.
 
 It must not implement domain blocking, application blocking, synchronization,
 enrollment, recovery, or production platform helpers. Those capabilities arrive

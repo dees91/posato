@@ -38,15 +38,6 @@ kotlin {
             implementation(libs.compose.resources)
             implementation(libs.compose.ui)
         }
-
-        commonTest.dependencies {
-            implementation(kotlin("test"))
-            implementation(libs.compose.ui.test)
-        }
-
-        jvmTest.dependencies {
-            implementation(libs.compose.desktop.macos.arm64)
-        }
     }
 }
 

@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 3
+- **Revision:** 4
 - **Accepted:** 2026-08-26
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -54,16 +54,23 @@ Use the layers that can reveal a failure introduced by the task:
 | Unit | Product, presentation, parsing, validation, state, or policy behavior changes. |
 | Contract | A platform, persistence, transport, IPC, or cryptographic boundary changes. |
 | Integration | Several owned components, processes, stores, or adapters must cooperate. |
-| Compose UI | Visible state, interaction, semantics, focus, or accessibility changes. |
+| Automated UI | Deferred until the interface stabilizes after the MVP; a golden-test approach such as Paparazzi requires a separate tool and target decision. |
 | Platform build or simulator | A host, native target, extension, helper, entitlement, packaging, or source-set boundary changes. |
 | Physical device | A simulator cannot represent the relevant entitlement, lifecycle, enforcement, or cross-device behavior. |
 | Manual inspection | Visual, accessibility, recovery, installation, or operating-system integration needs human observation. |
 
-Tests assert observable behavior rather than private structure. New behavior
-gets a regression-capable automated test when practical. A bug fix gets a
-regression test unless the execution record explains the concrete automation
-limit. Record only checks actually applicable and run; do not enumerate
-irrelevant categories as `N/A`.
+Tests protect important business, state, policy, validation, parsing, and
+boundary behavior rather than private structure or framework wiring.
+`user-confirmed` (2026-08-26): before post-MVP interface stabilization, do not
+add Compose UI tests for static rendering, copy presence, theme-token mapping,
+or application-shell wiring. UI changes use platform builds and proportionate
+manual inspection. Golden testing, with Paparazzi named as a candidate, remains
+a post-MVP decision and is not a current dependency or coverage claim.
+
+New important behavior gets a regression-capable automated test when
+practical. A business-logic bug fix gets a regression test unless the
+execution record explains the concrete automation limit. Record only checks
+actually applicable and run; do not enumerate irrelevant categories as `N/A`.
 
 ## Review
 

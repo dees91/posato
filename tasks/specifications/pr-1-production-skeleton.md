@@ -30,8 +30,9 @@ credential-free boundary in CI.
 - `AC-01` — The macOS application runs the exact four-line shell from
   `DESIGN.md`, and the iOS Simulator application builds and renders the same
   shared composable.
-- `AC-02` — `:shared` has one common graph contract, final validated Metro
-  graphs for iOS and desktop, and contract-focused shared tests.
+- `AC-02` — `:shared` has one common graph contract and final validated Metro
+  graphs for iOS and desktop. The static shell introduces no business behavior
+  that warrants an automated test.
 - `AC-03` — Stable compatible Kotlin, Compose Multiplatform, Gradle, Metro,
   JDK, JVM bytecode, Xcode, and deployment versions are selected and pinned.
 - `AC-04` — One documented local command runs formatting, analysis, warning,
@@ -41,7 +42,8 @@ credential-free boundary in CI.
 
 ## Verification
 
-- Run shared tests and compile both Metro platform graphs.
+- Compile both Metro platform graphs and run tests only for behavior-bearing
+  logic introduced by the increment.
 - Build and launch the macOS shell, then build and inspect the iOS Simulator
   shell without code signing.
 - Run the aggregate local quality command and its CI workflow from a clean
