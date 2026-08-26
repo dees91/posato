@@ -2,7 +2,7 @@
 
 - **Brief:**
   [`../specifications/pr-1-production-skeleton.md`](../specifications/pr-1-production-skeleton.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** `Codex`
 - **Reviewer:** `independent Codex reviewer; completed-change review approved`
@@ -89,6 +89,9 @@
   business, state, policy, validation, parsing, and boundary behavior. Static
   shell rendering, copy, theme mapping, and Compose wiring are not test
   targets. Golden UI testing remains a separate post-MVP decision.
+- `observed` (2026-08-26): a manually requested hosted Codex review examined
+  commit `e4eb8f4`, reported no major issue, and added no inline finding.
+  Automatic AI review remained disabled.
 
 ## Completed-change review
 
@@ -129,7 +132,8 @@
 | CI workflow validation | `pass` | The workflow parses as YAML, `actionlint` 1.7.12 reports no finding, `git diff --check` passes, and every external action resolves to the recorded immutable release commit. |
 | CI dependency and permission review | `pass` | The three GitHub-maintained actions are active, use MIT terms, are pinned by commit SHA, and receive only read-only repository access; checkout credential persistence and Apple signing are disabled. |
 | Local CI command parity | `pass` | From a clean build state, `./gradlew clean quality` and the workflow's signing-disabled `xcodebuild` command completed locally. Local Xcode is 26.6; the workflow selects the compatible Xcode 26.3 installed on the current arm64 `macos-15` runner image. |
-| Hosted CI execution | `pass` | PR #1's first GitHub-hosted `Quality` job completed successfully in 6 minutes 52 seconds on the selected arm64 `macos-15` runner. |
+| Hosted CI execution | `pass` | PR #1's first GitHub-hosted `Quality` job completed successfully in 6 minutes 52 seconds on the selected arm64 `macos-15` runner; the documentation and review-loop update passed again in 4 minutes 39 seconds. |
+| Manual hosted Codex review | `pass` | `@codex review` examined commit `e4eb8f4`, reported no major issue, and added no inline finding. |
 
 ## Blockers and accepted risks
 
@@ -145,8 +149,8 @@
   daemon vendor criterion therefore pins Eclipse Temurin rather than disabling
   the packaging safeguard.
 - PR #1 is connected to its private GitHub repository and its first hosted CI
-  run passed. The remaining handoff is the manual Codex review pass and the
-  maintainer's merge decision; automatic AI review remains disabled.
+  run and manual Codex review passed. The remaining handoff is the maintainer's
+  merge decision; automatic AI review remains disabled.
 - Independent review found two Required issues initially and one Critical plus
   one Required issue in the first correction. All were resolved, and the final
   follow-up verdict is `approve` with no remaining Critical or Required

@@ -34,7 +34,7 @@ merges or the first parallel implementation wave begins, whichever happens
 first.
 
 `FOUNDATION-001`, `QUALITY-001`, and `CI-001` are complete. The first hosted
-GitHub Actions run passed; PR #1 remains open for its manual review loop and
+GitHub Actions run and the manual Codex review passed; PR #1 remains open for
 the maintainer's merge decision.
 
 ## Foundation local use

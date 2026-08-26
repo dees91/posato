@@ -84,5 +84,5 @@ automated test.
 
 Gate 5 did not configure CI. The accepted roadmap groups `FOUNDATION-001`,
 `QUALITY-001`, and `CI-001` into one PR #1 brief, execution record, and
-completed-change review. PR #1 now awaits its manual Codex review pass and the
-maintainer's merge decision before any parallel implementation wave begins.
+completed-change review. PR #1 passed its manual Codex review and now awaits
+the maintainer's merge decision before any parallel implementation wave begins.

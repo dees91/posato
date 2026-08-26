@@ -345,6 +345,11 @@ corrections and verification; the reviewer controls thread resolution and the
 maintainer owns merge. Automatic AI review remains disabled until manual runs
 demonstrate useful signal without recurring noise.
 
+`observed` (2026-08-26): the first manual hosted Codex review examined PR #1
+at commit `e4eb8f4`, reported no major issue, and added no inline finding. The
+same commit passed the hosted `Quality` job in 4 minutes 39 seconds. Automatic
+AI review remained disabled; the maintainer still owns the merge decision.
+
 ## Gate 6 roadmap (complete)
 
 `user-confirmed` (2026-08-25): the accepted
@@ -532,5 +537,5 @@ non-Keychain portal capabilities, associations, team visibility, and retained
 Keychain suffix all pass. Gate 7 is complete without claiming Keychain
 functionality, provisioning authorization, or signed entitlements. The Ready
 to open PR #1 checkpoint was subsequently accepted. Hosted `CI-001` now passes;
-the active external handoff is the manual Codex review pass and maintainer
-merge decision.
+the manual Codex review also passes, and the active external handoff is the
+maintainer merge decision.
