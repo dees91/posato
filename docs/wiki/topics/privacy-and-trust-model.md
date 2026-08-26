@@ -14,8 +14,34 @@
 - `user-confirmed` (2026-08-25): Apple Account and iCloud Keychain trust define
   Apple-workspace membership. Portable workspaces use explicit Blocker device
   identity, membership, approval, wrapping, key epochs, and revocation.
-- `open`: the complete production threat model, telemetry policy, retention
-  schedule, support-data workflow, and public privacy notice are not accepted.
+- `user-confirmed` (2026-08-26): the
+  [Apple MVP threat model](../../security/apple-mvp-threat-model.md) is the
+  accepted authority for assets, data classification, trust boundaries,
+  threats, required controls, downstream owners, and residual risks.
+- `open`: the telemetry policy, exact retention and deletion rules,
+  support-data workflow, public privacy notice, and production cryptographic
+  design are not accepted.
+
+## Accepted Apple MVP threat model
+
+`user-confirmed` (2026-08-26): the model classifies ten asset and data groups,
+maps eight trust boundaries and fifteen abuse cases to existing roadmap owners,
+and keeps every production control unverified until its owning task supplies
+proportionate evidence and review. The feasibility PoC and enforcement spike
+provide bounded abuse cases and test ideas, not production status or an
+implementation prescription.
+
+The accepted residuals are Apple Account and iCloud Keychain as the complete
+Apple-workspace membership boundary; administrator, debugger, compromised-OS,
+and equivalent-process access; provider-visible metadata and service denial;
+no remote wipe or total-key-loss recovery; and no guarantee of complete secret
+erasure from managed-runtime or platform memory.
+
+Browser coverage and coexistence, helper privilege and recovery, iOS
+entitlement and App Group details, cryptographic primitives and signed-author
+registration, diagnostics, retention, deletion, and public-release claims
+remain with their named roadmap tasks. Acceptance of the threat model does not
+accept those implementations or make a production-readiness claim.
 
 ## Data the product may need
 
@@ -177,23 +203,15 @@ maintainer may attach the feasibility research checkout under the ignored
 `.research/` directory for exact PoC and spike reference. It is read-only and
 never a dependency of commits, builds, tests, or documentation.
 
-## Threat model questions
+## Remaining security and privacy questions
 
-- Is the primary adversary an automatic habit, a briefly motivated user, a
-  local unprivileged process, another Apple-trusted or portable-member device,
-  or the device owner with administrator access?
-- Which bypass methods are in scope and what delay or deliberate action is
-  considered sufficient?
-- What data is public routing metadata versus encrypted payload?
-- What metadata can Apple or a portable provider observe?
-- Is Apple Account and iCloud Keychain compromise accepted as the complete
-  Apple membership-boundary threat, or do later requirements reintroduce
-  Blocker-level admission or revocation?
+- Which exact browser, helper, privilege, lifecycle, bypass, and coexistence
+  controls satisfy the accepted outcomes on each supported platform?
 - What authenticated completeness claim can portable mode make about deletions
   to a fresh replica versus rollback below an existing local high-water mark?
-- Are policy targets sensitive data for privacy documentation and export or
-  deletion rights?
 - What diagnostics are necessary to support proxy, entitlement, and sync
   failures without collecting behavior?
-- Which cryptographic and IPC properties receive independent review before
-  release?
+- What exact retention, deletion, export, support-data, and public-notice rules
+  apply to each accepted data class?
+- Which production cryptographic, signed-author, IPC, signing, and distribution
+  choices satisfy the accepted threat controls and release recheck?

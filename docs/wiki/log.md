@@ -466,3 +466,17 @@
   review for meaningful documentation.
 - Made documentation-only closeout non-invalidating so recording a review
   result cannot recursively trigger another review request.
+
+## [2026-08-26] decision | Accept the Apple MVP threat model
+
+- Accepted ten asset and data classes, eight trust boundaries, and fifteen
+  threat-to-control mappings with existing roadmap owners.
+- Accepted the Apple membership, administrator and equivalent-process,
+  metadata and availability, remote-wipe and total-key-loss, and memory-erasure
+  residual boundaries for the MVP.
+- Kept cryptographic design, diagnostics, retention and deletion, helper and
+  browser contracts, iOS distribution details, and release readiness with
+  their named downstream tasks.
+- Retained the synchronization PoC and enforcement spike as bounded abuse-case
+  and verification evidence without importing their implementation or
+  production status.

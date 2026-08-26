@@ -49,6 +49,9 @@ provenance rather than a parallel public brand.
 - [ADR 0003: MVP Application Architecture Baseline](../decisions/0003-mvp-application-architecture-baseline.md)
   — accepted module, source-set, Metro, target, helper, extension, deployment,
   generator-import, and toolchain-selection boundaries.
+- [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
+  assets and data classification, trust boundaries, threats, required controls,
+  downstream owners, and residual risks.
 - [topics/product-framing.md](topics/product-framing.md) — problem, intended
   audience, product principles, platform sequencing, accepted scope, and open
   product measures.
@@ -79,7 +82,7 @@ provenance rather than a parallel public brand.
 - [topics/ios-enforcement.md](topics/ios-enforcement.md) — Family Controls,
   Managed Settings, opaque selections, cleanup, and entitlement limits.
 - [topics/privacy-and-trust-model.md](topics/privacy-and-trust-model.md) — data
-  boundary, encryption claims, metadata, diagnostics, deletion, and unresolved
-  threat model.
+  boundary, accepted MVP threat-model synthesis, metadata, diagnostics,
+  deletion, and remaining privacy questions.
 - [topics/poc-reuse-inventory.md](topics/poc-reuse-inventory.md) — what may be
   reused, adapted, rewritten, referenced, or left with the experiments.
