@@ -13,6 +13,7 @@ internal class JvmLocalPolicyStoreFactory(
     databasePath: String,
     private val databaseDispatcher: DatabaseDispatcher,
     private val driverDecorator: (SqlDriver) -> SqlDriver = { driver -> driver },
+    private val corruptionClassifier: LocalPolicyCorruptionClassifier? = null,
 ) : LocalExactDomainPolicyStoreFactory {
     private val path: Path = Path.of(databasePath).toAbsolutePath().normalize()
 
@@ -30,7 +31,8 @@ internal class JvmLocalPolicyStoreFactory(
                     OpenedLocalPolicyDriver(
                         driver = driver,
                         existedBeforeOpen = existed,
-                        corruptionClassifier = LocalPolicyCorruptionClassifier(::isJvmSqliteCorruption),
+                        corruptionClassifier =
+                            corruptionClassifier ?: LocalPolicyCorruptionClassifier(::isJvmSqliteCorruption),
                     )
                 },
             databaseDispatcher = databaseDispatcher,

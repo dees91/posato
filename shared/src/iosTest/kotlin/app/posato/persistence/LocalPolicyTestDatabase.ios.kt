@@ -49,6 +49,7 @@ private class IosLocalPolicyTestDatabase(
     override suspend fun open(
         databaseDispatcher: DatabaseDispatcher?,
         driverDecorator: (SqlDriver) -> SqlDriver,
+        corruptionClassifier: LocalPolicyCorruptionClassifier?,
     ): LocalPolicyResult<LocalExactDomainPolicyStore> =
         IosLocalPolicyStoreFactory(
             databaseName = name,
@@ -60,6 +61,7 @@ private class IosLocalPolicyTestDatabase(
                         Dispatchers.Default.limitedParallelism(1, "PosatoTestDatabase"),
                     ),
             driverDecorator = driverDecorator,
+            corruptionClassifier = corruptionClassifier,
         ).open()
 
     override fun withRawDriver(block: (SqlDriver) -> Unit) {

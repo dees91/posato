@@ -9,6 +9,7 @@ internal interface LocalPolicyTestDatabase {
     suspend fun open(
         databaseDispatcher: DatabaseDispatcher? = null,
         driverDecorator: (SqlDriver) -> SqlDriver = { driver -> driver },
+        corruptionClassifier: LocalPolicyCorruptionClassifier? = null,
     ): LocalPolicyResult<LocalExactDomainPolicyStore>
 
     fun withRawDriver(block: (SqlDriver) -> Unit)

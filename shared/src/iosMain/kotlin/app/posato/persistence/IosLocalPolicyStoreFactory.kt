@@ -20,6 +20,7 @@ internal class IosLocalPolicyStoreFactory(
     private val sqliterLogger: Logger = SilentSqliterLogger(),
     private val databaseDispatcher: DatabaseDispatcher,
     private val driverDecorator: (SqlDriver) -> SqlDriver = { driver -> driver },
+    private val corruptionClassifier: LocalPolicyCorruptionClassifier? = null,
 ) : LocalExactDomainPolicyStoreFactory {
     init {
         require(databaseName.matches(Regex("[a-z0-9][a-z0-9.-]{0,79}")))
@@ -49,7 +50,8 @@ internal class IosLocalPolicyStoreFactory(
                     OpenedLocalPolicyDriver(
                         driver = driver,
                         existedBeforeOpen = existed,
-                        corruptionClassifier = LocalPolicyCorruptionClassifier(::isIosSqliteCorruption),
+                        corruptionClassifier =
+                            corruptionClassifier ?: LocalPolicyCorruptionClassifier(::isIosSqliteCorruption),
                     )
                 },
             databaseDispatcher = databaseDispatcher,

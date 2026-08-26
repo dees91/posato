@@ -72,11 +72,16 @@
   integrity-valid file only when it still contains no user-defined table,
   index, trigger, or view. Non-empty unknown schemas remain preserved and
   rejected.
+- Require an existing v1 database to contain exactly the three expected tables.
+  Any additional table, view, trigger, or index is preserved and rejected as
+  an unsupported schema.
 - Applied the same execution-failure classification to post-open reads and the
-  final read inside replacement. Singleton metadata reads are bounded to two
-  rows and validate SQLite's storage class explicitly, while nullable values
-  from weakened schemas become invalid sentinels instead of escaping through
-  generated nullability or numeric coercion.
+  complete replacement transaction. Confirmed SQLite corruption maps to
+  `CORRUPTION`; unclassified write failures remain `STORAGE_FAILURE` and roll
+  back. Singleton metadata reads are bounded to two rows and validate SQLite's
+  storage class explicitly, while nullable values from weakened schemas become
+  invalid sentinels instead of escaping through generated nullability or
+  numeric coercion.
 - Preserved a completed transaction result across the cancellable dispatcher
   handoff. A `CancellationException` observed before the transaction produces
   a result still propagates after rollback; once the transaction produces its
@@ -163,6 +168,7 @@
 | Validation failure classification | `pass` | The new contract test first failed because validation-query exceptions were reported as `CORRUPTION`. Injected quick-check, schema-lookup, schema-version, revision, and domain-query execution failures now return `STORAGE_FAILURE`, while physical SQLite corruption still returns `CORRUPTION`. |
 | Atomic schema recovery and bounded metadata validation | `pass` | The interrupted-DDL and post-open-query tests failed before the correction. Failed fresh creation leaves zero user-defined objects and the next open recovers; invalid fresh schema metadata is a storage failure; an unknown view-only database is preserved and rejected; missing or duplicate revision metadata, a nullable domain, and over-limit rows fail closed. |
 | Commit handoff and SQLite storage classes | `pass` | The three hosted-finding regressions first failed. JVM and iOS now pass 25 tests each: cancellation after transaction completion still receives the committed replacement, nullable completed results remain distinguishable from no result, and an injected `CancellationException` observed before a result still rolls back; weakened schema-version and revision tables containing text or real metadata fail as corruption instead of being numerically coerced. |
+| Complete schema inventory and replacement classification | `pass` | The two hosted-finding regressions first failed on JVM. JVM and iOS now pass 27 tests each: an otherwise valid v1 database with an additional table, view, trigger, or index is preserved and rejected, and confirmed corruption during replacement maps to `CORRUPTION` after transaction rollback. |
 | Corrected aggregate and iOS host build | `pass` | `./gradlew quality` passed Ktlint, Detekt, both runtime contracts, both iOS compiles, desktop checks, and distribution. The CI-equivalent signing-disabled iOS Simulator host build also passed with SQLite linked. |
 
 ## CI linkage correction review
@@ -232,6 +238,36 @@
   Required, Recommended, or Optional finding remains. The reviewer reproduced
   25 passing tests on both runtimes, the aggregate quality gate, and the diff
   check, then approved the corrected cancellation wording.
+
+## Fourth hosted review correction
+
+- **Findings:** `2 P2`: an otherwise valid v1 database was accepted even when
+  it contained an additional table, view, trigger, or index, and exceptions
+  from replacement execution always mapped to storage failure even when the
+  platform classifier confirmed SQLite corruption.
+- **Plan review:** `approved`; no Critical or Required plan defect. The reviewer
+  approved a bounded four-row schema inventory against the exact three expected
+  tables and an internal test-only classifier seam without changing the public
+  or Metro API.
+- **Resolution:** Existing databases now recover only from an empty
+  user-defined schema or match the complete v1 object inventory exactly. Any
+  mismatch is preserved and rejected as `UNSUPPORTED_SCHEMA`. Replacement
+  execution uses the same narrow platform corruption classifier as reads and
+  opening validation while retaining transaction rollback.
+- **Regression evidence:** Separate cross-runtime coverage creates and
+  preserves each additional SQLite object kind. An injected confirmed-
+  corruption exception during replacement returns `CORRUPTION` and leaves the
+  revision and policy unchanged. Both regressions failed before the production
+  correction; 27 tests now pass on each runtime together with the aggregate
+  quality gate and signing-disabled iOS host build.
+- **Independent completed-change review:** `approved-after-correction`; one
+  Required finding identified that `_` in the initial `LIKE 'sqlite_%'`
+  predicate was a wildcard, allowing a user object such as `sqlitextable` to
+  escape the inventory. The query now compares the literal `sqlite_` prefix,
+  and the cross-runtime regression includes that former bypass. The follow-up
+  found no remaining Critical, Required, Recommended, or Optional finding and
+  reproduced 27 passing tests per runtime without cache, the aggregate quality
+  gate, and the diff check.
 
 ## Blockers and accepted risks
 

@@ -22,12 +22,14 @@ private class JvmLocalPolicyTestDatabase(
     override suspend fun open(
         databaseDispatcher: DatabaseDispatcher?,
         driverDecorator: (app.cash.sqldelight.db.SqlDriver) -> app.cash.sqldelight.db.SqlDriver,
+        corruptionClassifier: LocalPolicyCorruptionClassifier?,
     ): LocalPolicyResult<LocalExactDomainPolicyStore> =
         JvmLocalPolicyStoreFactory(
             databasePath = path.toString(),
             databaseDispatcher =
                 databaseDispatcher ?: DatabaseDispatcher(Dispatchers.IO.limitedParallelism(1, "PosatoTestDatabase")),
             driverDecorator = driverDecorator,
+            corruptionClassifier = corruptionClassifier,
         ).open()
 
     override fun withRawDriver(block: (app.cash.sqldelight.db.SqlDriver) -> Unit) {

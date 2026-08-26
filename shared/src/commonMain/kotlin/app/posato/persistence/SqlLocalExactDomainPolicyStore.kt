@@ -89,7 +89,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
         } catch (failure: LocalPolicyStoreException) {
             LocalPolicyResult.Failure(failure.reason)
         } catch (expectedWriteFailure: Exception) {
-            LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
+            LocalPolicyResult.Failure(corruptionClassifier.queryFailure(expectedWriteFailure))
         }
     }
 
@@ -151,7 +151,14 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
 
     companion object {
         private const val CURRENT_SCHEMA_VERSION: Long = 1
+        private const val USER_SCHEMA_OBJECT_LIMIT: Int = 4
         private const val SQLITE_INTEGER_STORAGE_CLASS: String = "integer"
+        private val EXPECTED_USER_SCHEMA_OBJECTS: List<String> =
+            listOf(
+                "table:exact_domain_policy",
+                "table:local_policy_metadata",
+                "table:policy_schema",
+            )
 
         suspend fun open(
             factory: LocalPolicyDriverFactory,
@@ -250,13 +257,10 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
                 fail(opened.invalidStorageFailure())
             }
             if (opened.existedBeforeOpen) {
-                val schemaPresent = executeValidationQuery(opened) { hasPolicySchema(opened.driver) }
-                if (!schemaPresent) {
-                    val userSchemaPresent = executeValidationQuery(opened) { hasUserDefinedSchema(opened.driver) }
-                    if (userSchemaPresent) {
-                        fail(LocalPolicyFailure.UNSUPPORTED_SCHEMA)
-                    }
-                    createFreshSchema(opened.driver)
+                val schemaObjects = executeValidationQuery(opened) { readUserSchemaObjects(opened.driver) }
+                when {
+                    schemaObjects.isEmpty() -> createFreshSchema(opened.driver)
+                    schemaObjects != EXPECTED_USER_SCHEMA_OBJECTS -> fail(LocalPolicyFailure.UNSUPPORTED_SCHEMA)
                 }
             }
         }
@@ -298,27 +302,20 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
                 ).await()
         }
 
-        private suspend fun hasPolicySchema(driver: SqlDriver): Boolean {
+        private suspend fun readUserSchemaObjects(driver: SqlDriver): List<String> {
             return driver
                 .executeQuery(
                     identifier = null,
-                    sql = "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'policy_schema'",
+                    sql =
+                        "SELECT type || ':' || name FROM sqlite_master " +
+                            "WHERE substr(name, 1, 7) != 'sqlite_' " +
+                            "ORDER BY type, name LIMIT $USER_SCHEMA_OBJECT_LIMIT",
                     mapper = { cursor ->
-                        check(cursor.next().value)
-                        QueryResult.Value(cursor.getLong(0) == 1L)
-                    },
-                    parameters = 0,
-                ).await()
-        }
-
-        private suspend fun hasUserDefinedSchema(driver: SqlDriver): Boolean {
-            return driver
-                .executeQuery(
-                    identifier = null,
-                    sql = "SELECT COUNT(*) FROM sqlite_master WHERE name NOT LIKE 'sqlite_%'",
-                    mapper = { cursor ->
-                        check(cursor.next().value)
-                        QueryResult.Value(cursor.getLong(0) != 0L)
+                        val objects = mutableListOf<String>()
+                        while (cursor.next().value) {
+                            objects += checkNotNull(cursor.getString(0))
+                        }
+                        QueryResult.Value(objects)
                     },
                     parameters = 0,
                 ).await()

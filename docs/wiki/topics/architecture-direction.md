@@ -166,7 +166,10 @@ that result wins prompt handoff cancellation. Fresh schema creation calls the
 generated suspending schema API inside one transaction; interrupted creation
 therefore leaves no user-defined schema object. A later open initializes an
 existing integrity-valid file only when it has no user-defined table, index,
-trigger, or view. An unknown non-empty schema remains preserved and rejected.
+trigger, or view. An existing v1 database is accepted only when its complete
+user-defined schema inventory is exactly the three expected tables. An
+additional table, index, trigger, or view remains preserved and causes an
+unsupported-schema result.
 No `runBlocking` or synchronous schema adapter is used. Cancelled open cleans
 up its driver, and explicit close performs cleanup even for an already-
 cancelled caller.
@@ -180,32 +183,34 @@ restore query materializes at most 1,025 rows so a tampered database cannot
 bypass the policy bound through unbounded allocation. The iOS SQLiter driver
 has error and verbose output disabled at its production configuration boundary
 so mapped storage failures do not emit raw SQL errors or stack traces.
-Query-execution exceptions during opening and later reads map to storage
-failure unless a narrow platform classifier observes SQLite's corruption or
-not-a-database primary error code; a completed non-`ok` integrity result
-remains corruption. Singleton schema-version and revision queries return at
-most two rows and validate cardinality, SQLite `integer` storage class, and
-non-negative sentinels explicitly. Fresh schema checks enforce the same storage
-class instead of relying on driver coercion. The domain query converts a
-nullable value from a weakened schema into an invalid sentinel, so logical
-stored-data violations still fail as corruption.
+Query-execution exceptions during opening, later reads, and replacement map to
+storage failure unless a narrow platform classifier observes SQLite's
+corruption or not-a-database primary error code; a completed non-`ok` integrity
+result remains corruption. Replacement still rolls back before returning its
+typed failure. Singleton schema-version and revision queries return at most two
+rows and validate cardinality, SQLite `integer` storage class, and non-negative
+sentinels explicitly. Fresh schema checks enforce the same storage class
+instead of relying on driver coercion. The domain query converts a nullable
+value from a weakened schema into an invalid sentinel, so logical stored-data
+violations still fail as corruption.
 Because the native driver is packaged in a static Kotlin framework, both iOS
 host configurations link the system SQLite library explicitly; the framework
 cannot propagate this final-host linker requirement. This is a fresh baseline
 rather than a migration from the feasibility repository; a checked migration
 begins only when a real v2 schema exists.
 
-`observed`: the same 25-test real-SQLite contract passes on desktop JVM and the
+`observed`: the same 27-test real-SQLite contract passes on desktop JVM and the
 iOS Simulator, including close/reopen, stale revision, rollback, cancellation
 rollback, driver-open and transaction-completion context probing, cancelled
 operation and result-handoff cleanup, an over-limit raw database, physically
-corrupted B-tree storage that remains in place, interrupted schema creation
-and recovery, invalid fresh schema metadata, a preserved view-only unknown
-schema, invalid singleton metadata and SQLite storage classes, nullable stored
-domains, committed-result handoff, bounds, redaction, opening and post-open
-query-failure classification, and silent iOS driver failure mapping. Both
-platform graphs compile with the factory binding. TARGETS-001 still owns user
-input and IDNA canonicalization.
+corrupted B-tree storage that remains in place, interrupted schema creation and
+recovery, invalid fresh schema metadata, preserved additional table, view,
+trigger, and index objects, invalid singleton metadata and SQLite storage
+classes, nullable stored domains, committed-result handoff, bounds, redaction,
+opening and post-open query-failure classification, replacement corruption
+classification, and silent iOS driver failure mapping. Both platform graphs
+compile with the factory binding. TARGETS-001 still owns user input and IDNA
+canonicalization.
 
 ### Platform and toolchain baseline
 

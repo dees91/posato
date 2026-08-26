@@ -220,7 +220,7 @@ class LocalExactDomainPolicyStoreContractTest {
                 val validationQueries =
                     listOf(
                         "PRAGMA quick_check",
-                        "SELECT COUNT(*) FROM sqlite_master",
+                        "FROM sqlite_master",
                         "FROM policy_schema",
                     )
                 validationQueries.forEach { failingSqlFragment ->
@@ -659,6 +659,78 @@ class LocalExactDomainPolicyStoreContractTest {
 
 class LocalExactDomainPolicyStoreHardeningContractTest {
     @Test
+    fun rejectsAndPreservesExtraSchemaObjects() =
+        runTest {
+            val extraObjects =
+                listOf(
+                    "unexpected_table" to "CREATE TABLE unexpected_table (value INTEGER)",
+                    "unexpected_view" to "CREATE VIEW unexpected_view AS SELECT 1 AS value",
+                    "unexpected_trigger" to
+                        "CREATE TRIGGER unexpected_trigger AFTER UPDATE ON local_policy_metadata " +
+                        "BEGIN SELECT 1; END",
+                    "unexpected_index" to
+                        "CREATE INDEX unexpected_index ON exact_domain_policy(canonical_domain)",
+                    "sqlitextable" to "CREATE TABLE sqlitextable (value INTEGER)",
+                )
+            extraObjects.forEach { (objectName, createStatement) ->
+                withTestDatabase("${objectName.replace('_', '-')}.db") { testDatabase ->
+                    val store = testDatabase.openStore()
+                    store.close()
+                    testDatabase.withRawDriver { driver ->
+                        driver
+                            .execute(
+                                identifier = null,
+                                sql = createStatement,
+                                parameters = 0,
+                            ).value
+                    }
+
+                    val failure = assertIs<LocalPolicyResult.Failure>(testDatabase.open())
+                    assertEquals(LocalPolicyFailure.UNSUPPORTED_SCHEMA, failure.reason)
+                    testDatabase.withRawDriver { driver ->
+                        assertEquals(
+                            listOf(objectName),
+                            driver.queryStrings(
+                                "SELECT name FROM sqlite_master WHERE name = '$objectName'",
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+
+    @Test
+    fun preservesConfirmedCorruptionFromReplacementExecution() =
+        runTest {
+            withTestDatabase("confirmed-replacement-corruption.db") { testDatabase ->
+                val initialStore = testDatabase.openStore()
+                initialStore.close()
+                val store =
+                    testDatabase.openStore(
+                        driverDecorator = { driver ->
+                            FailingExecuteSqlDriver(
+                                delegate = driver,
+                                failingSqlFragment = "INSERT INTO exact_domain_policy",
+                                failure = SyntheticCorruptionException(),
+                            )
+                        },
+                        corruptionClassifier =
+                            LocalPolicyCorruptionClassifier { failure ->
+                                failure is SyntheticCorruptionException
+                            },
+                    )
+
+                val failure =
+                    assertIs<LocalPolicyResult.Failure>(
+                        store.replace(0, policy("discarded.example")),
+                    )
+                assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
+                assertState(store.read(), 0, emptyList())
+                store.close()
+            }
+        }
+
+    @Test
     fun preservesANullCompletedDispatcherResultAcrossCancellation() =
         runTest {
             val probe = DatabaseDispatcherProbe()
@@ -806,8 +878,9 @@ private fun policy(vararg domains: String): ExactDomainPolicy =
 private suspend fun LocalPolicyTestDatabase.openStore(
     databaseDispatcher: DatabaseDispatcher? = null,
     driverDecorator: (SqlDriver) -> SqlDriver = { driver -> driver },
+    corruptionClassifier: LocalPolicyCorruptionClassifier? = null,
 ): LocalExactDomainPolicyStore =
-    when (val result = open(databaseDispatcher, driverDecorator)) {
+    when (val result = open(databaseDispatcher, driverDecorator, corruptionClassifier)) {
         is LocalPolicyResult.Success -> result.value
         is LocalPolicyResult.Failure -> error(result.reason.name)
     }
@@ -899,6 +972,7 @@ private class FailingQuerySqlDriver(
 private class FailingExecuteSqlDriver(
     private val delegate: SqlDriver,
     private val failingSqlFragment: String,
+    private val failure: Exception = IllegalStateException("Synthetic schema creation failure"),
 ) : SqlDriver by delegate {
     override fun execute(
         identifier: Int?,
@@ -907,11 +981,13 @@ private class FailingExecuteSqlDriver(
         binders: (SqlPreparedStatement.() -> Unit)?,
     ): QueryResult<Long> {
         if (sql.contains(failingSqlFragment)) {
-            error("Synthetic schema creation failure")
+            throw failure
         }
         return delegate.execute(identifier, sql, parameters, binders)
     }
 }
+
+private class SyntheticCorruptionException : IllegalStateException()
 
 private class SkippingExecuteSqlDriver(
     private val delegate: SqlDriver,

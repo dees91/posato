@@ -582,3 +582,14 @@
   metadata so text or real values cannot be coerced into trusted integers.
 - Strengthened fresh metadata constraints and passed 25 real-SQLite tests on
   both runtimes, the aggregate quality gate, and the iOS host build.
+
+## [2026-08-26] correction | Reject additional policy schema objects
+
+- Required an existing v1 database to contain exactly the three expected
+  user-defined tables; any additional table, view, trigger, or index remains
+  preserved and produces an unsupported-schema result.
+- Applied the narrow platform corruption classifier to replacement execution
+  failures while retaining transaction rollback and storage-failure mapping
+  for unclassified exceptions.
+- Passed 27 real-SQLite tests on both runtimes, the aggregate quality gate, and
+  the signing-disabled iOS host build.
