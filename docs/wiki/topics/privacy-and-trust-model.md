@@ -18,9 +18,12 @@
   [Apple MVP threat model](../../security/apple-mvp-threat-model.md) is the
   accepted authority for assets, data classification, trust boundaries,
   threats, required controls, downstream owners, and residual risks.
-- `open`: the telemetry policy, exact retention and deletion rules,
-  support-data workflow, public privacy notice, and production cryptographic
-  design are not accepted.
+- `user-confirmed` (2026-08-26): the
+  [Apple MVP diagnostics and support-data policy](../../security/diagnostics-and-support-data.md)
+  accepts safe current status, explicit bounded local capture, previewed user-
+  controlled export, and no automatic remote collection.
+- `open`: the public privacy notice, production cryptographic design, and
+  non-diagnostic data retention and deletion rules are not accepted.
 
 ## Accepted Apple MVP threat model
 
@@ -39,9 +42,10 @@ erasure from managed-runtime or platform memory.
 
 Browser coverage and coexistence, helper privilege and recovery, iOS
 entitlement and App Group details, cryptographic primitives and signed-author
-registration, diagnostics, retention, deletion, and public-release claims
-remain with their named roadmap tasks. Acceptance of the threat model does not
-accept those implementations or make a production-readiness claim.
+registration, non-diagnostic retention and deletion, and public-release claims
+remain with their named roadmap tasks. Diagnostic producers remain
+unimplemented and must satisfy the accepted diagnostic policy. Acceptance of
+these authorities does not make a production-readiness claim.
 
 ## Data the product may need
 
@@ -184,17 +188,25 @@ access; any accepted design must present that trade-off honestly.
 
 ## Diagnostics and support
 
-Default diagnostics should contain:
+`user-confirmed` (2026-08-26): the accepted
+[diagnostics and support-data policy](../../security/diagnostics-and-support-data.md)
+answers only four bounded support questions. Current status contains no event
+history. Local capture is off by default, explicitly enabled, unavailable for
+diagnostic use after at most 24 hours, and capped at 500 records and 512 KiB.
+Support export previews the exact derivative and uses a user-chosen platform
+destination.
 
-- stable operation and failure categories;
-- bounded counts and durations;
-- component and schema versions;
-- redacted state transitions;
-- no domain, application, account, device, key, opaque token, or content value.
+The closed allowlist permits stable operational categories, bounded buckets,
+and public component or contract versions. It prohibits free-form errors,
+event timestamps, correlation identifiers, domains, applications, policy,
+identity, secrets, content, browsing and application-use events, and derived
+or pseudonymous forms of those values.
 
-Before adding crash reporting, telemetry, or user-exported support bundles,
-define consent, collection purpose, field allowlist, retention, deletion,
-third-party processors, and a preview that lets users inspect exported data.
+The MVP has no automatic telemetry, analytics, crash upload, support store, or
+diagnostics processor. A future producing task must add only its real consumer,
+prove redaction and storage controls with synthetic canaries, and update the
+authority before introducing a new field, surface, retention rule, automatic
+transmission, or processor.
 
 ## Repository knowledge boundary
 
@@ -209,9 +221,7 @@ never a dependency of commits, builds, tests, or documentation.
   controls satisfy the accepted outcomes on each supported platform?
 - What authenticated completeness claim can portable mode make about deletions
   to a fresh replica versus rollback below an existing local high-water mark?
-- What diagnostics are necessary to support proxy, entitlement, and sync
-  failures without collecting behavior?
-- What exact retention, deletion, export, support-data, and public-notice rules
-  apply to each accepted data class?
+- What exact retention, deletion, export, and public-notice rules apply to
+  non-diagnostic accepted data classes?
 - Which production cryptographic, signed-author, IPC, signing, and distribution
   choices satisfy the accepted threat controls and release recheck?

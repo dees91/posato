@@ -52,6 +52,9 @@ provenance rather than a parallel public brand.
 - [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
   assets and data classification, trust boundaries, threats, required controls,
   downstream owners, and residual risks.
+- [Apple MVP diagnostics and support-data policy](../security/diagnostics-and-support-data.md)
+  — accepted diagnostic purposes, field and value boundaries, local expiry and
+  cleanup, user-controlled export, and no-remote-collection boundary.
 - [topics/product-framing.md](topics/product-framing.md) — problem, intended
   audience, product principles, platform sequencing, accepted scope, and open
   product measures.

@@ -369,9 +369,10 @@ completed-change review for PR #1 pass. The three PR #1 milestones share one
 brief and execution cycle. Later waves expose only concurrency candidates;
 exact plans must still prove disjoint write surfaces, frozen contracts,
 isolated worktrees, and integration order when activated. Dedicated decision
-tasks own the threat model, diagnostics policy, macOS helper
-lifecycle, macOS browser support, encrypted-operation contract, and Apple
-workspace bootstrap before implementation consumers start.
+tasks own the threat model, macOS helper lifecycle, macOS browser support,
+encrypted-operation contract, and Apple workspace bootstrap before
+implementation consumers start. The accepted diagnostic policy now constrains
+every producing task without creating a shared implementation in advance.
 
 The disposable [MVP interaction prototype](../sources/mvp-interaction-prototype.md)
 is routed as bounded UX evidence for session and onboarding tasks. Its Free
@@ -503,7 +504,10 @@ applicable consumer, and the separate pre-release audit to `RELEASE-001`.
 - Production threat model and attacker assumptions.
 - Key ownership, rotation, backup, recovery, and compromise response.
 - Local IPC authentication and privileged-helper attack surface.
-- Diagnostic data policy, retention, redaction, and opt-in behavior.
+- `user-confirmed` (2026-08-26): the accepted
+  [diagnostics and support-data policy](../../security/diagnostics-and-support-data.md)
+  defines local opt-in capture, retention, redaction, user-controlled export,
+  producer verification, and the no-remote-collection boundary.
 - Product privacy policy and user data export or deletion behavior.
 - Dependency, source-code, asset, and third-party license audit.
 - Repository license, contribution policy, security contact, and public support

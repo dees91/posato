@@ -480,3 +480,18 @@
 - Retained the synchronization PoC and enforcement spike as bounded abuse-case
   and verification evidence without importing their implementation or
   production status.
+
+## [2026-08-26] decision | Accept MVP diagnostics and support-data policy
+
+- Accepted four bounded support questions, a closed field allowlist, explicit
+  prohibited data, and allowlist-first redaction for every future producer.
+- Accepted local capture as off by default, unavailable for diagnostic use
+  after at most 24 hours, and bounded to 500 records and 512 KiB in protected
+  no-backup storage with lifecycle-truthful physical cleanup.
+- Required previewed user-controlled export and retained no automatic
+  telemetry, analytics, crash upload, support store, processor, or system-
+  console diagnostic surface.
+- Used final PoC and enforcement-spike privacy evidence only for synthetic
+  canary, categorical result, redaction, and cleanup test ideas without
+  importing implementation or production status; no diagnostic producer was
+  implemented by this decision.

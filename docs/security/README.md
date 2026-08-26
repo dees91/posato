@@ -8,6 +8,11 @@ and deletion policy, diagnostic policy, and security reporting process.
 `SECURITY-001` authority for the Apple MVP assets, trust boundaries, threats,
 required controls, owners, and residual risks.
 
+[`diagnostics-and-support-data.md`](diagnostics-and-support-data.md) is the
+accepted `DIAGNOSTICS-001` authority for diagnostic purpose, fields,
+prohibited data, consent, local expiry and cleanup, support export, producer
+verification, and the absence of automatic remote collection.
+
 The current feasibility synthesis is in
 [`docs/wiki/topics/privacy-and-trust-model.md`](../wiki/topics/privacy-and-trust-model.md).
 It records bounded evidence and open questions rather than a production
