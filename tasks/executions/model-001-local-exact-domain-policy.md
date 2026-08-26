@@ -58,6 +58,9 @@
 - Bound one scoped platform store factory in both app-scoped Metro graphs.
   Graph construction remains inert; opening and explicit close ownership stay
   with the caller.
+- Linked the system SQLite library from both iOS host configurations, as
+  required when the native SQLDelight driver is packaged in a static Kotlin
+  framework.
 - Bounded restoration to one row beyond the accepted maximum before policy
   materialization, and disabled SQLiter error and verbose output at the iOS
   production driver boundary.
@@ -139,6 +142,15 @@
 | Suspending persistence and dispatcher contract | `pass` | `:shared:jvmTest` and `:shared:iosSimulatorArm64Test` pass 14 real-SQLite contract tests per runtime, including driver-open and transaction-completion context probes, cancellation rollback, cancellation during open-result handoff, cancelled-operation cleanup, and close from an already-cancelled caller. |
 | Platform graph and async API compile | `pass` | `:shared:compileKotlinJvm`, `:shared:compileKotlinIosArm64`, and `:shared:compileKotlinIosSimulatorArm64` compile async schema/query use and both Metro factory bindings. |
 | Correction aggregate `./gradlew quality` | `pass` | Ktlint, Detekt, JVM tests, 14 iOS Simulator tests, both iOS target compiles, both Metro graphs, desktop tests, runtime checks, and the macOS distribution completed in 9 seconds after resolving the re-review findings. |
+| Static-framework SQLite host linkage | `pass` | The signing-disabled iOS Simulator host initially failed with undefined `_sqlite3_*` symbols. The same CI invocation reproduced locally, then passed for Debug and Release after both host configurations inherited `-lsqlite3`; `./gradlew quality` also remained green. |
+
+## CI linkage correction review
+
+- **Verdict:** `approved`; no Critical, Required, Recommended, or Optional
+  finding.
+- **Evidence:** The independent reviewer confirmed target-scoped inherited
+  flags in both host configurations and reproduced both signing-disabled iOS
+  Simulator builds, `./gradlew quality`, and `git diff --check`.
 
 ## Blockers and accepted risks
 

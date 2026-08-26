@@ -172,9 +172,12 @@ schemas, and validates restored canonical values before exposing state. The
 restore query materializes at most 1,025 rows so a tampered database cannot
 bypass the policy bound through unbounded allocation. The iOS SQLiter driver
 has error and verbose output disabled at its production configuration boundary
-so mapped storage failures do not emit raw SQL errors or stack traces. This is
-a fresh baseline rather than a migration from the feasibility repository; a
-checked migration begins only when a real v2 schema exists.
+so mapped storage failures do not emit raw SQL errors or stack traces. Because
+the native driver is packaged in a static Kotlin framework, both iOS host
+configurations link the system SQLite library explicitly; the framework cannot
+propagate this final-host linker requirement. This is a fresh baseline rather
+than a migration from the feasibility repository; a checked migration begins
+only when a real v2 schema exists.
 
 `observed`: the same 14-test real-SQLite contract passes on desktop JVM and the
 iOS Simulator, including close/reopen, stale revision, rollback, cancellation

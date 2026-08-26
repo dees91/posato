@@ -538,3 +538,13 @@
   and database-context ownership on both runtimes.
 - Reimplemented only the feasibility properties and passed the same real-
   SQLite contract on JVM and the iOS Simulator without copying PoC source.
+
+## [2026-08-26] implementation | Link SQLite in the iOS host
+
+- Reproduced the CI host-link failure locally as unresolved `_sqlite3_*`
+  symbols from the native SQLDelight driver inside the static shared framework.
+- Added the inherited `-lsqlite3` linker flag to both Debug and Release iOS host
+  configurations, matching the static-framework requirement and the verified
+  feasibility-project integration shape.
+- Passed the signing-disabled iOS Simulator host build in both configurations
+  and retained a green aggregate Gradle quality gate.
