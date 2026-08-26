@@ -1,7 +1,9 @@
 package app.posato.persistence
 
 import app.cash.sqldelight.db.QueryResult
+import app.cash.sqldelight.db.SqlCursor
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlPreparedStatement
 import app.posato.policy.ExactDomainPolicy
 import app.posato.policy.ExactDomainPolicyLimits
 import app.posato.policy.ExactDomainPolicyValidationFailure
@@ -204,6 +206,39 @@ class LocalExactDomainPolicyStoreContractTest {
                 assertTrue(testDatabase.exists())
                 assertTrue(testDatabase.corruptionMarkerIsPresent())
                 assertTrue(testDatabase.capturedDriverOutput().isEmpty())
+            }
+        }
+
+    @Test
+    fun mapsValidationExecutionFailuresToStorageFailure() =
+        runTest {
+            withTestDatabase("validation-execution-failure.db") { testDatabase ->
+                val store = testDatabase.openStore()
+                assertState(store.replace(0, policy("preserved.example")), 1, listOf("preserved.example"))
+                store.close()
+
+                val validationQueries =
+                    listOf(
+                        "PRAGMA quick_check",
+                        "SELECT COUNT(*) FROM sqlite_master",
+                        "SELECT schema_version",
+                    )
+                validationQueries.forEach { failingSqlFragment ->
+                    val failure =
+                        assertIs<LocalPolicyResult.Failure>(
+                            testDatabase.open(
+                                driverDecorator = { driver ->
+                                    FailingQuerySqlDriver(driver, failingSqlFragment)
+                                },
+                            ),
+                        )
+                    assertEquals(LocalPolicyFailure.STORAGE_FAILURE, failure.reason)
+                    assertTrue(testDatabase.exists())
+                }
+
+                val reopened = testDatabase.openStore()
+                assertState(reopened.read(), 1, listOf("preserved.example"))
+                reopened.close()
             }
         }
 
@@ -523,3 +558,21 @@ private fun SqlDriver.queryStrings(sql: String): List<String> =
         },
         parameters = 0,
     ).value
+
+private class FailingQuerySqlDriver(
+    private val delegate: SqlDriver,
+    private val failingSqlFragment: String,
+) : SqlDriver by delegate {
+    override fun <R> executeQuery(
+        identifier: Int?,
+        sql: String,
+        mapper: (SqlCursor) -> QueryResult<R>,
+        parameters: Int,
+        binders: (SqlPreparedStatement.() -> Unit)?,
+    ): QueryResult<R> {
+        if (sql.contains(failingSqlFragment)) {
+            error("Synthetic validation execution failure")
+        }
+        return delegate.executeQuery(identifier, sql, mapper, parameters, binders)
+    }
+}

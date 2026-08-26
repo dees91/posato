@@ -4,6 +4,10 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import java.nio.file.Files
 import java.nio.file.Path
+import java.sql.SQLException
+
+private const val SQLITE_CORRUPT_CODE: Int = 11
+private const val SQLITE_NOT_A_DATABASE_CODE: Int = 26
 
 internal class JvmLocalPolicyStoreFactory(
     databasePath: String,
@@ -23,11 +27,22 @@ internal class JvmLocalPolicyStoreFactory(
                     Files.createDirectories(path.parent)
                     val existed = Files.exists(path)
                     val driver = driverDecorator(JdbcSqliteDriver("jdbc:sqlite:$path"))
-                    OpenedLocalPolicyDriver(driver, existed)
+                    OpenedLocalPolicyDriver(
+                        driver = driver,
+                        existedBeforeOpen = existed,
+                        corruptionClassifier = LocalPolicyCorruptionClassifier(::isJvmSqliteCorruption),
+                    )
                 },
             databaseDispatcher = databaseDispatcher,
         )
     }
+}
+
+private fun isJvmSqliteCorruption(failure: Exception): Boolean {
+    val sqlFailure = failure as? SQLException ?: return false
+    val primaryCode = sqlFailure.errorCode and 0xff
+    return primaryCode == SQLITE_CORRUPT_CODE ||
+        primaryCode == SQLITE_NOT_A_DATABASE_CODE
 }
 
 internal fun defaultDesktopPolicyDatabasePath(): String {

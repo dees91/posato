@@ -6,6 +6,8 @@ import co.touchlab.sqliter.DatabaseConfiguration
 import co.touchlab.sqliter.JournalMode
 import co.touchlab.sqliter.NO_VERSION_CHECK
 import co.touchlab.sqliter.interop.Logger
+import co.touchlab.sqliter.interop.SQLiteExceptionErrorCode
+import co.touchlab.sqliter.interop.SqliteErrorType
 import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSHomeDirectory
@@ -44,7 +46,11 @@ internal class IosLocalPolicyStoreFactory(
                             loggingConfig = silentSqliterLogging(sqliterLogger),
                         )
                     val driver = driverDecorator(NativeSqliteDriver(configuration))
-                    OpenedLocalPolicyDriver(driver, existed)
+                    OpenedLocalPolicyDriver(
+                        driver = driver,
+                        existedBeforeOpen = existed,
+                        corruptionClassifier = LocalPolicyCorruptionClassifier(::isIosSqliteCorruption),
+                    )
                 },
             databaseDispatcher = databaseDispatcher,
         )
@@ -63,6 +69,12 @@ internal class IosLocalPolicyStoreFactory(
             )
         }
     }
+}
+
+private fun isIosSqliteCorruption(failure: Exception): Boolean {
+    val error = failure as? SQLiteExceptionErrorCode ?: return false
+    return error.errorType == SqliteErrorType.SQLITE_CORRUPT ||
+        error.errorType == SqliteErrorType.SQLITE_NOTADB
 }
 
 internal class SilentSqliterLogger(

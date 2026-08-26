@@ -2,7 +2,7 @@
 
 - **Brief:**
   [`../specifications/model-001-local-exact-domain-policy.md`](../specifications/model-001-local-exact-domain-policy.md)
-- **Status:** `complete`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** `Codex`
 - **Reviewer:** `independent Codex reviewer; plan and completed change approved`
@@ -64,6 +64,9 @@
 - Bounded restoration to one row beyond the accepted maximum before policy
   materialization, and disabled SQLiter error and verbose output at the iOS
   production driver boundary.
+- Distinguished validation-query execution failures from confirmed SQLite
+  corruption through narrow platform error-code classifiers. Transient or
+  unclassified failures now remain `STORAGE_FAILURE`.
 - Tightened Detekt so anonymous empty catch blocks cannot bypass analysis and
   swallowed exceptions require an explicit `expected...` boundary name. All
   MODEL-001 production functions use block bodies with explicit returns.
@@ -143,6 +146,7 @@
 | Platform graph and async API compile | `pass` | `:shared:compileKotlinJvm`, `:shared:compileKotlinIosArm64`, and `:shared:compileKotlinIosSimulatorArm64` compile async schema/query use and both Metro factory bindings. |
 | Correction aggregate `./gradlew quality` | `pass` | Ktlint, Detekt, JVM tests, 14 iOS Simulator tests, both iOS target compiles, both Metro graphs, desktop tests, runtime checks, and the macOS distribution completed in 9 seconds after resolving the re-review findings. |
 | Static-framework SQLite host linkage | `pass` | The signing-disabled iOS Simulator host initially failed with undefined `_sqlite3_*` symbols. The same CI invocation reproduced locally, then passed for Debug and Release after both host configurations inherited `-lsqlite3`; `./gradlew quality` also remained green. |
+| Validation failure classification | `pass` | The new contract test first failed because validation-query exceptions were reported as `CORRUPTION`. JVM and iOS now pass 15 tests each: injected quick-check, schema-lookup, and schema-version execution failures return `STORAGE_FAILURE` without changing the file, while physical SQLite corruption still returns `CORRUPTION`. |
 
 ## CI linkage correction review
 
@@ -152,6 +156,21 @@
   flags in both host configurations and reproduced both signing-disabled iOS
   Simulator builds, `./gradlew quality`, and `git diff --check`.
 
+## Hosted review correction
+
+- **Findings:** `2 P2`: the execution status used values outside the canonical
+  vocabulary, and validation-query exceptions for an existing database were
+  reported as corruption even when the database had not been proven corrupt.
+- **Resolution:** Both execution statuses now use `done`. Validation exceptions
+  are classified by the platform SQLite primary error code; only corruption or
+  not-a-database errors on an existing file map to `CORRUPTION`, while lock,
+  I/O, and unclassified execution failures map to `STORAGE_FAILURE`. A common
+  regression test covers all three opening queries and file preservation on
+  both runtimes.
+- **Follow-up:** `approved`; no Critical, Required, Recommended, or Optional
+  finding. The independent reviewer reproduced 15 passing tests per runtime,
+  the aggregate quality gate, and the diff check.
+
 ## Blockers and accepted risks
 
 - No current blocker. Separate reset, guaranteed secure erasure, custom backup
@@ -159,7 +178,7 @@
 
 ## Final
 
-- **Status:** `complete`
+- **Status:** `done`
 - **Outcome:** MODEL-001 persists the bounded exact-domain policy atomically on
   JVM and iOS, exposes one inert scoped factory from both Metro graphs, and
   performs suspending open, read, replace, transaction, and close work on the

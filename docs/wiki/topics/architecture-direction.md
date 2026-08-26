@@ -172,21 +172,24 @@ schemas, and validates restored canonical values before exposing state. The
 restore query materializes at most 1,025 rows so a tampered database cannot
 bypass the policy bound through unbounded allocation. The iOS SQLiter driver
 has error and verbose output disabled at its production configuration boundary
-so mapped storage failures do not emit raw SQL errors or stack traces. Because
-the native driver is packaged in a static Kotlin framework, both iOS host
-configurations link the system SQLite library explicitly; the framework cannot
-propagate this final-host linker requirement. This is a fresh baseline rather
-than a migration from the feasibility repository; a checked migration begins
-only when a real v2 schema exists.
+so mapped storage failures do not emit raw SQL errors or stack traces.
+Validation-query exceptions map to storage failure unless a narrow platform
+classifier observes SQLite's corruption or not-a-database primary error code
+for an existing file; a completed non-`ok` integrity result remains corruption.
+Because the native driver is packaged in a static Kotlin framework, both iOS
+host configurations link the system SQLite library explicitly; the framework
+cannot propagate this final-host linker requirement. This is a fresh baseline
+rather than a migration from the feasibility repository; a checked migration
+begins only when a real v2 schema exists.
 
-`observed`: the same 14-test real-SQLite contract passes on desktop JVM and the
+`observed`: the same 15-test real-SQLite contract passes on desktop JVM and the
 iOS Simulator, including close/reopen, stale revision, rollback, cancellation
 rollback, driver-open and transaction-completion context probing, cancelled
 operation and result-handoff cleanup, an over-limit raw database, physically
 corrupted B-tree storage that remains in place, an unsupported schema, bounds,
-redaction, and silent iOS driver failure mapping. Both platform graphs compile
-with the factory binding. TARGETS-001 still owns user input and IDNA
-canonicalization.
+redaction, validation-query execution-failure classification, and silent iOS
+driver failure mapping. Both platform graphs compile with the factory binding.
+TARGETS-001 still owns user input and IDNA canonicalization.
 
 ### Platform and toolchain baseline
 

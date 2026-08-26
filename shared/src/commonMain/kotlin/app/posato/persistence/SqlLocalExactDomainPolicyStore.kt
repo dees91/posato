@@ -17,7 +17,12 @@ internal fun interface LocalPolicyDriverFactory {
 internal class OpenedLocalPolicyDriver(
     val driver: SqlDriver,
     val existedBeforeOpen: Boolean,
+    val corruptionClassifier: LocalPolicyCorruptionClassifier,
 )
+
+internal fun interface LocalPolicyCorruptionClassifier {
+    fun isCorruption(failure: Exception): Boolean
+}
 
 internal class SqlLocalExactDomainPolicyStore private constructor(
     private val driver: SqlDriver,
@@ -201,7 +206,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
             } catch (expectedCancellation: CancellationException) {
                 throw expectedCancellation
             } catch (expectedSchemaFailure: Exception) {
-                fail(opened.invalidStorageFailure())
+                fail(opened.validationFailure(expectedSchemaFailure))
             }
         }
 
@@ -212,7 +217,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
                 } catch (expectedCancellation: CancellationException) {
                     throw expectedCancellation
                 } catch (expectedIntegrityFailure: Exception) {
-                    fail(opened.invalidStorageFailure())
+                    fail(opened.validationFailure(expectedIntegrityFailure))
                 }
             if (!integrityValid) {
                 fail(opened.invalidStorageFailure())
@@ -224,7 +229,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
                     } catch (expectedCancellation: CancellationException) {
                         throw expectedCancellation
                     } catch (expectedSchemaLookupFailure: Exception) {
-                        fail(LocalPolicyFailure.CORRUPTION)
+                        fail(opened.validationFailure(expectedSchemaLookupFailure))
                     }
                 if (!schemaPresent) {
                     fail(LocalPolicyFailure.UNSUPPORTED_SCHEMA)
@@ -281,6 +286,14 @@ private fun OpenedLocalPolicyDriver.invalidStorageFailure(): LocalPolicyFailure 
     }
 }
 
+private fun OpenedLocalPolicyDriver.validationFailure(failure: Exception): LocalPolicyFailure {
+    return if (existedBeforeOpen && corruptionClassifier.isCorruption(failure)) {
+        LocalPolicyFailure.CORRUPTION
+    } else {
+        LocalPolicyFailure.STORAGE_FAILURE
+    }
+}
+
 private class OpenedDriverOwner {
     var opened: OpenedLocalPolicyDriver? = null
         private set
@@ -293,6 +306,7 @@ private class OpenedDriverOwner {
             OpenedLocalPolicyDriver(
                 driver = DispatchingSqlDriver(rawOpened.driver, databaseDispatcher),
                 existedBeforeOpen = rawOpened.existedBeforeOpen,
+                corruptionClassifier = rawOpened.corruptionClassifier,
             )
         opened = acquired
         return acquired

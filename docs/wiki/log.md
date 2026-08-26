@@ -548,3 +548,14 @@
   feasibility-project integration shape.
 - Passed the signing-disabled iOS Simulator host build in both configurations
   and retained a green aggregate Gradle quality gate.
+
+## [2026-08-26] correction | Separate validation failure from corruption
+
+- Corrected opening validation so an exception is not itself treated as proof
+  that an existing SQLite file is corrupt.
+- Added narrow JVM and iOS classifiers for SQLite corruption and
+  not-a-database primary error codes; lock, I/O, and unclassified execution
+  failures remain storage failures.
+- Preserved the physical-corruption contract and added cross-runtime regression
+  coverage for failures in integrity, schema-presence, and schema-version
+  queries without changing or deleting the database file.
