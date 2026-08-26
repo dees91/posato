@@ -82,14 +82,13 @@ macOS enforcement APIs therefore live in a separate signed native helper behind
 authenticated, versioned local IPC. JNI, JNA, and a different desktop host are
 not the accepted baseline.
 
-The PoC proved the separate-process option with Swift. The first relevant MVP
-slice may evaluate a Kotlin/Native helper and retain a small Swift or
-Objective-C shim only where required. That evaluation should be part of a
-production vertical slice, not a throwaway language-count experiment.
-
-The decision must consider packaging, signatures, privileges, crash recovery,
-ABI risk, process authentication, update compatibility, debugging, and the
-cost of operating JVM and native runtimes.
+`user-confirmed` (2026-08-26):
+[ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
+selects Swift for a short-lived normal-user session helper and a minimal root
+proxy-settings launch daemon. Kotlin remains the product and policy owner. The
+native targets contain only Apple mechanisms and structured boundary mapping.
+Kotlin/Native was rejected here because it would add runtime, interop, build,
+packaging, and debugging surface without sharing product policy.
 
 ## Shared contract constraints
 
@@ -108,8 +107,6 @@ cost of operating JVM and native runtimes.
 - Which Apple frameworks used by the MVP are cleanly callable from
   Kotlin/Native at the selected minimum OS versions?
 - Which iOS flows require a SwiftUI or Xcode-owned leaf?
-- Can a Kotlin/Native macOS helper replace most PoC Swift without making
-  build, packaging, and IPC more complex?
 - Which individual compile-time leaves satisfy the accepted narrow
   `expect`/`actual` rule when their first consumer appears?
 - How will platform callbacks, cancellation, and lifecycle opportunities enter

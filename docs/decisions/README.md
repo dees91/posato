@@ -17,3 +17,6 @@ evidence at the revision recorded in the wiki. Accepted product ADRs are:
 - [ADR 0003: Establish the MVP Application Architecture Baseline](0003-mvp-application-architecture-baseline.md)
   — accepted module, source-set, Metro, Apple target, native-process,
   deployment, generator-import, and toolchain-selection boundaries.
+- [ADR 0004: Define macOS Helper Ownership and Lifecycle](0004-macos-helper-ownership-and-lifecycle.md)
+  — accepted macOS process, privilege, IPC, authorization, proxy ownership,
+  recovery, update, and removal boundaries.

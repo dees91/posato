@@ -22,6 +22,10 @@
   [Apple MVP diagnostics and support-data policy](../../security/diagnostics-and-support-data.md)
   accepts safe current status, explicit bounded local capture, previewed user-
   controlled export, and no automatic remote collection.
+- `user-confirmed` (2026-08-26):
+  [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
+  accepts the macOS session-helper and root proxy-settings-daemon ownership,
+  privilege, IPC, authorization, recovery, update, and removal boundary.
 - `open`: the public privacy notice, production cryptographic design, and
   non-diagnostic data retention and deletion rules are not accepted.
 
@@ -40,12 +44,13 @@ and equivalent-process access; provider-visible metadata and service denial;
 no remote wipe or total-key-loss recovery; and no guarantee of complete secret
 erasure from managed-runtime or platform memory.
 
-Browser coverage and coexistence, helper privilege and recovery, iOS
-entitlement and App Group details, cryptographic primitives and signed-author
-registration, non-diagnostic retention and deletion, and public-release claims
-remain with their named roadmap tasks. Diagnostic producers remain
-unimplemented and must satisfy the accepted diagnostic policy. Acceptance of
-these authorities does not make a production-readiness claim.
+Browser coverage and coexistence, implementation evidence for the accepted
+macOS helper and recovery contract, iOS entitlement and App Group details,
+cryptographic primitives and signed-author registration, non-diagnostic
+retention and deletion, and public-release claims remain with their named
+roadmap tasks. Diagnostic producers remain unimplemented and must satisfy the
+accepted diagnostic policy. Acceptance of these authorities does not make a
+production-readiness claim.
 
 ## Data the product may need
 
@@ -217,8 +222,9 @@ never a dependency of commits, builds, tests, or documentation.
 
 ## Remaining security and privacy questions
 
-- Which exact browser, helper, privilege, lifecycle, bypass, and coexistence
-  controls satisfy the accepted outcomes on each supported platform?
+- Which exact browser, bypass, and coexistence controls satisfy the accepted
+  outcomes on each supported platform, and which MACOS-003 implementation
+  evidence verifies the accepted helper contract?
 - What authenticated completeness claim can portable mode make about deletions
   to a fresh replica versus rollback below an existing local high-water mark?
 - What exact retention, deletion, export, and public-notice rules apply to

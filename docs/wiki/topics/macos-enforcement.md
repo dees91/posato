@@ -85,29 +85,41 @@ The spike used a temporary, narrowly scoped privilege path to modify and restore
 system proxy settings. That setup was deliberately not a daemon or production
 installer.
 
-`user-confirmed` (2026-08-25): the production boundary is a separate signed
-native helper, `app.posato.macos.helper`, reached from the Compose Desktop JVM
-application through narrow local IPC. The helper owns native mechanisms such
-as system-proxy mutation and application observation; shared Kotlin owns
-enforcement intent and product policy. The IPC is bounded, versioned,
-authenticated, timeout-aware, and returns structured outcomes. It is not an
-arbitrary command runner and owns neither synchronization nor business logic.
+`user-confirmed` (2026-08-26):
+[ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
+accepts two narrow Swift executables behind the Kotlin-owned policy boundary.
+The short-lived normal-user helper `app.posato.macos.helper` owns the loopback
+proxy, application observation, and native presentation. A root launch daemon
+owns only the exact Authorization Services rule, SystemConfiguration proxy
+mutation, minimum durable ownership state, and recovery. It receives no
+domains, application identities, browser events, arbitrary paths, commands, or
+business policy.
 
-The helper language, exact privilege model, installation, update, watchdog,
-recovery, and uninstall behavior remain assigned to the first macOS
-enforcement pull request. The accepted process boundary is authoritative in
-[ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md).
+The JVM-helper boundary uses private inherited pipes and fixed signed peers.
+The helper-daemon boundary uses a fixed NSXPC Mach service with mutual compiled
+code-signing requirements. Both boundaries validate bounded versioned input,
+request and session identity, state, deadlines, replay, and authorization for
+each operation. A timeout has an unknown outcome that must be reconciled under
+the same request identity.
 
-That implementation decision must cover:
+The only privileged apply right is `app.posato.macos.proxy.apply`. It requires
+fresh administrator authentication, is non-shared and one-use, and is bound to
+one authenticated connection, request, and session. Restore uses no bearer
+right and can act only on exact durable Posato ownership.
 
-- whether and which operations require privilege;
-- installation and update authorization;
-- code-signing and parent/helper identity checks;
-- the exact operations the helper may perform;
-- protection from arbitrary command execution or path substitution;
-- service snapshot ownership and concurrent network-setting changes;
-- crash, logout, reboot, sleep, network-change, and uninstall recovery;
-- removal that restores user networking even when the application is damaged.
+HTTP and HTTPS proxy settings are separate atomic `Enable/Proxy/Port` tuples.
+Apply and restore use an exclusive preferences lock, preserve PAC,
+autodiscovery, and unrelated keys, and independently verify the complete
+result. A concurrently changed tuple is preserved as a unit and leaves a
+truthful `recoveryRequired` conflict rather than being overwritten or combined
+with baseline fields.
+
+launchd and durable state own supported recovery; no custom watchdog exists.
+Supported in-app update, disablement, and removal restore and verify before
+unregistering. Out-of-band background-item disablement or a missing bundle can
+prevent automatic execution and therefore requires repair or truthful manual
+proxy recovery rather than a success claim. The architecture is non-sandboxed;
+RELEASE-001 must select a compatible distribution path or revisit the ADR.
 
 Durable safety properties from the spike:
 
@@ -139,8 +151,7 @@ is introduced.
 - How will system proxy use interact with VPNs, other local proxies, PAC files,
   captive portals, development tools, and network-service changes?
 - What persistence and bypass-resistance level is required?
-- Can the native helper be primarily Kotlin/Native while retaining only minimal
-  Apple-language shims?
-- How are helper installation, update, notarization, and uninstall tested?
-- What recovery watchdog is appropriate without creating a broad persistent
-  privileged service?
+- What exact daemon and Mach identifiers, launchd policy, IPC schemas, and
+  packaged layout will MACOS-003 implement?
+- How are signed installation, update, notarization, supported removal, and
+  manual recovery verified for the selected release channel?

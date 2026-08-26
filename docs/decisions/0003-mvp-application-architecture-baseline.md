@@ -21,6 +21,18 @@ This amendment supersedes the original wording that implied Gate 5 would
 select exact commands and CI jobs or that a CI image had to be selected before
 reviewed generator files could enter the working branch.
 
+## MACOS-001 amendment
+
+`user-confirmed` (2026-08-26):
+[ADR 0004](0004-macos-helper-ownership-and-lifecycle.md) resolves the deferred
+macOS helper language, privilege, installation, authorization, update,
+recovery, and removal boundary. The signed native-helper placeholder is
+implemented as a normal-user Swift session helper plus a minimal Swift root
+launch daemon limited to SystemConfiguration ownership and recovery. Shared
+Kotlin remains the product and policy owner. Concrete IPC schemas, daemon and
+Mach identifiers, build wiring, and enforcement mechanisms remain with their
+named implementation tasks.
+
 ## Context
 
 The accepted MVP scope, Posato identity, and design baseline are sufficient to
@@ -155,11 +167,12 @@ The helper snapshots and restores only Posato-owned system mutations, rejects
 replay or stale ownership, and must leave unrestricted networking recoverable
 after application, helper, or IPC failure.
 
-The helper implementation language, exact privilege model, installation,
-update, watchdog, and recovery lifecycle are deferred to the first macOS
-enforcement pull request. That pull request must preserve the accepted process
-boundary and re-establish production security and test coverage rather than
-copying the feasibility helper wholesale.
+Those language, privilege, installation, authorization, update, recovery, and
+removal decisions were deferred when this ADR was accepted and are now governed
+by [ADR 0004](0004-macos-helper-ownership-and-lifecycle.md). The implementation
+must preserve both accepted process boundaries and re-establish production
+security and test coverage rather than copying the feasibility helper
+wholesale.
 
 ### Persistence, navigation, and synchronization
 
@@ -297,8 +310,9 @@ the ready checkpoint are complete.
 
 ## Open implementation decisions
 
-- macOS helper language, privilege, installation, update, watchdog, recovery,
-  and uninstall behavior in the first macOS enforcement pull request;
+- concrete macOS IPC schemas, daemon and Mach identifiers, launchd policy,
+  build wiring, and enforcement implementation under
+  [ADR 0004](0004-macos-helper-ownership-and-lifecycle.md);
 - iOS App Group schema, extension lifecycle details, and entitlement
   verification in Apple Task 0 and the first iOS enforcement pull request;
 - SQLDelight schema, migration policy, and transaction ownership in the first

@@ -49,6 +49,9 @@ provenance rather than a parallel public brand.
 - [ADR 0003: MVP Application Architecture Baseline](../decisions/0003-mvp-application-architecture-baseline.md)
   — accepted module, source-set, Metro, target, helper, extension, deployment,
   generator-import, and toolchain-selection boundaries.
+- [ADR 0004: macOS Helper Ownership and Lifecycle](../decisions/0004-macos-helper-ownership-and-lifecycle.md)
+  — accepted macOS process, privilege, IPC, authorization, atomic proxy
+  ownership, recovery, update, and removal boundaries.
 - [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
   assets and data classification, trust boundaries, threats, required controls,
   downstream owners, and residual risks.

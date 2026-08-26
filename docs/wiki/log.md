@@ -495,3 +495,15 @@
   canary, categorical result, redaction, and cleanup test ideas without
   importing implementation or production status; no diagnostic producer was
   implemented by this decision.
+
+## [2026-08-26] decision | Accept macOS helper ownership and lifecycle
+
+- Selected a short-lived normal-user Swift session helper and a minimal Swift
+  root launch daemon while retaining Kotlin ownership of product policy and
+  session meaning.
+- Accepted Service Management lifecycle, fixed signed IPC peers, the one-use
+  `app.posato.macos.proxy.apply` right, atomic HTTP and HTTPS proxy ownership,
+  and durable repeatable recovery without a custom watchdog or shell surface.
+- Limited automatic restoration claims to paths where the exact daemon can run
+  and routed browser and proxy coexistence, concrete IPC and packaging,
+  application identity, and distribution to their existing downstream tasks.

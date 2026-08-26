@@ -95,7 +95,8 @@ call a service locator. Compile-time graph validation is required for both
 | iOS application | `app.posato.ios` | Created | Swift host and shared Compose framework |
 | macOS application | `app.posato.macos` | Created | Compose Desktop/JVM application |
 | iOS activity monitor extension | `app.posato.ios.activitymonitor` | Deferred | Swift/Xcode-owned expiry callback and minimum shared app-group state |
-| macOS native helper | `app.posato.macos.helper` | Deferred | Signed native process behind authenticated, versioned local IPC |
+| macOS session helper | `app.posato.macos.helper` | Deferred | Normal-user Swift process for loopback proxy and native enforcement mechanics |
+| macOS proxy-settings daemon | Fixed `app.posato.macos`-namespaced identifier selected by MACOS-003 | Deferred | Minimal Swift root launch daemon for atomic SystemConfiguration ownership and recovery |
 
 No Android, Web, custom shield-action, custom shield-configuration, or Device
 Activity report target enters the MVP skeleton. The activity-monitor extension
@@ -112,12 +113,16 @@ first iOS enforcement pull request. Gate 7 registers identifiers and
 capabilities. Default system shields remain sufficient; custom shield
 extensions are not an MVP requirement.
 
-The macOS helper owns only native mechanisms such as system-proxy mutation and
-application observation. Shared Kotlin owns enforcement intent. IPC uses
-bounded versioned frames, request identity, timeouts, structured outcomes,
-peer authentication, and safe repeatable cleanup. Helper language, privilege
-installation, update, and recovery details are deferred to the first macOS
-enforcement pull request.
+`user-confirmed` (2026-08-26):
+[ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
+selects a normal-user Swift session helper for the loopback proxy and native
+enforcement mechanics plus a minimal Swift root launch daemon limited to
+atomic SystemConfiguration ownership and recovery. Shared Kotlin owns
+enforcement intent and policy. Both IPC boundaries authenticate fixed signed
+peers, validate bounded versioned operations, and reconcile unknown outcomes
+under stable request identity. Service Management and launchd own daemon
+lifecycle; no custom watchdog, shell, `sudoers` or other persistent grant, or
+general installer is part of the contract.
 
 ### Wizard and dependency selection
 
@@ -258,8 +263,9 @@ not an application skeleton.
 
 ## Decisions deferred to named implementation work
 
-- macOS helper language, privilege model, installation, update, recovery, and
-  uninstall lifecycle in the first macOS enforcement pull request;
+- concrete macOS IPC schemas, fixed daemon and Mach identifiers, launchd
+  policy, build wiring, packaging, and recovery tests under
+  [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md);
 - App Group schema, extension lifecycle details, and entitlement validation in
   Apple Task 0 and the first iOS enforcement pull request;
 - persistence schema, migration policy, and transaction ownership in the first

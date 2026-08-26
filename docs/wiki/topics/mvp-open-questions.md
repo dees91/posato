@@ -268,11 +268,16 @@ selects CloudKit Private Database, synchronizable-Keychain workspace-key
 delivery, Apple Account/iCloud Keychain membership, common application E2EE,
 explicit later portable membership, and one-active-transport migration.
 
-The implementation language and privilege lifecycle of the macOS helper, the
-iOS App Group schema and extension lifecycle details, persistence and
-migration, concurrency ownership, production serialization, and exact later
-dependency versions remain assigned to the named vertical pull requests in the
-ADR. A separate broad architecture spike is not required.
+`user-confirmed` (2026-08-26):
+[ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
+selects the macOS Swift session-helper and root proxy-settings-daemon split,
+Service Management lifecycle, authenticated IPC boundaries, exact privileged
+apply right, atomic proxy ownership, and supported recovery and removal
+contract. Concrete schemas and packaging remain with MACOS-003. The iOS App
+Group schema and extension lifecycle details, persistence and migration,
+concurrency ownership, production serialization, and exact later dependency
+versions remain assigned to their named vertical pull requests. A separate
+broad architecture spike is not required.
 
 ## Engineering quality baseline
 
@@ -446,19 +451,21 @@ No PoC development identifier should be reused automatically.
 
 ## Enforcement product choices
 
-The roadmap assigns these decisions to `MACOS-001`, `MACOS-002`,
-`TARGETS-003`, `TARGETS-004`, `MACOS-003` through `MACOS-005`, and `IOS-001`
-through `IOS-002`. Their roadmap stubs are accepted, but the product and
-architecture questions remain open until just-in-time briefs and decision
-tasks record maintainer-approved authorities.
+MACOS-001 is complete in
+[ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md). The
+roadmap assigns the remaining decisions to `MACOS-002`, `TARGETS-003`,
+`TARGETS-004`, `MACOS-003` through `MACOS-005`, and `IOS-001` through
+`IOS-002`. Their roadmap stubs are accepted, but the remaining product and
+architecture questions stay open until just-in-time briefs and decision tasks
+record maintainer-approved authorities.
 
 - Which accepted blocking capability belongs in the first enforcement slice?
 - Which macOS browsers are supported, and is browser presentation part of the
   promise or an optional enhancement?
-- What privilege, persistence, coexistence, recovery, and uninstall behavior is
-  acceptable for the macOS helper?
 - How should proxy conflicts, VPNs, network-service changes, and captive portals
   be handled?
+- What exact IPC schemas, daemon and Mach identifiers, launchd policy, embedded
+  layout, and release packaging implement the accepted helper contract?
 - Which iOS authorization and entitlement path is viable for public
   distribution?
 - `user-confirmed`: opaque iOS application selections remain local and attach
@@ -503,7 +510,10 @@ applicable consumer, and the separate pre-release audit to `RELEASE-001`.
 
 - Production threat model and attacker assumptions.
 - Key ownership, rotation, backup, recovery, and compromise response.
-- Local IPC authentication and privileged-helper attack surface.
+- `user-confirmed` (2026-08-26): ADR 0004 accepts fixed signed peers,
+  per-operation authorization, bounded versioned IPC, one-use Apply authority,
+  minimal root ownership, and durable repeatable recovery for the macOS helper
+  attack surface. MACOS-003 owns implementation evidence.
 - `user-confirmed` (2026-08-26): the accepted
   [diagnostics and support-data policy](../../security/diagnostics-and-support-data.md)
   defines local opt-in capture, retention, redaction, user-controlled export,

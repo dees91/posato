@@ -151,13 +151,17 @@ The maintainer accepts these MVP limits:
 | `R-05` Managed runtimes or platform frameworks retain secret copies outside an application's complete erasure control | Minimize lifetime and clear owned mutable buffers where supported; do not claim guaranteed memory erasure | `SYNC-002`, `SYNC-005`, `SYNC-006`, and `MACOS-003` apply the rule; `RELEASE-001` rechecks the claim |
 
 These are not accepted blanket support claims. Browser coverage, proxy/VPN
-coexistence, helper privilege and recovery, application-termination behavior,
-iOS entitlement/distribution, App Group schema, cryptographic primitives and
-format, automatic signed-author registration, and non-diagnostic data
-retention/deletion remain blocked on their named tasks. Diagnostic producers
-remain unimplemented and must satisfy the accepted diagnostic policy in their
-own tasks. `RELEASE-001` must recheck both the residuals and those feature gates
-before any public-release claim.
+coexistence, application-termination behavior, iOS entitlement/distribution,
+App Group schema, cryptographic primitives and format, automatic signed-author
+registration, and non-diagnostic data retention/deletion remain blocked on
+their named tasks. `user-confirmed` (2026-08-26):
+[ADR 0004](../decisions/0004-macos-helper-ownership-and-lifecycle.md) accepts
+the macOS helper ownership, privilege, authorization, lifecycle, and recovery
+architecture; its production controls remain unverified until MACOS-003 and
+the downstream enforcement tasks supply their required evidence. Diagnostic
+producers remain unimplemented and must satisfy the accepted diagnostic policy
+in their own tasks. `RELEASE-001` must recheck both the residuals and those
+feature gates before any public-release claim.
 
 ## Change and review rule
 
