@@ -2,6 +2,16 @@ config:
   validation: true
   warningsAsErrors: true
 
+empty-blocks:
+  EmptyCatchBlock:
+    active: true
+    allowedExceptionNameRegex: '$^'
+
+exceptions:
+  SwallowedException:
+    active: true
+    allowedExceptionNameRegex: 'expected.*'
+
 naming:
   FunctionNaming:
     ignoreAnnotated:

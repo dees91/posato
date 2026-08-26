@@ -31,8 +31,12 @@
   accepts the narrow Safari and Chrome browser, exact-domain, proxy
   coexistence, transient-data, fixed-presentation, failure, and network-
   transition boundary.
+- `user-confirmed` (2026-08-26): local exact-domain policy has no TTL and
+  remains app-private until edited or removed; replacing it with an empty set
+  atomically removes every domain row. A separate reset flow, guaranteed secure
+  erasure, and custom backup policy remain outside MODEL-001.
 - `open`: the public privacy notice, production cryptographic design, and
-  non-diagnostic data retention and deletion rules are not accepted.
+  lifecycle rules for other non-diagnostic data are not accepted.
 
 ## Accepted Apple MVP threat model
 
@@ -54,11 +58,11 @@ and the disclosed Apple Events presentation race recorded as `R-06`.
 MACOS-002 now accepts browser coverage and coexistence, but MACOS-003 and
 MACOS-004 still own implementation and physical evidence for the helper,
 recovery, proxy, presentation, and privacy controls. iOS entitlement and App
-Group details, cryptographic primitives and signed-author registration, non-
-diagnostic retention and deletion, and public-release claims remain with their
-named roadmap tasks. Diagnostic producers remain unimplemented and must
-satisfy the accepted diagnostic policy. Acceptance of these authorities does
-not make a production-readiness claim.
+Group details, cryptographic primitives and signed-author registration,
+lifecycle rules for other non-diagnostic data, and public-release claims remain
+with their named roadmap tasks. Diagnostic producers remain unimplemented and
+must satisfy the accepted diagnostic policy. Acceptance of these authorities
+does not make a production-readiness claim.
 
 ## Data the product may need
 
@@ -80,6 +84,15 @@ Candidate local and synchronized data includes:
 
 Every field needs a stated purpose, storage location, synchronization scope,
 retention rule, deletion behavior, and diagnostic policy before production.
+
+### Local exact-domain policy lifecycle
+
+`user-confirmed` (2026-08-26): canonical exact-domain rows are active product
+configuration, not expiring history. They have no TTL and remain only in the
+app-private local replica until the person edits or removes them. Replacing the
+policy with an empty set removes every domain row in the same atomic
+transaction. This decision does not claim secure physical erasure and does not
+add a separate reset or custom backup policy.
 
 ## Data outside the default model
 
@@ -241,6 +254,7 @@ never a dependency of commits, builds, tests, or documentation.
 - What authenticated completeness claim can portable mode make about deletions
   to a fresh replica versus rollback below an existing local high-water mark?
 - What exact retention, deletion, export, and public-notice rules apply to
-  non-diagnostic accepted data classes?
+  accepted non-diagnostic data classes other than the local exact-domain
+  policy?
 - Which production cryptographic, signed-author, IPC, signing, and distribution
   choices satisfy the accepted threat controls and release recheck?

@@ -47,6 +47,12 @@ The repository must remain understandable and buildable when
 
 No source code was copied during the initial repository seed.
 
+`observed` (2026-08-26): MODEL-001 behaviorally reimplemented only the PoC's
+transaction, restart, rollback, and preserve-on-corruption properties. Its
+policy model, schema, store contract, limits, failure surface, platform
+factories, and tests were written for Posato; no feasibility source, operation
+model, runner, trace, credential, identifier, or machine-local path was copied.
+
 If later work copies a meaningful fragment, the pull request must identify:
 
 - the feasibility source revision and path;

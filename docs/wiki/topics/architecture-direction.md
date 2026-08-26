@@ -142,6 +142,49 @@ for the first local-replica slice. Exact coordinates are selected and verified
 in those named pull requests. Ktor is not implied by CloudKit and has no current
 Apple MVP consumer.
 
+### MODEL-001 local policy persistence
+
+`observed` (2026-08-26): MODEL-001 selected SQLDelight 2.3.2 for the first
+production local-replica slice. The existing `:shared` module owns one common
+typed store and v1 schema; `jvmMain` and `iosMain` provide only their SQLite
+driver, app-private path mechanics, and app-scoped Metro binding. Each platform
+graph exposes one scoped store factory without opening the database during
+graph construction. No new module, long-lived coroutine scope, serializer,
+synchronization queue, or UI integration was added.
+
+SQLDelight async generation makes open, read, replace, and close suspending.
+The factory receives one serialized database dispatcher: desktop uses an
+IO-dispatcher view, while iOS uses a background Default-dispatcher view because
+kotlinx.coroutines does not expose `Dispatchers.IO` as public Kotlin/Native
+API. A driver wrapper implements SQLDelight's transaction-dispatch contract,
+so revision advancement, domain replacement, final state read, and transaction
+completion stay in the same database context. Fresh schema creation calls the
+generated suspending schema API directly; no `runBlocking` or synchronous
+schema adapter is used. Cancellation is rethrown after rollback, cancelled
+open cleans up its driver, and explicit close performs cleanup even for an
+already-cancelled caller.
+
+The v1 schema contains one schema-version row, one revision row, and at most
+1,024 sorted unique canonical exact-domain rows. One transaction advances an
+expected revision and replaces the complete set, including an empty set.
+Opening checks SQLite integrity, rejects and preserves unknown existing
+schemas, and validates restored canonical values before exposing state. The
+restore query materializes at most 1,025 rows so a tampered database cannot
+bypass the policy bound through unbounded allocation. The iOS SQLiter driver
+has error and verbose output disabled at its production configuration boundary
+so mapped storage failures do not emit raw SQL errors or stack traces. This is
+a fresh baseline rather than a migration from the feasibility repository; a
+checked migration begins only when a real v2 schema exists.
+
+`observed`: the same 14-test real-SQLite contract passes on desktop JVM and the
+iOS Simulator, including close/reopen, stale revision, rollback, cancellation
+rollback, driver-open and transaction-completion context probing, cancelled
+operation and result-handoff cleanup, an over-limit raw database, physically
+corrupted B-tree storage that remains in place, an unsupported schema, bounds,
+redaction, and silent iOS driver failure mapping. Both platform graphs compile
+with the factory binding. TARGETS-001 still owns user input and IDNA
+canonicalization.
+
 ### Platform and toolchain baseline
 
 - iOS deployment target: 18.0, rechecked against the current-and-previous-major

@@ -519,3 +519,22 @@
 - Accepted the two necessary volatile data boundaries, the Apple Events
   presentation race, content-erasure limit, restoration on network transitions,
   and downstream MACOS-004 physical and privacy-canary evidence gate.
+
+## [2026-08-26] implementation | Accept and persist the local exact-domain policy
+
+- Classified exact-domain rows as active app-private configuration with no
+  time-to-live, retained until the person edits or removes them.
+- Required an empty replacement to remove every domain row atomically.
+- Kept a separate reset flow, secure physical erasure guarantees, and a custom
+  backup policy outside MODEL-001 and with future owning tasks.
+- Added a fresh async-generated SQLDelight v1 schema and one typed atomic store
+  with thin JVM and iOS driver leaves, without UI, synchronization, or a new
+  module.
+- Bound one inert, scoped store factory in each platform Metro graph and kept
+  open, read, replace, close, and whole-transaction work on an injected,
+  serialized database dispatcher without `runBlocking`.
+- Bounded restoration before materialization, disabled raw SQLiter error output
+  on iOS, and proved physical-corruption preservation, cancellation rollback,
+  and database-context ownership on both runtimes.
+- Reimplemented only the feasibility properties and passed the same real-
+  SQLite contract on JVM and the iOS Simulator without copying PoC source.
