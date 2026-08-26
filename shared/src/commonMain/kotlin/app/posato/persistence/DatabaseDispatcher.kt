@@ -2,6 +2,7 @@ package app.posato.persistence
 
 import app.cash.sqldelight.SuspendingTransacter
 import app.cash.sqldelight.db.SqlDriver
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.withContext
@@ -22,6 +23,18 @@ internal class DatabaseDispatcher(
         }
     }
 
+    suspend fun <T> executePreservingCompletedResult(block: suspend () -> T): T {
+        var completedResult: CompletedResult<T>? = null
+        return try {
+            withContext(dispatcher) {
+                block().also { result -> completedResult = CompletedResult(result) }
+            }
+        } catch (expectedCancellation: CancellationException) {
+            val result = completedResult ?: throw expectedCancellation
+            result.value
+        }
+    }
+
     suspend fun <T> executeNonCancellable(block: suspend () -> T): T {
         return withContext(dispatcher + NonCancellable) {
             block()
@@ -39,7 +52,7 @@ internal class DispatchingSqlDriver(
 ) : SqlDriver by delegate,
     SuspendingTransacter.TransactionDispatcher {
     override suspend fun <R> dispatch(transaction: suspend () -> R): R {
-        return databaseDispatcher.execute {
+        return databaseDispatcher.executePreservingCompletedResult {
             try {
                 transaction()
             } finally {
@@ -48,3 +61,7 @@ internal class DispatchingSqlDriver(
         }
     }
 }
+
+private class CompletedResult<T>(
+    val value: T,
+)

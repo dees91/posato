@@ -657,6 +657,146 @@ class LocalExactDomainPolicyStoreContractTest {
         }
 }
 
+class LocalExactDomainPolicyStoreHardeningContractTest {
+    @Test
+    fun preservesANullCompletedDispatcherResultAcrossCancellation() =
+        runTest {
+            val probe = DatabaseDispatcherProbe()
+            val databaseDispatcher = probe.dispatcher()
+            lateinit var execution: Deferred<Unit>
+            var resultReturned = false
+            var returnedValue: String? = "not-null"
+            execution =
+                async(start = CoroutineStart.LAZY) {
+                    returnedValue =
+                        databaseDispatcher.executePreservingCompletedResult<String?> {
+                            execution.cancel(CancellationException("Synthetic nullable-result cancellation"))
+                            null
+                        }
+                    resultReturned = true
+                }
+
+            execution.start()
+            execution.join()
+
+            assertTrue(execution.isCancelled)
+            assertTrue(resultReturned)
+            assertEquals(null, returnedValue)
+            assertTrue(probe.violations.isEmpty())
+        }
+
+    @Test
+    fun rejectsANonIntegerStoredSchemaVersion() =
+        runTest {
+            withTestDatabase("non-integer-schema-version.db") { testDatabase ->
+                val store = testDatabase.openStore()
+                store.close()
+                testDatabase.withRawDriver { driver ->
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "DROP TABLE policy_schema",
+                            parameters = 0,
+                        ).value
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "CREATE TABLE policy_schema (singleton INTEGER, schema_version)",
+                            parameters = 0,
+                        ).value
+                    driver
+                        .execute(
+                            identifier = null,
+                            sql = "INSERT INTO policy_schema(singleton, schema_version) VALUES (1, '1')",
+                            parameters = 0,
+                        ).value
+                }
+
+                val failure = assertIs<LocalPolicyResult.Failure>(testDatabase.open())
+                assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
+                assertTrue(testDatabase.exists())
+            }
+        }
+
+    @Test
+    fun rejectsNonIntegerStoredRevisions() =
+        runTest {
+            val storedRevisions =
+                listOf(
+                    "text" to "'abc'",
+                    "real" to "1.5",
+                )
+            storedRevisions.forEach { (storageClass, storedRevision) ->
+                withTestDatabase("$storageClass-revision.db") { testDatabase ->
+                    val store = testDatabase.openStore()
+                    store.close()
+                    testDatabase.withRawDriver { driver ->
+                        driver
+                            .execute(
+                                identifier = null,
+                                sql = "DROP TABLE local_policy_metadata",
+                                parameters = 0,
+                            ).value
+                        driver
+                            .execute(
+                                identifier = null,
+                                sql = "CREATE TABLE local_policy_metadata (singleton INTEGER, revision)",
+                                parameters = 0,
+                            ).value
+                        driver
+                            .execute(
+                                identifier = null,
+                                sql =
+                                    "INSERT INTO local_policy_metadata(singleton, revision) " +
+                                        "VALUES (1, $storedRevision)",
+                                parameters = 0,
+                            ).value
+                    }
+
+                    val failure = assertIs<LocalPolicyResult.Failure>(testDatabase.open())
+                    assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
+                    assertTrue(testDatabase.exists())
+                }
+            }
+        }
+
+    @Test
+    fun returnsTheCommittedReplacementWhenCancellationWinsTheHandoff() =
+        runTest {
+            withTestDatabase("replacement-handoff-cancellation.db") { testDatabase ->
+                val probe = DatabaseDispatcherProbe()
+                var cancelReplacement = false
+                lateinit var replacement: Deferred<Unit>
+                val databaseDispatcher =
+                    probe.dispatcher { operation ->
+                        if (cancelReplacement && operation == DatabaseContextOperation.TRANSACTION_COMPLETED) {
+                            replacement.cancel(CancellationException("Synthetic committed-result cancellation"))
+                        }
+                    }
+                val store =
+                    testDatabase.openStore(
+                        databaseDispatcher = databaseDispatcher,
+                        driverDecorator = { driver -> ProbingSqlDriver(driver, probe) },
+                    )
+                var replacementResult: LocalPolicyResult<LocalExactDomainPolicyState>? = null
+                replacement =
+                    async(start = CoroutineStart.LAZY) {
+                        replacementResult = store.replace(0, policy("committed.example"))
+                    }
+                cancelReplacement = true
+
+                replacement.start()
+                replacement.join()
+
+                assertTrue(replacement.isCancelled)
+                assertState(checkNotNull(replacementResult), 1, listOf("committed.example"))
+                assertState(store.read(), 1, listOf("committed.example"))
+                store.close()
+                assertTrue(probe.violations.isEmpty())
+            }
+        }
+}
+
 private fun policy(vararg domains: String): ExactDomainPolicy =
     when (val result = ExactDomainPolicy.fromCanonicalValues(domains.asList())) {
         is ExactDomainPolicyValidationResult.Success -> result.policy

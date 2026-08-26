@@ -52,7 +52,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
         expectedRevision: Long,
         policy: ExactDomainPolicy,
     ): LocalPolicyResult<LocalExactDomainPolicyState> {
-        return databaseDispatcher.execute {
+        return databaseDispatcher.executePreservingCompletedResult {
             when {
                 closed -> LocalPolicyResult.Failure(LocalPolicyFailure.CLOSED)
                 expectedRevision < 0 -> LocalPolicyResult.Failure(LocalPolicyFailure.INVALID_REVISION)
@@ -105,12 +105,18 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
     private suspend fun readStateOrThrow(): LocalExactDomainPolicyState {
         val revisions =
             executeReadQuery {
-                database.localExactDomainPolicyQueries.selectRevision().awaitAsList()
+                database.localExactDomainPolicyQueries
+                    .selectRevision { value, storageClass -> StoredInteger(value, storageClass) }
+                    .awaitAsList()
             }
-        if (revisions.size != 1 || revisions.single() < 0) {
+        if (revisions.size != 1) {
             fail(LocalPolicyFailure.CORRUPTION)
         }
-        val revision = revisions.single()
+        val storedRevision = revisions.single()
+        if (storedRevision.storageClass != SQLITE_INTEGER_STORAGE_CLASS || storedRevision.value < 0) {
+            fail(LocalPolicyFailure.CORRUPTION)
+        }
+        val revision = storedRevision.value
         val canonicalDomains =
             executeReadQuery {
                 database.localExactDomainPolicyQueries
@@ -145,6 +151,7 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
 
     companion object {
         private const val CURRENT_SCHEMA_VERSION: Long = 1
+        private const val SQLITE_INTEGER_STORAGE_CLASS: String = "integer"
 
         suspend fun open(
             factory: LocalPolicyDriverFactory,
@@ -220,12 +227,21 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
         ): Long {
             val schemaVersions =
                 executeValidationQuery(opened) {
-                    database.localExactDomainPolicyQueries.selectSchemaVersion().awaitAsList()
+                    database.localExactDomainPolicyQueries
+                        .selectSchemaVersion { value, storageClass -> StoredInteger(value, storageClass) }
+                        .awaitAsList()
                 }
-            if (schemaVersions.size != 1 || schemaVersions.single() < 0) {
+            if (schemaVersions.size != 1) {
                 fail(opened.invalidStorageFailure())
             }
-            return schemaVersions.single()
+            val storedSchemaVersion = schemaVersions.single()
+            if (
+                storedSchemaVersion.storageClass != SQLITE_INTEGER_STORAGE_CLASS ||
+                storedSchemaVersion.value < 0
+            ) {
+                fail(opened.invalidStorageFailure())
+            }
+            return storedSchemaVersion.value
         }
 
         private suspend fun validateOpenedStorage(opened: OpenedLocalPolicyDriver) {
@@ -313,6 +329,11 @@ internal class SqlLocalExactDomainPolicyStore private constructor(
 internal class LocalPolicyStoreException(
     val reason: LocalPolicyFailure,
 ) : IllegalStateException(reason.name)
+
+private data class StoredInteger(
+    val value: Long,
+    val storageClass: String,
+)
 
 private fun fail(reason: LocalPolicyFailure): Nothing {
     throw LocalPolicyStoreException(reason)

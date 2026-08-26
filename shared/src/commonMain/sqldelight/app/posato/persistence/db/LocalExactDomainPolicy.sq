@@ -1,13 +1,17 @@
 CREATE TABLE policy_schema (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
-  schema_version INTEGER NOT NULL CHECK (schema_version = 1)
+  schema_version INTEGER NOT NULL CHECK (
+    typeof(schema_version) = 'integer' AND schema_version = 1
+  )
 );
 
 INSERT INTO policy_schema(singleton, schema_version) VALUES (1, 1);
 
 CREATE TABLE local_policy_metadata (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
-  revision INTEGER NOT NULL CHECK (revision >= 0)
+  revision INTEGER NOT NULL CHECK (
+    typeof(revision) = 'integer' AND revision >= 0
+  )
 );
 
 INSERT INTO local_policy_metadata(singleton, revision) VALUES (1, 0);
@@ -19,13 +23,17 @@ CREATE TABLE exact_domain_policy (
 );
 
 selectSchemaVersion:
-SELECT COALESCE(schema_version, -1)
+SELECT
+  COALESCE(schema_version, -1) AS value,
+  typeof(schema_version) AS storage_class
 FROM policy_schema
 WHERE singleton = 1
 LIMIT 2;
 
 selectRevision:
-SELECT COALESCE(revision, -1)
+SELECT
+  COALESCE(revision, -1) AS value,
+  typeof(revision) AS storage_class
 FROM local_policy_metadata
 WHERE singleton = 1
 LIMIT 2;

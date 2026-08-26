@@ -571,3 +571,14 @@
   non-canonical domains, and row-bound violations.
 - Passed the 21-test real-SQLite contract on JVM and the iOS Simulator, the
   aggregate quality gate, and the signing-disabled iOS host build.
+
+## [2026-08-26] correction | Preserve committed policy results
+
+- Preserved produced transaction and replacement results across cancellable
+  dispatcher handoff. A `CancellationException` observed before any result
+  still propagates after rollback; a committed result wins prompt handoff
+  cancellation.
+- Added bounded SQLite storage-class validation for schema-version and revision
+  metadata so text or real values cannot be coerced into trusted integers.
+- Strengthened fresh metadata constraints and passed 25 real-SQLite tests on
+  both runtimes, the aggregate quality gate, and the iOS host build.

@@ -158,14 +158,18 @@ IO-dispatcher view, while iOS uses a background Default-dispatcher view because
 kotlinx.coroutines does not expose `Dispatchers.IO` as public Kotlin/Native
 API. A driver wrapper implements SQLDelight's transaction-dispatch contract,
 so revision advancement, domain replacement, final state read, and transaction
-completion stay in the same database context. Fresh schema creation calls the
+completion stay in the same database context. A transaction result completed
+before the cancellable dispatcher handoff is preserved. A
+`CancellationException` observed before the transaction produces a result
+propagates after rollback; once the transaction produces its committed result,
+that result wins prompt handoff cancellation. Fresh schema creation calls the
 generated suspending schema API inside one transaction; interrupted creation
 therefore leaves no user-defined schema object. A later open initializes an
 existing integrity-valid file only when it has no user-defined table, index,
 trigger, or view. An unknown non-empty schema remains preserved and rejected.
-No `runBlocking` or synchronous schema adapter is used. Cancellation is
-rethrown after rollback, cancelled open cleans up its driver, and explicit
-close performs cleanup even for an already-cancelled caller.
+No `runBlocking` or synchronous schema adapter is used. Cancelled open cleans
+up its driver, and explicit close performs cleanup even for an already-
+cancelled caller.
 
 The v1 schema contains one schema-version row, one revision row, and at most
 1,024 sorted unique canonical exact-domain rows. One transaction advances an
@@ -180,25 +184,28 @@ Query-execution exceptions during opening and later reads map to storage
 failure unless a narrow platform classifier observes SQLite's corruption or
 not-a-database primary error code; a completed non-`ok` integrity result
 remains corruption. Singleton schema-version and revision queries return at
-most two rows and validate cardinality and non-negative sentinels explicitly.
-The domain query converts a nullable value from a weakened schema into an
-invalid sentinel, so logical stored-data violations still fail as corruption.
+most two rows and validate cardinality, SQLite `integer` storage class, and
+non-negative sentinels explicitly. Fresh schema checks enforce the same storage
+class instead of relying on driver coercion. The domain query converts a
+nullable value from a weakened schema into an invalid sentinel, so logical
+stored-data violations still fail as corruption.
 Because the native driver is packaged in a static Kotlin framework, both iOS
 host configurations link the system SQLite library explicitly; the framework
 cannot propagate this final-host linker requirement. This is a fresh baseline
 rather than a migration from the feasibility repository; a checked migration
 begins only when a real v2 schema exists.
 
-`observed`: the same 21-test real-SQLite contract passes on desktop JVM and the
+`observed`: the same 25-test real-SQLite contract passes on desktop JVM and the
 iOS Simulator, including close/reopen, stale revision, rollback, cancellation
 rollback, driver-open and transaction-completion context probing, cancelled
 operation and result-handoff cleanup, an over-limit raw database, physically
 corrupted B-tree storage that remains in place, interrupted schema creation
 and recovery, invalid fresh schema metadata, a preserved view-only unknown
-schema, invalid singleton metadata, nullable stored domains, bounds, redaction,
-opening and post-open query-failure classification, and silent iOS driver
-failure mapping. Both platform graphs compile with the factory binding.
-TARGETS-001 still owns user input and IDNA canonicalization.
+schema, invalid singleton metadata and SQLite storage classes, nullable stored
+domains, committed-result handoff, bounds, redaction, opening and post-open
+query-failure classification, and silent iOS driver failure mapping. Both
+platform graphs compile with the factory binding. TARGETS-001 still owns user
+input and IDNA canonicalization.
 
 ### Platform and toolchain baseline
 

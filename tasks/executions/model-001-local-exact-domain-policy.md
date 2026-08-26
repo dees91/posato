@@ -74,8 +74,13 @@
   rejected.
 - Applied the same execution-failure classification to post-open reads and the
   final read inside replacement. Singleton metadata reads are bounded to two
-  rows and validated explicitly, while nullable values from weakened schemas
-  become invalid sentinels instead of escaping through generated nullability.
+  rows and validate SQLite's storage class explicitly, while nullable values
+  from weakened schemas become invalid sentinels instead of escaping through
+  generated nullability or numeric coercion.
+- Preserved a completed transaction result across the cancellable dispatcher
+  handoff. A `CancellationException` observed before the transaction produces
+  a result still propagates after rollback; once the transaction produces its
+  committed result, that result wins prompt handoff cancellation.
 - Tightened Detekt so anonymous empty catch blocks cannot bypass analysis and
   swallowed exceptions require an explicit `expected...` boundary name. All
   MODEL-001 production functions use block bodies with explicit returns.
@@ -156,7 +161,8 @@
 | Correction aggregate `./gradlew quality` | `pass` | Ktlint, Detekt, JVM tests, 14 iOS Simulator tests, both iOS target compiles, both Metro graphs, desktop tests, runtime checks, and the macOS distribution completed in 9 seconds after resolving the re-review findings. |
 | Static-framework SQLite host linkage | `pass` | The signing-disabled iOS Simulator host initially failed with undefined `_sqlite3_*` symbols. The same CI invocation reproduced locally, then passed for Debug and Release after both host configurations inherited `-lsqlite3`; `./gradlew quality` also remained green. |
 | Validation failure classification | `pass` | The new contract test first failed because validation-query exceptions were reported as `CORRUPTION`. Injected quick-check, schema-lookup, schema-version, revision, and domain-query execution failures now return `STORAGE_FAILURE`, while physical SQLite corruption still returns `CORRUPTION`. |
-| Atomic schema recovery and bounded metadata validation | `pass` | The interrupted-DDL and post-open-query tests failed before the correction. JVM and iOS now pass 21 tests each: failed fresh creation leaves zero user-defined objects and the next open recovers; invalid fresh schema metadata is a storage failure; an unknown view-only database is preserved and rejected; missing or duplicate revision metadata, a nullable domain, and over-limit rows fail closed. |
+| Atomic schema recovery and bounded metadata validation | `pass` | The interrupted-DDL and post-open-query tests failed before the correction. Failed fresh creation leaves zero user-defined objects and the next open recovers; invalid fresh schema metadata is a storage failure; an unknown view-only database is preserved and rejected; missing or duplicate revision metadata, a nullable domain, and over-limit rows fail closed. |
+| Commit handoff and SQLite storage classes | `pass` | The three hosted-finding regressions first failed. JVM and iOS now pass 25 tests each: cancellation after transaction completion still receives the committed replacement, nullable completed results remain distinguishable from no result, and an injected `CancellationException` observed before a result still rolls back; weakened schema-version and revision tables containing text or real metadata fail as corruption instead of being numerically coerced. |
 | Corrected aggregate and iOS host build | `pass` | `./gradlew quality` passed Ktlint, Detekt, both runtime contracts, both iOS compiles, desktop checks, and distribution. The CI-equivalent signing-disabled iOS Simulator host build also passed with SQLite linked. |
 
 ## CI linkage correction review
@@ -202,6 +208,30 @@
   Critical, Required, Recommended, or Optional finding. The reviewer
   reproduced 21 passing tests on both runtimes and confirmed the aggregate
   quality and diff checks.
+
+## Third hosted review correction
+
+- **Findings:** `2 P2`: prompt cancellation during the dispatcher handoff
+  could discard a successful replacement result after commit, and SQLite text
+  or real revision values could be coerced to a fabricated `Long`.
+- **Plan review:** `approved`; no Critical or Required plan defect. The reviewer
+  required an explicit completed-result holder so nullable generic transaction
+  values remain distinguishable, and independent schema-version and revision
+  storage-class regressions.
+- **Resolution:** Transaction dispatch and replacement preserve a result only
+  after their block has produced it. A `CancellationException` observed before
+  any result propagates after rollback; once a committed result exists, it wins
+  prompt handoff cancellation. Both singleton metadata queries remain bounded
+  to two rows and now read `typeof(...)`; anything other than SQLite `integer`
+  storage fails closed. Fresh schema checks enforce the same storage class.
+- **Regression evidence:** Separate cross-runtime tests cover committed-result
+  handoff cancellation, a nullable completed result, text schema versions, and
+  text plus real revisions. The pre-commit cancellation test continues to
+  prove propagation and rollback.
+- **Independent completed-change follow-up:** `approved`; no Critical,
+  Required, Recommended, or Optional finding remains. The reviewer reproduced
+  25 passing tests on both runtimes, the aggregate quality gate, and the diff
+  check, then approved the corrected cancellation wording.
 
 ## Blockers and accepted risks
 
