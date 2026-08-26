@@ -162,10 +162,21 @@ runs affected verification, commits and pushes the correction, and replies
 with concise evidence. The reviewer decides whether its thread is resolved.
 
 Use a manually requested `@codex review` as an additional independent pass
-when the repository is connected to Codex Cloud. Automatic AI reviews remain
-disabled until representative pull requests show that the manual pass adds
-useful signal without recurring noise. Cloud review remains read-only for this
-workflow; the local implementation agent owns corrections.
+when the repository is connected to Codex Cloud. Request it once after the
+latest substantive code or configuration change. Do not request hosted review
+for documentation-only changes, including task status, execution evidence,
+wiki logs, and review bookkeeping. Such a follow-up does not invalidate the
+preceding hosted review or require another request. Repeat hosted review only
+after code or configuration changes again, including corrections made for a
+substantive finding.
+
+Documentation still follows the proportional review tiers: routine status and
+bookkeeping use a Trivial self-check, while meaningful documentation receives
+its required human or local independent review without a hosted GitHub Codex
+pass. Automatic AI reviews remain disabled until representative pull requests
+show that manual substantive reviews add useful signal without recurring
+noise. Cloud review remains read-only for this workflow; the local
+implementation agent owns corrections.
 
 Neither AI review nor green CI authorizes merge. The required proportional
 review tier still applies, no unresolved Critical or Required finding may

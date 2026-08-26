@@ -456,3 +456,13 @@
   maintainer; automatic AI reviews remain disabled pending useful evidence.
 - Observed the first manual hosted Codex review complete without a major issue
   or inline finding while the reviewed commit's hosted `Quality` job passed.
+
+## [2026-08-26] correction | Stop hosted review loops for documentation
+
+- Reserved hosted `@codex review` for the latest substantive code or
+  configuration change.
+- Excluded documentation-only status, evidence, wiki-log, and review
+  bookkeeping from hosted review without weakening proportional local or human
+  review for meaningful documentation.
+- Made documentation-only closeout non-invalidating so recording a review
+  result cannot recursively trigger another review request.

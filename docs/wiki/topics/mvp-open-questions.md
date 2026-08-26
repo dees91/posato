@@ -350,6 +350,13 @@ at commit `e4eb8f4`, reported no major issue, and added no inline finding. The
 same commit passed the hosted `Quality` job in 4 minutes 39 seconds. Automatic
 AI review remained disabled; the maintainer still owns the merge decision.
 
+`user-confirmed` (2026-08-26): hosted GitHub Codex review is reserved for the
+latest substantive code or configuration change. Documentation-only status,
+evidence, wiki-log, and review-bookkeeping updates do not invalidate that
+review and must not trigger another request. Routine closeout uses a self-check;
+meaningful documentation keeps its proportional human or local independent
+review without creating a hosted-review loop.
+
 ## Gate 6 roadmap (complete)
 
 `user-confirmed` (2026-08-25): the accepted

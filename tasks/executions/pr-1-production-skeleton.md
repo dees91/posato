@@ -92,6 +92,9 @@
 - `observed` (2026-08-26): a manually requested hosted Codex review examined
   commit `e4eb8f4`, reported no major issue, and added no inline finding.
   Automatic AI review remained disabled.
+- `user-confirmed` (2026-08-26): documentation-only status, evidence, wiki-log,
+  and review-bookkeeping updates do not invalidate a substantive hosted review
+  and do not trigger another `@codex review` request.
 
 ## Completed-change review
 
