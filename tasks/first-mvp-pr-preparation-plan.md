@@ -6,8 +6,8 @@
 - **Current milestone:** complete the first production pull-request increment
 - **Active checklist:**
   [first-mvp-pr-preparation-todo.md](first-mvp-pr-preparation-todo.md)
-- **Next work:** observe the first hosted `CI-001` run, then close the
-  integrated PR #1 cycle
+- **Next work:** complete the manual Codex review pass, resolve any blocking
+  findings, and return PR #1 to the maintainer for the merge decision
 - **Accepted Gate 6 authority:** [mvp-roadmap.md](mvp-roadmap.md)
 
 ## Objective

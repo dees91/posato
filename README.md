@@ -63,8 +63,8 @@ These are direction constraints, not a complete architecture.
 
 The first production pull request is active. Its seven preparation gates and
 ready checkpoint are complete. `FOUNDATION-001` has added the Apple-only
-application shell, `QUALITY-001` has added `./gradlew quality`, and the local
-`CI-001` implementation is awaiting its first hosted GitHub Actions run.
+application shell, `QUALITY-001` has added `./gradlew quality`, and `CI-001`
+has passed its first hosted GitHub Actions run.
 
 The MVP scope, product identity, minimum brand and product design baseline,
 [MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md),
@@ -84,5 +84,5 @@ automated test.
 
 Gate 5 did not configure CI. The accepted roadmap groups `FOUNDATION-001`,
 `QUALITY-001`, and `CI-001` into one PR #1 brief, execution record, and
-completed-change review. The first hosted CI run must pass before PR #1 merges
-or any parallel implementation wave begins.
+completed-change review. PR #1 now awaits its manual Codex review pass and the
+maintainer's merge decision before any parallel implementation wave begins.

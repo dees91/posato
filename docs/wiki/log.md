@@ -444,3 +444,13 @@
 - Confirmed the corrected iOS launch and both desktop appearance branches; one
   opaque label color now preserves contrast while type and spacing carry the
   four-line hierarchy.
+
+## [2026-08-26] decision | Adopt a human-owned pull request review loop
+
+- Recorded the first successful hosted PR #1 quality run and closed `CI-001`
+  without adding signing material or application credentials.
+- Kept human inline comments as the primary feedback channel and added a
+  manually requested `@codex review` as an independent, read-only pass.
+- Assigned corrections and verification to the local implementation agent,
+  thread resolution to the reviewer, and the final merge decision to the
+  maintainer; automatic AI reviews remain disabled pending useful evidence.

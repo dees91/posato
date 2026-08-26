@@ -33,8 +33,9 @@ execution record, and completed-change review. CI must complete before PR #1
 merges or the first parallel implementation wave begins, whichever happens
 first.
 
-`FOUNDATION-001` and `QUALITY-001` are complete. `CI-001` is implemented
-locally and remains open until its first hosted GitHub Actions run passes.
+`FOUNDATION-001`, `QUALITY-001`, and `CI-001` are complete. The first hosted
+GitHub Actions run passed; PR #1 remains open for its manual review loop and
+the maintainer's merge decision.
 
 ## Foundation local use
 

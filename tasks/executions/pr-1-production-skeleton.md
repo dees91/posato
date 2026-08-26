@@ -5,7 +5,7 @@
 - **Status:** `active`
 - **Review tier:** `standard`
 - **Implementer:** `Codex`
-- **Reviewer:** `pending integrated PR #1 review`
+- **Reviewer:** `independent Codex reviewer; completed-change review approved`
 - **Branch:** `foundation-001`
 - **Updated:** `2026-08-26`
 
@@ -70,6 +70,9 @@
 - `CI-001` is implemented as one GitHub Actions job on the arm64 `macos-15`
   runner. Pull requests and pushes to `main` run `./gradlew quality`, then build
   the iOS Simulator host with signing disabled.
+- `CI-001` is complete. The first hosted pull-request job passed the aggregate
+  quality gate, the signing-disabled iOS host build, and report upload on the
+  selected runner in 6 minutes 52 seconds.
 - CI selects Temurin 21 and Xcode 26.3 explicitly. The latter is present on the
   selected runner and stays within Kotlin 2.4.10's documented Xcode support
   ceiling instead of inheriting the runner's default Xcode.
@@ -126,7 +129,7 @@
 | CI workflow validation | `pass` | The workflow parses as YAML, `actionlint` 1.7.12 reports no finding, `git diff --check` passes, and every external action resolves to the recorded immutable release commit. |
 | CI dependency and permission review | `pass` | The three GitHub-maintained actions are active, use MIT terms, are pinned by commit SHA, and receive only read-only repository access; checkout credential persistence and Apple signing are disabled. |
 | Local CI command parity | `pass` | From a clean build state, `./gradlew clean quality` and the workflow's signing-disabled `xcodebuild` command completed locally. Local Xcode is 26.6; the workflow selects the compatible Xcode 26.3 installed on the current arm64 `macos-15` runner image. |
-| Hosted CI execution | `blocked` | This checkout has no Git remote, so no GitHub Actions run can be triggered or observed locally. The first pull-request run remains required before `CI-001` closes. |
+| Hosted CI execution | `pass` | PR #1's first GitHub-hosted `Quality` job completed successfully in 6 minutes 52 seconds on the selected arm64 `macos-15` runner. |
 
 ## Blockers and accepted risks
 
@@ -141,8 +144,9 @@
 - Compose Desktop rejects Homebrew's JDK distribution for packaging. The
   daemon vendor criterion therefore pins Eclipse Temurin rather than disabling
   the packaging safeguard.
-- The CI workflow is locally validated, but this checkout has no Git remote.
-  `CI-001` remains open until the first hosted GitHub Actions run passes.
+- PR #1 is connected to its private GitHub repository and its first hosted CI
+  run passed. The remaining handoff is the manual Codex review pass and the
+  maintainer's merge decision; automatic AI review remains disabled.
 - Independent review found two Required issues initially and one Critical plus
   one Required issue in the first correction. All were resolved, and the final
   follow-up verdict is `approve` with no remaining Critical or Required

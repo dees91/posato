@@ -308,10 +308,11 @@ GitHub-maintained actions to immutable commits. Current official runner-image
 inventory lists Xcode 26.3 on that image; this stays within Kotlin 2.4.10's
 documented Xcode compatibility ceiling.
 
-`open` (2026-08-26): the local checkout has no Git remote, so the first hosted
-workflow run has not been observed. CI remains a separate PR #1 milestone due
-before merge or the first parallel implementation wave, whichever occurs
-first. Fresh local verification remains mandatory until that run passes.
+`observed` (2026-08-26): PR #1 is open in a private GitHub repository and its
+first hosted `Quality` job passed in 6 minutes 52 seconds. The run exercised
+the aggregate gate, the signing-disabled iOS Simulator host build with Xcode
+26.3, and report upload on the selected arm64 `macos-15` runner. `CI-001` is
+complete without introducing signing material or an application credential.
 
 `observed` (2026-08-26): PR #1 now exposes `./gradlew quality` as the local
 aggregate boundary. It pins ktlint Gradle plugin 14.2.0 with ktlint 1.8.0,
@@ -336,6 +337,13 @@ compiler metadata. The first compatible stable Detekt 2 release is the removal
 trigger. An explicit `.research/blocker` search found only compiler
 warnings-as-errors evidence, not a production-quality lint or aggregate gate
 configuration to reuse.
+
+`user-confirmed` (2026-08-26): pull requests use human inline comments as the
+primary feedback channel, followed by a manually requested `@codex review` as
+an additional independent pass. The local implementation agent owns accepted
+corrections and verification; the reviewer controls thread resolution and the
+maintainer owns merge. Automatic AI review remains disabled until manual runs
+demonstrate useful signal without recurring noise.
 
 ## Gate 6 roadmap (complete)
 
@@ -523,5 +531,6 @@ synchronization.
 non-Keychain portal capabilities, associations, team visibility, and retained
 Keychain suffix all pass. Gate 7 is complete without claiming Keychain
 functionality, provisioning authorization, or signed entitlements. The Ready
-to open PR #1 checkpoint was subsequently accepted; the active external
-handoff is the first hosted `CI-001` run.
+to open PR #1 checkpoint was subsequently accepted. Hosted `CI-001` now passes;
+the active external handoff is the manual Codex review pass and maintainer
+merge decision.
