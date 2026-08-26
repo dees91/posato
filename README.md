@@ -6,9 +6,9 @@ collected data and maintenance burden.
 
 ## Status
 
-This repository currently contains an initial product knowledge base only. It
-has no MVP application code, registered product identifiers, selected license,
-release, or production-readiness claim. The accepted public name is **Posato**,
+This repository contains the accepted product knowledge base and the first
+production application skeleton. The skeleton is not a complete MVP, release,
+or production-readiness claim. The accepted public name is **Posato**,
 `posato.app` is the maintainer-controlled canonical domain, and `app.posato` is
 the accepted stable technical root. The accepted contracts are recorded under
 `docs/product/`.
@@ -59,28 +59,25 @@ These are direction constraints, not a complete architecture.
 - [First MVP PR preparation plan](tasks/first-mvp-pr-preparation-plan.md)
 - [First MVP PR preparation checklist](tasks/first-mvp-pr-preparation-todo.md)
 
-## Next milestone: the first MVP code PR
+## Active milestone: the first MVP code PR
 
-The next milestone is a small pull request containing the first production
-application code. Seven gates precede implementation: MVP scope, product
-identity, minimal product and design baseline, architecture baseline, quality
-contract, PR decomposition, and one manual Apple resource setup task.
+The first production pull request is active. Its seven preparation gates and
+ready checkpoint are complete. `FOUNDATION-001` has added the Apple-only
+application shell; `QUALITY-001` is the next milestone inside the same PR.
 
 The MVP scope, product identity, minimum brand and product design baseline,
 [MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md),
 and [engineering quality contract](docs/development/engineering-quality-contract.md)
 are accepted. [Gate 6 MVP roadmap revision 2](tasks/mvp-roadmap.md) retains
-future work as concise task stubs. The immediate next work is the manual
-Gate 7 Apple resource checklist; production implementation remains blocked
-until the readiness checkpoint is accepted.
+future work as concise task stubs.
 The accepted route and verification criteria live in the
 [preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
 [checklist](tasks/first-mvp-pr-preparation-todo.md).
 
-PR #1 will add fresh KMP application modules, accepted identifiers, one minimal
-shared Compose screen running on macOS and iOS, small semantic platform
-contracts with fakes, baseline tests, and CI. It will not implement blocking or
-synchronization and will not adopt the PoC module graph as its starting point.
+PR #1 uses fresh KMP application modules, accepted identifiers, and one minimal
+shared Compose screen running on macOS and iOS. It will add the aggregate
+quality gate and CI before completion. It does not implement blocking or
+synchronization and does not adopt the PoC module graph as its starting point.
 
 Gate 5 does not configure CI. The accepted roadmap groups `FOUNDATION-001`,
 `QUALITY-001`, and `CI-001` into one PR #1 brief, execution record, and

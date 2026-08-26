@@ -377,3 +377,26 @@
   provisioning, signing, and verification path to `SYNC-006`.
 - Completed the Gate 7 resource and non-Keychain portal-capability evidence
   while preserving the separate Ready to open PR #1 checkpoint.
+
+## [2026-08-26] event | Import the Foundation application skeleton
+
+- Recorded the supplied Wizard archive digest and selectively retained the
+  Apple host and wrapper structure while excluding Android, Web, sample,
+  optional dependency, icon, and local configuration surfaces.
+- Added the fresh accepted `:shared`, `:desktopApp`, and `iosApp` topology with
+  Metro platform graphs and the exact four-line shared shell.
+- Selected Compose Multiplatform 1.10.3 after controlled inspection found that
+  the 1.11.1 and 1.12.0 Skiko ICU objects exceeded the accepted iOS 18.0
+  deployment target.
+- Passed shared tests, platform graph compilation, credential-free Xcode 26.6
+  Simulator build and launch, and macOS application-image build and launch.
+
+## [2026-08-26] correction | Pin the Gradle daemon to Temurin 21
+
+- Supplemented the runtime JDK guard with a checked-in daemon JVM criterion
+  that takes precedence over Android Studio's JBR 25 launcher.
+- Added the Gradle-owned Foojay resolver convention plugin 1.0.0 to generate
+  portable Eclipse Temurin 21 provisioning URLs.
+- Retained Compose Desktop's JDK vendor safeguard after it rejected Homebrew's
+  JDK distribution, then passed the Foundation build from a JBR 25 launcher
+  with a Temurin 21 daemon.

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="application_shell_note">This build contains the application shell only.</string>
+    <string name="brand_promise">A quiet pause between impulse and action.</string>
+    <string name="product_line">Pause. Then choose.</string>
+    <string name="product_name">Posato</string>
+</resources>

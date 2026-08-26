@@ -7,13 +7,13 @@ Definition of Done. Task planning and evidence follow the
 [repository task workflow](../../tasks/README.md).
 
 PoC tool versions and module boundaries are evidence, not automatic MVP
-requirements. No production build has been scaffolded yet.
+requirements. The first production build has been scaffolded under the
+accepted PR #1 boundaries.
 
 The accepted module, target, Metro, native-helper, extension, deployment, and
 generator-import boundaries are in
-[ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md). Gates
-5 and 6 are accepted. Gate 7, the manual Apple resource checklist, is the first
-incomplete preparation gate.
+[ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md). All
+seven preparation gates and the ready checkpoint are complete.
 
 ## First production pull request
 
@@ -30,6 +30,45 @@ Gate 5 defines the required CI outcome but does not configure a pipeline.
 execution record, and completed-change review. CI must complete before PR #1
 merges or the first parallel implementation wave begins, whichever happens
 first.
+
+`FOUNDATION-001` is complete. The active next milestone is `QUALITY-001`.
+
+## Foundation local use
+
+The Gradle daemon runs on Eclipse Temurin JDK 21, while the desktop target
+emits JVM 17 bytecode. The checked-in daemon JVM criteria takes precedence
+over the launcher JVM used by Android Studio, `JAVA_HOME`, or the wrapper and
+uses the Foojay resolver to provision Temurin 21 when it is not installed.
+The wrapper still needs a Gradle-compatible launcher JVM; Xcode build phases
+therefore require Java to be available in their development shell.
+
+Inspect the effective launcher and daemon JVMs with:
+
+```shell
+./gradlew --version
+```
+
+The `Daemon JVM` line must report Java 21 and Eclipse Temurin. Android Studio
+may continue to report its bundled JBR as the `Launcher JVM`.
+
+Run the current desktop shell with:
+
+```shell
+./gradlew :desktopApp:run
+```
+
+Build the credential-free iOS Simulator host with:
+
+```shell
+xcodebuild \
+  -project iosApp/iosApp.xcodeproj \
+  -scheme iosApp \
+  -sdk iphonesimulator \
+  -destination 'generic/platform=iOS Simulator' \
+  CODE_SIGNING_ALLOWED=NO \
+  CODE_SIGNING_REQUIRED=NO \
+  build
+```
 
 PR #1 does not implement website blocking, application blocking,
 synchronization, enrollment, recovery, or production helpers. Implementation
