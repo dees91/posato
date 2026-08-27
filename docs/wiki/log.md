@@ -519,3 +519,17 @@
 - Accepted the two necessary volatile data boundaries, the Apple Events
   presentation race, content-erasure limit, restoration on network transitions,
   and downstream MACOS-004 physical and privacy-canary evidence gate.
+
+## [2026-08-27] implementation | Persist policy with standard SQLDelight lifecycle
+
+- Classified exact-domain rows as active app-private configuration with no TTL;
+  an empty replacement removes every domain row atomically.
+- Selected SQLDelight's standard schema initialization, versioning, migrations,
+  and platform drivers without a custom database-management layer.
+- Bound the standard platform driver, generated database, and ready store
+  directly in each app-scoped Metro graph, with suspending store work on the
+  platform database dispatcher and replacement in one SQLDelight transaction.
+- Reduced v1 to revision metadata and canonical domains, committed the generated
+  schema baseline, linked system SQLite in the iOS host, and retained focused
+  cross-runtime policy, rollback, restart, invalid-file, redaction, bounds, and
+  dispatcher coverage.

@@ -1,0 +1,35 @@
+CREATE TABLE local_policy_metadata (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  revision INTEGER NOT NULL CHECK (revision >= 0)
+);
+
+INSERT INTO local_policy_metadata(singleton, revision) VALUES (1, 0);
+
+CREATE TABLE exact_domain_policy (
+  canonical_domain TEXT NOT NULL PRIMARY KEY CHECK (
+    length(canonical_domain) BETWEEN 3 AND 253
+  )
+);
+
+selectRevision:
+SELECT revision
+FROM local_policy_metadata
+WHERE singleton = 1;
+
+selectDomains:
+SELECT canonical_domain
+FROM exact_domain_policy
+ORDER BY canonical_domain
+LIMIT :maximum_row_count;
+
+advanceRevision:
+UPDATE local_policy_metadata
+SET revision = :next_revision
+WHERE singleton = 1 AND revision = :expected_revision;
+
+deleteDomains:
+DELETE FROM exact_domain_policy;
+
+insertDomain:
+INSERT INTO exact_domain_policy(canonical_domain)
+VALUES (:canonical_domain);

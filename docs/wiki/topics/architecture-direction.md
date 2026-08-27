@@ -142,6 +142,41 @@ for the first local-replica slice. Exact coordinates are selected and verified
 in those named pull requests. Ktor is not implied by CloudKit and has no current
 Apple MVP consumer.
 
+### MODEL-001 local policy persistence
+
+`user-confirmed` (2026-08-27): MODEL-001 uses SQLDelight's standard database
+lifecycle instead of a Posato-specific one. Desktop constructs
+`JdbcSqliteDriver` and iOS constructs `NativeSqliteDriver` with the generated
+synchronous schema bridge. Those drivers own fresh creation, `PRAGMA
+user_version`, and later `.sqm` migrations. Posato does not add a sidecar schema
+version, schema inventory, integrity preflight, recovery protocol, driver
+decorator, store factory, or explicit store close API.
+
+Both app-scoped Metro graphs bind the platform `SqlDriver`, generated
+`PosatoDatabase`, and ready `LocalExactDomainPolicyStore` directly. SQLDelight
+still generates suspending queries. Store reads and replacements use an
+injected named database dispatcher, and replacement uses one standard
+SQLDelight transaction. Desktop uses `Dispatchers.IO`. Kotlin/Native in the
+pinned kotlinx.coroutines 1.10.2 build does not expose `Dispatchers.IO`
+publicly, so iOS uses a single-parallelism `Dispatchers.Default` view without
+introducing an owned executor.
+
+The v1 schema contains only one revision row and canonical exact-domain rows.
+Its generated `1.db` is the migration-verification baseline; the first `.sqm`
+file is added only for a real v2. Restored domains are revalidated and bounded
+before becoming trusted policy state, while ordinary query failures remain
+typed storage failures. An invalid file is left to standard driver
+initialization and is not silently replaced. The iOS configuration changes
+only its app-private base path and installs a silent SQLiter logger while
+retaining the driver's default WAL mode. The static iOS host continues to link
+system SQLite.
+
+`observed` (2026-08-27): the focused real-SQLite contract passes on desktop JVM
+and the iOS Simulator for fresh creation, atomic replacement, restart, empty
+replacement, revision conflicts, rollback, stored-data bounds, redaction,
+invalid-file preservation, and injected dispatcher use. TARGETS-001 still owns
+user input and IDNA canonicalization.
+
 ### Platform and toolchain baseline
 
 - iOS deployment target: 18.0, rechecked against the current-and-previous-major

@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.multiplatform)
     alias(libs.plugins.metro)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -37,6 +38,29 @@ kotlin {
             implementation(libs.compose.material)
             implementation(libs.compose.resources)
             implementation(libs.compose.ui)
+            implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.sqldelight.async.extensions)
+            implementation(libs.sqldelight.runtime)
+        }
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            implementation(libs.kotlinx.coroutines.test)
+        }
+        iosMain.dependencies {
+            implementation(libs.sqldelight.native.driver)
+        }
+        jvmMain.dependencies {
+            implementation(libs.sqldelight.sqlite.driver)
+        }
+    }
+}
+
+sqldelight {
+    databases {
+        create("PosatoDatabase") {
+            generateAsync.set(true)
+            packageName.set("app.posato.persistence.db")
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
         }
     }
 }

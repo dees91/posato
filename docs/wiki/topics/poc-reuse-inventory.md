@@ -47,6 +47,14 @@ The repository must remain understandable and buildable when
 
 No source code was copied during the initial repository seed.
 
+`user-confirmed` (2026-08-27): MODEL-001 retains only the PoC's useful atomic
+replacement and restart behavior. An earlier production draft overfit the
+experiment with custom database initialization, validation, recovery, driver
+wrapping, and close ownership; that layer was removed. SQLDelight's standard
+drivers, schema version, and migration lifecycle now own those concerns. No
+feasibility source, runner, trace, credential, identifier, or machine-local path
+was copied.
+
 If later work copies a meaningful fragment, the pull request must identify:
 
 - the feasibility source revision and path;
