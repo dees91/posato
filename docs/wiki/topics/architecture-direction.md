@@ -155,18 +155,21 @@ decorator, store factory, or explicit store close API.
 Both app-scoped Metro graphs bind the platform `SqlDriver`, generated
 `PosatoDatabase`, and ready `LocalExactDomainPolicyStore` directly. SQLDelight
 still generates suspending queries. Store reads and replacements use an
-injected named database dispatcher, and replacement uses one standard
-SQLDelight transaction. Desktop uses `Dispatchers.IO`. Kotlin/Native in the
-pinned kotlinx.coroutines 1.10.2 build does not expose `Dispatchers.IO`
-publicly, so iOS uses a single-parallelism `Dispatchers.Default` view without
-introducing an owned executor.
+injected named database dispatcher and a standard SQLDelight transaction so a
+read returns one committed revision-and-policy snapshot and a replacement
+commits as one unit. Desktop uses `Dispatchers.IO`. Kotlin/Native in the pinned
+kotlinx.coroutines 1.10.2 build does not expose `Dispatchers.IO` publicly, so
+iOS uses a single-parallelism `Dispatchers.Default` view without introducing an
+owned executor.
 
 The v1 schema contains only one revision row and canonical exact-domain rows.
 Its generated `1.db` is the migration-verification baseline; the first `.sqm`
 file is added only for a real v2. The revision constraint requires SQLite's
 physical `integer` storage class so generated `Long` reads cannot coerce text or
-real values into trusted revision state. Restored domains are revalidated and
-bounded before becoming trusted policy state, while ordinary query failures
+real values into trusted revision state. The canonical-domain constraint
+likewise requires the physical `text` storage class so generated `String` reads
+cannot coerce BLOB values into trusted domains. Restored domains are revalidated
+and bounded before becoming trusted policy state, while ordinary query failures
 remain typed storage failures. An invalid file is left to standard driver
 initialization and is not silently replaced. The iOS configuration changes only
 its app-private base path and installs a silent SQLiter logger while retaining
@@ -177,10 +180,10 @@ SQLite.
 and the iOS Simulator for fresh creation, atomic replacement, restart, empty
 replacement, revision conflicts, rollback, stored-data bounds, redaction,
 invalid-file preservation, malformed A-label rejection, non-integer revision
-rejection, and injected dispatcher use. `inferred`: MODEL-001 fails closed on
-every reserved `??--` label, including `xn--`, until TARGETS-001 supplies
-reviewed IDNA validation and round-tripping rather than trusting the prefix
-alone.
+rejection, BLOB-domain rejection, and injected dispatcher use. `inferred`:
+MODEL-001 fails closed on every reserved `??--` label, including `xn--`, until
+TARGETS-001 supplies reviewed IDNA validation and round-tripping rather than
+trusting the prefix alone.
 
 ### Platform and toolchain baseline
 

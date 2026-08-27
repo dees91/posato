@@ -68,6 +68,17 @@ class LocalExactDomainPolicyStoreContractTest {
         }
 
     @Test
+    fun `given a BLOB domain when written then schema rejects it and state remains unchanged`() = withStore("blob-domain.db") { store, driver ->
+        val policy = policyOf("stable.example")
+        assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
+
+        assertFails {
+            driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES (x'626c6f622e6578616d706c65')")
+        }
+        assertState(store.read(), revision = 1, domains = policy.canonicalValues())
+    }
+
+    @Test
     fun `given an insert failure when replacing then the complete transaction rolls back`() = withStore("rollback.db") { store, driver ->
         val originalPolicy = policyOf("original.example")
         assertState(store.replace(0, originalPolicy), revision = 1, domains = originalPolicy.canonicalValues())

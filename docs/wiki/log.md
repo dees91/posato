@@ -548,3 +548,10 @@
   class instead of relying on column affinity and numeric comparison alone.
 - Added one real-SQLite cross-runtime contract proving that a non-integer write
   is rejected and leaves the committed policy unchanged.
+
+## [2026-08-27] correction | Preserve policy storage types and read snapshots
+
+- Required canonical domains to use SQLite's physical text storage class so a
+  BLOB cannot be coerced through the generated String accessor.
+- Read revision metadata and canonical domains in one standard SQLDelight
+  transaction so callers receive one committed logical state.

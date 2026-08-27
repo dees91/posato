@@ -45,10 +45,12 @@
   `Dispatchers.Default` because the pinned Native API does not expose IO.
 - Removed the store factory, driver decorator, schema attestation, corruption
   classifier, recovery protocol, explicit close API, and custom failure states.
-- Reduced the cross-runtime contract from 27 lifecycle-focused cases to ten
+- Reduced the cross-runtime contract from 27 lifecycle-focused cases to eleven
   policy behaviors, with descriptive backtick names and real SQLite rollback.
 - Required the v1 revision to use SQLite's integer storage class so generated
   `Long` reads cannot coerce text or real values into a fabricated revision.
+- Required canonical domains to use SQLite's text storage class and covered
+  complete state reads with one standard SQLDelight transaction.
 - Corrected the architecture and PoC-reuse synthesis so the deleted draft is
   explicitly superseded rather than retained as production guidance.
 - Aligned the repository, ktlint, Detekt, and Android Studio on the accepted
@@ -57,39 +59,46 @@
 
 ## Completed-change review
 
-- **Verdict:** `approved; formatting-only follow-up exempted by the maintainer`
+- **Verdict:** `approved, including the latest schema and snapshot corrections`
 - **Critical or Required findings:** The first pass found one Required privacy
   defect: default policy and state representations disclosed the domain count
   and policy revision.
 - **Resolution:** Both representations are now fully static and redacted. The
   contract test asserts their exact safe outputs, affected verification passed,
   and focused re-review found no remaining Critical or Required finding.
-- **Latest correction:** `user-confirmed` (2026-08-27): the later formatting
-  configuration does not require another independent completed-change review.
+- **Latest correction:** A fresh independent review approved the physical text
+  constraint, regenerated baseline, BLOB regression, and transactional read
+  without a Critical or Required finding. The change adds no custom lifecycle,
+  lock, orchestrator, attestation, or database wrapper.
 
 ## Hosted review
 
-- **Reviewed commits:** `a2d871ed2b`, `187e412d3e`
+- **Reviewed commits:** `a2d871ed2b`, `187e412d3e`, `e596b55cc0`
 - **Verdict:** `changes required; correction implemented, follow-up pending`
 - **Critical or Required findings:** The reviews found that an `xn--` prefix
   alone trusted a malformed IDNA A-label and that SQLite could store text or
   real revision values which generated `Long` reads then coerced.
-- **Resolution:** Cross-runtime regressions reproduced both false-success paths.
-  MODEL-001 now rejects every reserved `??--` label pending TARGETS-001 IDNA
-  validation, and the v1 schema requires the revision's physical SQLite type to
-  be `integer`. Focused JVM and iOS verification passes; hosted follow-up review
-  remains pending.
+- **Accepted advisory findings:** A BLOB domain could pass the length constraint
+  and be coerced by the generated `String` accessor, while separate revision
+  and domain queries could return a state that was never committed.
+- **Resolution:** Cross-runtime regressions cover the malformed A-label and both
+  storage-class coercion paths. MODEL-001 now rejects every reserved `??--`
+  label pending TARGETS-001 IDNA validation, and the v1 schema requires the
+  revision's physical SQLite type to be `integer` and a domain's physical type
+  to be `text`. Complete reads now use one standard SQLDelight transaction.
+  Focused JVM and iOS verification passes; hosted follow-up review remains
+  pending.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Independent high-risk plan review | `pass` | Approved with no Critical or Required finding. |
-| Focused persistence verification | `pass` | Ten real-SQLite tests pass on JVM and the iOS Simulator; SQLDelight migration verification passes. |
-| Aggregate `./gradlew quality` | `pass` | Formatting, Detekt, migration verification, both runtime contracts, platform compiles, desktop packaging, and distribution pass after the latest schema correction. |
+| Focused persistence verification | `pass` | Eleven real-SQLite tests pass on JVM and the iOS Simulator; SQLDelight migration verification passes. |
+| Aggregate `./gradlew quality` | `pass` | Formatting, Detekt, migration verification, both runtime contracts, platform compiles, desktop packaging, and distribution pass after the latest schema and snapshot corrections. |
 | Credential-free iOS host build | `pass` | The CI-equivalent Simulator build succeeds with the static framework and system SQLite linkage. |
 | Diff and security self-review | `pass` | No custom lifecycle remnants, personal paths, credentials, raw domain logging, unbounded restore, or SQL interpolation were found. |
-| Independent completed-change review | `pass` | The persistence re-review approved its correction; the maintainer explicitly exempted the later formatting-only follow-up. |
+| Independent completed-change review | `pass` | Fresh review approved the latest schema and transactional-read corrections with no Critical or Required finding. |
 | Kotlin formatting convergence | `pass` | Android Studio preserved the accepted Kotlin diff; `:shared:ktlintCheck` and `:shared:detekt` passed with the 150-character limit. |
 
 ## Blockers and accepted risks

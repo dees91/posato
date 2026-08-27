@@ -9,6 +9,7 @@ INSERT INTO local_policy_metadata(singleton, revision) VALUES (1, 0);
 
 CREATE TABLE exact_domain_policy (
   canonical_domain TEXT NOT NULL PRIMARY KEY CHECK (
+    typeof(canonical_domain) = 'text' AND
     length(canonical_domain) BETWEEN 3 AND 253
   )
 );

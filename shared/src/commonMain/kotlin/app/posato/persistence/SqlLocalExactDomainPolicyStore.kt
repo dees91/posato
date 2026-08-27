@@ -42,7 +42,11 @@ internal class SqlLocalExactDomainPolicyStore(
 
     private suspend fun readResult(): LocalPolicyResult<LocalExactDomainPolicyState> {
         return try {
-            LocalPolicyResult.Success(readStateOrThrow())
+            val state = database.transactionWithResult {
+                readStateOrThrow()
+            }
+
+            LocalPolicyResult.Success(state)
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (failure: LocalPolicyStoreException) {
