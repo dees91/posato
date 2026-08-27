@@ -7,5 +7,16 @@ insert_final_newline = true
 trim_trailing_whitespace = true
 
 [*.{kt,kts}]
+indent_size = 4
+indent_style = space
+max_line_length = 150
+ij_kotlin_code_style_defaults = KOTLIN_OFFICIAL
+ij_kotlin_continuation_indent_size = 4
+ij_kotlin_keep_line_breaks = true
+ij_kotlin_right_margin = 150
 ktlint_code_style = ktlint_official
+ktlint_function_signature_body_expression_wrapping = default
 ktlint_function_naming_ignore_when_annotated_with = Composable
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_function-expression-body = disabled
+ktlint_standard_multiline-expression-wrapping = disabled

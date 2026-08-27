@@ -2,10 +2,25 @@ config:
   validation: true
   warningsAsErrors: true
 
+empty-blocks:
+  EmptyCatchBlock:
+    active: true
+    allowedExceptionNameRegex: '$^'
+
+exceptions:
+  SwallowedException:
+    active: true
+    allowedExceptionNameRegex: '^_$'
+
 naming:
   FunctionNaming:
     ignoreAnnotated:
       - Composable
+
+style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 150
 
 Compose:
   ComposableAnnotationNaming:

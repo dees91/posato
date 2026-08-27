@@ -519,3 +519,53 @@
 - Accepted the two necessary volatile data boundaries, the Apple Events
   presentation race, content-erasure limit, restoration on network transitions,
   and downstream MACOS-004 physical and privacy-canary evidence gate.
+
+## [2026-08-27] implementation | Persist policy with standard SQLDelight lifecycle
+
+- Classified exact-domain rows as active app-private configuration with no TTL;
+  an empty replacement removes every domain row atomically.
+- Selected SQLDelight's standard schema initialization, versioning, migrations,
+  and platform drivers without a custom database-management layer.
+- Bound the standard platform driver, generated database, and ready store
+  directly in each app-scoped Metro graph, with suspending store work on the
+  platform database dispatcher and replacement in one SQLDelight transaction.
+- Reduced v1 to revision metadata and canonical domains, committed the generated
+  schema baseline, linked system SQLite in the iOS host, and retained focused
+  cross-runtime policy, rollback, restart, invalid-file, redaction, bounds,
+  malformed A-label, and dispatcher coverage.
+
+## [2026-08-27] correction | Align Kotlin formatting across IDE and quality gates
+
+- Set one 150-character Kotlin limit in ktlint, Detekt, and Android Studio.
+- Kept expression bodies, call assignments, and `when` expressions on their
+  declaration or assignment line when they fit the limit.
+- Retained blank lines before terminal returns and aligned multiline chains as
+  authored style without adding a custom lint plugin solely for those choices.
+
+## [2026-08-27] correction | Require integer revision storage
+
+- Required the v1 policy revision to use SQLite's physical integer storage
+  class instead of relying on column affinity and numeric comparison alone.
+- Added one real-SQLite cross-runtime contract proving that a non-integer write
+  is rejected and leaves the committed policy unchanged.
+
+## [2026-08-27] correction | Preserve policy storage types and read snapshots
+
+- Required canonical domains to use SQLite's physical text storage class so a
+  BLOB cannot be coerced through the generated String accessor.
+- Read revision metadata and canonical domains in one standard SQLDelight
+  transaction so callers receive one committed logical state.
+
+## [2026-08-27] correction | Bound canonical-domain storage bytes
+
+- Applied the existing 253-character ASCII domain budget to the complete stored
+  byte sequence so an embedded NUL cannot hide an oversized suffix.
+- Added one real-SQLite cross-runtime contract for rejection and preservation of
+  the previously committed policy without runtime or file-level validation.
+
+## [2026-08-27] correction | Preserve corruption during policy replacement
+
+- Validated the previous logical state inside the replacement transaction after
+  the revision compare-and-set and before deleting domain rows.
+- Kept a corrupt replica intact and returned typed corruption instead of
+  silently replacing it, without adding schema attestation or recovery logic.

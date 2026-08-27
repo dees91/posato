@@ -30,30 +30,26 @@ internal actual fun platformTheme(): PlatformTheme {
 private fun platformTextStyle(
     fontKey: String,
     fontWeight: FontWeight,
-): TextStyle =
-    TextStyle(
-        fontFamily = FontFamily.Default,
-        fontSize = platformFontSize(fontKey),
-        fontWeight = fontWeight,
-    )
+): TextStyle = TextStyle(
+    fontFamily = FontFamily.Default,
+    fontSize = platformFontSize(fontKey),
+    fontWeight = fontWeight,
+)
 
-private fun platformFontSize(fontKey: String): TextUnit =
-    checkNotNull(UIManager.getFont(fontKey)) {
-        "System font is not available for $fontKey"
-    }.size2D.sp
+private fun platformFontSize(fontKey: String): TextUnit = checkNotNull(UIManager.getFont(fontKey)) {
+    "System font is not available for $fontKey"
+}.size2D.sp
 
-private fun java.awt.Color.toComposeColor(invert: Boolean): Color =
-    Color(
-        red = red.platformChannel(invert),
-        green = green.platformChannel(invert),
-        blue = blue.platformChannel(invert),
-    )
+private fun java.awt.Color.toComposeColor(invert: Boolean): Color = Color(
+    red = red.platformChannel(invert),
+    green = green.platformChannel(invert),
+    blue = blue.platformChannel(invert),
+)
 
-private fun Int.platformChannel(invert: Boolean): Int =
-    if (invert) {
-        MAX_COLOR_CHANNEL - this
-    } else {
-        this
-    }
+private fun Int.platformChannel(invert: Boolean): Int = if (invert) {
+    MAX_COLOR_CHANNEL - this
+} else {
+    this
+}
 
 private const val MAX_COLOR_CHANNEL = 255

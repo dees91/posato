@@ -142,6 +142,53 @@ for the first local-replica slice. Exact coordinates are selected and verified
 in those named pull requests. Ktor is not implied by CloudKit and has no current
 Apple MVP consumer.
 
+### MODEL-001 local policy persistence
+
+`user-confirmed` (2026-08-27): MODEL-001 uses SQLDelight's standard database
+lifecycle instead of a Posato-specific one. Desktop constructs
+`JdbcSqliteDriver` and iOS constructs `NativeSqliteDriver` with the generated
+synchronous schema bridge. Those drivers own fresh creation, `PRAGMA
+user_version`, and later `.sqm` migrations. Posato does not add a sidecar schema
+version, schema inventory, integrity preflight, recovery protocol, driver
+decorator, store factory, or explicit store close API.
+
+Both app-scoped Metro graphs bind the platform `SqlDriver`, generated
+`PosatoDatabase`, and ready `LocalExactDomainPolicyStore` directly. SQLDelight
+still generates suspending queries. Store reads and replacements use an
+injected named database dispatcher and a standard SQLDelight transaction so a
+read returns one committed revision-and-policy snapshot and a replacement
+commits as one unit. After the revision compare-and-set acquires the write, a
+replacement validates the previous logical state before deleting it; detected
+corruption therefore aborts and rolls back the complete transaction instead of
+silently resetting the replica. Desktop uses `Dispatchers.IO`. Kotlin/Native in
+the pinned kotlinx.coroutines 1.10.2 build does not expose `Dispatchers.IO`
+publicly, so iOS uses a single-parallelism `Dispatchers.Default` view without
+introducing an owned executor.
+
+The v1 schema contains only one revision row and canonical exact-domain rows.
+Its generated `1.db` is the migration-verification baseline; the first `.sqm`
+file is added only for a real v2. The revision constraint requires SQLite's
+physical `integer` storage class so generated `Long` reads cannot coerce text or
+real values into trusted revision state. The canonical-domain constraint
+likewise requires the physical `text` storage class so generated `String` reads
+cannot coerce BLOB values into trusted domains, and it applies the 253-byte
+budget through BLOB-length semantics so an embedded NUL cannot hide an
+oversized suffix. Restored domains are revalidated and bounded before becoming
+trusted policy state, while ordinary query failures remain typed storage
+failures. An invalid file is left to standard driver initialization and is not
+silently replaced. The iOS configuration changes only its app-private base path
+and installs a silent SQLiter logger while retaining the driver's default WAL
+mode. The static iOS host continues to link system SQLite.
+
+`observed` (2026-08-27): the focused real-SQLite contract passes on desktop JVM
+and the iOS Simulator for fresh creation, atomic replacement, restart, empty
+replacement, revision conflicts, rollback, stored-data bounds, redaction,
+invalid-file preservation, malformed A-label rejection, non-integer revision
+rejection, BLOB-domain rejection, oversized NUL-suffixed text rejection, and
+injected dispatcher use. `inferred`: MODEL-001 fails closed on every reserved
+`??--` label, including `xn--`, until TARGETS-001 supplies reviewed IDNA
+validation and round-tripping rather than trusting the prefix alone.
+
 ### Platform and toolchain baseline
 
 - iOS deployment target: 18.0, rechecked against the current-and-previous-major
@@ -294,6 +341,12 @@ task-local evidence, and the standing Definition of Done. The
 [task workflow](../../../tasks/README.md) keeps future work as roadmap stubs,
 creates briefs just in time, and requires a pre-implementation review only for
 named High-risk work.
+
+`user-confirmed` (2026-08-27): Kotlin formatting uses one 150-character limit
+across ktlint, Detekt, and Android Studio. Existing formatter controls enforce
+the accepted expression-body layout; preferences without an exact built-in
+rule remain authored guidance unless repeated drift establishes a real need for
+a custom rule.
 
 Gate 5 records the CI outcome but does not configure a pipeline. The Gate 6
 roadmap groups the foundation, local quality, and CI milestones into one PR #1

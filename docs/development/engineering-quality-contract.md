@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 4
-- **Accepted:** 2026-08-26
+- **Revision:** 5
+- **Accepted:** 2026-08-27
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -25,6 +25,14 @@ CI quality boundaries and integrated completed-change review pass.
   through a duplicate ktlint integration.
 - **The Kotlin compiler** owns warning reporting. Repository-owned source is
   warning-free where the selected toolchain exposes reliable enforcement.
+
+`user-confirmed` (2026-08-27): repository-owned Kotlin and Kotlin build scripts
+use a 150-character limit in ktlint, Detekt, and the Android Studio settings
+published through `.editorconfig`. Expression bodies keep their first
+expression on the declaration line when it fits. The accepted assignment and
+call-chain layout remains formatter-compatible authored style where ktlint has
+no exact built-in rule; do not create a custom ruleset for it without observed
+repeated drift and a named consumer.
 
 PR #1 selects one compatible Kotlin, Compose Multiplatform, Gradle, Metro,
 ktlint, Detekt, and Compose Rules set. Stable releases are required by default.

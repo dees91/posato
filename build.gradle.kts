@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform) apply false
     alias(libs.plugins.ktlint)
     alias(libs.plugins.metro) apply false
+    alias(libs.plugins.sqldelight) apply false
 }
 
 check(JavaVersion.current() == JavaVersion.VERSION_21) {
@@ -91,7 +92,9 @@ tasks.register("quality") {
         ":shared:compileKotlinIosArm64",
         ":shared:compileKotlinIosSimulatorArm64",
         ":shared:detekt",
+        ":shared:iosSimulatorArm64Test",
         ":shared:jvmTest",
         ":shared:ktlintCheck",
+        ":shared:verifySqlDelightMigration",
     )
 }

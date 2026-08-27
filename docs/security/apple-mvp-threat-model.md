@@ -15,6 +15,13 @@ residual risks on 2026-08-26. The later user-confirmed MACOS-002 amendment adds
 `R-06`. This authority governs Apple MVP security work together with the
 accepted product and architecture authorities.
 
+`user-confirmed` (2026-08-26): exact-domain policy is active product
+configuration and has no time-to-live. Its canonical domain rows remain in the
+app-private local replica until the person edits or removes them. Replacing the
+policy with an empty set removes every domain row atomically. MODEL-001 does
+not add a separate reset flow, guarantee secure physical erasure, or define a
+custom backup policy; those lifecycle claims remain with their future owners.
+
 ## Scope
 
 The model covers the accepted Apple MVP on one supported arm64 Mac and one
@@ -82,7 +89,7 @@ it never changes a production control to verified.
 
 | ID | Asset or data | Purpose | Location and movement | Class and required protection | Lifecycle owner |
 | --- | --- | --- | --- | --- | --- |
-| `A-01` | Exact domain and semantic application policy | Express shared blocking intent | App-private local replica; only inside authenticated encrypted CloudKit bundles off-device | Sensitive configuration: validate, minimize, encrypt off-device, exclude from diagnostics | `MODEL-001`, `TARGETS-001`, `TARGETS-002`, `SYNC-001` |
+| `A-01` | Exact domain and semantic application policy | Express shared blocking intent | App-private local replica; only inside authenticated encrypted CloudKit bundles off-device | Sensitive configuration: validate, minimize, encrypt off-device, exclude from diagnostics; exact-domain rows have no TTL and remain until edited or removed | `MODEL-001`, `TARGETS-001`, `TARGETS-002`, `SYNC-001` |
 | `A-02` | Active-session intent and bounded timing | Apply and converge the current manual session | App-private local replica and encrypted synchronization operations | Sensitive configuration: retain only what convergence and active behavior require; never turn it into usage history | `SESSION-001`, `SESSION-002`, `SYNC-001`, `SYNC-012` |
 | `A-03` | macOS application mapping and opaque iOS selection | Bind semantic policy to a local platform target | App-private or platform-protected local storage only; never synchronized | Sensitive platform capability: no portable conversion, logging, public evidence, or silent replacement | `TARGETS-003`, `TARGETS-004`, `IOS-001`, `MACOS-005` |
 | `A-04` | Immutable operations, projected policy, pending publication, cursor, and bootstrap state | Preserve the local-first replica and retry work | App-private database; complete encrypted bundles cross the cloud boundary | Security state: bounded, authenticated, atomic, idempotent, migration-safe, and never silently reset after corruption | `MODEL-001`, `SYNC-002`, `SYNC-004`, `SYNC-010` |
@@ -170,10 +177,11 @@ controls and positive browser claims remain unverified until MACOS-003,
 MACOS-004, and the named downstream enforcement tasks supply their required
 evidence. Application termination, iOS entitlement/distribution, App Group
 schema, cryptographic primitives and format, automatic signed-author
-registration, and non-diagnostic data retention/deletion remain blocked on
-their named tasks. Diagnostic producers remain unimplemented and must satisfy
-the accepted diagnostic policy in their own tasks. `RELEASE-001` must recheck
-the residuals and feature gates before any public-release claim.
+registration, and non-diagnostic lifecycle rules other than the accepted local
+exact-domain policy remain blocked on their named tasks. Diagnostic producers
+remain unimplemented and must satisfy the accepted diagnostic policy in their
+own tasks. `RELEASE-001` must recheck the residuals and feature gates before any
+public-release claim.
 
 ## Change and review rule
 
