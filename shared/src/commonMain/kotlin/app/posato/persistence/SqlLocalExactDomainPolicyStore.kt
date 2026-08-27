@@ -66,10 +66,10 @@ internal class SqlLocalExactDomainPolicyStore(
                     next_revision = expectedRevision + 1,
                     expected_revision = expectedRevision,
                 )
+                readStateOrThrow()
                 if (changed != 1L) {
                     fail(LocalPolicyFailure.REVISION_CONFLICT)
                 }
-                readStateOrThrow()
                 database.localExactDomainPolicyQueries.deleteDomains()
                 policy.domains.forEach { domain ->
                     database.localExactDomainPolicyQueries.insertDomain(domain.canonicalValue)

@@ -42,18 +42,25 @@ class LocalExactDomainPolicyStoreContractTest {
     }
 
     @Test
-    fun `given invalid or stale revisions when replacing then the committed policy remains unchanged`() = withStore("revision.db") { store, _ ->
-        val policy = policyOf("stable.example")
-        assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
+    fun `given invalid stale or missing revisions when replacing then typed failures preserve stored state`() =
+        withStore("revision.db") { store, driver ->
+            val policy = policyOf("stable.example")
+            assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
 
-        val invalid = assertFailure(store.replace(-1, ExactDomainPolicy.empty()))
-        assertEquals(LocalPolicyFailure.INVALID_REVISION, invalid.reason)
-        val exhausted = assertFailure(store.replace(Long.MAX_VALUE, ExactDomainPolicy.empty()))
-        assertEquals(LocalPolicyFailure.REVISION_EXHAUSTED, exhausted.reason)
-        val stale = assertFailure(store.replace(0, ExactDomainPolicy.empty()))
-        assertEquals(LocalPolicyFailure.REVISION_CONFLICT, stale.reason)
-        assertState(store.read(), revision = 1, domains = policy.canonicalValues())
-    }
+            val invalid = assertFailure(store.replace(-1, ExactDomainPolicy.empty()))
+            assertEquals(LocalPolicyFailure.INVALID_REVISION, invalid.reason)
+            val exhausted = assertFailure(store.replace(Long.MAX_VALUE, ExactDomainPolicy.empty()))
+            assertEquals(LocalPolicyFailure.REVISION_EXHAUSTED, exhausted.reason)
+            val stale = assertFailure(store.replace(0, ExactDomainPolicy.empty()))
+            assertEquals(LocalPolicyFailure.REVISION_CONFLICT, stale.reason)
+            assertState(store.read(), revision = 1, domains = policy.canonicalValues())
+
+            driver.executeSql("DELETE FROM local_policy_metadata")
+            val missing = assertFailure(store.replace(1, ExactDomainPolicy.empty()))
+            assertEquals(LocalPolicyFailure.CORRUPTION, missing.reason)
+            val preserved = assertFailure(store.read())
+            assertEquals(LocalPolicyFailure.CORRUPTION, preserved.reason)
+        }
 
     @Test
     fun `given a noninteger revision when written then the schema rejects it and committed state remains unchanged`() =
