@@ -47,7 +47,7 @@ internal class SqlLocalExactDomainPolicyStore(
             throw expectedCancellation
         } catch (failure: LocalPolicyStoreException) {
             LocalPolicyResult.Failure(failure.reason)
-        } catch (expectedStorageFailure: Exception) {
+        } catch (_: Exception) {
             LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
         }
     }
@@ -76,7 +76,7 @@ internal class SqlLocalExactDomainPolicyStore(
             throw expectedCancellation
         } catch (failure: LocalPolicyStoreException) {
             LocalPolicyResult.Failure(failure.reason)
-        } catch (expectedStorageFailure: Exception) {
+        } catch (_: Exception) {
             LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
         }
     }
