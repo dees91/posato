@@ -17,65 +17,62 @@ import kotlin.test.assertTrue
 
 class LocalExactDomainPolicyStoreContractTest {
     @Test
-    fun `given a fresh database when policy is replaced and reopened then committed and empty policies persist`() =
-        runTest {
-            val testDatabase = createLocalPolicyTestDatabase("lifecycle.db")
-            var driver = testDatabase.openDriver()
-            try {
-                var store = driver.createStore()
-                assertState(store.read(), revision = 0, domains = emptyList())
+    fun `given a fresh database when policy is replaced and reopened then committed and empty policies persist`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("lifecycle.db")
+        var driver = testDatabase.openDriver()
+        try {
+            var store = driver.createStore()
+            assertState(store.read(), revision = 0, domains = emptyList())
 
-                val firstPolicy = policyOf("alpha.example", "beta.example")
-                assertState(store.replace(0, firstPolicy), revision = 1, domains = firstPolicy.canonicalValues())
+            val firstPolicy = policyOf("alpha.example", "beta.example")
+            assertState(store.replace(0, firstPolicy), revision = 1, domains = firstPolicy.canonicalValues())
 
-                driver.close()
-                driver = testDatabase.openDriver()
-                store = driver.createStore()
-                assertState(store.read(), revision = 1, domains = firstPolicy.canonicalValues())
+            driver.close()
+            driver = testDatabase.openDriver()
+            store = driver.createStore()
+            assertState(store.read(), revision = 1, domains = firstPolicy.canonicalValues())
 
-                assertState(store.replace(1, ExactDomainPolicy.empty()), revision = 2, domains = emptyList())
-                assertState(store.read(), revision = 2, domains = emptyList())
-            } finally {
-                driver.close()
-                testDatabase.delete()
-            }
+            assertState(store.replace(1, ExactDomainPolicy.empty()), revision = 2, domains = emptyList())
+            assertState(store.read(), revision = 2, domains = emptyList())
+        } finally {
+            driver.close()
+            testDatabase.delete()
         }
+    }
 
     @Test
-    fun `given invalid or stale revisions when replacing then the committed policy remains unchanged`() =
-        withStore("revision.db") { store, _ ->
-            val policy = policyOf("stable.example")
-            assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
+    fun `given invalid or stale revisions when replacing then the committed policy remains unchanged`() = withStore("revision.db") { store, _ ->
+        val policy = policyOf("stable.example")
+        assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
 
-            val invalid = assertFailure(store.replace(-1, ExactDomainPolicy.empty()))
-            assertEquals(LocalPolicyFailure.INVALID_REVISION, invalid.reason)
-            val exhausted = assertFailure(store.replace(Long.MAX_VALUE, ExactDomainPolicy.empty()))
-            assertEquals(LocalPolicyFailure.REVISION_EXHAUSTED, exhausted.reason)
-            val stale = assertFailure(store.replace(0, ExactDomainPolicy.empty()))
-            assertEquals(LocalPolicyFailure.REVISION_CONFLICT, stale.reason)
-            assertState(store.read(), revision = 1, domains = policy.canonicalValues())
-        }
+        val invalid = assertFailure(store.replace(-1, ExactDomainPolicy.empty()))
+        assertEquals(LocalPolicyFailure.INVALID_REVISION, invalid.reason)
+        val exhausted = assertFailure(store.replace(Long.MAX_VALUE, ExactDomainPolicy.empty()))
+        assertEquals(LocalPolicyFailure.REVISION_EXHAUSTED, exhausted.reason)
+        val stale = assertFailure(store.replace(0, ExactDomainPolicy.empty()))
+        assertEquals(LocalPolicyFailure.REVISION_CONFLICT, stale.reason)
+        assertState(store.read(), revision = 1, domains = policy.canonicalValues())
+    }
 
     @Test
-    fun `given an insert failure when replacing then the complete transaction rolls back`() =
-        withStore("rollback.db") { store, driver ->
-            val originalPolicy = policyOf("original.example")
-            assertState(store.replace(0, originalPolicy), revision = 1, domains = originalPolicy.canonicalValues())
-            driver.executeSql(
-                """
-                CREATE TRIGGER fail_policy_insert
-                BEFORE INSERT ON exact_domain_policy
-                WHEN NEW.canonical_domain = 'blocked.example'
-                BEGIN
-                  SELECT RAISE(ABORT, 'synthetic insert failure');
-                END
-                """.trimIndent(),
-            )
+    fun `given an insert failure when replacing then the complete transaction rolls back`() = withStore("rollback.db") { store, driver ->
+        val originalPolicy = policyOf("original.example")
+        assertState(store.replace(0, originalPolicy), revision = 1, domains = originalPolicy.canonicalValues())
+        driver.executeSql(
+            """
+            CREATE TRIGGER fail_policy_insert
+            BEFORE INSERT ON exact_domain_policy
+            WHEN NEW.canonical_domain = 'blocked.example'
+            BEGIN
+              SELECT RAISE(ABORT, 'synthetic insert failure');
+            END
+            """.trimIndent(),
+        )
 
-            val failure = assertFailure(store.replace(1, policyOf("blocked.example")))
-            assertEquals(LocalPolicyFailure.STORAGE_FAILURE, failure.reason)
-            assertState(store.read(), revision = 1, domains = originalPolicy.canonicalValues())
-        }
+        val failure = assertFailure(store.replace(1, policyOf("blocked.example")))
+        assertEquals(LocalPolicyFailure.STORAGE_FAILURE, failure.reason)
+        assertState(store.read(), revision = 1, domains = originalPolicy.canonicalValues())
+    }
 
     @Test
     fun `given a noncanonical stored domain when reading then corruption is returned without disclosure`() =
@@ -90,80 +87,76 @@ class LocalExactDomainPolicyStoreContractTest {
         }
 
     @Test
-    fun `given a malformed IDNA A-label in storage when read then corruption is returned`() =
-        withStore("invalid-a-label.db") { store, driver ->
-            driver.executeSql(
-                "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('xn--0.example')",
+    fun `given a malformed IDNA A-label in storage when read then corruption is returned`() = withStore("invalid-a-label.db") { store, driver ->
+        driver.executeSql(
+            "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('xn--0.example')",
+        )
+
+        val failure = assertFailure(store.read())
+        assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
+    }
+
+    @Test
+    fun `given too many stored domains when reading then corruption is returned`() = withStore("over-limit.db") { store, driver ->
+        val database = PosatoDatabase(driver)
+        database.transaction {
+            repeat(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT + 1) { index ->
+                database.localExactDomainPolicyQueries.insertDomain("a$index.example")
+            }
+        }
+
+        val failure = assertFailure(store.read())
+        assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
+    }
+
+    @Test
+    fun `given an invalid database file when initialized then opening fails and the file remains unchanged`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("invalid-file.db")
+        testDatabase.writeInvalidDatabase()
+        var driver: SqlDriver? = null
+        try {
+            val failure =
+                try {
+                    driver = testDatabase.openDriver()
+                    PosatoDatabase(checkNotNull(driver))
+                        .localExactDomainPolicyQueries
+                        .selectRevision()
+                        .awaitAsList()
+                    null
+                } catch (expectedInitializationFailure: Exception) {
+                    expectedInitializationFailure
+                }
+            assertNotNull(failure)
+            assertTrue(testDatabase.invalidDatabaseMarkerIsPresent())
+        } finally {
+            driver?.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given an injected database dispatcher when reading and replacing then all database work uses it`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("dispatcher.db")
+        val driver = testDatabase.openDriver()
+        val probe = DatabaseDispatcherProbe()
+        val store = ProbingSqlDriver(driver, probe).createStore(probe)
+        try {
+            assertState(store.read(), revision = 0, domains = emptyList())
+            assertState(
+                store.replace(0, policyOf("context.example")),
+                revision = 1,
+                domains = listOf("context.example"),
             )
 
-            val failure = assertFailure(store.read())
-            assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
+            assertTrue("query" in probe.operations)
+            assertTrue("execute" in probe.operations)
+            assertTrue("transaction" in probe.operations)
+            assertEquals(emptyList(), probe.violations)
+        } finally {
+            driver.close()
+            testDatabase.delete()
         }
-
-    @Test
-    fun `given too many stored domains when reading then corruption is returned`() =
-        withStore("over-limit.db") { store, driver ->
-            val database = PosatoDatabase(driver)
-            database.transaction {
-                repeat(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT + 1) { index ->
-                    database.localExactDomainPolicyQueries.insertDomain("a$index.example")
-                }
-            }
-
-            val failure = assertFailure(store.read())
-            assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
-        }
-
-    @Test
-    fun `given an invalid database file when initialized then opening fails and the file remains unchanged`() =
-        runTest {
-            val testDatabase = createLocalPolicyTestDatabase("invalid-file.db")
-            testDatabase.writeInvalidDatabase()
-            var driver: SqlDriver? = null
-            try {
-                val failure =
-                    try {
-                        driver = testDatabase.openDriver()
-                        PosatoDatabase(checkNotNull(driver))
-                            .localExactDomainPolicyQueries
-                            .selectRevision()
-                            .awaitAsList()
-                        null
-                    } catch (expectedInitializationFailure: Exception) {
-                        expectedInitializationFailure
-                    }
-                assertNotNull(failure)
-                assertTrue(testDatabase.invalidDatabaseMarkerIsPresent())
-            } finally {
-                driver?.close()
-                testDatabase.delete()
-            }
-        }
-
-    @Test
-    fun `given an injected database dispatcher when reading and replacing then all database work uses it`() =
-        runTest {
-            val testDatabase = createLocalPolicyTestDatabase("dispatcher.db")
-            val driver = testDatabase.openDriver()
-            val probe = DatabaseDispatcherProbe()
-            val store = ProbingSqlDriver(driver, probe).createStore(probe)
-            try {
-                assertState(store.read(), revision = 0, domains = emptyList())
-                assertState(
-                    store.replace(0, policyOf("context.example")),
-                    revision = 1,
-                    domains = listOf("context.example"),
-                )
-
-                assertTrue("query" in probe.operations)
-                assertTrue("execute" in probe.operations)
-                assertTrue("transaction" in probe.operations)
-                assertEquals(emptyList(), probe.violations)
-            } finally {
-                driver.close()
-                testDatabase.delete()
-            }
-        }
+    }
 
     @Test
     fun `given a policy when rendered as text then canonical domain values stay redacted`() {
@@ -191,9 +184,7 @@ private fun withStore(
     }
 }
 
-private fun SqlDriver.createStore(
-    databaseDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default,
-): LocalExactDomainPolicyStore {
+private fun SqlDriver.createStore(databaseDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default): LocalExactDomainPolicyStore {
     return SqlLocalExactDomainPolicyStore(
         database = PosatoDatabase(this),
         databaseDispatcher = databaseDispatcher,
@@ -202,6 +193,7 @@ private fun SqlDriver.createStore(
 
 private fun policyOf(vararg canonicalValues: String): ExactDomainPolicy {
     val result = ExactDomainPolicy.fromCanonicalValues(canonicalValues.asList())
+
     return assertIs<ExactDomainPolicyValidationResult.Success>(result).policy
 }
 

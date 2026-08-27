@@ -66,6 +66,7 @@ private class IosLocalPolicyTestDatabase(
         val actual = ByteArray(marker.size + 1)
         val descriptor = open(path, O_RDONLY)
         check(descriptor >= 0)
+
         return try {
             val bytesRead =
                 actual.usePinned { pinned ->

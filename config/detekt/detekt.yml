@@ -17,6 +17,11 @@ naming:
     ignoreAnnotated:
       - Composable
 
+style:
+  MaxLineLength:
+    active: true
+    maxLineLength: 150
+
 Compose:
   ComposableAnnotationNaming:
     active: true

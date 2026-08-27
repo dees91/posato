@@ -57,22 +57,20 @@ internal class SqlLocalExactDomainPolicyStore(
         policy: ExactDomainPolicy,
     ): LocalPolicyResult<LocalExactDomainPolicyState> {
         return try {
-            val state =
-                database.transactionWithResult {
-                    val changed =
-                        database.localExactDomainPolicyQueries.advanceRevision(
-                            next_revision = expectedRevision + 1,
-                            expected_revision = expectedRevision,
-                        )
-                    if (changed != 1L) {
-                        fail(LocalPolicyFailure.REVISION_CONFLICT)
-                    }
-                    database.localExactDomainPolicyQueries.deleteDomains()
-                    policy.domains.forEach { domain ->
-                        database.localExactDomainPolicyQueries.insertDomain(domain.canonicalValue)
-                    }
-                    readStateOrThrow()
+            val state = database.transactionWithResult {
+                val changed = database.localExactDomainPolicyQueries.advanceRevision(
+                    next_revision = expectedRevision + 1,
+                    expected_revision = expectedRevision,
+                )
+                if (changed != 1L) {
+                    fail(LocalPolicyFailure.REVISION_CONFLICT)
                 }
+                database.localExactDomainPolicyQueries.deleteDomains()
+                policy.domains.forEach { domain ->
+                    database.localExactDomainPolicyQueries.insertDomain(domain.canonicalValue)
+                }
+                readStateOrThrow()
+            }
             LocalPolicyResult.Success(state)
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
@@ -84,30 +82,28 @@ internal class SqlLocalExactDomainPolicyStore(
     }
 
     private suspend fun readStateOrThrow(): LocalExactDomainPolicyState {
-        val revisions =
-            database.localExactDomainPolicyQueries
-                .selectRevision()
-                .awaitAsList()
+        val revisions = database.localExactDomainPolicyQueries
+            .selectRevision()
+            .awaitAsList()
         if (revisions.size != 1 || revisions.single() < 0) {
             fail(LocalPolicyFailure.CORRUPTION)
         }
-        val canonicalDomains =
-            database.localExactDomainPolicyQueries
-                .selectDomains(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT.toLong() + 1)
-                .awaitAsList()
+        val canonicalDomains = database.localExactDomainPolicyQueries
+            .selectDomains(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT.toLong() + 1)
+            .awaitAsList()
         if (canonicalDomains.size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
             fail(LocalPolicyFailure.CORRUPTION)
         }
-        val policy =
-            when (val validation = ExactDomainPolicy.fromCanonicalValues(canonicalDomains)) {
-                is ExactDomainPolicyValidationResult.Success -> {
-                    validation.policy
-                }
-
-                is ExactDomainPolicyValidationResult.Failure -> {
-                    fail(LocalPolicyFailure.CORRUPTION)
-                }
+        val policy = when (val validation = ExactDomainPolicy.fromCanonicalValues(canonicalDomains)) {
+            is ExactDomainPolicyValidationResult.Success -> {
+                validation.policy
             }
+
+            is ExactDomainPolicyValidationResult.Failure -> {
+                fail(LocalPolicyFailure.CORRUPTION)
+            }
+        }
+
         return LocalExactDomainPolicyState(revisions.single(), policy)
     }
 }

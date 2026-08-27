@@ -5,7 +5,7 @@
 - **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** `Codex`
-- **Reviewer:** `independent Codex reviewer; plan and completed change approved`
+- **Reviewer:** `independent Codex reviewer; plan and persistence change approved`
 - **Branch:** `model-001-sqldelight`
 - **Updated:** `2026-08-27`
 
@@ -49,16 +49,21 @@
   policy behaviors, with descriptive backtick names and real SQLite rollback.
 - Corrected the architecture and PoC-reuse synthesis so the deleted draft is
   explicitly superseded rather than retained as production guidance.
+- Aligned the repository, ktlint, Detekt, and Android Studio on the accepted
+  150-character Kotlin limit and preserved the maintainer-approved expression,
+  return, and call-chain layout without introducing a custom lint module.
 
 ## Completed-change review
 
-- **Verdict:** `approved`
+- **Verdict:** `approved; formatting-only follow-up exempted by the maintainer`
 - **Critical or Required findings:** The first pass found one Required privacy
   defect: default policy and state representations disclosed the domain count
   and policy revision.
 - **Resolution:** Both representations are now fully static and redacted. The
   contract test asserts their exact safe outputs, affected verification passed,
   and focused re-review found no remaining Critical or Required finding.
+- **Latest correction:** `user-confirmed` (2026-08-27): the later formatting
+  configuration does not require another independent completed-change review.
 
 ## Hosted review
 
@@ -79,10 +84,11 @@
 | --- | --- | --- |
 | Independent high-risk plan review | `pass` | Approved with no Critical or Required finding. |
 | Focused persistence verification | `pass` | Nine real-SQLite tests pass on JVM and the iOS Simulator; SQLDelight migration verification passes. |
-| Aggregate `./gradlew quality` | `pass` | Formatting, Detekt, migration verification, both runtime contracts, platform compiles, desktop packaging, and distribution pass after the A-label correction. |
+| Aggregate `./gradlew quality` | `pass` | Formatting, Detekt, migration verification, both runtime contracts, platform compiles, desktop packaging, and distribution pass after the A-label and formatting corrections. |
 | Credential-free iOS host build | `pass` | The CI-equivalent Simulator build succeeds with the static framework and system SQLite linkage. |
 | Diff and security self-review | `pass` | No custom lifecycle remnants, personal paths, credentials, raw domain logging, unbounded restore, or SQL interpolation were found. |
-| Independent completed-change review | `pass` | One Required metadata-redaction defect was corrected; focused re-review approved the final change. |
+| Independent completed-change review | `pass` | The persistence re-review approved its correction; the maintainer explicitly exempted the later formatting-only follow-up. |
+| Kotlin formatting convergence | `pass` | Android Studio preserved the accepted Kotlin diff; `:shared:ktlintCheck` and `:shared:detekt` passed with the 150-character limit. |
 
 ## Blockers and accepted risks
 

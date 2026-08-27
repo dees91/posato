@@ -22,11 +22,10 @@ internal fun createIosDatabaseDriver(
         onConfiguration = { configuration ->
             configuration.copy(
                 extendedConfig = configuration.extendedConfig.copy(basePath = directory),
-                loggingConfig =
-                    DatabaseConfiguration.Logging(
-                        logger = SilentSqliterLogger,
-                        verboseDataCalls = false,
-                    ),
+                loggingConfig = DatabaseConfiguration.Logging(
+                    logger = SilentSqliterLogger,
+                    verboseDataCalls = false,
+                ),
             )
         },
     )

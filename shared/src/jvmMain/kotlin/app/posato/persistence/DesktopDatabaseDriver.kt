@@ -11,6 +11,7 @@ internal fun createDesktopDatabaseDriver(databasePath: String = defaultDesktopPo
     val path = Path.of(databasePath).toAbsolutePath().normalize()
     require(path.fileName != null && path.parent != null)
     Files.createDirectories(path.parent)
+
     return JdbcSqliteDriver(
         url = "jdbc:sqlite:$path",
         schema = PosatoDatabase.Schema.synchronous(),
@@ -26,5 +27,6 @@ private fun defaultDesktopPolicyDatabasePath(): String {
             "Application Support",
             "Posato",
             "posato-policy.db",
-        ).toString()
+        )
+        .toString()
 }

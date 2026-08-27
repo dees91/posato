@@ -332,6 +332,12 @@ task-local evidence, and the standing Definition of Done. The
 creates briefs just in time, and requires a pre-implementation review only for
 named High-risk work.
 
+`user-confirmed` (2026-08-27): Kotlin formatting uses one 150-character limit
+across ktlint, Detekt, and Android Studio. Existing formatter controls enforce
+the accepted expression-body layout; preferences without an exact built-in
+rule remain authored guidance unless repeated drift establishes a real need for
+a custom rule.
+
 Gate 5 records the CI outcome but does not configure a pipeline. The Gate 6
 roadmap groups the foundation, local quality, and CI milestones into one PR #1
 execution and review cycle completed before PR #1 merges or the first parallel

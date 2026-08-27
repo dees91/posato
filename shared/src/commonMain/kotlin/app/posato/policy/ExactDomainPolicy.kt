@@ -73,6 +73,7 @@ internal class ExactDomainPolicy private constructor(
                     break
                 }
             }
+
             return if (failure == null) {
                 ExactDomainPolicyValidationResult.Success(
                     ExactDomainPolicy(domains.sortedBy(ExactDomain::canonicalValue)),
@@ -108,6 +109,7 @@ private fun MutableSet<ExactDomain>.addCanonicalValue(value: String): ExactDomai
 private fun String.isCanonicalExactDomain(): Boolean {
     val validLength = length in ExactDomainPolicyLimits.MIN_DOMAIN_LENGTH..ExactDomainPolicyLimits.MAX_DOMAIN_LENGTH
     val validCharacters = all(Char::isAsciiDomainCharacter)
+
     return if (validLength && validCharacters) {
         val labels = split('.')
         labels.size >= 2 &&
@@ -125,6 +127,7 @@ private fun String.isCanonicalDomainLabel(): Boolean {
         length >= RESERVED_HYPHEN_MINIMUM_LENGTH &&
             this[RESERVED_HYPHEN_FIRST_INDEX] == '-' &&
             this[RESERVED_HYPHEN_SECOND_INDEX] == '-'
+
     return validEdges && !hasReservedHyphens
 }
 

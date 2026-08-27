@@ -533,3 +533,11 @@
   schema baseline, linked system SQLite in the iOS host, and retained focused
   cross-runtime policy, rollback, restart, invalid-file, redaction, bounds,
   malformed A-label, and dispatcher coverage.
+
+## [2026-08-27] correction | Align Kotlin formatting across IDE and quality gates
+
+- Set one 150-character Kotlin limit in ktlint, Detekt, and Android Studio.
+- Kept expression bodies, call assignments, and `when` expressions on their
+  declaration or assignment line when they fit the limit.
+- Retained blank lines before terminal returns and aligned multiline chains as
+  authored style without adding a custom lint plugin solely for those choices.

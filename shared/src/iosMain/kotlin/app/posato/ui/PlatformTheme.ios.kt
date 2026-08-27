@@ -46,12 +46,11 @@ internal actual fun platformTheme(): PlatformTheme {
 private fun platformTextStyle(
     textStyle: String?,
     fontWeight: FontWeight,
-): TextStyle =
-    TextStyle(
-        fontFamily = FontFamily.Default,
-        fontSize = platformFontSize(textStyle),
-        fontWeight = fontWeight,
-    )
+): TextStyle = TextStyle(
+    fontFamily = FontFamily.Default,
+    fontSize = platformFontSize(textStyle),
+    fontWeight = fontWeight,
+)
 
 @Composable
 private fun platformFontSize(textStyle: String?): TextUnit {
@@ -62,22 +61,21 @@ private fun platformFontSize(textStyle: String?): TextUnit {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun UIColor.toComposeColor(): Color =
-    memScoped {
-        val red = alloc<CGFloatVar>()
-        val green = alloc<CGFloatVar>()
-        val blue = alloc<CGFloatVar>()
-        val alpha = alloc<CGFloatVar>()
-        val resolvedColor = resolvedColorWithTraitCollection(UITraitCollection.currentTraitCollection)
+private fun UIColor.toComposeColor(): Color = memScoped {
+    val red = alloc<CGFloatVar>()
+    val green = alloc<CGFloatVar>()
+    val blue = alloc<CGFloatVar>()
+    val alpha = alloc<CGFloatVar>()
+    val resolvedColor = resolvedColorWithTraitCollection(UITraitCollection.currentTraitCollection)
 
-        check(resolvedColor.getRed(red.ptr, green.ptr, blue.ptr, alpha.ptr)) {
-            "UIKit semantic color could not be converted to RGB"
-        }
-
-        Color(
-            red = red.value.toFloat(),
-            green = green.value.toFloat(),
-            blue = blue.value.toFloat(),
-            alpha = alpha.value.toFloat(),
-        )
+    check(resolvedColor.getRed(red.ptr, green.ptr, blue.ptr, alpha.ptr)) {
+        "UIKit semantic color could not be converted to RGB"
     }
+
+    Color(
+        red = red.value.toFloat(),
+        green = green.value.toFloat(),
+        blue = blue.value.toFloat(),
+        alpha = alpha.value.toFloat(),
+    )
+}
