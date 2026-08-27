@@ -157,10 +157,13 @@ Both app-scoped Metro graphs bind the platform `SqlDriver`, generated
 still generates suspending queries. Store reads and replacements use an
 injected named database dispatcher and a standard SQLDelight transaction so a
 read returns one committed revision-and-policy snapshot and a replacement
-commits as one unit. Desktop uses `Dispatchers.IO`. Kotlin/Native in the pinned
-kotlinx.coroutines 1.10.2 build does not expose `Dispatchers.IO` publicly, so
-iOS uses a single-parallelism `Dispatchers.Default` view without introducing an
-owned executor.
+commits as one unit. After the revision compare-and-set acquires the write, a
+replacement validates the previous logical state before deleting it; detected
+corruption therefore aborts and rolls back the complete transaction instead of
+silently resetting the replica. Desktop uses `Dispatchers.IO`. Kotlin/Native in
+the pinned kotlinx.coroutines 1.10.2 build does not expose `Dispatchers.IO`
+publicly, so iOS uses a single-parallelism `Dispatchers.Default` view without
+introducing an owned executor.
 
 The v1 schema contains only one revision row and canonical exact-domain rows.
 Its generated `1.db` is the migration-verification baseline; the first `.sqm`

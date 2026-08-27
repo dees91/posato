@@ -112,15 +112,22 @@ class LocalExactDomainPolicyStoreContractTest {
     }
 
     @Test
-    fun `given a noncanonical stored domain when reading then corruption is returned without disclosure`() =
+    fun `given a noncanonical stored domain when reading or replacing then corruption is returned without disclosure`() =
         withStore("invalid-domain.db") { store, driver ->
             driver.executeSql(
                 "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('Private.Example')",
             )
 
-            val failure = assertFailure(store.read())
-            assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
-            assertFalse(failure.toString().contains("Private.Example"))
+            val readFailure = assertFailure(store.read())
+            assertEquals(LocalPolicyFailure.CORRUPTION, readFailure.reason)
+            assertFalse(readFailure.toString().contains("Private.Example"))
+
+            val replaceFailure = assertFailure(store.replace(0, policyOf("replacement.example")))
+            assertEquals(LocalPolicyFailure.CORRUPTION, replaceFailure.reason)
+            assertFalse(replaceFailure.toString().contains("Private.Example"))
+
+            val preservedFailure = assertFailure(store.read())
+            assertEquals(LocalPolicyFailure.CORRUPTION, preservedFailure.reason)
         }
 
     @Test

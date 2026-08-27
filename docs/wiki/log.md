@@ -562,3 +562,10 @@
   byte sequence so an embedded NUL cannot hide an oversized suffix.
 - Added one real-SQLite cross-runtime contract for rejection and preservation of
   the previously committed policy without runtime or file-level validation.
+
+## [2026-08-27] correction | Preserve corruption during policy replacement
+
+- Validated the previous logical state inside the replacement transaction after
+  the revision compare-and-set and before deleting domain rows.
+- Kept a corrupt replica intact and returned typed corruption instead of
+  silently replacing it, without adding schema attestation or recovery logic.
