@@ -174,8 +174,10 @@ system SQLite.
 `observed` (2026-08-27): the focused real-SQLite contract passes on desktop JVM
 and the iOS Simulator for fresh creation, atomic replacement, restart, empty
 replacement, revision conflicts, rollback, stored-data bounds, redaction,
-invalid-file preservation, and injected dispatcher use. TARGETS-001 still owns
-user input and IDNA canonicalization.
+invalid-file preservation, malformed A-label rejection, and injected dispatcher
+use. `inferred`: MODEL-001 fails closed on every reserved `??--` label,
+including `xn--`, until TARGETS-001 supplies reviewed IDNA validation and
+round-tripping rather than trusting the prefix alone.
 
 ### Platform and toolchain baseline
 

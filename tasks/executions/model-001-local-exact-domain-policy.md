@@ -6,7 +6,7 @@
 - **Review tier:** `high-risk`
 - **Implementer:** `Codex`
 - **Reviewer:** `independent Codex reviewer; plan and completed change approved`
-- **Branch:** `model-001` staging; clean replacement branch pending
+- **Branch:** `model-001-sqldelight`
 - **Updated:** `2026-08-27`
 
 ## Plan
@@ -45,7 +45,7 @@
   `Dispatchers.Default` because the pinned Native API does not expose IO.
 - Removed the store factory, driver decorator, schema attestation, corruption
   classifier, recovery protocol, explicit close API, and custom failure states.
-- Reduced the cross-runtime contract from 27 lifecycle-focused cases to eight
+- Reduced the cross-runtime contract from 27 lifecycle-focused cases to nine
   policy behaviors, with descriptive backtick names and real SQLite rollback.
 - Corrected the architecture and PoC-reuse synthesis so the deleted draft is
   explicitly superseded rather than retained as production guidance.
@@ -60,13 +60,26 @@
   contract test asserts their exact safe outputs, affected verification passed,
   and focused re-review found no remaining Critical or Required finding.
 
+## Hosted review
+
+- **Reviewed commit:** `a2d871ed2b`
+- **Verdict:** `changes required; correction implemented, follow-up pending`
+- **Critical or Required findings:** One P1 found that an `xn--` prefix alone
+  allowed a malformed IDNA A-label restored from SQLite to become trusted state.
+- **Resolution:** A cross-runtime regression first reproduced the false success.
+  MODEL-001 now fails closed on every reserved `??--` label instead of
+  implementing Punycode or accepting an unverified `xn--` payload. TARGETS-001
+  retains ownership of proper IDNA validation and may admit validated,
+  round-tripping A-labels. Focused JVM and iOS verification passes; hosted
+  follow-up review remains pending.
+
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Independent high-risk plan review | `pass` | Approved with no Critical or Required finding. |
-| Focused persistence verification | `pass` | Eight real-SQLite tests pass on JVM and the iOS Simulator; SQLDelight migration verification passes. |
-| Aggregate `./gradlew quality` | `pass` | Formatting, Detekt, migration verification, both runtime contracts, platform compiles, desktop packaging, and distribution pass. |
+| Focused persistence verification | `pass` | Nine real-SQLite tests pass on JVM and the iOS Simulator; SQLDelight migration verification passes. |
+| Aggregate `./gradlew quality` | `pass` | Formatting, Detekt, migration verification, both runtime contracts, platform compiles, desktop packaging, and distribution pass after the A-label correction. |
 | Credential-free iOS host build | `pass` | The CI-equivalent Simulator build succeeds with the static framework and system SQLite linkage. |
 | Diff and security self-review | `pass` | No custom lifecycle remnants, personal paths, credentials, raw domain logging, unbounded restore, or SQL interpolation were found. |
 | Independent completed-change review | `pass` | One Required metadata-redaction defect was corrected; focused re-review approved the final change. |
@@ -75,3 +88,5 @@
 
 - Compatibility with databases produced only by the unmerged custom lifecycle
   is intentionally unsupported; maintainers may delete that development data.
+- `inferred`: MODEL-001 rejects reserved `??--` labels, including IDNA A-labels,
+  until TARGETS-001 supplies the accepted validation and round-trip boundary.

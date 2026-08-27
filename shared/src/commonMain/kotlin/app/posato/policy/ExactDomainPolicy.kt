@@ -125,8 +125,7 @@ private fun String.isCanonicalDomainLabel(): Boolean {
         length >= RESERVED_HYPHEN_MINIMUM_LENGTH &&
             this[RESERVED_HYPHEN_FIRST_INDEX] == '-' &&
             this[RESERVED_HYPHEN_SECOND_INDEX] == '-'
-    val validReservedHyphens = !hasReservedHyphens || startsWith("xn--")
-    return validEdges && validReservedHyphens
+    return validEdges && !hasReservedHyphens
 }
 
 private fun Char.isAsciiDomainCharacter(): Boolean {

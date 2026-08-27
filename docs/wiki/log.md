@@ -531,5 +531,5 @@
   platform database dispatcher and replacement in one SQLDelight transaction.
 - Reduced v1 to revision metadata and canonical domains, committed the generated
   schema baseline, linked system SQLite in the iOS host, and retained focused
-  cross-runtime policy, rollback, restart, invalid-file, redaction, bounds, and
-  dispatcher coverage.
+  cross-runtime policy, rollback, restart, invalid-file, redaction, bounds,
+  malformed A-label, and dispatcher coverage.

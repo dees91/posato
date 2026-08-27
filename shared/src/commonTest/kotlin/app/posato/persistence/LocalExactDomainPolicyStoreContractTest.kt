@@ -90,6 +90,17 @@ class LocalExactDomainPolicyStoreContractTest {
         }
 
     @Test
+    fun `given a malformed IDNA A-label in storage when read then corruption is returned`() =
+        withStore("invalid-a-label.db") { store, driver ->
+            driver.executeSql(
+                "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('xn--0.example')",
+            )
+
+            val failure = assertFailure(store.read())
+            assertEquals(LocalPolicyFailure.CORRUPTION, failure.reason)
+        }
+
+    @Test
     fun `given too many stored domains when reading then corruption is returned`() =
         withStore("over-limit.db") { store, driver ->
             val database = PosatoDatabase(driver)
