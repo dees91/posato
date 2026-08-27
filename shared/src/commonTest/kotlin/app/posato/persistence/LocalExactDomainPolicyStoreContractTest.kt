@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
@@ -53,6 +54,18 @@ class LocalExactDomainPolicyStoreContractTest {
         assertEquals(LocalPolicyFailure.REVISION_CONFLICT, stale.reason)
         assertState(store.read(), revision = 1, domains = policy.canonicalValues())
     }
+
+    @Test
+    fun `given a noninteger revision when written then the schema rejects it and committed state remains unchanged`() =
+        withStore("noninteger-revision.db") { store, driver ->
+            val policy = policyOf("stable.example")
+            assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
+
+            assertFails {
+                driver.executeSql("UPDATE local_policy_metadata SET revision = 'invalid' WHERE singleton = 1")
+            }
+            assertState(store.read(), revision = 1, domains = policy.canonicalValues())
+        }
 
     @Test
     fun `given an insert failure when replacing then the complete transaction rolls back`() = withStore("rollback.db") { store, driver ->

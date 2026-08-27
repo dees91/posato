@@ -541,3 +541,10 @@
   declaration or assignment line when they fit the limit.
 - Retained blank lines before terminal returns and aligned multiline chains as
   authored style without adding a custom lint plugin solely for those choices.
+
+## [2026-08-27] correction | Require integer revision storage
+
+- Required the v1 policy revision to use SQLite's physical integer storage
+  class instead of relying on column affinity and numeric comparison alone.
+- Added one real-SQLite cross-runtime contract proving that a non-integer write
+  is rejected and leaves the committed policy unchanged.

@@ -45,8 +45,10 @@
   `Dispatchers.Default` because the pinned Native API does not expose IO.
 - Removed the store factory, driver decorator, schema attestation, corruption
   classifier, recovery protocol, explicit close API, and custom failure states.
-- Reduced the cross-runtime contract from 27 lifecycle-focused cases to nine
+- Reduced the cross-runtime contract from 27 lifecycle-focused cases to ten
   policy behaviors, with descriptive backtick names and real SQLite rollback.
+- Required the v1 revision to use SQLite's integer storage class so generated
+  `Long` reads cannot coerce text or real values into a fabricated revision.
 - Corrected the architecture and PoC-reuse synthesis so the deleted draft is
   explicitly superseded rather than retained as production guidance.
 - Aligned the repository, ktlint, Detekt, and Android Studio on the accepted
@@ -67,24 +69,24 @@
 
 ## Hosted review
 
-- **Reviewed commit:** `a2d871ed2b`
+- **Reviewed commits:** `a2d871ed2b`, `187e412d3e`
 - **Verdict:** `changes required; correction implemented, follow-up pending`
-- **Critical or Required findings:** One P1 found that an `xn--` prefix alone
-  allowed a malformed IDNA A-label restored from SQLite to become trusted state.
-- **Resolution:** A cross-runtime regression first reproduced the false success.
-  MODEL-001 now fails closed on every reserved `??--` label instead of
-  implementing Punycode or accepting an unverified `xn--` payload. TARGETS-001
-  retains ownership of proper IDNA validation and may admit validated,
-  round-tripping A-labels. Focused JVM and iOS verification passes; hosted
-  follow-up review remains pending.
+- **Critical or Required findings:** The reviews found that an `xn--` prefix
+  alone trusted a malformed IDNA A-label and that SQLite could store text or
+  real revision values which generated `Long` reads then coerced.
+- **Resolution:** Cross-runtime regressions reproduced both false-success paths.
+  MODEL-001 now rejects every reserved `??--` label pending TARGETS-001 IDNA
+  validation, and the v1 schema requires the revision's physical SQLite type to
+  be `integer`. Focused JVM and iOS verification passes; hosted follow-up review
+  remains pending.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Independent high-risk plan review | `pass` | Approved with no Critical or Required finding. |
-| Focused persistence verification | `pass` | Nine real-SQLite tests pass on JVM and the iOS Simulator; SQLDelight migration verification passes. |
-| Aggregate `./gradlew quality` | `pass` | Formatting, Detekt, migration verification, both runtime contracts, platform compiles, desktop packaging, and distribution pass after the A-label and formatting corrections. |
+| Focused persistence verification | `pass` | Ten real-SQLite tests pass on JVM and the iOS Simulator; SQLDelight migration verification passes. |
+| Aggregate `./gradlew quality` | `pass` | Formatting, Detekt, migration verification, both runtime contracts, platform compiles, desktop packaging, and distribution pass after the latest schema correction. |
 | Credential-free iOS host build | `pass` | The CI-equivalent Simulator build succeeds with the static framework and system SQLite linkage. |
 | Diff and security self-review | `pass` | No custom lifecycle remnants, personal paths, credentials, raw domain logging, unbounded restore, or SQL interpolation were found. |
 | Independent completed-change review | `pass` | The persistence re-review approved its correction; the maintainer explicitly exempted the later formatting-only follow-up. |

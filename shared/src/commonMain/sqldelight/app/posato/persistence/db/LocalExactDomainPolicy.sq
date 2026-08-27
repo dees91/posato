@@ -1,6 +1,8 @@
 CREATE TABLE local_policy_metadata (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
-  revision INTEGER NOT NULL CHECK (revision >= 0)
+  revision INTEGER NOT NULL CHECK (
+    typeof(revision) = 'integer' AND revision >= 0
+  )
 );
 
 INSERT INTO local_policy_metadata(singleton, revision) VALUES (1, 0);
