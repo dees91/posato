@@ -580,3 +580,36 @@
   classification so review-ready Markdown-only changes skip macOS while
   substantive changes, `main` pushes, and classification failures retain the
   full quality gate.
+
+## [2026-08-27] implementation | Add exact-domain management
+
+- Added bounded Unicode-to-ASCII exact-domain canonicalization with strict DNS
+  and A-label restoration checks and redacted domain value rendering.
+- Added one shared screen whose aggregate immutable state combines private
+  flows and starts policy reads only while the UI state is consumed.
+- Kept persistence directly on the existing atomic policy store without a new
+  use case, navigation layer, custom scope, or availability check.
+
+## [2026-08-27] correction | Establish the Material 3 UI foundation
+
+- Kept mutable text input in one composable-owned `rememberTextFieldState`
+  instead of duplicating it in aggregate immutable UI state or a ViewModel
+  flow.
+- Assigned the first reviewed screen to establish one root `PosatoTheme` with
+  platform semantic adaptation and Material 3 components only.
+- Required Compose Rules through Detekt to reject Material 2 source use while
+  leaving shared components and geometry tokens evidence-driven.
+- Narrowed the redacted-default-string rule to repository-owned carriers and
+  diagnostics because final framework `TextFieldState` exposes live text;
+  prohibited logging, diagnosing, persisting, or forwarding that state to the
+  ViewModel.
+
+## [2026-08-27] correction | Include SQL in the desktop runtime image
+
+- Reproduced the packaged macOS launch failure at `java/sql/DriverManager`
+  despite passing JVM and distribution-build checks.
+- Added only the JDK `java.sql` module required by SQLDelight's desktop JDBC
+  driver, then verified the corrected runtime image, packaged launch, and
+  maintainer interaction flow.
+- Confirmed that the preserved PoC carried the same package requirement without
+  importing its broader signing or synchronization machinery.

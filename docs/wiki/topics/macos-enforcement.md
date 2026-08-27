@@ -81,13 +81,16 @@ permits the denied route.
 ## Accepted exact-domain and coexistence contract
 
 ADR 0005 supports cleartext HTTP on port 80 and HTTPS `CONNECT` on port 443.
-The future TARGETS-001 boundary supplies lowercase ASCII canonical
-`ExactDomain` values. The proxy revalidates authority, permits one terminal dot
-on the wire, compares equality only, never includes subdomains or IP literals,
-and rejects malformed, duplicate, or conflicting authority without falling
-back direct. A selected host is denied before the port check. Allowed HTTPS is
-an opaque tunnel and the helper uses direct upstream sockets to avoid proxy
-recursion.
+`observed` (2026-08-27): the TARGETS-001 boundary now supplies lowercase ASCII
+canonical `ExactDomain` values after bounded UTS-46 processing and strict DNS
+and A-label round-tripping. Product input accepts a domain rather than a URL,
+requires at least two labels, excludes IP literals, and permits only one
+terminal DNS dot before canonicalization. The proxy revalidates authority,
+permits one terminal dot on the wire, compares equality only, never includes
+subdomains or IP literals, and rejects malformed, duplicate, or conflicting
+authority without falling back direct. A selected host is denied before the
+port check. Allowed HTTPS is an opaque tunnel and the helper uses direct
+upstream sockets to avoid proxy recursion.
 
 The complete candidate and effective proxy-resolution chains for each selected
 domain and both schemes must contain exactly the Posato loopback route. Any
@@ -124,6 +127,21 @@ The production design must define:
 A generic process killer is not an acceptable shared API. Shared Kotlin should
 express application policy intent; the native leaf should own platform process
 identity and lifecycle details.
+
+## Desktop application packaging
+
+`observed` (2026-08-27): the SQLDelight desktop host uses its SQLite JDBC
+driver, so the runtime image inside the Compose native distribution must include
+the JDK `java.sql` module. TARGETS-001 reproduced a packaged-application launch
+failure at `java/sql/DriverManager` even though JVM tests and distribution
+creation had passed. Adding only `modules("java.sql")` to the desktop package
+restored normal launch and maintainer-verified exact-domain interaction; image
+inspection also confirmed that the corrected runtime contains `java.sql`.
+
+This is a packaging requirement, not a new persistence layer or a claim about
+release signing, notarization, or distribution readiness. The preserved PoC
+independently carried the same module requirement for its JDBC-backed desktop
+package.
 
 ## Privilege, installation, and recovery
 

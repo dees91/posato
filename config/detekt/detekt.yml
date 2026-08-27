@@ -52,7 +52,7 @@ Compose:
   LambdaParameterInRestartableEffect:
     active: true
   Material2:
-    active: false
+    active: true
   MissingReadOnlyComposable:
     active: true
   ModifierClickableOrder:

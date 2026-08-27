@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 6
+- **Revision:** 7
 - **Accepted:** 2026-08-27
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -25,6 +25,26 @@ CI quality boundaries and integrated completed-change review pass.
   through a duplicate ktlint integration.
 - **The Kotlin compiler** owns warning reporting. Repository-owned source is
   warning-free where the selected toolchain exposes reliable enforcement.
+
+`user-confirmed` (2026-08-27): repository-owned Compose UI uses Material 3
+components exclusively. The Compose Rules Detekt `Material2` check is active
+with no allowlist, so the aggregate quality gate rejects Material 2 source use.
+The version catalog and production source do not retain a direct Material 2
+dependency or import.
+
+State-based Material 3 text fields use a composable-owned
+`rememberTextFieldState`. Mutable live text is not a field in immutable
+aggregate `UiState` and is not mirrored in a ViewModel flow; pass its current
+value to the ViewModel only for submission. Business, validation, persistence,
+failure, and editor-session facts remain in the combined screen state. Compose
+Runtime state annotations and observation APIs may be used in the ViewModel,
+but Compose Foundation text-input types may not.
+
+`user-confirmed` (2026-08-27): the framework `TextFieldState` is a narrow
+exception to the repository-owned redacted-default-string rule because its
+final implementation includes live text in `toString()`. Keep it inside the
+text-field composable; it must not be logged, diagnosed, persisted, passed to
+the ViewModel, or included in another carrier's string representation.
 
 `user-confirmed` (2026-08-27): repository-owned Kotlin and Kotlin build scripts
 use a 150-character limit in ktlint, Detekt, and the Android Studio settings

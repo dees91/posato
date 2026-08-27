@@ -35,10 +35,13 @@ kotlin {
         commonMain.dependencies {
             api(libs.compose.runtime)
             implementation(libs.compose.foundation)
-            implementation(libs.compose.material)
+            implementation(libs.compose.material3)
             implementation(libs.compose.resources)
             implementation(libs.compose.ui)
+            implementation(libs.kuri)
+            implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.sqldelight.async.extensions)
             implementation(libs.sqldelight.runtime)
         }
@@ -50,6 +53,7 @@ kotlin {
             implementation(libs.sqldelight.native.driver)
         }
         jvmMain.dependencies {
+            implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.sqldelight.sqlite.driver)
         }
     }

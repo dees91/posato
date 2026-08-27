@@ -189,6 +189,52 @@ injected dispatcher use. `inferred`: MODEL-001 fails closed on every reserved
 `??--` label, including `xn--`, until TARGETS-001 supplies reviewed IDNA
 validation and round-tripping rather than trusting the prefix alone.
 
+### TARGETS-001 exact-domain management
+
+`user-confirmed` (2026-08-27): the first stateful screen exposes one aggregate
+immutable `uiState` produced by combining private policy, editor, and submission
+flows. Its cold policy read starts only while the UI state is collected and is
+shared with a five-second `WhileSubscribed` timeout. Retry is explicit; there
+is no imperative initial-load call, pass-through use case, custom scope,
+service locator, or navigation framework for this single-screen slice.
+
+`user-confirmed` (2026-08-27): mutable text input is held in one
+composable-owned `rememberTextFieldState`, not duplicated in the aggregate
+immutable UI state or a ViewModel flow. The ViewModel receives the current text
+only on submission and may expose an immutable editor-session revision for
+field recreation. Compose Runtime state APIs remain permitted in the
+ViewModel, but Compose Foundation text-input types do not. The first reviewed
+screen establishes one application-root `PosatoTheme`, uses only Material 3
+components, and enables the Compose Rules Detekt Material 2 prohibition. New
+generic UI components and geometry tokens remain evidence-driven rather than
+being created speculatively.
+
+`user-confirmed` (2026-08-27): the final framework `TextFieldState` exposes its
+live text from `toString()`, so the redacted-default-string rule applies to
+repository-owned carriers and diagnostics. The screen-owned framework state is
+a narrow exception: keep it inside the text-field composable and never log,
+diagnose, persist, or pass it to the ViewModel.
+
+`observed` (2026-08-27): TARGETS-001 bounds raw input to 1,024 UTF-16 code units
+before trimming or Unicode processing, converts accepted Unicode through the
+pinned Kuri 0.1.0 Unicode 17 UTS-46 implementation, and then applies Posato's
+stricter lowercase ASCII DNS and A-label round-trip checks. The resulting exact
+domains remain sorted, bounded, redacted outside explicit UI rendering, and
+are replaced directly through the MODEL-001 revision compare-and-set store.
+Focused JVM and iOS Simulator tests cover canonicalization, malformed and
+collapsing input, duplicates, edits, removal, conflicts, corruption,
+cancellation, and subscription-driven loading.
+
+`observed` (2026-08-27): the application root now owns one `PosatoTheme` backed
+by stable Compose Multiplatform Material 3 1.9.0. The direct Material 2
+dependency and source imports are absent. A controlled temporary Material 2
+import failed Detekt through the enabled Compose Rules `Material2` check, and
+the final graph passed JVM, both iOS compilation targets, iOS Simulator tests,
+the desktop distributable, a credential-free iOS host build, and signed launch
+on a physical iPhone. The domain `TextFieldState` is created only inside the
+editor composable; the ViewModel receives a `String` on submission and exposes
+only aggregate business and editor-session facts.
+
 ### Platform and toolchain baseline
 
 - iOS deployment target: 18.0, rechecked against the current-and-previous-major

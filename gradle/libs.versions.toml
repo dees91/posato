@@ -1,24 +1,32 @@
 [versions]
 compose = "1.10.3"
+compose-material3 = "1.9.0"
 compose-rules = "0.6.4"
 coroutines = "1.10.2"
+immutable-collections = "0.5.1"
 detekt = "2.0.0-alpha.6"
 kotlin = "2.4.10"
 ktlint = "1.8.0"
 ktlint-gradle = "14.2.0"
+kuri = "0.1.0"
+lifecycle = "2.10.0"
 metro = "1.4.2"
 sqldelight = "2.3.2"
 
 [libraries]
 compose-desktop-macos-arm64 = { module = "org.jetbrains.compose.desktop:desktop-jvm-macos-arm64", version.ref = "compose" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
-compose-material = { module = "org.jetbrains.compose.material:material", version.ref = "compose" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3" }
 compose-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
 compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "compose-rules" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
+kuri = { module = "org.dexpace:kuri", version.ref = "kuri" }
+kotlinx-collections-immutable = { module = "org.jetbrains.kotlinx:kotlinx-collections-immutable", version.ref = "immutable-collections" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-async-extensions = { module = "app.cash.sqldelight:async-extensions", version.ref = "sqldelight" }
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
