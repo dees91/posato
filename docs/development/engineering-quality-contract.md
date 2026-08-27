@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 7
+- **Revision:** 8
 - **Accepted:** 2026-08-27
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -49,10 +49,15 @@ the ViewModel, or included in another carrier's string representation.
 `user-confirmed` (2026-08-27): repository-owned Kotlin and Kotlin build scripts
 use a 150-character limit in ktlint, Detekt, and the Android Studio settings
 published through `.editorconfig`. Expression bodies keep their first
-expression on the declaration line when it fits. The accepted assignment and
-call-chain layout remains formatter-compatible authored style where ktlint has
-no exact built-in rule; do not create a custom ruleset for it without observed
-repeated drift and a named consumer.
+expression on the declaration line when it fits. The repository-owned ktlint
+rule `posato:rhs-on-assignment-line` applies the same layout to declarations,
+assignments, named arguments, default values, and expression bodies when the
+first right-hand-side line fits. It reports without autocorrect; comments
+between `=` and the expression, values that need the next line, and multiline
+raw strings remain valid. Raw strings follow ktlint's standard required line
+break. The inverse standard ktlint multiline-expression rule stays disabled.
+Call-chain continuation remains formatter-compatible authored style; no
+separate custom rule is justified for it.
 
 PR #1 selects one compatible Kotlin, Compose Multiplatform, Gradle, Metro,
 ktlint, Detekt, and Compose Rules set. Stable releases are required by default.

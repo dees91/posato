@@ -166,17 +166,16 @@ class LocalExactDomainPolicyStoreContractTest {
         testDatabase.writeInvalidDatabase()
         var driver: SqlDriver? = null
         try {
-            val failure =
-                try {
-                    driver = testDatabase.openDriver()
-                    PosatoDatabase(checkNotNull(driver))
-                        .localExactDomainPolicyQueries
-                        .selectRevision()
-                        .awaitAsList()
-                    null
-                } catch (expectedInitializationFailure: Exception) {
-                    expectedInitializationFailure
-                }
+            val failure = try {
+                driver = testDatabase.openDriver()
+                PosatoDatabase(checkNotNull(driver))
+                    .localExactDomainPolicyQueries
+                    .selectRevision()
+                    .awaitAsList()
+                null
+            } catch (expectedInitializationFailure: Exception) {
+                expectedInitializationFailure
+            }
             assertNotNull(failure)
             assertTrue(testDatabase.invalidDatabaseMarkerIsPresent())
         } finally {

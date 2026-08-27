@@ -104,10 +104,9 @@ private fun ExactDomainsLoading(modifier: Modifier = Modifier) {
     val description = stringResource(Res.string.loading_domains)
 
     Box(
-        modifier =
-            modifier
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .semantics { contentDescription = description },
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .semantics { contentDescription = description },
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -130,10 +129,9 @@ private fun ExactDomainsUnavailable(
     modifier: Modifier = Modifier,
 ) {
     Box(
-        modifier =
-            modifier
-                .windowInsetsPadding(WindowInsets.safeDrawing)
-                .padding(24.dp),
+        modifier = modifier
+            .windowInsetsPadding(WindowInsets.safeDrawing)
+            .padding(24.dp),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -171,10 +169,9 @@ private fun ExactDomainsContent(
         contentAlignment = Alignment.TopCenter,
     ) {
         LazyColumn(
-            modifier =
-                Modifier
-                    .widthIn(max = 720.dp)
-                    .fillMaxWidth(),
+            modifier = Modifier
+                .widthIn(max = 720.dp)
+                .fillMaxWidth(),
             contentPadding = PaddingValues(horizontal = 24.dp, vertical = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {

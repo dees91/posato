@@ -34,19 +34,18 @@ class ExactDomainPolicyTest {
 
     @Test
     fun `given malformed or out of scope input when parsed then it fails`() {
-        val invalidInputs =
-            listOf(
-                "",
-                "example",
-                "https://example.com",
-                "127.0.0.1",
-                "example.com..",
-                "ab--cd.example",
-                "xn--0.example",
-                "-start.example",
-                "end-.example",
-                "a".repeat(64) + ".example",
-            )
+        val invalidInputs = listOf(
+            "",
+            "example",
+            "https://example.com",
+            "127.0.0.1",
+            "example.com..",
+            "ab--cd.example",
+            "xn--0.example",
+            "-start.example",
+            "end-.example",
+            "a".repeat(64) + ".example",
+        )
 
         invalidInputs.forEach { input ->
             assertIs<ExactDomainInputResult.Failure>(ExactDomain.parse(input))

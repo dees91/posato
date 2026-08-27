@@ -26,4 +26,5 @@ dependencyResolutionManagement {
 rootProject.name = "Posato"
 
 include(":desktopApp")
+include(":quality-rules")
 include(":shared")

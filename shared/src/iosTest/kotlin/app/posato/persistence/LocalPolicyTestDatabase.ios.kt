@@ -51,10 +51,9 @@ private class IosLocalPolicyTestDatabase(
         val descriptor = open(path, O_WRONLY)
         check(descriptor >= 0)
         try {
-            val bytesWritten =
-                marker.usePinned { pinned ->
-                    pwrite(descriptor, pinned.addressOf(0), marker.size.toULong(), 0)
-                }
+            val bytesWritten = marker.usePinned { pinned ->
+                pwrite(descriptor, pinned.addressOf(0), marker.size.toULong(), 0)
+            }
             check(bytesWritten == marker.size.toLong())
         } finally {
             check(close(descriptor) == 0)
@@ -68,10 +67,9 @@ private class IosLocalPolicyTestDatabase(
         check(descriptor >= 0)
 
         return try {
-            val bytesRead =
-                actual.usePinned { pinned ->
-                    pread(descriptor, pinned.addressOf(0), actual.size.toULong(), 0)
-                }
+            val bytesRead = actual.usePinned { pinned ->
+                pread(descriptor, pinned.addressOf(0), actual.size.toULong(), 0)
+            }
             bytesRead == marker.size.toLong() && actual.copyOf(marker.size).contentEquals(marker)
         } finally {
             check(close(descriptor) == 0)

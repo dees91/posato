@@ -12,6 +12,7 @@ kuri = "0.1.0"
 lifecycle = "2.10.0"
 metro = "1.4.2"
 sqldelight = "2.3.2"
+slf4j = "2.0.17"
 
 [libraries]
 compose-desktop-macos-arm64 = { module = "org.jetbrains.compose.desktop:desktop-jvm-macos-arm64", version.ref = "compose" }
@@ -27,10 +28,14 @@ kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-c
 kotlinx-coroutines-swing = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-swing", version.ref = "coroutines" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 lifecycle-viewmodel-compose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
+ktlint-cli-ruleset-core = { module = "com.pinterest.ktlint:ktlint-cli-ruleset-core", version.ref = "ktlint" }
+ktlint-rule-engine = { module = "com.pinterest.ktlint:ktlint-rule-engine", version.ref = "ktlint" }
+ktlint-rule-engine-core = { module = "com.pinterest.ktlint:ktlint-rule-engine-core", version.ref = "ktlint" }
 sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-async-extensions = { module = "app.cash.sqldelight:async-extensions", version.ref = "sqldelight" }
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-sqlite-driver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 
 [plugins]
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

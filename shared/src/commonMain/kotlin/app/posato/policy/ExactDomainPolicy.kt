@@ -165,10 +165,9 @@ private fun String.isCanonicalExactDomain(): Boolean {
 private fun String.isCanonicalDomainLabel(): Boolean {
     val validLength = length in ExactDomainPolicyLimits.MIN_LABEL_LENGTH..ExactDomainPolicyLimits.MAX_LABEL_LENGTH
     val validEdges = validLength && first().isAsciiLetterOrDigit() && last().isAsciiLetterOrDigit()
-    val hasReservedHyphens =
-        length >= RESERVED_HYPHEN_MINIMUM_LENGTH &&
-            this[RESERVED_HYPHEN_FIRST_INDEX] == '-' &&
-            this[RESERVED_HYPHEN_SECOND_INDEX] == '-'
+    val hasReservedHyphens = length >= RESERVED_HYPHEN_MINIMUM_LENGTH &&
+        this[RESERVED_HYPHEN_FIRST_INDEX] == '-' &&
+        this[RESERVED_HYPHEN_SECOND_INDEX] == '-'
 
     return validEdges &&
         when {

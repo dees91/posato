@@ -44,6 +44,13 @@ existing atomic local-policy store.
   components and state-based text fields exclusively, and make the existing
   Compose Rules Detekt `Material2` check reject Material 2 source use. Do not
   introduce speculative spacing tokens or generic component wrappers.
+- Enforce the accepted Kotlin assignment layout with one repository-owned
+  ktlint rule now that repeated authored drift has been observed: when the
+  first right-hand-side line fits within the 150-character limit, it starts on
+  the same line as `=`. Cover declarations, assignments, named arguments,
+  default values, and expression bodies without a regex scanner, autocorrect,
+  or a general formatting framework. Preserve the standard ktlint layout for
+  multiline raw strings.
 - Add only consumed IDNA, ViewModel, immutable-collection, Material 3, and
   desktop Main-dispatcher dependencies. Do not add sync, enforcement,
   onboarding, analytics, availability checks, or URL parsing.
@@ -63,12 +70,17 @@ existing atomic local-policy store.
   and by the iOS Simulator input path without relying on color alone. It uses
   the root Material 3 theme and a state-based `TextFieldState`; static analysis
   rejects Material 2 source use.
+- `AC-05` — The aggregate ktlint gate rejects a right-hand-side expression
+  starting below `=` when its first line fits on the assignment line, while
+  accepting comments, multiline raw strings, and expressions that would exceed
+  the configured limit.
 
 ## Verification
 
 - Run focused common domain and ViewModel tests on JVM and the iOS Simulator.
 - Run `./gradlew quality`, the credential-free iOS host build, manual macOS and
-  iOS Simulator interaction/accessibility checks, and `git diff --check`.
+  iOS Simulator interaction/accessibility checks, the custom-rule unit and
+  negative integration probes, and `git diff --check`.
 
 ## Decisions or blockers
 

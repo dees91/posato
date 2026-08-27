@@ -69,17 +69,16 @@ internal class ExactDomainsViewModel(
     private val submissionState = MutableStateFlow<ExactDomainsSubmissionState>(ExactDomainsSubmissionState.Idle)
     private val policyState = observePolicyState()
 
-    val uiState: StateFlow<ExactDomainsUiState> =
-        combine(
-            policyState,
-            editorState,
-            submissionState,
-            ::createUiState,
-        ).stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = ExactDomainsUiState(),
-        )
+    val uiState: StateFlow<ExactDomainsUiState> = combine(
+        policyState,
+        editorState,
+        submissionState,
+        ::createUiState,
+    ).stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5_000),
+        initialValue = ExactDomainsUiState(),
+    )
 
     fun retry() {
         if (submissionState.value is ExactDomainsSubmissionState.Saving) {

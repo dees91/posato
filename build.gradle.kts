@@ -26,11 +26,12 @@ val ktlintToolVersion = libs.versions.ktlint.asProvider()
 allprojects {
     apply(plugin = "org.jlleitschuh.gradle.ktlint")
 
-    val generatedSourceDirectory =
-        layout.buildDirectory
-            .dir("generated")
-            .get()
-            .asFile
+    dependencies.add("ktlintRuleset", rootProject.project(":quality-rules"))
+
+    val generatedSourceDirectory = layout.buildDirectory
+        .dir("generated")
+        .get()
+        .asFile
 
     configure<KtlintExtension> {
         version.set(ktlintToolVersion)
@@ -89,6 +90,9 @@ tasks.register("quality") {
         ":desktopApp:detekt",
         ":desktopApp:ktlintCheck",
         ":desktopApp:test",
+        ":quality-rules:detekt",
+        ":quality-rules:ktlintCheck",
+        ":quality-rules:test",
         ":shared:compileKotlinIosArm64",
         ":shared:compileKotlinIosSimulatorArm64",
         ":shared:detekt",

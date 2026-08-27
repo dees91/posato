@@ -390,9 +390,13 @@ named High-risk work.
 
 `user-confirmed` (2026-08-27): Kotlin formatting uses one 150-character limit
 across ktlint, Detekt, and Android Studio. Existing formatter controls enforce
-the accepted expression-body layout; preferences without an exact built-in
-rule remain authored guidance unless repeated drift establishes a real need for
-a custom rule.
+the accepted expression-body layout. After repeated assignment-layout drift,
+the repository-owned `posato:rhs-on-assignment-line` rule now requires the
+first right-hand-side expression to start after `=` when it fits. The rule has
+one named repository consumer, uses ktlint's syntax tree and line-length
+configuration, and intentionally does not autocorrect. Multiline raw strings
+retain the line break required by standard ktlint. Call-chain continuation
+remains authored guidance because no equivalent repeated drift was established.
 
 Gate 5 records the CI outcome but does not configure a pipeline. The Gate 6
 roadmap groups the foundation, local quality, and CI milestones into one PR #1

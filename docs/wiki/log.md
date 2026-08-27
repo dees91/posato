@@ -613,3 +613,12 @@
   maintainer interaction flow.
 - Confirmed that the preserved PoC carried the same package requirement without
   importing its broader signing or synchronization machinery.
+
+## [2026-08-27] correction | Enforce assignment-line formatting
+
+- Added one repository-owned ktlint rule after repeated authored drift showed a
+  real consumer for the accepted right-hand-side layout.
+- Required declarations, assignments, named arguments, default values, and
+  expression bodies to start their value after `=` when the first line fits.
+- Kept comments, over-limit values, and standard-formatted multiline raw
+  strings valid and omitted autocorrect or a general formatting framework.

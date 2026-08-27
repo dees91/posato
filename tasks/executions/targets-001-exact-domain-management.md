@@ -2,7 +2,7 @@
 
 - **Brief:**
   [`../specifications/targets-001-exact-domain-management.md`](../specifications/targets-001-exact-domain-management.md)
-- **Status:** `verification`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** `Codex`
 - **Reviewer:** `independent Codex reviewer`
@@ -26,6 +26,9 @@
    on macOS and the iOS Simulator.
 5. Run focused and aggregate checks, complete the independent security and
    quality review, resolve blocking findings, and record only actual evidence.
+6. Add the maintainer-requested ktlint rule for the accepted assignment layout
+   after repeated authored drift, using the public ruleset provider as the
+   test seam and no autocorrect or general formatting framework.
 
 ## Material 3 and text-state correction
 
@@ -82,6 +85,12 @@
   required by SQLDelight's JDBC driver. This is a package-only correction based
   on both the reproduced launch failure and the preserved PoC evidence; it does
   not add a database abstraction or change the store contract.
+- One repository-owned ktlint rule now rejects a right-hand-side expression
+  starting below `=` when its first physical line fits the configured limit.
+  It uses ktlint's syntax tree, has no autocorrect, and is wired into the
+  aggregate quality gate, including its own module, without introducing a
+  general formatting framework. Multiline raw strings retain the only layout
+  compatible with standard ktlint.
 
 ## Completed-change review
 
@@ -111,12 +120,26 @@
   maintainer completed the final add, edit, cancel, save, remove, scrolling,
   and large-text interaction check on the relaunched physical iPhone. The last
   verification-only Required finding is resolved.
+- **Assignment-formatting follow-up verdict:** `approved after correction`.
+  The reviewer found that excluding `:quality-rules` from its own ruleset left
+  a repository-owned enforcement gap and that this execution record omitted
+  the follow-up evidence. The module now loads its built ruleset without a
+  Gradle cycle, its owned source follows the rule, and the evidence below is
+  current. Self-enforcement also exposed standard ktlint's required multiline
+  raw-string layout; a narrow tested exception resolves that tool conflict
+  without weakening ordinary assignments. The reviewer confirmed that no
+  Critical or Required finding remains.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Dependency and primary-source review | `pass` | Kuri 0.1.0 publishes JVM, iOS arm64, and iOS Simulator arm64 variants, uses MIT, has no runtime dependency beyond Kotlin stdlib, and has no OSV entry; AndroidX 2.10.0 and coroutines Swing follow current JetBrains ViewModel guidance. Stable Compose Multiplatform Material 3 1.9.0 is Apache-2.0, has no OSV entry, supplies the state-based API, and resolves shared Compose core artifacts to the existing 1.10.3 graph. |
+| Custom-rule dependency and source review | `pass` | The repository-owned ruleset uses the existing ktlint 1.8.0 APIs. Test-only SLF4J Simple 2.0.17 matches ktlint's pin, is MIT-licensed, and returned no OSV result. The resolved ruleset and test runtime graphs were inspected. |
+| `./gradlew :quality-rules:ktlintCheck :quality-rules:test :quality-rules:detekt --rerun-tasks` | `pass` | Ten public-rule-engine tests cover declarations, assignments, named arguments, defaults, expression bodies, same-line values, comments, over-limit values, standard-formatted multiline raw strings, and fitting single-line raw strings. The module statically enforces its own rule through its built JAR without a task cycle. |
+| Assignment-formatting negative probe | `pass` | A temporary repository-owned shared source with its value below `=` made `:shared:ktlintCommonMainSourceSetCheck` fail with `posato:rhs-on-assignment-line`; removing the probe restored the passing check. |
+| Final `./gradlew quality --rerun-tasks` | `pass` | All 83 aggregate tasks executed and passed after self-enforcement and the multiline raw-string compatibility correction. |
+| `git diff --check` and repository-safety scan | `pass` | The final diff has no whitespace errors and contains no personal path, development-team value, or signing configuration. The temporary negative-probe source is absent. |
 | `./gradlew :shared:jvmTest :shared:iosSimulatorArm64Test` | `pass` | Focused common policy and ViewModel behavior passes on JVM and the iOS Simulator. |
 | `./gradlew quality` | `pass` | All 70 tasks completed after the final text-state ownership correction, including JVM and iOS Simulator tests, both iOS compilation targets, lint, ktlint, Detekt, and desktop distributable checks. |
 | Packaged macOS runtime | `pass` | The first final `.app` launch reproduced `NoClassDefFoundError: java/sql/DriverManager`. After adding only `java.sql` to the Compose native-distribution modules, `:desktopApp:createDistributable` passed, JDK image inspection found `Module: java.sql`, the packaged process remained healthy, and the maintainer completed add, edit, cancel, save, and remove interactions. |
