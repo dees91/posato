@@ -96,6 +96,13 @@ behavior-focused tests. Detekt writes Checkstyle, HTML, Markdown, and SARIF
 reports under each module's `build/reports/detekt/`; ktlint writes plain-text
 and Checkstyle reports under `build/reports/ktlint/` in each checked project.
 
+Draft pull requests allocate no GitHub Actions runner; moving one to ready for
+review triggers CI, while returning one to draft cancels its in-progress run.
+GitHub Actions then runs the full gate on macOS for every pull request
+containing a non-Markdown change and for every push to `main`. A Markdown-only
+pull request runs the lightweight scope job and reports the macOS `Quality` job
+as skipped; any classification failure falls back to running `Quality`.
+
 The pinned quality set is ktlint Gradle plugin 14.2.0, ktlint 1.8.0, Detekt
 2.0.0-alpha.6, and Compose Rules 0.6.4. The Detekt prerelease is the narrow
 maintainer-accepted exception recorded in the quality contract and must be

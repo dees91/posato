@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 5
+- **Revision:** 6
 - **Accepted:** 2026-08-27
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -104,6 +104,13 @@ artifact has a real consumer.
 Only a recorded maintainer decision may override a Critical or Required
 finding. Recommended and Optional findings do not silently become work.
 
+`user-confirmed` (2026-08-27): hosted `@codex review` is an optional final
+signal, not a recursive gate. Request at most one pass per pull request by
+default after local verification, the proportional independent review, and
+versioned task records are complete. Accepted Critical or Required findings
+receive local correction and affected verification without hosted re-review;
+P2 and lower findings remain advisory unless the maintainer accepts them.
+
 ## Dependencies and provenance
 
 Before adding or upgrading a dependency, review the production need,
@@ -136,6 +143,15 @@ macOS surfaces introduced by that increment.
 Routine CI must not require personal signing identities, provisioning profiles,
 application credentials, or private device data. Exact jobs and commands are
 chosen in the shared PR #1 execution cycle.
+
+`user-confirmed` (2026-08-27): draft pull requests allocate no runner; moving a
+pull request to ready for review triggers CI. The full macOS quality job runs
+for every review-ready pull-request diff containing a non-Markdown file and
+every push to `main`. Markdown-only review-ready pull requests retain reported
+job results but skip macOS after a cheap whole-diff classification.
+Classification failure must run macOS rather than silently weakening the gate.
+Do not classify only the latest push because cancellation could otherwise
+leave earlier substantive changes unverified.
 
 ## Definition of Done
 

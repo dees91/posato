@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 3
-- **Accepted:** 2026-08-26
+- **Revision:** 4
+- **Accepted:** 2026-08-27
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -162,13 +162,26 @@ runs affected verification, commits and pushes the correction, and replies
 with concise evidence. The reviewer decides whether its thread is resolved.
 
 Use a manually requested `@codex review` as an additional independent pass
-when the repository is connected to Codex Cloud. Request it once after the
-latest substantive code or configuration change. Do not request hosted review
-for documentation-only changes, including task status, execution evidence,
-wiki logs, and review bookkeeping. Such a follow-up does not invalidate the
-preceding hosted review or require another request. Repeat hosted review only
-after code or configuration changes again, including corrections made for a
-substantive finding.
+when the repository is connected to Codex Cloud. By default, request it at
+most once per pull request, after implementation, applicable local
+verification, the tier's independent completed-change review, and versioned
+task records are complete. Do not request hosted review for documentation-only
+changes.
+
+Map hosted P0 and P1 findings to Critical and Required. Apply accepted fixes,
+run affected verification, obtain any focused local re-review needed by the
+tier, and reply with concise evidence. Do not request another hosted pass after
+those corrections unless the maintainer explicitly asks for one. P2 and lower
+findings are advisory; they do not expand scope, block merge, or trigger
+another implementation or review cycle without explicit maintainer
+acceptance.
+
+Batch accepted corrections into one push where practical. Complete task
+status, execution evidence, durable wiki updates, and other versioned closeout
+before the final substantive push. Later hosted-review replies and routine
+bookkeeping stay in the pull-request conversation; do not create a repository
+commit solely to record them. A substantive correction still updates the
+affected versioned record in the same correction push.
 
 Documentation still follows the proportional review tiers: routine status and
 bookkeeping use a Trivial self-check, while meaningful documentation receives
@@ -211,7 +224,7 @@ verification stay in the execution record.
 
 `GOVERNANCE-001` and `PLANNING-001` preserve how the original workflow and
 Gate 6 roadmap were introduced. Their longer records are history, not templates
-for new work. This revision is implemented by
+for new work. The proportional workflow was implemented by
 [`GOVERNANCE-002`](specifications/governance-002-streamline-engineering-workflow.md),
-with the revision 3 pull-request feedback loop explicitly accepted during the
-PR #1 integration cycle.
+with its pull-request feedback loop bounded by
+[`GOVERNANCE-003`](specifications/governance-003-bound-review-and-ci-repetition.md).
