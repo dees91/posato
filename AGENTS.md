@@ -81,11 +81,15 @@ and write-surface conditions in `tasks/README.md`.
 - Flag credentials, personal paths, wholesale PoC reuse, and violations of the
   accepted product, architecture, security, privacy, or process boundaries.
   `.research/blocker` must remain read-only evidence and an optional checkout.
-- Request hosted `@codex review` only after the latest substantive code or
-  configuration change. Do not request it for documentation-only changes,
-  including status, evidence, wiki-log, and review-bookkeeping updates. A
-  documentation-only follow-up does not invalidate the preceding hosted
-  review; repeat that review only after code or configuration changes again.
+- Request hosted `@codex review` at most once per pull request by default, only
+  after implementation, applicable local verification, the independent
+  completed-change review, and versioned task records are complete. Do not
+  request it for documentation-only changes. Address accepted Critical or
+  Required findings locally and rerun affected verification without requesting
+  another hosted pass; a repeat requires an explicit maintainer request.
+- Treat hosted P2 or lower findings as advisory. They do not expand the task,
+  block merge, or trigger another review pass without explicit maintainer
+  acceptance.
 
 ## Feasibility research reference
 

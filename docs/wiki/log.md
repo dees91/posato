@@ -569,3 +569,14 @@
   the revision compare-and-set and before deleting domain rows.
 - Kept a corrupt replica intact and returned typed corruption instead of
   silently replacing it, without adding schema attestation or recovery logic.
+
+## [2026-08-27] correction | Bound hosted review and macOS CI repetition
+
+- Limited hosted `@codex review` to one final manual pass per pull request by
+  default; another pass now requires an explicit maintainer request.
+- Kept hosted P2 and lower findings advisory and moved routine post-review
+  bookkeeping to the pull-request conversation instead of another commit.
+- Made draft pull requests allocate no runner and added whole-pull-request
+  classification so review-ready Markdown-only changes skip macOS while
+  substantive changes, `main` pushes, and classification failures retain the
+  full quality gate.

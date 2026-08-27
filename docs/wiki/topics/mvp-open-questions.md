@@ -355,12 +355,32 @@ at commit `e4eb8f4`, reported no major issue, and added no inline finding. The
 same commit passed the hosted `Quality` job in 4 minutes 39 seconds. Automatic
 AI review remained disabled; the maintainer still owns the merge decision.
 
-`user-confirmed` (2026-08-26): hosted GitHub Codex review is reserved for the
-latest substantive code or configuration change. Documentation-only status,
-evidence, wiki-log, and review-bookkeeping updates do not invalidate that
-review and must not trigger another request. Routine closeout uses a self-check;
-meaningful documentation keeps its proportional human or local independent
-review without creating a hosted-review loop.
+`superseded` (2026-08-27): the 2026-08-26 correction reserved hosted GitHub
+Codex review for the latest substantive code or configuration change and made
+documentation-only closeout non-invalidating. It stopped documentation loops
+but still allowed repeated hosted passes after substantive corrections; the
+bounded rule below replaces it. Meaningful documentation continues to receive
+its proportional human or local independent review.
+
+`user-confirmed` (2026-08-27): repeated one-finding hosted reviews created an
+unbounded correction cycle and repeatedly consumed the private repository's
+limited GitHub Actions minutes. A pull request now receives at most one manual
+hosted `@codex review` by default, after local verification, proportional
+independent review, and versioned task records are complete. Accepted Critical
+or Required findings are corrected and rechecked locally without another
+hosted pass; P2 and lower findings remain advisory unless explicitly accepted
+by the maintainer. Routine post-review bookkeeping stays in the pull-request
+conversation rather than creating another commit and CI run.
+
+`user-confirmed` (2026-08-27): draft pull requests allocate no runner; moving
+one to ready for review triggers CI. The full credential-free macOS gate then
+runs for every pull request containing a non-Markdown file and every push to
+`main`. Markdown-only review-ready pull requests run a cheap whole-diff
+classification and skip macOS while retaining reported job results.
+Classification fails closed to macOS. The classifier intentionally examines
+the whole pull request, not only the latest push, so a quick documentation
+follow-up cannot cancel and replace verification of earlier substantive
+changes.
 
 ## Gate 6 roadmap (complete)
 
