@@ -79,6 +79,19 @@ class LocalExactDomainPolicyStoreContractTest {
     }
 
     @Test
+    fun `given oversized NUL text when written then schema rejects it and state remains unchanged`() = withStore("nul-domain.db") { store, driver ->
+        val policy = policyOf("stable.example")
+        assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
+
+        assertFails {
+            driver.executeSql(
+                "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('aa.bb' || char(0) || printf('%.*c', 248, 'x'))",
+            )
+        }
+        assertState(store.read(), revision = 1, domains = policy.canonicalValues())
+    }
+
+    @Test
     fun `given an insert failure when replacing then the complete transaction rolls back`() = withStore("rollback.db") { store, driver ->
         val originalPolicy = policyOf("original.example")
         assertState(store.replace(0, originalPolicy), revision = 1, domains = originalPolicy.canonicalValues())

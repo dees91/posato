@@ -555,3 +555,10 @@
   BLOB cannot be coerced through the generated String accessor.
 - Read revision metadata and canonical domains in one standard SQLDelight
   transaction so callers receive one committed logical state.
+
+## [2026-08-27] correction | Bound canonical-domain storage bytes
+
+- Applied the existing 253-character ASCII domain budget to the complete stored
+  byte sequence so an embedded NUL cannot hide an oversized suffix.
+- Added one real-SQLite cross-runtime contract for rejection and preservation of
+  the previously committed policy without runtime or file-level validation.

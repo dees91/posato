@@ -168,22 +168,23 @@ file is added only for a real v2. The revision constraint requires SQLite's
 physical `integer` storage class so generated `Long` reads cannot coerce text or
 real values into trusted revision state. The canonical-domain constraint
 likewise requires the physical `text` storage class so generated `String` reads
-cannot coerce BLOB values into trusted domains. Restored domains are revalidated
-and bounded before becoming trusted policy state, while ordinary query failures
-remain typed storage failures. An invalid file is left to standard driver
-initialization and is not silently replaced. The iOS configuration changes only
-its app-private base path and installs a silent SQLiter logger while retaining
-the driver's default WAL mode. The static iOS host continues to link system
-SQLite.
+cannot coerce BLOB values into trusted domains, and it applies the 253-byte
+budget through BLOB-length semantics so an embedded NUL cannot hide an
+oversized suffix. Restored domains are revalidated and bounded before becoming
+trusted policy state, while ordinary query failures remain typed storage
+failures. An invalid file is left to standard driver initialization and is not
+silently replaced. The iOS configuration changes only its app-private base path
+and installs a silent SQLiter logger while retaining the driver's default WAL
+mode. The static iOS host continues to link system SQLite.
 
 `observed` (2026-08-27): the focused real-SQLite contract passes on desktop JVM
 and the iOS Simulator for fresh creation, atomic replacement, restart, empty
 replacement, revision conflicts, rollback, stored-data bounds, redaction,
 invalid-file preservation, malformed A-label rejection, non-integer revision
-rejection, BLOB-domain rejection, and injected dispatcher use. `inferred`:
-MODEL-001 fails closed on every reserved `??--` label, including `xn--`, until
-TARGETS-001 supplies reviewed IDNA validation and round-tripping rather than
-trusting the prefix alone.
+rejection, BLOB-domain rejection, oversized NUL-suffixed text rejection, and
+injected dispatcher use. `inferred`: MODEL-001 fails closed on every reserved
+`??--` label, including `xn--`, until TARGETS-001 supplies reviewed IDNA
+validation and round-tripping rather than trusting the prefix alone.
 
 ### Platform and toolchain baseline
 
