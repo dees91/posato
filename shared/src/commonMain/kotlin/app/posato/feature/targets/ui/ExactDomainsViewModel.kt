@@ -116,6 +116,7 @@ internal class ExactDomainsViewModel(
         return when (result) {
             is LocalPolicyResult.Success -> {
                 latestPolicySnapshot.update { result.value }
+                editorState.reconcileWith(result.value)
                 ExactDomainsPolicyState(snapshot = result.value)
             }
 
@@ -231,6 +232,21 @@ private fun MutableStateFlow<ExactDomainEditorState>.showFailure(failure: ExactD
 
 private fun MutableStateFlow<ExactDomainEditorState>.reset() {
     update { state -> ExactDomainEditorState(session = state.session + 1) }
+}
+
+private fun MutableStateFlow<ExactDomainEditorState>.reconcileWith(snapshot: LocalExactDomainPolicyState) {
+    update { state ->
+        val editingDomain = state.editingDomain
+        val editingDomainExists = editingDomain == null || snapshot.policy.domains.any { domain ->
+            domain.canonicalValue == editingDomain
+        }
+
+        if (editingDomainExists) {
+            state
+        } else {
+            ExactDomainEditorState(session = state.session + 1)
+        }
+    }
 }
 
 private fun MutableStateFlow<ExactDomainsSubmissionState>.showFailure(failure: ExactDomainsOperationFailure) {

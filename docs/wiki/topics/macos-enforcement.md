@@ -81,16 +81,17 @@ permits the denied route.
 ## Accepted exact-domain and coexistence contract
 
 ADR 0005 supports cleartext HTTP on port 80 and HTTPS `CONNECT` on port 443.
-`observed` (2026-08-27): the TARGETS-001 boundary now supplies lowercase ASCII
+`observed` (2026-08-28): the TARGETS-001 boundary now supplies lowercase ASCII
 canonical `ExactDomain` values after bounded UTS-46 processing and strict DNS
 and A-label round-tripping. Product input accepts a domain rather than a URL,
-requires at least two labels, excludes IP literals, and permits only one
-terminal DNS dot before canonicalization. The proxy revalidates authority,
-permits one terminal dot on the wire, compares equality only, never includes
-subdomains or IP literals, and rejects malformed, duplicate, or conflicting
-authority without falling back direct. A selected host is denied before the
-port check. Allowed HTTPS is an opaque tunnel and the helper uses direct
-upstream sockets to avoid proxy recursion.
+requires at least two labels, excludes IP literals through the WHATWG
+[ends-in-a-number](https://url.spec.whatwg.org/#ends-in-a-number) rule, and
+permits only one terminal DNS dot before canonicalization. The proxy revalidates
+authority, permits one terminal dot on the wire, compares equality only, never
+includes subdomains or IP literals, and rejects malformed, duplicate, or
+conflicting authority without falling back direct. A selected host is denied
+before the port check. Allowed HTTPS is an opaque tunnel and the helper uses
+direct upstream sockets to avoid proxy recursion.
 
 The complete candidate and effective proxy-resolution chains for each selected
 domain and both schemes must contain exactly the Posato loopback route. Any

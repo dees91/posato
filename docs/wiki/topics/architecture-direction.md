@@ -232,11 +232,13 @@ repository-owned carriers and diagnostics. The screen-owned framework state is
 a narrow exception: keep it inside the text-field composable and never log,
 diagnose, persist, or pass it to the ViewModel.
 
-`observed` (2026-08-27): TARGETS-001 bounds raw input to 1,024 UTF-16 code units
+`observed` (2026-08-28): TARGETS-001 bounds raw input to 1,024 UTF-16 code units
 before trimming or Unicode processing, converts accepted Unicode through the
 pinned Kuri 0.1.0 Unicode 17 UTS-46 implementation, and then applies Posato's
-stricter lowercase ASCII DNS and A-label round-trip checks. The resulting exact
-domains remain sorted, bounded, redacted outside explicit UI rendering, and
+stricter lowercase ASCII DNS, WHATWG
+[ends-in-a-number](https://url.spec.whatwg.org/#ends-in-a-number) rejection,
+and A-label round-trip checks. The resulting exact domains remain sorted,
+bounded, redacted outside explicit UI rendering, and
 are replaced directly through the MODEL-001 revision compare-and-set store.
 Focused JVM and iOS Simulator tests cover canonicalization, malformed and
 collapsing input, duplicates, edits, removal, conflicts, corruption,

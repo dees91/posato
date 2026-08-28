@@ -35,6 +35,9 @@
 8. Migrate the completed slice from repository-wide layer packages to the
    accepted feature-layered TARGETS package, move shared database and theme
    ownership to named core packages, and preserve behavior and module shape.
+9. Address accepted hosted review findings test-first by rejecting WHATWG
+   number-ending hosts and reconciling an active editor with the snapshot
+   reloaded after a revision conflict.
 
 ## Material 3 and text-state correction
 
@@ -118,6 +121,12 @@
   theme and its platform adaptations live in `app.posato.core.designsystem`.
   The migration leaves the store contract, direct ViewModel injection, schema,
   application shell, Metro roots, and single-module boundary unchanged.
+- Exact-domain validation now rejects a final decimal or lowercase `0x`
+  hexadecimal label under WHATWG's number-ending rule, including mixed legacy
+  IPv4 spellings, while preserving hexadecimal-looking non-final labels.
+- A successful policy reload now clears an edit only when its target is absent
+  from the loaded snapshot. It increments the editor session so the
+  composable-owned field is recreated; an edit whose target remains is kept.
 
 ## Completed-change review
 
@@ -167,11 +176,26 @@
   no stale references or actionable defects. Its sandbox could not access the
   Gradle wrapper cache; the successful focused and aggregate implementer runs
   below remain the verification evidence.
+- **Hosted-feedback plan review:** `approved after correction`. The independent
+  reviewer accepted the WHATWG final-label predicate and paired conflict tests.
+  Its sole Required process finding was that the unresolved advisory thread
+  must be answered with evidence but left for its reviewer to resolve.
+- **Hosted review findings:** The Required IPv4 finding is addressed by the
+  WHATWG number-ending rejection. The maintainer-accepted advisory stale-editor
+  finding is addressed by snapshot reconciliation without adding a new stream,
+  use case, or public API.
+- **Hosted-feedback completed-change verdict:** `approved`. The independent
+  review found no actionable correctness, readability, architecture, security,
+  or performance defect. Its sandbox could not access the Gradle wrapper cache;
+  the successful implementer runs below remain the verification evidence.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
+| Hosted-feedback red/green regression | `pass` | The focused JVM run first failed only for accepted numeric-ending hosts and the stale editor after conflict reload. After the minimal fixes, the complete JVM and iOS Simulator policy and ViewModel suites passed. |
+| Hosted-feedback aggregate gate | `pass` | `./gradlew quality --rerun-tasks` executed all 92 tasks successfully, including lint, Detekt, JVM and iOS Simulator tests, both iOS compilation targets, migration verification, and the desktop distributable. |
+| Hosted-feedback iOS host build | `pass` | The credential-free generic iOS Simulator `xcodebuild` completed with `BUILD SUCCEEDED`. |
 | Dependency and primary-source review | `pass` | Kuri 0.1.0 publishes JVM, iOS arm64, and iOS Simulator arm64 variants, uses MIT, has no runtime dependency beyond Kotlin stdlib, and has no OSV entry; AndroidX 2.10.0 and coroutines Swing follow current JetBrains ViewModel guidance. Stable Compose Multiplatform Material 3 1.9.0 is Apache-2.0, has no OSV entry, supplies the state-based API, and resolves shared Compose core artifacts to the existing 1.10.3 graph. |
 | Custom-rule dependency and source review | `pass` | The repository-owned ruleset uses the existing ktlint 1.8.0 APIs. Test-only SLF4J Simple 2.0.17 matches ktlint's pin, is MIT-licensed, and returned no OSV result. The resolved ruleset and test runtime graphs were inspected. |
 | `./gradlew :quality-rules:ktlintCheck :quality-rules:test :quality-rules:detekt --rerun-tasks` | `pass` | Ten public-rule-engine tests cover declarations, assignments, named arguments, defaults, expression bodies, same-line values, comments, over-limit values, standard-formatted multiline raw strings, and fitting single-line raw strings. The module statically enforces its own rule through its built JAR without a task cycle. |

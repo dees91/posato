@@ -20,8 +20,10 @@ existing atomic local-policy store.
   allow one terminal DNS dot, and canonicalize Unicode through pinned
   cross-platform UTS-46 processing.
 - Require at least two valid DNS labels, the existing 63-byte label and
-  253-byte domain limits, no IP literal, and a strict Unicode/A-label
-  round-trip. Reject malformed, ambiguous, duplicate, or oversized input.
+  253-byte domain limits, no IP literal, the WHATWG
+  [ends-in-a-number](https://url.spec.whatwg.org/#ends-in-a-number) rejection,
+  and a strict Unicode/A-label round-trip. Reject malformed, ambiguous,
+  duplicate, or oversized input.
 - Preserve the last valid policy until validation and the atomic revision
   update succeed. Never put a domain in a repository-owned error, diagnostic,
   or default string form. The required framework `TextFieldState` is a narrow
@@ -39,6 +41,9 @@ existing atomic local-policy store.
   initial-load call. The existing store remains the direct data boundary; do
   not add a pass-through use case, module, service locator, custom scope, or
   navigation dependency for this single-screen slice.
+- After a revision conflict reloads persisted policy, reset the editor session
+  if its edited domain no longer exists and preserve the edit if the domain
+  remains present.
 - Establish the minimum reusable application UI foundation in this first
   reviewed screen slice: apply one root `PosatoTheme`, use Material 3
   components and state-based text fields exclusively, and make the existing
@@ -74,6 +79,8 @@ existing atomic local-policy store.
   previous valid row, and remove changes only the selected exact row.
 - `AC-03` — Successful changes render the persisted snapshot; storage,
   corruption, conflict, and cancellation never replace valid state silently.
+  A conflict reload cannot retain an edit for a domain absent from the reloaded
+  snapshot.
 - `AC-04` — The shared screen exposes explicit loading, empty, content, edit,
   validation, saving, and safe failure states and works by keyboard on macOS
   and by the iOS Simulator input path without relying on color alone. It uses

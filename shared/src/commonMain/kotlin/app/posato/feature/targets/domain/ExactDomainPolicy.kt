@@ -155,11 +155,18 @@ private fun String.isCanonicalExactDomain(): Boolean {
     return if (validLength && validCharacters) {
         val labels = split('.')
         labels.size >= 2 &&
-            !labels.all { label -> label.all(Char::isDigit) } &&
+            !labels.last().isWhatwgIpv4Number() &&
             labels.all(String::isCanonicalDomainLabel)
     } else {
         false
     }
+}
+
+private fun String.isWhatwgIpv4Number(): Boolean {
+    val isDecimalNumber = all { character -> character in '0'..'9' }
+    val isHexadecimalNumber = startsWith("0x") && drop(2).all(Char::isAsciiHexDigit)
+
+    return isDecimalNumber || isHexadecimalNumber
 }
 
 private fun String.isCanonicalDomainLabel(): Boolean {
@@ -192,4 +199,8 @@ private fun Char.isAsciiDomainCharacter(): Boolean {
 
 private fun Char.isAsciiLetterOrDigit(): Boolean {
     return this in 'a'..'z' || this in '0'..'9'
+}
+
+private fun Char.isAsciiHexDigit(): Boolean {
+    return this in '0'..'9' || this in 'a'..'f'
 }

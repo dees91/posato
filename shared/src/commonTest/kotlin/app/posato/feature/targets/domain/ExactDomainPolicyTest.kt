@@ -53,6 +53,29 @@ class ExactDomainPolicyTest {
     }
 
     @Test
+    fun `given WHATWG number-ending hosts when parsed or restored then they fail`() {
+        val invalidInputs = listOf(
+            "0x7f.0x0.0x0.0x1",
+            "127.0.0x0.1",
+            "example.123",
+            "example.0xdead",
+            "example.0x",
+        )
+
+        invalidInputs.forEach { input ->
+            assertIs<ExactDomainInputResult.Failure>(ExactDomain.parse(input))
+            assertNull(ExactDomain.restore(input))
+        }
+    }
+
+    @Test
+    fun `given a hexadecimal label before the final label when parsed then it remains a domain`() {
+        val domain = assertSuccess(ExactDomain.parse("0x7f.example"))
+
+        assertEquals("0x7f.example", domain.canonicalValue)
+    }
+
+    @Test
     fun `given canonical A-label storage values when restored then only strict round trips are accepted`() {
         assertEquals(
             "xn--bcher-kva.example",

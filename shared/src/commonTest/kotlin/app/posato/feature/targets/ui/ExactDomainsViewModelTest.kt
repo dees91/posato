@@ -180,6 +180,64 @@ class ExactDomainsViewModelTest {
     }
 
     @Test
+    fun `given an edited domain was removed externally when conflict reloads then the editor is reset`() = runTest(dispatcher) {
+        val store = FakeExactDomainPolicyStore(stateOf(3, "stable.example"))
+        val viewModel = ExactDomainsViewModel(store)
+        observe(viewModel)
+        scheduler.runCurrent()
+        viewModel.beginEditing("stable.example")
+        scheduler.runCurrent()
+        val editorSession = viewModel.uiState.value.editorSession
+        store.replaceExternally("other.example")
+
+        viewModel.submit("replacement.example")
+        scheduler.runCurrent()
+        assertEquals(ExactDomainsOperationFailure.REVISION_CONFLICT, viewModel.uiState.value.operationFailure)
+
+        viewModel.retry()
+        scheduler.runCurrent()
+
+        assertEquals(listOf("other.example"), viewModel.uiState.value.domains)
+        assertEquals(null, viewModel.uiState.value.editingDomain)
+        assertEquals(editorSession + 1, viewModel.uiState.value.editorSession)
+        assertEquals(null, viewModel.uiState.value.operationFailure)
+
+        viewModel.submit("replacement.example")
+        scheduler.runCurrent()
+
+        assertEquals(listOf("other.example", "replacement.example"), viewModel.uiState.value.domains)
+        assertEquals(2, store.replaceCalls)
+    }
+
+    @Test
+    fun `given an edited domain remains externally when conflict reloads then the editor is preserved`() = runTest(dispatcher) {
+        val store = FakeExactDomainPolicyStore(stateOf(3, "stable.example"))
+        val viewModel = ExactDomainsViewModel(store)
+        observe(viewModel)
+        scheduler.runCurrent()
+        viewModel.beginEditing("stable.example")
+        scheduler.runCurrent()
+        val editorSession = viewModel.uiState.value.editorSession
+        store.replaceExternally("stable.example", "other.example")
+
+        viewModel.submit("replacement.example")
+        scheduler.runCurrent()
+        viewModel.retry()
+        scheduler.runCurrent()
+
+        assertEquals(listOf("other.example", "stable.example"), viewModel.uiState.value.domains)
+        assertEquals("stable.example", viewModel.uiState.value.editingDomain)
+        assertEquals(editorSession, viewModel.uiState.value.editorSession)
+        assertEquals(null, viewModel.uiState.value.operationFailure)
+
+        viewModel.submit("replacement.example")
+        scheduler.runCurrent()
+
+        assertEquals(listOf("other.example", "replacement.example"), viewModel.uiState.value.domains)
+        assertEquals(2, store.replaceCalls)
+    }
+
+    @Test
     fun `given cancellation when saving then valid state is not replaced or left busy`() = runTest(dispatcher) {
         val store = FakeExactDomainPolicyStore(stateOf(1, "stable.example"))
         val viewModel = ExactDomainsViewModel(store)
@@ -238,6 +296,10 @@ private class FakeExactDomainPolicyStore(
     var nextReadFailure: LocalPolicyFailure? = null
     var nextReplaceFailure: LocalPolicyFailure? = null
     var cancelNextReplace: Boolean = false
+
+    fun replaceExternally(vararg domains: String) {
+        state = stateOf(state.revision + 1, *domains)
+    }
 
     override suspend fun read(): LocalPolicyResult<LocalExactDomainPolicyState> {
         readCalls++

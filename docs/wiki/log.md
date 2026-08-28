@@ -657,3 +657,10 @@
   `app.posato.core` capabilities.
 - Retained one `:shared` module and direct ViewModel-to-store injection; package
   organization does not create pass-through use cases or speculative modules.
+
+## [2026-08-28] correction | Reject ambiguous numeric hosts
+
+- Applied WHATWG's number-ending rule to the final canonical domain label so
+  alternate IPv4 spellings cannot enter exact-domain policy.
+- Reconciled conflict reloads with active edits, clearing an editor whose target
+  disappeared while preserving one whose target remains in persisted policy.
