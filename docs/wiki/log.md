@@ -664,3 +664,10 @@
   alternate IPv4 spellings cannot enter exact-domain policy.
 - Reconciled conflict reloads with active edits, clearing an editor whose target
   disappeared while preserving one whose target remains in persisted policy.
+
+## [2026-08-28] decision | Pause automatic hosted CI
+
+- `user-confirmed`: pause automatic GitHub Actions triggers through 2026-09-05
+  after the account exhausted its included runner minutes.
+- Retained manual workflow dispatch and made a fresh local aggregate quality
+  pass the temporary merge gate without weakening review requirements.

@@ -196,6 +196,14 @@ Classification failure must run macOS rather than silently weakening the gate.
 Do not classify only the latest push because cancellation could otherwise
 leave earlier substantive changes unverified.
 
+`user-confirmed` (2026-08-28): GitHub-hosted automatic CI is paused through
+2026-09-05 because the account exhausted its included Actions minutes. During
+the pause, a fresh local `./gradlew quality` pass after the last material
+correction is the required merge gate. The workflow retains manual dispatch
+for exceptional use. Restore the pull-request and `main` push triggers when
+hosted minutes become available; this temporary exception does not weaken the
+quality command or the proportional review requirement.
+
 ## Definition of Done
 
 A change is done when these five principles hold:

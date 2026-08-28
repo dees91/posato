@@ -431,3 +431,9 @@ Gate 5 records the CI outcome but does not configure a pipeline. The Gate 6
 roadmap groups the foundation, local quality, and CI milestones into one PR #1
 execution and review cycle completed before PR #1 merges or the first parallel
 implementation wave starts, whichever occurs first.
+
+`user-confirmed` (2026-08-28): automatic GitHub-hosted CI is paused through
+2026-09-05 after the account exhausted its included Actions minutes. A fresh
+local aggregate quality pass is the temporary merge gate, and the complete
+workflow remains manually dispatchable. Automatic pull-request and `main`
+push triggers return when hosted minutes become available.

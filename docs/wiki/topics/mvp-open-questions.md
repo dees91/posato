@@ -391,6 +391,12 @@ the whole pull request, not only the latest push, so a quick documentation
 follow-up cannot cancel and replace verification of earlier substantive
 changes.
 
+`superseded` (2026-08-28 through 2026-09-05): automatic pull-request and
+`main` push triggers are temporarily paused after the account exhausted its
+included Actions minutes. A fresh local aggregate quality pass is the accepted
+temporary merge gate, and the complete workflow remains available by manual
+dispatch. Restore the automatic triggers when hosted minutes become available.
+
 ## Gate 6 roadmap (complete)
 
 `user-confirmed` (2026-08-25): the accepted

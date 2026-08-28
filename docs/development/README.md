@@ -113,6 +113,12 @@ containing a non-Markdown change and for every push to `main`. A Markdown-only
 pull request runs the lightweight scope job and reports the macOS `Quality` job
 as skipped; any classification failure falls back to running `Quality`.
 
+Automatic GitHub Actions triggers are temporarily paused through 2026-09-05
+because the account exhausted its included runner minutes. Until they are
+restored, run `./gradlew quality` locally after the last material correction
+and treat that result as the merge gate. The CI workflow remains available for
+manual dispatch when spending permits.
+
 The pinned quality set is ktlint Gradle plugin 14.2.0, ktlint 1.8.0, Detekt
 2.0.0-alpha.6, and Compose Rules 0.6.4. The Detekt prerelease is the narrow
 maintainer-accepted exception recorded in the quality contract and must be
