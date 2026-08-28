@@ -310,7 +310,7 @@ class TargetsViewModelTest {
     }
 
     @Test
-    fun `given conflict reload is suspended when mutations are attempted then the fresh revision is required`() = runTest(dispatcher) {
+    fun `given a conflict when mutations are attempted then a successful reload is required`() = runTest(dispatcher) {
         val store = FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Social feeds"))
         val viewModel = TargetsViewModel(store)
         observe(viewModel)
@@ -318,6 +318,17 @@ class TargetsViewModelTest {
         store.replaceExternally(applicationPolicyName = "Social feeds")
         viewModel.submitApplicationPolicy("Work tools")
         scheduler.runCurrent()
+
+        val applicationEditorSession = viewModel.uiState.value.applicationEditorSession
+        viewModel.beginEditingApplicationPolicy()
+        viewModel.removeApplicationPolicy()
+        viewModel.submitDomain("blocked.example")
+        scheduler.runCurrent()
+
+        assertEquals(TargetsOperationFailure.REVISION_CONFLICT, viewModel.uiState.value.operationFailure)
+        assertFalse(viewModel.uiState.value.isEditingApplicationPolicy)
+        assertEquals(applicationEditorSession, viewModel.uiState.value.applicationEditorSession)
+        assertEquals(1, store.replaceCalls)
         val suspendedRead = store.suspendNextRead()
 
         viewModel.retry()
@@ -330,6 +341,11 @@ class TargetsViewModelTest {
         assertEquals(1, store.replaceCalls)
         suspendedRead.complete(Unit)
         scheduler.runCurrent()
+        viewModel.beginEditingApplicationPolicy()
+        scheduler.runCurrent()
+
+        assertTrue(viewModel.uiState.value.isEditingApplicationPolicy)
+        assertEquals(null, viewModel.uiState.value.operationFailure)
         viewModel.submitDomain("example.com")
         scheduler.runCurrent()
         assertEquals(2, store.replaceCalls)

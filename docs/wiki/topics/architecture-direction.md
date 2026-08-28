@@ -278,7 +278,9 @@ and Applications in one state holder. **Application group** is the visible
 term, and an existing group truthfully reports that apps still need selection
 on the current device without exposing a fake picker action. Independent
 composable-owned text fields retain the last valid aggregate during validation,
-storage, cancellation, and revision-conflict recovery.
+storage, cancellation, and revision-conflict recovery. Load, conflict, and
+corruption failures keep policy controls disabled until a successful reload,
+while an ordinary save failure still permits another submission.
 
 ### Platform and toolchain baseline
 

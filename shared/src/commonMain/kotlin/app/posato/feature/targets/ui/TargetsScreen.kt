@@ -149,7 +149,7 @@ private fun TargetsContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val enabled = !state.isLoading && !state.isSaving
+    val enabled = state.canMutatePolicy()
     Box(modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing), contentAlignment = Alignment.TopCenter) {
         LazyColumn(
             modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth(),

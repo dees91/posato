@@ -118,5 +118,6 @@ internal fun LocalPolicyFailure.toSaveFailure(): TargetsOperationFailure {
 }
 
 internal fun TargetsUiState.canMutatePolicy(): Boolean {
-    return hasLoaded && !isLoading && !isSaving
+    return hasLoaded && !isLoading && !isSaving &&
+        (operationFailure == null || operationFailure == TargetsOperationFailure.SAVE_FAILED)
 }

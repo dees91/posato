@@ -50,6 +50,15 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
             ),
         ),
         TargetsPreviewState(
+            "Website validation",
+            TargetsUiState(
+                domains = domains,
+                domainInputFailure = ExactDomainEntryFailure.EMPTY,
+                isLoading = false,
+                hasLoaded = true,
+            ),
+        ),
+        TargetsPreviewState(
             "Saving application group",
             TargetsUiState(
                 domains = domains,
@@ -61,11 +70,31 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
             ),
         ),
         TargetsPreviewState(
+            "Saving website",
+            TargetsUiState(
+                domains = domains,
+                editingDomain = "example.com",
+                savingMutation = TargetMutation.DOMAIN,
+                isLoading = false,
+                hasLoaded = true,
+            ),
+        ),
+        TargetsPreviewState(
             "Reloading",
             TargetsUiState(
                 domains = domains,
                 applicationPolicyName = "Social feeds",
                 isLoading = true,
+                hasLoaded = true,
+            ),
+        ),
+        TargetsPreviewState(
+            "Retryable corruption",
+            TargetsUiState(
+                domains = domains,
+                applicationPolicyName = "Social feeds",
+                operationFailure = TargetsOperationFailure.CORRUPTED_POLICY,
+                isLoading = false,
                 hasLoaded = true,
             ),
         ),

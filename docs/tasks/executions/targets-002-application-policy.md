@@ -38,6 +38,9 @@ compares actual changed paths in both worktrees.
 - **Resolution:** The records now identify TARGETS-001, make TARGETS-002 and
   MACOS-003 write surfaces and serialization explicit, define `Cc` as common
   C0/C1 ranges, require their tests, protect `1.db`, and compare actual paths.
+- **Hosted-correction plan review:** Approved with no Critical or Required
+  findings. The correction reuses one mutation gate, adds only the three
+  missing preview states, and extends one existing conflict test.
 
 ## Result
 
@@ -50,6 +53,8 @@ compares actual changed paths in both worktrees.
   device-mapping-required copy and no placeholder picker action.
 - Added focused domain, persistence, migration, conflict, cancellation, and
   redaction coverage across JVM and iOS simulator targets.
+- Restored the complete preview matrix and kept stale policy mutations disabled
+  until a conflict, corruption, or load failure is successfully reloaded.
 
 ## Completed-change review
 
@@ -69,13 +74,21 @@ compares actual changed paths in both worktrees.
   The independent reviewer confirmed that no Critical or Required finding
   remains. Filename alignment was retained as advisory cleanup and did not
   expand this task.
+- **Hosted correction:** The final hosted review identified one Required
+  preview-matrix regression and one P2 conflict-recovery defect accepted by the
+  maintainer. The missing website-validation, website-saving, and loaded-
+  corruption previews were restored, and the existing mutation gate now keeps
+  controls disabled until reload while preserving retry after `SAVE_FAILED`.
+  A focused independent completed-change review approved the correction with no
+  remaining findings.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Plan review | `pass` | Approved after all Required findings were resolved. |
-| `./gradlew quality` | `pass` | JVM and iOS tests, Android and Apple compilation, SQLDelight migration verification, static analysis, formatting, and desktop packaging passed. |
+| Conflict-recovery regression | `pass` | The focused JVM test failed against the old behavior when opening the application editor cleared a revision conflict, then passed after the shared mutation gate was corrected. |
+| `./gradlew quality` | `pass` | All 92 tasks passed after the hosted corrections, including JVM and iOS tests, Android preview compilation, Apple compilation, SQLDelight migration verification, static analysis, formatting, and desktop packaging. |
 | Credential-free iOS build | `pass` | `xcodebuild` completed with `CODE_SIGNING_ALLOWED=NO` and `CODE_SIGNING_REQUIRED=NO`. |
 | Desktop package smoke check | `pass` | The packaged application launched and rendered the empty application-group and website editors. |
 | macOS and iOS Simulator inspection | `pass` | Empty and populated group/domain states rendered on both Apple form factors; mapping-required copy, edit/remove controls, website rows, and the scrollable large-text layout remained visible and truthful. Shared interaction tests cover add/edit/cancel/remove and invalid-edit preservation on JVM and iOS. |
@@ -86,6 +99,9 @@ compares actual changed paths in both worktrees.
 ## Blockers and accepted risks
 
 - No blocker is known.
+- This correction leaves `docs/wiki/log.md` unchanged under the maintainer's
+  explicit collision-avoidance decision for the concurrent MACOS-003 worktree;
+  its execution record and maintained architecture topic carry the update.
 
 ## Final
 
