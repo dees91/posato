@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 4
-- **Accepted:** 2026-08-27
+- **Revision:** 5
+- **Accepted:** 2026-08-28
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -19,18 +19,55 @@ The standing quality bar is the
 
 | Concern | Authority |
 | --- | --- |
-| Workflow, review tiers, and artifact roles | This file |
+| Workflow, record paths, review tiers, and artifact roles | This file |
 | Standing quality and Definition of Done | Engineering quality contract |
 | Preparation-gate state before PR #1 | `first-mvp-pr-preparation-todo.md` |
 | MVP ordering, dependencies, waves, and integration groups | `mvp-roadmap.md` |
-| Active task outcome and boundaries | Its brief under `specifications/` |
-| Actual plan, result, review, checks, and blockers | Its execution record under `executions/` |
+| Lightweight change outcome | One concise entry in `docs/wiki/log.md` |
+| Recorded task outcome and boundaries | Its brief under `specifications/` |
+| Recorded task plan, result, checks, and blockers | Its execution record under `executions/` |
 | Product, design, architecture, security, or privacy decision | Its accepted authority under `docs/` |
 | Maintained synthesis and evidence routing | `docs/wiki/` |
 
 The roadmap is enough to retain future work. A full brief is created just in
-time, when a task becomes active. Do not write speculative briefs for every
-roadmap row.
+time only when the recorded-task path below requires one. Do not write
+speculative briefs for every roadmap row.
+
+## Record paths
+
+Choose how work is recorded separately from how deeply it is reviewed. A task
+ID, dependency, build target, or configuration change does not by itself
+justify a brief and execution record.
+
+### Lightweight change
+
+Use this path when the changed sources, focused verification, any affected
+authority, and one concise wiki-log entry fully explain the work. It may cover
+local and reversible implementation, dependency, build-tooling, CI,
+documentation, or configuration changes that do not need a separate
+coordination or risk narrative.
+
+- Do not create a task brief or execution record.
+- Append one outcome-focused entry to `docs/wiki/log.md`; do not copy command
+  output or review bookkeeping into it.
+- Update an accepted authority when the work changes a durable decision. That
+  authority remains distinct from a task record.
+- Pure typo, formatting, link, and bookkeeping corrections may omit the wiki
+  entry.
+
+Use the recorded-task path when the work introduces important product, state,
+policy, validation, persistence, synchronization, platform-boundary, or public
+contract behavior; is High-risk; needs multi-step or parallel coordination;
+has material blockers, accepted risks, or deviations that the diff and
+authorities cannot explain; or the maintainer explicitly requests a formal
+record. When uncertain, use the recorded-task path.
+
+### Recorded task
+
+Create one concise brief and execution record for work that meets the threshold
+above. Several coherent milestones may share them. The records must add useful
+task-specific context rather than duplicate the diff, an accepted authority,
+the wiki, CI output, or a pull-request conversation.
 
 ## Review tiers
 
@@ -39,19 +76,20 @@ needs a named reason; a lower tier must genuinely fit its definition.
 
 ### Trivial
 
-Use for a typo, an unambiguous link fix, mechanical formatting, or another
-change with no behavioral or durable-governance effect.
+Use for a typo, an unambiguous link fix, mechanical formatting, or a narrow,
+local, reversible change whose correctness is established by a focused
+self-check.
 
-- No task brief or execution record.
 - The author performs the relevant self-check.
 - Escalate to Standard as soon as judgment, broader scope, or risk appears.
 
 ### Standard
 
-Use for ordinary implementation, configuration, tests, and meaningful
-documentation.
+Use when a completed change benefits from an independent correctness,
+integration, or maintainability check. Dependency integration, CI behavior,
+new build targets, and changes spanning several targets normally qualify even
+when they use the lightweight record path.
 
-- Create a concise task brief and execution record.
 - Implement after the plan is understood; a separate plan-review ceremony is
   not required.
 - A different agent reviews the completed change once.
@@ -63,7 +101,7 @@ authorization, cryptography, privacy or sensitive data, destructive migration,
 signing or account-level resources, release operations, an exposed trust
 boundary, or another explicitly identified irreversible or costly failure.
 
-- Use the Standard artifacts.
+- Use the recorded-task path.
 - A different agent reviews the brief plan before implementation.
 - A different agent reviews the completed change. The same reviewer may perform
   both reviews.
@@ -75,9 +113,9 @@ configuration, and evidence created only for its own sake.
 
 ## Task brief
 
-Create `docs/tasks/specifications/<task-id>.md` from the
+For recorded tasks, create `docs/tasks/specifications/<task-id>.md` from the
 [brief template](templates/task-specification.md) only when the task is about
-to start.
+to start. Lightweight changes never create one.
 
 A normal brief contains 20–40 lines of unique content:
 
@@ -96,9 +134,8 @@ to the maintainer.
 
 ## Execution record
 
-Create `docs/tasks/executions/<task-id>.md` from the
-[execution template](templates/execution-record.md) for Standard and High-risk
-work. Keep only:
+For recorded tasks, create `docs/tasks/executions/<task-id>.md` from the
+[execution template](templates/execution-record.md). Keep only:
 
 - status: `active`, `blocked`, or `done`;
 - a short actual plan;
@@ -121,23 +158,25 @@ both artifact directories.
 Before implementation:
 
 1. Confirm dependencies and accepted authorities.
-2. Choose the review tier and write only the brief needed now.
-3. Record the short plan and relevant checks.
+2. Choose the record path and review tier independently.
+3. For a recorded task, write only the brief and short execution plan needed
+   now.
 4. For High-risk work, obtain plan approval from a different agent.
 
 During implementation, keep the change scoped and record only material
 deviations. If a missing human action, external resource, or durable decision
-blocks progress, set the task to `blocked`, state the clearing condition, and
-stop. Do not manufacture tooling to remain busy.
+blocks progress, escalate lightweight work to the recorded-task path when that
+context needs a durable task record. Set a recorded task to `blocked`, state
+the clearing condition, and stop. Do not manufacture tooling to remain busy.
 
 After implementation:
 
 1. Run the checks that can detect a defect in this change.
-2. Obtain the tier's completed-change review.
+2. Complete the selected review tier.
 3. Resolve Critical and Required findings.
 4. Rerun checks affected by the last correction.
-5. Record the result, remaining blocker, or final evidence and mark the task
-   `done` only when the outcome is met.
+5. Close the selected record: update the execution record for a recorded task,
+   or append the lightweight outcome to the wiki log.
 
 ## Human and one-off work
 
@@ -164,9 +203,9 @@ with concise evidence. The reviewer decides whether its thread is resolved.
 Use a manually requested `@codex review` as an additional independent pass
 when the repository is connected to Codex Cloud. By default, request it at
 most once per pull request, after implementation, applicable local
-verification, the tier's independent completed-change review, and versioned
-task records are complete. Do not request hosted review for documentation-only
-changes.
+verification, any required independent completed-change review, and any
+required versioned task records are complete. Do not request hosted review for
+documentation-only changes.
 
 Map hosted P0 and P1 findings to Critical and Required. Apply accepted fixes,
 run affected verification, obtain any focused local re-review needed by the
@@ -176,12 +215,12 @@ findings are advisory; they do not expand scope, block merge, or trigger
 another implementation or review cycle without explicit maintainer
 acceptance.
 
-Batch accepted corrections into one push where practical. Complete task
-status, execution evidence, durable wiki updates, and other versioned closeout
-before the final substantive push. Later hosted-review replies and routine
-bookkeeping stay in the pull-request conversation; do not create a repository
-commit solely to record them. A substantive correction still updates the
-affected versioned record in the same correction push.
+Batch accepted corrections into one push where practical. Complete the
+selected record path, durable wiki updates, and other versioned closeout before
+the final substantive push. Later hosted-review replies and routine bookkeeping
+stay in the pull-request conversation; do not create a repository commit solely
+to record them. A substantive correction still updates any affected versioned
+authority or required task record in the same correction push.
 
 Documentation still follows the proportional review tiers: routine status and
 bookkeeping use a Trivial self-check, while meaningful documentation receives
@@ -215,10 +254,12 @@ whichever happens first.
 
 ## Wiki threshold
 
-Update the wiki only for an accepted durable conclusion, a material reusable
-correction or experiment result, or an open question that changes future
-decisions. Task status, routine review comments, command output, and ordinary
-verification stay in the execution record.
+Every substantive lightweight change receives one concise wiki-log entry.
+Update a topic or source page only for an accepted durable conclusion, a
+material reusable correction or experiment result, or an open question that
+changes future decisions. Task status, routine review comments, command output,
+and ordinary verification stay in the execution record when one exists, or in
+the pull-request conversation otherwise.
 
 ## Historical records
 
@@ -228,3 +269,7 @@ for new work. The proportional workflow was implemented by
 [`GOVERNANCE-002`](specifications/governance-002-streamline-engineering-workflow.md),
 with its pull-request feedback loop bounded by
 [`GOVERNANCE-003`](specifications/governance-003-bound-review-and-ci-repetition.md).
+The `PREVIEW-001` and `CI-002` briefs and execution records are also retained as
+history. Under revision 5, equivalent work uses the lightweight record path,
+with independent completed-change review selected separately when warranted by
+its build, dependency, or CI risk.

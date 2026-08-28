@@ -713,3 +713,21 @@
   the exact wall-ahead reset and equal-or-regressed advancement rules.
 - Kept remote advancement wall-independent and retained the existing atomic
   batch reservation, terminal exhaustion, wire format, and operation model.
+
+## [2026-08-28] decision | Separate work records from review depth
+
+- `user-confirmed`: choose the lightweight or recorded-task path separately
+  from Trivial, Standard, or High-risk review.
+- Let changed sources, focused checks, affected authorities, and one concise
+  wiki-log entry close lightweight work without a brief or execution record.
+- Retained PREVIEW-001 and CI-002 records as history; equivalent future work
+  uses the lightweight path while dependency, build-target, and CI risk may
+  still require independent completed-change review.
+
+## [2026-08-28] tooling | Add Android Studio Apple run configurations
+
+- Added shared Android Studio configurations for the existing `iosApp` Xcode
+  application and `:desktopApp:run` macOS application task. The iOS entry uses
+  Android Studio's bundled Shell Script runner and needs no KMP IDE plugin.
+- Kept simulator and device selection machine-local and recorded no signing,
+  account, device, or personal-path value.

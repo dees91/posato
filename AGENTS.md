@@ -21,6 +21,11 @@ experiment work:
 2. Read [`docs/wiki/index.md`](docs/wiki/index.md).
 3. Open the relevant topic and source pages before drawing a conclusion.
 
+Lightweight developer tooling and maintenance, as defined by
+[`docs/tasks/README.md`](docs/tasks/README.md), read only the changed sources
+and directly relevant authorities unless they also produce one of the reusable
+conclusions above.
+
 Before brand, product-design, UI, or application-shell work, also read
 [`DESIGN.md`](DESIGN.md). It is the accepted design authority; the related wiki
 pages retain synthesis, evidence, flow diagrams, and proposal history rather
@@ -34,6 +39,10 @@ changes, and append one parseable entry to `docs/wiki/log.md` using
 `## [YYYY-MM-DD] type | Short title`. Routine task status, review bookkeeping,
 and verification output do not require wiki updates.
 
+A substantive lightweight change with no durable conclusion appends only one
+concise entry to `docs/wiki/log.md`. Pure typo, formatting, link, and
+bookkeeping corrections may omit it.
+
 The wiki is maintained synthesis, not decision authority. Do not promote an
 inference or PoC choice into an ADR, product requirement, plan, or
 source file without explicit user acceptance. Durable accepted decisions live
@@ -41,26 +50,32 @@ under `docs/decisions/`, `docs/product/`, or `docs/security/` as appropriate.
 
 ## Mandatory work execution
 
-Before non-trivial implementation, build, configuration, or documentation
-work, read:
+Before work starts, choose the record path and review tier independently using
+[`docs/tasks/README.md`](docs/tasks/README.md).
+
+For a lightweight change, inspect the changed sources and directly relevant
+authorities. Do not create a task brief or execution record. For a recorded
+task, read:
 
 1. [`docs/development/engineering-quality-contract.md`](docs/development/engineering-quality-contract.md);
 2. [`docs/tasks/README.md`](docs/tasks/README.md); and
-3. the active task brief, or its accepted roadmap stub when a brief has not
-   yet been created, and the linked authorities.
+3. the active task brief, or its accepted roadmap stub before the brief is
+   created, and the linked authorities.
 
-Gate 6 keeps short roadmap stubs. Create a task brief just before its work
-starts; do not pre-expand every future task. A brief records only the outcome,
-boundaries, dependencies, acceptance criteria, and applicable verification.
-The execution record contains only the actual plan, result, blockers, review,
-and checks used for that change.
+Gate 6 keeps short roadmap stubs. When an item uses the recorded-task path,
+create its brief just before work starts; do not pre-expand every future task.
+A brief records only the outcome, boundaries, dependencies, acceptance
+criteria, and applicable verification. Its execution record contains only the
+actual plan, result, blockers, review, and checks used for that change.
 
-Follow the proportional review tier in `docs/tasks/README.md`. Trivial changes use a
-self-check. Standard changes require one independent completed-change review.
-High-risk changes additionally require a brief independent plan review before
-implementation. Resolve all Critical and Required findings and rerun affected
-verification after the last correction. Recommended and Optional findings do
-not expand scope automatically.
+Review depth does not determine whether task records exist. Trivial changes use
+a self-check. Standard changes require one independent completed-change review,
+including lightweight dependency, build-target, or CI changes when their risk
+warrants it. High-risk changes use the recorded-task path and additionally
+require a brief independent plan review before implementation. Resolve all
+Critical and Required findings and rerun affected verification after the last
+correction. Recommended and Optional findings do not expand scope
+automatically.
 
 For a one-off manual task, guide the maintainer with a short checklist or chat
 instructions. Do not create a script, parser, wizard, or configuration layer
@@ -82,11 +97,12 @@ and write-surface conditions in `docs/tasks/README.md`.
   accepted product, architecture, security, privacy, or process boundaries.
   `.research/blocker` must remain read-only evidence and an optional checkout.
 - Request hosted `@codex review` at most once per pull request by default, only
-  after implementation, applicable local verification, the independent
-  completed-change review, and versioned task records are complete. Do not
-  request it for documentation-only changes. Address accepted Critical or
-  Required findings locally and rerun affected verification without requesting
-  another hosted pass; a repeat requires an explicit maintainer request.
+  after implementation, applicable local verification, any required
+  independent completed-change review, and any required versioned task records
+  are complete. Do not request it for documentation-only changes. Address
+  accepted Critical or Required findings locally and rerun affected
+  verification without requesting another hosted pass; a repeat requires an
+  explicit maintainer request.
 - Treat hosted P2 or lower findings as advisory. They do not expand the task,
   block merge, or trigger another review pass without explicit maintainer
   acceptance.

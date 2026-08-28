@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="iOS Simulator" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="set -eu&#10;&#10;open -a Simulator&#10;&#10;device_id=&quot;&quot;&#10;attempt=0&#10;while [ &quot;$attempt&quot; -lt 30 ]; do&#10;  device_id=&quot;$(xcrun simctl list devices booted | sed -nE '/^-- iOS /,/^-- / s/.*\(([0-9A-F-]{36})\) \(Booted\).*/\1/p' | head -n 1)&quot;&#10;  [ -n &quot;$device_id&quot; ] &amp;&amp; break&#10;  attempt=$((attempt + 1))&#10;  sleep 1&#10;done&#10;&#10;if [ -z &quot;$device_id&quot; ]; then&#10;  echo &quot;No booted iOS Simulator is available.&quot; &gt;&amp;2&#10;  exit 1&#10;fi&#10;&#10;derived_data=&quot;$(mktemp -d &quot;${TMPDIR:-/tmp}/posato-ios-simulator.XXXXXX&quot;)&quot;&#10;trap 'rm -rf &quot;$derived_data&quot;' EXIT HUP INT TERM&#10;xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug -destination &quot;platform=iOS Simulator,id=$device_id&quot; -derivedDataPath &quot;$derived_data&quot; build&#10;&#10;app_path=&quot;$derived_data/Build/Products/Debug-iphonesimulator/Posato.app&quot;&#10;xcrun simctl install &quot;$device_id&quot; &quot;$app_path&quot;&#10;xcrun simctl launch &quot;$device_id&quot; app.posato.ios&#10;open -a Simulator" />
+    <option name="SCRIPT_PATH" value="" />
+    <option name="SCRIPT_OPTIONS" value="" />
+    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="SCRIPT_WORKING_DIRECTORY_IS_SYSTEM_INDEPENDENT" value="true" />
+    <option name="INTERPRETER_PATH" value="/bin/sh" />
+    <option name="INTERPRETER_PATH_IS_SYSTEM_INDEPENDENT" value="true" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="EXECUTE_IN_TERMINAL" value="false" />
+    <option name="EXECUTE_SCRIPT_FILE" value="false" />
+    <method v="2" />
+  </configuration>
+</component>

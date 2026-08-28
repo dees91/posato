@@ -28,8 +28,9 @@ directory under `docs/` and referenced back from the wiki.
 ## Required files
 
 - `index.md` routes readers to every maintained page.
-- `log.md` is append-only and records ingests, corrections, decisions, and
-  material synthesis updates.
+- `log.md` is append-only and records ingests, corrections, decisions,
+  material synthesis updates, and concise outcomes for substantive lightweight
+  changes.
 - `sources/` records provenance and scope.
 - `topics/` records maintained knowledge.
 
@@ -80,8 +81,13 @@ future decisions:
 4. Append one entry to `log.md`.
 5. Promote a conclusion into a durable decision only after explicit acceptance.
 
+For a substantive lightweight change with no durable conclusion, append one
+outcome-focused log entry without updating a topic or source page. Pure typo,
+formatting, link, and bookkeeping corrections may omit it.
+
 Routine task status, review bookkeeping, and command output remain in the task
-execution record and do not trigger a wiki update.
+execution record when one exists, or in the pull-request conversation
+otherwise. Do not copy them into the wiki.
 
 ## Repository boundary
 

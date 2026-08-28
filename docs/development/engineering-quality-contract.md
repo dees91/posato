@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 8
-- **Accepted:** 2026-08-27
+- **Revision:** 9
+- **Accepted:** 2026-08-28
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -117,13 +117,14 @@ manual inspection. Golden testing, with Paparazzi named as a candidate, remains
 a post-MVP decision and is not a current dependency or coverage claim.
 
 New important behavior gets a regression-capable automated test when
-practical. A business-logic bug fix gets a regression test unless the
-execution record explains the concrete automation limit. Record only checks
-actually applicable and run; do not enumerate irrelevant categories as `N/A`.
+practical. A business-logic bug fix gets a regression test unless the selected
+record path explains the concrete automation limit. Record only checks actually
+applicable and run; do not enumerate irrelevant categories as `N/A`.
 
 ## Review
 
-The review tier comes from [the task workflow](../tasks/README.md):
+The review tier is selected independently from the record path in the
+[task workflow](../tasks/README.md):
 
 - Trivial changes receive an author self-check.
 - Standard changes receive one independent completed-change review.
@@ -147,10 +148,11 @@ finding. Recommended and Optional findings do not silently become work.
 
 `user-confirmed` (2026-08-27): hosted `@codex review` is an optional final
 signal, not a recursive gate. Request at most one pass per pull request by
-default after local verification, the proportional independent review, and
-versioned task records are complete. Accepted Critical or Required findings
-receive local correction and affected verification without hosted re-review;
-P2 and lower findings remain advisory unless the maintainer accepts them.
+default after local verification, any required proportional independent
+review, and any required versioned task records are complete. Accepted
+Critical or Required findings receive local correction and affected
+verification without hosted re-review; P2 and lower findings remain advisory
+unless the maintainer accepts them.
 
 ## Dependencies and provenance
 
@@ -216,12 +218,12 @@ A change is done when these five principles hold:
    or Required finding remains.
 4. **Authorities:** Affected architecture, design, security, privacy,
    dependency, provenance, documentation, and wiki authorities are consistent.
-5. **Change health:** The diff is scoped, portable, secret-free, reviewable,
-   and its execution record truthfully states the result, blockers, and
-   material accepted risks.
+5. **Change health:** The diff is scoped, portable, secret-free, and
+   reviewable. The selected record path truthfully states any result, blocker,
+   or material accepted risk that is not evident from the sources and checks.
 
-Do not copy these principles into every execution record. Record the evidence
-that demonstrates them for the task.
+Do not copy these principles into every execution record or wiki-log entry.
+Record only evidence that adds useful context for the task.
 
 ## Release-readiness boundary
 
