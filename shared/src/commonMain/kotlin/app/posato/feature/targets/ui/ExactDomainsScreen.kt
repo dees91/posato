@@ -167,6 +167,8 @@ private fun ExactDomainsContent(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val areMutationsEnabled = !state.isLoading && !state.isSaving
+
     Box(
         modifier = modifier.windowInsetsPadding(WindowInsets.safeDrawing),
         contentAlignment = Alignment.TopCenter,
@@ -193,6 +195,7 @@ private fun ExactDomainsContent(
             item {
                 ExactDomainEditor(
                     state = state,
+                    isEnabled = areMutationsEnabled,
                     onSubmit = onSubmit,
                     onCancelEdit = onCancelEdit,
                     modifier = Modifier.fillMaxWidth(),
@@ -209,7 +212,7 @@ private fun ExactDomainsContent(
                 ) { domain ->
                     ExactDomainRow(
                         canonicalDomain = domain,
-                        isEnabled = !state.isSaving,
+                        isEnabled = areMutationsEnabled,
                         onEdit = { onEdit(domain) },
                         onRemove = { onRemove(domain) },
                         modifier = Modifier.fillMaxWidth(),

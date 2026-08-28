@@ -16,10 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -27,27 +26,33 @@ internal class ExactDomainsViewModel(
     private val store: LocalExactDomainPolicyStore,
 ) : ViewModel() {
     private val refreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    private val savedSnapshots = MutableSharedFlow<LocalExactDomainPolicyState>(extraBufferCapacity = 1)
-    private val latestPolicySnapshot = MutableStateFlow<LocalExactDomainPolicyState?>(null)
+    private val policyState = MutableStateFlow(ExactDomainsPolicyState(isLoading = true))
     private val editorState = MutableStateFlow(ExactDomainEditorState())
     private val submissionState = MutableStateFlow<ExactDomainsSubmissionState>(ExactDomainsSubmissionState.Idle)
-    private val policyState = observePolicyState()
+    private val policyReadLifecycle = observePolicyReads()
 
     val uiState: StateFlow<ExactDomainsUiState> = combine(
         policyState,
         editorState,
         submissionState,
-        ::createUiState,
-    ).stateIn(
+        policyReadLifecycle,
+    ) { currentPolicyState, currentEditorState, currentSubmissionState, _ ->
+        createUiState(
+            policyState = currentPolicyState,
+            editorState = currentEditorState,
+            submissionState = currentSubmissionState,
+        )
+    }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
         initialValue = ExactDomainsUiState(),
     )
 
     fun retry() {
-        if (submissionState.value is ExactDomainsSubmissionState.Saving) {
+        if (policyState.value.isLoading || submissionState.value is ExactDomainsSubmissionState.Saving) {
             return
         }
+        policyState.startLoading()
         submissionState.update { ExactDomainsSubmissionState.Idle }
         refreshRequests.tryEmit(Unit)
     }
@@ -93,38 +98,30 @@ internal class ExactDomainsViewModel(
         }
     }
 
-    private fun observePolicyState(): Flow<ExactDomainsPolicyState> {
-        val readResults = refreshRequests
+    private fun observePolicyReads(): Flow<Unit> {
+        return refreshRequests
             .onStart { emit(Unit) }
-            .map { store.read() }
-        val savedResults = savedSnapshots.map { snapshot -> LocalPolicyResult.Success(snapshot) }
-
-        return merge(readResults, savedResults)
-            .map(::toPolicyState)
-            .onStart {
-                val snapshot = latestPolicySnapshot.value
-                emit(
-                    ExactDomainsPolicyState(
-                        snapshot = snapshot,
-                        isLoading = snapshot == null,
-                    ),
-                )
+            .transform {
+                policyState.startLoading()
+                emit(Unit)
+                applyReadResult(store.read())
             }
     }
 
-    private fun toPolicyState(result: LocalPolicyResult<LocalExactDomainPolicyState>): ExactDomainsPolicyState {
-        return when (result) {
+    private fun applyReadResult(result: LocalPolicyResult<LocalExactDomainPolicyState>) {
+        when (result) {
             is LocalPolicyResult.Success -> {
-                latestPolicySnapshot.update { result.value }
                 editorState.reconcileWith(result.value)
-                ExactDomainsPolicyState(snapshot = result.value)
+                policyState.update { ExactDomainsPolicyState(snapshot = result.value) }
             }
 
             is LocalPolicyResult.Failure -> {
-                ExactDomainsPolicyState(
-                    snapshot = latestPolicySnapshot.value,
-                    failure = result.reason.toLoadFailure(),
-                )
+                policyState.update { state ->
+                    ExactDomainsPolicyState(
+                        snapshot = state.snapshot,
+                        failure = result.reason.toLoadFailure(),
+                    )
+                }
             }
         }
     }
@@ -142,7 +139,7 @@ internal class ExactDomainsViewModel(
                 return
             }
         }
-        val expectedRevision = latestPolicySnapshot.value?.revision
+        val expectedRevision = policyState.value.snapshot?.revision
         if (expectedRevision == null) {
             submissionState.showFailure(ExactDomainsOperationFailure.LOAD_FAILED)
             return
@@ -163,12 +160,11 @@ internal class ExactDomainsViewModel(
         }
     }
 
-    private suspend fun handleReplaceResult(result: LocalPolicyResult<LocalExactDomainPolicyState>) {
+    private fun handleReplaceResult(result: LocalPolicyResult<LocalExactDomainPolicyState>) {
         when (result) {
             is LocalPolicyResult.Success -> {
-                latestPolicySnapshot.update { result.value }
+                policyState.update { ExactDomainsPolicyState(snapshot = result.value) }
                 editorState.reset()
-                savedSnapshots.emit(result.value)
                 submissionState.update { ExactDomainsSubmissionState.Idle }
             }
 
@@ -179,13 +175,8 @@ internal class ExactDomainsViewModel(
     }
 
     private fun createCurrentUiState(): ExactDomainsUiState {
-        val snapshot = latestPolicySnapshot.value
-
         return createUiState(
-            ExactDomainsPolicyState(
-                snapshot = snapshot,
-                isLoading = snapshot == null,
-            ),
+            policyState.value,
             editorState.value,
             submissionState.value,
         )
@@ -228,6 +219,15 @@ private fun ExactDomainsUiState.canMutatePolicy(): Boolean {
 
 private fun MutableStateFlow<ExactDomainEditorState>.showFailure(failure: ExactDomainEntryFailure) {
     update { state -> state.copy(failure = failure) }
+}
+
+private fun MutableStateFlow<ExactDomainsPolicyState>.startLoading() {
+    update { state ->
+        state.copy(
+            isLoading = true,
+            failure = null,
+        )
+    }
 }
 
 private fun MutableStateFlow<ExactDomainEditorState>.reset() {

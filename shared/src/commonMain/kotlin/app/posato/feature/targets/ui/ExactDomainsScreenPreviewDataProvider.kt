@@ -70,6 +70,16 @@ internal class ExactDomainsScreenPreviewDataProvider : PreviewParameterProvider<
             ),
         )
 
+        private val reloading = ExactDomainsPreviewState(
+            name = "Reloading",
+            state = ExactDomainsUiState(
+                domains = previewDomains,
+                editingDomain = "example.com",
+                isLoading = true,
+                hasLoaded = true,
+            ),
+        )
+
         private val retryableChangeFailure = ExactDomainsPreviewState(
             name = "Retryable change failure",
             state = ExactDomainsUiState(
@@ -109,6 +119,7 @@ internal class ExactDomainsScreenPreviewDataProvider : PreviewParameterProvider<
         editing,
         validationError,
         saving,
+        reloading,
         retryableChangeFailure,
         revisionConflict,
         saveFailure,

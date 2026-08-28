@@ -38,6 +38,9 @@
 9. Address accepted hosted review findings test-first by rejecting WHATWG
    number-ending hosts and reconciling an active editor with the snapshot
    reloaded after a revision conflict.
+10. Keep policy mutations disabled while a conflict reload is in progress,
+    retain the last valid snapshot, and prove that the next mutation uses the
+    refreshed revision.
 
 ## Material 3 and text-state correction
 
@@ -127,6 +130,11 @@
 - A successful policy reload now clears an edit only when its target is absent
   from the loaded snapshot. It increments the editor session so the
   composable-owned field is recreated; an edit whose target remains is kept.
+- Policy reload now enters loading before its read request is emitted. The
+  retained snapshot stays visible while editor and row mutations are disabled,
+  and successful or failed reads atomically replace the loading state. The
+  policy state is the command and render source of truth, so a suspended reload
+  cannot submit the stale revision.
 
 ## Completed-change review
 
@@ -188,11 +196,23 @@
   review found no actionable correctness, readability, architecture, security,
   or performance defect. Its sandbox could not access the Gradle wrapper cache;
   the successful implementer runs below remain the verification evidence.
+- **Conflict-reload follow-up plan verdict:** `approved`. The independent
+  reviewer found no Critical or Required issue in the single policy-state
+  source of truth, subscription-owned read lifecycle, retained snapshot,
+  mutation gate, suspended-read regression, or execution-only documentation
+  update.
+- **Conflict-reload completed-change verdict:** `approved`. The independent
+  reviewer found no Critical, Required, Recommended, or Optional defect in the
+  Flow lifecycle, synchronous mutation gate, retained-state rendering,
+  suspended-read regression, preview coverage, or recorded evidence.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
+| Conflict-reload red/green regression | `pass` | The focused JVM test first failed because `uiState.isLoading` remained false while the post-conflict read was suspended. After the correction, attempted Save and Remove do not start another replacement, and a follow-up mutation succeeds with the refreshed revision. |
+| Conflict-reload focused verification | `pass` | Shared ktlint, Detekt, JVM tests, and iOS Simulator tests passed after the policy-state and disabled-control correction. |
+| Conflict-reload aggregate gate | `pass` | `./gradlew quality --rerun-tasks` executed all 92 tasks successfully, including both iOS target compilations, migration verification, Android preview compilation, and the desktop distributable. |
 | Hosted-feedback red/green regression | `pass` | The focused JVM run first failed only for accepted numeric-ending hosts and the stale editor after conflict reload. After the minimal fixes, the complete JVM and iOS Simulator policy and ViewModel suites passed. |
 | Hosted-feedback aggregate gate | `pass` | `./gradlew quality --rerun-tasks` executed all 92 tasks successfully, including lint, Detekt, JVM and iOS Simulator tests, both iOS compilation targets, migration verification, and the desktop distributable. |
 | Hosted-feedback iOS host build | `pass` | The credential-free generic iOS Simulator `xcodebuild` completed with `BUILD SUCCEEDED`. |

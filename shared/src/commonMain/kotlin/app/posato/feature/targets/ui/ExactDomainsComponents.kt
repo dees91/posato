@@ -80,6 +80,7 @@ internal fun ExactDomainsHeader() {
 @Composable
 internal fun ExactDomainEditor(
     state: ExactDomainsUiState,
+    isEnabled: Boolean,
     onSubmit: (String) -> Unit,
     onCancelEdit: () -> Unit,
     modifier: Modifier = Modifier,
@@ -106,12 +107,13 @@ internal fun ExactDomainEditor(
                 ExactDomainInput(
                     inputState = inputState,
                     failure = inputError,
-                    isEnabled = !state.isSaving,
+                    isEnabled = isEnabled,
                     onSubmit = submit,
                     modifier = Modifier.fillMaxWidth(),
                 )
                 ExactDomainEditorActions(
                     isEditing = state.editingDomain != null,
+                    isEnabled = isEnabled,
                     isSaving = state.isSaving,
                     onSubmit = submit,
                     onCancelEdit = onCancelEdit,
@@ -155,6 +157,7 @@ private fun ExactDomainInput(
 @Composable
 private fun ExactDomainEditorActions(
     isEditing: Boolean,
+    isEnabled: Boolean,
     isSaving: Boolean,
     onSubmit: () -> Unit,
     onCancelEdit: () -> Unit,
@@ -165,14 +168,14 @@ private fun ExactDomainEditorActions(
     ) {
         Button(
             onClick = onSubmit,
-            enabled = !isSaving,
+            enabled = isEnabled,
         ) {
             Text(stringResource(if (isEditing) Res.string.action_save else Res.string.action_add))
         }
         if (isEditing) {
             TextButton(
                 onClick = onCancelEdit,
-                enabled = !isSaving,
+                enabled = isEnabled,
             ) {
                 Text(stringResource(Res.string.action_cancel))
             }

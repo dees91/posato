@@ -7,6 +7,7 @@ import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.domain.ExactDomainPolicy
 import app.posato.feature.targets.domain.ExactDomainPolicyValidationResult
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
@@ -24,6 +25,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class ExactDomainsViewModelTest {
     private val scheduler = TestCoroutineScheduler()
@@ -85,6 +87,7 @@ class ExactDomainsViewModelTest {
 
         assertEquals(ExactDomainsOperationFailure.CORRUPTED_POLICY, viewModel.uiState.value.operationFailure)
         assertFalse(viewModel.uiState.value.hasLoaded)
+        assertFalse(viewModel.uiState.value.isLoading)
 
         viewModel.retry()
         scheduler.runCurrent()
@@ -238,6 +241,39 @@ class ExactDomainsViewModelTest {
     }
 
     @Test
+    fun `given conflict reload is suspended when mutations are attempted then they are blocked until the fresh revision`() = runTest(dispatcher) {
+        val store = FakeExactDomainPolicyStore(stateOf(3, "stable.example"))
+        val viewModel = ExactDomainsViewModel(store)
+        observe(viewModel)
+        scheduler.runCurrent()
+        viewModel.beginEditing("stable.example")
+        scheduler.runCurrent()
+        store.replaceExternally("stable.example", "other.example")
+
+        viewModel.submit("replacement.example")
+        scheduler.runCurrent()
+        val suspendedRead = store.suspendNextRead()
+        viewModel.retry()
+        scheduler.runCurrent()
+
+        assertTrue(viewModel.uiState.value.isLoading)
+        viewModel.submit("replacement.example")
+        viewModel.remove("stable.example")
+        scheduler.runCurrent()
+
+        assertEquals(1, store.replaceCalls)
+
+        suspendedRead.complete(Unit)
+        scheduler.runCurrent()
+        assertFalse(viewModel.uiState.value.isLoading)
+        viewModel.submit("replacement.example")
+        scheduler.runCurrent()
+
+        assertEquals(listOf("other.example", "replacement.example"), viewModel.uiState.value.domains)
+        assertEquals(2, store.replaceCalls)
+    }
+
+    @Test
     fun `given cancellation when saving then valid state is not replaced or left busy`() = runTest(dispatcher) {
         val store = FakeExactDomainPolicyStore(stateOf(1, "stable.example"))
         val viewModel = ExactDomainsViewModel(store)
@@ -296,13 +332,25 @@ private class FakeExactDomainPolicyStore(
     var nextReadFailure: LocalPolicyFailure? = null
     var nextReplaceFailure: LocalPolicyFailure? = null
     var cancelNextReplace: Boolean = false
+    private var nextReadGate: CompletableDeferred<Unit>? = null
 
     fun replaceExternally(vararg domains: String) {
         state = stateOf(state.revision + 1, *domains)
     }
 
+    fun suspendNextRead(): CompletableDeferred<Unit> {
+        val readGate = CompletableDeferred<Unit>()
+        nextReadGate = readGate
+
+        return readGate
+    }
+
     override suspend fun read(): LocalPolicyResult<LocalExactDomainPolicyState> {
         readCalls++
+        nextReadGate?.let { readGate ->
+            nextReadGate = null
+            readGate.await()
+        }
         val failure = nextReadFailure
         if (failure != null) {
             nextReadFailure = null
