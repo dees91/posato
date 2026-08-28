@@ -77,6 +77,21 @@ Apple synchronization uses only the current account's private database in the
 existing `iCloud.app.posato.sync` container. Format 1 owns one custom record
 zone named `PosatoSyncV1` with the current-user owner.
 
+Zone existence and anchor existence are separate provider facts. Before any
+anchor read, the native adapter fetches that exact zone under the expected
+account binding. If it is definitively absent and no local workspace is
+established, bootstrap may save only that same zone and must confirm it with an
+exact fetch before continuing. A successful save, duplicate response, timeout,
+or lost response is reconciled by fetching the same zone; retry may save only
+that fixed identity while its absence is proven under the expected binding. No
+additional bootstrap zone state is persisted. A crash resumes by fetching the
+fixed zone again, and concurrent creators converge on that zone while the
+anchor remains the sole workspace arbiter.
+
+If the exact zone is definitively absent after a local workspace is established,
+the common coordinator reports `action-required`. It does not recreate the zone,
+treat the anchor as absent, create a candidate, or clear local or pending work.
+
 The zone contains two record types:
 
 | Purpose | Record type and identity | Exact fields |
@@ -198,33 +213,40 @@ available account outcome. One serialized coordinator follows this protocol:
 1. Resolve the current account binding. If a local attempt or established
    binding exists, require an exact match before any workspace-provider access;
    otherwise fix the resolved value as the binding for this new attempt.
-2. Read and validate the fixed CloudKit anchor under that expected binding
+2. Fetch the exact CloudKit zone under that expected binding. If it is absent
+   and no local workspace is established, save only that same zone and require
+   an exact binding-checked fetch to confirm it. Reconcile every duplicate,
+   timeout, lost response, or unknown save outcome with that fetch, and retry
+   only the fixed zone while absence is proven. Never classify the anchor as
+   absent before the zone is confirmed. Definitive zone absence after local
+   establishment is `action-required`.
+3. Read and validate the fixed CloudKit anchor under that expected binding
    before inspecting or creating a candidate key.
-3. If the anchor exists, read only its exact Keychain account under the same
+4. If the anchor exists, read only its exact Keychain account under the same
    binding. A missing item produces `waiting-for-workspace-key`; it never
    generates a key, replaces the anchor, interprets the workspace as empty, or
    creates another workspace.
-4. If the anchor is absent and no local attempt exists, generate one workspace
+5. If the anchor is absent and no local attempt exists, generate one workspace
    identifier, transport-epoch identifier, key-epoch identifier, and 32 random
    workspace-key bytes in memory. The key is never stored in the local database.
-5. Create the candidate's exact Keychain item under the expected binding and
+6. Create the candidate's exact Keychain item under the expected binding and
    reconcile duplicate or indeterminate results by reading that same selector.
    After identical bytes are confirmed, atomically persist the three non-secret
    candidate identifiers and the opaque binding. Anchor creation is forbidden
    until that local candidate commit succeeds.
-6. A crash before candidate persistence may leave only an inert, unanchored
+7. A crash before candidate persistence may leave only an inert, unanchored
    Keychain item. Restart does not enumerate or adopt such items and may create
    a fresh candidate. A persisted candidate whose exact item later becomes
    unavailable waits or fails action-required; it never regenerates the key.
-7. Reconcile every CloudKit timeout or lost response by reading the fixed
+8. Reconcile every anchor timeout or lost response by reading the fixed
    anchor under the persisted binding. Retry only the same candidate and bytes
    while absence is proven under that binding; never mint a replacement because
    an outcome is unknown.
-8. If another valid anchor won, retain the winner, delete and verify absence of
+9. If another valid anchor won, retain the winner, delete and verify absence of
    only the locally recorded losing candidate item under the same binding, then
    read the winner's exact Keychain item. A failed losing-item cleanup remains
    retryable and does not authorize a broad query or deletion.
-9. Commit the established local workspace and account binding only when anchor
+10. Commit the established local workspace and account binding only when anchor
    fields, Keychain account, decoded item identifiers, item length, and checksum
    all match. That binding is the only workspace that the local replica may
    open.
@@ -244,13 +266,14 @@ status values and error text are not control flow outside the adapter.
 A definitive malformed or unsupported anchor/item, context mismatch, different
 duplicate, or inconsistent local binding is an integrity failure. No invalid
 input replaces the last established binding. Account unavailable, restricted,
-or changed; entitlement or signing mismatch; and definitive anchor absence or
-difference after establishment stop synchronization without deleting or
-merging local pending work. An account-binding failure is never interpreted as
-provider absence and authorizes no create, replacement, cleanup, deletion,
-fetched-bundle acceptance, cursor advancement, engine-state acceptance, or
-publication acknowledgement. Re-entering the original account may resume only
-after its opaque binding and the exact existing anchor and item match again.
+or changed; entitlement or signing mismatch; and definitive anchor difference,
+anchor absence, or zone absence after establishment stop synchronization
+without deleting or merging local pending work. An account-binding failure is
+never interpreted as provider absence and authorizes no create, replacement,
+cleanup, deletion, fetched-bundle acceptance, cursor advancement, engine-state
+acceptance, or publication acknowledgement. Re-entering the original account
+may resume only after its opaque binding and the exact existing anchor and item
+match again.
 
 Disabling synchronization preserves the local replica, anchor, mailbox, and
 Keychain item. Removing a workspace is a separate explicit destructive action:
@@ -315,27 +338,32 @@ record types and one secure-item format are sufficient.
 Before the Apple provider contract is implemented and claimed:
 
 - `SYNC-004` contract tests cover both creator platforms, concurrent first run,
-  every persistent crash boundary, delayed key, exact duplicate, different
-  duplicate, unknown provider outcome, corruption, account change before and
-  after an indeterminate save, a postflight switch whose account-change event
-  arrives after the provider result, return to the original account, and no
-  replacement or parallel workspace;
+  a fresh database with no custom zone, an existing zone, concurrent zone
+  creation, a crash after zone save, zone-save timeout or lost response, zone
+  absence after establishment, every persistent crash boundary, delayed key,
+  exact duplicate, different duplicate, unknown provider outcome, corruption,
+  account change before and after an indeterminate zone or anchor save, a
+  postflight switch whose account-change event arrives after the provider
+  result, return to the original account, and no replacement or parallel
+  workspace;
 - `SYNC-005` and `SYNC-006` prove identical item bytes and selectors, delayed
   propagation, exact cleanup, locked/unavailable behavior, entitlements, and
   signed target access on a physical iPhone and Mac;
-- `SYNC-007` and `SYNC-008` prove identical zones, record types, fields,
-  immutable retries, change exchange, malformed/oversized rejection, and the
-  established-binding preflight and postflight around every mailbox operation,
-  including automatic delegate events and an account switch whose notification
-  arrives after a fetched or sent batch; a failed check invalidates the engine
-  and a fresh instance starts from only the last accepted serialization;
+- `SYNC-007` and `SYNC-008` prove identical exact-zone fetch, save, and
+  confirmation semantics, record types, fields, immutable retries, change
+  exchange, malformed/oversized rejection, and the established-binding
+  preflight and postflight around every mailbox operation, including automatic
+  delegate events and an account switch whose notification arrives after a
+  fetched or sent batch; a failed check invalidates the engine and a fresh
+  instance starts from only the last accepted serialization;
 - `SYNC-006` and `SYNC-008` prove the fixed companion/parent relationship,
   bounded IPC, wrong-peer and malformed-frame rejection, timeout reconciliation,
   cancellation, and absence of secrets in arguments, environment, logs, and
   diagnostics;
 - `SYNC-009` proves one controlled physical Mac-and-iPhone bootstrap in both
-  directions, simultaneous opt-in, restart, delayed Keychain, account failure,
-  and cleanup without manual repair or a second workspace; and
+  directions from a private database without the custom zone, simultaneous
+  opt-in, restart, delayed Keychain, account failure, and cleanup without manual
+  repair or a second workspace; and
 - `SYNC-010` proves that an account switch exposes no fetched bundle to common
   code, advances no cursor or accepted engine state, acknowledges no sent
   bundle, and preserves and restages unchanged pending work only after the
@@ -348,18 +376,20 @@ availability. They do not claim those controls are implemented.
 
 - `observed`: `.research/blocker` revision
   `bcdc8ce9b91ecb7569c2d98b568d5fd64c25455c`, especially the final Apple sync
-  report, `WorkspaceBootstrap.kt`, `KeychainStore.swift`,
+  report, `WorkspaceBootstrap.kt`, `AppleDirectCloudDatabase.swift`,
+  `KeychainStore.swift`,
   `SyncEngineDriver.swift`, and their tests, supports physical feasibility,
-  exact create/read/delete behavior, bounded failure mapping, delay handling,
-  and the checksum-as-corruption-check pattern. Its mailbox driver cancels after
-  an account-change event but does not prove persisted-account gating when that
-  event is delayed.
+  exact-zone fetch and save, exact create/read/delete behavior, bounded failure
+  mapping, delay handling, and the checksum-as-corruption-check pattern. It does
+  not prove this contract's zone-save reconciliation or persisted-account gating
+  when an account-change event is delayed.
 - [Synchronizable Keychain items](https://developer.apple.com/documentation/security/ksecattrsynchronizable)
   define the cross-device secure-item attribute.
 - [Keychain accessibility](https://developer.apple.com/documentation/security/ksecattraccessibleafterfirstunlock)
   defines the selected background-compatible accessibility class.
 - [CloudKit record zones](https://developer.apple.com/documentation/cloudkit/ckrecordzone)
-  define the private custom-zone boundary.
+  define the private custom-zone boundary and require a custom zone to be saved
+  before records can be saved in it.
 - [CloudKit save policy](https://developer.apple.com/documentation/cloudkit/ckmodifyrecordsoperation/recordsavepolicy/ifserverrecordunchanged)
   defines conditional save against unchanged server state.
 - [CloudKit record value limits](https://developer.apple.com/documentation/cloudkit/ckrecord)

@@ -239,8 +239,9 @@ as the active authority. There is no live bridge or dual-write.
 [ADR 0007](../../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
 freezes the Apple MVP bootstrap and provider contract:
 
-- one create-only `PosatoWorkspaceV1` anchor in the private
-  `PosatoSyncV1` zone arbitrates concurrent first runs;
+- the exact private `PosatoSyncV1` zone is binding-checked, created if absent,
+  and read-confirmed before anchor absence is accepted; one create-only
+  `PosatoWorkspaceV1` anchor then arbitrates concurrent first runs;
 - one versioned generic-password item per workspace carries the workspace,
   transport-epoch, and key-epoch identifiers plus the 32-byte workspace key;
 - an existing anchor with a delayed Keychain item waits and never creates a
@@ -255,7 +256,8 @@ freezes the Apple MVP bootstrap and provider contract:
 - immutable encrypted bundles use one `PosatoEncryptedBundleV1` record with an
   inline payload bounded by ADR 0006; and
 - account change, malformed state, unknown outcomes, and cleanup preserve exact
-  reconciliation and the last established local binding.
+  reconciliation and the last established local binding, while zone absence
+  after establishment is action-required and preserves local and pending work.
 
 `user-confirmed`: macOS uses the distinct `app.posato.macos.sync` short-lived
 Swift companion rather than the enforcement helper. Kotlin owns bootstrap and

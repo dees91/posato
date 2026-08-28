@@ -28,5 +28,5 @@ format and provider boundary; their implementation evidence remains downstream.
 [ADR 0007](../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
 defines the exact Apple mailbox, synchronizable-Keychain item, deterministic
 bootstrap, and dedicated macOS native synchronization boundary. Their controls
-remain unverified until `SYNC-004` through `SYNC-009` provide implementation and
+remain unverified until `SYNC-004` through `SYNC-010` provide implementation and
 physical evidence.

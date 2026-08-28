@@ -13,7 +13,7 @@
 [ADR 0007](0007-apple-workspace-bootstrap-and-native-sync-boundary.md) resolves
 the Apple workspace's exact CloudKit mailbox, synchronizable-Keychain item,
 concurrent bootstrap, account-isolation, cleanup, and dedicated macOS native
-synchronization boundary. `SYNC-004` through `SYNC-009` own implementation and
+synchronization boundary. `SYNC-004` through `SYNC-010` own implementation and
 physical evidence without changing the Apple trust model accepted here.
 
 ## SYNC-001 amendment

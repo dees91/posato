@@ -16,7 +16,7 @@ bootstrap, and a dedicated app-owned macOS native synchronization boundary.
 
 - Freeze only the minimum provider-visible schema, secure-item selectors,
   semantic outcomes, conflict behavior, account isolation, and native process
-  ownership required by `SYNC-004` through `SYNC-009`.
+  ownership required by `SYNC-004` through `SYNC-010`.
 - Register and verify `app.posato.macos.sync` with iCloud/CloudKit access to the
   existing `iCloud.app.posato.sync` container, without recording private Apple
   account, signing, provisioning, or team values.
@@ -29,8 +29,9 @@ bootstrap, and a dedicated app-owned macOS native synchronization boundary.
 
 ## Acceptance
 
-- `AC-01` — An accepted ADR freezes the minimal Keychain item, CloudKit zone,
-  anchor, mailbox record, bootstrap arbitration, and truthful outcome contracts.
+- `AC-01` — An accepted ADR freezes the minimal Keychain item, CloudKit zone
+  establishment, anchor, mailbox record, bootstrap arbitration, and truthful
+  outcome contracts.
 - `AC-02` — The macOS synchronization companion is distinct from the enforcement
   helper and has a bounded, unprivileged, app-owned native boundary.
 - `AC-03` — Concurrent first runs converge on one CloudKit anchor; delay,

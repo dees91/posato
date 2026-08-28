@@ -760,3 +760,11 @@
   cursor and engine state without accepting fetched or sent results, invalidate
   the affected sync-engine instance, and recreate it only under the original
   binding.
+
+## [2026-08-28] correction | Establish the exact CloudKit zone before bootstrap
+
+- Required a binding-checked fetch, save-if-absent, and read confirmation of the
+  fixed `PosatoSyncV1` zone before treating the workspace anchor as absent.
+- Reused the existing provider outcomes and account binding without adding a
+  zone manager or local zone token; established-workspace zone loss remains
+  action-required and preserves local and pending work.

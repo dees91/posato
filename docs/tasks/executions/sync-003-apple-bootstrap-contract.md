@@ -5,7 +5,7 @@
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
 - **Reviewer:** Codex agent `/root/sync003_plan_review`
-- **Branch:** `main`
+- **Branch:** `feature/sync-003-apple-bootstrap-contract`
 - **Updated:** `2026-08-28`
 
 ## Plan
@@ -44,7 +44,8 @@
 
 - ADR 0007 now freezes the one-workspace bootstrap, mailbox, Keychain, and
   dedicated macOS synchronization-companion boundaries, including a durable
-  local-only account binding that gates bootstrap provider access.
+  local-only account binding that gates bootstrap and ongoing mailbox access
+  and exact-zone establishment before anchor absence.
 - `user-confirmed` (2026-08-28): `app.posato.macos.sync` exists with
   iCloud/CloudKit enabled and is associated with the existing
   `iCloud.app.posato.sync` container. No private account or signing value was
@@ -110,6 +111,40 @@
   All implementation and proof routes now extend through `SYNC-010`; focused
   re-review found no remaining Critical, Required, or advisory issue.
 
+## Zone-establishment review correction
+
+- **Finding:** A third hosted `Required` finding identified that bootstrap read
+  the fixed anchor without first creating or confirming its custom zone, so a
+  literal implementation could not complete first opt-in in a fresh private
+  database.
+- **Resolution:** ADR 0007 now separates zone absence from anchor absence and
+  requires a binding-checked fetch, save-if-absent, and exact read confirmation
+  of the fixed `PosatoSyncV1` zone before bootstrap proceeds. Crash, concurrent
+  creation, timeout, and unknown outcomes reuse that fixed identity and the
+  existing provider outcomes without another local token or manager. Zone loss
+  after establishment remains action-required and preserves local and pending
+  work.
+
+## Accepted advisory correction
+
+- **Finding:** The maintainer accepted the hosted advisory that ADR 0002 still
+  ended implementation and physical evidence ownership at `SYNC-009` after the
+  ongoing mailbox correction assigned account isolation to `SYNC-010`.
+- **Resolution:** Current decision, task, security, and routing authorities now
+  distinguish bootstrap evidence through `SYNC-009` from ongoing mailbox and
+  account-isolation evidence through `SYNC-010`. The historical wiki-log entry
+  remains unchanged.
+
+## Zone-establishment focused review
+
+- **Verdict:** `approved`
+- **Critical or Required findings:** None. The reviewer found the fixed-zone
+  fetch, save, and read-confirm sequence implementable, account-bound, and
+  minimal, with established zone loss preserving local and pending work.
+- **Recommended finding:** Record this verdict and rerun the affected
+  documentation checks after the final record-only edit. Both actions were
+  completed; no Optional finding remained.
+
 ## Verification
 
 | Check run | Result | Evidence |
@@ -122,6 +157,7 @@
 | Account-isolation correction | pass | The contract checks the expected binding before and after provider access, preserves indeterminate attempts across delayed account-change notification, resumes only under the original binding, and leaves the anchor and Keychain formats unchanged. |
 | Correction documentation hygiene | pass | All repository-local Markdown links resolve, `git diff --check` passes, the scoped sensitive-data scan is clean, and the correction log entry is parseable at EOF. |
 | Ongoing-mailbox isolation | pass | The established binding gates fetch/send batches, automatic engine events, and their results; mismatch invalidates the engine while preserving pending work and accepted transport progress for a fresh instance under the original binding. |
+| Exact-zone establishment | pass | Bootstrap confirms the fixed binding-scoped zone before anchor absence; crash, concurrent creation, and unknown save outcomes reuse that identity, while established zone loss preserves local and pending work. |
 
 ## Blockers and accepted risks
 
