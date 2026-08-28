@@ -26,3 +26,6 @@ evidence at the revision recorded in the wiki. Accepted product ADRs are:
 - [ADR 0006: Apple MVP Encrypted Operation and Convergence Contract](0006-apple-mvp-encrypted-operation-and-convergence.md)
   — accepted encrypted bundle, canonical encoding, cryptographic provider,
   automatic author-registration, validation, and convergence boundaries.
+- [ADR 0007: Apple Workspace Bootstrap and macOS Native Sync Boundary](0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
+  — accepted CloudKit mailbox, synchronizable-Keychain item, deterministic
+  one-workspace bootstrap, and dedicated macOS synchronization companion.

@@ -233,6 +233,38 @@ a new portable workspace and key epoch, makes the exporting Apple device the
 first portable member, enrolls later devices explicitly, and retires CloudKit
 as the active authority. There is no live bridge or dual-write.
 
+## Accepted Apple bootstrap contract
+
+`user-confirmed` (2026-08-28):
+[ADR 0007](../../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
+freezes the Apple MVP bootstrap and provider contract:
+
+- the exact private `PosatoSyncV1` zone is binding-checked, created if absent,
+  and read-confirmed before anchor absence is accepted; one create-only
+  `PosatoWorkspaceV1` anchor then arbitrates concurrent first runs;
+- one versioned generic-password item per workspace carries the workspace,
+  transport-epoch, and key-epoch identifiers plus the 32-byte workspace key;
+- an existing anchor with a delayed Keychain item waits and never creates a
+  replacement key or workspace;
+- one local-only opaque account binding is persisted with each bootstrap
+  attempt and established workspace, then checked around bootstrap, every
+  workspace-key read or deletion, destructive removal, and ongoing mailbox
+  access, so account change cannot create a parallel anchor, expose key bytes or
+  a fetched bundle to common code, delete across accounts, advance transport
+  state, or falsely acknowledge cleanup or publication; exact Keychain
+  reconciliation and a fresh sync-engine instance resume only after the
+  original binding returns;
+- immutable encrypted bundles use one `PosatoEncryptedBundleV1` record with an
+  inline payload bounded by ADR 0006; and
+- account change, malformed state, unknown outcomes, and cleanup preserve exact
+  reconciliation and the last established local binding, while zone absence
+  after establishment is action-required and preserves local and pending work.
+
+`user-confirmed`: macOS uses the distinct `app.posato.macos.sync` short-lived
+Swift companion rather than the enforcement helper. Kotlin owns bootstrap and
+semantic outcomes; the native process owns only CloudKit and Keychain mechanics.
+Implementation and physical evidence remain with `SYNC-004` through `SYNC-010`.
+
 ## Lifecycle and user-visible status
 
 The common orchestration should coalesce overlapping start, resume, native
@@ -257,10 +289,6 @@ not claim that every other device has received the update.
 
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?
-- Which synchronizable-Keychain attributes, access groups, account-change
-  rules, and reset behaviors satisfy the accepted waiting-state invariant?
-- How does deterministic bootstrap prevent parallel workspaces when CloudKit
-  and Keychain propagation race?
 - What retry policy is appropriate without a delivery SLA?
 - How do portable authenticated completeness metadata and high-water marks
   distinguish rollback or deletion from incomplete first synchronization?

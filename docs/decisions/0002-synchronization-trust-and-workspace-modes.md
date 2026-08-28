@@ -7,6 +7,15 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SYNC-003 amendment
+
+`user-confirmed` (2026-08-28):
+[ADR 0007](0007-apple-workspace-bootstrap-and-native-sync-boundary.md) resolves
+the Apple workspace's exact CloudKit mailbox, synchronizable-Keychain item,
+concurrent bootstrap, account-isolation, cleanup, and dedicated macOS native
+synchronization boundary. `SYNC-004` through `SYNC-010` own implementation and
+physical evidence without changing the Apple trust model accepted here.
+
 ## SYNC-001 amendment
 
 `user-confirmed` (2026-08-28):
@@ -266,11 +275,9 @@ failure recovery.
 
 ## Open implementation decisions
 
-- synchronizable-Keychain item attributes, accessibility, access groups,
-  rotation, reset, and account-change behavior;
-- deterministic bootstrap when CloudKit and Keychain propagation race;
-- CloudKit schema, environments, quotas, subscription lifecycle, and container
-  ownership for official builds and forks;
+- CloudKit production-schema deployment, quotas, subscription and engine-state
+  lifecycle, and container ownership for forks;
+- post-MVP key rotation and recovery after total workspace-key loss;
 - portable-folder provider semantics, authenticated completeness metadata,
   local high-water marks, and fresh-replica rollback detection;
 - portable membership, revocation, recovery, export, deletion, and migration

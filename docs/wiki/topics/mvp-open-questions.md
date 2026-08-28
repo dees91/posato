@@ -455,6 +455,21 @@ development profiles are verified by the tasks that configure the owning
 application packaging paths; they do not block the credential-free PR #1
 skeleton.
 
+`user-confirmed` (2026-08-28): SYNC-003 later expands the accepted graph with
+one dedicated macOS synchronization companion, `app.posato.macos.sync`, because
+the Compose Desktop JVM host cannot own CloudKit or Keychain and the enforcement
+helper must not receive synchronization secrets or entitlements. SYNC-003 owns
+registration of this seventh external resource, enables iCloud/CloudKit, and
+associates only the existing `iCloud.app.posato.sync` container. It creates no
+new App Group or container. Target entitlements, provisioning, packaging,
+signing, and signed-artifact verification remain with `SYNC-006` and `SYNC-008`.
+
+`user-confirmed` (2026-08-28): the App ID registration, iCloud/CloudKit
+capability, and association with `iCloud.app.posato.sync` passed manual
+inspection. This result verifies only the public resource and association; it
+does not verify a target, entitlement, profile, signed artifact, deployed
+schema, or physical synchronization behavior.
+
 The source boundary was rechecked against Apple's current guidance for
 [adding target capabilities](https://developer.apple.com/documentation/xcode/adding-capabilities-to-your-app),
 [configuring Keychain Sharing](https://developer.apple.com/documentation/xcode/configuring-keychain-sharing),

@@ -583,8 +583,9 @@ Before `SYNC-002` is complete:
   production key or nonce, provider exception leakage, secret logging, or
   unreviewed runtime cryptography dependency.
 
-Physical CloudKit, Keychain propagation, account isolation, and one-workspace
-bootstrap evidence belongs to `SYNC-003` through `SYNC-009`.
+Physical CloudKit and Keychain bootstrap evidence belongs to `SYNC-003` through
+`SYNC-009`; ongoing mailbox publication, consumption, and account-isolation
+evidence additionally belongs to `SYNC-010`.
 
 ## Evidence and sources
 

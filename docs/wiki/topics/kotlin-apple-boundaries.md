@@ -90,6 +90,20 @@ native targets contain only Apple mechanisms and structured boundary mapping.
 Kotlin/Native was rejected here because it would add runtime, interop, build,
 packaging, and debugging surface without sharing product policy.
 
+`user-confirmed` (2026-08-28):
+[ADR 0007](../../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
+adds a second, separate Swift process: `app.posato.macos.sync` is a short-lived
+normal-user CloudKit and Keychain companion launched over private inherited
+pipes. It receives only bounded synchronization requests and owns no
+enforcement, root privilege, listener, background agent, merge, or product
+policy. Keeping it separate prevents the workspace key and cloud entitlements
+from entering the larger enforcement-helper surface.
+
+The iOS application continues to inject direct native leaves. Both platforms
+implement the same platform-neutral mailbox and secure-item outcomes; Apple
+records, Keychain dictionaries, account values, and native errors remain at the
+edge.
+
 ## Shared contract constraints
 
 - No `UIViewController`, `NSBundle`, Apple token, CloudKit record, Keychain

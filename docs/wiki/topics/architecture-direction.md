@@ -107,6 +107,7 @@ call a service locator. Compile-time graph validation is required for both
 | macOS application | `app.posato.macos` | Created | Compose Desktop/JVM application |
 | iOS activity monitor extension | `app.posato.ios.activitymonitor` | Deferred | Swift/Xcode-owned expiry callback and minimum shared app-group state |
 | macOS session helper | `app.posato.macos.helper` | Deferred | Normal-user Swift process for loopback proxy and native enforcement mechanics |
+| macOS synchronization companion | `app.posato.macos.sync` | Deferred | Short-lived normal-user Swift process for CloudKit and synchronizable Keychain only |
 | macOS proxy-settings daemon | Fixed `app.posato.macos`-namespaced identifier selected by MACOS-003 | Deferred | Minimal Swift root launch daemon for atomic SystemConfiguration ownership and recovery |
 
 No Android, Web, custom shield-action, custom shield-configuration, or Device

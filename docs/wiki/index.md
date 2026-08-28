@@ -60,6 +60,9 @@ provenance rather than a parallel public brand.
   — accepted format-1 operation vocabulary, canonical encrypted bundle,
   cryptographic provider, automatic author-registration, validation, and
   deterministic convergence boundaries.
+- [ADR 0007: Apple Workspace Bootstrap and Native Sync Boundary](../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
+  — accepted CloudKit zone, anchor, mailbox, synchronizable workspace-key,
+  account-isolation, deterministic bootstrap, and macOS native-sync boundaries.
 - [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
   assets and data classification, trust boundaries, threats, required controls,
   downstream owners, and residual risks.

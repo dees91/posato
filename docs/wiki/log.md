@@ -731,3 +731,49 @@
   Android Studio's bundled Shell Script runner and needs no KMP IDE plugin.
 - Kept simulator and device selection machine-local and recorded no signing,
   account, device, or personal-path value.
+
+## [2026-08-28] decision | Define one-workspace Apple bootstrap
+
+- `user-confirmed`: accepted one create-only CloudKit anchor, one exact
+  synchronizable-Keychain item contract, and automatic convergence for
+  concurrent first runs without replacement keys or parallel workspaces.
+- Added the dedicated `app.posato.macos.sync` companion so CloudKit, Keychain,
+  and the workspace key stay outside the macOS enforcement helper.
+- `user-confirmed`: the new App ID, iCloud/CloudKit capability, and association
+  with the existing `iCloud.app.posato.sync` container passed manual inspection.
+- Kept implementation, entitlements, schema deployment, retry policy, and
+  physical Mac-and-iPhone evidence with `SYNC-004` through `SYNC-009`.
+
+## [2026-08-28] correction | Bind Apple bootstrap to its account
+
+- Added one local-only opaque account binding to each candidate and established
+  workspace binding, and required it before and after every bootstrap provider
+  access.
+- Made account mismatch fail closed without treating another private database
+  as empty or changing the existing CloudKit and Keychain formats.
+
+## [2026-08-28] correction | Bind ongoing mailbox access to its account
+
+- Reused the established local account binding around every private-CloudKit
+  mailbox operation instead of adding another token or provider field.
+- Required account mismatch to preserve pending work and the last accepted
+  cursor and engine state without accepting fetched or sent results, invalidate
+  the affected sync-engine instance, and recreate it only under the original
+  binding.
+
+## [2026-08-28] correction | Establish the exact CloudKit zone before bootstrap
+
+- Required a binding-checked fetch, save-if-absent, and read confirmation of the
+  fixed `PosatoSyncV1` zone before treating the workspace anchor as absent.
+- Reused the existing provider outcomes and account binding without adding a
+  zone manager or local zone token; established-workspace zone loss remains
+  action-required and preserves local and pending work.
+
+## [2026-08-28] correction | Bind the workspace-key lifecycle to its account
+
+- Reused the candidate or established account binding around every
+  synchronizable workspace-key read and deletion, including destructive
+  removal, without changing item selectors, bytes, or device-local Keychain.
+- Failed account checks expose no key bytes or cleanup success, preserve the
+  established state for exact reconciliation under the original account, and
+  the wiki index now routes future work through ADR 0007.
