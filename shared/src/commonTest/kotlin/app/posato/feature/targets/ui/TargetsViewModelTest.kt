@@ -4,6 +4,7 @@ import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.domain.ExactDomainPolicyLimits
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.coroutines.CancellationException
@@ -146,6 +147,24 @@ class TargetsViewModelTest {
 
         assertEquals(ExactDomainEntryFailure.DUPLICATE, viewModel.uiState.value.domainInputFailure)
         assertEquals(listOf("example.com"), viewModel.uiState.value.domains)
+        assertEquals(0, store.replaceCalls)
+    }
+
+    @Test
+    fun `given the domain limit when another domain is submitted then the limit error is shown without replacing storage`() = runTest(dispatcher) {
+        val domains = List(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) { index -> "domain$index.example" }
+        val store = FakeTargetPolicyStore(stateOf(4, domains = domains, applicationPolicyName = "Social feeds"))
+        val viewModel = TargetsViewModel(store)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        viewModel.submitDomain("overflow.example")
+        scheduler.runCurrent()
+
+        assertEquals(ExactDomainEntryFailure.LIMIT_REACHED, viewModel.uiState.value.domainInputFailure)
+        assertEquals(null, viewModel.uiState.value.operationFailure)
+        assertEquals(domains.sorted(), viewModel.uiState.value.domains)
+        assertEquals("Social feeds", viewModel.uiState.value.applicationPolicyName)
         assertEquals(0, store.replaceCalls)
     }
 

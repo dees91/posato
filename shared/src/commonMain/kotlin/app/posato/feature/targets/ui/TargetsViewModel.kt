@@ -7,6 +7,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ApplicationPolicyNameResult
 import app.posato.feature.targets.domain.TargetPolicy
+import app.posato.feature.targets.domain.TargetPolicyValidationFailure
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -155,7 +156,11 @@ internal class TargetsViewModel(
             }
 
             is TargetPolicyValidationResult.Failure -> {
-                submissionState.update { TargetsSubmissionState.Failed(TargetsOperationFailure.CORRUPTED_POLICY) }
+                if (result.reason == TargetPolicyValidationFailure.TOO_MANY_DOMAINS) {
+                    domainEditorState.update { editor -> editor.copy(failure = ExactDomainEntryFailure.LIMIT_REACHED) }
+                } else {
+                    submissionState.update { TargetsSubmissionState.Failed(TargetsOperationFailure.CORRUPTED_POLICY) }
+                }
                 return
             }
         }
