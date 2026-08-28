@@ -6,11 +6,9 @@ import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.posato.persistence.db.PosatoDatabase
 import co.touchlab.sqliter.DatabaseConfiguration
 import co.touchlab.sqliter.interop.Logger
-import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSHomeDirectory
 
-@OptIn(ExperimentalForeignApi::class)
 internal fun createIosDatabaseDriver(
     databaseName: String = "posato-policy.db",
     directory: String = "${NSHomeDirectory().trimEnd('/')}/Library/Application Support/Posato",
@@ -31,7 +29,6 @@ internal fun createIosDatabaseDriver(
     )
 }
 
-@OptIn(ExperimentalForeignApi::class)
 private fun ensureDirectory(directory: String) {
     val fileManager = NSFileManager.defaultManager
     if (!fileManager.fileExistsAtPath(directory)) {

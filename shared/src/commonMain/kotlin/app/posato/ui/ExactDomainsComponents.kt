@@ -13,7 +13,6 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -123,7 +122,6 @@ internal fun ExactDomainEditor(
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 private fun ExactDomainInput(
     inputState: TextFieldState,
     failure: StringResource?,
@@ -219,8 +217,7 @@ internal fun OperationFailureNotice(
             )
             when (failure) {
                 ExactDomainsOperationFailure.LOAD_FAILED,
-                ExactDomainsOperationFailure.CORRUPTED_POLICY,
-                -> TextButton(onClick = onRetry) {
+                ExactDomainsOperationFailure.CORRUPTED_POLICY -> TextButton(onClick = onRetry) {
                     Text(stringResource(Res.string.action_retry))
                 }
 
@@ -312,7 +309,6 @@ internal fun ExactDomainsOperationFailure?.operationMessage(): StringResource {
         ExactDomainsOperationFailure.SAVE_FAILED -> Res.string.operation_error_save
 
         ExactDomainsOperationFailure.LOAD_FAILED,
-        null,
-        -> Res.string.operation_error_load
+        null -> Res.string.operation_error_load
     }
 }

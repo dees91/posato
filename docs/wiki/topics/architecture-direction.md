@@ -407,6 +407,13 @@ configuration, and intentionally does not autocorrect. Multiline raw strings
 retain the line break required by standard ktlint. Call-chain continuation
 remains authored guidance because no equivalent repeated drift was established.
 
+`user-confirmed` (2026-08-28): `when` entry arrows remain on the final
+condition line when they fit. The repository-owned
+`posato:when-entry-arrow-on-condition-line` ktlint rule enforces that narrow
+layout without autocorrect and accepts intervening comments and over-limit
+conditions. Ktlint's conflicting declaration-site trailing-comma rule is
+disabled; call-site trailing commas remain enforced.
+
 Gate 5 records the CI outcome but does not configure a pipeline. The Gate 6
 roadmap groups the foundation, local quality, and CI milestones into one PR #1
 execution and review cycle completed before PR #1 merges or the first parallel

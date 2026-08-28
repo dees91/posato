@@ -1,6 +1,5 @@
 package app.posato.ui
 
-import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.posato.persistence.LocalExactDomainPolicyState
@@ -8,12 +7,8 @@ import app.posato.persistence.LocalExactDomainPolicyStore
 import app.posato.persistence.LocalPolicyFailure
 import app.posato.persistence.LocalPolicyResult
 import app.posato.policy.ExactDomain
-import app.posato.policy.ExactDomainInputFailure
-import app.posato.policy.ExactDomainInputResult
 import app.posato.policy.ExactDomainPolicy
 import app.posato.policy.ExactDomainPolicyValidationResult
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -27,37 +22,6 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-internal enum class ExactDomainEntryFailure {
-    EMPTY,
-    TOO_LONG,
-    INVALID_DOMAIN,
-    DUPLICATE,
-    LIMIT_REACHED,
-}
-
-internal enum class ExactDomainsOperationFailure {
-    LOAD_FAILED,
-    REVISION_CONFLICT,
-    CORRUPTED_POLICY,
-    SAVE_FAILED,
-}
-
-@Immutable
-internal data class ExactDomainsUiState(
-    val domains: PersistentList<String> = persistentListOf(),
-    val editorSession: Long = 0,
-    val editingDomain: String? = null,
-    val inputFailure: ExactDomainEntryFailure? = null,
-    val operationFailure: ExactDomainsOperationFailure? = null,
-    val isLoading: Boolean = true,
-    val isSaving: Boolean = false,
-    val hasLoaded: Boolean = false,
-) {
-    override fun toString(): String {
-        return "ExactDomainsUiState(redacted)"
-    }
-}
 
 internal class ExactDomainsViewModel(
     private val store: LocalExactDomainPolicyStore,
@@ -257,60 +221,6 @@ private sealed interface ExactDomainsSubmissionState {
     ) : ExactDomainsSubmissionState
 }
 
-private sealed interface ExactDomainSubmission {
-    class Ready(
-        val canonicalDomains: List<String>,
-    ) : ExactDomainSubmission {
-        override fun toString(): String {
-            return "ExactDomainSubmission.Ready(redacted)"
-        }
-    }
-
-    data class EntryFailed(
-        val failure: ExactDomainEntryFailure,
-    ) : ExactDomainSubmission
-
-    data class OperationFailed(
-        val failure: ExactDomainsOperationFailure,
-    ) : ExactDomainSubmission
-}
-
-private fun createSubmission(
-    state: ExactDomainsUiState,
-    input: String,
-): ExactDomainSubmission {
-    val domainResult = ExactDomain.parse(input)
-    if (domainResult is ExactDomainInputResult.Failure) {
-        return ExactDomainSubmission.EntryFailed(domainResult.reason.toEntryFailure())
-    }
-    val canonicalValue = (domainResult as ExactDomainInputResult.Success).domain.canonicalValue
-    val isDuplicate = state.domains.any { existingDomain ->
-        existingDomain == canonicalValue && existingDomain != state.editingDomain
-    }
-
-    return when {
-        isDuplicate -> {
-            ExactDomainSubmission.EntryFailed(ExactDomainEntryFailure.DUPLICATE)
-        }
-
-        state.editingDomain == null -> {
-            ExactDomainSubmission.Ready(state.domains + canonicalValue)
-        }
-
-        state.editingDomain !in state.domains -> {
-            ExactDomainSubmission.OperationFailed(ExactDomainsOperationFailure.REVISION_CONFLICT)
-        }
-
-        else -> {
-            ExactDomainSubmission.Ready(
-                state.domains.map { existingDomain ->
-                    if (existingDomain == state.editingDomain) canonicalValue else existingDomain
-                },
-            )
-        }
-    }
-}
-
 private fun ExactDomainsUiState.canMutatePolicy(): Boolean {
     return hasLoaded && !isLoading && !isSaving
 }
@@ -344,14 +254,6 @@ private fun createUiState(
         isSaving = submissionState is ExactDomainsSubmissionState.Saving,
         hasLoaded = policyState.snapshot != null,
     )
-}
-
-private fun ExactDomainInputFailure.toEntryFailure(): ExactDomainEntryFailure {
-    return when (this) {
-        ExactDomainInputFailure.EMPTY -> ExactDomainEntryFailure.EMPTY
-        ExactDomainInputFailure.TOO_LONG -> ExactDomainEntryFailure.TOO_LONG
-        ExactDomainInputFailure.INVALID_DOMAIN -> ExactDomainEntryFailure.INVALID_DOMAIN
-    }
 }
 
 private fun LocalPolicyFailure.toLoadFailure(): ExactDomainsOperationFailure {

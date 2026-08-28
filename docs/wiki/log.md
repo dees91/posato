@@ -639,3 +639,10 @@
   deterministic synthetic state provider into a separate adjacent file.
 - Required phone and desktop previews to consume the same complete provider
   sequence rather than maintaining a reduced desktop-only case.
+
+## [2026-08-28] correction | Enforce when-entry arrow placement
+
+- Added a repository-owned ktlint rule for the maintainer-confirmed layout that
+  keeps a fitting `when` entry arrow on its final condition line.
+- Kept comments and over-limit condition lines valid, omitted autocorrect, and
+  disabled the conflicting standard declaration-site trailing-comma rule.

@@ -67,6 +67,11 @@ first right-hand-side line fits. It reports without autocorrect; comments
 between `=` and the expression, values that need the next line, and multiline
 raw strings remain valid. Raw strings follow ktlint's standard required line
 break. The inverse standard ktlint multiline-expression rule stays disabled.
+The repository-owned `posato:when-entry-arrow-on-condition-line` rule keeps a
+`when` entry arrow on the final condition line when it fits. It reports without
+autocorrect and accepts an intervening comment or a condition line that would
+exceed the configured limit. Ktlint's conflicting declaration-site trailing-
+comma rule is disabled; the call-site trailing-comma rule remains active.
 Call-chain continuation remains formatter-compatible authored style; no
 separate custom rule is justified for it.
 

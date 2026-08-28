@@ -8,7 +8,6 @@ import app.posato.policy.ExactDomainPolicy
 import app.posato.policy.ExactDomainPolicyValidationResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -26,7 +25,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ExactDomainsViewModelTest {
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)
@@ -226,7 +224,6 @@ class ExactDomainsViewModelTest {
     }
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 private fun TestScope.observe(viewModel: ExactDomainsViewModel): Job {
     return backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
         viewModel.uiState.collect()

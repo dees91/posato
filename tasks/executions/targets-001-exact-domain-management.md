@@ -7,7 +7,7 @@
 - **Implementer:** `Codex`
 - **Reviewer:** `independent Codex reviewer`
 - **Branch:** `targets-001-exact-domains`
-- **Updated:** `2026-08-27`
+- **Updated:** `2026-08-28`
 
 ## Plan
 
@@ -29,6 +29,9 @@
 6. Add the maintainer-requested ktlint rule for the accepted assignment layout
    after repeated authored drift, using the public ruleset provider as the
    test seam and no autocorrect or general formatting framework.
+7. Address PR review by moving accepted opt-ins into Gradle, separating UI
+   state and submission preparation from ViewModel orchestration, and enforcing
+   the accepted `when` entry arrow layout with a focused ktlint rule.
 
 ## Material 3 and text-state correction
 
@@ -91,6 +94,14 @@
   aggregate quality gate, including its own module, without introducing a
   general formatting framework. Multiline raw strings retain the only layout
   compatible with standard ktlint.
+- PR review follow-up keeps experimental API opt-ins in the `shared` module's
+  compiler configuration and removes source annotations. UI state and pure
+  submission preparation now live in focused adjacent files while the
+  ViewModel retains lifecycle-aware Flow and persistence orchestration.
+- `posato:when-entry-arrow-on-condition-line` rejects an arrow below the final
+  `when` condition when it fits, without autocorrect. Comments and over-limit
+  conditions remain valid. The conflicting standard declaration-site trailing-
+  comma rule is disabled while call-site trailing-comma enforcement remains.
 
 ## Completed-change review
 
@@ -129,6 +140,11 @@
   raw-string layout; a narrow tested exception resolves that tool conflict
   without weakening ordinary assignments. The reviewer confirmed that no
   Critical or Required finding remains.
+- **PR-feedback follow-up verdict:** `approved`. The independent local review
+  found no actionable correctness, readability, architecture, security, or
+  performance defect. Its sandbox could not reacquire the Gradle wrapper cache
+  lock, so the implementer's successful focused and aggregate reruns below are
+  the verification evidence.
 
 ## Verification
 
@@ -138,6 +154,10 @@
 | Custom-rule dependency and source review | `pass` | The repository-owned ruleset uses the existing ktlint 1.8.0 APIs. Test-only SLF4J Simple 2.0.17 matches ktlint's pin, is MIT-licensed, and returned no OSV result. The resolved ruleset and test runtime graphs were inspected. |
 | `./gradlew :quality-rules:ktlintCheck :quality-rules:test :quality-rules:detekt --rerun-tasks` | `pass` | Ten public-rule-engine tests cover declarations, assignments, named arguments, defaults, expression bodies, same-line values, comments, over-limit values, standard-formatted multiline raw strings, and fitting single-line raw strings. The module statically enforces its own rule through its built JAR without a task cycle. |
 | Assignment-formatting negative probe | `pass` | A temporary repository-owned shared source with its value below `=` made `:shared:ktlintCommonMainSourceSetCheck` fail with `posato:rhs-on-assignment-line`; removing the probe restored the passing check. |
+| When-entry formatting negative probe | `pass` | A temporary shared source with `->` below a fitting final condition made `:shared:ktlintCommonMainSourceSetCheck` fail with `posato:when-entry-arrow-on-condition-line`; removing the probe restored the passing check. |
+| PR-feedback focused verification | `pass` | Repository-owned rule tests, ktlint, Detekt, JVM tests, iOS Simulator tests, and Android main compilation all reran successfully after the opt-in, file-ownership, and formatting corrections. |
+| PR-feedback aggregate gate | `pass` | `./gradlew quality --rerun-tasks` executed and passed all 92 tasks. |
+| PR-feedback independent review | `pass` | `codex review --uncommitted` reported no actionable defects across the opt-in configuration, ViewModel file split, ktlint rule, CI correction, and task evidence. |
 | Final `./gradlew quality --rerun-tasks` | `pass` | All 83 aggregate tasks executed and passed after self-enforcement and the multiline raw-string compatibility correction. |
 | `git diff --check` and repository-safety scan | `pass` | The final diff has no whitespace errors and contains no personal path, development-team value, or signing configuration. The temporary negative-probe source is absent. |
 | `./gradlew :shared:jvmTest :shared:iosSimulatorArm64Test` | `pass` | Focused common policy and ViewModel behavior passes on JVM and the iOS Simulator. |

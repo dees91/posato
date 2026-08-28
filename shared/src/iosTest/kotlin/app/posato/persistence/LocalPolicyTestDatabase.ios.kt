@@ -1,7 +1,6 @@
 package app.posato.persistence
 
 import app.cash.sqldelight.db.SqlDriver
-import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import platform.Foundation.NSFileManager
@@ -15,12 +14,10 @@ import platform.posix.pwrite
 
 private const val INVALID_DATABASE_MARKER: String = "not a sqlite database"
 
-@OptIn(ExperimentalForeignApi::class)
 internal actual fun createLocalPolicyTestDatabase(name: String): LocalPolicyTestDatabase {
     return IosLocalPolicyTestDatabase(name)
 }
 
-@OptIn(ExperimentalForeignApi::class)
 private class IosLocalPolicyTestDatabase(
     private val name: String,
 ) : LocalPolicyTestDatabase {

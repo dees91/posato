@@ -51,6 +51,10 @@ existing atomic local-policy store.
   default values, and expression bodies without a regex scanner, autocorrect,
   or a general formatting framework. Preserve the standard ktlint layout for
   multiline raw strings.
+- Enforce the maintainer-confirmed `when` entry layout with one narrow
+  repository-owned ktlint rule: when the arrow fits on the final condition
+  line, it stays there. Accept comments between the condition and arrow and
+  conditions that would exceed the configured line limit; do not autocorrect.
 - Add only consumed IDNA, ViewModel, immutable-collection, Material 3, and
   desktop Main-dispatcher dependencies. Do not add sync, enforcement,
   onboarding, analytics, availability checks, or URL parsing.
@@ -74,6 +78,9 @@ existing atomic local-policy store.
   starting below `=` when its first line fits on the assignment line, while
   accepting comments, multiline raw strings, and expressions that would exceed
   the configured limit.
+- `AC-06` — The aggregate ktlint gate rejects a `when` entry arrow below its
+  final condition when the arrow fits on that line, while accepting comments
+  and final-condition lines that would exceed the configured limit.
 
 ## Verification
 

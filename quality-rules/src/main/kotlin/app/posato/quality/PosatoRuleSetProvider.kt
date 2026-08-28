@@ -9,5 +9,6 @@ internal const val POSATO_RULE_SET_ID = "posato"
 public class PosatoRuleSetProvider : RuleSetProviderV3(RuleSetId(POSATO_RULE_SET_ID)) {
     override fun getRuleProviders(): Set<RuleProvider> = setOf(
         RuleProvider { RightHandSideOnAssignmentLineRule() },
+        RuleProvider { WhenEntryArrowOnConditionLineRule() },
     )
 }

@@ -9,7 +9,6 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
-import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
 import kotlinx.cinterop.ptr
@@ -60,7 +59,6 @@ private fun platformFontSize(textStyle: String?): TextUnit {
     return (preferredPointSize / fontScale).sp
 }
 
-@OptIn(ExperimentalForeignApi::class)
 private fun UIColor.toComposeColor(): Color = memScoped {
     val red = alloc<CGFloatVar>()
     val green = alloc<CGFloatVar>()

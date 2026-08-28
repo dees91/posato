@@ -34,6 +34,9 @@ kotlin {
     val iosSimulatorArm64Target = iosSimulatorArm64()
 
     listOf(iosArm64Target, iosSimulatorArm64Target).forEach { target ->
+        target.compilerOptions {
+            freeCompilerArgs.add("-opt-in=kotlinx.cinterop.ExperimentalForeignApi")
+        }
         target.binaries.framework {
             baseName = "PosatoShared"
             isStatic = true
@@ -44,6 +47,10 @@ kotlin {
 
     compilerOptions {
         allWarningsAsErrors.set(true)
+        freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+        )
     }
 
     sourceSets {
