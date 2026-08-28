@@ -731,3 +731,15 @@
   Android Studio's bundled Shell Script runner and needs no KMP IDE plugin.
 - Kept simulator and device selection machine-local and recorded no signing,
   account, device, or personal-path value.
+
+## [2026-08-28] decision | Define one-workspace Apple bootstrap
+
+- `user-confirmed`: accepted one create-only CloudKit anchor, one exact
+  synchronizable-Keychain item contract, and automatic convergence for
+  concurrent first runs without replacement keys or parallel workspaces.
+- Added the dedicated `app.posato.macos.sync` companion so CloudKit, Keychain,
+  and the workspace key stay outside the macOS enforcement helper.
+- `user-confirmed`: the new App ID, iCloud/CloudKit capability, and association
+  with the existing `iCloud.app.posato.sync` container passed manual inspection.
+- Kept implementation, entitlements, schema deployment, retry policy, and
+  physical Mac-and-iPhone evidence with `SYNC-004` through `SYNC-009`.

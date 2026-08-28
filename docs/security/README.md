@@ -22,5 +22,11 @@ The accepted synchronization trust split is recorded in
 [ADR 0002](../decisions/0002-synchronization-trust-and-workspace-modes.md).
 It selects Apple Account and iCloud Keychain trust for Apple-workspace
 admission while retaining application-layer E2EE and explicit membership for
-the later portable workspace. The accepted threat model does not select the
-still-open production cryptographic design.
+the later portable workspace. ADR 0006 defines the Apple MVP cryptographic
+format and provider boundary; their implementation evidence remains downstream.
+
+[ADR 0007](../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
+defines the exact Apple mailbox, synchronizable-Keychain item, deterministic
+bootstrap, and dedicated macOS native synchronization boundary. Their controls
+remain unverified until `SYNC-004` through `SYNC-009` provide implementation and
+physical evidence.

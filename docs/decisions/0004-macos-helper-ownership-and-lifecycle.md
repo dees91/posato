@@ -7,6 +7,15 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SYNC-003 amendment
+
+`user-confirmed` (2026-08-28):
+[ADR 0007](0007-apple-workspace-bootstrap-and-native-sync-boundary.md) assigns
+CloudKit and synchronizable-Keychain access to the distinct
+`app.posato.macos.sync` companion. The enforcement helper and root daemon retain
+no synchronization entitlement, workspace key, secure store, or mailbox
+responsibility.
+
 ## MACOS-002 amendment
 
 `user-confirmed` (2026-08-26):
@@ -137,8 +146,9 @@ inside the `app.posato.macos` namespace and must not be caller-selectable.
 
 ### JVM-to-session-helper boundary
 
-The application launches only `app.posato.macos.helper` from its signed bundle
-at a fixed embedded path. The application verifies the expected helper identity
+For enforcement, the application launches only `app.posato.macos.helper` from
+its signed bundle at a fixed embedded path. The application verifies the
+expected helper identity
 before use; the helper verifies the expected signed parent identity and package
 relationship before accepting a frame.
 

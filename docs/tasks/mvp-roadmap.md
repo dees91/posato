@@ -112,6 +112,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Gate | Owner | Completion rule |
 | --- | --- | --- |
 | Apple team, four App IDs, App Group, CloudKit container, Keychain suffix, and Family Controls, App Groups, and iCloud/CloudKit portal capabilities | `APPLE-001` | Apple Developer and CloudKit Console resource rows plus Xcode team visibility pass without tracked private values; Keychain target configuration, provisioning authorization, and signed-entitlement verification remain with `SYNC-005` and `SYNC-006`. |
+| macOS synchronization-companion App ID and existing CloudKit-container association | `SYNC-003` | `app.posato.macos.sync` exists with iCloud/CloudKit enabled and is associated only with `iCloud.app.posato.sync`; target entitlements, provisioning, signing, and signed-artifact verification remain with `SYNC-006` and `SYNC-008`. |
 | Family Controls distribution availability | `TARGETS-004` / `IOS-001` | Later distribution work records pass or a clearing condition. |
 | iOS suspended expiry opportunity | `IOS-002` | A physical callback clears owned restrictions without promising exact wake time. |
 | macOS helper signing and privilege path | `MACOS-003` | Physical authentication, authorization, failure, and removal/recovery evidence passes. |

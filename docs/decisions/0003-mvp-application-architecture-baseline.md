@@ -7,6 +7,16 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SYNC-003 amendment
+
+`user-confirmed` (2026-08-28):
+[ADR 0007](0007-apple-workspace-bootstrap-and-native-sync-boundary.md) adds the
+deferred `app.posato.macos.sync` Swift companion as the app-owned CloudKit and
+Keychain boundary. It is a short-lived normal-user process distinct from the
+enforcement helper and root daemon. The original PR #1 graph remains unchanged;
+the target, packaging, signing, and IPC implementation belong to `SYNC-006` and
+`SYNC-008`.
+
 ## SYNC-001 amendment
 
 `user-confirmed` (2026-08-28):
@@ -106,6 +116,7 @@ iosApp (Xcode host)
 Later native targets, not PR #1 dependencies:
     iosActivityMonitorExtension
     macosHelper
+    macosSyncCompanion
 ```
 
 `:shared` is initially the only KMP production module. It owns the application
@@ -156,13 +167,15 @@ tokens, native errors, and system-settings objects do not cross into
 | macOS application | `app.posato.macos` | Created | Compose Desktop/JVM application |
 | iOS Device Activity monitor extension | `app.posato.ios.activitymonitor` | Deferred | Xcode-owned expiry callback and minimum shared App Group state |
 | macOS native helper | `app.posato.macos.helper` | Deferred | Signed native process behind authenticated, versioned local IPC |
+| macOS synchronization companion | `app.posato.macos.sync` | Deferred | Short-lived signed Swift process for CloudKit and synchronizable Keychain only |
 
 The first skeleton has no Android application, Web target, custom
 shield-action, custom shield-configuration, or Device Activity report target.
 `androidMain` exists only for shared Compose preview tooling and has no product
-identifier or host. Gate 7 registers the accepted Apple identifiers and
-required capabilities before production implementation begins, even though the
-extension and helper implementation arrive after PR #1.
+identifier or host. Gate 7 registered the initial accepted Apple identifiers
+and capabilities before production implementation. `SYNC-003` registers the
+later accepted synchronization-companion identifier; neither deferred process
+becomes an empty PR #1 target.
 
 ### iOS enforcement boundary
 
@@ -219,6 +232,10 @@ authority for CloudKit Private Database transport, synchronizable-Keychain
 workspace-key delivery, common application-layer E2EE, and the later portable
 workspace mode. Those mechanisms do not imply an HTTP client, so Ktor is not a
 baseline dependency.
+
+[ADR 0007](0007-apple-workspace-bootstrap-and-native-sync-boundary.md) owns the
+exact Apple mailbox, secure-item, one-workspace bootstrap, and macOS
+synchronization-companion contract. It adds no PR #1 dependency or target.
 
 PR #1 adds Compose and Metro only. Navigation 3 is the default candidate for
 the first multi-screen flow, AndroidX Multiplatform ViewModel for the first
