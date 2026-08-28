@@ -2,7 +2,7 @@
 
 - **Brief:**
   [`../specifications/model-001-local-exact-domain-policy.md`](../specifications/model-001-local-exact-domain-policy.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** `Codex`
 - **Reviewer:** `independent Codex reviewer; plan and persistence change approved`
@@ -91,7 +91,7 @@
 
 - **Reviewed commits:** `a2d871ed2b`, `187e412d3e`, `e596b55cc0`, `b2eb508a0d`,
   `339930072e`, `dc4306ce21`
-- **Verdict:** `changes required; correction implemented, follow-up pending`
+- **Verdict:** `changes required; accepted corrections implemented`
 - **Critical or Required findings:** The reviews found that an `xn--` prefix
   alone trusted a malformed IDNA A-label and that SQLite could store text or
   real revision values which generated `Long` reads then coerced. The latest
@@ -113,7 +113,8 @@
   failure rolls back the preceding revision change. The same validation now
   runs before conflict classification, so valid stale state remains a conflict
   while missing metadata returns corruption. Focused JVM and iOS verification
-  passes; hosted follow-up review remains pending.
+  passes. No repeated hosted review was requested under the accepted review
+  policy.
 
 ## Verification
 
@@ -133,3 +134,10 @@
   is intentionally unsupported; maintainers may delete that development data.
 - `inferred`: MODEL-001 rejects reserved `??--` labels, including IDNA A-labels,
   until TARGETS-001 supplies the accepted validation and round-trip boundary.
+
+## Final
+
+- **Status:** `done`
+- **Outcome:** The exact-domain policy slice is persisted atomically through
+  the accepted SQLDelight boundary and was consumed by the completed
+  `TARGETS-001` implementation.

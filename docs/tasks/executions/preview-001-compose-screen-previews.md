@@ -2,7 +2,7 @@
 
 - **Brief:**
   [`../specifications/preview-001-compose-screen-previews.md`](../specifications/preview-001-compose-screen-previews.md)
-- **Status:** `blocked`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** `Codex`
 - **Reviewer:** `independent local Codex review`
@@ -48,16 +48,14 @@
 | Credential-free iOS Simulator host build | `pass` | `xcodebuild` built the `iosApp` scheme for the generic iOS Simulator with code signing disabled. |
 | Independent completed-change review | `pass` | No Critical or Required defect in the PREVIEW-001 diff. |
 | Hosted CI correction | `pass` | The first hosted quality job reached an obsolete Android SDK installation step and failed because `sdkmanager` was unavailable. The redundant install step was removed because the `macos-15` runner already supplies the required Android 36 platform and build tools; follow-up run `33145856613` passed aggregate quality, the credential-free iOS host build, and report upload. |
+| Android Studio preview inspection | `pass` | `user-confirmed` (2026-08-28): the maintainer inspected the phone and desktop preview groups and accepted the rendered preview matrix. |
 
 ## Blockers and accepted risks
 
-- Android Studio visual inspection remains required for `AC-01`. Open
-  `ExactDomainsScreen.kt` after Gradle sync and confirm all ten named cases in
-  both the phone and desktop preview groups. This environment lacks the macOS
-  Accessibility permission needed to automate that IDE action.
+- None.
 
 ## Final
 
-- **Status:** `blocked`
-- **Outcome:** All automated checks and independent review passed; manual IDE
-  preview inspection is the clearing condition.
+- **Status:** `done`
+- **Outcome:** Deterministic phone and desktop preview groups passed automated
+  verification, independent review, and maintainer visual inspection.
