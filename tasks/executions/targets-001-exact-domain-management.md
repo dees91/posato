@@ -158,6 +158,7 @@
 | PR-feedback focused verification | `pass` | Repository-owned rule tests, ktlint, Detekt, JVM tests, iOS Simulator tests, and Android main compilation all reran successfully after the opt-in, file-ownership, and formatting corrections. |
 | PR-feedback aggregate gate | `pass` | `./gradlew quality --rerun-tasks` executed and passed all 92 tasks. |
 | PR-feedback independent review | `pass` | `codex review --uncommitted` reported no actionable defects across the opt-in configuration, ViewModel file split, ktlint rule, CI correction, and task evidence. |
+| PR-feedback hosted CI | `pass` | Follow-up run `33145856613` passed change classification, aggregate quality, the credential-free iOS Simulator host build, and quality-report upload after removal of the redundant SDK installation step. |
 | Final `./gradlew quality --rerun-tasks` | `pass` | All 83 aggregate tasks executed and passed after self-enforcement and the multiline raw-string compatibility correction. |
 | `git diff --check` and repository-safety scan | `pass` | The final diff has no whitespace errors and contains no personal path, development-team value, or signing configuration. The temporary negative-probe source is absent. |
 | `./gradlew :shared:jvmTest :shared:iosSimulatorArm64Test` | `pass` | Focused common policy and ViewModel behavior passes on JVM and the iOS Simulator. |

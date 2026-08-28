@@ -47,7 +47,7 @@
 | `./gradlew quality` | `pass` | The aggregate gate passed all 92 tasks, including Android, JVM, iOS, Detekt, ktlint, tests, and the macOS distributable. |
 | Credential-free iOS Simulator host build | `pass` | `xcodebuild` built the `iosApp` scheme for the generic iOS Simulator with code signing disabled. |
 | Independent completed-change review | `pass` | No Critical or Required defect in the PREVIEW-001 diff. |
-| Hosted CI correction | `pending hosted rerun` | The first hosted quality job reached an obsolete Android SDK installation step and failed because `sdkmanager` was unavailable. The `macos-15` runner already supplies the required Android 36 platform and build tools, so the redundant install step is removed; local aggregate quality and credential-free iOS host build pass. |
+| Hosted CI correction | `pass` | The first hosted quality job reached an obsolete Android SDK installation step and failed because `sdkmanager` was unavailable. The redundant install step was removed because the `macos-15` runner already supplies the required Android 36 platform and build tools; follow-up run `33145856613` passed aggregate quality, the credential-free iOS host build, and report upload. |
 
 ## Blockers and accepted risks
 
