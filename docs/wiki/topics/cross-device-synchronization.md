@@ -245,6 +245,10 @@ freezes the Apple MVP bootstrap and provider contract:
   transport-epoch, and key-epoch identifiers plus the 32-byte workspace key;
 - an existing anchor with a delayed Keychain item waits and never creates a
   replacement key or workspace;
+- one local-only opaque account binding is persisted with each bootstrap
+  attempt and is checked before and after every provider access, so a changed
+  account can never turn its empty private database into evidence that the
+  original anchor is absent;
 - immutable encrypted bundles use one `PosatoEncryptedBundleV1` record with an
   inline payload bounded by ADR 0006; and
 - account change, malformed state, unknown outcomes, and cleanup preserve exact

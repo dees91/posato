@@ -43,7 +43,8 @@
 ## Result
 
 - ADR 0007 now freezes the one-workspace bootstrap, mailbox, Keychain, and
-  dedicated macOS synchronization-companion boundaries.
+  dedicated macOS synchronization-companion boundaries, including a durable
+  local-only account binding that gates bootstrap provider access.
 - `user-confirmed` (2026-08-28): `app.posato.macos.sync` exists with
   iCloud/CloudKit enabled and is associated with the existing
   `iCloud.app.posato.sync` container. No private account or signing value was
@@ -63,6 +64,29 @@
   fixed as CRC-32/ISO-HDLC with complete parameters and byte order. Focused
   re-review found no remaining Critical or Required issue.
 
+## Hosted review correction
+
+- **Finding:** The hosted PR review identified a `Required` race: a persisted
+  candidate had no durable binding to its originating Apple account, so retry
+  after an account switch could treat another private database as empty and
+  create a parallel anchor.
+- **Resolution:** ADR 0007 now defines one native-derived 32-byte opaque account
+  binding, persists it with candidate and established state, and requires the
+  native edge to match it before and after every bootstrap provider access.
+  Mismatch or an in-flight account change fails closed without altering the
+  CloudKit or Keychain formats.
+
+## Focused correction review
+
+- **Verdict:** `approved`
+- **Critical or Required findings:** The first pass found that a preflight-only
+  binding check could accept a provider result before a delayed account-change
+  event arrived.
+- **Resolution:** The native edge now also requires an exact postflight match
+  before returning any definitive provider result. Unavailable, mismatched, or
+  changed in-flight state becomes `unknown-outcome`; focused re-review found no
+  remaining Critical, Required, or advisory issue.
+
 ## Verification
 
 | Check run | Result | Evidence |
@@ -72,6 +96,8 @@
 | Contract and authority consistency | pass | ADR, architecture, threat, roadmap, resource, and wiki surfaces use the same companion, zone, record, Keychain, and downstream-owner contracts. |
 | Markdown links and whitespace | pass | All changed relative links resolve; tracked and new-file diff checks pass after the final review correction. |
 | Scoped sensitive-data scan | pass | No personal path, private key marker, or common credential pattern appears in the changed security-sensitive records after the final review correction. |
+| Account-isolation correction | pass | The contract checks the expected binding before and after provider access, preserves indeterminate attempts across delayed account-change notification, resumes only under the original binding, and leaves the anchor and Keychain formats unchanged. |
+| Correction documentation hygiene | pass | All repository-local Markdown links resolve, `git diff --check` passes, the scoped sensitive-data scan is clean, and the correction log entry is parseable at EOF. |
 
 ## Blockers and accepted risks
 

@@ -743,3 +743,11 @@
   with the existing `iCloud.app.posato.sync` container passed manual inspection.
 - Kept implementation, entitlements, schema deployment, retry policy, and
   physical Mac-and-iPhone evidence with `SYNC-004` through `SYNC-009`.
+
+## [2026-08-28] correction | Bind Apple bootstrap to its account
+
+- Added one local-only opaque account binding to each candidate and established
+  workspace binding, and required it before and after every bootstrap provider
+  access.
+- Made account mismatch fail closed without treating another private database
+  as empty or changing the existing CloudKit and Keychain formats.

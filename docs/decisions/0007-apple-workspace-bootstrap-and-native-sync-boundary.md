@@ -60,8 +60,10 @@ signed process relationship.
 
 Shared Kotlin owns bootstrap state, validation, candidate persistence,
 reconciliation, and user-visible semantic status. Native adapters return only
-platform-neutral values and outcomes. Apple objects, account identifiers,
+platform-neutral values and outcomes. Apple objects, raw account identifiers,
 provider exceptions, and raw error descriptions stay inside the native edge.
+The only account-derived value that crosses this boundary is the local opaque
+binding defined below.
 
 The new companion requires one explicit App ID. `SYNC-003` registers
 `app.posato.macos.sync`, enables iCloud/CloudKit, and associates only the
@@ -140,37 +142,75 @@ delete-and-verify-absent:
 - `SecItemUpdate`, persistent references, broad deletion, and a synchronized or
   persistent authoring key are forbidden.
 
+### Local account binding
+
+Before workspace-provider access, the native adapter fetches the current
+CloudKit user record ID and derives this exact 32-byte value:
+
+```text
+SHA-256(
+  UTF8("iCloud.app.posato.sync|account-binding|v1")
+  || 0x00
+  || UTF8(currentUserRecordID.recordName)
+)
+```
+
+The value is a local equality token, not authentication or product identity.
+The raw CloudKit record ID remains native. Shared Kotlin may persist the opaque
+binding only in the app-private local database with a bootstrap attempt or the
+established local workspace binding. It is never stored in CloudKit or
+Keychain, synchronized as application data, displayed, logged, or included in
+diagnostics.
+
+Every bootstrap CloudKit or synchronizable-Keychain operation accepts the
+expected binding. The native edge resolves and compares the current binding
+immediately before and after provider access. An unavailable preflight value
+keeps its unavailable or restricted outcome, while a different value returns
+`account-changed`; neither invokes the requested operation. Before returning
+any definitive `found`, `missing`, `created`, `identical`, or `conflict` result,
+the adapter requires an exact postflight match. An unavailable or different
+postflight value, or an account-change signal observed during the operation,
+returns `unknown-outcome`, which common code may reconcile only after the
+expected binding is current again.
+
 ### Deterministic bootstrap
 
 Bootstrap runs only after the explicit **Sync with iCloud** action and an
 available account outcome. One serialized coordinator follows this protocol:
 
-1. Read and validate the fixed CloudKit anchor before inspecting or creating a
-   candidate key.
-2. If the anchor exists, read only its exact Keychain account. A missing item
-   produces `waiting-for-workspace-key`; it never generates a key, replaces the
-   anchor, interprets the workspace as empty, or creates another workspace.
-3. If the anchor is absent and no local attempt exists, generate one workspace
+1. Resolve the current account binding. If a local attempt or established
+   binding exists, require an exact match before any workspace-provider access;
+   otherwise fix the resolved value as the binding for this new attempt.
+2. Read and validate the fixed CloudKit anchor under that expected binding
+   before inspecting or creating a candidate key.
+3. If the anchor exists, read only its exact Keychain account under the same
+   binding. A missing item produces `waiting-for-workspace-key`; it never
+   generates a key, replaces the anchor, interprets the workspace as empty, or
+   creates another workspace.
+4. If the anchor is absent and no local attempt exists, generate one workspace
    identifier, transport-epoch identifier, key-epoch identifier, and 32 random
    workspace-key bytes in memory. The key is never stored in the local database.
-4. Create the candidate's exact Keychain item and reconcile duplicate or
-   indeterminate results by reading that same selector. After identical bytes
-   are confirmed, persist the three non-secret candidate identifiers. Anchor
-   creation is forbidden until that local candidate commit succeeds.
-5. A crash before candidate persistence may leave only an inert, unanchored
+5. Create the candidate's exact Keychain item under the expected binding and
+   reconcile duplicate or indeterminate results by reading that same selector.
+   After identical bytes are confirmed, atomically persist the three non-secret
+   candidate identifiers and the opaque binding. Anchor creation is forbidden
+   until that local candidate commit succeeds.
+6. A crash before candidate persistence may leave only an inert, unanchored
    Keychain item. Restart does not enumerate or adopt such items and may create
    a fresh candidate. A persisted candidate whose exact item later becomes
    unavailable waits or fails action-required; it never regenerates the key.
-6. Reconcile every CloudKit timeout or lost response by reading the fixed
-   anchor. Retry only the same candidate and bytes while absence is proven;
-   never mint a replacement because an outcome is unknown.
-7. If another valid anchor won, retain the winner, delete and verify absence of
-   only the locally recorded losing candidate item, then read the winner's
-   exact Keychain item. A failed losing-item cleanup remains retryable and does
-   not authorize a broad query or deletion.
-8. Commit the established local binding only when anchor fields, Keychain
-   account, decoded item identifiers, item length, and checksum all match. That
-   binding is the only workspace that the local replica may open.
+7. Reconcile every CloudKit timeout or lost response by reading the fixed
+   anchor under the persisted binding. Retry only the same candidate and bytes
+   while absence is proven under that binding; never mint a replacement because
+   an outcome is unknown.
+8. If another valid anchor won, retain the winner, delete and verify absence of
+   only the locally recorded losing candidate item under the same binding, then
+   read the winner's exact Keychain item. A failed losing-item cleanup remains
+   retryable and does not authorize a broad query or deletion.
+9. Commit the established local workspace and account binding only when anchor
+   fields, Keychain account, decoded item identifiers, item length, and checksum
+   all match. That binding is the only workspace that the local replica may
+   open.
 
 This conditional fixed-record creation is the sole concurrent-first-run
 arbiter. CloudKit does not merge policy or choose operation winners; after
@@ -179,18 +219,20 @@ bootstrap it remains the ADR 0006 opaque mailbox.
 ### Failure, account, and cleanup semantics
 
 Provider edges distinguish at least `found`, `missing`, `created`, `identical`,
-`conflict`, `retryable`, `action-required`, `unknown-outcome`, and
-`integrity-failure`. Product state collapses those only into truthful ready,
-waiting, retryable, or action-required behavior. Raw Apple status values and
-error text are not control flow outside the adapter.
+`conflict`, `retryable`, `action-required`, `account-changed`,
+`unknown-outcome`, and `integrity-failure`. Product state collapses those only
+into truthful ready, waiting, retryable, or action-required behavior. Raw Apple
+status values and error text are not control flow outside the adapter.
 
 A definitive malformed or unsupported anchor/item, context mismatch, different
 duplicate, or inconsistent local binding is an integrity failure. No invalid
 input replaces the last established binding. Account unavailable, restricted,
 or changed; entitlement or signing mismatch; and definitive anchor absence or
 difference after establishment stop synchronization without deleting or
-merging local pending work. Re-entering the original account may resume only
-after the exact existing anchor and item match again.
+merging local pending work. An account-binding failure is never interpreted as
+provider absence and authorizes no create, replacement, cleanup, or deletion.
+Re-entering the original account may resume only after its opaque binding and
+the exact existing anchor and item match again.
 
 Disabling synchronization preserves the local replica, anchor, mailbox, and
 Keychain item. Removing a workspace is a separate explicit destructive action:
@@ -254,7 +296,9 @@ Before Apple bootstrap is implemented and claimed:
 
 - `SYNC-004` contract tests cover both creator platforms, concurrent first run,
   every persistent crash boundary, delayed key, exact duplicate, different
-  duplicate, unknown provider outcome, corruption, account change, and no
+  duplicate, unknown provider outcome, corruption, account change before and
+  after an indeterminate save, a postflight switch whose account-change event
+  arrives after the provider result, return to the original account, and no
   replacement or parallel workspace;
 - `SYNC-005` and `SYNC-006` prove identical item bytes and selectors, delayed
   propagation, exact cleanup, locked/unavailable behavior, entitlements, and
@@ -290,3 +334,7 @@ availability. They do not claim those controls are implemented.
   defines conditional save against unchanged server state.
 - [CloudKit record value limits](https://developer.apple.com/documentation/cloudkit/ckrecord)
   permit the bounded inline byte fields selected here.
+- [CloudKit current-user record ID](https://developer.apple.com/documentation/cloudkit/ckcontainer/fetchuserrecordid%28completionhandler%3A%29)
+  supplies the native input for the current-account binding.
+- [CloudKit account-change events](https://developer.apple.com/documentation/cloudkit/cksyncengine-5sie5/event/accountchange)
+  require the application to reconcile local persistence after account changes.
