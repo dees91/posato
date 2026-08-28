@@ -11,8 +11,8 @@ minimum product identity, minimum product and design baseline, architecture
 baseline, engineering quality contract, vertical PR decomposition, and manual
 Apple resource setup.
 
-The active [preparation plan](../../../tasks/first-mvp-pr-preparation-plan.md)
-and [checklist](../../../tasks/first-mvp-pr-preparation-todo.md) are the
+The active [preparation plan](../../tasks/first-mvp-pr-preparation-plan.md)
+and [checklist](../../tasks/first-mvp-pr-preparation-todo.md) are the
 execution authority for this milestone. Gates 1 through 6 are complete in the
 accepted [MVP scope](../../product/mvp-scope.md) and
 [product identity](../../product/product-identity.md), with the accepted brand
@@ -21,8 +21,8 @@ accepted architecture in
 [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md).
 The engineering quality baseline is also accepted in the
 [quality contract](../../development/engineering-quality-contract.md) and
-[task workflow](../../../tasks/README.md). The
-[Gate 6 MVP roadmap](../../../tasks/mvp-roadmap.md) is accepted at revision 2
+[task workflow](../../tasks/README.md). The
+[Gate 6 MVP roadmap](../../tasks/mvp-roadmap.md) is accepted at revision 2
 with concise future task stubs. All seven preparation gates now have their
 accepted inputs and evidence. Production scaffolding remains blocked until the
 Ready to open PR #1 checkpoint, shared PR #1 brief and execution record, and
@@ -283,7 +283,7 @@ broad architecture spike is not required.
 
 `user-confirmed` (2026-08-25): Gate 5 is complete. The accepted
 [engineering quality contract](../../development/engineering-quality-contract.md)
-and [repository task workflow](../../../tasks/README.md) establish:
+and [repository task workflow](../../tasks/README.md) establish:
 
 - ktlint as the formatting and mechanical-style authority;
 - Detekt as the static-analysis authority, with
@@ -400,7 +400,7 @@ dispatch. Restore the automatic triggers when hosted minutes become available.
 ## Gate 6 roadmap (complete)
 
 `user-confirmed` (2026-08-25): the accepted
-[MVP roadmap](../../../tasks/mvp-roadmap.md) retains 36 outcome stubs: one
+[MVP roadmap](../../tasks/mvp-roadmap.md) retains 36 outcome stubs: one
 manual Gate 7 task, three PR #1 milestones, 31 later tasks through physical MVP
 acceptance, and one separate release-readiness task.
 
@@ -576,7 +576,7 @@ not gate the Apple-first MVP. Before those implementations begin, decide:
 ## Accepted route to the first code PR
 
 The first code PR waits for the seven gates in the
-[preparation checklist](../../../tasks/first-mvp-pr-preparation-todo.md),
+[preparation checklist](../../tasks/first-mvp-pr-preparation-todo.md),
 including the manual Apple Task 0 after the product identity and target graph
 are known. The accepted roadmap makes Gate 7 `APPLE-001` and groups
 `FOUNDATION-001`, `QUALITY-001`, and `CI-001` into one PR #1 brief,

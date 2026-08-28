@@ -95,5 +95,5 @@ the MVP.
 ## References
 
 - [First MVP PR preparation checklist](../first-mvp-pr-preparation-todo.md)
-- [MVP architecture baseline](../../docs/decisions/0003-mvp-application-architecture-baseline.md)
-- [Repository instructions](../../AGENTS.md)
+- [MVP architecture baseline](../../decisions/0003-mvp-application-architecture-baseline.md)
+- [Repository instructions](../../../AGENTS.md)

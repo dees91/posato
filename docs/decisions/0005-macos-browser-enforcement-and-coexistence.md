@@ -32,7 +32,7 @@ was rejected as unsafe. Those results establish bounded mechanism feasibility,
 not production support.
 
 The product therefore needs a deliberately small contract whose positive
-claims can be proved by [MACOS-004](../../tasks/mvp-roadmap.md), whose privacy
+claims can be proved by [MACOS-004](../tasks/mvp-roadmap.md), whose privacy
 costs are explicit, and whose unsupported environments fail truthfully.
 
 ## Decision
@@ -96,7 +96,7 @@ denial rather than content erasure.
 
 ### Exact-domain and request boundary
 
-[TARGETS-001](../../tasks/mvp-roadmap.md) owns user-input validation and must
+[TARGETS-001](../tasks/mvp-roadmap.md) owns user-input validation and must
 produce one canonical DNS `ExactDomain`: lowercase ASCII IDNA A-labels with no
 terminal dot, wildcard, IP literal, single-label or local name, scheme,
 userinfo, port, path, query, or fragment.
@@ -260,7 +260,7 @@ verified. Normal expiry and early end restore before stopping it and cancel
 presentation work and debounce state. Recovery never navigates back, restores
 an attempted URL, closes a tab or window, modifies a profile, or clears browser
 data. Persistent Apple Automation permission and release removal guidance stay
-with [RELEASE-001](../../tasks/mvp-roadmap.md).
+with [RELEASE-001](../tasks/mvp-roadmap.md).
 
 ## Required implementation evidence
 
@@ -382,5 +382,5 @@ incorrectly.
 - [Diagnostics and support-data policy](../security/diagnostics-and-support-data.md)
 - [macOS helper ownership and lifecycle](0004-macos-helper-ownership-and-lifecycle.md)
 - [macOS enforcement synthesis](../wiki/topics/macos-enforcement.md)
-- [MACOS-002 brief](../../tasks/specifications/macos-002-browser-enforcement-contract.md)
-- [MACOS-002 execution](../../tasks/executions/macos-002-browser-enforcement-contract.md)
+- [MACOS-002 brief](../tasks/specifications/macos-002-browser-enforcement-contract.md)
+- [MACOS-002 execution](../tasks/executions/macos-002-browser-enforcement-contract.md)

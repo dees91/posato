@@ -21,17 +21,17 @@ provenance rather than a parallel public brand.
 - [sources/mvp-interaction-prototype.md](sources/mvp-interaction-prototype.md)
   — pinned provenance, observed flows, and evidence limits for the disposable
   interactive MVP UX prototype.
-- [../../tasks/first-mvp-pr-preparation-plan.md](../../tasks/first-mvp-pr-preparation-plan.md)
+- [../tasks/first-mvp-pr-preparation-plan.md](../tasks/first-mvp-pr-preparation-plan.md)
   — accepted preparation route to the first MVP code pull request.
-- [../../tasks/first-mvp-pr-preparation-todo.md](../../tasks/first-mvp-pr-preparation-todo.md)
+- [../tasks/first-mvp-pr-preparation-todo.md](../tasks/first-mvp-pr-preparation-todo.md)
   — active state and acceptance criteria for its seven preparation gates.
 - [../development/engineering-quality-contract.md](../development/engineering-quality-contract.md)
   — accepted formatting, static-analysis, testing, review, CI, and Definition
   of Done authority.
-- [../../tasks/README.md](../../tasks/README.md) — accepted proportional review,
+- [../tasks/README.md](../tasks/README.md) — accepted proportional review,
   just-in-time task brief, concise execution record, wave, and parallel-work
   process.
-- [../../tasks/mvp-roadmap.md](../../tasks/mvp-roadmap.md) — accepted Gate 6
+- [../tasks/mvp-roadmap.md](../tasks/mvp-roadmap.md) — accepted Gate 6
   MVP task-stub, dependency, wave, evidence, and integration-group authority.
 - [../../DESIGN.md](../../DESIGN.md) — accepted, tool-neutral Posato brand and
   product design system for the Apple MVP.

@@ -406,7 +406,7 @@ it and then recorded as an ADR before parallel consumers depend on it.
 defines ktlint formatting, Detekt analysis, Compose Rules through Detekt,
 warning-free owned source, applicable test layers, proportional review, concise
 task-local evidence, and the standing Definition of Done. The
-[task workflow](../../../tasks/README.md) keeps future work as roadmap stubs,
+[task workflow](../../tasks/README.md) keeps future work as roadmap stubs,
 creates briefs just in time, and requires a pre-implementation review only for
 named High-risk work.
 

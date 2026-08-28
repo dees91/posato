@@ -13,7 +13,7 @@ software. Evidence should support an engineering decision, not exist merely to
 confirm that another record exists.
 
 The standing quality bar is the
-[engineering quality contract](../docs/development/engineering-quality-contract.md).
+[engineering quality contract](../development/engineering-quality-contract.md).
 
 ## Sources of truth
 
@@ -75,7 +75,7 @@ configuration, and evidence created only for its own sake.
 
 ## Task brief
 
-Create `tasks/specifications/<task-id>.md` from the
+Create `docs/tasks/specifications/<task-id>.md` from the
 [brief template](templates/task-specification.md) only when the task is about
 to start.
 
@@ -96,7 +96,7 @@ to the maintainer.
 
 ## Execution record
 
-Create `tasks/executions/<task-id>.md` from the
+Create `docs/tasks/executions/<task-id>.md` from the
 [execution template](templates/execution-record.md) for Standard and High-risk
 work. Keep only:
 

@@ -137,14 +137,14 @@ about to start.
 - [x] Foundation work is limited to what a named vertical slice needs; there
   is no broad "implement MVP" pull request.
 - [x] PR #1 is fixed to the production skeleton contract in
-  `tasks/first-mvp-pr-preparation-plan.md`.
+  `docs/tasks/first-mvp-pr-preparation-plan.md`.
 
 **Verification:**
 
 - [x] The roadmap names dependencies, phases, waves, integration groups,
   required manual gates, and physical-device checks without speculative
   reviewer assignments or repeated process text.
-- [x] The roadmap follows `tasks/README.md`, including proportional review,
+- [x] The roadmap follows `docs/tasks/README.md`, including proportional review,
   concise evidence, and the CI deadline.
 
 **Dependencies:** Gates 1 through 5.

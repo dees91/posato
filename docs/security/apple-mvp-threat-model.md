@@ -8,7 +8,7 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`, informed by accepted Posato authorities and
   bounded feasibility evidence
-- **Task:** [`SECURITY-001`](../../tasks/specifications/security-001-mvp-threat-model.md)
+- **Task:** [`SECURITY-001`](../tasks/specifications/security-001-mvp-threat-model.md)
 
 The maintainer explicitly accepted this authority and its original five
 residual risks on 2026-08-26. The later user-confirmed MACOS-002 amendment adds
@@ -218,7 +218,7 @@ evidence, or `VERIFIED` status is imported by this model.
 - [ADR 0002: synchronization trust and workspace modes](../decisions/0002-synchronization-trust-and-workspace-modes.md)
 - [ADR 0003: MVP application architecture baseline](../decisions/0003-mvp-application-architecture-baseline.md)
 - [Engineering quality contract](../development/engineering-quality-contract.md)
-- [MVP roadmap](../../tasks/mvp-roadmap.md)
+- [MVP roadmap](../tasks/mvp-roadmap.md)
 - [Diagnostics and support-data policy](diagnostics-and-support-data.md)
 - [Maintained privacy and trust synthesis](../wiki/topics/privacy-and-trust-model.md)
 - [Synchronization synthesis](../wiki/topics/cross-device-synchronization.md)

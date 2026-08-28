@@ -38,7 +38,7 @@ not filesystem paths.
 
 - Add `docs/development/engineering-quality-contract.md` as the standing
   quality and Definition of Done authority.
-- Add `tasks/README.md` plus specification and execution templates.
+- Add `docs/tasks/README.md` plus specification and execution templates.
 - Route the authorities from `AGENTS.md`, repository and development README
   files, preparation plan and checklist, wiki index, and maintained topics.
 - Add a dated amendment to ADR 0003 for the accepted Gate 5 and CI execution
@@ -127,7 +127,7 @@ reviewer approved the result in Round 5.
 | Criterion | Result | Evidence |
 | --- | --- | --- |
 | `AC-01` | `pass` | `docs/development/engineering-quality-contract.md` covers every named quality area. |
-| `AC-02` | `pass` | `tasks/README.md` defines artifact authority, planning hierarchy, dependencies, execution states, reviews, parallel work, and PR mapping. |
+| `AC-02` | `pass` | `docs/tasks/README.md` defines artifact authority, planning hierarchy, dependencies, execution states, reviews, parallel work, and PR mapping. |
 | `AC-03` | `pass` | Both templates now require revisioned acceptance, applicability, plan and review history, and complete final evidence. |
 | `AC-04` | `pass` | Active-routing search found no stale Gate 5 handoff or superseded CI wording. |
 | `AC-05` | `pass` | The corrected plan was independently approved and the fresh escalated reviewer approved the completed documentation in Round 5. |

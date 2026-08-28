@@ -45,7 +45,7 @@ Before non-trivial implementation, build, configuration, or documentation
 work, read:
 
 1. [`docs/development/engineering-quality-contract.md`](docs/development/engineering-quality-contract.md);
-2. [`tasks/README.md`](tasks/README.md); and
+2. [`docs/tasks/README.md`](docs/tasks/README.md); and
 3. the active task brief, or its accepted roadmap stub when a brief has not
    yet been created, and the linked authorities.
 
@@ -55,7 +55,7 @@ boundaries, dependencies, acceptance criteria, and applicable verification.
 The execution record contains only the actual plan, result, blockers, review,
 and checks used for that change.
 
-Follow the proportional review tier in `tasks/README.md`. Trivial changes use a
+Follow the proportional review tier in `docs/tasks/README.md`. Trivial changes use a
 self-check. Standard changes require one independent completed-change review.
 High-risk changes additionally require a brief independent plan review before
 implementation. Resolve all Critical and Required findings and rerun affected
@@ -68,7 +68,7 @@ unless the maintainer explicitly requests it or a named repeated consumer
 needs it. When human action is the blocker, stop and explain the next action.
 
 Parallel implementing agents require isolated Git worktrees and the dependency
-and write-surface conditions in `tasks/README.md`.
+and write-surface conditions in `docs/tasks/README.md`.
 
 ## Code Review Rules
 
@@ -154,9 +154,9 @@ decisions for their named pull requests rather than assumptions inherited from
 the PoC.
 
 The active preparation route to the first production-code pull request is
-[`tasks/first-mvp-pr-preparation-plan.md`](tasks/first-mvp-pr-preparation-plan.md),
+[`docs/tasks/first-mvp-pr-preparation-plan.md`](docs/tasks/first-mvp-pr-preparation-plan.md),
 with gate state in
-[`tasks/first-mvp-pr-preparation-todo.md`](tasks/first-mvp-pr-preparation-todo.md).
+[`docs/tasks/first-mvp-pr-preparation-todo.md`](docs/tasks/first-mvp-pr-preparation-todo.md).
 Continue the first incomplete gate unless the user explicitly changes the
 milestone. Do not scaffold application code until the "Ready to open PR #1"
 checkpoint is complete and explicitly accepted.

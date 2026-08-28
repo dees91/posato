@@ -15,11 +15,11 @@ and integration groups. It does not pre-authorize implementation or require a
 full specification for inactive work. Create a concise brief just before a
 task or integration group starts, following [the task workflow](README.md).
 
-The accepted [MVP scope](../docs/product/mvp-scope.md),
-[design authority](../DESIGN.md),
-[architecture baseline](../docs/decisions/0003-mvp-application-architecture-baseline.md),
-[synchronization trust boundary](../docs/decisions/0002-synchronization-trust-and-workspace-modes.md),
-and [quality contract](../docs/development/engineering-quality-contract.md)
+The accepted [MVP scope](../product/mvp-scope.md),
+[design authority](../../DESIGN.md),
+[architecture baseline](../decisions/0003-mvp-application-architecture-baseline.md),
+[synchronization trust boundary](../decisions/0002-synchronization-trust-and-workspace-modes.md),
+and [quality contract](../development/engineering-quality-contract.md)
 remain authoritative for their concerns.
 
 ## Planning boundaries
@@ -130,4 +130,4 @@ Gate 6 acceptance makes these rows planning authority, not implementation
 authorization. Complete and explicitly accept the Ready to open PR #1
 checkpoint before production scaffolding. For later work, create the brief
 only when its dependencies and wave barrier are clear, then apply the
-proportional review tier and evidence rules in `tasks/README.md`.
+proportional review tier and evidence rules in `docs/tasks/README.md`.

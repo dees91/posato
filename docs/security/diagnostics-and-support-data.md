@@ -9,7 +9,7 @@
 - **Provenance:** `user-confirmed`, constrained by accepted Posato authorities
   and bounded feasibility evidence
 - **Task:**
-  [`DIAGNOSTICS-001`](../../tasks/specifications/diagnostics-001-diagnostics-and-support-data.md)
+  [`DIAGNOSTICS-001`](../tasks/specifications/diagnostics-001-diagnostics-and-support-data.md)
 
 The maintainer explicitly accepted this policy and its capture, retention,
 deletion, export, and no-remote-collection boundaries on 2026-08-26. It
@@ -259,6 +259,6 @@ name, dependency, code, private value, or production claim is imported.
 - [ADR 0002: synchronization trust and workspace modes](../decisions/0002-synchronization-trust-and-workspace-modes.md)
 - [ADR 0003: MVP application architecture baseline](../decisions/0003-mvp-application-architecture-baseline.md)
 - [Engineering quality contract](../development/engineering-quality-contract.md)
-- [MVP roadmap](../../tasks/mvp-roadmap.md)
+- [MVP roadmap](../tasks/mvp-roadmap.md)
 - [Maintained privacy and trust synthesis](../wiki/topics/privacy-and-trust-model.md)
 - [PoC reuse inventory](../wiki/topics/poc-reuse-inventory.md)

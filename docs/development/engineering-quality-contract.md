@@ -9,7 +9,7 @@
 - **Provenance:** `user-confirmed`
 
 This document defines the standing quality bar for Posato. The
-[task workflow](../../tasks/README.md) applies it proportionally: verification
+[task workflow](../tasks/README.md) applies it proportionally: verification
 must be capable of finding a defect in the actual change, not fill a generic
 matrix.
 
@@ -123,7 +123,7 @@ actually applicable and run; do not enumerate irrelevant categories as `N/A`.
 
 ## Review
 
-The review tier comes from [the task workflow](../../tasks/README.md):
+The review tier comes from [the task workflow](../tasks/README.md):
 
 - Trivial changes receive an author self-check.
 - Standard changes receive one independent completed-change review.

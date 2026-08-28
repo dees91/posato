@@ -13,7 +13,7 @@ Identifiers beginning with `/root` below name collaboration agents. They are
 not filesystem paths.
 
 `PLANNING-001` began as a pre-acceptance Gate 6 drafting record under the
-explicit parent-gate exception in `tasks/README.md`. The plan and
+explicit parent-gate exception in `docs/tasks/README.md`. The plan and
 completed-change reviews below therefore occurred while the outputs were
 candidates. The maintainer accepted this specification, roadmap revision 1,
 and all 36 linked task specifications on 2026-08-25; final acceptance evidence
@@ -26,7 +26,7 @@ implementation.
 ### Repository findings and authorities
 
 - Gates 1 through 5 are accepted, and Gate 6 is the first incomplete gate.
-- `tasks/README.md` makes the Gate 6 roadmap authoritative for epic membership,
+- `docs/tasks/README.md` makes the Gate 6 roadmap authoritative for epic membership,
   phases, waves, lanes, the derived dependency graph, and pull-request order.
 - PR #1 must create only the reviewed Apple application skeleton, shared shell,
   semantic platform contracts and fakes, baseline tests and quality checks,
@@ -47,12 +47,12 @@ implementation.
 ### Assumptions and open questions
 
 - The maintainer's instruction to proceed to Gate 6 authorized drafting under
-  the parent-gate exception in `tasks/README.md`; it did not accept the output
+  the parent-gate exception in `docs/tasks/README.md`; it did not accept the output
   in advance. Explicit acceptance followed on 2026-08-25 after the completed
   review loop.
 - Roadmap revision 1 and all 36 downstream task specifications are accepted.
 - Execution records for downstream tasks are created only when an accepted
-  task is authorized, as required by `tasks/README.md`; the roadmap reserves
+  task is authorized, as required by `docs/tasks/README.md`; the roadmap reserves
   their canonical paths without fabricating future plans or reviews.
 - Exact dependency versions, files, APIs, algorithms, native-helper choices,
   Apple schema details, cryptographic primitives, and CI jobs remain technical
@@ -163,15 +163,15 @@ early-end-friction, or total-key-loss-recovery task is present.
    maintainer-reviewed and browser-observed flow evidence, usability-evidence
    limits, non-dependency status, and link to the existing design topic. Route
    it from `docs/wiki/index.md` without creating a second design authority.
-2. Add `tasks/mvp-roadmap.md` as a `draft` Gate 6 candidate with epics, phases,
+2. Add `docs/tasks/mvp-roadmap.md` as a `draft` Gate 6 candidate with epics, phases,
    waves, lanes, dependency graph, critical path, PR groups, shared write
    surfaces, manual gates, device checks, and acceptance procedure.
 3. Add draft specifications for the 36 task IDs listed above under
-   `tasks/specifications/`. Keep each specification outcome-only and include
+   `docs/tasks/specifications/`. Keep each specification outcome-only and include
    direct dependencies, concurrency constraints, acceptance criteria, evidence
    categories, review applicability, decision gates, and accepted-authority
    references. Reserve, but do not pre-create, each future execution path under
-   `tasks/executions/` until its accepted task is authorized.
+   `docs/tasks/executions/` until its accepted task is authorized.
 4. Give the serialized `D` decision tasks separate primary authorities:
    `docs/security/mvp-threat-model.md`,
    `docs/security/diagnostics-and-support-data.md`,
@@ -180,8 +180,8 @@ early-end-friction, or total-key-loss-recovery task is present.
    `docs/decisions/0005-synchronization-format-and-cryptography.md`, and
    `docs/decisions/0006-apple-workspace-bootstrap.md`. These paths are planning
    write-surface assignments, not accepted decision contents.
-5. Update `tasks/first-mvp-pr-preparation-plan.md`,
-   `tasks/first-mvp-pr-preparation-todo.md`, and
+5. Update `docs/tasks/first-mvp-pr-preparation-plan.md`,
+   `docs/tasks/first-mvp-pr-preparation-todo.md`, and
    `docs/wiki/topics/mvp-open-questions.md` to route to the candidate roadmap
    while leaving Gate 6 incomplete and PR #1 blocked pending maintainer
    acceptance and Gate 7 completion.

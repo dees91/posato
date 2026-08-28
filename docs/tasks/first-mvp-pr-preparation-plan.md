@@ -34,8 +34,8 @@ of selectively reviewed ideas, not the production baseline.
 - `user-confirmed`: PoC and spike code remain reference material rather than a
   foundation to clean up incrementally.
 
-See [feasibility results and limits](../docs/wiki/topics/feasibility-results-and-limits.md)
-and the [reuse inventory](../docs/wiki/topics/poc-reuse-inventory.md) for the
+See [feasibility results and limits](../wiki/topics/feasibility-results-and-limits.md)
+and the [reuse inventory](../wiki/topics/poc-reuse-inventory.md) for the
 evidence boundary.
 
 ## Gate dependency graph
@@ -57,8 +57,8 @@ Product identity ─┴───────────────────
 The MVP scope, **Posato** product identity, minimum brand and product design
 baseline, and [MVP architecture baseline][architecture-baseline] are accepted.
 The maintainer controls `posato.app`, `app.posato` is the stable technical root,
-and [DESIGN.md](../DESIGN.md) is the design authority. The
-[engineering quality contract](../docs/development/engineering-quality-contract.md)
+and [DESIGN.md](../../DESIGN.md) is the design authority. The
+[engineering quality contract](../development/engineering-quality-contract.md)
 and [task workflow](README.md) are accepted. The
 [Gate 6 MVP roadmap](mvp-roadmap.md) is accepted at revision 2 and retains
 future work as concise task stubs. Gate 7 Apple resource registration is
@@ -67,7 +67,7 @@ accepted; the production skeleton and local quality gate are implemented on the
 active PR #1 branch. Architecture details deferred by ADR 0003 remain with the
 smallest named task that requires them.
 
-[architecture-baseline]: ../docs/decisions/0003-mvp-application-architecture-baseline.md
+[architecture-baseline]: ../decisions/0003-mvp-application-architecture-baseline.md
 
 ## Seven gates
 
@@ -102,13 +102,13 @@ later as independently reviewable vertical slices.
 ## Execution rules
 
 - Do not start PR #1 implementation until every gate in
-  `tasks/first-mvp-pr-preparation-todo.md` is complete and the ready checkpoint
+  `docs/tasks/first-mvp-pr-preparation-todo.md` is complete and the ready checkpoint
   is explicitly accepted.
 - Do not create a broad architecture spike. Resolve detailed Kotlin/Native,
   Swift, helper, extension, and transport choices in the first production slice
   that needs them.
 - Require review before every merge, including generated project scaffolding.
-- Follow the proportional review tiers in `tasks/README.md`: self-check
+- Follow the proportional review tiers in `docs/tasks/README.md`: self-check
   Trivial changes, one completed-change review for Standard work, and add a
   brief plan review only for named High-risk work.
 - Reuse PoC code only after provenance, licensing, architecture, security, and

@@ -20,7 +20,7 @@ reported without overstating the feasibility evidence.
 ## Boundaries
 
 - Cover only the accepted arm64 macOS 15-or-later MVP and the helper boundary
-  accepted by [ADR 0004](../../docs/decisions/0004-macos-helper-ownership-and-lifecycle.md).
+  accepted by [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md).
 - Select the minimum explicit browser matrix and distinguish network denial
   from browser presentation for every support claim.
 - Define exact-host matching, ambiguous-input rejection, conflict preflight,

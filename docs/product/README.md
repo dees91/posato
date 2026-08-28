@@ -26,9 +26,9 @@ Gates 1 through 6 are accepted. Their authorities include the
 [DESIGN.md](../../DESIGN.md),
 [ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md), and the
 [engineering quality contract](../development/engineering-quality-contract.md)
-and [MVP roadmap](../../tasks/mvp-roadmap.md). Gate 7, the manual Apple resource
+and [MVP roadmap](../tasks/mvp-roadmap.md). Gate 7, the manual Apple resource
 checklist, is the first incomplete gate. The active execution contract is the
-[first MVP PR preparation plan](../../tasks/first-mvp-pr-preparation-plan.md)
-and its [gate checklist](../../tasks/first-mvp-pr-preparation-todo.md). Accepted
+[first MVP PR preparation plan](../tasks/first-mvp-pr-preparation-plan.md)
+and its [gate checklist](../tasks/first-mvp-pr-preparation-todo.md). Accepted
 product outputs are promoted back into this directory; architecture decisions
 live under `docs/decisions/`.

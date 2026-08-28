@@ -126,13 +126,13 @@ adds no `sudoers` rule, `SMJobBless` path, shell command, custom installer,
 custom updater, or custom watchdog.
 
 Authorization Services plus a root launch daemon select a non-sandboxed macOS
-architecture. [RELEASE-001](../../tasks/mvp-roadmap.md) owns the eventual
+architecture. [RELEASE-001](../tasks/mvp-roadmap.md) owns the eventual
 distribution verdict, but an incompatible distribution channel cannot be
 selected without revisiting this decision.
 
 The exact daemon bundle identifier, Mach service name, launchd property-list
 policy, build wiring, and embedded path are fixed and reviewed by
-[MACOS-003](../../tasks/mvp-roadmap.md) before implementation. Each must remain
+[MACOS-003](../tasks/mvp-roadmap.md) before implementation. Each must remain
 inside the `app.posato.macos` namespace and must not be caller-selectable.
 
 ### JVM-to-session-helper boundary
@@ -266,7 +266,7 @@ proxy configuration, compare the owned tuples, construct one resulting
 dictionary, commit and apply it, and then verify the complete result. PAC,
 autodiscovery, and every unrelated key are preserved. Whether their presence
 is supported or requires a fail-before-mutation outcome is decided by
-[MACOS-002](../../tasks/mvp-roadmap.md).
+[MACOS-002](../tasks/mvp-roadmap.md).
 
 During restore, a tuple that exactly equals the Posato-applied tuple is restored
 atomically to its baseline presence and values. If any tuple member differs,

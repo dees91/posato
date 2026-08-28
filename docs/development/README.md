@@ -4,7 +4,7 @@ The accepted [engineering quality contract](engineering-quality-contract.md)
 is the standing authority for code quality, tests, review, dependencies,
 security and privacy applicability, local verification, CI timing, and the
 Definition of Done. Task planning and evidence follow the
-[repository task workflow](../../tasks/README.md).
+[repository task workflow](../tasks/README.md).
 
 PoC tool versions and module boundaries are evidence, not automatic MVP
 requirements. The first production build has been scaffolded under the
@@ -86,7 +86,7 @@ xcodebuild \
 PR #1 does not implement website blocking, application blocking,
 synchronization, enrollment, recovery, or production helpers. Implementation
 starts only after all seven gates and the ready checkpoint in the
-[first MVP PR preparation checklist](../../tasks/first-mvp-pr-preparation-todo.md)
+[first MVP PR preparation checklist](../tasks/first-mvp-pr-preparation-todo.md)
 are complete and explicitly accepted.
 
 ## Local quality gate

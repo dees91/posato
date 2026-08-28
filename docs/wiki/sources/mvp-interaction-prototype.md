@@ -75,7 +75,7 @@ These are `observed` prototype results, not production acceptance evidence.
 
 ## Planning use
 
-The accepted [MVP roadmap](../../../tasks/mvp-roadmap.md) routes this evidence to
+The accepted [MVP roadmap](../../tasks/mvp-roadmap.md) routes this evidence to
 the smallest UI tasks that consume it: exact-domain and semantic-application
 target management, device-local mapping, shared manual-session behavior, local
 session integration, and first- and second-installation onboarding. Each task

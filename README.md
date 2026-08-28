@@ -53,11 +53,11 @@ These are direction constraints, not a complete architecture.
 - [Accepted product identity](docs/product/product-identity.md)
 - [Accepted design system](DESIGN.md)
 - [Engineering quality contract](docs/development/engineering-quality-contract.md)
-- [Task workflow](tasks/README.md)
+- [Task workflow](docs/tasks/README.md)
 - [Feasibility results and limits](docs/wiki/topics/feasibility-results-and-limits.md)
 - [MVP open questions](docs/wiki/topics/mvp-open-questions.md)
-- [First MVP PR preparation plan](tasks/first-mvp-pr-preparation-plan.md)
-- [First MVP PR preparation checklist](tasks/first-mvp-pr-preparation-todo.md)
+- [First MVP PR preparation plan](docs/tasks/first-mvp-pr-preparation-plan.md)
+- [First MVP PR preparation checklist](docs/tasks/first-mvp-pr-preparation-todo.md)
 
 ## Active milestone: the first MVP code PR
 
@@ -69,11 +69,11 @@ has passed its first hosted GitHub Actions run.
 The MVP scope, product identity, minimum brand and product design baseline,
 [MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md),
 and [engineering quality contract](docs/development/engineering-quality-contract.md)
-are accepted. [Gate 6 MVP roadmap revision 2](tasks/mvp-roadmap.md) retains
+are accepted. [Gate 6 MVP roadmap revision 2](docs/tasks/mvp-roadmap.md) retains
 future work as concise task stubs.
 The accepted route and verification criteria live in the
-[preparation plan](tasks/first-mvp-pr-preparation-plan.md) and
-[checklist](tasks/first-mvp-pr-preparation-todo.md).
+[preparation plan](docs/tasks/first-mvp-pr-preparation-plan.md) and
+[checklist](docs/tasks/first-mvp-pr-preparation-todo.md).
 
 PR #1 uses fresh KMP application modules, accepted identifiers, and one minimal
 shared Compose screen running on macOS and iOS. It has one aggregate local
