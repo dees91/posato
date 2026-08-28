@@ -109,6 +109,18 @@ start, or wall-clock rollback does not revive it. Multiple distinct starts for
 one identifier deterministically quarantine that session; the marker is not a
 synchronized event or diagnostic.
 
+`user-confirmed` (2026-08-28): an Apple author is a process-memory authoring
+incarnation scoped to one local replica-writer open, not a persistent device
+identity. The first mutation atomically creates registration and business
+operations; reopen creates a fresh author, while committed pending bundles
+remain immutable and publishable. Ambiguous local commits reconcile exact bytes
+or fail closed. The serialized replica state machine advances the open writer's
+checkpoint with each exact local or remote transaction. Loss, regression, or
+an unexplained change to that author/HLC footprint freezes the writer before it
+can create a sequence gap or clear exhaustion, while a verified remote advance
+remains valid. A terminal HLC blocks further local authoring without rejecting
+later valid remote input, while an out-of-range wall clock is recoverable.
+
 ## Persistence and atomicity
 
 The PoC used SQLDelight for an app-private local replica. It kept accepted

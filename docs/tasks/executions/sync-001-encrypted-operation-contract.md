@@ -23,6 +23,9 @@
 5. After acceptance, mark the ADR accepted, update the synchronization wiki and
    log, record final evidence, obtain a focused independent review of the final
    versioned change, and only then mark the task done.
+6. Address accepted hosted-review corrections in the same contract without a
+   wire-format change, rerun affected verification and focused independent
+   review, then commit, push, and reply with evidence.
 
 ## High-risk plan review
 
@@ -35,6 +38,10 @@
   requires focused independent review after the final closeout before done.
   Independent re-review approved the corrected plan with no remaining Critical
   or Required finding.
+- The third hosted-review correction plan initially required exact
+  ambiguous-commit reconciliation, whole-batch HLC reservation, atomic terminal
+  exhaustion, and a recoverable invalid-wall-clock outcome. Focused re-review
+  approved the corrected plan with no remaining Critical or Required finding.
 
 ## Result
 
@@ -52,6 +59,11 @@
   maintainer-requested second hosted pass: capacity is recomputed projection
   state, while observed expiry is a terminal local marker bound to its
   encrypted session identifier; competing starts quarantine the session.
+- The maintainer requested a third hosted pass. Its Required coordinated-
+  rollback finding replaces persistent Apple signing state with a fresh
+  process-memory authoring incarnation per local writer open. Its advisory HLC
+  overflow finding was explicitly accepted into scope and now has terminal
+  fail-closed local authoring behavior while inbound projection continues.
 
 ## Completed-change review
 
@@ -89,26 +101,45 @@
   quarantine from every distinct start removes that displacement without
   exposing the identifier as routing metadata. Focused re-review approved the
   complete correction with no remaining Critical or Required finding.
+- The third hosted pass found that coordinated database and secure-record
+  rollback could reuse an author sequence. It also reported advisory HLC
+  overflow at the accepted maximum, which the maintainer accepted into scope.
+  Independent correction-plan review required exact ambiguous-commit
+  reconciliation, whole-batch HLC reservation for registration plus the first
+  business operation, atomic exhaustion at the terminal tuple, and a distinct
+  recoverable invalid-wall-clock outcome. The corrected plan passed focused
+  re-review with no remaining Critical or Required finding.
+- The first focused completed-change review of that correction found one
+  remaining Required defect: the in-memory sequence did not prevent a
+  same-open rollback from deleting an unpublished committed operation, creating
+  an unfillable gap, lowering HLC, or clearing exhaustion. The correction now
+  compares the retained author/HLC footprint with the last committed in-memory
+  checkpoint and freezes the writer before any later sealing on regression.
+  Focused re-review then found that legitimate remote acceptance also advances
+  HLC during the same open. The state machine now advances the checkpoint with
+  every exact serialized local or remote transaction and rejects only regressed
+  or unexplained state. Focused re-review approved the complete correction with
+  no remaining Critical, Required, Recommended, or Optional finding.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Initial authority and feasibility routing | `pass` | Read the required repository contracts, accepted authorities, maintained synchronization synthesis, and final feasibility sources before drafting. |
-| Current cryptography evidence | `pass` | Reviewed current Apple CryptoKit, JDK 21, NIST, RFC 5869, RFC 8032, and cryptography-kotlin primary sources for the minimum Apple MVP candidates. |
+| Current cryptography evidence | `pass` | Reviewed current Apple CryptoKit and Keychain accessibility, JDK 21, NIST, RFC 5869, RFC 8032, and cryptography-kotlin primary sources for the minimum Apple MVP candidates and rollback boundary. |
 | Pre-acceptance proposal review | `pass` | Independent corrected-proposal review found no remaining Critical or Required defect. |
 | Maintainer acceptance | `pass` | The maintainer explicitly selected acceptance of ADR 0006 on 2026-08-28. |
 | Repository-local Markdown links | `pass` | All repository-local Markdown links resolve. |
 | Diff and sensitive-data hygiene | `pass` | `git diff --check` passed and the scoped scan found no personal path, private-key marker, or common credential shape. |
-| Completed-change review | `pass` | Focused re-review approved recomputed capacity outcomes, conflicting-start quarantine, and terminal expiry with no remaining Critical or Required finding. |
+| Third-correction completed-change review | `pass` | Focused review required same-open regression checks; re-review required verified remote transactions to advance the same checkpoint. Final focused re-review approved the complete correction with no remaining findings. |
 
 ## Blockers and accepted risks
 
-- No blocker. ADR 0006 is accepted; production implementation and cross-target
-  evidence remain with `SYNC-002`, and Apple bootstrap remains with `SYNC-003`.
+- No blocker. Production implementation and cross-target evidence remain with
+  `SYNC-002`, and Apple bootstrap remains with `SYNC-003`.
 
 ## Final
 
 - **Status:** `done`
-- **Outcome:** accepted encrypted-operation and convergence contract governs
-  Apple MVP synchronization implementation
+- **Outcome:** accepted encrypted-operation and convergence contract includes
+  rollback-safe local authoring and fail-closed HLC exhaustion

@@ -17,6 +17,14 @@ registration, validation order, replay and sequence handling, and deterministic
 convergence contract. Production implementation and cross-target evidence remain
 with `SYNC-002`; Apple workspace bootstrap remains with `SYNC-003`.
 
+For Apple mode, retained accepted-author sequence state detects replay and
+equivocation, while a fresh process-memory authoring incarnation on every local
+replica-writer open prevents sequence reuse after coordinated local restore.
+This supersedes any broader wording below that could imply a persistent Apple
+signing identity or a local high-water mark capable of detecting rollback after
+all evidence of the later state has been erased. Portable completeness and
+high-water behavior remain a later decision.
+
 ## Relationship to feasibility ADR 0001
 
 The feasibility repository retains ADR 0001, *Apple-First Synchronization in

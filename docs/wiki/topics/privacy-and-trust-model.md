@@ -169,16 +169,18 @@ may delete, replace, duplicate, reorder, or replay encrypted objects.
 The accepted direction separates:
 
 - one Apple workspace key delivered through synchronizable Keychain;
-- signed-operation author identity whose automatic Apple-mode registration is
-  still to be designed;
+- one ephemeral Apple authoring key per local replica-writer incarnation, held
+  only in process memory and registered automatically with the first mutation;
 - portable device-local signing and key-agreement identities;
 - portable per-device wrapping and future key epochs after membership changes;
   and
 - optional human-held portable recovery material.
 
-Production must define generation, storage accessibility, backup behavior,
-rotation, automatic Apple author registration, portable enrollment, revocation,
-recovery, destruction, and fork/self-build configuration for each class.
+Production must implement the accepted Apple generation, in-memory lifetime,
+automatic registration, rotation, ambiguous-commit, and destruction behavior.
+Storage accessibility, backup behavior, portable enrollment, revocation,
+recovery, and fork/self-build configuration remain to be defined for the key
+classes that persist or belong to portable mode.
 
 ## Failure and integrity
 

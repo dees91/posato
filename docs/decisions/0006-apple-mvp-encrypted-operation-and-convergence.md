@@ -226,18 +226,32 @@ standard encodings or provider behavior, `SYNC-002` must stop and propose a
 reviewed contract amendment rather than silently add a provider or change wire
 bytes.
 
-The device-local Ed25519 private key is non-synchronizable and non-exportable
-through Posato behavior. Exact Keychain storage selectors and accessibility are
-owned by `SYNC-003`, `SYNC-005`, and `SYNC-006`. Managed runtimes and CryptoKit
-may retain implementation-owned copies; Posato clears mutable byte arrays it
-owns where supported and makes no guaranteed-memory-erasure claim.
+An Apple authoring Ed25519 private key exists only in process memory for one
+local replica-writer incarnation. Posato never persists, synchronizes, exports,
+or diagnoses it. `SYNC-002` owns that lifecycle behind the narrow provider
+interface; `SYNC-003`, `SYNC-005`, and `SYNC-006` do not create a Keychain item
+for it. Managed runtimes and CryptoKit may retain implementation-owned copies;
+Posato clears mutable byte arrays it owns where supported and makes no
+guaranteed-memory-erasure claim.
 
 ### Automatic Apple author registration
 
-Workspace-key possession is the Apple MVP admission proof. Every installation
-creates one device-local Ed25519 key pair and random author identifier. Its
-first operation is `author-register`, at author sequence 1, encrypted with the
-derived bundle key and self-signed by its encrypted public key.
+Workspace-key possession is the Apple MVP admission proof. Each successful
+local replica-writer open starts without an author. Its first local mutation
+lazily creates a random author identifier and Ed25519 key pair in memory, then
+prepares two immutable bundles: `author-register` at sequence 1 and the
+requested business operation at sequence 2. One local transaction accepts and
+projects both operations, stores both pending bundles, and advances local HLC
+state before either bundle may be published. An open that creates no mutation
+creates no author or registration operation.
+
+The active authoring incarnation lives no longer than that writer open. Its
+private key and next sequence stay in memory, and the sequence never decreases
+from a storage observation during the open. Close, crash, or reopen retires the
+incarnation; the next mutation creates a fresh author. Previously committed
+pending bundles remain publishable byte-for-byte without the private key.
+Transport should publish registration first when possible, but reordered
+delivery remains valid and uses the bounded unknown-author staging rule below.
 
 For an unknown author, validation first derives the bundle key, authenticates
 and decrypts the bundle, then verifies the signature with the public key in the
@@ -279,9 +293,9 @@ replica before every applicable step succeeds:
 8. verify all duplicated context, identifier equality, signature, author rule,
    sequence rule, HLC bounds, operation kind, and payload invariants;
 9. reduce the complete accepted operation set deterministically; and
-10. in one transaction, store the accepted immutable operation, update author
-    high-water state, project visible state, mark the bundle accepted, and only
-    then advance transport progress.
+10. in one transaction, store the accepted immutable operation, update retained
+    author sequence state, project visible state, mark the bundle accepted, and
+    only then advance transport progress.
 
 Failure returns one bounded category: `unsupported-version`, `malformed`,
 `oversized`, `wrong-context`, `unknown-author`, `invalid-signature`,
@@ -292,21 +306,51 @@ successful no-op. Cancellation is propagated and never mapped to a failure.
 
 ### Sequence, time, and convergence
 
-Each author durably allocates a strictly increasing unsigned sequence starting
-at 1. Publication retry reuses the same immutable operation and sequence. A
+Each author allocates a strictly increasing unsigned sequence starting at 1.
+Publication retry reuses the same immutable operation, bundle, and sequence. A
 sequence already accepted with different bytes is an integrity failure.
 
-The secure local author record binds the signing identity to a durable sequence
-high-water mark. `SYNC-002` owns the state machine and must refuse sealing until
-the database and secure record are reconciled; `SYNC-003` owns its Apple
-bootstrap and storage contract, while `SYNC-005` and `SYNC-006` own the platform
-adapters. Local creation serializes the operation and pending immutable bundle
-commit before raising the secure high-water mark and before publication or the
-next operation. On restart, a database maximum above the secure high-water mark
-may raise that mark before publication. A secure high-water mark above a
-missing, corrupt, or rolled-back database retires the old local author identity
-and creates and registers a new identity at sequence 1. Missing or inconsistent
-state otherwise fails closed; the old identity cannot seal another operation.
+`SYNC-002` owns one active authoring incarnation at a time and serializes local
+creation and remote acceptance through the same replica state machine. Before a
+commit attempt it prepares stable identifiers, canonical bytes, signatures,
+and the complete required HLC reservation. The first mutation prepares
+registration and business operations together; later mutations prepare one
+operation. No prepared bundle is publishable before its local transaction
+commits.
+
+Every commit attempt retains its exact prepared identifiers and bytes until the
+result is resolved. After an ambiguous result, the store must inspect the exact
+transactional footprint. A complete byte-identical operation or first-operation
+pair, pending bundles, projection, author state, and HLC state means success. If
+complete absence is proven, only the same prepared bytes may be retried.
+Partial state, different bytes, or inability to prove presence or absence
+returns action-required `local-commit-uncertain`, retires and freezes that
+writer, and forbids an automatic retry or replacement incarnation. A
+preparation failure after sequence assignment likewise retires the incarnation
+unless the exact prepared operation remains available. Crash recovery must
+therefore expose either the complete committed transaction or no part of it.
+
+The in-memory sequence never decreases, so storage rollback while the writer
+remains open cannot reuse a sequence. Every successful serialized local or
+remote transaction atomically advances the writer's in-memory checkpoint to
+the exact retained accepted-operation bytes, author sequence state, and durable
+HLC/exhaustion state that transaction committed. A greater observed state may
+be adopted later only after its exact accepted remote-operation transaction
+footprint is verified.
+
+Before preparing any later mutation, the writer compares durable state with
+that checkpoint. Any missing, regressed, different, or otherwise unexplained
+element returns `local-commit-uncertain`, freezes and retires the writer, and
+emits no next-sequence bundle. This prevents a missing unpublished operation
+from creating an unfillable local gap and prevents same-open rollback from
+lowering HLC or clearing exhaustion without falsely rejecting a legitimate
+remote advance. Only a consistent reopen may resume local creation, with a
+fresh author.
+
+A restore followed by reopen cannot restore the private identity and uses a
+fresh author. The local database still retains accepted per-author sequence
+state for replay, equivocation, gap, and reordered-delivery handling; there is
+no secure author record or signing-key Keychain item.
 
 Delivery may be duplicated, reordered, or contain gaps. A higher sequence does
 not require rejecting the bundle solely because lower sequences are not yet
@@ -316,10 +360,34 @@ operations arrive. This avoids the PoC reducer's fresh-history assumption while
 retaining per-author equivocation and gap detection.
 
 Every operation carries a Hybrid Logical Clock value of signed 64-bit epoch
-milliseconds plus the bounded logical counter. On local creation and accepted
-remote input the durable local HLC advances by the standard maximum-plus-one
-rule. Wall-clock skew changes conflict winners but cannot bypass session bounds
-or extend a mandatory end after it has passed locally.
+milliseconds plus the bounded logical counter. Durable local HLC state is
+either `active(last)` or terminal `hlc-exhausted(last)`. Local creation first
+validates the wall clock. A physical value outside the format-1 range returns
+recoverable action-required `clock-out-of-range` without creating an author,
+reserving HLC values, sealing bytes, or mutating state.
+
+Local creation reserves the complete consecutive HLC batch before sealing: two
+successors for registration plus the first business operation, and one for a
+later operation. If two values remain, the first mutation may use the
+penultimate and terminal tuples and commits `hlc-exhausted` atomically with the
+two operations. If the complete batch cannot be represented, local creation
+commits no operation, records terminal `hlc-exhausted` in an otherwise
+state-only transaction, and returns that outcome; it never wraps, clamps,
+reuses a tuple, or partially registers an author.
+
+Accepted remote input advances from the greater of the retained local and
+remote HLC by one when representable. If that successor is the terminal tuple,
+or no successor exists because the remote or retained value is already
+terminal, the same acceptance and projection transaction records
+`hlc-exhausted`. Remote operations remain valid, accepted, and projectable
+while the local clock is exhausted; only future local operation creation is
+refused. Startup treats a retained or accepted terminal HLC as exhausted and
+fails closed on inconsistent clock state. Reopen, author rotation, or clock
+repair does not clear genuine exhaustion. Recovery requires a separately
+accepted workspace-reset or format/epoch migration decision.
+
+Wall-clock skew within the valid range changes conflict winners but cannot
+bypass session bounds or extend a mandatory end after it has passed locally.
 
 Each replica stores a terminal local expiry marker keyed by the encrypted
 session identifier, without an observed timestamp. When an evaluation first
@@ -379,8 +447,14 @@ version and does not downgrade.
 - CloudKit remains a mailbox. It cannot choose winners, supply identity, or
   replace the local accepted-operation history.
 - Apple author registration remains automatic and truthfully no stronger than
-  workspace-key possession, while independent device signatures still detect
+  workspace-key possession, while independent author signatures still detect
   forged operations from a transport-only attacker.
+- Ephemeral authoring incarnations prevent a restored local store from reusing
+  an author sequence without requiring online reconciliation or a persistent
+  signing identity. They create more encrypted author registrations over time;
+  format 1 adds no speculative author cap, garbage collection, or compaction.
+- A terminal HLC preserves inbound convergence but permanently blocks local
+  authoring for that workspace until a separately accepted recovery decision.
 - Per-operation bundles trade additional record overhead for simpler atomicity,
   signing, retries, deduplication, and review. Batching is deferred until there
   is evidence that it is needed.
@@ -414,8 +488,18 @@ serve. Reconsider only with a concrete target or interoperability failure.
 ### Use HMAC instead of device signatures
 
 Rejected. A shared MAC authenticates workspace-key possession but cannot bind
-an operation to one device-local author, so it cannot satisfy the accepted
+an operation to one authoring incarnation, so it cannot satisfy the accepted
 signed-author and per-author sequence contract.
+
+### Persist the Apple signing identity or reconcile before every mutation
+
+Rejected. A `ThisDeviceOnly` Keychain item may be restored to the same device
+that created its backup, so it cannot distinguish coordinated rollback of the
+database and secure record. A mandatory CloudKit reconciliation would make
+every writer open depend on service availability and contradict local-first
+offline mutation. A Secure Enclave anchor, hardware counter, new wire operation,
+or server generation has no minimum format-1 consumer and does not replace the
+required atomic local state machine.
 
 ### Require an existing Posato installation to approve an author
 
@@ -437,8 +521,30 @@ Before `SYNC-002` is complete:
 - the 108-byte header is byte-identical, author metadata is absent from it,
   HKDF vectors bind every specified context field, immutable retry reuses exact
   bytes, and no bundle key is used for more than one seal;
-- identity loss and sequence/database rollback fail closed or rotate and
-  register a new identity as specified;
+- an idle writer creates no author; its first mutation atomically commits
+  registration at sequence 1 and the requested operation at sequence 2; later
+  mutations increase the same in-memory sequence, while close, crash, reopen,
+  coordinated restore, and same-open storage rollback cannot reuse an accepted
+  `(author, sequence)` pair;
+- after a committed but unpublished operation, same-open loss or regression of
+  its accepted bytes, author sequence, HLC, or exhaustion state freezes the
+  writer with no next bundle; consistent reopen uses a fresh author and never
+  leaves a newly emitted operation behind an unfillable local sequence gap;
+- nonterminal remote acceptance between local mutations atomically advances the
+  writer checkpoint and permits the next correct HLC successor; unexplained HLC
+  change freezes the writer, while terminal remote acceptance advances the
+  checkpoint to exhaustion and refuses later local creation;
+- commit-before, commit-after, ambiguous-result, partial-state, preparation
+  failure, and crash boundaries either recover the exact immutable prepared
+  operation or pair, prove absence and retry those same bytes, or fail closed
+  with `local-commit-uncertain` without duplicating the business mutation;
+- reordered business-before-registration delivery stages within the existing
+  caps and converges after registration, while pending bundles from a retired
+  incarnation retry without the private key;
+- HLC tests cover two, one, and zero remaining values; local and remote
+  advancement to the terminal tuple; direct remote terminal input; restart and
+  a new author incarnation; inbound projection after exhaustion; no wrap or
+  clamp; and recoverable `clock-out-of-range` after wall-clock correction;
 - the 2,048th and 2,049th domain, an earlier removal arriving after a later
   capacity outcome, a later removal followed by a distinct presence, and
   randomized delivery permutations produce equal state and derived audit;
@@ -475,6 +581,9 @@ bootstrap evidence belongs to `SYNC-003` through `SYNC-009`.
   framework over lower-level interfaces.
 - [Apple AES.GCM.Nonce](https://developer.apple.com/documentation/cryptokit/aes/gcm/nonce)
   requires nonce uniqueness for encryption calls.
+- [Apple Keychain accessibility](https://developer.apple.com/documentation/security/restricting-keychain-item-accessibility)
+  states that `ThisDeviceOnly` items may be restored to the same device that
+  created the backup, so that attribute is not a coordinated-rollback anchor.
 - [Java `Cipher`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/javax/crypto/Cipher.html)
   requires AES/GCM support and distinct IVs; [Java `SecureRandom`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/security/SecureRandom.html)
   supplies cryptographically strong random bytes.

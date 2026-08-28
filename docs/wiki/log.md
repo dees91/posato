@@ -696,3 +696,13 @@
   set, quarantined conflicting starts deterministically, and made observed
   expiry a terminal local fact bound to the encrypted session identifier,
   preventing delivery order or clock rollback from reviving invalid state.
+
+## [2026-08-28] correction | Make local authoring rollback-safe
+
+- Replaced the persistent Apple signing identity and secure sequence high-water
+  with a process-memory authoring incarnation scoped to one local writer open.
+- Required exact reconciliation of ambiguous local commits, serialized
+  local/remote committed-footprint checks, and atomic HLC exhaustion without
+  rejecting later valid remote input.
+- Kept invalid wall-clock recovery distinct from terminal format-1 exhaustion
+  and added no hardware anchor, online preflight, wire operation, or dependency.
