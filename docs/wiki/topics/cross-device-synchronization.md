@@ -101,6 +101,14 @@ workspace-key-authorized author registration, canonical compatibility policy,
 validation order, and deterministic convergence. Portable membership and its
 later compatibility policy remain open outside the MVP format.
 
+`user-confirmed` (2026-08-28): capacity outcomes are derived by reducing the
+complete applicable operation set in total order and may be reclassified when
+an earlier operation arrives. Observed session expiry is a terminal local fact
+keyed to the encrypted session identifier, so restart, reordering, a conflicting
+start, or wall-clock rollback does not revive it. Multiple distinct starts for
+one identifier deterministically quarantine that session; the marker is not a
+synchronized event or diagnostic.
+
 ## Persistence and atomicity
 
 The PoC used SQLDelight for an app-private local replica. It kept accepted

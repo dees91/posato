@@ -321,29 +321,47 @@ remote input the durable local HLC advances by the standard maximum-plus-one
 rule. Wall-clock skew changes conflict winners but cannot bypass session bounds
 or extend a mandatory end after it has passed locally.
 
-All replicas with the same valid operation set and the same evaluation instant
-`t` derive the same state:
+Each replica stores a terminal local expiry marker keyed by the encrypted
+session identifier, without an observed timestamp. When an evaluation first
+observes `t >= mandatoryEnd`, it commits that marker before exposing the session
+as inactive or clearing enforcement. That session remains inactive after
+restart, wall-clock rollback, or discovery of another start for the same
+identifier. The marker is local, never synchronized or diagnosed, and is
+retained only while its referenced session-start operations remain. `SYNC-002`
+exposes the session identity, `SESSION-001` owns the terminal expiry rule, and
+`SESSION-002` owns its atomic enforcement integration.
 
-- applicable domain operations are reduced in ascending global total order. A
-  `domain-present` for an existing domain is an accepted no-op; for an absent
-  domain below the 2,048-domain cap it adds the domain; at the cap it produces a
-  deterministic `domain-capacity` rejection retained in history without state
-  change or eviction. A `domain-absent` removes a present domain and otherwise
-  is an accepted no-op. A rejected presence does not revive automatically, but
-  a later distinct presence may succeed after capacity is freed. The projection
-  exposes the rejection as a truthful capacity conflict requiring action;
+All replicas with the same valid operation set derive the same synchronized
+projection. Replicas with that projection, the same evaluation instant `t`,
+and the same local terminal-expiry facts derive the same effective state:
+
+- applicable domain operations are reduced from scratch in ascending global
+  total order whenever the complete applicable operation set changes. Every
+  authenticated operation remains accepted in immutable history; `applied`,
+  `no-op`, and `domain-capacity` are derived projection outcomes, not permanent
+  validation decisions. A `domain-present` for an existing domain is a no-op;
+  for an absent domain below the 2,048-domain cap it adds the domain; at the cap
+  it has a `domain-capacity` outcome without state change or eviction. A
+  `domain-absent` removes a present domain and is otherwise a no-op. Arrival of
+  an earlier-total-order operation may therefore reclassify later outcomes. A
+  later removal does not retroactively apply an earlier capacity outcome, while
+  a distinct still-later presence may use the freed capacity. The current
+  projection exposes every capacity outcome as a truthful conflict requiring
+  action;
 - the singleton application policy uses the greatest total-order key for its
   singleton identifier;
-- for each session identifier, the lowest-total-order `session-start` is its
-  single canonical start and every later start reusing that identifier is
-  shadowed; any valid matching `session-end`, regardless of relative order,
-  permanently ends that identifier;
-- among canonical starts whose signed start is not after `t`, the greatest
+- session starts are grouped by their encrypted session identifier. Exactly one
+  distinct immutable start is eligible; two or more produce a derived
+  `session-conflict` outcome for every start in the group and no start for that
+  identifier is eligible. This quarantine is recomputed from the complete
+  applicable set and is independent of delivery order. Any valid matching
+  `session-end`, regardless of relative order, permanently ends that identifier;
+- among eligible session starts whose signed start is not after `t`, the greatest
   total-order start is the sole current candidate; future starts do not suppress
   it, while an ended or expired current candidate yields no active session and
   never falls back to an older candidate;
-- a current candidate is active only when it has no matching end and
-  `start <= t < mandatoryEnd`; and
+- a current candidate is active only when it has neither a matching end nor a
+  terminal marker and `start <= t < mandatoryEnd`; and
 - total order is `(HLC physical, HLC logical, author identifier, operation
   identifier)`, comparing raw bytes unsigned where applicable.
 
@@ -421,8 +439,13 @@ Before `SYNC-002` is complete:
   bytes, and no bundle key is used for more than one seal;
 - identity loss and sequence/database rollback fail closed or rotate and
   register a new identity as specified;
-- the 2,048th and 2,049th domain, removal followed by a later presence, and
-  randomized delivery permutations produce equal state and rejection history;
+- the 2,048th and 2,049th domain, an earlier removal arriving after a later
+  capacity outcome, a later removal followed by a distinct presence, and
+  randomized delivery permutations produce equal state and derived audit;
+- expiry commits a marker for the session identifier before exposing
+  inactivity; restart, wall-clock rollback, or a competing start cannot
+  reactivate it. Competing starts in either delivery order produce the same
+  quarantined projection and derived audit;
 - signatures verify across both targets, without requiring identical signature
   bytes;
 - nonce, key, size, version, unknown-kind, truncation, trailing-byte,

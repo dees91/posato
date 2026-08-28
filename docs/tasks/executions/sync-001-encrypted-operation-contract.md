@@ -48,6 +48,10 @@
   encrypted, each immutable bundle has a context-bound single-use key, local
   identity loss fails closed or rotates identity, and the synchronized domain
   projection has a deterministic 2,048-item capacity rule.
+- Corrected reordered capacity outcomes and clock-rollback expiry after the
+  maintainer-requested second hosted pass: capacity is recomputed projection
+  state, while observed expiry is a terminal local marker bound to its
+  encrypted session identifier; competing starts quarantine the session.
 
 ## Completed-change review
 
@@ -72,8 +76,19 @@
   rejection. The focused independent review found the correction entry inserted
   ahead of existing wiki history and the review state closed prematurely. The
   entry was appended at the end, the record remained active through re-review,
-  and focused re-review approved the result with no remaining Critical or
-  Required finding. No second hosted review was requested.
+  and focused re-review approved that result with no remaining Critical or
+  Required finding.
+- The maintainer later requested a second hosted pass. It found two Required
+  defects: persisted capacity outcomes depended on delivery order, and a
+  wall-clock rollback could revive an observed-expired session. The correction
+  recomputes capacity outcomes from the complete applicable set and records the
+  maintainer-selected terminal local expiry marker without a timestamp or new
+  synchronized operation. Focused review found that a provisionally canonical
+  start could displace the marker under reordered delivery. Requiring the
+  marker to cover the session identifier and deriving a `session-conflict`
+  quarantine from every distinct start removes that displacement without
+  exposing the identifier as routing metadata. Focused re-review approved the
+  complete correction with no remaining Critical or Required finding.
 
 ## Verification
 
@@ -85,7 +100,7 @@
 | Maintainer acceptance | `pass` | The maintainer explicitly selected acceptance of ADR 0006 on 2026-08-28. |
 | Repository-local Markdown links | `pass` | All repository-local Markdown links resolve. |
 | Diff and sensitive-data hygiene | `pass` | `git diff --check` passed and the scoped scan found no personal path, private-key marker, or common credential shape. |
-| Completed-change review | `pass` | Focused re-review approved the protocol and append-only log correction with no remaining Critical or Required finding. |
+| Completed-change review | `pass` | Focused re-review approved recomputed capacity outcomes, conflicting-start quarantine, and terminal expiry with no remaining Critical or Required finding. |
 
 ## Blockers and accepted risks
 

@@ -689,3 +689,10 @@
   nonce derivation with a context-bound single-use bundle key; defined
   fail-closed author lifecycle recovery; and capped the format-1 synchronized
   domain projection at 2,048 with deterministic rejection.
+
+## [2026-08-28] correction | Make capacity and expiry order-safe
+
+- Made capacity outcomes recomputable from the complete applicable operation
+  set, quarantined conflicting starts deterministically, and made observed
+  expiry a terminal local fact bound to the encrypted session identifier,
+  preventing delivery order or clock rollback from reviving invalid state.

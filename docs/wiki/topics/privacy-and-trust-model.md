@@ -74,6 +74,9 @@ Candidate local and synchronized data includes:
   identifiers;
 - explicit membership identifiers and operations for portable workspaces;
 - domain and application policy intent;
+- one timestamp-free terminal local expiry marker bound to an encrypted session
+  identifier, retained only with its start operations and excluded from
+  synchronization and diagnostics;
 - local opaque platform selections where the operating system requires them;
 - encrypted immutable operations, including author identity, public key, and
   sequence, plus bounded routing metadata consisting of format and suite,
