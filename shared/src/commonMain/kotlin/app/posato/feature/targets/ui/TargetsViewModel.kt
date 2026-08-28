@@ -110,10 +110,13 @@ internal class TargetsViewModel(
             return
         }
         when (val result = ApplicationPolicyName.parse(input)) {
-            is ApplicationPolicyNameResult.Success -> persist(state.domains, result.name.canonicalValue, TargetMutation.APPLICATION_POLICY)
+            is ApplicationPolicyNameResult.Success -> {
+                applicationEditorState.update { editor -> editor.copy(failure = null) }
+                persist(state.domains, result.name.canonicalValue, TargetMutation.APPLICATION_POLICY)
+            }
 
-            is ApplicationPolicyNameResult.Failure -> applicationEditorState.update { editor ->
-                editor.copy(failure = result.reason.toEntryFailure())
+            is ApplicationPolicyNameResult.Failure -> {
+                applicationEditorState.update { editor -> editor.copy(failure = result.reason.toEntryFailure()) }
             }
         }
     }

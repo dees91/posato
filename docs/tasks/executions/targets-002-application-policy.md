@@ -7,7 +7,7 @@
 - **Implementer:** `Codex`
 - **Reviewer:** `independent Codex reviewer`
 - **Branch:** `feature/targets-002-application-group`
-- **Updated:** `2026-08-28`
+- **Updated:** `2026-08-29`
 
 ## Plan
 
@@ -80,7 +80,12 @@ compares actual changed paths in both worktrees.
   corruption previews were restored, and the existing mutation gate now keeps
   controls disabled until reload while preserving retry after `SAVE_FAILED`.
   A focused independent completed-change review approved the correction with no
-  remaining findings.
+  remaining findings. A later accepted P2 finding showed that a corrected valid
+  application-group name could retain the previous entry-validation failure
+  when persistence conflicted. The successful parse now clears that stale
+  entry failure before persistence, while the conflict remains visible and the
+  editor remains open. The focused independent completed-change review approved
+  this correction with no Critical, Required, Recommended, or Optional findings.
 
 ## Verification
 
@@ -88,7 +93,8 @@ compares actual changed paths in both worktrees.
 | --- | --- | --- |
 | Plan review | `pass` | Approved after all Required findings were resolved. |
 | Conflict-recovery regression | `pass` | The focused JVM test failed against the old behavior when opening the application editor cleared a revision conflict, then passed after the shared mutation gate was corrected. |
-| `./gradlew quality` | `pass` | All 92 tasks passed after the hosted corrections, including JVM and iOS tests, Android preview compilation, Apple compilation, SQLDelight migration verification, static analysis, formatting, and desktop packaging. |
+| Corrected-input regression | `pass` | The focused JVM test failed against the stale entry-validation behavior, then passed after a successful application-name parse cleared that failure before the conflicting persistence attempt. |
+| `./gradlew quality` | `pass` | All 92 tasks passed on 2026-08-29 after the latest hosted correction, including JVM and iOS tests, Android preview compilation, Apple compilation, SQLDelight migration verification, static analysis, formatting, and desktop packaging. |
 | Credential-free iOS build | `pass` | `xcodebuild` completed with `CODE_SIGNING_ALLOWED=NO` and `CODE_SIGNING_REQUIRED=NO`. |
 | Desktop package smoke check | `pass` | The packaged application launched and rendered the empty application-group and website editors. |
 | macOS and iOS Simulator inspection | `pass` | Empty and populated group/domain states rendered on both Apple form factors; mapping-required copy, edit/remove controls, website rows, and the scrollable large-text layout remained visible and truthful. Shared interaction tests cover add/edit/cancel/remove and invalid-edit preservation on JVM and iOS. |

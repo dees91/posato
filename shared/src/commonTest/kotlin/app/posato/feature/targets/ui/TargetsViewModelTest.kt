@@ -136,6 +136,29 @@ class TargetsViewModelTest {
     }
 
     @Test
+    fun `given invalid application input when corrected replacement conflicts then entry failure is cleared`() = runTest(dispatcher) {
+        val store = FakeTargetPolicyStore(stateOf(2, applicationPolicyName = "Social feeds"))
+        val viewModel = TargetsViewModel(store)
+        observe(viewModel)
+        scheduler.runCurrent()
+        viewModel.beginEditingApplicationPolicy()
+        scheduler.runCurrent()
+        viewModel.submitApplicationPolicy("line\nfeed")
+        scheduler.runCurrent()
+        assertEquals(ApplicationPolicyEntryFailure.INVALID_CHARACTERS, viewModel.uiState.value.applicationPolicyInputFailure)
+        store.replaceExternally(applicationPolicyName = "Social feeds")
+
+        viewModel.submitApplicationPolicy("Work tools")
+        scheduler.runCurrent()
+
+        assertEquals(null, viewModel.uiState.value.applicationPolicyInputFailure)
+        assertEquals(TargetsOperationFailure.REVISION_CONFLICT, viewModel.uiState.value.operationFailure)
+        assertEquals(true, viewModel.uiState.value.isEditingApplicationPolicy)
+        assertEquals("Social feeds", viewModel.uiState.value.applicationPolicyName)
+        assertEquals(1, store.replaceCalls)
+    }
+
+    @Test
     fun `given a canonical domain duplicate when submitted then it is rejected without replacing storage`() = runTest(dispatcher) {
         val store = FakeTargetPolicyStore(stateOf(4, domains = listOf("example.com")))
         val viewModel = TargetsViewModel(store)
