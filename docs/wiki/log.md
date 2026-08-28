@@ -786,3 +786,23 @@
 - Extended the shared paused-items screen with truthful device-local selection
   status while retaining app pickers and opaque mappings for TARGETS-003 and
   TARGETS-004.
+
+## [2026-08-29] experiment | Verify authenticated macOS helper IPC
+
+- Fixed the nested helper, daemon, Mach service, launchd policy, protocol bounds,
+  durable-state path, and exact mutual signed-peer requirements for MACOS-003.
+- A signed physical lifecycle passed authenticated Apply, lease renewal, exact
+  restore, controlled helper-loss recovery, Disable, right removal, daemon
+  unregistration, and clean idle verification.
+- Replaced the infeasible zero-second cross-process authorization timeout with
+  a non-shared 30-second transfer bound and immediate one-use destruction.
+- Required protocol capabilities, monotonic sequences and elapsed deadlines;
+  bound unknown reconciliation to canonical input; and made failed cleanup keep
+  ownership and registration fail-closed.
+- Bound renewal to the durable owner, kept unavailable-daemon cleanup
+  action-required, and made the packaging gate assert the exact helper and
+  launchd plist contracts.
+- Preflighted durable Apply ownership before authorization so a rejected request
+  cannot inherit another operation's cleanup responsibility.
+- Made daemon connection ownership require the explicit preflight result so a
+  malformed Apply cannot inherit a foreign global phase.

@@ -1,0 +1,127 @@
+# Execution: `MACOS-003`
+
+- **Brief:**
+  [`../specifications/macos-003-helper-ipc.md`](../specifications/macos-003-helper-ipc.md)
+- **Status:** `completed`
+- **Review tier:** `high-risk`
+- **Implementer:** `Codex`
+- **Reviewer:** independent Codex reviewer
+- **Branch:** `macos-003-helper-ipc`
+- **Updated:** `2026-08-29`
+
+## Plan
+
+1. Build only the minimal nested helper and inert daemon first. With a local
+   Apple Development-signed, non-notarized copy under `/Applications`, verify
+   `Bundle.main`, approval-to-enabled registration, fixed `BundleProgram`
+   launch, idle exit, crash restart, unregister, and restart/boot visibility.
+   Stop as blocked if the nested or non-notarized development artifact is
+   rejected; do not add JNI, a package installer, or another privilege path.
+2. Compile exact mutual XPC requirements from signed self-identity before
+   accepting or resuming connections. Pin the opposite identifier, Apple
+   anchor, and same Team ID; reject missing requirements, ad-hoc production
+   signatures, wrong identifiers, and other teams without PID, UID, path, or
+   `codesign` parsing as an authentication fallback.
+3. Fix and test the private protocol and launchd lifetime. Use `KeepAlive` with
+   `SuccessfulExit=false`: reconcile after load, remain resident only while
+   ownership is non-Idle, exit zero when Idle, and relaunch after crash or
+   nonzero exit.
+4. Implement the Swift service lifecycle, authorization, durable state,
+   SystemConfiguration transitions, and recovery state machine behind testable
+   boundaries. Sleep, wake, logout, and primary-service recovery remain
+   daemon-owned; helper signals may only accelerate recovery.
+5. Add the concrete desktop client and Gradle build, embedding, signing, and
+   package verification without adding a shared or UI abstraction.
+6. Run automated and signed physical verification, complete independent review,
+   resolve blocking findings, and close the durable records.
+
+## Result
+
+- The minimal Swift package, nested helper bundle, inert launch daemon, Gradle
+  assembly, and inside-out development signing are implemented in the worktree.
+- The signed helper reports the expected `Bundle.main`; outer app, helper, and
+  daemon signatures share one nonempty Team ID.
+- From the isolated `/Applications/Posato-MACOS-003.app` copy, initial service
+  status was not found. Registration created an approval-required service entry,
+  proving that Service Management resolved the nested calling bundle and plist.
+- The maintainer approved the background item. The service reached enabled,
+  repeated Mach-service pings succeeded, a forced nonzero daemon termination
+  was relaunched by launchd, and the restarted daemon exited zero after its
+  Idle reconciliation window. A retry after the launchd transition succeeded.
+- The production helper and daemon now use fixed binary pipe and XPC messages,
+  required capability negotiation, strict per-connection sequences, elapsed
+  deadlines, exact mutual signing requirements, a fixed Authorization Services
+  right, atomic SystemConfiguration tuple ownership, root-only durable
+  recovery, a renewable lease, and bounded zero-exit launchd lifetime. The
+  desktop client verifies and launches only the embedded signed helper, maps
+  typed outcomes, sends bounded cancellation before exact-process termination,
+  and reconciles unknown effects under the same request identity and canonical
+  input digest. A lost reconciliation response retains that original pending
+  intent, Apply preflights that exact durable owner before authorization, and
+  daemon connection ownership requires that explicit preflight fact rather than
+  a global phase. Lease renewal is accepted only from its durable owner.
+- The fixed product layout and inside-out signing checks are part of the Gradle
+  package pipeline. No signing identity, provisioning material, machine path,
+  temporary privilege mechanism, or research runtime is stored in the
+  repository.
+- Signed physical verification passed Enable, Repair, administrator-authenticated
+  Apply, a lease renewal after six seconds, Restore, Remove, authorization-right
+  absence, daemon unregistration, root-state absence, and exact preservation of
+  the pre-test disabled HTTP, HTTPS, and PAC configuration.
+- A controlled helper termination after Apply restored the exact proxy baseline
+  and removed durable ownership through authenticated XPC invalidation and the
+  daemon lease. A separate Disable row preserved the verified Apply right while
+  unregistering the daemon; the final Enable/Remove run removed both and left
+  the machine at its original baseline.
+- `observed`: the initially planned zero-second authorization credential timeout
+  expired while the external form crossed processes. A five-second retry was
+  also shorter than the observed system authentication-return latency. The
+  implementation uses a non-shared 30-second maximum transfer window, does not
+  permit daemon interaction or right extension, and destroys the one-use form
+  after validation.
+
+## Blockers and accepted risks
+
+- Physical verification requires maintainer approval in System Settings and a
+  foreground administrator authentication prompt.
+- The current parallel prototype branch changes only prototype and wiki files.
+  MACOS-003 owns desktop Gradle and packaging, desktop native-client sources,
+  native helper sources, ADR 0004, and the macOS enforcement topic. Work must
+  serialize if another task enters those surfaces; `docs/wiki/log.md` may need
+  a routine append-conflict resolution.
+
+## Plan review
+
+- **Verdict:** `approved for feasibility slice after required corrections`
+- **Required findings:** prove nested non-notarized development registration
+  before privileged behavior; replace unconditional root residency with bounded
+  launchd lifetime; gate XPC on compiled exact signing requirements.
+- **Resolution:** all three are hard gates in the plan above. Failure stops the
+  task rather than introducing an unaccepted architecture.
+
+## Completed-change review
+
+- **Verdict:** `approved; merge-ready`
+- **Initial result:** no Critical findings; Required findings covered the XPC
+  listener gate, cleanup ownership and unregister ordering, rule lifecycle,
+  canonical reconciliation, capabilities, deadlines and cancellation, durable
+  validation, complete proxy verification, authorization-material destruction,
+  owner-bound renewal, unavailable-daemon recovery, package contract checks,
+  and exact per-connection Apply ownership.
+- **Resolution:** every Required finding was corrected and affected verification
+  was rerun. The final independent pass found no Critical, Required,
+  Recommended, or Optional actionable defects and independently passed all 36
+  Swift tests.
+
+## Verification
+
+- `swift test`: 36 tests passed, including protocol capability, ordering,
+  deadline, lifecycle, reconciliation, authorization-rule, durable-state, and
+  complete proxy-dictionary cases.
+- `:desktopApp:verifyMacOsHelperPackaging`: passed with a runtime-only local
+  Apple Development identity, including exact embedded Info.plist and launchd
+  contract checks.
+- Signed physical lifecycle, controlled process-loss, Disable, and cleanup
+  matrix: passed.
+- Aggregate `quality`: passed with the Gradle configuration cache reused.
+- Independent completed-change review: approved with no remaining findings.
