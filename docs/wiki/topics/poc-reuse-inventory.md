@@ -55,6 +55,14 @@ drivers, schema version, and migration lifecycle now own those concerns. No
 feasibility source, runner, trace, credential, identifier, or machine-local path
 was copied.
 
+`observed` (2026-08-28): TARGETS-002 retained the PoC's useful evidence that a
+semantic application intent and device-local selection are separate concerns,
+plus its atomic replacement and restart test ideas. Production code does not
+reuse the PoC's generic `PolicyTarget.Application`, synthetic application
+identifiers, platform enum, probe UI, schedule/use-case layer, or availability
+probe. The shared v2 schema stores only one canonical semantic name, and no PoC
+source or distinctive fixture was copied.
+
 If later work copies a meaningful fragment, the pull request must identify:
 
 - the feasibility source revision and path;

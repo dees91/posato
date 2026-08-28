@@ -1,12 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="action_add">Add website</string>
+    <string name="action_add_application_group">Add group</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_edit">Edit</string>
     <string name="action_reload">Reload saved list</string>
     <string name="action_remove">Remove</string>
     <string name="action_retry">Retry</string>
     <string name="action_save">Save change</string>
+    <string name="application_group_description">The group name syncs. App choices stay on this device.</string>
+    <string name="application_group_empty">No application group yet.</string>
+    <string name="application_group_input_label">Application group name</string>
+    <string name="application_group_input_placeholder">Social feeds</string>
+    <string name="application_group_mapping_required">Apps still need to be chosen on this device.</string>
+    <string name="application_group_title">Applications</string>
+    <string name="application_entry_error_empty">Enter an application group name.</string>
+    <string name="application_entry_error_invalid">Use a name without line breaks or control characters.</string>
+    <string name="application_entry_error_too_long">That name is too long.</string>
     <string name="domain_input_description">Enter an exact domain such as example.com, not a full URL.</string>
     <string name="domain_input_label">Exact domain</string>
     <string name="domain_input_placeholder">example.com</string>
@@ -17,12 +27,14 @@
     <string name="entry_error_invalid">Enter a valid domain with at least two labels.</string>
     <string name="entry_error_limit">The website limit has been reached.</string>
     <string name="entry_error_too_long">That domain input is too long.</string>
-    <string name="loading_domains">Loading saved websites</string>
-    <string name="operation_error_corruption">Saved website data could not be verified. Nothing was changed.</string>
-    <string name="operation_error_load">Saved websites could not be loaded. Nothing was changed.</string>
-    <string name="operation_error_save">This change could not be saved. The previous website list is still active. Try the change again.</string>
+    <string name="loading_domains">Loading paused items</string>
+    <string name="operation_error_corruption">Saved paused items could not be verified. Nothing was changed.</string>
+    <string name="operation_error_load">Saved paused items could not be loaded. Nothing was changed.</string>
+    <string name="operation_error_save">This change could not be saved. Your previous paused items are still active.</string>
     <string name="operation_error_title">Needs your attention</string>
-    <string name="operation_error_update">The website list changed before this update finished. Reload the saved list, then try again.</string>
+    <string name="operation_error_update">Paused items changed before this update finished. Reload them, then try again.</string>
+    <string name="paused_items_description">Choose the websites and application group where you want a quiet pause before access.</string>
+    <string name="paused_items_title">Paused items</string>
     <string name="product_name">Posato</string>
     <string name="saving_domains">Saving</string>
     <string name="websites_description">Choose the exact websites where you want a quiet pause before access.</string>

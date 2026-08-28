@@ -14,6 +14,14 @@ CREATE TABLE exact_domain_policy (
   )
 );
 
+CREATE TABLE application_policy (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  canonical_name TEXT NOT NULL CHECK (
+    typeof(canonical_name) = 'text' AND
+    length(CAST(canonical_name AS BLOB)) BETWEEN 1 AND 80
+  )
+);
+
 selectRevision:
 SELECT revision
 FROM local_policy_metadata
@@ -24,6 +32,12 @@ SELECT canonical_domain
 FROM exact_domain_policy
 ORDER BY canonical_domain
 LIMIT :maximum_row_count;
+
+selectApplicationPolicyNames:
+SELECT canonical_name
+FROM application_policy
+ORDER BY singleton
+LIMIT 2;
 
 advanceRevision:
 UPDATE local_policy_metadata
@@ -36,3 +50,10 @@ DELETE FROM exact_domain_policy;
 insertDomain:
 INSERT INTO exact_domain_policy(canonical_domain)
 VALUES (:canonical_domain);
+
+deleteApplicationPolicy:
+DELETE FROM application_policy;
+
+insertApplicationPolicy:
+INSERT INTO application_policy(singleton, canonical_name)
+VALUES (1, :canonical_name);
