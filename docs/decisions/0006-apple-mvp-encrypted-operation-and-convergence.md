@@ -45,7 +45,7 @@ CloudKit need and a compatibility decision.
 
 The bundle has three byte regions:
 
-1. a fixed 144-byte canonical header used as AES-GCM additional authenticated data;
+1. a fixed 108-byte canonical header used as AES-GCM additional authenticated data;
 2. one encrypted canonical operation followed by the 16-byte GCM tag; and
 3. one 64-byte Ed25519 signature over a domain-separated concatenation of the
    complete header and ciphertext-with-tag.
@@ -53,10 +53,12 @@ The bundle has three byte regions:
 The header exposes only:
 
 - four-byte magic and unsigned 16-bit format and algorithm-suite numbers;
-- 16-byte bundle, workspace, transport-epoch, key-epoch, and author identifiers;
-- the author's 32-byte Ed25519 public key and unsigned 64-bit sequence;
-- one 12-byte nonce; and
+- 16-byte bundle, workspace, transport-epoch, and key-epoch identifiers;
+- one 32-byte random per-bundle salt; and
 - the unsigned 32-bit ciphertext length.
+
+The author identifier, public key, sequence, and operation identifier remain
+encrypted. The AES-GCM nonce is implicit and is not transmitted.
 
 The operation identifier stays encrypted. Format 1 requires the bundle and
 operation identifiers to be equal UUIDv4 values encoded as 16 raw bytes. This
@@ -66,6 +68,12 @@ UUIDv4 raw bytes. The all-zero singleton application-policy identifier is the
 only exception and is not interpreted as a UUID.
 Transport records may expose the bundle identifier and exact byte length, but
 must not duplicate protected policy or session fields.
+
+The complete provider-visible format-1 metadata boundary is the format and
+suite, per-operation bundle identifier and salt, workspace, transport-epoch,
+and key-epoch identifiers, ciphertext size, and transport-level account,
+timing, and record-count association. Author identity, public key, sequence,
+operation kind, domain, policy, and session data remain encrypted.
 
 ### Canonical format
 
@@ -95,11 +103,8 @@ padding. Offset zero is the first byte.
 | 24 | 16 | workspace identifier |
 | 40 | 16 | transport-epoch identifier |
 | 56 | 16 | key-epoch identifier |
-| 72 | 16 | author identifier |
-| 88 | 32 | Ed25519 public key |
-| 120 | 8 | author sequence |
-| 128 | 12 | AES-GCM nonce |
-| 140 | 4 | ciphertext-with-tag length |
+| 72 | 32 | random bundle salt |
+| 104 | 4 | ciphertext-with-tag length |
 
 The plaintext fields, in exact order, are:
 
@@ -111,6 +116,7 @@ bytes[16] workspace identifier
 bytes[16] transport-epoch identifier
 bytes[16] key-epoch identifier
 bytes[16] author identifier
+bytes[32] Ed25519 public key
 u64       author sequence
 i64       HLC physical epoch milliseconds
 u16       HLC logical counter
@@ -118,13 +124,12 @@ u8        operation-kind tag
 bytes[n]  kind payload defined below
 ```
 
-The operation, workspace, epoch, author, and sequence values must equal their
-header values; the operation identifier must equal the header bundle identifier.
-The public key is not duplicated in plaintext.
+The operation, workspace, and epoch values must equal their header values; the
+operation identifier must equal the header bundle identifier.
 
-The AES-GCM additional authenticated data is the complete 144-byte header. The
+The AES-GCM additional authenticated data is the complete 108-byte header. The
 signature preimage is exactly the UTF-8 bytes of
-`app.posato.sync.signature.v1`, then `u32(144)`, the header, then a `u32`
+`app.posato.sync.signature.v1`, then `u32(108)`, the header, then a `u32`
 ciphertext-with-tag length and the ciphertext-with-tag. The two length values
 must equal the corresponding encoded byte counts.
 
@@ -132,7 +137,7 @@ The version-1 operation kinds are closed:
 
 | Kind | Canonical key and payload | Reduction |
 | --- | --- | --- |
-| `1` `author-register` | Empty | Registers only the header author and public key at sequence 1. |
+| `1` `author-register` | Empty | Registers only the encrypted author and public key at sequence 1. |
 | `2` `domain-present` | `u16` domain byte length, then canonical ASCII domain bytes | Marks that exact domain present. |
 | `3` `domain-absent` | `u16` domain byte length, then canonical ASCII domain bytes | Marks that exact domain absent. |
 | `4` `application-policy-present` | 16-byte singleton policy identifier, `u16` name byte length, then canonical UTF-8 name | Replaces the shared semantic policy; device mappings remain local. |
@@ -161,7 +166,7 @@ Implementations reject before allocation beyond these limits:
 | Value | Format-1 limit |
 | --- | --- |
 | Complete bundle | 64 KiB |
-| Header | exactly 144 bytes |
+| Header | exactly 108 bytes |
 | Plaintext operation | 32 KiB |
 | Ciphertext and tag | plaintext length plus 16 bytes |
 | Operations per bundle | exactly 1 |
@@ -169,6 +174,7 @@ Implementations reject before allocation beyond these limits:
 | Ed25519 public key / signature | RFC 8032 compressed 32-byte public key, not X.509 SubjectPublicKeyInfo / 64 raw signature bytes |
 | AES-GCM key / nonce / tag | exactly 32 / 12 / 16 bytes |
 | Domain | 3 through 253 ASCII bytes |
+| Effective synchronized domain set | at most 2,048 present domains |
 | Application-policy name | 1 through 80 UTF-8 bytes after NFC normalization |
 | Author sequence | 1 through signed 64-bit maximum |
 | HLC physical time and session instants | 0 through 4,102,444,800,000 epoch milliseconds |
@@ -184,17 +190,18 @@ allocation threshold if every valid format-1 value remains accepted.
 Algorithm suite 1 is HKDF-SHA-256, AES-256-GCM with a 128-bit tag, and
 Ed25519:
 
-- each author content-encryption key is derived with HKDF-SHA-256 from the
-  32-byte workspace key, RFC 5869's absent-salt value of 32 zero bytes, a
-  32-byte output, and exact info bytes comprising the
-  UTF-8 domain `app.posato.sync.author-key.v1`, workspace identifier,
-  key-epoch identifier, author identifier, and Ed25519 public key in that order;
-- the 96-bit nonce is exactly four zero bytes followed by the author's `u64`
-  sequence, so every author sequence uses a distinct nonce with its derived
-  key; the header nonce must equal this construction and callers cannot provide
-  another production nonce;
-- sequence exhaustion fails closed before sealing and requires an explicit new
-  format or key-epoch decision; it never wraps or reuses a nonce;
+- each bundle content-encryption key is derived with HKDF-SHA-256 from the
+  32-byte workspace key and the header's 32 cryptographically random salt
+  bytes. The 32-byte output uses exact info bytes comprising the UTF-8 domain
+  `app.posato.sync.bundle-key.v1`, workspace identifier, transport-epoch
+  identifier, key-epoch identifier, and bundle identifier in that order;
+- the 96-bit nonce is exactly 12 zero bytes and is implicit. Exactly one AES-GCM
+  seal is permitted for each derived bundle key. A retry reuses the persisted,
+  immutable complete bundle bytes and never seals again. Reusing a bundle
+  identifier with different canonical bytes fails closed;
+- bundle identifiers are UUIDv4 values and bundle salts are generated with the
+  platform CSPRNG before derivation. The salt is authenticated as part of the
+  header and is not secret;
 - AES-GCM authenticates the complete canonical header as additional data;
 - the signature input uses the distinct domain
   `app.posato.sync.signature.v1` and length-prefixes the header and complete
@@ -230,14 +237,13 @@ owns where supported and makes no guaranteed-memory-erasure claim.
 Workspace-key possession is the Apple MVP admission proof. Every installation
 creates one device-local Ed25519 key pair and random author identifier. Its
 first operation is `author-register`, at author sequence 1, encrypted with the
-derived author key and self-signed by the header public key.
+derived bundle key and self-signed by its encrypted public key.
 
-For an unknown author, validation first verifies the signature with the header
-public key, derives the author content-encryption key, authenticates and decrypts
-the bundle, and verifies that every header and operation field agrees. Complete
-AEAD authentication proves workspace-key possession; the signature binds
-authorship to the header key. A sequence-1 `author-register` registers the author
-and accepted operation atomically.
+For an unknown author, validation first derives the bundle key, authenticates
+and decrypts the bundle, then verifies the signature with the public key in the
+canonical plaintext. Complete AEAD authentication proves workspace-key
+possession; the signature binds authorship to that encrypted key. A sequence-1
+`author-register` registers the author and accepted operation atomically.
 
 A fully authenticated, canonical unknown-author operation with sequence greater
 than 1 is deferred, not rejected. The replica retains at most 32 such bundles
@@ -248,8 +254,8 @@ a retryable capacity outcome and must not consume transport progress unless the
 adapter can request the exact bundle again. An invalid signature, AEAD, context,
 key/identifier relation, or canonical operation is rejected and never staged.
 
-For a known author, the stored public key must equal the header key and verifies
-the signature before decryption. A second registration, changed key, changed
+For a known author, the stored public key must equal the decrypted key and
+verify the signature. A second registration, changed key, changed
 identifier, sequence-1 conflict, or author-key mismatch is rejected. Format 1 has no Posato approval,
 key-agreement key, membership list, revocation, or key-epoch transition
 operation. An Apple-trusted installation with the workspace key can register
@@ -265,10 +271,11 @@ replica before every applicable step succeeds:
 2. reject unknown format or suite and invalid lengths before allocation;
 3. confirm expected workspace, transport epoch, and key epoch;
 4. reject an already accepted or staged bundle identifier with different bytes;
-5. verify the signature with the stored matching key or the unknown author's
-   header key, then derive the exact author content-encryption key;
+5. derive the exact bundle content-encryption key from the header context and
+   bundle salt;
 6. authenticate and decrypt AES-GCM using the header as additional data;
-7. strictly decode, validate, and canonicalize the operation;
+7. strictly decode, validate, and canonicalize the operation and extract its
+   author identifier, public key, and sequence;
 8. verify all duplicated context, identifier equality, signature, author rule,
    sequence rule, HLC bounds, operation kind, and payload invariants;
 9. reduce the complete accepted operation set deterministically; and
@@ -289,6 +296,18 @@ Each author durably allocates a strictly increasing unsigned sequence starting
 at 1. Publication retry reuses the same immutable operation and sequence. A
 sequence already accepted with different bytes is an integrity failure.
 
+The secure local author record binds the signing identity to a durable sequence
+high-water mark. `SYNC-002` owns the state machine and must refuse sealing until
+the database and secure record are reconciled; `SYNC-003` owns its Apple
+bootstrap and storage contract, while `SYNC-005` and `SYNC-006` own the platform
+adapters. Local creation serializes the operation and pending immutable bundle
+commit before raising the secure high-water mark and before publication or the
+next operation. On restart, a database maximum above the secure high-water mark
+may raise that mark before publication. A secure high-water mark above a
+missing, corrupt, or rolled-back database retires the old local author identity
+and creates and registers a new identity at sequence 1. Missing or inconsistent
+state otherwise fails closed; the old identity cannot seal another operation.
+
 Delivery may be duplicated, reordered, or contain gaps. A higher sequence does
 not require rejecting the bundle solely because lower sequences are not yet
 visible. It is stored as validated but remains unapplied behind the gap; the
@@ -305,7 +324,14 @@ or extend a mandatory end after it has passed locally.
 All replicas with the same valid operation set and the same evaluation instant
 `t` derive the same state:
 
-- domain presence uses the greatest total-order key for that canonical domain;
+- applicable domain operations are reduced in ascending global total order. A
+  `domain-present` for an existing domain is an accepted no-op; for an absent
+  domain below the 2,048-domain cap it adds the domain; at the cap it produces a
+  deterministic `domain-capacity` rejection retained in history without state
+  change or eviction. A `domain-absent` removes a present domain and otherwise
+  is an accepted no-op. A rejected presence does not revive automatically, but
+  a later distinct presence may succeed after capacity is freed. The projection
+  exposes the rejection as a truthful capacity conflict requiring action;
 - the singleton application policy uses the greatest total-order key for its
   singleton identifier;
 - for each session identifier, the lowest-total-order `session-start` is its
@@ -346,6 +372,10 @@ version and does not downgrade.
 - Portable membership, revocation, key wrapping, rollback completeness, and
   migration require a later format decision and are not hidden extensions of
   format 1.
+- The current local-only 1,024-domain implementation limit is not format-1
+  product authority. `SYNC-002`, as the first synchronized model consumer, must
+  support the 2,048-domain projection without changing that unrelated code in
+  this documentation-only task.
 
 ## Alternatives considered
 
@@ -386,6 +416,13 @@ Before `SYNC-002` is complete:
 
 - byte-identical canonical header, operation, AAD, and ciphertext vectors pass
   on the macOS JVM and physical iPhone provider implementations;
+- the 108-byte header is byte-identical, author metadata is absent from it,
+  HKDF vectors bind every specified context field, immutable retry reuses exact
+  bytes, and no bundle key is used for more than one seal;
+- identity loss and sequence/database rollback fail closed or rotate and
+  register a new identity as specified;
+- the 2,048th and 2,049th domain, removal followed by a later presence, and
+  randomized delivery permutations produce equal state and rejection history;
 - signatures verify across both targets, without requiring identical signature
   bytes;
 - nonce, key, size, version, unknown-kind, truncation, trailing-byte,
@@ -419,9 +456,10 @@ bootstrap evidence belongs to `SYNC-003` through `SYNC-009`.
   requires AES/GCM support and distinct IVs; [Java `SecureRandom`](https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/security/SecureRandom.html)
   supplies cryptographically strong random bytes.
 - [NIST SP 800-38D](https://nvlpubs.nist.gov/nistpubs/legacy/sp/nistspecialpublication800-38d.pdf)
-  recommends 96-bit GCM IVs for interoperability and simplicity.
+  requires IV uniqueness for distinct authenticated-encryption inputs under a
+  given key; suite 1 derives a new key for each single-seal bundle.
 - [RFC 5869](https://www.rfc-editor.org/rfc/rfc5869.html) defines HKDF and the
-  absent-salt value used by suite 1.
+  context-binding `info` input used by suite 1.
 - [RFC 8032](https://www.rfc-editor.org/rfc/rfc8032.html) defines Ed25519.
 - [cryptography-kotlin 0.6.0](https://github.com/whyoleg/cryptography-kotlin/releases/tag/0.6.0)
   was reviewed as the narrow third-party alternative: Apache-2.0, current at

@@ -5,7 +5,7 @@
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
 - **Reviewer:** `/root/sync_001_plan_review`
-- **Branch:** `main`
+- **Branch:** `feature/sync-001-encrypted-operation-contract`
 - **Updated:** 2026-08-28
 
 ## Plan
@@ -44,6 +44,10 @@
 - The maintainer accepted ADR 0006 on 2026-08-28. Promoted it to an accepted
   authority and reconciled the architecture decisions, threat model, maintained
   synchronization, architecture, privacy synthesis, routing, and open questions.
+- Corrected the accepted format after hosted review: author metadata is now
+  encrypted, each immutable bundle has a context-bound single-use key, local
+  identity loss fails closed or rotates identity, and the synchronized domain
+  projection has a deterministic 2,048-item capacity rule.
 
 ## Completed-change review
 
@@ -53,11 +57,23 @@
   first-contact handling, and complete time-dependent session projection. The
   completed-change review found that the execution record still described
   already-obtained maintainer acceptance as pending.
-- **Resolution:** Added the 144-byte normative grammar, per-author HKDF key and
-  sequence nonce, bounded authenticated staging, and deterministic projection
-  at the same evaluation instant. Removed the stale acceptance blocker; focused
-  re-review approved the correction with no remaining Critical or Required
-  finding.
+- **Resolution:** The initial accepted revision added a 144-byte normative
+  grammar, per-author HKDF key and sequence nonce, bounded authenticated
+  staging, and deterministic projection at the same evaluation instant. The
+  hosted-review correction below supersedes its header, key, and nonce design.
+  The stale acceptance blocker was also removed; focused re-review approved the
+  initial correction with no remaining Critical or Required finding.
+- Hosted review on PR #6 reported two Required findings: deterministic nonce
+  safety depended on identity/sequence durability, and author metadata was
+  unnecessarily exposed. It also reported an advisory domain-capacity gap,
+  which the maintainer explicitly accepted into scope. The correction removes
+  author metadata from the header, derives a single-use key per bundle, assigns
+  identity reconciliation ownership, and defines deterministic capacity
+  rejection. The focused independent review found the correction entry inserted
+  ahead of existing wiki history and the review state closed prematurely. The
+  entry was appended at the end, the record remained active through re-review,
+  and focused re-review approved the result with no remaining Critical or
+  Required finding. No second hosted review was requested.
 
 ## Verification
 
@@ -69,7 +85,7 @@
 | Maintainer acceptance | `pass` | The maintainer explicitly selected acceptance of ADR 0006 on 2026-08-28. |
 | Repository-local Markdown links | `pass` | All repository-local Markdown links resolve. |
 | Diff and sensitive-data hygiene | `pass` | `git diff --check` passed and the scoped scan found no personal path, private-key marker, or common credential shape. |
-| Completed-change review | `pass` | Independent focused re-review approved the final correction with no remaining Critical or Required finding. |
+| Completed-change review | `pass` | Focused re-review approved the protocol and append-only log correction with no remaining Critical or Required finding. |
 
 ## Blockers and accepted risks
 

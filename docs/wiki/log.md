@@ -682,3 +682,10 @@
   batching into the Apple MVP.
 - Kept production implementation and cross-target vectors with `SYNC-002` and
   deterministic CloudKit and Keychain bootstrap with `SYNC-003`.
+
+## [2026-08-28] correction | Harden encrypted operation contract
+
+- Encrypted author identity, public key, and sequence; replaced author/sequence
+  nonce derivation with a context-bound single-use bundle key; defined
+  fail-closed author lifecycle recovery; and capped the format-1 synchronized
+  domain projection at 2,048 with deterministic rejection.

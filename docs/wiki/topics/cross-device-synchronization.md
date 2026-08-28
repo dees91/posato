@@ -147,7 +147,8 @@ truncation, oversize data, invalid signature, and invalid ciphertext cases.
 The prototype evaluated AEAD encryption, signatures, key agreement, and key
 derivation with bounded canonical data. `user-confirmed` (2026-08-28): ADR 0006
 selects HKDF-SHA-256, AES-256-GCM, Ed25519, system JCA/JCE and CryptoKit
-providers, a closed positional format, per-author sequence nonces, and no
+providers, a closed positional format, per-bundle HKDF keys with a single
+implicit nonce use, encrypted author metadata, and no
 plaintext or algorithm fallback for Apple MVP format 1. `SYNC-002` must still
 prove cross-target implementation behavior; portable key wrapping and provider
 selection remain later decisions.

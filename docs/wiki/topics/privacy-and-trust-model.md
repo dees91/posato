@@ -75,7 +75,10 @@ Candidate local and synchronized data includes:
 - explicit membership identifiers and operations for portable workspaces;
 - domain and application policy intent;
 - local opaque platform selections where the operating system requires them;
-- encrypted immutable operations and bounded routing metadata;
+- encrypted immutable operations, including author identity, public key, and
+  sequence, plus bounded routing metadata consisting of format and suite,
+  per-operation bundle identifier and salt, workspace and epoch identifiers,
+  ciphertext size, and transport-required account, timing, and record data;
 - pending publication work and opaque transport cursor state;
 - synchronizable Apple workspace key material;
 - device-local signing and key-agreement identity and recipient-specific
