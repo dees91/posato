@@ -360,24 +360,38 @@ operations arrive. This avoids the PoC reducer's fresh-history assumption while
 retaining per-author equivocation and gap detection.
 
 Every operation carries a Hybrid Logical Clock value of signed 64-bit epoch
-milliseconds plus the bounded logical counter. Durable local HLC state is
-either `active(last)` or terminal `hlc-exhausted(last)`. Local creation first
-validates the wall clock. A physical value outside the format-1 range returns
-recoverable action-required `clock-out-of-range` without creating an author,
-reserving HLC values, sealing bytes, or mutating state.
+milliseconds plus the bounded logical counter. A fresh replica initializes its
+durable HLC state as `active((0, 0))`; afterward the state is either
+`active(last)` or terminal `hlc-exhausted(last)`.
 
-Local creation reserves the complete consecutive HLC batch before sealing: two
-successors for registration plus the first business operation, and one for a
-later operation. If two values remain, the first mutation may use the
-penultimate and terminal tuples and commits `hlc-exhausted` atomically with the
-two operations. If the complete batch cannot be represented, local creation
+The bounded successor of `(physical, logical)` is `(physical, logical + 1)`
+when the logical counter is below 65,535, `(physical + 1, 0)` when the logical
+counter is 65,535 and physical time is below 4,102,444,800,000, and absent for
+the terminal tuple `(4,102,444,800,000, 65,535)`.
+
+A local commit attempt samples the wall clock exactly once before reservation
+and validates it. A physical value outside the format-1 range returns
+recoverable action-required `clock-out-of-range` without creating an author,
+reserving HLC values, sealing bytes, or mutating state. For a valid sample, the
+first reserved value is `(wallClock, 0)` when `wallClock > last.physical` and is
+the bounded successor of `last` otherwise. Every further value in the same
+batch is the bounded successor of the previously reserved value. Preparation,
+ambiguous-commit reconciliation, and retry of the same prepared bytes neither
+resample the wall clock nor reallocate the batch.
+
+Local creation reserves the complete HLC batch before sealing: two reserved
+values for registration plus the first business operation, and one reserved
+value for a later operation. If two values remain, the first mutation may use
+the penultimate and terminal tuples and commits `hlc-exhausted` atomically with
+the two operations. If the complete batch cannot be represented, local creation
 commits no operation, records terminal `hlc-exhausted` in an otherwise
 state-only transaction, and returns that outcome; it never wraps, clamps,
 reuses a tuple, or partially registers an author.
 
-Accepted remote input advances from the greater of the retained local and
-remote HLC by one when representable. If that successor is the terminal tuple,
-or no successor exists because the remote or retained value is already
+Accepted remote input compares the retained local and remote HLC values in HLC
+order and advances to the bounded successor of the greater value; remote
+acceptance does not sample the wall clock. If that successor is the terminal
+tuple, or no successor exists because the remote or retained value is already
 terminal, the same acceptance and projection transaction records
 `hlc-exhausted`. Remote operations remain valid, accepted, and projectable
 while the local clock is exhausted; only future local operation creation is
@@ -541,10 +555,13 @@ Before `SYNC-002` is complete:
 - reordered business-before-registration delivery stages within the existing
   caps and converges after registration, while pending bundles from a retired
   incarnation retry without the private key;
-- HLC tests cover two, one, and zero remaining values; local and remote
-  advancement to the terminal tuple; direct remote terminal input; restart and
-  a new author incarnation; inbound projection after exhaustion; no wrap or
-  clamp; and recoverable `clock-out-of-range` after wall-clock correction;
+- HLC tests cover the fresh `(0, 0)` baseline; future, equal, and regressed wall
+  samples; one wall sample for the registration-plus-business batch; logical
+  carry into the next physical millisecond; two, one, and zero remaining
+  values; local and remote advancement to the terminal tuple; direct remote
+  terminal input; restart and a new author incarnation; inbound projection
+  after exhaustion; no wrap or clamp; and recoverable `clock-out-of-range`
+  after wall-clock correction;
 - the 2,048th and 2,049th domain, an earlier removal arriving after a later
   capacity outcome, a later removal followed by a distinct presence, and
   randomized delivery permutations produce equal state and derived audit;

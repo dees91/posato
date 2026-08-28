@@ -42,6 +42,10 @@
   ambiguous-commit reconciliation, whole-batch HLC reservation, atomic terminal
   exhaustion, and a recoverable invalid-wall-clock outcome. Focused re-review
   approved the corrected plan with no remaining Critical or Required finding.
+- The fourth hosted-review correction plan defines one bounded successor, one
+  wall-clock sample per local batch, the exact wall-ahead reset, logical carry,
+  and wall-independent remote advancement. Focused review approved the minimal
+  plan with no Critical, Required, or advisory finding.
 
 ## Result
 
@@ -64,6 +68,9 @@
   process-memory authoring incarnation per local writer open. Its advisory HLC
   overflow finding was explicitly accepted into scope and now has terminal
   fail-closed local authoring behavior while inbound projection continues.
+- The maintainer requested a fourth hosted pass. Its Required finding closes
+  the remaining local HLC allocation ambiguity without changing wire bytes,
+  limits, operation vocabulary, remote validation, or the security boundary.
 
 ## Completed-change review
 
@@ -120,6 +127,14 @@
   every exact serialized local or remote transaction and rejects only regressed
   or unexplained state. Focused re-review approved the complete correction with
   no remaining Critical, Required, Recommended, or Optional finding.
+- The fourth hosted pass found one Required ambiguity: the contract validated
+  wall time but did not define its exact participation in local HLC allocation.
+  The correction defines the fresh baseline, bounded successor, one wall sample,
+  wall-ahead reset, equal-or-regressed advancement, and wall-independent remote
+  advancement. Focused review found that the retained phrase "two successors"
+  could override the wall-ahead rule; changing batch terminology to two or one
+  reserved values removed that contradiction. Focused re-review approved the
+  complete correction with no remaining findings.
 
 ## Verification
 
@@ -132,6 +147,9 @@
 | Repository-local Markdown links | `pass` | All repository-local Markdown links resolve. |
 | Diff and sensitive-data hygiene | `pass` | `git diff --check` passed and the scoped scan found no personal path, private-key marker, or common credential shape. |
 | Third-correction completed-change review | `pass` | Focused review required same-open regression checks; re-review required verified remote transactions to advance the same checkpoint. Final focused re-review approved the complete correction with no remaining findings. |
+| Fourth-correction HLC boundary check | `pass` | Executable examples covered wall-ahead reset, equal and regressed wall time, logical carry, terminal overflow, and exact two-value versus one-value first-mutation capacity. |
+| Fourth-correction documentation hygiene | `pass` | `git diff --check` passed; no Markdown links were added or changed; the scoped sensitive-data scan was clean; and the wiki log heading is parseable and appended at EOF. |
+| Fourth-correction completed-change review | `pass` | Focused review required replacing contradictory successor terminology. Re-review approved the corrected diff with no Critical, Required, Recommended, or Optional finding. |
 
 ## Blockers and accepted risks
 
@@ -141,5 +159,5 @@
 ## Final
 
 - **Status:** `done`
-- **Outcome:** accepted encrypted-operation and convergence contract includes
-  rollback-safe local authoring and fail-closed HLC exhaustion
+- **Outcome:** accepted encrypted-operation and convergence contract defines
+  rollback-safe authoring, fail-closed exhaustion, and exact local HLC allocation

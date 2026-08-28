@@ -118,7 +118,10 @@ or fail closed. The serialized replica state machine advances the open writer's
 checkpoint with each exact local or remote transaction. Loss, regression, or
 an unexplained change to that author/HLC footprint freezes the writer before it
 can create a sequence gap or clear exhaustion, while a verified remote advance
-remains valid. A terminal HLC blocks further local authoring without rejecting
+remains valid. Local authoring samples wall time once per batch: a later wall
+time resets the logical counter to zero, while an equal or regressed value uses
+the bounded HLC successor and logical overflow carries into the next physical
+millisecond. A terminal HLC blocks further local authoring without rejecting
 later valid remote input, while an out-of-range wall clock is recoverable.
 
 ## Persistence and atomicity

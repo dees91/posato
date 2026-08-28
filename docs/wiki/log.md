@@ -706,3 +706,10 @@
   rejecting later valid remote input.
 - Kept invalid wall-clock recovery distinct from terminal format-1 exhaustion
   and added no hardware anchor, online preflight, wire operation, or dependency.
+
+## [2026-08-28] correction | Define local HLC allocation
+
+- Defined one bounded HLC successor, one wall-clock sample per local batch, and
+  the exact wall-ahead reset and equal-or-regressed advancement rules.
+- Kept remote advancement wall-independent and retained the existing atomic
+  batch reservation, terminal exhaustion, wire format, and operation model.
