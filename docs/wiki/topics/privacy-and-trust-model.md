@@ -57,12 +57,14 @@ and the disclosed Apple Events presentation race recorded as `R-06`.
 
 MACOS-002 now accepts browser coverage and coexistence, but MACOS-003 and
 MACOS-004 still own implementation and physical evidence for the helper,
-recovery, proxy, presentation, and privacy controls. iOS entitlement and App
-Group details, cryptographic primitives and signed-author registration,
-lifecycle rules for other non-diagnostic data, and public-release claims remain
-with their named roadmap tasks. Diagnostic producers remain unimplemented and
-must satisfy the accepted diagnostic policy. Acceptance of these authorities
-does not make a production-readiness claim.
+recovery, proxy, presentation, and privacy controls. `user-confirmed`
+(2026-08-28): ADR 0006 accepts the cryptographic format and signed-author
+registration contract; `SYNC-002` still owns implementation evidence. iOS
+entitlement and App Group details, lifecycle rules for other non-diagnostic
+data, and public-release claims remain with their named roadmap tasks.
+Diagnostic producers remain unimplemented and must satisfy the accepted
+diagnostic policy. Acceptance of these authorities does not make a
+production-readiness claim.
 
 ## Data the product may need
 
@@ -256,5 +258,6 @@ never a dependency of commits, builds, tests, or documentation.
 - What exact retention, deletion, export, and public-notice rules apply to
   accepted non-diagnostic data classes other than the local exact-domain
   policy?
-- Which production cryptographic, signed-author, IPC, signing, and distribution
-  choices satisfy the accepted threat controls and release recheck?
+- Which IPC, signing, and distribution choices and which `SYNC-002`
+  cryptographic implementation evidence satisfy the accepted threat controls
+  and release recheck?

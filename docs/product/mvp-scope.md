@@ -118,4 +118,7 @@ distribution model, or pull-request decomposition. Those decisions remain
 with their named preparation gates and must not silently change this product
 contract. The accepted synchronization trust and workspace-mode boundary is
 recorded in
-[ADR 0002](../decisions/0002-synchronization-trust-and-workspace-modes.md).
+[ADR 0002](../decisions/0002-synchronization-trust-and-workspace-modes.md),
+and the later accepted cryptographic format and convergence contract is
+recorded in
+[ADR 0006](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md).

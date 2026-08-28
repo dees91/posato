@@ -176,12 +176,13 @@ transient-data, presentation, and network-transition contract. Their production
 controls and positive browser claims remain unverified until MACOS-003,
 MACOS-004, and the named downstream enforcement tasks supply their required
 evidence. Application termination, iOS entitlement/distribution, App Group
-schema, cryptographic primitives and format, automatic signed-author
-registration, and non-diagnostic lifecycle rules other than the accepted local
-exact-domain policy remain blocked on their named tasks. Diagnostic producers
-remain unimplemented and must satisfy the accepted diagnostic policy in their
-own tasks. `RELEASE-001` must recheck the residuals and feature gates before any
-public-release claim.
+schema, and non-diagnostic lifecycle rules other than the accepted local
+exact-domain policy remain blocked on their named tasks. ADR 0006 accepts the
+cryptographic format and automatic signed-author contract, but `SYNC-002` must
+still prove its implementation and cross-target behavior before the controls
+are verified. Diagnostic producers remain unimplemented and must satisfy the
+accepted diagnostic policy in their own tasks. `RELEASE-001` must recheck the
+residuals and feature gates before any public-release claim.
 
 ## Change and review rule
 
@@ -217,6 +218,7 @@ evidence, or `VERIFIED` status is imported by this model.
 - [MVP scope](../product/mvp-scope.md)
 - [ADR 0002: synchronization trust and workspace modes](../decisions/0002-synchronization-trust-and-workspace-modes.md)
 - [ADR 0003: MVP application architecture baseline](../decisions/0003-mvp-application-architecture-baseline.md)
+- [ADR 0006: Apple MVP encrypted operation and convergence contract](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md)
 - [Engineering quality contract](../development/engineering-quality-contract.md)
 - [MVP roadmap](../tasks/mvp-roadmap.md)
 - [Diagnostics and support-data policy](diagnostics-and-support-data.md)

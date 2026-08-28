@@ -671,3 +671,14 @@
   after the account exhausted its included runner minutes.
 - Retained manual workflow dispatch and made a fresh local aggregate quality
   pass the temporary merge gate without weakening review requirements.
+
+## [2026-08-28] decision | Accept Apple MVP synchronization contract
+
+- `user-confirmed`: accepted ADR 0006's bounded format-1 encrypted operation,
+  automatic Apple author-registration, validation, and deterministic
+  convergence contract.
+- Selected platform system providers without importing the PoC format,
+  experimental cryptography dependency, portable membership, schedules, or
+  batching into the Apple MVP.
+- Kept production implementation and cross-target vectors with `SYNC-002` and
+  deterministic CloudKit and Keychain bootstrap with `SYNC-003`.

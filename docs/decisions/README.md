@@ -23,3 +23,6 @@ evidence at the revision recorded in the wiki. Accepted product ADRs are:
 - [ADR 0005: Bound macOS Browser Enforcement and Coexistence](0005-macos-browser-enforcement-and-coexistence.md)
   — accepted Safari and Chrome support, exact-domain denial, fixed browser
   presentation, proxy coexistence, privacy, failure, and recovery boundaries.
+- [ADR 0006: Apple MVP Encrypted Operation and Convergence Contract](0006-apple-mvp-encrypted-operation-and-convergence.md)
+  — accepted encrypted bundle, canonical encoding, cryptographic provider,
+  automatic author-registration, validation, and convergence boundaries.

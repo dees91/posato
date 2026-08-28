@@ -7,6 +7,16 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SYNC-001 amendment
+
+`user-confirmed` (2026-08-28):
+[ADR 0006](0006-apple-mvp-encrypted-operation-and-convergence.md) resolves the
+production synchronization primitives, platform-provider ownership, canonical
+encoding, versioning, automatic Apple author registration, and deterministic
+convergence contract. `SYNC-002` owns its common Kotlin implementation,
+platform provider leaves, and cross-target vectors without changing the module
+or platform-boundary baseline in this ADR.
+
 ## Gate 5 amendment
 
 `user-confirmed` (2026-08-25): the accepted
@@ -350,8 +360,9 @@ the ready checkpoint are complete.
   local-replica pull request;
 - state-holder and coroutine ownership in the first stateful-screen pull
   request;
-- production cryptographic primitives, providers, encoding, and versioning in
-  the synchronization foundation pull request;
+- cryptographic implementation and cross-target format evidence under
+  [ADR 0006](0006-apple-mvp-encrypted-operation-and-convergence.md) in the
+  synchronization foundation pull request;
 - deterministic CloudKit and Keychain bootstrap in the Apple synchronization
   pull request; and
 - signing, notarization, TestFlight, App Store, and release-readiness details
