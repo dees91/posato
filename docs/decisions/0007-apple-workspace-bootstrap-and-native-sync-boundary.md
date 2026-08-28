@@ -177,18 +177,22 @@ established local workspace binding. It is never stored in CloudKit or
 Keychain, synchronized as application data, displayed, logged, or included in
 diagnostics.
 
-Every private-CloudKit operation and every bootstrap synchronizable-Keychain
-operation accepts the expected binding. Bootstrap uses the candidate binding;
-after establishment, all mailbox access uses the established binding. The
-native edge resolves and compares the current binding immediately before and
-after provider access. An unavailable preflight value keeps its unavailable or
-restricted outcome, while a different value returns `account-changed`; neither
-invokes the requested operation. Before returning any definitive `found`,
-`missing`, `created`, `identical`, or `conflict` result, the adapter requires an
+Every private-CloudKit operation and every synchronizable workspace-key
+create, read, delete, and delete-and-verify operation accepts the expected
+binding. Bootstrap and exact cleanup of a losing candidate use the candidate
+binding; after establishment, mailbox access and every workspace-key read or
+destructive removal use the established binding. Device-local Keychain items
+are outside this workspace account gate. The native edge resolves and compares
+the current binding immediately before and after provider access. An
+unavailable preflight value keeps its unavailable or restricted outcome, while
+a different value returns `account-changed`; neither invokes the requested
+operation or any `SecItem` query. Before returning any definitive `found`,
+`missing`, `created`, `identical`, or `conflict` result, exposing workspace-key
+bytes, or acknowledging deletion or verified absence, the adapter requires an
 exact postflight match. An unavailable or different postflight value, or an
 account-change signal observed during the operation, returns `unknown-outcome`,
-which common code may reconcile only after the expected binding is current
-again.
+discards any read bytes, and does not confirm cleanup. Common code may reconcile
+only the same exact selector after the expected binding is current again.
 
 For ongoing mailbox exchange, the native edge performs the preflight before it
 starts an explicit fetch or send or supplies an outgoing `CKSyncEngine` batch.
@@ -276,12 +280,16 @@ may resume only after its opaque binding and the exact existing anchor and item
 match again.
 
 Disabling synchronization preserves the local replica, anchor, mailbox, and
-Keychain item. Removing a workspace is a separate explicit destructive action:
-it may delete only the exact Posato zone and exact known workspace-key items,
-must verify absence independently, and must preserve unrelated CloudKit and
-Keychain data. Automatic orphan enumeration, garbage collection, rotation,
-recovery codes, remote wipe, and total-key-loss recovery are absent from the
-Apple MVP.
+Keychain item. Removing a workspace is a separate explicit destructive action.
+It passes the established binding to each exact CloudKit and synchronizable-
+Keychain delete, may delete only the exact Posato zone and exact known
+workspace-key items, must verify absence independently, and must preserve
+unrelated CloudKit and Keychain data. An account failure or indeterminate
+provider result stops subsequent destructive steps, retains the established
+local state, and permits reconciliation only for the same exact resource after
+the original binding returns. Automatic orphan enumeration, garbage
+collection, rotation, recovery codes, remote wipe, and total-key-loss recovery
+are absent from the Apple MVP.
 
 ## Consequences
 
@@ -347,8 +355,11 @@ Before the Apple provider contract is implemented and claimed:
   result, return to the original account, and no replacement or parallel
   workspace;
 - `SYNC-005` and `SYNC-006` prove identical item bytes and selectors, delayed
-  propagation, exact cleanup, locked/unavailable behavior, entitlements, and
-  signed target access on a physical iPhone and Mac;
+  propagation, exact cleanup, locked/unavailable behavior, entitlements,
+  signed target access, and established-binding preflight and postflight around
+  every workspace-key read and delete on a physical iPhone and Mac; an account
+  switch after the Keychain result exposes no read bytes, confirms no deletion
+  or absence, and retains the established state for exact reconciliation;
 - `SYNC-007` and `SYNC-008` prove identical exact-zone fetch, save, and
   confirmation semantics, record types, fields, immutable retries, change
   exchange, malformed/oversized rejection, and the established-binding
@@ -362,8 +373,9 @@ Before the Apple provider contract is implemented and claimed:
   diagnostics;
 - `SYNC-009` proves one controlled physical Mac-and-iPhone bootstrap in both
   directions from a private database without the custom zone, simultaneous
-  opt-in, restart, delayed Keychain, account failure, and cleanup without manual
-  repair or a second workspace; and
+  opt-in, restart, delayed Keychain, account failure, losing-candidate cleanup,
+  and destructive removal under the established binding without manual repair,
+  cross-account deletion, or a second workspace; and
 - `SYNC-010` proves that an account switch exposes no fetched bundle to common
   code, advances no cursor or accepted engine state, acknowledges no sent
   bundle, and preserves and restages unchanged pending work only after the
@@ -382,7 +394,7 @@ availability. They do not claim those controls are implemented.
   exact-zone fetch and save, exact create/read/delete behavior, bounded failure
   mapping, delay handling, and the checksum-as-corruption-check pattern. It does
   not prove this contract's zone-save reconciliation or persisted-account gating
-  when an account-change event is delayed.
+  for established Keychain access when an account-change event is delayed.
 - [Synchronizable Keychain items](https://developer.apple.com/documentation/security/ksecattrsynchronizable)
   define the cross-device secure-item attribute.
 - [Keychain accessibility](https://developer.apple.com/documentation/security/ksecattraccessibleafterfirstunlock)

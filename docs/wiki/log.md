@@ -768,3 +768,12 @@
 - Reused the existing provider outcomes and account binding without adding a
   zone manager or local zone token; established-workspace zone loss remains
   action-required and preserves local and pending work.
+
+## [2026-08-28] correction | Bind the workspace-key lifecycle to its account
+
+- Reused the candidate or established account binding around every
+  synchronizable workspace-key read and deletion, including destructive
+  removal, without changing item selectors, bytes, or device-local Keychain.
+- Failed account checks expose no key bytes or cleanup success, preserve the
+  established state for exact reconciliation under the original account, and
+  the wiki index now routes future work through ADR 0007.

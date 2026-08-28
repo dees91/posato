@@ -44,8 +44,9 @@
 
 - ADR 0007 now freezes the one-workspace bootstrap, mailbox, Keychain, and
   dedicated macOS synchronization-companion boundaries, including a durable
-  local-only account binding that gates bootstrap and ongoing mailbox access
-  and exact-zone establishment before anchor absence.
+  local-only account binding that gates bootstrap, every workspace-key
+  operation, destructive removal, and ongoing mailbox access, plus exact-zone
+  establishment before anchor absence.
 - `user-confirmed` (2026-08-28): `app.posato.macos.sync` exists with
   iCloud/CloudKit enabled and is associated with the existing
   `iCloud.app.posato.sync` container. No private account or signing value was
@@ -162,6 +163,37 @@
   unchanged local-access and key-loss ranges retain their narrower ownership.
 - **Recommended or Optional findings:** None.
 
+## Established-Keychain review correction
+
+- **Finding:** A fourth hosted `Required` finding identified that established
+  workspace-key reads and deletes, including destructive removal, remained
+  outside the account gate even though account failure authorizes no cleanup or
+  deletion.
+- **Resolution:** The existing candidate or established binding now gates every
+  synchronizable workspace-key operation before and after its exact `SecItem`
+  query. A failed preflight performs no query; a failed postflight exposes no
+  key bytes, confirms no deletion or absence, stops later destructive steps,
+  retains established state, and reconciles only the same selector after the
+  original binding returns. Device-local Keychain behavior and provider formats
+  remain unchanged.
+
+## Accepted wiki-routing advisory correction
+
+- **Finding:** The maintainer accepted the hosted advisory that the mandatory
+  wiki index routed product and architecture work through ADR 0006 but omitted
+  accepted ADR 0007.
+- **Resolution:** The product-and-architecture index now routes directly to ADR
+  0007 without changing any decision or adding a second source of authority.
+
+## Established-Keychain focused review
+
+- **Verdict:** `approved`
+- **Critical or Required findings:** None. The reviewer confirmed that the
+  candidate and established bindings gate the correct Keychain lifecycle,
+  failed checks preserve established state without exposing bytes or cleanup
+  success, and the downstream evidence and ADR 0007 wiki route are complete.
+- **Recommended or Optional findings:** None.
+
 ## Verification
 
 | Check run | Result | Evidence |
@@ -175,6 +207,7 @@
 | Correction documentation hygiene | pass | All repository-local Markdown links resolve, `git diff --check` passes, the scoped sensitive-data scan is clean, and the correction log entry is parseable at EOF. |
 | Ongoing-mailbox isolation | pass | The established binding gates fetch/send batches, automatic engine events, and their results; mismatch invalidates the engine while preserving pending work and accepted transport progress for a fresh instance under the original binding. |
 | Exact-zone establishment | pass | Bootstrap confirms the fixed binding-scoped zone before anchor absence; crash, concurrent creation, and unknown save outcomes reuse that identity, while established zone loss preserves local and pending work. |
+| Established Keychain isolation | pass | Candidate and established bindings gate exact workspace-key reads and deletes before and after `SecItem` access; failed postflight exposes no bytes or cleanup success and preserves established state for same-selector reconciliation. |
 
 ## Blockers and accepted risks
 

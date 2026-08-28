@@ -247,12 +247,13 @@ freezes the Apple MVP bootstrap and provider contract:
 - an existing anchor with a delayed Keychain item waits and never creates a
   replacement key or workspace;
 - one local-only opaque account binding is persisted with each bootstrap
-  attempt and established workspace, then checked around bootstrap and ongoing
-  mailbox access, so account change cannot create a parallel anchor, expose a
-  fetched bundle to common code, advance transport state, or falsely
-  acknowledge publication; a mismatched sync-engine instance is discarded and
-  recreated from the last accepted state only after the original binding
-  returns;
+  attempt and established workspace, then checked around bootstrap, every
+  workspace-key read or deletion, destructive removal, and ongoing mailbox
+  access, so account change cannot create a parallel anchor, expose key bytes or
+  a fetched bundle to common code, delete across accounts, advance transport
+  state, or falsely acknowledge cleanup or publication; exact Keychain
+  reconciliation and a fresh sync-engine instance resume only after the
+  original binding returns;
 - immutable encrypted bundles use one `PosatoEncryptedBundleV1` record with an
   inline payload bounded by ADR 0006; and
 - account change, malformed state, unknown outcomes, and cleanup preserve exact
