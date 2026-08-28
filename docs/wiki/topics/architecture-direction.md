@@ -258,9 +258,10 @@ only aggregate business and editor-session facts.
 ### TARGETS-002 semantic application group
 
 `observed` (2026-08-28): the local target aggregate now contains sorted exact
-domains and one optional semantic application-policy name. Names are bounded
-before processing, trimmed, normalized to NFC through a narrow platform leaf,
-validated against common C0/C1 controls and a strict 80-byte UTF-8 limit, and
+domains and one optional semantic application-policy name. Raw names are
+bounded and rejected for common C0/C1 controls before trimming, then normalized
+to NFC through a narrow platform leaf and validated against a strict 80-byte
+UTF-8 limit. Canonical values retain the control-character check and remain
 redacted from repository-owned default strings. Stored names must already be
 canonical; invalid persisted text fails as corruption rather than being
 repaired silently.

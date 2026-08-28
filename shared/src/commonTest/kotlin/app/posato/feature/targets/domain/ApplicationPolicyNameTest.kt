@@ -26,12 +26,18 @@ class ApplicationPolicyNameTest {
             ApplicationPolicyName.parse(" ".repeat(ApplicationPolicyNameLimits.MAX_RAW_INPUT_LENGTH + 1)),
             ApplicationPolicyNameFailure.TOO_LONG,
         )
+        assertFailure(
+            ApplicationPolicyName.parse("\u000A" + "a".repeat(ApplicationPolicyNameLimits.MAX_RAW_INPUT_LENGTH)),
+            ApplicationPolicyNameFailure.TOO_LONG,
+        )
     }
 
     @Test
     fun `given empty malformed C0 or C1 input when parsed then it fails`() {
         assertFailure(ApplicationPolicyName.parse("   "), ApplicationPolicyNameFailure.EMPTY)
         assertFailure(ApplicationPolicyName.parse("line\u000Afeed"), ApplicationPolicyNameFailure.INVALID_CHARACTERS)
+        assertFailure(ApplicationPolicyName.parse("\u000ASocial feeds"), ApplicationPolicyNameFailure.INVALID_CHARACTERS)
+        assertFailure(ApplicationPolicyName.parse("Social feeds\u0009"), ApplicationPolicyNameFailure.INVALID_CHARACTERS)
         assertFailure(ApplicationPolicyName.parse("delete\u007Fcharacter"), ApplicationPolicyNameFailure.INVALID_CHARACTERS)
         assertFailure(ApplicationPolicyName.parse("broken\uD800"), ApplicationPolicyNameFailure.INVALID_CHARACTERS)
     }

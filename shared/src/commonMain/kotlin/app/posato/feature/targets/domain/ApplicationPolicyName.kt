@@ -33,8 +33,13 @@ internal value class ApplicationPolicyName private constructor(
 
     companion object {
         fun parse(rawInput: String): ApplicationPolicyNameResult {
-            if (rawInput.length > ApplicationPolicyNameLimits.MAX_RAW_INPUT_LENGTH) {
-                return ApplicationPolicyNameResult.Failure(ApplicationPolicyNameFailure.TOO_LONG)
+            val rawFailure = when {
+                rawInput.length > ApplicationPolicyNameLimits.MAX_RAW_INPUT_LENGTH -> ApplicationPolicyNameFailure.TOO_LONG
+                rawInput.any(Char::isApplicationPolicyControlCharacter) -> ApplicationPolicyNameFailure.INVALID_CHARACTERS
+                else -> null
+            }
+            if (rawFailure != null) {
+                return ApplicationPolicyNameResult.Failure(rawFailure)
             }
             val canonicalValue = normalizeApplicationPolicyNameNfc(rawInput.trim())
 
