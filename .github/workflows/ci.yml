@@ -104,6 +104,11 @@ jobs:
           java-version: "21"
           cache: gradle
 
+      - name: Install Android preview SDK
+        run: |
+          yes | sdkmanager --licenses
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
+
       - name: Select Xcode 26.3
         run: |
           sudo xcode-select --switch /Applications/Xcode_26.3.app

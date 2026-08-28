@@ -28,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.posato.generated.resources.Res
@@ -217,5 +219,51 @@ private fun ExactDomainsContent(
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
+}
+
+@Preview(
+    name = "Phone",
+    group = "Exact domains",
+    widthDp = 390,
+    heightDp = 844,
+)
+@Composable
+private fun ExactDomainsPhonePreview(
+    @PreviewParameter(ExactDomainsScreenPreviewDataProvider::class)
+    previewState: ExactDomainsScreenPreviewDataProvider.ExactDomainsPreviewState,
+) {
+    PosatoTheme {
+        ExactDomainsScreen(
+            state = previewState.state,
+            onSubmit = {},
+            onEdit = {},
+            onCancelEdit = {},
+            onRemove = {},
+            onRetry = {},
+        )
+    }
+}
+
+@Preview(
+    name = "Desktop",
+    group = "Exact domains",
+    widthDp = 1024,
+    heightDp = 768,
+)
+@Composable
+private fun ExactDomainsDesktopPreview(
+    @PreviewParameter(ExactDomainsScreenPreviewDataProvider::class)
+    previewState: ExactDomainsScreenPreviewDataProvider.ExactDomainsPreviewState,
+) {
+    PosatoTheme {
+        ExactDomainsScreen(
+            state = previewState.state,
+            onSubmit = {},
+            onEdit = {},
+            onCancelEdit = {},
+            onRemove = {},
+            onRetry = {},
+        )
     }
 }

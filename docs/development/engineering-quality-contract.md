@@ -46,6 +46,17 @@ final implementation includes live text in `toString()`. Keep it inside the
 text-field composable; it must not be logged, diagnosed, persisted, passed to
 the ViewModel, or included in another carrier's string representation.
 
+`user-confirmed` (2026-08-27): each product screen has named, deterministic
+common-code Compose previews backed by one `PreviewParameterProvider`. Keep the
+provider and its synthetic states in a separate `*PreviewDataProvider.kt` file,
+and keep exactly two preview functions in the screen file. Both preview
+functions consume the same complete provider sequence and call the
+state-and-callback rendering overload rather than a ViewModel, store, DI graph,
+platform service, clock, random source, or live text state. Samples cover each
+visually distinct screen branch. This is a review and task-acceptance
+convention, not a naming-based static rule; leaf composables need previews only
+when independently reused or visually complex.
+
 `user-confirmed` (2026-08-27): repository-owned Kotlin and Kotlin build scripts
 use a 150-character limit in ktlint, Detekt, and the Android Studio settings
 published through `.editorconfig`. Expression bodies keep their first
@@ -166,8 +177,10 @@ repository-owned aggregate quality gate and the credential-free JVM, iOS, and
 macOS surfaces introduced by that increment.
 
 Routine CI must not require personal signing identities, provisioning profiles,
-application credentials, or private device data. Exact jobs and commands are
-chosen in the shared PR #1 execution cycle.
+application credentials, or private device data. The preview-only Android KMP
+library uses Android SDK Platform 36 and Build Tools 36.0.0 to compile shared
+preview code; it does not add an Android product host or emulator job. Exact
+jobs and commands are chosen in the shared PR #1 execution cycle.
 
 `user-confirmed` (2026-08-27): draft pull requests allocate no runner; moving a
 pull request to ready for review triggers CI. The full macOS quality job runs

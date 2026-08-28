@@ -55,6 +55,15 @@ Inspect the effective launcher and daemon JVMs with:
 The `Daemon JVM` line must report Java 21 and Eclipse Temurin. Android Studio
 may continue to report its bundled JBR as the `Launcher JVM`.
 
+## Compose previews
+
+The shared module has an Android KMP library target only because common Compose
+previews require Android tooling. It is not an Android application or MVP
+platform target. Install Android SDK Platform 36 and Build Tools 36.0.0, sync
+the project in Android Studio, then open a screen file to inspect its phone and
+desktop preview functions. Their shared named cases live in the adjacent
+`*PreviewDataProvider.kt` file.
+
 Run the current desktop shell with:
 
 ```shell
@@ -89,12 +98,13 @@ Run the repository-owned aggregate gate from the repository root:
 ```
 
 It checks root and module Kotlin formatting with ktlint, analyzes both
-application modules with Detekt and Compose Rules, compiles warning-free JVM
-and iOS source, runs the shared JVM and desktop test tasks when test sources
-exist, and creates the macOS distributable. The current static shell has no
-behavior-focused tests. Detekt writes Checkstyle, HTML, Markdown, and SARIF
-reports under each module's `build/reports/detekt/`; ktlint writes plain-text
-and Checkstyle reports under `build/reports/ktlint/` in each checked project.
+application modules with Detekt and Compose Rules, compiles warning-free JVM,
+iOS, and preview-only Android source, runs the shared JVM and desktop test
+tasks when test sources exist, and creates the macOS distributable. The current
+static shell has no behavior-focused tests. Detekt writes Checkstyle, HTML,
+Markdown, and SARIF reports under each module's `build/reports/detekt/`;
+ktlint writes plain-text and Checkstyle reports under `build/reports/ktlint/`
+in each checked project.
 
 Draft pull requests allocate no GitHub Actions runner; moving one to ready for
 review triggers CI, while returning one to draft cancels its in-progress run.

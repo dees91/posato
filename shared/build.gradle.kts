@@ -1,6 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.multiplatform)
@@ -9,6 +10,20 @@ plugins {
 }
 
 kotlin {
+    androidLibrary {
+        namespace = "app.posato.shared"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+
+        androidResources {
+            enable = true
+        }
+    }
+
     jvm {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
@@ -38,6 +53,7 @@ kotlin {
             implementation(libs.compose.material3)
             implementation(libs.compose.resources)
             implementation(libs.compose.ui)
+            implementation(libs.compose.ui.tooling.preview)
             implementation(libs.kuri)
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kotlinx.coroutines.core)
@@ -57,6 +73,10 @@ kotlin {
             implementation(libs.sqldelight.sqlite.driver)
         }
     }
+}
+
+dependencies {
+    add("androidRuntimeClasspath", libs.compose.ui.tooling)
 }
 
 sqldelight {

@@ -5,6 +5,7 @@ import org.jlleitschuh.gradle.ktlint.KtlintExtension
 import org.jlleitschuh.gradle.ktlint.reporter.ReporterType
 
 plugins {
+    alias(libs.plugins.android.kotlin.multiplatform.library) apply false
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.compose.multiplatform) apply false
     alias(libs.plugins.detekt) apply false
@@ -95,6 +96,7 @@ tasks.register("quality") {
         ":quality-rules:test",
         ":shared:compileKotlinIosArm64",
         ":shared:compileKotlinIosSimulatorArm64",
+        ":shared:compileAndroidMain",
         ":shared:detekt",
         ":shared:iosSimulatorArm64Test",
         ":shared:jvmTest",

@@ -622,3 +622,20 @@
   expression bodies to start their value after `=` when the first line fits.
 - Kept comments, over-limit values, and standard-formatted multiline raw
   strings valid and omitted autocorrect or a general formatting framework.
+
+## [2026-08-27] decision | Add tooling-only shared Compose previews
+
+- `user-confirmed`: common Compose previews use a narrow Android KMP library
+  target because the Compose preview tooling requires one.
+- The target has no Android application, host, identifier, distribution
+  artifact, or MVP platform claim; Android product work remains deferred.
+- Product screens use deterministic named `PreviewParameterProvider` cases via
+  their state-and-callback render surface, with review rather than a brittle
+  naming-based static rule enforcing the convention.
+
+## [2026-08-27] correction | Align screen preview ownership
+
+- Kept exactly two preview functions in the product screen file and moved the
+  deterministic synthetic state provider into a separate adjacent file.
+- Required phone and desktop previews to consume the same complete provider
+  sequence rather than maintaining a reduced desktop-only case.

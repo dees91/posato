@@ -209,6 +209,12 @@ components, and enables the Compose Rules Detekt Material 2 prohibition. New
 generic UI components and geometry tokens remain evidence-driven rather than
 being created speculatively.
 
+`user-confirmed` (2026-08-27): each product screen keeps exactly two preview
+functions in its screen file and one separate preview data provider. Both
+preview functions consume the same complete deterministic state sequence and
+render through the state-and-callback overload without a ViewModel or platform
+I/O.
+
 `user-confirmed` (2026-08-27): the final framework `TextFieldState` exposes its
 live text from `toString()`, so the redacted-default-string rule applies to
 repository-owned carriers and diagnostics. The screen-owned framework state is
@@ -244,7 +250,10 @@ only aggregate business and editor-session facts.
 - observed generation-time candidates: Kotlin 2.4.10, Compose Multiplatform
   1.12.0, Gradle 9.7.1, and Metro 1.4.2; these are not production pins.
 - PR #1 uses JDK 21 and JVM bytecode target 17.
-- no Android Gradle Plugin in the Apple-only graph.
+- `user-confirmed` (2026-08-27): `:shared` has an Android KMP library target
+  only for common Compose preview tooling. It has no Android application,
+  host, identifier, distribution artifact, or MVP feature claim; Android
+  product work remains deferred.
 - the exact stable Xcode version is selected in the skeleton task after a clean
   compatibility check against the pinned Kotlin and Compose versions; the
   compatible CI image is selected in the separate PR #1 CI task.
