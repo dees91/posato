@@ -2,6 +2,13 @@ import org.gradle.api.initialization.resolve.RepositoriesMode
 
 pluginManagement {
     repositories {
+        google {
+            content {
+                includeGroup("com.android")
+                includeGroupByRegex("com\\.android\\..*")
+                includeGroupByRegex("androidx\\..*")
+            }
+        }
         gradlePluginPortal()
         mavenCentral()
     }
@@ -16,7 +23,9 @@ dependencyResolutionManagement {
     repositories {
         google {
             content {
+                includeGroup("com.android")
                 includeGroupByRegex("androidx\\..*")
+                includeGroupByRegex("com\\.android\\..*")
             }
         }
         mavenCentral()
@@ -26,4 +35,5 @@ dependencyResolutionManagement {
 rootProject.name = "Posato"
 
 include(":desktopApp")
+include(":quality-rules")
 include(":shared")

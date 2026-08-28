@@ -34,6 +34,7 @@ compose.desktop {
             targetFormats(TargetFormat.Dmg)
             packageName = "Posato"
             packageVersion = "1.0.0"
+            modules("java.sql")
 
             macOS {
                 bundleID = "app.posato.macos"

@@ -55,6 +55,15 @@ Inspect the effective launcher and daemon JVMs with:
 The `Daemon JVM` line must report Java 21 and Eclipse Temurin. Android Studio
 may continue to report its bundled JBR as the `Launcher JVM`.
 
+## Compose previews
+
+The shared module has an Android KMP library target only because common Compose
+previews require Android tooling. It is not an Android application or MVP
+platform target. Install Android SDK Platform 36 and Build Tools 36.0.0, sync
+the project in Android Studio, then open a screen file to inspect its phone and
+desktop preview functions. Their shared named cases live in the adjacent
+`*PreviewDataProvider.kt` file.
+
 Run the current desktop shell with:
 
 ```shell
@@ -89,12 +98,13 @@ Run the repository-owned aggregate gate from the repository root:
 ```
 
 It checks root and module Kotlin formatting with ktlint, analyzes both
-application modules with Detekt and Compose Rules, compiles warning-free JVM
-and iOS source, runs the shared JVM and desktop test tasks when test sources
-exist, and creates the macOS distributable. The current static shell has no
-behavior-focused tests. Detekt writes Checkstyle, HTML, Markdown, and SARIF
-reports under each module's `build/reports/detekt/`; ktlint writes plain-text
-and Checkstyle reports under `build/reports/ktlint/` in each checked project.
+application modules with Detekt and Compose Rules, compiles warning-free JVM,
+iOS, and preview-only Android source, runs the shared JVM and desktop test
+tasks when test sources exist, and creates the macOS distributable. The current
+static shell has no behavior-focused tests. Detekt writes Checkstyle, HTML,
+Markdown, and SARIF reports under each module's `build/reports/detekt/`;
+ktlint writes plain-text and Checkstyle reports under `build/reports/ktlint/`
+in each checked project.
 
 Draft pull requests allocate no GitHub Actions runner; moving one to ready for
 review triggers CI, while returning one to draft cancels its in-progress run.
@@ -102,6 +112,12 @@ GitHub Actions then runs the full gate on macOS for every pull request
 containing a non-Markdown change and for every push to `main`. A Markdown-only
 pull request runs the lightweight scope job and reports the macOS `Quality` job
 as skipped; any classification failure falls back to running `Quality`.
+
+Automatic GitHub Actions triggers are temporarily paused through 2026-09-05
+because the account exhausted its included runner minutes. Until they are
+restored, run `./gradlew quality` locally after the last material correction
+and treat that result as the merge gate. The CI workflow remains available for
+manual dispatch when spending permits.
 
 The pinned quality set is ktlint Gradle plugin 14.2.0, ktlint 1.8.0, Detekt
 2.0.0-alpha.6, and Compose Rules 0.6.4. The Detekt prerelease is the narrow

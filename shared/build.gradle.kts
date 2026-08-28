@@ -1,6 +1,7 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.multiplatform)
@@ -9,6 +10,20 @@ plugins {
 }
 
 kotlin {
+    androidLibrary {
+        namespace = "app.posato.shared"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+        }
+
+        androidResources {
+            enable = true
+        }
+    }
+
     jvm {
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_17)
@@ -19,6 +34,9 @@ kotlin {
     val iosSimulatorArm64Target = iosSimulatorArm64()
 
     listOf(iosArm64Target, iosSimulatorArm64Target).forEach { target ->
+        target.compilerOptions {
+            freeCompilerArgs.add("-opt-in=kotlinx.cinterop.ExperimentalForeignApi")
+        }
         target.binaries.framework {
             baseName = "PosatoShared"
             isStatic = true
@@ -29,16 +47,24 @@ kotlin {
 
     compilerOptions {
         allWarningsAsErrors.set(true)
+        freeCompilerArgs.addAll(
+            "-opt-in=androidx.compose.material3.ExperimentalMaterial3Api",
+            "-opt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",
+        )
     }
 
     sourceSets {
         commonMain.dependencies {
             api(libs.compose.runtime)
             implementation(libs.compose.foundation)
-            implementation(libs.compose.material)
+            implementation(libs.compose.material3)
             implementation(libs.compose.resources)
             implementation(libs.compose.ui)
+            implementation(libs.compose.ui.tooling.preview)
+            implementation(libs.kuri)
+            implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.lifecycle.viewmodel.compose)
             implementation(libs.sqldelight.async.extensions)
             implementation(libs.sqldelight.runtime)
         }
@@ -50,16 +76,21 @@ kotlin {
             implementation(libs.sqldelight.native.driver)
         }
         jvmMain.dependencies {
+            implementation(libs.kotlinx.coroutines.swing)
             implementation(libs.sqldelight.sqlite.driver)
         }
     }
+}
+
+dependencies {
+    add("androidRuntimeClasspath", libs.compose.ui.tooling)
 }
 
 sqldelight {
     databases {
         create("PosatoDatabase") {
             generateAsync.set(true)
-            packageName.set("app.posato.persistence.db")
+            packageName.set("app.posato.core.database")
             schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
         }
     }

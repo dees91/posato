@@ -1,16 +1,7 @@
 name: CI
 
 on:
-  pull_request:
-    types:
-      - converted_to_draft
-      - opened
-      - ready_for_review
-      - reopened
-      - synchronize
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -77,7 +68,7 @@ jobs:
       ${{
         always() &&
         (
-          github.event_name == 'push' ||
+          github.event_name == 'workflow_dispatch' ||
           (
             github.event_name == 'pull_request' &&
             github.event.pull_request.draft == false &&

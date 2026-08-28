@@ -33,6 +33,32 @@ Kotlin remains the product and policy owner. Concrete IPC schemas, daemon and
 Mach identifiers, build wiring, and enforcement mechanisms remain with their
 named implementation tasks.
 
+## PREVIEW-001 amendment
+
+`user-confirmed` (2026-08-27): `:shared` adds the
+`com.android.kotlin.multiplatform.library` plugin and an `androidMain` source
+set solely to make common Compose `@Preview` tooling available. It has no
+Android application, Activity, host, bundle identifier, distribution artifact,
+runtime support claim, or MVP feature ownership. The target compiles the same
+shared UI with a thin `PlatformTheme` actual and supplies no product platform
+behavior. Android application work remains deferred until separately accepted.
+
+## TARGETS-001 package-ownership amendment
+
+`user-confirmed` (2026-08-28): production packages inside the initial
+`:shared` module are organized feature-first. TARGETS-001 owns
+`app.posato.feature.targets`, with `domain`, `data`, and `ui` subpackages only
+where those responsibilities already exist. Application-wide capabilities use
+named `app.posato.core.<capability>` packages; the current shared capabilities
+are `database` and `designsystem`, and no catch-all declarations live directly
+under `core`.
+
+This source organization does not introduce pass-through use cases or imply a
+module split. TARGETS UI may depend directly on its injected store contract,
+while the application shell and Metro composition roots remain under
+`app.posato` and `app.posato.di`. A feature or core package becomes a separate
+module only when a real production dependency boundary requires it.
+
 ## Context
 
 The accepted MVP scope, Posato identity, and design baseline are sufficient to
@@ -62,6 +88,7 @@ iosApp (Xcode host)
     -> :shared (KMP, Compose, and Metro plugin)
            commonMain
            commonTest
+           androidMain (preview tooling only)
            iosMain
            jvmMain
     <- :desktopApp (JVM entry point and macOS packaging)
@@ -120,11 +147,12 @@ tokens, native errors, and system-settings objects do not cross into
 | iOS Device Activity monitor extension | `app.posato.ios.activitymonitor` | Deferred | Xcode-owned expiry callback and minimum shared App Group state |
 | macOS native helper | `app.posato.macos.helper` | Deferred | Signed native process behind authenticated, versioned local IPC |
 
-The first skeleton has no Android, Web, custom shield-action, custom
-shield-configuration, or Device Activity report target. Gate 7 registers the
-accepted Apple identifiers and required capabilities before production
-implementation begins, even though the extension and helper implementation
-arrive after PR #1.
+The first skeleton has no Android application, Web target, custom
+shield-action, custom shield-configuration, or Device Activity report target.
+`androidMain` exists only for shared Compose preview tooling and has no product
+identifier or host. Gate 7 registers the accepted Apple identifiers and
+required capabilities before production implementation begins, even though the
+extension and helper implementation arrive after PR #1.
 
 ### iOS enforcement boundary
 
@@ -198,7 +226,8 @@ decisions for the first slice that needs them.
 - Both deployment targets are rechecked against the release support policy
   before the first release; this decision does not claim future store
   eligibility.
-- The Apple-only graph has no Android Gradle Plugin.
+- The Apple MVP product graph has no Android application. `:shared` uses the
+  Android Gradle Plugin only for common Compose preview tooling.
 - PR #1 uses JDK 21 and emits JVM 17 bytecode.
 - PR #1 must select, compatibility-check, and pin one stable Kotlin, Compose,
   Gradle, Metro, and Xcode set before generated files are accepted. The
@@ -245,8 +274,10 @@ also conflict with existing repository files on a case-insensitive filesystem.
 
 ### Select every available platform and library
 
-Rejected. Android and Web are outside the Apple-first MVP, and speculative
-libraries would create ownership and update cost before a consumer exists.
+Rejected as product targets. Android and Web are outside the Apple-first MVP,
+and speculative libraries would create ownership and update cost before a
+consumer exists. The separately accepted preview-only Android KMP library is
+the narrow tooling exception required by common Compose previews.
 
 ### Use Koin alongside or instead of Metro
 
@@ -297,9 +328,9 @@ PR #1 must prove, at minimum:
 - both Metro platform graphs compile and validate;
 - the macOS application builds and renders the accepted minimal shell;
 - the iOS Simulator application builds and renders the same shell;
-- no Android or Web target, enforcement implementation, synchronization
-  implementation, helper executable, or extension executable has entered the
-  skeleton; and
+- no Android application or Web target, enforcement implementation,
+  synchronization implementation, helper executable, or extension executable
+  has entered the skeleton; and
 - the imported file set is traceable to the reviewed wizard revision and its
   recorded sanitation diff.
 

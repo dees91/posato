@@ -152,6 +152,18 @@ Favor stable alignment and deliberate negative space. Avoid excessive rounding,
 heavy shadows, gradients, decorative panels, and stock card grids. Product
 hierarchy should remain legible without elevation effects.
 
+### Application implementation foundation
+
+TARGETS-001, the first reviewed product screen, establishes the reusable
+application foundation: one root `PosatoTheme` backed only by Material 3 and
+adapted from the existing platform semantic colors and text styles. Feature
+screens consume that theme instead of creating their own theme boundary.
+
+This foundation does not create a generic wrapper for every Material 3
+component. Promote a feature component or add spacing, shape, border, or
+elevation tokens only after repeated screen evidence establishes a shared
+contract.
+
 ### Iconography and imagery
 
 Use SF Symbols for familiar interface actions and give essential symbols text

@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 6
+- **Revision:** 8
 - **Accepted:** 2026-08-27
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -26,13 +26,54 @@ CI quality boundaries and integrated completed-change review pass.
 - **The Kotlin compiler** owns warning reporting. Repository-owned source is
   warning-free where the selected toolchain exposes reliable enforcement.
 
+`user-confirmed` (2026-08-27): repository-owned Compose UI uses Material 3
+components exclusively. The Compose Rules Detekt `Material2` check is active
+with no allowlist, so the aggregate quality gate rejects Material 2 source use.
+The version catalog and production source do not retain a direct Material 2
+dependency or import.
+
+State-based Material 3 text fields use a composable-owned
+`rememberTextFieldState`. Mutable live text is not a field in immutable
+aggregate `UiState` and is not mirrored in a ViewModel flow; pass its current
+value to the ViewModel only for submission. Business, validation, persistence,
+failure, and editor-session facts remain in the combined screen state. Compose
+Runtime state annotations and observation APIs may be used in the ViewModel,
+but Compose Foundation text-input types may not.
+
+`user-confirmed` (2026-08-27): the framework `TextFieldState` is a narrow
+exception to the repository-owned redacted-default-string rule because its
+final implementation includes live text in `toString()`. Keep it inside the
+text-field composable; it must not be logged, diagnosed, persisted, passed to
+the ViewModel, or included in another carrier's string representation.
+
+`user-confirmed` (2026-08-27): each product screen has named, deterministic
+common-code Compose previews backed by one `PreviewParameterProvider`. Keep the
+provider and its synthetic states in a separate `*PreviewDataProvider.kt` file,
+and keep exactly two preview functions in the screen file. Both preview
+functions consume the same complete provider sequence and call the
+state-and-callback rendering overload rather than a ViewModel, store, DI graph,
+platform service, clock, random source, or live text state. Samples cover each
+visually distinct screen branch. This is a review and task-acceptance
+convention, not a naming-based static rule; leaf composables need previews only
+when independently reused or visually complex.
+
 `user-confirmed` (2026-08-27): repository-owned Kotlin and Kotlin build scripts
 use a 150-character limit in ktlint, Detekt, and the Android Studio settings
 published through `.editorconfig`. Expression bodies keep their first
-expression on the declaration line when it fits. The accepted assignment and
-call-chain layout remains formatter-compatible authored style where ktlint has
-no exact built-in rule; do not create a custom ruleset for it without observed
-repeated drift and a named consumer.
+expression on the declaration line when it fits. The repository-owned ktlint
+rule `posato:rhs-on-assignment-line` applies the same layout to declarations,
+assignments, named arguments, default values, and expression bodies when the
+first right-hand-side line fits. It reports without autocorrect; comments
+between `=` and the expression, values that need the next line, and multiline
+raw strings remain valid. Raw strings follow ktlint's standard required line
+break. The inverse standard ktlint multiline-expression rule stays disabled.
+The repository-owned `posato:when-entry-arrow-on-condition-line` rule keeps a
+`when` entry arrow on the final condition line when it fits. It reports without
+autocorrect and accepts an intervening comment or a condition line that would
+exceed the configured limit. Ktlint's conflicting declaration-site trailing-
+comma rule is disabled; the call-site trailing-comma rule remains active.
+Call-chain continuation remains formatter-compatible authored style; no
+separate custom rule is justified for it.
 
 PR #1 selects one compatible Kotlin, Compose Multiplatform, Gradle, Metro,
 ktlint, Detekt, and Compose Rules set. Stable releases are required by default.
@@ -141,8 +182,10 @@ repository-owned aggregate quality gate and the credential-free JVM, iOS, and
 macOS surfaces introduced by that increment.
 
 Routine CI must not require personal signing identities, provisioning profiles,
-application credentials, or private device data. Exact jobs and commands are
-chosen in the shared PR #1 execution cycle.
+application credentials, or private device data. The preview-only Android KMP
+library uses Android SDK Platform 36 and Build Tools 36.0.0 to compile shared
+preview code; it does not add an Android product host or emulator job. Exact
+jobs and commands are chosen in the shared PR #1 execution cycle.
 
 `user-confirmed` (2026-08-27): draft pull requests allocate no runner; moving a
 pull request to ready for review triggers CI. The full macOS quality job runs
@@ -152,6 +195,14 @@ job results but skip macOS after a cheap whole-diff classification.
 Classification failure must run macOS rather than silently weakening the gate.
 Do not classify only the latest push because cancellation could otherwise
 leave earlier substantive changes unverified.
+
+`user-confirmed` (2026-08-28): GitHub-hosted automatic CI is paused through
+2026-09-05 because the account exhausted its included Actions minutes. During
+the pause, a fresh local `./gradlew quality` pass after the last material
+correction is the required merge gate. The workflow retains manual dispatch
+for exceptional use. Restore the pull-request and `main` push triggers when
+hosted minutes become available; this temporary exception does not weaken the
+quality command or the proportional review requirement.
 
 ## Definition of Done
 

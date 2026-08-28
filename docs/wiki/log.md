@@ -580,3 +580,94 @@
   classification so review-ready Markdown-only changes skip macOS while
   substantive changes, `main` pushes, and classification failures retain the
   full quality gate.
+
+## [2026-08-27] implementation | Add exact-domain management
+
+- Added bounded Unicode-to-ASCII exact-domain canonicalization with strict DNS
+  and A-label restoration checks and redacted domain value rendering.
+- Added one shared screen whose aggregate immutable state combines private
+  flows and starts policy reads only while the UI state is consumed.
+- Kept persistence directly on the existing atomic policy store without a new
+  use case, navigation layer, custom scope, or availability check.
+
+## [2026-08-27] correction | Establish the Material 3 UI foundation
+
+- Kept mutable text input in one composable-owned `rememberTextFieldState`
+  instead of duplicating it in aggregate immutable UI state or a ViewModel
+  flow.
+- Assigned the first reviewed screen to establish one root `PosatoTheme` with
+  platform semantic adaptation and Material 3 components only.
+- Required Compose Rules through Detekt to reject Material 2 source use while
+  leaving shared components and geometry tokens evidence-driven.
+- Narrowed the redacted-default-string rule to repository-owned carriers and
+  diagnostics because final framework `TextFieldState` exposes live text;
+  prohibited logging, diagnosing, persisting, or forwarding that state to the
+  ViewModel.
+
+## [2026-08-27] correction | Include SQL in the desktop runtime image
+
+- Reproduced the packaged macOS launch failure at `java/sql/DriverManager`
+  despite passing JVM and distribution-build checks.
+- Added only the JDK `java.sql` module required by SQLDelight's desktop JDBC
+  driver, then verified the corrected runtime image, packaged launch, and
+  maintainer interaction flow.
+- Confirmed that the preserved PoC carried the same package requirement without
+  importing its broader signing or synchronization machinery.
+
+## [2026-08-27] correction | Enforce assignment-line formatting
+
+- Added one repository-owned ktlint rule after repeated authored drift showed a
+  real consumer for the accepted right-hand-side layout.
+- Required declarations, assignments, named arguments, default values, and
+  expression bodies to start their value after `=` when the first line fits.
+- Kept comments, over-limit values, and standard-formatted multiline raw
+  strings valid and omitted autocorrect or a general formatting framework.
+
+## [2026-08-27] decision | Add tooling-only shared Compose previews
+
+- `user-confirmed`: common Compose previews use a narrow Android KMP library
+  target because the Compose preview tooling requires one.
+- The target has no Android application, host, identifier, distribution
+  artifact, or MVP platform claim; Android product work remains deferred.
+- Product screens use deterministic named `PreviewParameterProvider` cases via
+  their state-and-callback render surface, with review rather than a brittle
+  naming-based static rule enforcing the convention.
+
+## [2026-08-27] correction | Align screen preview ownership
+
+- Kept exactly two preview functions in the product screen file and moved the
+  deterministic synthetic state provider into a separate adjacent file.
+- Required phone and desktop previews to consume the same complete provider
+  sequence rather than maintaining a reduced desktop-only case.
+
+## [2026-08-28] correction | Enforce when-entry arrow placement
+
+- Added a repository-owned ktlint rule for the maintainer-confirmed layout that
+  keeps a fitting `when` entry arrow on its final condition line.
+- Kept comments and over-limit condition lines valid, omitted autocorrect, and
+  disabled the conflicting standard declaration-site trailing-comma rule.
+
+## [2026-08-28] decision | Adopt feature-first shared packages
+
+- `user-confirmed`: organize product code under
+  `app.posato.feature.<feature>` and add layers only inside a feature when the
+  responsibilities exist.
+- Assigned TARGETS domain, data, and UI to `app.posato.feature.targets` and
+  assigned shared database and design-system ownership to named
+  `app.posato.core` capabilities.
+- Retained one `:shared` module and direct ViewModel-to-store injection; package
+  organization does not create pass-through use cases or speculative modules.
+
+## [2026-08-28] correction | Reject ambiguous numeric hosts
+
+- Applied WHATWG's number-ending rule to the final canonical domain label so
+  alternate IPv4 spellings cannot enter exact-domain policy.
+- Reconciled conflict reloads with active edits, clearing an editor whose target
+  disappeared while preserving one whose target remains in persisted policy.
+
+## [2026-08-28] decision | Pause automatic hosted CI
+
+- `user-confirmed`: pause automatic GitHub Actions triggers through 2026-09-05
+  after the account exhausted its included runner minutes.
+- Retained manual workflow dispatch and made a fresh local aggregate quality
+  pass the temporary merge gate without weakening review requirements.

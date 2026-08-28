@@ -66,6 +66,17 @@ composable, shared product and presentation types, semantic platform contracts,
 and test fakes. It may be split only when a real dependency boundary appears;
 the skeleton does not create empty domain, data, feature, or utility modules.
 
+`user-confirmed` (2026-08-28): source packages inside `:shared` are
+feature-first. A feature uses `app.posato.feature.<feature>` and adds layer
+subpackages only for responsibilities it actually has. TARGETS therefore owns
+`feature.targets.domain`, `feature.targets.data`, and `feature.targets.ui`.
+Reusable application-wide capabilities use named `app.posato.core.<capability>`
+packages, currently `core.database` and `core.designsystem`; `core` itself is
+not a miscellaneous bucket. The application shell and Metro composition roots
+stay at `app.posato` and `app.posato.di`. Package structure neither mandates a
+pass-through use case nor changes the rule that modules split only at a real
+dependency boundary.
+
 `:desktopApp` owns the JVM `main`, application window, macOS packaging, and the
 desktop composition root. `iosApp` owns the Swift application lifecycle and
 embeds the static framework produced by `:shared`. Both hosts delegate
@@ -189,6 +200,60 @@ injected dispatcher use. `inferred`: MODEL-001 fails closed on every reserved
 `??--` label, including `xn--`, until TARGETS-001 supplies reviewed IDNA
 validation and round-tripping rather than trusting the prefix alone.
 
+### TARGETS-001 exact-domain management
+
+`user-confirmed` (2026-08-27): the first stateful screen exposes one aggregate
+immutable `uiState` produced by combining private policy, editor, and submission
+flows. Its cold policy read starts only while the UI state is collected and is
+shared with a five-second `WhileSubscribed` timeout. Retry is explicit; there
+is no imperative initial-load call, pass-through use case, custom scope,
+service locator, or navigation framework for this single-screen slice.
+
+`user-confirmed` (2026-08-27): mutable text input is held in one
+composable-owned `rememberTextFieldState`, not duplicated in the aggregate
+immutable UI state or a ViewModel flow. The ViewModel receives the current text
+only on submission and may expose an immutable editor-session revision for
+field recreation. Compose Runtime state APIs remain permitted in the
+ViewModel, but Compose Foundation text-input types do not. The first reviewed
+screen establishes one application-root `PosatoTheme`, uses only Material 3
+components, and enables the Compose Rules Detekt Material 2 prohibition. New
+generic UI components and geometry tokens remain evidence-driven rather than
+being created speculatively.
+
+`user-confirmed` (2026-08-27): each product screen keeps exactly two preview
+functions in its screen file and one separate preview data provider. Both
+preview functions consume the same complete deterministic state sequence and
+render through the state-and-callback overload without a ViewModel or platform
+I/O.
+
+`user-confirmed` (2026-08-27): the final framework `TextFieldState` exposes its
+live text from `toString()`, so the redacted-default-string rule applies to
+repository-owned carriers and diagnostics. The screen-owned framework state is
+a narrow exception: keep it inside the text-field composable and never log,
+diagnose, persist, or pass it to the ViewModel.
+
+`observed` (2026-08-28): TARGETS-001 bounds raw input to 1,024 UTF-16 code units
+before trimming or Unicode processing, converts accepted Unicode through the
+pinned Kuri 0.1.0 Unicode 17 UTS-46 implementation, and then applies Posato's
+stricter lowercase ASCII DNS, WHATWG
+[ends-in-a-number](https://url.spec.whatwg.org/#ends-in-a-number) rejection,
+and A-label round-trip checks. The resulting exact domains remain sorted,
+bounded, redacted outside explicit UI rendering, and
+are replaced directly through the MODEL-001 revision compare-and-set store.
+Focused JVM and iOS Simulator tests cover canonicalization, malformed and
+collapsing input, duplicates, edits, removal, conflicts, corruption,
+cancellation, and subscription-driven loading.
+
+`observed` (2026-08-27): the application root now owns one `PosatoTheme` backed
+by stable Compose Multiplatform Material 3 1.9.0. The direct Material 2
+dependency and source imports are absent. A controlled temporary Material 2
+import failed Detekt through the enabled Compose Rules `Material2` check, and
+the final graph passed JVM, both iOS compilation targets, iOS Simulator tests,
+the desktop distributable, a credential-free iOS host build, and signed launch
+on a physical iPhone. The domain `TextFieldState` is created only inside the
+editor composable; the ViewModel receives a `String` on submission and exposes
+only aggregate business and editor-session facts.
+
 ### Platform and toolchain baseline
 
 - iOS deployment target: 18.0, rechecked against the current-and-previous-major
@@ -198,7 +263,10 @@ validation and round-tripping rather than trusting the prefix alone.
 - observed generation-time candidates: Kotlin 2.4.10, Compose Multiplatform
   1.12.0, Gradle 9.7.1, and Metro 1.4.2; these are not production pins.
 - PR #1 uses JDK 21 and JVM bytecode target 17.
-- no Android Gradle Plugin in the Apple-only graph.
+- `user-confirmed` (2026-08-27): `:shared` has an Android KMP library target
+  only for common Compose preview tooling. It has no Android application,
+  host, identifier, distribution artifact, or MVP feature claim; Android
+  product work remains deferred.
 - the exact stable Xcode version is selected in the skeleton task after a clean
   compatibility check against the pinned Kotlin and Compose versions; the
   compatible CI image is selected in the separate PR #1 CI task.
@@ -344,11 +412,28 @@ named High-risk work.
 
 `user-confirmed` (2026-08-27): Kotlin formatting uses one 150-character limit
 across ktlint, Detekt, and Android Studio. Existing formatter controls enforce
-the accepted expression-body layout; preferences without an exact built-in
-rule remain authored guidance unless repeated drift establishes a real need for
-a custom rule.
+the accepted expression-body layout. After repeated assignment-layout drift,
+the repository-owned `posato:rhs-on-assignment-line` rule now requires the
+first right-hand-side expression to start after `=` when it fits. The rule has
+one named repository consumer, uses ktlint's syntax tree and line-length
+configuration, and intentionally does not autocorrect. Multiline raw strings
+retain the line break required by standard ktlint. Call-chain continuation
+remains authored guidance because no equivalent repeated drift was established.
+
+`user-confirmed` (2026-08-28): `when` entry arrows remain on the final
+condition line when they fit. The repository-owned
+`posato:when-entry-arrow-on-condition-line` ktlint rule enforces that narrow
+layout without autocorrect and accepts intervening comments and over-limit
+conditions. Ktlint's conflicting declaration-site trailing-comma rule is
+disabled; call-site trailing commas remain enforced.
 
 Gate 5 records the CI outcome but does not configure a pipeline. The Gate 6
 roadmap groups the foundation, local quality, and CI milestones into one PR #1
 execution and review cycle completed before PR #1 merges or the first parallel
 implementation wave starts, whichever occurs first.
+
+`user-confirmed` (2026-08-28): automatic GitHub-hosted CI is paused through
+2026-09-05 after the account exhausted its included Actions minutes. A fresh
+local aggregate quality pass is the temporary merge gate, and the complete
+workflow remains manually dispatchable. Automatic pull-request and `main`
+push triggers return when hosted minutes become available.

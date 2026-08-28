@@ -329,6 +329,15 @@ invalid composable was rejected by the Compose `ModifierMissing` rule.
 Generated Compose Resources Kotlin is excluded from ktlint and no baseline
 exists.
 
+`observed` (2026-08-27): repeated manual drift established a consumer for one
+repository-owned ktlint rule. `posato:rhs-on-assignment-line` rejects a value
+starting below `=` when its first line fits the configured 150-character
+limit. Public-rule-engine tests cover declarations, assignments, named
+arguments, defaults, expression bodies, comments, over-limit values, and the
+standard-required multiline raw-string layout while still rejecting a fitting
+single-line raw string below `=`; a controlled source probe confirmed that the
+shared aggregate ktlint task fails on the rejected form.
+
 `user-confirmed` (2026-08-26): pre-stabilization UI tests that assert static
 copy, rendering, theme-token mapping, or shell wiring are maintenance burden
 without protecting important product logic. They are excluded through the MVP;
@@ -381,6 +390,12 @@ Classification fails closed to macOS. The classifier intentionally examines
 the whole pull request, not only the latest push, so a quick documentation
 follow-up cannot cancel and replace verification of earlier substantive
 changes.
+
+`superseded` (2026-08-28 through 2026-09-05): automatic pull-request and
+`main` push triggers are temporarily paused after the account exhausted its
+included Actions minutes. A fresh local aggregate quality pass is the accepted
+temporary merge gate, and the complete workflow remains available by manual
+dispatch. Restore the automatic triggers when hosted minutes become available.
 
 ## Gate 6 roadmap (complete)
 

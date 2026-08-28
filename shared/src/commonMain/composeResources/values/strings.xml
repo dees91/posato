@@ -1,7 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="application_shell_note">This build contains the application shell only.</string>
-    <string name="brand_promise">A quiet pause between impulse and action.</string>
-    <string name="product_line">Pause. Then choose.</string>
+    <string name="action_add">Add website</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_edit">Edit</string>
+    <string name="action_reload">Reload saved list</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_save">Save change</string>
+    <string name="domain_input_description">Enter an exact domain such as example.com, not a full URL.</string>
+    <string name="domain_input_label">Exact domain</string>
+    <string name="domain_input_placeholder">example.com</string>
+    <string name="empty_domains_description">Add a domain to prepare the websites Posato can pause.</string>
+    <string name="empty_domains_title">No websites added</string>
+    <string name="entry_error_duplicate">That exact domain is already in the list.</string>
+    <string name="entry_error_empty">Enter an exact domain.</string>
+    <string name="entry_error_invalid">Enter a valid domain with at least two labels.</string>
+    <string name="entry_error_limit">The website limit has been reached.</string>
+    <string name="entry_error_too_long">That domain input is too long.</string>
+    <string name="loading_domains">Loading saved websites</string>
+    <string name="operation_error_corruption">Saved website data could not be verified. Nothing was changed.</string>
+    <string name="operation_error_load">Saved websites could not be loaded. Nothing was changed.</string>
+    <string name="operation_error_save">This change could not be saved. The previous website list is still active. Try the change again.</string>
+    <string name="operation_error_title">Needs your attention</string>
+    <string name="operation_error_update">The website list changed before this update finished. Reload the saved list, then try again.</string>
     <string name="product_name">Posato</string>
+    <string name="saving_domains">Saving</string>
+    <string name="websites_description">Choose the exact websites where you want a quiet pause before access.</string>
+    <string name="websites_title">Websites</string>
 </resources>
