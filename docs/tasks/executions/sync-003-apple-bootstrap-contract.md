@@ -145,6 +145,23 @@
   documentation checks after the final record-only edit. Both actions were
   completed; no Optional finding remained.
 
+## Physical-gate advisory correction
+
+- **Finding:** The maintainer accepted a hosted advisory that the roadmap's
+  physical CloudKit and Keychain gate still ended at `SYNC-009`, although
+  ongoing mailbox account-postflight evidence belongs to `SYNC-010`.
+- **Resolution:** The gate now extends through `SYNC-010` without changing its
+  completion rule, the accepted provider contract, or unrelated bootstrap,
+  Keychain, key-loss, and local-access ownership ranges.
+
+## Physical-gate focused review
+
+- **Verdict:** `approved`
+- **Critical or Required findings:** None. The reviewer confirmed that
+  `SYNC-010` owns the ongoing mailbox account-postflight evidence while the
+  unchanged local-access and key-loss ranges retain their narrower ownership.
+- **Recommended or Optional findings:** None.
+
 ## Verification
 
 | Check run | Result | Evidence |
