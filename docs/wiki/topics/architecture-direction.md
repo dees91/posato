@@ -385,10 +385,11 @@ not an application skeleton.
   Apple Task 0 and the first iOS enforcement pull request;
 - persistence schema, migration policy, and transaction ownership in the first
   local-replica pull request;
-- production cryptographic encoding and pinned providers in the
-  synchronization foundation pull request;
-- deterministic Apple bootstrap and signed-author registration in the Apple
-  synchronization pull request;
+- cryptographic implementation and cross-target vectors under
+  [ADR 0006](../../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md)
+  in the synchronization foundation pull request;
+- deterministic Apple bootstrap under the accepted automatic signed-author
+  contract in the Apple synchronization pull request;
 - portable membership, folder-integrity, high-water-mark, and migration
   contracts in the portable-synchronization pull requests;
 - exact CI jobs and runner details in the Gate 6 CI implementation task under

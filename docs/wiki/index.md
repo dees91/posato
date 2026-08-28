@@ -56,6 +56,10 @@ provenance rather than a parallel public brand.
   — accepted Safari and Chrome support, exact-domain network denial, fixed
   presentation, proxy coexistence, transient-data, failure, and recovery
   boundaries.
+- [ADR 0006: Apple MVP Encrypted Operation and Convergence Contract](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md)
+  — accepted format-1 operation vocabulary, canonical encrypted bundle,
+  cryptographic provider, automatic author-registration, validation, and
+  deterministic convergence boundaries.
 - [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
   assets and data classification, trust boundaries, threats, required controls,
   downstream owners, and residual risks.

@@ -671,3 +671,45 @@
   after the account exhausted its included runner minutes.
 - Retained manual workflow dispatch and made a fresh local aggregate quality
   pass the temporary merge gate without weakening review requirements.
+
+## [2026-08-28] decision | Accept Apple MVP synchronization contract
+
+- `user-confirmed`: accepted ADR 0006's bounded format-1 encrypted operation,
+  automatic Apple author-registration, validation, and deterministic
+  convergence contract.
+- Selected platform system providers without importing the PoC format,
+  experimental cryptography dependency, portable membership, schedules, or
+  batching into the Apple MVP.
+- Kept production implementation and cross-target vectors with `SYNC-002` and
+  deterministic CloudKit and Keychain bootstrap with `SYNC-003`.
+
+## [2026-08-28] correction | Harden encrypted operation contract
+
+- Encrypted author identity, public key, and sequence; replaced author/sequence
+  nonce derivation with a context-bound single-use bundle key; defined
+  fail-closed author lifecycle recovery; and capped the format-1 synchronized
+  domain projection at 2,048 with deterministic rejection.
+
+## [2026-08-28] correction | Make capacity and expiry order-safe
+
+- Made capacity outcomes recomputable from the complete applicable operation
+  set, quarantined conflicting starts deterministically, and made observed
+  expiry a terminal local fact bound to the encrypted session identifier,
+  preventing delivery order or clock rollback from reviving invalid state.
+
+## [2026-08-28] correction | Make local authoring rollback-safe
+
+- Replaced the persistent Apple signing identity and secure sequence high-water
+  with a process-memory authoring incarnation scoped to one local writer open.
+- Required exact reconciliation of ambiguous local commits, serialized
+  local/remote committed-footprint checks, and atomic HLC exhaustion without
+  rejecting later valid remote input.
+- Kept invalid wall-clock recovery distinct from terminal format-1 exhaustion
+  and added no hardware anchor, online preflight, wire operation, or dependency.
+
+## [2026-08-28] correction | Define local HLC allocation
+
+- Defined one bounded HLC successor, one wall-clock sample per local batch, and
+  the exact wall-ahead reset and equal-or-regressed advancement rules.
+- Kept remote advancement wall-independent and retained the existing atomic
+  batch reservation, terminal exhaustion, wire format, and operation model.

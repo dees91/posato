@@ -527,8 +527,10 @@ questions remain outside the MVP task graph.
   **Sync with iCloud** action. Posato uses no QR or cross-device approval;
   CloudKit Private Database transports common encrypted payloads, Keychain
   delivers the workspace key, and Apple trust admits the device.
-- How should Apple-mode signed authors register automatically without
-  introducing a separate Posato device-approval ceremony?
+- `user-confirmed` (2026-08-28): ADR 0006 uses workspace-key possession,
+  a process-memory Ed25519 authoring incarnation, and an encrypted self-signed
+  registration created atomically with the first business operation, without a
+  Posato approval ceremony or persistent Apple signing identity.
 - How should delayed-Keychain, account-change, reset, partial-loss, and retry
   states behave while preserving the one-workspace invariant?
 - `user-confirmed`: the later portable folder is an untrusted mailbox and uses

@@ -57,12 +57,14 @@ and the disclosed Apple Events presentation race recorded as `R-06`.
 
 MACOS-002 now accepts browser coverage and coexistence, but MACOS-003 and
 MACOS-004 still own implementation and physical evidence for the helper,
-recovery, proxy, presentation, and privacy controls. iOS entitlement and App
-Group details, cryptographic primitives and signed-author registration,
-lifecycle rules for other non-diagnostic data, and public-release claims remain
-with their named roadmap tasks. Diagnostic producers remain unimplemented and
-must satisfy the accepted diagnostic policy. Acceptance of these authorities
-does not make a production-readiness claim.
+recovery, proxy, presentation, and privacy controls. `user-confirmed`
+(2026-08-28): ADR 0006 accepts the cryptographic format and signed-author
+registration contract; `SYNC-002` still owns implementation evidence. iOS
+entitlement and App Group details, lifecycle rules for other non-diagnostic
+data, and public-release claims remain with their named roadmap tasks.
+Diagnostic producers remain unimplemented and must satisfy the accepted
+diagnostic policy. Acceptance of these authorities does not make a
+production-readiness claim.
 
 ## Data the product may need
 
@@ -72,8 +74,14 @@ Candidate local and synchronized data includes:
   identifiers;
 - explicit membership identifiers and operations for portable workspaces;
 - domain and application policy intent;
+- one timestamp-free terminal local expiry marker bound to an encrypted session
+  identifier, retained only with its start operations and excluded from
+  synchronization and diagnostics;
 - local opaque platform selections where the operating system requires them;
-- encrypted immutable operations and bounded routing metadata;
+- encrypted immutable operations, including author identity, public key, and
+  sequence, plus bounded routing metadata consisting of format and suite,
+  per-operation bundle identifier and salt, workspace and epoch identifiers,
+  ciphertext size, and transport-required account, timing, and record data;
 - pending publication work and opaque transport cursor state;
 - synchronizable Apple workspace key material;
 - device-local signing and key-agreement identity and recipient-specific
@@ -161,16 +169,18 @@ may delete, replace, duplicate, reorder, or replay encrypted objects.
 The accepted direction separates:
 
 - one Apple workspace key delivered through synchronizable Keychain;
-- signed-operation author identity whose automatic Apple-mode registration is
-  still to be designed;
+- one ephemeral Apple authoring key per local replica-writer incarnation, held
+  only in process memory and registered automatically with the first mutation;
 - portable device-local signing and key-agreement identities;
 - portable per-device wrapping and future key epochs after membership changes;
   and
 - optional human-held portable recovery material.
 
-Production must define generation, storage accessibility, backup behavior,
-rotation, automatic Apple author registration, portable enrollment, revocation,
-recovery, destruction, and fork/self-build configuration for each class.
+Production must implement the accepted Apple generation, in-memory lifetime,
+automatic registration, rotation, ambiguous-commit, and destruction behavior.
+Storage accessibility, backup behavior, portable enrollment, revocation,
+recovery, and fork/self-build configuration remain to be defined for the key
+classes that persist or belong to portable mode.
 
 ## Failure and integrity
 
@@ -256,5 +266,6 @@ never a dependency of commits, builds, tests, or documentation.
 - What exact retention, deletion, export, and public-notice rules apply to
   accepted non-diagnostic data classes other than the local exact-domain
   policy?
-- Which production cryptographic, signed-author, IPC, signing, and distribution
-  choices satisfy the accepted threat controls and release recheck?
+- Which IPC, signing, and distribution choices and which `SYNC-002`
+  cryptographic implementation evidence satisfy the accepted threat controls
+  and release recheck?

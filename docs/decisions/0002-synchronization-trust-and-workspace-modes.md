@@ -7,6 +7,24 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SYNC-001 amendment
+
+`user-confirmed` (2026-08-28):
+[ADR 0006](0006-apple-mvp-encrypted-operation-and-convergence.md) resolves the
+deferred Apple MVP operation vocabulary, cryptographic primitives and provider
+ownership, canonical format and versioning, automatic signed-author
+registration, validation order, replay and sequence handling, and deterministic
+convergence contract. Production implementation and cross-target evidence remain
+with `SYNC-002`; Apple workspace bootstrap remains with `SYNC-003`.
+
+For Apple mode, retained accepted-author sequence state detects replay and
+equivocation, while a fresh process-memory authoring incarnation on every local
+replica-writer open prevents sequence reuse after coordinated local restore.
+This supersedes any broader wording below that could imply a persistent Apple
+signing identity or a local high-water mark capable of detecting rollback after
+all evidence of the later state has been erased. Portable completeness and
+high-water behavior remain a later decision.
+
 ## Relationship to feasibility ADR 0001
 
 The feasibility repository retains ADR 0001, *Apple-First Synchronization in
@@ -248,13 +266,9 @@ failure recovery.
 
 ## Open implementation decisions
 
-- production cryptographic primitives, providers, canonical encoding, and
-  version-negotiation policy;
 - synchronizable-Keychain item attributes, accessibility, access groups,
   rotation, reset, and account-change behavior;
 - deterministic bootstrap when CloudKit and Keychain propagation race;
-- Apple-mode device identity and signed-author registration without explicit
-  Blocker approval;
 - CloudKit schema, environments, quotas, subscription lifecycle, and container
   ownership for official builds and forks;
 - portable-folder provider semantics, authenticated completeness metadata,

@@ -94,9 +94,35 @@ session operations are shared. Explicit membership, per-device wrapping,
 revocation, and recovery operations are required by portable mode but are not
 an Apple MVP enrollment ceremony.
 
-`open`: the production vocabulary, automatic Apple-mode author registration,
-portable membership operations, and compatibility policy must be specified
-before freezing wire-format version 1.
+`user-confirmed` (2026-08-28):
+[ADR 0006](../../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md)
+accepts the Apple MVP's closed format-1 operation vocabulary, automatic
+workspace-key-authorized author registration, canonical compatibility policy,
+validation order, and deterministic convergence. Portable membership and its
+later compatibility policy remain open outside the MVP format.
+
+`user-confirmed` (2026-08-28): capacity outcomes are derived by reducing the
+complete applicable operation set in total order and may be reclassified when
+an earlier operation arrives. Observed session expiry is a terminal local fact
+keyed to the encrypted session identifier, so restart, reordering, a conflicting
+start, or wall-clock rollback does not revive it. Multiple distinct starts for
+one identifier deterministically quarantine that session; the marker is not a
+synchronized event or diagnostic.
+
+`user-confirmed` (2026-08-28): an Apple author is a process-memory authoring
+incarnation scoped to one local replica-writer open, not a persistent device
+identity. The first mutation atomically creates registration and business
+operations; reopen creates a fresh author, while committed pending bundles
+remain immutable and publishable. Ambiguous local commits reconcile exact bytes
+or fail closed. The serialized replica state machine advances the open writer's
+checkpoint with each exact local or remote transaction. Loss, regression, or
+an unexplained change to that author/HLC footprint freezes the writer before it
+can create a sequence gap or clear exhaustion, while a verified remote advance
+remains valid. Local authoring samples wall time once per batch: a later wall
+time resets the logical counter to zero, while an equal or regressed value uses
+the bounded HLC successor and logical overflow carries into the next physical
+millisecond. A terminal HLC blocks further local authoring without rejecting
+later valid remote input, while an out-of-range wall clock is recoverable.
 
 ## Persistence and atomicity
 
@@ -142,10 +168,13 @@ wrong workspace, transport epoch, key epoch, author, bundle identity, replay,
 truncation, oversize data, invalid signature, and invalid ciphertext cases.
 
 The prototype evaluated AEAD encryption, signatures, key agreement, and key
-derivation with bounded canonical data. Exact providers, primitives, canonical
-encoding, format versions, nonce policy, key wrapping, and dependency versions
-must be selected through the production threat model. No plaintext fallback is
-acceptable.
+derivation with bounded canonical data. `user-confirmed` (2026-08-28): ADR 0006
+selects HKDF-SHA-256, AES-256-GCM, Ed25519, system JCA/JCE and CryptoKit
+providers, a closed positional format, per-bundle HKDF keys with a single
+implicit nonce use, encrypted author metadata, and no
+plaintext or algorithm fallback for Apple MVP format 1. `SYNC-002` must still
+prove cross-target implementation behavior; portable key wrapping and provider
+selection remain later decisions.
 
 `user-confirmed`: CloudKit and portable folders use one compatible
 application-encrypted and signed payload format. Apple-mode simplification
@@ -189,9 +218,9 @@ In Apple mode, a new device may still need Apple-managed approval or recovery
 before iCloud Keychain releases synchronizable items. Blocker exposes that as a
 system prerequisite and does not duplicate it. Blocker also gives up
 independent admission and prospective revocation of one Apple installation
-while it remains trusted by Apple. The exact signed-author registration rule
-must preserve operation authenticity without reintroducing cross-device
-Blocker approval.
+while it remains trusted by Apple. ADR 0006 preserves operation authenticity
+through workspace-key-authorized, self-signed author registration without
+reintroducing cross-device Posato approval.
 
 In portable mode, selecting the same Dropbox, OneDrive, iCloud Drive, or other
 File Provider folder grants access to bytes, not membership. Independent device
@@ -226,12 +255,6 @@ not claim that every other device has received the update.
 
 ## Open production questions
 
-- `user-confirmed`: Apple synchronization belongs in the MVP; its position in
-  the ordered vertical pull-request roadmap remains open.
-- What exact policy operations and conflict semantics become format version 1?
-- Which cryptographic providers and encodings satisfy all selected targets?
-- How are Apple-mode signed authors registered and validated automatically
-  without a Blocker approval ceremony?
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?
 - Which synchronizable-Keychain attributes, access groups, account-change
