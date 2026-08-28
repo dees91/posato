@@ -751,3 +751,12 @@
   access.
 - Made account mismatch fail closed without treating another private database
   as empty or changing the existing CloudKit and Keychain formats.
+
+## [2026-08-28] correction | Bind ongoing mailbox access to its account
+
+- Reused the established local account binding around every private-CloudKit
+  mailbox operation instead of adding another token or provider field.
+- Required account mismatch to preserve pending work and the last accepted
+  cursor and engine state without accepting fetched or sent results, invalidate
+  the affected sync-engine instance, and recreate it only under the original
+  binding.

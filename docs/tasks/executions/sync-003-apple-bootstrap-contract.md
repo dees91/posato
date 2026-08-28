@@ -87,6 +87,29 @@
   changed in-flight state becomes `unknown-outcome`; focused re-review found no
   remaining Critical, Required, or advisory issue.
 
+## Ongoing-mailbox review correction
+
+- **Finding:** A second hosted `Required` finding identified that the durable
+  binding guarded bootstrap only, leaving later CloudKit bundle reads and
+  writes dependent on a potentially delayed account-change event.
+- **Resolution:** The established binding now guards every mailbox operation
+  before and after provider access. Failed checks expose no fetched bundle,
+  advance no cursor or accepted engine state, acknowledge no publication, and
+  preserve pending work without changing provider formats. Each sync-engine
+  instance is binding-scoped; failure invalidates it, and recovery creates a
+  fresh instance from the last accepted serialization and pending work.
+
+## Ongoing-mailbox focused review
+
+- **Verdict:** `approved`
+- **Critical or Required findings:** The first pass required invalidating the
+  live sync-engine instance after an account failure and found three stale
+  authority routes that ended implementation ownership at `SYNC-009`.
+- **Resolution:** Automatic events now share the account gate; failure cancels
+  and discards the binding-scoped engine before recreation from accepted state.
+  All implementation and proof routes now extend through `SYNC-010`; focused
+  re-review found no remaining Critical, Required, or advisory issue.
+
 ## Verification
 
 | Check run | Result | Evidence |
@@ -98,12 +121,13 @@
 | Scoped sensitive-data scan | pass | No personal path, private key marker, or common credential pattern appears in the changed security-sensitive records after the final review correction. |
 | Account-isolation correction | pass | The contract checks the expected binding before and after provider access, preserves indeterminate attempts across delayed account-change notification, resumes only under the original binding, and leaves the anchor and Keychain formats unchanged. |
 | Correction documentation hygiene | pass | All repository-local Markdown links resolve, `git diff --check` passes, the scoped sensitive-data scan is clean, and the correction log entry is parseable at EOF. |
+| Ongoing-mailbox isolation | pass | The established binding gates fetch/send batches, automatic engine events, and their results; mismatch invalidates the engine while preserving pending work and accepted transport progress for a fresh instance under the original binding. |
 
 ## Blockers and accepted risks
 
 - No blocker. Target creation, entitlements, provisioning, signing, production
   CloudKit schema deployment, and physical behavior remain with `SYNC-004`
-  through `SYNC-009` and do not gain an implementation-readiness claim here.
+  through `SYNC-010` and do not gain an implementation-readiness claim here.
 
 ## Final
 

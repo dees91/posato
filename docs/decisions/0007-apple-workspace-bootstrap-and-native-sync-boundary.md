@@ -31,7 +31,7 @@ secure-item behavior, delayed-key outcomes, bounded native errors, and exact
 cleanup. Its combined helper, persistent device identity, schema, identifiers,
 and runtime remain prototype choices rather than product authority.
 
-The MVP needs the smallest contract that lets `SYNC-004` through `SYNC-009`
+The MVP needs the smallest contract that lets `SYNC-004` through `SYNC-010`
 implement independently without inventing another workspace, replacing a
 missing key, or exposing Apple framework types to common Kotlin.
 
@@ -162,16 +162,33 @@ established local workspace binding. It is never stored in CloudKit or
 Keychain, synchronized as application data, displayed, logged, or included in
 diagnostics.
 
-Every bootstrap CloudKit or synchronizable-Keychain operation accepts the
-expected binding. The native edge resolves and compares the current binding
-immediately before and after provider access. An unavailable preflight value
-keeps its unavailable or restricted outcome, while a different value returns
-`account-changed`; neither invokes the requested operation. Before returning
-any definitive `found`, `missing`, `created`, `identical`, or `conflict` result,
-the adapter requires an exact postflight match. An unavailable or different
-postflight value, or an account-change signal observed during the operation,
-returns `unknown-outcome`, which common code may reconcile only after the
-expected binding is current again.
+Every private-CloudKit operation and every bootstrap synchronizable-Keychain
+operation accepts the expected binding. Bootstrap uses the candidate binding;
+after establishment, all mailbox access uses the established binding. The
+native edge resolves and compares the current binding immediately before and
+after provider access. An unavailable preflight value keeps its unavailable or
+restricted outcome, while a different value returns `account-changed`; neither
+invokes the requested operation. Before returning any definitive `found`,
+`missing`, `created`, `identical`, or `conflict` result, the adapter requires an
+exact postflight match. An unavailable or different postflight value, or an
+account-change signal observed during the operation, returns `unknown-outcome`,
+which common code may reconcile only after the expected binding is current
+again.
+
+For ongoing mailbox exchange, the native edge performs the preflight before it
+starts an explicit fetch or send or supplies an outgoing `CKSyncEngine` batch.
+It performs the postflight before it exposes fetched records, accepts engine or
+cursor state, acknowledges a sent record, or lets common code clear pending
+work. A failed check leaves pending work and the last accepted cursor and engine
+state unchanged.
+
+Each `CKSyncEngine` instance belongs to one established binding. Every automatic
+delegate event, including a state update, is accepted only while that instance
+remains valid and passes the same account check. A failed check or account-change
+event cancels and invalidates the instance and discards its buffered events; the
+instance is never reused. After the original binding returns, a fresh instance
+starts from the last accepted serialization and common code restages the
+unchanged pending work.
 
 ### Deterministic bootstrap
 
@@ -230,9 +247,10 @@ input replaces the last established binding. Account unavailable, restricted,
 or changed; entitlement or signing mismatch; and definitive anchor absence or
 difference after establishment stop synchronization without deleting or
 merging local pending work. An account-binding failure is never interpreted as
-provider absence and authorizes no create, replacement, cleanup, or deletion.
-Re-entering the original account may resume only after its opaque binding and
-the exact existing anchor and item match again.
+provider absence and authorizes no create, replacement, cleanup, deletion,
+fetched-bundle acceptance, cursor advancement, engine-state acceptance, or
+publication acknowledgement. Re-entering the original account may resume only
+after its opaque binding and the exact existing anchor and item match again.
 
 Disabling synchronization preserves the local replica, anchor, mailbox, and
 Keychain item. Removing a workspace is a separate explicit destructive action:
@@ -248,6 +266,8 @@ Apple MVP.
   fakes before either Apple adapter exists.
 - `SYNC-005` through `SYNC-008` can share exact persisted identifiers, bytes,
   and semantic outcomes while keeping platform mechanisms independent.
+- `SYNC-010` can preserve pending work and transport progress across account
+  changes by reusing the established binding rather than adding transport state.
 - The macOS application gains one additional signed and provisioned process,
   but the workspace key stays outside the enforcement helper and root daemon.
 - Concurrent creation needs one small plaintext routing anchor and temporarily
@@ -292,7 +312,7 @@ record types and one secure-item format are sufficient.
 
 ## Required downstream evidence
 
-Before Apple bootstrap is implemented and claimed:
+Before the Apple provider contract is implemented and claimed:
 
 - `SYNC-004` contract tests cover both creator platforms, concurrent first run,
   every persistent crash boundary, delayed key, exact duplicate, different
@@ -303,16 +323,23 @@ Before Apple bootstrap is implemented and claimed:
 - `SYNC-005` and `SYNC-006` prove identical item bytes and selectors, delayed
   propagation, exact cleanup, locked/unavailable behavior, entitlements, and
   signed target access on a physical iPhone and Mac;
-- `SYNC-007` and `SYNC-008` prove identical zones, record types, fields, immutable
-  retries, change exchange, malformed/oversized rejection, account isolation,
-  and signed CloudKit access on both platforms;
+- `SYNC-007` and `SYNC-008` prove identical zones, record types, fields,
+  immutable retries, change exchange, malformed/oversized rejection, and the
+  established-binding preflight and postflight around every mailbox operation,
+  including automatic delegate events and an account switch whose notification
+  arrives after a fetched or sent batch; a failed check invalidates the engine
+  and a fresh instance starts from only the last accepted serialization;
 - `SYNC-006` and `SYNC-008` prove the fixed companion/parent relationship,
   bounded IPC, wrong-peer and malformed-frame rejection, timeout reconciliation,
   cancellation, and absence of secrets in arguments, environment, logs, and
-  diagnostics; and
+  diagnostics;
 - `SYNC-009` proves one controlled physical Mac-and-iPhone bootstrap in both
   directions, simultaneous opt-in, restart, delayed Keychain, account failure,
-  and cleanup without manual repair or a second workspace.
+  and cleanup without manual repair or a second workspace; and
+- `SYNC-010` proves that an account switch exposes no fetched bundle to common
+  code, advances no cursor or accepted engine state, acknowledges no sent
+  bundle, and preserves and restages unchanged pending work only after the
+  established binding returns.
 
 This ADR and the `SYNC-003` resource check verify only the contract and resource
 availability. They do not claim those controls are implemented.
@@ -321,9 +348,12 @@ availability. They do not claim those controls are implemented.
 
 - `observed`: `.research/blocker` revision
   `bcdc8ce9b91ecb7569c2d98b568d5fd64c25455c`, especially the final Apple sync
-  report, `WorkspaceBootstrap.kt`, `KeychainStore.swift`, and their tests,
-  supports physical feasibility, exact create/read/delete behavior, bounded
-  failure mapping, delay handling, and the checksum-as-corruption-check pattern.
+  report, `WorkspaceBootstrap.kt`, `KeychainStore.swift`,
+  `SyncEngineDriver.swift`, and their tests, supports physical feasibility,
+  exact create/read/delete behavior, bounded failure mapping, delay handling,
+  and the checksum-as-corruption-check pattern. Its mailbox driver cancels after
+  an account-change event but does not prove persisted-account gating when that
+  event is delayed.
 - [Synchronizable Keychain items](https://developer.apple.com/documentation/security/ksecattrsynchronizable)
   define the cross-device secure-item attribute.
 - [Keychain accessibility](https://developer.apple.com/documentation/security/ksecattraccessibleafterfirstunlock)
