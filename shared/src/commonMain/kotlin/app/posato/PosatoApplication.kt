@@ -1,9 +1,9 @@
 package app.posato
 
 import androidx.compose.runtime.Composable
-import app.posato.persistence.LocalExactDomainPolicyStore
-import app.posato.ui.ExactDomainsScreen
-import app.posato.ui.PosatoTheme
+import app.posato.core.designsystem.PosatoTheme
+import app.posato.feature.targets.data.LocalExactDomainPolicyStore
+import app.posato.feature.targets.ui.ExactDomainsScreen
 import dev.zacsweers.metro.Inject
 
 @Inject

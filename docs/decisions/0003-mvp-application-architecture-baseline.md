@@ -43,6 +43,22 @@ runtime support claim, or MVP feature ownership. The target compiles the same
 shared UI with a thin `PlatformTheme` actual and supplies no product platform
 behavior. Android application work remains deferred until separately accepted.
 
+## TARGETS-001 package-ownership amendment
+
+`user-confirmed` (2026-08-28): production packages inside the initial
+`:shared` module are organized feature-first. TARGETS-001 owns
+`app.posato.feature.targets`, with `domain`, `data`, and `ui` subpackages only
+where those responsibilities already exist. Application-wide capabilities use
+named `app.posato.core.<capability>` packages; the current shared capabilities
+are `database` and `designsystem`, and no catch-all declarations live directly
+under `core`.
+
+This source organization does not introduce pass-through use cases or imply a
+module split. TARGETS UI may depend directly on its injected store contract,
+while the application shell and Metro composition roots remain under
+`app.posato` and `app.posato.di`. A feature or core package becomes a separate
+module only when a real production dependency boundary requires it.
+
 ## Context
 
 The accepted MVP scope, Posato identity, and design baseline are sufficient to

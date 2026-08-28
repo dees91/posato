@@ -66,6 +66,17 @@ composable, shared product and presentation types, semantic platform contracts,
 and test fakes. It may be split only when a real dependency boundary appears;
 the skeleton does not create empty domain, data, feature, or utility modules.
 
+`user-confirmed` (2026-08-28): source packages inside `:shared` are
+feature-first. A feature uses `app.posato.feature.<feature>` and adds layer
+subpackages only for responsibilities it actually has. TARGETS therefore owns
+`feature.targets.domain`, `feature.targets.data`, and `feature.targets.ui`.
+Reusable application-wide capabilities use named `app.posato.core.<capability>`
+packages, currently `core.database` and `core.designsystem`; `core` itself is
+not a miscellaneous bucket. The application shell and Metro composition roots
+stay at `app.posato` and `app.posato.di`. Package structure neither mandates a
+pass-through use case nor changes the rule that modules split only at a real
+dependency boundary.
+
 `:desktopApp` owns the JVM `main`, application window, macOS packaging, and the
 desktop composition root. `iosApp` owns the Swift application lifecycle and
 embeds the static framework produced by `:shared`. Both hosts delegate

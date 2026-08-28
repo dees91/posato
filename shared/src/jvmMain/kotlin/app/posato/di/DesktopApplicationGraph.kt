@@ -1,10 +1,10 @@
 package app.posato.di
 
 import app.cash.sqldelight.db.SqlDriver
-import app.posato.persistence.LocalExactDomainPolicyStore
-import app.posato.persistence.SqlLocalExactDomainPolicyStore
-import app.posato.persistence.createDesktopDatabaseDriver
-import app.posato.persistence.db.PosatoDatabase
+import app.posato.core.database.PosatoDatabase
+import app.posato.core.database.createDesktopDatabaseDriver
+import app.posato.feature.targets.data.LocalExactDomainPolicyStore
+import app.posato.feature.targets.data.SqlLocalExactDomainPolicyStore
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named

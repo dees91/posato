@@ -58,6 +58,11 @@ existing atomic local-policy store.
 - Add only consumed IDNA, ViewModel, immutable-collection, Material 3, and
   desktop Main-dispatcher dependencies. Do not add sync, enforcement,
   onboarding, analytics, availability checks, or URL parsing.
+- Keep this slice under `app.posato.feature.targets`, layering its existing
+  domain, data, and UI responsibilities inside the feature. Put the shared
+  database and design-system capabilities under their named `app.posato.core`
+  packages while retaining the direct UI-to-store-contract dependency and the
+  single `:shared` module.
 
 ## Acceptance
 
@@ -81,6 +86,9 @@ existing atomic local-policy store.
 - `AC-06` — The aggregate ktlint gate rejects a `when` entry arrow below its
   final condition when the arrow fits on that line, while accepting comments
   and final-condition lines that would exceed the configured limit.
+- `AC-07` — TARGETS production and test sources mirror the accepted
+  feature-layered package boundary; database and design-system infrastructure
+  use named core packages, and no former top-level layer package remains.
 
 ## Verification
 

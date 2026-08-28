@@ -90,7 +90,7 @@ sqldelight {
     databases {
         create("PosatoDatabase") {
             generateAsync.set(true)
-            packageName.set("app.posato.persistence.db")
+            packageName.set("app.posato.core.database")
             schemaOutputDirectory.set(file("src/commonMain/sqldelight/databases"))
         }
     }

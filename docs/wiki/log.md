@@ -646,3 +646,14 @@
   keeps a fitting `when` entry arrow on its final condition line.
 - Kept comments and over-limit condition lines valid, omitted autocorrect, and
   disabled the conflicting standard declaration-site trailing-comma rule.
+
+## [2026-08-28] decision | Adopt feature-first shared packages
+
+- `user-confirmed`: organize product code under
+  `app.posato.feature.<feature>` and add layers only inside a feature when the
+  responsibilities exist.
+- Assigned TARGETS domain, data, and UI to `app.posato.feature.targets` and
+  assigned shared database and design-system ownership to named
+  `app.posato.core` capabilities.
+- Retained one `:shared` module and direct ViewModel-to-store injection; package
+  organization does not create pass-through use cases or speculative modules.

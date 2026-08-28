@@ -32,6 +32,9 @@
 7. Address PR review by moving accepted opt-ins into Gradle, separating UI
    state and submission preparation from ViewModel orchestration, and enforcing
    the accepted `when` entry arrow layout with a focused ktlint rule.
+8. Migrate the completed slice from repository-wide layer packages to the
+   accepted feature-layered TARGETS package, move shared database and theme
+   ownership to named core packages, and preserve behavior and module shape.
 
 ## Material 3 and text-state correction
 
@@ -65,6 +68,13 @@
 - **Resolution:** The brief now rejects input over 1,024 UTF-16 code units
   before trimming or UTS-46 and requires a collapsing-input regression test;
   the reviewer confirmed that no Critical or Required findings remain.
+- **Package-migration follow-up:** The first review required explicit
+  maintainer acceptance of the package map and direct UI-to-store dependency.
+  The maintainer selected feature-layered packages, the
+  `app.posato.feature.targets` feature root, named `app.posato.core` shared
+  capabilities, migration in this pull request, and retention of direct store
+  injection. The independent re-review then approved the plan with no remaining
+  Critical or Required findings.
 
 ## Result
 
@@ -102,6 +112,12 @@
   `when` condition when it fits, without autocorrect. Comments and over-limit
   conditions remain valid. The conflicting standard declaration-site trailing-
   comma rule is disabled while call-site trailing-comma enforcement remains.
+- TARGETS production and test code now mirrors
+  `app.posato.feature.targets.{domain,data,ui}`. SQLDelight generation and
+  platform drivers live in `app.posato.core.database`, while the application
+  theme and its platform adaptations live in `app.posato.core.designsystem`.
+  The migration leaves the store contract, direct ViewModel injection, schema,
+  application shell, Metro roots, and single-module boundary unchanged.
 
 ## Completed-change review
 
@@ -145,6 +161,12 @@
   performance defect. Its sandbox could not reacquire the Gradle wrapper cache
   lock, so the implementer's successful focused and aggregate reruns below are
   the verification evidence.
+- **Feature-package follow-up verdict:** `approved`. The independent completed-
+  change review found the package declarations, imports, tests, SQLDelight
+  generation, platform composition roots, and durable records consistent, with
+  no stale references or actionable defects. Its sandbox could not access the
+  Gradle wrapper cache; the successful focused and aggregate implementer runs
+  below remain the verification evidence.
 
 ## Verification
 
@@ -157,6 +179,10 @@
 | When-entry formatting negative probe | `pass` | A temporary shared source with `->` below a fitting final condition made `:shared:ktlintCommonMainSourceSetCheck` fail with `posato:when-entry-arrow-on-condition-line`; removing the probe restored the passing check. |
 | PR-feedback focused verification | `pass` | Repository-owned rule tests, ktlint, Detekt, JVM tests, iOS Simulator tests, and Android main compilation all reran successfully after the opt-in, file-ownership, and formatting corrections. |
 | PR-feedback aggregate gate | `pass` | `./gradlew quality --rerun-tasks` executed and passed all 92 tasks. |
+| Feature-package focused verification | `pass` | Ktlint, Detekt, JVM tests, iOS Simulator tests, SQLDelight migration verification, and Android preview-target compilation all passed after the package migration. |
+| Feature-package aggregate gate | `pass` | `./gradlew quality --rerun-tasks` executed all 92 tasks successfully, including both iOS target compilations and the desktop distributable. |
+| Feature-package iOS host build | `pass` | The credential-free generic iOS Simulator `xcodebuild` succeeded after relinking the shared framework from the migrated packages. |
+| Feature-package structural checks | `pass` | The former top-level layer package declarations and imports are absent, production tests mirror the TARGETS feature, `git diff --check` passes, and the SQLDelight `1.db` baseline is unchanged. |
 | PR-feedback independent review | `pass` | `codex review --uncommitted` reported no actionable defects across the opt-in configuration, ViewModel file split, ktlint rule, CI correction, and task evidence. |
 | PR-feedback hosted CI | `pass` | Follow-up run `33145856613` passed change classification, aggregate quality, the credential-free iOS Simulator host build, and quality-report upload after removal of the redundant SDK installation step. |
 | Final `./gradlew quality --rerun-tasks` | `pass` | All 83 aggregate tasks executed and passed after self-enforcement and the multiline raw-string compatibility correction. |
