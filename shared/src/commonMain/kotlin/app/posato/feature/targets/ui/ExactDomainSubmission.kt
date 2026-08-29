@@ -6,7 +6,7 @@ import app.posato.feature.targets.domain.ExactDomainInputResult
 
 internal sealed interface ExactDomainSubmission {
     class Ready(
-        val canonicalDomains: List<String>,
+        val canonicalDomains: List<String>
     ) : ExactDomainSubmission {
         override fun toString(): String {
             return "ExactDomainSubmission.Ready(redacted)"
@@ -14,17 +14,17 @@ internal sealed interface ExactDomainSubmission {
     }
 
     data class EntryFailed(
-        val failure: ExactDomainEntryFailure,
+        val failure: ExactDomainEntryFailure
     ) : ExactDomainSubmission
 
     data class OperationFailed(
-        val failure: ExactDomainsOperationFailure,
+        val failure: TargetsOperationFailure
     ) : ExactDomainSubmission
 }
 
-internal fun createSubmission(
-    state: ExactDomainsUiState,
-    input: String,
+internal fun createExactDomainSubmission(
+    state: TargetsUiState,
+    input: String
 ): ExactDomainSubmission {
     val domainResult = ExactDomain.parse(input)
     if (domainResult is ExactDomainInputResult.Failure) {
@@ -36,25 +36,17 @@ internal fun createSubmission(
     }
 
     return when {
-        isDuplicate -> {
-            ExactDomainSubmission.EntryFailed(ExactDomainEntryFailure.DUPLICATE)
-        }
+        isDuplicate -> ExactDomainSubmission.EntryFailed(ExactDomainEntryFailure.DUPLICATE)
 
-        state.editingDomain == null -> {
-            ExactDomainSubmission.Ready(state.domains + canonicalValue)
-        }
+        state.editingDomain == null -> ExactDomainSubmission.Ready(state.domains + canonicalValue)
 
-        state.editingDomain !in state.domains -> {
-            ExactDomainSubmission.OperationFailed(ExactDomainsOperationFailure.REVISION_CONFLICT)
-        }
+        state.editingDomain !in state.domains -> ExactDomainSubmission.OperationFailed(TargetsOperationFailure.REVISION_CONFLICT)
 
-        else -> {
-            ExactDomainSubmission.Ready(
-                state.domains.map { existingDomain ->
-                    if (existingDomain == state.editingDomain) canonicalValue else existingDomain
-                },
-            )
-        }
+        else -> ExactDomainSubmission.Ready(
+            state.domains.map { existingDomain ->
+                if (existingDomain == state.editingDomain) canonicalValue else existingDomain
+            },
+        )
     }
 }
 

@@ -3,9 +3,9 @@ package app.posato.feature.targets.data
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
-import app.posato.feature.targets.domain.ExactDomainPolicy
 import app.posato.feature.targets.domain.ExactDomainPolicyLimits
-import app.posato.feature.targets.domain.ExactDomainPolicyValidationResult
+import app.posato.feature.targets.domain.TargetPolicy
+import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -33,8 +33,50 @@ class LocalExactDomainPolicyStoreContractTest {
             store = driver.createStore()
             assertState(store.read(), revision = 1, domains = firstPolicy.canonicalValues())
 
-            assertState(store.replace(1, ExactDomainPolicy.empty()), revision = 2, domains = emptyList())
+            assertState(store.replace(1, TargetPolicy.empty()), revision = 2, domains = emptyList())
             assertState(store.read(), revision = 2, domains = emptyList())
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given domains and an application group when replaced reopened and removed then the aggregate persists atomically`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("application-policy.db")
+        var driver = testDatabase.openDriver()
+        try {
+            var store = driver.createStore()
+            val policy = policyOf("stable.example", applicationPolicyName = "Social feeds")
+
+            assertState(store.replace(0, policy), revision = 1, domains = listOf("stable.example"), applicationPolicyName = "Social feeds")
+            driver.close()
+            driver = testDatabase.openDriver()
+            store = driver.createStore()
+            assertState(store.read(), revision = 1, domains = listOf("stable.example"), applicationPolicyName = "Social feeds")
+
+            val withoutApplicationPolicy = policyOf("stable.example")
+            assertState(store.replace(1, withoutApplicationPolicy), revision = 2, domains = listOf("stable.example"))
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a version one database when reopened then migration preserves revision and domains without adding a group`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("migration.db")
+        var driver = testDatabase.openDriver()
+        try {
+            driver.executeSql("UPDATE local_policy_metadata SET revision = 7 WHERE singleton = 1")
+            driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
+            driver.executeSql("DROP TABLE application_policy")
+            driver.executeSql("PRAGMA user_version = 1")
+            driver.close()
+
+            driver = testDatabase.openDriver()
+
+            assertState(driver.createStore().read(), revision = 7, domains = listOf("stable.example"))
         } finally {
             driver.close()
             testDatabase.delete()
@@ -47,16 +89,16 @@ class LocalExactDomainPolicyStoreContractTest {
             val policy = policyOf("stable.example")
             assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
 
-            val invalid = assertFailure(store.replace(-1, ExactDomainPolicy.empty()))
+            val invalid = assertFailure(store.replace(-1, TargetPolicy.empty()))
             assertEquals(LocalPolicyFailure.INVALID_REVISION, invalid.reason)
-            val exhausted = assertFailure(store.replace(Long.MAX_VALUE, ExactDomainPolicy.empty()))
+            val exhausted = assertFailure(store.replace(Long.MAX_VALUE, TargetPolicy.empty()))
             assertEquals(LocalPolicyFailure.REVISION_EXHAUSTED, exhausted.reason)
-            val stale = assertFailure(store.replace(0, ExactDomainPolicy.empty()))
+            val stale = assertFailure(store.replace(0, TargetPolicy.empty()))
             assertEquals(LocalPolicyFailure.REVISION_CONFLICT, stale.reason)
             assertState(store.read(), revision = 1, domains = policy.canonicalValues())
 
             driver.executeSql("DELETE FROM local_policy_metadata")
-            val missing = assertFailure(store.replace(1, ExactDomainPolicy.empty()))
+            val missing = assertFailure(store.replace(1, TargetPolicy.empty()))
             assertEquals(LocalPolicyFailure.CORRUPTION, missing.reason)
             val preserved = assertFailure(store.read())
             assertEquals(LocalPolicyFailure.CORRUPTION, preserved.reason)
@@ -84,6 +126,21 @@ class LocalExactDomainPolicyStoreContractTest {
         }
         assertState(store.read(), revision = 1, domains = policy.canonicalValues())
     }
+
+    @Test
+    fun `given a BLOB or oversized application policy when written then schema rejects it and state remains unchanged`() =
+        withStore("invalid-application-policy-type.db") { store, driver ->
+            val policy = policyOf("stable.example")
+            assertState(store.replace(0, policy), revision = 1, domains = listOf("stable.example"))
+
+            assertFails {
+                driver.executeSql("INSERT INTO application_policy(singleton, canonical_name) VALUES (1, x'626c6f62')")
+            }
+            assertFails {
+                driver.executeSql("INSERT INTO application_policy(singleton, canonical_name) VALUES (1, '${"a".repeat(81)}')")
+            }
+            assertState(store.read(), revision = 1, domains = listOf("stable.example"))
+        }
 
     @Test
     fun `given oversized NUL text when written then schema rejects it and state remains unchanged`() = withStore("nul-domain.db") { store, driver ->
@@ -117,6 +174,57 @@ class LocalExactDomainPolicyStoreContractTest {
         assertEquals(LocalPolicyFailure.STORAGE_FAILURE, failure.reason)
         assertState(store.read(), revision = 1, domains = originalPolicy.canonicalValues())
     }
+
+    @Test
+    fun `given an application policy insert failure when replacing then domains revision and prior group roll back`() =
+        withStore("application-rollback.db") { store, driver ->
+            val originalPolicy = policyOf("original.example", applicationPolicyName = "Original group")
+            assertState(
+                store.replace(0, originalPolicy),
+                revision = 1,
+                domains = listOf("original.example"),
+                applicationPolicyName = "Original group",
+            )
+            driver.executeSql(
+                """
+                CREATE TRIGGER fail_application_policy_insert
+                BEFORE INSERT ON application_policy
+                BEGIN
+                  SELECT RAISE(ABORT, 'synthetic insert failure');
+                END
+                """.trimIndent(),
+            )
+
+            val failure = assertFailure(store.replace(1, policyOf("replacement.example", applicationPolicyName = "Replacement group")))
+
+            assertEquals(LocalPolicyFailure.STORAGE_FAILURE, failure.reason)
+            assertState(
+                store.read(),
+                revision = 1,
+                domains = listOf("original.example"),
+                applicationPolicyName = "Original group",
+            )
+        }
+
+    @Test
+    fun `given a noncanonical stored application policy when read or replaced then corruption preserves stored state`() =
+        withStore("invalid-application-policy.db") { store, driver ->
+            driver.executeSql("INSERT INTO application_policy(singleton, canonical_name) VALUES (1, 'Cafe' || char(769))")
+
+            assertEquals(LocalPolicyFailure.CORRUPTION, assertFailure(store.read()).reason)
+            assertEquals(LocalPolicyFailure.CORRUPTION, assertFailure(store.replace(0, policyOf("replacement.example"))).reason)
+            assertEquals(LocalPolicyFailure.CORRUPTION, assertFailure(store.read()).reason)
+        }
+
+    @Test
+    fun `given malformed UTF-8 application policy when read then corruption is returned`() =
+        withStore("malformed-application-policy.db") { store, driver ->
+            driver.executeSql(
+                "INSERT INTO application_policy(singleton, canonical_name) VALUES (1, CAST(x'80' AS TEXT))",
+            )
+
+            assertEquals(LocalPolicyFailure.CORRUPTION, assertFailure(store.read()).reason)
+        }
 
     @Test
     fun `given a noncanonical stored domain when reading or replacing then corruption is returned without disclosure`() =
@@ -212,17 +320,17 @@ class LocalExactDomainPolicyStoreContractTest {
     fun `given a policy when rendered as text then canonical domain values stay redacted`() {
         val canonicalValue = "private.example"
         val policy = policyOf(canonicalValue)
-        val state = LocalExactDomainPolicyState(7, policy)
+        val state = LocalTargetPolicyState(7, policy)
 
         assertEquals("ExactDomain(redacted)", policy.domains.single().toString())
-        assertEquals("ExactDomainPolicy(redacted)", policy.toString())
-        assertEquals("LocalExactDomainPolicyState(redacted)", state.toString())
+        assertEquals("TargetPolicy(redacted)", policy.toString())
+        assertEquals("LocalTargetPolicyState(redacted)", state.toString())
     }
 }
 
 private fun withStore(
     name: String,
-    block: suspend (LocalExactDomainPolicyStore, SqlDriver) -> Unit,
+    block: suspend (LocalTargetPolicyStore, SqlDriver) -> Unit,
 ) = runTest {
     val testDatabase = createLocalPolicyTestDatabase(name)
     val driver = testDatabase.openDriver()
@@ -234,31 +342,36 @@ private fun withStore(
     }
 }
 
-private fun SqlDriver.createStore(databaseDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default): LocalExactDomainPolicyStore {
-    return SqlLocalExactDomainPolicyStore(
+private fun SqlDriver.createStore(databaseDispatcher: kotlinx.coroutines.CoroutineDispatcher = Dispatchers.Default): LocalTargetPolicyStore {
+    return SqlLocalTargetPolicyStore(
         database = PosatoDatabase(this),
         databaseDispatcher = databaseDispatcher,
     )
 }
 
-private fun policyOf(vararg canonicalValues: String): ExactDomainPolicy {
-    val result = ExactDomainPolicy.fromCanonicalValues(canonicalValues.asList())
+private fun policyOf(
+    vararg canonicalValues: String,
+    applicationPolicyName: String? = null,
+): TargetPolicy {
+    val result = TargetPolicy.fromStoredValues(canonicalValues.asList(), applicationPolicyName)
 
-    return assertIs<ExactDomainPolicyValidationResult.Success>(result).policy
+    return assertIs<TargetPolicyValidationResult.Success>(result).policy
 }
 
-private fun ExactDomainPolicy.canonicalValues(): List<String> {
+private fun TargetPolicy.canonicalValues(): List<String> {
     return domains.map { domain -> domain.canonicalValue }
 }
 
 private fun assertState(
-    result: LocalPolicyResult<LocalExactDomainPolicyState>,
+    result: LocalPolicyResult<LocalTargetPolicyState>,
     revision: Long,
     domains: List<String>,
+    applicationPolicyName: String? = null,
 ) {
-    val state = assertIs<LocalPolicyResult.Success<LocalExactDomainPolicyState>>(result).value
+    val state = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(result).value
     assertEquals(revision, state.revision)
     assertEquals(domains, state.policy.canonicalValues())
+    assertEquals(applicationPolicyName, state.policy.applicationPolicyName?.canonicalValue)
 }
 
 private fun assertFailure(result: LocalPolicyResult<*>): LocalPolicyResult.Failure {

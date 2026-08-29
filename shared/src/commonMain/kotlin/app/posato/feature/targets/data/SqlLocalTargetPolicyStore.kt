@@ -2,18 +2,18 @@ package app.posato.feature.targets.data
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
-import app.posato.feature.targets.domain.ExactDomainPolicy
 import app.posato.feature.targets.domain.ExactDomainPolicyLimits
-import app.posato.feature.targets.domain.ExactDomainPolicyValidationResult
+import app.posato.feature.targets.domain.TargetPolicy
+import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
-internal class SqlLocalExactDomainPolicyStore(
+internal class SqlLocalTargetPolicyStore(
     private val database: PosatoDatabase,
     private val databaseDispatcher: CoroutineDispatcher,
-) : LocalExactDomainPolicyStore {
-    override suspend fun read(): LocalPolicyResult<LocalExactDomainPolicyState> {
+) : LocalTargetPolicyStore {
+    override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
         return withContext(databaseDispatcher) {
             readResult()
         }
@@ -21,8 +21,8 @@ internal class SqlLocalExactDomainPolicyStore(
 
     override suspend fun replace(
         expectedRevision: Long,
-        policy: ExactDomainPolicy,
-    ): LocalPolicyResult<LocalExactDomainPolicyState> {
+        policy: TargetPolicy,
+    ): LocalPolicyResult<LocalTargetPolicyState> {
         return withContext(databaseDispatcher) {
             when {
                 expectedRevision < 0 -> {
@@ -40,7 +40,7 @@ internal class SqlLocalExactDomainPolicyStore(
         }
     }
 
-    private suspend fun readResult(): LocalPolicyResult<LocalExactDomainPolicyState> {
+    private suspend fun readResult(): LocalPolicyResult<LocalTargetPolicyState> {
         return try {
             val state = database.transactionWithResult {
                 readStateOrThrow()
@@ -58,8 +58,8 @@ internal class SqlLocalExactDomainPolicyStore(
 
     private suspend fun replaceValidRevision(
         expectedRevision: Long,
-        policy: ExactDomainPolicy,
-    ): LocalPolicyResult<LocalExactDomainPolicyState> {
+        policy: TargetPolicy,
+    ): LocalPolicyResult<LocalTargetPolicyState> {
         return try {
             val state = database.transactionWithResult {
                 val changed = database.localExactDomainPolicyQueries.advanceRevision(
@@ -74,6 +74,10 @@ internal class SqlLocalExactDomainPolicyStore(
                 policy.domains.forEach { domain ->
                     database.localExactDomainPolicyQueries.insertDomain(domain.canonicalValue)
                 }
+                database.localExactDomainPolicyQueries.deleteApplicationPolicy()
+                policy.applicationPolicyName?.let { name ->
+                    database.localExactDomainPolicyQueries.insertApplicationPolicy(name.canonicalValue)
+                }
                 readStateOrThrow()
             }
             LocalPolicyResult.Success(state)
@@ -86,7 +90,7 @@ internal class SqlLocalExactDomainPolicyStore(
         }
     }
 
-    private suspend fun readStateOrThrow(): LocalExactDomainPolicyState {
+    private suspend fun readStateOrThrow(): LocalTargetPolicyState {
         val revisions = database.localExactDomainPolicyQueries
             .selectRevision()
             .awaitAsList()
@@ -99,17 +103,33 @@ internal class SqlLocalExactDomainPolicyStore(
         if (canonicalDomains.size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
             fail(LocalPolicyFailure.CORRUPTION)
         }
-        val policy = when (val validation = ExactDomainPolicy.fromCanonicalValues(canonicalDomains)) {
-            is ExactDomainPolicyValidationResult.Success -> {
+        val applicationPolicyNameBytes = database.localExactDomainPolicyQueries
+            .selectApplicationPolicyNameBytes()
+            .awaitAsList()
+        if (applicationPolicyNameBytes.size > 1) {
+            fail(LocalPolicyFailure.CORRUPTION)
+        }
+        val applicationPolicyName = try {
+            applicationPolicyNameBytes.singleOrNull()?.decodeToString(throwOnInvalidSequence = true)
+        } catch (_: Exception) {
+            fail(LocalPolicyFailure.CORRUPTION)
+        }
+        val policy = when (
+            val validation = TargetPolicy.fromStoredValues(
+                canonicalDomains = canonicalDomains,
+                applicationPolicyName = applicationPolicyName,
+            )
+        ) {
+            is TargetPolicyValidationResult.Success -> {
                 validation.policy
             }
 
-            is ExactDomainPolicyValidationResult.Failure -> {
+            is TargetPolicyValidationResult.Failure -> {
                 fail(LocalPolicyFailure.CORRUPTION)
             }
         }
 
-        return LocalExactDomainPolicyState(revisions.single(), policy)
+        return LocalTargetPolicyState(revisions.single(), policy)
     }
 }
 

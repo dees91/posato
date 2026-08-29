@@ -255,6 +255,33 @@ on a physical iPhone. The domain `TextFieldState` is created only inside the
 editor composable; the ViewModel receives a `String` on submission and exposes
 only aggregate business and editor-session facts.
 
+### TARGETS-002 semantic application group
+
+`observed` (2026-08-28): the local target aggregate now contains sorted exact
+domains and one optional semantic application-policy name. Raw names are
+bounded and rejected for common C0/C1 controls before trimming, then normalized
+to NFC through a narrow platform leaf and validated against a strict 80-byte
+UTF-8 limit. Canonical values retain the control-character check and remain
+redacted from repository-owned default strings. Stored names must already be
+canonical; invalid persisted text fails as corruption rather than being
+repaired silently.
+
+`observed` (2026-08-28): SQLDelight schema v2 adds only the optional singleton
+semantic name. The `1.sqm` migration preserves v1 revision and exact-domain
+rows, while aggregate replacement keeps the existing revision compare-and-set
+transaction and rolls back domains, name, and revision together. No platform
+application identity, selection token, mapping state, or navigation event is
+stored in the shared database.
+
+`observed` (2026-08-28): the shared **Paused items** screen presents Websites
+and Applications in one state holder. **Application group** is the visible
+term, and an existing group truthfully reports that apps still need selection
+on the current device without exposing a fake picker action. Independent
+composable-owned text fields retain the last valid aggregate during validation,
+storage, cancellation, and revision-conflict recovery. Load, conflict, and
+corruption failures keep policy controls disabled until a successful reload,
+while an ordinary save failure still permits another submission.
+
 ### Platform and toolchain baseline
 
 - iOS deployment target: 18.0, rechecked against the current-and-previous-major

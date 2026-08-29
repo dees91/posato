@@ -16,8 +16,9 @@ private const val RESERVED_HYPHEN_FIRST_INDEX: Int = 2
 private const val RESERVED_HYPHEN_SECOND_INDEX: Int = 3
 private const val RESERVED_HYPHEN_MINIMUM_LENGTH: Int = 4
 
-internal enum class ExactDomainPolicyValidationFailure {
+internal enum class TargetPolicyValidationFailure {
     INVALID_CANONICAL_DOMAIN,
+    INVALID_APPLICATION_POLICY_NAME,
     TOO_MANY_DOMAINS,
 }
 
@@ -37,14 +38,14 @@ internal sealed interface ExactDomainInputResult {
     ) : ExactDomainInputResult
 }
 
-internal sealed interface ExactDomainPolicyValidationResult {
+internal sealed interface TargetPolicyValidationResult {
     data class Success(
-        val policy: ExactDomainPolicy,
-    ) : ExactDomainPolicyValidationResult
+        val policy: TargetPolicy,
+    ) : TargetPolicyValidationResult
 
     data class Failure(
-        val reason: ExactDomainPolicyValidationFailure,
-    ) : ExactDomainPolicyValidationResult
+        val reason: TargetPolicyValidationFailure,
+    ) : TargetPolicyValidationResult
 }
 
 @JvmInline
@@ -89,58 +90,71 @@ internal value class ExactDomain private constructor(
     }
 }
 
-internal class ExactDomainPolicy private constructor(
+internal class TargetPolicy private constructor(
     val domains: List<ExactDomain>,
+    val applicationPolicyName: ApplicationPolicyName?,
 ) {
     override fun equals(other: Any?): Boolean {
-        return other is ExactDomainPolicy && domains == other.domains
+        return other is TargetPolicy &&
+            domains == other.domains &&
+            applicationPolicyName == other.applicationPolicyName
     }
 
     override fun hashCode(): Int {
-        return domains.hashCode()
+        return 31 * domains.hashCode() + applicationPolicyName.hashCode()
     }
 
     override fun toString(): String {
-        return "ExactDomainPolicy(redacted)"
+        return "TargetPolicy(redacted)"
     }
 
     companion object {
-        fun fromCanonicalValues(values: Iterable<String>): ExactDomainPolicyValidationResult {
+        fun fromStoredValues(
+            canonicalDomains: Iterable<String>,
+            applicationPolicyName: String?,
+        ): TargetPolicyValidationResult {
             val domains = linkedSetOf<ExactDomain>()
-            var failure: ExactDomainPolicyValidationFailure? = null
-            for (value in values) {
+            var failure: TargetPolicyValidationFailure? = null
+            for (value in canonicalDomains) {
                 val valueFailure = domains.addCanonicalValue(value)
                 if (valueFailure != null) {
                     failure = valueFailure
                     break
                 }
             }
+            val restoredApplicationPolicyName = applicationPolicyName?.let(ApplicationPolicyName::restore)
+            if (applicationPolicyName != null && restoredApplicationPolicyName == null) {
+                failure = TargetPolicyValidationFailure.INVALID_APPLICATION_POLICY_NAME
+            }
 
             return if (failure == null) {
-                ExactDomainPolicyValidationResult.Success(
-                    ExactDomainPolicy(domains.sortedBy(ExactDomain::canonicalValue)),
+                TargetPolicyValidationResult.Success(
+                    TargetPolicy(
+                        domains = domains.sortedBy(ExactDomain::canonicalValue),
+                        applicationPolicyName = restoredApplicationPolicyName,
+                    ),
                 )
             } else {
-                ExactDomainPolicyValidationResult.Failure(failure)
+                TargetPolicyValidationResult.Failure(failure)
             }
         }
 
-        fun empty(): ExactDomainPolicy {
-            return ExactDomainPolicy(emptyList())
+        fun empty(): TargetPolicy {
+            return TargetPolicy(emptyList(), null)
         }
     }
 }
 
-private fun MutableSet<ExactDomain>.addCanonicalValue(value: String): ExactDomainPolicyValidationFailure? {
+private fun MutableSet<ExactDomain>.addCanonicalValue(value: String): TargetPolicyValidationFailure? {
     return when (val domain = ExactDomain.restore(value)) {
         null -> {
-            ExactDomainPolicyValidationFailure.INVALID_CANONICAL_DOMAIN
+            TargetPolicyValidationFailure.INVALID_CANONICAL_DOMAIN
         }
 
         else -> {
             add(domain)
             if (size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
-                ExactDomainPolicyValidationFailure.TOO_MANY_DOMAINS
+                TargetPolicyValidationFailure.TOO_MANY_DOMAINS
             } else {
                 null
             }

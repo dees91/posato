@@ -3,8 +3,8 @@ package app.posato.di
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createIosDatabaseDriver
-import app.posato.feature.targets.data.LocalExactDomainPolicyStore
-import app.posato.feature.targets.data.SqlLocalExactDomainPolicyStore
+import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -16,7 +16,7 @@ import kotlinx.coroutines.Dispatchers
 
 @DependencyGraph(AppScope::class)
 internal interface IosApplicationGraph : ApplicationGraph {
-    val localExactDomainPolicyStore: LocalExactDomainPolicyStore
+    val localTargetPolicyStore: LocalTargetPolicyStore
 
     @Provides
     @Named("database")
@@ -42,8 +42,8 @@ internal interface IosApplicationGraph : ApplicationGraph {
     fun providePolicyStore(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): LocalExactDomainPolicyStore {
-        return SqlLocalExactDomainPolicyStore(
+    ): LocalTargetPolicyStore {
+        return SqlLocalTargetPolicyStore(
             database = database,
             databaseDispatcher = databaseDispatcher,
         )

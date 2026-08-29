@@ -777,3 +777,12 @@
 - Failed account checks expose no key bytes or cleanup success, preserve the
   established state for exact reconciliation under the original account, and
   the wiki index now routes future work through ADR 0007.
+
+## [2026-08-28] implementation | Add semantic application groups
+
+- Added one validated, revisioned application-group name to the local target
+  aggregate and migrated the SQLDelight schema from v1 to v2 without shared
+  platform application identifiers.
+- Extended the shared paused-items screen with truthful device-local selection
+  status while retaining app pickers and opaque mappings for TARGETS-003 and
+  TARGETS-004.

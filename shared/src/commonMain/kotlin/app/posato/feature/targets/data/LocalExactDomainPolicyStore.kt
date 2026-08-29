@@ -1,6 +1,6 @@
 package app.posato.feature.targets.data
 
-import app.posato.feature.targets.domain.ExactDomainPolicy
+import app.posato.feature.targets.domain.TargetPolicy
 
 internal enum class LocalPolicyFailure {
     INVALID_REVISION,
@@ -20,16 +20,16 @@ internal sealed interface LocalPolicyResult<out T> {
     ) : LocalPolicyResult<Nothing>
 }
 
-internal class LocalExactDomainPolicyState(
+internal class LocalTargetPolicyState(
     val revision: Long,
-    val policy: ExactDomainPolicy,
+    val policy: TargetPolicy,
 ) {
     init {
         require(revision >= 0)
     }
 
     override fun equals(other: Any?): Boolean {
-        return other is LocalExactDomainPolicyState &&
+        return other is LocalTargetPolicyState &&
             revision == other.revision &&
             policy == other.policy
     }
@@ -39,15 +39,15 @@ internal class LocalExactDomainPolicyState(
     }
 
     override fun toString(): String {
-        return "LocalExactDomainPolicyState(redacted)"
+        return "LocalTargetPolicyState(redacted)"
     }
 }
 
-internal interface LocalExactDomainPolicyStore {
-    suspend fun read(): LocalPolicyResult<LocalExactDomainPolicyState>
+internal interface LocalTargetPolicyStore {
+    suspend fun read(): LocalPolicyResult<LocalTargetPolicyState>
 
     suspend fun replace(
         expectedRevision: Long,
-        policy: ExactDomainPolicy,
-    ): LocalPolicyResult<LocalExactDomainPolicyState>
+        policy: TargetPolicy,
+    ): LocalPolicyResult<LocalTargetPolicyState>
 }

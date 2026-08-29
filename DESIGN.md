@@ -213,6 +213,12 @@ selection is local to each device. A row identifies type, current local mapping,
 and whether action is required. Editing preserves the previous valid value
 until replacement input validates.
 
+The visible name for the singleton semantic application policy is
+**Application group**. Its name may synchronize, but application choices remain
+local to each device. Until a native selection producer exists, the shared UI
+states **Apps still need to be chosen on this device.** and does not present a
+fake, disabled, or speculative selection action.
+
 ### Session setup and review
 
 Session setup collects duration or end time. Review shows the resolved end time,
