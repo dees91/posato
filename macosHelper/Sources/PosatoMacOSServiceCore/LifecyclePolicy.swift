@@ -156,4 +156,17 @@ public enum WireLifecyclePolicy {
         response: response
       )
   }
+
+  public static func postUnregisterResponse(
+    _ response: WireResponsePayload,
+    serviceState: ServiceState
+  ) -> WireResponsePayload {
+    return WireResponsePayload(
+      outcome: response.outcome,
+      serviceState: serviceState,
+      ownershipPhase: response.ownershipPhase,
+      actionRequired: response.actionRequired,
+      failure: response.failure
+    )
+  }
 }

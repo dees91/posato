@@ -132,7 +132,7 @@ do {
       leaseRenewer?.cancelAndWait()
       leaseRenewer = nil
     }
-    let response: WireMessage
+    var response: WireMessage
     switch request.operation {
     case .status where service.status != .enabled,
       .disable where service.status != .enabled,
@@ -219,6 +219,10 @@ do {
           response: responsePayload
         ) {
           try service.unregister()
+          response.payload = WireLifecyclePolicy.postUnregisterResponse(
+            responsePayload,
+            serviceState: serviceState(service.status)
+          ).encode()
         }
       }
       if activeRequest == nil {

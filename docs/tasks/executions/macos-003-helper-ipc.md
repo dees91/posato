@@ -200,6 +200,21 @@
   and aggregate verification, and the final pass approved with no Critical,
   Required, Recommended, or Optional findings.
 
+## Hosted-review post-unregister-state correction
+
+- **Required finding:** successful direct and reconciled Disable and Remove
+  returned the daemon's pre-unregister Ready service state to the desktop
+  client after the helper had unregistered the service.
+- **Resolution:** the existing successful-Idle unregister path now replaces
+  only the outbound service state with the status read after synchronous
+  unregistration. Outcome, ownership, required action, failure, wire shape, and
+  every non-unregister response remain unchanged. One pure lifecycle projection
+  keeps the behavior testable without an SMAppService abstraction or new target.
+- **Focused completed-change review:** approved with no Critical, Required,
+  Recommended, or Optional findings. The reviewer confirmed the shared direct
+  and reconciled path, throwing unregister behavior, response-field
+  preservation, focused regression, and prior physical evidence.
+
 ## Verification
 
 - `swift test`: 49 tests passed, including protocol capability, ordering,
@@ -230,5 +245,12 @@
 - Cleanup-retirement aggregate `quality`: passed with the Gradle configuration
   cache reused, release Swift compilation, signed nested-helper packaging, and
   all repository verification targets green.
+- Post-unregister-state `:macosHelper:check`: passed with 50 Swift tests, strict
+  formatting, and zero SwiftLint violations. The regression covers the Ready to
+  NotRegistered projection while preserving every other response field; the
+  prior signed physical matrix already proves successful daemon unregistration.
+- Post-unregister-state aggregate `quality`: passed with the Gradle
+  configuration cache reused, release Swift compilation, JVM and iOS tests,
+  zero SwiftLint violations, and signed nested-helper packaging.
 - Independent focused completed-change review: approved with no remaining
   findings.
