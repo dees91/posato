@@ -2,7 +2,7 @@
 
 - **Brief:**
   [`../specifications/macos-003-helper-ipc.md`](../specifications/macos-003-helper-ipc.md)
-- **Status:** `completed`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** `Codex`
 - **Reviewer:** independent Codex reviewer
