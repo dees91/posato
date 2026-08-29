@@ -50,10 +50,10 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     }
     defer { SCPreferencesUnlock(preferences) }
     SCPreferencesSynchronize(preferences)
-    if requirePrimaryService,
-      try currentPrimaryServiceIdentifier() != expected.serviceIdentifier
-    {
-      throw ProxyOwnershipFailure.conflict
+    if requirePrimaryService {
+      guard try currentPrimaryServiceIdentifier() == expected.serviceIdentifier else {
+        throw ProxyOwnershipFailure.conflict
+      }
     }
     let protocolValue = try proxyProtocol(
       preferences: preferences,

@@ -2,6 +2,11 @@
 
 import PackageDescription
 
+let swiftLintPlugins = Package.Dependency.package(
+  url: "https://github.com/SimplyDanny/SwiftLintPlugins",
+  exact: "0.65.1"
+)
+
 let package = Package(
   name: "PosatoMacOSHelper",
   platforms: [.macOS(.v15)],
@@ -12,6 +17,7 @@ let package = Package(
       targets: ["PosatoProxySettingsDaemon"]
     ),
   ],
+  dependencies: [swiftLintPlugins],
   targets: [
     .target(name: "PosatoMacOSServiceCore"),
     .executableTarget(

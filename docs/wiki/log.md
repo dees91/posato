@@ -806,3 +806,11 @@
   cannot inherit another operation's cleanup responsibility.
 - Made daemon connection ownership require the explicit preflight result so a
   malformed Apply cannot inherit a foreign global phase.
+
+## [2026-08-29] tooling | Add SwiftLint to the macOS quality gate
+
+- Pinned SwiftLint 0.65.1 through its Swift package command plugin, enabled
+  strict linting alongside `swift format`, and connected it to the Gradle
+  `check` and root `quality` lifecycle.
+- Split oversized native files by existing model, transport, coordination, and
+  request-processing responsibilities; no lint rules were disabled.

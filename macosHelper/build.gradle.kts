@@ -63,6 +63,29 @@ tasks.register<Exec>("swiftFormatCheck") {
     )
 }
 
+tasks.register<Exec>("swiftLintCheck") {
+    group = "verification"
+    description = "Runs SwiftLint for the native macOS helper sources."
+    inputs.files(
+        fileTree("Sources"),
+        fileTree("Tests"),
+        "Package.swift",
+        "Package.resolved",
+        ".swiftlint.yml",
+    )
+
+    commandLine(
+        "/usr/bin/xcrun",
+        "swift",
+        "package",
+        "--package-path",
+        projectDir.absolutePath,
+        "plugin",
+        "--allow-writing-to-package-directory",
+        "swiftlint",
+    )
+}
+
 tasks.register<Exec>("swiftTest") {
     group = "verification"
     description = "Runs native macOS helper tests."
@@ -81,5 +104,5 @@ tasks.register<Exec>("swiftTest") {
 }
 
 tasks.named("check") {
-    dependsOn("swiftFormatCheck", "swiftTest")
+    dependsOn("swiftFormatCheck", "swiftLintCheck", "swiftTest")
 }
