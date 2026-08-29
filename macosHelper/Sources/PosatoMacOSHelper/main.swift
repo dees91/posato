@@ -71,7 +71,7 @@ do {
       else {
         throw PipeFailure.invalidFrame
       }
-      leaseRenewer?.cancel()
+      leaseRenewer?.cancelAndWait()
       if let activeRequest, let daemon {
         let restore = try WireMessage(
           kind: .request,
@@ -125,6 +125,13 @@ do {
     let reconcilePayload =
       request.operation == .reconcile
       ? try WireReconcilePayload.decode(request.payload) : nil
+    if WireLifecyclePolicy.reconcilesExistingOwnership(
+      requestOperation: request.operation,
+      reconcilePayload: reconcilePayload
+    ) {
+      leaseRenewer?.cancelAndWait()
+      leaseRenewer = nil
+    }
     let response: WireMessage
     switch request.operation {
     case .status where service.status != .enabled,
@@ -197,14 +204,13 @@ do {
         response: responsePayload
       ) {
         activeRequest = request
-        leaseRenewer?.cancel()
+        leaseRenewer?.cancelAndWait()
         leaseRenewer = LeaseRenewer(connection: daemon!, request: request)
       } else if WireLifecyclePolicy.completesCleanup(
         requestOperation: request.operation,
         reconcilePayload: reconcilePayload,
         response: responsePayload
       ) {
-        leaseRenewer?.cancel()
         leaseRenewer = nil
         activeRequest = nil
         if WireLifecyclePolicy.shouldUnregister(
@@ -222,7 +228,7 @@ do {
     try writeFrame(WireCodec.encode(response))
   }
   if let request = activeRequest, let daemon {
-    leaseRenewer?.cancel()
+    leaseRenewer?.cancelAndWait()
     let restore = try WireMessage(
       kind: .request,
       operation: .restore,
@@ -237,7 +243,7 @@ do {
   }
 } catch {
   if let request = activeRequest, let daemon {
-    leaseRenewer?.cancel()
+    leaseRenewer?.cancelAndWait()
     let restore = try? WireMessage(
       kind: .request,
       operation: .restore,

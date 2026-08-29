@@ -837,3 +837,11 @@
   restoration.
 - Made every unverified non-Idle Apply response conflict before either the
   daemon connection or helper can claim another session's cleanup ownership.
+
+## [2026-08-29] correction | Retire macOS renewal before cleanup
+
+- Made successful Idle Enable and Repair clear helper and daemon-connection
+  cleanup ownership alongside Restore, Disable, and Remove.
+- Synchronously retired renewal before every direct or reconciled cleanup so an
+  in-flight timer cannot run afterward; failed cleanup no longer extends the
+  lease while the daemon retries restoration.

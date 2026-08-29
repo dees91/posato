@@ -97,6 +97,12 @@
   attach a connection to an unverified durable record. Exact Applied requests
   now use the existing maintenance path, while every unverified non-Idle Apply
   response fails closed as Conflict for both daemon and helper ownership.
+- Hosted review found that successful Enable and Repair cleanup did not release
+  helper lease ownership, and that an already-running renewal could execute
+  after foreground cleanup. Every direct or reconciled ownership-ending intent
+  now retires renewal synchronously before daemon execution. Successful Idle
+  Enable and Repair responses clear helper and connection ownership, while a
+  failed cleanup leaves daemon recovery active without extending the lease.
 
 ## Blockers and accepted risks
 
@@ -176,14 +182,35 @@
   reconciled proof path, helper and daemon ownership consumer, exact duplicate,
   actual drift, and post-effect failure case.
 
+## Hosted-review cleanup-retirement correction
+
+- **Required finding:** clear helper lease ownership after successful Idle
+  Enable and Repair cleanup.
+- **Accepted advisory finding:** prevent an already-running renewal from
+  executing after foreground Restore, Disable, Remove, Enable, or Repair.
+- **Resolution:** one effective-operation policy covers direct and reconciled
+  ownership-ending intents. The helper retires its existing renewal through a
+  bounded lock before forwarding those intents, and a failed cleanup does not
+  restart renewal or extend enforcement. No wire field, timer, callback,
+  reconnect path, runtime dependency, or shared production abstraction was
+  added.
+- **Focused completed-change review:** the first pass required retirement before
+  local unavailable-service responses as well as forwarded daemon calls. The
+  correction moved retirement before the service-status branch, reran affected
+  and aggregate verification, and the final pass approved with no Critical,
+  Required, Recommended, or Optional findings.
+
 ## Verification
 
-- `swift test`: 46 tests passed, including protocol capability, ordering,
+- `swift test`: 49 tests passed, including protocol capability, ordering,
   deadline, lifecycle, reconciliation, authorization-rule, durable-state, and
   complete proxy-dictionary cases. The added cases cover post-save Applied
   state, cleanup retry decisions, unavailable-daemon responses, and the exact
   successful Applied renewal acknowledgement, duplicate Applied requests, and
-  verified versus unverified Apply ownership.
+  verified versus unverified Apply ownership. Direct and reconciled
+  ownership-ending operations now share cleanup classification, successful
+  Idle Enable and Repair complete ownership, and renewal retirement waits for
+  in-flight work while suppressing later work.
 - `:desktopApp:verifyMacOsHelperPackaging`: passed with a runtime-only local
   Apple Development identity, including exact embedded Info.plist and launchd
   contract checks.
@@ -198,5 +225,10 @@
 - Idempotency and proof correction aggregate `quality`: passed twice with the
   Gradle configuration cache reused, 46 Swift tests, zero SwiftLint violations,
   and signed-package verification.
+- Cleanup-retirement `:macosHelper:check`: passed with 49 Swift tests, strict
+  formatting, and zero SwiftLint violations.
+- Cleanup-retirement aggregate `quality`: passed with the Gradle configuration
+  cache reused, release Swift compilation, signed nested-helper packaging, and
+  all repository verification targets green.
 - Independent focused completed-change review: approved with no remaining
   findings.

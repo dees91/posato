@@ -112,16 +112,30 @@ public enum WireLifecyclePolicy {
     )
   }
 
+  public static func reconcilesExistingOwnership(
+    requestOperation: WireOperation,
+    reconcilePayload: WireReconcilePayload?
+  ) -> Bool {
+    switch effectiveOperation(
+      requestOperation: requestOperation,
+      reconcilePayload: reconcilePayload
+    ) {
+    case .enable, .repair, .restore, .disable, .remove:
+      return true
+    default:
+      return false
+    }
+  }
+
   public static func completesCleanup(
     requestOperation: WireOperation,
     reconcilePayload: WireReconcilePayload?,
     response: WireResponsePayload
   ) -> Bool {
-    let operation = effectiveOperation(
+    return reconcilesExistingOwnership(
       requestOperation: requestOperation,
       reconcilePayload: reconcilePayload
     )
-    return (operation == .restore || operation == .disable || operation == .remove)
       && response.outcome == .success
       && response.ownershipPhase == .idle
   }

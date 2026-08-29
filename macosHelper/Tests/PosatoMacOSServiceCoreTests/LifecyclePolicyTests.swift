@@ -81,6 +81,86 @@ import Testing
   )
 }
 
+@Test func givenOwnershipReconciliationWhenClassifiedThenDirectAndRetriedOperationsMatch() throws {
+  let operations: [WireOperation] = [.enable, .repair, .restore, .disable, .remove]
+
+  for operation in operations {
+    let reconcile = try WireReconcilePayload(
+      originalOperation: operation,
+      canonicalInputDigest: WireCodec.canonicalInputDigest(
+        operation: operation,
+        payload: Data()
+      )
+    )
+
+    #expect(
+      WireLifecyclePolicy.reconcilesExistingOwnership(
+        requestOperation: operation,
+        reconcilePayload: nil
+      )
+    )
+    #expect(
+      WireLifecyclePolicy.reconcilesExistingOwnership(
+        requestOperation: .reconcile,
+        reconcilePayload: reconcile
+      )
+    )
+  }
+
+  #expect(
+    !WireLifecyclePolicy.reconcilesExistingOwnership(
+      requestOperation: .status,
+      reconcilePayload: nil
+    )
+  )
+  #expect(
+    !WireLifecyclePolicy.reconcilesExistingOwnership(
+      requestOperation: .apply,
+      reconcilePayload: nil
+    )
+  )
+}
+
+@Test func givenSuccessfulIdleEnableOrRepairWhenEvaluatedThenCleanupCompletes() throws {
+  let success = WireResponsePayload(
+    outcome: .success,
+    serviceState: .ready,
+    ownershipPhase: .idle
+  )
+
+  for operation in [WireOperation.enable, .repair] {
+    let reconcile = try WireReconcilePayload(
+      originalOperation: operation,
+      canonicalInputDigest: WireCodec.canonicalInputDigest(
+        operation: operation,
+        payload: Data()
+      )
+    )
+
+    #expect(
+      WireLifecyclePolicy.completesCleanup(
+        requestOperation: operation,
+        reconcilePayload: nil,
+        response: success
+      )
+    )
+    #expect(
+      WireLifecyclePolicy.completesCleanup(
+        requestOperation: .reconcile,
+        reconcilePayload: reconcile,
+        response: success
+      )
+    )
+    #expect(
+      !WireLifecyclePolicy.shouldUnregister(
+        requestOperation: operation,
+        reconcilePayload: nil,
+        response: success
+      )
+    )
+  }
+}
+
 @Test func givenReconciledApplyWhenAppliedThenConnectionOwnsTheMutation() throws {
   let reconcile = try WireReconcilePayload(
     originalOperation: .apply,

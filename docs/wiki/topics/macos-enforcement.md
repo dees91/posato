@@ -214,7 +214,12 @@ acknowledgement, transport failure, timeout, or connection operation-limit
 exhaustion invalidates XPC and terminates the helper nonzero, closing its
 inherited pipes so the desktop client cannot retain stale enforcement state. A
 helper that cannot reach an enabled daemon reports recovery required rather
-than synthesizing an Idle result.
+than synthesizing an Idle result. Before direct or reconciled Enable, Repair,
+Restore, Disable, or Remove cleanup, the helper synchronously retires renewal so
+an already-running timer cannot execute after cleanup. Successful Idle Enable
+and Repair responses clear helper and daemon-connection cleanup ownership; a
+failed cleanup does not restart renewal, leaving the daemon's existing deadline
+and retry path to restore ownership without extending enforcement.
 
 `observed`: a zero-second custom-right credential timeout expired before an
 external authorization form could be validated in the daemon. The implemented

@@ -123,41 +123,65 @@ final class DaemonConnection: @unchecked Sendable {
   }
 }
 
+final class LeaseRenewalGate: @unchecked Sendable {
+  private let lock = NSLock()
+  private var isActive = true
+
+  func run(_ operation: () -> Void) {
+    lock.withLock {
+      guard isActive else {
+        return
+      }
+      operation()
+    }
+  }
+
+  func retire() {
+    lock.withLock {
+      isActive = false
+    }
+  }
+}
+
 final class LeaseRenewer: @unchecked Sendable {
   private let timer: DispatchSourceTimer
+  private let gate = LeaseRenewalGate()
 
   init(connection: DaemonConnection, request: WireMessage) {
     timer = DispatchSource.makeTimerSource(
       queue: DispatchQueue(label: "app.posato.macos.helper.lease")
     )
     timer.schedule(deadline: .now() + .seconds(5), repeating: .seconds(5))
-    timer.setEventHandler {
-      do {
-        let renew = try WireMessage(
-          kind: .request,
-          operation: .renew,
-          sequence: request.sequence,
-          deadlineMilliseconds: 5_000,
-          connectionIdentifier: request.connectionIdentifier,
-          sessionIdentifier: request.sessionIdentifier,
-          requestIdentifier: request.requestIdentifier,
-          payload: Data()
-        )
-        let response = try connection.perform(renew)
-        let payload = try WireResponsePayload.decode(response.payload)
-        guard WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: payload) else {
-          throw PipeFailure.unavailable
+    timer.setEventHandler { [gate] in
+      gate.run {
+        do {
+          let renew = try WireMessage(
+            kind: .request,
+            operation: .renew,
+            sequence: request.sequence,
+            deadlineMilliseconds: 5_000,
+            connectionIdentifier: request.connectionIdentifier,
+            sessionIdentifier: request.sessionIdentifier,
+            requestIdentifier: request.requestIdentifier,
+            payload: Data()
+          )
+          let response = try connection.perform(renew)
+          let payload = try WireResponsePayload.decode(response.payload)
+          guard WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: payload) else {
+            throw PipeFailure.unavailable
+          }
+        } catch {
+          connection.invalidate()
+          exit(EXIT_FAILURE)
         }
-      } catch {
-        connection.invalidate()
-        exit(EXIT_FAILURE)
       }
     }
     timer.resume()
   }
 
-  func cancel() {
+  func cancelAndWait() {
     timer.cancel()
+    gate.retire()
   }
 }
 
