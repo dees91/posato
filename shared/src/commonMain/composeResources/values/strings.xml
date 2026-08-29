@@ -8,7 +8,7 @@
     <string name="action_remove">Remove</string>
     <string name="action_retry">Retry</string>
     <string name="action_save">Save change</string>
-    <string name="application_group_description">The group name syncs. App choices stay on this device.</string>
+    <string name="application_group_description">The group name may sync. App choices stay on this device.</string>
     <string name="application_group_empty">No application group yet.</string>
     <string name="application_group_input_label">Application group name</string>
     <string name="application_group_input_placeholder">Social feeds</string>
