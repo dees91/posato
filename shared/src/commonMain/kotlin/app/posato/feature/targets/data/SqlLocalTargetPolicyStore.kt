@@ -103,16 +103,21 @@ internal class SqlLocalTargetPolicyStore(
         if (canonicalDomains.size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
             fail(LocalPolicyFailure.CORRUPTION)
         }
-        val applicationPolicyNames = database.localExactDomainPolicyQueries
-            .selectApplicationPolicyNames()
+        val applicationPolicyNameBytes = database.localExactDomainPolicyQueries
+            .selectApplicationPolicyNameBytes()
             .awaitAsList()
-        if (applicationPolicyNames.size > 1) {
+        if (applicationPolicyNameBytes.size > 1) {
+            fail(LocalPolicyFailure.CORRUPTION)
+        }
+        val applicationPolicyName = try {
+            applicationPolicyNameBytes.singleOrNull()?.decodeToString(throwOnInvalidSequence = true)
+        } catch (_: Exception) {
             fail(LocalPolicyFailure.CORRUPTION)
         }
         val policy = when (
             val validation = TargetPolicy.fromStoredValues(
                 canonicalDomains = canonicalDomains,
-                applicationPolicyName = applicationPolicyNames.singleOrNull(),
+                applicationPolicyName = applicationPolicyName,
             )
         ) {
             is TargetPolicyValidationResult.Success -> {

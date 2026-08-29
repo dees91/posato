@@ -217,6 +217,16 @@ class LocalExactDomainPolicyStoreContractTest {
         }
 
     @Test
+    fun `given malformed UTF-8 application policy when read then corruption is returned`() =
+        withStore("malformed-application-policy.db") { store, driver ->
+            driver.executeSql(
+                "INSERT INTO application_policy(singleton, canonical_name) VALUES (1, CAST(x'80' AS TEXT))",
+            )
+
+            assertEquals(LocalPolicyFailure.CORRUPTION, assertFailure(store.read()).reason)
+        }
+
+    @Test
     fun `given a noncanonical stored domain when reading or replacing then corruption is returned without disclosure`() =
         withStore("invalid-domain.db") { store, driver ->
             driver.executeSql(

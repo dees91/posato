@@ -33,8 +33,8 @@ FROM exact_domain_policy
 ORDER BY canonical_domain
 LIMIT :maximum_row_count;
 
-selectApplicationPolicyNames:
-SELECT canonical_name
+selectApplicationPolicyNameBytes:
+SELECT CAST(canonical_name AS BLOB) AS canonical_name_bytes
 FROM application_policy
 ORDER BY singleton
 LIMIT 2;

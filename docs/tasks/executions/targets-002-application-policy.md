@@ -41,6 +41,10 @@ compares actual changed paths in both worktrees.
 - **Hosted-correction plan review:** Approved with no Critical or Required
   findings. The correction reuses one mutation gate, adds only the three
   missing preview states, and extends one existing conflict test.
+- **Malformed UTF-8 correction plan review:** Approved with no Critical,
+  Required, Recommended, or Optional findings. The correction reads the
+  application-policy value as raw bytes, decodes it strictly in common code,
+  and adds one real-SQLite contract test without expanding exact-domain scope.
 
 ## Result
 
@@ -86,6 +90,12 @@ compares actual changed paths in both worktrees.
   entry failure before persistence, while the conflict remains visible and the
   editor remains open. The focused independent completed-change review approved
   this correction with no Critical, Required, Recommended, or Optional findings.
+  A further accepted P2 finding showed that a malformed UTF-8 application name
+  could be replaced by the SQLite driver before domain validation. The query now
+  returns raw bytes and the store rejects an invalid UTF-8 sequence as
+  `CORRUPTION` before restoring the semantic name. The independent completed-
+  change review approved this correction with no Critical, Required,
+  Recommended, or Optional findings.
 
 ## Verification
 
@@ -94,7 +104,8 @@ compares actual changed paths in both worktrees.
 | Plan review | `pass` | Approved after all Required findings were resolved. |
 | Conflict-recovery regression | `pass` | The focused JVM test failed against the old behavior when opening the application editor cleared a revision conflict, then passed after the shared mutation gate was corrected. |
 | Corrected-input regression | `pass` | The focused JVM test failed against the stale entry-validation behavior, then passed after a successful application-name parse cleared that failure before the conflicting persistence attempt. |
-| `./gradlew quality` | `pass` | All 92 tasks passed on 2026-08-29 after the latest hosted correction, including JVM and iOS tests, Android preview compilation, Apple compilation, SQLDelight migration verification, static analysis, formatting, and desktop packaging. |
+| Malformed UTF-8 regression | `pass` | The common real-SQLite contract test failed against the previous String projection, then passed after the query returned raw bytes and common code decoded them strictly. |
+| `./gradlew quality` | `pass` | All 92 tasks passed on 2026-08-29 after the malformed UTF-8 correction, including JVM and iOS tests, Android preview compilation, Apple compilation, SQLDelight migration verification, static analysis, formatting, and desktop packaging. |
 | Credential-free iOS build | `pass` | `xcodebuild` completed with `CODE_SIGNING_ALLOWED=NO` and `CODE_SIGNING_REQUIRED=NO`. |
 | Desktop package smoke check | `pass` | The packaged application launched and rendered the empty application-group and website editors. |
 | macOS and iOS Simulator inspection | `pass` | Empty and populated group/domain states rendered on both Apple form factors; mapping-required copy, edit/remove controls, website rows, and the scrollable large-text layout remained visible and truthful. Shared interaction tests cover add/edit/cancel/remove and invalid-edit preservation on JVM and iOS. |
