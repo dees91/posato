@@ -68,6 +68,12 @@ public enum WireLifecyclePolicy {
     return phase == .applied
   }
 
+  public static func keepsLeaseHealthy(
+    afterRenewal response: WireResponsePayload
+  ) -> Bool {
+    return response.outcome == .success && response.ownershipPhase == .applied
+  }
+
   public static func unreconciledServiceResponse(
     serviceState: ServiceState
   ) -> WireResponsePayload {

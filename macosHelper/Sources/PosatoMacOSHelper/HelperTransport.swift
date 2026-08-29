@@ -143,9 +143,14 @@ final class LeaseRenewer: @unchecked Sendable {
           requestIdentifier: request.requestIdentifier,
           payload: Data()
         )
-        _ = try connection.perform(renew)
+        let response = try connection.perform(renew)
+        let payload = try WireResponsePayload.decode(response.payload)
+        guard WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: payload) else {
+          throw PipeFailure.unavailable
+        }
       } catch {
         connection.invalidate()
+        exit(EXIT_FAILURE)
       }
     }
     timer.resume()

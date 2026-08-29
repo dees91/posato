@@ -203,8 +203,13 @@ cleanup ownership for every non-Idle durable phase, including an Applied record
 whose final persistence step reports an error after replacement. Startup
 reconciliation, connection invalidation, and an expired lease retry cleanup on
 the existing daemon timer until durable ownership reaches Idle; healthy Applied
-maintenance preserves its lease. A helper that cannot reach an enabled daemon
-reports recovery required rather than synthesizing an Idle result.
+maintenance preserves its lease. A background renewal keeps the helper alive
+only when the daemon explicitly returns Success with Applied ownership. Any
+other outcome, malformed acknowledgement, transport failure, timeout, or
+connection operation-limit exhaustion invalidates XPC and terminates the helper
+nonzero, closing its inherited pipes so the desktop client cannot retain stale
+enforcement state. A helper that cannot reach an enabled daemon reports
+recovery required rather than synthesizing an Idle result.
 
 `observed`: a zero-second custom-right credential timeout expired before an
 external authorization form could be validated in the daemon. The implemented

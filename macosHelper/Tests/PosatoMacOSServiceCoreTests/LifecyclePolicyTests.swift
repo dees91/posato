@@ -173,6 +173,34 @@ import Testing
   #expect(!WireLifecyclePolicy.leaseRemainsHealthy(afterMaintenance: nil))
 }
 
+@Test func givenRenewalResponseWhenLifecycleEvaluatedThenOnlySuccessfulAppliedKeepsLeaseHealthy() {
+  let successfulApplied = WireResponsePayload(
+    outcome: .success,
+    serviceState: .ready,
+    ownershipPhase: .applied
+  )
+  let conflictingApplied = WireResponsePayload(
+    outcome: .conflict,
+    serviceState: .recoveryRequired,
+    ownershipPhase: .applied
+  )
+  let actionRequiredApplied = WireResponsePayload(
+    outcome: .actionRequired,
+    serviceState: .recoveryRequired,
+    ownershipPhase: .applied
+  )
+  let successfulIdle = WireResponsePayload(
+    outcome: .success,
+    serviceState: .ready,
+    ownershipPhase: .idle
+  )
+
+  #expect(WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: successfulApplied))
+  #expect(!WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: conflictingApplied))
+  #expect(!WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: actionRequiredApplied))
+  #expect(!WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: successfulIdle))
+}
+
 @Test func givenUnavailableDaemonWhenRespondingThenCleanupIsNotClaimed() {
   let approval = WireLifecyclePolicy.unreconciledServiceResponse(
     serviceState: .approvalRequired

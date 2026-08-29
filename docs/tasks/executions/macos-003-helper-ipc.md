@@ -86,6 +86,12 @@
   cleanup reaches Idle, treats every verified non-Idle Apply phase as owned, and
   returns recovery-required lifecycle responses when daemon state cannot be
   reconciled.
+- Hosted review also found that background renewal discarded the daemon
+  response and left the helper pipes open after lease loss or the bounded XPC
+  operation limit. Renewal now remains healthy only for an explicit Success and
+  Applied response. Every other response, malformed payload, or transport error
+  invalidates XPC and terminates the helper nonzero so the desktop client cannot
+  retain stale enforcement state.
 
 ## Blockers and accepted risks
 
@@ -133,12 +139,28 @@
   Swift tests, the aggregate quality gate, formatting, SwiftLint, diff hygiene,
   and signed-package verification.
 
+## Hosted-review lease-loss correction
+
+- **Required finding:** surface background lease loss to the desktop client
+  instead of leaving the helper process and its inherited pipes alive after a
+  failed or rejected renewal.
+- **Resolution:** the existing renewal timer decodes and validates every Renew
+  acknowledgement. Only Success with Applied ownership remains healthy; all
+  other outcomes and failures invalidate XPC and terminate the helper nonzero.
+  No callback, unsolicited protocol event, reconnect path, dependency, or new
+  timer was added.
+- **Focused completed-change review:** approved with no Critical, Required,
+  Recommended, or Optional findings. The reviewer confirmed that typed response
+  validation, XPC invalidation, process exit, and inherited-pipe closure cover
+  every rejected or failed renewal without changing the wire protocol.
+
 ## Verification
 
-- `swift test`: 41 tests passed, including protocol capability, ordering,
+- `swift test`: 42 tests passed, including protocol capability, ordering,
   deadline, lifecycle, reconciliation, authorization-rule, durable-state, and
   complete proxy-dictionary cases. The added cases cover post-save Applied
-  state, cleanup retry decisions, and unavailable-daemon responses.
+  state, cleanup retry decisions, unavailable-daemon responses, and the exact
+  successful Applied renewal acknowledgement.
 - `:desktopApp:verifyMacOsHelperPackaging`: passed with a runtime-only local
   Apple Development identity, including exact embedded Info.plist and launchd
   contract checks.
@@ -147,5 +169,8 @@
 - Aggregate `quality`: passed with the Gradle configuration cache reused.
 - Hosted-review correction aggregate `quality`: passed twice with the Gradle
   configuration cache reused; SwiftLint reported zero violations.
+- Lease-loss correction aggregate `quality`: passed twice with the Gradle
+  configuration cache reused, 42 Swift tests, zero SwiftLint violations, and
+  signed-package verification.
 - Independent focused completed-change review: approved with no remaining
   findings.

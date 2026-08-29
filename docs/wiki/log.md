@@ -821,3 +821,11 @@
   the existing daemon timer until durable ownership reaches Idle.
 - Retained verified Apply ownership after a post-effect error and made an
   unavailable daemon report recovery required instead of synthetic Idle.
+
+## [2026-08-29] correction | Surface background macOS lease loss
+
+- Required every background renewal to receive an explicit Success and Applied
+  acknowledgement from the daemon.
+- Made every rejected, malformed, timed-out, or exhausted renewal invalidate
+  XPC and terminate the helper nonzero so inherited desktop pipes cannot retain
+  stale enforcement state.
