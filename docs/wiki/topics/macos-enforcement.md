@@ -200,16 +200,21 @@ verified fact rather than a global ownership phase. If the daemon is
 unavailable, registration state or rule absence alone is not treated as proof
 that durable ownership and proxy cleanup completed. A verified Apply keeps
 cleanup ownership for every non-Idle durable phase, including an Applied record
-whose final persistence step reports an error after replacement. Startup
-reconciliation, connection invalidation, and an expired lease retry cleanup on
-the existing daemon timer until durable ownership reaches Idle; healthy Applied
-maintenance preserves its lease. A background renewal keeps the helper alive
-only when the daemon explicitly returns Success with Applied ownership. Any
-other outcome, malformed acknowledgement, transport failure, timeout, or
-connection operation-limit exhaustion invalidates XPC and terminates the helper
-nonzero, closing its inherited pipes so the desktop client cannot retain stale
-enforcement state. A helper that cannot reach an enabled daemon reports
-recovery required rather than synthesizing an Idle result.
+whose final persistence step reports an error after replacement. Exact
+duplicate Apply and exact Apply reconciliation validate an Applied record
+through maintenance instead of startup restoration. An effective Apply that
+has not completed durable preflight can expose a non-Idle phase only as
+Conflict, so neither the daemon connection nor helper can claim another
+session's ownership. Startup reconciliation, connection invalidation, and an
+expired lease retry cleanup on the existing daemon timer until durable
+ownership reaches Idle; healthy Applied maintenance preserves its lease. A
+background renewal keeps the helper alive only when the daemon explicitly
+returns Success with Applied ownership. Any other outcome, malformed
+acknowledgement, transport failure, timeout, or connection operation-limit
+exhaustion invalidates XPC and terminates the helper nonzero, closing its
+inherited pipes so the desktop client cannot retain stale enforcement state. A
+helper that cannot reach an enabled daemon reports recovery required rather
+than synthesizing an Idle result.
 
 `observed`: a zero-second custom-right credential timeout expired before an
 external authorization form could be validated in the daemon. The implemented

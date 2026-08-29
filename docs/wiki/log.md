@@ -829,3 +829,11 @@
 - Made every rejected, malformed, timed-out, or exhausted renewal invalidate
   XPC and terminate the helper nonzero so inherited desktop pipes cannot retain
   stale enforcement state.
+
+## [2026-08-29] correction | Preserve exact macOS Apply ownership
+
+- Kept exact duplicate Apply and exact Apply reconciliation in Applied state by
+  validating the existing record through maintenance instead of startup
+  restoration.
+- Made every unverified non-Idle Apply response conflict before either the
+  daemon connection or helper can claim another session's cleanup ownership.

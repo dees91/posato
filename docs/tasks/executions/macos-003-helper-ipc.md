@@ -92,6 +92,11 @@
   Applied response. Every other response, malformed payload, or transport error
   invalidates XPC and terminates the helper nonzero so the desktop client cannot
   retain stale enforcement state.
+- Hosted review found that exact duplicate Apply and Apply reconciliation used
+  startup cleanup semantics, and that blanket reconciliation ownership could
+  attach a connection to an unverified durable record. Exact Applied requests
+  now use the existing maintenance path, while every unverified non-Idle Apply
+  response fails closed as Conflict for both daemon and helper ownership.
 
 ## Blockers and accepted risks
 
@@ -154,13 +159,31 @@
   validation, XPC invalidation, process exit, and inherited-pipe closure cover
   every rejected or failed renewal without changing the wire protocol.
 
+## Hosted-review idempotency and ownership-proof correction
+
+- **Required findings:** preserve Applied state for an exact duplicate Apply,
+  and require a verified durable match before a reconciliation connection can
+  claim cleanup ownership.
+- **Resolution:** duplicate Apply and exact Apply reconciliation share one
+  existing-record path that validates Applied through maintenance instead of
+  startup restoration. Durable preflight now reports whether an exact record
+  existed, the daemon passes only that fact to connection state, and any
+  unverified non-Idle Apply response becomes Conflict before either process can
+  claim it. No wire field, capability, dependency, scheduler, or test target was
+  added.
+- **Focused completed-change review:** approved with no Critical, Required,
+  Recommended, or Optional findings. The reviewer verified every direct and
+  reconciled proof path, helper and daemon ownership consumer, exact duplicate,
+  actual drift, and post-effect failure case.
+
 ## Verification
 
-- `swift test`: 42 tests passed, including protocol capability, ordering,
+- `swift test`: 46 tests passed, including protocol capability, ordering,
   deadline, lifecycle, reconciliation, authorization-rule, durable-state, and
   complete proxy-dictionary cases. The added cases cover post-save Applied
   state, cleanup retry decisions, unavailable-daemon responses, and the exact
-  successful Applied renewal acknowledgement.
+  successful Applied renewal acknowledgement, duplicate Applied requests, and
+  verified versus unverified Apply ownership.
 - `:desktopApp:verifyMacOsHelperPackaging`: passed with a runtime-only local
   Apple Development identity, including exact embedded Info.plist and launchd
   contract checks.
@@ -172,5 +195,8 @@
 - Lease-loss correction aggregate `quality`: passed twice with the Gradle
   configuration cache reused, 42 Swift tests, zero SwiftLint violations, and
   signed-package verification.
+- Idempotency and proof correction aggregate `quality`: passed twice with the
+  Gradle configuration cache reused, 46 Swift tests, zero SwiftLint violations,
+  and signed-package verification.
 - Independent focused completed-change review: approved with no remaining
   findings.

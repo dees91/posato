@@ -43,6 +43,71 @@ private final class MemoryOwnershipPersistence: OwnershipPersistence, @unchecked
   #expect(try engine.status() == .applied)
 }
 
+@Test func givenExactAppliedRequestWhenRepeatedOrReconciledThenAppliedStateRemains() throws {
+  let persistence = MemoryOwnershipPersistence()
+  let configuration = MemoryProxyConfiguration()
+  let engine = ProxyOwnershipEngine(
+    persistence: persistence,
+    configuration: configuration
+  )
+  #expect(
+    try engine.apply(
+      sessionIdentifier: sessionIdentifier,
+      requestIdentifier: requestIdentifier,
+      canonicalInputDigest: canonicalDigest,
+      port: 17_769
+    ) == .applied
+  )
+  let appliedSnapshot = configuration.snapshotValue
+
+  #expect(
+    try engine.apply(
+      sessionIdentifier: sessionIdentifier,
+      requestIdentifier: requestIdentifier,
+      canonicalInputDigest: canonicalDigest,
+      port: 17_769
+    ) == .applied
+  )
+  #expect(
+    try engine.reconcile(
+      sessionIdentifier: sessionIdentifier,
+      requestIdentifier: requestIdentifier,
+      canonicalInputDigest: canonicalDigest
+    ) == .applied
+  )
+  #expect(configuration.snapshotValue == appliedSnapshot)
+  #expect(persistence.record?.phase == .applied)
+}
+
+@Test func givenAbsentOrExactRecordWhenApplyOwnershipVerifiedThenOnlyExactReportsMatch() throws {
+  let persistence = MemoryOwnershipPersistence()
+  let engine = ProxyOwnershipEngine(
+    persistence: persistence,
+    configuration: MemoryProxyConfiguration()
+  )
+
+  #expect(
+    try !engine.verifyApplyOwnership(
+      sessionIdentifier: sessionIdentifier,
+      requestIdentifier: requestIdentifier,
+      canonicalInputDigest: canonicalDigest
+    )
+  )
+  _ = try engine.apply(
+    sessionIdentifier: sessionIdentifier,
+    requestIdentifier: requestIdentifier,
+    canonicalInputDigest: canonicalDigest,
+    port: 17_769
+  )
+  #expect(
+    try engine.verifyApplyOwnership(
+      sessionIdentifier: sessionIdentifier,
+      requestIdentifier: requestIdentifier,
+      canonicalInputDigest: canonicalDigest
+    )
+  )
+}
+
 private final class MemoryProxyConfiguration: ProxyConfigurationAccess, @unchecked Sendable {
   let serviceIdentifier = "synthetic-service"
   var primaryServiceIdentifier = "synthetic-service"
@@ -218,7 +283,7 @@ private let canonicalDigest = Data(repeating: 3, count: 32)
   )
 
   #expect(throws: ProxyOwnershipFailure.conflict) {
-    try engine.verifyApplyOwnership(
+    _ = try engine.verifyApplyOwnership(
       sessionIdentifier: Data(repeating: 9, count: WireLimits.identifierBytes),
       requestIdentifier: Data(repeating: 8, count: WireLimits.identifierBytes),
       canonicalInputDigest: Data(repeating: 7, count: 32)

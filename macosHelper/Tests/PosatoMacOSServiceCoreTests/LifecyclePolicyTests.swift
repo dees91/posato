@@ -201,6 +201,102 @@ import Testing
   #expect(!WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: successfulIdle))
 }
 
+@Test func givenUnverifiedApplyResponseWhenFailedClosedThenConflictPreservesDetails() throws {
+  let reconcile = try WireReconcilePayload(
+    originalOperation: .apply,
+    canonicalInputDigest: Data(repeating: 1, count: 32)
+  )
+  let postEffectFailure = WireResponsePayload(
+    outcome: .actionRequired,
+    serviceState: .recoveryRequired,
+    ownershipPhase: .applied,
+    actionRequired: .manualRecovery,
+    failure: .storage
+  )
+  let unverifiedDirect = WireLifecyclePolicy.failClosedApplyResponse(
+    requestOperation: .apply,
+    reconcilePayload: nil,
+    ownershipVerified: false,
+    response: postEffectFailure
+  )
+  let unverifiedReconcile = WireLifecyclePolicy.failClosedApplyResponse(
+    requestOperation: .reconcile,
+    reconcilePayload: reconcile,
+    ownershipVerified: false,
+    response: postEffectFailure
+  )
+  let idle = WireResponsePayload(
+    outcome: .success,
+    serviceState: .ready,
+    ownershipPhase: .idle
+  )
+  let unverifiedIdle = WireLifecyclePolicy.failClosedApplyResponse(
+    requestOperation: .reconcile,
+    reconcilePayload: reconcile,
+    ownershipVerified: false,
+    response: idle
+  )
+
+  #expect(unverifiedDirect.outcome == .conflict)
+  #expect(unverifiedDirect.serviceState == postEffectFailure.serviceState)
+  #expect(unverifiedDirect.ownershipPhase == postEffectFailure.ownershipPhase)
+  #expect(unverifiedDirect.actionRequired == postEffectFailure.actionRequired)
+  #expect(unverifiedDirect.failure == postEffectFailure.failure)
+  #expect(unverifiedReconcile.outcome == .conflict)
+  #expect(unverifiedIdle == idle)
+}
+
+@Test func givenFailClosedResponseThenOnlyVerifiedApplyIsOwned() throws {
+  let reconcile = try WireReconcilePayload(
+    originalOperation: .apply,
+    canonicalInputDigest: Data(repeating: 1, count: 32)
+  )
+  let postEffectFailure = WireResponsePayload(
+    outcome: .actionRequired,
+    serviceState: .recoveryRequired,
+    ownershipPhase: .applied,
+    actionRequired: .manualRecovery,
+    failure: .storage
+  )
+  let unverifiedDirect = WireLifecyclePolicy.failClosedApplyResponse(
+    requestOperation: .apply,
+    reconcilePayload: nil,
+    ownershipVerified: false,
+    response: postEffectFailure
+  )
+  let unverifiedReconcile = WireLifecyclePolicy.failClosedApplyResponse(
+    requestOperation: .reconcile,
+    reconcilePayload: reconcile,
+    ownershipVerified: false,
+    response: postEffectFailure
+  )
+
+  #expect(
+    !WireLifecyclePolicy.ownsAppliedMutation(
+      requestOperation: .apply,
+      reconcilePayload: nil,
+      ownershipVerified: true,
+      response: unverifiedDirect
+    )
+  )
+  #expect(
+    !WireLifecyclePolicy.ownsAppliedMutation(
+      requestOperation: .reconcile,
+      reconcilePayload: reconcile,
+      ownershipVerified: true,
+      response: unverifiedReconcile
+    )
+  )
+  #expect(
+    WireLifecyclePolicy.ownsAppliedMutation(
+      requestOperation: .apply,
+      reconcilePayload: nil,
+      ownershipVerified: true,
+      response: postEffectFailure
+    )
+  )
+}
+
 @Test func givenUnavailableDaemonWhenRespondingThenCleanupIsNotClaimed() {
   let approval = WireLifecyclePolicy.unreconciledServiceResponse(
     serviceState: .approvalRequired

@@ -32,12 +32,12 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     guard port > 0 else {
       throw ProxyOwnershipFailure.invalidInput
     }
-    if try matchingApplyRecord(
+    if let record = try matchingApplyRecord(
       sessionIdentifier: sessionIdentifier,
       requestIdentifier: requestIdentifier,
       canonicalInputDigest: canonicalInputDigest
-    ) != nil {
-      return try reconcile()
+    ) {
+      return try reconcileApply(record: record)
     }
     let serviceIdentifier = try configuration.currentPrimaryServiceIdentifier()
     let baseline = try configuration.snapshot(serviceIdentifier: serviceIdentifier)
@@ -75,12 +75,12 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     sessionIdentifier: Data,
     requestIdentifier: Data,
     canonicalInputDigest: Data
-  ) throws {
-    _ = try matchingApplyRecord(
+  ) throws -> Bool {
+    return try matchingApplyRecord(
       sessionIdentifier: sessionIdentifier,
       requestIdentifier: requestIdentifier,
       canonicalInputDigest: canonicalInputDigest
-    )
+    ) != nil
   }
 
   public func reconcile() throws -> OwnershipPhase {
@@ -109,22 +109,16 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     requestIdentifier: Data,
     canonicalInputDigest: Data
   ) throws -> OwnershipPhase {
-    guard sessionIdentifier.count == WireLimits.identifierBytes,
-      requestIdentifier.count == WireLimits.identifierBytes,
-      canonicalInputDigest.count == 32
+    guard
+      let record = try matchingApplyRecord(
+        sessionIdentifier: sessionIdentifier,
+        requestIdentifier: requestIdentifier,
+        canonicalInputDigest: canonicalInputDigest
+      )
     else {
-      throw ProxyOwnershipFailure.invalidInput
-    }
-    guard let record = try persistence.load() else {
       return .idle
     }
-    guard record.sessionIdentifier == sessionIdentifier,
-      record.requestIdentifier == requestIdentifier,
-      record.canonicalInputDigest == canonicalInputDigest
-    else {
-      throw ProxyOwnershipFailure.conflict
-    }
-    return try reconcile()
+    return try reconcileApply(record: record)
   }
 
   public func restore() throws -> OwnershipPhase {
@@ -180,6 +174,13 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
       return try restore(record: record, current: current)
     }
     return .applied
+  }
+
+  private func reconcileApply(record: OwnershipRecord) throws -> OwnershipPhase {
+    if record.phase == .applied {
+      return try maintain(record: record)
+    }
+    return try reconcile()
   }
 
   private func restore(

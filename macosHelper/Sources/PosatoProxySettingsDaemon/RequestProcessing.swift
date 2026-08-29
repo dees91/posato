@@ -14,11 +14,20 @@ extension RequestCoordinator {
     }
     defer { request.payload.resetBytes(in: request.payload.startIndex..<request.payload.endIndex) }
     var ownershipVerified = false
-    let response = response(for: request, ownershipVerified: &ownershipVerified)
+    let rawResponse = response(for: request, ownershipVerified: &ownershipVerified)
+    let reconcilePayload =
+      request.operation == .reconcile
+      ? try? WireReconcilePayload.decode(request.payload) : nil
+    let response = WireLifecyclePolicy.failClosedApplyResponse(
+      requestOperation: request.operation,
+      reconcilePayload: reconcilePayload,
+      ownershipVerified: ownershipVerified,
+      response: rawResponse
+    )
     connectionState.update(
       request: request,
       response: response,
-      ownershipVerified: ownershipVerified || request.operation == .reconcile
+      ownershipVerified: ownershipVerified
     )
     return encode(response: response, for: request)
   }
@@ -75,7 +84,8 @@ extension RequestCoordinator {
     case .reconcile:
       return try reconcileUnknown(
         request: request,
-        payload: WireReconcilePayload.decode(request.payload)
+        payload: WireReconcilePayload.decode(request.payload),
+        ownershipVerified: &ownershipVerified
       )
     case .renew:
       return try performRenew(request)
@@ -118,7 +128,7 @@ extension RequestCoordinator {
       operation: request.operation,
       payload: Data(request.payload.prefix(2))
     )
-    try engine.verifyApplyOwnership(
+    _ = try engine.verifyApplyOwnership(
       sessionIdentifier: request.sessionIdentifier,
       requestIdentifier: request.requestIdentifier,
       canonicalInputDigest: canonicalInputDigest
@@ -174,10 +184,16 @@ extension RequestCoordinator {
 
   private func reconcileUnknown(
     request: WireMessage,
-    payload: WireReconcilePayload
+    payload: WireReconcilePayload,
+    ownershipVerified: inout Bool
   ) throws -> OwnershipPhase {
     switch payload.originalOperation {
     case .apply:
+      ownershipVerified = try engine.verifyApplyOwnership(
+        sessionIdentifier: request.sessionIdentifier,
+        requestIdentifier: request.requestIdentifier,
+        canonicalInputDigest: payload.canonicalInputDigest
+      )
       return try engine.reconcile(
         sessionIdentifier: request.sessionIdentifier,
         requestIdentifier: request.requestIdentifier,

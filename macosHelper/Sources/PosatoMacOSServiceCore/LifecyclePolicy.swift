@@ -74,6 +74,32 @@ public enum WireLifecyclePolicy {
     return response.outcome == .success && response.ownershipPhase == .applied
   }
 
+  public static func failClosedApplyResponse(
+    requestOperation: WireOperation,
+    reconcilePayload: WireReconcilePayload?,
+    ownershipVerified: Bool,
+    response: WireResponsePayload
+  ) -> WireResponsePayload {
+    guard
+      effectiveOperation(
+        requestOperation: requestOperation,
+        reconcilePayload: reconcilePayload
+      ) == .apply,
+      !ownershipVerified,
+      response.ownershipPhase != .idle,
+      response.outcome != .conflict
+    else {
+      return response
+    }
+    return WireResponsePayload(
+      outcome: .conflict,
+      serviceState: response.serviceState,
+      ownershipPhase: response.ownershipPhase,
+      actionRequired: response.actionRequired,
+      failure: response.failure
+    )
+  }
+
   public static func unreconciledServiceResponse(
     serviceState: ServiceState
   ) -> WireResponsePayload {
