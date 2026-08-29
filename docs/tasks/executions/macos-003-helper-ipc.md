@@ -79,6 +79,13 @@
   implementation uses a non-shared 30-second maximum transfer window, does not
   permit daemon interaction or right extension, and destroys the one-use form
   after validation.
+- Hosted review found three post-effect recovery gaps: cleanup retry stopped
+  after a transient error, a verified Applied record could lose connection
+  ownership when its final save reported failure, and an unavailable daemon
+  could synthesize Idle. The correction reuses the existing lease timer until
+  cleanup reaches Idle, treats every verified non-Idle Apply phase as owned, and
+  returns recovery-required lifecycle responses when daemon state cannot be
+  reconciled.
 
 ## Blockers and accepted risks
 
@@ -113,15 +120,32 @@
   Recommended, or Optional actionable defects and independently passed all 36
   Swift tests.
 
+## Hosted-review correction
+
+- **Required findings:** retain cleanup retries after restoration errors; retain
+  connection cleanup ownership when a verified Applied record survives a
+  post-save error; and do not claim Idle while the daemon is unavailable.
+- **Resolution:** all three paths now fail closed through the existing lifecycle
+  policy and daemon timer. No dependency, watchdog, retry configuration, or
+  production failure-injection surface was added.
+- **Focused completed-change review:** approved with no Critical, Required,
+  Recommended, or Optional findings. The reviewer independently passed all 41
+  Swift tests, the aggregate quality gate, formatting, SwiftLint, diff hygiene,
+  and signed-package verification.
+
 ## Verification
 
-- `swift test`: 36 tests passed, including protocol capability, ordering,
+- `swift test`: 41 tests passed, including protocol capability, ordering,
   deadline, lifecycle, reconciliation, authorization-rule, durable-state, and
-  complete proxy-dictionary cases.
+  complete proxy-dictionary cases. The added cases cover post-save Applied
+  state, cleanup retry decisions, and unavailable-daemon responses.
 - `:desktopApp:verifyMacOsHelperPackaging`: passed with a runtime-only local
   Apple Development identity, including exact embedded Info.plist and launchd
   contract checks.
 - Signed physical lifecycle, controlled process-loss, Disable, and cleanup
   matrix: passed.
 - Aggregate `quality`: passed with the Gradle configuration cache reused.
-- Independent completed-change review: approved with no remaining findings.
+- Hosted-review correction aggregate `quality`: passed twice with the Gradle
+  configuration cache reused; SwiftLint reported zero violations.
+- Independent focused completed-change review: approved with no remaining
+  findings.

@@ -216,10 +216,7 @@ func remainingDeadline(
 
 func localResponse(
   request: WireMessage,
-  outcome: WireOutcome,
-  state: ServiceState,
-  action: ActionRequiredReason = .none,
-  failure: FailureCategory = .none
+  payload: WireResponsePayload
 ) throws -> WireMessage {
   return try WireMessage(
     kind: .response,
@@ -229,13 +226,7 @@ func localResponse(
     connectionIdentifier: request.connectionIdentifier,
     sessionIdentifier: request.sessionIdentifier,
     requestIdentifier: request.requestIdentifier,
-    payload: WireResponsePayload(
-      outcome: outcome,
-      serviceState: state,
-      ownershipPhase: .idle,
-      actionRequired: action,
-      failure: failure
-    ).encode()
+    payload: payload.encode()
   )
 }
 

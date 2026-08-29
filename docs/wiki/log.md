@@ -814,3 +814,10 @@
   `check` and root `quality` lifecycle.
 - Split oversized native files by existing model, transport, coordination, and
   request-processing responsibilities; no lint rules were disabled.
+
+## [2026-08-29] correction | Retain macOS cleanup ownership until Idle
+
+- Kept transient startup, invalidation, and expired-lease cleanup failures on
+  the existing daemon timer until durable ownership reaches Idle.
+- Retained verified Apply ownership after a post-effect error and made an
+  unavailable daemon report recovery required instead of synthetic Idle.

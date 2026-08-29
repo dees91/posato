@@ -55,9 +55,29 @@ public enum WireLifecyclePolicy {
     guard operation == .apply, ownershipVerified, response.outcome != .conflict else {
       return false
     }
-    return (response.outcome == .success && response.ownershipPhase == .applied)
-      || response.ownershipPhase == .prepared
-      || response.ownershipPhase == .restorePending
+    return response.ownershipPhase != .idle
+  }
+
+  public static func cleanupCompleted(_ phase: OwnershipPhase?) -> Bool {
+    return phase == .idle
+  }
+
+  public static func leaseRemainsHealthy(
+    afterMaintenance phase: OwnershipPhase?
+  ) -> Bool {
+    return phase == .applied
+  }
+
+  public static func unreconciledServiceResponse(
+    serviceState: ServiceState
+  ) -> WireResponsePayload {
+    return WireResponsePayload(
+      outcome: .actionRequired,
+      serviceState: serviceState,
+      ownershipPhase: .recoveryRequired,
+      actionRequired: serviceState == .approvalRequired ? .backgroundApproval : .manualRecovery,
+      failure: .lifecycle
+    )
   }
 
   public static func completesCleanup(

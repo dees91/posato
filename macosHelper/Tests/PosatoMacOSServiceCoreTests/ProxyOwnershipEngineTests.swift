@@ -5,6 +5,7 @@ import Testing
 
 private final class MemoryOwnershipPersistence: OwnershipPersistence, @unchecked Sendable {
   var record: OwnershipRecord?
+  var failAfterSavingPhase: OwnershipPhase?
 
   func load() throws -> OwnershipRecord? {
     return record
@@ -12,11 +13,34 @@ private final class MemoryOwnershipPersistence: OwnershipPersistence, @unchecked
 
   func save(_ record: OwnershipRecord) throws {
     self.record = record
+    if failAfterSavingPhase == record.phase {
+      failAfterSavingPhase = nil
+      throw ProxyOwnershipFailure.unavailable
+    }
   }
 
   func remove() throws {
     record = nil
   }
+}
+
+@Test func givenAppliedRecordPersistedBeforeSaveFailureThenStatusRemainsApplied() throws {
+  let persistence = MemoryOwnershipPersistence()
+  persistence.failAfterSavingPhase = .applied
+  let engine = ProxyOwnershipEngine(
+    persistence: persistence,
+    configuration: MemoryProxyConfiguration()
+  )
+
+  #expect(throws: ProxyOwnershipFailure.unavailable) {
+    try engine.apply(
+      sessionIdentifier: sessionIdentifier,
+      requestIdentifier: requestIdentifier,
+      canonicalInputDigest: canonicalDigest,
+      port: 17_769
+    )
+  }
+  #expect(try engine.status() == .applied)
 }
 
 private final class MemoryProxyConfiguration: ProxyConfigurationAccess, @unchecked Sendable {

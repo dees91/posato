@@ -121,6 +121,25 @@ import Testing
   )
 }
 
+@Test func givenApplyFailureWithVerifiedAppliedStateThenConnectionKeepsCleanupOwnership() {
+  let response = WireResponsePayload(
+    outcome: .actionRequired,
+    serviceState: .recoveryRequired,
+    ownershipPhase: .applied,
+    actionRequired: .manualRecovery,
+    failure: .storage
+  )
+
+  #expect(
+    WireLifecyclePolicy.ownsAppliedMutation(
+      requestOperation: .apply,
+      reconcilePayload: nil,
+      ownershipVerified: true,
+      response: response
+    )
+  )
+}
+
 @Test func givenUnverifiedApplyFailureWithForeignPreparedStateThenConnectionOwnsNothing() {
   let response = WireResponsePayload(
     outcome: .failure,
@@ -138,4 +157,37 @@ import Testing
       response: response
     )
   )
+}
+
+@Test func givenOwnershipPhaseWhenLifecycleEvaluatedThenOnlyIdleCompletesCleanup() {
+  #expect(WireLifecyclePolicy.cleanupCompleted(.idle))
+  #expect(!WireLifecyclePolicy.cleanupCompleted(.applied))
+  #expect(!WireLifecyclePolicy.cleanupCompleted(.recoveryRequired))
+  #expect(!WireLifecyclePolicy.cleanupCompleted(nil))
+}
+
+@Test func givenMaintenancePhaseWhenLifecycleEvaluatedThenOnlyAppliedKeepsLeaseHealthy() {
+  #expect(WireLifecyclePolicy.leaseRemainsHealthy(afterMaintenance: .applied))
+  #expect(!WireLifecyclePolicy.leaseRemainsHealthy(afterMaintenance: .idle))
+  #expect(!WireLifecyclePolicy.leaseRemainsHealthy(afterMaintenance: .restorePending))
+  #expect(!WireLifecyclePolicy.leaseRemainsHealthy(afterMaintenance: nil))
+}
+
+@Test func givenUnavailableDaemonWhenRespondingThenCleanupIsNotClaimed() {
+  let approval = WireLifecyclePolicy.unreconciledServiceResponse(
+    serviceState: .approvalRequired
+  )
+  let unavailable = WireLifecyclePolicy.unreconciledServiceResponse(
+    serviceState: .notRegistered
+  )
+
+  #expect(approval.outcome == .actionRequired)
+  #expect(approval.ownershipPhase == .recoveryRequired)
+  #expect(approval.actionRequired == .backgroundApproval)
+  #expect(approval.failure == .lifecycle)
+  #expect(unavailable.outcome == .actionRequired)
+  #expect(unavailable.serviceState == .notRegistered)
+  #expect(unavailable.ownershipPhase == .recoveryRequired)
+  #expect(unavailable.actionRequired == .manualRecovery)
+  #expect(unavailable.failure == .lifecycle)
 }

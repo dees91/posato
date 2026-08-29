@@ -198,7 +198,13 @@ before authorization so a rejected request cannot acquire another operation's
 cleanup ownership. Per-connection cleanup ownership requires that explicit
 verified fact rather than a global ownership phase. If the daemon is
 unavailable, registration state or rule absence alone is not treated as proof
-that durable ownership and proxy cleanup completed.
+that durable ownership and proxy cleanup completed. A verified Apply keeps
+cleanup ownership for every non-Idle durable phase, including an Applied record
+whose final persistence step reports an error after replacement. Startup
+reconciliation, connection invalidation, and an expired lease retry cleanup on
+the existing daemon timer until durable ownership reaches Idle; healthy Applied
+maintenance preserves its lease. A helper that cannot reach an enabled daemon
+reports recovery required rather than synthesizing an Idle result.
 
 `observed`: a zero-second custom-right credential timeout expired before an
 external authorization form could be validated in the daemon. The implemented

@@ -90,8 +90,11 @@ do {
       }
       let cancelled = try localResponse(
         request: request,
-        outcome: .success,
-        state: serviceState(service.status)
+        payload: WireResponsePayload(
+          outcome: .success,
+          serviceState: serviceState(service.status),
+          ownershipPhase: .idle
+        )
       )
       try writeFrame(WireCodec.encode(cancelled))
       break
@@ -124,35 +127,15 @@ do {
       ? try WireReconcilePayload.decode(request.payload) : nil
     let response: WireMessage
     switch request.operation {
-    case .status where service.status != .enabled:
+    case .status where service.status != .enabled,
+      .disable where service.status != .enabled,
+      .remove where service.status != .enabled,
+      .reconcile where service.status != .enabled:
       response = try localResponse(
         request: request,
-        outcome: .success,
-        state: serviceState(service.status)
-      )
-    case .disable where service.status != .enabled:
-      response = try localResponse(
-        request: request,
-        outcome: .actionRequired,
-        state: serviceState(service.status),
-        action: service.status == .requiresApproval ? .backgroundApproval : .manualRecovery,
-        failure: .lifecycle
-      )
-    case .remove where service.status != .enabled:
-      response = try localResponse(
-        request: request,
-        outcome: .actionRequired,
-        state: serviceState(service.status),
-        action: service.status == .requiresApproval ? .backgroundApproval : .manualRecovery,
-        failure: .lifecycle
-      )
-    case .reconcile where service.status != .enabled:
-      response = try localResponse(
-        request: request,
-        outcome: .actionRequired,
-        state: serviceState(service.status),
-        action: service.status == .requiresApproval ? .backgroundApproval : .manualRecovery,
-        failure: .lifecycle
+        payload: WireLifecyclePolicy.unreconciledServiceResponse(
+          serviceState: serviceState(service.status)
+        )
       )
     case .enable:
       if service.status != .enabled {
@@ -162,9 +145,9 @@ do {
         let state = serviceState(service.status)
         response = try localResponse(
           request: request,
-          outcome: .actionRequired,
-          state: state,
-          action: state == .approvalRequired ? .backgroundApproval : .none
+          payload: WireLifecyclePolicy.unreconciledServiceResponse(
+            serviceState: state
+          )
         )
         break
       }

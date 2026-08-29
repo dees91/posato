@@ -59,9 +59,8 @@ final class RequestCoordinator: @unchecked Sendable {
 
   func start() {
     queue.async {
-      _ = try? self.engine.reconcile()
+      self.recordCleanupAttempt(try? self.engine.reconcile())
       self.scheduleLeaseCheck()
-      self.scheduleIdleExit()
     }
   }
 
@@ -92,10 +91,10 @@ final class RequestCoordinator: @unchecked Sendable {
     queue.async {
       self.activeConnections = max(0, self.activeConnections - 1)
       if state.shouldRestoreOnInvalidation() {
-        self.leaseDeadline = nil
-        _ = try? self.engine.restore()
+        self.recordCleanupAttempt(try? self.engine.restore())
+      } else {
+        self.scheduleIdleExit()
       }
-      self.scheduleIdleExit()
     }
   }
 
@@ -120,19 +119,24 @@ final class RequestCoordinator: @unchecked Sendable {
 
   private func scheduleLeaseCheck() {
     queue.asyncAfter(deadline: .now() + .seconds(1)) {
-      if self.leaseDeadline != nil {
-        if let phase = try? self.engine.maintain(), phase != .applied {
+      if let deadline = self.leaseDeadline, DispatchTime.now() >= deadline {
+        self.recordCleanupAttempt(try? self.engine.restore())
+      } else if self.leaseDeadline != nil {
+        let phase = try? self.engine.maintain()
+        if WireLifecyclePolicy.cleanupCompleted(phase) {
           self.leaseDeadline = nil
           self.scheduleIdleExit()
+        } else if !WireLifecyclePolicy.leaseRemainsHealthy(afterMaintenance: phase) {
+          self.leaseDeadline = .now()
         }
-      }
-      if let deadline = self.leaseDeadline, DispatchTime.now() >= deadline {
-        self.leaseDeadline = nil
-        _ = try? self.engine.restore()
-        self.scheduleIdleExit()
       }
       self.scheduleLeaseCheck()
     }
+  }
+
+  private func recordCleanupAttempt(_ phase: OwnershipPhase?) {
+    leaseDeadline = WireLifecyclePolicy.cleanupCompleted(phase) ? nil : .now()
+    scheduleIdleExit()
   }
 
   private func scheduleIdleExit() {
