@@ -1,6 +1,6 @@
 import PosatoMacOSServiceCore
 
-struct ServiceRepairOperations {
+struct ServiceRecoveryOperations {
   let remainingMilliseconds: () throws -> UInt32
   let currentServiceState: () -> ServiceState
   let invalidateDaemon: () -> Void
@@ -9,18 +9,28 @@ struct ServiceRepairOperations {
   let performOriginalRequest: (UInt32) throws -> WireResponsePayload
 }
 
-func isServiceRepair(
+func serviceRecoveryOperation(
   requestOperation: WireOperation,
   reconcilePayload: WireReconcilePayload?
-) -> Bool {
-  return WireLifecyclePolicy.effectiveOperation(
+) -> WireOperation? {
+  let operation = WireLifecyclePolicy.effectiveOperation(
     requestOperation: requestOperation,
     reconcilePayload: reconcilePayload
-  ) == .repair
+  )
+  switch operation {
+  case .repair:
+    return operation
+  case .disable where requestOperation == .reconcile,
+    .remove where requestOperation == .reconcile:
+    return operation
+  default:
+    return nil
+  }
 }
 
-func performServiceRepair(
-  operations: ServiceRepairOperations
+func performServiceRecovery(
+  operation: WireOperation,
+  operations: ServiceRecoveryOperations
 ) throws -> WireResponsePayload {
   switch operations.currentServiceState() {
   case .ready:
@@ -45,11 +55,12 @@ func performServiceRepair(
       serviceState: .recoveryRequired
     )
   }
-  return try finishRepair(operations)
+  return try finishServiceRecovery(operation: operation, operations: operations)
 }
 
-private func finishRepair(
-  _ operations: ServiceRepairOperations
+private func finishServiceRecovery(
+  operation: WireOperation,
+  operations: ServiceRecoveryOperations
 ) throws -> WireResponsePayload {
   let response: WireResponsePayload
   do {
@@ -63,29 +74,32 @@ private func finishRepair(
   guard operations.currentServiceState() == .ready else {
     return unreconciledResponse(operations)
   }
-  guard cleanupCompleted(response) else {
-    return incompleteRepairResponse(response)
+  guard cleanupCompleted(operation: operation, response: response) else {
+    return incompleteRecoveryResponse(response)
   }
   return response
 }
 
-private func cleanupCompleted(_ response: WireResponsePayload) -> Bool {
+private func cleanupCompleted(
+  operation: WireOperation,
+  response: WireResponsePayload
+) -> Bool {
   return WireLifecyclePolicy.completesCleanup(
-    requestOperation: .repair,
+    requestOperation: operation,
     reconcilePayload: nil,
     response: response
   )
 }
 
 private func unreconciledResponse(
-  _ operations: ServiceRepairOperations
+  _ operations: ServiceRecoveryOperations
 ) -> WireResponsePayload {
   return WireLifecyclePolicy.unreconciledServiceResponse(
     serviceState: operations.currentServiceState()
   )
 }
 
-private func incompleteRepairResponse(
+private func incompleteRecoveryResponse(
   _ response: WireResponsePayload
 ) -> WireResponsePayload {
   guard response.outcome == .success else {

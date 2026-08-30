@@ -241,6 +241,14 @@ rule. Unconfirmed cleanup, compatibility, transport, or final state remains
 fail-closed. The earlier physical daemon-PID replacement proved the former
 workflow but is superseded as a product requirement.
 
+`user-confirmed` (2026-08-30): same-request Disable and Remove reconciliation
+does not infer successful cleanup from an absent service. If a successful
+unregister response was lost, a fresh helper registers the exact embedded
+daemon once, verifies the original request through authenticated reconciliation
+to Idle, and unregisters it again. Remove also verifies absence of the exact
+authorization right. Direct cleanup against an absent service and every
+uncertain registration, connection, cleanup, or final state remain fail-closed.
+
 `observed`: a zero-second custom-right credential timeout expired before an
 external authorization form could be validated in the daemon. The implemented
 rule uses a 30-second maximum transfer window. It remains non-shared and fresh;

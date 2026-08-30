@@ -398,6 +398,15 @@ Direct Repair and same-request reconciliation use this one convergent path. An
 exact duplicate that finds the daemon `ready`, ownership `Idle`, and the exact
 rule performs no Service Management transition and does not rewrite the rule.
 
+Same-request reconciliation for Disable or Remove does not treat an absent
+service as proof that cleanup completed. When the service became unregistered
+before its successful response reached the application, the fresh helper
+registers the exact embedded daemon once, authenticates it, and reconciles the
+original request to `Idle`. Remove also verifies that the exact authorization
+right is absent. Only then does the helper unregister the daemon again and
+return `notRegistered`; any uncertainty remains action-required or an unknown
+outcome.
+
 Disable and removal leave the daemon unregistered. Removal also leaves the
 custom right absent. Update and repair may resume service only after the
 registered executable set, IPC contract, durable state, and authorization rule

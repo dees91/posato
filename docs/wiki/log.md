@@ -875,3 +875,9 @@
   completed Repair without mandatory daemon replacement.
 - Kept registration for absent services and made direct and reconciled Repair
   share one effect-free exact-state path.
+
+## [2026-08-30] correction | Reconcile cleanup after daemon unregistration
+
+- Made same-request Disable and Remove reconciliation temporarily restore
+  authenticated daemon access instead of treating an absent service as proof
+  of cleanup.

@@ -133,12 +133,13 @@ do {
       leaseRenewer = nil
     }
     var response: WireMessage
-    if isServiceRepair(
+    if let recoveryOperation = serviceRecoveryOperation(
       requestOperation: request.operation,
       reconcilePayload: reconcilePayload
     ) {
-      let repairPayload = try performServiceRepair(
-        operations: ServiceRepairOperations(
+      let recoveryPayload = try performServiceRecovery(
+        operation: recoveryOperation,
+        operations: ServiceRecoveryOperations(
           remainingMilliseconds: {
             try remainingDeadline(
               receivedAt: receivedAt,
@@ -190,7 +191,7 @@ do {
           }
         )
       )
-      response = try localResponse(request: request, payload: repairPayload)
+      response = try localResponse(request: request, payload: recoveryPayload)
     } else {
       switch request.operation {
       case .status where service.status != .enabled,

@@ -308,6 +308,27 @@
   that the existing signed platform evidence plus deterministic no-transition
   tests are proportionate without recreating the disposable physical harness.
 
+## Hosted-review lost unregister response correction
+
+- **Required finding:** a completed Disable or Remove whose post-unregister
+  pipe response was lost could reconcile against the absent service as
+  recovery-required and permanently clear the client's pending request.
+- **Resolution:** only same-request Disable and Remove reconciliation now joins
+  Repair's existing bounded service-recovery workflow. A fresh helper registers
+  the exact daemon once, forwards the unchanged reconciliation through mutual
+  authentication, requires Success and Idle, and then uses the existing
+  unregister and response projection. Direct cleanup against an absent service
+  is unchanged, and no journal, wire field, retry loop, dependency, or Kotlin
+  behavior was added.
+- **Plan review:** approved as implementation-ready with no Critical, Required,
+  Recommended, or Optional findings. The reviewer confirmed fail-closed
+  registration, idempotent Remove-right absence, and the use of existing signed
+  platform evidence rather than another disposable physical harness.
+- **Focused completed-change review:** approved for merge with no Critical or
+  Required findings. The reviewer independently passed the focused routing and
+  recovery regressions, confirmed identity and digest preservation, and found
+  the prior signed platform evidence proportionate.
+
 ## Verification
 
 - `swift test`: 49 tests passed, including protocol capability, ordering,
@@ -375,3 +396,11 @@
   existing signed lifecycle evidence plus the new deterministic service and
   authorization convergence regressions; it does not recreate a one-off runner
   or persist machine-specific test infrastructure.
+- Lost unregister response correction `:macosHelper:check`: passed with 68
+  Swift tests, strict formatting, and zero SwiftLint violations. The focused
+  regression proves that reconciled Disable and Remove recover a missing
+  service once while direct Disable and Remove remain unchanged.
+- Lost unregister response correction aggregate `quality`: passed with the
+  configuration cache reused, release Swift compilation, JVM and iOS tests,
+  signed nested-helper packaging, and all repository verification targets
+  green.
