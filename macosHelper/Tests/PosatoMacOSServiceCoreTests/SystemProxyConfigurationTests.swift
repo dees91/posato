@@ -3,6 +3,25 @@ import Testing
 
 @testable import PosatoMacOSServiceCore
 
+@Test func givenAdditionalProxyFlagWhenCheckedThenEnabledStateIsDetected() throws {
+  for key in ["SOCKSEnable", "ProxyAutoConfigEnable", "ProxyAutoDiscoveryEnable"] {
+    #expect(
+      try SystemProxyConfiguration.additionalProxyEnabled(
+        values: [key: NSNumber(value: 1)]
+      )
+    )
+  }
+  #expect(
+    try !SystemProxyConfiguration.additionalProxyEnabled(
+      values: [
+        "SOCKSEnable": NSNumber(value: 0),
+        "ProxyAutoConfigEnable": NSNumber(value: 0),
+        "ProxyAutoDiscoveryEnable": NSNumber(value: 0),
+      ]
+    )
+  )
+}
+
 @Test func givenUnrelatedProxyValuesWhenTuplesChangeThenTheyRemainExact() {
   let original: [String: Any] = [
     "HTTPEnable": NSNumber(value: 0),

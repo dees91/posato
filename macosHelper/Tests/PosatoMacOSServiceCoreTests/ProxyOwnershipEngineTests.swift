@@ -3,7 +3,7 @@ import Testing
 
 @testable import PosatoMacOSServiceCore
 
-private final class MemoryOwnershipPersistence: OwnershipPersistence, @unchecked Sendable {
+final class MemoryOwnershipPersistence: OwnershipPersistence, @unchecked Sendable {
   var record: OwnershipRecord?
   var failAfterSavingPhase: OwnershipPhase?
 
@@ -108,17 +108,21 @@ private final class MemoryOwnershipPersistence: OwnershipPersistence, @unchecked
   )
 }
 
-private final class MemoryProxyConfiguration: ProxyConfigurationAccess, @unchecked Sendable {
+final class MemoryProxyConfiguration: ProxyConfigurationAccess, @unchecked Sendable {
   let serviceIdentifier = "synthetic-service"
   var primaryServiceIdentifier = "synthetic-service"
   var snapshotValue: ProxySnapshot
 
-  init(http: ProxyTuple = emptyTuple, https: ProxyTuple = emptyTuple) {
+  init(
+    http: ProxyTuple = emptyTuple,
+    https: ProxyTuple = emptyTuple,
+    additionalProxyEnabled: Bool = false
+  ) {
     snapshotValue = ProxySnapshot(
       serviceIdentifier: serviceIdentifier,
       http: http,
       https: https,
-      automaticProxyEnabled: false
+      additionalProxyEnabled: additionalProxyEnabled
     )
   }
 
@@ -146,7 +150,7 @@ private final class MemoryProxyConfiguration: ProxyConfigurationAccess, @uncheck
       serviceIdentifier: serviceIdentifier,
       http: http,
       https: https,
-      automaticProxyEnabled: snapshotValue.automaticProxyEnabled
+      additionalProxyEnabled: snapshotValue.additionalProxyEnabled
     )
     return snapshotValue
   }
@@ -202,7 +206,7 @@ private final class MemoryProxyConfiguration: ProxyConfigurationAccess, @uncheck
   #expect(persistence.record?.phase == .applied)
 }
 
-private let emptyTuple = ProxyTuple(enabled: nil, host: nil, port: nil)
+let emptyTuple = ProxyTuple(enabled: nil, host: nil, port: nil)
 private let sessionIdentifier = Data(repeating: 1, count: 16)
 private let requestIdentifier = Data(repeating: 2, count: 16)
 private let canonicalDigest = Data(repeating: 3, count: 32)
@@ -316,7 +320,7 @@ private let canonicalDigest = Data(repeating: 3, count: 32)
     serviceIdentifier: configuration.serviceIdentifier,
     http: externalHTTP,
     https: configuration.snapshotValue.https,
-    automaticProxyEnabled: false
+    additionalProxyEnabled: false
   )
 
   #expect(try engine.restore() == .recoveryRequired)

@@ -77,7 +77,6 @@ func performServiceRepair(
 private func prepareRegisteredServiceForRepair(
   _ operations: ServiceRepairOperations
 ) throws -> WireResponsePayload? {
-  var oldDaemonInvalidated = false
   do {
     let response = try operations.restoreExistingDaemon(
       operations.remainingMilliseconds()
@@ -88,12 +87,9 @@ private func prepareRegisteredServiceForRepair(
     operations.ownershipRestored()
   } catch {
     operations.invalidateDaemon()
-    oldDaemonInvalidated = true
-    _ = try operations.remainingMilliseconds()
+    throw error
   }
-  if !oldDaemonInvalidated {
-    operations.invalidateDaemon()
-  }
+  operations.invalidateDaemon()
 
   do {
     try operations.unregister(operations.remainingMilliseconds())

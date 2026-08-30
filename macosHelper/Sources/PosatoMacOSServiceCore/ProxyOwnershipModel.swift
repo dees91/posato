@@ -57,24 +57,32 @@ public struct ProxyTuple: Codable, Equatable, Sendable {
         return false
       }()
   }
+
+  var isEnabled: Bool {
+    return enabled != nil && enabled != .integer(0)
+  }
 }
 
 public struct ProxySnapshot: Equatable, Sendable {
   public let serviceIdentifier: String
   public let http: ProxyTuple
   public let https: ProxyTuple
-  public let automaticProxyEnabled: Bool
+  public let additionalProxyEnabled: Bool
 
   public init(
     serviceIdentifier: String,
     http: ProxyTuple,
     https: ProxyTuple,
-    automaticProxyEnabled: Bool = false
+    additionalProxyEnabled: Bool = false
   ) {
     self.serviceIdentifier = serviceIdentifier
     self.http = http
     self.https = https
-    self.automaticProxyEnabled = automaticProxyEnabled
+    self.additionalProxyEnabled = additionalProxyEnabled
+  }
+
+  var hasEnabledProxy: Bool {
+    return http.isEnabled || https.isEnabled || additionalProxyEnabled
   }
 }
 

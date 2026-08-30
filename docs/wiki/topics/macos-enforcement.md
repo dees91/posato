@@ -101,6 +101,11 @@ managed/global proxy, PAC, or autodiscovery state is incompatible. Detected
 VPNs, network relays or filters that change routing, and iCloud Private Relay
 are also incompatible and are never disabled by Posato.
 
+`observed` (2026-08-30): MACOS-003 rejects enabled HTTP, HTTPS, SOCKS, PAC, and
+autodiscovery state before saving durable ownership or replacing proxy tuples.
+Managed/global proxy, effective-chain, VPN, relay, filter, and Private Relay
+verification remains part of the MACOS-004 activation and physical matrix.
+
 Supported activation starts on one stable primary Wi-Fi or Ethernet service.
 Captive-portal coexistence is unsupported and adds no probe or automatic sign-
 in. Sleep, wake, or primary-service change ends the active claim, restores the
@@ -270,8 +275,11 @@ fresh helper process registered the current embedded daemon and returned Ready
 and Idle. A later controlled run began with an existing rule whose credential
 timeout was deliberately reduced. Repair used two helper and daemon processes,
 restored the expected rule, and returned Ready and Idle before Remove deleted
-the right and service. This is one-machine development evidence, not a
-platform-wide timing guarantee or release-readiness claim.
+the right and service. If restoration loses its daemon response, Repair now
+invalidates that uncertain connection and leaves the service registered; only
+an explicit successful Idle response permits unregistration. This is
+one-machine development evidence plus deterministic lifecycle verification,
+not a platform-wide timing guarantee or release-readiness claim.
 
 Durable safety properties from the spike:
 

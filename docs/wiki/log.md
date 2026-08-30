@@ -861,3 +861,10 @@
   Services rule, while Enable reconciliation continues to verify it only.
 - A signed physical run replaced a deliberately mismatched rule through a fresh
   helper and daemon, then Remove deleted the right and service.
+
+## [2026-08-30] correction | Stop unsafe Repair and proxy replacement
+
+- Prevented Repair from unregistering its recovery daemon when restoration is
+  not explicitly confirmed Idle.
+- Made Apply reject existing HTTP, HTTPS, SOCKS, PAC, and autodiscovery proxy
+  state before durable ownership or SystemConfiguration mutation.

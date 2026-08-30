@@ -126,24 +126,14 @@ private final class RepairHarness {
   #expect(harness.deadlineCalls == 7)
 }
 
-@Test func givenUnknownOldRestoreWhenRepairedThenOwnershipRemainsUntilFreshReconciliation() throws {
+@Test func givenUnknownOldRestoreWhenRepairedThenServiceCycleDoesNotStart() {
   let harness = RepairHarness()
   harness.restoreThrows = true
 
-  let response = try performServiceRepair(operations: harness.operations())
-
-  #expect(response.outcome == .success)
-  #expect(!harness.lifecycleEvents.contains("clearOwnership"))
-  #expect(
-    harness.lifecycleEvents == [
-      "restore",
-      "invalidate",
-      "unregister",
-      "register",
-      "connect",
-      "finalRequest",
-    ]
-  )
+  #expect(throws: RepairTestFailure.expected) {
+    try performServiceRepair(operations: harness.operations())
+  }
+  #expect(harness.lifecycleEvents == ["restore", "invalidate"])
 }
 
 @Test func givenIncompleteOldCleanupWhenRepairedThenRegistrationIsUntouched() throws {

@@ -41,7 +41,7 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     }
     let serviceIdentifier = try configuration.currentPrimaryServiceIdentifier()
     let baseline = try configuration.snapshot(serviceIdentifier: serviceIdentifier)
-    guard !baseline.automaticProxyEnabled else {
+    guard !baseline.hasEnabledProxy else {
       throw ProxyOwnershipFailure.unavailable
     }
     let applied = appliedTuple(port: port)

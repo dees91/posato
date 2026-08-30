@@ -261,6 +261,25 @@
   Required, Recommended, or Optional findings. The reviewer independently
   passed the focused regression and diff-hygiene checks.
 
+## Hosted-review restoration and proxy-conflict correction
+
+- **Required findings:** Repair could unregister the daemon after an uncertain
+  restoration response, and Apply could replace an already-enabled manual HTTP
+  or HTTPS proxy instead of rejecting incompatible network configuration.
+- **Resolution:** uncertain restoration now invalidates the connection and
+  stops before any service transition, leaving the existing one-shot
+  same-request reconciliation and registered daemon recovery path intact.
+  Apply rejects enabled HTTP, HTTPS, SOCKS, PAC, or autodiscovery state before
+  durable ownership is saved or proxy tuples are replaced. No retry, protocol
+  field, durable schema, dependency, or generalized coexistence layer was
+  added.
+- **Plan review:** approved as implementation-ready with no Critical, Required,
+  Recommended, or Optional findings. Deterministic pre-effect tests were judged
+  sufficient; the broader physical coexistence matrix remains MACOS-004 scope.
+- **Focused completed-change review:** approved for merge with no Critical,
+  Required, Recommended, or Optional findings. The reviewer independently
+  passed all three affected regressions and diff hygiene.
+
 ## Verification
 
 - `swift test`: 49 tests passed, including protocol capability, ordering,
@@ -313,3 +332,6 @@
 - Authorization-repair correction `:macosHelper:check`: passed with 63 Swift
   tests, strict formatting, and zero SwiftLint violations. Aggregate `quality`,
   signed-package verification, and diff hygiene passed.
+- Restoration and proxy-conflict correction `:macosHelper:check`: passed with
+  65 Swift tests, strict formatting, and zero SwiftLint violations. Aggregate
+  `quality`, explicit signed-package verification, and diff hygiene passed.

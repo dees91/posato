@@ -119,7 +119,7 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
       serviceIdentifier: serviceIdentifier,
       http: try tuple(prefix: "HTTP", values: values),
       https: try tuple(prefix: "HTTPS", values: values),
-      automaticProxyEnabled: try automaticProxyEnabled(values: values)
+      additionalProxyEnabled: try Self.additionalProxyEnabled(values: values)
     )
   }
 
@@ -172,12 +172,13 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     throw SystemProxyConfigurationFailure.protocolConfiguration
   }
 
-  private func automaticProxyEnabled(values: [String: Any]) throws -> Bool {
-    return try enabledFlag(values["ProxyAutoConfigEnable"])
+  static func additionalProxyEnabled(values: [String: Any]) throws -> Bool {
+    return try enabledFlag(values["SOCKSEnable"])
+      || enabledFlag(values["ProxyAutoConfigEnable"])
       || enabledFlag(values["ProxyAutoDiscoveryEnable"])
   }
 
-  private func enabledFlag(_ value: Any?) throws -> Bool {
+  private static func enabledFlag(_ value: Any?) throws -> Bool {
     guard let value else {
       return false
     }
