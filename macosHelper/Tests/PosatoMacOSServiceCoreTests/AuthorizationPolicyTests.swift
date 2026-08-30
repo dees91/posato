@@ -2,6 +2,7 @@ import Foundation
 import Testing
 
 @testable import PosatoMacOSServiceCore
+@testable import PosatoProxySettingsDaemon
 
 @Test func givenExpectedAuthorizationRuleWhenValidatedThenItMatchesExactly() {
   let definition = AuthorizationPolicy.applyRightDefinition()
@@ -27,4 +28,23 @@ import Testing
     try AuthorizationPolicy.validateAndDestroyApplyExternalForm(&material)
   }
   #expect(material.allSatisfy { $0 == 0 })
+}
+
+@Test func givenReconciledAuthorizationRuleWhenDispatchedThenOriginalIntentIsPreserved() throws {
+  var calls: [String] = []
+
+  try reconcileAuthorizationRule(
+    for: .enable,
+    verify: { calls.append("verify") },
+    repair: { calls.append("repair") }
+  )
+  #expect(calls == ["verify"])
+
+  calls.removeAll()
+  try reconcileAuthorizationRule(
+    for: .repair,
+    verify: { calls.append("verify") },
+    repair: { calls.append("repair") }
+  )
+  #expect(calls == ["repair"])
 }

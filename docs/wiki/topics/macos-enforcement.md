@@ -193,7 +193,10 @@ requirement before a delegate can accept an XPC connection.
 
 Lease renewal requires the exact durable session and request owner. Enable may
 install an absent exact rule but only explicit Repair may replace a mismatched
-one. Apply verifies the exact durable session, request, and canonical digest
+one. That Repair intent is preserved when an unknown outcome moves to a fresh
+helper process, so reconciliation restores the exact rule instead of merely
+verifying the mismatched definition. Apply verifies the exact durable session,
+request, and canonical digest
 before authorization so a rejected request cannot acquire another operation's
 cleanup ownership. Per-connection cleanup ownership requires that explicit
 verified fact rather than a global ownership phase. If the daemon is
@@ -264,8 +267,11 @@ replaced the running daemon process. Service Management rejected immediate
 registration by the same process that had completed asynchronous
 unregistration with error code 1; one bounded same-request reconciliation in a
 fresh helper process registered the current embedded daemon and returned Ready
-and Idle. This is one-machine development evidence, not a platform-wide timing
-guarantee or release-readiness claim.
+and Idle. A later controlled run began with an existing rule whose credential
+timeout was deliberately reduced. Repair used two helper and daemon processes,
+restored the expected rule, and returned Ready and Idle before Remove deleted
+the right and service. This is one-machine development evidence, not a
+platform-wide timing guarantee or release-readiness claim.
 
 Durable safety properties from the spike:
 

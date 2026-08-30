@@ -244,6 +244,23 @@
   the final completed-change pass approved the change for merge with no
   Critical or Required findings.
 
+## Hosted-review authorization-repair correction
+
+- **Required finding:** a same-request Repair handed to a fresh helper after
+  Service Management rejected same-process registration verified the existing
+  authorization rule instead of repairing a mismatched definition.
+- **Resolution:** reconciliation now dispatches the original Enable intent to
+  rule verification and the original Repair intent to the existing exact-rule
+  repair operation. No protocol field, retry, dependency, or service workflow
+  was added.
+- **Physical correction:** a signed run began with the expected authorization
+  rule changed to a shorter credential timeout. Repair traversed two helper and
+  daemon processes, returned Success, Ready, and Idle, and restored the exact
+  expected rule. Remove then deleted the right and unregistered the service.
+- **Focused completed-change review:** approved for merge with no Critical,
+  Required, Recommended, or Optional findings. The reviewer independently
+  passed the focused regression and diff-hygiene checks.
+
 ## Verification
 
 - `swift test`: 49 tests passed, including protocol capability, ordering,
@@ -293,3 +310,6 @@
 - Independent focused completed-change review: approved for merge with no
   Critical or Required findings. Its documentation-precision recommendation
   was applied before commit.
+- Authorization-repair correction `:macosHelper:check`: passed with 63 Swift
+  tests, strict formatting, and zero SwiftLint violations. Aggregate `quality`,
+  signed-package verification, and diff hygiene passed.

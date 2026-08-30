@@ -216,7 +216,11 @@ extension RequestCoordinator {
       guard phase == .idle else {
         throw ProxyOwnershipFailure.recoveryRequired
       }
-      try AuthorizationPolicy.verifyApplyRight()
+      try reconcileAuthorizationRule(
+        for: payload.originalOperation,
+        verify: AuthorizationPolicy.verifyApplyRight,
+        repair: AuthorizationPolicy.repairApplyRight
+      )
       return .idle
     case .status:
       try verifyCanonicalEmptyInput(payload)
@@ -340,5 +344,20 @@ extension RequestCoordinator {
         payload: response.encode()
       )
     )
+  }
+}
+
+func reconcileAuthorizationRule(
+  for operation: WireOperation,
+  verify: () throws -> Void,
+  repair: () throws -> Void
+) throws {
+  switch operation {
+  case .enable:
+    try verify()
+  case .repair:
+    try repair()
+  default:
+    throw ProxyOwnershipFailure.invalidInput
   }
 }

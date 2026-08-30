@@ -854,3 +854,10 @@
   is rejected by Service Management.
 - Signed physical checks passed exact sleep/wake restoration, explicit later
   Apply, and a Ready and Idle Repair with a replaced daemon process.
+
+## [2026-08-30] correction | Preserve authorization repair across helper handoff
+
+- Made same-request Repair reconciliation restore the exact Authorization
+  Services rule, while Enable reconciliation continues to verify it only.
+- A signed physical run replaced a deliberately mismatched rule through a fresh
+  helper and daemon, then Remove deleted the right and service.
