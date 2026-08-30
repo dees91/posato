@@ -256,6 +256,17 @@ prevent automatic execution and therefore requires repair or truthful manual
 proxy recovery rather than a success claim. The architecture is non-sandboxed;
 RELEASE-001 must select a compatible distribution path or revisit the ADR.
 
+`observed` (2026-08-30): on one Apple silicon Mac running macOS 26, the signed
+daemon restored an active Apply to the exact proxy baseline during physical
+sleep/wake, reached Idle after wake, and did not silently reapply. A later
+explicit Apply remained possible. A signed Repair also restored ownership and
+replaced the running daemon process. Service Management rejected immediate
+registration by the same process that had completed asynchronous
+unregistration with error code 1; one bounded same-request reconciliation in a
+fresh helper process registered the current embedded daemon and returned Ready
+and Idle. This is one-machine development evidence, not a platform-wide timing
+guarantee or release-readiness claim.
+
 Durable safety properties from the spike:
 
 - snapshot exact state before mutation;

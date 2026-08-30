@@ -133,101 +133,188 @@ do {
       leaseRenewer = nil
     }
     var response: WireMessage
-    switch request.operation {
-    case .status where service.status != .enabled,
-      .disable where service.status != .enabled,
-      .remove where service.status != .enabled,
-      .reconcile where service.status != .enabled:
-      response = try localResponse(
-        request: request,
-        payload: WireLifecyclePolicy.unreconciledServiceResponse(
-          serviceState: serviceState(service.status)
+    if isServiceRepair(
+      requestOperation: request.operation,
+      reconcilePayload: reconcilePayload
+    ) {
+      let repairPayload = try performServiceRepair(
+        operations: ServiceRepairOperations(
+          remainingMilliseconds: {
+            try remainingDeadline(
+              receivedAt: receivedAt,
+              budgetMilliseconds: request.deadlineMilliseconds
+            )
+          },
+          currentServiceState: {
+            serviceState(service.status)
+          },
+          restoreExistingDaemon: { deadlineMilliseconds in
+            if daemon == nil {
+              daemon = try DaemonConnection(requirement: daemonRequirement)
+            }
+            let restore = try WireMessage(
+              kind: .request,
+              operation: .restore,
+              sequence: request.sequence,
+              deadlineMilliseconds: deadlineMilliseconds,
+              connectionIdentifier: request.connectionIdentifier,
+              sessionIdentifier: request.sessionIdentifier,
+              requestIdentifier: try randomIdentifier(),
+              payload: Data()
+            )
+            guard let daemon else {
+              throw PipeFailure.unavailable
+            }
+            let restoreResponse = try daemon.perform(restore)
+            return try WireResponsePayload.decode(restoreResponse.payload)
+          },
+          ownershipRestored: {
+            activeRequest = nil
+          },
+          invalidateDaemon: {
+            daemon?.invalidate()
+            daemon = nil
+          },
+          unregister: { timeoutMilliseconds in
+            try awaitUnregistration(
+              service: service,
+              timeoutMilliseconds: timeoutMilliseconds
+            )
+          },
+          register: {
+            try service.register()
+          },
+          connectFreshDaemon: {
+            daemon = try DaemonConnection(requirement: daemonRequirement)
+          },
+          performOriginalRequest: { deadlineMilliseconds in
+            var forwardedPayload = request.payload
+            defer {
+              forwardedPayload.resetBytes(
+                in: forwardedPayload.startIndex..<forwardedPayload.endIndex
+              )
+            }
+            var forwarded = try WireMessage(
+              kind: request.kind,
+              operation: request.operation,
+              sequence: request.sequence,
+              deadlineMilliseconds: deadlineMilliseconds,
+              connectionIdentifier: request.connectionIdentifier,
+              sessionIdentifier: request.sessionIdentifier,
+              requestIdentifier: request.requestIdentifier,
+              payload: forwardedPayload
+            )
+            defer {
+              forwarded.payload.resetBytes(
+                in: forwarded.payload.startIndex..<forwarded.payload.endIndex
+              )
+            }
+            guard let daemon else {
+              throw PipeFailure.unavailable
+            }
+            let forwardedResponse = try daemon.perform(forwarded)
+            return try WireResponsePayload.decode(forwardedResponse.payload)
+          }
         )
       )
-    case .enable:
-      if service.status != .enabled {
-        try service.register()
-      }
-      if service.status != .enabled {
-        let state = serviceState(service.status)
+      response = try localResponse(request: request, payload: repairPayload)
+    } else {
+      switch request.operation {
+      case .status where service.status != .enabled,
+        .disable where service.status != .enabled,
+        .remove where service.status != .enabled,
+        .reconcile where service.status != .enabled:
         response = try localResponse(
           request: request,
           payload: WireLifecyclePolicy.unreconciledServiceResponse(
-            serviceState: state
+            serviceState: serviceState(service.status)
           )
         )
-        break
-      }
-      fallthrough
-    default:
-      if daemon == nil {
-        daemon = try DaemonConnection(requirement: daemonRequirement)
-      }
-      var forwardedPayload = request.payload
-      var authorizationGrant: ApplyAuthorizationGrant?
-      defer {
-        forwardedPayload.resetBytes(
-          in: forwardedPayload.startIndex..<forwardedPayload.endIndex
+      case .enable:
+        if service.status != .enabled {
+          try service.register()
+        }
+        if service.status != .enabled {
+          let state = serviceState(service.status)
+          response = try localResponse(
+            request: request,
+            payload: WireLifecyclePolicy.unreconciledServiceResponse(
+              serviceState: state
+            )
+          )
+          break
+        }
+        fallthrough
+      default:
+        if daemon == nil {
+          daemon = try DaemonConnection(requirement: daemonRequirement)
+        }
+        var forwardedPayload = request.payload
+        var authorizationGrant: ApplyAuthorizationGrant?
+        defer {
+          forwardedPayload.resetBytes(
+            in: forwardedPayload.startIndex..<forwardedPayload.endIndex
+          )
+        }
+        if request.operation == .apply {
+          let grant = try AuthorizationPolicy.acquireApplyGrant()
+          authorizationGrant = grant
+          forwardedPayload.append(grant.externalForm)
+        }
+        var forwarded = try WireMessage(
+          kind: request.kind,
+          operation: request.operation,
+          sequence: request.sequence,
+          deadlineMilliseconds: try remainingDeadline(
+            receivedAt: receivedAt,
+            budgetMilliseconds: request.deadlineMilliseconds
+          ),
+          connectionIdentifier: request.connectionIdentifier,
+          sessionIdentifier: request.sessionIdentifier,
+          requestIdentifier: request.requestIdentifier,
+          payload: forwardedPayload
         )
-      }
-      if request.operation == .apply {
-        let grant = try AuthorizationPolicy.acquireApplyGrant()
-        authorizationGrant = grant
-        forwardedPayload.append(grant.externalForm)
-      }
-      var forwarded = try WireMessage(
-        kind: request.kind,
-        operation: request.operation,
-        sequence: request.sequence,
-        deadlineMilliseconds: try remainingDeadline(
-          receivedAt: receivedAt,
-          budgetMilliseconds: request.deadlineMilliseconds
-        ),
-        connectionIdentifier: request.connectionIdentifier,
-        sessionIdentifier: request.sessionIdentifier,
-        requestIdentifier: request.requestIdentifier,
-        payload: forwardedPayload
-      )
-      defer {
-        forwarded.payload.resetBytes(
-          in: forwarded.payload.startIndex..<forwarded.payload.endIndex
-        )
-      }
-      response = try withExtendedLifetime(authorizationGrant) {
-        try daemon!.perform(forwarded)
-      }
-      let responsePayload = try WireResponsePayload.decode(response.payload)
-      if WireLifecyclePolicy.ownsAppliedMutation(
-        requestOperation: request.operation,
-        reconcilePayload: reconcilePayload,
-        ownershipVerified: true,
-        response: responsePayload
-      ) {
-        activeRequest = request
-        leaseRenewer?.cancelAndWait()
-        leaseRenewer = LeaseRenewer(connection: daemon!, request: request)
-      } else if WireLifecyclePolicy.completesCleanup(
-        requestOperation: request.operation,
-        reconcilePayload: reconcilePayload,
-        response: responsePayload
-      ) {
-        leaseRenewer = nil
-        activeRequest = nil
-        if WireLifecyclePolicy.shouldUnregister(
-          requestOperation: request.operation,
-          reconcilePayload: reconcilePayload,
-          response: responsePayload
-        ) {
-          try service.unregister()
-          response.payload = WireLifecyclePolicy.postUnregisterResponse(
-            responsePayload,
-            serviceState: serviceState(service.status)
-          ).encode()
+        defer {
+          forwarded.payload.resetBytes(
+            in: forwarded.payload.startIndex..<forwarded.payload.endIndex
+          )
+        }
+        response = try withExtendedLifetime(authorizationGrant) {
+          try daemon!.perform(forwarded)
         }
       }
-      if activeRequest == nil {
-        daemon = nil
+    }
+    let responsePayload = try WireResponsePayload.decode(response.payload)
+    if WireLifecyclePolicy.ownsAppliedMutation(
+      requestOperation: request.operation,
+      reconcilePayload: reconcilePayload,
+      ownershipVerified: true,
+      response: responsePayload
+    ) {
+      activeRequest = request
+      leaseRenewer?.cancelAndWait()
+      leaseRenewer = LeaseRenewer(connection: daemon!, request: request)
+    } else if WireLifecyclePolicy.completesCleanup(
+      requestOperation: request.operation,
+      reconcilePayload: reconcilePayload,
+      response: responsePayload
+    ) {
+      leaseRenewer = nil
+      activeRequest = nil
+      if WireLifecyclePolicy.shouldUnregister(
+        requestOperation: request.operation,
+        reconcilePayload: reconcilePayload,
+        response: responsePayload
+      ) {
+        try service.unregister()
+        response.payload = WireLifecyclePolicy.postUnregisterResponse(
+          responsePayload,
+          serviceState: serviceState(service.status)
+        ).encode()
       }
+    }
+    if activeRequest == nil {
+      daemon = nil
     }
     try writeFrame(WireCodec.encode(response))
   }

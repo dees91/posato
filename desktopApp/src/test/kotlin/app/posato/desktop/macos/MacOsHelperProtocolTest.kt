@@ -97,6 +97,26 @@ class MacOsHelperProtocolTest {
         assertEquals(original, retainPendingUnknownRequest(null, original))
     }
 
+    @Test
+    fun `unknown repair is reconciled once`() {
+        var reconciliations = 0
+        val success = HelperResult(
+            outcome = HelperResult.Outcome.Success,
+            serviceState = HelperResult.State.Ready,
+            ownershipPhase = HelperResult.Phase.Idle,
+            requiredAction = HelperResult.RequiredAction.None,
+            failure = HelperResult.Failure.None,
+        )
+
+        val result = completeRepair(HelperResult.unknownOutcome()) {
+            reconciliations += 1
+            success
+        }
+
+        assertEquals(success, result)
+        assertEquals(1, reconciliations)
+    }
+
     private fun message(
         operation: HelperOperation,
         requestByte: Byte,

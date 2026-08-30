@@ -41,7 +41,11 @@ internal class MacOsHelperClient(
 
     @Synchronized
     fun repair(): HelperResult {
-        return request(HelperOperation.Repair)
+        return completeRepair(request(HelperOperation.Repair)) {
+            // SMAppService can reject registration while completed unregistration is still settling.
+            Thread.sleep(500)
+            reconcileUnknown()
+        }
     }
 
     @Synchronized
@@ -91,8 +95,8 @@ internal class MacOsHelperClient(
                 request(HelperOperation.Restore)
             }
         }
-        output?.close()
-        input?.close()
+        runCatching { output?.close() }
+        runCatching { input?.close() }
         process?.destroy()
         readerExecutor.shutdownNow()
         output = null
@@ -241,8 +245,8 @@ internal class MacOsHelperClient(
                 process?.waitFor(250, TimeUnit.MILLISECONDS)
             }
         }
-        output?.close()
-        input?.close()
+        runCatching { output?.close() }
+        runCatching { input?.close() }
         if (process?.isAlive == true) {
             process?.destroyForcibly()
         }
@@ -257,6 +261,11 @@ internal class MacOsHelperClient(
         }
     }
 }
+
+internal fun completeRepair(
+    result: HelperResult,
+    reconcile: () -> HelperResult,
+): HelperResult = if (result.outcome == HelperResult.Outcome.UnknownOutcome) reconcile() else result
 
 internal fun retainPendingUnknownRequest(
     pending: HelperMessage?,

@@ -7,7 +7,7 @@
 - **Implementer:** `Codex`
 - **Reviewer:** independent Codex reviewer
 - **Branch:** `macos-003-helper-ipc`
-- **Updated:** `2026-08-29`
+- **Updated:** `2026-08-30`
 
 ## Plan
 
@@ -103,6 +103,13 @@
   now retires renewal synchronously before daemon execution. Successful Idle
   Enable and Repair responses clear helper and connection ownership, while a
   failed cleanup leaves daemon recovery active without extending the lease.
+- Hosted review found that the daemon had no explicit sleep/wake restoration
+  trigger and Repair did not replace the registered daemon. The daemon now
+  restores before acknowledging system sleep and retries restoration after
+  wake without reapplying. Repair restores ownership, awaits asynchronous
+  unregistration, and reconciles the original request through a fresh helper
+  process and authenticated daemon connection when Service Management rejects
+  immediate same-process registration.
 
 ## Blockers and accepted risks
 
@@ -215,6 +222,28 @@
   and reconciled path, throwing unregister behavior, response-field
   preservation, focused regression, and prior physical evidence.
 
+## Hosted-review sleep and repair correction
+
+- **Required findings:** restore owned proxy state on sleep and wake, and make
+  Repair unregister and re-register the launch daemon instead of forwarding a
+  daemon-only cleanup request.
+- **Resolution:** a native IOKit power monitor restores synchronously before the
+  sleep acknowledgement and retries only restoration after wake. The bounded
+  Repair workflow restores current ownership, invalidates stale XPC, awaits
+  asynchronous unregistration, registers the current embedded daemon, opens a
+  fresh authenticated XPC connection, and verifies final Ready and Idle state.
+  No dependency, watchdog, protocol field, or background scheduler was added.
+- **Physical correction:** macOS 26 returned `SMAppServiceErrorDomain` code 1
+  when the process that completed unregistration immediately attempted
+  registration. The existing unknown-outcome reconciliation now performs one
+  delayed, same-request handoff to a fresh helper process; pipe cleanup is
+  best-effort so EOF cannot suppress reconciliation.
+- **Review:** the independent plan review approved the bounded deadline and
+  conservative ownership behavior. The first completed-change pass found no
+  source defect and required only this record plus signed physical evidence;
+  the final completed-change pass approved the change for merge with no
+  Critical or Required findings.
+
 ## Verification
 
 - `swift test`: 49 tests passed, including protocol capability, ordering,
@@ -252,5 +281,15 @@
 - Post-unregister-state aggregate `quality`: passed with the Gradle
   configuration cache reused, release Swift compilation, JVM and iOS tests,
   zero SwiftLint violations, and signed nested-helper packaging.
-- Independent focused completed-change review: approved with no remaining
-  findings.
+- Sleep and Repair correction `:macosHelper:check`: passed with 62 Swift tests,
+  strict formatting, and zero SwiftLint violations. Desktop client tests passed
+  the same-request unknown-outcome Repair handoff; pipe teardown is best-effort
+  so a closed stream cannot suppress that reconciliation.
+- Apple Development-signed physical Repair passed with Success, Ready, and Idle,
+  restored the exact proxy baseline, and replaced the running daemon process.
+- Apple Development-signed physical sleep/wake passed: an active Apply restored
+  the exact proxy baseline before wake verification, returned Success, Ready,
+  and Idle, did not silently reapply, and allowed a later explicit Apply.
+- Independent focused completed-change review: approved for merge with no
+  Critical or Required findings. Its documentation-precision recommendation
+  was applied before commit.

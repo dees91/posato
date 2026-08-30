@@ -30,7 +30,11 @@ let package = Package(
     ),
     .testTarget(
       name: "PosatoMacOSServiceCoreTests",
-      dependencies: ["PosatoMacOSHelper", "PosatoMacOSServiceCore"]
+      dependencies: [
+        "PosatoMacOSHelper",
+        "PosatoMacOSServiceCore",
+        "PosatoProxySettingsDaemon",
+      ]
     ),
   ]
 )

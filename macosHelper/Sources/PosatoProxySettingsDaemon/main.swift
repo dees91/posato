@@ -90,7 +90,11 @@ else {
 private let coordinator = RequestCoordinator()
 private let delegate = ListenerDelegate(coordinator: coordinator)
 private let listener = NSXPCListener(machServiceName: ServiceContract.daemonIdentifier)
-coordinator.start()
+do {
+  try coordinator.start()
+} catch {
+  exit(EXIT_FAILURE)
+}
 listener.setConnectionCodeSigningRequirement(helperRequirement)
 listener.delegate = delegate
 listener.resume()

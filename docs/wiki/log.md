@@ -845,3 +845,12 @@
 - Synchronously retired renewal before every direct or reconciled cleanup so an
   in-flight timer cannot run afterward; failed cleanup no longer extends the
   lease while the daemon retries restoration.
+
+## [2026-08-30] correction | Restore on sleep and replace the macOS daemon
+
+- Added native sleep/wake restoration without a watchdog or silent reapply.
+- Made Repair restore ownership, await daemon unregistration, and reconcile the
+  same request through a fresh helper when immediate same-process registration
+  is rejected by Service Management.
+- Signed physical checks passed exact sleep/wake restoration, explicit later
+  Apply, and a Ready and Idle Repair with a replaced daemon process.

@@ -56,8 +56,14 @@ final class RequestCoordinator: @unchecked Sendable {
   )
   var leaseDeadline: DispatchTime?
   private var activeConnections = 0
+  private var powerMonitor: SystemPowerMonitor?
 
-  func start() {
+  func start() throws {
+    let monitor = SystemPowerMonitor(queue: queue) { [weak self] in
+      self?.restoreForPowerTransition()
+    }
+    try monitor.start()
+    powerMonitor = monitor
     queue.async {
       self.recordCleanupAttempt(try? self.engine.reconcile())
       self.scheduleLeaseCheck()
@@ -139,6 +145,10 @@ final class RequestCoordinator: @unchecked Sendable {
     scheduleIdleExit()
   }
 
+  private func restoreForPowerTransition() {
+    recordCleanupAttempt(try? engine.restore())
+  }
+
   private func scheduleIdleExit() {
     queue.asyncAfter(deadline: .now() + .seconds(1)) {
       let shouldExit =
@@ -146,6 +156,8 @@ final class RequestCoordinator: @unchecked Sendable {
         && self.leaseDeadline == nil
         && (try? self.engine.status()) == .idle
       if shouldExit {
+        self.powerMonitor?.stop()
+        self.powerMonitor = nil
         exit(EXIT_SUCCESS)
       }
     }
