@@ -266,10 +266,11 @@ removes that definition.
 
 Installation occurs only during an explicit in-app Enable operation over the
 authenticated connection while proxy ownership is idle. Repair occurs only
-during an explicit in-app Repair operation. Apply never installs or silently
-repairs the rule: absence or semantic mismatch fails closed as
-`recoveryRequired`. Supported removal deletes only this exact right and verifies
-its absence before unregistering the daemon.
+during an explicit in-app Repair operation. Direct and reconciled Repair first
+verify the exact rule and replace it only when it is absent or semantically
+mismatched. Apply never installs or silently repairs the rule: absence or
+semantic mismatch fails closed as `recoveryRequired`. Supported removal deletes
+only this exact right and verifies its absence before unregistering the daemon.
 
 For one foreground Apply intent, the user-session helper obtains the right
 immediately before the operation. Only its external form crosses the already
@@ -367,10 +368,9 @@ re-enables or re-registers the exact signed compatible daemon and reconciles
 its durable state before new enforcement. If that path cannot run, the product
 provides truthful manual Apple proxy-recovery instructions.
 
-### Update, disablement, and removal
+### Update, repair, disablement, and removal
 
-A supported in-app disable, update, repair, or removal performs these steps in
-order:
+A supported in-app disable, update, or removal performs these steps in order:
 
 1. reject new Apply intents;
 2. request restoration and reconcile any unknown outcome;
@@ -379,13 +379,27 @@ order:
 5. for removal, remove and verify absence of the exact custom authorization
    right;
 6. unregister the daemon with `SMAppService` and await completion; and
-7. for update or repair, replace or repair only the exact owned component,
-   re-register the exact signed compatible daemon, explicitly repair the
-   authorization rule if that was the fault, and verify `ready` before allowing
-   another Apply.
+7. for update, replace only the exact owned component, re-register the exact
+   signed compatible daemon, and verify `ready` before allowing another Apply.
+
+Repair is desired-state convergence rather than an unconditional daemon
+restart. It rejects new Apply intents, reconciles durable proxy ownership to
+`Idle`, and then:
+
+- retains an already enabled daemon only when the fixed mutually authenticated
+  connection accepts the current protocol and the exact authorization rule is
+  present or repaired;
+- registers the current exact embedded daemon once when Service Management
+  reports it as not registered or not found; and
+- fails closed without unregistering when cleanup, compatibility, or the final
+  `ready` and `Idle` state cannot be confirmed.
+
+Direct Repair and same-request reconciliation use this one convergent path. An
+exact duplicate that finds the daemon `ready`, ownership `Idle`, and the exact
+rule performs no Service Management transition and does not rewrite the rule.
 
 Disable and removal leave the daemon unregistered. Removal also leaves the
-custom right absent. Update and repair may resume service only after the newly
+custom right absent. Update and repair may resume service only after the
 registered executable set, IPC contract, durable state, and authorization rule
 all pass their compatibility checks.
 

@@ -148,44 +148,17 @@ do {
           currentServiceState: {
             serviceState(service.status)
           },
-          restoreExistingDaemon: { deadlineMilliseconds in
-            if daemon == nil {
-              daemon = try DaemonConnection(requirement: daemonRequirement)
-            }
-            let restore = try WireMessage(
-              kind: .request,
-              operation: .restore,
-              sequence: request.sequence,
-              deadlineMilliseconds: deadlineMilliseconds,
-              connectionIdentifier: request.connectionIdentifier,
-              sessionIdentifier: request.sessionIdentifier,
-              requestIdentifier: try randomIdentifier(),
-              payload: Data()
-            )
-            guard let daemon else {
-              throw PipeFailure.unavailable
-            }
-            let restoreResponse = try daemon.perform(restore)
-            return try WireResponsePayload.decode(restoreResponse.payload)
-          },
-          ownershipRestored: {
-            activeRequest = nil
-          },
           invalidateDaemon: {
             daemon?.invalidate()
             daemon = nil
           },
-          unregister: { timeoutMilliseconds in
-            try awaitUnregistration(
-              service: service,
-              timeoutMilliseconds: timeoutMilliseconds
-            )
-          },
           register: {
             try service.register()
           },
-          connectFreshDaemon: {
-            daemon = try DaemonConnection(requirement: daemonRequirement)
+          connectDaemon: {
+            if daemon == nil {
+              daemon = try DaemonConnection(requirement: daemonRequirement)
+            }
           },
           performOriginalRequest: { deadlineMilliseconds in
             var forwardedPayload = request.payload

@@ -280,6 +280,34 @@
   Required, Recommended, or Optional findings. The reviewer independently
   passed all three affected regressions and diff hygiene.
 
+## Hosted-review convergent Repair correction
+
+- **Required finding:** a completed Repair reconciled under the same request
+  identity could repeat the full unregister and register cycle instead of
+  returning the already-completed result.
+- **Accepted contract correction:** Repair is a desired-state operation. A
+  Ready service with an authenticated compatible daemon, Idle ownership, and
+  the exact authorization rule is already repaired. An absent or incompatible
+  service is registered once, while uncertain cleanup, compatibility, or final
+  state fails closed without unregistering a working service. The earlier
+  process-replacement requirement is superseded by this accepted contract.
+- **Resolution:** direct and reconciled Repair now share one convergent service
+  workflow and one authorization-rule convergence function. The workflow keeps
+  a verified Ready daemon, registers a missing service once, and rewrites the
+  authorization rule only after exact verification reports it absent or
+  mismatched. The desktop client immediately performs its single same-request
+  reconciliation after an unknown outcome. The prior unregister cycle and its
+  timing delay were removed without adding a journal, wire field, dependency,
+  retry layer, or new target.
+- **Plan review:** approved as implementation-ready with no Critical, Required,
+  Recommended, or Optional findings. The reviewer confirmed that both direct
+  and reconciled paths use the same authorization convergence boundary.
+- **Focused completed-change review:** approved for merge with no Critical,
+  Required, Recommended, or Optional findings. The reviewer independently
+  passed the focused convergence regressions and diff hygiene, and confirmed
+  that the existing signed platform evidence plus deterministic no-transition
+  tests are proportionate without recreating the disposable physical harness.
+
 ## Verification
 
 - `swift test`: 49 tests passed, including protocol capability, ordering,
@@ -335,3 +363,15 @@
 - Restoration and proxy-conflict correction `:macosHelper:check`: passed with
   65 Swift tests, strict formatting, and zero SwiftLint violations. Aggregate
   `quality`, explicit signed-package verification, and diff hygiene passed.
+- Convergent Repair correction `:macosHelper:check`: passed with 68 Swift tests,
+  strict formatting, and zero SwiftLint violations. Focused desktop protocol
+  reconciliation tests passed without the former delay.
+- Convergent Repair correction aggregate `quality`: passed with the Gradle
+  configuration cache reused, release Swift compilation, JVM and iOS tests,
+  signed nested-helper packaging, and all repository verification targets
+  green.
+- The disposable physical-host harness used for earlier signed Repair evidence
+  is no longer installed or present. This correction therefore relies on the
+  existing signed lifecycle evidence plus the new deterministic service and
+  authorization convergence regressions; it does not recreate a one-off runner
+  or persist machine-specific test infrastructure.

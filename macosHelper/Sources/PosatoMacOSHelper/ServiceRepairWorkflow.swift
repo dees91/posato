@@ -1,50 +1,11 @@
-import Foundation
 import PosatoMacOSServiceCore
-import ServiceManagement
-
-final class ServiceTransitionResult: @unchecked Sendable {
-  private let lock = NSLock()
-  private var storedError: (any Error)?
-
-  func store(_ error: (any Error)?) {
-    lock.withLock {
-      storedError = error
-    }
-  }
-
-  func error() -> (any Error)? {
-    return lock.withLock { storedError }
-  }
-}
-
-func awaitUnregistration(
-  service: SMAppService,
-  timeoutMilliseconds: UInt32
-) throws {
-  let semaphore = DispatchSemaphore(value: 0)
-  let result = ServiceTransitionResult()
-  service.unregister { error in
-    result.store(error)
-    semaphore.signal()
-  }
-  let timeout = DispatchTime.now() + .milliseconds(Int(timeoutMilliseconds))
-  guard semaphore.wait(timeout: timeout) == .success else {
-    throw PipeFailure.unavailable
-  }
-  if let error = result.error() {
-    throw error
-  }
-}
 
 struct ServiceRepairOperations {
   let remainingMilliseconds: () throws -> UInt32
   let currentServiceState: () -> ServiceState
-  let restoreExistingDaemon: (UInt32) throws -> WireResponsePayload
-  let ownershipRestored: () -> Void
   let invalidateDaemon: () -> Void
-  let unregister: (UInt32) throws -> Void
   let register: () throws -> Void
-  let connectFreshDaemon: () throws -> Void
+  let connectDaemon: () throws -> Void
   let performOriginalRequest: (UInt32) throws -> WireResponsePayload
 }
 
@@ -63,66 +24,27 @@ func performServiceRepair(
 ) throws -> WireResponsePayload {
   switch operations.currentServiceState() {
   case .ready:
-    if let response = try prepareRegisteredServiceForRepair(operations) {
-      return response
-    }
+    break
   case .notRegistered, .unavailableOrIncompatible:
     operations.invalidateDaemon()
+    _ = try operations.remainingMilliseconds()
+    try operations.register()
+    _ = try operations.remainingMilliseconds()
+    guard operations.currentServiceState() == .ready else {
+      return unreconciledResponse(operations)
+    }
   case .approvalRequired, .recoveryRequired:
     return unreconciledResponse(operations)
   }
-  return try registerAndFinishRepair(operations)
-}
-
-private func prepareRegisteredServiceForRepair(
-  _ operations: ServiceRepairOperations
-) throws -> WireResponsePayload? {
-  do {
-    let response = try operations.restoreExistingDaemon(
-      operations.remainingMilliseconds()
-    )
-    guard cleanupCompleted(response) else {
-      return incompleteRepairResponse(response)
-    }
-    operations.ownershipRestored()
-  } catch {
-    operations.invalidateDaemon()
-    throw error
-  }
-  operations.invalidateDaemon()
 
   do {
-    try operations.unregister(operations.remainingMilliseconds())
-  } catch {
-    _ = try operations.remainingMilliseconds()
-    return unreconciledResponse(operations)
-  }
-  _ = try operations.remainingMilliseconds()
-  guard operations.currentServiceState() == .notRegistered else {
-    return unreconciledResponse(operations)
-  }
-  return nil
-}
-
-private func registerAndFinishRepair(
-  _ operations: ServiceRepairOperations
-) throws -> WireResponsePayload {
-  _ = try operations.remainingMilliseconds()
-  try operations.register()
-  _ = try operations.remainingMilliseconds()
-  guard operations.currentServiceState() == .ready else {
-    return unreconciledResponse(operations)
-  }
-
-  do {
-    try operations.connectFreshDaemon()
+    try operations.connectDaemon()
   } catch {
     _ = try operations.remainingMilliseconds()
     return WireLifecyclePolicy.unreconciledServiceResponse(
       serviceState: .recoveryRequired
     )
   }
-  _ = try operations.remainingMilliseconds()
   return try finishRepair(operations)
 }
 

@@ -868,3 +868,10 @@
   not explicitly confirmed Idle.
 - Made Apply reject existing HTTP, HTTPS, SOCKS, PAC, and autodiscovery proxy
   state before durable ownership or SystemConfiguration mutation.
+
+## [2026-08-30] decision | Converge macOS Repair without daemon churn
+
+- Accepted Ready, authenticated, compatible, Idle, exact-rule state as a
+  completed Repair without mandatory daemon replacement.
+- Kept registration for absent services and made direct and reconciled Repair
+  share one effect-free exact-state path.

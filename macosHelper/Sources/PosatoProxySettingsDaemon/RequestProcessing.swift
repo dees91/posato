@@ -110,7 +110,11 @@ extension RequestCoordinator {
       throw ProxyOwnershipFailure.recoveryRequired
     }
     if repair {
-      try AuthorizationPolicy.repairApplyRight()
+      try convergeAuthorizationRule(
+        for: .repair,
+        verify: AuthorizationPolicy.verifyApplyRight,
+        repair: AuthorizationPolicy.repairApplyRight
+      )
     } else {
       try AuthorizationPolicy.installApplyRight()
     }
@@ -216,7 +220,7 @@ extension RequestCoordinator {
       guard phase == .idle else {
         throw ProxyOwnershipFailure.recoveryRequired
       }
-      try reconcileAuthorizationRule(
+      try convergeAuthorizationRule(
         for: payload.originalOperation,
         verify: AuthorizationPolicy.verifyApplyRight,
         repair: AuthorizationPolicy.repairApplyRight
@@ -347,7 +351,7 @@ extension RequestCoordinator {
   }
 }
 
-func reconcileAuthorizationRule(
+func convergeAuthorizationRule(
   for operation: WireOperation,
   verify: () throws -> Void,
   repair: () throws -> Void
@@ -356,7 +360,11 @@ func reconcileAuthorizationRule(
   case .enable:
     try verify()
   case .repair:
-    try repair()
+    do {
+      try verify()
+    } catch AuthorizationPolicyFailure.ruleUnavailable {
+      try repair()
+    }
   default:
     throw ProxyOwnershipFailure.invalidInput
   }

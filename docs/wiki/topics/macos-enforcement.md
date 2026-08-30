@@ -229,6 +229,18 @@ and Repair responses clear helper and daemon-connection cleanup ownership; a
 failed cleanup does not restart renewal, leaving the daemon's existing deadline
 and retry path to restore ownership without extending enforcement.
 
+`user-confirmed` (2026-08-30): Repair converges to the accepted service state
+instead of unconditionally replacing a healthy daemon process. An already
+enabled daemon is retained only after the fixed authenticated connection accepts
+the current protocol, durable ownership reaches Idle, and the exact
+authorization rule verifies or is repaired. A not-registered or not-found
+service registers the current embedded daemon once and performs the same final
+checks. Direct and same-request reconciled Repair share this behavior, so a
+completed duplicate neither cycles Service Management nor rewrites an exact
+rule. Unconfirmed cleanup, compatibility, transport, or final state remains
+fail-closed. The earlier physical daemon-PID replacement proved the former
+workflow but is superseded as a product requirement.
+
 `observed`: a zero-second custom-right credential timeout expired before an
 external authorization form could be validated in the daemon. The implemented
 rule uses a 30-second maximum transfer window. It remains non-shared and fresh;

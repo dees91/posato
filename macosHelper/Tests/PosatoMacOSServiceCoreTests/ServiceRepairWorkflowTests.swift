@@ -13,13 +13,6 @@ private final class RepairHarness {
   var events: [String] = []
   var deadlineCalls = 0
   var deadlineFailureAt: Int?
-  var restoreResponse = WireResponsePayload(
-    outcome: .success,
-    serviceState: .ready,
-    ownershipPhase: .idle
-  )
-  var restoreThrows = false
-  var unregisterThrows = false
   var registerThrows = false
   var connectThrows = false
   var finalThrows = false
@@ -39,12 +32,9 @@ private final class RepairHarness {
     return ServiceRepairOperations(
       remainingMilliseconds: remainingMilliseconds,
       currentServiceState: { self.state },
-      restoreExistingDaemon: restoreExistingDaemon,
-      ownershipRestored: { self.events.append("clearOwnership") },
       invalidateDaemon: { self.events.append("invalidate") },
-      unregister: unregister,
       register: register,
-      connectFreshDaemon: connectFreshDaemon,
+      connectDaemon: connectDaemon,
       performOriginalRequest: performOriginalRequest
     )
   }
@@ -58,22 +48,6 @@ private final class RepairHarness {
     return 1_000
   }
 
-  private func restoreExistingDaemon(_: UInt32) throws -> WireResponsePayload {
-    events.append("restore")
-    if restoreThrows {
-      throw RepairTestFailure.expected
-    }
-    return restoreResponse
-  }
-
-  private func unregister(_: UInt32) throws {
-    events.append("unregister")
-    if unregisterThrows {
-      throw RepairTestFailure.expected
-    }
-    state = .notRegistered
-  }
-
   private func register() throws {
     events.append("register")
     if registerThrows {
@@ -82,7 +56,7 @@ private final class RepairHarness {
     state = registeredState
   }
 
-  private func connectFreshDaemon() throws {
+  private func connectDaemon() throws {
     events.append("connect")
     if connectThrows {
       throw RepairTestFailure.expected
@@ -105,67 +79,34 @@ private final class RepairHarness {
   }
 }
 
-@Test func givenEnabledServiceWhenRepairedThenCleanupPrecedesServiceCycle() throws {
+@Test func givenReadyServiceWhenRepairedThenRegistrationIsUnchanged() throws {
   let harness = RepairHarness()
 
   let response = try performServiceRepair(operations: harness.operations())
 
   #expect(response.outcome == .success)
   #expect(response.ownershipPhase == .idle)
-  #expect(
-    harness.lifecycleEvents == [
-      "restore",
-      "clearOwnership",
-      "invalidate",
-      "unregister",
-      "register",
-      "connect",
-      "finalRequest",
-    ]
-  )
-  #expect(harness.deadlineCalls == 7)
+  #expect(harness.lifecycleEvents == ["connect", "finalRequest"])
+  #expect(harness.deadlineCalls == 1)
 }
 
-@Test func givenUnknownOldRestoreWhenRepairedThenServiceCycleDoesNotStart() {
-  let harness = RepairHarness()
-  harness.restoreThrows = true
+@Test func givenMissingServiceWhenRepairedThenCurrentServiceIsRegisteredOnce() throws {
+  for state in [ServiceState.notRegistered, .unavailableOrIncompatible] {
+    let harness = RepairHarness(state: state)
 
-  #expect(throws: RepairTestFailure.expected) {
-    try performServiceRepair(operations: harness.operations())
+    let response = try performServiceRepair(operations: harness.operations())
+
+    #expect(response.outcome == .success)
+    #expect(
+      harness.lifecycleEvents == [
+        "invalidate",
+        "register",
+        "connect",
+        "finalRequest",
+      ]
+    )
+    #expect(harness.deadlineCalls == 3)
   }
-  #expect(harness.lifecycleEvents == ["restore", "invalidate"])
-}
-
-@Test func givenIncompleteOldCleanupWhenRepairedThenRegistrationIsUntouched() throws {
-  let harness = RepairHarness()
-  harness.restoreResponse = WireResponsePayload(
-    outcome: .actionRequired,
-    serviceState: .recoveryRequired,
-    ownershipPhase: .recoveryRequired,
-    actionRequired: .proxyRecovery,
-    failure: .integrity
-  )
-
-  let response = try performServiceRepair(operations: harness.operations())
-
-  #expect(response.outcome == .actionRequired)
-  #expect(harness.lifecycleEvents == ["restore"])
-}
-
-@Test func givenMissingServiceWhenRepairedThenOnlyCurrentServiceIsRegistered() throws {
-  let harness = RepairHarness(state: .notRegistered)
-
-  let response = try performServiceRepair(operations: harness.operations())
-
-  #expect(response.outcome == .success)
-  #expect(
-    harness.lifecycleEvents == [
-      "invalidate",
-      "register",
-      "connect",
-      "finalRequest",
-    ]
-  )
 }
 
 @Test func givenApprovalRequiredWhenRepairedThenNoTransitionStarts() throws {
@@ -178,46 +119,56 @@ private final class RepairHarness {
   #expect(harness.events.isEmpty)
 }
 
-@Test func givenUnregisterErrorWhenRepairedThenRegistrationDoesNotStart() throws {
-  let harness = RepairHarness()
-  harness.unregisterThrows = true
-
-  let response = try performServiceRepair(operations: harness.operations())
-
-  #expect(response.outcome == .actionRequired)
-  #expect(!harness.lifecycleEvents.contains("register"))
-  #expect(!harness.lifecycleEvents.contains("connect"))
-}
-
-@Test func givenRegistrationErrorWhenRepairedThenUnknownOutcomeCanBeReconciled() {
-  let harness = RepairHarness()
+@Test func givenRegistrationErrorWhenRepairedThenNoConnectionStarts() {
+  let harness = RepairHarness(state: .notRegistered)
   harness.registerThrows = true
 
   #expect(throws: RepairTestFailure.expected) {
     try performServiceRepair(operations: harness.operations())
   }
-  #expect(!harness.lifecycleEvents.contains("connect"))
+  #expect(harness.lifecycleEvents == ["invalidate", "register"])
 }
 
-@Test func givenDeadlineExhaustionWhenRepairedThenNoLaterTransitionStarts() {
-  let forbiddenEvents: [String] = [
-    "restore",
-    "unregister",
-    "register",
-    "register",
-    "connect",
-    "finalRequest",
-    "finalRequest",
-  ]
+@Test func givenRegistrationWithoutReadinessWhenRepairedThenSuccessIsRejected() throws {
+  let harness = RepairHarness(state: .notRegistered)
+  harness.registeredState = .approvalRequired
 
-  for failureAt in 1...7 {
-    let harness = RepairHarness()
+  let response = try performServiceRepair(operations: harness.operations())
+
+  #expect(response.outcome == .actionRequired)
+  #expect(response.serviceState == .approvalRequired)
+  #expect(harness.lifecycleEvents == ["invalidate", "register"])
+}
+
+@Test func givenConnectionErrorWhenRepairedThenRecoveryIsRequired() throws {
+  let harness = RepairHarness()
+  harness.connectThrows = true
+
+  let response = try performServiceRepair(operations: harness.operations())
+
+  #expect(response.outcome == .actionRequired)
+  #expect(response.serviceState == .recoveryRequired)
+  #expect(harness.lifecycleEvents == ["connect"])
+}
+
+@Test func givenDeadlineExhaustionWhenRegisteringThenNoLaterTransitionStarts() {
+  for failureAt in 1...3 {
+    let harness = RepairHarness(state: .notRegistered)
     harness.deadlineFailureAt = failureAt
 
     #expect(throws: WireProtocolFailure.invalidDeadline) {
       try performServiceRepair(operations: harness.operations())
     }
-    #expect(!harness.events.contains(forbiddenEvents[failureAt - 1]))
+    switch failureAt {
+    case 1:
+      #expect(harness.lifecycleEvents == ["invalidate"])
+    case 2:
+      #expect(harness.lifecycleEvents == ["invalidate", "register"])
+    default:
+      #expect(
+        harness.lifecycleEvents == ["invalidate", "register", "connect", "invalidate"]
+      )
+    }
   }
 }
 
@@ -232,14 +183,29 @@ private final class RepairHarness {
   #expect(response.ownershipPhase == .recoveryRequired)
 }
 
-@Test func givenFinalTransportLossWhenRepairedThenFreshConnectionIsInvalidated() {
+@Test func givenFinalTransportLossWhenRepairedThenConnectionIsInvalidated() {
   let harness = RepairHarness()
   harness.finalThrows = true
 
   #expect(throws: RepairTestFailure.expected) {
     try performServiceRepair(operations: harness.operations())
   }
-  #expect(harness.lifecycleEvents.suffix(2) == ["finalRequest", "invalidate"])
+  #expect(harness.lifecycleEvents == ["connect", "finalRequest", "invalidate"])
+}
+
+@Test func givenIncompleteFinalCleanupWhenRepairedThenSuccessIsRejected() throws {
+  let harness = RepairHarness()
+  harness.finalResponse = WireResponsePayload(
+    outcome: .success,
+    serviceState: .ready,
+    ownershipPhase: .recoveryRequired
+  )
+
+  let response = try performServiceRepair(operations: harness.operations())
+
+  #expect(response.outcome == .actionRequired)
+  #expect(response.serviceState == .recoveryRequired)
+  #expect(response.ownershipPhase == .recoveryRequired)
 }
 
 @Test func givenDirectOrReconciledRepairWhenClassifiedThenBothUseServiceWorkflow() throws {

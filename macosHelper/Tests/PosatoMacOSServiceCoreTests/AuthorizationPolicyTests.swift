@@ -30,21 +30,57 @@ import Testing
   #expect(material.allSatisfy { $0 == 0 })
 }
 
-@Test func givenReconciledAuthorizationRuleWhenDispatchedThenOriginalIntentIsPreserved() throws {
+@Test func givenEnableAuthorizationRuleWhenConvergedThenItIsOnlyVerified() throws {
   var calls: [String] = []
 
-  try reconcileAuthorizationRule(
+  try convergeAuthorizationRule(
     for: .enable,
     verify: { calls.append("verify") },
     repair: { calls.append("repair") }
   )
   #expect(calls == ["verify"])
+}
 
-  calls.removeAll()
-  try reconcileAuthorizationRule(
+@Test func givenExactRepairAuthorizationRuleWhenConvergedThenItIsNotRewritten() throws {
+  var calls: [String] = []
+
+  try convergeAuthorizationRule(
     for: .repair,
     verify: { calls.append("verify") },
     repair: { calls.append("repair") }
   )
-  #expect(calls == ["repair"])
+
+  #expect(calls == ["verify"])
+}
+
+@Test func givenUnavailableRepairAuthorizationRuleWhenConvergedThenItIsRepairedOnce() throws {
+  var calls: [String] = []
+
+  try convergeAuthorizationRule(
+    for: .repair,
+    verify: {
+      calls.append("verify")
+      throw AuthorizationPolicyFailure.ruleUnavailable
+    },
+    repair: { calls.append("repair") }
+  )
+
+  #expect(calls == ["verify", "repair"])
+}
+
+@Test func givenUnexpectedRepairAuthorizationFailureWhenConvergedThenItFailsClosed() {
+  var calls: [String] = []
+
+  #expect(throws: AuthorizationPolicyFailure.denied) {
+    try convergeAuthorizationRule(
+      for: .repair,
+      verify: {
+        calls.append("verify")
+        throw AuthorizationPolicyFailure.denied
+      },
+      repair: { calls.append("repair") }
+    )
+  }
+
+  #expect(calls == ["verify"])
 }

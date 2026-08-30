@@ -42,8 +42,6 @@ internal class MacOsHelperClient(
     @Synchronized
     fun repair(): HelperResult {
         return completeRepair(request(HelperOperation.Repair)) {
-            // SMAppService can reject registration while completed unregistration is still settling.
-            Thread.sleep(500)
             reconcileUnknown()
         }
     }
