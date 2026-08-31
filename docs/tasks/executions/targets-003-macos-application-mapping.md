@@ -97,6 +97,10 @@ and before the pull request.
   cancel, invalid/self rejection, restart persistence, removal, retained
   mappings, keyboard operation, and VoiceOver checks. Automated tests do not
   substitute for AppKit, Security, and accessibility observation.
+- Initial physical execution observed that an already-accessory `LSUIElement`
+  helper can return `false` from `setActivationPolicy(.accessory)`; treating
+  that return as picker rejection prevented presentation. The helper now sets
+  the idempotent policy without interpreting an unchanged value as failure.
 - Hosted CI remains paused through 2026-09-05. Aggregate quality and the iOS
   host build pass locally; rerun affected verification after any correction
   caused by the physical checklist.

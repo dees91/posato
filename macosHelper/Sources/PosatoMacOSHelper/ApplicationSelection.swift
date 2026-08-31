@@ -48,9 +48,7 @@ protocol ApplicationIdentityInspecting {
 struct AppKitApplicationChooser: ApplicationChoosing {
   func choose() -> ApplicationChoice {
     let application = NSApplication.shared
-    guard application.setActivationPolicy(.accessory) else {
-      return .rejected
-    }
+    application.setActivationPolicy(.accessory)
     application.activate()
     let panel = NSOpenPanel()
     panel.title = "Choose applications"
