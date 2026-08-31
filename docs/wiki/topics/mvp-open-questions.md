@@ -420,10 +420,12 @@ play behavior, fixtures, geometry, and web implementation do not change the
 accepted [DESIGN.md](../../../DESIGN.md) contract or become production
 requirements.
 
-Roadmap revision 2 is accepted. Future work remains as stubs until a concise
-brief is needed. Gates 6 and 7 are complete, but this does not authorize
-application scaffolding before the separate Ready to open PR #1 checkpoint is
-explicitly accepted.
+Roadmap revision 3 is accepted. Its 2026-08-31 amendment makes `SESSION-001`
+the first design-system consolidation checkpoint without adding another task
+or changing dependencies, waves, or integration groups. Future work remains as
+stubs until a concise brief is needed. Gates 6 and 7 are complete, but this does
+not authorize application scaffolding before the separate Ready to open PR #1
+checkpoint is explicitly accepted.
 
 ## Apple identity and distribution
 

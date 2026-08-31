@@ -164,6 +164,16 @@ component. Promote a feature component or add spacing, shape, border, or
 elevation tokens only after repeated screen evidence establishes a shared
 contract.
 
+`SESSION-001` is the first explicit design-system consolidation checkpoint.
+Its session setup, review, active, early-end, expiry, and action-required
+states must be reviewed alongside the implemented Paused items screen, this
+contract, and the disposable interaction prototype. Promote only patterns that
+repeat in production screens into `app.posato.core.designsystem`, and add exact
+tokens or responsive rules here only when rendered macOS and iOS evidence
+supports them. The checkpoint does not require a comprehensive component
+library, copy prototype geometry, or separate design-system implementation
+from the `SESSION-001` vertical product slice.
+
 ### Iconography and imagery
 
 Use SF Symbols for familiar interface actions and give essential symbols text
