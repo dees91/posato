@@ -44,17 +44,23 @@ and before the pull request.
   complete desktop adapter, require owner-only directory/database/sidecar
   permissions with fail-closed tests, and define operation- and transport-
   specific deadlines. Parent/helper negotiation requires capability bits `1|2`,
-  while helper/daemon XPC keeps bit `1` and rejects picker capability/operation;
-  missing-bit and unchanged-daemon negotiation tests are explicit. The
-  independent reviewer confirmed that no Critical or Required finding remains.
+  while helper/daemon XPC has no capability handshake and rejects picker
+  operation `10` during bounded decoding; missing-bit and daemon-rejection tests
+  are explicit. The independent reviewer confirmed that no Critical or Required
+  finding remains.
   A focused follow-up plan review approved delimiter-qualified rejection of the
   macOS Posato identifier namespace with no finding.
+  A final focused plan review approved the empty mapping-status and XPC evidence
+  corrections with no finding at any severity.
 
 ## Result
 
 - Added a redacted shared mapping contract and independently loaded UI state;
   macOS can choose and remove applications while iOS remains truthful and
   non-interactive.
+- Hid mapping status when neither an application group nor retained mappings
+  exist, while preserving present-group, retained-mapping, and load-failure
+  states.
 - Added a separate macOS SQLDelight database with atomic batches, stable
   requirement hashes, restart persistence, corruption detection, and
   owner-only files. Database and helper work run on an injected IO dispatcher.
@@ -78,6 +84,9 @@ and before the pull request.
   their retryable notice rather than contradictory confirmed-empty copy.
 - Updated the accepted design, ADR amendment, maintained wiki synthesis, and
   PoC provenance without copying feasibility code or machine state.
+- Corrected the TARGETS-003 protocol record to match the implemented boundary:
+  capability negotiation ends at the parent/helper pipe, and daemon XPC rejects
+  application selection without a capability handshake.
 
 ## Completed-change review
 
@@ -87,7 +96,9 @@ and before the pull request.
   complete preview states, and physical-Mac verification. A focused namespace
   follow-up found one Required regression-test gap: the test did not prove that
   a self candidate bypasses signature inspection or that a delimiter-near
-  third-party identifier remains allowed.
+  third-party identifier remains allowed. The final review found one Required
+  process gap: this record did not yet include the accepted P2 correction plan,
+  completed review, or post-correction verification.
 - **Resolution:** Selection and removal now keep mutation plus fallible
   verification inside one transaction; injected in-transaction permission
   failures prove rollback after reopen. Swift normal and reflective strings are
@@ -106,7 +117,9 @@ and before the pull request.
   exhausts inspector data before the self candidate and uses
   `app.posato.macosx` as a valid near-prefix control; affected focused and
   aggregate gates pass. The focused re-review approved the correction with no
-  remaining finding at any severity.
+  remaining finding at any severity. The final mapping-status and XPC evidence
+  review found no implementation issue; this record now includes its plan,
+  review, focused checks, detekt correction, and aggregate verification.
 - **Advisory findings:** Sidecar permission coverage should create controlled
   sidecars instead of conditionally checking only artifacts SQLite happens to
   leave behind; this does not expand the current scope automatically.
@@ -115,15 +128,15 @@ and before the pull request.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Plan review | `pass` | Approved after the IO, owner-only storage, and capability/deadline corrections; the focused namespace follow-up also passed. |
-| Focused Kotlin and Swift tests | `pass` | Shared state/contract, real SQLite restart/rollback/corruption/permissions/dispatcher, protocol, helper, main/helper self-selection, and daemon-rejection coverage pass. |
+| Plan review | `pass` | Approved after the IO, owner-only storage, and capability/deadline corrections; focused namespace and final mapping-status/XPC evidence follow-ups also passed. |
+| Focused Kotlin and Swift tests | `pass` | Shared JVM, iOS Simulator, and Swift protocol tests passed after the final correction; focused shared detekt and ktlint passed after extracting the visibility predicate instead of suppressing cyclomatic complexity. |
 | SQLDelight migration verification | `pass` | Desktop schema baseline `1.db` matches the current create statements. |
-| Aggregate quality | `pass` | `./gradlew quality --rerun-tasks` completed after the namespace self-selection correction, executing all 112 tasks including iOS tests, packaging, lint, analysis, and migration checks. |
+| Aggregate quality | `pass` | After rebasing onto `main`, `./gradlew quality --rerun-tasks` completed all 116 tasks, including the approved-quality-exception gate, iOS tests, packaging, lint, analysis, and migration checks. |
 | Gradle desktop shell | `pass` | `./gradlew :desktopApp:run` reached a live UI process outside an application bundle without eager helper discovery and terminated cleanly from the invoking terminal. |
 | Credential-free iOS host build | `pass` | Generic iOS Simulator `xcodebuild` completed with signing disabled. |
 | Diff and privacy checks | `pass` | `git diff --check` and the scoped sensitive-data/path scan found no introduced personal path, credential, key, or token material. |
 | Physical-Mac application picker | `pass` | Maintainer-observed multi-select, cancel and reopen, non-ad-hoc and self rejection, restart persistence, individual removal, retained mapping cleanup, keyboard operation, VoiceOver navigation, and quitting Posato with an active picker passed on one Apple silicon Mac. Initial runs found and corrected accessory-policy handling, the default picker directory, one-shot AppKit helper lifecycle, and active-picker shutdown cleanup. |
-| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction. Follow-up reviews approved the active-picker shutdown, loading-state, suppression-removal, lazy helper-discovery, load-failure-rendering, and namespace self-selection corrections; the namespace re-review found no remaining finding at any severity. |
+| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction. Follow-up reviews approved the active-picker shutdown, loading-state, suppression-removal, lazy helper-discovery, load-failure-rendering, and namespace self-selection corrections. The final mapping-status/XPC evidence review found only this corrected execution-record gap and permitted commit after final diff/privacy checks. |
 
 ## Blockers and accepted risks
 

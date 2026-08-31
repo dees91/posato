@@ -946,3 +946,10 @@
 - Extended application self-selection rejection to the complete macOS Posato
   identifier namespace, including the signed helper.
 - Kept third-party signature validation and atomic batch rejection unchanged.
+
+## [2026-08-31] correction | Align application mapping status and IPC evidence
+
+- Hid device mapping status when neither an application group nor retained
+  application choices exist.
+- Corrected the TARGETS-003 record: capability negotiation ends at the
+  parent/helper pipe, while daemon XPC rejects selection without a handshake.

@@ -94,8 +94,9 @@ plus binary designated requirements as one atomic batch. The JVM stores only
 SHA-256 identifiers, display names, and exact requirement bytes in a separate
 owner-only local SQLDelight database. These identities never enter semantic
 policy, synchronization, diagnostics, or the root daemon. Daemon decoding
-rejects operation `10` before payload handling, and helper-to-daemon negotiation
-continues to advertise only capability bit `1`.
+rejects operation `10` before payload handling. Helper-to-daemon XPC has no
+capability handshake; it retains the existing protocol version, 120-second
+deadline maximum, and lifecycle operation allowlist.
 
 ## Context
 

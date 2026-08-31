@@ -345,6 +345,11 @@ Posato application and every product-owned bundle in its identifier namespace
 are rejected as self-selection before that candidate's requirement is
 inspected. The complete batch fails before persistence if any member is invalid.
 
+`observed` (2026-08-31): picker capability negotiation exists only on the
+authenticated parent-to-helper pipe. Helper-to-daemon XPC has no capability
+handshake; its bounded decoder rejects application selection before payload
+handling and keeps the lifecycle deadline maximum unchanged.
+
 `observed` (2026-08-31): the AppKit picker helper must be one-shot. Returning
 from `NSOpenPanel.runModal()` directly to a blocking inherited-pipe read left
 the activated accessory process unable to service AppKit events and caused a

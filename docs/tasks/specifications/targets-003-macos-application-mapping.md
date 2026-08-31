@@ -77,7 +77,7 @@ rename, removal, and recreation.
   the existing 120-second maximum; operation `10` is rejected by the daemon
   before payload handling or side effects.
 - Parent to helper negotiation offers and requires lifecycle bit `1` plus
-  picker bit `2`. Helper to daemon negotiation offers and requires lifecycle
-  bit `1` only; XPC never advertises or accepts picker bit `2` or operation
-  `10`. Kotlin and Swift tests cover a parent missing bit `2`, a helper welcome
-  missing bit `2`, and unchanged daemon compatibility with bit `1`.
+  picker bit `2`. Helper-to-daemon XPC has no capability handshake and rejects
+  operation `10` during bounded decoding. Kotlin and Swift tests cover a parent
+  missing bit `2`, a helper welcome missing bit `2`, and unchanged daemon
+  rejection of application selection.

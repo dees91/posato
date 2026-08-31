@@ -38,6 +38,10 @@ internal fun ApplicationMappingsSection(
     onRemove: (LocalApplicationMappingId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (!state.shouldShowApplicationMappings()) {
+        return
+    }
+
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (state.isApplicationMappingLoading) {
             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -74,6 +78,10 @@ internal fun ApplicationMappingsSection(
             }
         }
     }
+}
+
+private fun TargetsUiState.shouldShowApplicationMappings(): Boolean {
+    return applicationPolicyName != null || applicationMappings.isNotEmpty() || hasApplicationMappingLoadFailure
 }
 
 @Composable
