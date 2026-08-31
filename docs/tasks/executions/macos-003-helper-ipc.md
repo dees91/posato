@@ -7,7 +7,7 @@
 - **Implementer:** `Codex`
 - **Reviewer:** independent Codex reviewer
 - **Branch:** `macos-003-helper-ipc`
-- **Updated:** `2026-08-30`
+- **Updated:** `2026-08-31`
 
 ## Plan
 
@@ -92,6 +92,11 @@
   Applied response. Every other response, malformed payload, or transport error
   invalidates XPC and terminates the helper nonzero so the desktop client cannot
   retain stale enforcement state.
+- Hosted review later found that treating normal renewal sequence exhaustion as
+  a failure ended healthy enforcement after about 21 minutes without immediate
+  JVM state observation. Renewal now uses a separate non-owning authenticated
+  XPC connection, rotates it before operation 257, and keeps the original Apply
+  connection as cleanup owner. Actual renewal failures remain fail-closed.
 - Hosted review found that exact duplicate Apply and Apply reconciliation used
   startup cleanup semantics, and that blanket reconciliation ownership could
   attach a connection to an unverified durable record. Exact Applied requests
@@ -329,6 +334,25 @@
   recovery regressions, confirmed identity and digest preservation, and found
   the prior signed platform evidence proportionate.
 
+## Hosted-review renewal-connection rotation correction
+
+- **Required finding:** periodic Renew exhausted the per-connection sequence
+  bound and terminated an otherwise healthy helper without immediately updating
+  JVM state.
+- **Resolution:** the original Apply XPC remains the cleanup owner. A separate
+  private authenticated XPC channel performs Renew, reuses sequence values 1
+  through 256, and rotates before reserving 257. Renewal connections never own
+  cleanup; rejected, malformed, timed-out, or failed renewal still invalidates
+  the ownership connection and terminates the helper nonzero. No wire field,
+  callback, retry, dependency, or Kotlin behavior was added.
+- **Plan review:** approved as implementation-ready with no Critical, Required,
+  Recommended, or Optional findings.
+- **Completed-change review:** the source, ownership, concurrency, failure, test,
+  and documentation review found no defect. Ponytail reported `Lean already.
+  Ship.` The initial pass required this stale execution record to be updated
+  before final approval. The final pass approved the correction with no
+  Critical, Required, Recommended, or Optional findings.
+
 ## Verification
 
 - `swift test`: 49 tests passed, including protocol capability, ordering,
@@ -404,3 +428,10 @@
   configuration cache reused, release Swift compilation, JVM and iOS tests,
   signed nested-helper packaging, and all repository verification targets
   green.
+- Renewal rotation `:macosHelper:check`: passed with 70 Swift tests, strict
+  formatting, and zero SwiftLint violations. The regressions cover the exact
+  1-through-256 sequence boundary, non-owning Renew connection state, and
+  in-flight cancellation ordering.
+- Renewal rotation aggregate `quality`: passed with release Swift compilation,
+  JVM and iOS tests, signed nested-helper packaging, and all repository
+  verification targets green.

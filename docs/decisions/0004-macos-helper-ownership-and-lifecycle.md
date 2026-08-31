@@ -54,6 +54,11 @@ Idle cleanup; only explicit Repair may replace a mismatched existing rule. The
 XPC listener installs its exact helper signing requirement before a delegate can
 accept a connection. Failed cleanup keeps connection ownership and service
 registration intact. Renewal requires the durable session and request owner.
+Periodic renewal uses a separate authenticated XPC connection that never owns
+cleanup. The helper rotates that connection before its 257th operation while
+keeping the original Apply connection open as the cleanup owner. A rejected,
+malformed, timed-out, or failed renewal still invalidates the ownership
+connection and terminates the helper nonzero.
 When the daemon is unavailable, registration or rule absence alone never proves
 cleanup. Apply preflights the exact durable session, request, and canonical
 input digest before authorization so a rejected peer cannot acquire another

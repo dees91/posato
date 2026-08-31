@@ -217,17 +217,19 @@ session's ownership. Startup reconciliation, connection invalidation, and an
 expired lease retry cleanup on the existing daemon timer until durable
 ownership reaches Idle; healthy Applied maintenance preserves its lease. A
 background renewal keeps the helper alive only when the daemon explicitly
-returns Success with Applied ownership. Any other outcome, malformed
-acknowledgement, transport failure, timeout, or connection operation-limit
-exhaustion invalidates XPC and terminates the helper nonzero, closing its
-inherited pipes so the desktop client cannot retain stale enforcement state. A
-helper that cannot reach an enabled daemon reports recovery required rather
-than synthesizing an Idle result. Before direct or reconciled Enable, Repair,
-Restore, Disable, or Remove cleanup, the helper synchronously retires renewal so
-an already-running timer cannot execute after cleanup. Successful Idle Enable
-and Repair responses clear helper and daemon-connection cleanup ownership; a
-failed cleanup does not restart renewal, leaving the daemon's existing deadline
-and retry path to restore ownership without extending enforcement.
+returns Success with Applied ownership. Renewal uses a separate authenticated,
+non-owning XPC connection and rotates it before the 257th operation, while the
+original Apply connection remains open as the cleanup owner. Any other outcome,
+malformed acknowledgement, transport failure, or timeout invalidates both
+connections and terminates the helper nonzero, closing its inherited pipes so
+the desktop client cannot retain stale enforcement state. A helper that cannot
+reach an enabled daemon reports recovery required rather than synthesizing an
+Idle result. Before direct or reconciled Enable, Repair, Restore, Disable, or
+Remove cleanup, the helper synchronously retires renewal so an already-running
+timer cannot execute after cleanup. Successful Idle Enable and Repair responses
+clear helper and daemon-connection cleanup ownership; a failed cleanup does not
+restart renewal, leaving the daemon's existing deadline and retry path to
+restore ownership without extending enforcement.
 
 `user-confirmed` (2026-08-30): Repair converges to the accepted service state
 instead of unconditionally replacing a healthy daemon process. An already

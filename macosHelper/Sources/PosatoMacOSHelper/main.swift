@@ -267,7 +267,11 @@ do {
     ) {
       activeRequest = request
       leaseRenewer?.cancelAndWait()
-      leaseRenewer = LeaseRenewer(connection: daemon!, request: request)
+      leaseRenewer = LeaseRenewer(
+        ownershipConnection: daemon!,
+        daemonRequirement: daemonRequirement,
+        request: request
+      )
     } else if WireLifecyclePolicy.completesCleanup(
       requestOperation: request.operation,
       reconcilePayload: reconcilePayload,

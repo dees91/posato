@@ -881,3 +881,10 @@
 - Made same-request Disable and Remove reconciliation temporarily restore
   authenticated daemon access instead of treating an absent service as proof
   of cleanup.
+
+## [2026-08-31] correction | Rotate the macOS renewal connection
+
+- Moved periodic lease renewal to a separate non-owning authenticated XPC
+  connection and rotated it before its bounded operation sequence is exhausted.
+- Kept the original Apply connection as cleanup owner and preserved fail-closed
+  termination for actual renewal failures.

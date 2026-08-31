@@ -8,10 +8,27 @@ enum PipeFailure: Error {
   case unavailable
 }
 
+struct DaemonRequestSequence {
+  private var nextValue: UInt32 = 1
+
+  var hasCapacity: Bool {
+    return nextValue <= WireLimits.maximumOperationsPerConnection
+  }
+
+  mutating func take() throws -> UInt32 {
+    guard hasCapacity else {
+      throw PipeFailure.invalidFrame
+    }
+    let value = nextValue
+    nextValue += 1
+    return value
+  }
+}
+
 final class DaemonConnection: @unchecked Sendable {
   private let connection: NSXPCConnection
   private let callLock = NSLock()
-  private var nextSequence: UInt32 = 1
+  private var requestSequence = DaemonRequestSequence()
 
   init(requirement: String) throws {
     connection = NSXPCConnection(
@@ -29,6 +46,10 @@ final class DaemonConnection: @unchecked Sendable {
 
   func invalidate() {
     connection.invalidate()
+  }
+
+  var hasCapacity: Bool {
+    return callLock.withLock { requestSequence.hasCapacity }
   }
 
   func perform(_ request: WireMessage) throws -> WireMessage {
@@ -50,20 +71,17 @@ final class DaemonConnection: @unchecked Sendable {
   }
 
   private func sequencedRequest(_ request: WireMessage) throws -> WireMessage {
-    guard nextSequence <= WireLimits.maximumOperationsPerConnection else {
-      throw PipeFailure.invalidFrame
-    }
+    let sequence = try requestSequence.take()
     let sequenced = try WireMessage(
       kind: request.kind,
       operation: request.operation,
-      sequence: nextSequence,
+      sequence: sequence,
       deadlineMilliseconds: request.deadlineMilliseconds,
       connectionIdentifier: request.connectionIdentifier,
       sessionIdentifier: request.sessionIdentifier,
       requestIdentifier: request.requestIdentifier,
       payload: request.payload
     )
-    nextSequence += 1
     return sequenced
   }
 
@@ -123,6 +141,32 @@ final class DaemonConnection: @unchecked Sendable {
   }
 }
 
+final class LeaseRenewalChannel: @unchecked Sendable {
+  private let requirement: String
+  private var connection: DaemonConnection?
+
+  init(requirement: String) {
+    self.requirement = requirement
+  }
+
+  func perform(_ request: WireMessage) throws -> WireMessage {
+    if connection?.hasCapacity != true {
+      let replacement = try DaemonConnection(requirement: requirement)
+      connection?.invalidate()
+      connection = replacement
+    }
+    guard let connection else {
+      throw PipeFailure.unavailable
+    }
+    return try connection.perform(request)
+  }
+
+  func invalidate() {
+    connection?.invalidate()
+    connection = nil
+  }
+}
+
 final class LeaseRenewalGate: @unchecked Sendable {
   private let lock = NSLock()
   private var isActive = true
@@ -146,13 +190,19 @@ final class LeaseRenewalGate: @unchecked Sendable {
 final class LeaseRenewer: @unchecked Sendable {
   private let timer: DispatchSourceTimer
   private let gate = LeaseRenewalGate()
+  private let channel: LeaseRenewalChannel
 
-  init(connection: DaemonConnection, request: WireMessage) {
+  init(
+    ownershipConnection: DaemonConnection,
+    daemonRequirement: String,
+    request: WireMessage
+  ) {
+    channel = LeaseRenewalChannel(requirement: daemonRequirement)
     timer = DispatchSource.makeTimerSource(
       queue: DispatchQueue(label: "app.posato.macos.helper.lease")
     )
     timer.schedule(deadline: .now() + .seconds(5), repeating: .seconds(5))
-    timer.setEventHandler { [gate] in
+    timer.setEventHandler { [channel, gate] in
       gate.run {
         do {
           let renew = try WireMessage(
@@ -165,13 +215,14 @@ final class LeaseRenewer: @unchecked Sendable {
             requestIdentifier: request.requestIdentifier,
             payload: Data()
           )
-          let response = try connection.perform(renew)
+          let response = try channel.perform(renew)
           let payload = try WireResponsePayload.decode(response.payload)
           guard WireLifecyclePolicy.keepsLeaseHealthy(afterRenewal: payload) else {
             throw PipeFailure.unavailable
           }
         } catch {
-          connection.invalidate()
+          channel.invalidate()
+          ownershipConnection.invalidate()
           exit(EXIT_FAILURE)
         }
       }
@@ -182,6 +233,7 @@ final class LeaseRenewer: @unchecked Sendable {
   func cancelAndWait() {
     timer.cancel()
     gate.retire()
+    channel.invalidate()
   }
 }
 
