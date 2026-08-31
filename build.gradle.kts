@@ -1,3 +1,4 @@
+import app.posato.buildlogic.VerifyApprovedQualityExceptions
 import dev.detekt.gradle.Detekt
 import dev.detekt.gradle.extensions.DetektExtension
 import dev.detekt.gradle.extensions.FailOnSeverity
@@ -50,6 +51,17 @@ allprojects {
     }
 }
 
+configure<KtlintExtension> {
+    kotlinScriptAdditionalPaths {
+        include(
+            fileTree("buildSrc") {
+                include("**/*.kt", "**/*.kts")
+                exclude("**/build/**")
+            },
+        )
+    }
+}
+
 subprojects {
     apply(plugin = "dev.detekt")
 
@@ -82,6 +94,43 @@ subprojects {
     }
 }
 
+val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityExceptions::class) {
+    group = "verification"
+    description = "Rejects Kotlin suppressions that do not have explicit maintainer approval."
+
+    kotlinSources.from(
+        fileTree(rootDir) {
+            include("**/*.kt", "**/*.kts")
+            exclude("**/build/**", "**/.gradle/**", ".research/**")
+        },
+    )
+    repositoryDirectory.set(layout.projectDirectory)
+    val annotationMarker = "@"
+    val exceptionName = "Supp" + "ress"
+    approvedExceptions.set(
+        listOf(
+            "desktopApp/src/main/kotlin/app/posato/desktop/macos/MacOsHelperClient.kt:" +
+                annotationMarker + "file:$exceptionName(\"MagicNumber\", \"TooManyFunctions\")" +
+                "\n\npackage app.posato.desktop.macos",
+            "desktopApp/src/main/kotlin/app/posato/desktop/macos/MacOsHelperClient.kt:" +
+                annotationMarker + "$exceptionName(\"TooGenericExceptionCaught\")" +
+                "\n    private fun ensureStarted()",
+            "desktopApp/src/main/kotlin/app/posato/desktop/macos/MacOsHelperClient.kt:" +
+                annotationMarker + "$exceptionName(\"ThrowsCount\")" +
+                "\n    private fun readWithDeadline(",
+            "desktopApp/src/main/kotlin/app/posato/desktop/macos/MacOsHelperProtocol.kt:" +
+                annotationMarker + "file:$exceptionName(\"MagicNumber\")" +
+                "\n\npackage app.posato.desktop.macos",
+            "shared/src/iosMain/kotlin/app/posato/MainViewController.kt:" +
+                annotationMarker + "$exceptionName(\"FunctionNaming\", \"ktlint:standard:function-naming\")" +
+                "\nfun MainViewController()",
+            "shared/src/iosMain/kotlin/app/posato/feature/targets/domain/ApplicationPolicyName.ios.kt:" +
+                annotationMarker + "file:$exceptionName(\"CAST_NEVER_SUCCEEDS\")" +
+                "\n\npackage app.posato.feature.targets.domain",
+        ),
+    )
+}
+
 tasks.register("quality") {
     group = "verification"
     description = "Runs Posato's formatting, analysis, test, compilation, packaging, and report checks."
@@ -104,5 +153,6 @@ tasks.register("quality") {
         ":shared:ktlintCheck",
         ":shared:verifySqlDelightMigration",
         ":macosHelper:check",
+        verifyApprovedQualityExceptions,
     )
 }

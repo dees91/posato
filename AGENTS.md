@@ -85,6 +85,20 @@ needs it. When human action is the blocker, stop and explain the next action.
 Parallel implementing agents require isolated Git worktrees and the dependency
 and write-surface conditions in `docs/tasks/README.md`.
 
+## Suppression policy
+
+Fix the underlying source of Detekt, ktlint, compiler, and other quality-tool
+findings by default. Do not add, broaden, or modify a suppression annotation,
+lint baseline, rule exclusion, disabled rule, or compiler-warning exception to
+make a check pass without explicit prior maintainer approval.
+
+Before requesting an exception, explain the finding's cause, why correcting it
+is less appropriate than suppression in that specific case, and the narrowest
+possible scope. Approval is case-specific and does not authorize similar
+exceptions elsewhere. The aggregate quality gate enforces the exact approved
+Kotlin suppression allowlist. To keep that gate syntax-independent, do not put
+the `Suppress` token in Kotlin comments, strings, aliases, or examples.
+
 ## Code Review Rules
 
 - Report only actionable defects introduced by the reviewed diff. Map P0 to
