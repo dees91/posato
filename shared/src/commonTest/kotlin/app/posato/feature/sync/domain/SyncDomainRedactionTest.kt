@@ -7,6 +7,14 @@ import kotlin.test.assertEquals
 
 class SyncDomainRedactionTest {
     @Test
+    fun `given a hybrid logical clock when converted to a string then exact time remains redacted`() {
+        assertEquals(
+            "HybridLogicalClock(redacted)",
+            HybridLogicalClock(1_234_567_890L, 42).toString(),
+        )
+    }
+
+    @Test
     fun `given session timing carriers when converted to strings then timing remains redacted`() {
         val sessionId = SessionId(testIdentifier(20))
         val startEpochMillis = 1_234_567_890L

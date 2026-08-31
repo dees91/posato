@@ -996,3 +996,9 @@
   redacted default string representations.
 - Kept exact times available to domain behavior without exposing them through
   accidental diagnostic interpolation.
+
+## [2026-08-31] correction | Redact hybrid logical clock timestamps
+
+- Gave the hybrid logical clock one fixed redacted default string so containing
+  data-class representations cannot expose exact operation times.
+- Preserved clock ordering, persistence, and canonical format behavior.

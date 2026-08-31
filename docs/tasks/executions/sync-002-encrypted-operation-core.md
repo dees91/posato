@@ -81,7 +81,10 @@
   sequence, bundle-identity, or capacity invariants. The latest pass found that
   oversized transport input was copied before the 64 KiB limit was enforced. A
   subsequent pass found that four session timing carriers exposed exact values
-  through their generated default string representations.
+  through their generated default string representations. The final pass found
+  that the hybrid logical clock still exposed its exact physical operation time
+  through its generated default string representation and through containing
+  data classes.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -95,9 +98,12 @@
   checks raw byte size before retaining an immutable copy, while oversized
   rejection keeps the existing exact-refetch progress and reconciliation
   semantics. Local mutation, operation payload, reduced-start, and effective-
-  session carriers now use fixed redacted default strings. Independent focused
-  re-reviews approved the corrections with no remaining Critical or Required
-  findings. No further hosted review is needed.
+  session carriers now use fixed redacted default strings. The hybrid logical
+  clock also has one fixed redacted representation, which transitively removes
+  exact operation times from containing data-class strings without changing
+  clock behavior or serialization. Independent focused re-reviews approved the
+  corrections with no remaining Critical or Required findings. No further
+  hosted review is needed.
 
 ## Verification
 
@@ -112,7 +118,7 @@
 | CryptoKit XCTest on physical iPhone | `pass` | All six Simulator-tested CryptoKit cases passed on the connected physical iPhone with the maintainer-provided Development Team supplied only as a local build parameter. No personal signing value was added to the repository. |
 | Hosted-review regression tests | `pass` | Invalid local session bounds remain recoverable; reopen rejects invalid accepted and staged author histories while preserving legal gaps and exact staging-capacity boundaries. |
 | Bounded remote-ingress regression tests | `pass` | Exactly 64 KiB reaches normal parsing, larger input returns `OVERSIZED` before an immutable copy, and exact-refetch proof remains required before rejection advances transport progress. |
-| Session timing redaction regression | `pass` | Local, payload, reduced-start, and effective-session carriers return fixed redacted strings on the JVM and iOS Simulator. |
+| Synchronization timing redaction regression | `pass` | The hybrid logical clock plus local, payload, reduced-start, and effective-session timing carriers return fixed redacted strings on the JVM and iOS Simulator. |
 
 ## Blockers and accepted risks
 

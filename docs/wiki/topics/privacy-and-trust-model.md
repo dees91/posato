@@ -251,6 +251,11 @@ boundary. This prevents accidental interpolation from exposing exact session
 times; it does not authorize production diagnostics to serialize with
 `toString()`.
 
+`observed` (2026-08-31): the `SYNC-002` hybrid logical clock also has a fixed
+redacted default string. Containing data-class representations therefore do not
+expose its exact physical operation time, while comparison, persistence, and
+canonical format behavior remain unchanged.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the

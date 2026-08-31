@@ -144,6 +144,10 @@ internal data class HybridLogicalClock(
 
         return if (physicalComparison != 0) physicalComparison else logicalCounter.compareTo(other.logicalCounter)
     }
+
+    override fun toString(): String {
+        return "HybridLogicalClock(redacted)"
+    }
 }
 
 internal class PublicSigningKey private constructor(
