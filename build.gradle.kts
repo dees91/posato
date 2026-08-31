@@ -88,6 +88,7 @@ tasks.register("quality") {
     dependsOn(
         "ktlintCheck",
         ":desktopApp:createDistributable",
+        ":desktopApp:verifyMacOsHelperPackaging",
         ":desktopApp:detekt",
         ":desktopApp:ktlintCheck",
         ":desktopApp:test",
@@ -102,5 +103,6 @@ tasks.register("quality") {
         ":shared:jvmTest",
         ":shared:ktlintCheck",
         ":shared:verifySqlDelightMigration",
+        ":macosHelper:check",
     )
 }

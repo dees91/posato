@@ -786,3 +786,105 @@
 - Extended the shared paused-items screen with truthful device-local selection
   status while retaining app pickers and opaque mappings for TARGETS-003 and
   TARGETS-004.
+
+## [2026-08-29] experiment | Verify authenticated macOS helper IPC
+
+- Fixed the nested helper, daemon, Mach service, launchd policy, protocol bounds,
+  durable-state path, and exact mutual signed-peer requirements for MACOS-003.
+- A signed physical lifecycle passed authenticated Apply, lease renewal, exact
+  restore, controlled helper-loss recovery, Disable, right removal, daemon
+  unregistration, and clean idle verification.
+- Replaced the infeasible zero-second cross-process authorization timeout with
+  a non-shared 30-second transfer bound and immediate one-use destruction.
+- Required protocol capabilities, monotonic sequences and elapsed deadlines;
+  bound unknown reconciliation to canonical input; and made failed cleanup keep
+  ownership and registration fail-closed.
+- Bound renewal to the durable owner, kept unavailable-daemon cleanup
+  action-required, and made the packaging gate assert the exact helper and
+  launchd plist contracts.
+- Preflighted durable Apply ownership before authorization so a rejected request
+  cannot inherit another operation's cleanup responsibility.
+- Made daemon connection ownership require the explicit preflight result so a
+  malformed Apply cannot inherit a foreign global phase.
+
+## [2026-08-29] tooling | Add SwiftLint to the macOS quality gate
+
+- Pinned SwiftLint 0.65.1 through its Swift package command plugin, enabled
+  strict linting alongside `swift format`, and connected it to the Gradle
+  `check` and root `quality` lifecycle.
+- Split oversized native files by existing model, transport, coordination, and
+  request-processing responsibilities; no lint rules were disabled.
+
+## [2026-08-29] correction | Retain macOS cleanup ownership until Idle
+
+- Kept transient startup, invalidation, and expired-lease cleanup failures on
+  the existing daemon timer until durable ownership reaches Idle.
+- Retained verified Apply ownership after a post-effect error and made an
+  unavailable daemon report recovery required instead of synthetic Idle.
+
+## [2026-08-29] correction | Surface background macOS lease loss
+
+- Required every background renewal to receive an explicit Success and Applied
+  acknowledgement from the daemon.
+- Made every rejected, malformed, timed-out, or exhausted renewal invalidate
+  XPC and terminate the helper nonzero so inherited desktop pipes cannot retain
+  stale enforcement state.
+
+## [2026-08-29] correction | Preserve exact macOS Apply ownership
+
+- Kept exact duplicate Apply and exact Apply reconciliation in Applied state by
+  validating the existing record through maintenance instead of startup
+  restoration.
+- Made every unverified non-Idle Apply response conflict before either the
+  daemon connection or helper can claim another session's cleanup ownership.
+
+## [2026-08-29] correction | Retire macOS renewal before cleanup
+
+- Made successful Idle Enable and Repair clear helper and daemon-connection
+  cleanup ownership alongside Restore, Disable, and Remove.
+- Synchronously retired renewal before every direct or reconciled cleanup so an
+  in-flight timer cannot run afterward; failed cleanup no longer extends the
+  lease while the daemon retries restoration.
+
+## [2026-08-30] correction | Restore on sleep and replace the macOS daemon
+
+- Added native sleep/wake restoration without a watchdog or silent reapply.
+- Made Repair restore ownership, await daemon unregistration, and reconcile the
+  same request through a fresh helper when immediate same-process registration
+  is rejected by Service Management.
+- Signed physical checks passed exact sleep/wake restoration, explicit later
+  Apply, and a Ready and Idle Repair with a replaced daemon process.
+
+## [2026-08-30] correction | Preserve authorization repair across helper handoff
+
+- Made same-request Repair reconciliation restore the exact Authorization
+  Services rule, while Enable reconciliation continues to verify it only.
+- A signed physical run replaced a deliberately mismatched rule through a fresh
+  helper and daemon, then Remove deleted the right and service.
+
+## [2026-08-30] correction | Stop unsafe Repair and proxy replacement
+
+- Prevented Repair from unregistering its recovery daemon when restoration is
+  not explicitly confirmed Idle.
+- Made Apply reject existing HTTP, HTTPS, SOCKS, PAC, and autodiscovery proxy
+  state before durable ownership or SystemConfiguration mutation.
+
+## [2026-08-30] decision | Converge macOS Repair without daemon churn
+
+- Accepted Ready, authenticated, compatible, Idle, exact-rule state as a
+  completed Repair without mandatory daemon replacement.
+- Kept registration for absent services and made direct and reconciled Repair
+  share one effect-free exact-state path.
+
+## [2026-08-30] correction | Reconcile cleanup after daemon unregistration
+
+- Made same-request Disable and Remove reconciliation temporarily restore
+  authenticated daemon access instead of treating an absent service as proof
+  of cleanup.
+
+## [2026-08-31] correction | Rotate the macOS renewal connection
+
+- Moved periodic lease renewal to a separate non-owning authenticated XPC
+  connection and rotated it before its bounded operation sequence is exhausted.
+- Kept the original Apply connection as cleanup owner and preserved fail-closed
+  termination for actual renewal failures.

@@ -35,5 +35,6 @@ dependencyResolutionManagement {
 rootProject.name = "Posato"
 
 include(":desktopApp")
+include(":macosHelper")
 include(":quality-rules")
 include(":shared")

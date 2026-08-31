@@ -26,6 +26,59 @@ contract. This amendment changes no process, privilege, IPC, authorization, or
 durable ownership boundary accepted here. MACOS-004 owns implementation and
 physical evidence for ADR 0005.
 
+## MACOS-003 implementation amendment
+
+`observed` (2026-08-28): MACOS-003 fixes the launch daemon identifier, launchd
+label, and Mach service name to `app.posato.macos.proxy-settings`. The nested
+provider is
+`Posato.app/Contents/Helpers/PosatoMacOSHelper.app`, and its daemon executable
+is `Contents/Resources/PosatoProxySettingsDaemon` relative to that provider.
+The daemon uses `BundleProgram`, a background process type, umask `0077`, and
+`KeepAlive` only when the previous exit was unsuccessful.
+
+The private pipe and XPC representations share binary protocol major version
+1. Pipe frames are limited to 512 KiB, XPC messages to 64 KiB, deadlines to 120
+seconds, identifiers to 16 bytes, and one connection to 256 operations. The
+fixed operation set is status, enable, repair, apply, restore, disable, remove,
+reconcile, and lease renewal. Version 1 requires its fixed capability bit,
+strictly increasing sequences, elapsed deadline propagation, and bounded
+cancellation followed by exact helper-process termination when the transport
+cannot acknowledge it. Unknown outcomes reconcile the original operation and
+SHA-256 canonical input digest under the same request and session identities.
+The root ownership record is fixed at `/Library/Application
+Support/Posato/ProxySettings/ownership-v1.plist`.
+
+The daemon installs or verifies the exact Apply right during Enable before
+reporting ready, verifies it during Status, and removes it only after successful
+Idle cleanup; only explicit Repair may replace a mismatched existing rule. The
+XPC listener installs its exact helper signing requirement before a delegate can
+accept a connection. Failed cleanup keeps connection ownership and service
+registration intact. Renewal requires the durable session and request owner.
+Periodic renewal uses a separate authenticated XPC connection that never owns
+cleanup. The helper rotates that connection before its 257th operation while
+keeping the original Apply connection open as the cleanup owner. A rejected,
+malformed, timed-out, or failed renewal still invalidates the ownership
+connection and terminates the helper nonzero.
+When the daemon is unavailable, registration or rule absence alone never proves
+cleanup. Apply preflights the exact durable session, request, and canonical
+input digest before authorization so a rejected peer cannot acquire another
+request's cleanup ownership. The daemon passes that verified fact explicitly
+to per-connection lifecycle state; a reported global phase alone never grants
+ownership. Durable records are validated semantically before use, and proxy
+mutation verifies the complete resulting dictionary rather than only the owned
+tuples.
+
+`observed`: a zero-second Authorization Services credential timeout could not
+carry the freshly granted right across the helper-to-daemon process boundary;
+`authd` treated it as expired before the daemon could validate it. The concrete
+rule therefore has a 30-second maximum credential-validity window solely for
+that transfer. It remains non-shared, the helper obtains it immediately before
+one Apply, the daemon cannot present authorization UI or extend the rights,
+and both processes release the reference after the reply while the daemon
+destroys the right and both processes zero every owned copy of the external
+form and encoded request material. This corrects the earlier zero-timeout
+implementation detail without changing the one-Apply authorization boundary.
+
 ## Context
 
 The arm64 macOS 15-or-later MVP runs its product UI, policy, and orchestration
@@ -211,16 +264,18 @@ app.posato.macos.proxy.apply
 ```
 
 Its compiled accepted definition requires a freshly authenticated
-administrator, is non-shared, has zero credential-reuse timeout, and represents
-one Apply attempt. The root daemon is the only component that installs, reads
-back, verifies, explicitly repairs, and removes that definition.
+administrator, is non-shared, has the 30-second transfer bound recorded in the
+MACOS-003 amendment, and represents one Apply attempt. The root daemon is the
+only component that installs, reads back, verifies, explicitly repairs, and
+removes that definition.
 
 Installation occurs only during an explicit in-app Enable operation over the
 authenticated connection while proxy ownership is idle. Repair occurs only
-during an explicit in-app Repair operation. Apply never installs or silently
-repairs the rule: absence or semantic mismatch fails closed as
-`recoveryRequired`. Supported removal deletes only this exact right and verifies
-its absence before unregistering the daemon.
+during an explicit in-app Repair operation. Direct and reconciled Repair first
+verify the exact rule and replace it only when it is absent or semantically
+mismatched. Apply never installs or silently repairs the rule: absence or
+semantic mismatch fails closed as `recoveryRequired`. Supported removal deletes
+only this exact right and verifies its absence before unregistering the daemon.
 
 For one foreground Apply intent, the user-session helper obtains the right
 immediately before the operation. Only its external form crosses the already
@@ -318,10 +373,9 @@ re-enables or re-registers the exact signed compatible daemon and reconciles
 its durable state before new enforcement. If that path cannot run, the product
 provides truthful manual Apple proxy-recovery instructions.
 
-### Update, disablement, and removal
+### Update, repair, disablement, and removal
 
-A supported in-app disable, update, repair, or removal performs these steps in
-order:
+A supported in-app disable, update, or removal performs these steps in order:
 
 1. reject new Apply intents;
 2. request restoration and reconcile any unknown outcome;
@@ -330,13 +384,36 @@ order:
 5. for removal, remove and verify absence of the exact custom authorization
    right;
 6. unregister the daemon with `SMAppService` and await completion; and
-7. for update or repair, replace or repair only the exact owned component,
-   re-register the exact signed compatible daemon, explicitly repair the
-   authorization rule if that was the fault, and verify `ready` before allowing
-   another Apply.
+7. for update, replace only the exact owned component, re-register the exact
+   signed compatible daemon, and verify `ready` before allowing another Apply.
+
+Repair is desired-state convergence rather than an unconditional daemon
+restart. It rejects new Apply intents, reconciles durable proxy ownership to
+`Idle`, and then:
+
+- retains an already enabled daemon only when the fixed mutually authenticated
+  connection accepts the current protocol and the exact authorization rule is
+  present or repaired;
+- registers the current exact embedded daemon once when Service Management
+  reports it as not registered or not found; and
+- fails closed without unregistering when cleanup, compatibility, or the final
+  `ready` and `Idle` state cannot be confirmed.
+
+Direct Repair and same-request reconciliation use this one convergent path. An
+exact duplicate that finds the daemon `ready`, ownership `Idle`, and the exact
+rule performs no Service Management transition and does not rewrite the rule.
+
+Same-request reconciliation for Disable or Remove does not treat an absent
+service as proof that cleanup completed. When the service became unregistered
+before its successful response reached the application, the fresh helper
+registers the exact embedded daemon once, authenticates it, and reconciles the
+original request to `Idle`. Remove also verifies that the exact authorization
+right is absent. Only then does the helper unregister the daemon again and
+return `notRegistered`; any uncertainty remains action-required or an unknown
+outcome.
 
 Disable and removal leave the daemon unregistered. Removal also leaves the
-custom right absent. Update and repair may resume service only after the newly
+custom right absent. Update and repair may resume service only after the
 registered executable set, IPC contract, durable state, and authorization rule
 all pass their compatibility checks.
 
@@ -437,11 +514,6 @@ that can make an already removed or disabled service execute cleanup.
 
 ## Open implementation decisions
 
-- exact daemon bundle identifier, Mach service name, launchd property-list
-  policy, embedded layout, build wiring, and packaging tests in MACOS-003;
-- concrete IPC schemas, size limits, deadlines, cancellation points, capability
-  negotiation, state serialization, storage location, and redacted outcome
-  codes in MACOS-003;
 - concrete browser, proxy, captive-portal, network-transition, and presentation
   implementation plus physical verification in MACOS-004 under ADR 0005;
 - selected-application identity and termination behavior in TARGETS-003 and
