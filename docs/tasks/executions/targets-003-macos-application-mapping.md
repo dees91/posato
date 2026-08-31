@@ -2,7 +2,7 @@
 
 - **Brief:**
   [`../specifications/targets-003-macos-application-mapping.md`](../specifications/targets-003-macos-application-mapping.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** `Codex`
 - **Reviewer:** `independent Codex reviewer`
@@ -142,5 +142,5 @@ and before the pull request.
 
 ## Final
 
-- **Status:** `complete`
+- **Status:** `done`
 - **Outcome:** implementation, affected verification, physical-Mac gate, and independent review are complete; the branch is ready for push and pull request
