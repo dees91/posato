@@ -24,10 +24,20 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
         ),
         TargetsPreviewState("Empty", TargetsUiState(isLoading = false, hasLoaded = true)),
         TargetsPreviewState(
+            "Application mappings loading",
+            TargetsUiState(
+                applicationPolicyName = "Social feeds",
+                isLoading = false,
+                hasLoaded = true,
+            ),
+        ),
+        TargetsPreviewState(
             "Application mapping required",
             TargetsUiState(
                 domains = domains,
                 applicationPolicyName = "Social feeds",
+                isApplicationMappingLoading = false,
+                hasLoadedApplicationMappings = true,
                 isLoading = false,
                 hasLoaded = true,
             ),

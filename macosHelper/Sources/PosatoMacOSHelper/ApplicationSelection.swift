@@ -61,6 +61,18 @@ struct AppKitApplicationChooser: ApplicationChoosing {
     panel.resolvesAliases = true
     panel.allowsOtherFileTypes = false
     panel.treatsFilePackagesAsDirectories = false
+    signal(SIGTERM, SIG_IGN)
+    let terminationSource = DispatchSource.makeSignalSource(signal: SIGTERM, queue: .main)
+    terminationSource.setEventHandler {
+      panel.cancel(nil)
+      signal(SIGTERM, SIG_DFL)
+      raise(SIGTERM)
+    }
+    terminationSource.resume()
+    defer {
+      terminationSource.cancel()
+      signal(SIGTERM, SIG_DFL)
+    }
     let response = panel.runModal()
     guard response == .OK else {
       return .cancelled

@@ -7,6 +7,7 @@ import app.posato.di.createDesktopApplicationGraph
 
 fun main() {
     DesktopLocalApplicationMappings().use { applicationMappings ->
+        Runtime.getRuntime().addShutdownHook(Thread(applicationMappings::close, "application-mappings-shutdown"))
         val applicationGraph = createDesktopApplicationGraph(applicationMappings)
 
         application {

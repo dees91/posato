@@ -916,6 +916,8 @@
 
 - Made the dedicated application-picker helper client one-shot after physical
   testing found that returning to a blocking pipe read left AppKit unresponsive.
+- Added bounded shutdown cleanup that cancels an active AppKit panel before its
+  helper exits, preventing an orphaned system picker when Posato quits.
 - Kept enforcement helper lifecycle and daemon ownership unchanged.
 
 ## [2026-08-31] decision | Add a development-packaging correction gate

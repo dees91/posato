@@ -349,7 +349,11 @@ the activated accessory process unable to service AppKit events and caused a
 system beachball around later panels. The mapping adapter owns a dedicated
 helper client, closes it after every successful or cancelled selection
 response, and starts a freshly authenticated process for the next picker.
-This lifecycle is separate from enforcement helper ownership.
+Desktop shutdown also closes the mapping adapter from a JVM shutdown hook. The
+client sends the active picker helper `SIGTERM` without waiting for its
+serialized request, and the helper cancels the AppKit panel before exiting;
+forced termination remains a bounded fallback. This lifecycle is separate from
+enforcement helper ownership.
 
 The JVM hashes each exact requirement with SHA-256 for its redacted mapping key
 and keeps the requirement bytes and bounded display name in a separate local

@@ -113,33 +113,35 @@ internal fun ApplicationMappingsSection(
     onRemove: (LocalApplicationMappingId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (!state.isApplicationMappingAvailable) {
-        Text(stringResource(Res.string.application_group_mapping_required), style = MaterialTheme.typography.bodySmall, modifier = modifier)
-        return
-    }
     Column(modifier, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        state.applicationMappingFailure?.let { failure ->
-            ApplicationMappingFailureNotice(failure, onRetry, Modifier.fillMaxWidth())
-        }
-        if (state.applicationPolicyName == null && state.applicationMappings.isNotEmpty()) {
-            Text(stringResource(Res.string.application_mapping_retained), style = MaterialTheme.typography.bodySmall)
-        } else if (state.applicationMappings.isEmpty() && state.hasLoadedApplicationMappings) {
-            Text(stringResource(Res.string.application_mapping_empty), style = MaterialTheme.typography.bodySmall)
-        }
-        state.applicationMappings.forEach { mapping ->
-            ApplicationMappingRow(
-                name = mapping.displayName,
-                enabled = state.canRemoveApplicationMapping(mapping.id),
-                onRemove = { onRemove(mapping.id) },
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        if (state.applicationPolicyName != null) {
-            Button(onClick = onChoose, enabled = state.canChooseApplications()) {
-                if (state.applicationMappingMutation == ApplicationMappingMutation.CHOOSE) {
-                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Text(stringResource(Res.string.action_choose_applications))
+        if (state.isApplicationMappingLoading) {
+            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+        } else if (!state.isApplicationMappingAvailable) {
+            Text(stringResource(Res.string.application_group_mapping_required), style = MaterialTheme.typography.bodySmall)
+        } else {
+            state.applicationMappingFailure?.let { failure ->
+                ApplicationMappingFailureNotice(failure, onRetry, Modifier.fillMaxWidth())
+            }
+            if (state.applicationPolicyName == null && state.applicationMappings.isNotEmpty()) {
+                Text(stringResource(Res.string.application_mapping_retained), style = MaterialTheme.typography.bodySmall)
+            } else if (state.applicationMappings.isEmpty() && state.hasLoadedApplicationMappings) {
+                Text(stringResource(Res.string.application_mapping_empty), style = MaterialTheme.typography.bodySmall)
+            }
+            state.applicationMappings.forEach { mapping ->
+                ApplicationMappingRow(
+                    name = mapping.displayName,
+                    enabled = state.canRemoveApplicationMapping(mapping.id),
+                    onRemove = { onRemove(mapping.id) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (state.applicationPolicyName != null) {
+                Button(onClick = onChoose, enabled = state.canChooseApplications()) {
+                    if (state.applicationMappingMutation == ApplicationMappingMutation.CHOOSE) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(Res.string.action_choose_applications))
+                    }
                 }
             }
         }
@@ -232,7 +234,7 @@ private fun ApplicationPolicyEditor(
 
 @Composable
 private fun TargetsUiState.applicationMappingSupportingText(): String? {
-    return if (!isApplicationMappingAvailable || applicationMappings.isEmpty()) {
+    return if (!isApplicationMappingLoading && (!isApplicationMappingAvailable || applicationMappings.isEmpty())) {
         stringResource(Res.string.application_group_mapping_required)
     } else {
         null

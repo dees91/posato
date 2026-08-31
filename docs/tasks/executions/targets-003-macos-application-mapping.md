@@ -61,6 +61,9 @@ and before the pull request.
   that helper; selection is rejected by daemon decoding and never reaches XPC.
   The dedicated picker client retires its helper after each result so AppKit
   cannot return to a blocking pipe read while it remains the active process.
+- Added shutdown cleanup for an in-flight picker. The JVM shutdown hook closes
+  the mapping adapter, the client interrupts the active request without waiting
+  on its monitor, and the helper cancels the AppKit panel before exiting.
 - Updated the accepted design, ADR amendment, maintained wiki synthesis, and
   PoC provenance without copying feasibility code or machine state.
 
@@ -78,7 +81,9 @@ and before the pull request.
   confirmed these three findings resolved. Maintainer-observed physical-Mac
   verification then covered the remaining gate. The final review required one
   categorical privacy wording correction in the execution evidence and
-  approved the change after that correction.
+  approved the change after that correction. A follow-up independent review
+  approved the active-picker shutdown and loading-state corrections with no
+  Critical, Required, Recommended, or Optional finding.
 - **Advisory findings:** Sidecar permission coverage should create controlled
   sidecars instead of conditionally checking only artifacts SQLite happens to
   leave behind; this does not expand the current scope automatically.
@@ -93,8 +98,8 @@ and before the pull request.
 | Aggregate quality | `pass` | `./gradlew quality --rerun-tasks` completed after the physical-gate production corrections, executing all 112 tasks including iOS tests, packaging, lint, analysis, and migration checks. |
 | Credential-free iOS host build | `pass` | Generic iOS Simulator `xcodebuild` completed with signing disabled. |
 | Diff and privacy checks | `pass` | `git diff --check` and the scoped sensitive-data/path scan found no introduced personal path, credential, key, or token material. |
-| Physical-Mac application picker | `pass` | Maintainer-observed multi-select, cancel and reopen, non-ad-hoc and self rejection, restart persistence, individual removal, retained mapping cleanup, keyboard operation, and VoiceOver navigation passed on one Apple silicon Mac. Initial runs found and corrected accessory-policy handling, the default picker directory, and one-shot AppKit helper lifecycle. |
-| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction; no Critical or Required finding remains. |
+| Physical-Mac application picker | `pass` | Maintainer-observed multi-select, cancel and reopen, non-ad-hoc and self rejection, restart persistence, individual removal, retained mapping cleanup, keyboard operation, VoiceOver navigation, and quitting Posato with an active picker passed on one Apple silicon Mac. Initial runs found and corrected accessory-policy handling, the default picker directory, one-shot AppKit helper lifecycle, and active-picker shutdown cleanup. |
+| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction. Follow-up review approved the active-picker shutdown and loading-state corrections with no finding at any severity. |
 
 ## Blockers and accepted risks
 
@@ -108,6 +113,12 @@ and before the pull request.
   The client now terminates the picker helper after every decoded result;
   repeated cancel and reopen, Posato, unrelated system applications, and later
   panels remained responsive after correction.
+- Physical shutdown testing observed that force-terminating a picker helper can
+  leave its out-of-process AppKit panel visible. Posato now invokes mapping
+  cleanup from a JVM shutdown hook; the helper handles termination by cancelling
+  the panel, while the client retains a one-second forced-exit fallback. Quitting
+  Posato then closed both windows together, left no child process, and preserved
+  later cancel and reopen behavior.
 - The physical flow used a locally development-signed gate artifact. The
   repository packaging pipeline still produces a JVM runtime whose nested
   signing and hardened-runtime JIT configuration cannot launch unchanged on
