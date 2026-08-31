@@ -110,17 +110,23 @@ val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityEx
     approvedExceptions.set(
         listOf(
             "desktopApp/src/main/kotlin/app/posato/desktop/macos/MacOsHelperClient.kt:" +
-                annotationMarker + "file:$exceptionName(\"MagicNumber\", \"TooManyFunctions\")",
+                annotationMarker + "file:$exceptionName(\"MagicNumber\", \"TooManyFunctions\")" +
+                "\n\npackage app.posato.desktop.macos",
             "desktopApp/src/main/kotlin/app/posato/desktop/macos/MacOsHelperClient.kt:" +
-                annotationMarker + "$exceptionName(\"TooGenericExceptionCaught\")",
+                annotationMarker + "$exceptionName(\"TooGenericExceptionCaught\")" +
+                "\n    private fun ensureStarted()",
             "desktopApp/src/main/kotlin/app/posato/desktop/macos/MacOsHelperClient.kt:" +
-                annotationMarker + "$exceptionName(\"ThrowsCount\")",
+                annotationMarker + "$exceptionName(\"ThrowsCount\")" +
+                "\n    private fun readWithDeadline(",
             "desktopApp/src/main/kotlin/app/posato/desktop/macos/MacOsHelperProtocol.kt:" +
-                annotationMarker + "file:$exceptionName(\"MagicNumber\")",
+                annotationMarker + "file:$exceptionName(\"MagicNumber\")" +
+                "\n\npackage app.posato.desktop.macos",
             "shared/src/iosMain/kotlin/app/posato/MainViewController.kt:" +
-                annotationMarker + "$exceptionName(\"FunctionNaming\", \"ktlint:standard:function-naming\")",
+                annotationMarker + "$exceptionName(\"FunctionNaming\", \"ktlint:standard:function-naming\")" +
+                "\nfun MainViewController()",
             "shared/src/iosMain/kotlin/app/posato/feature/targets/domain/ApplicationPolicyName.ios.kt:" +
-                annotationMarker + "file:$exceptionName(\"CAST_NEVER_SUCCEEDS\")",
+                annotationMarker + "file:$exceptionName(\"CAST_NEVER_SUCCEEDS\")" +
+                "\n\npackage app.posato.feature.targets.domain",
         ),
     )
 }
