@@ -14,26 +14,31 @@ import Testing
 }
 
 @MainActor
-@Test func givenPosatoAmongSelectionWhenSelectedThenWholeBatchIsRejected() throws {
-  let candidates = [
-    candidate(name: "Browser", identifier: "example.browser"),
-    candidate(name: "Posato", identifier: ServiceContract.applicationIdentifier),
-  ]
-  let inspector = StubInspector(requirements: [Data([1]), Data([2])])
+@Test func givenPosatoOwnedBundleAmongSelectionWhenSelectedThenWholeBatchIsRejected() throws {
+  for identifier in [
+    ServiceContract.applicationIdentifier,
+    ServiceContract.helperIdentifier,
+  ] {
+    let candidates = [
+      candidate(name: "Browser", identifier: "example.browser"),
+      candidate(name: "Posato", identifier: identifier),
+    ]
+    let inspector = StubInspector(requirements: [Data([1])])
 
-  let result = try ApplicationSelectionService(
-    chooser: StubChooser(.selected(candidates)),
-    inspector: inspector
-  ).select()
+    let result = try ApplicationSelectionService(
+      chooser: StubChooser(.selected(candidates)),
+      inspector: inspector
+    ).select()
 
-  #expect(result.outcome == .selfSelection)
-  #expect(result.applications.isEmpty)
+    #expect(result.outcome == .selfSelection)
+    #expect(result.applications.isEmpty)
+  }
 }
 
 @MainActor
 @Test func givenDuplicateRequirementsWhenSelectedThenOnlyOneIdentityIsReturned() throws {
   let candidates = [
-    candidate(name: "Browser", identifier: "example.browser"),
+    candidate(name: "Browser", identifier: "app.posato.macosx"),
     candidate(name: "Browser copy", identifier: "example.browser.copy"),
   ]
   let requirement = Data([1, 2, 3])

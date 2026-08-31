@@ -940,3 +940,9 @@
   desktop shell starts outside an application bundle.
 - Kept mapping load failures distinct from a confirmed empty snapshot and
   rendered only their retryable failure state.
+
+## [2026-08-31] correction | Reject Posato-owned application bundles
+
+- Extended application self-selection rejection to the complete macOS Posato
+  identifier namespace, including the signed helper.
+- Kept third-party signature validation and atomic batch rejection unchanged.

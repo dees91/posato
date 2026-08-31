@@ -47,6 +47,8 @@ and before the pull request.
   while helper/daemon XPC keeps bit `1` and rejects picker capability/operation;
   missing-bit and unchanged-daemon negotiation tests are explicit. The
   independent reviewer confirmed that no Critical or Required finding remains.
+  A focused follow-up plan review approved delimiter-qualified rejection of the
+  macOS Posato identifier namespace with no finding.
 
 ## Result
 
@@ -64,6 +66,9 @@ and before the pull request.
 - Added shutdown cleanup for an in-flight picker. The JVM shutdown hook closes
   the mapping adapter, the client interrupts the active request without waiting
   on its monitor, and the helper cancels the AppKit panel before exiting.
+- Expanded self-selection rejection from the main application identifier to
+  every product-owned bundle in its macOS namespace, including the signed
+  helper, before that candidate reaches signature inspection.
 - Removed all detekt suppressions introduced by this task. Application mapping
   UI, state conversion, and ViewModel operations now occupy focused files, and
   corrupt mapping validation shares one unchanged private failure path.
@@ -79,7 +84,10 @@ and before the pull request.
 - **Verdict:** `approved after correction`
 - **Critical or Required findings:** No Critical finding. Required corrections
   covered transactional failure reporting, Swift sensitive-carrier redaction,
-  complete preview states, and physical-Mac verification.
+  complete preview states, and physical-Mac verification. A focused namespace
+  follow-up found one Required regression-test gap: the test did not prove that
+  a self candidate bypasses signature inspection or that a delimiter-near
+  third-party identifier remains allowed.
 - **Resolution:** Selection and removal now keep mutation plus fallible
   verification inside one transaction; injected in-transaction permission
   failures prove rollback after reopen. Swift normal and reflective strings are
@@ -94,7 +102,11 @@ and before the pull request.
   removal review also approved the focused file split and preserved behavior
   with no finding at any severity.
   A final follow-up review approved lazy helper discovery and load-failure
-  rendering with no finding at any severity.
+  rendering with no finding at any severity. The namespace regression now
+  exhausts inspector data before the self candidate and uses
+  `app.posato.macosx` as a valid near-prefix control; affected focused and
+  aggregate gates pass. The focused re-review approved the correction with no
+  remaining finding at any severity.
 - **Advisory findings:** Sidecar permission coverage should create controlled
   sidecars instead of conditionally checking only artifacts SQLite happens to
   leave behind; this does not expand the current scope automatically.
@@ -103,15 +115,15 @@ and before the pull request.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Plan review | `pass` | Approved after the IO, owner-only storage, and capability/deadline corrections. |
-| Focused Kotlin and Swift tests | `pass` | Shared state/contract, real SQLite restart/rollback/corruption/permissions/dispatcher, protocol, helper, and daemon-rejection coverage pass. |
+| Plan review | `pass` | Approved after the IO, owner-only storage, and capability/deadline corrections; the focused namespace follow-up also passed. |
+| Focused Kotlin and Swift tests | `pass` | Shared state/contract, real SQLite restart/rollback/corruption/permissions/dispatcher, protocol, helper, main/helper self-selection, and daemon-rejection coverage pass. |
 | SQLDelight migration verification | `pass` | Desktop schema baseline `1.db` matches the current create statements. |
-| Aggregate quality | `pass` | `./gradlew quality --rerun-tasks` completed after all review corrections, executing all 112 tasks including iOS tests, packaging, lint, analysis, and migration checks. |
+| Aggregate quality | `pass` | `./gradlew quality --rerun-tasks` completed after the namespace self-selection correction, executing all 112 tasks including iOS tests, packaging, lint, analysis, and migration checks. |
 | Gradle desktop shell | `pass` | `./gradlew :desktopApp:run` reached a live UI process outside an application bundle without eager helper discovery and terminated cleanly from the invoking terminal. |
 | Credential-free iOS host build | `pass` | Generic iOS Simulator `xcodebuild` completed with signing disabled. |
 | Diff and privacy checks | `pass` | `git diff --check` and the scoped sensitive-data/path scan found no introduced personal path, credential, key, or token material. |
 | Physical-Mac application picker | `pass` | Maintainer-observed multi-select, cancel and reopen, non-ad-hoc and self rejection, restart persistence, individual removal, retained mapping cleanup, keyboard operation, VoiceOver navigation, and quitting Posato with an active picker passed on one Apple silicon Mac. Initial runs found and corrected accessory-policy handling, the default picker directory, one-shot AppKit helper lifecycle, and active-picker shutdown cleanup. |
-| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction. Follow-up reviews approved the active-picker shutdown, loading-state, suppression-removal, lazy helper-discovery, and load-failure-rendering corrections with no finding at any severity. |
+| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction. Follow-up reviews approved the active-picker shutdown, loading-state, suppression-removal, lazy helper-discovery, load-failure-rendering, and namespace self-selection corrections; the namespace re-review found no remaining finding at any severity. |
 
 ## Blockers and accepted risks
 

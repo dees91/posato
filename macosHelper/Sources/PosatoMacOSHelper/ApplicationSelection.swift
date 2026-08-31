@@ -205,11 +205,16 @@ struct ApplicationSelectionService {
       guard !candidates.isEmpty else {
         return try ApplicationSelectionPayload(outcome: .capacity)
       }
+      let posatoIdentifier = ServiceContract.applicationIdentifier
+      let posatoPrefix = "\(posatoIdentifier)."
       var identities: [SelectedApplicationIdentity] = []
       var requirements: Set<Data> = []
       identities.reserveCapacity(candidates.count)
       for candidate in candidates {
-        if candidate.bundleIdentifier == ServiceContract.applicationIdentifier {
+        let isPosatoBundle =
+          candidate.bundleIdentifier == posatoIdentifier
+          || candidate.bundleIdentifier?.hasPrefix(posatoPrefix) == true
+        if isPosatoBundle {
           return try ApplicationSelectionPayload(outcome: .selfSelection)
         }
         do {
