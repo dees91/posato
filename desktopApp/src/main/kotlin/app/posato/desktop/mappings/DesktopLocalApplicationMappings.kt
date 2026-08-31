@@ -123,15 +123,14 @@ internal class DesktopLocalApplicationMappings(
         }
     }
 
-    @Suppress("ThrowsCount")
     private fun restoreCandidate(application: SelectedMacOsApplication): StoredApplicationCandidate {
         if (application.designatedRequirement.isEmpty() || application.designatedRequirement.size > MAXIMUM_REQUIREMENT_BYTES) {
-            throw CorruptApplicationMappingsException()
+            corruptApplicationMappings()
         }
         val mappingId = LocalApplicationMappingId.restore(application.designatedRequirement.sha256().toHex())
-            ?: throw CorruptApplicationMappingsException()
+            ?: corruptApplicationMappings()
         val mapping = LocalApplicationMapping.restore(mappingId, application.displayName)
-            ?: throw CorruptApplicationMappingsException()
+            ?: corruptApplicationMappings()
 
         return StoredApplicationCandidate(mapping, application.designatedRequirement.copyOf())
     }
@@ -163,26 +162,25 @@ internal class DesktopLocalApplicationMappings(
         return LocalApplicationMappingsSnapshot.restore(mappings) ?: throw CorruptApplicationMappingsException()
     }
 
-    @Suppress("ThrowsCount")
     private fun restoreStoredMapping(
         mappingId: ByteArray,
         displayName: ByteArray,
         designatedRequirement: ByteArray,
     ): LocalApplicationMapping {
         if (mappingId.size != SHA256_BYTES || designatedRequirement.isEmpty() || designatedRequirement.size > MAXIMUM_REQUIREMENT_BYTES) {
-            throw CorruptApplicationMappingsException()
+            corruptApplicationMappings()
         }
         if (!mappingId.contentEquals(designatedRequirement.sha256())) {
-            throw CorruptApplicationMappingsException()
+            corruptApplicationMappings()
         }
-        val restoredId = LocalApplicationMappingId.restore(mappingId.toHex()) ?: throw CorruptApplicationMappingsException()
+        val restoredId = LocalApplicationMappingId.restore(mappingId.toHex()) ?: corruptApplicationMappings()
         val restoredName = try {
             displayName.decodeToString(throwOnInvalidSequence = true)
         } catch (_: Exception) {
-            throw CorruptApplicationMappingsException()
+            corruptApplicationMappings()
         }
 
-        return LocalApplicationMapping.restore(restoredId, restoredName) ?: throw CorruptApplicationMappingsException()
+        return LocalApplicationMapping.restore(restoredId, restoredName) ?: corruptApplicationMappings()
     }
 
     private companion object {
@@ -199,6 +197,10 @@ private class StoredApplicationCandidate(
 private class ApplicationMappingCapacityException : Exception()
 
 private class CorruptApplicationMappingsException : Exception()
+
+private fun corruptApplicationMappings(): Nothing {
+    throw CorruptApplicationMappingsException()
+}
 
 private fun ByteArray.sha256(): ByteArray {
     return MessageDigest.getInstance("SHA-256").digest(this)

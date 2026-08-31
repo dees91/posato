@@ -64,6 +64,9 @@ and before the pull request.
 - Added shutdown cleanup for an in-flight picker. The JVM shutdown hook closes
   the mapping adapter, the client interrupts the active request without waiting
   on its monitor, and the helper cancels the AppKit panel before exiting.
+- Removed all detekt suppressions introduced by this task. Application mapping
+  UI, state conversion, and ViewModel operations now occupy focused files, and
+  corrupt mapping validation shares one unchanged private failure path.
 - Updated the accepted design, ADR amendment, maintained wiki synthesis, and
   PoC provenance without copying feasibility code or machine state.
 
@@ -83,7 +86,9 @@ and before the pull request.
   categorical privacy wording correction in the execution evidence and
   approved the change after that correction. A follow-up independent review
   approved the active-picker shutdown and loading-state corrections with no
-  Critical, Required, Recommended, or Optional finding.
+  Critical, Required, Recommended, or Optional finding. The final suppression-
+  removal review also approved the focused file split and preserved behavior
+  with no finding at any severity.
 - **Advisory findings:** Sidecar permission coverage should create controlled
   sidecars instead of conditionally checking only artifacts SQLite happens to
   leave behind; this does not expand the current scope automatically.
@@ -95,11 +100,11 @@ and before the pull request.
 | Plan review | `pass` | Approved after the IO, owner-only storage, and capability/deadline corrections. |
 | Focused Kotlin and Swift tests | `pass` | Shared state/contract, real SQLite restart/rollback/corruption/permissions/dispatcher, protocol, helper, and daemon-rejection coverage pass. |
 | SQLDelight migration verification | `pass` | Desktop schema baseline `1.db` matches the current create statements. |
-| Aggregate quality | `pass` | `./gradlew quality --rerun-tasks` completed after the physical-gate production corrections, executing all 112 tasks including iOS tests, packaging, lint, analysis, and migration checks. |
+| Aggregate quality | `pass` | `./gradlew quality --rerun-tasks` completed after the physical-gate and suppression-removal corrections, executing all 112 tasks including iOS tests, packaging, lint, analysis, and migration checks. |
 | Credential-free iOS host build | `pass` | Generic iOS Simulator `xcodebuild` completed with signing disabled. |
 | Diff and privacy checks | `pass` | `git diff --check` and the scoped sensitive-data/path scan found no introduced personal path, credential, key, or token material. |
 | Physical-Mac application picker | `pass` | Maintainer-observed multi-select, cancel and reopen, non-ad-hoc and self rejection, restart persistence, individual removal, retained mapping cleanup, keyboard operation, VoiceOver navigation, and quitting Posato with an active picker passed on one Apple silicon Mac. Initial runs found and corrected accessory-policy handling, the default picker directory, one-shot AppKit helper lifecycle, and active-picker shutdown cleanup. |
-| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction. Follow-up review approved the active-picker shutdown and loading-state corrections with no finding at any severity. |
+| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction. Follow-up reviews approved the active-picker shutdown, loading-state, and suppression-removal corrections with no finding at any severity. |
 
 ## Blockers and accepted risks
 

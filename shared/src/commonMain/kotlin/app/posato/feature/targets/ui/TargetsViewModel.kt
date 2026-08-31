@@ -2,11 +2,7 @@ package app.posato.feature.targets.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
-import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
-import app.posato.feature.targets.data.LocalApplicationRemovalResult
-import app.posato.feature.targets.data.LocalApplicationSelectionResult
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.UnavailableLocalApplicationMappings
@@ -15,7 +11,6 @@ import app.posato.feature.targets.domain.ApplicationPolicyNameResult
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationFailure
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,15 +23,14 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-@Suppress("TooManyFunctions")
 internal class TargetsViewModel(
     private val store: LocalTargetPolicyStore,
-    private val applicationMappings: LocalApplicationMappings = UnavailableLocalApplicationMappings,
+    internal val applicationMappings: LocalApplicationMappings = UnavailableLocalApplicationMappings,
 ) : ViewModel() {
     private val refreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    private val applicationMappingRefreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    internal val applicationMappingRefreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val policyState = MutableStateFlow(TargetsPolicyState(isLoading = true))
-    private val applicationMappingsState = MutableStateFlow(ApplicationMappingsState())
+    internal val applicationMappingsState = MutableStateFlow(ApplicationMappingsState())
     private val domainEditorState = MutableStateFlow(ExactDomainEditorState())
     private val applicationEditorState = MutableStateFlow(ApplicationPolicyEditorState())
     private val submissionState = MutableStateFlow<TargetsSubmissionState>(TargetsSubmissionState.Idle)
@@ -55,7 +49,7 @@ internal class TargetsViewModel(
             currentSubmissionState,
         )
     }
-    private val currentState: TargetsUiState
+    internal val currentState: TargetsUiState
         get() = createUiState(
             policyState.value,
             domainEditorState.value,
@@ -86,85 +80,6 @@ internal class TargetsViewModel(
         policyState.update { state -> state.copy(isLoading = true, failure = null) }
         submissionState.update { TargetsSubmissionState.Idle }
         refreshRequests.tryEmit(Unit)
-    }
-
-    fun retryApplicationMappings() {
-        val state = applicationMappingsState.value
-        if (state.isLoading || state.mutation != null) {
-            return
-        }
-        applicationMappingsState.update { current -> current.copy(isLoading = true, failure = null) }
-        applicationMappingRefreshRequests.tryEmit(Unit)
-    }
-
-    fun chooseApplications() {
-        if (!currentState.canChooseApplications()) {
-            return
-        }
-        applicationMappingsState.update { state ->
-            state.copy(failure = null, mutation = ApplicationMappingMutation.CHOOSE)
-        }
-        viewModelScope.launch {
-            try {
-                when (val result = applicationMappings.chooseApplications()) {
-                    is LocalApplicationSelectionResult.Success -> applicationMappingsState.update { state ->
-                        state.copy(snapshot = result.snapshot, failure = null)
-                    }
-
-                    LocalApplicationSelectionResult.Cancelled -> Unit
-
-                    LocalApplicationSelectionResult.Unavailable -> applicationMappingsState.update { state ->
-                        state.copy(isAvailable = false)
-                    }
-
-                    is LocalApplicationSelectionResult.Rejected -> applicationMappingsState.update { state ->
-                        state.copy(failure = result.reason.toUiFailure())
-                    }
-
-                    is LocalApplicationSelectionResult.Failure -> applicationMappingsState.update { state ->
-                        state.copy(failure = result.reason.toUiFailure())
-                    }
-                }
-            } catch (cancellationException: CancellationException) {
-                throw cancellationException
-            } catch (_: Exception) {
-                applicationMappingsState.update { state -> state.copy(failure = ApplicationMappingFailure.PICKER_FAILED) }
-            } finally {
-                applicationMappingsState.update { state -> state.copy(mutation = null) }
-            }
-        }
-    }
-
-    fun removeApplicationMapping(mappingId: LocalApplicationMappingId) {
-        if (!currentState.canRemoveApplicationMapping(mappingId)) {
-            return
-        }
-        applicationMappingsState.update { state ->
-            state.copy(failure = null, mutation = ApplicationMappingMutation.REMOVE)
-        }
-        viewModelScope.launch {
-            try {
-                when (val result = applicationMappings.remove(mappingId)) {
-                    is LocalApplicationRemovalResult.Success -> applicationMappingsState.update { state ->
-                        state.copy(snapshot = result.snapshot, failure = null)
-                    }
-
-                    LocalApplicationRemovalResult.Unavailable -> applicationMappingsState.update { state ->
-                        state.copy(isAvailable = false)
-                    }
-
-                    is LocalApplicationRemovalResult.Failure -> applicationMappingsState.update { state ->
-                        state.copy(failure = result.reason.toUiFailure())
-                    }
-                }
-            } catch (cancellationException: CancellationException) {
-                throw cancellationException
-            } catch (_: Exception) {
-                applicationMappingsState.update { state -> state.copy(failure = ApplicationMappingFailure.SAVE_FAILED) }
-            } finally {
-                applicationMappingsState.update { state -> state.copy(mutation = null) }
-            }
-        }
     }
 
     fun beginEditingDomain(canonicalDomain: String) {
@@ -257,42 +172,6 @@ internal class TargetsViewModel(
                 is LocalPolicyResult.Failure -> {
                     policyState.update { state ->
                         TargetsPolicyState(snapshot = state.snapshot, failure = result.reason.toLoadFailure())
-                    }
-                }
-            }
-        }
-    }
-
-    private fun observeApplicationMappingReads(): Flow<Unit> {
-        return applicationMappingRefreshRequests.onStart { emit(Unit) }.transform {
-            applicationMappingsState.update { state -> state.copy(isLoading = true, failure = null) }
-            emit(Unit)
-            when (val result = applicationMappings.load()) {
-                is LocalApplicationMappingsLoadResult.Success -> {
-                    applicationMappingsState.update {
-                        ApplicationMappingsState(
-                            snapshot = result.snapshot,
-                            isLoading = false,
-                            hasLoaded = true,
-                            isAvailable = true,
-                        )
-                    }
-                }
-
-                LocalApplicationMappingsLoadResult.Unavailable -> {
-                    applicationMappingsState.update {
-                        ApplicationMappingsState(isLoading = false, hasLoaded = true, isAvailable = false)
-                    }
-                }
-
-                is LocalApplicationMappingsLoadResult.Failure -> {
-                    applicationMappingsState.update { state ->
-                        state.copy(
-                            isLoading = false,
-                            hasLoaded = true,
-                            isAvailable = true,
-                            failure = result.reason.toUiFailure(),
-                        )
                     }
                 }
             }

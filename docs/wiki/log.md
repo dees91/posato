@@ -926,3 +926,10 @@
   unchanged Gradle package failed to launch during a physical gate.
 - Required strict nested-signature verification and launch without manual
   re-signing while retaining release signing and notarization in `RELEASE-001`.
+
+## [2026-08-31] correction | Remove TARGETS-003 lint suppressions
+
+- Removed every detekt suppression introduced by TARGETS-003 and split mapping
+  UI, state conversion, and ViewModel operations along their existing concerns.
+- Centralized the unchanged corrupt-mapping failure without weakening its
+  validation or exception contract.
