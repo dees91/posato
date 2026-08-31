@@ -13,6 +13,7 @@ import app.posato.feature.sync.data.SyncReplicaSnapshot
 import app.posato.feature.sync.data.SyncReplicaStore
 import app.posato.feature.sync.data.SyncStoreResult
 import app.posato.feature.sync.testContext
+import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testOperation
 import app.posato.feature.targets.domain.ExactDomain
 import kotlinx.coroutines.test.runTest
@@ -74,6 +75,33 @@ class SyncWriterTest {
         assertEquals(2, store.current.acceptedBundles.size)
         assertEquals(2, store.current.pendingBundles.size)
         assertEquals(listOf(1L, 2L), store.current.acceptedBundles.values.map { it.operation.authorSequence }.sorted())
+    }
+
+    @Test
+    fun `given an invalid session mutation when retried then the writer remains usable`() = runTest {
+        val invalidSessions = listOf(
+            LocalSyncMutation.StartSession(SessionId(testIdentifier(20)), 100, 100),
+            LocalSyncMutation.StartSession(
+                SessionId(testIdentifier(21)),
+                100,
+                100 + SyncFormatLimits.MAX_SESSION_DURATION_MILLIS + 1,
+            ),
+        )
+
+        invalidSessions.forEach { invalidMutation ->
+            val store = FakeSyncReplicaStore(snapshot())
+            val writer = assertIs<OpenSyncWriterResult.Success>(
+                SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 })
+                    .open(testContext, transportKey()),
+            ).writer
+            val before = store.current
+
+            val invalidResult = assertIs<LocalMutationResult.Failure>(writer.mutate(invalidMutation))
+
+            assertEquals(LocalMutationFailure.INVALID_MUTATION, invalidResult.reason)
+            assertEquals(before, store.current)
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+        }
     }
 
     @Test
@@ -296,6 +324,71 @@ class SyncWriterTest {
                 assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
             }
         }
+    }
+
+    @Test
+    fun `given an invalid accepted author history when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val cases = listOf(
+            listOf(testOperation(30, 1, SyncOperationPayload.ApplicationPolicyAbsent)),
+            listOf(
+                testOperation(31, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(32, 2, SyncOperationPayload.AuthorRegister),
+            ),
+            listOf(
+                testOperation(37, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(38, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+                testOperation(39, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+            ),
+        )
+
+        cases.forEach { operations ->
+            val result = SyncOperationCore(
+                FakeSyncReplicaStore(acceptedSnapshot(provider, operations)),
+                provider,
+                SyncWallClock { 100 },
+            ).open(testContext, transportKey())
+
+            assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+        }
+    }
+
+    @Test
+    fun `given a valid accepted author history with a sequence gap when reopened then it succeeds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(33, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(34, 3, SyncOperationPayload.ApplicationPolicyAbsent),
+            ),
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertIs<OpenSyncWriterResult.Success>(result)
+    }
+
+    @Test
+    fun `given an accepted author changes signing key when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val changedKey = checkNotNull(PublicSigningKey.fromBytes(ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES) { 8 }))
+        val changedKeyProvider = FakeSyncCryptoProvider(changedKey)
+        val registration = testOperation(35, 1, SyncOperationPayload.AuthorRegister)
+        val changedKeyOperation = testOperation(36, 2, SyncOperationPayload.ApplicationPolicyAbsent)
+            .copy(publicSigningKey = changedKey)
+        val accepted = snapshot(DurableClockState(changedKeyOperation.clock, false)).copy(
+            acceptedBundles = listOf(
+                storedAcceptedBundle(provider, registration),
+                storedAcceptedBundle(changedKeyProvider, changedKeyOperation),
+            ).associateBy { stored -> stored.operation.operationId },
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
     }
 
     @Test
@@ -696,13 +789,18 @@ private fun acceptedSnapshot(
     operations: List<SyncOperation>,
 ): SyncReplicaSnapshot {
     val lastClock = checkNotNull(operations.maxOfOrNull { operation -> operation.clock })
-    val accepted = operations.associate { operation ->
-        val bundle = remoteBundle(provider, operation)
-        operation.operationId to StoredAcceptedBundle(
-            bundle,
-            ImmutableBytes(checkNotNull(app.posato.feature.sync.data.SyncOperationCodec.encode(operation))),
-            operation,
-        )
-    }
+    val accepted = operations.map { operation -> storedAcceptedBundle(provider, operation) }
+        .associateBy { stored -> stored.operation.operationId }
     return snapshot(DurableClockState(lastClock, lastClock.successor() == null)).copy(acceptedBundles = accepted)
+}
+
+private fun storedAcceptedBundle(
+    provider: FakeSyncCryptoProvider,
+    operation: SyncOperation,
+): StoredAcceptedBundle {
+    return StoredAcceptedBundle(
+        remoteBundle(provider, operation),
+        ImmutableBytes(checkNotNull(app.posato.feature.sync.data.SyncOperationCodec.encode(operation))),
+        operation,
+    )
 }

@@ -1,6 +1,5 @@
 package app.posato.feature.sync.domain
 
-import app.posato.feature.sync.data.DecodeBundleResult
 import app.posato.feature.sync.data.DurableClockState
 import app.posato.feature.sync.data.EncryptedBundleCodec
 import app.posato.feature.sync.data.InspectBundleHeaderResult
@@ -11,7 +10,6 @@ import app.posato.feature.sync.data.RemoteBundleFailure
 import app.posato.feature.sync.data.StoredAcceptedBundle
 import app.posato.feature.sync.data.StoredStagedBundle
 import app.posato.feature.sync.data.SyncCryptoProvider
-import app.posato.feature.sync.data.SyncOperationCodec
 import app.posato.feature.sync.data.SyncReplicaSnapshot
 import app.posato.feature.sync.data.SyncReplicaStore
 import app.posato.feature.sync.data.SyncSigningKey
@@ -183,38 +181,6 @@ internal class SyncOperationCore(
     }
 }
 
-private fun SyncReplicaSnapshot.isAuthenticatedBy(
-    cryptoProvider: SyncCryptoProvider,
-    transportKey: TransportKey,
-): Boolean {
-    val terminalClock = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
-    if ((clockState.last == terminalClock) != clockState.isExhausted) {
-        return false
-    }
-    val codec = EncryptedBundleCodec(cryptoProvider)
-    val acceptedAreValid = acceptedBundles.all { (bundleId, stored) ->
-        val decoded = codec.decode(stored.bundle, context, transportKey)
-        decoded is DecodeBundleResult.Success &&
-            bundleId == stored.operation.operationId &&
-            decoded.operation == stored.operation &&
-            stored.operation.clock <= clockState.last &&
-            stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
-    }
-    val stagedAreValid = stagedBundles.all { (bundleId, stored) ->
-        val decoded = codec.decode(stored.bundle, context, transportKey)
-        decoded is DecodeBundleResult.Success &&
-            bundleId == stored.operation.operationId &&
-            decoded.operation == stored.operation &&
-            stored.operation.payload != SyncOperationPayload.AuthorRegister &&
-            stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
-    }
-    val retainedSessionIds = acceptedBundles.values.mapNotNullTo(mutableSetOf()) { stored ->
-        (stored.operation.payload as? SyncOperationPayload.SessionStart)?.sessionId
-    }
-
-    return acceptedAreValid && stagedAreValid && terminalExpiryFacts.all(retainedSessionIds::contains)
-}
-
 internal class SyncWriter internal constructor(
     private val store: SyncReplicaStore,
     private val cryptoProvider: SyncCryptoProvider,
@@ -241,6 +207,8 @@ internal class SyncWriter internal constructor(
             if (!verifyCheckpoint()) {
                 return@withLock LocalMutationResult.Failure(LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN)
             }
+            val payload = mutation.toPayload()
+                ?: return@withLock LocalMutationResult.Failure(LocalMutationFailure.INVALID_MUTATION)
             if (authoringIncarnation?.let { incarnation -> incarnation.nextSequence == null } == true) {
                 freeze()
                 return@withLock LocalMutationResult.Failure(LocalMutationFailure.AUTHOR_SEQUENCE_EXHAUSTED)
@@ -259,7 +227,7 @@ internal class SyncWriter internal constructor(
                     LocalMutationResult.Failure(LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN)
                 }
             }
-            val prepared = localMutationPreparer.prepare(mutation, reservedClocks, authoringIncarnation, checkpoint.context)
+            val prepared = localMutationPreparer.prepare(payload, reservedClocks, authoringIncarnation, checkpoint.context)
                 ?: return@withLock LocalMutationResult.Failure(freezeForPreparationFailure())
             val committedSnapshot = commitReconciler.commitLocal(checkpoint, prepared)
                 ?: return@withLock LocalMutationResult.Failure(LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN).also { freeze() }

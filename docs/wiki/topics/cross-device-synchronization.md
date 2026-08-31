@@ -155,6 +155,12 @@ and deferred-capacity bundles now share the same rule: opaque transport progress
 advances only when exact refetch remains available, using the existing exact
 commit-reconciliation boundary.
 
+`observed` (2026-08-31): a later hosted review correction rejects invalid local
+session mutations before reserving authoring resources, so the open writer
+remains usable. Reopen also revalidates each accepted author's unique sequence-1
+registration, stable signing key, unique sequences, and absence of later
+registration while continuing to permit sequence gaps.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:

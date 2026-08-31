@@ -973,3 +973,9 @@
 - Rejected reopen when durable HLC state falls below retained accepted history.
 - Unified rejected and deferred-capacity exact-refetch progress handling through
   the existing atomic commit-reconciliation path.
+
+## [2026-08-31] correction | Revalidate sync author history on reopen
+
+- Kept invalid local mutations recoverable without freezing the replica writer.
+- Revalidated accepted author registration, signing-key, and sequence invariants
+  on reopen while preserving legal sequence gaps.

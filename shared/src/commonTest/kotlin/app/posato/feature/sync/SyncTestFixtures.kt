@@ -53,7 +53,9 @@ internal fun testOperation(
     )
 }
 
-internal class FakeSyncCryptoProvider : SyncCryptoProvider {
+internal class FakeSyncCryptoProvider(
+    private val signingPublicKey: PublicSigningKey = testPublicKey,
+) : SyncCryptoProvider {
     private var nextByte = 1
 
     override fun randomBytes(count: Int): ByteArray {
@@ -100,7 +102,7 @@ internal class FakeSyncCryptoProvider : SyncCryptoProvider {
     }
 
     override fun createSigningKey(): SyncSigningKey {
-        return FakeSyncSigningKey(testPublicKey)
+        return FakeSyncSigningKey(signingPublicKey)
     }
 
     override fun verifyEd25519(
@@ -108,7 +110,7 @@ internal class FakeSyncCryptoProvider : SyncCryptoProvider {
         message: ByteArray,
         signature: ByteArray,
     ): Boolean {
-        return publicKey == testPublicKey && signature.contentEquals(fakeSignature(message))
+        return signature.contentEquals(fakeSignature(publicKey, message))
     }
 
     private fun authenticationTag(
@@ -128,7 +130,7 @@ private class FakeSyncSigningKey(
     private var isClosed = false
 
     override fun sign(message: ByteArray): ByteArray? {
-        return if (isClosed) null else fakeSignature(message)
+        return if (isClosed) null else fakeSignature(publicKey, message)
     }
 
     override fun close() {
@@ -136,6 +138,12 @@ private class FakeSyncSigningKey(
     }
 }
 
-private fun fakeSignature(message: ByteArray): ByteArray {
-    return ByteArray(SyncFormatLimits.SIGNATURE_BYTES) { index -> message[index % message.size] }
+private fun fakeSignature(
+    publicKey: PublicSigningKey,
+    message: ByteArray,
+): ByteArray {
+    val keyBytes = publicKey.copyBytes()
+    return ByteArray(SyncFormatLimits.SIGNATURE_BYTES) { index ->
+        (keyBytes[index % keyBytes.size].toInt() xor message[index % message.size].toInt()).toByte()
+    }
 }

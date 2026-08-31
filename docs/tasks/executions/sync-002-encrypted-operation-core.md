@@ -69,14 +69,19 @@
 - **Verdict:** `changes required`
 - **Required findings:** A reopened replica did not reject durable HLC state
   below an accepted operation clock, and rejected bundles did not commit
-  supplied progress when exact refetch remained available.
+  supplied progress when exact refetch remained available. A later review pass
+  also found that invalid local mutations froze the writer and that reopen did
+  not revalidate accepted author registration and signing-key history.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
   cover lower, equal, and greater reopen clocks plus exact-refetch progress and
   exact and unresolved ambiguous results, including writer freezing. No repeat
-  hosted review was requested. An independent focused re-review approved the
-  correction with no remaining Critical or Required findings.
+  hosted review was requested. Invalid mutations now return
+  `INVALID_MUTATION` before authoring resources are reserved, and reopen rejects
+  missing or repeated registration, sequence conflicts, and signing-key changes
+  while preserving legal sequence gaps. An independent focused re-review
+  approved the corrections with no remaining Critical or Required findings.
 
 ## Verification
 
@@ -89,6 +94,7 @@
 | Credential-free iOS Simulator host build | `pass` | The `iosApp` scheme and injected CryptoKit provider compiled with signing disabled. |
 | CryptoKit XCTest on iOS Simulator | `pass` | FIPS SHA-256, RFC 4231 HMAC-SHA256, NIST AES-GCM including altered-tag rejection, Ed25519 lifecycle and RFC 8032 cross-verification, and decoding the fixed JCA-produced format-1 golden bundle through Kotlin and CryptoKit passed. |
 | CryptoKit XCTest on physical iPhone | `pass` | All six Simulator-tested CryptoKit cases passed on the connected physical iPhone with the maintainer-provided Development Team supplied only as a local build parameter. No personal signing value was added to the repository. |
+| Hosted-review regression tests | `pass` | Invalid local session bounds remain recoverable; reopen rejects invalid registration and signing-key histories while accepting a valid history with a sequence gap. |
 
 ## Blockers and accepted risks
 

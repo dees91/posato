@@ -13,14 +13,13 @@ internal class LocalMutationPreparer(
     private val transportKey: TransportKey,
 ) {
     fun prepare(
-        mutation: LocalSyncMutation,
+        payload: SyncOperationPayload,
         clocks: List<HybridLogicalClock>,
         existing: AuthoringIncarnation?,
         context: SyncContext,
     ): PreparedLocalMutation? {
         val signingKey = existing?.signingKey ?: cryptoProvider.createSigningKey()
         val authorId = existing?.authorId ?: createUuidV4()?.let(::AuthorId)
-        val payload = mutation.toPayload()
         val operations = createOperations(existing, authorId, signingKey, clocks, payload, context)
         val bundles = operations?.let { prepareBundles(it, signingKey) }
         val complete = listOf(authorId, signingKey, operations, bundles).all { it != null }
@@ -46,10 +45,10 @@ internal class LocalMutationPreparer(
         authorId: AuthorId?,
         signingKey: SyncSigningKey?,
         clocks: List<HybridLogicalClock>,
-        payload: SyncOperationPayload?,
+        payload: SyncOperationPayload,
         context: SyncContext,
     ): List<SyncOperation>? {
-        if (authorId == null || signingKey == null || payload == null) return null
+        if (authorId == null || signingKey == null) return null
         val specifications = if (existing == null) {
             listOf(Triple(1L, clocks[0], SyncOperationPayload.AuthorRegister), Triple(2L, clocks[1], payload))
         } else {
