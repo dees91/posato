@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 3
+- **Revision:** 4
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
 - **Last amended:** 2026-08-31
@@ -15,9 +15,10 @@ This roadmap retains the MVP outcomes, ordering, direct dependencies, waves,
 and integration groups. It does not pre-authorize implementation or require a
 full specification for inactive work. Create a concise brief just before a
 task or integration group starts, following [the task workflow](README.md).
-Revision 3 adds the maintainer-accepted `SESSION-001` design-system
-consolidation checkpoint without adding a task or changing dependencies,
-waves, or integration groups.
+Revision 4 adds the maintainer-accepted `MACOS-006` development-packaging
+correction after a physical TARGETS-003 gate found that the unchanged Gradle
+artifact could not launch. It keeps release signing, notarization, and public
+distribution in `RELEASE-001`.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -49,7 +50,8 @@ remain authoritative for their concerns.
 
 ## Task stubs, dependencies, waves, and integration groups
 
-The 36 rows below are the complete Gate 6 task set. Future rows stay as stubs.
+The 37 rows below are the complete amended Gate 6 task set. Future rows stay as
+stubs.
 [`APPLE-001`](specifications/apple-001-register-apple-resources.md) is the
 completed Gate 7 brief. The Ready to open PR #1 checkpoint is complete and the
 PR #1 implementation cycle is active. Direct dependencies preserve revision 1;
@@ -72,13 +74,14 @@ wave barriers add the phase ordering stated above.
 | `TARGETS-002` | Manage semantic application policies and truthful local-mapping availability. | Target management | P2/W2.5 | `MODEL-001` | PR-APP-POLICY |
 | `SYNC-003` | Accept the one-workspace CloudKit and synchronizable-Keychain bootstrap contract. | Apple synchronization | P2/W2.5 | `SYNC-001`, `APPLE-001` | PR-APPLE-SYNC-CONTRACT |
 | `TARGETS-003` | Associate and remove device-local macOS application selections. | Target management | P2/W2.6 | `TARGETS-002` | PR-MAC-MAPPING |
+| `MACOS-006` | Produce an unchanged development-signed macOS package whose nested JVM and helper runtime passes strict verification and launches on the supported Mac. | Preparation | P2/W2.6a | `MACOS-003` | PR-MAC-DEV-PACKAGING |
 | `TARGETS-004` | Authorize and associate an opaque device-local iOS application selection. | Target management | P2/W2.6 | `TARGETS-002`, `APPLE-001` | PR-IOS-MAPPING |
 | `SYNC-002` | Create and process compatible encrypted operations with deterministic rejection and convergence. | Apple synchronization | P2/W2.6 | `SYNC-001` | PR-SYNC-CORE |
 | `SESSION-001` | Provide shared setup, review, start, early-end, and expiry behavior for one manual session, and consolidate only repeated production UI contracts. | Sessions and enforcement | P2/W2.7 | `TARGETS-001`, `TARGETS-002` | PR-SESSION-CORE |
 | `SYNC-004` | Preserve the one-workspace invariant through bootstrap delay, conflict, failure, and restart. | Apple synchronization | P2/W2.8 | `SYNC-003` | PR-BOOTSTRAP-CORE |
-| `MACOS-004` | Deny selected exact domains on the accepted macOS browser matrix with safe recovery. | Sessions and enforcement | P3/W3.1 | `MACOS-002`, `MACOS-003`, `SESSION-001`, `TARGETS-001` | PR-MAC-DOMAINS |
+| `MACOS-004` | Deny selected exact domains on the accepted macOS browser matrix with safe recovery. | Sessions and enforcement | P3/W3.1 | `MACOS-002`, `MACOS-006`, `SESSION-001`, `TARGETS-001` | PR-MAC-DOMAINS |
 | `IOS-001` | Apply and clear only Posato-owned iOS website and application restrictions. | Sessions and enforcement | P3/W3.1 | `SESSION-001`, `TARGETS-004`, `APPLE-001` | PR-IOS-ENFORCEMENT |
-| `MACOS-005` | Restrict locally mapped macOS applications without affecting unselected applications. | Sessions and enforcement | P3/W3.2 | `MACOS-003`, `SESSION-001`, `TARGETS-003` | PR-MAC-APPS |
+| `MACOS-005` | Restrict locally mapped macOS applications without affecting unselected applications. | Sessions and enforcement | P3/W3.2 | `MACOS-006`, `SESSION-001`, `TARGETS-003` | PR-MAC-APPS |
 | `IOS-002` | Clear Posato-owned restrictions after normal expiry while the iOS app is suspended. | Sessions and enforcement | P3/W3.2 | `IOS-001` | PR-IOS-EXPIRY |
 | `SYNC-005` | Implement the iOS synchronizable-Keychain adapter and truthful service outcomes. | Apple synchronization | P3/W3.3 | `SYNC-003` | PR-IOS-KEYCHAIN |
 | `SYNC-006` | Implement the macOS synchronizable-Keychain native boundary and truthful outcomes. | Apple synchronization | P3/W3.3 | `SYNC-003` | PR-MAC-KEYCHAIN |
@@ -108,7 +111,7 @@ integrated increment, not three task cycles plus another holistic review.
 | --- | --- | --- |
 | Production shell, target graph, quality gate, and credential-free CI | `APPLE-001`, `FOUNDATION-001`, `QUALITY-001`, `CI-001` | Manual resource results, macOS run, iOS Simulator build, aggregate gate, CI, one review |
 | Local domains and semantic application mappings | `MODEL-001`, `TARGETS-001`–`TARGETS-004` | Persistence and contract tests, UI/accessibility checks, physical native selection |
-| Bounded local sessions and platform enforcement | `SESSION-001`, `SESSION-002`, `MACOS-001`–`MACOS-005`, `IOS-001`, `IOS-002` | IPC and browser/app matrices, physical start/end/expiry/failure cleanup |
+| Bounded local sessions and platform enforcement | `SESSION-001`, `SESSION-002`, `MACOS-001`–`MACOS-006`, `IOS-001`, `IOS-002` | IPC, launchable development packaging, browser/app matrices, physical start/end/expiry/failure cleanup |
 | Common encrypted operations and one Apple workspace | `SYNC-001`–`SYNC-010` | Security decisions, vectors, tamper/replay rejection, physical Keychain/CloudKit delay and account isolation |
 | First and second installation | `ONBOARDING-001`, `ONBOARDING-002` | Physical flows without a product account or parallel workspace |
 | Policy and session convergence | `SYNC-011`, `SYNC-012` | Bidirectional physical convergence, offline/retry, early end, and expiry |
@@ -124,6 +127,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Family Controls distribution availability | `TARGETS-004` / `IOS-001` | Later distribution work records pass or a clearing condition. |
 | iOS suspended expiry opportunity | `IOS-002` | A physical callback clears owned restrictions without promising exact wake time. |
 | macOS helper signing and privilege path | `MACOS-003` | Physical authentication, authorization, failure, and removal/recovery evidence passes. |
+| macOS development package launch | `MACOS-006` | The unchanged Gradle-produced application passes strict nested-signature verification and launches on the supported physical Mac without manual re-signing. |
 | Browser support and proxy coexistence | `MACOS-002` / `MACOS-004` | Accepted support contract and physical browser matrix pass. |
 | CloudKit and Keychain environments | `SYNC-005`–`SYNC-010` | Physical account, delay, restart, error, and cleanup evidence passes. |
 | Complete product flow | `MVP-001` | The accepted Mac-and-iPhone matrix passes without manual repair. |

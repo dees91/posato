@@ -917,3 +917,10 @@
 - Made the dedicated application-picker helper client one-shot after physical
   testing found that returning to a blocking pipe read left AppKit unresponsive.
 - Kept enforcement helper lifecycle and daemon ownership unchanged.
+
+## [2026-08-31] decision | Add a development-packaging correction gate
+
+- Added `MACOS-006` before macOS domain and application enforcement after the
+  unchanged Gradle package failed to launch during a physical gate.
+- Required strict nested-signature verification and launch without manual
+  re-signing while retaining release signing and notarization in `RELEASE-001`.
