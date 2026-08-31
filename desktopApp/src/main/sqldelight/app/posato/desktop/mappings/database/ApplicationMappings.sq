@@ -1,0 +1,22 @@
+CREATE TABLE localApplicationMapping (
+    mappingId BLOB NOT NULL PRIMARY KEY,
+    displayName BLOB NOT NULL,
+    designatedRequirement BLOB NOT NULL
+);
+
+selectAll:
+SELECT mappingId, displayName, designatedRequirement
+FROM localApplicationMapping
+ORDER BY displayName, mappingId;
+
+insertOrIgnore:
+INSERT OR IGNORE INTO localApplicationMapping(mappingId, displayName, designatedRequirement)
+VALUES (?, ?, ?);
+
+removeById:
+DELETE FROM localApplicationMapping
+WHERE mappingId = ?;
+
+countAll:
+SELECT COUNT(*)
+FROM localApplicationMapping;

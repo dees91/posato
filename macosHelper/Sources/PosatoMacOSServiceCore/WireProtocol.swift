@@ -7,8 +7,12 @@ public enum WireLimits {
   public static let maximumXPCBytes = 64 * 1024
   public static let identifierBytes = 16
   public static let maximumDeadlineMilliseconds: UInt32 = 120_000
+  public static let maximumSelectionDeadlineMilliseconds: UInt32 = 1_800_000
   public static let maximumOperationsPerConnection: UInt32 = 256
   public static let requiredCapabilities: UInt64 = 1
+  public static let applicationSelectionCapability: UInt64 = 2
+  public static let requiredParentHelperCapabilities: UInt64 =
+    requiredCapabilities | applicationSelectionCapability
 }
 
 public enum WireCapabilities {
@@ -27,8 +31,8 @@ public enum WireCapabilities {
     }
   }
 
-  public static func supportsRequired(_ offered: UInt64) -> Bool {
-    return offered & WireLimits.requiredCapabilities == WireLimits.requiredCapabilities
+  public static func supports(_ offered: UInt64, required: UInt64) -> Bool {
+    return offered & required == required
   }
 }
 
@@ -51,6 +55,7 @@ public enum WireOperation: UInt8, Sendable {
   case remove = 7
   case reconcile = 8
   case renew = 9
+  case selectApplications = 10
 }
 
 public enum WireOutcome: UInt8, Sendable {
@@ -136,7 +141,11 @@ public struct WireMessage: Equatable, Sendable {
     else {
       throw WireProtocolFailure.invalidFrame
     }
-    guard deadlineMilliseconds <= WireLimits.maximumDeadlineMilliseconds else {
+    let maximumDeadline =
+      operation == .selectApplications
+      ? WireLimits.maximumSelectionDeadlineMilliseconds
+      : WireLimits.maximumDeadlineMilliseconds
+    guard deadlineMilliseconds <= maximumDeadline else {
       throw WireProtocolFailure.invalidDeadline
     }
     guard payload.count <= WireLimits.maximumFrameBytes else {
@@ -189,7 +198,12 @@ public enum WireCodec {
     return encoded
   }
 
-  public static func decode(_ encoded: Data, maximumBytes: Int) throws -> WireMessage {
+  public static func decode(
+    _ encoded: Data,
+    maximumBytes: Int,
+    allowsApplicationSelection: Bool = false,
+    maximumDeadlineMilliseconds: UInt32 = WireLimits.maximumDeadlineMilliseconds
+  ) throws -> WireMessage {
     guard encoded.count <= maximumBytes else {
       throw WireProtocolFailure.oversizedFrame
     }
@@ -209,8 +223,14 @@ public enum WireCodec {
     guard let operation = WireOperation(rawValue: try cursor.readUInt8()) else {
       throw WireProtocolFailure.invalidOperation
     }
+    guard allowsApplicationSelection || operation != .selectApplications else {
+      throw WireProtocolFailure.invalidOperation
+    }
     let sequence = try cursor.readUInt32()
     let deadline = try cursor.readUInt32()
+    guard deadline <= maximumDeadlineMilliseconds else {
+      throw WireProtocolFailure.invalidDeadline
+    }
     let connectionIdentifier = try cursor.readData(count: WireLimits.identifierBytes)
     let sessionIdentifier = try cursor.readData(count: WireLimits.identifierBytes)
     let requestIdentifier = try cursor.readData(count: WireLimits.identifierBytes)
@@ -359,30 +379,5 @@ private struct DataCursor {
     }
     defer { offset += count }
     return data.subdata(in: offset..<(offset + count))
-  }
-}
-
-extension Data {
-  fileprivate mutating func appendBigEndian(_ value: UInt16) {
-    append(UInt8((value >> 8) & 0xFF))
-    append(UInt8(value & 0xFF))
-  }
-
-  fileprivate mutating func appendBigEndian(_ value: UInt32) {
-    append(UInt8((value >> 24) & 0xFF))
-    append(UInt8((value >> 16) & 0xFF))
-    append(UInt8((value >> 8) & 0xFF))
-    append(UInt8(value & 0xFF))
-  }
-
-  fileprivate mutating func appendBigEndian(_ value: UInt64) {
-    append(UInt8((value >> 56) & 0xFF))
-    append(UInt8((value >> 48) & 0xFF))
-    append(UInt8((value >> 40) & 0xFF))
-    append(UInt8((value >> 32) & 0xFF))
-    append(UInt8((value >> 24) & 0xFF))
-    append(UInt8((value >> 16) & 0xFF))
-    append(UInt8((value >> 8) & 0xFF))
-    append(UInt8(value & 0xFF))
   }
 }

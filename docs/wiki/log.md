@@ -904,3 +904,10 @@
   approval for every narrowly justified quality-tool exception.
 - Added an aggregate quality check that rejects Kotlin suppression annotations
   outside the exact allowlist of approved pre-existing exceptions.
+
+## [2026-08-31] experiment | Add device-local macOS application mappings
+
+- Added strict signed-bundle selection in the normal-user helper and an
+  owner-only local mapping database outside synchronization and diagnostics.
+- Kept picker capability and its human-interaction deadline off daemon XPC;
+  lifecycle transport remains unchanged.

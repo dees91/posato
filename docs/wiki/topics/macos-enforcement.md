@@ -335,6 +335,21 @@ Application launch observations are also behavioral data. Production logging
 must minimize them and define retention before any telemetry or support capture
 is introduced.
 
+## Device-local application identity
+
+`observed` (2026-08-31): TARGETS-003 implements macOS selection in the existing
+normal-user helper. AppKit returns application bundles; Security framework
+validation checks all architectures strictly without network access, rejects
+ad-hoc signatures and Posato, and extracts each binary designated requirement.
+The complete batch fails before persistence if any member is invalid.
+
+The JVM hashes each exact requirement with SHA-256 for its redacted mapping key
+and keeps the requirement bytes and bounded display name in a separate local
+SQLDelight database. Its directory is owner-only and the database plus present
+SQLite sidecars are owner read/write only. Selection identity remains absent
+from the root daemon, synchronized policy, diagnostics, and logs. Process
+matching and termination remain deferred to MACOS-005.
+
 ## Open questions
 
 - Does MACOS-004 pass every accepted automated and physical browser,

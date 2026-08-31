@@ -1,5 +1,13 @@
 package app.posato.feature.targets.ui
 
+import app.posato.feature.targets.data.LocalApplicationMapping
+import app.posato.feature.targets.data.LocalApplicationMappingId
+import app.posato.feature.targets.data.LocalApplicationMappings
+import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
+import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
+import app.posato.feature.targets.data.LocalApplicationRemovalResult
+import app.posato.feature.targets.data.LocalApplicationSelectionRejection
+import app.posato.feature.targets.data.LocalApplicationSelectionResult
 import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
@@ -414,6 +422,44 @@ class TargetsViewModelTest {
 
         assertEquals("TargetsUiState(redacted)", viewModel.uiState.value.toString())
     }
+
+    @Test
+    fun `given available mappings when choosing and removing then device snapshot changes independently`() = runTest(dispatcher) {
+        val mapping = mapping("Browser", "01")
+        val mappings = FakeApplicationMappings()
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        assertTrue(viewModel.uiState.value.canChooseApplications())
+        mappings.selectionResult = LocalApplicationSelectionResult.Success(snapshotOf(mapping))
+        viewModel.chooseApplications()
+        scheduler.runCurrent()
+        assertEquals(listOf(mapping), viewModel.uiState.value.applicationMappings)
+
+        mappings.removalResult = LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty())
+        viewModel.removeApplicationMapping(mapping.id)
+        scheduler.runCurrent()
+        assertTrue(viewModel.uiState.value.applicationMappings.isEmpty())
+        assertEquals(1, mappings.removeCalls)
+    }
+
+    @Test
+    fun `given rejected selection when choosing then prior snapshot remains visible`() = runTest(dispatcher) {
+        val mapping = mapping("Browser", "02")
+        val mappings = FakeApplicationMappings(snapshotOf(mapping)).apply {
+            selectionResult = LocalApplicationSelectionResult.Rejected(LocalApplicationSelectionRejection.SELF)
+        }
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        viewModel.chooseApplications()
+        scheduler.runCurrent()
+
+        assertEquals(listOf(mapping), viewModel.uiState.value.applicationMappings)
+        assertEquals(ApplicationMappingFailure.SELF_SELECTION, viewModel.uiState.value.applicationMappingFailure)
+    }
 }
 
 private fun TestScope.observe(viewModel: TargetsViewModel): Job {
@@ -469,6 +515,43 @@ private class FakeTargetPolicyStore(
         state = LocalTargetPolicyState(expectedRevision + 1, policy)
         return LocalPolicyResult.Success(state)
     }
+}
+
+private class FakeApplicationMappings(
+    private var snapshot: LocalApplicationMappingsSnapshot = LocalApplicationMappingsSnapshot.empty(),
+) : LocalApplicationMappings {
+    var selectionResult: LocalApplicationSelectionResult = LocalApplicationSelectionResult.Cancelled
+    var removalResult: LocalApplicationRemovalResult = LocalApplicationRemovalResult.Success(snapshot)
+    var removeCalls: Int = 0
+
+    override suspend fun load(): LocalApplicationMappingsLoadResult {
+        return LocalApplicationMappingsLoadResult.Success(snapshot)
+    }
+
+    override suspend fun chooseApplications(): LocalApplicationSelectionResult {
+        return selectionResult.also { result ->
+            if (result is LocalApplicationSelectionResult.Success) snapshot = result.snapshot
+        }
+    }
+
+    override suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult {
+        removeCalls++
+        return removalResult.also { result ->
+            if (result is LocalApplicationRemovalResult.Success) snapshot = result.snapshot
+        }
+    }
+}
+
+private fun mapping(
+    name: String,
+    byte: String
+): LocalApplicationMapping {
+    val id = checkNotNull(LocalApplicationMappingId.restore(byte.repeat(32)))
+    return checkNotNull(LocalApplicationMapping.restore(id, name))
+}
+
+private fun snapshotOf(vararg mappings: LocalApplicationMapping): LocalApplicationMappingsSnapshot {
+    return checkNotNull(LocalApplicationMappingsSnapshot.restore(mappings.asList()))
 }
 
 private fun stateOf(

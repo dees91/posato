@@ -225,9 +225,13 @@ until replacement input validates.
 
 The visible name for the singleton semantic application policy is
 **Application group**. Its name may synchronize, but application choices remain
-local to each device. Until a native selection producer exists, the shared UI
-states **Apps still need to be chosen on this device.** and does not present a
-fake, disabled, or speculative selection action.
+local to each device. On macOS, a present application group exposes **Choose
+applications**, followed by a plain device-local list with individual Remove
+actions. Cancellation keeps the previous list. Removing the semantic group
+retains the local list and says so explicitly; recreating the group makes the
+retained choices effective again. On platforms without an accepted native
+selection producer, the shared UI states **Apps still need to be chosen on this
+device.** and presents no fake or speculative selection action.
 
 ### Session setup and review
 

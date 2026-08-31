@@ -141,6 +141,7 @@ tasks.register("quality") {
         ":desktopApp:detekt",
         ":desktopApp:ktlintCheck",
         ":desktopApp:test",
+        ":desktopApp:verifySqlDelightMigration",
         ":quality-rules:detekt",
         ":quality-rules:ktlintCheck",
         ":quality-rules:test",

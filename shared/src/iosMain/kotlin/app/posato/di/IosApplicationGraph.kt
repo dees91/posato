@@ -3,8 +3,10 @@ package app.posato.di
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createIosDatabaseDriver
+import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
+import app.posato.feature.targets.data.UnavailableLocalApplicationMappings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -47,6 +49,12 @@ internal interface IosApplicationGraph : ApplicationGraph {
             database = database,
             databaseDispatcher = databaseDispatcher,
         )
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideApplicationMappings(): LocalApplicationMappings {
+        return UnavailableLocalApplicationMappings
     }
 }
 
