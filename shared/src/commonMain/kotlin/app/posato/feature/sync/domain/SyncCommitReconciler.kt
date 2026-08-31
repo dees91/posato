@@ -1,0 +1,59 @@
+package app.posato.feature.sync.domain
+
+import app.posato.feature.sync.data.SyncReplicaSnapshot
+import app.posato.feature.sync.data.SyncReplicaStore
+import app.posato.feature.sync.data.SyncStoreResult
+
+internal class SyncCommitReconciler(
+    private val store: SyncReplicaStore,
+) {
+    suspend fun commitLocal(
+        checkpoint: SyncReplicaSnapshot,
+        prepared: PreparedLocalMutation
+    ): SyncReplicaSnapshot? {
+        val expected = prepared.expectedAfter(checkpoint)
+        val firstAttempt = store.commitLocal(checkpoint.revision, prepared.bundles, prepared.clockState)
+        val firstResult = (firstAttempt as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
+        val observed = firstResult?.let { SyncStoreResult.Success(it) } ?: store.read(checkpoint.context)
+        val observedSnapshot = (observed as? SyncStoreResult.Success)?.value
+        val retryResult = if (observedSnapshot == checkpoint) {
+            retryLocal(checkpoint, prepared, expected)
+        } else {
+            null
+        }
+        return firstResult ?: observedSnapshot?.takeIf(expected::equals) ?: retryResult
+    }
+
+    suspend fun commitRemote(
+        checkpoint: SyncReplicaSnapshot,
+        expected: SyncReplicaSnapshot,
+        commit: suspend () -> SyncStoreResult<SyncReplicaSnapshot>,
+    ): SyncReplicaSnapshot? {
+        val firstResult = (commit() as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
+        val observed = firstResult?.let { SyncStoreResult.Success(it) } ?: store.read(checkpoint.context)
+        val observedSnapshot = (observed as? SyncStoreResult.Success)?.value
+        val retryResult = if (observedSnapshot == checkpoint) retryRemote(checkpoint, expected, commit) else null
+        return firstResult ?: observedSnapshot?.takeIf(expected::equals) ?: retryResult
+    }
+
+    private suspend fun retryLocal(
+        checkpoint: SyncReplicaSnapshot,
+        prepared: PreparedLocalMutation,
+        expected: SyncReplicaSnapshot,
+    ): SyncReplicaSnapshot? {
+        val retry = store.commitLocal(checkpoint.revision, prepared.bundles, prepared.clockState)
+        val retryResult = (retry as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
+        val observation = retryResult?.let { SyncStoreResult.Success(it) } ?: store.read(checkpoint.context)
+        return retryResult ?: (observation as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
+    }
+
+    private suspend fun retryRemote(
+        checkpoint: SyncReplicaSnapshot,
+        expected: SyncReplicaSnapshot,
+        commit: suspend () -> SyncStoreResult<SyncReplicaSnapshot>,
+    ): SyncReplicaSnapshot? {
+        val retryResult = (commit() as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
+        val observation = retryResult?.let { SyncStoreResult.Success(it) } ?: store.read(checkpoint.context)
+        return retryResult ?: (observation as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
+    }
+}

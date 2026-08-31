@@ -1,0 +1,141 @@
+package app.posato.feature.sync.data
+
+import app.posato.core.database.PosatoDatabase
+import app.posato.feature.sync.domain.EncryptedBundle
+import app.posato.feature.sync.domain.HybridLogicalClock
+import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.sync.domain.SyncOperationPayload
+import app.posato.feature.sync.testContext
+import app.posato.feature.sync.testIdentifier
+import app.posato.feature.sync.testOperation
+import app.posato.feature.targets.data.createLocalPolicyTestDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
+
+class SqlSyncReplicaStoreContractTest {
+    @Test
+    fun `given local state when committed and reopened then exact accepted pending clock and expiry facts persist`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-lifecycle.db")
+        var driver = testDatabase.openDriver()
+        try {
+            var store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+            val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+            val sessionId = SessionId(testIdentifier(90))
+            val registration = prepared(1, 1, SyncOperationPayload.AuthorRegister)
+            val session = prepared(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200))
+            val committed = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitLocal(
+                    initial.revision,
+                    listOf(registration, session),
+                    DurableClockState(HybridLogicalClock(100, 1), false),
+                ),
+            ).value
+            val staged = prepared(3, 2, SyncOperationPayload.ApplicationPolicyAbsent)
+            val progress = OpaqueTransportProgress(byteArrayOf(7, 8, 9))
+            val withStaged = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitStagedRemote(committed.revision, staged, committed.clockState, progress),
+            ).value
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.markTerminalExpiry(withStaged.revision, sessionId))
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+            val reopened = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+
+            assertEquals(2, reopened.acceptedBundles.size)
+            assertEquals(2, reopened.pendingBundles.size)
+            assertEquals(setOf(staged.operation.operationId), reopened.stagedBundles.keys)
+            assertEquals(progress, reopened.transportProgress)
+            assertEquals(setOf(sessionId), reopened.terminalExpiryFacts)
+            assertEquals(DurableClockState(HybridLogicalClock(100, 1), false), reopened.clockState)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given an accepted insert failure when remote progress commits then history clock and progress roll back together`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-rollback.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+            val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+            val priorProgress = OpaqueTransportProgress(byteArrayOf(1))
+            val withProgress = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitTransportProgress(initial.revision, priorProgress),
+            ).value
+            driver.execute(
+                identifier = null,
+                sql =
+                    """
+                    CREATE TRIGGER fail_sync_accept
+                    BEFORE INSERT ON sync_accepted_bundle
+                    BEGIN
+                      SELECT RAISE(ABORT, 'synthetic insert failure');
+                    END
+                    """.trimIndent(),
+                parameters = 0,
+            )
+
+            val result = store.commitAcceptedRemote(
+                expectedRevision = withProgress.revision,
+                bundles = listOf(prepared(1, 1, SyncOperationPayload.AuthorRegister)),
+                stagedBundleIdsToDelete = emptySet(),
+                clockState = DurableClockState(HybridLogicalClock(1, 0), false),
+                transportProgress = OpaqueTransportProgress(byteArrayOf(2)),
+            )
+            val after = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value
+
+            assertEquals(SyncStoreFailure.STORAGE_FAILURE, assertIs<SyncStoreResult.Failure>(result).reason)
+            assertEquals(withProgress, after)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given persisted operation or pending bytes diverge when read then corruption is reported`() = runTest {
+        listOf(
+            "UPDATE sync_accepted_bundle SET operation_bytes = x'00'" to "operation bytes",
+            "UPDATE sync_pending_bundle SET bundle_bytes = x'01'" to "pending bytes",
+        ).forEachIndexed { index, (corruption, description) ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-corruption-$index.db")
+            val driver = testDatabase.openDriver()
+            try {
+                val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+                val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                    store.commitLocal(
+                        initial.revision,
+                        listOf(prepared(1, 1, SyncOperationPayload.AuthorRegister)),
+                        DurableClockState(HybridLogicalClock(1, 0), false),
+                    ),
+                )
+                driver.execute(null, corruption, 0)
+
+                val result = store.read(testContext)
+
+                assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason, description)
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+}
+
+private fun prepared(
+    id: Int,
+    sequence: Long,
+    payload: SyncOperationPayload,
+): PreparedStoredBundle {
+    return PreparedStoredBundle(
+        bundle = EncryptedBundle(ByteArray(32) { id.toByte() }),
+        operation = testOperation(id, sequence, payload),
+    )
+}

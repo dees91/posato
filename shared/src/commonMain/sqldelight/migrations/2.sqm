@@ -1,0 +1,44 @@
+CREATE TABLE sync_replica_state (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  workspace_id BLOB NOT NULL CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16),
+  transport_epoch_id BLOB NOT NULL CHECK (typeof(transport_epoch_id) = 'blob' AND length(transport_epoch_id) = 16),
+  key_epoch_id BLOB NOT NULL CHECK (typeof(key_epoch_id) = 'blob' AND length(key_epoch_id) = 16),
+  revision INTEGER NOT NULL CHECK (typeof(revision) = 'integer' AND revision >= 0),
+  hlc_physical INTEGER NOT NULL CHECK (typeof(hlc_physical) = 'integer' AND hlc_physical BETWEEN 0 AND 4102444800000),
+  hlc_logical INTEGER NOT NULL CHECK (typeof(hlc_logical) = 'integer' AND hlc_logical BETWEEN 0 AND 65535),
+  hlc_exhausted INTEGER NOT NULL CHECK (typeof(hlc_exhausted) = 'integer' AND hlc_exhausted IN (0, 1)),
+  transport_progress BLOB CHECK (transport_progress IS NULL OR typeof(transport_progress) = 'blob')
+);
+
+CREATE TABLE sync_accepted_bundle (
+  bundle_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(bundle_id) = 'blob' AND length(bundle_id) = 16),
+  bundle_bytes BLOB NOT NULL CHECK (typeof(bundle_bytes) = 'blob' AND length(bundle_bytes) <= 65536),
+  operation_bytes BLOB NOT NULL CHECK (typeof(operation_bytes) = 'blob' AND length(operation_bytes) <= 32768),
+  author_id BLOB NOT NULL CHECK (typeof(author_id) = 'blob' AND length(author_id) = 16),
+  author_sequence INTEGER NOT NULL CHECK (typeof(author_sequence) = 'integer' AND author_sequence > 0),
+  public_key BLOB NOT NULL CHECK (typeof(public_key) = 'blob' AND length(public_key) = 32),
+  hlc_physical INTEGER NOT NULL CHECK (typeof(hlc_physical) = 'integer' AND hlc_physical BETWEEN 0 AND 4102444800000),
+  hlc_logical INTEGER NOT NULL CHECK (typeof(hlc_logical) = 'integer' AND hlc_logical BETWEEN 0 AND 65535),
+  UNIQUE(author_id, author_sequence)
+);
+
+CREATE TABLE sync_pending_bundle (
+  bundle_id BLOB NOT NULL PRIMARY KEY REFERENCES sync_accepted_bundle(bundle_id) ON DELETE CASCADE,
+  bundle_bytes BLOB NOT NULL CHECK (typeof(bundle_bytes) = 'blob' AND length(bundle_bytes) <= 65536)
+);
+
+CREATE TABLE sync_staged_bundle (
+  bundle_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(bundle_id) = 'blob' AND length(bundle_id) = 16),
+  bundle_bytes BLOB NOT NULL CHECK (typeof(bundle_bytes) = 'blob' AND length(bundle_bytes) <= 65536),
+  operation_bytes BLOB NOT NULL CHECK (typeof(operation_bytes) = 'blob' AND length(operation_bytes) <= 32768),
+  author_id BLOB NOT NULL CHECK (typeof(author_id) = 'blob' AND length(author_id) = 16),
+  author_sequence INTEGER NOT NULL CHECK (typeof(author_sequence) = 'integer' AND author_sequence > 1),
+  public_key BLOB NOT NULL CHECK (typeof(public_key) = 'blob' AND length(public_key) = 32)
+);
+
+CREATE INDEX sync_staged_author_sequence
+ON sync_staged_bundle(author_id, author_sequence, bundle_id);
+
+CREATE TABLE sync_terminal_expiry (
+  session_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(session_id) = 'blob' AND length(session_id) = 16)
+);

@@ -140,7 +140,14 @@ Durable properties worth retaining:
 - duplicate operations and bundles are idempotent;
 - schema migration or storage corruption must not silently replace valid state.
 
-The production database schema and migration policy remain open.
+`observed` (2026-08-31): `SYNC-002` implemented this core in the production
+shared module with immutable accepted, pending, and staged bundle bytes,
+durable replica checkpoints and terminal expiry facts, and opaque transport
+progress committed in the same SQLDelight transaction. Migration verification,
+reopen validation, ambiguous-commit reconciliation, duplicate and reordered
+delivery, bounded capacity, terminal HLC behavior, and deterministic convergence
+passed on the JVM, iOS Simulator, and a physical iPhone. Concrete CloudKit
+cursor and sync-engine state remain deferred to their transport task.
 
 ## Transport contract
 
@@ -172,9 +179,12 @@ derivation with bounded canonical data. `user-confirmed` (2026-08-28): ADR 0006
 selects HKDF-SHA-256, AES-256-GCM, Ed25519, system JCA/JCE and CryptoKit
 providers, a closed positional format, per-bundle HKDF keys with a single
 implicit nonce use, encrypted author metadata, and no
-plaintext or algorithm fallback for Apple MVP format 1. `SYNC-002` must still
-prove cross-target implementation behavior; portable key wrapping and provider
-selection remain later decisions.
+plaintext or algorithm fallback for Apple MVP format 1. `observed` (2026-08-31):
+the production Kotlin codec and JCA provider passed a fixed complete format-1
+golden bundle decoded and authenticated through the injected Swift CryptoKit
+provider on the iOS Simulator and a physical iPhone, alongside the selected
+primitive vectors. Portable key wrapping and provider selection remain later
+decisions.
 
 `user-confirmed`: CloudKit and portable folders use one compatible
 application-encrypted and signed payload format. Apple-mode simplification

@@ -960,3 +960,10 @@
   surface inside-out for credential-free and Apple Development artifacts.
 - Kept development entitlements on the application launcher only and packaged
   the unchanged verified bundle without JPackage rewriting nested signatures.
+## [2026-08-31] experiment | Verify the encrypted operation core
+
+- Implemented and verified the format-1 codec, deterministic reducer, serialized
+  writer, durable SQLDelight replica state, and JCA and CryptoKit provider
+  boundary without importing feasibility code wholesale.
+- Passed the JVM, iOS Simulator, and physical-iPhone quality matrix plus the
+  independent completed-change review.

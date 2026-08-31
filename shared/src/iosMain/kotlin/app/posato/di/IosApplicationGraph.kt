@@ -3,6 +3,12 @@ package app.posato.di
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createIosDatabaseDriver
+import app.posato.feature.sync.data.IosCryptoProvider
+import app.posato.feature.sync.data.IosSyncCryptoProvider
+import app.posato.feature.sync.data.SqlSyncReplicaStore
+import app.posato.feature.sync.data.SyncReplicaStore
+import app.posato.feature.sync.domain.SyncOperationCore
+import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
@@ -15,10 +21,12 @@ import dev.zacsweers.metro.SingleIn
 import dev.zacsweers.metro.createGraph
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import platform.posix.time
 
 @DependencyGraph(AppScope::class)
 internal interface IosApplicationGraph : ApplicationGraph {
     val localTargetPolicyStore: LocalTargetPolicyStore
+    val syncReplicaStore: SyncReplicaStore
 
     @Provides
     @Named("database")
@@ -53,11 +61,34 @@ internal interface IosApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
+    fun provideSyncReplicaStore(
+        database: PosatoDatabase,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+    ): SyncReplicaStore {
+        return SqlSyncReplicaStore(database, databaseDispatcher)
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
     fun provideApplicationMappings(): LocalApplicationMappings {
         return UnavailableLocalApplicationMappings
     }
 }
 
-fun createIosApplicationGraph(): ApplicationGraph {
-    return createGraph<IosApplicationGraph>()
+internal data class IosApplicationRuntime(
+    val applicationGraph: ApplicationGraph,
+    val syncOperationCore: SyncOperationCore,
+)
+
+internal fun createIosApplicationRuntime(cryptoProvider: IosCryptoProvider): IosApplicationRuntime {
+    val graph = createGraph<IosApplicationGraph>()
+    val syncOperationCore = SyncOperationCore(
+        store = graph.syncReplicaStore,
+        cryptoProvider = IosSyncCryptoProvider(cryptoProvider),
+        wallClock = SyncWallClock { time(null) * MILLIS_PER_SECOND },
+    )
+
+    return IosApplicationRuntime(graph, syncOperationCore)
 }
+
+private const val MILLIS_PER_SECOND = 1_000
