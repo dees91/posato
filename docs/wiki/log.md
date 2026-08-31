@@ -897,3 +897,10 @@
   within the session slice instead of adding a speculative design-system task.
 - Accepted roadmap revision 3 without changing its task count, dependencies,
   waves, or integration groups.
+
+## [2026-08-31] decision | Require approval for quality suppressions
+
+- Made root-cause correction the default and required explicit prior maintainer
+  approval for every narrowly justified quality-tool exception.
+- Added an aggregate quality check that rejects Kotlin suppression annotations
+  outside the exact allowlist of approved pre-existing exceptions.

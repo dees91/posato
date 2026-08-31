@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 9
-- **Accepted:** 2026-08-28
+- **Revision:** 10
+- **Accepted:** 2026-08-31
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -25,6 +25,18 @@ CI quality boundaries and integrated completed-change review pass.
   through a duplicate ktlint integration.
 - **The Kotlin compiler** owns warning reporting. Repository-owned source is
   warning-free where the selected toolchain exposes reliable enforcement.
+
+`user-confirmed` (2026-08-31): correct the underlying source of a Detekt,
+ktlint, compiler, or other quality-tool finding by default. Adding, broadening,
+or modifying a suppression annotation, lint baseline, rule exclusion, disabled
+rule, or compiler-warning exception requires explicit prior maintainer approval
+after the cause, the case against correcting it, and the narrowest possible
+scope are explained. Approval is case-specific. The aggregate quality gate
+rejects Kotlin suppression annotations outside its exact allowlist of approved
+pre-existing exceptions. It conservatively rejects the `Suppress` token in
+Kotlin comments, strings, aliases, and examples as well, keeping the check
+independent of annotation syntax and preventing alternate spellings from
+bypassing approval.
 
 `user-confirmed` (2026-08-27): repository-owned Compose UI uses Material 3
 components exclusively. The Compose Rules Detekt `Material2` check is active
