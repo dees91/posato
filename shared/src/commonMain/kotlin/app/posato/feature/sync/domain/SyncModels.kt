@@ -197,7 +197,11 @@ internal sealed interface SyncOperationPayload {
         val sessionId: SessionId,
         val startEpochMillis: Long,
         val mandatoryEndEpochMillis: Long,
-    ) : SyncOperationPayload
+    ) : SyncOperationPayload {
+        override fun toString(): String {
+            return "SyncOperationPayload.SessionStart(redacted)"
+        }
+    }
 
     data class SessionEnd(
         val sessionId: SessionId,

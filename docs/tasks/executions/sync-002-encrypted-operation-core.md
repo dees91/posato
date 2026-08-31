@@ -50,6 +50,11 @@
 - Added a credential-free iOS XCTest target for CryptoKit HMAC, AES-GCM, and
   Ed25519 vectors. No feasibility implementation or machine-specific state was
   copied into product sources.
+- Merged the current `main` branch without dropping either SYNC-002 runtime
+  wiring or the iOS application-mapping fallback. The merged quality-exception
+  gate exposed a stale iOS function-naming suppression, so the Kotlin export
+  and Swift caller now use lower camel case and the obsolete approval was
+  removed instead of broadened.
 
 ## Completed-change review
 
@@ -74,7 +79,9 @@
   not revalidate accepted author registration and signing-key history. The
   next pass found that reopened staged state did not enforce the live author,
   sequence, bundle-identity, or capacity invariants. The latest pass found that
-  oversized transport input was copied before the 64 KiB limit was enforced.
+  oversized transport input was copied before the 64 KiB limit was enforced. A
+  subsequent pass found that four session timing carriers exposed exact values
+  through their generated default string representations.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -87,8 +94,10 @@
   sequences, and per-author or global capacity overflow. Remote acceptance now
   checks raw byte size before retaining an immutable copy, while oversized
   rejection keeps the existing exact-refetch progress and reconciliation
-  semantics. Independent focused re-reviews approved the corrections with no
-  remaining Critical or Required findings. No further hosted review is needed.
+  semantics. Local mutation, operation payload, reduced-start, and effective-
+  session carriers now use fixed redacted default strings. Independent focused
+  re-reviews approved the corrections with no remaining Critical or Required
+  findings. No further hosted review is needed.
 
 ## Verification
 
@@ -98,11 +107,12 @@
 | Baseline credential-free iOS host build | `pass` | Existing `iosApp` scheme built for the generic iOS Simulator with signing disabled. |
 | Focused JVM codec, JCA, migration, and writer tests | `pass` | Canonical round trips, RFC 5869, Ed25519, format-1 envelope, schema upgrades, first-author batch, and terminal HLC exhaustion passed. |
 | Final `./gradlew quality` | `pass` | JVM and iOS Simulator tests, SQLDelight migration verification, static analysis without SYNC-002 suppressions, formatting, and all existing targets passed after the completed-change and hosted-review corrections. |
-| Credential-free iOS Simulator host build | `pass` | The `iosApp` scheme and injected CryptoKit provider compiled with signing disabled. |
+| Credential-free iOS Simulator host build | `pass` | The `iosApp` scheme, injected CryptoKit provider, and lower-camel Kotlin-to-Swift entry point compiled with signing disabled. |
 | CryptoKit XCTest on iOS Simulator | `pass` | FIPS SHA-256, RFC 4231 HMAC-SHA256, NIST AES-GCM including altered-tag rejection, Ed25519 lifecycle and RFC 8032 cross-verification, and decoding the fixed JCA-produced format-1 golden bundle through Kotlin and CryptoKit passed. |
 | CryptoKit XCTest on physical iPhone | `pass` | All six Simulator-tested CryptoKit cases passed on the connected physical iPhone with the maintainer-provided Development Team supplied only as a local build parameter. No personal signing value was added to the repository. |
 | Hosted-review regression tests | `pass` | Invalid local session bounds remain recoverable; reopen rejects invalid accepted and staged author histories while preserving legal gaps and exact staging-capacity boundaries. |
 | Bounded remote-ingress regression tests | `pass` | Exactly 64 KiB reaches normal parsing, larger input returns `OVERSIZED` before an immutable copy, and exact-refetch proof remains required before rejection advances transport progress. |
+| Session timing redaction regression | `pass` | Local, payload, reduced-start, and effective-session carriers return fixed redacted strings on the JVM and iOS Simulator. |
 
 ## Blockers and accepted risks
 

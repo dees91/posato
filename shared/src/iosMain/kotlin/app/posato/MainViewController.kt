@@ -5,8 +5,7 @@ import app.posato.di.createIosApplicationRuntime
 import app.posato.feature.sync.data.IosCryptoProvider
 import platform.UIKit.UIViewController
 
-@Suppress("FunctionNaming", "ktlint:standard:function-naming")
-fun MainViewController(cryptoProvider: IosCryptoProvider): UIViewController {
+fun mainViewController(cryptoProvider: IosCryptoProvider): UIViewController {
     val runtime = createIosApplicationRuntime(cryptoProvider)
 
     return ComposeUIViewController {

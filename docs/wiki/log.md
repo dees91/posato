@@ -990,3 +990,9 @@
 - Checked the complete-bundle limit at raw remote ingress before retaining an
   immutable copy.
 - Preserved typed oversized rejection and exact-refetch progress semantics.
+## [2026-08-31] correction | Redact synchronized session timing carriers
+
+- Gave local, serialized, reduced, and effective session timing carriers fixed
+  redacted default string representations.
+- Kept exact times available to domain behavior without exposing them through
+  accidental diagnostic interpolation.

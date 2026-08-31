@@ -244,6 +244,13 @@ event timestamps, correlation identifiers, domains, applications, policy,
 identity, secrets, content, browsing and application-use events, and derived
 or pseudonymous forms of those values.
 
+`observed` (2026-08-31): `SYNC-002` gives local, serialized, reduced, and
+effective session timing carriers fixed redacted default string
+representations. Common JVM and iOS Simulator regression tests cover the
+boundary. This prevents accidental interpolation from exposing exact session
+times; it does not authorize production diagnostics to serialize with
+`toString()`.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the

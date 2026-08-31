@@ -24,7 +24,11 @@ internal data class SynchronizedSessionStart(
     val mandatoryEndEpochMillis: Long,
     val order: OperationOrder,
     val isEnded: Boolean,
-)
+) {
+    override fun toString(): String {
+        return "SynchronizedSessionStart(redacted)"
+    }
+}
 
 internal data class SyncProjection(
     val domains: List<ExactDomain>,
@@ -44,7 +48,11 @@ internal sealed interface EffectiveSession {
     data class Active(
         val sessionId: SessionId,
         val mandatoryEndEpochMillis: Long,
-    ) : EffectiveSession
+    ) : EffectiveSession {
+        override fun toString(): String {
+            return "EffectiveSession.Active(redacted)"
+        }
+    }
 }
 
 internal object SyncReducer {

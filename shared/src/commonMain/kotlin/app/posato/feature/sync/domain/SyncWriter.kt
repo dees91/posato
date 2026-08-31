@@ -43,7 +43,11 @@ internal sealed interface LocalSyncMutation {
         val sessionId: SessionId,
         val startEpochMillis: Long,
         val mandatoryEndEpochMillis: Long,
-    ) : LocalSyncMutation
+    ) : LocalSyncMutation {
+        override fun toString(): String {
+            return "LocalSyncMutation.StartSession(redacted)"
+        }
+    }
 
     data class EndSession(
         val sessionId: SessionId,

@@ -1,0 +1,45 @@
+package app.posato.feature.sync.domain
+
+import app.posato.feature.sync.testIdentifier
+import app.posato.feature.sync.testOperation
+import kotlin.test.Test
+import kotlin.test.assertEquals
+
+class SyncDomainRedactionTest {
+    @Test
+    fun `given session timing carriers when converted to strings then timing remains redacted`() {
+        val sessionId = SessionId(testIdentifier(20))
+        val startEpochMillis = 1_234_567_890L
+        val mandatoryEndEpochMillis = 1_234_568_000L
+        val operation = testOperation(
+            id = 21,
+            sequence = 2,
+            payload = SyncOperationPayload.SessionEnd(sessionId),
+            physical = startEpochMillis,
+        )
+
+        assertEquals(
+            "SyncOperationPayload.SessionStart(redacted)",
+            SyncOperationPayload.SessionStart(sessionId, startEpochMillis, mandatoryEndEpochMillis).toString(),
+        )
+        assertEquals(
+            "LocalSyncMutation.StartSession(redacted)",
+            LocalSyncMutation.StartSession(sessionId, startEpochMillis, mandatoryEndEpochMillis).toString(),
+        )
+        assertEquals(
+            "SynchronizedSessionStart(redacted)",
+            SynchronizedSessionStart(
+                operationId = operation.operationId,
+                sessionId = sessionId,
+                startEpochMillis = startEpochMillis,
+                mandatoryEndEpochMillis = mandatoryEndEpochMillis,
+                order = operation.order(),
+                isEnded = false,
+            ).toString(),
+        )
+        assertEquals(
+            "EffectiveSession.Active(redacted)",
+            EffectiveSession.Active(sessionId, mandatoryEndEpochMillis).toString(),
+        )
+    }
+}
