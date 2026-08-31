@@ -270,7 +270,7 @@ private class SqlSnapshotReader(
                 val id = SyncIdentifier.fromUuidV4Bytes(bundleId)?.let(::BundleId)
                     ?: failStore(SyncStoreFailure.CORRUPTION)
                 val acceptedBundle = accepted[id] ?: failStore(SyncStoreFailure.CORRUPTION)
-                val bundle = EncryptedBundle(bundleBytes)
+                val bundle = EncryptedBundle.fromBytes(bundleBytes) ?: failStore(SyncStoreFailure.CORRUPTION)
                 if (bundle != acceptedBundle.bundle) {
                     failStore(SyncStoreFailure.CORRUPTION)
                 }
@@ -323,9 +323,14 @@ private fun restoreStoredAccepted(
     physical: Long,
     logical: Long,
 ): StoredAcceptedBundle? {
-    val operation = restoreStoredOperation(bundleId, operationBytes, authorId, sequence, publicKey, physical, logical) ?: return null
+    val operation = restoreStoredOperation(bundleId, operationBytes, authorId, sequence, publicKey, physical, logical)
+    val bundle = EncryptedBundle.fromBytes(bundleBytes)
 
-    return StoredAcceptedBundle(EncryptedBundle(bundleBytes), ImmutableBytes(operationBytes), operation)
+    return if (operation != null && bundle != null) {
+        StoredAcceptedBundle(bundle, ImmutableBytes(operationBytes), operation)
+    } else {
+        null
+    }
 }
 
 private fun restoreStoredStaged(
@@ -343,9 +348,11 @@ private fun restoreStoredStaged(
     val identityMatches = operation != null && operation.operationId == expectedBundleId && operation.authorId == expectedAuthorId
     val authorMatches = operation?.publicSigningKey == expectedPublicKey && operation?.authorSequence == sequence
 
+    val bundle = EncryptedBundle.fromBytes(bundleBytes) ?: return null
+
     return operation
         ?.takeIf { identityMatches && authorMatches && sequence > 1 }
-        ?.let { StoredStagedBundle(EncryptedBundle(bundleBytes), ImmutableBytes(operationBytes), it) }
+        ?.let { StoredStagedBundle(bundle, ImmutableBytes(operationBytes), it) }
 }
 
 private fun restoreStoredOperation(

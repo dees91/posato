@@ -984,3 +984,9 @@
 
 - Revalidated staged author, sequence, bundle-identity, and capacity invariants
   without narrowing valid pre-registration gaps or competing keys.
+
+## [2026-08-31] correction | Bound remote sync bytes before copying
+
+- Checked the complete-bundle limit at raw remote ingress before retaining an
+  immutable copy.
+- Preserved typed oversized rejection and exact-refetch progress semantics.

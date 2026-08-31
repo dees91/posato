@@ -91,9 +91,6 @@ internal class EncryptedBundleCodec(
 ) {
     fun inspectHeader(bundle: EncryptedBundle): InspectBundleHeaderResult {
         val completeBytes = bundle.copyBytes()
-        if (completeBytes.size > SyncFormatLimits.COMPLETE_BUNDLE_BYTES) {
-            return InspectBundleHeaderResult.Failure(RemoteBundleFailure.OVERSIZED)
-        }
 
         return when (val result = decodeHeader(completeBytes)) {
             is HeaderDecodeResult.Success -> InspectBundleHeaderResult.Success(result.header)
@@ -125,9 +122,12 @@ internal class EncryptedBundleCodec(
 
         return when {
             !validIdentity || plaintext == null -> PrepareBundleResult.InvalidOperation
+
             completeBytes == null -> PrepareBundleResult.CryptographyFailure
-            completeBytes.size > SyncFormatLimits.COMPLETE_BUNDLE_BYTES -> PrepareBundleResult.InvalidOperation
-            else -> PrepareBundleResult.Success(EncryptedBundle(completeBytes))
+
+            else -> EncryptedBundle.fromBytes(completeBytes)
+                ?.let { bundle -> PrepareBundleResult.Success(bundle) }
+                ?: PrepareBundleResult.InvalidOperation
         }
     }
 
@@ -137,8 +137,7 @@ internal class EncryptedBundleCodec(
         transportKey: TransportKey,
     ): DecodeBundleResult {
         val completeBytes = bundle.copyBytes()
-        val oversized = completeBytes.size > SyncFormatLimits.COMPLETE_BUNDLE_BYTES
-        val headerResult = completeBytes.takeUnless { oversized }?.let(::decodeHeader)
+        val headerResult = decodeHeader(completeBytes)
         val header = (headerResult as? HeaderDecodeResult.Success)?.header
         val headerFailure = (headerResult as? HeaderDecodeResult.Failure)?.reason
         val wrongContext = header != null && header.context != expectedContext
@@ -152,7 +151,6 @@ internal class EncryptedBundleCodec(
         val signatureIsValid = verifySignature(validOperation, parts)
 
         return decodedResult(
-            oversized,
             headerFailure,
             wrongContext,
             malformedSize,
@@ -264,7 +262,6 @@ internal class EncryptedBundleCodec(
 }
 
 private fun decodedResult(
-    oversized: Boolean,
     headerFailure: RemoteBundleFailure?,
     wrongContext: Boolean,
     malformedSize: Boolean,
@@ -273,7 +270,6 @@ private fun decodedResult(
     header: BundleHeader?,
     signatureIsValid: Boolean,
 ): DecodeBundleResult = when {
-    oversized -> DecodeBundleResult.Failure(RemoteBundleFailure.OVERSIZED)
     headerFailure != null -> DecodeBundleResult.Failure(headerFailure)
     wrongContext -> DecodeBundleResult.Failure(RemoteBundleFailure.WRONG_CONTEXT)
     malformedSize -> DecodeBundleResult.Failure(RemoteBundleFailure.MALFORMED)

@@ -72,8 +72,9 @@
   supplied progress when exact refetch remained available. A later review pass
   also found that invalid local mutations froze the writer and that reopen did
   not revalidate accepted author registration and signing-key history. The
-  final pass found that reopened staged state did not enforce the live author,
-  sequence, bundle-identity, or capacity invariants.
+  next pass found that reopened staged state did not enforce the live author,
+  sequence, bundle-identity, or capacity invariants. The latest pass found that
+  oversized transport input was copied before the 64 KiB limit was enforced.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -83,9 +84,11 @@
   missing or repeated registration, sequence conflicts, and signing-key changes
   while preserving legal sequence gaps. Reopen also rejects staged sequence-1
   operations, accepted-author and bundle-identity overlap, duplicate author
-  sequences, and per-author or global capacity overflow. Independent focused
-  re-reviews approved the corrections with no remaining Critical or Required
-  findings. No further hosted review was requested.
+  sequences, and per-author or global capacity overflow. Remote acceptance now
+  checks raw byte size before retaining an immutable copy, while oversized
+  rejection keeps the existing exact-refetch progress and reconciliation
+  semantics. Independent focused re-reviews approved the corrections with no
+  remaining Critical or Required findings. No further hosted review is needed.
 
 ## Verification
 
@@ -99,6 +102,7 @@
 | CryptoKit XCTest on iOS Simulator | `pass` | FIPS SHA-256, RFC 4231 HMAC-SHA256, NIST AES-GCM including altered-tag rejection, Ed25519 lifecycle and RFC 8032 cross-verification, and decoding the fixed JCA-produced format-1 golden bundle through Kotlin and CryptoKit passed. |
 | CryptoKit XCTest on physical iPhone | `pass` | All six Simulator-tested CryptoKit cases passed on the connected physical iPhone with the maintainer-provided Development Team supplied only as a local build parameter. No personal signing value was added to the repository. |
 | Hosted-review regression tests | `pass` | Invalid local session bounds remain recoverable; reopen rejects invalid accepted and staged author histories while preserving legal gaps and exact staging-capacity boundaries. |
+| Bounded remote-ingress regression tests | `pass` | Exactly 64 KiB reaches normal parsing, larger input returns `OVERSIZED` before an immutable copy, and exact-refetch proof remains required before rejection advances transport progress. |
 
 ## Blockers and accepted risks
 

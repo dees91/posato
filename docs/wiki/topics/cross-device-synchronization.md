@@ -166,6 +166,11 @@ live acceptance boundary. It rejects sequence 1, accepted-author or bundle-ID
 overlap, duplicate author sequences, and per-author or global capacity overflow
 while preserving valid staged gaps and competing pre-registration keys.
 
+`observed` (2026-08-31): remote acceptance now checks the complete-bundle limit
+on raw transport bytes before retaining an immutable copy. Exactly 64 KiB
+continues to normal parsing, larger input returns the bounded `OVERSIZED`
+outcome, and rejection preserves the existing exact-refetch progress rule.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:

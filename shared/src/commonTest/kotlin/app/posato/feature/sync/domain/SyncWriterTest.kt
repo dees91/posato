@@ -18,11 +18,22 @@ import app.posato.feature.sync.testOperation
 import app.posato.feature.targets.domain.ExactDomain
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
 class SyncWriterTest {
+    @Test
+    fun `given bounded source bytes when wrapped then later source changes do not change the bundle`() {
+        val source = byteArrayOf(1)
+        val bundle = checkNotNull(EncryptedBundle.fromBytes(source))
+
+        source[0] = 2
+
+        assertContentEquals(byteArrayOf(1), bundle.copyBytes())
+    }
+
     @Test
     fun `given the terminal author sequence when advanced then it cannot be reused`() {
         assertEquals(null, nextAuthorSequence(Long.MAX_VALUE))
@@ -179,7 +190,7 @@ class SyncWriterTest {
             val progress = OpaqueTransportProgress(byteArrayOf(index.toByte()))
 
             val result = writer.acceptRemote(
-                remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.AuthorRegister)),
+                remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.AuthorRegister)).copyBytes(),
                 RemoteTransportReceipt(progress, case.exactRefetchAvailable),
             )
 
@@ -187,6 +198,29 @@ class SyncWriterTest {
             assertEquals(emptyMap(), store.current.stagedBundles)
             assertEquals(progress.takeIf { case.exactRefetchAvailable }, store.current.transportProgress)
         }
+    }
+
+    @Test
+    fun `given remote bytes at the bundle limit when accepted then oversized input is rejected before parsing`() = runTest {
+        val store = FakeSyncReplicaStore(snapshot())
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val receipt = RemoteTransportReceipt(OpaqueTransportProgress(byteArrayOf(1)), exactRefetchAvailable = true)
+
+        val atLimit = writer.acceptRemote(ByteArray(SyncFormatLimits.COMPLETE_BUNDLE_BYTES), RemoteTransportReceipt(null, false))
+        val oversizedWithoutProof = writer.acceptRemote(
+            ByteArray(SyncFormatLimits.COMPLETE_BUNDLE_BYTES + 1),
+            receipt.copy(exactRefetchAvailable = false),
+        )
+        val progressWithoutProof = store.current.transportProgress
+        val oversizedWithProof = writer.acceptRemote(ByteArray(SyncFormatLimits.COMPLETE_BUNDLE_BYTES + 1), receipt)
+
+        assertEquals(RemoteAcceptanceFailure.MALFORMED, assertIs<RemoteAcceptanceResult.Failure>(atLimit).reason)
+        assertEquals(RemoteAcceptanceFailure.OVERSIZED, assertIs<RemoteAcceptanceResult.Failure>(oversizedWithoutProof).reason)
+        assertEquals(null, progressWithoutProof)
+        assertEquals(RemoteAcceptanceFailure.OVERSIZED, assertIs<RemoteAcceptanceResult.Failure>(oversizedWithProof).reason)
+        assertEquals(receipt.progress, store.current.transportProgress)
     }
 
     @Test
@@ -199,7 +233,7 @@ class SyncWriterTest {
         val rejected = remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.AuthorRegister))
 
         val result = writer.acceptRemote(
-            rejected,
+            rejected.copyBytes(),
             RemoteTransportReceipt(OpaqueTransportProgress(byteArrayOf(9)), exactRefetchAvailable = true),
         )
 
@@ -210,7 +244,7 @@ class SyncWriterTest {
         assertEquals(
             RemoteAcceptanceFailure.LOCAL_COMMIT_UNCERTAIN,
             assertIs<RemoteAcceptanceResult.Failure>(
-                writer.acceptRemote(rejected, RemoteTransportReceipt(null, exactRefetchAvailable = false)),
+                writer.acceptRemote(rejected.copyBytes(), RemoteTransportReceipt(null, exactRefetchAvailable = false)),
             ).reason,
         )
     }
@@ -226,12 +260,12 @@ class SyncWriterTest {
 
         assertIs<RemoteAcceptanceResult.Staged>(
             writer.acceptRemote(
-                remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.DomainPresent(domain))),
+                remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.DomainPresent(domain))).copyBytes(),
                 RemoteTransportReceipt(OpaqueTransportProgress(byteArrayOf(1)), false),
             ),
         )
         val result = writer.acceptRemote(
-            remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)),
+            remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
             RemoteTransportReceipt(OpaqueTransportProgress(byteArrayOf(2)), false),
         )
 
@@ -458,7 +492,7 @@ class SyncWriterTest {
         ).writer
 
         val result = writer.acceptRemote(
-            remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)),
+            remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
             RemoteTransportReceipt(OpaqueTransportProgress(byteArrayOf(1)), false),
         )
 
@@ -474,15 +508,15 @@ class SyncWriterTest {
         ).writer
         val registration = remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister))
         assertIs<RemoteAcceptanceResult.Accepted>(
-            writer.acceptRemote(registration, RemoteTransportReceipt(null, false)),
+            writer.acceptRemote(registration.copyBytes(), RemoteTransportReceipt(null, false)),
         )
 
         val duplicateProgress = OpaqueTransportProgress(byteArrayOf(3))
         assertIs<RemoteAcceptanceResult.Duplicate>(
-            writer.acceptRemote(registration, RemoteTransportReceipt(duplicateProgress, false)),
+            writer.acceptRemote(registration.copyBytes(), RemoteTransportReceipt(duplicateProgress, false)),
         )
         assertEquals(duplicateProgress, store.current.transportProgress)
-        val altered = EncryptedBundle(registration.copyBytes().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() })
+        val altered = registration.copyBytes().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }
         assertEquals(
             RemoteAcceptanceFailure.REPLAY_CONFLICT,
             assertIs<RemoteAcceptanceResult.Failure>(
@@ -493,7 +527,7 @@ class SyncWriterTest {
             RemoteAcceptanceFailure.SEQUENCE_CONFLICT,
             assertIs<RemoteAcceptanceResult.Failure>(
                 writer.acceptRemote(
-                    remoteBundle(provider, testOperation(2, 1, SyncOperationPayload.AuthorRegister)),
+                    remoteBundle(provider, testOperation(2, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
                     RemoteTransportReceipt(null, false),
                 ),
             ).reason,
@@ -501,7 +535,7 @@ class SyncWriterTest {
         val gapDomain = checkNotNull(ExactDomain.restore("gap.example"))
         assertIs<RemoteAcceptanceResult.Accepted>(
             writer.acceptRemote(
-                remoteBundle(provider, testOperation(3, 3, SyncOperationPayload.DomainPresent(gapDomain))),
+                remoteBundle(provider, testOperation(3, 3, SyncOperationPayload.DomainPresent(gapDomain))).copyBytes(),
                 RemoteTransportReceipt(null, false),
             ),
         )
@@ -531,7 +565,7 @@ class SyncWriterTest {
             val operation = testOperation(1_000 + index, 100, SyncOperationPayload.ApplicationPolicyAbsent, case.author)
 
             val result = writer.acceptRemote(
-                remoteBundle(provider, operation),
+                remoteBundle(provider, operation).copyBytes(),
                 RemoteTransportReceipt(progress, exactRefetchAvailable = case.exactRefetch),
             )
 
@@ -556,7 +590,7 @@ class SyncWriterTest {
                 val registration = testOperation(800 + index, 1, SyncOperationPayload.AuthorRegister).copy(clock = remoteClock)
 
                 assertIs<RemoteAcceptanceResult.Accepted>(
-                    writer.acceptRemote(remoteBundle(provider, registration), RemoteTransportReceipt(null, false)),
+                    writer.acceptRemote(remoteBundle(provider, registration).copyBytes(), RemoteTransportReceipt(null, false)),
                 )
                 assertEquals(DurableClockState(terminal, true), store.current.clockState)
                 assertEquals(
@@ -607,7 +641,7 @@ class SyncWriterTest {
             ).writer
 
             val result = writer.acceptRemote(
-                remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)),
+                remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
                 RemoteTransportReceipt(null, false),
             )
 

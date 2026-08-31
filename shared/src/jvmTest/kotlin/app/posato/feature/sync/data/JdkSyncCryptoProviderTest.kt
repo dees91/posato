@@ -95,7 +95,9 @@ class JdkSyncCryptoProviderTest {
         assertEquals(operation, decoded.operation)
 
         val tampered = prepared.bundle.copyBytes().also { bytes -> bytes[SyncFormatLimits.HEADER_BYTES] = (bytes[108].toInt() xor 1).toByte() }
-        val failure = assertIs<DecodeBundleResult.Failure>(codec.decode(EncryptedBundle(tampered), testContext, transportKey))
+        val failure = assertIs<DecodeBundleResult.Failure>(
+            codec.decode(checkNotNull(EncryptedBundle.fromBytes(tampered)), testContext, transportKey),
+        )
         assertNotEquals(RemoteBundleFailure.INVALID_OPERATION, failure.reason)
         signingKey.close()
         transportKey.close()
@@ -148,19 +150,22 @@ class JdkSyncCryptoProviderTest {
         ).bundle
         val bytes = bundle.copyBytes()
         val wrongContext = testContext.copy(workspaceId = WorkspaceId(testIdentifier(112)))
-        val alteredSignature = EncryptedBundle(bytes.copyOf().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() })
+        val alteredSignature = checkNotNull(
+            EncryptedBundle.fromBytes(bytes.copyOf().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }),
+        )
 
         assertEquals(RemoteBundleFailure.WRONG_CONTEXT, assertFailure(codec.decode(bundle, wrongContext, transportKey)))
         assertEquals(RemoteBundleFailure.AUTHENTICATION_FAILED, assertFailure(codec.decode(bundle, testContext, wrongKey)))
         assertEquals(RemoteBundleFailure.INVALID_SIGNATURE, assertFailure(codec.decode(alteredSignature, testContext, transportKey)))
         assertEquals(
             RemoteBundleFailure.MALFORMED,
-            assertFailure(codec.decode(EncryptedBundle(bytes.dropLast(1).toByteArray()), testContext, transportKey)),
+            assertFailure(
+                codec.decode(checkNotNull(EncryptedBundle.fromBytes(bytes.dropLast(1).toByteArray())), testContext, transportKey),
+            ),
         )
-        assertEquals(RemoteBundleFailure.MALFORMED, assertFailure(codec.decode(EncryptedBundle(bytes + 0), testContext, transportKey)))
         assertEquals(
-            RemoteBundleFailure.OVERSIZED,
-            assertFailure(codec.decode(EncryptedBundle(ByteArray(SyncFormatLimits.COMPLETE_BUNDLE_BYTES + 1)), testContext, transportKey)),
+            RemoteBundleFailure.MALFORMED,
+            assertFailure(codec.decode(checkNotNull(EncryptedBundle.fromBytes(bytes + 0)), testContext, transportKey)),
         )
         signingKey.close()
         transportKey.close()

@@ -242,7 +242,7 @@ internal class SyncWriter internal constructor(
     }
 
     suspend fun acceptRemote(
-        bundle: EncryptedBundle,
+        bundleBytes: ByteArray,
         receipt: RemoteTransportReceipt,
     ): RemoteAcceptanceResult {
         return mutex.withLock {
@@ -252,25 +252,30 @@ internal class SyncWriter internal constructor(
             if (!verifyCheckpoint()) {
                 return@withLock RemoteAcceptanceResult.Failure(RemoteAcceptanceFailure.LOCAL_COMMIT_UNCERTAIN)
             }
-            val outcome = when (val classified = remoteClassifier.classify(checkpoint, bundle)) {
-                is RemoteBundleClassification.Failure -> {
-                    remoteCommitter.failure(checkpoint, classified.result, receipt)
-                }
+            val bundle = EncryptedBundle.fromBytes(bundleBytes)
+            val outcome = if (bundle == null) {
+                remoteCommitter.failure(checkpoint, RemoteBundleFailure.OVERSIZED.toRemoteResult(), receipt)
+            } else {
+                when (val classified = remoteClassifier.classify(checkpoint, bundle)) {
+                    is RemoteBundleClassification.Failure -> {
+                        remoteCommitter.failure(checkpoint, classified.result, receipt)
+                    }
 
-                RemoteBundleClassification.Duplicate -> {
-                    remoteCommitter.duplicate(checkpoint, receipt)
-                }
+                    RemoteBundleClassification.Duplicate -> {
+                        remoteCommitter.duplicate(checkpoint, receipt)
+                    }
 
-                is RemoteBundleClassification.Registration -> {
-                    remoteCommitter.registration(checkpoint, bundle, classified.operation, receipt)
-                }
+                    is RemoteBundleClassification.Registration -> {
+                        remoteCommitter.registration(checkpoint, bundle, classified.operation, receipt)
+                    }
 
-                is RemoteBundleClassification.UnknownAuthor -> {
-                    remoteCommitter.unknownAuthor(checkpoint, bundle, classified.operation, receipt)
-                }
+                    is RemoteBundleClassification.UnknownAuthor -> {
+                        remoteCommitter.unknownAuthor(checkpoint, bundle, classified.operation, receipt)
+                    }
 
-                is RemoteBundleClassification.KnownAuthor -> {
-                    remoteCommitter.knownAuthor(checkpoint, PreparedStoredBundle(bundle, classified.operation), receipt)
+                    is RemoteBundleClassification.KnownAuthor -> {
+                        remoteCommitter.knownAuthor(checkpoint, PreparedStoredBundle(bundle, classified.operation), receipt)
+                    }
                 }
             }
             outcome.snapshot?.let { checkpoint = it }

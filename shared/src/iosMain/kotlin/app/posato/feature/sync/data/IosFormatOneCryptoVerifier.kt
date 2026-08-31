@@ -37,7 +37,7 @@ class IosFormatOneCryptoVerifier(
                 payload = SyncOperationPayload.AuthorRegister,
             )
             val decoded = EncryptedBundleCodec(provider).decode(
-                EncryptedBundle(hex(GOLDEN_BUNDLE)),
+                checkNotNull(EncryptedBundle.fromBytes(hex(GOLDEN_BUNDLE))),
                 operation.context,
                 transportKey,
             )

@@ -253,11 +253,9 @@ internal class TransportKey private constructor(
     }
 }
 
-internal class EncryptedBundle(
-    bytes: ByteArray,
+internal class EncryptedBundle private constructor(
+    private val bytes: ByteArray,
 ) {
-    private val bytes = bytes.copyOf()
-
     fun copyBytes(): ByteArray {
         return bytes.copyOf()
     }
@@ -272,6 +270,15 @@ internal class EncryptedBundle(
 
     override fun toString(): String {
         return "EncryptedBundle(redacted)"
+    }
+
+    companion object {
+        fun fromBytes(bytes: ByteArray): EncryptedBundle? {
+            return bytes
+                .takeIf { value -> value.size <= SyncFormatLimits.COMPLETE_BUNDLE_BYTES }
+                ?.copyOf()
+                ?.let(::EncryptedBundle)
+        }
     }
 }
 

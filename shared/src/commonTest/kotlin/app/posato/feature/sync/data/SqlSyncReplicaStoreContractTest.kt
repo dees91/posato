@@ -135,7 +135,7 @@ private fun prepared(
     payload: SyncOperationPayload,
 ): PreparedStoredBundle {
     return PreparedStoredBundle(
-        bundle = EncryptedBundle(ByteArray(32) { id.toByte() }),
+        bundle = checkNotNull(EncryptedBundle.fromBytes(ByteArray(32) { id.toByte() })),
         operation = testOperation(id, sequence, payload),
     )
 }
