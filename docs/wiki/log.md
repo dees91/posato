@@ -911,3 +911,9 @@
   owner-only local mapping database outside synchronization and diagnostics.
 - Kept picker capability and its human-interaction deadline off daemon XPC;
   lifecycle transport remains unchanged.
+
+## [2026-08-31] correction | Retire the AppKit picker helper after selection
+
+- Made the dedicated application-picker helper client one-shot after physical
+  testing found that returning to a blocking pipe read left AppKit unresponsive.
+- Kept enforcement helper lifecycle and daemon ownership unchanged.

@@ -99,7 +99,9 @@ internal class MacOsHelperClient(
             check(response.connectionIdentifier.contentEquals(connectionIdentifier))
             check(response.sessionIdentifier.contentEquals(sessionIdentifier))
             check(response.requestIdentifier.contentEquals(requestIdentifier))
-            MacOsApplicationSelectionProtocol.decode(response.payload)
+            MacOsApplicationSelectionProtocol.decode(response.payload).also {
+                terminateProcess()
+            }
         } catch (_: Exception) {
             terminateProcess()
             MacOsApplicationPickerResult.Failure

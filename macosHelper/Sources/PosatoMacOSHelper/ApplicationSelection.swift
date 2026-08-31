@@ -53,6 +53,7 @@ struct AppKitApplicationChooser: ApplicationChoosing {
     let panel = NSOpenPanel()
     panel.title = "Choose applications"
     panel.prompt = "Choose"
+    panel.directoryURL = URL(fileURLWithPath: "/Applications", isDirectory: true)
     panel.allowedContentTypes = [.applicationBundle]
     panel.allowsMultipleSelection = true
     panel.canChooseDirectories = false
@@ -60,7 +61,8 @@ struct AppKitApplicationChooser: ApplicationChoosing {
     panel.resolvesAliases = true
     panel.allowsOtherFileTypes = false
     panel.treatsFilePackagesAsDirectories = false
-    guard panel.runModal() == .OK else {
+    let response = panel.runModal()
+    guard response == .OK else {
       return .cancelled
     }
     guard !panel.urls.isEmpty,

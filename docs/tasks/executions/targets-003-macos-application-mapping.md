@@ -59,12 +59,14 @@ and before the pull request.
 - Added capability bit `2` and pipe operation `10` for the normal-user AppKit
   picker. Strict all-architecture, non-ad-hoc signature validation remains in
   that helper; selection is rejected by daemon decoding and never reaches XPC.
+  The dedicated picker client retires its helper after each result so AppKit
+  cannot return to a blocking pipe read while it remains the active process.
 - Updated the accepted design, ADR amendment, maintained wiki synthesis, and
   PoC provenance without copying feasibility code or machine state.
 
 ## Completed-change review
 
-- **Verdict:** `changes required`
+- **Verdict:** `approved after correction`
 - **Critical or Required findings:** No Critical finding. Required corrections
   covered transactional failure reporting, Swift sensitive-carrier redaction,
   complete preview states, and physical-Mac verification.
@@ -73,8 +75,10 @@ and before the pull request.
   failures prove rollback after reopen. Swift normal and reflective strings are
   redacted with synthetic-secret tests. The shared provider now covers every
   mapping rendering branch through both existing previews. The reviewer
-  confirmed these three findings resolved. Physical-Mac verification remains
-  open.
+  confirmed these three findings resolved. Maintainer-observed physical-Mac
+  verification then covered the remaining gate. The final review required one
+  categorical privacy wording correction in the execution evidence and
+  approved the change after that correction.
 - **Advisory findings:** Sidecar permission coverage should create controlled
   sidecars instead of conditionally checking only artifacts SQLite happens to
   leave behind; this does not expand the current scope automatically.
@@ -86,26 +90,34 @@ and before the pull request.
 | Plan review | `pass` | Approved after the IO, owner-only storage, and capability/deadline corrections. |
 | Focused Kotlin and Swift tests | `pass` | Shared state/contract, real SQLite restart/rollback/corruption/permissions/dispatcher, protocol, helper, and daemon-rejection coverage pass. |
 | SQLDelight migration verification | `pass` | Desktop schema baseline `1.db` matches the current create statements. |
-| Aggregate quality | `pass` | `./gradlew quality --rerun-tasks` completed after the last production correction, including iOS tests, packaging, lint, analysis, and migration checks. |
+| Aggregate quality | `pass` | `./gradlew quality --rerun-tasks` completed after the physical-gate production corrections, executing all 112 tasks including iOS tests, packaging, lint, analysis, and migration checks. |
 | Credential-free iOS host build | `pass` | Generic iOS Simulator `xcodebuild` completed with signing disabled. |
 | Diff and privacy checks | `pass` | `git diff --check` and the scoped sensitive-data/path scan found no introduced personal path, credential, key, or token material. |
-| Independent completed-change review | `blocked` | Three Required findings were corrected and re-reviewed; the remaining Required finding is the maintainer-observed physical-Mac picker and accessibility checklist. |
+| Physical-Mac application picker | `pass` | Maintainer-observed multi-select, cancel and reopen, non-ad-hoc and self rejection, restart persistence, individual removal, retained mapping cleanup, keyboard operation, and VoiceOver navigation passed on one Apple silicon Mac. Initial runs found and corrected accessory-policy handling, the default picker directory, and one-shot AppKit helper lifecycle. |
+| Independent completed-change review | `pass` | Final review approved the one-shot picker lifecycle and packaging boundary after one Required privacy wording correction; no Critical or Required finding remains. |
 
 ## Blockers and accepted risks
 
-- The signed physical-Mac flow still needs maintainer-observed multi-select,
-  cancel, invalid/self rejection, restart persistence, removal, retained
-  mappings, keyboard operation, and VoiceOver checks. Automated tests do not
-  substitute for AppKit, Security, and accessibility observation.
 - Initial physical execution observed that an already-accessory `LSUIElement`
   helper can return `false` from `setActivationPolicy(.accessory)`; treating
   that return as picker rejection prevented presentation. The helper now sets
   the idempotent policy without interpreting an unchanged value as failure.
+- Physical execution also observed that leaving the dedicated picker helper
+  alive after `NSOpenPanel.runModal()` returned caused beachballs and blocked
+  later system panels because its main thread resumed a blocking pipe read.
+  The client now terminates the picker helper after every decoded result;
+  repeated cancel and reopen, Posato, unrelated system applications, and later
+  panels remained responsive after correction.
+- The physical flow used a locally development-signed gate artifact. The
+  repository packaging pipeline still produces a JVM runtime whose nested
+  signing and hardened-runtime JIT configuration cannot launch unchanged on
+  this Mac. The local bottom-up re-signing workaround is physical feature
+  evidence only, not release-signing, notarization, or distribution evidence.
 - Hosted CI remains paused through 2026-09-05. Aggregate quality and the iOS
   host build pass locally; rerun affected verification after any correction
   caused by the physical checklist.
 
 ## Final
 
-- **Status:** `blocked`
-- **Outcome:** implementation and automated verification are complete; physical-Mac verification blocks final review, push, and pull request
+- **Status:** `complete`
+- **Outcome:** implementation, affected verification, physical-Mac gate, and independent review are complete; the branch is ready for push and pull request

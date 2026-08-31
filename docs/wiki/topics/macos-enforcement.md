@@ -343,6 +343,14 @@ validation checks all architectures strictly without network access, rejects
 ad-hoc signatures and Posato, and extracts each binary designated requirement.
 The complete batch fails before persistence if any member is invalid.
 
+`observed` (2026-08-31): the AppKit picker helper must be one-shot. Returning
+from `NSOpenPanel.runModal()` directly to a blocking inherited-pipe read left
+the activated accessory process unable to service AppKit events and caused a
+system beachball around later panels. The mapping adapter owns a dedicated
+helper client, closes it after every successful or cancelled selection
+response, and starts a freshly authenticated process for the next picker.
+This lifecycle is separate from enforcement helper ownership.
+
 The JVM hashes each exact requirement with SHA-256 for its redacted mapping key
 and keeps the requirement bytes and bounded display name in a separate local
 SQLDelight database. Its directory is owner-only and the database plus present
