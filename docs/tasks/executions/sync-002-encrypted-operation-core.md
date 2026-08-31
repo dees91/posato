@@ -64,6 +64,20 @@
   re-reviewed. The final review found no remaining actionable Critical or
   Required findings.
 
+## Hosted review follow-up
+
+- **Verdict:** `changes required`
+- **Required findings:** A reopened replica did not reject durable HLC state
+  below an accepted operation clock, and rejected bundles did not commit
+  supplied progress when exact refetch remained available.
+- **Resolution:** Reopen validation now enforces the accepted-history HLC lower
+  bound. Rejection and deferred-capacity outcomes share one exact-refetch
+  progress path with ambiguous-commit reconciliation. Focused regression tests
+  cover lower, equal, and greater reopen clocks plus exact-refetch progress and
+  exact and unresolved ambiguous results, including writer freezing. No repeat
+  hosted review was requested. An independent focused re-review approved the
+  correction with no remaining Critical or Required findings.
+
 ## Verification
 
 | Check run | Result | Evidence |
@@ -71,7 +85,7 @@
 | Baseline `./gradlew quality` | `pass` | Existing main baseline passed before the task worktree was created. |
 | Baseline credential-free iOS host build | `pass` | Existing `iosApp` scheme built for the generic iOS Simulator with signing disabled. |
 | Focused JVM codec, JCA, migration, and writer tests | `pass` | Canonical round trips, RFC 5869, Ed25519, format-1 envelope, schema upgrades, first-author batch, and terminal HLC exhaustion passed. |
-| Final `./gradlew quality` | `pass` | JVM and iOS Simulator tests, SQLDelight migration verification, static analysis without SYNC-002 suppressions, formatting, and all existing targets passed after the completed-change corrections. |
+| Final `./gradlew quality` | `pass` | JVM and iOS Simulator tests, SQLDelight migration verification, static analysis without SYNC-002 suppressions, formatting, and all existing targets passed after the completed-change and hosted-review corrections. |
 | Credential-free iOS Simulator host build | `pass` | The `iosApp` scheme and injected CryptoKit provider compiled with signing disabled. |
 | CryptoKit XCTest on iOS Simulator | `pass` | FIPS SHA-256, RFC 4231 HMAC-SHA256, NIST AES-GCM including altered-tag rejection, Ed25519 lifecycle and RFC 8032 cross-verification, and decoding the fixed JCA-produced format-1 golden bundle through Kotlin and CryptoKit passed. |
 | CryptoKit XCTest on physical iPhone | `pass` | All six Simulator-tested CryptoKit cases passed on the connected physical iPhone with the maintainer-provided Development Team supplied only as a local build parameter. No personal signing value was added to the repository. |

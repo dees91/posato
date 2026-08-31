@@ -131,21 +131,60 @@ class SyncWriterTest {
     }
 
     @Test
-    fun `given a registration above sequence one when accepted then it is rejected without staging or progress`() = runTest {
+    fun `given a rejected bundle and transport receipt when handled then only exact refetch advances progress`() = runTest {
+        data class Case(
+            val exactRefetchAvailable: Boolean,
+            val remoteCommitMode: RemoteCommitMode,
+        )
+        val cases = listOf(
+            Case(false, RemoteCommitMode.SUCCESS),
+            Case(true, RemoteCommitMode.SUCCESS),
+            Case(true, RemoteCommitMode.AMBIGUOUS_EXACT),
+        )
+
+        cases.forEachIndexed { index, case ->
+            val provider = FakeSyncCryptoProvider()
+            val store = FakeSyncReplicaStore(snapshot(), remoteCommitMode = case.remoteCommitMode)
+            val writer = assertIs<OpenSyncWriterResult.Success>(
+                SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+            ).writer
+            val progress = OpaqueTransportProgress(byteArrayOf(index.toByte()))
+
+            val result = writer.acceptRemote(
+                remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.AuthorRegister)),
+                RemoteTransportReceipt(progress, case.exactRefetchAvailable),
+            )
+
+            assertEquals(RemoteAcceptanceFailure.INVALID_OPERATION, assertIs<RemoteAcceptanceResult.Failure>(result).reason)
+            assertEquals(emptyMap(), store.current.stagedBundles)
+            assertEquals(progress.takeIf { case.exactRefetchAvailable }, store.current.transportProgress)
+        }
+    }
+
+    @Test
+    fun `given rejected progress cannot be reconciled when handled then the writer freezes`() = runTest {
         val provider = FakeSyncCryptoProvider()
-        val store = FakeSyncReplicaStore(snapshot())
+        val store = FakeSyncReplicaStore(snapshot(), remoteCommitMode = RemoteCommitMode.AMBIGUOUS_WITH_EXTRA_STATE)
         val writer = assertIs<OpenSyncWriterResult.Success>(
             SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
         ).writer
+        val rejected = remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.AuthorRegister))
 
         val result = writer.acceptRemote(
-            remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.AuthorRegister)),
+            rejected,
             RemoteTransportReceipt(OpaqueTransportProgress(byteArrayOf(9)), exactRefetchAvailable = true),
         )
 
-        assertEquals(RemoteAcceptanceFailure.INVALID_OPERATION, assertIs<RemoteAcceptanceResult.Failure>(result).reason)
-        assertEquals(emptyMap(), store.current.stagedBundles)
-        assertEquals(null, store.current.transportProgress)
+        assertEquals(
+            RemoteAcceptanceFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<RemoteAcceptanceResult.Failure>(result).reason,
+        )
+        assertEquals(
+            RemoteAcceptanceFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<RemoteAcceptanceResult.Failure>(
+                writer.acceptRemote(rejected, RemoteTransportReceipt(null, exactRefetchAvailable = false)),
+            ).reason,
+        )
     }
 
     @Test
@@ -228,6 +267,35 @@ class SyncWriterTest {
             .open(testContext, transportKey())
 
         assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given accepted history when reopened then the durable HLC must cover every operation`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val acceptedClock = HybridLogicalClock(10, 5)
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister).copy(clock = acceptedClock)),
+        )
+        val cases = listOf(
+            DurableClockState(HybridLogicalClock(10, 4), false) to false,
+            DurableClockState(acceptedClock, false) to true,
+            DurableClockState(HybridLogicalClock(10, 6), false) to true,
+        )
+
+        cases.forEach { (clockState, succeeds) ->
+            val result = SyncOperationCore(
+                FakeSyncReplicaStore(accepted.copy(clockState = clockState)),
+                provider,
+                SyncWallClock { 100 },
+            ).open(testContext, transportKey())
+
+            if (succeeds) {
+                assertIs<OpenSyncWriterResult.Success>(result)
+            } else {
+                assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            }
+        }
     }
 
     @Test
@@ -537,10 +605,21 @@ private class FakeSyncReplicaStore(
     }
 
     private fun remoteResult(): SyncStoreResult<SyncReplicaSnapshot> {
-        return if (remoteCommitMode == RemoteCommitMode.SUCCESS) {
-            SyncStoreResult.Success(current)
-        } else {
-            SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
+        return when (remoteCommitMode) {
+            RemoteCommitMode.SUCCESS -> {
+                SyncStoreResult.Success(current)
+            }
+
+            RemoteCommitMode.AMBIGUOUS_EXACT -> {
+                SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
+            }
+
+            RemoteCommitMode.AMBIGUOUS_WITH_EXTRA_STATE -> {
+                current = current.copy(
+                    terminalExpiryFacts = current.terminalExpiryFacts + SessionId(app.posato.feature.sync.testIdentifier(96)),
+                )
+                SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
+            }
         }
     }
 }
@@ -555,6 +634,7 @@ private enum class LocalCommitMode {
 private enum class RemoteCommitMode {
     SUCCESS,
     AMBIGUOUS_EXACT,
+    AMBIGUOUS_WITH_EXTRA_STATE,
 }
 
 private fun snapshot(clockState: DurableClockState = DurableClockState(HybridLogicalClock(0, 0), false),): SyncReplicaSnapshot {
@@ -615,6 +695,7 @@ private fun acceptedSnapshot(
     provider: FakeSyncCryptoProvider,
     operations: List<SyncOperation>,
 ): SyncReplicaSnapshot {
+    val lastClock = checkNotNull(operations.maxOfOrNull { operation -> operation.clock })
     val accepted = operations.associate { operation ->
         val bundle = remoteBundle(provider, operation)
         operation.operationId to StoredAcceptedBundle(
@@ -623,5 +704,5 @@ private fun acceptedSnapshot(
             operation,
         )
     }
-    return snapshot().copy(acceptedBundles = accepted)
+    return snapshot(DurableClockState(lastClock, lastClock.successor() == null)).copy(acceptedBundles = accepted)
 }

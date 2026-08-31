@@ -149,6 +149,12 @@ delivery, bounded capacity, terminal HLC behavior, and deterministic convergence
 passed on the JVM, iOS Simulator, and a physical iPhone. Concrete CloudKit
 cursor and sync-engine state remain deferred to their transport task.
 
+`observed` (2026-08-31): a hosted review correction made reopen fail closed
+when durable HLC state is below any retained accepted operation clock. Rejected
+and deferred-capacity bundles now share the same rule: opaque transport progress
+advances only when exact refetch remains available, using the existing exact
+commit-reconciliation boundary.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:

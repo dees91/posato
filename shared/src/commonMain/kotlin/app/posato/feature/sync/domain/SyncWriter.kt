@@ -197,6 +197,7 @@ private fun SyncReplicaSnapshot.isAuthenticatedBy(
         decoded is DecodeBundleResult.Success &&
             bundleId == stored.operation.operationId &&
             decoded.operation == stored.operation &&
+            stored.operation.clock <= clockState.last &&
             stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
     }
     val stagedAreValid = stagedBundles.all { (bundleId, stored) ->
@@ -285,7 +286,7 @@ internal class SyncWriter internal constructor(
             }
             val outcome = when (val classified = remoteClassifier.classify(checkpoint, bundle)) {
                 is RemoteBundleClassification.Failure -> {
-                    RemoteCommitOutcome(classified.result)
+                    remoteCommitter.failure(checkpoint, classified.result, receipt)
                 }
 
                 RemoteBundleClassification.Duplicate -> {

@@ -141,6 +141,21 @@ internal class RemoteBundleCommitter(
     private val store: SyncReplicaStore,
     private val reconciler: SyncCommitReconciler,
 ) {
+    suspend fun failure(
+        snapshot: SyncReplicaSnapshot,
+        result: RemoteAcceptanceResult.Failure,
+        receipt: RemoteTransportReceipt,
+    ): RemoteCommitOutcome {
+        val progress = receipt.progress?.takeIf { receipt.exactRefetchAvailable }
+            ?: return RemoteCommitOutcome(result)
+        val expected = snapshot.expectedAfterProgress(progress)
+        val committed = reconciler.commitRemote(snapshot, expected) {
+            store.commitTransportProgress(snapshot.revision, progress)
+        }
+
+        return committed?.let { RemoteCommitOutcome(result, it) } ?: uncertain()
+    }
+
     suspend fun duplicate(
         snapshot: SyncReplicaSnapshot,
         receipt: RemoteTransportReceipt
@@ -162,7 +177,11 @@ internal class RemoteBundleCommitter(
         val stagedCount = snapshot.stagedBundles.values.count { it.operation.authorId == operation.authorId }
         val atCapacity = stagedCount >= SyncFormatLimits.MAX_UNKNOWN_AUTHOR_BUNDLES ||
             snapshot.stagedBundles.size >= SyncFormatLimits.MAX_STAGED_BUNDLES
-        return if (atCapacity) capacityOutcome(snapshot, receipt) else stage(snapshot, bundle, operation, receipt)
+        return if (atCapacity) {
+            failure(snapshot, RemoteAcceptanceResult.Failure(RemoteAcceptanceFailure.DEFERRED_CAPACITY), receipt)
+        } else {
+            stage(snapshot, bundle, operation, receipt)
+        }
     }
 
     suspend fun registration(
@@ -198,25 +217,6 @@ internal class RemoteBundleCommitter(
             store.commitAcceptedRemote(snapshot.revision, bundles, emptySet(), clock, receipt.progress)
         }
         return committedOutcome(committed) { RemoteAcceptanceResult.Accepted(projection(it)) }
-    }
-
-    private suspend fun capacityOutcome(
-        snapshot: SyncReplicaSnapshot,
-        receipt: RemoteTransportReceipt
-    ): RemoteCommitOutcome {
-        val progress = receipt.progress?.takeIf { receipt.exactRefetchAvailable }
-        val committed = progress?.let {
-            val expected = snapshot.expectedAfterProgress(it)
-            reconciler.commitRemote(snapshot, expected) { store.commitTransportProgress(snapshot.revision, it) }
-        }
-        return if (progress != null && committed == null) {
-            uncertain()
-        } else {
-            RemoteCommitOutcome(
-                RemoteAcceptanceResult.Failure(RemoteAcceptanceFailure.DEFERRED_CAPACITY),
-                committed,
-            )
-        }
     }
 
     private suspend fun stage(

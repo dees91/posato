@@ -967,3 +967,9 @@
   boundary without importing feasibility code wholesale.
 - Passed the JVM, iOS Simulator, and physical-iPhone quality matrix plus the
   independent completed-change review.
+
+## [2026-08-31] correction | Fail closed on sync checkpoint regression
+
+- Rejected reopen when durable HLC state falls below retained accepted history.
+- Unified rejected and deferred-capacity exact-refetch progress handling through
+  the existing atomic commit-reconciliation path.
