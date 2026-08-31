@@ -888,3 +888,12 @@
   connection and rotated it before its bounded operation sequence is exhausted.
 - Kept the original Apply connection as cleanup owner and preserved fail-closed
   termination for actual renewal failures.
+
+## [2026-08-31] decision | Consolidate the design system in SESSION-001
+
+- Made `SESSION-001` the first explicit checkpoint for comparing repeated
+  production UI patterns with `DESIGN.md` and the disposable prototype.
+- Kept reusable components, exact tokens, and responsive rules evidence-driven
+  within the session slice instead of adding a speculative design-system task.
+- Accepted roadmap revision 3 without changing its task count, dependencies,
+  waves, or integration groups.

@@ -3,9 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 2
+- **Revision:** 3
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
+- **Last amended:** 2026-08-31
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -14,6 +15,9 @@ This roadmap retains the MVP outcomes, ordering, direct dependencies, waves,
 and integration groups. It does not pre-authorize implementation or require a
 full specification for inactive work. Create a concise brief just before a
 task or integration group starts, following [the task workflow](README.md).
+Revision 3 adds the maintainer-accepted `SESSION-001` design-system
+consolidation checkpoint without adding a task or changing dependencies,
+waves, or integration groups.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -35,6 +39,10 @@ remain authoritative for their concerns.
   are checked when that wave starts.
 - The disposable interaction prototype is bounded UX evidence, not production
   code or a product requirement.
+- `SESSION-001` is the first design-system consolidation checkpoint. It reviews
+  repeated production UI patterns against `DESIGN.md` and the prototype while
+  keeping implementation inside the session vertical slice; it does not create
+  a speculative component-library task.
 - Schedules, portable workspaces, Android, Linux, product accounts, analytics,
   stronger early-end friction, and total-key-loss recovery remain outside this
   MVP graph.
@@ -66,7 +74,7 @@ wave barriers add the phase ordering stated above.
 | `TARGETS-003` | Associate and remove device-local macOS application selections. | Target management | P2/W2.6 | `TARGETS-002` | PR-MAC-MAPPING |
 | `TARGETS-004` | Authorize and associate an opaque device-local iOS application selection. | Target management | P2/W2.6 | `TARGETS-002`, `APPLE-001` | PR-IOS-MAPPING |
 | `SYNC-002` | Create and process compatible encrypted operations with deterministic rejection and convergence. | Apple synchronization | P2/W2.6 | `SYNC-001` | PR-SYNC-CORE |
-| `SESSION-001` | Provide shared setup, review, start, early-end, and expiry behavior for one manual session. | Sessions and enforcement | P2/W2.7 | `TARGETS-001`, `TARGETS-002` | PR-SESSION-CORE |
+| `SESSION-001` | Provide shared setup, review, start, early-end, and expiry behavior for one manual session, and consolidate only repeated production UI contracts. | Sessions and enforcement | P2/W2.7 | `TARGETS-001`, `TARGETS-002` | PR-SESSION-CORE |
 | `SYNC-004` | Preserve the one-workspace invariant through bootstrap delay, conflict, failure, and restart. | Apple synchronization | P2/W2.8 | `SYNC-003` | PR-BOOTSTRAP-CORE |
 | `MACOS-004` | Deny selected exact domains on the accepted macOS browser matrix with safe recovery. | Sessions and enforcement | P3/W3.1 | `MACOS-002`, `MACOS-003`, `SESSION-001`, `TARGETS-001` | PR-MAC-DOMAINS |
 | `IOS-001` | Apply and clear only Posato-owned iOS website and application restrictions. | Sessions and enforcement | P3/W3.1 | `SESSION-001`, `TARGETS-004`, `APPLE-001` | PR-IOS-ENFORCEMENT |

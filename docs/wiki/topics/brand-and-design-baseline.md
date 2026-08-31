@@ -234,6 +234,19 @@ supporting information, not an animated spectacle.
   identifier handling, and final edit or deletion confirmation remain later
   implementation evidence.
 
+### SESSION-001 design-system consolidation checkpoint
+
+- `user-confirmed` (2026-08-31): `SESSION-001` is the first explicit
+  design-system consolidation checkpoint. It compares the production Paused
+  items screen and the new session states with `DESIGN.md` and the disposable
+  interaction prototype.
+- `user-confirmed` (2026-08-31): only patterns repeated by production screens
+  may move into `app.posato.core.designsystem`; exact tokens and responsive
+  rules require rendered macOS and iOS evidence.
+- `user-confirmed` (2026-08-31): this review remains part of the `SESSION-001`
+  vertical slice. It does not authorize a speculative component library,
+  prototype geometry reuse, or a separate design-system implementation task.
+
 ## Low-fidelity flows
 
 These diagrams specify state and action order, not final navigation, layout, or
