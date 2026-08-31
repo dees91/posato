@@ -70,7 +70,7 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
             mappingState(applicationMappings = mappings),
         ),
         TargetsPreviewState(
-            "Application mapping failure",
+            "Application mapping load failure",
             mappingState(applicationPolicyName = "Social feeds", applicationMappingFailure = ApplicationMappingFailure.CORRUPTED_MAPPINGS),
         ),
         TargetsPreviewState(

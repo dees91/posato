@@ -53,6 +53,10 @@ internal data class TargetsUiState(
     val isMutatingApplicationMappings: Boolean
         get() = applicationMappingMutation != null
 
+    val hasApplicationMappingLoadFailure: Boolean
+        get() = applicationMappingFailure == ApplicationMappingFailure.LOAD_FAILED ||
+            applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS
+
     override fun toString(): String {
         return "TargetsUiState(redacted)"
     }
@@ -67,9 +71,6 @@ internal fun TargetsUiState.canRemoveApplicationMapping(mappingId: LocalApplicat
 }
 
 private fun TargetsUiState.canMutateApplicationMappings(): Boolean {
-    val hasBlockingFailure = applicationMappingFailure == ApplicationMappingFailure.LOAD_FAILED ||
-        applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS
-
     return hasLoadedApplicationMappings && isApplicationMappingAvailable &&
-        !isApplicationMappingLoading && !isMutatingApplicationMappings && !hasBlockingFailure
+        !isApplicationMappingLoading && !isMutatingApplicationMappings && !hasApplicationMappingLoadFailure
 }

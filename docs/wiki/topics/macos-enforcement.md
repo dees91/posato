@@ -355,6 +355,12 @@ serialized request, and the helper cancels the AppKit panel before exiting;
 forced termination remains a bounded fallback. This lifecycle is separate from
 enforcement helper ownership.
 
+`observed` (2026-08-31): the normal-user helper path must be resolved only when
+the helper is first requested. Eager bundle discovery prevented the documented
+Gradle desktop shell from launching outside an application bundle; lazy
+discovery preserves packaged signature verification while keeping shell startup
+independent of picker availability.
+
 The JVM hashes each exact requirement with SHA-256 for its redacted mapping key
 and keeps the requirement bytes and bounded display name in a separate local
 SQLDelight database. Its directory is owner-only and the database plus present

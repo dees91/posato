@@ -933,3 +933,10 @@
   UI, state conversion, and ViewModel operations along their existing concerns.
 - Centralized the unchanged corrupt-mapping failure without weakening its
   validation or exception contract.
+
+## [2026-08-31] correction | Preserve truthful mapping startup states
+
+- Deferred packaged helper discovery until first use so the documented Gradle
+  desktop shell starts outside an application bundle.
+- Kept mapping load failures distinct from a confirmed empty snapshot and
+  rendered only their retryable failure state.

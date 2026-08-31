@@ -47,6 +47,9 @@ internal fun ApplicationMappingsSection(
             state.applicationMappingFailure?.let { failure ->
                 ApplicationMappingFailureNotice(failure, onRetry, Modifier.fillMaxWidth())
             }
+            if (state.hasApplicationMappingLoadFailure) {
+                return@Column
+            }
             if (state.applicationPolicyName == null && state.applicationMappings.isNotEmpty()) {
                 Text(stringResource(Res.string.application_mapping_retained), style = MaterialTheme.typography.bodySmall)
             } else if (state.applicationMappings.isEmpty() && state.hasLoadedApplicationMappings) {
@@ -97,7 +100,11 @@ private fun ApplicationMappingRow(
 
 @Composable
 internal fun TargetsUiState.applicationMappingSupportingText(): String? {
-    return if (!isApplicationMappingLoading && (!isApplicationMappingAvailable || applicationMappings.isEmpty())) {
+    if (isApplicationMappingLoading || hasApplicationMappingLoadFailure) {
+        return null
+    }
+
+    return if (!isApplicationMappingAvailable || applicationMappings.isEmpty()) {
         stringResource(Res.string.application_group_mapping_required)
     } else {
         null

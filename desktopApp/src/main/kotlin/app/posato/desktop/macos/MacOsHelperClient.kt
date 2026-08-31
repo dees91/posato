@@ -17,9 +17,10 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 internal class MacOsHelperClient(
-    private val helperPath: Path = MacOsHelperSigningVerifier.installedHelperPath(),
+    helperPath: Path? = null,
 ) : Closeable,
     MacOsApplicationPicker {
+    private val helperPath: Path by lazy { helperPath ?: MacOsHelperSigningVerifier.installedHelperPath() }
     private val random = SecureRandom()
     private val readerExecutor = Executors.newSingleThreadExecutor()
     private val sessionIdentifier = randomIdentifier()
