@@ -50,8 +50,19 @@ private let syntheticIdentifier = Data(repeating: 7, count: 16)
   let encoded = WireCapabilities.encode(WireLimits.requiredCapabilities)
 
   #expect(try WireCapabilities.decode(encoded) == WireLimits.requiredCapabilities)
-  #expect(WireCapabilities.supportsRequired(WireLimits.requiredCapabilities | 2))
-  #expect(!WireCapabilities.supportsRequired(0))
+  #expect(
+    WireCapabilities.supports(
+      WireLimits.requiredParentHelperCapabilities,
+      required: WireLimits.requiredCapabilities
+    )
+  )
+  #expect(!WireCapabilities.supports(0, required: WireLimits.requiredCapabilities))
+  #expect(
+    !WireCapabilities.supports(
+      WireLimits.requiredCapabilities,
+      required: WireLimits.requiredParentHelperCapabilities
+    )
+  )
   #expect(throws: WireProtocolFailure.invalidFrame) {
     try WireCapabilities.decode(Data())
   }

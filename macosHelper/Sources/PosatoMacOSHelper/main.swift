@@ -33,7 +33,12 @@ private var leaseRenewer: LeaseRenewer?
 do {
   while let encoded = try readFrame() {
     let receivedAt = DispatchTime.now()
-    let request = try WireCodec.decode(encoded, maximumBytes: WireLimits.maximumFrameBytes)
+    let request = try WireCodec.decode(
+      encoded,
+      maximumBytes: WireLimits.maximumFrameBytes,
+      allowsApplicationSelection: true,
+      maximumDeadlineMilliseconds: WireLimits.maximumSelectionDeadlineMilliseconds
+    )
     guard sequenceValidator.accept(request.sequence) else {
       throw PipeFailure.invalidFrame
     }
@@ -42,7 +47,10 @@ do {
         request.connectionIdentifier == Data(repeating: 0, count: WireLimits.identifierBytes),
         request.sessionIdentifier.contains(where: { $0 != 0 }),
         request.requestIdentifier.contains(where: { $0 != 0 }),
-        try WireCapabilities.supportsRequired(WireCapabilities.decode(request.payload))
+        try WireCapabilities.supports(
+          WireCapabilities.decode(request.payload),
+          required: WireLimits.requiredParentHelperCapabilities
+        )
       else {
         throw PipeFailure.invalidFrame
       }
@@ -57,7 +65,7 @@ do {
         connectionIdentifier: identifier,
         sessionIdentifier: request.sessionIdentifier,
         requestIdentifier: request.requestIdentifier,
-        payload: WireCapabilities.encode(WireLimits.requiredCapabilities)
+        payload: WireCapabilities.encode(WireLimits.requiredParentHelperCapabilities)
       )
       try writeFrame(WireCodec.encode(welcome))
       continue
@@ -109,7 +117,7 @@ do {
       throw PipeFailure.invalidFrame
     }
     switch request.operation {
-    case .status, .enable, .repair, .restore, .disable, .remove:
+    case .status, .enable, .repair, .restore, .disable, .remove, .selectApplications:
       guard request.payload.isEmpty else {
         throw PipeFailure.invalidFrame
       }
@@ -121,6 +129,24 @@ do {
       break
     case .none, .renew:
       throw PipeFailure.invalidFrame
+    }
+    if request.operation == .selectApplications {
+      let selection = try ApplicationSelectionService().select()
+      let response = try WireMessage(
+        kind: .response,
+        operation: request.operation,
+        sequence: request.sequence,
+        deadlineMilliseconds: try remainingDeadline(
+          receivedAt: receivedAt,
+          budgetMilliseconds: request.deadlineMilliseconds
+        ),
+        connectionIdentifier: request.connectionIdentifier,
+        sessionIdentifier: request.sessionIdentifier,
+        requestIdentifier: request.requestIdentifier,
+        payload: selection.encode()
+      )
+      try writeFrame(WireCodec.encode(response))
+      continue
     }
     let reconcilePayload =
       request.operation == .reconcile

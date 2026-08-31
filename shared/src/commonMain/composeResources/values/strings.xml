@@ -3,6 +3,7 @@
     <string name="action_add">Add website</string>
     <string name="action_add_application_group">Add group</string>
     <string name="action_cancel">Cancel</string>
+    <string name="action_choose_applications">Choose applications</string>
     <string name="action_edit">Edit</string>
     <string name="action_reload">Reload saved list</string>
     <string name="action_remove">Remove</string>
@@ -13,6 +14,15 @@
     <string name="application_group_input_label">Application group name</string>
     <string name="application_group_input_placeholder">Social feeds</string>
     <string name="application_group_mapping_required">Apps still need to be chosen on this device.</string>
+    <string name="application_mapping_capacity">This device already has the maximum number of chosen applications.</string>
+    <string name="application_mapping_corruption">Chosen applications could not be verified. Nothing was changed.</string>
+    <string name="application_mapping_empty">No applications chosen on this Mac.</string>
+    <string name="application_mapping_invalid">Choose signed application bundles that can be verified on this Mac.</string>
+    <string name="application_mapping_load_failed">Chosen applications could not be loaded. Nothing was changed.</string>
+    <string name="application_mapping_picker_failed">The application picker could not be opened.</string>
+    <string name="application_mapping_retained">These device-only choices are retained without an application group.</string>
+    <string name="application_mapping_save_failed">This application change could not be saved.</string>
+    <string name="application_mapping_self">Posato cannot be added to its own application group.</string>
     <string name="application_group_title">Applications</string>
     <string name="application_entry_error_empty">Enter an application group name.</string>
     <string name="application_entry_error_invalid">Use a name without line breaks or control characters.</string>

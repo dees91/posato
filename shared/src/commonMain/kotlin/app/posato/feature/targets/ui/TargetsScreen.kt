@@ -31,6 +31,8 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.posato.core.designsystem.PosatoTheme
+import app.posato.feature.targets.data.LocalApplicationMappingId
+import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.action_retry
@@ -43,8 +45,9 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 internal fun TargetsScreen(
     store: LocalTargetPolicyStore,
+    applicationMappings: LocalApplicationMappings,
     modifier: Modifier = Modifier,
-    viewModel: TargetsViewModel = viewModel { TargetsViewModel(store) },
+    viewModel: TargetsViewModel = viewModel { TargetsViewModel(store, applicationMappings) },
 ) {
     val state by viewModel.uiState.collectAsState()
 
@@ -59,6 +62,9 @@ internal fun TargetsScreen(
         onCancelApplicationPolicyEdit = viewModel::cancelEditingApplicationPolicy,
         onRemoveApplicationPolicy = viewModel::removeApplicationPolicy,
         onRetry = viewModel::retry,
+        onRetryApplicationMappings = viewModel::retryApplicationMappings,
+        onChooseApplications = viewModel::chooseApplications,
+        onRemoveApplicationMapping = viewModel::removeApplicationMapping,
         modifier = modifier,
     )
 }
@@ -75,6 +81,9 @@ internal fun TargetsScreen(
     onCancelApplicationPolicyEdit: () -> Unit,
     onRemoveApplicationPolicy: () -> Unit,
     onRetry: () -> Unit,
+    onRetryApplicationMappings: () -> Unit,
+    onChooseApplications: () -> Unit,
+    onRemoveApplicationMapping: (LocalApplicationMappingId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier = modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -94,6 +103,9 @@ internal fun TargetsScreen(
                 onCancelApplicationPolicyEdit = onCancelApplicationPolicyEdit,
                 onRemoveApplicationPolicy = onRemoveApplicationPolicy,
                 onRetry = onRetry,
+                onRetryApplicationMappings = onRetryApplicationMappings,
+                onChooseApplications = onChooseApplications,
+                onRemoveApplicationMapping = onRemoveApplicationMapping,
             )
         }
     }
@@ -147,6 +159,9 @@ private fun TargetsContent(
     onCancelApplicationPolicyEdit: () -> Unit,
     onRemoveApplicationPolicy: () -> Unit,
     onRetry: () -> Unit,
+    onRetryApplicationMappings: () -> Unit,
+    onChooseApplications: () -> Unit,
+    onRemoveApplicationMapping: (LocalApplicationMappingId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val enabled = state.canMutatePolicy()
@@ -171,6 +186,15 @@ private fun TargetsContent(
                     onCancelApplicationPolicyEdit,
                     onRemoveApplicationPolicy,
                     Modifier.fillMaxWidth(),
+                )
+            }
+            item {
+                ApplicationMappingsSection(
+                    state = state,
+                    onRetry = onRetryApplicationMappings,
+                    onChoose = onChooseApplications,
+                    onRemove = onRemoveApplicationMapping,
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             item { WebsitesSectionHeader() }
@@ -198,7 +222,7 @@ private fun TargetsContent(
 private fun TargetsPhonePreview(
     @PreviewParameter(TargetsScreenPreviewDataProvider::class) previewState: TargetsScreenPreviewDataProvider.TargetsPreviewState,
 ) {
-    PosatoTheme { TargetsScreen(previewState.state, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
+    PosatoTheme { TargetsScreen(previewState.state, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
 }
 
 @Preview(name = "Desktop", widthDp = 900, heightDp = 720)
@@ -206,5 +230,5 @@ private fun TargetsPhonePreview(
 private fun TargetsDesktopPreview(
     @PreviewParameter(TargetsScreenPreviewDataProvider::class) previewState: TargetsScreenPreviewDataProvider.TargetsPreviewState,
 ) {
-    PosatoTheme { TargetsScreen(previewState.state, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
+    PosatoTheme { TargetsScreen(previewState.state, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
 }

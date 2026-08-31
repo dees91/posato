@@ -39,7 +39,6 @@ import app.posato.generated.resources.application_group_description
 import app.posato.generated.resources.application_group_empty
 import app.posato.generated.resources.application_group_input_label
 import app.posato.generated.resources.application_group_input_placeholder
-import app.posato.generated.resources.application_group_mapping_required
 import app.posato.generated.resources.application_group_title
 import app.posato.generated.resources.domain_input_label
 import app.posato.generated.resources.domain_input_placeholder
@@ -91,7 +90,7 @@ internal fun ApplicationPolicySection(
         TargetRow(
             value = currentName,
             enabled = enabled,
-            supportingText = stringResource(Res.string.application_group_mapping_required),
+            supportingText = state.applicationMappingSupportingText(),
             onEdit = onEdit,
             onRemove = onRemove,
             modifier = modifier,
@@ -118,7 +117,7 @@ private fun ApplicationPolicyEditor(
                 TargetRow(
                     value = currentName,
                     enabled = false,
-                    supportingText = stringResource(Res.string.application_group_mapping_required),
+                    supportingText = state.applicationMappingSupportingText(),
                     onEdit = onEdit,
                     onRemove = onRemove,
                     modifier = Modifier.fillMaxWidth(),

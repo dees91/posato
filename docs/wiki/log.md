@@ -904,3 +904,52 @@
   approval for every narrowly justified quality-tool exception.
 - Added an aggregate quality check that rejects Kotlin suppression annotations
   outside the exact allowlist of approved pre-existing exceptions.
+
+## [2026-08-31] experiment | Add device-local macOS application mappings
+
+- Added strict signed-bundle selection in the normal-user helper and an
+  owner-only local mapping database outside synchronization and diagnostics.
+- Kept picker capability and its human-interaction deadline off daemon XPC;
+  lifecycle transport remains unchanged.
+
+## [2026-08-31] correction | Retire the AppKit picker helper after selection
+
+- Made the dedicated application-picker helper client one-shot after physical
+  testing found that returning to a blocking pipe read left AppKit unresponsive.
+- Added bounded shutdown cleanup that cancels an active AppKit panel before its
+  helper exits, preventing an orphaned system picker when Posato quits.
+- Kept enforcement helper lifecycle and daemon ownership unchanged.
+
+## [2026-08-31] decision | Add a development-packaging correction gate
+
+- Added `MACOS-006` before macOS domain and application enforcement after the
+  unchanged Gradle package failed to launch during a physical gate.
+- Required strict nested-signature verification and launch without manual
+  re-signing while retaining release signing and notarization in `RELEASE-001`.
+
+## [2026-08-31] correction | Remove TARGETS-003 lint suppressions
+
+- Removed every detekt suppression introduced by TARGETS-003 and split mapping
+  UI, state conversion, and ViewModel operations along their existing concerns.
+- Centralized the unchanged corrupt-mapping failure without weakening its
+  validation or exception contract.
+
+## [2026-08-31] correction | Preserve truthful mapping startup states
+
+- Deferred packaged helper discovery until first use so the documented Gradle
+  desktop shell starts outside an application bundle.
+- Kept mapping load failures distinct from a confirmed empty snapshot and
+  rendered only their retryable failure state.
+
+## [2026-08-31] correction | Reject Posato-owned application bundles
+
+- Extended application self-selection rejection to the complete macOS Posato
+  identifier namespace, including the signed helper.
+- Kept third-party signature validation and atomic batch rejection unchanged.
+
+## [2026-08-31] correction | Align application mapping status and IPC evidence
+
+- Hid device mapping status when neither an application group nor retained
+  application choices exist.
+- Corrected the TARGETS-003 record: capability negotiation ends at the
+  parent/helper pipe, while daemon XPC rejects selection without a handshake.

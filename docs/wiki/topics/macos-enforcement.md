@@ -335,6 +335,46 @@ Application launch observations are also behavioral data. Production logging
 must minimize them and define retention before any telemetry or support capture
 is introduced.
 
+## Device-local application identity
+
+`observed` (2026-08-31): TARGETS-003 implements macOS selection in the existing
+normal-user helper. AppKit returns application bundles; Security framework
+validation checks all architectures strictly without network access, rejects
+ad-hoc signatures, and extracts each binary designated requirement. The macOS
+Posato application and every product-owned bundle in its identifier namespace
+are rejected as self-selection before that candidate's requirement is
+inspected. The complete batch fails before persistence if any member is invalid.
+
+`observed` (2026-08-31): picker capability negotiation exists only on the
+authenticated parent-to-helper pipe. Helper-to-daemon XPC has no capability
+handshake; its bounded decoder rejects application selection before payload
+handling and keeps the lifecycle deadline maximum unchanged.
+
+`observed` (2026-08-31): the AppKit picker helper must be one-shot. Returning
+from `NSOpenPanel.runModal()` directly to a blocking inherited-pipe read left
+the activated accessory process unable to service AppKit events and caused a
+system beachball around later panels. The mapping adapter owns a dedicated
+helper client, closes it after every successful or cancelled selection
+response, and starts a freshly authenticated process for the next picker.
+Desktop shutdown also closes the mapping adapter from a JVM shutdown hook. The
+client sends the active picker helper `SIGTERM` without waiting for its
+serialized request, and the helper cancels the AppKit panel before exiting;
+forced termination remains a bounded fallback. This lifecycle is separate from
+enforcement helper ownership.
+
+`observed` (2026-08-31): the normal-user helper path must be resolved only when
+the helper is first requested. Eager bundle discovery prevented the documented
+Gradle desktop shell from launching outside an application bundle; lazy
+discovery preserves packaged signature verification while keeping shell startup
+independent of picker availability.
+
+The JVM hashes each exact requirement with SHA-256 for its redacted mapping key
+and keeps the requirement bytes and bounded display name in a separate local
+SQLDelight database. Its directory is owner-only and the database plus present
+SQLite sidecars are owner read/write only. Selection identity remains absent
+from the root daemon, synchronized policy, diagnostics, and logs. Process
+matching and termination remain deferred to MACOS-005.
+
 ## Open questions
 
 - Does MACOS-004 pass every accepted automated and physical browser,

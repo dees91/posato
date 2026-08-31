@@ -11,7 +11,11 @@ internal object MacOsHelperProtocol {
     const val IDENTIFIER_BYTES: Int = 16
     const val MAXIMUM_OPERATIONS: Int = 256
     const val HEADER_BYTES: Int = 68
-    const val REQUIRED_CAPABILITIES: Long = 1L
+    const val MAXIMUM_LIFECYCLE_DEADLINE_MILLISECONDS: Int = 120_000
+    const val MAXIMUM_SELECTION_DEADLINE_MILLISECONDS: Int = 1_800_000
+    const val LIFECYCLE_CAPABILITY: Long = 1L
+    const val APPLICATION_SELECTION_CAPABILITY: Long = 2L
+    const val REQUIRED_PARENT_HELPER_CAPABILITIES: Long = LIFECYCLE_CAPABILITY or APPLICATION_SELECTION_CAPABILITY
     private const val MAGIC: Int = 0x5053544F
     private const val MAJOR_VERSION: Short = 1
 
@@ -49,7 +53,11 @@ internal object MacOsHelperProtocol {
             ?: error("Unknown operation")
         val sequence = buffer.int
         val deadline = buffer.int
-        require(deadline in 0..120_000)
+        val maximumDeadline = when (operation) {
+            HelperOperation.SelectApplications -> MAXIMUM_SELECTION_DEADLINE_MILLISECONDS
+            else -> MAXIMUM_LIFECYCLE_DEADLINE_MILLISECONDS
+        }
+        require(deadline in 0..maximumDeadline)
         val connection = ByteArray(IDENTIFIER_BYTES).also(buffer::get)
         val session = ByteArray(IDENTIFIER_BYTES).also(buffer::get)
         val request = ByteArray(IDENTIFIER_BYTES).also(buffer::get)
@@ -78,8 +86,16 @@ internal object MacOsHelperProtocol {
     fun capabilityPayload(): ByteArray {
         return ByteBuffer.allocate(Long.SIZE_BYTES)
             .order(ByteOrder.BIG_ENDIAN)
-            .putLong(REQUIRED_CAPABILITIES)
+            .putLong(REQUIRED_PARENT_HELPER_CAPABILITIES)
             .array()
+    }
+
+    fun supportsRequiredParentCapabilities(payload: ByteArray): Boolean {
+        if (payload.size != Long.SIZE_BYTES) {
+            return false
+        }
+        val offered = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN).long
+        return offered and REQUIRED_PARENT_HELPER_CAPABILITIES == REQUIRED_PARENT_HELPER_CAPABILITIES
     }
 }
 
@@ -106,6 +122,7 @@ internal enum class HelperOperation(
     Remove(7),
     Reconcile(8),
     Renew(9),
+    SelectApplications(10),
 }
 
 internal data class HelperMessage(

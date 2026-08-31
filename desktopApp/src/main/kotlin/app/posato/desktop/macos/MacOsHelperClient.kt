@@ -17,11 +17,18 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
 internal class MacOsHelperClient(
-    private val helperPath: Path = MacOsHelperSigningVerifier.installedHelperPath(),
-) : Closeable {
+    helperPath: Path? = null,
+) : Closeable,
+    MacOsApplicationPicker {
+    private val helperPath: Path by lazy { helperPath ?: MacOsHelperSigningVerifier.installedHelperPath() }
     private val random = SecureRandom()
     private val readerExecutor = Executors.newSingleThreadExecutor()
     private val sessionIdentifier = randomIdentifier()
+
+    @Volatile private var isClosed = false
+
+    @Volatile private var activeSelectionProcess: Process? = null
+
     private var process: Process? = null
     private var input: BufferedInputStream? = null
     private var output: BufferedOutputStream? = null
@@ -72,6 +79,46 @@ internal class MacOsHelperClient(
     }
 
     @Synchronized
+    override fun selectApplications(): MacOsApplicationPickerResult {
+        if (isClosed || pendingUnknownRequest != null) {
+            return MacOsApplicationPickerResult.Failure
+        }
+        return try {
+            ensureStarted()
+            activeSelectionProcess = checkNotNull(process)
+            check(!isClosed)
+            check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
+            val requestIdentifier = randomIdentifier()
+            val message = HelperMessage(
+                kind = HelperMessageKind.Request,
+                operation = HelperOperation.SelectApplications,
+                sequence = nextSequence++,
+                deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_SELECTION_DEADLINE_MILLISECONDS,
+                connectionIdentifier = connectionIdentifier,
+                sessionIdentifier = sessionIdentifier,
+                requestIdentifier = requestIdentifier,
+                payload = byteArrayOf(),
+            )
+            write(message)
+            val response = readWithDeadline(message.deadlineMilliseconds.toLong())
+            check(response.kind == HelperMessageKind.Response)
+            check(response.operation == message.operation)
+            check(response.sequence == message.sequence)
+            check(response.connectionIdentifier.contentEquals(connectionIdentifier))
+            check(response.sessionIdentifier.contentEquals(sessionIdentifier))
+            check(response.requestIdentifier.contentEquals(requestIdentifier))
+            MacOsApplicationSelectionProtocol.decode(response.payload).also {
+                terminateProcess()
+            }
+        } catch (_: Exception) {
+            terminateProcess()
+            MacOsApplicationPickerResult.Failure
+        } finally {
+            activeSelectionProcess = null
+        }
+    }
+
+    @Synchronized
     fun reconcileUnknown(): HelperResult {
         val pending = pendingUnknownRequest ?: return status()
         val result = request(
@@ -86,20 +133,28 @@ internal class MacOsHelperClient(
         return result
     }
 
-    @Synchronized
     override fun close() {
-        runCatching {
-            if (process?.isAlive == true) {
-                request(HelperOperation.Restore)
+        isClosed = true
+        activeSelectionProcess?.let { selectionProcess ->
+            selectionProcess.destroy()
+            if (!selectionProcess.waitFor(1, TimeUnit.SECONDS)) {
+                selectionProcess.destroyForcibly()
             }
         }
-        runCatching { output?.close() }
-        runCatching { input?.close() }
-        process?.destroy()
-        readerExecutor.shutdownNow()
-        output = null
-        input = null
-        process = null
+        synchronized(this) {
+            runCatching {
+                if (process?.isAlive == true) {
+                    request(HelperOperation.Restore)
+                }
+            }
+            runCatching { output?.close() }
+            runCatching { input?.close() }
+            process?.destroy()
+            readerExecutor.shutdownNow()
+            output = null
+            input = null
+            process = null
+        }
     }
 
     private fun request(
@@ -114,7 +169,7 @@ internal class MacOsHelperClient(
             kind = HelperMessageKind.Request,
             operation = operation,
             sequence = nextSequence++,
-            deadlineMilliseconds = 120_000,
+            deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_LIFECYCLE_DEADLINE_MILLISECONDS,
             connectionIdentifier = connectionIdentifier,
             sessionIdentifier = sessionIdentifier,
             requestIdentifier = requestIdentifier,
@@ -142,6 +197,7 @@ internal class MacOsHelperClient(
         if (process?.isAlive == true) {
             return
         }
+        check(!isClosed)
         check(Files.isRegularFile(helperPath) && Files.isExecutable(helperPath))
         val verifiedHelper = MacOsHelperSigningVerifier.verify(helperPath)
         val builder = ProcessBuilder(verifiedHelper.toString())
@@ -172,7 +228,7 @@ internal class MacOsHelperClient(
             check(welcome.sequence == 1)
             check(welcome.sessionIdentifier.contentEquals(sessionIdentifier))
             check(welcome.requestIdentifier.contentEquals(requestIdentifier))
-            check(welcome.payload.contentEquals(MacOsHelperProtocol.capabilityPayload()))
+            check(MacOsHelperProtocol.supportsRequiredParentCapabilities(welcome.payload))
             connectionIdentifier = welcome.connectionIdentifier
             check(connectionIdentifier.any { it != 0.toByte() })
         } catch (error: Exception) {

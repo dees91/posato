@@ -2,17 +2,21 @@ package app.posato.desktop
 
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.di.createDesktopApplicationGraph
 
 fun main() {
-    val applicationGraph = createDesktopApplicationGraph()
+    DesktopLocalApplicationMappings().use { applicationMappings ->
+        Runtime.getRuntime().addShutdownHook(Thread(applicationMappings::close, "application-mappings-shutdown"))
+        val applicationGraph = createDesktopApplicationGraph(applicationMappings)
 
-    application {
-        Window(
-            onCloseRequest = ::exitApplication,
-            title = "Posato",
-        ) {
-            applicationGraph.application.Content()
+        application {
+            Window(
+                onCloseRequest = ::exitApplication,
+                title = "Posato",
+            ) {
+                applicationGraph.application.Content()
+            }
         }
     }
 }

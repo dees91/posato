@@ -63,6 +63,14 @@ identifiers, platform enum, probe UI, schedule/use-case layer, or availability
 probe. The shared v2 schema stores only one canonical semantic name, and no PoC
 source or distinctive fixture was copied.
 
+`observed` (2026-08-31): TARGETS-003 used preserved revisions `bcdc8ce` and
+`4c13ade` only to confirm that binary designated requirements can support exact
+macOS identity and that selection belongs outside synchronized semantic policy.
+The production implementation defines a new bounded pipe operation, native
+validation service, redacted shared contract, owner-only SQLDelight schema, and
+focused tests. No PoC source, runner, trace, signing material, machine path, or
+distinctive fixture was copied.
+
 If later work copies a meaningful fragment, the pull request must identify:
 
 - the feasibility source revision and path;

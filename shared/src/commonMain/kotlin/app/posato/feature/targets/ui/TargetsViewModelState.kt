@@ -1,5 +1,6 @@
 package app.posato.feature.targets.ui
 
+import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
 import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.domain.ApplicationPolicyNameFailure
@@ -35,6 +36,19 @@ internal data class ApplicationPolicyEditorState(
 ) {
     override fun toString(): String {
         return "ApplicationPolicyEditorState(redacted)"
+    }
+}
+
+internal data class ApplicationMappingsState(
+    val snapshot: LocalApplicationMappingsSnapshot? = null,
+    val isLoading: Boolean = true,
+    val hasLoaded: Boolean = false,
+    val isAvailable: Boolean = false,
+    val failure: ApplicationMappingFailure? = null,
+    val mutation: ApplicationMappingMutation? = null,
+) {
+    override fun toString(): String {
+        return "ApplicationMappingsState(redacted)"
     }
 }
 
@@ -78,6 +92,7 @@ internal fun createUiState(
     domainEditorState: ExactDomainEditorState,
     applicationEditorState: ApplicationPolicyEditorState,
     submissionState: TargetsSubmissionState,
+    applicationMappingsState: ApplicationMappingsState,
 ): TargetsUiState {
     val policy = policyState.snapshot?.policy
 
@@ -92,6 +107,12 @@ internal fun createUiState(
         applicationPolicyInputFailure = applicationEditorState.failure,
         operationFailure = (submissionState as? TargetsSubmissionState.Failed)?.failure ?: policyState.failure,
         savingMutation = (submissionState as? TargetsSubmissionState.Saving)?.mutation,
+        applicationMappings = applicationMappingsState.snapshot?.mappings.orEmpty().toPersistentList(),
+        applicationMappingFailure = applicationMappingsState.failure,
+        applicationMappingMutation = applicationMappingsState.mutation,
+        isApplicationMappingLoading = applicationMappingsState.isLoading,
+        hasLoadedApplicationMappings = applicationMappingsState.hasLoaded,
+        isApplicationMappingAvailable = applicationMappingsState.isAvailable,
         isLoading = policyState.isLoading,
         hasLoaded = policyState.snapshot != null,
     )

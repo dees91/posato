@@ -1,10 +1,20 @@
 package app.posato.feature.targets.ui
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import app.posato.feature.targets.data.LocalApplicationMapping
+import app.posato.feature.targets.data.LocalApplicationMappingId
 import kotlinx.collections.immutable.persistentListOf
 
 internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<TargetsScreenPreviewDataProvider.TargetsPreviewState> {
     private val domains = persistentListOf("example.com", "news.example")
+    private val mappings = persistentListOf(
+        checkNotNull(
+            LocalApplicationMapping.restore(
+                checkNotNull(LocalApplicationMappingId.restore("01".repeat(32))),
+                "Browser",
+            ),
+        ),
+    )
 
     override val values: Sequence<TargetsPreviewState> = sequenceOf(
         TargetsPreviewState("Loading", TargetsUiState()),
@@ -14,13 +24,54 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
         ),
         TargetsPreviewState("Empty", TargetsUiState(isLoading = false, hasLoaded = true)),
         TargetsPreviewState(
-            "Application mapping required",
+            "Application mappings loading",
             TargetsUiState(
-                domains = domains,
                 applicationPolicyName = "Social feeds",
                 isLoading = false,
                 hasLoaded = true,
             ),
+        ),
+        TargetsPreviewState(
+            "Application mapping required",
+            TargetsUiState(
+                domains = domains,
+                applicationPolicyName = "Social feeds",
+                isApplicationMappingLoading = false,
+                hasLoadedApplicationMappings = true,
+                isLoading = false,
+                hasLoaded = true,
+            ),
+        ),
+        TargetsPreviewState(
+            "Available application picker",
+            mappingState(applicationPolicyName = "Social feeds"),
+        ),
+        TargetsPreviewState(
+            "Mapped application",
+            mappingState(applicationPolicyName = "Social feeds", applicationMappings = mappings),
+        ),
+        TargetsPreviewState(
+            "Choosing applications",
+            mappingState(
+                applicationPolicyName = "Social feeds",
+                applicationMappingMutation = ApplicationMappingMutation.CHOOSE,
+            ),
+        ),
+        TargetsPreviewState(
+            "Removing application",
+            mappingState(
+                applicationPolicyName = "Social feeds",
+                applicationMappings = mappings,
+                applicationMappingMutation = ApplicationMappingMutation.REMOVE,
+            ),
+        ),
+        TargetsPreviewState(
+            "Retained application mapping",
+            mappingState(applicationMappings = mappings),
+        ),
+        TargetsPreviewState(
+            "Application mapping load failure",
+            mappingState(applicationPolicyName = "Social feeds", applicationMappingFailure = ApplicationMappingFailure.CORRUPTED_MAPPINGS),
         ),
         TargetsPreviewState(
             "Editing application group",
@@ -127,5 +178,24 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
         override fun toString(): String {
             return name
         }
+    }
+
+    private fun mappingState(
+        applicationPolicyName: String? = null,
+        applicationMappings: kotlinx.collections.immutable.PersistentList<LocalApplicationMapping> = persistentListOf(),
+        applicationMappingMutation: ApplicationMappingMutation? = null,
+        applicationMappingFailure: ApplicationMappingFailure? = null,
+    ): TargetsUiState {
+        return TargetsUiState(
+            applicationPolicyName = applicationPolicyName,
+            applicationMappings = applicationMappings,
+            applicationMappingMutation = applicationMappingMutation,
+            applicationMappingFailure = applicationMappingFailure,
+            isApplicationMappingLoading = false,
+            hasLoadedApplicationMappings = true,
+            isApplicationMappingAvailable = true,
+            isLoading = false,
+            hasLoaded = true,
+        )
     }
 }

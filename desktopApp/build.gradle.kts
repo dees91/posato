@@ -76,6 +76,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.compose.multiplatform)
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.sqldelight)
 }
 
 kotlin {
@@ -95,7 +96,19 @@ java {
 dependencies {
     implementation(project(":shared"))
     implementation(libs.compose.desktop.macos.arm64)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.sqldelight.sqlite.driver)
     testImplementation(kotlin("test"))
+    testImplementation(libs.kotlinx.coroutines.test)
+}
+
+sqldelight {
+    databases {
+        create("MacOsApplicationMappingsDatabase") {
+            packageName.set("app.posato.desktop.mappings.database")
+            schemaOutputDirectory.set(file("src/main/sqldelight/databases"))
+        }
+    }
 }
 
 compose.desktop {

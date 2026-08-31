@@ -79,6 +79,25 @@ destroys the right and both processes zero every owned copy of the external
 form and encoded request material. This corrects the earlier zero-timeout
 implementation detail without changing the one-Apply authorization boundary.
 
+## TARGETS-003 implementation amendment
+
+`observed` (2026-08-31): application selection is operation `10` on the
+authenticated parent-to-normal-user-helper pipe only. That pipe requires
+protocol capability bits `1|2`; the existing lifecycle capability remains bit
+`1`. Selection may use a 30-minute deadline for a person-controlled AppKit
+panel. Every lifecycle frame and helper-to-daemon XPC frame retains the
+120-second maximum.
+
+The normal-user helper verifies every selected bundle across all architectures,
+rejects ad-hoc signatures and Posato itself, and returns bounded display names
+plus binary designated requirements as one atomic batch. The JVM stores only
+SHA-256 identifiers, display names, and exact requirement bytes in a separate
+owner-only local SQLDelight database. These identities never enter semantic
+policy, synchronization, diagnostics, or the root daemon. Daemon decoding
+rejects operation `10` before payload handling. Helper-to-daemon XPC has no
+capability handshake; it retains the existing protocol version, 120-second
+deadline maximum, and lifecycle operation allowlist.
+
 ## Context
 
 The arm64 macOS 15-or-later MVP runs its product UI, policy, and orchestration

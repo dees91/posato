@@ -5,6 +5,13 @@ import app.posato.generated.resources.application_entry_error_empty
 import app.posato.generated.resources.application_entry_error_invalid
 import app.posato.generated.resources.application_entry_error_too_long
 import app.posato.generated.resources.application_group_description
+import app.posato.generated.resources.application_mapping_capacity
+import app.posato.generated.resources.application_mapping_corruption
+import app.posato.generated.resources.application_mapping_invalid
+import app.posato.generated.resources.application_mapping_load_failed
+import app.posato.generated.resources.application_mapping_picker_failed
+import app.posato.generated.resources.application_mapping_save_failed
+import app.posato.generated.resources.application_mapping_self
 import app.posato.generated.resources.domain_input_description
 import app.posato.generated.resources.entry_error_duplicate
 import app.posato.generated.resources.entry_error_empty
@@ -47,5 +54,17 @@ internal fun TargetsOperationFailure?.operationMessage(): StringResource {
 
         TargetsOperationFailure.LOAD_FAILED,
         null -> Res.string.operation_error_load
+    }
+}
+
+internal fun ApplicationMappingFailure.applicationMappingMessage(): StringResource {
+    return when (this) {
+        ApplicationMappingFailure.LOAD_FAILED -> Res.string.application_mapping_load_failed
+        ApplicationMappingFailure.CORRUPTED_MAPPINGS -> Res.string.application_mapping_corruption
+        ApplicationMappingFailure.PICKER_FAILED -> Res.string.application_mapping_picker_failed
+        ApplicationMappingFailure.SAVE_FAILED -> Res.string.application_mapping_save_failed
+        ApplicationMappingFailure.SELF_SELECTION -> Res.string.application_mapping_self
+        ApplicationMappingFailure.INVALID_OR_UNSIGNED -> Res.string.application_mapping_invalid
+        ApplicationMappingFailure.CAPACITY -> Res.string.application_mapping_capacity
     }
 }

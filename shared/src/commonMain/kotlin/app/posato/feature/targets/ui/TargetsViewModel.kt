@@ -2,8 +2,10 @@ package app.posato.feature.targets.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.data.UnavailableLocalApplicationMappings
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ApplicationPolicyNameResult
 import app.posato.feature.targets.domain.TargetPolicy
@@ -23,24 +25,52 @@ import kotlinx.coroutines.launch
 
 internal class TargetsViewModel(
     private val store: LocalTargetPolicyStore,
+    internal val applicationMappings: LocalApplicationMappings = UnavailableLocalApplicationMappings,
 ) : ViewModel() {
     private val refreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    internal val applicationMappingRefreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val policyState = MutableStateFlow(TargetsPolicyState(isLoading = true))
+    internal val applicationMappingsState = MutableStateFlow(ApplicationMappingsState())
     private val domainEditorState = MutableStateFlow(ExactDomainEditorState())
     private val applicationEditorState = MutableStateFlow(ApplicationPolicyEditorState())
     private val submissionState = MutableStateFlow<TargetsSubmissionState>(TargetsSubmissionState.Idle)
     private val policyReadLifecycle = observePolicyReads()
-    private val currentState: TargetsUiState
-        get() = createUiState(policyState.value, domainEditorState.value, applicationEditorState.value, submissionState.value)
-
-    val uiState: StateFlow<TargetsUiState> = combine(
+    private val applicationMappingsReadLifecycle = observeApplicationMappingReads()
+    private val policyPresentationState = combine(
         policyState,
         domainEditorState,
         applicationEditorState,
         submissionState,
+    ) { currentPolicyState, currentDomainEditorState, currentApplicationEditorState, currentSubmissionState ->
+        TargetsPolicyPresentationState(
+            currentPolicyState,
+            currentDomainEditorState,
+            currentApplicationEditorState,
+            currentSubmissionState,
+        )
+    }
+    internal val currentState: TargetsUiState
+        get() = createUiState(
+            policyState.value,
+            domainEditorState.value,
+            applicationEditorState.value,
+            submissionState.value,
+            applicationMappingsState.value,
+        )
+
+    val uiState: StateFlow<TargetsUiState> = combine(
+        policyPresentationState,
+        applicationMappingsState,
         policyReadLifecycle,
-    ) { currentPolicyState, currentDomainEditorState, currentApplicationEditorState, currentSubmissionState, _ ->
-        createUiState(currentPolicyState, currentDomainEditorState, currentApplicationEditorState, currentSubmissionState)
+        applicationMappingsReadLifecycle,
+    ) { presentation, currentApplicationMappingsState, _, _ ->
+        createUiState(
+            presentation.policyState,
+            presentation.domainEditorState,
+            presentation.applicationEditorState,
+            presentation.submissionState,
+            currentApplicationMappingsState,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TargetsUiState())
 
     fun retry() {
@@ -193,5 +223,16 @@ internal class TargetsViewModel(
                 submissionState.update { state -> if (state is TargetsSubmissionState.Saving) TargetsSubmissionState.Idle else state }
             }
         }
+    }
+}
+
+private data class TargetsPolicyPresentationState(
+    val policyState: TargetsPolicyState,
+    val domainEditorState: ExactDomainEditorState,
+    val applicationEditorState: ApplicationPolicyEditorState,
+    val submissionState: TargetsSubmissionState,
+) {
+    override fun toString(): String {
+        return "TargetsPolicyPresentationState(redacted)"
     }
 }
