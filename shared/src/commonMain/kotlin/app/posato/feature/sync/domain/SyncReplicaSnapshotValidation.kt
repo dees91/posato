@@ -20,14 +20,8 @@ internal fun SyncReplicaSnapshot.isAuthenticatedBy(
     return (clockState.last == terminalClock) == clockState.isExhausted &&
         acceptedBundlesAreValid(codec, transportKey) &&
         acceptedBundles.values.haveValidAuthorHistories() &&
-        stagedBundles.all { (bundleId, stored) ->
-            val decoded = codec.decode(stored.bundle, context, transportKey)
-            decoded is DecodeBundleResult.Success &&
-                bundleId == stored.operation.operationId &&
-                decoded.operation == stored.operation &&
-                stored.operation.payload != SyncOperationPayload.AuthorRegister &&
-                stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
-        } &&
+        hasValidStagingState() &&
+        stagedBundlesAreValid(codec, transportKey) &&
         terminalExpiryFacts.all(retainedSessionIds::contains)
 }
 
@@ -43,6 +37,35 @@ private fun SyncReplicaSnapshot.acceptedBundlesAreValid(
             stored.operation.clock <= clockState.last &&
             stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
     }
+}
+
+private fun SyncReplicaSnapshot.stagedBundlesAreValid(
+    codec: EncryptedBundleCodec,
+    transportKey: TransportKey,
+): Boolean {
+    return stagedBundles.all { (bundleId, stored) ->
+        val decoded = codec.decode(stored.bundle, context, transportKey)
+        decoded is DecodeBundleResult.Success &&
+            bundleId == stored.operation.operationId &&
+            decoded.operation == stored.operation &&
+            stored.operation.authorSequence > 1L &&
+            stored.operation.payload != SyncOperationPayload.AuthorRegister &&
+            stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
+    }
+}
+
+private fun SyncReplicaSnapshot.hasValidStagingState(): Boolean {
+    val acceptedAuthorIds = acceptedBundles.values.mapTo(mutableSetOf()) { stored -> stored.operation.authorId }
+    val operationsByAuthor = stagedBundles.values.map { stored -> stored.operation }.groupBy(SyncOperation::authorId)
+
+    return stagedBundles.size <= SyncFormatLimits.MAX_STAGED_BUNDLES &&
+        stagedBundles.keys.none(acceptedBundles::containsKey) &&
+        operationsByAuthor.keys.none(acceptedAuthorIds::contains) &&
+        operationsByAuthor.values.all { operations ->
+            val sequences = operations.map(SyncOperation::authorSequence)
+            operations.size <= SyncFormatLimits.MAX_UNKNOWN_AUTHOR_BUNDLES &&
+                sequences.distinct().size == sequences.size
+        }
 }
 
 private fun Collection<StoredAcceptedBundle>.haveValidAuthorHistories(): Boolean {

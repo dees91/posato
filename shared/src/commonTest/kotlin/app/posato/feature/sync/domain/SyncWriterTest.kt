@@ -392,6 +392,64 @@ class SyncWriterTest {
     }
 
     @Test
+    fun `given invalid staged state when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val registration = testOperation(40, 1, SyncOperationPayload.AuthorRegister)
+        val overlappingRegistration = testOperation(45, 1, SyncOperationPayload.AuthorRegister)
+        val cases = listOf(
+            snapshot().withStagedBundles(
+                provider,
+                listOf(testOperation(41, 1, SyncOperationPayload.ApplicationPolicyAbsent)),
+            ),
+            acceptedSnapshot(provider, listOf(registration)).withStagedBundles(
+                provider,
+                listOf(testOperation(42, 2, SyncOperationPayload.ApplicationPolicyAbsent)),
+            ),
+            snapshot().withStagedBundles(
+                provider,
+                listOf(
+                    testOperation(43, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+                    testOperation(44, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+                ),
+            ),
+            stagedSnapshot(provider, SyncFormatLimits.MAX_UNKNOWN_AUTHOR_BUNDLES + 1, singleAuthor = true),
+            stagedSnapshot(provider, SyncFormatLimits.MAX_STAGED_BUNDLES + 1, singleAuthor = false),
+            acceptedSnapshot(provider, listOf(overlappingRegistration)).withStagedBundles(
+                provider,
+                listOf(testOperation(45, 2, SyncOperationPayload.ApplicationPolicyAbsent, author = 11)),
+            ),
+        )
+
+        cases.forEach { corrupted ->
+            val result = SyncOperationCore(FakeSyncReplicaStore(corrupted), provider, SyncWallClock { 100 })
+                .open(testContext, transportKey())
+
+            assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+        }
+    }
+
+    @Test
+    fun `given staged gaps and competing keys when reopened then it succeeds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val competingKey = checkNotNull(PublicSigningKey.fromBytes(ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES) { 9 }))
+        val competingProvider = FakeSyncCryptoProvider(competingKey)
+        val first = testOperation(46, 2, SyncOperationPayload.ApplicationPolicyAbsent)
+        val later = testOperation(47, 4, SyncOperationPayload.ApplicationPolicyAbsent).copy(publicSigningKey = competingKey)
+        val staged = listOf(
+            storedStagedBundle(provider, first),
+            storedStagedBundle(competingProvider, later),
+        ).associateBy { stored -> stored.operation.operationId }
+
+        val result = SyncOperationCore(
+            FakeSyncReplicaStore(snapshot().copy(stagedBundles = staged)),
+            provider,
+            SyncWallClock { 100 },
+        ).open(testContext, transportKey())
+
+        assertIs<OpenSyncWriterResult.Success>(result)
+    }
+
+    @Test
     fun `given an ambiguous remote commit with the exact footprint when reconciled then acceptance succeeds`() = runTest {
         val provider = FakeSyncCryptoProvider()
         val store = FakeSyncReplicaStore(snapshot(), remoteCommitMode = RemoteCommitMode.AMBIGUOUS_EXACT)
@@ -770,18 +828,34 @@ private fun stagedSnapshot(
     count: Int,
     singleAuthor: Boolean,
 ): SyncReplicaSnapshot {
-    val staged = (0 until count).associate { index ->
+    val operations = (0 until count).map { index ->
         val author = if (singleAuthor) 10 else 100 + index
         val sequence = if (singleAuthor) index.toLong() + 2 else 2L
-        val operation = testOperation(2_000 + index, sequence, SyncOperationPayload.ApplicationPolicyAbsent, author)
-        val bundle = remoteBundle(provider, operation)
-        operation.operationId to StoredStagedBundle(
-            bundle,
-            ImmutableBytes(checkNotNull(app.posato.feature.sync.data.SyncOperationCodec.encode(operation))),
-            operation,
-        )
+        testOperation(2_000 + index, sequence, SyncOperationPayload.ApplicationPolicyAbsent, author)
     }
-    return snapshot().copy(stagedBundles = staged)
+
+    return snapshot().withStagedBundles(provider, operations)
+}
+
+private fun SyncReplicaSnapshot.withStagedBundles(
+    provider: FakeSyncCryptoProvider,
+    operations: List<SyncOperation>,
+): SyncReplicaSnapshot {
+    val staged = operations.map { operation -> storedStagedBundle(provider, operation) }
+        .associateBy { stored -> stored.operation.operationId }
+
+    return copy(stagedBundles = staged)
+}
+
+private fun storedStagedBundle(
+    provider: FakeSyncCryptoProvider,
+    operation: SyncOperation,
+): StoredStagedBundle {
+    return StoredStagedBundle(
+        remoteBundle(provider, operation),
+        ImmutableBytes(checkNotNull(app.posato.feature.sync.data.SyncOperationCodec.encode(operation))),
+        operation,
+    )
 }
 
 private fun acceptedSnapshot(

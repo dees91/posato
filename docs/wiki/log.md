@@ -979,3 +979,8 @@
 - Kept invalid local mutations recoverable without freezing the replica writer.
 - Revalidated accepted author registration, signing-key, and sequence invariants
   on reopen while preserving legal sequence gaps.
+
+## [2026-08-31] correction | Reject invalid staged sync state on reopen
+
+- Revalidated staged author, sequence, bundle-identity, and capacity invariants
+  without narrowing valid pre-registration gaps or competing keys.

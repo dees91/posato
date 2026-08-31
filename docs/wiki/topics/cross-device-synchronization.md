@@ -161,6 +161,11 @@ remains usable. Reopen also revalidates each accepted author's unique sequence-1
 registration, stable signing key, unique sequences, and absence of later
 registration while continuing to permit sequence gaps.
 
+`observed` (2026-08-31): reopen now also revalidates staged state against the
+live acceptance boundary. It rejects sequence 1, accepted-author or bundle-ID
+overlap, duplicate author sequences, and per-author or global capacity overflow
+while preserving valid staged gaps and competing pre-registration keys.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:
