@@ -102,6 +102,9 @@
   were included in the regression plan. Independent completed-change review
   then approved the implementation with no Critical or Required findings; its
   simplicity review found the change already lean.
+  The persisted-state and decoded-operation redaction correction received an
+  independent plan review and completed-change review with no findings at any
+  severity; its simplicity review found the change already lean.
 
 ## Hosted review follow-up
 
@@ -146,6 +149,8 @@
   to reset revision, HLC, and transport progress. The latest required finding
   found that cancellation after a durable local commit could leave the writer's
   checkpoint, projection, and pending bundles at their pre-commit values.
+  The latest required finding found that the private persisted-state carrier
+  exposed the exact replica revision through its generated default string.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -201,7 +206,10 @@
   now maps provider exceptions through the existing nullable cryptographic
   boundary, preserving the writer's established cleanup path. Replica restore
   now rejects physical HLC values outside the format range as corruption before
-  constructing the domain clock. No further hosted review is needed.
+  constructing the domain clock. The persisted-state carrier now uses a fixed
+  redacted representation. The same correction covers the directly observed
+  decoded-operation carrier, whose generated representation exposed exact
+  author sequence and HLC fields. No further hosted review is needed.
 
 ## Verification
 
@@ -228,6 +236,7 @@
 | Invalid singleton rejection | `pass` | The focused real-database JVM regression first returned success after relocating the state row to an invalid singleton key, then passed with fail-closed restore. JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 | Cancelled local-commit reconciliation | `pass` | The focused JVM regression first exposed a stale post-commit projection, then passed after the correction. The complete JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 | Secure-random and persisted-clock corrections | `pass` | Focused JVM regressions first exposed the escaping provider exception and storage-failure mapping for both physical-clock bounds, then passed after the corrections. JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no Critical or Required findings. |
+| Persisted-state and decoded-operation redaction | `pass` | JVM bytecode inspection confirmed both generated representations exposed exact prohibited metadata before the correction and returned only fixed redacted literals afterward. Focused codec and SQL tests, JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

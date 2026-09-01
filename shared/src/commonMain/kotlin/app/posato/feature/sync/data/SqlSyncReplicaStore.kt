@@ -310,7 +310,11 @@ private data class StateRow(
     val revision: Long,
     val clockState: DurableClockState,
     val transportProgress: OpaqueTransportProgress?,
-)
+) {
+    override fun toString(): String {
+        return "StateRow(redacted)"
+    }
+}
 
 private fun restoreContext(
     workspaceId: ByteArray,

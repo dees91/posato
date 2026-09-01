@@ -1059,3 +1059,8 @@
 - Mapped JVM secure-random provider exceptions to the existing nullable
   cryptographic failure boundary.
 - Rejected persisted physical clocks outside the format range as corruption.
+
+## [2026-09-01] correction | Redact private sync carriers
+
+- Gave persisted-state and decoded-operation carriers fixed redacted default
+  string representations without changing their behavior.

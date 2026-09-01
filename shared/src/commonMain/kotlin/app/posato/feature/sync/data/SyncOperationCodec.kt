@@ -72,6 +72,10 @@ private data class DecodedOperationFields(
     val logicalCounter: Int,
     val payload: SyncOperationPayload,
 ) {
+    override fun toString(): String {
+        return "DecodedOperationFields(redacted)"
+    }
+
     fun toOperation() = SyncOperation(
         operationId = operationId,
         context = SyncContext(workspaceId, transportEpochId, keyEpochId),

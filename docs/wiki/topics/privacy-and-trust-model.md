@@ -272,6 +272,11 @@ default string. Their representations no longer expose pending-bundle
 cardinality or nested projection state, while result fields and behavior remain
 unchanged.
 
+`observed` (2026-09-01): private persisted-state and decoded-operation carriers
+use fixed redacted default strings. Their representations expose neither the
+replica revision nor exact author-sequence and HLC fields, without changing
+persistence, decoding, equality, or canonical serialization.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the
