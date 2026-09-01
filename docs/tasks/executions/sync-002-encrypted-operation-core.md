@@ -50,6 +50,9 @@
   exact invalid-output and ownership-transfer cases. Its simplicity review
   selected validation before wrapper construction and no broader exception
   handling or platform changes.
+  The follow-up pre-copy correction received independent plan approval with a
+  native-data sentinel that makes any payload read fail. Its simplicity review
+  selected the existing exact-length guard pattern and no new helper or seam.
 
 ## Result
 
@@ -119,6 +122,9 @@
   The native signing-key correction received focused completed-change approval
   with no findings at any severity; its simplicity review found pre-wrapper
   validation and explicit ownership transfer already lean.
+  The pre-copy native signing-key correction received the same approval with no
+  findings at any severity; its simplicity review found the exact-length guard
+  and iOS-only sentinel already lean.
 
 ## Hosted review follow-up
 
@@ -241,7 +247,11 @@
   leave its native handle without explicit closure. The adapter now validates
   the public key before wrapper construction: invalid output closes the handle
   and returns nullable failure, while valid output transfers the handle and
-  validated key to the wrapper. No further hosted review is needed.
+  validated key to the wrapper. The maintainer accepted the follow-up advisory
+  that this validation occurred only after copying the native payload. The
+  adapter now checks the exact public-key length before reading its bytes, so
+  malformed output cannot trigger a size-derived Kotlin allocation. No further
+  hosted review is needed.
 
 ## Verification
 
@@ -272,6 +282,7 @@
 | Persisted-BLOB and native-random boundaries | `pass` | A real-database matrix covers all 17 BLOB columns selected during restore, a wrong SQLite storage class, exact fixed sizes, and exact 32/64 KiB allocation limits. iOS Simulator coverage accepts only exact native random output and rejects negative, short, and long cases before copying. Focused JVM and iOS tests, ktlint, Detekt, all 116 aggregate quality tasks, and the credential-free iOS host build passed without suppressions. Independent completed-change review found no findings at any severity. Existing physical-device evidence remains applicable because Swift, CryptoKit, and the wire format did not change. |
 | Sequence-gap expiry validation | `pass` | The focused JVM regression failed before the correction and passed afterward. Reopen rejects a marker backed only by a gapped start, preserves legal gaps without a marker, and accepts a marker backed by conflicting but applicable starts. All 113 aggregate quality tasks passed, including JVM and iOS Simulator tests, ktlint, Detekt, approved-exception verification, and target compilation without suppressions. |
 | Native signing-key output validation | `pass` | The focused iOS Simulator regression failed with `IllegalStateException` before the correction and passed afterward. Null, 31-byte, and 33-byte native public keys close their handles exactly once and return failure; an exact 32-byte key transfers ownership until wrapper closure. Detekt's initial return-count finding was fixed in the control flow without suppression. All 113 aggregate quality tasks and the credential-free iOS host build passed. |
+| Pre-copy native signing-key validation | `pass` | An iOS `NSData` sentinel that reports 33 bytes and fails on payload access first reproduced the invalid read, then passed when the adapter rejected its length without touching its bytes and closed the signing handle once. The complete iOS Simulator suite, all 113 quality tasks, and the credential-free iOS host build passed without suppressions. |
 
 ## Blockers and accepted risks
 

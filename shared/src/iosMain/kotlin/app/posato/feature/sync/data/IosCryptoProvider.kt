@@ -1,6 +1,7 @@
 package app.posato.feature.sync.data
 
 import app.posato.feature.sync.domain.PublicSigningKey
+import app.posato.feature.sync.domain.SyncFormatLimits
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -98,7 +99,10 @@ internal class IosSyncCryptoProvider(
 
     override fun createSigningKey(): SyncSigningKey? {
         val signingKey = provider.createSigningKey() ?: return null
-        val publicKey = signingKey.publicKey()?.toByteArray()?.let(PublicSigningKey::fromBytes)
+        val publicKey = signingKey.publicKey()
+            ?.takeIf { bytes -> bytes.length == SyncFormatLimits.PUBLIC_KEY_BYTES.toULong() }
+            ?.toByteArray()
+            ?.let(PublicSigningKey::fromBytes)
         return if (publicKey == null) {
             signingKey.close()
             null

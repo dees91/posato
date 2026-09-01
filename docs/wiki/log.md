@@ -1081,3 +1081,8 @@
 
 - Rejected invalid native signing public-key output as a nullable cryptographic
   failure and closed its handle before wrapper construction.
+
+## [2026-09-01] correction | Bound native signing-key copies
+
+- Validated the native Ed25519 public-key length before reading or copying its
+  payload.

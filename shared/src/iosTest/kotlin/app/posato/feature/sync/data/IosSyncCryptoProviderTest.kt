@@ -1,6 +1,8 @@
 package app.posato.feature.sync.data
 
 import kotlinx.cinterop.BetaInteropApi
+import kotlinx.cinterop.CPointed
+import kotlinx.cinterop.CPointer
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import platform.Foundation.NSData
@@ -31,7 +33,7 @@ class IosSyncCryptoProviderTest {
 
     @Test
     fun `given invalid native signing public key when adapted then creation fails and the handle closes`() {
-        listOf<NSData?>(null, ByteArray(31).toNSData(), ByteArray(33).toNSData()).forEach { publicKey ->
+        listOf<NSData?>(null, ByteArray(31).toNSData(), UnreadableWrongSizedNSData()).forEach { publicKey ->
             val signingKey = FakeIosSigningKey(publicKey)
 
             assertNull(IosSyncCryptoProvider(FakeIosCryptoProvider(signingKey = signingKey)).createSigningKey())
@@ -51,6 +53,14 @@ class IosSyncCryptoProviderTest {
         adapted.close()
 
         assertEquals(1, signingKey.closeCount)
+    }
+}
+
+private class UnreadableWrongSizedNSData : NSData() {
+    override fun length(): ULong = 33u
+
+    override fun bytes(): CPointer<out CPointed>? {
+        error("Wrong-sized native data must not be copied")
     }
 }
 
