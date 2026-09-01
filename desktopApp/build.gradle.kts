@@ -490,7 +490,7 @@ val verifyMacOsDevelopmentPackaging by tasks.registering(VerifyMacOsDevelopmentP
     signingIdentity.set(macOsSigningIdentity)
 }
 
-tasks.register<AbstractNativeMacApplicationPackageDmgTask>("packageDmg") {
+val packageDmg = tasks.register<AbstractNativeMacApplicationPackageDmgTask>("packageDmg") {
     group = "distribution"
     description = "Packages the verified development-signed macOS application as a DMG."
     dependsOn(verifyMacOsDevelopmentPackaging)
@@ -498,6 +498,10 @@ tasks.register<AbstractNativeMacApplicationPackageDmgTask>("packageDmg") {
     packageVersion.set("1.0.0")
     destinationDir.set(layout.buildDirectory.dir("compose/binaries/main/dmg"))
     appDir.set(macOsDevelopmentPackageRoot)
+}
+
+tasks.matching { it.name == "packageDistributionForCurrentOS" }.configureEach {
+    dependsOn(packageDmg)
 }
 
 tasks.matching { it.name == "runDistributable" }.configureEach {

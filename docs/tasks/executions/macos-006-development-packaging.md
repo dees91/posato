@@ -26,13 +26,14 @@
 - The Gradle pipeline now signs the complete current arm64 package surface inside-out in both credential-free and Apple Development modes, including the SQLite JDBC native library inside its JAR.
 - One verifier enforces strict bundle verification, exact identifiers and entitlement sets, and explicit signatures for the runtime, Skiko, SQLite, helper, and daemon. Apple Development additionally requires one shared Team ID and the Apple Development authority.
 - The verified application is staged as an immutable DMG input. The planned JPackage installer path was replaced with Compose's native DMG task after controlled verification showed that JPackage rewrote nested executables and invalidated the helper resource seal.
+- The replacement DMG task remains part of Compose's standard `packageDistributionForCurrentOS` and `package` lifecycle instead of requiring callers to know its implementation task name.
 - Both final DMGs passed strict verification and launched directly from mounted images with isolated normal SQLite stores. No manual copy or re-signing was used.
 
 ## Completed-change review
 
 - **Verdict:** `approved`
-- **Critical or Required findings:** the initial ad-hoc verifier did not enumerate SQLite-in-JAR and every other nested signature, recreating the original `--deep` blind spot.
-- **Resolution:** both signing modes and the shared verifier now enumerate the same inside-out package surface. Focused re-review found no remaining Critical or Required defect.
+- **Critical or Required findings:** the initial ad-hoc verifier did not enumerate SQLite-in-JAR and every other nested signature, recreating the original `--deep` blind spot. Hosted review later found that the replacement DMG task was no longer connected to Compose's aggregate packaging lifecycle.
+- **Resolution:** both signing modes and the shared verifier enumerate the same inside-out package surface, and the replacement DMG task is a dependency of `packageDistributionForCurrentOS`. Focused re-review found no remaining Critical or Required defect.
 
 ## Verification
 
@@ -42,8 +43,9 @@
 | Baseline regression probe | `pass` | The new verifier rejected the former Apple Development package at its first ad-hoc nested signature. |
 | Credential-free package and launch | `pass` | Full nested verification, configuration-cache reuse, strict mounted-DMG verification, and isolated packaged launch passed. |
 | Apple Development package and launch | `pass` | Authority, shared-team, identifier, entitlement, strict mounted-DMG, and isolated packaged launch checks passed. |
-| `./gradlew quality --rerun-tasks` | `pass` | All 115 tasks passed after the final signing and verifier correction. |
-| Independent completed-change review | `pass` | The Required ad-hoc nested-code finding was corrected and the focused re-review approved the change. |
+| Compose aggregate packaging lifecycle | `pass` | Both aggregate task graphs include the replacement DMG task; `packageDistributionForCurrentOS` built a strictly verified mounted DMG and reused the configuration cache. |
+| `./gradlew quality --rerun-tasks` | `pass` | All 115 tasks passed after the final lifecycle correction. |
+| Independent completed-change review | `pass` | Focused re-reviews approved the nested-code and aggregate-lifecycle corrections with no remaining finding. |
 
 ## Blockers and accepted risks
 
