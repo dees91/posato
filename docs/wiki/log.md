@@ -1024,3 +1024,8 @@
 - Redacted the durable replica snapshot's default representation.
 - Cleared supplied transport keys on every writer-open exit that does not
   transfer ownership to an active writer.
+
+## [2026-09-01] correction | Reconcile cancelled remote commits
+
+- Reconciled durable remote-style transactions before propagating cancellation
+  so the active writer cannot retain a stale checkpoint or expiry marker.

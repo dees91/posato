@@ -188,6 +188,15 @@ successfully initialized writer becomes active. Every failure, exception, or
 cancellation before that transfer clears the key, including rejection because
 another writer is already active.
 
+`observed` (2026-09-01): cancellation after a remote-style transaction starts
+performs one non-cancellable durable reconciliation before propagating. An
+exact committed snapshot advances the writer checkpoint, an exact pre-commit
+snapshot preserves it, and every other result freezes the writer. This keeps
+remote acceptance, transport progress, staging, terminal expiry, and state-only
+HLC exhaustion aligned with durable state without making their transactions
+non-cancellable. A failed reconciliation read is an unresolved result: it
+freezes the writer while preserving the original cancellation as the outcome.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:

@@ -19,6 +19,8 @@ import app.posato.feature.targets.domain.ExactDomain
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -26,6 +28,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class SyncWriterOpenTest {
@@ -71,6 +74,151 @@ class SyncWriterOpenTest {
             ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES),
             openingKey.useBytes { bytes -> bytes.copyOf() },
         )
+    }
+}
+
+class SyncWriterCancellationTest {
+    @Test
+    fun `given cancellation after writer shutdown begins when release suspends then release completes`() = runTest {
+        val initialSnapshot = snapshot()
+        val releaseStarted = CompletableDeferred<Unit>()
+        val continueRelease = CompletableDeferred<Unit>()
+        var releaseCompleted = false
+        val writer = SyncWriter(
+            store = FakeSyncReplicaStore(initialSnapshot),
+            cryptoProvider = FakeSyncCryptoProvider(),
+            wallClock = SyncWallClock { 100 },
+            transportKey = transportKey(),
+            initialSnapshot = initialSnapshot,
+            onClose = {
+                releaseStarted.complete(Unit)
+                continueRelease.await()
+                releaseCompleted = true
+            },
+        )
+
+        val closeJob = launch { writer.close() }
+        releaseStarted.await()
+        closeJob.cancel()
+        continueRelease.complete(Unit)
+        closeJob.join()
+
+        assertTrue(releaseCompleted)
+    }
+
+    @Test
+    fun `given cancellation during the first local commit when retried then the prepared incarnation is retired`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(snapshot(), LocalCommitMode.CANCELLED)
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val before = store.current
+
+        assertFailsWith<CancellationException> {
+            writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)
+        }
+
+        assertEquals(before, store.current)
+        assertEquals(1, provider.signingKeyCloseCount)
+        assertEquals(
+            LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+        )
+    }
+
+    @Test
+    fun `given cancellation after remote acceptance commits when resumed then the checkpoint is reconciled`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val commitCompleted = CompletableDeferred<Unit>()
+        val domain = checkNotNull(ExactDomain.restore("reconciled.example"))
+        val registration = testOperation(1, 1, SyncOperationPayload.AuthorRegister)
+        val operation = testOperation(2, 2, SyncOperationPayload.DomainPresent(domain))
+        val bundle = remoteBundle(provider, operation)
+        val store = FakeSyncReplicaStore(
+            initial = acceptedSnapshot(provider, listOf(registration)),
+            afterRemoteCommit = {
+                commitCompleted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val acceptanceJob = launch {
+            writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false))
+        }
+        commitCompleted.await()
+
+        acceptanceJob.cancel()
+        acceptanceJob.join()
+
+        assertTrue(acceptanceJob.isCancelled)
+        assertEquals(listOf(domain), writer.projection().domains)
+        assertIs<RemoteAcceptanceResult.Duplicate>(
+            writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false)),
+        )
+    }
+
+    @Test
+    fun `given the cancellation reconciliation read throws then the original cancellation freezes the writer`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val cancellation = CancellationException("Original remote cancellation")
+        val registration = testOperation(1, 1, SyncOperationPayload.AuthorRegister)
+        val operation = testOperation(2, 2, SyncOperationPayload.DomainPresent(checkNotNull(ExactDomain.restore("freeze.example"))))
+        val bundle = remoteBundle(provider, operation)
+        val store = FakeSyncReplicaStore(
+            initial = acceptedSnapshot(provider, listOf(registration)),
+            afterRemoteCommit = { throw cancellation },
+            remoteReconciliationReadFailure = IllegalStateException("Synthetic reconciliation read failure"),
+        )
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+
+        val thrown = assertFailsWith<CancellationException> {
+            writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false))
+        }
+
+        assertSame(cancellation, thrown)
+        assertEquals(
+            RemoteAcceptanceFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<RemoteAcceptanceResult.Failure>(
+                writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false)),
+            ).reason,
+        )
+    }
+
+    @Test
+    fun `given cancellation after terminal expiry commits when time rolls back then the session remains inactive`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val commitCompleted = CompletableDeferred<Unit>()
+        val sessionId = SessionId(testIdentifier(95))
+        val initial = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+            ),
+        )
+        val store = FakeSyncReplicaStore(
+            initial = initial,
+            afterExpiryCommit = {
+                commitCompleted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val expiryJob = launch { writer.markTerminalExpiry(sessionId) }
+        commitCompleted.await()
+
+        expiryJob.cancel()
+        expiryJob.join()
+
+        assertTrue(expiryJob.isCancelled)
+        assertIs<EffectiveSession.Inactive>(writer.evaluateSession(150))
     }
 }
 
@@ -121,55 +269,6 @@ class SyncWriterTest {
         cases.forEach { case ->
             assertEquals(case.expected, reserveLocalClocks(DurableClockState(case.current, false), case.wallTime, case.count))
         }
-    }
-
-    @Test
-    fun `given cancellation after writer shutdown begins when release suspends then release completes`() = runTest {
-        val initialSnapshot = snapshot()
-        val releaseStarted = CompletableDeferred<Unit>()
-        val continueRelease = CompletableDeferred<Unit>()
-        var releaseCompleted = false
-        val writer = SyncWriter(
-            store = FakeSyncReplicaStore(initialSnapshot),
-            cryptoProvider = FakeSyncCryptoProvider(),
-            wallClock = SyncWallClock { 100 },
-            transportKey = transportKey(),
-            initialSnapshot = initialSnapshot,
-            onClose = {
-                releaseStarted.complete(Unit)
-                continueRelease.await()
-                releaseCompleted = true
-            },
-        )
-
-        val closeJob = launch { writer.close() }
-        releaseStarted.await()
-        closeJob.cancel()
-        continueRelease.complete(Unit)
-        closeJob.join()
-
-        assertTrue(releaseCompleted)
-    }
-
-    @Test
-    fun `given cancellation during the first local commit when retried then the prepared incarnation is retired`() = runTest {
-        val provider = FakeSyncCryptoProvider()
-        val store = FakeSyncReplicaStore(snapshot(), LocalCommitMode.CANCELLED)
-        val writer = assertIs<OpenSyncWriterResult.Success>(
-            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
-        ).writer
-        val before = store.current
-
-        assertFailsWith<CancellationException> {
-            writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)
-        }
-
-        assertEquals(before, store.current)
-        assertEquals(1, provider.signingKeyCloseCount)
-        assertEquals(
-            LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
-            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
-        )
     }
 
     @Test
@@ -757,9 +856,13 @@ private class FakeSyncReplicaStore(
     private val remoteCommitMode: RemoteCommitMode = RemoteCommitMode.SUCCESS,
     private val expiryCommitMode: LocalCommitMode = LocalCommitMode.SUCCESS,
     private val beforeOpen: suspend () -> Unit = {},
+    private val afterRemoteCommit: suspend () -> Unit = {},
+    private val afterExpiryCommit: suspend () -> Unit = {},
+    private val remoteReconciliationReadFailure: Exception? = null,
 ) : SyncReplicaStore {
     private var localCommitAttempts = 0
     private var expiryCommitAttempts = 0
+    private var remoteCommitCompleted = false
     var current = initial
         private set
 
@@ -769,6 +872,8 @@ private class FakeSyncReplicaStore(
     }
 
     override suspend fun read(context: SyncContext): SyncStoreResult<SyncReplicaSnapshot> {
+        currentCoroutineContext().ensureActive()
+        if (remoteCommitCompleted) remoteReconciliationReadFailure?.let { throw it }
         return SyncStoreResult.Success(current)
     }
 
@@ -887,6 +992,7 @@ private class FakeSyncReplicaStore(
                 current.transportProgress
             },
         )
+        afterExpiryCommit()
         return if (expiryCommitMode == LocalCommitMode.SUCCESS || expiryCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE) {
             SyncStoreResult.Success(current)
         } else {
@@ -894,7 +1000,9 @@ private class FakeSyncReplicaStore(
         }
     }
 
-    private fun remoteResult(): SyncStoreResult<SyncReplicaSnapshot> {
+    private suspend fun remoteResult(): SyncStoreResult<SyncReplicaSnapshot> {
+        remoteCommitCompleted = true
+        afterRemoteCommit()
         return when (remoteCommitMode) {
             RemoteCommitMode.SUCCESS -> {
                 SyncStoreResult.Success(current)

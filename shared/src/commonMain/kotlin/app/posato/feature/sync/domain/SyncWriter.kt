@@ -202,13 +202,15 @@ internal class SyncWriter internal constructor(
 ) {
     private val mutex = Mutex()
     private val codec = EncryptedBundleCodec(cryptoProvider)
-    private val localMutationPreparer = LocalMutationPreparer(cryptoProvider, codec, transportKey)
-    private val commitReconciler = SyncCommitReconciler(store)
-    private val remoteClassifier = RemoteBundleClassifier(codec, transportKey)
-    private val remoteCommitter = RemoteBundleCommitter(store, commitReconciler)
     private var checkpoint = initialSnapshot
     private var authoringIncarnation: AuthoringIncarnation? = null
     private var state = WriterState.ACTIVE
+    private val localMutationPreparer = LocalMutationPreparer(cryptoProvider, codec, transportKey)
+    private val commitReconciler = SyncCommitReconciler(store) { reconciled ->
+        if (reconciled == null) freeze() else checkpoint = reconciled
+    }
+    private val remoteClassifier = RemoteBundleClassifier(codec, transportKey)
+    private val remoteCommitter = RemoteBundleCommitter(store, commitReconciler)
 
     suspend fun mutate(mutation: LocalSyncMutation): LocalMutationResult {
         return mutex.withLock {

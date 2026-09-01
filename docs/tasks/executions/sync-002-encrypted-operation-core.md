@@ -75,6 +75,9 @@
   with no findings. The replica-snapshot redaction and rejected-key lifetime
   corrections received the same focused approval with no findings; the
   simplicity review found the centralized ownership boundary already lean.
+  The cancelled remote-commit reconciliation correction received focused
+  approval after its required exceptional-read fix; no findings remain. The
+  simplicity review found the single guarded cleanup read already lean.
 
 ## Hosted review follow-up
 
@@ -103,6 +106,11 @@
   collection cardinalities, and state shape through its generated default
   string. The maintainer also accepted the accompanying advisory that a failed
   or cancelled writer open could leave its supplied transport key uncleared.
+  The next required finding found that cancellation after a remote transaction
+  committed could leave the in-memory checkpoint stale. The maintainer accepted
+  the related advisory that the same handoff could omit a committed terminal-
+  expiry marker and permit same-process session revival after wall-clock
+  rollback.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -134,7 +142,13 @@
   redacted representation. Writer open retains ownership of its supplied
   transport key until an active writer is installed; one centralized cleanup
   path clears it for every failure, exception, and cancellation before that
-  transfer. No further hosted review is needed.
+  transfer. Cancelled remote-style commits now perform one non-cancellable
+  durable read before rethrowing cancellation: an exact committed or exact
+  pre-commit snapshot updates or preserves the checkpoint, while every other
+  outcome, including a failed reconciliation read, freezes the writer without
+  replacing the original cancellation. The same boundary covers remote acceptance,
+  transport progress, staging, terminal expiry, and state-only HLC exhaustion.
+  No further hosted review is needed.
 
 ## Verification
 
@@ -155,6 +169,7 @@
 | Post-cancellation aggregate quality | `pass` | All 113 aggregate tasks passed, including JVM and iOS Simulator tests, migration verification, Detekt, ktlint, approved-exception verification, and target compilation. |
 | Authoring metadata redaction correction | `pass` | The focused JVM test failed before the correction. JVM and iOS Simulator common suites then passed, and all 113 aggregate quality tasks passed with the fixed representations. |
 | Replica redaction and rejected-key correction | `pass` | Three focused JVM regressions failed before the correction and passed after it. The complete JVM and iOS Simulator suites passed in 32 executed tasks, followed by the aggregate quality gate with every task rerun from a clean build. |
+| Cancelled remote-commit reconciliation | `pass` | Three focused JVM regressions failed before their corresponding corrections, including an exceptional reconciliation read. The complete cancellation class then passed, followed by all 32 JVM and iOS Simulator tasks and all 113 aggregate quality tasks after the final correction. |
 
 ## Blockers and accepted risks
 
