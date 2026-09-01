@@ -1076,3 +1076,8 @@
 
 - Rejected terminal-expiry facts backed only by sequence-gapped session starts
   while preserving markers retained through applicable session conflicts.
+
+## [2026-09-01] correction | Validate native sync signing keys
+
+- Rejected invalid native signing public-key output as a nullable cryptographic
+  failure and closed its handle before wrapper construction.

@@ -46,6 +46,10 @@
   preserving the authenticated-restore order and adding an explicit positive
   regression for conflicted applicable starts. Its simplicity review selected
   one shared non-gap helper and no broader abstraction.
+  The native signing-key correction received independent plan approval with
+  exact invalid-output and ownership-transfer cases. Its simplicity review
+  selected validation before wrapper construction and no broader exception
+  handling or platform changes.
 
 ## Result
 
@@ -112,6 +116,9 @@
   The sequence-gap expiry correction received focused completed-change approval
   with no findings at any severity; its simplicity review found the shared
   non-gap helper already lean.
+  The native signing-key correction received focused completed-change approval
+  with no findings at any severity; its simplicity review found pre-wrapper
+  validation and explicit ownership transfer already lean.
 
 ## Hosted review follow-up
 
@@ -229,7 +236,12 @@
   expiry facts against retained session starts whose derived audit outcome is
   not `SEQUENCE_GAP`, using the same rule as live marker creation. This rejects
   impossible gapped markers without invalidating markers retained through a
-  derived session conflict. No further hosted review is needed.
+  derived session conflict. The maintainer accepted the later advisory that an
+  invalid native signing public key could throw across the iOS adapter and
+  leave its native handle without explicit closure. The adapter now validates
+  the public key before wrapper construction: invalid output closes the handle
+  and returns nullable failure, while valid output transfers the handle and
+  validated key to the wrapper. No further hosted review is needed.
 
 ## Verification
 
@@ -259,6 +271,7 @@
 | Persisted-state and decoded-operation redaction | `pass` | JVM bytecode inspection confirmed both generated representations exposed exact prohibited metadata before the correction and returned only fixed redacted literals afterward. Focused codec and SQL tests, JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 | Persisted-BLOB and native-random boundaries | `pass` | A real-database matrix covers all 17 BLOB columns selected during restore, a wrong SQLite storage class, exact fixed sizes, and exact 32/64 KiB allocation limits. iOS Simulator coverage accepts only exact native random output and rejects negative, short, and long cases before copying. Focused JVM and iOS tests, ktlint, Detekt, all 116 aggregate quality tasks, and the credential-free iOS host build passed without suppressions. Independent completed-change review found no findings at any severity. Existing physical-device evidence remains applicable because Swift, CryptoKit, and the wire format did not change. |
 | Sequence-gap expiry validation | `pass` | The focused JVM regression failed before the correction and passed afterward. Reopen rejects a marker backed only by a gapped start, preserves legal gaps without a marker, and accepts a marker backed by conflicting but applicable starts. All 113 aggregate quality tasks passed, including JVM and iOS Simulator tests, ktlint, Detekt, approved-exception verification, and target compilation without suppressions. |
+| Native signing-key output validation | `pass` | The focused iOS Simulator regression failed with `IllegalStateException` before the correction and passed afterward. Null, 31-byte, and 33-byte native public keys close their handles exactly once and return failure; an exact 32-byte key transfers ownership until wrapper closure. Detekt's initial return-count finding was fixed in the control flow without suppression. All 113 aggregate quality tasks and the credential-free iOS host build passed. |
 
 ## Blockers and accepted risks
 

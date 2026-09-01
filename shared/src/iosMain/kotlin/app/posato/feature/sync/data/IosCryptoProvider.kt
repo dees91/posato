@@ -97,7 +97,14 @@ internal class IosSyncCryptoProvider(
     }
 
     override fun createSigningKey(): SyncSigningKey? {
-        return provider.createSigningKey()?.let(::IosSyncSigningKey)
+        val signingKey = provider.createSigningKey() ?: return null
+        val publicKey = signingKey.publicKey()?.toByteArray()?.let(PublicSigningKey::fromBytes)
+        return if (publicKey == null) {
+            signingKey.close()
+            null
+        } else {
+            IosSyncSigningKey(signingKey, publicKey)
+        }
     }
 
     override fun verifyEd25519(
@@ -111,9 +118,8 @@ internal class IosSyncCryptoProvider(
 
 private class IosSyncSigningKey(
     private val signingKey: IosSigningKey,
+    override val publicKey: PublicSigningKey,
 ) : SyncSigningKey {
-    override val publicKey: PublicSigningKey = checkNotNull(signingKey.publicKey()?.toByteArray()?.let(PublicSigningKey::fromBytes))
-
     override fun sign(message: ByteArray): ByteArray? {
         return signingKey.sign(message.toNSData())?.toByteArray()
     }

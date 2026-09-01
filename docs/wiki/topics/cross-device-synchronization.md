@@ -389,6 +389,12 @@ byte requests before invoking native code and validates the returned
 therefore a nullable cryptographic failure that follows the writer's existing
 signing-key cleanup path.
 
+`observed` (2026-09-01): the iOS cryptographic adapter validates a native
+Ed25519 public key before transferring its handle to the common signing-key
+wrapper. Null or non-32-byte output returns a nullable cryptographic failure and
+closes the native handle; exact output transfers ownership until wrapper
+closure.
+
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?
 - What retry policy is appropriate without a delivery SLA?
