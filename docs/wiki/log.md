@@ -1053,3 +1053,9 @@
 
 - Adopted an exact durable local-commit snapshot before propagating cancellation
   while still retiring the cancelled writer's authoring incarnation.
+
+## [2026-09-01] correction | Preserve sync failure boundaries
+
+- Mapped JVM secure-random provider exceptions to the existing nullable
+  cryptographic failure boundary.
+- Rejected persisted physical clocks outside the format range as corruption.

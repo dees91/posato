@@ -97,6 +97,11 @@
   The cancelled local-commit reconciliation correction also received approval
   with no findings at any severity; the simplicity review found its reuse of
   the existing exact reconciliation boundary already lean.
+  The secure-random and persisted-clock corrections received an independent
+  plan review with no remaining findings after both physical-clock boundaries
+  were included in the regression plan. Independent completed-change review
+  then approved the implementation with no Critical or Required findings; its
+  simplicity review found the change already lean.
 
 ## Hosted review follow-up
 
@@ -192,7 +197,11 @@
   owned plaintext buffer. State restore now reads every replica-state row and
   validates its singleton key before fresh initialization can run, so an
   invalid or additional hidden state row reports corruption.
-  No further hosted review is needed.
+  The maintainer accepted two later advisory findings. JDK random generation
+  now maps provider exceptions through the existing nullable cryptographic
+  boundary, preserving the writer's established cleanup path. Replica restore
+  now rejects physical HLC values outside the format range as corruption before
+  constructing the domain clock. No further hosted review is needed.
 
 ## Verification
 
@@ -218,6 +227,7 @@
 | Bounded progress and plaintext cleanup | `pass` | Focused JVM regressions demonstrated the missing application and SQL limits before implementation. The corrected JVM and iOS Simulator suites passed in 32 executed tasks; ktlint and Detekt passed without suppressions; all 113 aggregate quality tasks then passed. Independent completed-change review found no findings at any severity. |
 | Invalid singleton rejection | `pass` | The focused real-database JVM regression first returned success after relocating the state row to an invalid singleton key, then passed with fail-closed restore. JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 | Cancelled local-commit reconciliation | `pass` | The focused JVM regression first exposed a stale post-commit projection, then passed after the correction. The complete JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
+| Secure-random and persisted-clock corrections | `pass` | Focused JVM regressions first exposed the escaping provider exception and storage-failure mapping for both physical-clock bounds, then passed after the corrections. JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no Critical or Required findings. |
 
 ## Blockers and accepted risks
 

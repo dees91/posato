@@ -226,7 +226,14 @@ private class SqlSnapshotReader(
                 if (singleton != 1L) {
                     failStore(SyncStoreFailure.CORRUPTION)
                 }
-                if (revision < 0 || logical !in 0..SyncFormatLimits.MAX_LOGICAL_COUNTER.toLong() || exhausted !in 0..1) {
+                if (physical !in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS) {
+                    failStore(SyncStoreFailure.CORRUPTION)
+                }
+                if (
+                    revision < 0 ||
+                    logical !in 0..SyncFormatLimits.MAX_LOGICAL_COUNTER.toLong() ||
+                    exhausted !in 0..1
+                ) {
                     failStore(SyncStoreFailure.CORRUPTION)
                 }
                 StateRow(

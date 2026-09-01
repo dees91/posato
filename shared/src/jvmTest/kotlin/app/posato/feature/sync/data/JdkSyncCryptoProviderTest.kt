@@ -12,6 +12,8 @@ import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
 import java.security.KeyFactory
+import java.security.ProviderException
+import java.security.SecureRandom
 import java.security.Signature
 import java.security.spec.PKCS8EncodedKeySpec
 import kotlin.test.Test
@@ -19,8 +21,20 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotEquals
+import kotlin.test.assertNull
 
 class JdkSyncCryptoProviderTest {
+    @Test
+    fun `given a secure random provider failure when generating bytes then null is returned`() {
+        val secureRandom = object : SecureRandom() {
+            override fun nextBytes(bytes: ByteArray) {
+                throw ProviderException("synthetic provider failure")
+            }
+        }
+
+        assertNull(JdkSyncCryptoProvider(secureRandom).randomBytes(32))
+    }
+
     @Test
     fun `given the shared format one fixture when encoded then every cryptographic boundary matches`() {
         val provider = JdkSyncCryptoProvider()

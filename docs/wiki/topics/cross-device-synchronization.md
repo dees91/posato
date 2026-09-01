@@ -365,6 +365,12 @@ not claim that every other device has received the update.
 
 ## Open production questions
 
+`observed` (2026-09-01): the JVM cryptographic provider returns a nullable
+failure when its secure-random provider throws, allowing the synchronization
+writer to use its existing cryptographic cleanup path. Persisted physical HLC
+values below zero or above the format maximum are rejected as storage
+corruption before domain-clock construction.
+
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?
 - What retry policy is appropriate without a delivery SLA?

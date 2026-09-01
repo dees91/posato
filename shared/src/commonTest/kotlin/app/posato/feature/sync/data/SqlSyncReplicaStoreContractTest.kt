@@ -22,6 +22,35 @@ import kotlin.test.assertNull
 
 class SqlSyncReplicaStoreContractTest {
     @Test
+    fun `given an out of range persisted physical clock when read then corruption is reported`() = runTest {
+        listOf(-1L, SyncFormatLimits.MAX_PHYSICAL_MILLIS + 1).forEachIndexed { index, physical ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-invalid-physical-$index.db")
+            val driver = testDatabase.openDriver()
+            try {
+                val database = PosatoDatabase(driver)
+                val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+                database.transaction {
+                    driver.execute(null, "PRAGMA ignore_check_constraints = ON", 0)
+                    driver.execute(
+                        identifier = null,
+                        sql = "UPDATE sync_replica_state SET hlc_physical = $physical WHERE singleton = 1",
+                        parameters = 0,
+                    )
+                    driver.execute(null, "PRAGMA ignore_check_constraints = OFF", 0)
+                }
+
+                val result = store.read(testContext)
+
+                assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+
+    @Test
     fun `given bounded and oversized transport progress when wrapped then only the bounded bytes are retained`() {
         val source = ByteArray(SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES)
         val progress = assertNotNull(OpaqueTransportProgress.fromBytes(source))

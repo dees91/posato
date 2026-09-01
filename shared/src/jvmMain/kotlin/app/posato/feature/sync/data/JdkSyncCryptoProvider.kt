@@ -24,10 +24,9 @@ internal class JdkSyncCryptoProvider(
         if (count < 0) {
             return null
         }
-        val bytes = ByteArray(count)
-        secureRandom.nextBytes(bytes)
-
-        return bytes
+        return cryptographicCall {
+            ByteArray(count).also(secureRandom::nextBytes)
+        }
     }
 
     override fun sha256(message: ByteArray): ByteArray? {
