@@ -47,9 +47,8 @@ CREATE TABLE sync_terminal_expiry (
 );
 
 selectSyncReplicaState:
-SELECT workspace_id, transport_epoch_id, key_epoch_id, revision, hlc_physical, hlc_logical, hlc_exhausted, transport_progress
-FROM sync_replica_state
-WHERE singleton = 1;
+SELECT singleton, workspace_id, transport_epoch_id, key_epoch_id, revision, hlc_physical, hlc_logical, hlc_exhausted, transport_progress
+FROM sync_replica_state;
 
 selectSyncReplicaResidue:
 SELECT 1

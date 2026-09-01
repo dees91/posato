@@ -220,9 +220,12 @@ private class SqlSnapshotReader(
 
     suspend fun readStateRows(): List<StateRow> {
         return database.syncReplicaQueries
-            .selectSyncReplicaState { workspaceId, transportEpochId, keyEpochId, revision, physical, logical, exhausted, progress ->
+            .selectSyncReplicaState { singleton, workspaceId, transportEpochId, keyEpochId, revision, physical, logical, exhausted, progress ->
                 val context = restoreContext(workspaceId, transportEpochId, keyEpochId)
                     ?: failStore(SyncStoreFailure.CORRUPTION)
+                if (singleton != 1L) {
+                    failStore(SyncStoreFailure.CORRUPTION)
+                }
                 if (revision < 0 || logical !in 0..SyncFormatLimits.MAX_LOGICAL_COUNTER.toLong() || exhausted !in 0..1) {
                     failStore(SyncStoreFailure.CORRUPTION)
                 }

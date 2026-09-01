@@ -36,6 +36,9 @@
   corrected plan with no unresolved Critical or Required findings.
   The later bounded-progress and plaintext-cleanup correction also received an
   independent high-risk plan review with no Critical or Required findings.
+  The invalid-singleton correction received the same plan approval with no
+  findings at any severity; its simplicity review selected one broader state
+  query and one existing-boundary invariant check.
 
 ## Result
 
@@ -85,6 +88,9 @@
   The bounded-progress and plaintext-cleanup corrections received focused
   approval with no Critical, Required, Recommended, or Optional findings; the
   simplicity review found the final change already lean.
+  The invalid-singleton correction received the same completed-change approval
+  with no findings at any severity; the simplicity review found the broader
+  state query and existing-boundary invariant check already lean.
 
 ## Hosted review follow-up
 
@@ -123,7 +129,10 @@
   through their generated default string. Two further required findings found
   that opaque transport progress was copied and stored without an explicit
   size limit, and that an HKDF failure left the already encoded operation
-  plaintext outside the existing cleanup block.
+  plaintext outside the existing cleanup block. The latest required finding
+  found that a state row retained under an invalid singleton key was invisible
+  to both state restore and residue detection, allowing fresh initialization
+  to reset revision, HLC, and transport progress.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -169,7 +178,9 @@
   schema and migration reject oversized persistence, and restore reports
   invalid retained bytes as corruption. Bundle sealing now runs nullable
   prerequisites inside its cleanup block, so an HKDF failure still clears the
-  owned plaintext buffer.
+  owned plaintext buffer. State restore now reads every replica-state row and
+  validates its singleton key before fresh initialization can run, so an
+  invalid or additional hidden state row reports corruption.
   No further hosted review is needed.
 
 ## Verification
@@ -194,6 +205,7 @@
 | Cancelled remote-commit reconciliation | `pass` | Three focused JVM regressions failed before their corresponding corrections, including an exceptional reconciliation read. The complete cancellation class then passed, followed by all 32 JVM and iOS Simulator tasks and all 113 aggregate quality tasks after the final correction. |
 | Orphaned-state and result-redaction corrections | `pass` | Both focused JVM regressions failed before implementation and passed afterward. Valid accepted-only, staged-only, and expiry-only residue is rejected when singleton state is missing; successful local-mutation output no longer exposes pending cardinality. All 32 JVM and iOS Simulator tasks passed before the aggregate quality gate. |
 | Bounded progress and plaintext cleanup | `pass` | Focused JVM regressions demonstrated the missing application and SQL limits before implementation. The corrected JVM and iOS Simulator suites passed in 32 executed tasks; ktlint and Detekt passed without suppressions; all 113 aggregate quality tasks then passed. Independent completed-change review found no findings at any severity. |
+| Invalid singleton rejection | `pass` | The focused real-database JVM regression first returned success after relocating the state row to an invalid singleton key, then passed with fail-closed restore. JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

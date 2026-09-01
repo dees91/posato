@@ -201,7 +201,10 @@ freezes the writer while preserving the original cancellation as the outcome.
 only when accepted, pending, staged, and terminal-expiry storage is also empty.
 Any retained child row now reports corruption before initialization, so a
 partial restore cannot silently reset revision, HLC, or transport progress
-around surviving synchronization state.
+around surviving synchronization state. Restore also reads and validates every
+replica-state row before initialization, so a row retained under an invalid
+singleton key or an additional hidden state row reports corruption instead of
+being treated as an empty database.
 
 `observed` (2026-09-01): opaque transport progress is limited to 64 KiB before
 common code retains a copy. The SQL schema rejects larger values, restore

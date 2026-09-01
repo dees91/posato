@@ -1043,3 +1043,8 @@
   or restore into valid replica state.
 - Cleared owned operation plaintext when bundle-key derivation fails before
   sealing.
+
+## [2026-09-01] correction | Reject invalid sync singleton rows
+
+- Validated every retained replica-state singleton before fresh initialization
+  so corrupted state cannot be silently replaced.

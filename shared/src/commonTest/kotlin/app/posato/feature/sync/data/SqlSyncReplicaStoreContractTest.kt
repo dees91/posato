@@ -134,6 +134,29 @@ class SqlSyncReplicaStoreContractTest {
     }
 
     @Test
+    fun `given a state row with an invalid singleton key when reopened then corruption is reported`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-invalid-singleton.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+            database.transaction {
+                driver.execute(null, "PRAGMA ignore_check_constraints = ON", 0)
+                driver.execute(null, "UPDATE sync_replica_state SET singleton = 2 WHERE singleton = 1", 0)
+                driver.execute(null, "PRAGMA ignore_check_constraints = OFF", 0)
+            }
+
+            val result = store.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
     fun `given a missing state row with retained replica records when reopened then corruption is reported`() = runTest {
         data class ResidueCase(
             val name: String,
