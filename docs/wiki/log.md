@@ -1086,3 +1086,10 @@
 
 - Validated the native Ed25519 public-key length before reading or copying its
   payload.
+
+## [2026-09-01] correction | Validate sync storage and native outputs
+
+- Rejected non-integer SQLite storage for every numeric field materialized
+  during replica restore before SQLDelight can coerce it.
+- Validated every native cryptographic result against its exact expected size
+  before allocating or reading the payload.

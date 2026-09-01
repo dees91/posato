@@ -58,20 +58,18 @@ internal class IosSyncCryptoProvider(
             return null
         }
 
-        return provider.randomBytes(count)
-            ?.takeIf { bytes -> bytes.length == count.toULong() }
-            ?.toByteArray()
+        return provider.randomBytes(count)?.toByteArray(count)
     }
 
     override fun sha256(message: ByteArray): ByteArray? {
-        return provider.sha256(message.toNSData())?.toByteArray()
+        return provider.sha256(message.toNSData())?.toByteArray(SHA256_BYTES)
     }
 
     override fun hmacSha256(
         key: ByteArray,
         message: ByteArray,
     ): ByteArray? {
-        return provider.hmacSha256(key.toNSData(), message.toNSData())?.toByteArray()
+        return provider.hmacSha256(key.toNSData(), message.toNSData())?.toByteArray(SHA256_BYTES)
     }
 
     override fun sealAesGcm(
@@ -80,7 +78,12 @@ internal class IosSyncCryptoProvider(
         authenticatedData: ByteArray,
         plaintext: ByteArray,
     ): ByteArray? {
-        return provider.sealAesGcm(key.toNSData(), nonce.toNSData(), authenticatedData.toNSData(), plaintext.toNSData())?.toByteArray()
+        return provider.sealAesGcm(
+            key.toNSData(),
+            nonce.toNSData(),
+            authenticatedData.toNSData(),
+            plaintext.toNSData(),
+        )?.toByteArray(plaintext.size + SyncFormatLimits.AES_TAG_BYTES)
     }
 
     override fun openAesGcm(
@@ -94,14 +97,13 @@ internal class IosSyncCryptoProvider(
             nonce.toNSData(),
             authenticatedData.toNSData(),
             ciphertextAndTag.toNSData(),
-        )?.toByteArray()
+        )?.toByteArray(ciphertextAndTag.size - SyncFormatLimits.AES_TAG_BYTES)
     }
 
     override fun createSigningKey(): SyncSigningKey? {
         val signingKey = provider.createSigningKey() ?: return null
         val publicKey = signingKey.publicKey()
-            ?.takeIf { bytes -> bytes.length == SyncFormatLimits.PUBLIC_KEY_BYTES.toULong() }
-            ?.toByteArray()
+            ?.toByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES)
             ?.let(PublicSigningKey::fromBytes)
         return if (publicKey == null) {
             signingKey.close()
@@ -125,7 +127,7 @@ private class IosSyncSigningKey(
     override val publicKey: PublicSigningKey,
 ) : SyncSigningKey {
     override fun sign(message: ByteArray): ByteArray? {
-        return signingKey.sign(message.toNSData())?.toByteArray()
+        return signingKey.sign(message.toNSData())?.toByteArray(SyncFormatLimits.SIGNATURE_BYTES)
     }
 
     override fun close() {
@@ -140,16 +142,18 @@ private fun ByteArray.toNSData(): NSData {
     }
 }
 
-private fun NSData.toByteArray(): ByteArray? {
-    if (length > Int.MAX_VALUE.toULong()) {
+private fun NSData.toByteArray(expectedSize: Int): ByteArray? {
+    if (expectedSize < 0 || length != expectedSize.toULong()) {
         return null
     }
-    val result = ByteArray(length.toInt())
+    val result = ByteArray(expectedSize)
     if (result.isNotEmpty()) {
         result.usePinned { pinned ->
-            memcpy(pinned.addressOf(0), bytes, length)
+            memcpy(pinned.addressOf(0), bytes, expectedSize.toULong())
         }
     }
 
     return result
 }
+
+private const val SHA256_BYTES = 32

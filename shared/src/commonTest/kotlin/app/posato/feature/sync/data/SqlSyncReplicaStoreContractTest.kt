@@ -23,9 +23,9 @@ import kotlin.test.assertNull
 
 class SqlSyncReplicaStoreContractTest {
     @Test
-    fun `given invalid persisted blob boundaries when reopened then corruption is reported before restore`() = runTest {
-        persistedBlobCorruptions.forEachIndexed { index, corruption ->
-            val testDatabase = createLocalPolicyTestDatabase("sync-blob-corruption-$index.db")
+    fun `given invalid persisted storage when reopened then corruption is reported before restore`() = runTest {
+        persistedStorageCorruptions.forEachIndexed { index, corruption ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-storage-corruption-$index.db")
             val driver = testDatabase.openDriver()
             try {
                 val database = PosatoDatabase(driver)
@@ -40,7 +40,7 @@ class SqlSyncReplicaStoreContractTest {
 
                 assertEquals(
                     listOf(1L),
-                    database.syncReplicaQueries.selectInvalidSyncReplicaBlob().awaitAsList(),
+                    database.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList(),
                     corruption.name,
                 )
                 val result = store.open(testContext)
@@ -66,7 +66,7 @@ class SqlSyncReplicaStoreContractTest {
             driver.execute(null, "UPDATE sync_pending_bundle SET bundle_bytes = zeroblob(65536)", 0)
             driver.execute(null, "UPDATE sync_staged_bundle SET bundle_bytes = zeroblob(65536), operation_bytes = zeroblob(32768)", 0)
 
-            assertEquals(emptyList(), database.syncReplicaQueries.selectInvalidSyncReplicaBlob().awaitAsList())
+            assertEquals(emptyList(), database.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
         } finally {
             driver.close()
             testDatabase.delete()
@@ -365,30 +365,41 @@ class SqlSyncReplicaStoreContractTest {
     }
 }
 
-private data class PersistedBlobCorruption(
+private data class PersistedStorageCorruption(
     val name: String,
     val sql: String,
 )
 
-private val persistedBlobCorruptions = listOf(
-    PersistedBlobCorruption("state workspace ID", "UPDATE sync_replica_state SET workspace_id = zeroblob(17)"),
-    PersistedBlobCorruption("state transport epoch ID", "UPDATE sync_replica_state SET transport_epoch_id = zeroblob(17)"),
-    PersistedBlobCorruption("state key epoch ID", "UPDATE sync_replica_state SET key_epoch_id = zeroblob(17)"),
-    PersistedBlobCorruption("state transport progress", "UPDATE sync_replica_state SET transport_progress = zeroblob(65537)"),
-    PersistedBlobCorruption("accepted bundle ID", "UPDATE sync_accepted_bundle SET bundle_id = zeroblob(17)"),
-    PersistedBlobCorruption("accepted bundle", "UPDATE sync_accepted_bundle SET bundle_bytes = zeroblob(65537)"),
-    PersistedBlobCorruption("accepted operation", "UPDATE sync_accepted_bundle SET operation_bytes = zeroblob(32769)"),
-    PersistedBlobCorruption("accepted author ID", "UPDATE sync_accepted_bundle SET author_id = zeroblob(17)"),
-    PersistedBlobCorruption("accepted public key", "UPDATE sync_accepted_bundle SET public_key = zeroblob(33)"),
-    PersistedBlobCorruption("pending bundle ID", "UPDATE sync_pending_bundle SET bundle_id = zeroblob(17)"),
-    PersistedBlobCorruption("pending bundle", "UPDATE sync_pending_bundle SET bundle_bytes = zeroblob(65537)"),
-    PersistedBlobCorruption("staged bundle ID", "UPDATE sync_staged_bundle SET bundle_id = zeroblob(17)"),
-    PersistedBlobCorruption("staged bundle", "UPDATE sync_staged_bundle SET bundle_bytes = zeroblob(65537)"),
-    PersistedBlobCorruption("staged operation", "UPDATE sync_staged_bundle SET operation_bytes = zeroblob(32769)"),
-    PersistedBlobCorruption("staged author ID", "UPDATE sync_staged_bundle SET author_id = zeroblob(17)"),
-    PersistedBlobCorruption("staged public key", "UPDATE sync_staged_bundle SET public_key = zeroblob(33)"),
-    PersistedBlobCorruption("terminal expiry session ID", "UPDATE sync_terminal_expiry SET session_id = zeroblob(17)"),
-    PersistedBlobCorruption("non-blob state workspace ID", "UPDATE sync_replica_state SET workspace_id = 'not-a-blob'"),
+private val persistedStorageCorruptions = listOf(
+    PersistedStorageCorruption("state workspace ID", "UPDATE sync_replica_state SET workspace_id = zeroblob(17)"),
+    PersistedStorageCorruption("state transport epoch ID", "UPDATE sync_replica_state SET transport_epoch_id = zeroblob(17)"),
+    PersistedStorageCorruption("state key epoch ID", "UPDATE sync_replica_state SET key_epoch_id = zeroblob(17)"),
+    PersistedStorageCorruption("state transport progress", "UPDATE sync_replica_state SET transport_progress = zeroblob(65537)"),
+    PersistedStorageCorruption("accepted bundle ID", "UPDATE sync_accepted_bundle SET bundle_id = zeroblob(17)"),
+    PersistedStorageCorruption("accepted bundle", "UPDATE sync_accepted_bundle SET bundle_bytes = zeroblob(65537)"),
+    PersistedStorageCorruption("accepted operation", "UPDATE sync_accepted_bundle SET operation_bytes = zeroblob(32769)"),
+    PersistedStorageCorruption("accepted author ID", "UPDATE sync_accepted_bundle SET author_id = zeroblob(17)"),
+    PersistedStorageCorruption("accepted public key", "UPDATE sync_accepted_bundle SET public_key = zeroblob(33)"),
+    PersistedStorageCorruption("pending bundle ID", "UPDATE sync_pending_bundle SET bundle_id = zeroblob(17)"),
+    PersistedStorageCorruption("pending bundle", "UPDATE sync_pending_bundle SET bundle_bytes = zeroblob(65537)"),
+    PersistedStorageCorruption("staged bundle ID", "UPDATE sync_staged_bundle SET bundle_id = zeroblob(17)"),
+    PersistedStorageCorruption("staged bundle", "UPDATE sync_staged_bundle SET bundle_bytes = zeroblob(65537)"),
+    PersistedStorageCorruption("staged operation", "UPDATE sync_staged_bundle SET operation_bytes = zeroblob(32769)"),
+    PersistedStorageCorruption("staged author ID", "UPDATE sync_staged_bundle SET author_id = zeroblob(17)"),
+    PersistedStorageCorruption("staged public key", "UPDATE sync_staged_bundle SET public_key = zeroblob(33)"),
+    PersistedStorageCorruption("terminal expiry session ID", "UPDATE sync_terminal_expiry SET session_id = zeroblob(17)"),
+    PersistedStorageCorruption("non-blob state workspace ID", "UPDATE sync_replica_state SET workspace_id = 'not-a-blob'"),
+    PersistedStorageCorruption("state revision type", "UPDATE sync_replica_state SET revision = CAST(revision AS TEXT) || 'x'"),
+    PersistedStorageCorruption("state physical HLC type", "UPDATE sync_replica_state SET hlc_physical = CAST(hlc_physical AS TEXT) || 'x'"),
+    PersistedStorageCorruption("state logical HLC type", "UPDATE sync_replica_state SET hlc_logical = CAST(hlc_logical AS TEXT) || 'x'"),
+    PersistedStorageCorruption("state exhaustion type", "UPDATE sync_replica_state SET hlc_exhausted = CAST(hlc_exhausted AS TEXT) || 'x'"),
+    PersistedStorageCorruption(
+        "accepted author sequence type",
+        "UPDATE sync_accepted_bundle SET author_sequence = CAST(author_sequence AS TEXT) || 'x'",
+    ),
+    PersistedStorageCorruption("accepted physical HLC type", "UPDATE sync_accepted_bundle SET hlc_physical = CAST(hlc_physical AS TEXT) || 'x'"),
+    PersistedStorageCorruption("accepted logical HLC type", "UPDATE sync_accepted_bundle SET hlc_logical = CAST(hlc_logical AS TEXT) || 'x'"),
+    PersistedStorageCorruption("staged author sequence type", "UPDATE sync_staged_bundle SET author_sequence = CAST(author_sequence AS TEXT) || 'x'"),
 )
 
 private suspend fun populateReplica(store: SqlSyncReplicaStore) {

@@ -53,6 +53,9 @@
   The follow-up pre-copy correction received independent plan approval with a
   native-data sentinel that makes any payload read fail. Its simplicity review
   selected the existing exact-length guard pattern and no new helper or seam.
+  The persisted-integer and native-result correction received independent plan
+  approval with a real-SQLite storage-class matrix and one shared exact-size
+  native conversion boundary. Its simplicity review found the plan lean.
 
 ## Result
 
@@ -125,6 +128,9 @@
   The pre-copy native signing-key correction received the same approval with no
   findings at any severity; its simplicity review found the exact-length guard
   and iOS-only sentinel already lean.
+  The persisted-integer and native-result correction received focused approval
+  with no findings at any severity; its simplicity review found the single
+  storage preflight and exact-size conversion helper already lean.
 
 ## Hosted review follow-up
 
@@ -174,6 +180,10 @@
   The latest required finding found that reopen accepted a terminal-expiry fact
   referencing only a session start behind an author-sequence gap, even though
   live marker creation rejected the same impossible state.
+  The latest required finding found that SQLite could coerce malformed text in
+  eight selected integer columns before restore validation. The maintainer also
+  accepted the advisory that native cryptographic results other than public
+  keys were copied before their exact result lengths were validated.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -251,7 +261,11 @@
   that this validation occurred only after copying the native payload. The
   adapter now checks the exact public-key length before reading its bytes, so
   malformed output cannot trigger a size-derived Kotlin allocation. No further
-  hosted review is needed.
+  hosted review is needed. Replica restore now preflights the SQLite storage
+  class of every selected integer in the same transaction before SQLDelight
+  materializes it. The iOS adapter now validates the exact expected size of
+  random, SHA-256, HMAC-SHA256, AES-GCM, public-key, and signature results before
+  allocating or reading their native payloads.
 
 ## Verification
 
@@ -283,6 +297,7 @@
 | Sequence-gap expiry validation | `pass` | The focused JVM regression failed before the correction and passed afterward. Reopen rejects a marker backed only by a gapped start, preserves legal gaps without a marker, and accepts a marker backed by conflicting but applicable starts. All 113 aggregate quality tasks passed, including JVM and iOS Simulator tests, ktlint, Detekt, approved-exception verification, and target compilation without suppressions. |
 | Native signing-key output validation | `pass` | The focused iOS Simulator regression failed with `IllegalStateException` before the correction and passed afterward. Null, 31-byte, and 33-byte native public keys close their handles exactly once and return failure; an exact 32-byte key transfers ownership until wrapper closure. Detekt's initial return-count finding was fixed in the control flow without suppression. All 113 aggregate quality tasks and the credential-free iOS host build passed. |
 | Pre-copy native signing-key validation | `pass` | An iOS `NSData` sentinel that reports 33 bytes and fails on payload access first reproduced the invalid read, then passed when the adapter rejected its length without touching its bytes and closed the signing handle once. The complete iOS Simulator suite, all 113 quality tasks, and the credential-free iOS host build passed without suppressions. |
+| Persisted-integer and native-result validation | `pass` | A real-SQLite matrix first reproduced coercion of malformed text in all eight selected integer fields, then passed with same-transaction storage-class preflight. An unreadable 65-byte `NSData` sentinel first reproduced an attempted copy and then proved that SHA-256, HMAC-SHA256, AES-GCM, and signature output is rejected before payload access. All 113 quality tasks, the credential-free iOS Simulator host build, and all six CryptoKit XTests passed without suppressions. |
 
 ## Blockers and accepted risks
 

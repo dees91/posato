@@ -173,7 +173,7 @@ internal class SqlSyncReplicaStore(
             try {
                 SyncStoreResult.Success(
                     database.transactionWithResult {
-                        snapshotReader.rejectInvalidPersistedBlobs()
+                        snapshotReader.rejectInvalidPersistedStorage()
                         block()
                     },
                 )
@@ -191,8 +191,8 @@ internal class SqlSyncReplicaStore(
 private class SqlSnapshotReader(
     private val database: PosatoDatabase,
 ) {
-    suspend fun rejectInvalidPersistedBlobs() {
-        if (database.syncReplicaQueries.selectInvalidSyncReplicaBlob().awaitAsList().isNotEmpty()) {
+    suspend fun rejectInvalidPersistedStorage() {
+        if (database.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList().isNotEmpty()) {
             failStore(SyncStoreFailure.CORRUPTION)
         }
     }

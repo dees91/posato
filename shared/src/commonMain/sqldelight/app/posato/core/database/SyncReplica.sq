@@ -50,10 +50,14 @@ selectSyncReplicaState:
 SELECT singleton, workspace_id, transport_epoch_id, key_epoch_id, revision, hlc_physical, hlc_logical, hlc_exhausted, transport_progress
 FROM sync_replica_state;
 
-selectInvalidSyncReplicaBlob:
+selectInvalidSyncReplicaStorage:
 SELECT 1
 FROM sync_replica_state
 WHERE CASE
+  WHEN typeof(revision) != 'integer' THEN 1
+  WHEN typeof(hlc_physical) != 'integer' THEN 1
+  WHEN typeof(hlc_logical) != 'integer' THEN 1
+  WHEN typeof(hlc_exhausted) != 'integer' THEN 1
   WHEN typeof(workspace_id) != 'blob' THEN 1
   WHEN length(workspace_id) != 16 THEN 1
   WHEN typeof(transport_epoch_id) != 'blob' THEN 1
@@ -68,6 +72,9 @@ UNION ALL
 SELECT 1
 FROM sync_accepted_bundle
 WHERE CASE
+  WHEN typeof(author_sequence) != 'integer' THEN 1
+  WHEN typeof(hlc_physical) != 'integer' THEN 1
+  WHEN typeof(hlc_logical) != 'integer' THEN 1
   WHEN typeof(bundle_id) != 'blob' THEN 1
   WHEN length(bundle_id) != 16 THEN 1
   WHEN typeof(bundle_bytes) != 'blob' THEN 1
@@ -94,6 +101,7 @@ UNION ALL
 SELECT 1
 FROM sync_staged_bundle
 WHERE CASE
+  WHEN typeof(author_sequence) != 'integer' THEN 1
   WHEN typeof(bundle_id) != 'blob' THEN 1
   WHEN length(bundle_id) != 16 THEN 1
   WHEN typeof(bundle_bytes) != 'blob' THEN 1

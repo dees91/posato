@@ -217,11 +217,14 @@ classifies an invalid retained value as corruption, and failed bundle-key
 derivation still clears the already encoded operation plaintext owned by
 common code.
 
-`observed` (2026-09-01): every BLOB selected during replica restore is checked
-by SQLite type and byte length before its contents cross the SQLDelight driver
-boundary. The preflight and snapshot read share one transaction, and invalid
-state, accepted, pending, staged, or terminal-expiry storage reports corruption
-without materializing the rejected value in Kotlin.
+`observed` (2026-09-01): every selected persisted value whose representation is
+part of the sync contract is checked before it crosses the SQLDelight driver
+boundary. BLOBs are checked by SQLite type and byte length, and all eight
+materialized integer fields are checked for physical integer storage so SQLite
+cannot silently coerce malformed text. The preflight and snapshot read share
+one transaction, and invalid state, accepted, pending, staged, or terminal-
+expiry storage reports corruption without materializing the rejected value in
+Kotlin.
 
 `observed` (2026-09-01): authenticated reopen accepts a terminal local expiry
 fact only when the retained history contains a currently applicable session
@@ -394,6 +397,12 @@ Ed25519 public-key length before copying its payload or transferring its handle
 to the common signing-key wrapper. Null or non-32-byte output returns a nullable
 cryptographic failure and closes the native handle; exact output transfers
 ownership until wrapper closure.
+
+`observed` (2026-09-01): every `NSData` returned by the iOS cryptographic
+boundary is checked against its operation-specific result size before Kotlin
+allocates an array or reads the native payload. This covers random bytes,
+SHA-256, HMAC-SHA256, AES-GCM seal and open, Ed25519 public keys, and signatures;
+wrong-sized output remains a nullable cryptographic failure.
 
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?

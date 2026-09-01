@@ -33,7 +33,7 @@ class IosSyncCryptoProviderTest {
 
     @Test
     fun `given invalid native signing public key when adapted then creation fails and the handle closes`() {
-        listOf<NSData?>(null, ByteArray(31).toNSData(), UnreadableWrongSizedNSData()).forEach { publicKey ->
+        listOf<NSData?>(null, ByteArray(31).toNSData(), UnreadableWrongSizedNSData(33u)).forEach { publicKey ->
             val signingKey = FakeIosSigningKey(publicKey)
 
             assertNull(IosSyncCryptoProvider(FakeIosCryptoProvider(signingKey = signingKey)).createSigningKey())
@@ -54,10 +54,30 @@ class IosSyncCryptoProviderTest {
 
         assertEquals(1, signingKey.closeCount)
     }
+
+    @Test
+    fun `given wrong-sized native cryptographic output when adapted then no payload is copied`() {
+        val wrongSizedOutput = UnreadableWrongSizedNSData(65u)
+        val provider = IosSyncCryptoProvider(FakeIosCryptoProvider(cryptographicResult = wrongSizedOutput))
+
+        val input = byteArrayOf(1)
+        assertNull(provider.sha256(input))
+        assertNull(provider.hmacSha256(input, input))
+        assertNull(provider.sealAesGcm(input, input, input, input))
+        assertNull(provider.openAesGcm(input, input, input, ByteArray(16)))
+
+        val signingKey = FakeIosSigningKey(ByteArray(32).toNSData(), wrongSizedOutput)
+        val adapted = assertNotNull(IosSyncCryptoProvider(FakeIosCryptoProvider(signingKey = signingKey)).createSigningKey())
+        assertNull(adapted.sign(input))
+        adapted.close()
+        assertEquals(1, signingKey.closeCount)
+    }
 }
 
-private class UnreadableWrongSizedNSData : NSData() {
-    override fun length(): ULong = 33u
+private class UnreadableWrongSizedNSData(
+    private val reportedLength: ULong,
+) : NSData() {
+    override fun length(): ULong = reportedLength
 
     override fun bytes(): CPointer<out CPointed>? {
         error("Wrong-sized native data must not be copied")
@@ -67,6 +87,7 @@ private class UnreadableWrongSizedNSData : NSData() {
 private class FakeIosCryptoProvider(
     private val randomBytes: NSData? = null,
     private val signingKey: IosSigningKey? = null,
+    private val cryptographicResult: NSData? = null,
 ) : IosCryptoProvider {
     val requestedCounts = mutableListOf<Int>()
 
@@ -75,26 +96,26 @@ private class FakeIosCryptoProvider(
         return randomBytes
     }
 
-    override fun sha256(message: NSData): NSData? = null
+    override fun sha256(message: NSData): NSData? = cryptographicResult
 
     override fun hmacSha256(
         key: NSData,
         message: NSData,
-    ): NSData? = null
+    ): NSData? = cryptographicResult
 
     override fun sealAesGcm(
         key: NSData,
         nonce: NSData,
         authenticatedData: NSData,
         plaintext: NSData,
-    ): NSData? = null
+    ): NSData? = cryptographicResult
 
     override fun openAesGcm(
         key: NSData,
         nonce: NSData,
         authenticatedData: NSData,
         ciphertextAndTag: NSData,
-    ): NSData? = null
+    ): NSData? = cryptographicResult
 
     override fun createSigningKey(): IosSigningKey? = signingKey
 
@@ -107,13 +128,14 @@ private class FakeIosCryptoProvider(
 
 private class FakeIosSigningKey(
     private val publicKey: NSData?,
+    private val signature: NSData? = null,
 ) : IosSigningKey {
     var closeCount = 0
         private set
 
     override fun publicKey(): NSData? = publicKey
 
-    override fun sign(message: NSData): NSData? = null
+    override fun sign(message: NSData): NSData? = signature
 
     override fun close() {
         closeCount += 1
