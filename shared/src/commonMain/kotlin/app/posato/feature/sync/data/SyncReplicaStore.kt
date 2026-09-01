@@ -55,7 +55,11 @@ internal data class SyncReplicaSnapshot(
     val pendingBundles: Map<BundleId, EncryptedBundle>,
     val terminalExpiryFacts: Set<SessionId>,
     val transportProgress: OpaqueTransportProgress?,
-)
+) {
+    override fun toString(): String {
+        return "SyncReplicaSnapshot(redacted)"
+    }
+}
 
 internal class ImmutableBytes(
     bytes: ByteArray,

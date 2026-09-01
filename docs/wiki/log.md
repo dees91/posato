@@ -1018,3 +1018,9 @@
 - Gave authoring incarnations and prepared local mutations fixed redacted
   default string representations.
 - Preserved authoring, equality, persistence, and canonical serialization.
+
+## [2026-09-01] correction | Protect sync state and rejected keys
+
+- Redacted the durable replica snapshot's default representation.
+- Cleared supplied transport keys on every writer-open exit that does not
+  transfer ownership to an active writer.

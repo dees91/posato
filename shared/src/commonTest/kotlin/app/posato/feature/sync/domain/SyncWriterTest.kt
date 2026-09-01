@@ -18,6 +18,7 @@ import app.posato.feature.sync.testOperation
 import app.posato.feature.targets.domain.ExactDomain
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -26,6 +27,52 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+
+class SyncWriterOpenTest {
+    @Test
+    fun `given an active writer when another open is rejected then the rejected transport key is cleared`() = runTest {
+        val core = SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+        val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+        val rejectedKey = transportKey()
+
+        try {
+            val result = core.open(testContext, rejectedKey)
+
+            assertEquals(OpenSyncWriterFailure.ALREADY_OPEN, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            assertContentEquals(
+                ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES),
+                rejectedKey.useBytes { bytes -> bytes.copyOf() },
+            )
+        } finally {
+            writer.close()
+        }
+    }
+
+    @Test
+    fun `given a suspended store open when opening is cancelled then the transport key is cleared`() = runTest {
+        val openStarted = CompletableDeferred<Unit>()
+        val store = FakeSyncReplicaStore(
+            initial = snapshot(),
+            beforeOpen = {
+                openStarted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val openingKey = transportKey()
+        val openJob = launch {
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, openingKey)
+        }
+        openStarted.await()
+
+        openJob.cancel()
+        openJob.join()
+
+        assertContentEquals(
+            ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES),
+            openingKey.useBytes { bytes -> bytes.copyOf() },
+        )
+    }
+}
 
 class SyncWriterTest {
     @Test
@@ -709,6 +756,7 @@ private class FakeSyncReplicaStore(
     private val localCommitMode: LocalCommitMode = LocalCommitMode.SUCCESS,
     private val remoteCommitMode: RemoteCommitMode = RemoteCommitMode.SUCCESS,
     private val expiryCommitMode: LocalCommitMode = LocalCommitMode.SUCCESS,
+    private val beforeOpen: suspend () -> Unit = {},
 ) : SyncReplicaStore {
     private var localCommitAttempts = 0
     private var expiryCommitAttempts = 0
@@ -716,6 +764,7 @@ private class FakeSyncReplicaStore(
         private set
 
     override suspend fun open(context: SyncContext): SyncStoreResult<SyncReplicaSnapshot> {
+        beforeOpen()
         return SyncStoreResult.Success(current)
     }
 

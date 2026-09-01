@@ -148,34 +148,38 @@ internal class SyncOperationCore(
         context: SyncContext,
         transportKey: app.posato.feature.sync.domain.TransportKey,
     ): OpenSyncWriterResult {
-        return mutex.withLock {
-            if (activeWriter != null) {
-                return@withLock OpenSyncWriterResult.Failure(OpenSyncWriterFailure.ALREADY_OPEN)
-            }
+        var isTransportKeyTransferredToWriter = false
+        return try {
+            mutex.withLock {
+                if (activeWriter != null) {
+                    return@withLock OpenSyncWriterResult.Failure(OpenSyncWriterFailure.ALREADY_OPEN)
+                }
 
-            when (val result = store.open(context)) {
-                is SyncStoreResult.Success -> {
-                    if (!result.value.isAuthenticatedBy(cryptoProvider, transportKey)) {
-                        transportKey.close()
-                        return@withLock OpenSyncWriterResult.Failure(OpenSyncWriterFailure.CORRUPTION)
+                when (val result = store.open(context)) {
+                    is SyncStoreResult.Success -> {
+                        if (!result.value.isAuthenticatedBy(cryptoProvider, transportKey)) {
+                            return@withLock OpenSyncWriterResult.Failure(OpenSyncWriterFailure.CORRUPTION)
+                        }
+                        val writer = SyncWriter(
+                            store = store,
+                            cryptoProvider = cryptoProvider,
+                            wallClock = wallClock,
+                            transportKey = transportKey,
+                            initialSnapshot = result.value,
+                            onClose = ::release,
+                        )
+                        activeWriter = writer
+                        isTransportKeyTransferredToWriter = true
+                        OpenSyncWriterResult.Success(writer)
                     }
-                    val writer = SyncWriter(
-                        store = store,
-                        cryptoProvider = cryptoProvider,
-                        wallClock = wallClock,
-                        transportKey = transportKey,
-                        initialSnapshot = result.value,
-                        onClose = ::release,
-                    )
-                    activeWriter = writer
-                    OpenSyncWriterResult.Success(writer)
-                }
 
-                is SyncStoreResult.Failure -> {
-                    transportKey.close()
-                    OpenSyncWriterResult.Failure(result.reason.toOpenFailure())
+                    is SyncStoreResult.Failure -> {
+                        OpenSyncWriterResult.Failure(result.reason.toOpenFailure())
+                    }
                 }
             }
+        } finally {
+            if (!isTransportKeyTransferredToWriter) transportKey.close()
         }
     }
 

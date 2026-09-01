@@ -2,12 +2,30 @@ package app.posato.feature.sync.domain
 
 import app.posato.feature.sync.FakeSyncCryptoProvider
 import app.posato.feature.sync.data.DurableClockState
+import app.posato.feature.sync.data.SyncReplicaSnapshot
+import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testOperation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SyncDomainRedactionTest {
+    @Test
+    fun `given a replica snapshot when converted to a string then durable state remains redacted`() {
+        val snapshot = SyncReplicaSnapshot(
+            context = testContext,
+            revision = 42,
+            clockState = DurableClockState(HybridLogicalClock(1_234_567_890L, 42), isExhausted = false),
+            acceptedBundles = emptyMap(),
+            stagedBundles = emptyMap(),
+            pendingBundles = emptyMap(),
+            terminalExpiryFacts = emptySet(),
+            transportProgress = null,
+        )
+
+        assertEquals("SyncReplicaSnapshot(redacted)", snapshot.toString())
+    }
+
     @Test
     fun `given authoring state carriers when converted to strings then metadata remains redacted`() {
         val incarnation = AuthoringIncarnation(

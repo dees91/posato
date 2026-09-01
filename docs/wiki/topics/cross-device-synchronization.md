@@ -183,6 +183,11 @@ during that commit propagates unchanged after freezing the writer and closing
 the signing key, so later authoring cannot replace prepared bytes for the same
 author sequence.
 
+`observed` (2026-09-01): writer open owns its supplied transport key until a
+successfully initialized writer becomes active. Every failure, exception, or
+cancellation before that transfer clears the key, including rejection because
+another writer is already active.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:

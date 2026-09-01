@@ -262,6 +262,11 @@ neither the next author sequence nor prepared-operation cardinality or durable
 state shape, while authoring, equality, persistence, and canonical serialization
 remain unchanged.
 
+`observed` (2026-09-01): the durable `SYNC-002` replica snapshot also has a
+fixed redacted default string. It exposes neither the replica revision nor
+collection cardinalities or durable state shape, while equality, persistence,
+and canonical serialization remain unchanged.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the

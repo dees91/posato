@@ -72,7 +72,9 @@
   review concluded that the correction was already lean. The local-commit
   cancellation correction received the same focused approval with no findings.
   The authoring-metadata redaction correction was also independently approved
-  with no findings.
+  with no findings. The replica-snapshot redaction and rejected-key lifetime
+  corrections received the same focused approval with no findings; the
+  simplicity review found the centralized ownership boundary already lean.
 
 ## Hosted review follow-up
 
@@ -96,7 +98,11 @@
   and could abandon a newly created signing key.
   A further required pass found that authoring state carriers exposed the exact
   next author sequence, prepared-bundle cardinality, and durable state shape
-  through their generated default string representations.
+  through their generated default string representations. The latest required
+  finding found that the durable replica snapshot still exposed its revision,
+  collection cardinalities, and state shape through its generated default
+  string. The maintainer also accepted the accompanying advisory that a failed
+  or cancelled writer open could leave its supplied transport key uncleared.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -124,7 +130,11 @@
   propagates unchanged instead of permitting replacement bytes for the same
   author sequence. Authoring incarnations and prepared local mutations now use
   fixed redacted default strings without changing equality, persistence, or
-  canonical serialization. No further hosted review is needed.
+  canonical serialization. The replica snapshot now has the same fixed
+  redacted representation. Writer open retains ownership of its supplied
+  transport key until an active writer is installed; one centralized cleanup
+  path clears it for every failure, exception, and cancellation before that
+  transfer. No further hosted review is needed.
 
 ## Verification
 
@@ -144,6 +154,7 @@
 | Local-commit cancellation regression | `pass` | The focused test failed before the correction, then JVM and iOS Simulator common suites proved unchanged cancellation propagation, no synthetic durable mutation, prepared-key closure, and frozen refusal of later authoring. |
 | Post-cancellation aggregate quality | `pass` | All 113 aggregate tasks passed, including JVM and iOS Simulator tests, migration verification, Detekt, ktlint, approved-exception verification, and target compilation. |
 | Authoring metadata redaction correction | `pass` | The focused JVM test failed before the correction. JVM and iOS Simulator common suites then passed, and all 113 aggregate quality tasks passed with the fixed representations. |
+| Replica redaction and rejected-key correction | `pass` | Three focused JVM regressions failed before the correction and passed after it. The complete JVM and iOS Simulator suites passed in 32 executed tasks, followed by the aggregate quality gate with every task rerun from a clean build. |
 
 ## Blockers and accepted risks
 
