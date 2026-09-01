@@ -6,7 +6,7 @@
 - **Implementer:** Codex
 - **Reviewer:** independent Codex agent `/root/sync002_plan_review`
 - **Branch:** `feature/sync-002-encrypted-operation-core`
-- **Updated:** 2026-08-31
+- **Updated:** 2026-09-01
 
 ## Plan
 
@@ -67,7 +67,9 @@
   and the normative writer, SQLDelight, failure, and convergence test matrix.
 - **Resolution:** All Required findings were resolved and independently
   re-reviewed. The final review found no remaining actionable Critical or
-  Required findings.
+  Required findings. A focused completed-change review of the writer-release
+  cancellation correction also approved it with no findings; its simplicity
+  review concluded that the correction was already lean.
 
 ## Hosted review follow-up
 
@@ -84,7 +86,9 @@
   through their generated default string representations. The final pass found
   that the hybrid logical clock still exposed its exact physical operation time
   through its generated default string representation and through containing
-  data classes.
+  data classes. An accepted advisory pass then found that cancellation could
+  leave a closed writer registered while its owner-release callback waited for
+  the core mutex.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -102,8 +106,12 @@
   clock also has one fixed redacted representation, which transitively removes
   exact operation times from containing data-class strings without changing
   clock behavior or serialization. Independent focused re-reviews approved the
-  corrections with no remaining Critical or Required findings. No further
-  hosted review is needed.
+  corrections with no remaining Critical or Required findings. Writer close now
+  runs only owner deregistration in a non-cancellable cleanup context after
+  closing its state and keys, so cancellation cannot leave the closed instance
+  active. A deterministic common regression test cancels close while that
+  callback is suspended and proves it completes on JVM and iOS Simulator. No
+  further hosted review is needed.
 
 ## Verification
 
@@ -112,13 +120,14 @@
 | Baseline `./gradlew quality` | `pass` | Existing main baseline passed before the task worktree was created. |
 | Baseline credential-free iOS host build | `pass` | Existing `iosApp` scheme built for the generic iOS Simulator with signing disabled. |
 | Focused JVM codec, JCA, migration, and writer tests | `pass` | Canonical round trips, RFC 5869, Ed25519, format-1 envelope, schema upgrades, first-author batch, and terminal HLC exhaustion passed. |
-| Final `./gradlew quality` | `pass` | JVM and iOS Simulator tests, SQLDelight migration verification, static analysis without SYNC-002 suppressions, formatting, and all existing targets passed after the completed-change and hosted-review corrections. |
+| Final `./gradlew quality` | `pass` | All 116 aggregate tasks passed after the writer-release correction, including JVM and iOS Simulator tests, migration verification, static analysis, approved-exception verification, formatting, and all existing targets. |
 | Credential-free iOS Simulator host build | `pass` | The `iosApp` scheme, injected CryptoKit provider, and lower-camel Kotlin-to-Swift entry point compiled with signing disabled. |
 | CryptoKit XCTest on iOS Simulator | `pass` | FIPS SHA-256, RFC 4231 HMAC-SHA256, NIST AES-GCM including altered-tag rejection, Ed25519 lifecycle and RFC 8032 cross-verification, and decoding the fixed JCA-produced format-1 golden bundle through Kotlin and CryptoKit passed. |
 | CryptoKit XCTest on physical iPhone | `pass` | All six Simulator-tested CryptoKit cases passed on the connected physical iPhone with the maintainer-provided Development Team supplied only as a local build parameter. No personal signing value was added to the repository. |
 | Hosted-review regression tests | `pass` | Invalid local session bounds remain recoverable; reopen rejects invalid accepted and staged author histories while preserving legal gaps and exact staging-capacity boundaries. |
 | Bounded remote-ingress regression tests | `pass` | Exactly 64 KiB reaches normal parsing, larger input returns `OVERSIZED` before an immutable copy, and exact-refetch proof remains required before rejection advances transport progress. |
 | Synchronization timing redaction regression | `pass` | The hybrid logical clock plus local, payload, reduced-start, and effective-session timing carriers return fixed redacted strings on the JVM and iOS Simulator. |
+| Writer-release cancellation regression | `pass` | The focused test failed before the correction, then the JVM and iOS Simulator common suites proved that owner deregistration completes after close cancellation. |
 
 ## Blockers and accepted risks
 

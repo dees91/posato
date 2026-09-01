@@ -1002,3 +1002,8 @@
 - Gave the hybrid logical clock one fixed redacted default string so containing
   data-class representations cannot expose exact operation times.
 - Preserved clock ordering, persistence, and canonical format behavior.
+
+## [2026-09-01] correction | Guarantee writer release after close
+
+- Completed owner deregistration after writer shutdown even when the closing
+  coroutine is cancelled while release is suspended.

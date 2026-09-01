@@ -17,8 +17,10 @@ import app.posato.feature.sync.data.SyncStoreFailure
 import app.posato.feature.sync.data.SyncStoreResult
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 internal fun interface SyncWallClock {
     fun currentEpochMillis(): Long
@@ -337,7 +339,9 @@ internal class SyncWriter internal constructor(
                 transportKey.close()
             }
         }
-        onClose(this)
+        withContext(NonCancellable) {
+            onClose(this@SyncWriter)
+        }
     }
 
     private suspend fun commitExhaustion(): Boolean {

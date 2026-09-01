@@ -16,6 +16,8 @@ import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testOperation
 import app.posato.feature.targets.domain.ExactDomain
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -70,6 +72,34 @@ class SyncWriterTest {
         cases.forEach { case ->
             assertEquals(case.expected, reserveLocalClocks(DurableClockState(case.current, false), case.wallTime, case.count))
         }
+    }
+
+    @Test
+    fun `given cancellation after writer shutdown begins when release suspends then release completes`() = runTest {
+        val initialSnapshot = snapshot()
+        val releaseStarted = CompletableDeferred<Unit>()
+        val continueRelease = CompletableDeferred<Unit>()
+        var releaseCompleted = false
+        val writer = SyncWriter(
+            store = FakeSyncReplicaStore(initialSnapshot),
+            cryptoProvider = FakeSyncCryptoProvider(),
+            wallClock = SyncWallClock { 100 },
+            transportKey = transportKey(),
+            initialSnapshot = initialSnapshot,
+            onClose = {
+                releaseStarted.complete(Unit)
+                continueRelease.await()
+                releaseCompleted = true
+            },
+        )
+
+        val closeJob = launch { writer.close() }
+        releaseStarted.await()
+        closeJob.cancel()
+        continueRelease.complete(Unit)
+        closeJob.join()
+
+        assertTrue(releaseCompleted)
     }
 
     @Test

@@ -171,6 +171,12 @@ on raw transport bytes before retaining an immutable copy. Exactly 64 KiB
 continues to normal parsing, larger input returns the bounded `OVERSIZED`
 outcome, and rejection preserves the existing exact-refetch progress rule.
 
+`observed` (2026-09-01): after a writer has closed its state and ephemeral keys,
+owner deregistration completes in a narrowly scoped non-cancellable cleanup
+context. A deterministic common test cancelled close while deregistration was
+suspended and passed on the JVM and iOS Simulator, preventing a closed writer
+from blocking every later open until process restart.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:
