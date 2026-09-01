@@ -161,6 +161,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
     }
 
     private fun signature(code: File): CodeSignature {
+        command("/usr/bin/codesign", "--verify", "--strict", code.absolutePath)
         val details = command("/usr/bin/codesign", "--display", "--verbose=4", code.absolutePath)
         val values = details.lineSequence().map(String::trim).toList()
         val teamId = values.firstOrNull { line -> line.startsWith("TeamIdentifier=") }
