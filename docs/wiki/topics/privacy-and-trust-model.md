@@ -256,6 +256,12 @@ redacted default string. Containing data-class representations therefore do not
 expose its exact physical operation time, while comparison, persistence, and
 canonical format behavior remain unchanged.
 
+`observed` (2026-09-01): the `SYNC-002` authoring incarnation and prepared local
+mutation also have fixed redacted default strings. Their representations expose
+neither the next author sequence nor prepared-operation cardinality or durable
+state shape, while authoring, equality, persistence, and canonical serialization
+remain unchanged.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the

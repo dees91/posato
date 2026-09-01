@@ -397,13 +397,21 @@ internal data class AuthoringIncarnation(
     val authorId: AuthorId,
     val signingKey: SyncSigningKey,
     val nextSequence: Long?,
-)
+) {
+    override fun toString(): String {
+        return "AuthoringIncarnation(redacted)"
+    }
+}
 
 internal data class PreparedLocalMutation(
     val bundles: List<PreparedStoredBundle>,
     val clockState: DurableClockState,
     val nextIncarnation: AuthoringIncarnation,
 ) {
+    override fun toString(): String {
+        return "PreparedLocalMutation(redacted)"
+    }
+
     fun expectedAfter(snapshot: SyncReplicaSnapshot): SyncReplicaSnapshot {
         val accepted = snapshot.acceptedBundles.toMutableMap()
         val pending = snapshot.pendingBundles.toMutableMap()

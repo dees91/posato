@@ -1,11 +1,30 @@
 package app.posato.feature.sync.domain
 
+import app.posato.feature.sync.FakeSyncCryptoProvider
+import app.posato.feature.sync.data.DurableClockState
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testOperation
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class SyncDomainRedactionTest {
+    @Test
+    fun `given authoring state carriers when converted to strings then metadata remains redacted`() {
+        val incarnation = AuthoringIncarnation(
+            authorId = AuthorId(testIdentifier(19)),
+            signingKey = FakeSyncCryptoProvider().createSigningKey(),
+            nextSequence = 4_294_967_296L,
+        )
+        val prepared = PreparedLocalMutation(
+            bundles = emptyList(),
+            clockState = DurableClockState(HybridLogicalClock(1_234_567_890L, 42), isExhausted = false),
+            nextIncarnation = incarnation,
+        )
+
+        assertEquals("AuthoringIncarnation(redacted)", incarnation.toString())
+        assertEquals("PreparedLocalMutation(redacted)", prepared.toString())
+    }
+
     @Test
     fun `given a hybrid logical clock when converted to a string then exact time remains redacted`() {
         assertEquals(

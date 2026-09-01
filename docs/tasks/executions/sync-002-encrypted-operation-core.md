@@ -71,6 +71,8 @@
   cancellation correction also approved it with no findings; its simplicity
   review concluded that the correction was already lean. The local-commit
   cancellation correction received the same focused approval with no findings.
+  The authoring-metadata redaction correction was also independently approved
+  with no findings.
 
 ## Hosted review follow-up
 
@@ -92,6 +94,9 @@
   the core mutex. The next required pass found that cancellation during a local
   commit discarded prepared bytes without retiring the authoring incarnation
   and could abandon a newly created signing key.
+  A further required pass found that authoring state carriers exposed the exact
+  next author sequence, prepared-bundle cardinality, and durable state shape
+  through their generated default string representations.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -117,7 +122,9 @@
   prepared local mutation now transfers its incarnation to the writer before
   the commit can suspend; cancellation freezes the writer, closes the key, and
   propagates unchanged instead of permitting replacement bytes for the same
-  author sequence. No further hosted review is needed.
+  author sequence. Authoring incarnations and prepared local mutations now use
+  fixed redacted default strings without changing equality, persistence, or
+  canonical serialization. No further hosted review is needed.
 
 ## Verification
 
@@ -136,6 +143,7 @@
 | Writer-release cancellation regression | `pass` | The focused test failed before the correction, then the JVM and iOS Simulator common suites proved that owner deregistration completes after close cancellation. |
 | Local-commit cancellation regression | `pass` | The focused test failed before the correction, then JVM and iOS Simulator common suites proved unchanged cancellation propagation, no synthetic durable mutation, prepared-key closure, and frozen refusal of later authoring. |
 | Post-cancellation aggregate quality | `pass` | All 113 aggregate tasks passed, including JVM and iOS Simulator tests, migration verification, Detekt, ktlint, approved-exception verification, and target compilation. |
+| Authoring metadata redaction correction | `pass` | The focused JVM test failed before the correction. JVM and iOS Simulator common suites then passed, and all 113 aggregate quality tasks passed with the fixed representations. |
 
 ## Blockers and accepted risks
 

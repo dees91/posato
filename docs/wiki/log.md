@@ -1012,3 +1012,9 @@
 
 - Transferred prepared authoring ownership before local commit suspension and
   froze the writer before propagating cancellation.
+
+## [2026-09-01] correction | Redact sync authoring metadata
+
+- Gave authoring incarnations and prepared local mutations fixed redacted
+  default string representations.
+- Preserved authoring, equality, persistence, and canonical serialization.
