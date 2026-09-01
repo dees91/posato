@@ -1093,3 +1093,8 @@
   during replica restore before SQLDelight can coerce it.
 - Validated every native cryptographic result against its exact expected size
   before allocating or reading the payload.
+
+## [2026-09-01] correction | Redact sync writer identity
+
+- Replaced the active writer's dynamic per-instance default representation with
+  one fixed redacted string, including through successful-open results.

@@ -310,9 +310,10 @@ internal class SyncWriter internal constructor(
         return SyncReducer.reduce(checkpoint.acceptedBundles.values.map { stored -> stored.operation })
     }
 
-    fun pendingBundles(): List<EncryptedBundle> {
-        return checkpoint.pendingBundles.values.toList()
-    }
+    val pendingBundles: List<EncryptedBundle>
+        get() {
+            return checkpoint.pendingBundles.values.toList()
+        }
 
     fun evaluateSession(evaluationEpochMillis: Long): EffectiveSession {
         return SyncReducer.evaluateSession(projection(), evaluationEpochMillis, checkpoint.terminalExpiryFacts)
@@ -352,6 +353,10 @@ internal class SyncWriter internal constructor(
         withContext(NonCancellable) {
             onClose(this@SyncWriter)
         }
+    }
+
+    override fun toString(): String {
+        return "SyncWriter(redacted)"
     }
 
     private suspend fun commitExhaustion(): Boolean {

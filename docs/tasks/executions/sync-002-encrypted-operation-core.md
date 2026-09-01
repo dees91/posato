@@ -56,6 +56,9 @@
   The persisted-integer and native-result correction received independent plan
   approval with a real-SQLite storage-class matrix and one shared exact-size
   native conversion boundary. Its simplicity review found the plan lean.
+  The writer-identity redaction correction received independent plan approval
+  with one exact common regression. Its simplicity review selected one root
+  `SyncWriter` representation and no duplicate wrapper override.
 
 ## Result
 
@@ -131,6 +134,9 @@
   The persisted-integer and native-result correction received focused approval
   with no findings at any severity; its simplicity review found the single
   storage preflight and exact-size conversion helper already lean.
+  The writer-identity redaction correction received focused approval with no
+  findings at any severity. Its simplicity review found the single root
+  representation and read-only pending-bundle property already lean.
 
 ## Hosted review follow-up
 
@@ -184,6 +190,9 @@
   eight selected integer columns before restore validation. The maintainer also
   accepted the advisory that native cryptographic results other than public
   keys were copied before their exact result lengths were validated.
+  The latest required finding found that the default `SyncWriter` identity hash
+  supplied a prohibited per-instance correlation identifier, including through
+  the generated successful-open result representation.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -266,6 +275,10 @@
   materializes it. The iOS adapter now validates the exact expected size of
   random, SHA-256, HMAC-SHA256, AES-GCM, public-key, and signature results before
   allocating or reading their native payloads.
+  `SyncWriter` now returns one fixed redacted default string, which also makes
+  the generated successful-open result representation stable and non-
+  correlating. The existing pending-bundle accessor is now a property so this
+  required representation does not weaken the class-complexity gate.
 
 ## Verification
 
@@ -298,6 +311,7 @@
 | Native signing-key output validation | `pass` | The focused iOS Simulator regression failed with `IllegalStateException` before the correction and passed afterward. Null, 31-byte, and 33-byte native public keys close their handles exactly once and return failure; an exact 32-byte key transfers ownership until wrapper closure. Detekt's initial return-count finding was fixed in the control flow without suppression. All 113 aggregate quality tasks and the credential-free iOS host build passed. |
 | Pre-copy native signing-key validation | `pass` | An iOS `NSData` sentinel that reports 33 bytes and fails on payload access first reproduced the invalid read, then passed when the adapter rejected its length without touching its bytes and closed the signing handle once. The complete iOS Simulator suite, all 113 quality tasks, and the credential-free iOS host build passed without suppressions. |
 | Persisted-integer and native-result validation | `pass` | A real-SQLite matrix first reproduced coercion of malformed text in all eight selected integer fields, then passed with same-transaction storage-class preflight. An unreadable 65-byte `NSData` sentinel first reproduced an attempted copy and then proved that SHA-256, HMAC-SHA256, AES-GCM, and signature output is rejected before payload access. All 113 quality tasks, the credential-free iOS Simulator host build, and all six CryptoKit XTests passed without suppressions. |
+| Writer-identity redaction | `pass` | The focused JVM regression first observed the inherited per-instance writer representation, then proved exact fixed strings for both the writer and successful-open wrapper. Complete JVM and iOS Simulator suites and all 113 quality tasks passed without suppressions. Detekt's function-count and cyclomatic-complexity findings were resolved in the source by expressing the pending-bundle accessor as a property while retaining the focused preparation-failure helper. |
 
 ## Blockers and accepted risks
 

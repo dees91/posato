@@ -277,6 +277,11 @@ use fixed redacted default strings. Their representations expose neither the
 replica revision nor exact author-sequence and HLC fields, without changing
 persistence, decoding, equality, or canonical serialization.
 
+`observed` (2026-09-01): the active `SYNC-002` writer uses a fixed redacted
+default string rather than the platform's per-instance identity representation.
+The generated successful-open result therefore also contains no dynamic
+correlation identifier, without changing writer ownership or lifecycle.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the

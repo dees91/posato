@@ -35,6 +35,21 @@ import kotlin.test.assertTrue
 
 class SyncWriterOpenTest {
     @Test
+    fun `given an open writer when converted to strings then its identity remains redacted`() = runTest {
+        val result = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+                .open(testContext, transportKey()),
+        )
+
+        try {
+            assertEquals("SyncWriter(redacted)", result.writer.toString())
+            assertEquals("Success(writer=SyncWriter(redacted))", result.toString())
+        } finally {
+            result.writer.close()
+        }
+    }
+
+    @Test
     fun `given an active writer when another open is rejected then the rejected transport key is cleared`() = runTest {
         val core = SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
         val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
@@ -153,7 +168,7 @@ class SyncWriterCancellationTest {
 
         assertTrue(mutationJob.isCancelled)
         assertEquals(listOf(domain), writer.projection().domains)
-        assertEquals(2, writer.pendingBundles().size)
+        assertEquals(2, writer.pendingBundles.size)
         assertEquals(
             LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
             assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
