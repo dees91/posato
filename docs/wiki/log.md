@@ -1048,3 +1048,8 @@
 
 - Validated every retained replica-state singleton before fresh initialization
   so corrupted state cannot be silently replaced.
+
+## [2026-09-01] correction | Reconcile cancelled local commits
+
+- Adopted an exact durable local-commit snapshot before propagating cancellation
+  while still retiring the cancelled writer's authoring incarnation.

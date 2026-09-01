@@ -39,6 +39,9 @@
   The invalid-singleton correction received the same plan approval with no
   findings at any severity; its simplicity review selected one broader state
   query and one existing-boundary invariant check.
+  The cancelled local-commit reconciliation correction also received plan
+  approval with no findings at any severity; its simplicity review selected
+  the existing exact cancellation-reconciliation boundary.
 
 ## Result
 
@@ -91,6 +94,9 @@
   The invalid-singleton correction received the same completed-change approval
   with no findings at any severity; the simplicity review found the broader
   state query and existing-boundary invariant check already lean.
+  The cancelled local-commit reconciliation correction also received approval
+  with no findings at any severity; the simplicity review found its reuse of
+  the existing exact reconciliation boundary already lean.
 
 ## Hosted review follow-up
 
@@ -129,10 +135,12 @@
   through their generated default string. Two further required findings found
   that opaque transport progress was copied and stored without an explicit
   size limit, and that an HKDF failure left the already encoded operation
-  plaintext outside the existing cleanup block. The latest required finding
+  plaintext outside the existing cleanup block. The invalid-singleton finding
   found that a state row retained under an invalid singleton key was invisible
   to both state restore and residue detection, allowing fresh initialization
-  to reset revision, HLC, and transport progress.
+  to reset revision, HLC, and transport progress. The latest required finding
+  found that cancellation after a durable local commit could leave the writer's
+  checkpoint, projection, and pending bundles at their pre-commit values.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -170,6 +178,9 @@
   outcome, including a failed reconciliation read, freezes the writer without
   replacing the original cancellation. The same boundary covers remote acceptance,
   transport progress, staging, terminal expiry, and state-only HLC exhaustion.
+  Local commits now use that exact cancellation-reconciliation boundary before
+  propagating cancellation, while the existing outer freeze still retires the
+  authoring incarnation and refuses later mutation.
   Replica initialization now proceeds only when every child sync table is
   empty; otherwise missing singleton state reports corruption without changing
   retained rows. Successful local-mutation results now use one fixed redacted
@@ -206,6 +217,7 @@
 | Orphaned-state and result-redaction corrections | `pass` | Both focused JVM regressions failed before implementation and passed afterward. Valid accepted-only, staged-only, and expiry-only residue is rejected when singleton state is missing; successful local-mutation output no longer exposes pending cardinality. All 32 JVM and iOS Simulator tasks passed before the aggregate quality gate. |
 | Bounded progress and plaintext cleanup | `pass` | Focused JVM regressions demonstrated the missing application and SQL limits before implementation. The corrected JVM and iOS Simulator suites passed in 32 executed tasks; ktlint and Detekt passed without suppressions; all 113 aggregate quality tasks then passed. Independent completed-change review found no findings at any severity. |
 | Invalid singleton rejection | `pass` | The focused real-database JVM regression first returned success after relocating the state row to an invalid singleton key, then passed with fail-closed restore. JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
+| Cancelled local-commit reconciliation | `pass` | The focused JVM regression first exposed a stale post-commit projection, then passed after the correction. The complete JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

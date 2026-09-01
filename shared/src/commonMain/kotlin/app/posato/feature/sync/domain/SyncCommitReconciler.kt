@@ -9,23 +9,28 @@ import kotlinx.coroutines.withContext
 
 internal class SyncCommitReconciler(
     private val store: SyncReplicaStore,
-    private val onRemoteCommitCancellation: (SyncReplicaSnapshot?) -> Unit,
+    private val onCommitCancellation: (SyncReplicaSnapshot?) -> Unit,
 ) {
     suspend fun commitLocal(
         checkpoint: SyncReplicaSnapshot,
         prepared: PreparedLocalMutation
     ): SyncReplicaSnapshot? {
         val expected = prepared.expectedAfter(checkpoint)
-        val firstAttempt = store.commitLocal(checkpoint.revision, prepared.bundles, prepared.clockState)
-        val firstResult = (firstAttempt as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
-        val observed = firstResult?.let { SyncStoreResult.Success(it) } ?: store.read(checkpoint.context)
-        val observedSnapshot = (observed as? SyncStoreResult.Success)?.value
-        val retryResult = if (observedSnapshot == checkpoint) {
-            retryLocal(checkpoint, prepared, expected)
-        } else {
-            null
+        return try {
+            val firstAttempt = store.commitLocal(checkpoint.revision, prepared.bundles, prepared.clockState)
+            val firstResult = (firstAttempt as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
+            val observed = firstResult?.let { SyncStoreResult.Success(it) } ?: store.read(checkpoint.context)
+            val observedSnapshot = (observed as? SyncStoreResult.Success)?.value
+            val retryResult = if (observedSnapshot == checkpoint) {
+                retryLocal(checkpoint, prepared, expected)
+            } else {
+                null
+            }
+            firstResult ?: observedSnapshot?.takeIf(expected::equals) ?: retryResult
+        } catch (cancellation: CancellationException) {
+            reconcileCancellation(checkpoint, expected)
+            throw cancellation
         }
-        return firstResult ?: observedSnapshot?.takeIf(expected::equals) ?: retryResult
     }
 
     suspend fun commitRemote(
@@ -40,18 +45,25 @@ internal class SyncCommitReconciler(
             val retryResult = if (observedSnapshot == checkpoint) retryRemote(checkpoint, expected, commit) else null
             firstResult ?: observedSnapshot?.takeIf(expected::equals) ?: retryResult
         } catch (cancellation: CancellationException) {
-            val reconciled = withContext(NonCancellable) {
-                try {
-                    (store.read(checkpoint.context) as? SyncStoreResult.Success)?.value?.takeIf { observed ->
-                        observed == checkpoint || observed == expected
-                    }
-                } catch (_: Exception) {
-                    null
-                }
-            }
-            onRemoteCommitCancellation(reconciled)
+            reconcileCancellation(checkpoint, expected)
             throw cancellation
         }
+    }
+
+    private suspend fun reconcileCancellation(
+        checkpoint: SyncReplicaSnapshot,
+        expected: SyncReplicaSnapshot,
+    ) {
+        val reconciled = withContext(NonCancellable) {
+            try {
+                (store.read(checkpoint.context) as? SyncStoreResult.Success)?.value?.takeIf { observed ->
+                    observed == checkpoint || observed == expected
+                }
+            } catch (_: Exception) {
+                null
+            }
+        }
+        onCommitCancellation(reconciled)
     }
 
     private suspend fun retryLocal(

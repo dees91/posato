@@ -197,6 +197,11 @@ HLC exhaustion aligned with durable state without making their transactions
 non-cancellable. A failed reconciliation read is an unresolved result: it
 freezes the writer while preserving the original cancellation as the outcome.
 
+`observed` (2026-09-01): local mutation commits use the same exact cancellation
+reconciliation before propagating. A durable post-commit snapshot advances the
+checkpoint, projection, and pending bundles, while the writer still retires its
+authoring incarnation and refuses later mutation after cancellation.
+
 `observed` (2026-09-01): a missing replica-state singleton is considered fresh
 only when accepted, pending, staged, and terminal-expiry storage is also empty.
 Any retained child row now reports corruption before initialization, so a

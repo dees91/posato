@@ -130,6 +130,37 @@ class SyncWriterCancellationTest {
     }
 
     @Test
+    fun `given cancellation after a local mutation commits when resumed then the checkpoint is reconciled`() = runTest {
+        val commitCompleted = CompletableDeferred<Unit>()
+        val domain = checkNotNull(ExactDomain.restore("reconciled-local.example"))
+        val store = FakeSyncReplicaStore(
+            initial = snapshot(),
+            afterLocalCommit = {
+                commitCompleted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val mutationJob = launch {
+            writer.mutate(LocalSyncMutation.PresentDomain(domain))
+        }
+        commitCompleted.await()
+
+        mutationJob.cancel()
+        mutationJob.join()
+
+        assertTrue(mutationJob.isCancelled)
+        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(2, writer.pendingBundles().size)
+        assertEquals(
+            LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+        )
+    }
+
+    @Test
     fun `given cancellation after remote acceptance commits when resumed then the checkpoint is reconciled`() = runTest {
         val provider = FakeSyncCryptoProvider()
         val commitCompleted = CompletableDeferred<Unit>()
@@ -900,6 +931,7 @@ private class FakeSyncReplicaStore(
     private val remoteCommitMode: RemoteCommitMode = RemoteCommitMode.SUCCESS,
     private val expiryCommitMode: LocalCommitMode = LocalCommitMode.SUCCESS,
     private val beforeOpen: suspend () -> Unit = {},
+    private val afterLocalCommit: suspend () -> Unit = {},
     private val afterRemoteCommit: suspend () -> Unit = {},
     private val afterExpiryCommit: suspend () -> Unit = {},
     private val remoteReconciliationReadFailure: Exception? = null,
@@ -954,6 +986,7 @@ private class FakeSyncReplicaStore(
                 current.transportProgress
             },
         )
+        afterLocalCommit()
 
         return if (localCommitMode == LocalCommitMode.SUCCESS || localCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE) {
             SyncStoreResult.Success(current)
