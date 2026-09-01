@@ -953,3 +953,10 @@
   application choices exist.
 - Corrected the TARGETS-003 record: capability negotiation ends at the
   parent/helper pipe, while daemon XPC rejects selection without a handshake.
+
+## [2026-09-01] correction | Make development macOS packages launchable
+
+- Signed and verified the complete arm64 JVM, SQLite, helper, and daemon package
+  surface inside-out for credential-free and Apple Development artifacts.
+- Kept development entitlements on the application launcher only and packaged
+  the unchanged verified bundle without JPackage rewriting nested signatures.
