@@ -26,28 +26,24 @@ internal class SqlSyncReplicaStore(
 
     override suspend fun open(context: SyncContext): SyncStoreResult<SyncReplicaSnapshot> {
         return databaseCall {
-            database.transactionWithResult {
-                val existing = snapshotReader.readStateRows()
-                if (existing.isEmpty()) {
-                    if (database.syncReplicaQueries.selectSyncReplicaResidue().awaitAsList().isNotEmpty()) {
-                        failStore(SyncStoreFailure.CORRUPTION)
-                    }
-                    database.syncReplicaQueries.insertSyncReplicaState(
-                        workspace_id = context.workspaceId.value.copyBytes(),
-                        transport_epoch_id = context.transportEpochId.value.copyBytes(),
-                        key_epoch_id = context.keyEpochId.value.copyBytes(),
-                    )
+            val existing = snapshotReader.readStateRows()
+            if (existing.isEmpty()) {
+                if (database.syncReplicaQueries.selectSyncReplicaResidue().awaitAsList().isNotEmpty()) {
+                    failStore(SyncStoreFailure.CORRUPTION)
                 }
-                snapshotReader.readSnapshotOrThrow(context)
+                database.syncReplicaQueries.insertSyncReplicaState(
+                    workspace_id = context.workspaceId.value.copyBytes(),
+                    transport_epoch_id = context.transportEpochId.value.copyBytes(),
+                    key_epoch_id = context.keyEpochId.value.copyBytes(),
+                )
             }
+            snapshotReader.readSnapshotOrThrow(context)
         }
     }
 
     override suspend fun read(context: SyncContext): SyncStoreResult<SyncReplicaSnapshot> {
         return databaseCall {
-            database.transactionWithResult {
-                snapshotReader.readSnapshotOrThrow(context)
-            }
+            snapshotReader.readSnapshotOrThrow(context)
         }
     }
 
@@ -131,15 +127,13 @@ internal class SqlSyncReplicaStore(
         }
 
         return databaseCall {
-            database.transactionWithResult {
-                val context = snapshotReader.readContextOrThrow()
-                val current = snapshotReader.readSnapshotOrThrow(context)
-                if (current.revision != expectedRevision) {
-                    failStore(SyncStoreFailure.REVISION_CONFLICT)
-                }
-                mutation(current)
-                snapshotReader.readSnapshotOrThrow(context)
+            val context = snapshotReader.readContextOrThrow()
+            val current = snapshotReader.readSnapshotOrThrow(context)
+            if (current.revision != expectedRevision) {
+                failStore(SyncStoreFailure.REVISION_CONFLICT)
             }
+            mutation(current)
+            snapshotReader.readSnapshotOrThrow(context)
         }
     }
 
@@ -177,7 +171,12 @@ internal class SqlSyncReplicaStore(
     private suspend fun <T> databaseCall(block: suspend () -> T): SyncStoreResult<T> {
         return withContext(databaseDispatcher) {
             try {
-                SyncStoreResult.Success(block())
+                SyncStoreResult.Success(
+                    database.transactionWithResult {
+                        snapshotReader.rejectInvalidPersistedBlobs()
+                        block()
+                    },
+                )
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (failure: SyncStoreException) {
@@ -192,6 +191,12 @@ internal class SqlSyncReplicaStore(
 private class SqlSnapshotReader(
     private val database: PosatoDatabase,
 ) {
+    suspend fun rejectInvalidPersistedBlobs() {
+        if (database.syncReplicaQueries.selectInvalidSyncReplicaBlob().awaitAsList().isNotEmpty()) {
+            failStore(SyncStoreFailure.CORRUPTION)
+        }
+    }
+
     suspend fun readSnapshotOrThrow(expectedContext: SyncContext): SyncReplicaSnapshot {
         val stateRows = readStateRows()
         if (stateRows.size != 1) {

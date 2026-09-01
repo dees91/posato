@@ -53,7 +53,13 @@ internal class IosSyncCryptoProvider(
     private val provider: IosCryptoProvider,
 ) : SyncCryptoProvider {
     override fun randomBytes(count: Int): ByteArray? {
-        return provider.randomBytes(count)?.toByteArray()
+        if (count < 0) {
+            return null
+        }
+
+        return provider.randomBytes(count)
+            ?.takeIf { bytes -> bytes.length == count.toULong() }
+            ?.toByteArray()
     }
 
     override fun sha256(message: ByteArray): ByteArray? {

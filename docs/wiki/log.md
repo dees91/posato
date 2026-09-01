@@ -1064,3 +1064,10 @@
 
 - Gave persisted-state and decoded-operation carriers fixed redacted default
   string representations without changing their behavior.
+
+## [2026-09-01] correction | Bound sync restore and native randomness
+
+- Preflighted every persisted sync BLOB before its contents cross the database
+  driver boundary.
+- Rejected negative and wrong-sized iOS random-byte responses before allocating
+  a Kotlin array.

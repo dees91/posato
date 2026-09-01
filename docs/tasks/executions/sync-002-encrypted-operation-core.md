@@ -209,7 +209,14 @@
   constructing the domain clock. The persisted-state carrier now uses a fixed
   redacted representation. The same correction covers the directly observed
   decoded-operation carrier, whose generated representation exposed exact
-  author sequence and HLC fields. No further hosted review is needed.
+  author sequence and HLC fields. Replica restore now preflights the type and
+  byte length of every selected BLOB in the same transaction before reading
+  any contents, so invalid retained state reports corruption without crossing
+  the SQLDelight driver boundary. The iOS cryptographic adapter now rejects
+  negative random-byte requests before calling native code and wrong-sized
+  native output before allocating a Kotlin array, preserving the established
+  nullable failure and signing-key cleanup path. No further hosted review is
+  needed.
 
 ## Verification
 
@@ -237,6 +244,7 @@
 | Cancelled local-commit reconciliation | `pass` | The focused JVM regression first exposed a stale post-commit projection, then passed after the correction. The complete JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 | Secure-random and persisted-clock corrections | `pass` | Focused JVM regressions first exposed the escaping provider exception and storage-failure mapping for both physical-clock bounds, then passed after the corrections. JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no Critical or Required findings. |
 | Persisted-state and decoded-operation redaction | `pass` | JVM bytecode inspection confirmed both generated representations exposed exact prohibited metadata before the correction and returned only fixed redacted literals afterward. Focused codec and SQL tests, JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
+| Persisted-BLOB and native-random boundaries | `pass` | A real-database matrix covers all 17 BLOB columns selected during restore, a wrong SQLite storage class, exact fixed sizes, and exact 32/64 KiB allocation limits. iOS Simulator coverage accepts only exact native random output and rejects negative, short, and long cases before copying. Focused JVM and iOS tests, ktlint, Detekt, all 116 aggregate quality tasks, and the credential-free iOS host build passed without suppressions. Independent completed-change review found no findings at any severity. Existing physical-device evidence remains applicable because Swift, CryptoKit, and the wire format did not change. |
 
 ## Blockers and accepted risks
 

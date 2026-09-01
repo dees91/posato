@@ -217,6 +217,12 @@ classifies an invalid retained value as corruption, and failed bundle-key
 derivation still clears the already encoded operation plaintext owned by
 common code.
 
+`observed` (2026-09-01): every BLOB selected during replica restore is checked
+by SQLite type and byte length before its contents cross the SQLDelight driver
+boundary. The preflight and snapshot read share one transaction, and invalid
+state, accepted, pending, staged, or terminal-expiry storage reports corruption
+without materializing the rejected value in Kotlin.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:
@@ -370,6 +376,12 @@ failure when its secure-random provider throws, allowing the synchronization
 writer to use its existing cryptographic cleanup path. Persisted physical HLC
 values below zero or above the format maximum are rejected as storage
 corruption before domain-clock construction.
+
+`observed` (2026-09-01): the iOS cryptographic adapter rejects negative random
+byte requests before invoking native code and validates the returned
+`NSData.length` before allocating a Kotlin array. Wrong-sized native output is
+therefore a nullable cryptographic failure that follows the writer's existing
+signing-key cleanup path.
 
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?

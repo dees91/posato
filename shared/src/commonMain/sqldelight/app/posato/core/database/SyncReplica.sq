@@ -50,6 +50,72 @@ selectSyncReplicaState:
 SELECT singleton, workspace_id, transport_epoch_id, key_epoch_id, revision, hlc_physical, hlc_logical, hlc_exhausted, transport_progress
 FROM sync_replica_state;
 
+selectInvalidSyncReplicaBlob:
+SELECT 1
+FROM sync_replica_state
+WHERE CASE
+  WHEN typeof(workspace_id) != 'blob' THEN 1
+  WHEN length(workspace_id) != 16 THEN 1
+  WHEN typeof(transport_epoch_id) != 'blob' THEN 1
+  WHEN length(transport_epoch_id) != 16 THEN 1
+  WHEN typeof(key_epoch_id) != 'blob' THEN 1
+  WHEN length(key_epoch_id) != 16 THEN 1
+  WHEN transport_progress IS NOT NULL AND typeof(transport_progress) != 'blob' THEN 1
+  WHEN transport_progress IS NOT NULL AND length(transport_progress) > 65536 THEN 1
+  ELSE 0
+END = 1
+UNION ALL
+SELECT 1
+FROM sync_accepted_bundle
+WHERE CASE
+  WHEN typeof(bundle_id) != 'blob' THEN 1
+  WHEN length(bundle_id) != 16 THEN 1
+  WHEN typeof(bundle_bytes) != 'blob' THEN 1
+  WHEN length(bundle_bytes) > 65536 THEN 1
+  WHEN typeof(operation_bytes) != 'blob' THEN 1
+  WHEN length(operation_bytes) > 32768 THEN 1
+  WHEN typeof(author_id) != 'blob' THEN 1
+  WHEN length(author_id) != 16 THEN 1
+  WHEN typeof(public_key) != 'blob' THEN 1
+  WHEN length(public_key) != 32 THEN 1
+  ELSE 0
+END = 1
+UNION ALL
+SELECT 1
+FROM sync_pending_bundle
+WHERE CASE
+  WHEN typeof(bundle_id) != 'blob' THEN 1
+  WHEN length(bundle_id) != 16 THEN 1
+  WHEN typeof(bundle_bytes) != 'blob' THEN 1
+  WHEN length(bundle_bytes) > 65536 THEN 1
+  ELSE 0
+END = 1
+UNION ALL
+SELECT 1
+FROM sync_staged_bundle
+WHERE CASE
+  WHEN typeof(bundle_id) != 'blob' THEN 1
+  WHEN length(bundle_id) != 16 THEN 1
+  WHEN typeof(bundle_bytes) != 'blob' THEN 1
+  WHEN length(bundle_bytes) > 65536 THEN 1
+  WHEN typeof(operation_bytes) != 'blob' THEN 1
+  WHEN length(operation_bytes) > 32768 THEN 1
+  WHEN typeof(author_id) != 'blob' THEN 1
+  WHEN length(author_id) != 16 THEN 1
+  WHEN typeof(public_key) != 'blob' THEN 1
+  WHEN length(public_key) != 32 THEN 1
+  ELSE 0
+END = 1
+UNION ALL
+SELECT 1
+FROM sync_terminal_expiry
+WHERE CASE
+  WHEN typeof(session_id) != 'blob' THEN 1
+  WHEN length(session_id) != 16 THEN 1
+  ELSE 0
+END = 1
+LIMIT 1;
+
 selectSyncReplicaResidue:
 SELECT 1
 FROM sync_accepted_bundle
