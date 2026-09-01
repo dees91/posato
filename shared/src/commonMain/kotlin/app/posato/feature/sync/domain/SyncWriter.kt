@@ -17,6 +17,7 @@ import app.posato.feature.sync.data.SyncStoreFailure
 import app.posato.feature.sync.data.SyncStoreResult
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -235,10 +236,15 @@ internal class SyncWriter internal constructor(
             }
             val prepared = localMutationPreparer.prepare(payload, reservedClocks, authoringIncarnation, checkpoint.context)
                 ?: return@withLock LocalMutationResult.Failure(freezeForPreparationFailure())
-            val committedSnapshot = commitReconciler.commitLocal(checkpoint, prepared)
+            authoringIncarnation = prepared.nextIncarnation
+            val committedSnapshot = try {
+                commitReconciler.commitLocal(checkpoint, prepared)
+            } catch (cancellation: CancellationException) {
+                freeze()
+                throw cancellation
+            }
                 ?: return@withLock LocalMutationResult.Failure(LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN).also { freeze() }
             checkpoint = committedSnapshot
-            authoringIncarnation = prepared.nextIncarnation
 
             LocalMutationResult.Success(
                 pendingBundles = prepared.bundles.map(PreparedStoredBundle::bundle),

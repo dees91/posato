@@ -69,7 +69,8 @@
   re-reviewed. The final review found no remaining actionable Critical or
   Required findings. A focused completed-change review of the writer-release
   cancellation correction also approved it with no findings; its simplicity
-  review concluded that the correction was already lean.
+  review concluded that the correction was already lean. The local-commit
+  cancellation correction received the same focused approval with no findings.
 
 ## Hosted review follow-up
 
@@ -88,7 +89,9 @@
   through its generated default string representation and through containing
   data classes. An accepted advisory pass then found that cancellation could
   leave a closed writer registered while its owner-release callback waited for
-  the core mutex.
+  the core mutex. The next required pass found that cancellation during a local
+  commit discarded prepared bytes without retiring the authoring incarnation
+  and could abandon a newly created signing key.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -110,8 +113,11 @@
   runs only owner deregistration in a non-cancellable cleanup context after
   closing its state and keys, so cancellation cannot leave the closed instance
   active. A deterministic common regression test cancels close while that
-  callback is suspended and proves it completes on JVM and iOS Simulator. No
-  further hosted review is needed.
+  callback is suspended and proves it completes on JVM and iOS Simulator. A
+  prepared local mutation now transfers its incarnation to the writer before
+  the commit can suspend; cancellation freezes the writer, closes the key, and
+  propagates unchanged instead of permitting replacement bytes for the same
+  author sequence. No further hosted review is needed.
 
 ## Verification
 
@@ -128,6 +134,8 @@
 | Bounded remote-ingress regression tests | `pass` | Exactly 64 KiB reaches normal parsing, larger input returns `OVERSIZED` before an immutable copy, and exact-refetch proof remains required before rejection advances transport progress. |
 | Synchronization timing redaction regression | `pass` | The hybrid logical clock plus local, payload, reduced-start, and effective-session timing carriers return fixed redacted strings on the JVM and iOS Simulator. |
 | Writer-release cancellation regression | `pass` | The focused test failed before the correction, then the JVM and iOS Simulator common suites proved that owner deregistration completes after close cancellation. |
+| Local-commit cancellation regression | `pass` | The focused test failed before the correction, then JVM and iOS Simulator common suites proved unchanged cancellation propagation, no synthetic durable mutation, prepared-key closure, and frozen refusal of later authoring. |
+| Post-cancellation aggregate quality | `pass` | All 113 aggregate tasks passed, including JVM and iOS Simulator tests, migration verification, Detekt, ktlint, approved-exception verification, and target compilation. |
 
 ## Blockers and accepted risks
 

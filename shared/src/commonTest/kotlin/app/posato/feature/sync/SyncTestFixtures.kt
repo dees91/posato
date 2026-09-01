@@ -57,6 +57,8 @@ internal class FakeSyncCryptoProvider(
     private val signingPublicKey: PublicSigningKey = testPublicKey,
 ) : SyncCryptoProvider {
     private var nextByte = 1
+    internal var signingKeyCloseCount = 0
+        private set
 
     override fun randomBytes(count: Int): ByteArray {
         return ByteArray(count) { nextByte++.toByte() }
@@ -102,7 +104,7 @@ internal class FakeSyncCryptoProvider(
     }
 
     override fun createSigningKey(): SyncSigningKey {
-        return FakeSyncSigningKey(signingPublicKey)
+        return FakeSyncSigningKey(signingPublicKey) { signingKeyCloseCount += 1 }
     }
 
     override fun verifyEd25519(
@@ -126,6 +128,7 @@ internal class FakeSyncCryptoProvider(
 
 private class FakeSyncSigningKey(
     override val publicKey: PublicSigningKey,
+    private val onClose: () -> Unit,
 ) : SyncSigningKey {
     private var isClosed = false
 
@@ -134,7 +137,10 @@ private class FakeSyncSigningKey(
     }
 
     override fun close() {
-        isClosed = true
+        if (!isClosed) {
+            isClosed = true
+            onClose()
+        }
     }
 }
 

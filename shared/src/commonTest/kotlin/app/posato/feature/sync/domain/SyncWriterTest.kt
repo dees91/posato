@@ -16,12 +16,14 @@ import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testOperation
 import app.posato.feature.targets.domain.ExactDomain
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -100,6 +102,27 @@ class SyncWriterTest {
         closeJob.join()
 
         assertTrue(releaseCompleted)
+    }
+
+    @Test
+    fun `given cancellation during the first local commit when retried then the prepared incarnation is retired`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(snapshot(), LocalCommitMode.CANCELLED)
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val before = store.current
+
+        assertFailsWith<CancellationException> {
+            writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)
+        }
+
+        assertEquals(before, store.current)
+        assertEquals(1, provider.signingKeyCloseCount)
+        assertEquals(
+            LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+        )
     }
 
     @Test
@@ -706,6 +729,9 @@ private class FakeSyncReplicaStore(
         clockState: DurableClockState,
     ): SyncStoreResult<SyncReplicaSnapshot> {
         localCommitAttempts += 1
+        if (localCommitMode == LocalCommitMode.CANCELLED) {
+            throw CancellationException("Synthetic local commit cancellation")
+        }
         if (localCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE && localCommitAttempts == 1) {
             return SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
         }
@@ -841,6 +867,7 @@ private class FakeSyncReplicaStore(
 
 private enum class LocalCommitMode {
     SUCCESS,
+    CANCELLED,
     AMBIGUOUS_EXACT,
     AMBIGUOUS_ABSENT_ONCE,
     AMBIGUOUS_WITH_EXTRA_STATE,

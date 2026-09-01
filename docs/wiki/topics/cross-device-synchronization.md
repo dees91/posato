@@ -177,6 +177,12 @@ context. A deterministic common test cancelled close while deregistration was
 suspended and passed on the JVM and iOS Simulator, preventing a closed writer
 from blocking every later open until process restart.
 
+`observed` (2026-09-01): a prepared local mutation transfers ownership of its
+authoring incarnation to the writer before the commit can suspend. Cancellation
+during that commit propagates unchanged after freezing the writer and closing
+the signing key, so later authoring cannot replace prepared bytes for the same
+author sequence.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:

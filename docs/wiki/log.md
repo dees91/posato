@@ -1007,3 +1007,8 @@
 
 - Completed owner deregistration after writer shutdown even when the closing
   coroutine is cancelled while release is suspended.
+
+## [2026-09-01] correction | Retire cancelled local commit attempts
+
+- Transferred prepared authoring ownership before local commit suspension and
+  froze the writer before propagating cancellation.
