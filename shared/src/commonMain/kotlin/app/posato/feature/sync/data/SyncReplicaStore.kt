@@ -5,13 +5,12 @@ import app.posato.feature.sync.domain.EncryptedBundle
 import app.posato.feature.sync.domain.HybridLogicalClock
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncContext
+import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncOperation
 
-internal class OpaqueTransportProgress(
-    bytes: ByteArray,
+internal class OpaqueTransportProgress private constructor(
+    private val bytes: ByteArray,
 ) {
-    private val bytes = bytes.copyOf()
-
     fun copyBytes(): ByteArray {
         return bytes.copyOf()
     }
@@ -26,6 +25,15 @@ internal class OpaqueTransportProgress(
 
     override fun toString(): String {
         return "OpaqueTransportProgress(redacted)"
+    }
+
+    companion object {
+        fun fromBytes(bytes: ByteArray): OpaqueTransportProgress? {
+            return bytes
+                .takeIf { value -> value.size <= SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES }
+                ?.copyOf()
+                ?.let(::OpaqueTransportProgress)
+        }
     }
 }
 

@@ -203,6 +203,12 @@ Any retained child row now reports corruption before initialization, so a
 partial restore cannot silently reset revision, HLC, or transport progress
 around surviving synchronization state.
 
+`observed` (2026-09-01): opaque transport progress is limited to 64 KiB before
+common code retains a copy. The SQL schema rejects larger values, restore
+classifies an invalid retained value as corruption, and failed bundle-key
+derivation still clears the already encoded operation plaintext owned by
+common code.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:

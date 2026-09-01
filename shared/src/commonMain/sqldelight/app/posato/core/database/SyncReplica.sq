@@ -7,7 +7,10 @@ CREATE TABLE sync_replica_state (
   hlc_physical INTEGER NOT NULL CHECK (typeof(hlc_physical) = 'integer' AND hlc_physical BETWEEN 0 AND 4102444800000),
   hlc_logical INTEGER NOT NULL CHECK (typeof(hlc_logical) = 'integer' AND hlc_logical BETWEEN 0 AND 65535),
   hlc_exhausted INTEGER NOT NULL CHECK (typeof(hlc_exhausted) = 'integer' AND hlc_exhausted IN (0, 1)),
-  transport_progress BLOB CHECK (transport_progress IS NULL OR typeof(transport_progress) = 'blob')
+  transport_progress BLOB CHECK (
+    transport_progress IS NULL OR
+    (typeof(transport_progress) = 'blob' AND length(transport_progress) <= 65536)
+  )
 );
 
 CREATE TABLE sync_accepted_bundle (

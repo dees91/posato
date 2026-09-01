@@ -196,14 +196,17 @@ internal class EncryptedBundleCodec(
         header: ByteArray?,
         plaintext: ByteArray?
     ): ByteArray? {
-        if (key == null || header == null || plaintext == null) return null
         return try {
-            cryptoProvider.sealAesGcm(key, implicitNonce, header, plaintext)
+            if (key == null || header == null || plaintext == null) {
+                null
+            } else {
+                cryptoProvider.sealAesGcm(key, implicitNonce, header, plaintext)
+            }
         } catch (_: Exception) {
             null
         } finally {
-            key.fill(0)
-            plaintext.fill(0)
+            key?.fill(0)
+            plaintext?.fill(0)
         }
     }
 

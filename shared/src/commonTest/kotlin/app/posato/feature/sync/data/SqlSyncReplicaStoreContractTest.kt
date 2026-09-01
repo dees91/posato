@@ -4,18 +4,94 @@ import app.posato.core.database.PosatoDatabase
 import app.posato.feature.sync.domain.EncryptedBundle
 import app.posato.feature.sync.domain.HybridLogicalClock
 import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testOperation
+import app.posato.feature.sync.testTransportProgress
 import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFails
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 
 class SqlSyncReplicaStoreContractTest {
+    @Test
+    fun `given bounded and oversized transport progress when wrapped then only the bounded bytes are retained`() {
+        val source = ByteArray(SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES)
+        val progress = assertNotNull(OpaqueTransportProgress.fromBytes(source))
+
+        source[0] = 1
+
+        assertEquals(0, progress.copyBytes()[0])
+        assertNull(
+            OpaqueTransportProgress.fromBytes(
+                ByteArray(SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES + 1),
+            ),
+        )
+    }
+
+    @Test
+    fun `given bounded progress when committed then an oversized direct write is rejected and bounded state remains`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-progress-limit.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+            val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+            val progress = assertNotNull(
+                OpaqueTransportProgress.fromBytes(ByteArray(SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES)),
+            )
+            val committed = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitTransportProgress(initial.revision, progress),
+            ).value
+
+            assertFails {
+                driver.execute(
+                    identifier = null,
+                    sql = "UPDATE sync_replica_state SET transport_progress = zeroblob(65537) WHERE singleton = 1",
+                    parameters = 0,
+                )
+            }
+
+            assertEquals(committed, assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given oversized persisted transport progress when read then corruption is reported`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-progress-corruption.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+            database.transaction {
+                driver.execute(null, "PRAGMA ignore_check_constraints = ON", 0)
+                driver.execute(
+                    identifier = null,
+                    sql = "UPDATE sync_replica_state SET transport_progress = zeroblob(65537) WHERE singleton = 1",
+                    parameters = 0,
+                )
+                driver.execute(null, "PRAGMA ignore_check_constraints = OFF", 0)
+            }
+
+            val result = store.read(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
     @Test
     fun `given local state when committed and reopened then exact accepted pending clock and expiry facts persist`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("sync-lifecycle.db")
@@ -34,7 +110,7 @@ class SqlSyncReplicaStoreContractTest {
                 ),
             ).value
             val staged = prepared(3, 2, SyncOperationPayload.ApplicationPolicyAbsent)
-            val progress = OpaqueTransportProgress(byteArrayOf(7, 8, 9))
+            val progress = testTransportProgress(7, 8, 9)
             val withStaged = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
                 store.commitStagedRemote(committed.revision, staged, committed.clockState, progress),
             ).value
@@ -120,7 +196,7 @@ class SqlSyncReplicaStoreContractTest {
         try {
             val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
             val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
-            val priorProgress = OpaqueTransportProgress(byteArrayOf(1))
+            val priorProgress = testTransportProgress(1)
             val withProgress = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
                 store.commitTransportProgress(initial.revision, priorProgress),
             ).value
@@ -142,7 +218,7 @@ class SqlSyncReplicaStoreContractTest {
                 bundles = listOf(prepared(1, 1, SyncOperationPayload.AuthorRegister)),
                 stagedBundleIdsToDelete = emptySet(),
                 clockState = DurableClockState(HybridLogicalClock(1, 0), false),
-                transportProgress = OpaqueTransportProgress(byteArrayOf(2)),
+                transportProgress = testTransportProgress(2),
             )
             val after = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value
 

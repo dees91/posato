@@ -34,6 +34,8 @@
   rejection, and deferred-capacity semantics, while leaving CloudKit cursor and
   engine-state ownership with `SYNC-010`. Independent re-review approved the
   corrected plan with no unresolved Critical or Required findings.
+  The later bounded-progress and plaintext-cleanup correction also received an
+  independent high-risk plan review with no Critical or Required findings.
 
 ## Result
 
@@ -80,6 +82,9 @@
   simplicity review found the single guarded cleanup read already lean.
   The orphaned-row and local-mutation-result corrections received focused
   approval with no findings; the simplicity review found them already lean.
+  The bounded-progress and plaintext-cleanup corrections received focused
+  approval with no Critical, Required, Recommended, or Optional findings; the
+  simplicity review found the final change already lean.
 
 ## Hosted review follow-up
 
@@ -115,7 +120,10 @@
   rollback. The latest pass found that a missing replica-state row could be
   recreated around retained accepted, pending, staged, or expiry records, and
   that successful local-mutation results exposed pending-bundle cardinality
-  through their generated default string.
+  through their generated default string. Two further required findings found
+  that opaque transport progress was copied and stored without an explicit
+  size limit, and that an HKDF failure left the already encoded operation
+  plaintext outside the existing cleanup block.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -156,7 +164,12 @@
   Replica initialization now proceeds only when every child sync table is
   empty; otherwise missing singleton state reports corruption without changing
   retained rows. Successful local-mutation results now use one fixed redacted
-  default string without changing their fields or domain behavior.
+  default string without changing their fields or domain behavior. Opaque
+  transport progress now rejects more than 64 KiB before copying, the current
+  schema and migration reject oversized persistence, and restore reports
+  invalid retained bytes as corruption. Bundle sealing now runs nullable
+  prerequisites inside its cleanup block, so an HKDF failure still clears the
+  owned plaintext buffer.
   No further hosted review is needed.
 
 ## Verification
@@ -180,6 +193,7 @@
 | Replica redaction and rejected-key correction | `pass` | Three focused JVM regressions failed before the correction and passed after it. The complete JVM and iOS Simulator suites passed in 32 executed tasks, followed by the aggregate quality gate with every task rerun from a clean build. |
 | Cancelled remote-commit reconciliation | `pass` | Three focused JVM regressions failed before their corresponding corrections, including an exceptional reconciliation read. The complete cancellation class then passed, followed by all 32 JVM and iOS Simulator tasks and all 113 aggregate quality tasks after the final correction. |
 | Orphaned-state and result-redaction corrections | `pass` | Both focused JVM regressions failed before implementation and passed afterward. Valid accepted-only, staged-only, and expiry-only residue is rejected when singleton state is missing; successful local-mutation output no longer exposes pending cardinality. All 32 JVM and iOS Simulator tasks passed before the aggregate quality gate. |
+| Bounded progress and plaintext cleanup | `pass` | Focused JVM regressions demonstrated the missing application and SQL limits before implementation. The corrected JVM and iOS Simulator suites passed in 32 executed tasks; ktlint and Detekt passed without suppressions; all 113 aggregate quality tasks then passed. Independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

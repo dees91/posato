@@ -1,5 +1,6 @@
 package app.posato.feature.sync
 
+import app.posato.feature.sync.data.OpaqueTransportProgress
 import app.posato.feature.sync.data.SyncCryptoProvider
 import app.posato.feature.sync.data.SyncSigningKey
 import app.posato.feature.sync.domain.AuthorId
@@ -34,6 +35,10 @@ internal val testContext = SyncContext(
 )
 
 internal val testPublicKey = checkNotNull(PublicSigningKey.fromBytes(ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES) { 7 }))
+
+internal fun testTransportProgress(vararg bytes: Byte): OpaqueTransportProgress {
+    return checkNotNull(OpaqueTransportProgress.fromBytes(bytes))
+}
 
 internal fun testOperation(
     id: Int,

@@ -230,7 +230,9 @@ private class SqlSnapshotReader(
                     context = context,
                     revision = revision,
                     clockState = DurableClockState(HybridLogicalClock(physical, logical.toInt()), exhausted == 1L),
-                    transportProgress = progress?.let(::OpaqueTransportProgress),
+                    transportProgress = progress?.let { bytes ->
+                        OpaqueTransportProgress.fromBytes(bytes) ?: failStore(SyncStoreFailure.CORRUPTION)
+                    },
                 )
             }
             .awaitAsList()

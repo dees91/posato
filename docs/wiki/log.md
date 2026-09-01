@@ -1036,3 +1036,10 @@
   missing instead of initializing around a partial persistence footprint.
 - Redacted successful local-mutation result strings without changing their
   fields or behavior.
+
+## [2026-09-01] correction | Bound sync progress and plaintext lifetime
+
+- Rejected opaque transport progress above 64 KiB before copying, persistence,
+  or restore into valid replica state.
+- Cleared owned operation plaintext when bundle-key derivation fails before
+  sealing.

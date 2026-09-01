@@ -6,6 +6,7 @@ import kotlin.jvm.JvmInline
 
 internal object SyncFormatLimits {
     const val COMPLETE_BUNDLE_BYTES: Int = 65_536
+    const val MAX_TRANSPORT_PROGRESS_BYTES: Int = 65_536
     const val HEADER_BYTES: Int = 108
     const val PLAINTEXT_BYTES: Int = 32_768
     const val IDENTIFIER_BYTES: Int = 16
