@@ -679,6 +679,43 @@ class SyncWriterTest {
     }
 
     @Test
+    fun `given terminal expiry references a sequence-gapped session start when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val sessionId = SessionId(testIdentifier(97))
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(33, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(34, 3, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+            ),
+        ).copy(terminalExpiryFacts = setOf(sessionId))
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given terminal expiry references conflicting applicable session starts when reopened then it succeeds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val sessionId = SessionId(testIdentifier(98))
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(35, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(36, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+                testOperation(37, 3, SyncOperationPayload.SessionStart(sessionId, 100, 250)),
+            ),
+        ).copy(terminalExpiryFacts = setOf(sessionId))
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertIs<OpenSyncWriterResult.Success>(result)
+    }
+
+    @Test
     fun `given an accepted author changes signing key when reopened then corruption is returned`() = runTest {
         val provider = FakeSyncCryptoProvider()
         val changedKey = checkNotNull(PublicSigningKey.fromBytes(ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES) { 8 }))

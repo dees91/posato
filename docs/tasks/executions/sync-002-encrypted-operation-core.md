@@ -42,6 +42,10 @@
   The cancelled local-commit reconciliation correction also received plan
   approval with no findings at any severity; its simplicity review selected
   the existing exact cancellation-reconciliation boundary.
+  The sequence-gap expiry correction received independent plan approval after
+  preserving the authenticated-restore order and adding an explicit positive
+  regression for conflicted applicable starts. Its simplicity review selected
+  one shared non-gap helper and no broader abstraction.
 
 ## Result
 
@@ -105,6 +109,9 @@
   The persisted-state and decoded-operation redaction correction received an
   independent plan review and completed-change review with no findings at any
   severity; its simplicity review found the change already lean.
+  The sequence-gap expiry correction received focused completed-change approval
+  with no findings at any severity; its simplicity review found the shared
+  non-gap helper already lean.
 
 ## Hosted review follow-up
 
@@ -151,6 +158,9 @@
   checkpoint, projection, and pending bundles at their pre-commit values.
   The latest required finding found that the private persisted-state carrier
   exposed the exact replica revision through its generated default string.
+  The latest required finding found that reopen accepted a terminal-expiry fact
+  referencing only a session start behind an author-sequence gap, even though
+  live marker creation rejected the same impossible state.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -215,8 +225,11 @@
   the SQLDelight driver boundary. The iOS cryptographic adapter now rejects
   negative random-byte requests before calling native code and wrong-sized
   native output before allocating a Kotlin array, preserving the established
-  nullable failure and signing-key cleanup path. No further hosted review is
-  needed.
+  nullable failure and signing-key cleanup path. Reopen now validates terminal-
+  expiry facts against retained session starts whose derived audit outcome is
+  not `SEQUENCE_GAP`, using the same rule as live marker creation. This rejects
+  impossible gapped markers without invalidating markers retained through a
+  derived session conflict. No further hosted review is needed.
 
 ## Verification
 
@@ -245,6 +258,7 @@
 | Secure-random and persisted-clock corrections | `pass` | Focused JVM regressions first exposed the escaping provider exception and storage-failure mapping for both physical-clock bounds, then passed after the corrections. JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no Critical or Required findings. |
 | Persisted-state and decoded-operation redaction | `pass` | JVM bytecode inspection confirmed both generated representations exposed exact prohibited metadata before the correction and returned only fixed redacted literals afterward. Focused codec and SQL tests, JVM and iOS Simulator suites, ktlint, Detekt, and all 113 aggregate quality tasks passed without suppressions. Independent completed-change review found no findings at any severity. |
 | Persisted-BLOB and native-random boundaries | `pass` | A real-database matrix covers all 17 BLOB columns selected during restore, a wrong SQLite storage class, exact fixed sizes, and exact 32/64 KiB allocation limits. iOS Simulator coverage accepts only exact native random output and rejects negative, short, and long cases before copying. Focused JVM and iOS tests, ktlint, Detekt, all 116 aggregate quality tasks, and the credential-free iOS host build passed without suppressions. Independent completed-change review found no findings at any severity. Existing physical-device evidence remains applicable because Swift, CryptoKit, and the wire format did not change. |
+| Sequence-gap expiry validation | `pass` | The focused JVM regression failed before the correction and passed afterward. Reopen rejects a marker backed only by a gapped start, preserves legal gaps without a marker, and accepts a marker backed by conflicting but applicable starts. All 113 aggregate quality tasks passed, including JVM and iOS Simulator tests, ktlint, Detekt, approved-exception verification, and target compilation without suppressions. |
 
 ## Blockers and accepted risks
 

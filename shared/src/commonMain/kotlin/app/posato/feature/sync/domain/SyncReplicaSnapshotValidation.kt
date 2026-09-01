@@ -12,9 +12,6 @@ internal fun SyncReplicaSnapshot.isAuthenticatedBy(
     transportKey: TransportKey,
 ): Boolean {
     val terminalClock = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
-    val retainedSessionIds = acceptedBundles.values.mapNotNullTo(mutableSetOf()) { stored ->
-        (stored.operation.payload as? SyncOperationPayload.SessionStart)?.sessionId
-    }
     val codec = EncryptedBundleCodec(cryptoProvider)
 
     return (clockState.last == terminalClock) == clockState.isExhausted &&
@@ -22,7 +19,19 @@ internal fun SyncReplicaSnapshot.isAuthenticatedBy(
         acceptedBundles.values.haveValidAuthorHistories() &&
         hasValidStagingState() &&
         stagedBundlesAreValid(codec, transportKey) &&
-        terminalExpiryFacts.all(retainedSessionIds::contains)
+        hasValidTerminalExpiryFacts()
+}
+
+internal fun SyncReplicaSnapshot.retainedNonGapSessionIds(projection: SyncProjection): Set<SessionId> {
+    val nonGapOperationIds = projection.audit
+        .filterNot { entry -> entry.outcome == SyncAuditOutcome.SEQUENCE_GAP }
+        .mapTo(mutableSetOf(), SyncAuditEntry::operationId)
+
+    return acceptedBundles.values.mapNotNullTo(mutableSetOf()) { stored ->
+        (stored.operation.payload as? SyncOperationPayload.SessionStart)
+            ?.takeIf { stored.operation.operationId in nonGapOperationIds }
+            ?.sessionId
+    }
 }
 
 private fun SyncReplicaSnapshot.acceptedBundlesAreValid(
@@ -66,6 +75,13 @@ private fun SyncReplicaSnapshot.hasValidStagingState(): Boolean {
             operations.size <= SyncFormatLimits.MAX_UNKNOWN_AUTHOR_BUNDLES &&
                 sequences.distinct().size == sequences.size
         }
+}
+
+private fun SyncReplicaSnapshot.hasValidTerminalExpiryFacts(): Boolean {
+    val projection = SyncReducer.reduce(acceptedBundles.values.map(StoredAcceptedBundle::operation))
+    val retainedSessionIds = retainedNonGapSessionIds(projection)
+
+    return terminalExpiryFacts.all(retainedSessionIds::contains)
 }
 
 private fun Collection<StoredAcceptedBundle>.haveValidAuthorHistories(): Boolean {

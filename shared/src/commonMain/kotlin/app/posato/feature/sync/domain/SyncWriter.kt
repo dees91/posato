@@ -324,13 +324,7 @@ internal class SyncWriter internal constructor(
                 return@withLock false
             }
             val projection = projection()
-            val applicableOperationIds = projection.audit
-                .filterNot { entry -> entry.outcome == SyncAuditOutcome.SEQUENCE_GAP }
-                .mapTo(mutableSetOf(), SyncAuditEntry::operationId)
-            val retainsSessionStart = checkpoint.acceptedBundles.values.any { stored ->
-                stored.operation.operationId in applicableOperationIds &&
-                    (stored.operation.payload as? SyncOperationPayload.SessionStart)?.sessionId == sessionId
-            }
+            val retainsSessionStart = sessionId in checkpoint.retainedNonGapSessionIds(projection)
             if (!retainsSessionStart) {
                 return@withLock false
             }

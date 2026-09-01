@@ -223,6 +223,12 @@ boundary. The preflight and snapshot read share one transaction, and invalid
 state, accepted, pending, staged, or terminal-expiry storage reports corruption
 without materializing the rejected value in Kotlin.
 
+`observed` (2026-09-01): authenticated reopen accepts a terminal local expiry
+fact only when the retained history contains a currently applicable session
+start for that encrypted identifier. A start behind an author-sequence gap does
+not qualify, while a conflicting but applicable start continues to retain an
+existing marker so reordering or conflict cannot revive the session.
+
 ## Transport contract
 
 The platform-neutral mailbox contract can remain small:

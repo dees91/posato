@@ -1071,3 +1071,8 @@
   driver boundary.
 - Rejected negative and wrong-sized iOS random-byte responses before allocating
   a Kotlin array.
+
+## [2026-09-01] correction | Reject impossible sync expiry markers
+
+- Rejected terminal-expiry facts backed only by sequence-gapped session starts
+  while preserving markers retained through applicable session conflicts.
