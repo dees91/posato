@@ -227,6 +227,9 @@ the singleton, but the same preflight also rejects a replaced untrusted table
 before its values reach typed restore. The preflight and snapshot read share one
 transaction, and invalid state, accepted, pending, staged, or terminal-expiry
 storage reports corruption without materializing the rejected value in Kotlin.
+The preflight also rejects duplicate accepted or staged bundle identifiers
+before typed rows or bundle payloads are materialized, so map construction
+cannot silently discard a retained row from a replaced untrusted table.
 
 `observed` (2026-09-01): authenticated reopen accepts a terminal local expiry
 fact only when the retained history contains a currently applicable session

@@ -1105,3 +1105,8 @@
   after replacement of the untrusted state table.
 - Replaced JDK and iOS signing-key wrapper identities with fixed redacted
   representations.
+
+## [2026-09-01] correction | Reject duplicate persisted sync bundles
+
+- Rejected duplicate accepted or staged bundle identifiers before typed replica
+  restore can collapse retained rows into maps.

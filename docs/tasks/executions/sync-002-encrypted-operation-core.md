@@ -65,6 +65,10 @@
   behavior cannot obscure the restored-file boundary. The corrected plan uses
   one SQL preflight branch and two platform-specific redacted strings without a
   schema attestation layer or shared wrapper abstraction.
+  The duplicate persisted-bundle correction received independent plan approval
+  with no Critical or Required findings. Its simplicity review selected two
+  native SQL grouping checks in the existing preflight and no Kotlin helper,
+  schema attestation, or broader duplicate policy.
 
 ## Result
 
@@ -147,7 +151,11 @@
   focused completed-change approval with no Critical or Required findings. The
   reviewer recommended adding its verification evidence to this record; that
   bookkeeping correction is included below. Its simplicity review found the
-  implementation already lean.
+  implementation already lean. The duplicate persisted-bundle correction
+  received focused completed-change approval with no Critical or Required
+  findings. The reviewer recommended recording its verification evidence;
+  that bookkeeping correction is included below. Its simplicity review found
+  the two preflight branches and one table-driven regression already lean.
 
 ## Hosted review follow-up
 
@@ -206,7 +214,10 @@
   the generated successful-open result representation. The latest two required
   findings found that a replaced untrusted state table could let SQLDelight
   coerce a text singleton before validation, and that the platform signing-key
-  wrappers still exposed dynamic per-instance object identities.
+  wrappers still exposed dynamic per-instance object identities. The latest
+  required finding found that replaced accepted or staged tables could retain
+  duplicate bundle identifiers that map construction silently collapsed after
+  restore validation.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -296,7 +307,10 @@
   restore now also rejects a non-integer singleton before typed materialization,
   including after an untrusted table replacement. JDK and iOS signing-key
   wrappers now return fixed redacted strings while retaining their existing
-  ownership and close behavior. No further hosted review is needed.
+  ownership and close behavior. Replica restore now rejects duplicate accepted
+  or staged bundle identifiers in the same SQL preflight before typed rows or
+  bundle payloads are materialized, so map construction cannot discard a
+  retained row. No further hosted review is needed.
 
 ## Verification
 
@@ -331,6 +345,7 @@
 | Persisted-integer and native-result validation | `pass` | A real-SQLite matrix first reproduced coercion of malformed text in all eight selected integer fields, then passed with same-transaction storage-class preflight. An unreadable 65-byte `NSData` sentinel first reproduced an attempted copy and then proved that SHA-256, HMAC-SHA256, AES-GCM, and signature output is rejected before payload access. All 113 quality tasks, the credential-free iOS Simulator host build, and all six CryptoKit XTests passed without suppressions. |
 | Writer-identity redaction | `pass` | The focused JVM regression first observed the inherited per-instance writer representation, then proved exact fixed strings for both the writer and successful-open wrapper. Complete JVM and iOS Simulator suites and all 113 quality tasks passed without suppressions. Detekt's function-count and cyclomatic-complexity findings were resolved in the source by expressing the pending-bundle accessor as a property while retaining the focused preparation-failure helper. |
 | Singleton storage and signing-key redaction | `pass` | Focused JVM and iOS regressions first exposed the missing singleton preflight and dynamic wrapper identities, then passed after the correction. All 32 JVM and iOS Simulator tasks and all 113 quality tasks passed without suppressions. Independent completed-change review found no Critical or Required findings; its Recommended evidence-record correction is included here. |
+| Duplicate persisted-bundle rejection | `pass` | The focused real-SQLite JVM regression first showed that duplicate accepted or staged bundle identifiers passed preflight, then proved exact preflight rejection and `CORRUPTION` after reopening with a fresh driver. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no Critical or Required findings. |
 
 ## Blockers and accepted risks
 

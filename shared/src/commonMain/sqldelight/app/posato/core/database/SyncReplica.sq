@@ -90,6 +90,11 @@ WHERE CASE
 END = 1
 UNION ALL
 SELECT 1
+FROM sync_accepted_bundle
+GROUP BY bundle_id
+HAVING count(*) > 1
+UNION ALL
+SELECT 1
 FROM sync_pending_bundle
 WHERE CASE
   WHEN typeof(bundle_id) != 'blob' THEN 1
@@ -115,6 +120,11 @@ WHERE CASE
   WHEN length(public_key) != 32 THEN 1
   ELSE 0
 END = 1
+UNION ALL
+SELECT 1
+FROM sync_staged_bundle
+GROUP BY bundle_id
+HAVING count(*) > 1
 UNION ALL
 SELECT 1
 FROM sync_terminal_expiry

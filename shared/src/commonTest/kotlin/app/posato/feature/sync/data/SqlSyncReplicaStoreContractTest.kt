@@ -283,6 +283,49 @@ class SqlSyncReplicaStoreContractTest {
     }
 
     @Test
+    fun `given duplicate persisted bundle identifiers when reopened then corruption is reported`() = runTest {
+        listOf(
+            "accepted" to "sync_accepted_bundle",
+            "staged" to "sync_staged_bundle",
+        ).forEachIndexed { index, (name, table) ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-duplicate-$index.db")
+            var driver = testDatabase.openDriver()
+            try {
+                val database = PosatoDatabase(driver)
+                populateReplica(SqlSyncReplicaStore(database, Dispatchers.Default))
+                driver.execute(null, "PRAGMA foreign_keys = OFF", 0)
+                database.transaction {
+                    driver.execute(null, "CREATE TABLE tampered_$table AS SELECT * FROM $table", 0)
+                    driver.execute(null, "INSERT INTO tampered_$table SELECT * FROM $table", 0)
+                    driver.execute(null, "DROP TABLE $table", 0)
+                    driver.execute(null, "ALTER TABLE tampered_$table RENAME TO $table", 0)
+                }
+
+                driver.close()
+                driver = testDatabase.openDriver()
+                val reopenedDatabase = PosatoDatabase(driver)
+                val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+                assertEquals(
+                    listOf(1L),
+                    reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList(),
+                    name,
+                )
+                val result = reopenedStore.open(testContext)
+
+                assertEquals(
+                    SyncStoreFailure.CORRUPTION,
+                    assertIs<SyncStoreResult.Failure>(result).reason,
+                    name,
+                )
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+
+    @Test
     fun `given a missing state row with retained replica records when reopened then corruption is reported`() = runTest {
         data class ResidueCase(
             val name: String,
