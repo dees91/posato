@@ -15,6 +15,20 @@ import kotlin.test.assertNull
 
 class IosSyncCryptoProviderTest {
     @Test
+    fun `given a signing key when represented then its identity is redacted`() {
+        val nativeSigningKey = FakeIosSigningKey(ByteArray(32).toNSData())
+        val signingKey = assertNotNull(
+            IosSyncCryptoProvider(FakeIosCryptoProvider(signingKey = nativeSigningKey)).createSigningKey(),
+        )
+        try {
+            assertEquals("IosSyncSigningKey(redacted)", signingKey.toString())
+        } finally {
+            signingKey.close()
+        }
+        assertEquals(1, nativeSigningKey.closeCount)
+    }
+
+    @Test
     fun `given native random output when adapted then only the requested length succeeds`() {
         val provider = FakeIosCryptoProvider(randomBytes = ByteArray(1).toNSData())
         assertNull(IosSyncCryptoProvider(provider).randomBytes(-1))

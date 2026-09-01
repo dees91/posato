@@ -59,6 +59,12 @@
   The writer-identity redaction correction received independent plan approval
   with one exact common regression. Its simplicity review selected one root
   `SyncWriter` representation and no duplicate wrapper override.
+  The singleton storage-class and signing-key wrapper correction received an
+  independent plan review. Its Required finding moved the tampered-table
+  regression to a fresh driver, database, and store so prepared-statement cache
+  behavior cannot obscure the restored-file boundary. The corrected plan uses
+  one SQL preflight branch and two platform-specific redacted strings without a
+  schema attestation layer or shared wrapper abstraction.
 
 ## Result
 
@@ -137,6 +143,11 @@
   The writer-identity redaction correction received focused approval with no
   findings at any severity. Its simplicity review found the single root
   representation and read-only pending-bundle property already lean.
+  The singleton storage-class and signing-key wrapper correction received
+  focused completed-change approval with no Critical or Required findings. The
+  reviewer recommended adding its verification evidence to this record; that
+  bookkeeping correction is included below. Its simplicity review found the
+  implementation already lean.
 
 ## Hosted review follow-up
 
@@ -192,7 +203,10 @@
   keys were copied before their exact result lengths were validated.
   The latest required finding found that the default `SyncWriter` identity hash
   supplied a prohibited per-instance correlation identifier, including through
-  the generated successful-open result representation.
+  the generated successful-open result representation. The latest two required
+  findings found that a replaced untrusted state table could let SQLDelight
+  coerce a text singleton before validation, and that the platform signing-key
+  wrappers still exposed dynamic per-instance object identities.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -269,16 +283,20 @@
   validated key to the wrapper. The maintainer accepted the follow-up advisory
   that this validation occurred only after copying the native payload. The
   adapter now checks the exact public-key length before reading its bytes, so
-  malformed output cannot trigger a size-derived Kotlin allocation. No further
-  hosted review is needed. Replica restore now preflights the SQLite storage
-  class of every selected integer in the same transaction before SQLDelight
-  materializes it. The iOS adapter now validates the exact expected size of
+  malformed output cannot trigger a size-derived Kotlin allocation. Replica
+  restore now preflights the SQLite storage class of every selected integer in
+  the same transaction before SQLDelight materializes it. The iOS adapter now
+  validates the exact expected size of
   random, SHA-256, HMAC-SHA256, AES-GCM, public-key, and signature results before
   allocating or reading their native payloads.
   `SyncWriter` now returns one fixed redacted default string, which also makes
   the generated successful-open result representation stable and non-
   correlating. The existing pending-bundle accessor is now a property so this
-  required representation does not weaken the class-complexity gate.
+  required representation does not weaken the class-complexity gate. Replica
+  restore now also rejects a non-integer singleton before typed materialization,
+  including after an untrusted table replacement. JDK and iOS signing-key
+  wrappers now return fixed redacted strings while retaining their existing
+  ownership and close behavior. No further hosted review is needed.
 
 ## Verification
 
@@ -312,6 +330,7 @@
 | Pre-copy native signing-key validation | `pass` | An iOS `NSData` sentinel that reports 33 bytes and fails on payload access first reproduced the invalid read, then passed when the adapter rejected its length without touching its bytes and closed the signing handle once. The complete iOS Simulator suite, all 113 quality tasks, and the credential-free iOS host build passed without suppressions. |
 | Persisted-integer and native-result validation | `pass` | A real-SQLite matrix first reproduced coercion of malformed text in all eight selected integer fields, then passed with same-transaction storage-class preflight. An unreadable 65-byte `NSData` sentinel first reproduced an attempted copy and then proved that SHA-256, HMAC-SHA256, AES-GCM, and signature output is rejected before payload access. All 113 quality tasks, the credential-free iOS Simulator host build, and all six CryptoKit XTests passed without suppressions. |
 | Writer-identity redaction | `pass` | The focused JVM regression first observed the inherited per-instance writer representation, then proved exact fixed strings for both the writer and successful-open wrapper. Complete JVM and iOS Simulator suites and all 113 quality tasks passed without suppressions. Detekt's function-count and cyclomatic-complexity findings were resolved in the source by expressing the pending-bundle accessor as a property while retaining the focused preparation-failure helper. |
+| Singleton storage and signing-key redaction | `pass` | Focused JVM and iOS regressions first exposed the missing singleton preflight and dynamic wrapper identities, then passed after the correction. All 32 JVM and iOS Simulator tasks and all 113 quality tasks passed without suppressions. Independent completed-change review found no Critical or Required findings; its Recommended evidence-record correction is included here. |
 
 ## Blockers and accepted risks
 

@@ -54,6 +54,7 @@ selectInvalidSyncReplicaStorage:
 SELECT 1
 FROM sync_replica_state
 WHERE CASE
+  WHEN typeof(singleton) != 'integer' THEN 1
   WHEN typeof(revision) != 'integer' THEN 1
   WHEN typeof(hlc_physical) != 'integer' THEN 1
   WHEN typeof(hlc_logical) != 'integer' THEN 1

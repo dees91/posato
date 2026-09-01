@@ -126,6 +126,10 @@ private class JdkSyncSigningKey(
     override fun close() {
         privateKey = null
     }
+
+    override fun toString(): String {
+        return "JdkSyncSigningKey(redacted)"
+    }
 }
 
 private fun EdECPublicKey.toRawBytes(): ByteArray {

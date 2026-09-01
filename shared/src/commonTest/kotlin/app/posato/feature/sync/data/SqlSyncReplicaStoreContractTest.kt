@@ -238,6 +238,51 @@ class SqlSyncReplicaStoreContractTest {
     }
 
     @Test
+    fun `given a text singleton in a replaced state table when reopened then corruption is reported`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-text-singleton.db")
+        var driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            populateReplica(SqlSyncReplicaStore(database, Dispatchers.Default))
+            database.transaction {
+                driver.execute(
+                    identifier = null,
+                    sql =
+                        """
+                        CREATE TABLE tampered_sync_replica_state AS
+                        SELECT '1x' AS singleton,
+                               workspace_id,
+                               transport_epoch_id,
+                               key_epoch_id,
+                               revision,
+                               hlc_physical,
+                               hlc_logical,
+                               hlc_exhausted,
+                               transport_progress
+                        FROM sync_replica_state
+                        """.trimIndent(),
+                    parameters = 0,
+                )
+                driver.execute(null, "DROP TABLE sync_replica_state", 0)
+                driver.execute(null, "ALTER TABLE tampered_sync_replica_state RENAME TO sync_replica_state", 0)
+            }
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            val reopenedDatabase = PosatoDatabase(driver)
+            val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+            assertEquals(listOf(1L), reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            val result = reopenedStore.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
     fun `given a missing state row with retained replica records when reopened then corruption is reported`() = runTest {
         data class ResidueCase(
             val name: String,

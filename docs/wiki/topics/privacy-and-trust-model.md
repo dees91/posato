@@ -282,6 +282,11 @@ default string rather than the platform's per-instance identity representation.
 The generated successful-open result therefore also contains no dynamic
 correlation identifier, without changing writer ownership or lifecycle.
 
+`observed` (2026-09-01): the JDK and iOS `SYNC-002` signing-key wrappers use
+fixed redacted default strings rather than platform object identities. Their
+representations expose neither a dynamic correlation identifier nor key
+material, without changing signing or key ownership.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the

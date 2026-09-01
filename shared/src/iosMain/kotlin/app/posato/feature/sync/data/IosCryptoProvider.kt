@@ -133,6 +133,10 @@ private class IosSyncSigningKey(
     override fun close() {
         signingKey.close()
     }
+
+    override fun toString(): String {
+        return "IosSyncSigningKey(redacted)"
+    }
 }
 
 @OptIn(BetaInteropApi::class)

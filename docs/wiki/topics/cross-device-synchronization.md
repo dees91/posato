@@ -219,12 +219,14 @@ common code.
 
 `observed` (2026-09-01): every selected persisted value whose representation is
 part of the sync contract is checked before it crosses the SQLDelight driver
-boundary. BLOBs are checked by SQLite type and byte length, and all eight
-materialized integer fields are checked for physical integer storage so SQLite
-cannot silently coerce malformed text. The preflight and snapshot read share
-one transaction, and invalid state, accepted, pending, staged, or terminal-
-expiry storage reports corruption without materializing the rejected value in
-Kotlin.
+boundary. BLOBs are checked by SQLite type and byte length, and all nine
+materialized integer fields, including the replica-state singleton, are checked
+for physical integer storage so SQLite cannot silently coerce malformed text.
+The accepted schema's integer primary key prevents an ordinary text update to
+the singleton, but the same preflight also rejects a replaced untrusted table
+before its values reach typed restore. The preflight and snapshot read share one
+transaction, and invalid state, accepted, pending, staged, or terminal-expiry
+storage reports corruption without materializing the rejected value in Kotlin.
 
 `observed` (2026-09-01): authenticated reopen accepts a terminal local expiry
 fact only when the retained history contains a currently applicable session

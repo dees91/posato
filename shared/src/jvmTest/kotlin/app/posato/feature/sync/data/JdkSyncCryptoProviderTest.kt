@@ -25,6 +25,16 @@ import kotlin.test.assertNull
 
 class JdkSyncCryptoProviderTest {
     @Test
+    fun `given a signing key when represented then its identity is redacted`() {
+        val signingKey = checkNotNull(JdkSyncCryptoProvider().createSigningKey())
+        try {
+            assertEquals("JdkSyncSigningKey(redacted)", signingKey.toString())
+        } finally {
+            signingKey.close()
+        }
+    }
+
+    @Test
     fun `given a secure random provider failure when generating bytes then null is returned`() {
         val secureRandom = object : SecureRandom() {
             override fun nextBytes(bytes: ByteArray) {

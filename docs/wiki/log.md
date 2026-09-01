@@ -1098,3 +1098,10 @@
 
 - Replaced the active writer's dynamic per-instance default representation with
   one fixed redacted string, including through successful-open results.
+
+## [2026-09-01] correction | Validate sync singleton and signing keys
+
+- Rejected non-integer singleton storage before typed replica restore, including
+  after replacement of the untrusted state table.
+- Replaced JDK and iOS signing-key wrapper identities with fixed redacted
+  representations.
