@@ -137,7 +137,7 @@ tasks.register("quality") {
     dependsOn(
         "ktlintCheck",
         ":desktopApp:createDistributable",
-        ":desktopApp:verifyMacOsHelperPackaging",
+        ":desktopApp:verifyMacOsDevelopmentPackaging",
         ":desktopApp:detekt",
         ":desktopApp:ktlintCheck",
         ":desktopApp:test",

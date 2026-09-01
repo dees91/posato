@@ -149,6 +149,31 @@ release signing, notarization, or distribution readiness. The preserved PoC
 independently carried the same module requirement for its JDBC-backed desktop
 package.
 
+`observed` (2026-09-01): MACOS-006 replaced permissive outer-bundle signing
+with an inside-out arm64 package boundary. Both Apple Development and ad-hoc
+packaging sign the SQLite JDBC native library inside its JAR, every runtime
+Mach-O file and runtime bundle, loose application Mach-O code, daemon, helper,
+and outer application. Verification enumerates that same surface rather than
+assuming `codesign --deep` can inspect native code stored inside an archive.
+
+The Apple Development artifact requires one Apple Development authority and
+one nonempty Team ID throughout. Its application and launcher carry only
+`com.apple.security.cs.allow-jit`; nested code carries no entitlement. The
+credential-free artifact remains teamless and authority-free, with the three
+Compose JVM development entitlements confined to its application and launcher.
+Strict verification and isolated SQLite-backed launch passed from both mounted
+DMGs on the supported Apple silicon Mac.
+
+`observed`: JPackage changed nested signed executables when it converted the
+verified application image into a DMG, invalidating the helper resource seal.
+The Gradle package task therefore uses Compose's native macOS DMG task with a
+staged, already verified application instead of asking JPackage to transform
+that image. Preserved PoC revisions `d48e90b` and `fd3f95c` informed the signing
+order and SQLite boundary, but the Posato implementation and result were
+independently re-established. This remains one-machine development evidence for
+the current arm64 JDK 21 and Compose toolchain, not release-signing,
+notarization, x86_64, or public-distribution evidence.
+
 ## Privilege, installation, and recovery
 
 The spike used a temporary, narrowly scoped privilege path to modify and restore
