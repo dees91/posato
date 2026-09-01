@@ -48,6 +48,20 @@ SELECT workspace_id, transport_epoch_id, key_epoch_id, revision, hlc_physical, h
 FROM sync_replica_state
 WHERE singleton = 1;
 
+selectSyncReplicaResidue:
+SELECT 1
+FROM sync_accepted_bundle
+UNION ALL
+SELECT 1
+FROM sync_pending_bundle
+UNION ALL
+SELECT 1
+FROM sync_staged_bundle
+UNION ALL
+SELECT 1
+FROM sync_terminal_expiry
+LIMIT 1;
+
 insertSyncReplicaState:
 INSERT INTO sync_replica_state(
   singleton,

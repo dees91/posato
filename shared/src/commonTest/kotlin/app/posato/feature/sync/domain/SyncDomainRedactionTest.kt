@@ -11,6 +11,19 @@ import kotlin.test.assertEquals
 
 class SyncDomainRedactionTest {
     @Test
+    fun `given a local mutation success when converted to a string then pending cardinality remains redacted`() {
+        val result = LocalMutationResult.Success(
+            pendingBundles = listOf(
+                checkNotNull(EncryptedBundle.fromBytes(ByteArray(32) { 1 })),
+                checkNotNull(EncryptedBundle.fromBytes(ByteArray(32) { 2 })),
+            ),
+            projection = SyncReducer.reduce(emptyList()),
+        )
+
+        assertEquals("LocalMutationResult.Success(redacted)", result.toString())
+    }
+
+    @Test
     fun `given a replica snapshot when converted to a string then durable state remains redacted`() {
         val snapshot = SyncReplicaSnapshot(
             context = testContext,

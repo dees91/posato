@@ -29,6 +29,9 @@ internal class SqlSyncReplicaStore(
             database.transactionWithResult {
                 val existing = snapshotReader.readStateRows()
                 if (existing.isEmpty()) {
+                    if (database.syncReplicaQueries.selectSyncReplicaResidue().awaitAsList().isNotEmpty()) {
+                        failStore(SyncStoreFailure.CORRUPTION)
+                    }
                     database.syncReplicaQueries.insertSyncReplicaState(
                         workspace_id = context.workspaceId.value.copyBytes(),
                         transport_epoch_id = context.transportEpochId.value.copyBytes(),

@@ -72,7 +72,11 @@ internal sealed interface LocalMutationResult {
     data class Success(
         val pendingBundles: List<EncryptedBundle>,
         val projection: SyncProjection,
-    ) : LocalMutationResult
+    ) : LocalMutationResult {
+        override fun toString(): String {
+            return "LocalMutationResult.Success(redacted)"
+        }
+    }
 
     data class Failure(
         val reason: LocalMutationFailure,

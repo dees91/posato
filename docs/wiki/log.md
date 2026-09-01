@@ -1029,3 +1029,10 @@
 
 - Reconciled durable remote-style transactions before propagating cancellation
   so the active writer cannot retain a stale checkpoint or expiry marker.
+
+## [2026-09-01] correction | Protect sync initialization and mutation results
+
+- Rejected retained sync records when their required replica-state singleton is
+  missing instead of initializing around a partial persistence footprint.
+- Redacted successful local-mutation result strings without changing their
+  fields or behavior.

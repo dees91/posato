@@ -78,6 +78,8 @@
   The cancelled remote-commit reconciliation correction received focused
   approval after its required exceptional-read fix; no findings remain. The
   simplicity review found the single guarded cleanup read already lean.
+  The orphaned-row and local-mutation-result corrections received focused
+  approval with no findings; the simplicity review found them already lean.
 
 ## Hosted review follow-up
 
@@ -110,7 +112,10 @@
   committed could leave the in-memory checkpoint stale. The maintainer accepted
   the related advisory that the same handoff could omit a committed terminal-
   expiry marker and permit same-process session revival after wall-clock
-  rollback.
+  rollback. The latest pass found that a missing replica-state row could be
+  recreated around retained accepted, pending, staged, or expiry records, and
+  that successful local-mutation results exposed pending-bundle cardinality
+  through their generated default string.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -148,6 +153,10 @@
   outcome, including a failed reconciliation read, freezes the writer without
   replacing the original cancellation. The same boundary covers remote acceptance,
   transport progress, staging, terminal expiry, and state-only HLC exhaustion.
+  Replica initialization now proceeds only when every child sync table is
+  empty; otherwise missing singleton state reports corruption without changing
+  retained rows. Successful local-mutation results now use one fixed redacted
+  default string without changing their fields or domain behavior.
   No further hosted review is needed.
 
 ## Verification
@@ -170,6 +179,7 @@
 | Authoring metadata redaction correction | `pass` | The focused JVM test failed before the correction. JVM and iOS Simulator common suites then passed, and all 113 aggregate quality tasks passed with the fixed representations. |
 | Replica redaction and rejected-key correction | `pass` | Three focused JVM regressions failed before the correction and passed after it. The complete JVM and iOS Simulator suites passed in 32 executed tasks, followed by the aggregate quality gate with every task rerun from a clean build. |
 | Cancelled remote-commit reconciliation | `pass` | Three focused JVM regressions failed before their corresponding corrections, including an exceptional reconciliation read. The complete cancellation class then passed, followed by all 32 JVM and iOS Simulator tasks and all 113 aggregate quality tasks after the final correction. |
+| Orphaned-state and result-redaction corrections | `pass` | Both focused JVM regressions failed before implementation and passed afterward. Valid accepted-only, staged-only, and expiry-only residue is rejected when singleton state is missing; successful local-mutation output no longer exposes pending cardinality. All 32 JVM and iOS Simulator tasks passed before the aggregate quality gate. |
 
 ## Blockers and accepted risks
 

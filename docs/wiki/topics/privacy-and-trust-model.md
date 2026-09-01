@@ -267,6 +267,11 @@ fixed redacted default string. It exposes neither the replica revision nor
 collection cardinalities or durable state shape, while equality, persistence,
 and canonical serialization remain unchanged.
 
+`observed` (2026-09-01): successful local-mutation results use a fixed redacted
+default string. Their representations no longer expose pending-bundle
+cardinality or nested projection state, while result fields and behavior remain
+unchanged.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the

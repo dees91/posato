@@ -58,6 +58,62 @@ class SqlSyncReplicaStoreContractTest {
     }
 
     @Test
+    fun `given a missing state row with retained replica records when reopened then corruption is reported`() = runTest {
+        data class ResidueCase(
+            val name: String,
+            val persist: suspend (SqlSyncReplicaStore, SyncReplicaSnapshot) -> Unit,
+        )
+
+        val cases = listOf(
+            ResidueCase("accepted") { store, initial ->
+                val bundle = prepared(1, 1, SyncOperationPayload.AuthorRegister)
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                    store.commitAcceptedRemote(
+                        initial.revision,
+                        listOf(bundle),
+                        emptySet(),
+                        DurableClockState(bundle.operation.clock, false),
+                        null,
+                    ),
+                )
+            },
+            ResidueCase("staged") { store, initial ->
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                    store.commitStagedRemote(
+                        initial.revision,
+                        prepared(2, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+                        initial.clockState,
+                        null,
+                    ),
+                )
+            },
+            ResidueCase("terminal expiry") { store, initial ->
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                    store.markTerminalExpiry(initial.revision, SessionId(testIdentifier(91))),
+                )
+            },
+        )
+
+        cases.forEachIndexed { index, case ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-orphaned-$index.db")
+            val driver = testDatabase.openDriver()
+            try {
+                val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+                val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+                case.persist(store, initial)
+                driver.execute(null, "DELETE FROM sync_replica_state", 0)
+
+                val result = store.open(testContext)
+
+                assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason, case.name)
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+
+    @Test
     fun `given an accepted insert failure when remote progress commits then history clock and progress roll back together`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("sync-rollback.db")
         val driver = testDatabase.openDriver()
