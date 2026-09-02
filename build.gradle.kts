@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.detekt) apply false
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
     alias(libs.plugins.ktlint)
     alias(libs.plugins.metro) apply false
     alias(libs.plugins.sqldelight) apply false
@@ -151,6 +152,10 @@ tasks.register("quality") {
         ":shared:ktlintCheck",
         ":shared:verifySqlDelightMigration",
         ":macosHelper:check",
+        ":posato-control:detekt",
+        ":posato-control:ktlintCheck",
+        ":posato-control:swiftFormatCheck",
+        ":posato-control:test",
         verifyApprovedQualityExceptions,
     )
 }

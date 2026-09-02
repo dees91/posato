@@ -1,0 +1,29 @@
+{
+  "role": "other", "label": "Posato", "platformRole": "AXApplication", "path": "",
+  "children": [
+    { "role": "window", "label": "Posato", "platformRole": "AXWindow/AXStandardWindow", "path": "0", "frame": { "x": 48, "y": 81, "w": 800, "h": 600 },
+      "children": [
+        { "role": "group", "platformRole": "AXGroup", "path": "0/0", "children": [
+          { "role": "group", "platformRole": "AXScrollArea", "path": "0/0/0", "children": [
+            { "role": "text", "label": "Paused items", "value": "Paused items", "platformRole": "AXStaticText", "path": "0/0/0/0" },
+            { "role": "text", "label": "Websites", "value": "Websites", "platformRole": "AXStaticText", "path": "0/0/0/1" },
+            { "role": "group", "platformRole": "AXGroup", "path": "0/0/0/2", "children": [
+              { "role": "textField", "value": "", "platformRole": "AXTextField", "path": "0/0/0/2/0" },
+              { "role": "text", "label": "Enter an exact domain such as example.com, not a full URL.", "platformRole": "AXStaticText", "path": "0/0/0/2/1" },
+              { "role": "button", "label": "Add website", "platformRole": "AXButton", "path": "0/0/0/2/2" }
+            ] },
+            { "role": "group", "platformRole": "AXGroup", "path": "0/0/0/3", "children": [
+              { "role": "text", "label": "example.com", "value": "example.com", "platformRole": "AXStaticText", "path": "0/0/0/3/0" },
+              { "role": "button", "label": "Edit", "platformRole": "AXButton", "path": "0/0/0/3/1" },
+              { "role": "button", "label": "Remove", "platformRole": "AXButton", "path": "0/0/0/3/2" }
+            ] },
+            { "role": "group", "platformRole": "AXGroup", "path": "0/0/0/4", "children": [
+              { "role": "text", "label": "Social feeds", "value": "Social feeds", "platformRole": "AXStaticText", "path": "0/0/0/4/0" },
+              { "role": "button", "label": "Edit", "platformRole": "AXButton", "path": "0/0/0/4/1" },
+              { "role": "button", "label": "Remove", "platformRole": "AXButton", "enabled": false, "platformRole": "AXButton", "path": "0/0/0/4/2" }
+            ] }
+          ] }
+        ] }
+      ] }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": false },
+  "steps": [
+    { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "example.com", "role": "text" }, "timeoutSeconds": 30 },
+    { "name": "remove", "action": "tap", "query": { "text": "Remove", "role": "button", "within": { "text": "example.com", "role": "group" } } },
+    { "name": "row-gone", "action": "waitFor", "state": "absent", "query": { "text": "example.com", "role": "text" } },
+    { "name": "after-remove", "action": "screenshot" }
+  ]
+}
