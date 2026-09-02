@@ -108,6 +108,10 @@
   fail-fast checkpoint contract as SQL. The approved plan uses one full
   checkpoint comparison and one real-database regression without a schema or
   transaction-layer expansion.
+  The canonical-buffer lifecycle correction received independent plan approval
+  after its Required findings extended cleanup to owned canonical inputs and
+  both signature-preimage provider boundaries. The approved plan keeps borrowed
+  arrays non-consuming and adds no secure-memory abstraction or test seam.
 
 ## Result
 
@@ -226,6 +230,13 @@
   before side effects and that the single real-database regression directly
   covers the reported race; its simplicity review found the change already
   lean.
+  The canonical-buffer lifecycle correction received focused completed-change
+  approval after two Required reviews extended the final cleanup boundary to
+  every buffer transferred into bundle preparation and its local header-salt
+  copy. The corrected implementation and six retained-reference regressions
+  were approved with no remaining findings at any severity; its simplicity
+  review found the ownership primitives and local cleanup boundary already
+  lean.
 
 ## Hosted review follow-up
 
@@ -312,7 +323,9 @@
   The newest required finding found that a same-open rollback could replace the
   durable snapshot after writer verification while retaining its revision, so
   the mutation transaction could commit a later operation over unexplained
-  state.
+  state. The newest three required findings found that canonical writer backing
+  arrays, decode-validation re-encodings, and projection-digest preimages could
+  retain plaintext after their logical use ended.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -431,6 +444,12 @@
   any write. A same-revision replacement returns `REVISION_CONFLICT`, retains
   its exact state, and leaves the existing revision compare-and-set in place for
   concurrent writers.
+  Canonical writers now clear backing arrays after extraction, before replacing
+  capacity, and on every early or exceptional exit. Fresh identifier, public-key,
+  and UTF-8 inputs are consumed and cleared, while borrowed arrays remain owned
+  by their callers. Decode comparison, projection hashing, signature creation and
+  verification, prepared storage, and snapshot validation clear their temporary
+  canonical bytes after use.
   No further hosted review is needed.
 
 ## Verification
@@ -475,6 +494,7 @@
 | Pending duplicate and terminal rewrite correction | `pass` | Both focused JVM regressions failed before implementation and passed afterward. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks. Detekt's initial complexity finding was addressed by moving the already-terminal idempotency guard into the existing exhaustion operation without suppression. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Accepted-sequence and terminal-expiry duplicate preflight | `pass` | Both real-SQLite JVM regressions failed before implementation and passed afterward. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks without suppressions. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Exact checkpoint transaction guard | `pass` | The real-SQLite JVM regression first committed sequence 3 over a same-revision snapshot missing sequence 2, then returned `REVISION_CONFLICT` and preserved the replacement after the correction. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks without suppressions. Independent completed-change review found no findings at any severity. |
+| Canonical-buffer lifecycle | `pass` | Six retained-reference JVM regressions first exposed uncleared projection, signature, and successful-prepare buffers, then passed for SHA-256 success, nullable failure, and exception; signing failure; successful verification; and preparation cleanup of the owned salt copy, header, ciphertext, and signature without changing the borrowed salt. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks without suppressions. Independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

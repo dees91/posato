@@ -445,6 +445,12 @@ allocates an array or reads the native payload. This covers random bytes,
 SHA-256, HMAC-SHA256, AES-GCM seal and open, Ed25519 public keys, and signatures;
 wrong-sized output remains a nullable cryptographic failure.
 
+`observed` (2026-09-02): canonical operation, projection, header, and signature
+construction clears every mutable input and backing buffer it owns after use,
+including growth, early rejection, nullable provider failure, and exceptions.
+Successful returned bytes transfer to their caller; borrowed inputs remain
+untouched, and the managed-runtime residual-risk boundary remains unchanged.
+
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?
 - What retry policy is appropriate without a delivery SLA?

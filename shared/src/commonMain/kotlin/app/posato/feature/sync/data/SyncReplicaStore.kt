@@ -78,6 +78,10 @@ internal class ImmutableBytes(
         return bytes.copyOf()
     }
 
+    fun contentEquals(other: ByteArray): Boolean {
+        return bytes.contentEquals(other)
+    }
+
     override fun equals(other: Any?): Boolean {
         return other is ImmutableBytes && bytes.contentEquals(other.bytes)
     }
@@ -95,7 +99,7 @@ internal data class PreparedStoredBundle(
     val bundle: EncryptedBundle,
     val operation: SyncOperation,
 ) {
-    val operationBytes = ImmutableBytes(checkNotNull(SyncOperationCodec.encode(operation)))
+    val operationBytes = checkNotNull(SyncOperationCodec.encode(operation)).useAndClear(::ImmutableBytes)
 }
 
 internal sealed interface SyncStoreResult<out T> {

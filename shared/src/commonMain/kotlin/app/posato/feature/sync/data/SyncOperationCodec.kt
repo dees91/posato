@@ -29,23 +29,33 @@ private const val SESSION_END_TAG = 7
 internal object SyncOperationCodec {
     fun encode(operation: SyncOperation): ByteArray? {
         val writer = CanonicalWriter()
-        writer.writeBytes(operationMagic)
-        writer.writeU16(OPERATION_FORMAT)
-        writer.writeBytes(operation.operationId.value.copyBytes())
-        writer.writeBytes(operation.context.workspaceId.value.copyBytes())
-        writer.writeBytes(operation.context.transportEpochId.value.copyBytes())
-        writer.writeBytes(operation.context.keyEpochId.value.copyBytes())
-        writer.writeBytes(operation.authorId.value.copyBytes())
-        writer.writeBytes(operation.publicSigningKey.copyBytes())
-        writer.writeLong(operation.authorSequence)
-        writer.writeLong(operation.clock.physicalMillis)
-        writer.writeU16(operation.clock.logicalCounter)
-        if (!writer.writePayload(operation.payload)) {
-            return null
-        }
-        val result = writer.toByteArray()
+        return try {
+            writer.writeBytes(operationMagic)
+            writer.writeU16(OPERATION_FORMAT)
+            writer.writeOwnedBytes(operation.operationId.value.copyBytes())
+            writer.writeOwnedBytes(operation.context.workspaceId.value.copyBytes())
+            writer.writeOwnedBytes(operation.context.transportEpochId.value.copyBytes())
+            writer.writeOwnedBytes(operation.context.keyEpochId.value.copyBytes())
+            writer.writeOwnedBytes(operation.authorId.value.copyBytes())
+            writer.writeOwnedBytes(operation.publicSigningKey.copyBytes())
+            writer.writeLong(operation.authorSequence)
+            writer.writeLong(operation.clock.physicalMillis)
+            writer.writeU16(operation.clock.logicalCounter)
 
-        return result.takeIf { bytes -> bytes.size <= SyncFormatLimits.PLAINTEXT_BYTES }
+            if (writer.writePayload(operation.payload)) {
+                val encodedOperation = writer.consumeBytes()
+                if (encodedOperation.size <= SyncFormatLimits.PLAINTEXT_BYTES) {
+                    encodedOperation
+                } else {
+                    encodedOperation.fill(0)
+                    null
+                }
+            } else {
+                null
+            }
+        } finally {
+            writer.clear()
+        }
     }
 
     fun decode(bytes: ByteArray): SyncOperation? {
@@ -56,7 +66,10 @@ internal object SyncOperationCodec {
         val fields = reader.readOperationFields()
         val operation = fields?.toOperation()
 
-        return operation?.takeIf { decoded -> reader.remaining == 0 && encode(decoded)?.contentEquals(bytes) == true }
+        return operation?.takeIf { decoded ->
+            reader.remaining == 0 &&
+                encode(decoded)?.useAndClear { encoded -> encoded.contentEquals(bytes) } == true
+        }
     }
 }
 
@@ -142,13 +155,13 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
 
         is SyncOperationPayload.ApplicationPolicyPresent -> {
             writeByte(APPLICATION_POLICY_PRESENT_TAG)
-            writeBytes(SyncIdentifier.zero().copyBytes())
+            writeOwnedBytes(SyncIdentifier.zero().copyBytes())
             writeString(payload.name.canonicalValue)
         }
 
         SyncOperationPayload.ApplicationPolicyAbsent -> {
             writeByte(APPLICATION_POLICY_ABSENT_TAG)
-            writeBytes(SyncIdentifier.zero().copyBytes())
+            writeOwnedBytes(SyncIdentifier.zero().copyBytes())
         }
 
         is SyncOperationPayload.SessionStart -> {
@@ -156,14 +169,14 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
                 return false
             }
             writeByte(SESSION_START_TAG)
-            writeBytes(payload.sessionId.value.copyBytes())
+            writeOwnedBytes(payload.sessionId.value.copyBytes())
             writeLong(payload.startEpochMillis)
             writeLong(payload.mandatoryEndEpochMillis)
         }
 
         is SyncOperationPayload.SessionEnd -> {
             writeByte(SESSION_END_TAG)
-            writeBytes(payload.sessionId.value.copyBytes())
+            writeOwnedBytes(payload.sessionId.value.copyBytes())
         }
     }
 
@@ -171,9 +184,10 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
 }
 
 private fun CanonicalWriter.writeString(value: String) {
-    val bytes = value.encodeToByteArray(throwOnInvalidSequence = true)
-    writeU16(bytes.size)
-    writeBytes(bytes)
+    value.encodeToByteArray(throwOnInvalidSequence = true).useAndClear { bytes ->
+        writeU16(bytes.size)
+        writeBytes(bytes)
+    }
 }
 
 private fun CanonicalReader.readPayload(): SyncOperationPayload? {

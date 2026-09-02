@@ -104,30 +104,53 @@ internal class EncryptedBundleCodec(
         signingKey: SyncSigningKey,
         salt: ByteArray,
     ): PrepareBundleResult {
-        val validIdentity = salt.size == SyncFormatLimits.BUNDLE_SALT_BYTES && signingKey.publicKey == operation.publicSigningKey
-        val plaintext = operation.takeIf { validIdentity }?.let(SyncOperationCodec::encode)
-        val header = plaintext?.let { encoded ->
-            BundleHeader(operation.operationId, operation.context, salt.copyOf(), encoded.size + SyncFormatLimits.AES_TAG_BYTES)
-        }
-        val headerBytes = header?.let(::encodeHeader)
-        val key = header?.let { deriveBundleKey(transportKey, it) }
-        val ciphertextAndTag = seal(key, headerBytes, plaintext)
-        val validCiphertext = ciphertextAndTag?.takeIf { encrypted -> encrypted.size == header?.ciphertextLength }
-        val signature = sign(signingKey, headerBytes, validCiphertext)
-        val completeBytes = if (headerBytes != null && validCiphertext != null && signature != null) {
-            headerBytes + validCiphertext + signature
-        } else {
-            null
-        }
+        var plaintext: ByteArray? = null
+        var header: BundleHeader? = null
+        var headerBytes: ByteArray? = null
+        var ciphertextAndTag: ByteArray? = null
+        var signature: ByteArray? = null
+        var completeBytes: ByteArray? = null
 
-        return when {
-            !validIdentity || plaintext == null -> PrepareBundleResult.InvalidOperation
+        return try {
+            val hasValidSalt = salt.size == SyncFormatLimits.BUNDLE_SALT_BYTES
+            val hasMatchingSigningKey = signingKey.publicKey == operation.publicSigningKey
+            val validIdentity = hasValidSalt && hasMatchingSigningKey
+            plaintext = operation.takeIf { validIdentity }?.let(SyncOperationCodec::encode)
+            header = plaintext?.let { encoded ->
+                BundleHeader(
+                    operation.operationId,
+                    operation.context,
+                    salt.copyOf(),
+                    encoded.size + SyncFormatLimits.AES_TAG_BYTES,
+                )
+            }
+            headerBytes = header?.let(::encodeHeader)
+            val key = header?.let { deriveBundleKey(transportKey, it) }
+            ciphertextAndTag = seal(key, headerBytes, plaintext)
+            val validCiphertext = ciphertextAndTag?.takeIf { encrypted -> encrypted.size == header?.ciphertextLength }
+            signature = sign(signingKey, headerBytes, validCiphertext)
+            completeBytes = if (headerBytes != null && validCiphertext != null && signature != null) {
+                headerBytes + validCiphertext + signature
+            } else {
+                null
+            }
 
-            completeBytes == null -> PrepareBundleResult.CryptographyFailure
+            when {
+                !validIdentity || plaintext == null -> PrepareBundleResult.InvalidOperation
 
-            else -> EncryptedBundle.fromBytes(completeBytes)
-                ?.let { bundle -> PrepareBundleResult.Success(bundle) }
-                ?: PrepareBundleResult.InvalidOperation
+                completeBytes == null -> PrepareBundleResult.CryptographyFailure
+
+                else -> EncryptedBundle.fromBytes(completeBytes)
+                    ?.let { bundle -> PrepareBundleResult.Success(bundle) }
+                    ?: PrepareBundleResult.InvalidOperation
+            }
+        } finally {
+            plaintext?.fill(0)
+            header?.salt?.fill(0)
+            headerBytes?.fill(0)
+            ciphertextAndTag?.fill(0)
+            signature?.fill(0)
+            completeBytes?.fill(0)
         }
     }
 
@@ -163,17 +186,20 @@ internal class EncryptedBundleCodec(
 
     fun encodeHeader(header: BundleHeader): ByteArray {
         val writer = CanonicalWriter(SyncFormatLimits.HEADER_BYTES)
-        writer.writeBytes(envelopeMagic)
-        writer.writeU16(ENVELOPE_FORMAT)
-        writer.writeU16(ALGORITHM_SUITE)
-        writer.writeBytes(header.bundleId.value.copyBytes())
-        writer.writeBytes(header.context.workspaceId.value.copyBytes())
-        writer.writeBytes(header.context.transportEpochId.value.copyBytes())
-        writer.writeBytes(header.context.keyEpochId.value.copyBytes())
-        writer.writeBytes(header.salt)
-        writer.writeU32(header.ciphertextLength.toLong())
-
-        return writer.toByteArray()
+        return try {
+            writer.writeBytes(envelopeMagic)
+            writer.writeU16(ENVELOPE_FORMAT)
+            writer.writeU16(ALGORITHM_SUITE)
+            writer.writeOwnedBytes(header.bundleId.value.copyBytes())
+            writer.writeOwnedBytes(header.context.workspaceId.value.copyBytes())
+            writer.writeOwnedBytes(header.context.transportEpochId.value.copyBytes())
+            writer.writeOwnedBytes(header.context.keyEpochId.value.copyBytes())
+            writer.writeBytes(header.salt)
+            writer.writeU32(header.ciphertextLength.toLong())
+            writer.consumeBytes()
+        } finally {
+            writer.clear()
+        }
     }
 
     private fun deriveBundleKey(
@@ -217,7 +243,7 @@ internal class EncryptedBundleCodec(
     ): ByteArray? {
         if (header == null || ciphertext == null) return null
         return try {
-            signingKey.sign(signaturePreimage(header, ciphertext))
+            signaturePreimage(header, ciphertext).useAndClear(signingKey::sign)
         } catch (_: Exception) {
             null
         }?.takeIf { it.size == SyncFormatLimits.SIGNATURE_BYTES }
@@ -253,11 +279,13 @@ internal class EncryptedBundleCodec(
     ): Boolean {
         if (operation == null || parts == null) return false
         return try {
-            cryptoProvider.verifyEd25519(
-                operation.publicSigningKey,
-                signaturePreimage(parts.header, parts.ciphertextAndTag),
-                parts.signature,
-            )
+            signaturePreimage(parts.header, parts.ciphertextAndTag).useAndClear { preimage ->
+                cryptoProvider.verifyEd25519(
+                    operation.publicSigningKey,
+                    preimage,
+                    parts.signature,
+                )
+            }
         } catch (_: Exception) {
             false
         }
@@ -368,11 +396,14 @@ private fun signaturePreimage(
     ciphertextAndTag: ByteArray
 ): ByteArray {
     val writer = CanonicalWriter(signatureDomain.size + 8 + header.size + ciphertextAndTag.size)
-    writer.writeBytes(signatureDomain)
-    writer.writeU32(header.size.toLong())
-    writer.writeBytes(header)
-    writer.writeU32(ciphertextAndTag.size.toLong())
-    writer.writeBytes(ciphertextAndTag)
-
-    return writer.toByteArray()
+    return try {
+        writer.writeBytes(signatureDomain)
+        writer.writeU32(header.size.toLong())
+        writer.writeBytes(header)
+        writer.writeU32(ciphertextAndTag.size.toLong())
+        writer.writeBytes(ciphertextAndTag)
+        writer.consumeBytes()
+    } finally {
+        writer.clear()
+    }
 }

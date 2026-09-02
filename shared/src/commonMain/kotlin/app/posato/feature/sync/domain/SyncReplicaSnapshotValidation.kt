@@ -7,6 +7,7 @@ import app.posato.feature.sync.data.StoredAcceptedBundle
 import app.posato.feature.sync.data.SyncCryptoProvider
 import app.posato.feature.sync.data.SyncOperationCodec
 import app.posato.feature.sync.data.SyncReplicaSnapshot
+import app.posato.feature.sync.data.useAndClear
 
 internal fun SyncReplicaSnapshot.isAuthenticatedBy(
     cryptoProvider: SyncCryptoProvider,
@@ -43,7 +44,8 @@ private fun SyncReplicaSnapshot.acceptedBundlesAreValid(
         decoded is DecodeBundleResult.Success &&
             bundleId == stored.operation.operationId &&
             decoded.operation == stored.operation &&
-            stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
+            SyncOperationCodec.encode(stored.operation)
+                ?.useAndClear(stored.operationBytes::contentEquals) == true
     }
 }
 
@@ -84,7 +86,8 @@ private fun SyncReplicaSnapshot.stagedBundlesAreValid(
             decoded.operation == stored.operation &&
             stored.operation.authorSequence > 1L &&
             stored.operation.payload != SyncOperationPayload.AuthorRegister &&
-            stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
+            SyncOperationCodec.encode(stored.operation)
+                ?.useAndClear(stored.operationBytes::contentEquals) == true
     }
 }
 

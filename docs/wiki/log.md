@@ -1155,3 +1155,8 @@
 
 - Rejected every store mutation whose complete expected checkpoint differs
   from durable state, including a rollback or replacement at the same revision.
+
+## [2026-09-02] correction | Clear owned canonical sync buffers
+
+- Cleared owned canonical inputs, writer backing arrays, validation encodings,
+  digest plaintext, and signature preimages after their final use.

@@ -38,8 +38,20 @@ internal class CanonicalWriter(
         size += value.size
     }
 
-    fun toByteArray(): ByteArray {
-        return bytes.copyOf(size)
+    fun writeOwnedBytes(value: ByteArray) {
+        value.useAndClear(::writeBytes)
+    }
+
+    fun consumeBytes(): ByteArray {
+        val consumedBytes = bytes.copyOf(size)
+        clear()
+
+        return consumedBytes
+    }
+
+    fun clear() {
+        bytes.fill(0)
+        size = 0
     }
 
     private fun ensureCapacity(additionalBytes: Int) {
@@ -49,8 +61,18 @@ internal class CanonicalWriter(
             while (newSize < requiredSize) {
                 newSize = newSize.coerceAtMost(Int.MAX_VALUE / 2) * 2
             }
-            bytes = bytes.copyOf(newSize)
+            val expandedBytes = bytes.copyOf(newSize)
+            bytes.fill(0)
+            bytes = expandedBytes
         }
+    }
+}
+
+internal inline fun <T> ByteArray.useAndClear(block: (ByteArray) -> T): T {
+    return try {
+        block(this)
+    } finally {
+        fill(0)
     }
 }
 
