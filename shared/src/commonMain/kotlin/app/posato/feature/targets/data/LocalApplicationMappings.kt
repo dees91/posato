@@ -1,5 +1,7 @@
 package app.posato.feature.targets.data
 
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlin.jvm.JvmInline
 
 public object LocalApplicationMappingLimits {
@@ -26,16 +28,72 @@ public value class LocalApplicationMappingId private constructor(
     }
 }
 
+public sealed interface LocalApplicationMappingDisplay {
+    public class Named private constructor(
+        public val value: String,
+    ) : LocalApplicationMappingDisplay {
+        override fun equals(other: Any?): Boolean {
+            return other is Named && value == other.value
+        }
+
+        override fun hashCode(): Int {
+            return value.hashCode()
+        }
+
+        override fun toString(): String {
+            return "LocalApplicationMappingDisplay.Named(redacted)"
+        }
+
+        public companion object {
+            public fun restore(value: String): Named? {
+                val encodedName = try {
+                    value.encodeToByteArray(throwOnInvalidSequence = true)
+                } catch (_: Exception) {
+                    return null
+                }
+                val isValid = value.isNotEmpty() &&
+                    value == value.trim() &&
+                    value.none { character -> character.isApplicationMappingControlCharacter() } &&
+                    encodedName.size <= LocalApplicationMappingLimits.MAXIMUM_DISPLAY_NAME_BYTES
+
+                return if (isValid) Named(value) else null
+            }
+        }
+    }
+
+    public class Numbered private constructor(
+        public val slot: Int,
+    ) : LocalApplicationMappingDisplay {
+        override fun equals(other: Any?): Boolean {
+            return other is Numbered && slot == other.slot
+        }
+
+        override fun hashCode(): Int {
+            return slot
+        }
+
+        override fun toString(): String {
+            return "LocalApplicationMappingDisplay.Numbered(redacted)"
+        }
+
+        public companion object {
+            public fun restore(slot: Int): Numbered? {
+                return if (slot in 1..LocalApplicationMappingLimits.MAXIMUM_MAPPINGS) Numbered(slot) else null
+            }
+        }
+    }
+}
+
 public class LocalApplicationMapping private constructor(
     public val id: LocalApplicationMappingId,
-    public val displayName: String,
+    public val display: LocalApplicationMappingDisplay,
 ) {
     override fun equals(other: Any?): Boolean {
-        return other is LocalApplicationMapping && id == other.id && displayName == other.displayName
+        return other is LocalApplicationMapping && id == other.id && display == other.display
     }
 
     override fun hashCode(): Int {
-        return 31 * id.hashCode() + displayName.hashCode()
+        return 31 * id.hashCode() + display.hashCode()
     }
 
     override fun toString(): String {
@@ -47,17 +105,18 @@ public class LocalApplicationMapping private constructor(
             id: LocalApplicationMappingId,
             displayName: String,
         ): LocalApplicationMapping? {
-            val encodedName = try {
-                displayName.encodeToByteArray(throwOnInvalidSequence = true)
-            } catch (_: Exception) {
-                return null
-            }
-            val isValid = displayName.isNotEmpty() &&
-                displayName == displayName.trim() &&
-                displayName.none { character -> character.isApplicationMappingControlCharacter() } &&
-                encodedName.size <= LocalApplicationMappingLimits.MAXIMUM_DISPLAY_NAME_BYTES
+            val display = LocalApplicationMappingDisplay.Named.restore(displayName) ?: return null
 
-            return if (isValid) LocalApplicationMapping(id, displayName) else null
+            return LocalApplicationMapping(id, display)
+        }
+
+        public fun restoreNumbered(
+            id: LocalApplicationMappingId,
+            slot: Int,
+        ): LocalApplicationMapping? {
+            val display = LocalApplicationMappingDisplay.Numbered.restore(slot) ?: return null
+
+            return LocalApplicationMapping(id, display)
         }
     }
 }
@@ -85,10 +144,7 @@ public class LocalApplicationMappingsSnapshot private constructor(
         public fun restore(mappings: Iterable<LocalApplicationMapping>): LocalApplicationMappingsSnapshot? {
             val restored = mappings
                 .toList()
-                .sortedWith(
-                    compareBy<LocalApplicationMapping> { mapping -> mapping.displayName.lowercase() }
-                        .thenBy { mapping -> mapping.id.canonicalValue },
-                )
+                .sortedWith(applicationMappingComparator)
             val hasValidCount = restored.size <= LocalApplicationMappingLimits.MAXIMUM_MAPPINGS
             val hasUniqueIdentifiers = restored.map { mapping -> mapping.id }.toSet().size == restored.size
 
@@ -99,23 +155,32 @@ public class LocalApplicationMappingsSnapshot private constructor(
 
 public enum class LocalApplicationMappingsLoadFailure { STORAGE, CORRUPTION }
 
+public enum class LocalApplicationMappingsAccess { READY, AUTHORIZATION_REQUIRED, AUTHORIZATION_DENIED, RESTRICTED }
+
 public sealed interface LocalApplicationMappingsLoadResult {
     public data class Success(
         public val snapshot: LocalApplicationMappingsSnapshot,
+        public val access: LocalApplicationMappingsAccess = LocalApplicationMappingsAccess.READY,
     ) : LocalApplicationMappingsLoadResult {
         override fun toString(): String {
             return "LocalApplicationMappingsLoadResult.Success(redacted)"
         }
     }
 
-    public data object Unavailable : LocalApplicationMappingsLoadResult
+    public data class Unavailable(
+        public val snapshot: LocalApplicationMappingsSnapshot = LocalApplicationMappingsSnapshot.empty(),
+    ) : LocalApplicationMappingsLoadResult {
+        override fun toString(): String {
+            return "LocalApplicationMappingsLoadResult.Unavailable(redacted)"
+        }
+    }
 
     public data class Failure(
         public val reason: LocalApplicationMappingsLoadFailure,
     ) : LocalApplicationMappingsLoadResult
 }
 
-public enum class LocalApplicationSelectionRejection { SELF, INVALID_OR_UNSIGNED, CAPACITY }
+public enum class LocalApplicationSelectionRejection { SELF, INVALID_OR_UNSIGNED, UNSUPPORTED, CAPACITY }
 
 public enum class LocalApplicationSelectionFailure { PICKER, STORAGE }
 
@@ -129,6 +194,15 @@ public sealed interface LocalApplicationSelectionResult {
     }
 
     public data object Cancelled : LocalApplicationSelectionResult
+
+    public data class AccessChanged(
+        public val snapshot: LocalApplicationMappingsSnapshot,
+        public val access: LocalApplicationMappingsAccess,
+    ) : LocalApplicationSelectionResult {
+        override fun toString(): String {
+            return "LocalApplicationSelectionResult.AccessChanged(redacted)"
+        }
+    }
 
     public data object Unavailable : LocalApplicationSelectionResult
 
@@ -160,16 +234,21 @@ public sealed interface LocalApplicationRemovalResult {
 }
 
 public interface LocalApplicationMappings {
+    public val invalidations: Flow<Unit>
+        get() = emptyFlow()
+
     public suspend fun load(): LocalApplicationMappingsLoadResult
 
     public suspend fun chooseApplications(): LocalApplicationSelectionResult
 
     public suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult
+
+    public suspend fun clear(): LocalApplicationRemovalResult
 }
 
 internal object UnavailableLocalApplicationMappings : LocalApplicationMappings {
     override suspend fun load(): LocalApplicationMappingsLoadResult {
-        return LocalApplicationMappingsLoadResult.Unavailable
+        return LocalApplicationMappingsLoadResult.Unavailable()
     }
 
     override suspend fun chooseApplications(): LocalApplicationSelectionResult {
@@ -179,6 +258,34 @@ internal object UnavailableLocalApplicationMappings : LocalApplicationMappings {
     override suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult {
         return LocalApplicationRemovalResult.Unavailable
     }
+
+    override suspend fun clear(): LocalApplicationRemovalResult {
+        return LocalApplicationRemovalResult.Unavailable
+    }
+}
+
+private val applicationMappingComparator = Comparator<LocalApplicationMapping> { left, right ->
+    val displayComparison = when {
+        left.display is LocalApplicationMappingDisplay.Named && right.display is LocalApplicationMappingDisplay.Named -> {
+            left.display.value.lowercase().compareTo(right.display.value.lowercase())
+        }
+
+        left.display is LocalApplicationMappingDisplay.Named -> {
+            -1
+        }
+
+        right.display is LocalApplicationMappingDisplay.Named -> {
+            1
+        }
+
+        else -> {
+            (left.display as LocalApplicationMappingDisplay.Numbered).slot.compareTo(
+                (right.display as LocalApplicationMappingDisplay.Numbered).slot,
+            )
+        }
+    }
+
+    if (displayComparison != 0) displayComparison else left.id.canonicalValue.compareTo(right.id.canonicalValue)
 }
 
 private fun Char.isApplicationMappingControlCharacter(): Boolean {

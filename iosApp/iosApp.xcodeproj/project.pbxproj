@@ -9,7 +9,9 @@
 /* Begin PBXBuildFile section */
 		A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
 		B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */; };
+		B300000129CC810C00F8E227 /* IosApplicationMappingsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */; };
 		B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */; };
+		B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -27,7 +29,10 @@
 		A93A953729CC810C00F8E227 /* Posato.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Posato.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
 		B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoKitSyncProvider.swift; sourceTree = "<group>"; };
+		B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosApplicationMappingsProvider.swift; sourceTree = "<group>"; };
+		B300000329CC810C00F8E227 /* PosatoDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PosatoDebug.entitlements; sourceTree = "<group>"; };
 		B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoKitSyncProviderTests.swift; sourceTree = "<group>"; };
+		B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationMappingsStoreTests.swift; sourceTree = "<group>"; };
 		B200000329CC810C00F8E227 /* PosatoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PosatoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -74,6 +79,8 @@
 			children = (
 				A93A953A29CC810C00F8E227 /* iosApp.swift */,
 				B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */,
+				B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */,
+				B300000329CC810C00F8E227 /* PosatoDebug.entitlements */,
 				A93A953E29CC810D00F8E227 /* Assets.xcassets */,
 			);
 			path = iosApp;
@@ -83,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */,
+				B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */,
 			);
 			path = iosAppTests;
 			sourceTree = "<group>";
@@ -208,6 +216,7 @@
 			files = (
 				A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */,
 				B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */,
+				B300000129CC810C00F8E227 /* IosApplicationMappingsProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,6 +225,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */,
+				B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -351,6 +361,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = iosApp/PosatoDebug.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = iosApp/Info.plist;
@@ -364,6 +375,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = app.posato.ios;
 				PRODUCT_NAME = "Posato";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				"SWIFT_ACTIVE_COMPILATION_CONDITIONS[sdk=iphoneos*]" = "$(inherited) POSATO_FAMILY_CONTROLS_DEVELOPMENT";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

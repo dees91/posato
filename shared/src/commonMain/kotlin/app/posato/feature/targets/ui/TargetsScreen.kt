@@ -64,6 +64,7 @@ internal fun TargetsScreen(
         onRetry = viewModel::retry,
         onRetryApplicationMappings = viewModel::retryApplicationMappings,
         onChooseApplications = viewModel::chooseApplications,
+        onClearApplicationMappings = viewModel::clearApplicationMappings,
         onRemoveApplicationMapping = viewModel::removeApplicationMapping,
         modifier = modifier,
     )
@@ -83,6 +84,7 @@ internal fun TargetsScreen(
     onRetry: () -> Unit,
     onRetryApplicationMappings: () -> Unit,
     onChooseApplications: () -> Unit,
+    onClearApplicationMappings: () -> Unit,
     onRemoveApplicationMapping: (LocalApplicationMappingId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -105,6 +107,7 @@ internal fun TargetsScreen(
                 onRetry = onRetry,
                 onRetryApplicationMappings = onRetryApplicationMappings,
                 onChooseApplications = onChooseApplications,
+                onClearApplicationMappings = onClearApplicationMappings,
                 onRemoveApplicationMapping = onRemoveApplicationMapping,
             )
         }
@@ -161,6 +164,7 @@ private fun TargetsContent(
     onRetry: () -> Unit,
     onRetryApplicationMappings: () -> Unit,
     onChooseApplications: () -> Unit,
+    onClearApplicationMappings: () -> Unit,
     onRemoveApplicationMapping: (LocalApplicationMappingId) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -193,6 +197,7 @@ private fun TargetsContent(
                     state = state,
                     onRetry = onRetryApplicationMappings,
                     onChoose = onChooseApplications,
+                    onClear = onClearApplicationMappings,
                     onRemove = onRemoveApplicationMapping,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -222,7 +227,7 @@ private fun TargetsContent(
 private fun TargetsPhonePreview(
     @PreviewParameter(TargetsScreenPreviewDataProvider::class) previewState: TargetsScreenPreviewDataProvider.TargetsPreviewState,
 ) {
-    PosatoTheme { TargetsScreen(previewState.state, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
+    PosatoTheme { TargetsScreen(previewState.state, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
 }
 
 @Preview(name = "Desktop", widthDp = 900, heightDp = 720)
@@ -230,5 +235,5 @@ private fun TargetsPhonePreview(
 private fun TargetsDesktopPreview(
     @PreviewParameter(TargetsScreenPreviewDataProvider::class) previewState: TargetsScreenPreviewDataProvider.TargetsPreviewState,
 ) {
-    PosatoTheme { TargetsScreen(previewState.state, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
+    PosatoTheme { TargetsScreen(previewState.state, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) }
 }

@@ -3,6 +3,7 @@ package app.posato.feature.targets.ui
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
+import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
 import app.posato.feature.targets.data.LocalApplicationRemovalResult
@@ -445,6 +446,21 @@ class TargetsViewModelTest {
     }
 
     @Test
+    fun `given available mappings when clearing then the device snapshot is replaced once`() = runTest(dispatcher) {
+        val mapping = mapping("Browser", "03")
+        val mappings = FakeApplicationMappings(snapshotOf(mapping))
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        viewModel.clearApplicationMappings()
+        scheduler.runCurrent()
+
+        assertTrue(viewModel.uiState.value.applicationMappings.isEmpty())
+        assertEquals(1, mappings.clearCalls)
+    }
+
+    @Test
     fun `given rejected selection when choosing then prior snapshot remains visible`() = runTest(dispatcher) {
         val mapping = mapping("Browser", "02")
         val mappings = FakeApplicationMappings(snapshotOf(mapping)).apply {
@@ -459,6 +475,26 @@ class TargetsViewModelTest {
 
         assertEquals(listOf(mapping), viewModel.uiState.value.applicationMappings)
         assertEquals(ApplicationMappingFailure.SELF_SELECTION, viewModel.uiState.value.applicationMappingFailure)
+    }
+
+    @Test
+    fun `given access change when choosing then retained snapshot and restricted state remain visible`() = runTest(dispatcher) {
+        val mapping = mapping("Browser", "04")
+        val mappings = FakeApplicationMappings().apply {
+            selectionResult = LocalApplicationSelectionResult.AccessChanged(
+                snapshotOf(mapping),
+                LocalApplicationMappingsAccess.RESTRICTED,
+            )
+        }
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        viewModel.chooseApplications()
+        scheduler.runCurrent()
+
+        assertEquals(listOf(mapping), viewModel.uiState.value.applicationMappings)
+        assertEquals(LocalApplicationMappingsAccess.RESTRICTED, viewModel.uiState.value.applicationMappingsAccess)
     }
 }
 
@@ -523,6 +559,7 @@ private class FakeApplicationMappings(
     var selectionResult: LocalApplicationSelectionResult = LocalApplicationSelectionResult.Cancelled
     var removalResult: LocalApplicationRemovalResult = LocalApplicationRemovalResult.Success(snapshot)
     var removeCalls: Int = 0
+    var clearCalls: Int = 0
 
     override suspend fun load(): LocalApplicationMappingsLoadResult {
         return LocalApplicationMappingsLoadResult.Success(snapshot)
@@ -530,7 +567,11 @@ private class FakeApplicationMappings(
 
     override suspend fun chooseApplications(): LocalApplicationSelectionResult {
         return selectionResult.also { result ->
-            if (result is LocalApplicationSelectionResult.Success) snapshot = result.snapshot
+            snapshot = when (result) {
+                is LocalApplicationSelectionResult.Success -> result.snapshot
+                is LocalApplicationSelectionResult.AccessChanged -> result.snapshot
+                else -> snapshot
+            }
         }
     }
 
@@ -538,6 +579,13 @@ private class FakeApplicationMappings(
         removeCalls++
         return removalResult.also { result ->
             if (result is LocalApplicationRemovalResult.Success) snapshot = result.snapshot
+        }
+    }
+
+    override suspend fun clear(): LocalApplicationRemovalResult {
+        clearCalls++
+        return LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty()).also { result ->
+            snapshot = result.snapshot
         }
     }
 }
