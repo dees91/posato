@@ -1120,3 +1120,8 @@
 
 - Rejected a persisted staged set above 128 rows before staged payload columns
   are inspected or restored.
+
+## [2026-09-02] correction | Bound persisted replica state before restore
+
+- Rejected a second persisted replica-state row before state BLOB columns are
+  inspected or restored.

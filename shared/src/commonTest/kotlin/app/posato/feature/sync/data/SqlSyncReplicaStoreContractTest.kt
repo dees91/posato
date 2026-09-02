@@ -119,6 +119,37 @@ class SqlSyncReplicaStoreContractTest {
     }
 
     @Test
+    fun `given duplicate persisted state rows when reopened then corruption is reported before restore`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-duplicate-state.db")
+        var driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+            driver.execute(null, "UPDATE sync_replica_state SET transport_progress = zeroblob(65536)", 0)
+            database.transaction {
+                driver.execute(null, "CREATE TABLE tampered_sync_replica_state AS SELECT * FROM sync_replica_state", 0)
+                driver.execute(null, "INSERT INTO tampered_sync_replica_state SELECT * FROM sync_replica_state", 0)
+                driver.execute(null, "DROP TABLE sync_replica_state", 0)
+                driver.execute(null, "ALTER TABLE tampered_sync_replica_state RENAME TO sync_replica_state", 0)
+            }
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            val reopenedDatabase = PosatoDatabase(driver)
+            val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+            assertEquals(listOf(1L), reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            val result = reopenedStore.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
     fun `given an out of range persisted physical clock when read then corruption is reported`() = runTest {
         listOf(-1L, SyncFormatLimits.MAX_PHYSICAL_MILLIS + 1).forEachIndexed { index, physical ->
             val testDatabase = createLocalPolicyTestDatabase("sync-invalid-physical-$index.db")

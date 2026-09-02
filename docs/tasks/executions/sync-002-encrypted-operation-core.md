@@ -77,6 +77,10 @@
   with no Critical or Required findings. Its simplicity review selected one
   bounded SQL preflight branch before staged payload inspection and one
   real-database boundary regression, without a count query or broader policy.
+  The duplicate persisted-state correction received independent plan approval
+  with no Critical or Required findings. Its simplicity review selected the
+  same bounded SQL preflight pattern at the exact one-row boundary and one
+  real-database regression, without a count query or schema change.
 
 ## Result
 
@@ -171,7 +175,10 @@
   lean. The persisted-staging capacity correction received focused
   completed-change approval with no findings at any severity; its simplicity
   review found the bounded SQL preflight and one boundary regression already
-  lean.
+  lean. The duplicate persisted-state correction received focused
+  completed-change approval with no findings at any severity; its simplicity
+  review found the exact one-row SQL preflight and one boundary regression
+  already lean.
 
 ## Hosted review follow-up
 
@@ -237,7 +244,10 @@
   bundle-parts carrier exposed the complete header, ciphertext and tag, and
   signature through its generated default string. The latest required finding
   found that reopen selected and decoded every persisted staged bundle before
-  rejecting a staging set above the accepted 128-bundle limit.
+  rejecting a staging set above the accepted 128-bundle limit. The latest
+  required finding found that reopen materialized every row from a replaced
+  replica-state table, including bounded transport-progress bytes, before
+  rejecting a second row.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -333,8 +343,9 @@
   retained row. The private bundle-parts carrier now returns one fixed redacted
   default string instead of rendering its header, ciphertext and tag, and
   signature byte arrays. Replica restore now rejects a 129th staged row in the
-  SQL preflight before inspecting staged payload columns. No further hosted
-  review is needed.
+  SQL preflight before inspecting staged payload columns. Replica restore now
+  also rejects a second state row in the SQL preflight before inspecting state
+  BLOB columns. No further hosted review is needed.
 
 ## Verification
 
@@ -372,6 +383,7 @@
 | Duplicate persisted-bundle rejection | `pass` | The focused real-SQLite JVM regression first showed that duplicate accepted or staged bundle identifiers passed preflight, then proved exact preflight rejection and `CORRUPTION` after reopening with a fresh driver. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no Critical or Required findings. |
 | Bundle-parts redaction | `pass` | Baseline JVM bytecode rendered all three byte arrays through `Arrays.toString`; post-correction bytecode returns only the fixed `BundleParts(redacted)` literal without reading a field. The focused JVM cryptographic-provider test, all 32 JVM and iOS Simulator test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no Critical or Required findings. |
 | Persisted-staging capacity preflight | `pass` | The focused real-SQLite JVM regression first showed that 129 physically valid staged rows passed preflight, then proved rejection and `CORRUPTION` after reopening with a fresh driver. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
+| Duplicate persisted-state preflight | `pass` | The focused real-SQLite JVM regression first showed that two physically valid state rows with exact-limit transport progress passed preflight, then proved rejection and `CORRUPTION` after reopening with a fresh driver. A controlled SQLite probe confirmed that the first cardinality arm short-circuits the later branch. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

@@ -206,10 +206,10 @@ authoring incarnation and refuses later mutation after cancellation.
 only when accepted, pending, staged, and terminal-expiry storage is also empty.
 Any retained child row now reports corruption before initialization, so a
 partial restore cannot silently reset revision, HLC, or transport progress
-around surviving synchronization state. Restore also reads and validates every
-replica-state row before initialization, so a row retained under an invalid
-singleton key or an additional hidden state row reports corruption instead of
-being treated as an empty database.
+around surviving synchronization state. Restore rejects an invalid singleton
+and a second replica-state row in the SQL preflight before typed state or
+transport-progress bytes are materialized, so neither can be treated as an
+empty database or drive an unbounded restore.
 
 `observed` (2026-09-01): opaque transport progress is limited to 64 KiB before
 common code retains a copy. The SQL schema rejects larger values, restore
