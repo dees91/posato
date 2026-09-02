@@ -244,6 +244,14 @@ event timestamps, correlation identifiers, domains, applications, policy,
 identity, secrets, content, browsing and application-use events, and derived
 or pseudonymous forms of those values.
 
+`observed` (2026-09-02): `SYNC-002` carriers that hold session timing, hybrid
+logical clocks, authoring state, replica snapshots, mutation results,
+persisted rows, decoded operations, bundle parts, the writer, and the signing
+and transport keys use fixed redacted default string representations. Common
+and platform tests enumerate the covered carriers on the JVM and iOS
+Simulator. This prevents accidental interpolation from exposing exact values;
+it does not authorize production diagnostics to serialize with `toString()`.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the

@@ -1,0 +1,1440 @@
+package app.posato.feature.sync.domain
+
+import app.posato.feature.sync.FakeSyncCryptoProvider
+import app.posato.feature.sync.data.DurableClockState
+import app.posato.feature.sync.data.EncryptedBundleCodec
+import app.posato.feature.sync.data.ImmutableBytes
+import app.posato.feature.sync.data.OpaqueTransportProgress
+import app.posato.feature.sync.data.PrepareBundleResult
+import app.posato.feature.sync.data.PreparedStoredBundle
+import app.posato.feature.sync.data.StoredAcceptedBundle
+import app.posato.feature.sync.data.StoredStagedBundle
+import app.posato.feature.sync.data.SyncCryptoProvider
+import app.posato.feature.sync.data.SyncReplicaSnapshot
+import app.posato.feature.sync.data.SyncReplicaStore
+import app.posato.feature.sync.data.SyncStoreFailure
+import app.posato.feature.sync.data.SyncStoreResult
+import app.posato.feature.sync.testContext
+import app.posato.feature.sync.testIdentifier
+import app.posato.feature.sync.testOperation
+import app.posato.feature.sync.testTransportProgress
+import app.posato.feature.targets.domain.ExactDomain
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertContentEquals
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertIs
+import kotlin.test.assertNull
+import kotlin.test.assertSame
+import kotlin.test.assertTrue
+
+class SyncWriterOpenTest {
+    @Test
+    fun `given an open writer when converted to strings then its identity remains redacted`() = runTest {
+        val result = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+                .open(testContext, transportKey()),
+        )
+
+        try {
+            assertEquals("SyncWriter(redacted)", result.writer.toString())
+            assertEquals("Success(writer=SyncWriter(redacted))", result.toString())
+        } finally {
+            result.writer.close()
+        }
+    }
+
+    @Test
+    fun `given an active writer when another open is rejected then the rejected transport key is cleared`() = runTest {
+        val core = SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+        val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+        val rejectedKey = transportKey()
+
+        try {
+            val result = core.open(testContext, rejectedKey)
+
+            assertEquals(OpenSyncWriterFailure.ALREADY_OPEN, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            assertNull(rejectedKey.useBytes { bytes -> bytes.copyOf() })
+        } finally {
+            writer.close()
+        }
+    }
+
+    @Test
+    fun `given an active writer when open receives its own transport key then the key stays usable`() = runTest {
+        val core = SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+        val activeKey = transportKey()
+        val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, activeKey)).writer
+
+        try {
+            val result = core.open(testContext, activeKey)
+
+            assertEquals(OpenSyncWriterFailure.ALREADY_OPEN, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            assertFalse(activeKey.isClosed)
+            assertIs<LocalMutationResult.Success>(
+                writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("alias.example")))),
+            )
+        } finally {
+            writer.close()
+        }
+        assertTrue(activeKey.isClosed)
+    }
+
+    @Test
+    fun `given a rejected transport key when it is reused after the writer closes then open fails closed`() = runTest {
+        val core = SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+        val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+        val rejectedKey = transportKey()
+        assertIs<OpenSyncWriterResult.Failure>(core.open(testContext, rejectedKey))
+        writer.close()
+
+        val result = core.open(testContext, rejectedKey)
+
+        assertEquals(OpenSyncWriterFailure.TRANSPORT_KEY_CLOSED, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+        assertTrue(rejectedKey.isClosed)
+        val replacement = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+        replacement.close()
+    }
+
+    @Test
+    fun `given a suspended store open when opening is cancelled then the transport key is cleared`() = runTest {
+        val openStarted = CompletableDeferred<Unit>()
+        val store = FakeSyncReplicaStore(
+            initial = snapshot(),
+            beforeOpen = {
+                openStarted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val openingKey = transportKey()
+        val openJob = launch {
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, openingKey)
+        }
+        openStarted.await()
+
+        openJob.cancel()
+        openJob.join()
+
+        assertNull(openingKey.useBytes { bytes -> bytes.copyOf() })
+    }
+}
+
+class SyncWriterCancellationTest {
+    @Test
+    fun `given close cancellation while a mutation owns the writer when mutation completes then resources retire`() = runTest {
+        val mutationCommitted = CompletableDeferred<Unit>()
+        val continueMutation = CompletableDeferred<Unit>()
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(
+            initial = snapshot(),
+            afterLocalCommit = {
+                mutationCommitted.complete(Unit)
+                continueMutation.await()
+            },
+        )
+        val activeTransportKey = transportKey()
+        val core = SyncOperationCore(store, provider, SyncWallClock { 100 })
+        val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, activeTransportKey)).writer
+        val mutationJob = launch {
+            writer.mutate(
+                LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("close.example"))),
+            )
+        }
+        mutationCommitted.await()
+        val closeJob = launch(start = CoroutineStart.UNDISPATCHED) { writer.close() }
+
+        closeJob.cancel()
+        continueMutation.complete(Unit)
+        mutationJob.join()
+        closeJob.join()
+
+        assertNull(activeTransportKey.useBytes { bytes -> bytes.copyOf() })
+        assertEquals(1, provider.signingKeyCloseCount)
+        val reopenedWriter = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+        reopenedWriter.close()
+    }
+
+    @Test
+    fun `given cancellation after writer shutdown begins when release suspends then release completes`() = runTest {
+        val initialSnapshot = snapshot()
+        val releaseStarted = CompletableDeferred<Unit>()
+        val continueRelease = CompletableDeferred<Unit>()
+        var releaseCompleted = false
+        val writer = SyncWriter(
+            store = FakeSyncReplicaStore(initialSnapshot),
+            cryptoProvider = FakeSyncCryptoProvider(),
+            wallClock = SyncWallClock { 100 },
+            transportKey = transportKey(),
+            initialSnapshot = initialSnapshot,
+            onClose = {
+                releaseStarted.complete(Unit)
+                continueRelease.await()
+                releaseCompleted = true
+            },
+        )
+
+        val closeJob = launch { writer.close() }
+        releaseStarted.await()
+        closeJob.cancel()
+        continueRelease.complete(Unit)
+        closeJob.join()
+
+        assertTrue(releaseCompleted)
+    }
+
+    @Test
+    fun `given cancellation during the first local commit when retried then the prepared incarnation is retired`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(snapshot(), LocalCommitMode.CANCELLED)
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val before = store.current
+
+        assertFailsWith<CancellationException> {
+            writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)
+        }
+
+        assertEquals(before, store.current)
+        assertEquals(1, provider.signingKeyCloseCount)
+        assertEquals(
+            LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+        )
+    }
+
+    @Test
+    fun `given cancellation after a local mutation commits when resumed then the checkpoint is reconciled`() = runTest {
+        val commitCompleted = CompletableDeferred<Unit>()
+        val domain = checkNotNull(ExactDomain.restore("reconciled-local.example"))
+        val store = FakeSyncReplicaStore(
+            initial = snapshot(),
+            afterLocalCommit = {
+                commitCompleted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val mutationJob = launch {
+            writer.mutate(LocalSyncMutation.PresentDomain(domain))
+        }
+        commitCompleted.await()
+
+        mutationJob.cancel()
+        mutationJob.join()
+
+        assertTrue(mutationJob.isCancelled)
+        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(2, writer.pendingBundles.size)
+        assertEquals(
+            LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+        )
+    }
+
+    @Test
+    fun `given cancellation after remote acceptance commits when resumed then the checkpoint is reconciled`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val commitCompleted = CompletableDeferred<Unit>()
+        val domain = checkNotNull(ExactDomain.restore("reconciled.example"))
+        val registration = testOperation(1, 1, SyncOperationPayload.AuthorRegister)
+        val operation = testOperation(2, 2, SyncOperationPayload.DomainPresent(domain))
+        val bundle = remoteBundle(provider, operation)
+        val store = FakeSyncReplicaStore(
+            initial = acceptedSnapshot(provider, listOf(registration)),
+            afterRemoteCommit = {
+                commitCompleted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val acceptanceJob = launch {
+            writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false))
+        }
+        commitCompleted.await()
+
+        acceptanceJob.cancel()
+        acceptanceJob.join()
+
+        assertTrue(acceptanceJob.isCancelled)
+        assertEquals(listOf(domain), writer.projection().domains)
+        assertIs<RemoteAcceptanceResult.Duplicate>(
+            writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false)),
+        )
+    }
+
+    @Test
+    fun `given the cancellation reconciliation read throws then the original cancellation freezes the writer`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val cancellation = CancellationException("Original remote cancellation")
+        val registration = testOperation(1, 1, SyncOperationPayload.AuthorRegister)
+        val operation = testOperation(2, 2, SyncOperationPayload.DomainPresent(checkNotNull(ExactDomain.restore("freeze.example"))))
+        val bundle = remoteBundle(provider, operation)
+        val store = FakeSyncReplicaStore(
+            initial = acceptedSnapshot(provider, listOf(registration)),
+            afterRemoteCommit = { throw cancellation },
+            remoteReconciliationReadFailure = IllegalStateException("Synthetic reconciliation read failure"),
+        )
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+
+        val thrown = assertFailsWith<CancellationException> {
+            writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false))
+        }
+
+        assertSame(cancellation, thrown)
+        assertEquals(
+            RemoteAcceptanceFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<RemoteAcceptanceResult.Failure>(
+                writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false)),
+            ).reason,
+        )
+    }
+
+    @Test
+    fun `given cancellation after terminal expiry commits when time rolls back then the session remains inactive`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val commitCompleted = CompletableDeferred<Unit>()
+        val sessionId = SessionId(testIdentifier(95))
+        val initial = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+            ),
+        )
+        val store = FakeSyncReplicaStore(
+            initial = initial,
+            afterExpiryCommit = {
+                commitCompleted.complete(Unit)
+                awaitCancellation()
+            },
+        )
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val expiryJob = launch { writer.markTerminalExpiry(sessionId) }
+        commitCompleted.await()
+
+        expiryJob.cancel()
+        expiryJob.join()
+
+        assertTrue(expiryJob.isCancelled)
+        assertIs<EffectiveSession.Inactive>(writer.evaluateSession(150))
+    }
+}
+
+class SyncReplicaSnapshotClockValidationTest {
+    @Test
+    fun `given empty accepted history when reopened then only the fresh HLC is valid`() = runTest {
+        val terminal = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
+        val cases = listOf(
+            DurableClockState(HybridLogicalClock(0, 0), false) to true,
+            DurableClockState(HybridLogicalClock(10, 0), false) to false,
+            DurableClockState(terminal, true) to false,
+        )
+
+        cases.forEach { (clockState, succeeds) ->
+            val result = SyncOperationCore(
+                FakeSyncReplicaStore(snapshot(clockState)),
+                FakeSyncCryptoProvider(),
+                SyncWallClock { 100 },
+            ).open(testContext, transportKey())
+
+            if (succeeds) {
+                assertIs<OpenSyncWriterResult.Success>(result).writer.close()
+            } else {
+                assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            }
+        }
+    }
+
+    @Test
+    fun `given exhausted state is not terminal when reopened then corruption is returned`() = runTest {
+        val corrupted = snapshot(DurableClockState(HybridLogicalClock(10, 0), true))
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(corrupted), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given accepted history at the initial HLC when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister, physical = 0)),
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given local accepted history when reopened then the durable HLC may equal the last operation`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister).copy(clock = HybridLogicalClock(10, 4)),
+                testOperation(2, 2, SyncOperationPayload.ApplicationPolicyAbsent).copy(clock = HybridLogicalClock(10, 5)),
+            ),
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertIs<OpenSyncWriterResult.Success>(result).writer.close()
+    }
+
+    @Test
+    fun `given remote accepted history when reopened then the durable HLC must remain within reachable bounds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = remotelyAcceptedSnapshot(
+            provider,
+            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister)),
+        )
+        val terminal = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
+        val cases = listOf(
+            DurableClockState(HybridLogicalClock(0, 1), false) to false,
+            DurableClockState(HybridLogicalClock(1, 1), false) to true,
+            DurableClockState(HybridLogicalClock(1, 2), false) to false,
+            DurableClockState(HybridLogicalClock(2, 0), false) to false,
+            DurableClockState(terminal, true) to false,
+        )
+
+        cases.forEach { (clockState, succeeds) ->
+            val result = SyncOperationCore(
+                FakeSyncReplicaStore(accepted.copy(clockState = clockState)),
+                provider,
+                SyncWallClock { 100 },
+            ).open(testContext, transportKey())
+
+            if (succeeds) {
+                assertIs<OpenSyncWriterResult.Success>(result).writer.close()
+            } else {
+                assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            }
+        }
+    }
+}
+
+class SyncWriterTest {
+    @Test
+    fun `given HKDF failure when a local mutation is prepared then cryptography failure freezes the writer before sealing`() = runTest {
+        val delegate = FakeSyncCryptoProvider()
+        var sealCallCount = 0
+        val provider = object : SyncCryptoProvider by delegate {
+            override fun hmacSha256(
+                key: ByteArray,
+                message: ByteArray,
+            ): ByteArray? {
+                return null
+            }
+
+            override fun sealAesGcm(
+                key: ByteArray,
+                nonce: ByteArray,
+                authenticatedData: ByteArray,
+                plaintext: ByteArray,
+            ): ByteArray? {
+                sealCallCount += 1
+                return null
+            }
+        }
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(FakeSyncReplicaStore(snapshot()), provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+
+        try {
+            assertEquals(
+                LocalMutationFailure.CRYPTOGRAPHY_FAILURE,
+                assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+            )
+            assertEquals(0, sealCallCount)
+            assertEquals(1, delegate.signingKeyCloseCount)
+            assertEquals(
+                LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
+                assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+            )
+        } finally {
+            writer.close()
+        }
+    }
+
+    @Test
+    fun `given bounded source bytes when wrapped then later source changes do not change the bundle`() {
+        val source = byteArrayOf(1)
+        val bundle = checkNotNull(EncryptedBundle.fromBytes(source))
+
+        source[0] = 2
+
+        assertContentEquals(byteArrayOf(1), bundle.copyBytes())
+    }
+
+    @Test
+    fun `given the terminal author sequence when advanced then it cannot be reused`() {
+        assertEquals(null, nextAuthorSequence(Long.MAX_VALUE))
+        assertEquals(Long.MAX_VALUE, nextAuthorSequence(Long.MAX_VALUE - 1))
+    }
+
+    @Test
+    fun `given wall clock samples and remaining counters when reserved then HLC advancement is monotonic and atomic`() {
+        data class Case(
+            val current: HybridLogicalClock,
+            val wallTime: Long,
+            val count: Int,
+            val expected: List<HybridLogicalClock>?,
+        )
+        val terminal = SyncFormatLimits.MAX_LOGICAL_COUNTER
+        val cases = listOf(
+            Case(HybridLogicalClock(100, 5), 101, 2, listOf(HybridLogicalClock(101, 0), HybridLogicalClock(101, 1))),
+            Case(HybridLogicalClock(100, 5), 100, 1, listOf(HybridLogicalClock(100, 6))),
+            Case(HybridLogicalClock(100, 5), 99, 1, listOf(HybridLogicalClock(100, 6))),
+            Case(HybridLogicalClock(100, terminal), 100, 1, listOf(HybridLogicalClock(101, 0))),
+            Case(
+                HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, terminal - 2),
+                SyncFormatLimits.MAX_PHYSICAL_MILLIS,
+                2,
+                listOf(
+                    HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, terminal - 1),
+                    HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, terminal),
+                ),
+            ),
+            Case(HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, terminal - 1), SyncFormatLimits.MAX_PHYSICAL_MILLIS, 2, null),
+            Case(HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, terminal), SyncFormatLimits.MAX_PHYSICAL_MILLIS, 1, null),
+        )
+
+        cases.forEach { case ->
+            assertEquals(case.expected, reserveLocalClocks(DurableClockState(case.current, false), case.wallTime, case.count))
+        }
+    }
+
+    @Test
+    fun `given a fresh writer when the first mutation commits then registration and change are one pending batch`() = runTest {
+        val store = FakeSyncReplicaStore(snapshot())
+        val core = SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 })
+        val opened = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey()))
+
+        val result = assertIs<LocalMutationResult.Success>(
+            opened.writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("stable.example")))),
+        )
+
+        assertEquals(2, result.pendingBundles.size)
+        assertEquals(2, store.current.acceptedBundles.size)
+        assertEquals(2, store.current.pendingBundles.size)
+        assertEquals(listOf(1L, 2L), store.current.acceptedBundles.values.map { it.operation.authorSequence }.sorted())
+    }
+
+    @Test
+    fun `given an invalid session mutation when retried then the writer remains usable`() = runTest {
+        val invalidSessions = listOf(
+            LocalSyncMutation.StartSession(SessionId(testIdentifier(20)), 100, 100),
+            LocalSyncMutation.StartSession(
+                SessionId(testIdentifier(21)),
+                100,
+                100 + SyncFormatLimits.MAX_SESSION_DURATION_MILLIS + 1,
+            ),
+        )
+
+        invalidSessions.forEach { invalidMutation ->
+            val store = FakeSyncReplicaStore(snapshot())
+            val writer = assertIs<OpenSyncWriterResult.Success>(
+                SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 })
+                    .open(testContext, transportKey()),
+            ).writer
+            val before = store.current
+
+            val invalidResult = assertIs<LocalMutationResult.Failure>(writer.mutate(invalidMutation))
+
+            assertEquals(LocalMutationFailure.INVALID_MUTATION, invalidResult.reason)
+            assertEquals(before, store.current)
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+        }
+    }
+
+    @Test
+    fun `given insufficient HLC space for the complete first batch when mutated then terminal exhaustion is persisted without operations`() =
+        runTest {
+            val provider = FakeSyncCryptoProvider()
+            val beforeTerminal = HybridLogicalClock(
+                SyncFormatLimits.MAX_PHYSICAL_MILLIS,
+                SyncFormatLimits.MAX_LOGICAL_COUNTER - 1,
+            )
+            val retainedOperation = testOperation(90, 1, SyncOperationPayload.AuthorRegister, author = 90).copy(
+                clock = HybridLogicalClock(
+                    SyncFormatLimits.MAX_PHYSICAL_MILLIS,
+                    SyncFormatLimits.MAX_LOGICAL_COUNTER - 2,
+                ),
+            )
+            val store = FakeSyncReplicaStore(remotelyAcceptedSnapshot(provider, listOf(retainedOperation)))
+            val core = SyncOperationCore(store, provider, SyncWallClock { SyncFormatLimits.MAX_PHYSICAL_MILLIS })
+            assertEquals(DurableClockState(beforeTerminal, false), store.current.clockState)
+            val opened = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey()))
+
+            val result = assertIs<LocalMutationResult.Failure>(
+                opened.writer.mutate(LocalSyncMutation.RemoveApplicationPolicy),
+            )
+
+            assertEquals(LocalMutationFailure.HLC_EXHAUSTED, result.reason)
+            assertEquals(
+                HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER),
+                store.current.clockState.last,
+            )
+            assertTrue(store.current.clockState.isExhausted)
+            assertEquals(setOf(retainedOperation.operationId), store.current.acceptedBundles.keys)
+            opened.writer.close()
+            assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer.close()
+        }
+
+    @Test
+    fun `given ambiguous HLC exhaustion commits when reconciled then only exact or proven absent outcomes succeed`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val retainedOperation = testOperation(90, 1, SyncOperationPayload.AuthorRegister, author = 90).copy(
+            clock = HybridLogicalClock(
+                SyncFormatLimits.MAX_PHYSICAL_MILLIS,
+                SyncFormatLimits.MAX_LOGICAL_COUNTER - 2,
+            ),
+        )
+        val initial = remotelyAcceptedSnapshot(provider, listOf(retainedOperation))
+        val cases = listOf(
+            LocalCommitMode.AMBIGUOUS_EXACT to LocalMutationFailure.HLC_EXHAUSTED,
+            LocalCommitMode.AMBIGUOUS_ABSENT_ONCE to LocalMutationFailure.HLC_EXHAUSTED,
+            LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE to LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
+        )
+
+        cases.forEach { (mode, expectedFailure) ->
+            val store = FakeSyncReplicaStore(initial, mode)
+            val writer = assertIs<OpenSyncWriterResult.Success>(
+                SyncOperationCore(
+                    store,
+                    provider,
+                    SyncWallClock { SyncFormatLimits.MAX_PHYSICAL_MILLIS },
+                ).open(testContext, transportKey()),
+            ).writer
+
+            val result = assertIs<LocalMutationResult.Failure>(
+                writer.mutate(LocalSyncMutation.RemoveApplicationPolicy),
+            )
+
+            assertEquals(expectedFailure, result.reason, mode.name)
+        }
+    }
+
+    @Test
+    fun `given a rejected bundle and transport receipt when handled then only exact refetch advances progress`() = runTest {
+        data class Case(
+            val exactRefetchAvailable: Boolean,
+            val remoteCommitMode: RemoteCommitMode,
+        )
+        val cases = listOf(
+            Case(false, RemoteCommitMode.SUCCESS),
+            Case(true, RemoteCommitMode.SUCCESS),
+            Case(true, RemoteCommitMode.AMBIGUOUS_EXACT),
+        )
+
+        cases.forEachIndexed { index, case ->
+            val provider = FakeSyncCryptoProvider()
+            val store = FakeSyncReplicaStore(snapshot(), remoteCommitMode = case.remoteCommitMode)
+            val writer = assertIs<OpenSyncWriterResult.Success>(
+                SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+            ).writer
+            val progress = testTransportProgress(index.toByte())
+
+            val result = writer.acceptRemote(
+                remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.AuthorRegister)).copyBytes(),
+                RemoteTransportReceipt(progress, case.exactRefetchAvailable),
+            )
+
+            assertEquals(RemoteAcceptanceFailure.INVALID_OPERATION, assertIs<RemoteAcceptanceResult.Failure>(result).reason)
+            assertEquals(emptyMap(), store.current.stagedBundles)
+            assertEquals(progress.takeIf { case.exactRefetchAvailable }, store.current.transportProgress)
+        }
+    }
+
+    @Test
+    fun `given remote bytes at the bundle limit when accepted then oversized input is rejected before parsing`() = runTest {
+        val store = FakeSyncReplicaStore(snapshot())
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val receipt = RemoteTransportReceipt(testTransportProgress(1), exactRefetchAvailable = true)
+
+        val atLimit = writer.acceptRemote(ByteArray(SyncFormatLimits.COMPLETE_BUNDLE_BYTES), RemoteTransportReceipt(null, false))
+        val oversizedWithoutProof = writer.acceptRemote(
+            ByteArray(SyncFormatLimits.COMPLETE_BUNDLE_BYTES + 1),
+            receipt.copy(exactRefetchAvailable = false),
+        )
+        val progressWithoutProof = store.current.transportProgress
+        val oversizedWithProof = writer.acceptRemote(ByteArray(SyncFormatLimits.COMPLETE_BUNDLE_BYTES + 1), receipt)
+
+        assertEquals(RemoteAcceptanceFailure.MALFORMED, assertIs<RemoteAcceptanceResult.Failure>(atLimit).reason)
+        assertEquals(RemoteAcceptanceFailure.OVERSIZED, assertIs<RemoteAcceptanceResult.Failure>(oversizedWithoutProof).reason)
+        assertEquals(null, progressWithoutProof)
+        assertEquals(RemoteAcceptanceFailure.OVERSIZED, assertIs<RemoteAcceptanceResult.Failure>(oversizedWithProof).reason)
+        assertEquals(receipt.progress, store.current.transportProgress)
+    }
+
+    @Test
+    fun `given rejected progress cannot be reconciled when handled then the writer freezes`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(snapshot(), remoteCommitMode = RemoteCommitMode.AMBIGUOUS_WITH_EXTRA_STATE)
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val rejected = remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.AuthorRegister))
+
+        val result = writer.acceptRemote(
+            rejected.copyBytes(),
+            RemoteTransportReceipt(testTransportProgress(9), exactRefetchAvailable = true),
+        )
+
+        assertEquals(
+            RemoteAcceptanceFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<RemoteAcceptanceResult.Failure>(result).reason,
+        )
+        assertEquals(
+            RemoteAcceptanceFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<RemoteAcceptanceResult.Failure>(
+                writer.acceptRemote(rejected.copyBytes(), RemoteTransportReceipt(null, exactRefetchAvailable = false)),
+            ).reason,
+        )
+    }
+
+    @Test
+    fun `given business arrives before registration when both are accepted then staged input and progress converge atomically`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(snapshot())
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val domain = checkNotNull(ExactDomain.restore("stable.example"))
+
+        assertIs<RemoteAcceptanceResult.Staged>(
+            writer.acceptRemote(
+                remoteBundle(provider, testOperation(2, 2, SyncOperationPayload.DomainPresent(domain))).copyBytes(),
+                RemoteTransportReceipt(testTransportProgress(1), false),
+            ),
+        )
+        val result = writer.acceptRemote(
+            remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
+            RemoteTransportReceipt(testTransportProgress(2), false),
+        )
+
+        assertIs<RemoteAcceptanceResult.Accepted>(result)
+        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(emptyMap(), store.current.stagedBundles)
+        assertEquals(testTransportProgress(2), store.current.transportProgress)
+    }
+
+    @Test
+    fun `given an ambiguous local commit with the exact footprint when reconciled then immutable bytes succeed`() = runTest {
+        val store = FakeSyncReplicaStore(snapshot(), LocalCommitMode.AMBIGUOUS_EXACT)
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+
+        val result = writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)
+
+        assertIs<LocalMutationResult.Success>(result)
+        assertEquals(2, store.current.pendingBundles.size)
+    }
+
+    @Test
+    fun `given an ambiguous local commit with extra state when reconciled then the writer freezes`() = runTest {
+        val store = FakeSyncReplicaStore(snapshot(), LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE)
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+
+        val result = assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+
+        assertEquals(LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN, result.reason)
+        assertEquals(
+            LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+        )
+    }
+
+    @Test
+    fun `given persisted plaintext bytes do not match the authenticated bundle when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val operation = testOperation(1, 1, SyncOperationPayload.AuthorRegister)
+        val bundle = remoteBundle(provider, operation)
+        val corrupted = snapshot().copy(
+            acceptedBundles = mapOf(
+                operation.operationId to StoredAcceptedBundle(bundle, ImmutableBytes(byteArrayOf(1)), operation),
+            ),
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(corrupted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given an invalid accepted author history when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val cases = listOf(
+            listOf(testOperation(30, 1, SyncOperationPayload.ApplicationPolicyAbsent)),
+            listOf(
+                testOperation(31, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(32, 2, SyncOperationPayload.AuthorRegister),
+            ),
+            listOf(
+                testOperation(37, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(38, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+                testOperation(39, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+            ),
+        )
+
+        cases.forEach { operations ->
+            val result = SyncOperationCore(
+                FakeSyncReplicaStore(acceptedSnapshot(provider, operations)),
+                provider,
+                SyncWallClock { 100 },
+            ).open(testContext, transportKey())
+
+            assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+        }
+    }
+
+    @Test
+    fun `given a valid accepted author history with a sequence gap when reopened then it succeeds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(33, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(34, 3, SyncOperationPayload.ApplicationPolicyAbsent),
+            ),
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertIs<OpenSyncWriterResult.Success>(result)
+    }
+
+    @Test
+    fun `given terminal expiry references a sequence-gapped session start when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val sessionId = SessionId(testIdentifier(97))
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(33, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(34, 3, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+            ),
+        ).copy(terminalExpiryFacts = setOf(sessionId))
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given terminal expiry references conflicting applicable session starts when reopened then it succeeds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val sessionId = SessionId(testIdentifier(98))
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(35, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(36, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+                testOperation(37, 3, SyncOperationPayload.SessionStart(sessionId, 100, 250)),
+            ),
+        ).copy(terminalExpiryFacts = setOf(sessionId))
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertIs<OpenSyncWriterResult.Success>(result)
+    }
+
+    @Test
+    fun `given an accepted author changes signing key when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val changedKey = checkNotNull(PublicSigningKey.fromBytes(ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES) { 8 }))
+        val changedKeyProvider = FakeSyncCryptoProvider(changedKey)
+        val registration = testOperation(35, 1, SyncOperationPayload.AuthorRegister)
+        val changedKeyOperation = testOperation(36, 2, SyncOperationPayload.ApplicationPolicyAbsent)
+            .copy(publicSigningKey = changedKey)
+        val accepted = snapshot(DurableClockState(changedKeyOperation.clock, false)).copy(
+            acceptedBundles = listOf(
+                storedAcceptedBundle(provider, registration),
+                storedAcceptedBundle(changedKeyProvider, changedKeyOperation),
+            ).associateBy { stored -> stored.operation.operationId },
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given invalid staged state when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val registration = testOperation(40, 1, SyncOperationPayload.AuthorRegister)
+        val overlappingRegistration = testOperation(45, 1, SyncOperationPayload.AuthorRegister)
+        val cases = listOf(
+            snapshot().withStagedBundles(
+                provider,
+                listOf(testOperation(41, 1, SyncOperationPayload.ApplicationPolicyAbsent)),
+            ),
+            acceptedSnapshot(provider, listOf(registration)).withStagedBundles(
+                provider,
+                listOf(testOperation(42, 2, SyncOperationPayload.ApplicationPolicyAbsent)),
+            ),
+            snapshot().withStagedBundles(
+                provider,
+                listOf(
+                    testOperation(43, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+                    testOperation(44, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+                ),
+            ),
+            stagedSnapshot(provider, SyncFormatLimits.MAX_UNKNOWN_AUTHOR_BUNDLES + 1, singleAuthor = true),
+            stagedSnapshot(provider, SyncFormatLimits.MAX_STAGED_BUNDLES + 1, singleAuthor = false),
+            acceptedSnapshot(provider, listOf(overlappingRegistration)).withStagedBundles(
+                provider,
+                listOf(testOperation(45, 2, SyncOperationPayload.ApplicationPolicyAbsent, author = 11)),
+            ),
+        )
+
+        cases.forEach { corrupted ->
+            val result = SyncOperationCore(FakeSyncReplicaStore(corrupted), provider, SyncWallClock { 100 })
+                .open(testContext, transportKey())
+
+            assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+        }
+    }
+
+    @Test
+    fun `given staged gaps and competing keys when reopened then it succeeds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val competingKey = checkNotNull(PublicSigningKey.fromBytes(ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES) { 9 }))
+        val competingProvider = FakeSyncCryptoProvider(competingKey)
+        val first = testOperation(46, 2, SyncOperationPayload.ApplicationPolicyAbsent)
+        val later = testOperation(47, 4, SyncOperationPayload.ApplicationPolicyAbsent).copy(publicSigningKey = competingKey)
+        val staged = listOf(
+            storedStagedBundle(provider, first),
+            storedStagedBundle(competingProvider, later),
+        ).associateBy { stored -> stored.operation.operationId }
+
+        val result = SyncOperationCore(
+            FakeSyncReplicaStore(snapshot().copy(stagedBundles = staged)),
+            provider,
+            SyncWallClock { 100 },
+        ).open(testContext, transportKey())
+
+        assertIs<OpenSyncWriterResult.Success>(result)
+    }
+
+    @Test
+    fun `given an ambiguous remote commit with the exact footprint when reconciled then acceptance succeeds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(snapshot(), remoteCommitMode = RemoteCommitMode.AMBIGUOUS_EXACT)
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+
+        val result = writer.acceptRemote(
+            remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
+            RemoteTransportReceipt(testTransportProgress(1), false),
+        )
+
+        assertIs<RemoteAcceptanceResult.Accepted>(result)
+    }
+
+    @Test
+    fun `given duplicate replay sequence conflict and a gap when accepted then each public outcome is stable`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(snapshot())
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        val registration = remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister))
+        assertIs<RemoteAcceptanceResult.Accepted>(
+            writer.acceptRemote(registration.copyBytes(), RemoteTransportReceipt(null, false)),
+        )
+
+        val duplicateProgress = testTransportProgress(3)
+        assertIs<RemoteAcceptanceResult.Duplicate>(
+            writer.acceptRemote(registration.copyBytes(), RemoteTransportReceipt(duplicateProgress, false)),
+        )
+        assertEquals(duplicateProgress, store.current.transportProgress)
+        val altered = registration.copyBytes().also { it[it.lastIndex] = (it.last().toInt() xor 1).toByte() }
+        assertEquals(
+            RemoteAcceptanceFailure.REPLAY_CONFLICT,
+            assertIs<RemoteAcceptanceResult.Failure>(
+                writer.acceptRemote(altered, RemoteTransportReceipt(null, false)),
+            ).reason,
+        )
+        assertEquals(
+            RemoteAcceptanceFailure.SEQUENCE_CONFLICT,
+            assertIs<RemoteAcceptanceResult.Failure>(
+                writer.acceptRemote(
+                    remoteBundle(provider, testOperation(2, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
+                    RemoteTransportReceipt(null, false),
+                ),
+            ).reason,
+        )
+        val gapDomain = checkNotNull(ExactDomain.restore("gap.example"))
+        assertIs<RemoteAcceptanceResult.Accepted>(
+            writer.acceptRemote(
+                remoteBundle(provider, testOperation(3, 3, SyncOperationPayload.DomainPresent(gapDomain))).copyBytes(),
+                RemoteTransportReceipt(null, false),
+            ),
+        )
+        assertEquals(emptyList(), writer.projection().domains)
+    }
+
+    @Test
+    fun `given per-author or global staging capacity when deferred then only exact-refetch receipts advance progress`() = runTest {
+        data class Case(
+            val initial: SyncReplicaSnapshot,
+            val author: Int,
+            val exactRefetch: Boolean
+        )
+        val cases = listOf(true, false).flatMap { exactRefetch ->
+            listOf(
+                Case(stagedSnapshot(FakeSyncCryptoProvider(), SyncFormatLimits.MAX_UNKNOWN_AUTHOR_BUNDLES, true), 10, exactRefetch),
+                Case(stagedSnapshot(FakeSyncCryptoProvider(), SyncFormatLimits.MAX_STAGED_BUNDLES, false), 500, exactRefetch),
+            )
+        }
+        cases.forEachIndexed { index, case ->
+            val provider = FakeSyncCryptoProvider()
+            val store = FakeSyncReplicaStore(case.initial)
+            val writer = assertIs<OpenSyncWriterResult.Success>(
+                SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+            ).writer
+            val progress = testTransportProgress(index.toByte())
+            val operation = testOperation(1_000 + index, 100, SyncOperationPayload.ApplicationPolicyAbsent, case.author)
+
+            val result = writer.acceptRemote(
+                remoteBundle(provider, operation).copyBytes(),
+                RemoteTransportReceipt(progress, exactRefetchAvailable = case.exactRefetch),
+            )
+
+            assertEquals(
+                RemoteAcceptanceFailure.DEFERRED_CAPACITY,
+                assertIs<RemoteAcceptanceResult.Failure>(result).reason,
+            )
+            assertEquals(progress.takeIf { case.exactRefetch }, store.current.transportProgress)
+        }
+    }
+
+    @Test
+    fun `given remote clocks at the terminal boundary when accepted then terminal state persists and later local writes are refused`() {
+        runTest {
+            val terminal = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
+            listOf(terminal.copy(logicalCounter = terminal.logicalCounter - 1), terminal).forEachIndexed { index, remoteClock ->
+                val provider = FakeSyncCryptoProvider()
+                val store = FakeSyncReplicaStore(
+                    initial = snapshot(),
+                    localCommitMode = LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE,
+                )
+                val writer = assertIs<OpenSyncWriterResult.Success>(
+                    SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+                ).writer
+                val registration = testOperation(800 + index, 1, SyncOperationPayload.AuthorRegister).copy(clock = remoteClock)
+
+                assertIs<RemoteAcceptanceResult.Accepted>(
+                    writer.acceptRemote(remoteBundle(provider, registration).copyBytes(), RemoteTransportReceipt(null, false)),
+                )
+                assertEquals(DurableClockState(terminal, true), store.current.clockState)
+                val terminalSnapshot = store.current
+                assertEquals(
+                    LocalMutationFailure.HLC_EXHAUSTED,
+                    assertIs<LocalMutationResult.Failure>(
+                        writer.mutate(LocalSyncMutation.RemoveApplicationPolicy),
+                    ).reason,
+                )
+                assertEquals(terminalSnapshot, store.current)
+            }
+        }
+    }
+
+    @Test
+    fun `given ambiguous terminal expiry commits when reconciled then only exact or proven absent outcomes succeed`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val sessionId = SessionId(app.posato.feature.sync.testIdentifier(95))
+        val initial = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+            ),
+        )
+        val cases = listOf(
+            LocalCommitMode.AMBIGUOUS_EXACT to true,
+            LocalCommitMode.AMBIGUOUS_ABSENT_ONCE to true,
+            LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE to false,
+        )
+
+        cases.forEach { (mode, expected) ->
+            val store = FakeSyncReplicaStore(initial, expiryCommitMode = mode)
+            val writer = assertIs<OpenSyncWriterResult.Success>(
+                SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
+            ).writer
+
+            assertEquals(expected, writer.markTerminalExpiry(sessionId), mode.name)
+        }
+    }
+
+    @Test
+    fun `given remote input reaches the terminal HLC when reopened then later inbound history remains accepted`() {
+        runTest {
+            val provider = FakeSyncCryptoProvider()
+            val terminal = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
+            val beforeTerminal = HybridLogicalClock(
+                SyncFormatLimits.MAX_PHYSICAL_MILLIS,
+                SyncFormatLimits.MAX_LOGICAL_COUNTER - 1,
+            )
+            val store = FakeSyncReplicaStore(snapshot())
+            val core = SyncOperationCore(store, provider, SyncWallClock { 100 })
+            val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+
+            assertIs<RemoteAcceptanceResult.Accepted>(
+                writer.acceptRemote(
+                    remoteBundle(
+                        provider,
+                        testOperation(90, 1, SyncOperationPayload.AuthorRegister, author = 90).copy(clock = beforeTerminal),
+                    ).copyBytes(),
+                    RemoteTransportReceipt(null, false),
+                ),
+            )
+            assertEquals(DurableClockState(terminal, true), store.current.clockState)
+            writer.close()
+
+            val reopened = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+            val result = reopened.acceptRemote(
+                remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
+                RemoteTransportReceipt(null, false),
+            )
+
+            assertIs<RemoteAcceptanceResult.Accepted>(result)
+            assertEquals(DurableClockState(terminal, true), store.current.clockState)
+            reopened.close()
+        }
+    }
+}
+
+private class FakeSyncReplicaStore(
+    initial: SyncReplicaSnapshot,
+    private val localCommitMode: LocalCommitMode = LocalCommitMode.SUCCESS,
+    private val remoteCommitMode: RemoteCommitMode = RemoteCommitMode.SUCCESS,
+    private val expiryCommitMode: LocalCommitMode = LocalCommitMode.SUCCESS,
+    private val beforeOpen: suspend () -> Unit = {},
+    private val afterLocalCommit: suspend () -> Unit = {},
+    private val afterRemoteCommit: suspend () -> Unit = {},
+    private val afterExpiryCommit: suspend () -> Unit = {},
+    private val remoteReconciliationReadFailure: Exception? = null,
+) : SyncReplicaStore {
+    private var localCommitAttempts = 0
+    private var expiryCommitAttempts = 0
+    private var remoteCommitCompleted = false
+    var current = initial
+        private set
+
+    override suspend fun open(context: SyncContext): SyncStoreResult<SyncReplicaSnapshot> {
+        beforeOpen()
+        return SyncStoreResult.Success(current)
+    }
+
+    override suspend fun read(context: SyncContext): SyncStoreResult<SyncReplicaSnapshot> {
+        currentCoroutineContext().ensureActive()
+        if (remoteCommitCompleted) remoteReconciliationReadFailure?.let { throw it }
+        return SyncStoreResult.Success(current)
+    }
+
+    override suspend fun commitLocal(
+        expectedCheckpoint: SyncReplicaSnapshot,
+        bundles: List<PreparedStoredBundle>,
+        clockState: DurableClockState,
+    ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
+        localCommitAttempts += 1
+        if (localCommitMode == LocalCommitMode.CANCELLED) {
+            throw CancellationException("Synthetic local commit cancellation")
+        }
+        return if (localCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE && localCommitAttempts == 1) {
+            SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
+        } else {
+            val accepted = current.acceptedBundles.toMutableMap()
+            val pending = current.pendingBundles.toMutableMap()
+            bundles.forEach { prepared ->
+                accepted[prepared.operation.operationId] = StoredAcceptedBundle(
+                    prepared.bundle,
+                    prepared.operationBytes,
+                    prepared.operation,
+                )
+                pending[prepared.operation.operationId] = prepared.bundle
+            }
+            current = current.copy(
+                revision = current.revision + 1,
+                clockState = clockState,
+                acceptedBundles = accepted,
+                pendingBundles = pending,
+                transportProgress = if (localCommitMode == LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE) {
+                    testTransportProgress(99)
+                } else {
+                    current.transportProgress
+                },
+            )
+            afterLocalCommit()
+
+            if (localCommitMode == LocalCommitMode.SUCCESS || localCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE) {
+                SyncStoreResult.Success(current)
+            } else {
+                SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
+            }
+        }
+    }
+
+    override suspend fun commitAcceptedRemote(
+        expectedCheckpoint: SyncReplicaSnapshot,
+        bundles: List<PreparedStoredBundle>,
+        stagedBundleIdsToDelete: Set<BundleId>,
+        clockState: DurableClockState,
+        transportProgress: OpaqueTransportProgress?,
+    ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
+        val accepted = current.acceptedBundles.toMutableMap()
+        bundles.forEach { prepared ->
+            accepted[prepared.operation.operationId] = StoredAcceptedBundle(
+                prepared.bundle,
+                prepared.operationBytes,
+                prepared.operation,
+            )
+        }
+        current = current.copy(
+            revision = current.revision + 1,
+            clockState = clockState,
+            acceptedBundles = accepted,
+            stagedBundles = current.stagedBundles - stagedBundleIdsToDelete,
+            transportProgress = transportProgress ?: current.transportProgress,
+        )
+
+        return remoteResult()
+    }
+
+    override suspend fun commitStagedRemote(
+        expectedCheckpoint: SyncReplicaSnapshot,
+        bundle: PreparedStoredBundle,
+        clockState: DurableClockState,
+        transportProgress: OpaqueTransportProgress?,
+    ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
+        current = current.copy(
+            revision = current.revision + 1,
+            clockState = clockState,
+            stagedBundles = current.stagedBundles + (
+                bundle.operation.operationId to StoredStagedBundle(
+                    bundle.bundle,
+                    bundle.operationBytes,
+                    bundle.operation,
+                )
+            ),
+            transportProgress = transportProgress ?: current.transportProgress,
+        )
+
+        return remoteResult()
+    }
+
+    override suspend fun commitTransportProgress(
+        expectedCheckpoint: SyncReplicaSnapshot,
+        transportProgress: OpaqueTransportProgress,
+    ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
+        current = current.copy(revision = current.revision + 1, transportProgress = transportProgress)
+
+        return remoteResult()
+    }
+
+    override suspend fun markTerminalExpiry(
+        expectedCheckpoint: SyncReplicaSnapshot,
+        sessionId: SessionId,
+    ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
+        expiryCommitAttempts += 1
+        return if (expiryCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE && expiryCommitAttempts == 1) {
+            SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
+        } else {
+            current = current.copy(
+                revision = current.revision + 1,
+                terminalExpiryFacts = current.terminalExpiryFacts + sessionId,
+                transportProgress = if (expiryCommitMode == LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE) {
+                    testTransportProgress(99)
+                } else {
+                    current.transportProgress
+                },
+            )
+            afterExpiryCommit()
+            if (expiryCommitMode == LocalCommitMode.SUCCESS || expiryCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE) {
+                SyncStoreResult.Success(current)
+            } else {
+                SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
+            }
+        }
+    }
+
+    private fun checkpointConflict(expectedCheckpoint: SyncReplicaSnapshot): SyncStoreResult.Failure? {
+        return if (current == expectedCheckpoint) null else SyncStoreResult.Failure(SyncStoreFailure.REVISION_CONFLICT)
+    }
+
+    private suspend fun remoteResult(): SyncStoreResult<SyncReplicaSnapshot> {
+        remoteCommitCompleted = true
+        afterRemoteCommit()
+        return when (remoteCommitMode) {
+            RemoteCommitMode.SUCCESS -> {
+                SyncStoreResult.Success(current)
+            }
+
+            RemoteCommitMode.AMBIGUOUS_EXACT -> {
+                SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
+            }
+
+            RemoteCommitMode.AMBIGUOUS_WITH_EXTRA_STATE -> {
+                current = current.copy(
+                    terminalExpiryFacts = current.terminalExpiryFacts + SessionId(app.posato.feature.sync.testIdentifier(96)),
+                )
+                SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
+            }
+        }
+    }
+}
+
+private enum class LocalCommitMode {
+    SUCCESS,
+    CANCELLED,
+    AMBIGUOUS_EXACT,
+    AMBIGUOUS_ABSENT_ONCE,
+    AMBIGUOUS_WITH_EXTRA_STATE,
+}
+
+private enum class RemoteCommitMode {
+    SUCCESS,
+    AMBIGUOUS_EXACT,
+    AMBIGUOUS_WITH_EXTRA_STATE,
+}
+
+private fun snapshot(clockState: DurableClockState = DurableClockState(HybridLogicalClock(0, 0), false),): SyncReplicaSnapshot {
+    return SyncReplicaSnapshot(
+        context = testContext,
+        revision = 0,
+        clockState = clockState,
+        acceptedBundles = emptyMap(),
+        stagedBundles = emptyMap(),
+        pendingBundles = emptyMap(),
+        terminalExpiryFacts = emptySet(),
+        transportProgress = null,
+    )
+}
+
+private fun transportKey(): TransportKey {
+    return checkNotNull(TransportKey.fromBytes(ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES) { 3 }))
+}
+
+private fun remoteBundle(
+    provider: FakeSyncCryptoProvider,
+    operation: SyncOperation,
+): EncryptedBundle {
+    val signingKey = checkNotNull(provider.createSigningKey())
+    return try {
+        val prepared = EncryptedBundleCodec(provider).prepare(
+            operation,
+            transportKey(),
+            signingKey,
+            ByteArray(SyncFormatLimits.BUNDLE_SALT_BYTES) { 4 },
+        )
+        assertIs<PrepareBundleResult.Success>(prepared).bundle
+    } finally {
+        signingKey.close()
+    }
+}
+
+private fun stagedSnapshot(
+    provider: FakeSyncCryptoProvider,
+    count: Int,
+    singleAuthor: Boolean,
+): SyncReplicaSnapshot {
+    val operations = (0 until count).map { index ->
+        val author = if (singleAuthor) 10 else 100 + index
+        val sequence = if (singleAuthor) index.toLong() + 2 else 2L
+        testOperation(2_000 + index, sequence, SyncOperationPayload.ApplicationPolicyAbsent, author)
+    }
+
+    return snapshot().withStagedBundles(provider, operations)
+}
+
+private fun SyncReplicaSnapshot.withStagedBundles(
+    provider: FakeSyncCryptoProvider,
+    operations: List<SyncOperation>,
+): SyncReplicaSnapshot {
+    val staged = operations.map { operation -> storedStagedBundle(provider, operation) }
+        .associateBy { stored -> stored.operation.operationId }
+
+    return copy(stagedBundles = staged)
+}
+
+private fun storedStagedBundle(
+    provider: FakeSyncCryptoProvider,
+    operation: SyncOperation,
+): StoredStagedBundle {
+    return StoredStagedBundle(
+        remoteBundle(provider, operation),
+        ImmutableBytes(checkNotNull(app.posato.feature.sync.data.SyncOperationCodec.encode(operation))),
+        operation,
+    )
+}
+
+private fun acceptedSnapshot(
+    provider: FakeSyncCryptoProvider,
+    operations: List<SyncOperation>,
+): SyncReplicaSnapshot {
+    val lastClock = checkNotNull(operations.maxOfOrNull { operation -> operation.clock })
+    val accepted = operations.map { operation -> storedAcceptedBundle(provider, operation) }
+        .associateBy { stored -> stored.operation.operationId }
+    return snapshot(DurableClockState(lastClock, lastClock.successor() == null)).copy(acceptedBundles = accepted)
+}
+
+private fun remotelyAcceptedSnapshot(
+    provider: FakeSyncCryptoProvider,
+    operations: List<SyncOperation>,
+): SyncReplicaSnapshot {
+    val accepted = acceptedSnapshot(provider, operations)
+
+    return accepted.copy(clockState = advanceRemoteClock(snapshot().clockState, operations))
+}
+
+private fun storedAcceptedBundle(
+    provider: FakeSyncCryptoProvider,
+    operation: SyncOperation,
+): StoredAcceptedBundle {
+    return StoredAcceptedBundle(
+        remoteBundle(provider, operation),
+        ImmutableBytes(checkNotNull(app.posato.feature.sync.data.SyncOperationCodec.encode(operation))),
+        operation,
+    )
+}

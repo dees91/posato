@@ -126,8 +126,10 @@ replaces them.
   not collect a larger object and attempt to scrub it afterward.
 - Convert native, storage, network, cryptographic, IPC, and framework errors to
   a stable category and fixed code at the boundary, then discard their raw text.
-- Sensitive domain types must have redacted default string representations;
-  production diagnostics must not depend on `toString()` as serialization.
+- Domain types holding key material, plaintext policy or session data,
+  identifiers, or user content must have redacted default string
+  representations, proven by one enumerated test per module; production
+  diagnostics must not depend on `toString()` as serialization.
 - Unknown fields, unknown category values, and dynamic stable-code segments
   fail closed by dropping the diagnostic record without changing product
   behavior or the last valid product state.

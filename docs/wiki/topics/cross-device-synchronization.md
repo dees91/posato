@@ -140,7 +140,34 @@ Durable properties worth retaining:
 - duplicate operations and bundles are idempotent;
 - schema migration or storage corruption must not silently replace valid state.
 
-The production database schema and migration policy remain open.
+`observed` (2026-09-02): `SYNC-002` implemented this core in the production
+shared module. Accepted, pending, and staged bundle bytes are immutable;
+replica checkpoints, terminal expiry facts, and opaque transport progress
+commit in the same SQLDelight transaction, and every store mutation compares
+the complete expected checkpoint with the restored snapshot before writing.
+Migration verification, duplicate and reordered delivery, bounded capacity,
+terminal HLC behavior, and deterministic convergence passed on the JVM, iOS
+Simulator, and a physical iPhone. Concrete CloudKit cursor and sync-engine
+state remain deferred to their transport task.
+
+`observed` (2026-09-02): reopen fails closed. A restored snapshot must
+authenticate every retained bundle, satisfy the live author, sequence,
+staging, capacity, and terminal-expiry invariants, keep its durable HLC within
+the range that retained history can explain, and pass a same-transaction
+SQLite preflight of storage classes, sizes, cardinalities, and identifier
+uniqueness before typed rows are materialized. Any inconsistency reports
+corruption instead of initializing fresh state. This validates what the
+application reads; it does not claim to defend against modification of the
+app-private database by a local actor, which the threat model accepts as
+`R-02`.
+
+`observed` (2026-09-02): one serialized writer owns the replica. Invalid local
+mutations are rejected before authoring resources are reserved; an uncertain
+or cancelled commit reconciles against durable state in a non-cancellable read
+and otherwise freezes the writer; close completes key retirement and owner
+release even under cancellation; open consumes the supplied transport key on
+every path and rejects a key that was already retired. Owned key and
+plaintext buffers are cleared after use within the `R-05` boundary.
 
 ## Transport contract
 
@@ -172,9 +199,15 @@ derivation with bounded canonical data. `user-confirmed` (2026-08-28): ADR 0006
 selects HKDF-SHA-256, AES-256-GCM, Ed25519, system JCA/JCE and CryptoKit
 providers, a closed positional format, per-bundle HKDF keys with a single
 implicit nonce use, encrypted author metadata, and no
-plaintext or algorithm fallback for Apple MVP format 1. `SYNC-002` must still
-prove cross-target implementation behavior; portable key wrapping and provider
-selection remain later decisions.
+plaintext or algorithm fallback for Apple MVP format 1. `observed` (2026-08-31):
+the production Kotlin codec and JCA provider passed a fixed complete format-1
+golden bundle decoded and authenticated through the injected Swift CryptoKit
+provider on the iOS Simulator and a physical iPhone, alongside the selected
+primitive vectors. Every native result crossing the iOS boundary is checked
+against its operation-specific size before Kotlin allocates or reads it, and
+provider failures map to nullable cryptographic failures rather than
+exceptions. Portable key wrapping and provider selection remain later
+decisions.
 
 `user-confirmed`: CloudKit and portable folders use one compatible
 application-encrypted and signed payload format. Apple-mode simplification

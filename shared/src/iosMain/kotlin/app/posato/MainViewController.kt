@@ -1,14 +1,14 @@
 package app.posato
 
 import androidx.compose.ui.window.ComposeUIViewController
-import app.posato.di.createIosApplicationGraph
+import app.posato.di.createIosApplicationRuntime
+import app.posato.feature.sync.data.IosCryptoProvider
 import platform.UIKit.UIViewController
 
-@Suppress("FunctionNaming", "ktlint:standard:function-naming")
-fun MainViewController(): UIViewController {
-    val applicationGraph = createIosApplicationGraph()
+fun mainViewController(cryptoProvider: IosCryptoProvider): UIViewController {
+    val runtime = createIosApplicationRuntime(cryptoProvider)
 
     return ComposeUIViewController {
-        applicationGraph.application.Content()
+        runtime.applicationGraph.application.Content()
     }
 }
