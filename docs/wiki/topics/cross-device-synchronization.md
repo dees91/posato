@@ -231,6 +231,11 @@ The preflight also rejects duplicate accepted or staged bundle identifiers
 before typed rows or bundle payloads are materialized, so map construction
 cannot silently discard a retained row from a replaced untrusted table.
 
+`observed` (2026-09-02): the same preflight rejects persisted staging above the
+accepted 128-bundle limit before inspecting staged payload columns, so a
+hostile restored database cannot exceed the staging allocation boundary during
+restore.
+
 `observed` (2026-09-01): authenticated reopen accepts a terminal local expiry
 fact only when the retained history contains a currently applicable session
 start for that encrypted identifier. A start behind an author-sequence gap does

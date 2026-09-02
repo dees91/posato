@@ -74,6 +74,51 @@ class SqlSyncReplicaStoreContractTest {
     }
 
     @Test
+    fun `given oversized persisted staging when reopened then corruption is reported before restore`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-staged-capacity.db")
+        var driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+            database.transaction {
+                repeat(SyncFormatLimits.MAX_STAGED_BUNDLES) { index ->
+                    database.syncReplicaQueries.insertStagedBundle(
+                        bundle_id = testIdentifier(1_000 + index).copyBytes(),
+                        bundle_bytes = ByteArray(1),
+                        operation_bytes = ByteArray(1),
+                        author_id = testIdentifier(2_000).copyBytes(),
+                        author_sequence = index.toLong() + 2,
+                        public_key = ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES),
+                    )
+                }
+            }
+            assertEquals(emptyList(), database.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            database.syncReplicaQueries.insertStagedBundle(
+                bundle_id = testIdentifier(2_000).copyBytes(),
+                bundle_bytes = ByteArray(1),
+                operation_bytes = ByteArray(1),
+                author_id = testIdentifier(2_001).copyBytes(),
+                author_sequence = 2,
+                public_key = ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES),
+            )
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            val reopenedDatabase = PosatoDatabase(driver)
+            val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+            assertEquals(listOf(1L), reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            val result = reopenedStore.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
     fun `given an out of range persisted physical clock when read then corruption is reported`() = runTest {
         listOf(-1L, SyncFormatLimits.MAX_PHYSICAL_MILLIS + 1).forEachIndexed { index, physical ->
             val testDatabase = createLocalPolicyTestDatabase("sync-invalid-physical-$index.db")

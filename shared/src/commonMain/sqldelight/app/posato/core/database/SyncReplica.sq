@@ -105,6 +105,13 @@ WHERE CASE
 END = 1
 UNION ALL
 SELECT 1
+WHERE EXISTS (
+  SELECT 1
+  FROM sync_staged_bundle
+  LIMIT 1 OFFSET 128
+)
+UNION ALL
+SELECT 1
 FROM sync_staged_bundle
 WHERE CASE
   WHEN typeof(author_sequence) != 'integer' THEN 1
