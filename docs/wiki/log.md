@@ -954,14 +954,6 @@
 - Corrected the TARGETS-003 record: capability negotiation ends at the
   parent/helper pipe, while daemon XPC rejects selection without a handshake.
 
-## [2026-08-31] experiment | Verify the encrypted operation core
-
-- Implemented and verified the format-1 codec, deterministic reducer, serialized
-  writer, durable SQLDelight replica state, and JCA and CryptoKit provider
-  boundary without importing feasibility code wholesale.
-- Passed the JVM, iOS Simulator, and physical-iPhone quality matrix plus the
-  independent completed-change review.
-
 ## [2026-09-01] correction | Make development macOS packages launchable
 
 - Signed and verified the complete arm64 JVM, SQLite, helper, and daemon package
@@ -969,10 +961,15 @@
 - Kept development entitlements on the application launcher only and packaged
   the unchanged verified bundle without JPackage rewriting nested signatures.
 
-## [2026-09-02] correction | Harden the sync core after hosted review
+## [2026-09-02] experiment | Verify and harden the encrypted operation core
 
+- Implemented and verified the format-1 codec, deterministic reducer, serialized
+  writer, durable SQLDelight replica state, and JCA and CryptoKit provider
+  boundary without importing feasibility code wholesale; the JVM, iOS
+  Simulator, and physical-iPhone quality matrix passed.
 - Fixed writer lifecycle, cancellation, checkpoint-reconciliation, and reopen
   validation defects found by hosted review, and gave sensitive sync carriers
   fixed redacted string representations.
 - Bounded native cryptographic output and persisted-state restore, cleared owned
-  key and plaintext buffers, and made a retired transport key unusable.
+  key and plaintext buffers, made a retired transport key unusable, and kept
+  the active writer's key when a rejected open passes the same instance.

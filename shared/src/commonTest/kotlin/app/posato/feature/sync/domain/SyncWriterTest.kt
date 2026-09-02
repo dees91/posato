@@ -31,6 +31,7 @@ import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
@@ -66,6 +67,26 @@ class SyncWriterOpenTest {
         } finally {
             writer.close()
         }
+    }
+
+    @Test
+    fun `given an active writer when open receives its own transport key then the key stays usable`() = runTest {
+        val core = SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+        val activeKey = transportKey()
+        val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, activeKey)).writer
+
+        try {
+            val result = core.open(testContext, activeKey)
+
+            assertEquals(OpenSyncWriterFailure.ALREADY_OPEN, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            assertFalse(activeKey.isClosed)
+            assertIs<LocalMutationResult.Success>(
+                writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("alias.example")))),
+            )
+        } finally {
+            writer.close()
+        }
+        assertTrue(activeKey.isClosed)
     }
 
     @Test
