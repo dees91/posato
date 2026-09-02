@@ -286,7 +286,11 @@ private data class BundleParts(
     val header: ByteArray,
     val ciphertextAndTag: ByteArray,
     val signature: ByteArray
-)
+) {
+    override fun toString(): String {
+        return "BundleParts(redacted)"
+    }
+}
 
 private fun splitBundle(
     bytes: ByteArray,

@@ -287,6 +287,11 @@ fixed redacted default strings rather than platform object identities. Their
 representations expose neither a dynamic correlation identifier nor key
 material, without changing signing or key ownership.
 
+`observed` (2026-09-02): the private `SYNC-002` bundle-parts carrier uses a
+fixed redacted default string. Its representation exposes neither the complete
+header, ciphertext and authentication tag, nor signature bytes, without
+changing codec behavior or canonical serialization.
+
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,
 prove redaction and storage controls with synthetic canaries, and update the
