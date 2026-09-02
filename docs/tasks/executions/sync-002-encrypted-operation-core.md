@@ -81,6 +81,10 @@
   with no Critical or Required findings. Its simplicity review selected the
   same bounded SQL preflight pattern at the exact one-row boundary and one
   real-database regression, without a count query or schema change.
+  The initial-HLC reachability correction received independent plan approval
+  with no Critical or Required findings. Its simplicity review selected one
+  authenticated-snapshot guard and one common regression, without duplicating
+  the semantic invariant in SQL or adding a helper or schema change.
 
 ## Result
 
@@ -178,7 +182,10 @@
   lean. The duplicate persisted-state correction received focused
   completed-change approval with no findings at any severity; its simplicity
   review found the exact one-row SQL preflight and one boundary regression
-  already lean.
+  already lean. The initial-HLC reachability correction received focused
+  completed-change approval with no findings at any severity; its simplicity
+  review found the single authenticated-snapshot guard and regression already
+  lean.
 
 ## Hosted review follow-up
 
@@ -247,7 +254,10 @@
   rejecting a staging set above the accepted 128-bundle limit. The latest
   required finding found that reopen materialized every row from a replaced
   replica-state table, including bounded transport-progress bytes, before
-  rejecting a second row.
+  rejecting a second row. The newest required finding found that authenticated
+  reopen accepted nonempty history while the durable HLC remained at the fresh
+  `(0, 0)` baseline, even though no legal local or remote acceptance path can
+  produce that snapshot.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -345,7 +355,10 @@
   signature byte arrays. Replica restore now rejects a 129th staged row in the
   SQL preflight before inspecting staged payload columns. Replica restore now
   also rejects a second state row in the SQL preflight before inspecting state
-  BLOB columns. No further hosted review is needed.
+  BLOB columns. Authenticated reopen now rejects accepted history at the fresh
+  `(0, 0)` HLC baseline while preserving legal equality between a non-initial
+  durable clock and an accepted local operation. No further hosted review is
+  needed.
 
 ## Verification
 
@@ -384,6 +397,7 @@
 | Bundle-parts redaction | `pass` | Baseline JVM bytecode rendered all three byte arrays through `Arrays.toString`; post-correction bytecode returns only the fixed `BundleParts(redacted)` literal without reading a field. The focused JVM cryptographic-provider test, all 32 JVM and iOS Simulator test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no Critical or Required findings. |
 | Persisted-staging capacity preflight | `pass` | The focused real-SQLite JVM regression first showed that 129 physically valid staged rows passed preflight, then proved rejection and `CORRUPTION` after reopening with a fresh driver. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Duplicate persisted-state preflight | `pass` | The focused real-SQLite JVM regression first showed that two physically valid state rows with exact-limit transport progress passed preflight, then proved rejection and `CORRUPTION` after reopening with a fresh driver. A controlled SQLite probe confirmed that the first cardinality arm short-circuits the later branch. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
+| Initial-HLC reachability | `pass` | The focused JVM regression first showed that authenticated accepted history at the fresh `(0, 0)` baseline opened successfully, then proved `CORRUPTION` after the correction. All 32 JVM and iOS Simulator test tasks and all 113 quality tasks passed while the existing lower, equal, and greater non-initial HLC cases remained green. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

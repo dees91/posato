@@ -236,6 +236,11 @@ accepted 128-bundle limit before inspecting staged payload columns, so a
 hostile restored database cannot exceed the staging allocation boundary during
 restore.
 
+`observed` (2026-09-02): authenticated reopen rejects accepted history while
+the durable HLC remains at the fresh `(0, 0)` baseline. Legal local creation
+starts at its successor and remote acceptance advances past the retained
+operation, while equality at a later clock remains valid for local commits.
+
 `observed` (2026-09-01): authenticated reopen accepts a terminal local expiry
 fact only when the retained history contains a currently applicable session
 start for that encrypted identifier. A start behind an author-sequence gap does

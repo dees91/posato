@@ -621,6 +621,20 @@ class SyncWriterTest {
     }
 
     @Test
+    fun `given accepted history at the initial HLC when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister, physical = 0)),
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
     fun `given accepted history when reopened then the durable HLC must cover every operation`() = runTest {
         val provider = FakeSyncCryptoProvider()
         val acceptedClock = HybridLogicalClock(10, 5)

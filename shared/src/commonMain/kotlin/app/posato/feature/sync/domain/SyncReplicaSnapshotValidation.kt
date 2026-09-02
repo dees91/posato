@@ -11,10 +11,12 @@ internal fun SyncReplicaSnapshot.isAuthenticatedBy(
     cryptoProvider: SyncCryptoProvider,
     transportKey: TransportKey,
 ): Boolean {
+    val initialClock = HybridLogicalClock(0, 0)
     val terminalClock = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
     val codec = EncryptedBundleCodec(cryptoProvider)
 
     return (clockState.last == terminalClock) == clockState.isExhausted &&
+        (acceptedBundles.isEmpty() || clockState.last != initialClock) &&
         acceptedBundlesAreValid(codec, transportKey) &&
         acceptedBundles.values.haveValidAuthorHistories() &&
         hasValidStagingState() &&

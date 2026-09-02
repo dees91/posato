@@ -1125,3 +1125,8 @@
 
 - Rejected a second persisted replica-state row before state BLOB columns are
   inspected or restored.
+
+## [2026-09-02] correction | Reject unreachable initial sync clocks
+
+- Rejected authenticated accepted history retained at the fresh `(0, 0)` HLC
+  baseline while preserving legal equality at later local clocks.
