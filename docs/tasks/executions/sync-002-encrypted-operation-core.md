@@ -45,7 +45,7 @@
 - A credential-free iOS XCTest target covers CryptoKit HMAC, AES-GCM, and
   Ed25519 vectors. No feasibility implementation or machine-specific state was
   copied into product sources.
-- Hosted-review hardening landed in 36 commits after the initial
+- Hosted-review hardening landed in 35 commits after the initial
   implementation; see the summary below. The branch was rebased onto `main`
   at closeout.
 - Closeout corrections: a retired transport key is unusable and rejected by
@@ -67,7 +67,7 @@
 
 ## Hosted review summary
 
-40 hosted passes produced 49 findings (40 P1, 9 P2) and 36 correction commits
+40 hosted passes produced 49 findings (40 P1, 9 P2) and 35 correction commits
 between 2026-08-31 and 2026-09-02. All were accepted at the time; the review
 budget and the excluded finding classes in `AGENTS.md` now bound this loop.
 
@@ -90,7 +90,7 @@ budget and the excluded finding classes in `AGENTS.md` now bound this loop.
 | Credential-free iOS Simulator host build and CryptoKit XCTest | `pass` | Seven cases including the JCA-produced golden bundle decoded through Kotlin and CryptoKit and the zero-length random request. |
 | CryptoKit XCTest on a physical iPhone | `pass` | Six cases on 2026-08-31 with the Development Team supplied only as a local build parameter; later Swift changes are guards on paths Kotlin does not use. |
 | Hosted-review regression classes | `pass` | Reopen validation, cancellation reconciliation, bounded ingress, redaction, storage preflight, native output length, and buffer lifecycle regressions run on the JVM and iOS Simulator. |
-| Closeout regressions | `pass` | Closed transport key rejected by `open` and by the codec; single-read checkpoint accessors; zero-length native random output. |
+| Closeout regressions | `pass` | Closed transport key rejected by `open` and by the codec; identifier redaction; zero-length native random output. The single-read checkpoint accessors are covered by review, not by a test. |
 | `git diff --check`, suppression scan, personal-data scan | `pass` | No new quality-tool suppression, credentials, device identifiers, or personal paths. |
 
 ## Blockers and accepted risks

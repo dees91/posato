@@ -42,7 +42,7 @@ and verification output do not require wiki updates.
 A substantive lightweight change with no durable conclusion appends only one
 concise entry to `docs/wiki/log.md`. Pure typo, formatting, link, and
 bookkeeping corrections may omit it. A pull request appends at most one
-wiki-log entry, in its closeout commit, never one per correction commit.
+wiki-log entry per closeout, never one per correction commit.
 
 The wiki is maintained synthesis, not decision authority. Do not promote an
 inference or PoC choice into an ADR, product requirement, plan, or
@@ -79,9 +79,10 @@ correction. Recommended and Optional findings do not expand scope
 automatically.
 
 A correction inside an open pull request takes the review tier of its own
-risk, Standard by default, without a plan-review ceremony. It adds no
-per-commit execution-record paragraph or wiki-log entry; the record receives
-one closeout update before the final substantive push.
+risk, Standard by default; a plan review applies only when the correction
+itself is High-risk. It adds no per-commit execution-record paragraph or
+wiki-log entry; the record receives one closeout update before the final
+substantive push.
 
 For a one-off manual task, guide the maintainer with a short checklist or chat
 instructions. Do not create a script, parser, wizard, or configuration layer
