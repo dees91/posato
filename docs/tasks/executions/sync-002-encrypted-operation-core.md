@@ -103,6 +103,11 @@
   independent plan approval with no findings. Its simplicity review selected
   two grouping arms in the existing preflight and extensions of the existing
   real-database coverage without a schema change or Kotlin validation.
+  The exact-checkpoint transaction correction received independent plan
+  approval after its Required finding made the test fake enforce the same
+  fail-fast checkpoint contract as SQL. The approved plan uses one full
+  checkpoint comparison and one real-database regression without a schema or
+  transaction-layer expansion.
 
 ## Result
 
@@ -124,6 +129,10 @@
   gate exposed a stale iOS function-naming suppression, so the Kotlin export
   and Swift caller now use lower camel case and the obsolete approval was
   removed instead of broadened.
+- Store mutations now compare the complete expected replica checkpoint inside
+  their existing SQLDelight transaction before writing, so a same-revision
+  rollback or replacement cannot accept a later operation over unexplained
+  state.
 
 ## Completed-change review
 
@@ -211,6 +220,12 @@
   focused completed-change approval with no findings at any severity; its
   simplicity review found both SQL grouping arms and real-database regressions
   already lean.
+  The exact-checkpoint transaction correction received focused completed-
+  change approval with no findings at any severity. The reviewer confirmed
+  that all five mutation paths enforce the same fail-fast checkpoint contract
+  before side effects and that the single real-database regression directly
+  covers the reported race; its simplicity review found the change already
+  lean.
 
 ## Hosted review follow-up
 
@@ -294,6 +309,10 @@
   retain duplicate `(author_id, author_sequence)` pairs until after payload
   materialization, and that duplicate terminal-expiry session identifiers were
   silently collapsed during restore.
+  The newest required finding found that a same-open rollback could replace the
+  durable snapshot after writer verification while retaining its revision, so
+  the mutation transaction could commit a later operation over unexplained
+  state.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -407,6 +426,11 @@
   Replica restore now also rejects duplicate accepted author-sequence pairs and
   terminal-expiry session identifiers in the SQL preflight before their rows
   cross the SQLDelight boundary.
+  Every store mutation now receives the complete expected checkpoint and
+  compares it with the restored snapshot inside the existing transaction before
+  any write. A same-revision replacement returns `REVISION_CONFLICT`, retains
+  its exact state, and leaves the existing revision compare-and-set in place for
+  concurrent writers.
   No further hosted review is needed.
 
 ## Verification
@@ -450,6 +474,7 @@
 | Conservative HLC reachability | `pass` | Focused JVM regressions first accepted an empty nonfresh clock and remote-history clocks above the reachable successor, then passed after the correction. The complete JVM and iOS Simulator suites and all 113 quality tasks passed without suppressions. Diff and suppression scans were clean. Independent completed-change review found no code, security, boundary, test, or simplicity defects; its Required verification-record finding was resolved by this row. |
 | Pending duplicate and terminal rewrite correction | `pass` | Both focused JVM regressions failed before implementation and passed afterward. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks. Detekt's initial complexity finding was addressed by moving the already-terminal idempotency guard into the existing exhaustion operation without suppression. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Accepted-sequence and terminal-expiry duplicate preflight | `pass` | Both real-SQLite JVM regressions failed before implementation and passed afterward. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks without suppressions. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
+| Exact checkpoint transaction guard | `pass` | The real-SQLite JVM regression first committed sequence 3 over a same-revision snapshot missing sequence 2, then returned `REVISION_CONFLICT` and preserved the replacement after the correction. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks without suppressions. Independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

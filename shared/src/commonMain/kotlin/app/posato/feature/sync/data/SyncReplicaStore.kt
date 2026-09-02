@@ -123,13 +123,13 @@ internal interface SyncReplicaStore {
     suspend fun read(context: SyncContext): SyncStoreResult<SyncReplicaSnapshot>
 
     suspend fun commitLocal(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundles: List<PreparedStoredBundle>,
         clockState: DurableClockState,
     ): SyncStoreResult<SyncReplicaSnapshot>
 
     suspend fun commitAcceptedRemote(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundles: List<PreparedStoredBundle>,
         stagedBundleIdsToDelete: Set<BundleId>,
         clockState: DurableClockState,
@@ -137,19 +137,19 @@ internal interface SyncReplicaStore {
     ): SyncStoreResult<SyncReplicaSnapshot>
 
     suspend fun commitStagedRemote(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundle: PreparedStoredBundle,
         clockState: DurableClockState,
         transportProgress: OpaqueTransportProgress?,
     ): SyncStoreResult<SyncReplicaSnapshot>
 
     suspend fun commitTransportProgress(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         transportProgress: OpaqueTransportProgress,
     ): SyncStoreResult<SyncReplicaSnapshot>
 
     suspend fun markTerminalExpiry(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         sessionId: SessionId,
     ): SyncStoreResult<SyncReplicaSnapshot>
 }

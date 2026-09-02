@@ -48,11 +48,11 @@ internal class SqlSyncReplicaStore(
     }
 
     override suspend fun commitLocal(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundles: List<PreparedStoredBundle>,
         clockState: DurableClockState,
     ): SyncStoreResult<SyncReplicaSnapshot> {
-        return mutate(expectedRevision) { current ->
+        return mutate(expectedCheckpoint) { current ->
             bundles.forEach { bundle ->
                 insertAccepted(bundle)
                 database.syncReplicaQueries.insertPendingBundle(
@@ -60,33 +60,33 @@ internal class SqlSyncReplicaStore(
                     bundle_bytes = bundle.bundle.copyBytes(),
                 )
             }
-            advanceState(expectedRevision, clockState, current.transportProgress)
+            advanceState(expectedCheckpoint.revision, clockState, current.transportProgress)
         }
     }
 
     override suspend fun commitAcceptedRemote(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundles: List<PreparedStoredBundle>,
         stagedBundleIdsToDelete: Set<BundleId>,
         clockState: DurableClockState,
         transportProgress: OpaqueTransportProgress?,
     ): SyncStoreResult<SyncReplicaSnapshot> {
-        return mutate(expectedRevision) { current ->
+        return mutate(expectedCheckpoint) { current ->
             bundles.forEach { bundle -> insertAccepted(bundle) }
             stagedBundleIdsToDelete.forEach { bundleId ->
                 database.syncReplicaQueries.deleteStagedBundle(bundleId.value.copyBytes())
             }
-            advanceState(expectedRevision, clockState, transportProgress ?: current.transportProgress)
+            advanceState(expectedCheckpoint.revision, clockState, transportProgress ?: current.transportProgress)
         }
     }
 
     override suspend fun commitStagedRemote(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundle: PreparedStoredBundle,
         clockState: DurableClockState,
         transportProgress: OpaqueTransportProgress?,
     ): SyncStoreResult<SyncReplicaSnapshot> {
-        return mutate(expectedRevision) { current ->
+        return mutate(expectedCheckpoint) { current ->
             database.syncReplicaQueries.insertStagedBundle(
                 bundle_id = bundle.operation.operationId.value.copyBytes(),
                 bundle_bytes = bundle.bundle.copyBytes(),
@@ -95,41 +95,41 @@ internal class SqlSyncReplicaStore(
                 author_sequence = bundle.operation.authorSequence,
                 public_key = bundle.operation.publicSigningKey.copyBytes(),
             )
-            advanceState(expectedRevision, clockState, transportProgress ?: current.transportProgress)
+            advanceState(expectedCheckpoint.revision, clockState, transportProgress ?: current.transportProgress)
         }
     }
 
     override suspend fun commitTransportProgress(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         transportProgress: OpaqueTransportProgress,
     ): SyncStoreResult<SyncReplicaSnapshot> {
-        return mutate(expectedRevision) { current ->
-            advanceState(expectedRevision, current.clockState, transportProgress)
+        return mutate(expectedCheckpoint) { current ->
+            advanceState(expectedCheckpoint.revision, current.clockState, transportProgress)
         }
     }
 
     override suspend fun markTerminalExpiry(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         sessionId: SessionId,
     ): SyncStoreResult<SyncReplicaSnapshot> {
-        return mutate(expectedRevision) { current ->
+        return mutate(expectedCheckpoint) { current ->
             database.syncReplicaQueries.insertTerminalExpiry(sessionId.value.copyBytes())
-            advanceState(expectedRevision, current.clockState, current.transportProgress)
+            advanceState(expectedCheckpoint.revision, current.clockState, current.transportProgress)
         }
     }
 
     private suspend fun mutate(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         mutation: suspend (SyncReplicaSnapshot) -> Unit,
     ): SyncStoreResult<SyncReplicaSnapshot> {
-        if (expectedRevision == Long.MAX_VALUE) {
+        if (expectedCheckpoint.revision == Long.MAX_VALUE) {
             return SyncStoreResult.Failure(SyncStoreFailure.REVISION_EXHAUSTED)
         }
 
         return databaseCall {
             val context = snapshotReader.readContextOrThrow()
             val current = snapshotReader.readSnapshotOrThrow(context)
-            if (current.revision != expectedRevision) {
+            if (current != expectedCheckpoint) {
                 failStore(SyncStoreFailure.REVISION_CONFLICT)
             }
             mutation(current)

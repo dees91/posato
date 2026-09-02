@@ -334,7 +334,7 @@ internal class SyncWriter internal constructor(
                 terminalExpiryFacts = checkpoint.terminalExpiryFacts + sessionId,
             )
             val committed = commitReconciler.commitRemote(checkpoint, expected) {
-                store.markTerminalExpiry(checkpoint.revision, sessionId)
+                store.markTerminalExpiry(checkpoint, sessionId)
             }
             if (committed != null) checkpoint = committed else freeze()
             committed != null
@@ -369,7 +369,7 @@ internal class SyncWriter internal constructor(
         )
         val expected = checkpoint.copy(revision = checkpoint.revision + 1, clockState = exhaustedState)
         val committed = commitReconciler.commitRemote(checkpoint, expected) {
-            store.commitLocal(checkpoint.revision, emptyList(), exhaustedState)
+            store.commitLocal(checkpoint, emptyList(), exhaustedState)
         }
         if (committed != null) checkpoint = committed else freeze()
         return committed != null

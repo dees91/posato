@@ -150,7 +150,7 @@ internal class RemoteBundleCommitter(
             ?: return RemoteCommitOutcome(result)
         val expected = snapshot.expectedAfterProgress(progress)
         val committed = reconciler.commitRemote(snapshot, expected) {
-            store.commitTransportProgress(snapshot.revision, progress)
+            store.commitTransportProgress(snapshot, progress)
         }
 
         return committed?.let { RemoteCommitOutcome(result, it) } ?: uncertain()
@@ -163,7 +163,7 @@ internal class RemoteBundleCommitter(
         val progress = receipt.progress ?: return RemoteCommitOutcome(RemoteAcceptanceResult.Duplicate(projection(snapshot)))
         val expected = snapshot.expectedAfterProgress(progress)
         val committed = reconciler.commitRemote(snapshot, expected) {
-            store.commitTransportProgress(snapshot.revision, progress)
+            store.commitTransportProgress(snapshot, progress)
         }
         return committedOutcome(committed) { RemoteAcceptanceResult.Duplicate(projection(it)) }
     }
@@ -200,7 +200,7 @@ internal class RemoteBundleCommitter(
         val stagedIds = staged.mapTo(mutableSetOf()) { it.operation.operationId }
         val expected = snapshot.expectedAfterAccepted(prepared, stagedIds, clock, receipt.progress)
         val committed = reconciler.commitRemote(snapshot, expected) {
-            store.commitAcceptedRemote(snapshot.revision, prepared, stagedIds, clock, receipt.progress)
+            store.commitAcceptedRemote(snapshot, prepared, stagedIds, clock, receipt.progress)
         }
         return committedOutcome(committed) { RemoteAcceptanceResult.Accepted(projection(it)) }
     }
@@ -214,7 +214,7 @@ internal class RemoteBundleCommitter(
         val bundles = listOf(bundle)
         val expected = snapshot.expectedAfterAccepted(bundles, emptySet(), clock, receipt.progress)
         val committed = reconciler.commitRemote(snapshot, expected) {
-            store.commitAcceptedRemote(snapshot.revision, bundles, emptySet(), clock, receipt.progress)
+            store.commitAcceptedRemote(snapshot, bundles, emptySet(), clock, receipt.progress)
         }
         return committedOutcome(committed) { RemoteAcceptanceResult.Accepted(projection(it)) }
     }
@@ -228,7 +228,7 @@ internal class RemoteBundleCommitter(
         val prepared = PreparedStoredBundle(bundle, operation)
         val expected = snapshot.expectedAfterStaged(prepared, receipt.progress)
         val committed = reconciler.commitRemote(snapshot, expected) {
-            store.commitStagedRemote(snapshot.revision, prepared, snapshot.clockState, receipt.progress)
+            store.commitStagedRemote(snapshot, prepared, snapshot.clockState, receipt.progress)
         }
         return committedOutcome(committed) { RemoteAcceptanceResult.Staged(projection(it)) }
     }

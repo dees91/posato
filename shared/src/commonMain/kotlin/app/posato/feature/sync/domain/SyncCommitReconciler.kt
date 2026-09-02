@@ -17,7 +17,7 @@ internal class SyncCommitReconciler(
     ): SyncReplicaSnapshot? {
         val expected = prepared.expectedAfter(checkpoint)
         return try {
-            val firstAttempt = store.commitLocal(checkpoint.revision, prepared.bundles, prepared.clockState)
+            val firstAttempt = store.commitLocal(checkpoint, prepared.bundles, prepared.clockState)
             val firstResult = (firstAttempt as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
             val observed = firstResult?.let { SyncStoreResult.Success(it) } ?: store.read(checkpoint.context)
             val observedSnapshot = (observed as? SyncStoreResult.Success)?.value
@@ -71,7 +71,7 @@ internal class SyncCommitReconciler(
         prepared: PreparedLocalMutation,
         expected: SyncReplicaSnapshot,
     ): SyncReplicaSnapshot? {
-        val retry = store.commitLocal(checkpoint.revision, prepared.bundles, prepared.clockState)
+        val retry = store.commitLocal(checkpoint, prepared.bundles, prepared.clockState)
         val retryResult = (retry as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)
         val observation = retryResult?.let { SyncStoreResult.Success(it) } ?: store.read(checkpoint.context)
         return retryResult ?: (observation as? SyncStoreResult.Success)?.value?.takeIf(expected::equals)

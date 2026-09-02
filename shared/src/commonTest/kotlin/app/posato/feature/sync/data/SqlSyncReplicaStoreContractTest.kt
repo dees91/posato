@@ -204,7 +204,7 @@ class SqlSyncReplicaStoreContractTest {
                 OpaqueTransportProgress.fromBytes(ByteArray(SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES)),
             )
             val committed = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
-                store.commitTransportProgress(initial.revision, progress),
+                store.commitTransportProgress(initial, progress),
             ).value
 
             assertFails {
@@ -261,7 +261,7 @@ class SqlSyncReplicaStoreContractTest {
             val session = prepared(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200))
             val committed = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
                 store.commitLocal(
-                    initial.revision,
+                    initial,
                     listOf(registration, session),
                     DurableClockState(HybridLogicalClock(100, 1), false),
                 ),
@@ -269,9 +269,9 @@ class SqlSyncReplicaStoreContractTest {
             val staged = prepared(3, 2, SyncOperationPayload.ApplicationPolicyAbsent)
             val progress = testTransportProgress(7, 8, 9)
             val withStaged = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
-                store.commitStagedRemote(committed.revision, staged, committed.clockState, progress),
+                store.commitStagedRemote(committed, staged, committed.clockState, progress),
             ).value
-            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.markTerminalExpiry(withStaged.revision, sessionId))
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.markTerminalExpiry(withStaged, sessionId))
 
             driver.close()
             driver = testDatabase.openDriver()
@@ -455,7 +455,7 @@ class SqlSyncReplicaStoreContractTest {
                 val bundle = prepared(1, 1, SyncOperationPayload.AuthorRegister)
                 assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
                     store.commitAcceptedRemote(
-                        initial.revision,
+                        initial,
                         listOf(bundle),
                         emptySet(),
                         DurableClockState(bundle.operation.clock, false),
@@ -466,7 +466,7 @@ class SqlSyncReplicaStoreContractTest {
             ResidueCase("staged") { store, initial ->
                 assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
                     store.commitStagedRemote(
-                        initial.revision,
+                        initial,
                         prepared(2, 2, SyncOperationPayload.ApplicationPolicyAbsent),
                         initial.clockState,
                         null,
@@ -475,7 +475,7 @@ class SqlSyncReplicaStoreContractTest {
             },
             ResidueCase("terminal expiry") { store, initial ->
                 assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
-                    store.markTerminalExpiry(initial.revision, SessionId(testIdentifier(91))),
+                    store.markTerminalExpiry(initial, SessionId(testIdentifier(91))),
                 )
             },
         )
@@ -508,7 +508,7 @@ class SqlSyncReplicaStoreContractTest {
             val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
             val priorProgress = testTransportProgress(1)
             val withProgress = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
-                store.commitTransportProgress(initial.revision, priorProgress),
+                store.commitTransportProgress(initial, priorProgress),
             ).value
             driver.execute(
                 identifier = null,
@@ -524,7 +524,7 @@ class SqlSyncReplicaStoreContractTest {
             )
 
             val result = store.commitAcceptedRemote(
-                expectedRevision = withProgress.revision,
+                expectedCheckpoint = withProgress,
                 bundles = listOf(prepared(1, 1, SyncOperationPayload.AuthorRegister)),
                 stagedBundleIdsToDelete = emptySet(),
                 clockState = DurableClockState(HybridLogicalClock(1, 0), false),
@@ -534,6 +534,60 @@ class SqlSyncReplicaStoreContractTest {
 
             assertEquals(SyncStoreFailure.STORAGE_FAILURE, assertIs<SyncStoreResult.Failure>(result).reason)
             assertEquals(withProgress, after)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a different snapshot at the expected revision when committing then the replacement remains unchanged`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-checkpoint-conflict.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+            val registration = prepared(1, 1, SyncOperationPayload.AuthorRegister)
+            val second = prepared(2, 2, SyncOperationPayload.ApplicationPolicyAbsent)
+            val checkpoint = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitLocal(
+                    initial,
+                    listOf(registration, second),
+                    DurableClockState(second.operation.clock, false),
+                ),
+            ).value
+            database.transaction {
+                driver.execute(
+                    identifier = null,
+                    sql =
+                        """
+                        DELETE FROM sync_pending_bundle
+                        WHERE bundle_id = (
+                          SELECT bundle_id
+                          FROM sync_accepted_bundle
+                          WHERE author_sequence = 2
+                        )
+                        """.trimIndent(),
+                    parameters = 0,
+                )
+                driver.execute(null, "DELETE FROM sync_accepted_bundle WHERE author_sequence = 2", 0)
+            }
+            val replacement = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value
+
+            assertEquals(checkpoint.revision, replacement.revision)
+            assertEquals(setOf(registration.operation.operationId), replacement.acceptedBundles.keys)
+
+            val third = prepared(3, 3, SyncOperationPayload.ApplicationPolicyAbsent)
+            val result = store.commitLocal(
+                checkpoint,
+                listOf(third),
+                DurableClockState(third.operation.clock, false),
+            )
+            val after = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value
+
+            assertEquals(SyncStoreFailure.REVISION_CONFLICT, assertIs<SyncStoreResult.Failure>(result).reason)
+            assertEquals(replacement, after)
         } finally {
             driver.close()
             testDatabase.delete()
@@ -553,7 +607,7 @@ class SqlSyncReplicaStoreContractTest {
                 val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
                 assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
                     store.commitLocal(
-                        initial.revision,
+                        initial,
                         listOf(prepared(1, 1, SyncOperationPayload.AuthorRegister)),
                         DurableClockState(HybridLogicalClock(1, 0), false),
                     ),
@@ -613,21 +667,21 @@ private suspend fun populateReplica(store: SqlSyncReplicaStore) {
     val registration = prepared(1, 1, SyncOperationPayload.AuthorRegister)
     val accepted = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
         store.commitLocal(
-            initial.revision,
+            initial,
             listOf(registration),
             DurableClockState(registration.operation.clock, false),
         ),
     ).value
     val staged = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
         store.commitStagedRemote(
-            accepted.revision,
+            accepted,
             prepared(2, 2, SyncOperationPayload.ApplicationPolicyAbsent),
             accepted.clockState,
             null,
         ),
     ).value
     assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
-        store.markTerminalExpiry(staged.revision, SessionId(testIdentifier(90))),
+        store.markTerminalExpiry(staged, SessionId(testIdentifier(90))),
     )
 }
 

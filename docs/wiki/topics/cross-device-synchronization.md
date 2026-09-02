@@ -149,6 +149,13 @@ delivery, bounded capacity, terminal HLC behavior, and deterministic convergence
 passed on the JVM, iOS Simulator, and a physical iPhone. Concrete CloudKit
 cursor and sync-engine state remain deferred to their transport task.
 
+`observed` (2026-09-02): every local, remote, transport-progress, and terminal-
+expiry store mutation compares the complete expected replica checkpoint with
+the restored snapshot inside its existing SQLDelight transaction before any
+write. A same-revision rollback or replacement returns a revision conflict and
+remains unchanged; the SQL revision compare-and-set still protects against a
+concurrent writer.
+
 `observed` (2026-08-31): a hosted review correction made reopen fail closed
 when durable HLC state is below any retained accepted operation clock. Rejected
 and deferred-capacity bundles now share the same rule: opaque transport progress

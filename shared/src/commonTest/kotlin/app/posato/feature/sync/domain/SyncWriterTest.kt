@@ -12,6 +12,7 @@ import app.posato.feature.sync.data.StoredStagedBundle
 import app.posato.feature.sync.data.SyncCryptoProvider
 import app.posato.feature.sync.data.SyncReplicaSnapshot
 import app.posato.feature.sync.data.SyncReplicaStore
+import app.posato.feature.sync.data.SyncStoreFailure
 import app.posato.feature.sync.data.SyncStoreResult
 import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
@@ -1139,54 +1140,57 @@ private class FakeSyncReplicaStore(
     }
 
     override suspend fun commitLocal(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundles: List<PreparedStoredBundle>,
         clockState: DurableClockState,
     ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
         localCommitAttempts += 1
         if (localCommitMode == LocalCommitMode.CANCELLED) {
             throw CancellationException("Synthetic local commit cancellation")
         }
-        if (localCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE && localCommitAttempts == 1) {
-            return SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
-        }
-        val accepted = current.acceptedBundles.toMutableMap()
-        val pending = current.pendingBundles.toMutableMap()
-        bundles.forEach { prepared ->
-            accepted[prepared.operation.operationId] = StoredAcceptedBundle(
-                prepared.bundle,
-                prepared.operationBytes,
-                prepared.operation,
-            )
-            pending[prepared.operation.operationId] = prepared.bundle
-        }
-        current = current.copy(
-            revision = current.revision + 1,
-            clockState = clockState,
-            acceptedBundles = accepted,
-            pendingBundles = pending,
-            transportProgress = if (localCommitMode == LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE) {
-                testTransportProgress(99)
-            } else {
-                current.transportProgress
-            },
-        )
-        afterLocalCommit()
-
-        return if (localCommitMode == LocalCommitMode.SUCCESS || localCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE) {
-            SyncStoreResult.Success(current)
+        return if (localCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE && localCommitAttempts == 1) {
+            SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
         } else {
-            SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
+            val accepted = current.acceptedBundles.toMutableMap()
+            val pending = current.pendingBundles.toMutableMap()
+            bundles.forEach { prepared ->
+                accepted[prepared.operation.operationId] = StoredAcceptedBundle(
+                    prepared.bundle,
+                    prepared.operationBytes,
+                    prepared.operation,
+                )
+                pending[prepared.operation.operationId] = prepared.bundle
+            }
+            current = current.copy(
+                revision = current.revision + 1,
+                clockState = clockState,
+                acceptedBundles = accepted,
+                pendingBundles = pending,
+                transportProgress = if (localCommitMode == LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE) {
+                    testTransportProgress(99)
+                } else {
+                    current.transportProgress
+                },
+            )
+            afterLocalCommit()
+
+            if (localCommitMode == LocalCommitMode.SUCCESS || localCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE) {
+                SyncStoreResult.Success(current)
+            } else {
+                SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
+            }
         }
     }
 
     override suspend fun commitAcceptedRemote(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundles: List<PreparedStoredBundle>,
         stagedBundleIdsToDelete: Set<BundleId>,
         clockState: DurableClockState,
         transportProgress: OpaqueTransportProgress?,
     ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
         val accepted = current.acceptedBundles.toMutableMap()
         bundles.forEach { prepared ->
             accepted[prepared.operation.operationId] = StoredAcceptedBundle(
@@ -1207,11 +1211,12 @@ private class FakeSyncReplicaStore(
     }
 
     override suspend fun commitStagedRemote(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         bundle: PreparedStoredBundle,
         clockState: DurableClockState,
         transportProgress: OpaqueTransportProgress?,
     ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
         current = current.copy(
             revision = current.revision + 1,
             clockState = clockState,
@@ -1229,37 +1234,44 @@ private class FakeSyncReplicaStore(
     }
 
     override suspend fun commitTransportProgress(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         transportProgress: OpaqueTransportProgress,
     ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
         current = current.copy(revision = current.revision + 1, transportProgress = transportProgress)
 
         return remoteResult()
     }
 
     override suspend fun markTerminalExpiry(
-        expectedRevision: Long,
+        expectedCheckpoint: SyncReplicaSnapshot,
         sessionId: SessionId,
     ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
         expiryCommitAttempts += 1
-        if (expiryCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE && expiryCommitAttempts == 1) {
-            return SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
-        }
-        current = current.copy(
-            revision = current.revision + 1,
-            terminalExpiryFacts = current.terminalExpiryFacts + sessionId,
-            transportProgress = if (expiryCommitMode == LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE) {
-                testTransportProgress(99)
-            } else {
-                current.transportProgress
-            },
-        )
-        afterExpiryCommit()
-        return if (expiryCommitMode == LocalCommitMode.SUCCESS || expiryCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE) {
-            SyncStoreResult.Success(current)
+        return if (expiryCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE && expiryCommitAttempts == 1) {
+            SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
         } else {
-            SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
+            current = current.copy(
+                revision = current.revision + 1,
+                terminalExpiryFacts = current.terminalExpiryFacts + sessionId,
+                transportProgress = if (expiryCommitMode == LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE) {
+                    testTransportProgress(99)
+                } else {
+                    current.transportProgress
+                },
+            )
+            afterExpiryCommit()
+            if (expiryCommitMode == LocalCommitMode.SUCCESS || expiryCommitMode == LocalCommitMode.AMBIGUOUS_ABSENT_ONCE) {
+                SyncStoreResult.Success(current)
+            } else {
+                SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
+            }
         }
+    }
+
+    private fun checkpointConflict(expectedCheckpoint: SyncReplicaSnapshot): SyncStoreResult.Failure? {
+        return if (current == expectedCheckpoint) null else SyncStoreResult.Failure(SyncStoreFailure.REVISION_CONFLICT)
     }
 
     private suspend fun remoteResult(): SyncStoreResult<SyncReplicaSnapshot> {
@@ -1271,14 +1283,14 @@ private class FakeSyncReplicaStore(
             }
 
             RemoteCommitMode.AMBIGUOUS_EXACT -> {
-                SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
+                SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
             }
 
             RemoteCommitMode.AMBIGUOUS_WITH_EXTRA_STATE -> {
                 current = current.copy(
                     terminalExpiryFacts = current.terminalExpiryFacts + SessionId(app.posato.feature.sync.testIdentifier(96)),
                 )
-                SyncStoreResult.Failure(app.posato.feature.sync.data.SyncStoreFailure.AMBIGUOUS_RESULT)
+                SyncStoreResult.Failure(SyncStoreFailure.AMBIGUOUS_RESULT)
             }
         }
     }

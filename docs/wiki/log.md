@@ -1150,3 +1150,8 @@
 
 - Rejected duplicate accepted author-sequence pairs and terminal-expiry session
   identifiers before replica restore materializes their rows.
+
+## [2026-09-02] correction | Compare exact sync checkpoints on commit
+
+- Rejected every store mutation whose complete expected checkpoint differs
+  from durable state, including a rollback or replacement at the same revision.
