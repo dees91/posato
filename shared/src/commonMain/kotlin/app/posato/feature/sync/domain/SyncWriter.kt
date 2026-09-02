@@ -149,18 +149,20 @@ internal class SyncOperationCore(
 ) {
     private val mutex = Mutex()
     private var activeWriter: SyncWriter? = null
+    private var activeTransportKey: TransportKey? = null
 
     suspend fun open(
         context: SyncContext,
-        transportKey: app.posato.feature.sync.domain.TransportKey,
+        transportKey: TransportKey,
     ): OpenSyncWriterResult {
-        var isTransportKeyTransferredToWriter = false
+        var isTransportKeyOwnedByWriter = false
         return try {
             mutex.withLock {
                 if (transportKey.isClosed) {
                     return@withLock OpenSyncWriterResult.Failure(OpenSyncWriterFailure.TRANSPORT_KEY_CLOSED)
                 }
                 if (activeWriter != null) {
+                    isTransportKeyOwnedByWriter = transportKey === activeTransportKey
                     return@withLock OpenSyncWriterResult.Failure(OpenSyncWriterFailure.ALREADY_OPEN)
                 }
 
@@ -178,7 +180,8 @@ internal class SyncOperationCore(
                             onClose = ::release,
                         )
                         activeWriter = writer
-                        isTransportKeyTransferredToWriter = true
+                        activeTransportKey = transportKey
+                        isTransportKeyOwnedByWriter = true
                         OpenSyncWriterResult.Success(writer)
                     }
 
@@ -188,7 +191,7 @@ internal class SyncOperationCore(
                 }
             }
         } finally {
-            if (!isTransportKeyTransferredToWriter) transportKey.close()
+            if (!isTransportKeyOwnedByWriter) transportKey.close()
         }
     }
 
@@ -196,6 +199,7 @@ internal class SyncOperationCore(
         mutex.withLock {
             if (activeWriter === writer) {
                 activeWriter = null
+                activeTransportKey = null
             }
         }
     }
