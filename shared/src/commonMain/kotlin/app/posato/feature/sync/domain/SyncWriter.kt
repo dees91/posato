@@ -22,6 +22,7 @@ import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlin.concurrent.Volatile
 
 internal fun interface SyncWallClock {
     fun currentEpochMillis(): Long
@@ -135,6 +136,7 @@ internal sealed interface OpenSyncWriterResult {
 
 internal enum class OpenSyncWriterFailure {
     ALREADY_OPEN,
+    TRANSPORT_KEY_CLOSED,
     WRONG_CONTEXT,
     CORRUPTION,
     STORAGE_FAILURE,
@@ -155,6 +157,9 @@ internal class SyncOperationCore(
         var isTransportKeyTransferredToWriter = false
         return try {
             mutex.withLock {
+                if (transportKey.isClosed) {
+                    return@withLock OpenSyncWriterResult.Failure(OpenSyncWriterFailure.TRANSPORT_KEY_CLOSED)
+                }
                 if (activeWriter != null) {
                     return@withLock OpenSyncWriterResult.Failure(OpenSyncWriterFailure.ALREADY_OPEN)
                 }
@@ -206,6 +211,8 @@ internal class SyncWriter internal constructor(
 ) {
     private val mutex = Mutex()
     private val codec = EncryptedBundleCodec(cryptoProvider)
+
+    @Volatile
     private var checkpoint = initialSnapshot
     private var authoringIncarnation: AuthoringIncarnation? = null
     private var state = WriterState.ACTIVE
@@ -316,7 +323,12 @@ internal class SyncWriter internal constructor(
         }
 
     fun evaluateSession(evaluationEpochMillis: Long): EffectiveSession {
-        return SyncReducer.evaluateSession(projection(), evaluationEpochMillis, checkpoint.terminalExpiryFacts)
+        val snapshot = checkpoint
+        return SyncReducer.evaluateSession(
+            SyncReducer.reduce(snapshot.acceptedBundles.values.map { stored -> stored.operation }),
+            evaluationEpochMillis,
+            snapshot.terminalExpiryFacts,
+        )
     }
 
     suspend fun markTerminalExpiry(sessionId: SessionId): Boolean {

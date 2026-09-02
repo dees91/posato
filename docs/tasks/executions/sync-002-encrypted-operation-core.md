@@ -91,7 +91,7 @@ budget and the excluded finding classes in `AGENTS.md` now bound this loop.
 | CryptoKit XCTest on a physical iPhone | `pass` | Six cases on 2026-08-31 with the Development Team supplied only as a local build parameter; later Swift changes are guards on paths Kotlin does not use. |
 | Hosted-review regression classes | `pass` | Reopen validation, cancellation reconciliation, bounded ingress, redaction, storage preflight, native output length, and buffer lifecycle regressions run on the JVM and iOS Simulator. |
 | Closeout regressions | `pass` | Closed transport key rejected by `open` and by the codec; single-read checkpoint accessors; zero-length native random output. |
-| `git diff --check`, suppression scan, personal-data scan | `pass` | No new `Suppress` token, credentials, device identifiers, or personal paths. |
+| `git diff --check`, suppression scan, personal-data scan | `pass` | No new quality-tool suppression, credentials, device identifiers, or personal paths. |
 
 ## Blockers and accepted risks
 

@@ -214,7 +214,7 @@ internal class EncryptedBundleCodec(
 
         return transportKey.useBytes { keyBytes ->
             cryptoProvider.hkdfSha256(keyBytes, header.salt, info) ?: ByteArray(0)
-        }.takeIf { key -> key.size == SyncFormatLimits.AES_KEY_BYTES }
+        }?.takeIf { key -> key.size == SyncFormatLimits.AES_KEY_BYTES }
     }
 
     private fun seal(
