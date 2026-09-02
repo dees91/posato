@@ -238,10 +238,20 @@ accepted 128-bundle limit before inspecting staged payload columns, so a
 hostile restored database cannot exceed the staging allocation boundary during
 restore.
 
-`observed` (2026-09-02): authenticated reopen rejects accepted history while
-the durable HLC remains at the fresh `(0, 0)` baseline. Legal local creation
-starts at its successor and remote acceptance advances past the retained
-operation, while equality at a later clock remains valid for local commits.
+`observed` (2026-09-02): authenticated reopen accepts empty history only at the
+fresh active `(0, 0)` HLC. With retained history, the durable clock must remain
+between its greatest authenticated operation clock and a conservative upper
+bound that permits at most one remote successor per retained operation. A
+terminal upper bound remains valid, as does state-only first-author exhaustion
+from an otherwise reachable preterminal clock. This preserves legal local
+equality and remote advancement while rejecting unexplained logical or physical
+leaps and fabricated terminal exhaustion.
+
+`inferred` (2026-09-02): retained snapshots do not identify which operations
+were authored locally or preserve their acceptance order, so reopen cannot
+reconstruct the replica's exact historical path. The bounded check is a
+necessary reachability envelope over the accepted local and remote transition
+rules, not an exact replay claim.
 
 `observed` (2026-09-01): authenticated reopen accepts a terminal local expiry
 fact only when the retained history contains a currently applicable session

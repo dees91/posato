@@ -308,6 +308,104 @@ class SyncWriterCancellationTest {
     }
 }
 
+class SyncReplicaSnapshotClockValidationTest {
+    @Test
+    fun `given empty accepted history when reopened then only the fresh HLC is valid`() = runTest {
+        val terminal = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
+        val cases = listOf(
+            DurableClockState(HybridLogicalClock(0, 0), false) to true,
+            DurableClockState(HybridLogicalClock(10, 0), false) to false,
+            DurableClockState(terminal, true) to false,
+        )
+
+        cases.forEach { (clockState, succeeds) ->
+            val result = SyncOperationCore(
+                FakeSyncReplicaStore(snapshot(clockState)),
+                FakeSyncCryptoProvider(),
+                SyncWallClock { 100 },
+            ).open(testContext, transportKey())
+
+            if (succeeds) {
+                assertIs<OpenSyncWriterResult.Success>(result).writer.close()
+            } else {
+                assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            }
+        }
+    }
+
+    @Test
+    fun `given exhausted state is not terminal when reopened then corruption is returned`() = runTest {
+        val corrupted = snapshot(DurableClockState(HybridLogicalClock(10, 0), true))
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(corrupted), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given accepted history at the initial HLC when reopened then corruption is returned`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister, physical = 0)),
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+    }
+
+    @Test
+    fun `given local accepted history when reopened then the durable HLC may equal the last operation`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = acceptedSnapshot(
+            provider,
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister).copy(clock = HybridLogicalClock(10, 4)),
+                testOperation(2, 2, SyncOperationPayload.ApplicationPolicyAbsent).copy(clock = HybridLogicalClock(10, 5)),
+            ),
+        )
+
+        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
+            .open(testContext, transportKey())
+
+        assertIs<OpenSyncWriterResult.Success>(result).writer.close()
+    }
+
+    @Test
+    fun `given remote accepted history when reopened then the durable HLC must remain within reachable bounds`() = runTest {
+        val provider = FakeSyncCryptoProvider()
+        val accepted = remotelyAcceptedSnapshot(
+            provider,
+            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister)),
+        )
+        val terminal = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
+        val cases = listOf(
+            DurableClockState(HybridLogicalClock(0, 1), false) to false,
+            DurableClockState(HybridLogicalClock(1, 1), false) to true,
+            DurableClockState(HybridLogicalClock(1, 2), false) to false,
+            DurableClockState(HybridLogicalClock(2, 0), false) to false,
+            DurableClockState(terminal, true) to false,
+        )
+
+        cases.forEach { (clockState, succeeds) ->
+            val result = SyncOperationCore(
+                FakeSyncReplicaStore(accepted.copy(clockState = clockState)),
+                provider,
+                SyncWallClock { 100 },
+            ).open(testContext, transportKey())
+
+            if (succeeds) {
+                assertIs<OpenSyncWriterResult.Success>(result).writer.close()
+            } else {
+                assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+            }
+        }
+    }
+}
+
 class SyncWriterTest {
     @Test
     fun `given HKDF failure when a local mutation is prepared then cryptography failure freezes the writer before sealing`() = runTest {
@@ -445,12 +543,20 @@ class SyncWriterTest {
     @Test
     fun `given insufficient HLC space for the complete first batch when mutated then terminal exhaustion is persisted without operations`() =
         runTest {
+            val provider = FakeSyncCryptoProvider()
             val beforeTerminal = HybridLogicalClock(
                 SyncFormatLimits.MAX_PHYSICAL_MILLIS,
                 SyncFormatLimits.MAX_LOGICAL_COUNTER - 1,
             )
-            val store = FakeSyncReplicaStore(snapshot(DurableClockState(beforeTerminal, false)))
-            val core = SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { SyncFormatLimits.MAX_PHYSICAL_MILLIS })
+            val retainedOperation = testOperation(90, 1, SyncOperationPayload.AuthorRegister, author = 90).copy(
+                clock = HybridLogicalClock(
+                    SyncFormatLimits.MAX_PHYSICAL_MILLIS,
+                    SyncFormatLimits.MAX_LOGICAL_COUNTER - 2,
+                ),
+            )
+            val store = FakeSyncReplicaStore(remotelyAcceptedSnapshot(provider, listOf(retainedOperation)))
+            val core = SyncOperationCore(store, provider, SyncWallClock { SyncFormatLimits.MAX_PHYSICAL_MILLIS })
+            assertEquals(DurableClockState(beforeTerminal, false), store.current.clockState)
             val opened = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey()))
 
             val result = assertIs<LocalMutationResult.Failure>(
@@ -463,15 +569,21 @@ class SyncWriterTest {
                 store.current.clockState.last,
             )
             assertTrue(store.current.clockState.isExhausted)
-            assertEquals(emptyMap(), store.current.acceptedBundles)
+            assertEquals(setOf(retainedOperation.operationId), store.current.acceptedBundles.keys)
+            opened.writer.close()
+            assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer.close()
         }
 
     @Test
     fun `given ambiguous HLC exhaustion commits when reconciled then only exact or proven absent outcomes succeed`() = runTest {
-        val beforeTerminal = HybridLogicalClock(
-            SyncFormatLimits.MAX_PHYSICAL_MILLIS,
-            SyncFormatLimits.MAX_LOGICAL_COUNTER - 1,
+        val provider = FakeSyncCryptoProvider()
+        val retainedOperation = testOperation(90, 1, SyncOperationPayload.AuthorRegister, author = 90).copy(
+            clock = HybridLogicalClock(
+                SyncFormatLimits.MAX_PHYSICAL_MILLIS,
+                SyncFormatLimits.MAX_LOGICAL_COUNTER - 2,
+            ),
         )
+        val initial = remotelyAcceptedSnapshot(provider, listOf(retainedOperation))
         val cases = listOf(
             LocalCommitMode.AMBIGUOUS_EXACT to LocalMutationFailure.HLC_EXHAUSTED,
             LocalCommitMode.AMBIGUOUS_ABSENT_ONCE to LocalMutationFailure.HLC_EXHAUSTED,
@@ -479,11 +591,11 @@ class SyncWriterTest {
         )
 
         cases.forEach { (mode, expectedFailure) ->
-            val store = FakeSyncReplicaStore(snapshot(DurableClockState(beforeTerminal, false)), mode)
+            val store = FakeSyncReplicaStore(initial, mode)
             val writer = assertIs<OpenSyncWriterResult.Success>(
                 SyncOperationCore(
                     store,
-                    FakeSyncCryptoProvider(),
+                    provider,
                     SyncWallClock { SyncFormatLimits.MAX_PHYSICAL_MILLIS },
                 ).open(testContext, transportKey()),
             ).writer
@@ -646,59 +758,6 @@ class SyncWriterTest {
             .open(testContext, transportKey())
 
         assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
-    }
-
-    @Test
-    fun `given exhausted state is not terminal when reopened then corruption is returned`() = runTest {
-        val corrupted = snapshot(DurableClockState(HybridLogicalClock(10, 0), true))
-
-        val result = SyncOperationCore(FakeSyncReplicaStore(corrupted), FakeSyncCryptoProvider(), SyncWallClock { 100 })
-            .open(testContext, transportKey())
-
-        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
-    }
-
-    @Test
-    fun `given accepted history at the initial HLC when reopened then corruption is returned`() = runTest {
-        val provider = FakeSyncCryptoProvider()
-        val accepted = acceptedSnapshot(
-            provider,
-            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister, physical = 0)),
-        )
-
-        val result = SyncOperationCore(FakeSyncReplicaStore(accepted), provider, SyncWallClock { 100 })
-            .open(testContext, transportKey())
-
-        assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
-    }
-
-    @Test
-    fun `given accepted history when reopened then the durable HLC must cover every operation`() = runTest {
-        val provider = FakeSyncCryptoProvider()
-        val acceptedClock = HybridLogicalClock(10, 5)
-        val accepted = acceptedSnapshot(
-            provider,
-            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister).copy(clock = acceptedClock)),
-        )
-        val cases = listOf(
-            DurableClockState(HybridLogicalClock(10, 4), false) to false,
-            DurableClockState(acceptedClock, false) to true,
-            DurableClockState(HybridLogicalClock(10, 6), false) to true,
-        )
-
-        cases.forEach { (clockState, succeeds) ->
-            val result = SyncOperationCore(
-                FakeSyncReplicaStore(accepted.copy(clockState = clockState)),
-                provider,
-                SyncWallClock { 100 },
-            ).open(testContext, transportKey())
-
-            if (succeeds) {
-                assertIs<OpenSyncWriterResult.Success>(result)
-            } else {
-                assertEquals(OpenSyncWriterFailure.CORRUPTION, assertIs<OpenSyncWriterResult.Failure>(result).reason)
-            }
-        }
     }
 
     @Test
@@ -1009,22 +1068,39 @@ class SyncWriterTest {
     }
 
     @Test
-    fun `given a terminal local HLC when a valid remote registration arrives then it remains terminal and accepts inbound history`() {
+    fun `given remote input reaches the terminal HLC when reopened then later inbound history remains accepted`() {
         runTest {
             val provider = FakeSyncCryptoProvider()
             val terminal = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
-            val store = FakeSyncReplicaStore(snapshot(DurableClockState(terminal, true)))
-            val writer = assertIs<OpenSyncWriterResult.Success>(
-                SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
-            ).writer
+            val beforeTerminal = HybridLogicalClock(
+                SyncFormatLimits.MAX_PHYSICAL_MILLIS,
+                SyncFormatLimits.MAX_LOGICAL_COUNTER - 1,
+            )
+            val store = FakeSyncReplicaStore(snapshot())
+            val core = SyncOperationCore(store, provider, SyncWallClock { 100 })
+            val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
 
-            val result = writer.acceptRemote(
+            assertIs<RemoteAcceptanceResult.Accepted>(
+                writer.acceptRemote(
+                    remoteBundle(
+                        provider,
+                        testOperation(90, 1, SyncOperationPayload.AuthorRegister, author = 90).copy(clock = beforeTerminal),
+                    ).copyBytes(),
+                    RemoteTransportReceipt(null, false),
+                ),
+            )
+            assertEquals(DurableClockState(terminal, true), store.current.clockState)
+            writer.close()
+
+            val reopened = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+            val result = reopened.acceptRemote(
                 remoteBundle(provider, testOperation(1, 1, SyncOperationPayload.AuthorRegister)).copyBytes(),
                 RemoteTransportReceipt(null, false),
             )
 
             assertIs<RemoteAcceptanceResult.Accepted>(result)
             assertEquals(DurableClockState(terminal, true), store.current.clockState)
+            reopened.close()
         }
     }
 }
@@ -1295,6 +1371,15 @@ private fun acceptedSnapshot(
     val accepted = operations.map { operation -> storedAcceptedBundle(provider, operation) }
         .associateBy { stored -> stored.operation.operationId }
     return snapshot(DurableClockState(lastClock, lastClock.successor() == null)).copy(acceptedBundles = accepted)
+}
+
+private fun remotelyAcceptedSnapshot(
+    provider: FakeSyncCryptoProvider,
+    operations: List<SyncOperation>,
+): SyncReplicaSnapshot {
+    val accepted = acceptedSnapshot(provider, operations)
+
+    return accepted.copy(clockState = advanceRemoteClock(snapshot().clockState, operations))
 }
 
 private fun storedAcceptedBundle(

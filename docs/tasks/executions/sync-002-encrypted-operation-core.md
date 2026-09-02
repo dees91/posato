@@ -89,6 +89,11 @@
   with no Critical or Required findings. Its simplicity review selected one
   wider `NonCancellable` boundary and the existing store suspension seam,
   without adding a scope, timeout, retry, helper, or production test hook.
+  The conservative-HLC reachability correction received independent plan
+  approval with no Critical or Required findings. The reviewer confirmed that
+  exact historical replay is unavailable without retained acceptance order and
+  local-or-remote provenance, and approved one bounded validation helper using
+  the existing clock-transition rules without a schema or replay engine.
 
 ## Result
 
@@ -268,6 +273,10 @@
   The subsequent required finding found that cancellation while `close()`
   waited for the writer mutex could prevent state closure, key retirement, and
   owner release, leaving the core unable to open a replacement writer.
+  The latest required finding found that reopen accepted durable HLC values
+  above the state conservatively explainable by authenticated retained history,
+  including a fabricated terminal exhaustion that permanently blocked local
+  authoring.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -368,8 +377,14 @@
   also rejects a second state row in the SQL preflight before inspecting state
   BLOB columns. Authenticated reopen now rejects accepted history at the fresh
   `(0, 0)` HLC baseline while preserving legal equality between a non-initial
-  durable clock and an accepted local operation. No further hosted review is
-  needed.
+  durable clock and an accepted local operation. It now also requires empty
+  history to retain the exact fresh clock and bounds nonempty history between
+  its greatest operation clock and the most remote advancement retained
+  operations could explain. Terminal exhaustion additionally requires a
+  terminal upper bound or the state-only first-author exhaustion reachable from
+  a preterminal clock. This rejects unexplained physical or logical advances
+  without adding unavailable acceptance provenance. No further hosted review
+  is needed.
 
 ## Verification
 
@@ -409,6 +424,7 @@
 | Persisted-staging capacity preflight | `pass` | The focused real-SQLite JVM regression first showed that 129 physically valid staged rows passed preflight, then proved rejection and `CORRUPTION` after reopening with a fresh driver. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Duplicate persisted-state preflight | `pass` | The focused real-SQLite JVM regression first showed that two physically valid state rows with exact-limit transport progress passed preflight, then proved rejection and `CORRUPTION` after reopening with a fresh driver. A controlled SQLite probe confirmed that the first cardinality arm short-circuits the later branch. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Initial-HLC reachability | `pass` | The focused JVM regression first showed that authenticated accepted history at the fresh `(0, 0)` baseline opened successfully, then proved `CORRUPTION` after the correction. All 32 JVM and iOS Simulator test tasks and all 113 quality tasks passed while the existing lower, equal, and greater non-initial HLC cases remained green. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
+| Conservative HLC reachability | `pass` | Focused JVM regressions first accepted an empty nonfresh clock and remote-history clocks above the reachable successor, then passed after the correction. The complete JVM and iOS Simulator suites and all 113 quality tasks passed without suppressions. Diff and suppression scans were clean. Independent completed-change review found no code, security, boundary, test, or simplicity defects; its Required verification-record finding was resolved by this row. |
 
 ## Blockers and accepted risks
 

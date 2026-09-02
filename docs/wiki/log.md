@@ -1135,3 +1135,8 @@
 
 - Entered non-cancellable writer cleanup before mutex acquisition so state,
   ephemeral keys, and core ownership are released after close cancellation.
+
+## [2026-09-02] correction | Bound reopened sync clocks
+
+- Rejected empty nonfresh clocks, unexplained advances beyond authenticated
+  retained history, and fabricated terminal HLC exhaustion during reopen.

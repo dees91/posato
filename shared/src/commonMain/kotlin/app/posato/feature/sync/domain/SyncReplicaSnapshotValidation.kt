@@ -1,6 +1,7 @@
 package app.posato.feature.sync.domain
 
 import app.posato.feature.sync.data.DecodeBundleResult
+import app.posato.feature.sync.data.DurableClockState
 import app.posato.feature.sync.data.EncryptedBundleCodec
 import app.posato.feature.sync.data.StoredAcceptedBundle
 import app.posato.feature.sync.data.SyncCryptoProvider
@@ -11,14 +12,11 @@ internal fun SyncReplicaSnapshot.isAuthenticatedBy(
     cryptoProvider: SyncCryptoProvider,
     transportKey: TransportKey,
 ): Boolean {
-    val initialClock = HybridLogicalClock(0, 0)
-    val terminalClock = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
     val codec = EncryptedBundleCodec(cryptoProvider)
 
-    return (clockState.last == terminalClock) == clockState.isExhausted &&
-        (acceptedBundles.isEmpty() || clockState.last != initialClock) &&
-        acceptedBundlesAreValid(codec, transportKey) &&
+    return acceptedBundlesAreValid(codec, transportKey) &&
         acceptedBundles.values.haveValidAuthorHistories() &&
+        hasClockStateWithinConservativeReachabilityBounds() &&
         hasValidStagingState() &&
         stagedBundlesAreValid(codec, transportKey) &&
         hasValidTerminalExpiryFacts()
@@ -45,9 +43,34 @@ private fun SyncReplicaSnapshot.acceptedBundlesAreValid(
         decoded is DecodeBundleResult.Success &&
             bundleId == stored.operation.operationId &&
             decoded.operation == stored.operation &&
-            stored.operation.clock <= clockState.last &&
             stored.operationBytes.copyBytes().contentEquals(SyncOperationCodec.encode(stored.operation))
     }
+}
+
+private fun SyncReplicaSnapshot.hasClockStateWithinConservativeReachabilityBounds(): Boolean {
+    val initialClock = HybridLogicalClock(0, 0)
+    val terminalClock = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
+    val operations = acceptedBundles.values.map(StoredAcceptedBundle::operation)
+    val hasConsistentExhaustion = (clockState.last == terminalClock) == clockState.isExhausted
+    val isWithinReachabilityBounds = if (operations.isEmpty()) {
+        clockState == DurableClockState(initialClock, false)
+    } else {
+        val lowerClock = operations.maxOf(SyncOperation::clock)
+        val remoteUpperState = advanceRemoteClock(
+            DurableClockState(lowerClock, lowerClock == terminalClock),
+            operations,
+        )
+        val canExhaustWithoutAnotherOperation = reserveLocalClocks(
+            remoteUpperState,
+            remoteUpperState.last.physicalMillis,
+            2,
+        ) == null
+        val upperClock = if (canExhaustWithoutAnotherOperation) terminalClock else remoteUpperState.last
+
+        clockState.last != initialClock && clockState.last in lowerClock..upperClock
+    }
+
+    return hasConsistentExhaustion && isWithinReachabilityBounds
 }
 
 private fun SyncReplicaSnapshot.stagedBundlesAreValid(
