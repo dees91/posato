@@ -128,6 +128,32 @@ class JdkSyncCryptoProviderTest {
     }
 
     @Test
+    fun `given a closed transport key when sealing and decoding then the codec fails closed`() {
+        val provider = JdkSyncCryptoProvider()
+        val signingKey = checkNotNull(provider.createSigningKey())
+        val operation = SyncOperation(
+            operationId = BundleId(testIdentifier(100)),
+            context = testContext,
+            authorId = AuthorId(testIdentifier(101)),
+            publicSigningKey = signingKey.publicKey,
+            authorSequence = 1,
+            clock = HybridLogicalClock(1_000, 2),
+            payload = SyncOperationPayload.AuthorRegister,
+        )
+        val transportKey = checkNotNull(TransportKey.fromBytes(ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES) { it.toByte() }))
+        val salt = ByteArray(SyncFormatLimits.BUNDLE_SALT_BYTES) { (it + 32).toByte() }
+        val codec = EncryptedBundleCodec(provider)
+        val prepared = assertIs<PrepareBundleResult.Success>(codec.prepare(operation, transportKey, signingKey, salt))
+
+        transportKey.close()
+
+        assertIs<PrepareBundleResult.CryptographyFailure>(codec.prepare(operation, transportKey, signingKey, salt))
+        assertIs<DecodeBundleResult.Failure>(codec.decode(prepared.bundle, testContext, transportKey))
+        assertNull(transportKey.useBytes { bytes -> bytes.copyOf() })
+        signingKey.close()
+    }
+
+    @Test
     fun `given an Ed25519 key when signing then the raw public key verifies and altered input fails`() {
         val provider = JdkSyncCryptoProvider()
         val signingKey = checkNotNull(provider.createSigningKey())

@@ -8,9 +8,15 @@ final class CryptoKitSyncProvider: IosCryptoProvider {
         guard count >= 0 else {
             return nil
         }
+        guard count > 0 else {
+            return Data()
+        }
         var bytes = Data(count: Int(count))
-        let status = bytes.withUnsafeMutableBytes { buffer in
-            SecRandomCopyBytes(kSecRandomDefault, buffer.count, buffer.baseAddress!)
+        let status = bytes.withUnsafeMutableBytes { buffer -> OSStatus in
+            guard let baseAddress = buffer.baseAddress else {
+                return errSecParam
+            }
+            return SecRandomCopyBytes(kSecRandomDefault, buffer.count, baseAddress)
         }
 
         return status == errSecSuccess ? bytes : nil

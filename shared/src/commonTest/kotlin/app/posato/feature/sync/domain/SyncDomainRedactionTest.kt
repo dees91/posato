@@ -11,6 +11,12 @@ import kotlin.test.assertEquals
 
 class SyncDomainRedactionTest {
     @Test
+    fun `given a sync identifier when converted to a string then its bytes and identity remain redacted`() {
+        assertEquals("SyncIdentifier(redacted)", testIdentifier(7).toString())
+        assertEquals("SessionId(value=SyncIdentifier(redacted))", SessionId(testIdentifier(8)).toString())
+    }
+
+    @Test
     fun `given a local mutation success when converted to a string then pending cardinality remains redacted`() {
         val result = LocalMutationResult.Success(
             pendingBundles = listOf(

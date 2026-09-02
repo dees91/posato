@@ -32,6 +32,7 @@ import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -61,13 +62,26 @@ class SyncWriterOpenTest {
             val result = core.open(testContext, rejectedKey)
 
             assertEquals(OpenSyncWriterFailure.ALREADY_OPEN, assertIs<OpenSyncWriterResult.Failure>(result).reason)
-            assertContentEquals(
-                ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES),
-                rejectedKey.useBytes { bytes -> bytes.copyOf() },
-            )
+            assertNull(rejectedKey.useBytes { bytes -> bytes.copyOf() })
         } finally {
             writer.close()
         }
+    }
+
+    @Test
+    fun `given a rejected transport key when it is reused after the writer closes then open fails closed`() = runTest {
+        val core = SyncOperationCore(FakeSyncReplicaStore(snapshot()), FakeSyncCryptoProvider(), SyncWallClock { 100 })
+        val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+        val rejectedKey = transportKey()
+        assertIs<OpenSyncWriterResult.Failure>(core.open(testContext, rejectedKey))
+        writer.close()
+
+        val result = core.open(testContext, rejectedKey)
+
+        assertEquals(OpenSyncWriterFailure.TRANSPORT_KEY_CLOSED, assertIs<OpenSyncWriterResult.Failure>(result).reason)
+        assertTrue(rejectedKey.isClosed)
+        val replacement = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+        replacement.close()
     }
 
     @Test
@@ -89,10 +103,7 @@ class SyncWriterOpenTest {
         openJob.cancel()
         openJob.join()
 
-        assertContentEquals(
-            ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES),
-            openingKey.useBytes { bytes -> bytes.copyOf() },
-        )
+        assertNull(openingKey.useBytes { bytes -> bytes.copyOf() })
     }
 }
 
@@ -125,10 +136,7 @@ class SyncWriterCancellationTest {
         mutationJob.join()
         closeJob.join()
 
-        assertContentEquals(
-            ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES),
-            activeTransportKey.useBytes { bytes -> bytes.copyOf() },
-        )
+        assertNull(activeTransportKey.useBytes { bytes -> bytes.copyOf() })
         assertEquals(1, provider.signingKeyCloseCount)
         val reopenedWriter = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
         reopenedWriter.close()

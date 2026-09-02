@@ -30,6 +30,14 @@ final class CryptoKitSyncProviderTests: XCTestCase {
         )
     }
 
+    func testRandomBytesRejectsNegativeReturnsEmptyForZeroAndExactCountOtherwise() throws {
+        let provider = CryptoKitSyncProvider()
+
+        XCTAssertNil(provider.randomBytes(count: -1))
+        XCTAssertEqual(provider.randomBytes(count: 0), Data())
+        XCTAssertEqual(try XCTUnwrap(provider.randomBytes(count: 32)).count, 32)
+    }
+
     func testSha256MatchesFIPSVector() {
         let provider = CryptoKitSyncProvider()
 

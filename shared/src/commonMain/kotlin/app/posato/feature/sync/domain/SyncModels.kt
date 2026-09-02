@@ -234,7 +234,11 @@ internal data class SyncOperation(
 internal class TransportKey private constructor(
     private val bytes: ByteArray,
 ) {
-    fun useBytes(block: (ByteArray) -> ByteArray): ByteArray {
+    var isClosed: Boolean = false
+        private set
+
+    fun useBytes(block: (ByteArray) -> ByteArray): ByteArray? {
+        if (isClosed) return null
         val copy = bytes.copyOf()
         return try {
             block(copy)
@@ -244,6 +248,7 @@ internal class TransportKey private constructor(
     }
 
     fun close() {
+        isClosed = true
         bytes.fill(0)
     }
 
