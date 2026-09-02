@@ -106,6 +106,11 @@ The build must expose one documented aggregate local quality entry point.
 Focused commands remain useful during iteration; the aggregate check runs when
 the current change can affect its surface.
 
+`user-confirmed` (2026-09-02): Detekt `ReturnCount` allows three returns and
+excludes guard clauses so security-sensitive parsers fail closed with early
+returns instead of nullable accumulators. This is a repository-wide threshold
+change, not a suppression.
+
 ## Tests and runtime checks
 
 Use the layers that can reveal a failure introduced by the task:
@@ -133,6 +138,10 @@ practical. A business-logic bug fix gets a regression test unless the selected
 record path explains the concrete automation limit. Record only checks actually
 applicable and run; do not enumerate irrelevant categories as `N/A`.
 
+Run focused tests for each correction and the complete `./gradlew quality`
+once after the last correction before pushing. Use `--rerun-tasks` only after
+a build-configuration change.
+
 ## Review
 
 The review tier is selected independently from the record path in the
@@ -148,6 +157,10 @@ performance, scope, tests, and the verification story. It explicitly asks
 whether a script, abstraction, generalized configuration layer, or additional
 artifact has a real consumer.
 
+An independent review counts only with evidence: the diff lines it examined,
+the tests it ran for the touched behavior, and the paths it checked. An
+approval without those three elements does not complete the review tier.
+
 | Severity | Meaning | Completion effect |
 | --- | --- | --- |
 | Critical | Data loss, security or privacy exposure, broken behavior, or a fundamental contract violation. | Blocks completion. |
@@ -158,13 +171,12 @@ artifact has a real consumer.
 Only a recorded maintainer decision may override a Critical or Required
 finding. Recommended and Optional findings do not silently become work.
 
-`user-confirmed` (2026-08-27): hosted `@codex review` is an optional final
-signal, not a recursive gate. Request at most one pass per pull request by
-default after local verification, any required proportional independent
-review, and any required versioned task records are complete. Accepted
-Critical or Required findings receive local correction and affected
-verification without hosted re-review; P2 and lower findings remain advisory
-unless the maintainer accepts them.
+`user-confirmed` (2026-09-02): hosted `@codex review` is an optional final
+signal, not a recursive gate. Request at most two passes per pull request; a
+third needs a recorded maintainer decision. Before a repeat pass, fix the
+whole class of each accepted finding across the diff. Accepted Critical or
+Required findings receive local correction and affected verification; P2 and
+lower findings are declined unless the maintainer explicitly accepts them.
 
 ## Dependencies and provenance
 
