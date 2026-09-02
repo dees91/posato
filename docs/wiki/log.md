@@ -1140,3 +1140,8 @@
 
 - Rejected empty nonfresh clocks, unexplained advances beyond authenticated
   retained history, and fabricated terminal HLC exhaustion during reopen.
+
+## [2026-09-02] correction | Complete sync restore and exhaustion boundaries
+
+- Rejected duplicate pending bundle identifiers before restore materializes
+  their bytes, and avoided rewriting an already terminal clock on local refusal.

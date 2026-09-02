@@ -229,9 +229,10 @@ the singleton, but the same preflight also rejects a replaced untrusted table
 before its values reach typed restore. The preflight and snapshot read share one
 transaction, and invalid state, accepted, pending, staged, or terminal-expiry
 storage reports corruption without materializing the rejected value in Kotlin.
-The preflight also rejects duplicate accepted or staged bundle identifiers
-before typed rows or bundle payloads are materialized, so map construction
-cannot silently discard a retained row from a replaced untrusted table.
+The preflight also rejects duplicate accepted, pending, or staged bundle
+identifiers before typed rows or bundle payloads are materialized, so map
+construction cannot silently discard a retained row from a replaced untrusted
+table.
 
 `observed` (2026-09-02): the same preflight rejects persisted staging above the
 accepted 128-bundle limit before inspecting staged payload columns, so a
@@ -246,6 +247,11 @@ terminal upper bound remains valid, as does state-only first-author exhaustion
 from an otherwise reachable preterminal clock. This preserves legal local
 equality and remote advancement while rejecting unexplained logical or physical
 leaps and fabricated terminal exhaustion.
+
+`observed` (2026-09-02): once the durable clock is already exhausted, a local
+mutation returns `HLC_EXHAUSTED` without rewriting the identical terminal state
+or advancing its revision. The state-only exhaustion commit remains reserved
+for an active clock that cannot fit the required local batch.
 
 `inferred` (2026-09-02): retained snapshots do not identify which operations
 were authored locally or preserve their acceptance order, so reopen cannot

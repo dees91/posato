@@ -360,6 +360,9 @@ internal class SyncWriter internal constructor(
     }
 
     private suspend fun commitExhaustion(): Boolean {
+        if (checkpoint.clockState.isExhausted) {
+            return true
+        }
         val exhaustedState = DurableClockState(
             HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER),
             true,

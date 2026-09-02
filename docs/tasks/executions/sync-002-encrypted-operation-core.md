@@ -94,6 +94,11 @@
   exact historical replay is unavailable without retained acceptance order and
   local-or-remote provenance, and approved one bounded validation helper using
   the existing clock-transition rules without a schema or replay engine.
+  The pending-duplicate and terminal-rewrite correction also received
+  independent plan approval with no findings. Its simplicity review selected
+  one additional SQL grouping arm, one guard at the existing exhaustion
+  boundary, and extensions of two existing regressions without a schema change,
+  helper, or broader policy.
 
 ## Result
 
@@ -367,14 +372,14 @@
   restore now also rejects a non-integer singleton before typed materialization,
   including after an untrusted table replacement. JDK and iOS signing-key
   wrappers now return fixed redacted strings while retaining their existing
-  ownership and close behavior. Replica restore now rejects duplicate accepted
-  or staged bundle identifiers in the same SQL preflight before typed rows or
-  bundle payloads are materialized, so map construction cannot discard a
-  retained row. The private bundle-parts carrier now returns one fixed redacted
-  default string instead of rendering its header, ciphertext and tag, and
-  signature byte arrays. Replica restore now rejects a 129th staged row in the
-  SQL preflight before inspecting staged payload columns. Replica restore now
-  also rejects a second state row in the SQL preflight before inspecting state
+  ownership and close behavior. Replica restore now rejects duplicate
+  accepted, pending, or staged bundle identifiers in the same SQL preflight
+  before typed rows or bundle payloads are materialized, so map construction
+  cannot discard a retained row. The private bundle-parts carrier now returns
+  one fixed redacted default string instead of rendering its header, ciphertext
+  and tag, and signature byte arrays. Replica restore now rejects a 129th
+  staged row in the SQL preflight before inspecting staged payload columns.
+  Replica restore now also rejects a second state row in the SQL preflight before inspecting state
   BLOB columns. Authenticated reopen now rejects accepted history at the fresh
   `(0, 0)` HLC baseline while preserving legal equality between a non-initial
   durable clock and an accepted local operation. It now also requires empty
@@ -383,8 +388,11 @@
   operations could explain. Terminal exhaustion additionally requires a
   terminal upper bound or the state-only first-author exhaustion reachable from
   a preterminal clock. This rejects unexplained physical or logical advances
-  without adding unavailable acceptance provenance. No further hosted review
-  is needed.
+  without adding unavailable acceptance provenance. A local mutation against
+  an already exhausted checkpoint now returns `HLC_EXHAUSTED` without
+  rewriting the identical terminal state or advancing its revision; an active
+  clock that cannot reserve the required batch still persists exhaustion once.
+  No further hosted review is needed.
 
 ## Verification
 
@@ -425,6 +433,7 @@
 | Duplicate persisted-state preflight | `pass` | The focused real-SQLite JVM regression first showed that two physically valid state rows with exact-limit transport progress passed preflight, then proved rejection and `CORRUPTION` after reopening with a fresh driver. A controlled SQLite probe confirmed that the first cardinality arm short-circuits the later branch. The focused JVM and iOS Simulator contract tests, all 32 cross-target test tasks, and all 113 quality tasks passed. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Initial-HLC reachability | `pass` | The focused JVM regression first showed that authenticated accepted history at the fresh `(0, 0)` baseline opened successfully, then proved `CORRUPTION` after the correction. All 32 JVM and iOS Simulator test tasks and all 113 quality tasks passed while the existing lower, equal, and greater non-initial HLC cases remained green. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Conservative HLC reachability | `pass` | Focused JVM regressions first accepted an empty nonfresh clock and remote-history clocks above the reachable successor, then passed after the correction. The complete JVM and iOS Simulator suites and all 113 quality tasks passed without suppressions. Diff and suppression scans were clean. Independent completed-change review found no code, security, boundary, test, or simplicity defects; its Required verification-record finding was resolved by this row. |
+| Pending duplicate and terminal rewrite correction | `pass` | Both focused JVM regressions failed before implementation and passed afterward. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks. Detekt's initial complexity finding was addressed by moving the already-terminal idempotency guard into the existing exhaustion operation without suppression. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 

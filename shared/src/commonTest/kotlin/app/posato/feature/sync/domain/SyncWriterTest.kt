@@ -1020,7 +1020,10 @@ class SyncWriterTest {
             val terminal = HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER)
             listOf(terminal.copy(logicalCounter = terminal.logicalCounter - 1), terminal).forEachIndexed { index, remoteClock ->
                 val provider = FakeSyncCryptoProvider()
-                val store = FakeSyncReplicaStore(snapshot())
+                val store = FakeSyncReplicaStore(
+                    initial = snapshot(),
+                    localCommitMode = LocalCommitMode.AMBIGUOUS_WITH_EXTRA_STATE,
+                )
                 val writer = assertIs<OpenSyncWriterResult.Success>(
                     SyncOperationCore(store, provider, SyncWallClock { 100 }).open(testContext, transportKey()),
                 ).writer
@@ -1030,12 +1033,14 @@ class SyncWriterTest {
                     writer.acceptRemote(remoteBundle(provider, registration).copyBytes(), RemoteTransportReceipt(null, false)),
                 )
                 assertEquals(DurableClockState(terminal, true), store.current.clockState)
+                val terminalSnapshot = store.current
                 assertEquals(
                     LocalMutationFailure.HLC_EXHAUSTED,
                     assertIs<LocalMutationResult.Failure>(
                         writer.mutate(LocalSyncMutation.RemoveApplicationPolicy),
                     ).reason,
                 )
+                assertEquals(terminalSnapshot, store.current)
             }
         }
     }

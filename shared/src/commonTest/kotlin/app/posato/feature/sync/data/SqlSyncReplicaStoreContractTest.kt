@@ -362,6 +362,7 @@ class SqlSyncReplicaStoreContractTest {
     fun `given duplicate persisted bundle identifiers when reopened then corruption is reported`() = runTest {
         listOf(
             "accepted" to "sync_accepted_bundle",
+            "pending" to "sync_pending_bundle",
             "staged" to "sync_staged_bundle",
         ).forEachIndexed { index, (name, table) ->
             val testDatabase = createLocalPolicyTestDatabase("sync-duplicate-$index.db")
