@@ -1,0 +1,697 @@
+package app.posato.feature.sync.data
+
+import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.posato.core.database.PosatoDatabase
+import app.posato.feature.sync.domain.EncryptedBundle
+import app.posato.feature.sync.domain.HybridLogicalClock
+import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.sync.domain.SyncFormatLimits
+import app.posato.feature.sync.domain.SyncOperationPayload
+import app.posato.feature.sync.testContext
+import app.posato.feature.sync.testIdentifier
+import app.posato.feature.sync.testOperation
+import app.posato.feature.sync.testTransportProgress
+import app.posato.feature.targets.data.createLocalPolicyTestDatabase
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.runTest
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFails
+import kotlin.test.assertIs
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
+
+class SqlSyncReplicaStoreContractTest {
+    @Test
+    fun `given invalid persisted storage when reopened then corruption is reported before restore`() = runTest {
+        persistedStorageCorruptions.forEachIndexed { index, corruption ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-storage-corruption-$index.db")
+            val driver = testDatabase.openDriver()
+            try {
+                val database = PosatoDatabase(driver)
+                val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+                populateReplica(store)
+                driver.execute(null, "PRAGMA foreign_keys = OFF", 0)
+                database.transaction {
+                    driver.execute(null, "PRAGMA ignore_check_constraints = ON", 0)
+                    driver.execute(null, corruption.sql, 0)
+                    driver.execute(null, "PRAGMA ignore_check_constraints = OFF", 0)
+                }
+
+                assertEquals(
+                    listOf(1L),
+                    database.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList(),
+                    corruption.name,
+                )
+                val result = store.open(testContext)
+
+                assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason, corruption.name)
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+
+    @Test
+    fun `given exact persisted blob limits when preflight runs then allocation boundaries are accepted`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-blob-boundaries.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            populateReplica(store)
+            driver.execute(null, "UPDATE sync_replica_state SET transport_progress = zeroblob(65536)", 0)
+            driver.execute(null, "UPDATE sync_accepted_bundle SET bundle_bytes = zeroblob(65536), operation_bytes = zeroblob(32768)", 0)
+            driver.execute(null, "UPDATE sync_pending_bundle SET bundle_bytes = zeroblob(65536)", 0)
+            driver.execute(null, "UPDATE sync_staged_bundle SET bundle_bytes = zeroblob(65536), operation_bytes = zeroblob(32768)", 0)
+
+            assertEquals(emptyList(), database.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given oversized persisted staging when reopened then corruption is reported before restore`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-staged-capacity.db")
+        var driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+            database.transaction {
+                repeat(SyncFormatLimits.MAX_STAGED_BUNDLES) { index ->
+                    database.syncReplicaQueries.insertStagedBundle(
+                        bundle_id = testIdentifier(1_000 + index).copyBytes(),
+                        bundle_bytes = ByteArray(1),
+                        operation_bytes = ByteArray(1),
+                        author_id = testIdentifier(2_000).copyBytes(),
+                        author_sequence = index.toLong() + 2,
+                        public_key = ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES),
+                    )
+                }
+            }
+            assertEquals(emptyList(), database.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            database.syncReplicaQueries.insertStagedBundle(
+                bundle_id = testIdentifier(2_000).copyBytes(),
+                bundle_bytes = ByteArray(1),
+                operation_bytes = ByteArray(1),
+                author_id = testIdentifier(2_001).copyBytes(),
+                author_sequence = 2,
+                public_key = ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES),
+            )
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            val reopenedDatabase = PosatoDatabase(driver)
+            val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+            assertEquals(listOf(1L), reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            val result = reopenedStore.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given duplicate persisted state rows when reopened then corruption is reported before restore`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-duplicate-state.db")
+        var driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+            driver.execute(null, "UPDATE sync_replica_state SET transport_progress = zeroblob(65536)", 0)
+            database.transaction {
+                driver.execute(null, "CREATE TABLE tampered_sync_replica_state AS SELECT * FROM sync_replica_state", 0)
+                driver.execute(null, "INSERT INTO tampered_sync_replica_state SELECT * FROM sync_replica_state", 0)
+                driver.execute(null, "DROP TABLE sync_replica_state", 0)
+                driver.execute(null, "ALTER TABLE tampered_sync_replica_state RENAME TO sync_replica_state", 0)
+            }
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            val reopenedDatabase = PosatoDatabase(driver)
+            val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+            assertEquals(listOf(1L), reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            val result = reopenedStore.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given an out of range persisted physical clock when read then corruption is reported`() = runTest {
+        listOf(-1L, SyncFormatLimits.MAX_PHYSICAL_MILLIS + 1).forEachIndexed { index, physical ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-invalid-physical-$index.db")
+            val driver = testDatabase.openDriver()
+            try {
+                val database = PosatoDatabase(driver)
+                val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+                database.transaction {
+                    driver.execute(null, "PRAGMA ignore_check_constraints = ON", 0)
+                    driver.execute(
+                        identifier = null,
+                        sql = "UPDATE sync_replica_state SET hlc_physical = $physical WHERE singleton = 1",
+                        parameters = 0,
+                    )
+                    driver.execute(null, "PRAGMA ignore_check_constraints = OFF", 0)
+                }
+
+                val result = store.read(testContext)
+
+                assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+
+    @Test
+    fun `given bounded and oversized transport progress when wrapped then only the bounded bytes are retained`() {
+        val source = ByteArray(SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES)
+        val progress = assertNotNull(OpaqueTransportProgress.fromBytes(source))
+
+        source[0] = 1
+
+        assertEquals(0, progress.copyBytes()[0])
+        assertNull(
+            OpaqueTransportProgress.fromBytes(
+                ByteArray(SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES + 1),
+            ),
+        )
+    }
+
+    @Test
+    fun `given bounded progress when committed then an oversized direct write is rejected and bounded state remains`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-progress-limit.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+            val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+            val progress = assertNotNull(
+                OpaqueTransportProgress.fromBytes(ByteArray(SyncFormatLimits.MAX_TRANSPORT_PROGRESS_BYTES)),
+            )
+            val committed = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitTransportProgress(initial, progress),
+            ).value
+
+            assertFails {
+                driver.execute(
+                    identifier = null,
+                    sql = "UPDATE sync_replica_state SET transport_progress = zeroblob(65537) WHERE singleton = 1",
+                    parameters = 0,
+                )
+            }
+
+            assertEquals(committed, assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given oversized persisted transport progress when read then corruption is reported`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-progress-corruption.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+            database.transaction {
+                driver.execute(null, "PRAGMA ignore_check_constraints = ON", 0)
+                driver.execute(
+                    identifier = null,
+                    sql = "UPDATE sync_replica_state SET transport_progress = zeroblob(65537) WHERE singleton = 1",
+                    parameters = 0,
+                )
+                driver.execute(null, "PRAGMA ignore_check_constraints = OFF", 0)
+            }
+
+            val result = store.read(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given local state when committed and reopened then exact accepted pending clock and expiry facts persist`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-lifecycle.db")
+        var driver = testDatabase.openDriver()
+        try {
+            var store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+            val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+            val sessionId = SessionId(testIdentifier(90))
+            val registration = prepared(1, 1, SyncOperationPayload.AuthorRegister)
+            val session = prepared(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200))
+            val committed = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitLocal(
+                    initial,
+                    listOf(registration, session),
+                    DurableClockState(HybridLogicalClock(100, 1), false),
+                ),
+            ).value
+            val staged = prepared(3, 2, SyncOperationPayload.ApplicationPolicyAbsent)
+            val progress = testTransportProgress(7, 8, 9)
+            val withStaged = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitStagedRemote(committed, staged, committed.clockState, progress),
+            ).value
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.markTerminalExpiry(withStaged, sessionId))
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+            val reopened = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+
+            assertEquals(2, reopened.acceptedBundles.size)
+            assertEquals(2, reopened.pendingBundles.size)
+            assertEquals(setOf(staged.operation.operationId), reopened.stagedBundles.keys)
+            assertEquals(progress, reopened.transportProgress)
+            assertEquals(setOf(sessionId), reopened.terminalExpiryFacts)
+            assertEquals(DurableClockState(HybridLogicalClock(100, 1), false), reopened.clockState)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a state row with an invalid singleton key when reopened then corruption is reported`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-invalid-singleton.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext))
+            database.transaction {
+                driver.execute(null, "PRAGMA ignore_check_constraints = ON", 0)
+                driver.execute(null, "UPDATE sync_replica_state SET singleton = 2 WHERE singleton = 1", 0)
+                driver.execute(null, "PRAGMA ignore_check_constraints = OFF", 0)
+            }
+
+            val result = store.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a text singleton in a replaced state table when reopened then corruption is reported`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-text-singleton.db")
+        var driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            populateReplica(SqlSyncReplicaStore(database, Dispatchers.Default))
+            database.transaction {
+                driver.execute(
+                    identifier = null,
+                    sql =
+                        """
+                        CREATE TABLE tampered_sync_replica_state AS
+                        SELECT '1x' AS singleton,
+                               workspace_id,
+                               transport_epoch_id,
+                               key_epoch_id,
+                               revision,
+                               hlc_physical,
+                               hlc_logical,
+                               hlc_exhausted,
+                               transport_progress
+                        FROM sync_replica_state
+                        """.trimIndent(),
+                    parameters = 0,
+                )
+                driver.execute(null, "DROP TABLE sync_replica_state", 0)
+                driver.execute(null, "ALTER TABLE tampered_sync_replica_state RENAME TO sync_replica_state", 0)
+            }
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            val reopenedDatabase = PosatoDatabase(driver)
+            val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+            assertEquals(listOf(1L), reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            val result = reopenedStore.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given duplicate persisted identifiers when reopened then corruption is reported`() = runTest {
+        listOf(
+            "accepted" to "sync_accepted_bundle",
+            "pending" to "sync_pending_bundle",
+            "staged" to "sync_staged_bundle",
+            "terminal expiry" to "sync_terminal_expiry",
+        ).forEachIndexed { index, (name, table) ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-duplicate-$index.db")
+            var driver = testDatabase.openDriver()
+            try {
+                val database = PosatoDatabase(driver)
+                populateReplica(SqlSyncReplicaStore(database, Dispatchers.Default))
+                driver.execute(null, "PRAGMA foreign_keys = OFF", 0)
+                database.transaction {
+                    driver.execute(null, "CREATE TABLE tampered_$table AS SELECT * FROM $table", 0)
+                    driver.execute(null, "INSERT INTO tampered_$table SELECT * FROM $table", 0)
+                    driver.execute(null, "DROP TABLE $table", 0)
+                    driver.execute(null, "ALTER TABLE tampered_$table RENAME TO $table", 0)
+                }
+
+                driver.close()
+                driver = testDatabase.openDriver()
+                val reopenedDatabase = PosatoDatabase(driver)
+                val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+                assertEquals(
+                    listOf(1L),
+                    reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList(),
+                    name,
+                )
+                val result = reopenedStore.open(testContext)
+
+                assertEquals(
+                    SyncStoreFailure.CORRUPTION,
+                    assertIs<SyncStoreResult.Failure>(result).reason,
+                    name,
+                )
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+
+    @Test
+    fun `given duplicate accepted author sequences when reopened then corruption is reported before restore`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-duplicate-accepted-sequence.db")
+        var driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            populateReplica(SqlSyncReplicaStore(database, Dispatchers.Default))
+            driver.execute(null, "PRAGMA foreign_keys = OFF", 0)
+            database.transaction {
+                driver.execute(null, "CREATE TABLE tampered_sync_accepted_bundle AS SELECT * FROM sync_accepted_bundle", 0)
+                driver.execute(null, "DROP TABLE sync_accepted_bundle", 0)
+                driver.execute(null, "ALTER TABLE tampered_sync_accepted_bundle RENAME TO sync_accepted_bundle", 0)
+            }
+            val conflicting = prepared(3, 1, SyncOperationPayload.AuthorRegister)
+            database.syncReplicaQueries.insertAcceptedBundle(
+                bundle_id = conflicting.operation.operationId.value.copyBytes(),
+                bundle_bytes = conflicting.bundle.copyBytes(),
+                operation_bytes = conflicting.operationBytes.copyBytes(),
+                author_id = conflicting.operation.authorId.value.copyBytes(),
+                author_sequence = conflicting.operation.authorSequence,
+                public_key = conflicting.operation.publicSigningKey.copyBytes(),
+                hlc_physical = conflicting.operation.clock.physicalMillis,
+                hlc_logical = conflicting.operation.clock.logicalCounter.toLong(),
+            )
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            val reopenedDatabase = PosatoDatabase(driver)
+            val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+            assertEquals(listOf(1L), reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            val result = reopenedStore.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a missing state row with retained replica records when reopened then corruption is reported`() = runTest {
+        data class ResidueCase(
+            val name: String,
+            val persist: suspend (SqlSyncReplicaStore, SyncReplicaSnapshot) -> Unit,
+        )
+
+        val cases = listOf(
+            ResidueCase("accepted") { store, initial ->
+                val bundle = prepared(1, 1, SyncOperationPayload.AuthorRegister)
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                    store.commitAcceptedRemote(
+                        initial,
+                        listOf(bundle),
+                        emptySet(),
+                        DurableClockState(bundle.operation.clock, false),
+                        null,
+                    ),
+                )
+            },
+            ResidueCase("staged") { store, initial ->
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                    store.commitStagedRemote(
+                        initial,
+                        prepared(2, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+                        initial.clockState,
+                        null,
+                    ),
+                )
+            },
+            ResidueCase("terminal expiry") { store, initial ->
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                    store.markTerminalExpiry(initial, SessionId(testIdentifier(91))),
+                )
+            },
+        )
+
+        cases.forEachIndexed { index, case ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-orphaned-$index.db")
+            val driver = testDatabase.openDriver()
+            try {
+                val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+                val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+                case.persist(store, initial)
+                driver.execute(null, "DELETE FROM sync_replica_state", 0)
+
+                val result = store.open(testContext)
+
+                assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason, case.name)
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+
+    @Test
+    fun `given an accepted insert failure when remote progress commits then history clock and progress roll back together`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-rollback.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+            val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+            val priorProgress = testTransportProgress(1)
+            val withProgress = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitTransportProgress(initial, priorProgress),
+            ).value
+            driver.execute(
+                identifier = null,
+                sql =
+                    """
+                    CREATE TRIGGER fail_sync_accept
+                    BEFORE INSERT ON sync_accepted_bundle
+                    BEGIN
+                      SELECT RAISE(ABORT, 'synthetic insert failure');
+                    END
+                    """.trimIndent(),
+                parameters = 0,
+            )
+
+            val result = store.commitAcceptedRemote(
+                expectedCheckpoint = withProgress,
+                bundles = listOf(prepared(1, 1, SyncOperationPayload.AuthorRegister)),
+                stagedBundleIdsToDelete = emptySet(),
+                clockState = DurableClockState(HybridLogicalClock(1, 0), false),
+                transportProgress = testTransportProgress(2),
+            )
+            val after = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value
+
+            assertEquals(SyncStoreFailure.STORAGE_FAILURE, assertIs<SyncStoreResult.Failure>(result).reason)
+            assertEquals(withProgress, after)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a different snapshot at the expected revision when committing then the replacement remains unchanged`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-checkpoint-conflict.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlSyncReplicaStore(database, Dispatchers.Default)
+            val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+            val registration = prepared(1, 1, SyncOperationPayload.AuthorRegister)
+            val second = prepared(2, 2, SyncOperationPayload.ApplicationPolicyAbsent)
+            val checkpoint = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                store.commitLocal(
+                    initial,
+                    listOf(registration, second),
+                    DurableClockState(second.operation.clock, false),
+                ),
+            ).value
+            database.transaction {
+                driver.execute(
+                    identifier = null,
+                    sql =
+                        """
+                        DELETE FROM sync_pending_bundle
+                        WHERE bundle_id = (
+                          SELECT bundle_id
+                          FROM sync_accepted_bundle
+                          WHERE author_sequence = 2
+                        )
+                        """.trimIndent(),
+                    parameters = 0,
+                )
+                driver.execute(null, "DELETE FROM sync_accepted_bundle WHERE author_sequence = 2", 0)
+            }
+            val replacement = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value
+
+            assertEquals(checkpoint.revision, replacement.revision)
+            assertEquals(setOf(registration.operation.operationId), replacement.acceptedBundles.keys)
+
+            val third = prepared(3, 3, SyncOperationPayload.ApplicationPolicyAbsent)
+            val result = store.commitLocal(
+                checkpoint,
+                listOf(third),
+                DurableClockState(third.operation.clock, false),
+            )
+            val after = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.read(testContext)).value
+
+            assertEquals(SyncStoreFailure.REVISION_CONFLICT, assertIs<SyncStoreResult.Failure>(result).reason)
+            assertEquals(replacement, after)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given persisted operation or pending bytes diverge when read then corruption is reported`() = runTest {
+        listOf(
+            "UPDATE sync_accepted_bundle SET operation_bytes = x'00'" to "operation bytes",
+            "UPDATE sync_pending_bundle SET bundle_bytes = x'01'" to "pending bytes",
+        ).forEachIndexed { index, (corruption, description) ->
+            val testDatabase = createLocalPolicyTestDatabase("sync-corruption-$index.db")
+            val driver = testDatabase.openDriver()
+            try {
+                val store = SqlSyncReplicaStore(PosatoDatabase(driver), Dispatchers.Default)
+                val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+                assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                    store.commitLocal(
+                        initial,
+                        listOf(prepared(1, 1, SyncOperationPayload.AuthorRegister)),
+                        DurableClockState(HybridLogicalClock(1, 0), false),
+                    ),
+                )
+                driver.execute(null, corruption, 0)
+
+                val result = store.read(testContext)
+
+                assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason, description)
+            } finally {
+                driver.close()
+                testDatabase.delete()
+            }
+        }
+    }
+}
+
+private data class PersistedStorageCorruption(
+    val name: String,
+    val sql: String,
+)
+
+private val persistedStorageCorruptions = listOf(
+    PersistedStorageCorruption("state workspace ID", "UPDATE sync_replica_state SET workspace_id = zeroblob(17)"),
+    PersistedStorageCorruption("state transport epoch ID", "UPDATE sync_replica_state SET transport_epoch_id = zeroblob(17)"),
+    PersistedStorageCorruption("state key epoch ID", "UPDATE sync_replica_state SET key_epoch_id = zeroblob(17)"),
+    PersistedStorageCorruption("state transport progress", "UPDATE sync_replica_state SET transport_progress = zeroblob(65537)"),
+    PersistedStorageCorruption("accepted bundle ID", "UPDATE sync_accepted_bundle SET bundle_id = zeroblob(17)"),
+    PersistedStorageCorruption("accepted bundle", "UPDATE sync_accepted_bundle SET bundle_bytes = zeroblob(65537)"),
+    PersistedStorageCorruption("accepted operation", "UPDATE sync_accepted_bundle SET operation_bytes = zeroblob(32769)"),
+    PersistedStorageCorruption("accepted author ID", "UPDATE sync_accepted_bundle SET author_id = zeroblob(17)"),
+    PersistedStorageCorruption("accepted public key", "UPDATE sync_accepted_bundle SET public_key = zeroblob(33)"),
+    PersistedStorageCorruption("pending bundle ID", "UPDATE sync_pending_bundle SET bundle_id = zeroblob(17)"),
+    PersistedStorageCorruption("pending bundle", "UPDATE sync_pending_bundle SET bundle_bytes = zeroblob(65537)"),
+    PersistedStorageCorruption("staged bundle ID", "UPDATE sync_staged_bundle SET bundle_id = zeroblob(17)"),
+    PersistedStorageCorruption("staged bundle", "UPDATE sync_staged_bundle SET bundle_bytes = zeroblob(65537)"),
+    PersistedStorageCorruption("staged operation", "UPDATE sync_staged_bundle SET operation_bytes = zeroblob(32769)"),
+    PersistedStorageCorruption("staged author ID", "UPDATE sync_staged_bundle SET author_id = zeroblob(17)"),
+    PersistedStorageCorruption("staged public key", "UPDATE sync_staged_bundle SET public_key = zeroblob(33)"),
+    PersistedStorageCorruption("terminal expiry session ID", "UPDATE sync_terminal_expiry SET session_id = zeroblob(17)"),
+    PersistedStorageCorruption("non-blob state workspace ID", "UPDATE sync_replica_state SET workspace_id = 'not-a-blob'"),
+    PersistedStorageCorruption("state revision type", "UPDATE sync_replica_state SET revision = CAST(revision AS TEXT) || 'x'"),
+    PersistedStorageCorruption("state physical HLC type", "UPDATE sync_replica_state SET hlc_physical = CAST(hlc_physical AS TEXT) || 'x'"),
+    PersistedStorageCorruption("state logical HLC type", "UPDATE sync_replica_state SET hlc_logical = CAST(hlc_logical AS TEXT) || 'x'"),
+    PersistedStorageCorruption("state exhaustion type", "UPDATE sync_replica_state SET hlc_exhausted = CAST(hlc_exhausted AS TEXT) || 'x'"),
+    PersistedStorageCorruption(
+        "accepted author sequence type",
+        "UPDATE sync_accepted_bundle SET author_sequence = CAST(author_sequence AS TEXT) || 'x'",
+    ),
+    PersistedStorageCorruption("accepted physical HLC type", "UPDATE sync_accepted_bundle SET hlc_physical = CAST(hlc_physical AS TEXT) || 'x'"),
+    PersistedStorageCorruption("accepted logical HLC type", "UPDATE sync_accepted_bundle SET hlc_logical = CAST(hlc_logical AS TEXT) || 'x'"),
+    PersistedStorageCorruption("staged author sequence type", "UPDATE sync_staged_bundle SET author_sequence = CAST(author_sequence AS TEXT) || 'x'"),
+)
+
+private suspend fun populateReplica(store: SqlSyncReplicaStore) {
+    val initial = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(store.open(testContext)).value
+    val registration = prepared(1, 1, SyncOperationPayload.AuthorRegister)
+    val accepted = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+        store.commitLocal(
+            initial,
+            listOf(registration),
+            DurableClockState(registration.operation.clock, false),
+        ),
+    ).value
+    val staged = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+        store.commitStagedRemote(
+            accepted,
+            prepared(2, 2, SyncOperationPayload.ApplicationPolicyAbsent),
+            accepted.clockState,
+            null,
+        ),
+    ).value
+    assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+        store.markTerminalExpiry(staged, SessionId(testIdentifier(90))),
+    )
+}
+
+private fun prepared(
+    id: Int,
+    sequence: Long,
+    payload: SyncOperationPayload,
+): PreparedStoredBundle {
+    return PreparedStoredBundle(
+        bundle = checkNotNull(EncryptedBundle.fromBytes(ByteArray(32) { id.toByte() })),
+        operation = testOperation(id, sequence, payload),
+    )
+}

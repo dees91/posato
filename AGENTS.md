@@ -41,7 +41,8 @@ and verification output do not require wiki updates.
 
 A substantive lightweight change with no durable conclusion appends only one
 concise entry to `docs/wiki/log.md`. Pure typo, formatting, link, and
-bookkeeping corrections may omit it.
+bookkeeping corrections may omit it. A pull request appends at most one
+wiki-log entry, in its closeout commit, never one per correction commit.
 
 The wiki is maintained synthesis, not decision authority. Do not promote an
 inference or PoC choice into an ADR, product requirement, plan, or
@@ -77,6 +78,12 @@ Critical and Required findings and rerun affected verification after the last
 correction. Recommended and Optional findings do not expand scope
 automatically.
 
+A correction inside an open pull request takes the review tier of its own
+risk, Standard by default; a plan review applies only when the correction
+itself is High-risk. It adds no per-commit execution-record paragraph or
+wiki-log entry; the record receives one closeout update before the final
+substantive push.
+
 For a one-off manual task, guide the maintainer with a short checklist or chat
 instructions. Do not create a script, parser, wizard, or configuration layer
 unless the maintainer explicitly requests it or a named repeated consumer
@@ -110,16 +117,25 @@ the `Suppress` token in Kotlin comments, strings, aliases, or examples.
 - Flag credentials, personal paths, wholesale PoC reuse, and violations of the
   accepted product, architecture, security, privacy, or process boundaries.
   `.research/blocker` must remain read-only evidence and an optional checkout.
-- Request hosted `@codex review` at most once per pull request by default, only
-  after implementation, applicable local verification, any required
-  independent completed-change review, and any required versioned task records
-  are complete. Do not request it for documentation-only changes. Address
-  accepted Critical or Required findings locally and rerun affected
-  verification without requesting another hosted pass; a repeat requires an
-  explicit maintainer request.
-- Treat hosted P2 or lower findings as advisory. They do not expand the task,
-  block merge, or trigger another review pass without explicit maintainer
-  acceptance.
+- Request hosted `@codex review` at most twice per pull request. The first
+  pass follows implementation, applicable local verification, any required
+  independent completed-change review, and any required versioned task
+  records. The second pass follows correction of every accepted finding and
+  its whole class across the diff. A third pass requires a recorded maintainer
+  decision. Do not request it for documentation-only changes.
+- After each hosted pass, return a triage table (finding, class, decision,
+  rule, cost) with a merge or one-more-pass recommendation, and implement
+  nothing until the maintainer decides on that table.
+- Treat hosted P2 or lower findings as advisory and decline them by default.
+  Accepting one is an explicit maintainer scope decision; it never expands the
+  task, blocks merge, or triggers another pass on its own.
+- Decline findings that need an actor with write access to the app-private
+  database file or schema or a compromised operating system (accepted limit
+  `R-02`), defensive checks that duplicate schema constraints, memory zeroing
+  beyond owned key material and plaintext buffers whose clearing removes the
+  last in-memory copy (`R-05`), and per-type `toString()` redaction reports
+  for a family already covered by the enumerated redaction test. Reply with
+  the rule reference.
 
 ## Feasibility research reference
 

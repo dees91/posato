@@ -8,17 +8,39 @@
 
 /* Begin PBXBuildFile section */
 		A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
+		B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */; };
+		B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B200000C29CC810C00F8E227 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A93A952F29CC810C00F8E227 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A93A953629CC810C00F8E227;
+			remoteInfo = iosApp;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		A93A953729CC810C00F8E227 /* Posato.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Posato.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
+		B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoKitSyncProvider.swift; sourceTree = "<group>"; };
+		B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoKitSyncProviderTests.swift; sourceTree = "<group>"; };
+		B200000329CC810C00F8E227 /* PosatoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PosatoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		A93A953429CC810C00F8E227 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B200000629CC810C00F8E227 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -32,6 +54,7 @@
 			isa = PBXGroup;
 			children = (
 				A93A953929CC810C00F8E227 /* iosApp */,
+				B200000429CC810C00F8E227 /* iosAppTests */,
 				A93A953829CC810C00F8E227 /* Products */,
 				C4127409AE3703430489E7BC /* Frameworks */,
 			);
@@ -41,6 +64,7 @@
 			isa = PBXGroup;
 			children = (
 				A93A953729CC810C00F8E227 /* Posato.app */,
+				B200000329CC810C00F8E227 /* PosatoTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -49,9 +73,18 @@
 			isa = PBXGroup;
 			children = (
 				A93A953A29CC810C00F8E227 /* iosApp.swift */,
+				B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */,
 				A93A953E29CC810D00F8E227 /* Assets.xcassets */,
 			);
 			path = iosApp;
+			sourceTree = "<group>";
+		};
+		B200000429CC810C00F8E227 /* iosAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */,
+			);
+			path = iosAppTests;
 			sourceTree = "<group>";
 		};
 		C4127409AE3703430489E7BC /* Frameworks */ = {
@@ -82,6 +115,23 @@
 			productReference = A93A953729CC810C00F8E227 /* Posato.app */;
 			productType = "com.apple.product-type.application";
 		};
+		B200000829CC810C00F8E227 /* iosAppTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B200000B29CC810C00F8E227 /* Build configuration list for PBXNativeTarget "iosAppTests" */;
+			buildPhases = (
+				B200000529CC810C00F8E227 /* Sources */,
+				B200000629CC810C00F8E227 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				B200000D29CC810C00F8E227 /* PBXTargetDependency */,
+			);
+			name = iosAppTests;
+			productName = PosatoTests;
+			productReference = B200000329CC810C00F8E227 /* PosatoTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -93,6 +143,10 @@
 				TargetAttributes = {
 					A93A953629CC810C00F8E227 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					B200000829CC810C00F8E227 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = A93A953629CC810C00F8E227;
 					};
 				};
 			};
@@ -110,6 +164,7 @@
 			projectRoot = "";
 			targets = (
 				A93A953629CC810C00F8E227 /* iosApp */,
+				B200000829CC810C00F8E227 /* iosAppTests */,
 			);
 		};
 /* End PBXProject section */
@@ -152,10 +207,27 @@
 			buildActionMask = 2147483647;
 			files = (
 				A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */,
+				B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B200000529CC810C00F8E227 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		B200000D29CC810C00F8E227 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A93A953629CC810C00F8E227 /* iosApp */;
+			targetProxy = B200000C29CC810C00F8E227 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		A93A954329CC810D00F8E227 /* Debug */ = {
@@ -320,6 +392,36 @@
 			};
 			name = Release;
 		};
+		B200000929CC810C00F8E227 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.posato.ios.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Posato.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Posato";
+			};
+			name = Debug;
+		};
+		B200000A29CC810C00F8E227 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.posato.ios.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Posato.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Posato";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -337,6 +439,15 @@
 			buildConfigurations = (
 				A93A954629CC810D00F8E227 /* Debug */,
 				A93A954729CC810D00F8E227 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B200000B29CC810C00F8E227 /* Build configuration list for PBXNativeTarget "iosAppTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B200000929CC810C00F8E227 /* Debug */,
+				B200000A29CC810C00F8E227 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

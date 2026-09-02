@@ -70,6 +70,11 @@ class LocalExactDomainPolicyStoreContractTest {
         try {
             driver.executeSql("UPDATE local_policy_metadata SET revision = 7 WHERE singleton = 1")
             driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
+            driver.executeSql("DROP TABLE sync_terminal_expiry")
+            driver.executeSql("DROP TABLE sync_staged_bundle")
+            driver.executeSql("DROP TABLE sync_pending_bundle")
+            driver.executeSql("DROP TABLE sync_accepted_bundle")
+            driver.executeSql("DROP TABLE sync_replica_state")
             driver.executeSql("DROP TABLE application_policy")
             driver.executeSql("PRAGMA user_version = 1")
             driver.close()
@@ -77,6 +82,37 @@ class LocalExactDomainPolicyStoreContractTest {
             driver = testDatabase.openDriver()
 
             assertState(driver.createStore().read(), revision = 7, domains = listOf("stable.example"))
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a version two database when reopened then sync storage is added without changing policy`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-migration.db")
+        var driver = testDatabase.openDriver()
+        try {
+            driver.executeSql("UPDATE local_policy_metadata SET revision = 9 WHERE singleton = 1")
+            driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
+            driver.executeSql("INSERT INTO application_policy(singleton, canonical_name) VALUES (1, 'Stable group')")
+            driver.executeSql("DROP TABLE sync_terminal_expiry")
+            driver.executeSql("DROP TABLE sync_staged_bundle")
+            driver.executeSql("DROP TABLE sync_pending_bundle")
+            driver.executeSql("DROP TABLE sync_accepted_bundle")
+            driver.executeSql("DROP TABLE sync_replica_state")
+            driver.executeSql("PRAGMA user_version = 2")
+            driver.close()
+
+            driver = testDatabase.openDriver()
+
+            assertState(
+                driver.createStore().read(),
+                revision = 9,
+                domains = listOf("stable.example"),
+                applicationPolicyName = "Stable group",
+            )
+            assertEquals(emptyList(), PosatoDatabase(driver).syncReplicaQueries.selectSyncReplicaState().awaitAsList())
         } finally {
             driver.close()
             testDatabase.delete()

@@ -21,6 +21,10 @@ style:
   MaxLineLength:
     active: true
     maxLineLength: 150
+  ReturnCount:
+    active: true
+    max: 3
+    excludeGuardClauses: true
 
 Compose:
   ComposableAnnotationNaming:

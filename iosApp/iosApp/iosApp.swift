@@ -13,7 +13,9 @@ struct PosatoApp: App {
 
 private struct ComposeRoot: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
-        return MainViewControllerKt.MainViewController()
+        return MainViewControllerKt.mainViewController(
+            cryptoProvider: CryptoKitSyncProvider()
+        )
     }
 
     func updateUIViewController(
