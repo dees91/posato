@@ -973,3 +973,8 @@
 - Bounded native cryptographic output and persisted-state restore, cleared owned
   key and plaintext buffers, made a retired transport key unusable, and kept
   the active writer's key when a rejected open passes the same instance.
+
+## [2026-09-02] correction | Remove dead synchronization code
+
+- Removed four unused SQLDelight queries and moved the projection digest into
+  test sources without changing schema, format, or runtime behavior.

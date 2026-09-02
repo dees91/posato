@@ -205,11 +205,6 @@ SELECT bundle_id, bundle_bytes, operation_bytes, author_id, author_sequence, pub
 FROM sync_accepted_bundle
 ORDER BY author_id, author_sequence, bundle_id;
 
-selectAcceptedBundleById:
-SELECT bundle_id, bundle_bytes, operation_bytes, author_id, author_sequence, public_key, hlc_physical, hlc_logical
-FROM sync_accepted_bundle
-WHERE bundle_id = :bundle_id;
-
 insertAcceptedBundle:
 INSERT INTO sync_accepted_bundle(
   bundle_id,
@@ -244,21 +239,6 @@ selectStagedBundles:
 SELECT bundle_id, bundle_bytes, operation_bytes, author_id, author_sequence, public_key
 FROM sync_staged_bundle
 ORDER BY author_id, author_sequence, bundle_id;
-
-selectStagedBundlesByAuthor:
-SELECT bundle_id, bundle_bytes, operation_bytes, author_id, author_sequence, public_key
-FROM sync_staged_bundle
-WHERE author_id = :author_id
-ORDER BY author_sequence, bundle_id;
-
-countStagedBundles:
-SELECT count(*)
-FROM sync_staged_bundle;
-
-countStagedBundlesByAuthor:
-SELECT count(*)
-FROM sync_staged_bundle
-WHERE author_id = :author_id;
 
 insertStagedBundle:
 INSERT INTO sync_staged_bundle(
