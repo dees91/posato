@@ -132,9 +132,10 @@ the `Suppress` token in Kotlin comments, strings, aliases, or examples.
 - Decline findings that need an actor with write access to the app-private
   database file or schema or a compromised operating system (accepted limit
   `R-02`), defensive checks that duplicate schema constraints, memory zeroing
-  beyond owned key material and plaintext buffers the code itself allocates
-  (`R-05`), and per-type `toString()` redaction reports for a family already
-  covered by the enumerated redaction test. Reply with the rule reference.
+  beyond owned key material and plaintext buffers whose clearing removes the
+  last in-memory copy (`R-05`), and per-type `toString()` redaction reports
+  for a family already covered by the enumerated redaction test. Reply with
+  the rule reference.
 
 ## Feasibility research reference
 
