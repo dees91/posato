@@ -359,11 +359,12 @@ class SqlSyncReplicaStoreContractTest {
     }
 
     @Test
-    fun `given duplicate persisted bundle identifiers when reopened then corruption is reported`() = runTest {
+    fun `given duplicate persisted identifiers when reopened then corruption is reported`() = runTest {
         listOf(
             "accepted" to "sync_accepted_bundle",
             "pending" to "sync_pending_bundle",
             "staged" to "sync_staged_bundle",
+            "terminal expiry" to "sync_terminal_expiry",
         ).forEachIndexed { index, (name, table) ->
             val testDatabase = createLocalPolicyTestDatabase("sync-duplicate-$index.db")
             var driver = testDatabase.openDriver()
@@ -399,6 +400,46 @@ class SqlSyncReplicaStoreContractTest {
                 driver.close()
                 testDatabase.delete()
             }
+        }
+    }
+
+    @Test
+    fun `given duplicate accepted author sequences when reopened then corruption is reported before restore`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-duplicate-accepted-sequence.db")
+        var driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            populateReplica(SqlSyncReplicaStore(database, Dispatchers.Default))
+            driver.execute(null, "PRAGMA foreign_keys = OFF", 0)
+            database.transaction {
+                driver.execute(null, "CREATE TABLE tampered_sync_accepted_bundle AS SELECT * FROM sync_accepted_bundle", 0)
+                driver.execute(null, "DROP TABLE sync_accepted_bundle", 0)
+                driver.execute(null, "ALTER TABLE tampered_sync_accepted_bundle RENAME TO sync_accepted_bundle", 0)
+            }
+            val conflicting = prepared(3, 1, SyncOperationPayload.AuthorRegister)
+            database.syncReplicaQueries.insertAcceptedBundle(
+                bundle_id = conflicting.operation.operationId.value.copyBytes(),
+                bundle_bytes = conflicting.bundle.copyBytes(),
+                operation_bytes = conflicting.operationBytes.copyBytes(),
+                author_id = conflicting.operation.authorId.value.copyBytes(),
+                author_sequence = conflicting.operation.authorSequence,
+                public_key = conflicting.operation.publicSigningKey.copyBytes(),
+                hlc_physical = conflicting.operation.clock.physicalMillis,
+                hlc_logical = conflicting.operation.clock.logicalCounter.toLong(),
+            )
+
+            driver.close()
+            driver = testDatabase.openDriver()
+            val reopenedDatabase = PosatoDatabase(driver)
+            val reopenedStore = SqlSyncReplicaStore(reopenedDatabase, Dispatchers.Default)
+
+            assertEquals(listOf(1L), reopenedDatabase.syncReplicaQueries.selectInvalidSyncReplicaStorage().awaitAsList())
+            val result = reopenedStore.open(testContext)
+
+            assertEquals(SyncStoreFailure.CORRUPTION, assertIs<SyncStoreResult.Failure>(result).reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
         }
     }
 

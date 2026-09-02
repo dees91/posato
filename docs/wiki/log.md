@@ -1145,3 +1145,8 @@
 
 - Rejected duplicate pending bundle identifiers before restore materializes
   their bytes, and avoided rewriting an already terminal clock on local refusal.
+
+## [2026-09-02] correction | Complete persisted sync uniqueness preflight
+
+- Rejected duplicate accepted author-sequence pairs and terminal-expiry session
+  identifiers before replica restore materializes their rows.

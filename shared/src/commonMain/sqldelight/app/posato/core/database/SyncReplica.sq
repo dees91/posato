@@ -102,6 +102,11 @@ GROUP BY bundle_id
 HAVING count(*) > 1
 UNION ALL
 SELECT 1
+FROM sync_accepted_bundle
+GROUP BY author_id, author_sequence
+HAVING count(*) > 1
+UNION ALL
+SELECT 1
 FROM sync_pending_bundle
 WHERE CASE
   WHEN typeof(bundle_id) != 'blob' THEN 1
@@ -152,6 +157,11 @@ WHERE CASE
   WHEN length(session_id) != 16 THEN 1
   ELSE 0
 END = 1
+UNION ALL
+SELECT 1
+FROM sync_terminal_expiry
+GROUP BY session_id
+HAVING count(*) > 1
 LIMIT 1;
 
 selectSyncReplicaResidue:

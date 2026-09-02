@@ -230,9 +230,10 @@ before its values reach typed restore. The preflight and snapshot read share one
 transaction, and invalid state, accepted, pending, staged, or terminal-expiry
 storage reports corruption without materializing the rejected value in Kotlin.
 The preflight also rejects duplicate accepted, pending, or staged bundle
-identifiers before typed rows or bundle payloads are materialized, so map
-construction cannot silently discard a retained row from a replaced untrusted
-table.
+identifiers, accepted author-sequence pairs, and terminal-expiry session
+identifiers before typed rows or bundle payloads are materialized. Map and set
+construction therefore cannot silently discard a retained row from a replaced
+untrusted table.
 
 `observed` (2026-09-02): the same preflight rejects persisted staging above the
 accepted 128-bundle limit before inspecting staged payload columns, so a

@@ -99,6 +99,10 @@
   one additional SQL grouping arm, one guard at the existing exhaustion
   boundary, and extensions of two existing regressions without a schema change,
   helper, or broader policy.
+  The accepted-sequence and terminal-expiry duplicate correction received
+  independent plan approval with no findings. Its simplicity review selected
+  two grouping arms in the existing preflight and extensions of the existing
+  real-database coverage without a schema change or Kotlin validation.
 
 ## Result
 
@@ -203,6 +207,10 @@
   completed-change approval with no findings at any severity; its simplicity
   review found the single authenticated-snapshot guard and regression already
   lean.
+  The accepted-sequence and terminal-expiry duplicate correction received
+  focused completed-change approval with no findings at any severity; its
+  simplicity review found both SQL grouping arms and real-database regressions
+  already lean.
 
 ## Hosted review follow-up
 
@@ -282,6 +290,10 @@
   above the state conservatively explainable by authenticated retained history,
   including a fabricated terminal exhaustion that permanently blocked local
   authoring.
+  The newest two required findings found that a replaced accepted table could
+  retain duplicate `(author_id, author_sequence)` pairs until after payload
+  materialization, and that duplicate terminal-expiry session identifiers were
+  silently collapsed during restore.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -392,6 +404,9 @@
   an already exhausted checkpoint now returns `HLC_EXHAUSTED` without
   rewriting the identical terminal state or advancing its revision; an active
   clock that cannot reserve the required batch still persists exhaustion once.
+  Replica restore now also rejects duplicate accepted author-sequence pairs and
+  terminal-expiry session identifiers in the SQL preflight before their rows
+  cross the SQLDelight boundary.
   No further hosted review is needed.
 
 ## Verification
@@ -434,6 +449,7 @@
 | Initial-HLC reachability | `pass` | The focused JVM regression first showed that authenticated accepted history at the fresh `(0, 0)` baseline opened successfully, then proved `CORRUPTION` after the correction. All 32 JVM and iOS Simulator test tasks and all 113 quality tasks passed while the existing lower, equal, and greater non-initial HLC cases remained green. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 | Conservative HLC reachability | `pass` | Focused JVM regressions first accepted an empty nonfresh clock and remote-history clocks above the reachable successor, then passed after the correction. The complete JVM and iOS Simulator suites and all 113 quality tasks passed without suppressions. Diff and suppression scans were clean. Independent completed-change review found no code, security, boundary, test, or simplicity defects; its Required verification-record finding was resolved by this row. |
 | Pending duplicate and terminal rewrite correction | `pass` | Both focused JVM regressions failed before implementation and passed afterward. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks. Detekt's initial complexity finding was addressed by moving the already-terminal idempotency guard into the existing exhaustion operation without suppression. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
+| Accepted-sequence and terminal-expiry duplicate preflight | `pass` | Both real-SQLite JVM regressions failed before implementation and passed afterward. The complete JVM and iOS Simulator suites passed in 32 tasks, followed by all 113 quality tasks without suppressions. Diff and suppression scans were clean, and independent completed-change review found no findings at any severity. |
 
 ## Blockers and accepted risks
 
