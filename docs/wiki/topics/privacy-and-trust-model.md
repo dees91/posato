@@ -244,53 +244,13 @@ event timestamps, correlation identifiers, domains, applications, policy,
 identity, secrets, content, browsing and application-use events, and derived
 or pseudonymous forms of those values.
 
-`observed` (2026-08-31): `SYNC-002` gives local, serialized, reduced, and
-effective session timing carriers fixed redacted default string
-representations. Common JVM and iOS Simulator regression tests cover the
-boundary. This prevents accidental interpolation from exposing exact session
-times; it does not authorize production diagnostics to serialize with
-`toString()`.
-
-`observed` (2026-08-31): the `SYNC-002` hybrid logical clock also has a fixed
-redacted default string. Containing data-class representations therefore do not
-expose its exact physical operation time, while comparison, persistence, and
-canonical format behavior remain unchanged.
-
-`observed` (2026-09-01): the `SYNC-002` authoring incarnation and prepared local
-mutation also have fixed redacted default strings. Their representations expose
-neither the next author sequence nor prepared-operation cardinality or durable
-state shape, while authoring, equality, persistence, and canonical serialization
-remain unchanged.
-
-`observed` (2026-09-01): the durable `SYNC-002` replica snapshot also has a
-fixed redacted default string. It exposes neither the replica revision nor
-collection cardinalities or durable state shape, while equality, persistence,
-and canonical serialization remain unchanged.
-
-`observed` (2026-09-01): successful local-mutation results use a fixed redacted
-default string. Their representations no longer expose pending-bundle
-cardinality or nested projection state, while result fields and behavior remain
-unchanged.
-
-`observed` (2026-09-01): private persisted-state and decoded-operation carriers
-use fixed redacted default strings. Their representations expose neither the
-replica revision nor exact author-sequence and HLC fields, without changing
-persistence, decoding, equality, or canonical serialization.
-
-`observed` (2026-09-01): the active `SYNC-002` writer uses a fixed redacted
-default string rather than the platform's per-instance identity representation.
-The generated successful-open result therefore also contains no dynamic
-correlation identifier, without changing writer ownership or lifecycle.
-
-`observed` (2026-09-01): the JDK and iOS `SYNC-002` signing-key wrappers use
-fixed redacted default strings rather than platform object identities. Their
-representations expose neither a dynamic correlation identifier nor key
-material, without changing signing or key ownership.
-
-`observed` (2026-09-02): the private `SYNC-002` bundle-parts carrier uses a
-fixed redacted default string. Its representation exposes neither the complete
-header, ciphertext and authentication tag, nor signature bytes, without
-changing codec behavior or canonical serialization.
+`observed` (2026-09-02): `SYNC-002` carriers that hold session timing, hybrid
+logical clocks, authoring state, replica snapshots, mutation results,
+persisted rows, decoded operations, bundle parts, the writer, and the signing
+and transport keys use fixed redacted default string representations. Common
+and platform tests enumerate the covered carriers on the JVM and iOS
+Simulator. This prevents accidental interpolation from exposing exact values;
+it does not authorize production diagnostics to serialize with `toString()`.
 
 The MVP has no automatic telemetry, analytics, crash upload, support store, or
 diagnostics processor. A future producing task must add only its real consumer,

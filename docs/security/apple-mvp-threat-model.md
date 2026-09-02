@@ -55,6 +55,11 @@ tampering (`T`), repudiation (`R`), information disclosure (`I`), denial of
 service (`D`), and elevation of privilege (`E`). It uses no numeric score that
 would imply unsupported precision.
 
+An untrusted local database value must be validated on read into typed state
+and fail closed on inconsistency. This does not require defending against
+modification of the app-private file or schema by a local actor, which `R-02`
+accepts.
+
 A **required control** is a downstream acceptance condition, not an
 implemented or verified feature. Its named owner keeps the capability disabled
 or incomplete until proportionate tests and review prove the control. An

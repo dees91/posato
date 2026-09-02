@@ -140,138 +140,34 @@ Durable properties worth retaining:
 - duplicate operations and bundles are idempotent;
 - schema migration or storage corruption must not silently replace valid state.
 
-`observed` (2026-08-31): `SYNC-002` implemented this core in the production
-shared module with immutable accepted, pending, and staged bundle bytes,
-durable replica checkpoints and terminal expiry facts, and opaque transport
-progress committed in the same SQLDelight transaction. Migration verification,
-reopen validation, ambiguous-commit reconciliation, duplicate and reordered
-delivery, bounded capacity, terminal HLC behavior, and deterministic convergence
-passed on the JVM, iOS Simulator, and a physical iPhone. Concrete CloudKit
-cursor and sync-engine state remain deferred to their transport task.
+`observed` (2026-09-02): `SYNC-002` implemented this core in the production
+shared module. Accepted, pending, and staged bundle bytes are immutable;
+replica checkpoints, terminal expiry facts, and opaque transport progress
+commit in the same SQLDelight transaction, and every store mutation compares
+the complete expected checkpoint with the restored snapshot before writing.
+Migration verification, duplicate and reordered delivery, bounded capacity,
+terminal HLC behavior, and deterministic convergence passed on the JVM, iOS
+Simulator, and a physical iPhone. Concrete CloudKit cursor and sync-engine
+state remain deferred to their transport task.
 
-`observed` (2026-09-02): every local, remote, transport-progress, and terminal-
-expiry store mutation compares the complete expected replica checkpoint with
-the restored snapshot inside its existing SQLDelight transaction before any
-write. A same-revision rollback or replacement returns a revision conflict and
-remains unchanged; the SQL revision compare-and-set still protects against a
-concurrent writer.
+`observed` (2026-09-02): reopen fails closed. A restored snapshot must
+authenticate every retained bundle, satisfy the live author, sequence,
+staging, capacity, and terminal-expiry invariants, keep its durable HLC within
+the range that retained history can explain, and pass a same-transaction
+SQLite preflight of storage classes, sizes, cardinalities, and identifier
+uniqueness before typed rows are materialized. Any inconsistency reports
+corruption instead of initializing fresh state. This validates what the
+application reads; it does not claim to defend against modification of the
+app-private database by a local actor, which the threat model accepts as
+`R-02`.
 
-`observed` (2026-08-31): a hosted review correction made reopen fail closed
-when durable HLC state is below any retained accepted operation clock. Rejected
-and deferred-capacity bundles now share the same rule: opaque transport progress
-advances only when exact refetch remains available, using the existing exact
-commit-reconciliation boundary.
-
-`observed` (2026-08-31): a later hosted review correction rejects invalid local
-session mutations before reserving authoring resources, so the open writer
-remains usable. Reopen also revalidates each accepted author's unique sequence-1
-registration, stable signing key, unique sequences, and absence of later
-registration while continuing to permit sequence gaps.
-
-`observed` (2026-08-31): reopen now also revalidates staged state against the
-live acceptance boundary. It rejects sequence 1, accepted-author or bundle-ID
-overlap, duplicate author sequences, and per-author or global capacity overflow
-while preserving valid staged gaps and competing pre-registration keys.
-
-`observed` (2026-08-31): remote acceptance now checks the complete-bundle limit
-on raw transport bytes before retaining an immutable copy. Exactly 64 KiB
-continues to normal parsing, larger input returns the bounded `OVERSIZED`
-outcome, and rejection preserves the existing exact-refetch progress rule.
-
-`observed` (2026-09-02): writer shutdown enters a non-cancellable cleanup
-context before acquiring its mutex. Once close is requested, any in-flight
-operation finishes before the serialized closed-state transition, ephemeral-key
-retirement, and owner deregistration complete. Deterministic common tests cancel
-close both while mutex acquisition and deregistration are suspended and pass on
-the JVM and iOS Simulator, preventing retained keys or a stale active writer
-from blocking every later open until process restart.
-
-`observed` (2026-09-01): a prepared local mutation transfers ownership of its
-authoring incarnation to the writer before the commit can suspend. Cancellation
-during that commit propagates unchanged after freezing the writer and closing
-the signing key, so later authoring cannot replace prepared bytes for the same
-author sequence.
-
-`observed` (2026-09-01): writer open owns its supplied transport key until a
-successfully initialized writer becomes active. Every failure, exception, or
-cancellation before that transfer clears the key, including rejection because
-another writer is already active.
-
-`observed` (2026-09-01): cancellation after a remote-style transaction starts
-performs one non-cancellable durable reconciliation before propagating. An
-exact committed snapshot advances the writer checkpoint, an exact pre-commit
-snapshot preserves it, and every other result freezes the writer. This keeps
-remote acceptance, transport progress, staging, terminal expiry, and state-only
-HLC exhaustion aligned with durable state without making their transactions
-non-cancellable. A failed reconciliation read is an unresolved result: it
-freezes the writer while preserving the original cancellation as the outcome.
-
-`observed` (2026-09-01): local mutation commits use the same exact cancellation
-reconciliation before propagating. A durable post-commit snapshot advances the
-checkpoint, projection, and pending bundles, while the writer still retires its
-authoring incarnation and refuses later mutation after cancellation.
-
-`observed` (2026-09-01): a missing replica-state singleton is considered fresh
-only when accepted, pending, staged, and terminal-expiry storage is also empty.
-Any retained child row now reports corruption before initialization, so a
-partial restore cannot silently reset revision, HLC, or transport progress
-around surviving synchronization state. Restore rejects an invalid singleton
-and a second replica-state row in the SQL preflight before typed state or
-transport-progress bytes are materialized, so neither can be treated as an
-empty database or drive an unbounded restore.
-
-`observed` (2026-09-01): opaque transport progress is limited to 64 KiB before
-common code retains a copy. The SQL schema rejects larger values, restore
-classifies an invalid retained value as corruption, and failed bundle-key
-derivation still clears the already encoded operation plaintext owned by
-common code.
-
-`observed` (2026-09-01): every selected persisted value whose representation is
-part of the sync contract is checked before it crosses the SQLDelight driver
-boundary. BLOBs are checked by SQLite type and byte length, and all nine
-materialized integer fields, including the replica-state singleton, are checked
-for physical integer storage so SQLite cannot silently coerce malformed text.
-The accepted schema's integer primary key prevents an ordinary text update to
-the singleton, but the same preflight also rejects a replaced untrusted table
-before its values reach typed restore. The preflight and snapshot read share one
-transaction, and invalid state, accepted, pending, staged, or terminal-expiry
-storage reports corruption without materializing the rejected value in Kotlin.
-The preflight also rejects duplicate accepted, pending, or staged bundle
-identifiers, accepted author-sequence pairs, and terminal-expiry session
-identifiers before typed rows or bundle payloads are materialized. Map and set
-construction therefore cannot silently discard a retained row from a replaced
-untrusted table.
-
-`observed` (2026-09-02): the same preflight rejects persisted staging above the
-accepted 128-bundle limit before inspecting staged payload columns, so a
-hostile restored database cannot exceed the staging allocation boundary during
-restore.
-
-`observed` (2026-09-02): authenticated reopen accepts empty history only at the
-fresh active `(0, 0)` HLC. With retained history, the durable clock must remain
-between its greatest authenticated operation clock and a conservative upper
-bound that permits at most one remote successor per retained operation. A
-terminal upper bound remains valid, as does state-only first-author exhaustion
-from an otherwise reachable preterminal clock. This preserves legal local
-equality and remote advancement while rejecting unexplained logical or physical
-leaps and fabricated terminal exhaustion.
-
-`observed` (2026-09-02): once the durable clock is already exhausted, a local
-mutation returns `HLC_EXHAUSTED` without rewriting the identical terminal state
-or advancing its revision. The state-only exhaustion commit remains reserved
-for an active clock that cannot fit the required local batch.
-
-`inferred` (2026-09-02): retained snapshots do not identify which operations
-were authored locally or preserve their acceptance order, so reopen cannot
-reconstruct the replica's exact historical path. The bounded check is a
-necessary reachability envelope over the accepted local and remote transition
-rules, not an exact replay claim.
-
-`observed` (2026-09-01): authenticated reopen accepts a terminal local expiry
-fact only when the retained history contains a currently applicable session
-start for that encrypted identifier. A start behind an author-sequence gap does
-not qualify, while a conflicting but applicable start continues to retain an
-existing marker so reordering or conflict cannot revive the session.
+`observed` (2026-09-02): one serialized writer owns the replica. Invalid local
+mutations are rejected before authoring resources are reserved; an uncertain
+or cancelled commit reconciles against durable state in a non-cancellable read
+and otherwise freezes the writer; close completes key retirement and owner
+release even under cancellation; open consumes the supplied transport key on
+every path and rejects a key that was already retired. Owned key and
+plaintext buffers are cleared after use within the `R-05` boundary.
 
 ## Transport contract
 
@@ -307,7 +203,10 @@ plaintext or algorithm fallback for Apple MVP format 1. `observed` (2026-08-31):
 the production Kotlin codec and JCA provider passed a fixed complete format-1
 golden bundle decoded and authenticated through the injected Swift CryptoKit
 provider on the iOS Simulator and a physical iPhone, alongside the selected
-primitive vectors. Portable key wrapping and provider selection remain later
+primitive vectors. Every native result crossing the iOS boundary is checked
+against its operation-specific size before Kotlin allocates or reads it, and
+provider failures map to nullable cryptographic failures rather than
+exceptions. Portable key wrapping and provider selection remain later
 decisions.
 
 `user-confirmed`: CloudKit and portable folders use one compatible
@@ -420,36 +319,6 @@ A local success means the local synchronization transaction completed. It must
 not claim that every other device has received the update.
 
 ## Open production questions
-
-`observed` (2026-09-01): the JVM cryptographic provider returns a nullable
-failure when its secure-random provider throws, allowing the synchronization
-writer to use its existing cryptographic cleanup path. Persisted physical HLC
-values below zero or above the format maximum are rejected as storage
-corruption before domain-clock construction.
-
-`observed` (2026-09-01): the iOS cryptographic adapter rejects negative random
-byte requests before invoking native code and validates the returned
-`NSData.length` before allocating a Kotlin array. Wrong-sized native output is
-therefore a nullable cryptographic failure that follows the writer's existing
-signing-key cleanup path.
-
-`observed` (2026-09-01): the iOS cryptographic adapter validates a native
-Ed25519 public-key length before copying its payload or transferring its handle
-to the common signing-key wrapper. Null or non-32-byte output returns a nullable
-cryptographic failure and closes the native handle; exact output transfers
-ownership until wrapper closure.
-
-`observed` (2026-09-01): every `NSData` returned by the iOS cryptographic
-boundary is checked against its operation-specific result size before Kotlin
-allocates an array or reads the native payload. This covers random bytes,
-SHA-256, HMAC-SHA256, AES-GCM seal and open, Ed25519 public keys, and signatures;
-wrong-sized output remains a nullable cryptographic failure.
-
-`observed` (2026-09-02): canonical operation, projection, header, and signature
-construction clears every mutable input and backing buffer it owns after use,
-including growth, early rejection, nullable provider failure, and exceptions.
-Successful returned bytes transfer to their caller; borrowed inputs remain
-untouched, and the managed-runtime residual-risk boundary remains unchanged.
 
 - How are production CloudKit schema, environment promotion, quota, and
   container ownership managed for official builds and forks?

@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 4
+- **Revision:** 5
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-08-31
+- **Last amended:** 2026-09-02
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -18,7 +18,11 @@ task or integration group starts, following [the task workflow](README.md).
 Revision 4 adds the maintainer-accepted `MACOS-006` development-packaging
 correction after a physical TARGETS-003 gate found that the unchanged Gradle
 artifact could not launch. It keeps release signing, notarization, and public
-distribution in `RELEASE-001`.
+distribution in `RELEASE-001`. Revision 5 adds the maintainer-accepted
+`SYNC-013` simplification follow-up after hosted review of `SYNC-002` left
+dead queries, unused wiring, a test-only digest helper, and duplicated
+validation layers in place. It changes no other task, dependency, wave, or
+integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -77,6 +81,7 @@ wave barriers add the phase ordering stated above.
 | `MACOS-006` | Produce an unchanged development-signed macOS package whose nested JVM and helper runtime passes strict verification and launches on the supported Mac. | Preparation | P2/W2.6a | `MACOS-003` | PR-MAC-DEV-PACKAGING |
 | `TARGETS-004` | Authorize and associate an opaque device-local iOS application selection. | Target management | P2/W2.6 | `TARGETS-002`, `APPLE-001` | PR-IOS-MAPPING |
 | `SYNC-002` | Create and process compatible encrypted operations with deterministic rejection and convergence. | Apple synchronization | P2/W2.6 | `SYNC-001` | PR-SYNC-CORE |
+| `SYNC-013` | Remove dead sync queries, unused iOS wiring, the test-only digest helper, and duplicated validation layers without changing format, schema, or behavior. | Apple synchronization | P2/W2.6b | `SYNC-002` | PR-SYNC-SIMPLIFY |
 | `SESSION-001` | Provide shared setup, review, start, early-end, and expiry behavior for one manual session, and consolidate only repeated production UI contracts. | Sessions and enforcement | P2/W2.7 | `TARGETS-001`, `TARGETS-002` | PR-SESSION-CORE |
 | `SYNC-004` | Preserve the one-workspace invariant through bootstrap delay, conflict, failure, and restart. | Apple synchronization | P2/W2.8 | `SYNC-003` | PR-BOOTSTRAP-CORE |
 | `MACOS-004` | Deny selected exact domains on the accepted macOS browser matrix with safe recovery. | Sessions and enforcement | P3/W3.1 | `MACOS-002`, `MACOS-006`, `SESSION-001`, `TARGETS-001` | PR-MAC-DOMAINS |

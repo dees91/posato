@@ -147,6 +147,11 @@ For recorded tasks, create `docs/tasks/executions/<task-id>.md` from the
 Do not copy every Definition of Done item or test category. Do not add an
 `N/A` matrix. A missing irrelevant row communicates nothing.
 
+Keep the record at or under 120 lines. Summarize hosted-review findings as one
+table of finding classes with counts, commit ranges, and decisions instead of a
+paragraph per correction. Update the record once at closeout, not once per
+commit.
+
 Several roadmap tasks in one pull request use one shared brief, execution
 record, and completed-change review when they form one coherent increment.
 For PR #1, `FOUNDATION-001`, `QUALITY-001`, and `CI-001` are milestones in
@@ -201,26 +206,34 @@ runs affected verification, commits and pushes the correction, and replies
 with concise evidence. The reviewer decides whether its thread is resolved.
 
 Use a manually requested `@codex review` as an additional independent pass
-when the repository is connected to Codex Cloud. By default, request it at
-most once per pull request, after implementation, applicable local
+when the repository is connected to Codex Cloud. Request it at most twice per
+pull request. The first pass follows implementation, applicable local
 verification, any required independent completed-change review, and any
-required versioned task records are complete. Do not request hosted review for
-documentation-only changes.
+required versioned task records. The second pass follows correction of every
+accepted finding and its whole class across the diff. A third pass requires a
+recorded maintainer decision in the execution record. Do not request hosted
+review for documentation-only changes.
 
-Map hosted P0 and P1 findings to Critical and Required. Apply accepted fixes,
+Map hosted P0 and P1 findings to Critical and Required. After each hosted
+pass, the implementing agent returns a triage table with one row per finding:
+finding, class, decision (accept, decline, or defer), rule reference, and
+cost, plus a recommendation to merge or run one more pass. The maintainer
+decides on that table, not on individual comments, and nothing is implemented
+before that decision. Apply accepted fixes together with their whole class,
 run affected verification, obtain any focused local re-review needed by the
-tier, and reply with concise evidence. Do not request another hosted pass after
-those corrections unless the maintainer explicitly asks for one. P2 and lower
-findings are advisory; they do not expand scope, block merge, or trigger
-another implementation or review cycle without explicit maintainer
-acceptance.
+tier, and reply with concise evidence. P2 and lower findings are advisory and
+declined by default; accepting one is an explicit maintainer scope decision.
+Declined findings and findings in the classes excluded by `AGENTS.md` receive
+a one-sentence reply citing the rule.
 
 Batch accepted corrections into one push where practical. Complete the
 selected record path, durable wiki updates, and other versioned closeout before
 the final substantive push. Later hosted-review replies and routine bookkeeping
 stay in the pull-request conversation; do not create a repository commit solely
 to record them. A substantive correction still updates any affected versioned
-authority or required task record in the same correction push.
+authority or required task record in the same correction push. A correction
+inside an open pull request takes the review tier of its own risk, Standard by
+default, without a plan-review ceremony.
 
 Documentation still follows the proportional review tiers: routine status and
 bookkeeping use a Trivial self-check, while meaningful documentation receives
