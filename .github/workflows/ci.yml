@@ -103,11 +103,36 @@ jobs:
       - name: Run aggregate quality gate
         run: ./gradlew quality
 
-      - name: Build credential-free iOS Simulator host
+      - name: Build credential-free Debug iOS Simulator host
         run: |
           xcodebuild \
             -project iosApp/iosApp.xcodeproj \
             -scheme iosApp \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Build credential-free Debug iOS device host
+        run: |
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Debug \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build
+
+      - name: Build credential-free Release iOS Simulator fallback
+        run: |
+          xcodebuild \
+            -project iosApp/iosApp.xcodeproj \
+            -scheme iosApp \
+            -configuration Release \
             -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \

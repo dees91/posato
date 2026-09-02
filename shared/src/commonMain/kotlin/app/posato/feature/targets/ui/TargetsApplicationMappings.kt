@@ -7,6 +7,7 @@ import app.posato.feature.targets.data.LocalApplicationRemovalResult
 import app.posato.feature.targets.data.LocalApplicationSelectionResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.update
@@ -36,6 +37,10 @@ internal fun TargetsViewModel.chooseApplications() {
                 }
 
                 LocalApplicationSelectionResult.Cancelled -> Unit
+
+                is LocalApplicationSelectionResult.AccessChanged -> applicationMappingsState.update { state ->
+                    state.copy(snapshot = result.snapshot, access = result.access, failure = null)
+                }
 
                 LocalApplicationSelectionResult.Unavailable -> applicationMappingsState.update { state ->
                     state.copy(isAvailable = false)
@@ -91,8 +96,47 @@ internal fun TargetsViewModel.removeApplicationMapping(mappingId: LocalApplicati
     }
 }
 
+internal fun TargetsViewModel.clearApplicationMappings() {
+    if (!currentState.canClearApplicationMappings()) {
+        return
+    }
+    applicationMappingsState.update { state ->
+        state.copy(failure = null, mutation = ApplicationMappingMutation.CLEAR)
+    }
+    viewModelScope.launch {
+        try {
+            applyApplicationRemovalResult(applicationMappings.clear())
+        } catch (cancellationException: CancellationException) {
+            throw cancellationException
+        } catch (_: Exception) {
+            applicationMappingsState.update { state -> state.copy(failure = ApplicationMappingFailure.SAVE_FAILED) }
+        } finally {
+            applicationMappingsState.update { state -> state.copy(mutation = null) }
+        }
+    }
+}
+
+private fun TargetsViewModel.applyApplicationRemovalResult(result: LocalApplicationRemovalResult) {
+    when (result) {
+        is LocalApplicationRemovalResult.Success -> applicationMappingsState.update { state ->
+            state.copy(snapshot = result.snapshot, failure = null)
+        }
+
+        LocalApplicationRemovalResult.Unavailable -> applicationMappingsState.update { state ->
+            state.copy(isAvailable = false)
+        }
+
+        is LocalApplicationRemovalResult.Failure -> applicationMappingsState.update { state ->
+            state.copy(failure = result.reason.toUiFailure())
+        }
+    }
+}
+
 internal fun TargetsViewModel.observeApplicationMappingReads(): Flow<Unit> {
-    return applicationMappingRefreshRequests.onStart { emit(Unit) }.transform {
+    return merge(
+        applicationMappingRefreshRequests.onStart { emit(Unit) },
+        applicationMappings.invalidations,
+    ).transform {
         applicationMappingsState.update { state -> state.copy(isLoading = true, failure = null) }
         emit(Unit)
         when (val result = applicationMappings.load()) {
@@ -103,13 +147,19 @@ internal fun TargetsViewModel.observeApplicationMappingReads(): Flow<Unit> {
                         isLoading = false,
                         hasLoaded = true,
                         isAvailable = true,
+                        access = result.access,
                     )
                 }
             }
 
-            LocalApplicationMappingsLoadResult.Unavailable -> {
+            is LocalApplicationMappingsLoadResult.Unavailable -> {
                 applicationMappingsState.update {
-                    ApplicationMappingsState(isLoading = false, hasLoaded = true, isAvailable = false)
+                    ApplicationMappingsState(
+                        snapshot = result.snapshot,
+                        isLoading = false,
+                        hasLoaded = true,
+                        isAvailable = false,
+                    )
                 }
             }
 

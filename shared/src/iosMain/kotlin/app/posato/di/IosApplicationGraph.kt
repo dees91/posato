@@ -9,16 +9,17 @@ import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.data.SyncReplicaStore
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
+import app.posato.feature.targets.data.IosApplicationMappingsProvider
+import app.posato.feature.targets.data.IosLocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
-import app.posato.feature.targets.data.UnavailableLocalApplicationMappings
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
-import dev.zacsweers.metro.createGraph
+import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import platform.posix.time
@@ -27,6 +28,13 @@ import platform.posix.time
 internal interface IosApplicationGraph : ApplicationGraph {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val syncReplicaStore: SyncReplicaStore
+
+    @DependencyGraph.Factory
+    fun interface Factory {
+        fun create(
+            @Provides applicationMappings: LocalApplicationMappings,
+        ): IosApplicationGraph
+    }
 
     @Provides
     @Named("database")
@@ -67,12 +75,6 @@ internal interface IosApplicationGraph : ApplicationGraph {
     ): SyncReplicaStore {
         return SqlSyncReplicaStore(database, databaseDispatcher)
     }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideApplicationMappings(): LocalApplicationMappings {
-        return UnavailableLocalApplicationMappings
-    }
 }
 
 internal data class IosApplicationRuntime(
@@ -80,8 +82,12 @@ internal data class IosApplicationRuntime(
     val syncOperationCore: SyncOperationCore,
 )
 
-internal fun createIosApplicationRuntime(cryptoProvider: IosCryptoProvider): IosApplicationRuntime {
-    val graph = createGraph<IosApplicationGraph>()
+internal fun createIosApplicationRuntime(
+    cryptoProvider: IosCryptoProvider,
+    applicationMappingsProvider: IosApplicationMappingsProvider,
+): IosApplicationRuntime {
+    val applicationMappings = IosLocalApplicationMappings(applicationMappingsProvider)
+    val graph = createGraphFactory<IosApplicationGraph.Factory>().create(applicationMappings)
     val syncOperationCore = SyncOperationCore(
         store = graph.syncReplicaStore,
         cryptoProvider = IosSyncCryptoProvider(cryptoProvider),

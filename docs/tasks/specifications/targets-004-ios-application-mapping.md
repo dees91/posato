@@ -35,9 +35,11 @@ not a portable application identifier.
 - Persist selections in app-private, versioned local storage that is never
   synchronized, shaped so `IOS-001` can hand tokens to the Device Activity
   extension through the App Group without changing their meaning.
-- Request individual authorization once and surface not-determined, denied,
-  restricted, and unavailable states through the existing `Unavailable`
-  result; never retry silently or reset prior selections.
+- Read the current Family Controls status on the main queue, observe later
+  changes, and request individual authorization only from the contextual
+  not-determined action. Surface approved, denied, restricted, and unavailable
+  states without persisting authorization state, retrying silently, or
+  resetting prior selections.
 - Preserve prior valid mappings on cancel, failure, capacity (64), or an
   invalid batch; duplicate selections are idempotent; removal is exact.
 - Add the Family Controls capability to the iOS target for development
@@ -51,16 +53,19 @@ not a portable application identifier.
   `shared/src/iosMain/kotlin/app/posato/di/IosApplicationGraph.kt`,
   `shared/src/iosMain/kotlin/app/posato/MainViewController.kt`,
   `shared/src/iosMain/kotlin/app/posato/feature/targets/**`, `iosApp/**`, and
-  `shared/src/commonMain/kotlin/app/posato/feature/targets/**` only where the
-  contract needs a truthful iOS-specific state. Do not touch
-  `feature/sync/**` or `SyncReplica.sq`.
+  `shared/src/commonMain/kotlin/app/posato/feature/targets/**`, plus direct
+  macOS mapping callers, the credential-free CI build matrix, and affected
+  authorities. Do not touch `feature/sync/**` or `SyncReplica.sq`.
 - `.research/blocker` stays read-only; the spike proves only that the picker
   and authorization flow work on a device.
 
 ## Acceptance
 
 - `AC-01` — Not-determined, denied, and approved authorization states map to
-  truthful screen states, and approval survives restart.
+  truthful screen states. A physical test records the cold-restart status; if
+  it returns to not-determined, retained mappings remain visible and the
+  contextual request restores approved state without another authentication
+  prompt.
 - `AC-02` — A picker selection commits atomically and survives restart;
   cancel, failure, capacity, and invalid batches preserve the prior snapshot;
   removal is exact and idempotent.
@@ -84,21 +89,24 @@ not a portable application identifier.
 - Physical-iPhone checklist recorded in the execution record with pass or
   blocked per step and no device identifier.
 - Private-data scan, `git diff --check`, an independent plan review before
-  implementation, an independent completed-change review with evidence, and
-  at most one hosted pass under the `AGENTS.md` budget.
+  implementation, and an independent completed-change review with evidence.
+  Hosted review follows physical verification and the `AGENTS.md` two-pass
+  budget and triage rules when requested.
 
 ## Decisions or blockers
 
-- Open (maintainer): display names. The picker returns opaque tokens and the
-  application cannot read application names; SwiftUI renders `Label(token)`
-  natively, the shared Compose list cannot. Options: (a) generic numbered
-  names in the shared list plus a native SwiftUI review sheet with real
-  labels; (b) a native SwiftUI list for iOS mappings while the shared screen
-  shows only the count; (c) generic names only. Recommendation: (a). Decide
-  before implementation because it changes how `displayName` is used.
-- Open (maintainer): store tokens in the App Group container now, which needs
-  the App Group capability and coordination with `IOS-001`, or app-private
-  now with one migration in `IOS-001`. Recommendation: app-private now.
+- `user-confirmed`: the shared screen shows only the iOS mapping count while
+  the system Family Controls picker owns native labels and detailed review; UI
+  copy stays outside the data adapter.
+- `user-confirmed`: Save atomically replaces the complete selected set, and
+  authorization starts only from one contextual shared action.
+- `user-confirmed`: TARGETS-004 uses an app-private store. IOS-001 owns the App
+  Group migration and the change from complete protection to protection that
+  remains available after the first unlock.
+- `user-confirmed`: load maps the current authorization status and observes
+  changes. The physical cold-restart, revoke, and reinstall experiment decides
+  the recorded platform result; persistent not-determined uses the AC-01
+  fallback above.
 - Blocker: a physical iPhone with the maintainer's development team. Family
   Controls (Development) needs no Apple approval; distribution approval
   remains a recorded later blocker per the `APPLE-001` record.

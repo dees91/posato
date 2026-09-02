@@ -17,6 +17,9 @@ removeById:
 DELETE FROM localApplicationMapping
 WHERE mappingId = ?;
 
+removeAll:
+DELETE FROM localApplicationMapping;
+
 countAll:
 SELECT COUNT(*)
 FROM localApplicationMapping;

@@ -3,6 +3,7 @@ package app.posato.feature.targets.ui
 import androidx.compose.runtime.Immutable
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingId
+import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 
@@ -21,10 +22,11 @@ internal enum class ApplicationMappingFailure {
     SAVE_FAILED,
     SELF_SELECTION,
     INVALID_OR_UNSIGNED,
+    UNSUPPORTED_SELECTION,
     CAPACITY,
 }
 
-internal enum class ApplicationMappingMutation { CHOOSE, REMOVE }
+internal enum class ApplicationMappingMutation { CHOOSE, REMOVE, CLEAR }
 
 @Immutable
 internal data class TargetsUiState(
@@ -44,6 +46,7 @@ internal data class TargetsUiState(
     val isApplicationMappingLoading: Boolean = true,
     val hasLoadedApplicationMappings: Boolean = false,
     val isApplicationMappingAvailable: Boolean = false,
+    val applicationMappingsAccess: LocalApplicationMappingsAccess? = null,
     val isLoading: Boolean = true,
     val hasLoaded: Boolean = false,
 ) {
@@ -63,11 +66,18 @@ internal data class TargetsUiState(
 }
 
 internal fun TargetsUiState.canChooseApplications(): Boolean {
-    return applicationPolicyName != null && canMutateApplicationMappings()
+    val canRequestSelection = applicationMappingsAccess == LocalApplicationMappingsAccess.READY ||
+        applicationMappingsAccess == LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED
+
+    return applicationPolicyName != null && canRequestSelection && canMutateApplicationMappings()
 }
 
 internal fun TargetsUiState.canRemoveApplicationMapping(mappingId: LocalApplicationMappingId): Boolean {
     return canMutateApplicationMappings() && applicationMappings.any { mapping -> mapping.id == mappingId }
+}
+
+internal fun TargetsUiState.canClearApplicationMappings(): Boolean {
+    return canMutateApplicationMappings() && applicationMappings.isNotEmpty()
 }
 
 private fun TargetsUiState.canMutateApplicationMappings(): Boolean {
