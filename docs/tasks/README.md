@@ -233,7 +233,7 @@ stay in the pull-request conversation; do not create a repository commit solely
 to record them. A substantive correction still updates any affected versioned
 authority or required task record in the same correction push. A correction
 inside an open pull request takes the review tier of its own risk, Standard by
-default, without a plan-review ceremony.
+default; a plan review applies only when the correction itself is High-risk.
 
 Documentation still follows the proportional review tiers: routine status and
 bookkeeping use a Trivial self-check, while meaningful documentation receives
