@@ -49,8 +49,9 @@
   implementation; see the summary below. The branch was rebased onto `main`
   at closeout.
 - Closeout corrections: a retired transport key is unusable and rejected by
-  `open`, writer checkpoint reads are volatile and single-read, and the Swift
-  random-byte provider handles a zero-length request without a trap.
+  `open`, a rejected open that passes the active writer's own key leaves that
+  key usable, writer checkpoint reads are volatile and single-read, and the
+  Swift random-byte provider handles a zero-length request without a trap.
 
 ## Completed-change review
 
@@ -70,6 +71,10 @@
 40 hosted passes produced 49 findings (40 P1, 9 P2) and 35 correction commits
 between 2026-08-31 and 2026-09-02. All were accepted at the time; the review
 budget and the excluded finding classes in `AGENTS.md` now bound this loop.
+Maintainer decision (2026-09-02): after the closeout, up to three further
+passes without per-round ceremony, stopping at the first pass with no
+accepted finding. Passes 41 and 42 ran under that decision; pass 42 produced
+no accepted finding, so the loop stopped.
 
 | Finding class | Count | Decision |
 | --- | --- | --- |
@@ -79,7 +84,7 @@ budget and the excluded finding classes in `AGENTS.md` now bound this loop.
 | Bounded copies and native output length | 6 | Fixed. |
 | Owned buffer and key zeroing | 5 | Fixed within the `R-05` boundary. |
 | SQL BLOB preflight before materialization | 1 | Fixed. |
-| Final pass after closeout | pending | Triage table decides; one pass, then merge. |
+| Final passes after closeout (41, 42) | 3 | 2 accepted and fixed (active-writer key alias, wiki-log consolidation); 1 declined (transient plaintext copy whose clearing removes no in-memory copy, `R-05`). |
 
 ## Verification
 
@@ -97,6 +102,11 @@ budget and the excluded finding classes in `AGENTS.md` now bound this loop.
 
 - `R-02` and `R-05` remain accepted limits; reopen validation and buffer
   clearing do not claim tamper resistance or guaranteed memory erasure.
+- Hosted review was bounded, not exhausted: it returns at most three findings
+  per pass and its real-defect yield fell to about one in five findings by
+  the end. Residual lifecycle edge cases may remain; the core is not reachable
+  by users until `SYNC-009` and `SYNC-010` integrate it, and those tasks review
+  the integration on a smaller diff.
 - `SYNC-013` removes dead queries, unused iOS wiring, the test-only digest
   helper, and duplicated validation layers after merge.
 - Concrete CloudKit transport, Keychain delivery, and sync-engine state remain
