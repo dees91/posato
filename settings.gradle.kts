@@ -36,5 +36,8 @@ rootProject.name = "Posato"
 
 include(":desktopApp")
 include(":macosHelper")
+include(":posato-control")
 include(":quality-rules")
 include(":shared")
+
+project(":posato-control").projectDir = file("tools/posato-control")
