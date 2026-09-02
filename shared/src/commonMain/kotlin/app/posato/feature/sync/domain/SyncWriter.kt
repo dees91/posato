@@ -342,15 +342,15 @@ internal class SyncWriter internal constructor(
     }
 
     suspend fun close() {
-        mutex.withLock {
-            if (state != WriterState.CLOSED) {
-                state = WriterState.CLOSED
-                authoringIncarnation?.signingKey?.close()
-                authoringIncarnation = null
-                transportKey.close()
-            }
-        }
         withContext(NonCancellable) {
+            mutex.withLock {
+                if (state != WriterState.CLOSED) {
+                    state = WriterState.CLOSED
+                    authoringIncarnation?.signingKey?.close()
+                    authoringIncarnation = null
+                    transportKey.close()
+                }
+            }
             onClose(this@SyncWriter)
         }
     }

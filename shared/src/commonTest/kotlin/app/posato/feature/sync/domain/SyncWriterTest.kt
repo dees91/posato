@@ -20,6 +20,7 @@ import app.posato.feature.sync.testTransportProgress
 import app.posato.feature.targets.domain.ExactDomain
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -95,6 +96,43 @@ class SyncWriterOpenTest {
 }
 
 class SyncWriterCancellationTest {
+    @Test
+    fun `given close cancellation while a mutation owns the writer when mutation completes then resources retire`() = runTest {
+        val mutationCommitted = CompletableDeferred<Unit>()
+        val continueMutation = CompletableDeferred<Unit>()
+        val provider = FakeSyncCryptoProvider()
+        val store = FakeSyncReplicaStore(
+            initial = snapshot(),
+            afterLocalCommit = {
+                mutationCommitted.complete(Unit)
+                continueMutation.await()
+            },
+        )
+        val activeTransportKey = transportKey()
+        val core = SyncOperationCore(store, provider, SyncWallClock { 100 })
+        val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, activeTransportKey)).writer
+        val mutationJob = launch {
+            writer.mutate(
+                LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("close.example"))),
+            )
+        }
+        mutationCommitted.await()
+        val closeJob = launch(start = CoroutineStart.UNDISPATCHED) { writer.close() }
+
+        closeJob.cancel()
+        continueMutation.complete(Unit)
+        mutationJob.join()
+        closeJob.join()
+
+        assertContentEquals(
+            ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES),
+            activeTransportKey.useBytes { bytes -> bytes.copyOf() },
+        )
+        assertEquals(1, provider.signingKeyCloseCount)
+        val reopenedWriter = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey())).writer
+        reopenedWriter.close()
+    }
+
     @Test
     fun `given cancellation after writer shutdown begins when release suspends then release completes`() = runTest {
         val initialSnapshot = snapshot()

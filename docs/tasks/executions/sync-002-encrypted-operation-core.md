@@ -85,6 +85,10 @@
   with no Critical or Required findings. Its simplicity review selected one
   authenticated-snapshot guard and one common regression, without duplicating
   the semantic invariant in SQL or adding a helper or schema change.
+  The pre-lock writer-shutdown correction received independent plan approval
+  with no Critical or Required findings. Its simplicity review selected one
+  wider `NonCancellable` boundary and the existing store suspension seam,
+  without adding a scope, timeout, retry, helper, or production test hook.
 
 ## Result
 
@@ -120,8 +124,11 @@
   re-reviewed. The final review found no remaining actionable Critical or
   Required findings. A focused completed-change review of the writer-release
   cancellation correction also approved it with no findings; its simplicity
-  review concluded that the correction was already lean. The local-commit
-  cancellation correction received the same focused approval with no findings.
+  review concluded that the correction was already lean. The later pre-lock
+  writer-shutdown correction received the same focused approval with no
+  findings at any severity; its simplicity review found the wider existing
+  cleanup boundary already lean. The local-commit cancellation correction
+  received the same focused approval with no findings.
   The authoring-metadata redaction correction was also independently approved
   with no findings. The replica-snapshot redaction and rejected-key lifetime
   corrections received the same focused approval with no findings; the
@@ -258,6 +265,9 @@
   reopen accepted nonempty history while the durable HLC remained at the fresh
   `(0, 0)` baseline, even though no legal local or remote acceptance path can
   produce that snapshot.
+  The subsequent required finding found that cancellation while `close()`
+  waited for the writer mutex could prevent state closure, key retirement, and
+  owner release, leaving the core unable to open a replacement writer.
 - **Resolution:** Reopen validation now enforces the accepted-history HLC lower
   bound. Rejection and deferred-capacity outcomes share one exact-refetch
   progress path with ambiguous-commit reconciliation. Focused regression tests
@@ -276,10 +286,11 @@
   exact operation times from containing data-class strings without changing
   clock behavior or serialization. Independent focused re-reviews approved the
   corrections with no remaining Critical or Required findings. Writer close now
-  runs only owner deregistration in a non-cancellable cleanup context after
-  closing its state and keys, so cancellation cannot leave the closed instance
-  active. A deterministic common regression test cancels close while that
-  callback is suspended and proves it completes on JVM and iOS Simulator. A
+  enters a non-cancellable cleanup context before acquiring its mutex, so its
+  serialized state transition, key retirement, and owner release complete even
+  when cancellation occurs while another operation owns the writer. Common
+  regressions cover cancellation both while mutex acquisition and owner release
+  are suspended on the JVM and iOS Simulator. A
   prepared local mutation now transfers its incarnation to the writer before
   the commit can suspend; cancellation freezes the writer, closes the key, and
   propagates unchanged instead of permitting replacement bytes for the same
@@ -374,7 +385,7 @@
 | Hosted-review regression tests | `pass` | Invalid local session bounds remain recoverable; reopen rejects invalid accepted and staged author histories while preserving legal gaps and exact staging-capacity boundaries. |
 | Bounded remote-ingress regression tests | `pass` | Exactly 64 KiB reaches normal parsing, larger input returns `OVERSIZED` before an immutable copy, and exact-refetch proof remains required before rejection advances transport progress. |
 | Synchronization timing redaction regression | `pass` | The hybrid logical clock plus local, payload, reduced-start, and effective-session timing carriers return fixed redacted strings on the JVM and iOS Simulator. |
-| Writer-release cancellation regression | `pass` | The focused test failed before the correction, then the JVM and iOS Simulator common suites proved that owner deregistration completes after close cancellation. |
+| Writer-release cancellation regression | `pass` | The new focused test first exposed a retained transport key when close was cancelled while waiting for an in-flight mutation. After correction it asserts transport-key zeroization, one signing-key close, and successful replacement open; the JVM and iOS Simulator common suites also retain the deregistration-suspension case. |
 | Local-commit cancellation regression | `pass` | The focused test failed before the correction, then JVM and iOS Simulator common suites proved unchanged cancellation propagation, no synthetic durable mutation, prepared-key closure, and frozen refusal of later authoring. |
 | Post-cancellation aggregate quality | `pass` | All 113 aggregate tasks passed, including JVM and iOS Simulator tests, migration verification, Detekt, ktlint, approved-exception verification, and target compilation. |
 | Authoring metadata redaction correction | `pass` | The focused JVM test failed before the correction. JVM and iOS Simulator common suites then passed, and all 113 aggregate quality tasks passed with the fixed representations. |

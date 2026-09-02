@@ -1130,3 +1130,8 @@
 
 - Rejected authenticated accepted history retained at the fresh `(0, 0)` HLC
   baseline while preserving legal equality at later local clocks.
+
+## [2026-09-02] correction | Complete cancelled writer shutdown
+
+- Entered non-cancellable writer cleanup before mutex acquisition so state,
+  ephemeral keys, and core ownership are released after close cancellation.

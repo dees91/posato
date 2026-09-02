@@ -171,10 +171,12 @@ on raw transport bytes before retaining an immutable copy. Exactly 64 KiB
 continues to normal parsing, larger input returns the bounded `OVERSIZED`
 outcome, and rejection preserves the existing exact-refetch progress rule.
 
-`observed` (2026-09-01): after a writer has closed its state and ephemeral keys,
-owner deregistration completes in a narrowly scoped non-cancellable cleanup
-context. A deterministic common test cancelled close while deregistration was
-suspended and passed on the JVM and iOS Simulator, preventing a closed writer
+`observed` (2026-09-02): writer shutdown enters a non-cancellable cleanup
+context before acquiring its mutex. Once close is requested, any in-flight
+operation finishes before the serialized closed-state transition, ephemeral-key
+retirement, and owner deregistration complete. Deterministic common tests cancel
+close both while mutex acquisition and deregistration are suspended and pass on
+the JVM and iOS Simulator, preventing retained keys or a stale active writer
 from blocking every later open until process restart.
 
 `observed` (2026-09-01): a prepared local mutation transfers ownership of its
