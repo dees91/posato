@@ -15,8 +15,8 @@ the Simulator and Release builds report it as unavailable.
   Time access to choose apps. Your choices stay on this device.`
   (not determined), `Screen Time access is off for Posato. Enable it in
   Settings to review chosen apps.` (denied), `Screen Time access is not
-  available for this account or device.` (restricted), and `Application
-  selection is unavailable in this build.` (Simulator and Release).
+  available for this account or device.` (restricted), and `Choosing apps is
+  not available in this version of Posato.` (Simulator and Release).
 - `ios-mapping-choose` opens the system picker from `Choose applications`,
   `Review applications`, or `Allow and review applications`.
 - `ios-mapping-count` shows `Applications selected: <n>` with `Clear selection`.

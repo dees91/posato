@@ -4,8 +4,10 @@ import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
+import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
+import app.posato.feature.targets.data.LocalApplicationRemovalFailure
 import app.posato.feature.targets.data.LocalApplicationRemovalResult
 import app.posato.feature.targets.data.LocalApplicationSelectionRejection
 import app.posato.feature.targets.data.LocalApplicationSelectionResult
@@ -496,6 +498,89 @@ class TargetsViewModelTest {
         assertEquals(listOf(mapping), viewModel.uiState.value.applicationMappings)
         assertEquals(LocalApplicationMappingsAccess.RESTRICTED, viewModel.uiState.value.applicationMappingsAccess)
     }
+
+    @Test
+    fun `given corrupted mappings when retrying then clear is available and choose stays blocked`() = runTest(dispatcher) {
+        val mappings = FakeApplicationMappings().apply {
+            loadFailure = LocalApplicationMappingsLoadFailure.CORRUPTION
+        }
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        assertEquals(ApplicationMappingFailure.CORRUPTED_MAPPINGS, viewModel.uiState.value.applicationMappingFailure)
+        assertTrue(viewModel.uiState.value.canClearApplicationMappings())
+        assertFalse(viewModel.uiState.value.canChooseApplications())
+
+        viewModel.retryApplicationMappings()
+        scheduler.runCurrent()
+
+        assertEquals(ApplicationMappingFailure.CORRUPTED_MAPPINGS, viewModel.uiState.value.applicationMappingFailure)
+        assertEquals(0, mappings.clearCalls)
+        assertFalse(viewModel.uiState.value.canChooseApplications())
+        assertTrue(viewModel.uiState.value.canClearApplicationMappings())
+    }
+
+    @Test
+    fun `given corrupted mappings when clearing then choosing becomes available`() = runTest(dispatcher) {
+        val mappings = FakeApplicationMappings().apply {
+            loadFailure = LocalApplicationMappingsLoadFailure.CORRUPTION
+        }
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        viewModel.clearApplicationMappings()
+        scheduler.runCurrent()
+
+        assertEquals(null, viewModel.uiState.value.applicationMappingFailure)
+        assertTrue(viewModel.uiState.value.canChooseApplications())
+        assertEquals(1, mappings.clearCalls)
+    }
+
+    @Test
+    fun `given a storage load failure when reviewing actions then clear stays unavailable`() = runTest(dispatcher) {
+        val mappings = FakeApplicationMappings().apply {
+            loadFailure = LocalApplicationMappingsLoadFailure.STORAGE
+        }
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        assertEquals(ApplicationMappingFailure.LOAD_FAILED, viewModel.uiState.value.applicationMappingFailure)
+        assertFalse(viewModel.uiState.value.canClearApplicationMappings())
+        assertFalse(viewModel.uiState.value.canChooseApplications())
+        viewModel.clearApplicationMappings()
+        scheduler.runCurrent()
+        assertEquals(0, mappings.clearCalls)
+    }
+
+    @Test
+    fun `given a failed corruption clear when clearing again then choosing becomes available`() = runTest(dispatcher) {
+        val mappings = FakeApplicationMappings().apply {
+            loadFailure = LocalApplicationMappingsLoadFailure.CORRUPTION
+            clearResult = LocalApplicationRemovalResult.Failure(LocalApplicationRemovalFailure.STORAGE)
+        }
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        viewModel.clearApplicationMappings()
+        scheduler.runCurrent()
+
+        assertEquals(ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED, viewModel.uiState.value.applicationMappingFailure)
+        assertTrue(viewModel.uiState.value.canClearApplicationMappings())
+        assertFalse(viewModel.uiState.value.canChooseApplications())
+        assertEquals(1, mappings.clearCalls)
+
+        mappings.clearResult = null
+        viewModel.clearApplicationMappings()
+        scheduler.runCurrent()
+
+        assertEquals(null, viewModel.uiState.value.applicationMappingFailure)
+        assertTrue(viewModel.uiState.value.canChooseApplications())
+        assertEquals(2, mappings.clearCalls)
+    }
 }
 
 private fun TestScope.observe(viewModel: TargetsViewModel): Job {
@@ -558,10 +643,16 @@ private class FakeApplicationMappings(
 ) : LocalApplicationMappings {
     var selectionResult: LocalApplicationSelectionResult = LocalApplicationSelectionResult.Cancelled
     var removalResult: LocalApplicationRemovalResult = LocalApplicationRemovalResult.Success(snapshot)
+    var loadFailure: LocalApplicationMappingsLoadFailure? = null
+    var clearResult: LocalApplicationRemovalResult? = null
     var removeCalls: Int = 0
     var clearCalls: Int = 0
 
     override suspend fun load(): LocalApplicationMappingsLoadResult {
+        val failure = loadFailure
+        if (failure != null) {
+            return LocalApplicationMappingsLoadResult.Failure(failure)
+        }
         return LocalApplicationMappingsLoadResult.Success(snapshot)
     }
 
@@ -584,9 +675,13 @@ private class FakeApplicationMappings(
 
     override suspend fun clear(): LocalApplicationRemovalResult {
         clearCalls++
-        return LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty()).also { result ->
-            snapshot = result.snapshot
+        val forced = clearResult
+        if (forced != null) {
+            return forced
         }
+        loadFailure = null
+        snapshot = LocalApplicationMappingsSnapshot.empty()
+        return LocalApplicationRemovalResult.Success(snapshot)
     }
 }
 

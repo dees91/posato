@@ -138,27 +138,30 @@ The accepted boundary and identifier are authoritative in
 - Opaque selections, screenshots, result bundles, and device data stay out of
   tracked evidence and diagnostics.
 
-## Deferred hardening after `TARGETS-004`
+## Recovery after `TARGETS-005`
 
-`observed` in the independent review of `TARGETS-004`. None blocks the accepted
-mapping contract, all are reachable only through narrow sequences, and each is
-retained for `TARGETS-005` rather than fixed in place:
+`observed` (2026-09-03): a per-request generation on the native choose session
+stops a stale authorization continuation from presenting or completing a later
+selection. Presentation fails closed when another controller is already
+presented or the presenter has no window; a refused or failed present completes
+the current generation with picker failure and releases the adapter mutex.
+A corrupted selection store remains blocked for choose and remove, and the
+corruption notice exposes **Clear selection**, which overwrites only that
+unreadable file with an empty valid store. Retry alone still reports
+corruption. Simulator XCTest covers the FamilyControls-free session and
+presentation types and the store/provider clear path; the Family Controls
+picker path is compile-checked in the Debug device build.
 
-- A stale authorization request can outlive the selection that started it. The
-  continuation guards only on an active completion, not on which request owns
-  it, so a resurfacing task could drive a later picker. A per-request
-  generation token closes it.
-- A refused modal presentation leaves the selection pending forever. The
-  picker is presented without checking for an existing modal and without a
-  completion handler, so UIKit refusing the presentation strands the native
-  completion and holds the shared adapter mutex against every later load,
-  removal, and clear.
-- A corrupted store is an in-app dead end. A corrupt load blocks the mutating
-  actions, so `Clear selection` — the one action that would overwrite the bad
-  file — is unreachable, and retry re-reads the same file. Only reinstalling
-  recovers today.
-- Unavailability is stated in build terms rather than product terms, so a
-  build without the capability tells a person about the build.
+`user-confirmed` (2026-09-03): a build without a selection producer states
+**Choosing apps is not available in this version of Posato.** Clearing a
+corrupted store has no confirmation; `DESIGN.md` reserves confirmation for
+ending a session early.
+
+`observed` (2026-09-03): on one development-signed iPhone the TARGETS-004
+physical flow still passed after this hardening: authorize, pick, cancel with
+the prior count retained, process restart with the selection intact, and
+in-app clear back to an empty local list. No device, team, or profile value is
+recorded.
 
 ## Open questions
 
@@ -171,5 +174,3 @@ retained for `TARGETS-005` rather than fixed in place:
   from backup?
 - Which native APIs can move into `iosMain` without making the boundary harder
   to build, test, or maintain?
-- What should a person be told when a build carries no selection producer, in
-  words that describe the product rather than the build?
