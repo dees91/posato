@@ -990,7 +990,7 @@
 
 ## [2026-09-03] tooling | Add the verify-posato skill
 
-- Added the project-local `verify-posato` skill under `.claude/skills/` with a
+- Added the project-local `verify-posato` skill under `.agents/skills/` with a
   feature map (websites, application group, macOS application mappings) that
   tells an agent how to launch, check, drive, prove, and clean up Posato through
   `posato-control` on the desktop, the Simulator, and the iPhone.
