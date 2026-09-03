@@ -65,7 +65,9 @@
   session after picker dismissal, drop the unreachable UIKit `!presented`
   branch and tighten `canPresent`, report a failed corruption clear as
   `CORRUPTED_CLEAR_FAILED`, and have `begin` complete an active session
-  instead of dropping it.
+  instead of dropping it. Follow-up P2: one `canPresent` decision with a
+  handled `false` result, and a second corruption-clear from
+  `CORRUPTED_CLEAR_FAILED` reloads so choosing is available again.
 
 ## Verification
 

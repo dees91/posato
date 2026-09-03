@@ -97,14 +97,14 @@ enum ApplicationMappingsPresentationGate {
         _ controller: UIViewController,
         from presenter: UIViewController,
         animated: Bool = true,
-        completion: ((Bool) -> Void)? = nil
+        completion: @escaping (Bool) -> Void
     ) {
         guard canPresent(from: presenter) else {
-            completion?(false)
+            completion(false)
             return
         }
         presenter.present(controller, animated: animated) {
-            completion?(presenter.presentedViewController === controller)
+            completion(presenter.presentedViewController === controller)
         }
     }
 }
@@ -332,10 +332,6 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             completeChoose(generation, with: response(outcome: .pickerFailure))
             return
         }
-        guard ApplicationMappingsPresentationGate.canPresent(from: presenter) else {
-            completeChoose(generation, with: response(outcome: .pickerFailure))
-            return
-        }
         let initialTokens: Set<ApplicationToken>
         do {
             let mappings = try validatedMappings(try storeFactory().load())
@@ -361,7 +357,14 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         pickerController = controller
         pickerGeneration = generation
         controller.presentationController?.delegate = self
-        ApplicationMappingsPresentationGate.present(controller, from: presenter)
+        ApplicationMappingsPresentationGate.present(controller, from: presenter) { [weak self] presented in
+            guard let self else { return }
+            self.performOnMain {
+                if !presented {
+                    self.completeChoose(generation, with: self.response(outcome: .pickerFailure))
+                }
+            }
+        }
     }
 
     private func finishPicker(result: ApplicationPickerResult) {

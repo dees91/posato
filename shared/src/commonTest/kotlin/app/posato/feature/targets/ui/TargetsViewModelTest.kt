@@ -556,7 +556,7 @@ class TargetsViewModelTest {
     }
 
     @Test
-    fun `given corrupted mappings when clear fails then the failed-clear notice remains actionable`() = runTest(dispatcher) {
+    fun `given a failed corruption clear when clearing again then choosing becomes available`() = runTest(dispatcher) {
         val mappings = FakeApplicationMappings().apply {
             loadFailure = LocalApplicationMappingsLoadFailure.CORRUPTION
             clearResult = LocalApplicationRemovalResult.Failure(LocalApplicationRemovalFailure.STORAGE)
@@ -572,6 +572,14 @@ class TargetsViewModelTest {
         assertTrue(viewModel.uiState.value.canClearApplicationMappings())
         assertFalse(viewModel.uiState.value.canChooseApplications())
         assertEquals(1, mappings.clearCalls)
+
+        mappings.clearResult = null
+        viewModel.clearApplicationMappings()
+        scheduler.runCurrent()
+
+        assertEquals(null, viewModel.uiState.value.applicationMappingFailure)
+        assertTrue(viewModel.uiState.value.canChooseApplications())
+        assertEquals(2, mappings.clearCalls)
     }
 }
 
