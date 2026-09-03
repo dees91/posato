@@ -18,6 +18,7 @@ import app.posato.control.core.LaunchedProcess
 import app.posato.control.core.RunContext
 import app.posato.control.core.RunStateStore
 import app.posato.control.core.Target
+import app.posato.control.core.TrackedProcess
 import app.posato.control.model.DoctorCheck
 import app.posato.control.model.Severity
 import java.nio.file.Files
@@ -60,6 +61,13 @@ class SimulatorSession(
 
     fun isRunning(udid: String): Boolean = ProcessHandle.allProcesses().anyMatch { handle ->
         handle.info().command().map { it.contains("/Devices/$udid/") && it.endsWith("/Posato.app/Posato") }.orElse(false)
+    }
+
+    /** True only when the tracked pid is alive, started at the recorded instant, and runs Posato inside the tracked simulator. */
+    fun isTrackedRunning(tracked: LaunchedProcess?): Boolean {
+        val udid = tracked?.udid ?: return false
+        val handle = TrackedProcess.handleOf(tracked.pid, tracked.startedAt) ?: return false
+        return handle.info().command().map { it.contains("/Devices/$udid/") && it.endsWith("/Posato.app/Posato") }.orElse(false)
     }
 
     fun container(udid: String): Path? = simctl.appContainer(udid, IOS_BUNDLE_ID, "data")
@@ -184,13 +192,27 @@ class SimulatorLifecycle(
         val stdout = context.artifactPath("simulator-app.log")
         val stderr = context.artifactPath("simulator-app.err.log")
         val pid = session.simctl.launch(udid, IOS_BUNDLE_ID, stdout, stderr, options.arguments, options.environment)
-        stateStore.update(Target.SIMULATOR, LaunchedProcess(pid = pid, udid = udid, logPath = stdout.toString(), runId = context.runId))
+        stateStore.update(
+            Target.SIMULATOR,
+            LaunchedProcess(
+                pid = pid,
+                startedAt = pid?.let { TrackedProcess.startedAt(it) },
+                udid = udid,
+                logPath = stdout.toString(),
+                runId = context.runId,
+            ),
+        )
         context.recordArtifact(stdout)
         return LaunchResult(pid = pid, udid = udid, logPath = context.layout.relativize(stdout))
     }
 
     override fun terminate(): StatusResult {
-        stateStore.load().simulator?.udid?.let { udid -> session.simctl.terminate(udid, IOS_BUNDLE_ID) }
+        val tracked = stateStore.load().simulator
+        if (session.isTrackedRunning(tracked)) {
+            session.simctl.terminate(checkNotNull(tracked?.udid), IOS_BUNDLE_ID)
+        } else if (tracked != null) {
+            context.log("The tracked simulator launch is no longer running; leaving other Posato instances alone")
+        }
         stateStore.update(Target.SIMULATOR, null)
         return status()
     }
@@ -202,7 +224,7 @@ class SimulatorLifecycle(
         return StatusResult(
             installed = session.isInstalled(udid),
             running = running,
-            pid = tracked?.pid?.takeIf { running },
+            pid = tracked?.pid?.takeIf { session.isTrackedRunning(tracked) },
             udid = udid,
             appPath = xcodeBuild.appProduct(Target.SIMULATOR).takeIf { it.exists() }?.let { context.layout.relativize(it) },
             containerPath = session.container(udid)?.toString(),

@@ -78,7 +78,7 @@
 
 ## Hosted review
 
-- **Pass 1 (Codex, commit `07953ad`):** three P1 and two P2 findings. The
+- **Pass 1 (Codex, on the closeout commit):** three P1 and two P2 findings. The
   maintainer accepted the three P1 findings as Required, accepted the P2
   finding about `terminate -t simulator` stopping untracked instances, and
   resolved the P2 finding about the `--configuration` option by removing the
@@ -98,14 +98,29 @@
   the driver; on the iPhone `launch`, `status`, `terminate`, and a repeated
   `terminate` behaved as documented; `status -t mars`, a missing required
   option, and an unknown option each returned the `USAGE` envelope.
-- **Pass 2:** requested after these corrections; at most one more hosted pass
-  remains under the `AGENTS.md` budget.
+- **Pass 2:** not run. The hosted review quota was exhausted after pass 1,
+  and the maintainer decided on 2026-09-03 to close the correction with an
+  independent local completed-change review of the correction commit instead
+  (Standard tier for a correction inside an open pull request).
+- **Correction review (local, independent agent):** `changes-required` on
+  the first pass with one Required finding: simulator `terminate` still
+  stopped any Posato instance on the tracked simulator instead of only the
+  recorded launch. Corrected by recording the simulator process start
+  instant at launch and terminating only when that pid is alive, started at
+  that instant, and runs Posato inside the tracked simulator; verified by
+  ending the tracked launch outside the tool, starting another instance, and
+  seeing it survive `terminate`. The three advisory items were corrected as
+  well: usage envelopes now carry Clikt's formatted reason ("no such option
+  --bogus", "missing option --text-input"), device console liveness and log
+  path are gated on the recorded device, and a device whose process list
+  cannot be read no longer leaves stale state. Verdict after corrections:
+  `approve`.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew :posato-control:test :posato-control:detekt :posato-control:ktlintCheck :posato-control:swiftFormatCheck` | `pass` | 27 unit tests over synthetic fixtures after the review corrections; no lint finding; no suppression added. |
+| `./gradlew :posato-control:test :posato-control:detekt :posato-control:ktlintCheck :posato-control:swiftFormatCheck` | `pass` | 28 unit tests over synthetic fixtures after the review corrections; no lint finding; no suppression added. |
 | `./gradlew quality` | `pass` | Passed on the worktree after the last correction (hosted pass 1 fixes included), with the module's checks and the unchanged suppression allowlist. |
 | Desktop sequence | `pass` | `doctor`, `build`, `install`, `launch`, `status`, `logs`, `snapshot`, `screenshot`, `find`, the `add-website` and `remove-website` scenarios, `db query` (row count 1 then 0), `reset --dry-run` listing exactly the two databases, `reset` refused without `--yes` (exit 3), `reset --yes` leaving an empty database (count 0) with the deleted files backed up in the run directory, `terminate`, `tap` on a missing element (exit 4 with failure evidence), `db` on the device target (exit 6), `snapshot` with accessibility trust withheld (`TCC_ACCESSIBILITY_DENIED`, exit 3) and `doctor` naming the host to grant, and `terminate` against a recorded pid that belonged to a decoy process (the decoy survived). |
 | Simulator sequence | `pass` | `devices boot`, `doctor`, `build --driver`, `install`, `status`, `launch --fresh`, `screenshot`, `snapshot`, `find`, `tap`, `wait`, both scenarios with the row count confirmed through `db query`, `logs` and `logs --stream-seconds`, `reset --dry-run --keep-install`, `reset --yes` (uninstall, `status.installed` false, reinstall, empty state on relaunch), a scenario with `launch.fresh`, `--run-id` reuse, `terminate`. |
@@ -114,6 +129,11 @@
 
 ## Blockers and accepted risks
 
+- The final device rerun after the correction review could not launch the
+  application (`devicectl` reported CoreDeviceError 10002, the usual sign of
+  a locked iPhone); the device lifecycle had passed minutes earlier on the
+  same build, and the remaining device changes are covered by unit tests and
+  the static checks.
 - The desktop interaction evidence was collected from a terminal host that
   held the Accessibility and Screen Recording grants. The closeout session
   ran under a host without them, where `doctor` reported both as missing and
