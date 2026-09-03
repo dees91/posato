@@ -92,6 +92,20 @@ needs it. When human action is the blocker, stop and explain the next action.
 Parallel implementing agents require isolated Git worktrees and the dependency
 and write-surface conditions in `docs/tasks/README.md`.
 
+## Application verification
+
+Before claiming that a change to either application works, drive the real
+application through the repository's verification driver
+(`tools/posato-control`, documented in `tools/posato-control/README.md`)
+following the tool-neutral skill at
+[`.agents/skills/verify-posato/SKILL.md`](.agents/skills/verify-posato/SKILL.md)
+and its feature map. The skill lives under `.agents/skills/` so that any
+agent can use it; `.claude/skills/verify-posato` is a symbolic link to it for
+tools that only scan their own directory, and the copy under
+`.agents/skills/` is the maintained one. Cite
+the run directory under the ignored `build/verification/` as evidence and
+keep screenshots, logs, and identifiers out of tracked files.
+
 ## Suppression policy
 
 Fix the underlying source of Detekt, ktlint, compiler, and other quality-tool
