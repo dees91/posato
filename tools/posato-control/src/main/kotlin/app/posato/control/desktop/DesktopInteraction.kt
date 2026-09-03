@@ -35,7 +35,7 @@ class DesktopInteraction(
     }
 
     override fun runScenario(scenario: Scenario): RunResult {
-        val running = stateStore.load().desktop?.pid?.let { processes.isAlive(it) } ?: false
+        val running = processes.isTracked(stateStore.load().desktop)
         if (scenario.launch.terminateExisting || !running) {
             lifecycle.launch(
                 LaunchOptions(fresh = scenario.launch.fresh, arguments = scenario.launch.arguments, environment = scenario.launch.environment),
@@ -44,7 +44,7 @@ class DesktopInteraction(
         return ScenarioRunner(DesktopActions(scenario), context.layout::relativize).run(scenario)
     }
 
-    private fun runningPid(): Long = stateStore.load().desktop?.pid?.takeIf { processes.isAlive(it) }
+    private fun runningPid(): Long = processes.trackedPid(stateStore.load().desktop)
         ?: throw ControlException(
             ErrorCode.APP_NOT_RUNNING,
             "No tracked desktop process is running.",

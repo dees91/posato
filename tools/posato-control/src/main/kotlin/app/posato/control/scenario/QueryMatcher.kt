@@ -89,8 +89,9 @@ object QueryMatcher {
         node: SnapshotNode,
         query: Query
     ): Boolean {
-        if (query.text != null && node.label != query.text && node.value != query.text) return false
+        val texts = listOfNotNull(node.label, node.value, node.placeholder)
+        if (query.text != null && query.text !in texts) return false
         val needle = query.textContains ?: return true
-        return node.label?.contains(needle) == true || node.value?.contains(needle) == true
+        return texts.any { it.contains(needle) }
     }
 }

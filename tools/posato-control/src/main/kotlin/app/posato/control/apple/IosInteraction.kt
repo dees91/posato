@@ -16,6 +16,7 @@ class IosInteraction(
     private val runner: IosDriverRunner,
     private val resolveUdid: () -> String,
     private val bundleId: String,
+    private val resetState: () -> Unit,
 ) : Interaction {
     override fun snapshot(
         root: Query?,
@@ -36,7 +37,10 @@ class IosInteraction(
         return root?.let { QueryMatcher.require(node, it) } ?: node
     }
 
-    override fun runScenario(scenario: Scenario): RunResult = runner.run(scenario, resolveUdid(), bundleId).result
+    override fun runScenario(scenario: Scenario): RunResult {
+        if (scenario.launch.fresh) resetState()
+        return runner.run(scenario, resolveUdid(), bundleId).result
+    }
 
     fun screenshotArtifact(name: String): String {
         val scenario = Scenario(

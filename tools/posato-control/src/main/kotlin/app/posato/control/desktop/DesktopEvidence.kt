@@ -35,7 +35,7 @@ class DesktopEvidence(
         return context.recordArtifact(destination)
     }
 
-    private fun runningPid(): Long = stateStore.load().desktop?.pid?.takeIf { processes.isAlive(it) }
+    private fun runningPid(): Long = processes.trackedPid(stateStore.load().desktop)
         ?: throw ControlException(
             ErrorCode.APP_NOT_RUNNING,
             "No tracked desktop process is running.",
@@ -78,7 +78,7 @@ class DesktopEvidence(
             listOf(database) + DesktopPaths.sidecarSuffixes.map { suffix -> database.resolveSibling(database.fileName.toString() + suffix) }
         }.filter { it.exists() }
         if (dryRun) return ResetPlan(deletions.map { it.toString() }, uninstall = false, performed = false)
-        stateStore.load().desktop?.pid?.let { processes.terminate(it) }
+        processes.terminate(stateStore.load().desktop)
         stateStore.update(Target.DESKTOP, null)
         val backup = context.artifactPath("backup", "desktop")
         Files.createDirectories(backup)
@@ -95,9 +95,9 @@ class DesktopEvidence(
         purgeDerivedData: Boolean
     ): List<String> {
         val tracked = stateStore.load().desktop ?: return emptyList()
-        val actions = listOfNotNull(tracked.pid?.takeIf { processes.isAlive(it) }?.let { "terminate desktop pid $it" })
+        val actions = listOfNotNull(processes.trackedPid(tracked)?.let { "terminate desktop pid $it" })
         if (!dryRun) {
-            tracked.pid?.let { processes.terminate(it) }
+            processes.terminate(tracked)
             stateStore.update(Target.DESKTOP, null)
         }
         return actions

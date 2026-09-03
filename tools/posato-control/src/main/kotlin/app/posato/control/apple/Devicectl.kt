@@ -113,6 +113,15 @@ class Devicectl(
         logFile,
     )
 
+    fun isRunning(
+        udid: String,
+        pid: Long
+    ): Boolean {
+        val result = json(listOf("device", "info", "processes", "--device", udid), ErrorCode.COMMAND_FAILED, "Listing device processes")
+        return result["runningProcesses"]?.jsonArray?.any { it.jsonObject["processIdentifier"]?.jsonPrimitive?.content?.toLongOrNull() == pid }
+            ?: false
+    }
+
     fun terminate(
         udid: String,
         pid: Long

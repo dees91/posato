@@ -312,7 +312,9 @@ class SimulatorBackend private constructor(
             val stateStore = RunStateStore(context.layout)
             val evidence = SimulatorEvidence(context, session, xcodeBuild, stateStore)
             val lifecycle = SimulatorLifecycle(context, session, xcodeBuild, stateStore, evidence)
-            val interaction = IosInteraction(IosDriverRunner(context, xcodeBuild, Target.SIMULATOR), session::udid, IOS_BUNDLE_ID)
+            val interaction = IosInteraction(IosDriverRunner(context, xcodeBuild, Target.SIMULATOR), session::udid, IOS_BUNDLE_ID) {
+                evidence.reset(dryRun = false, keepInstall = true)
+            }
             return SimulatorBackend(lifecycle, evidence, interaction)
         }
     }

@@ -92,10 +92,10 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | `status` | all | Installed, running, pid, app path, container path, signing mode. |
 | `screenshot [--name n] [--out file]` | all | Desktop window capture, `simctl io screenshot`, or a driver screenshot on the device. |
 | `snapshot [--format json\|text] [--max-depth n] [query]` | all | Unified accessibility tree. `--format text` prints an outline with roles, labels, and desktop paths. |
-| `find <query>` | all | Matching elements without side effects. |
+| `find <query>` | all | Matching elements; never changes application state (on iOS it starts the app when it is not running). |
 | `tap <query>` | all | Presses a button or taps an element. |
 | `type <query> --input TEXT [--clear] [--submit]` | all | Types into a text field. |
-| `press --key return\|escape\|tab\|delete\|space\|up\|down\|left\|right\|<letter> [--modifiers cmd,shift]` | all | Keyboard input (`home` on iOS). |
+| `press --key <key> [--modifiers cmd,shift]` | all | Keyboard input. Desktop: `return`, `escape`, `tab`, `delete`, `space`, arrows, digits, letters, with `--modifiers`. iOS: `return`, `delete`, `space`, `home`, `volumeUp`, `volumeDown` (device only), and `escape`/`tab` where the keyboard offers them. |
 | `wait --for exists\|absent\|enabled\|disabled\|settled [query] [--timeout-seconds 10]` | all | Polls until the condition holds. |
 | `run --scenario file.json` (or `-`) | all | Runs a batched scenario and reports every step with its evidence. The primary path on iOS. |
 | `logs [--tail n] [--stream-seconds s]` | all | Captured application log; the simulator can also stream the unified log for a few seconds. |
@@ -169,7 +169,9 @@ action) or `press --key return` before tapping controls below the field. The
 Actions: `waitFor` (`state`: `exists`, `absent`, `enabled`, `disabled`,
 `settled`), `tap`, `type` (`text`, `clear`, `submit`), `press` (`key`,
 `modifiers`), `assert` (`state`), `screenshot`, `snapshot` (`query`,
-`maxDepth`), `sleep` (`seconds`), `scrollTo`, `terminate`, `relaunch`. With
+`maxDepth`), `sleep` (`seconds`), `scrollTo` (iOS swipes until the element is
+hittable; the desktop only checks that it exists), `terminate`, `relaunch`.
+`launch.fresh` resets the application state on every target before the run. With
 `terminateExisting: true` (the default) the scenario restarts the app; single
 commands such as `tap` reuse the running app. A failed step records
 `failure-<index>-screenshot.png` and `failure-<index>-snapshot.json`.

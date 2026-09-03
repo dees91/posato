@@ -12,6 +12,7 @@ import app.posato.control.core.LaunchedProcess
 import app.posato.control.core.RunContext
 import app.posato.control.core.RunStateStore
 import app.posato.control.core.Target
+import app.posato.control.core.TrackedProcess
 import app.posato.control.model.DoctorCheck
 import app.posato.control.model.Severity
 
@@ -44,8 +45,8 @@ class DesktopLifecycle(
         if (options.build) build(BuildOptions())
         processes.requireStaged()
         val tracked = stateStore.load().desktop
-        tracked?.pid?.takeIf { processes.isAlive(it) }?.let { processes.terminate(it) }
-        val foreign = processes.foreignPids(tracked?.pid)
+        processes.terminate(tracked)
+        val foreign = processes.foreignPids(processes.trackedPid(tracked))
         if (foreign.isNotEmpty()) {
             throw ControlException(
                 ErrorCode.ALREADY_RUNNING,
@@ -63,15 +64,20 @@ class DesktopLifecycle(
         val windowId = awaitWindow(process.pid())
         stateStore.update(
             Target.DESKTOP,
-            LaunchedProcess(pid = process.pid(), logPath = logPath.toString(), windowId = windowId, runId = context.runId),
+            LaunchedProcess(
+                pid = process.pid(),
+                startedAt = TrackedProcess.startedAt(process.pid()),
+                logPath = logPath.toString(),
+                windowId = windowId,
+                runId = context.runId,
+            ),
         )
         context.recordArtifact(logPath)
         return LaunchResult(pid = process.pid(), logPath = context.layout.relativize(logPath), windowId = windowId)
     }
 
     override fun terminate(): StatusResult {
-        val tracked = stateStore.load().desktop
-        tracked?.pid?.let { processes.terminate(it) }
+        processes.terminate(stateStore.load().desktop)
         stateStore.update(Target.DESKTOP, null)
         return status()
     }
@@ -79,7 +85,7 @@ class DesktopLifecycle(
     override fun status(): StatusResult {
         val tracked = stateStore.load().desktop
         val staged = processes.executablePath().toFile().isFile
-        val running = tracked?.pid?.let { processes.isAlive(it) } ?: false
+        val running = processes.isTracked(tracked)
         return StatusResult(
             installed = staged,
             running = running,
