@@ -13,6 +13,11 @@ final class ScenarioExecutor {
   private static let pollInterval: TimeInterval = 0.25
   private static let settleInterval: TimeInterval = 0.5
   private static let scrollAttempts = 10
+  private static let revealAttempts = 3
+  private static let keyboardSettle: TimeInterval = 0.3
+  private static let extraDeletes = 3
+  private static let rowWeight: CGFloat = 3
+  private static let scrollSettle: TimeInterval = 0.5
 
   private let scenario: Scenario
   private let app: XCUIApplication
@@ -209,7 +214,11 @@ final class ScenarioExecutor {
     // after focusing changed its attributes (Compose appends the value to the
     // label of a focused field).
     if clear {
-      app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count))
+      // The first keystrokes can be dropped while the keyboard animates in, so
+      // wait briefly and send a few extra deletes; deleting past the start is harmless.
+      Thread.sleep(forTimeInterval: Self.keyboardSettle)
+      let deletes = currentValue.count + Self.extraDeletes
+      app.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: deletes))
     }
     app.typeText(text)
     if step.submit == true {
@@ -335,19 +344,46 @@ final class ScenarioExecutor {
   // MARK: - Element resolution
 
   /// The element for `query`, waiting up to `timeout` for it to exist.
+  ///
+  /// Compose drops the accessibility label of content clipped at the screen
+  /// edge, so when a `near` anchor is visible but the target is not, the
+  /// content is scrolled a few times to bring the anchor toward the centre.
   private func existingElement(_ query: ElementQuery?, timeout: TimeInterval, action: String) throws
     -> XCUIElement
   {
-    var element = try element(for: query, action: action)
-    let found = poll(timeout: timeout) {
-      if element.exists { return true }
-      if let again = self.resolve(query, action: action) { element = again }
-      return element.exists
+    guard let query else {
+      throw DriverError(.scenarioInvalid, "\(action) requires a query")
     }
-    guard found else {
+    try validateRoles(query)
+    var element = resolve(query, action: action)
+    var reveals = 0
+    let found = poll(timeout: timeout) {
+      if let current = element, current.exists { return true }
+      if let near = query.near, reveals < Self.revealAttempts, self.app.keyboards.count == 0,
+        let anchor = self.resolve(near, action: action), anchor.exists
+      {
+        reveals += 1
+        self.reveal(anchor)
+      }
+      element = self.resolve(query, action: action)
+      return element?.exists ?? false
+    }
+    guard found, let resolved = element else {
       throw DriverError(.elementNotFound, "no element matches \(describe(query))")
     }
-    return element
+    return resolved
+  }
+
+  /// Scrolls so that `anchor` moves toward the vertical centre of the screen.
+  private func reveal(_ anchor: XCUIElement) {
+    let screenMidY = app.frame.midY
+    let anchorMidY = anchor.frame.midY
+    if anchorMidY > screenMidY {
+      app.swipeUp()
+    } else {
+      app.swipeDown()
+    }
+    Thread.sleep(forTimeInterval: Self.scrollSettle)
   }
 
   /// The element for `query`, or `nil` when the query cannot be resolved right now.
@@ -412,8 +448,19 @@ final class ScenarioExecutor {
     return sorted[index]
   }
 
+  /// Row-biased distance: elements on the same line as the anchor win over
+  /// elements in neighbouring rows, and vertical stacking still resolves the
+  /// closest control below or above a header.
   private static func distance(_ a: CGRect, _ b: CGRect) -> CGFloat {
-    hypot(a.midX - b.midX, a.midY - b.midY)
+    abs(a.midY - b.midY) * Self.rowWeight + abs(a.midX - b.midX)
+  }
+
+  /// Validates the role of `query` and of its nested `near` and `within` queries up front, so a
+  /// typo fails immediately instead of polling to the timeout.
+  private func validateRoles(_ query: ElementQuery) throws {
+    try validateRole(query.role)
+    if let near = query.near { try validateRoles(near) }
+    if let within = query.within { try validateRoles(within) }
   }
 
   private func validateRole(_ role: String?) throws {

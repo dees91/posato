@@ -118,7 +118,7 @@ scenario steps use the same keys in a `query` object:
 | `--index` | `index` | The nth match, 0-based. |
 | `--path` | `path` | Desktop accessibility path from a previous snapshot, e.g. `0/0/0/0/9/2`. |
 | `--within-text` + `--within-role` | `within` | Scope: the nearest ancestor with the given role of the element carrying the text; the query then matches inside that scope. Works where the platform exposes containers (desktop rows). |
-| `--near-text` + `--near-role` | `near` | Prefer the match whose frame centre is closest to the element carrying the text; `index` then picks farther matches. Works on every target, including iOS lists whose rows expose no container. |
+| `--near-text` + `--near-role` | `near` | Prefer the match closest to the element carrying the text, with vertical distance weighted three times, so a control on the anchor's row wins over the neighbouring row; `index` then picks farther matches. Works on every target, including iOS lists whose rows expose no container. |
 
 Example: the Remove button of the `example.com` row is
 `--text Remove --role button --near-text example.com`, and the domain field is
@@ -160,8 +160,11 @@ must not be minimized.
 ```
 
 iOS keyboard note: Compose drops the accessibility label of content hidden
-behind the software keyboard, and this screen does not pad for it, so the
-"Add website" button is unreachable while the domain field has focus. Finish
+behind the software keyboard or clipped at the screen edge, and this screen
+does not pad for the keyboard, so the "Add website" button is unreachable
+while the domain field has focus. When a `near` anchor is visible but the
+target is not, the driver scrolls the anchor toward the centre of the screen
+(up to three swipes) before giving up. Finish
 text entry with `"submit": true` (the Return key triggers the field's IME
 action) or `press --key return` before tapping controls below the field. The
 `add-website` fixture does exactly that on every target.
