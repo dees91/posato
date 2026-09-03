@@ -50,8 +50,8 @@
   picker failure and releases the adapter mutex.
 - Shared Targets UI keeps valid-selection Clear and adds **Clear selection**
   on the corruption notice with no confirmation. A successful corruption clear
-  reloads access; a failed one keeps the corruption notice. Choose and remove
-  stay blocked on corruption.
+  reloads access; a failed one keeps Clear reachable and says the selection
+  could not be cleared. Choose and remove stay blocked on corruption.
 - Replaced build-terms unavailability with **Choosing apps is not available in
   this version of Posato.**
 - No entitlement, App Group, store format, schema, or Kotlin protocol change.
@@ -61,15 +61,18 @@
 - **Verdict:** `approved`
 - **Critical or Required findings:** none
 - **Resolution:** Accepted one Recommended item: a failed corruption clear
-  keeps `CORRUPTED_MAPPINGS` so Clear remains. ViewModel test added; ktlint,
-  Detekt, and JVM tests rerun.
+  keeps Clear reachable. Maintainer-accepted P2 corrections: complete the
+  session after picker dismissal, drop the unreachable UIKit `!presented`
+  branch and tighten `canPresent`, report a failed corruption clear as
+  `CORRUPTED_CLEAR_FAILED`, and have `begin` complete an active session
+  instead of dropping it.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | `./gradlew quality` | pass | after last correction; includes `shared:iosSimulatorArm64Test` |
-| Simulator XCTest | pass | iPhone 17; session, presentation, store, and provider tests |
+| Simulator XCTest | pass | iPhone 17; session, presentation, store, and provider tests, including P2 session-complete-on-begin |
 | Unsigned Debug Simulator build | pass | Xcode 26.6 |
 | Unsigned Debug device build | pass | Xcode 26.6; Family Controls path compiled |
 | Unsigned Release Simulator build | pass | Xcode 26.6 |

@@ -115,6 +115,13 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
             mappingState(applicationPolicyName = "Social feeds", applicationMappingFailure = ApplicationMappingFailure.CORRUPTED_MAPPINGS),
         ),
         TargetsPreviewState(
+            "Corrupted application mappings clear failed",
+            mappingState(
+                applicationPolicyName = "Social feeds",
+                applicationMappingFailure = ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED,
+            ),
+        ),
+        TargetsPreviewState(
             "Application mapping load failure",
             mappingState(applicationPolicyName = "Social feeds", applicationMappingFailure = ApplicationMappingFailure.LOAD_FAILED),
         ),
