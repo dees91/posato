@@ -86,14 +86,11 @@ says so in product terms.
 
 ## Decisions or blockers
 
-- `open`: the product-terms unavailability sentence. Recommended: "Choosing
-  apps is not available in this version of Posato." It names the product, not
-  the build, and stays true for Simulator and Release builds. Maintainer
-  acceptance is needed before the `DESIGN.md` edit; it can arrive with the plan
-  review.
-- `open`: whether clearing a corrupted store needs a confirmation.
-  Recommended: no; the notice already states that the selection cannot be
-  verified, the action label is explicit, and `DESIGN.md` reserves
-  confirmation for ending a session early.
+- `user-confirmed`: unavailability copy is "Choosing apps is not available in
+  this version of Posato." It names the product, not the build, and stays true
+  for Simulator and Release builds.
+- `user-confirmed`: clearing a corrupted store has no confirmation. The notice
+  already states that the selection cannot be verified, the action label is
+  explicit, and `DESIGN.md` reserves confirmation for ending a session early.
 - Blocker for `AC-05`: a physical iPhone with the maintainer's development team
   supplied only through the ignored `local.properties`, as for `TARGETS-004`.

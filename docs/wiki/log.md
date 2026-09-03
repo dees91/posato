@@ -1040,3 +1040,11 @@
   provider. `./gradlew quality` passes on JVM and iOS Simulator;
   a verify-posato simulator pass confirmed the app still launches
   and website add/remove works with the new migration.
+
+## [2026-09-03] experiment | Recover iOS mapping stale, refused, and corrupted states
+
+- Closed the four deferred TARGETS-004 hardening items: a per-request choose
+  generation, fail-closed picker presentation, in-app clear of a corrupted
+  selection store, and product-terms unavailability copy.
+- Recorded the maintainer-accepted sentence "Choosing apps is not available in
+  this version of Posato" and that corrupted-store clear has no confirmation.
