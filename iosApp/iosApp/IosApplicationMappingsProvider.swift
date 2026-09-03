@@ -247,7 +247,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
                 } catch let error as FamilyControlsError {
                     self.completeChoose(with: self.authorizationFailureResponse(error))
                 } catch {
-                    self.completeChoose(with: self.response(outcome: .unavailable, access: .unavailable))
+                    self.completeChoose(with: self.response(outcome: .pickerFailure))
                 }
             }
         } else {

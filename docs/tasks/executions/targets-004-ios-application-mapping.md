@@ -102,6 +102,7 @@
 | Clear and group removal after the access change | passed | `Clear selection` reached `No applications chosen on this device.` and group removal reached `No application group yet.`, restoring the device to its post-install state |
 | `./gradlew quality` after review corrections | passed | Xcode 26.6; 126 tasks including `shared:iosSimulatorArm64Test` with the new outcome-mapping tests |
 | Build matrix and Simulator XCTest after review corrections | passed | Xcode 26.6; Debug Simulator, Debug device, and Release Simulator all built and XCTest succeeded; the corrected Swift branch compiles in every configuration |
+| Full reverification after the second correction | passed | Xcode 26.6; `./gradlew quality`, Debug Simulator, Debug device, Release Simulator, and Simulator XCTest all green |
 
 ## Local review after the hosted budget became unavailable
 
@@ -123,8 +124,18 @@
   "no producer in this build" from "nothing chosen yet". Added iOS adapter
   tests pinning the cancelled, capacity, invalid, picker, storage, and
   unavailable selection outcomes.
+- **Class completeness:** correcting the first finding surfaced a second
+  instance the review had not reported. The generic `catch` around the
+  authorization request mapped any non-`FamilyControlsError` to the same
+  compile-time `unavailable` outcome and was corrected the same way. The two
+  remaining producers of that outcome are inside the capability guard and are
+  correct.
 - **Recommended and Optional findings** were recorded and not actioned; they do
   not expand scope automatically.
+- **Re-review:** `approved`. The independent reviewer confirmed each fix, the
+  closure of all three classes, the out-of-scope call on a pre-existing
+  `DESIGN.md` string, and that the added tests assert real structural
+  equality. No new or still-open Critical or Required findings.
 
 ## Blockers and accepted risks
 
