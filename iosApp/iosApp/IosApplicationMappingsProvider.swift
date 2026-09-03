@@ -49,6 +49,56 @@ final class ApplicationMappingsObservation: IosApplicationMappingsObservation {
     }
 }
 
+final class ApplicationMappingsChooseSession {
+    private var generation: UInt64 = 0
+    private var completion: ((IosApplicationMappingsResponse) -> Void)?
+
+    var isActive: Bool {
+        completion != nil
+    }
+
+    func begin(_ completion: @escaping (IosApplicationMappingsResponse) -> Void) -> UInt64 {
+        generation += 1
+        self.completion = completion
+        return generation
+    }
+
+    func isCurrent(_ generation: UInt64) -> Bool {
+        generation == self.generation && completion != nil
+    }
+
+    @discardableResult
+    func complete(_ generation: UInt64, with response: IosApplicationMappingsResponse) -> Bool {
+        guard isCurrent(generation), let completion else {
+            return false
+        }
+        self.completion = nil
+        completion(response)
+        return true
+    }
+}
+
+enum ApplicationMappingsPresentationGate {
+    static func canPresent(from presenter: UIViewController) -> Bool {
+        presenter.presentedViewController == nil && presenter.view.window != nil
+    }
+
+    static func present(
+        _ controller: UIViewController,
+        from presenter: UIViewController,
+        animated: Bool = true,
+        completion: @escaping (Bool) -> Void
+    ) {
+        guard canPresent(from: presenter) else {
+            completion(false)
+            return
+        }
+        presenter.present(controller, animated: animated) {
+            completion(presenter.presentedViewController === controller)
+        }
+    }
+}
+
 struct StoredApplicationMapping: Codable, Equatable {
     let token: Data
 }
@@ -146,8 +196,9 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
     weak var presenter: UIViewController?
 
     private let storeFactory: () throws -> ApplicationMappingsStore
+    private let chooseSession = ApplicationMappingsChooseSession()
     private var pickerController: UIViewController?
-    private var chooseCompletion: ((IosApplicationMappingsResponse) -> Void)?
+    private var pickerGeneration: UInt64 = 0
 
     init(
         storeFactory: @escaping () throws -> ApplicationMappingsStore = { try ApplicationMappingsStore.live() }
@@ -220,46 +271,56 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
 #if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
         completion(response(outcome: .unavailable, access: .unavailable))
 #else
-        guard pickerController == nil, chooseCompletion == nil else {
+        guard pickerController == nil, !chooseSession.isActive else {
             completion(response(outcome: .pickerFailure))
             return
         }
-        chooseCompletion = completion
+        let generation = chooseSession.begin(completion)
         operation.install { [weak self] in
-            self?.performOnMain {
-                self?.completeChoose(with: self?.response(outcome: .cancelled), dismissPicker: true)
+            guard let self else { return }
+            self.performOnMain {
+                self.completeChoose(
+                    generation,
+                    with: self.response(outcome: .cancelled),
+                    dismissPicker: true
+                )
             }
         }
-        guard chooseCompletion != nil else { return }
-        let continueWithPicker = {
-            guard self.chooseCompletion != nil else { return }
-            guard self.isAuthorizationApproved else {
-                self.completeChoose(with: self.loadResponse(outcome: .accessChanged, access: self.currentAccess()))
-                return
-            }
-            self.presentPicker()
-        }
+        guard chooseSession.isCurrent(generation) else { return }
         if AuthorizationCenter.shared.authorizationStatus == .notDetermined {
             Task { @MainActor in
                 do {
                     try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-                    continueWithPicker()
+                    self.continueWithPicker(generation: generation)
                 } catch let error as FamilyControlsError {
-                    self.completeChoose(with: self.authorizationFailureResponse(error))
+                    self.completeChoose(generation, with: self.authorizationFailureResponse(error))
                 } catch {
-                    self.completeChoose(with: self.response(outcome: .pickerFailure))
+                    self.completeChoose(generation, with: self.response(outcome: .pickerFailure))
                 }
             }
         } else {
-            continueWithPicker()
+            continueWithPicker(generation: generation)
         }
 #endif
     }
 
-    private func presentPicker() {
-        guard chooseCompletion != nil else { return }
+    private func continueWithPicker(generation: UInt64) {
+        guard chooseSession.isCurrent(generation) else { return }
+        guard isAuthorizationApproved else {
+            completeChoose(generation, with: loadResponse(outcome: .accessChanged, access: currentAccess()))
+            return
+        }
+        presentPicker(generation: generation)
+    }
+
+    private func presentPicker(generation: UInt64) {
+        guard chooseSession.isCurrent(generation) else { return }
         guard let presenter else {
-            completeChoose(with: response(outcome: .pickerFailure))
+            completeChoose(generation, with: response(outcome: .pickerFailure))
+            return
+        }
+        guard ApplicationMappingsPresentationGate.canPresent(from: presenter) else {
+            completeChoose(generation, with: response(outcome: .pickerFailure))
             return
         }
         let initialTokens: Set<ApplicationToken>
@@ -269,10 +330,10 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
                 try JSONDecoder().decode(ApplicationToken.self, from: mapping.token)
             })
         } catch ApplicationMappingsStoreError.corruption {
-            completeChoose(with: response(outcome: .corruption))
+            completeChoose(generation, with: response(outcome: .corruption))
             return
         } catch {
-            completeChoose(with: response(outcome: .storageFailure))
+            completeChoose(generation, with: response(outcome: .storageFailure))
             return
         }
         let controller = UIHostingController(
@@ -285,22 +346,33 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         )
         controller.modalPresentationStyle = .formSheet
         pickerController = controller
+        pickerGeneration = generation
         controller.presentationController?.delegate = self
-        presenter.present(controller, animated: true)
+        ApplicationMappingsPresentationGate.present(controller, from: presenter) { [weak self] presented in
+            guard let self else { return }
+            self.performOnMain {
+                guard self.chooseSession.isCurrent(generation) else { return }
+                if !presented {
+                    self.completeChoose(generation, with: self.response(outcome: .pickerFailure))
+                }
+            }
+        }
     }
 
     private func finishPicker(result: ApplicationPickerResult) {
-        guard chooseCompletion != nil else { return }
+        let generation = pickerGeneration
+        guard chooseSession.isCurrent(generation) else { return }
         if case .invalidSelection = result {
-            completeChoose(with: response(outcome: .invalidSelection), dismissPicker: true)
+            completeChoose(generation, with: response(outcome: .invalidSelection), dismissPicker: true)
             return
         }
         guard case let .selected(tokens) = result else {
-            completeChoose(with: response(outcome: .cancelled), dismissPicker: true)
+            completeChoose(generation, with: response(outcome: .cancelled), dismissPicker: true)
             return
         }
         guard isAuthorizationApproved else {
             completeChoose(
+                generation,
                 with: loadResponse(outcome: .accessChanged, access: currentAccess()),
                 dismissPicker: true
             )
@@ -311,13 +383,13 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             let current = try store.load()
             let updated = try reconcile(tokens: tokens, into: current)
             try store.save(updated)
-            completeChoose(with: response(outcome: .success, mappings: updated), dismissPicker: true)
+            completeChoose(generation, with: response(outcome: .success, mappings: updated), dismissPicker: true)
         } catch ApplicationMappingsStoreError.corruption {
-            completeChoose(with: response(outcome: .corruption), dismissPicker: true)
+            completeChoose(generation, with: response(outcome: .corruption), dismissPicker: true)
         } catch ApplicationMappingsProviderError.capacity {
-            completeChoose(with: response(outcome: .capacity), dismissPicker: true)
+            completeChoose(generation, with: response(outcome: .capacity), dismissPicker: true)
         } catch {
-            completeChoose(with: response(outcome: .storageFailure), dismissPicker: true)
+            completeChoose(generation, with: response(outcome: .storageFailure), dismissPicker: true)
         }
     }
 
@@ -414,17 +486,21 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
     }
 
     private func completeChoose(
-        with response: IosApplicationMappingsResponse?,
+        _ generation: UInt64,
+        with response: IosApplicationMappingsResponse,
         dismissPicker: Bool = false
     ) {
-        guard let response, let completion = chooseCompletion else { return }
-        chooseCompletion = nil
+        guard chooseSession.isCurrent(generation) else { return }
         let controller = pickerController
-        pickerController = nil
-        if dismissPicker {
+        let ownsPicker = pickerGeneration == generation
+        if ownsPicker {
+            pickerController = nil
+            pickerGeneration = 0
+        }
+        chooseSession.complete(generation, with: response)
+        if dismissPicker && ownsPicker {
             controller?.dismiss(animated: true)
         }
-        completion(response)
     }
 
     private func response(
@@ -476,7 +552,8 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
 
 extension IosFamilyControlsApplicationMappingsProvider: UIAdaptivePresentationControllerDelegate {
     func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
-        completeChoose(with: response(outcome: .cancelled))
+        guard presentationController.presentedViewController === pickerController else { return }
+        completeChoose(pickerGeneration, with: response(outcome: .cancelled))
     }
 }
 

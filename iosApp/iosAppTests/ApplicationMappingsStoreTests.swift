@@ -1,4 +1,6 @@
 import Foundation
+import PosatoShared
+import UIKit
 import XCTest
 @testable import Posato
 
@@ -125,6 +127,106 @@ final class ApplicationMappingsStoreTests: XCTestCase {
         operation.cancel()
 
         XCTAssertEqual(cancellations, 1)
+    }
+
+    func testChooseSessionIgnoresStaleCompletionAfterALaterBegin() {
+        let session = ApplicationMappingsChooseSession()
+        var first: IosApplicationMappingsOutcome?
+        var second: IosApplicationMappingsOutcome?
+        let firstGeneration = session.begin { first = $0.outcome }
+        let secondGeneration = session.begin { second = $0.outcome }
+
+        XCTAssertFalse(session.complete(firstGeneration, with: sessionResponse(.cancelled)))
+        XCTAssertNil(first)
+        XCTAssertTrue(session.complete(secondGeneration, with: sessionResponse(.pickerFailure)))
+        XCTAssertEqual(second, .pickerFailure)
+        XCTAssertFalse(session.isActive)
+    }
+
+    func testChooseSessionCancelDoesNotCompleteALaterRequest() {
+        let session = ApplicationMappingsChooseSession()
+        var first: IosApplicationMappingsOutcome?
+        var second: IosApplicationMappingsOutcome?
+        let firstGeneration = session.begin { first = $0.outcome }
+
+        XCTAssertTrue(session.complete(firstGeneration, with: sessionResponse(.cancelled)))
+        XCTAssertEqual(first, .cancelled)
+
+        let secondGeneration = session.begin { second = $0.outcome }
+        XCTAssertFalse(session.complete(firstGeneration, with: sessionResponse(.pickerFailure)))
+        XCTAssertNil(second)
+        XCTAssertTrue(session.isCurrent(secondGeneration))
+    }
+
+    func testPresentationGateFailsClosedWhenAlreadyPresentingOrOffWindow() {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 320, height: 480))
+        let presenter = UIViewController()
+        window.rootViewController = presenter
+        window.makeKeyAndVisible()
+        _ = presenter.view
+
+        XCTAssertTrue(ApplicationMappingsPresentationGate.canPresent(from: presenter))
+
+        let first = UIViewController()
+        let presented = expectation(description: "presented")
+        ApplicationMappingsPresentationGate.present(first, from: presenter, animated: false) { success in
+            XCTAssertTrue(success)
+            presented.fulfill()
+        }
+        wait(for: [presented], timeout: 1)
+        XCTAssertFalse(ApplicationMappingsPresentationGate.canPresent(from: presenter))
+
+        let second = UIViewController()
+        var stacked = true
+        ApplicationMappingsPresentationGate.present(second, from: presenter, animated: false) { success in
+            stacked = success
+        }
+        XCTAssertFalse(stacked)
+        XCTAssertTrue(presenter.presentedViewController === first)
+
+        let detached = UIViewController()
+        _ = detached.view
+        XCTAssertFalse(ApplicationMappingsPresentationGate.canPresent(from: detached))
+        var completed = false
+        ApplicationMappingsPresentationGate.present(UIViewController(), from: detached, animated: false) { success in
+            XCTAssertFalse(success)
+            completed = true
+        }
+        XCTAssertTrue(completed)
+    }
+
+    func testSavingEmptyMappingsRecoversCorruptFile() throws {
+        let fileURL = directory.appendingPathComponent("mappings.json")
+        try Data("not-json".utf8).write(to: fileURL)
+        let store = ApplicationMappingsStore(fileURL: fileURL)
+
+        assertCorruption { try store.load() }
+        try store.save([])
+        XCTAssertEqual(try store.load(), [])
+    }
+
+    func testProviderClearRecoversCorruptStore() throws {
+        let fileURL = directory.appendingPathComponent("mappings.json")
+        try Data("not-json".utf8).write(to: fileURL)
+        let store = ApplicationMappingsStore(fileURL: fileURL)
+        let provider = IosFamilyControlsApplicationMappingsProvider(storeFactory: { store })
+
+        var loadOutcome: IosApplicationMappingsOutcome?
+        provider.load { loadOutcome = $0.outcome }
+        XCTAssertEqual(loadOutcome, .corruption)
+
+        var clearOutcome: IosApplicationMappingsOutcome?
+        provider.clear { clearOutcome = $0.outcome }
+        XCTAssertEqual(clearOutcome, .success)
+
+        var recovered: IosApplicationMappingsResponse?
+        provider.load { recovered = $0 }
+        XCTAssertNotEqual(recovered?.outcome, .corruption)
+        XCTAssertEqual(recovered?.mappings.count, 0)
+    }
+
+    private func sessionResponse(_ outcome: IosApplicationMappingsOutcome) -> IosApplicationMappingsResponse {
+        return IosApplicationMappingsResponse(outcome: outcome, access: .unavailable, mappings: [])
     }
 
     private func assertCorruption(_ action: () throws -> Any) {

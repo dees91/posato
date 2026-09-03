@@ -59,7 +59,13 @@ internal fun ApplicationMappingsSection(
             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
         } else {
             state.applicationMappingFailure?.let { failure ->
-                ApplicationMappingFailureNotice(failure, onRetry, Modifier.fillMaxWidth())
+                ApplicationMappingFailureNotice(
+                    failure = failure,
+                    onRetry = onRetry,
+                    onClear = onClear,
+                    canClear = state.canClearApplicationMappings(),
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
             if (state.hasApplicationMappingLoadFailure) {
                 return@Column
@@ -241,6 +247,8 @@ private fun TargetsUiState.canPresentApplicationSelectionAction(): Boolean {
 private fun ApplicationMappingFailureNotice(
     failure: ApplicationMappingFailure,
     onRetry: () -> Unit,
+    onClear: () -> Unit,
+    canClear: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Surface(modifier, color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f), shape = MaterialTheme.shapes.medium) {
@@ -249,6 +257,13 @@ private fun ApplicationMappingFailureNotice(
             Text(stringResource(failure.applicationMappingMessage()))
             if (failure == ApplicationMappingFailure.LOAD_FAILED || failure == ApplicationMappingFailure.CORRUPTED_MAPPINGS) {
                 TextButton(onClick = onRetry) { Text(stringResource(Res.string.action_retry)) }
+            }
+            if (failure == ApplicationMappingFailure.CORRUPTED_MAPPINGS) {
+                TextButton(
+                    onClick = onClear,
+                    enabled = canClear,
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+                ) { Text(stringResource(Res.string.action_clear_applications)) }
             }
         }
     }

@@ -77,6 +77,12 @@ internal fun TargetsUiState.canRemoveApplicationMapping(mappingId: LocalApplicat
 }
 
 internal fun TargetsUiState.canClearApplicationMappings(): Boolean {
+    if (!hasLoadedApplicationMappings || isApplicationMappingLoading || isMutatingApplicationMappings) {
+        return false
+    }
+    if (applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS) {
+        return true
+    }
     return canMutateApplicationMappings() && applicationMappings.isNotEmpty()
 }
 

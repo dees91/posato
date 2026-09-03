@@ -97,19 +97,42 @@ internal fun TargetsViewModel.removeApplicationMapping(mappingId: LocalApplicati
 }
 
 internal fun TargetsViewModel.clearApplicationMappings() {
+    val clearingCorruption = currentState.applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS
     if (!currentState.canClearApplicationMappings()) {
         return
     }
     applicationMappingsState.update { state ->
-        state.copy(failure = null, mutation = ApplicationMappingMutation.CLEAR)
+        if (clearingCorruption) {
+            state.copy(mutation = ApplicationMappingMutation.CLEAR)
+        } else {
+            state.copy(failure = null, mutation = ApplicationMappingMutation.CLEAR)
+        }
     }
     viewModelScope.launch {
         try {
-            applyApplicationRemovalResult(applicationMappings.clear())
+            val result = applicationMappings.clear()
+            if (clearingCorruption && result is LocalApplicationRemovalResult.Failure) {
+                applicationMappingsState.update { state ->
+                    state.copy(failure = ApplicationMappingFailure.CORRUPTED_MAPPINGS)
+                }
+            } else {
+                applyApplicationRemovalResult(result)
+                if (clearingCorruption && result is LocalApplicationRemovalResult.Success) {
+                    applicationMappingRefreshRequests.tryEmit(Unit)
+                }
+            }
         } catch (cancellationException: CancellationException) {
             throw cancellationException
         } catch (_: Exception) {
-            applicationMappingsState.update { state -> state.copy(failure = ApplicationMappingFailure.SAVE_FAILED) }
+            applicationMappingsState.update { state ->
+                state.copy(
+                    failure = if (clearingCorruption) {
+                        ApplicationMappingFailure.CORRUPTED_MAPPINGS
+                    } else {
+                        ApplicationMappingFailure.SAVE_FAILED
+                    },
+                )
+            }
         } finally {
             applicationMappingsState.update { state -> state.copy(mutation = null) }
         }
