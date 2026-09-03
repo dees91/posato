@@ -209,6 +209,7 @@ class BootstrapCoordinatorTest {
 
         assertIs<BootstrapResult.Ready>(result)
         assertEquals(1, harness.cloud.zoneSaveCalls)
+        assertEquals(2, harness.cloud.zoneFetchCalls)
         assertEquals(1, harness.cloud.anchorCreateCalls)
     }
 
@@ -249,15 +250,18 @@ class BootstrapCoordinatorTest {
     }
 
     @Test
-    fun `given a zone-save conflict when bootstrapping then action is required`() = runTest {
+    fun `given an unconfirmed duplicate zone save when bootstrapping then retry follows without anchor access`() = runTest {
         val harness = BootstrapHarness()
-        harness.cloud.scriptZoneFetch(ZoneFetchResult.Missing)
-        harness.cloud.scriptZoneSave(ZoneSaveResult.Conflict)
+        harness.cloud.scriptZoneFetch(ZoneFetchResult.Missing, ZoneFetchResult.Missing)
+        harness.cloud.scriptZoneSave(ZoneSaveResult.AlreadyExists)
 
         val result = harness.coordinator.bootstrap()
 
-        assertEquals(BootstrapResult.ActionRequired, result)
+        assertEquals(BootstrapResult.Retryable, result)
         assertEquals(0, harness.cloud.anchorReadCalls)
+        assertEquals(0, harness.cloud.anchorCreateCalls)
+        assertEquals(0, harness.keys.createCalls)
+        assertIs<BootstrapState.None>(harness.store.state)
     }
 
     @Test

@@ -54,6 +54,12 @@
   sync_bootstrap_state` lines in the v1/v2 simulations of
   `LocalExactDomainPolicyStoreContractTest` (same precedent as `SYNC-002`;
   `TARGETS-005` files untouched, verified against its worktree).
+- Advisory correction in the open PR (scope explicitly accepted by the
+  maintainer, 2026-09-03): removed the dead `ZoneSaveResult.Conflict`
+  variant (a zone-save duplicate is reconciled by the exact fetch, like
+  `AlreadyExists`) and enforced strict 8-4-4-4-12 account text with
+  rejection vectors, including the extra-dash case only a position check
+  catches.
 
 ## Completed-change review
 
@@ -79,6 +85,7 @@
 | verify-posato simulator regression | pass | run `20260903-203129-42ad`: launch, add/remove website scenarios, DB side-effect and restoration, `sync_bootstrap_state` on device |
 | Independent plan review | Approve | maintainer verdict in chat before implementation |
 | Independent completed-change review | Approve after corrections | R1 and R2 resolved and covered by tests |
+| Advisory correction review (Standard) | Approve | independent Claude Code re-review of the correction diff; `./gradlew quality` rerun green on JVM + iOS Simulator |
 
 ## Blockers and accepted risks
 
@@ -86,9 +93,9 @@
   `./gradlew quality` after the last correction is the merge gate.
 - Physical CloudKit and Keychain behavior is not claimed here; it belongs to
   `SYNC-005` through `SYNC-009`.
-- Advisory review findings (zone-conflict mapping, strict segment lengths,
-  record bookkeeping, minor style nits) intentionally left unchanged pending
-  explicit maintainer acceptance.
+- Remaining advisory findings (minor style nits, nullable gates instead of
+  a `Continue` variant, the unreachable `Stop(Ready)` branch) intentionally
+  left unchanged; not accepted into scope.
 
 ## Final
 

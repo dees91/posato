@@ -164,8 +164,6 @@ internal sealed interface ZoneSaveResult {
 
     data object AlreadyExists : ZoneSaveResult
 
-    data object Conflict : ZoneSaveResult
-
     data object Retryable : ZoneSaveResult
 
     data object AccountChanged : ZoneSaveResult
