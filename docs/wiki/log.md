@@ -1027,3 +1027,16 @@
   authorization request driving a later picker, a refused presentation
   stranding the selection and holding the adapter mutex, a corrupted store
   that no in-app action can clear, and unavailability stated in build terms.
+
+## [2026-09-03] implementation | SYNC-004 one-workspace bootstrap
+
+- Implemented the ADR 0007 ten-step bootstrap protocol with
+  deterministic fake ports, a `3.sqm` singleton table, and a
+  37-test coordinator contract matrix covering the full evidence
+  list.
+- Independent completed-change review required two corrections,
+  both applied: the established path re-reads its anchor, and
+  AC-02 is demonstrated by two coordinators over one shared fake
+  provider. `./gradlew quality` passes on JVM and iOS Simulator;
+  a verify-posato simulator pass confirmed the app still launches
+  and website add/remove works with the new migration.

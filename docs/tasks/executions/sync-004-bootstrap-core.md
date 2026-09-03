@@ -3,9 +3,11 @@
 - **Brief:** [Implement the one-workspace bootstrap coordinator](../specifications/sync-004-bootstrap-core.md)
 - **Status:** `active`
 - **Review tier:** `high-risk`
-- **Implementer:** pending
-- **Reviewer:** pending until assigned
+- **Implementer:** Muse Code session `simple-musca` (2026-09-03)
+- **Reviewer:** plan review — project maintainer (in chat); completed-change
+  review — independent Claude Code reviewer
 - **Branch:** `feature/sync-004-bootstrap-core`
+- **Worktree:** `~/Projects/Polyglot/posato-sync-004`
 - **Updated:** 2026-09-03
 
 ## Plan
@@ -32,25 +34,51 @@
 
 ## High-risk plan review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `Approve` (maintainer, in chat, 2026-09-03)
+- **Critical or Required findings:** none; two open questions resolved —
+  removal stays with `SYNC-009`, plan review done by the maintainer in chat.
+- **Resolution:** proceeded to implementation unchanged.
 
 ## Result
 
-- pending
+- New `shared/.../feature/sync/bootstrap/` package: ports and sealed provider
+  outcomes, UUID/CRC-32/item-codec encoding, a Mutex-serialized coordinator
+  split into zone, candidate, anchor, and key-read phases, and an atomic
+  SQLDelight store over a new `3.sqm` singleton table. The key is generated in
+  memory, never persisted, and cleared after use.
+- Deterministic fakes and a 37-test coordinator contract matrix (55 tests in
+  the bootstrap package) covering the ADR 0007 evidence list, plus encoding
+  vectors, an enumerated redaction test, and real-database migration,
+  atomicity, corruption, and replica-coexistence tests.
+- One deviation from the exclusive write surface: two `DROP TABLE
+  sync_bootstrap_state` lines in the v1/v2 simulations of
+  `LocalExactDomainPolicyStoreContractTest` (same precedent as `SYNC-002`;
+  `TARGETS-005` files untouched, verified against its worktree).
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `Approve` (approved after corrections; independent Claude Code
+  reviewer, 2026-09-03).
+- **Required findings:** R1 — the established path returned `Ready` from the
+  stored context without re-reading the anchor (false ready after a remote
+  workspace replacement); R2 — AC-02 lacked a two-coordinator demonstration
+  (both races used one coordinator with scripted state).
+- **Resolution:** R1 — `establishedAttempt` re-reads the exact anchor after
+  the zone check; equal ids return `Ready`, missing or different ids return
+  action-required (2 new tests). R2 — sequential-join and interleaved-race
+  tests with two coordinator instances over one shared fake cloud/key
+  provider, including loser-only cleanup and a single surviving anchor.
+  Recommended and Optional findings deferred as advisory; no scope change.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| pending | pending | pending |
+| `./gradlew quality` after last correction | pass | ktlint, Detekt, JVM + iOS Simulator suites, macOS packaging |
+| `git diff --check`, suppression and private-data scans | clean | no whitespace errors, no `Suppress` token in new sources |
+| verify-posato simulator regression | pass | run `20260903-203129-42ad`: launch, add/remove website scenarios, DB side-effect and restoration, `sync_bootstrap_state` on device |
+| Independent plan review | Approve | maintainer verdict in chat before implementation |
+| Independent completed-change review | Approve after corrections | R1 and R2 resolved and covered by tests |
 
 ## Blockers and accepted risks
 
@@ -58,8 +86,12 @@
   `./gradlew quality` after the last correction is the merge gate.
 - Physical CloudKit and Keychain behavior is not claimed here; it belongs to
   `SYNC-005` through `SYNC-009`.
+- Advisory review findings (zone-conflict mapping, strict segment lengths,
+  record bookkeeping, minor style nits) intentionally left unchanged pending
+  explicit maintainer acceptance.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** all acceptance criteria met; reviews complete; verification
+  green after the last correction.
