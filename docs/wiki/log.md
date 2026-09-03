@@ -988,6 +988,20 @@
 - Recorded that Compose Desktop exposes controls through macOS accessibility
   without `testTag`, while iOS maps `testTag` to the accessibility identifier.
 
+## [2026-09-02] implementation | Add device-local iOS application mappings
+
+- Added a fresh Family Controls picker boundary, live authorization state,
+  bounded app-private token persistence, an aggregate shared mapping count, and
+  simulator-safe unavailable behavior without copying feasibility code.
+- Verified save, cancel, clear, restart, authorization revocation and recovery,
+  and reinstall lifecycle behavior on a development-signed physical iPhone;
+  kept the Device Activity App Group migration explicit for its named task.
+- Recorded that losing Screen Time access while the picker is open is an access
+  change, not a failure: the selection is retained and the action becomes
+  `Allow and review applications`. The Screen Time consent alert and the picker
+  list stay outside the driver's accessibility tree, so granting access,
+  selecting applications, and revoking access remain maintainer steps.
+
 ## [2026-09-03] tooling | Add the verify-posato skill
 
 - Added the project-local `verify-posato` skill under `.agents/skills/` with a

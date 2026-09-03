@@ -22,8 +22,8 @@ sync while the chosen applications stay on the device.
   `Application group name` field (placeholder `Social feeds`), the note `The
   group name may sync. App choices stay on this device.`, and `Add group`.
 - With a group the section shows one row with the name, the note `Apps still
-  need to be chosen on this device.` (until applications are chosen on a Mac),
-  and `Edit` and `Remove`.
+  need to be chosen on this device.` (until applications are chosen on that
+  Mac or iPhone), and `Edit` and `Remove`.
 - Press Return in the field or tap `Add group` to submit.
 
 ## Driving it with posato-control

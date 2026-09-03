@@ -3,6 +3,7 @@ package app.posato.feature.targets.ui
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingId
+import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import kotlinx.collections.immutable.persistentListOf
 
 internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<TargetsScreenPreviewDataProvider.TargetsPreviewState> {
@@ -13,6 +14,14 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
                 checkNotNull(LocalApplicationMappingId.restore("01".repeat(32))),
                 "Browser",
             ),
+        ),
+    )
+    private val opaqueMappings = persistentListOf(
+        LocalApplicationMapping.restoreOpaque(
+            checkNotNull(LocalApplicationMappingId.restore("02".repeat(32))),
+        ),
+        LocalApplicationMapping.restoreOpaque(
+            checkNotNull(LocalApplicationMappingId.restore("03".repeat(32))),
         ),
     )
 
@@ -47,8 +56,40 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
             mappingState(applicationPolicyName = "Social feeds"),
         ),
         TargetsPreviewState(
-            "Mapped application",
-            mappingState(applicationPolicyName = "Social feeds", applicationMappings = mappings),
+            "Mapped iOS applications",
+            mappingState(applicationPolicyName = "Social feeds", applicationMappings = opaqueMappings),
+        ),
+        TargetsPreviewState(
+            "Authorization required with retained mapping",
+            mappingState(
+                applicationPolicyName = "Social feeds",
+                applicationMappings = mappings,
+                access = LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED,
+            ),
+        ),
+        TargetsPreviewState(
+            "Authorization denied with retained mapping",
+            mappingState(
+                applicationPolicyName = "Social feeds",
+                applicationMappings = mappings,
+                access = LocalApplicationMappingsAccess.AUTHORIZATION_DENIED,
+            ),
+        ),
+        TargetsPreviewState(
+            "Authorization restricted with retained mapping",
+            mappingState(
+                applicationPolicyName = "Social feeds",
+                applicationMappings = mappings,
+                access = LocalApplicationMappingsAccess.RESTRICTED,
+            ),
+        ),
+        TargetsPreviewState(
+            "Application selection unavailable with retained mapping",
+            mappingState(
+                applicationPolicyName = "Social feeds",
+                applicationMappings = mappings,
+                isAvailable = false,
+            ),
         ),
         TargetsPreviewState(
             "Choosing applications",
@@ -185,6 +226,8 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
         applicationMappings: kotlinx.collections.immutable.PersistentList<LocalApplicationMapping> = persistentListOf(),
         applicationMappingMutation: ApplicationMappingMutation? = null,
         applicationMappingFailure: ApplicationMappingFailure? = null,
+        access: LocalApplicationMappingsAccess = LocalApplicationMappingsAccess.READY,
+        isAvailable: Boolean = true,
     ): TargetsUiState {
         return TargetsUiState(
             applicationPolicyName = applicationPolicyName,
@@ -193,7 +236,8 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
             applicationMappingFailure = applicationMappingFailure,
             isApplicationMappingLoading = false,
             hasLoadedApplicationMappings = true,
-            isApplicationMappingAvailable = true,
+            isApplicationMappingAvailable = isAvailable,
+            applicationMappingsAccess = if (isAvailable) access else null,
             isLoading = false,
             hasLoaded = true,
         )

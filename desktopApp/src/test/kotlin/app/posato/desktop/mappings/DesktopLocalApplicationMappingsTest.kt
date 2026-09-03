@@ -3,6 +3,7 @@ package app.posato.desktop.mappings
 import app.posato.desktop.macos.MacOsApplicationPicker
 import app.posato.desktop.macos.MacOsApplicationPickerResult
 import app.posato.desktop.macos.SelectedMacOsApplication
+import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.data.LocalApplicationRemovalResult
@@ -25,7 +26,10 @@ class DesktopLocalApplicationMappingsTest {
     fun `selection persists across reopen and removal is durable`() {
         withStore(MacOsApplicationPickerResult.Success(listOf(application("Browser", 1)))) { store, path ->
             val selected = assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications() })
-            assertEquals(listOf("Browser"), selected.snapshot.mappings.map { mapping -> mapping.displayName })
+            assertEquals(
+                listOf("Browser"),
+                selected.snapshot.mappings.map { mapping -> (mapping.display as LocalApplicationMappingDisplay.Named).value },
+            )
             val id = selected.snapshot.mappings.single().id
             store.close()
 
