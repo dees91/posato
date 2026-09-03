@@ -36,6 +36,16 @@ class MainTest {
         assertEquals(2, exitCode)
         val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
         assertEquals("USAGE", envelope.error?.code)
+        assertTrue(envelope.error?.message.orEmpty().contains("--text-input"), envelope.error?.message)
+        assertTrue(envelope.error?.message.orEmpty().lowercase().contains("missing"), envelope.error?.message)
+    }
+
+    @Test
+    fun `an unknown option names the option in the envelope`() {
+        val (exitCode, output) = capture("--bogus")
+        assertEquals(2, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertTrue(envelope.error?.message.orEmpty().contains("--bogus"), envelope.error?.message)
     }
 
     @Test

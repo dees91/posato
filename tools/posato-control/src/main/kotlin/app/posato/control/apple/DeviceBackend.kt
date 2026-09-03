@@ -216,11 +216,11 @@ class DeviceLifecycle(
         TrackedProcess.terminate(tracked?.consolePid, tracked?.consoleStartedAt)
         val udid = tracked?.udid
         val pid = tracked?.pid
-        if (udid != null && pid != null && session.devicectl.isRunning(udid, pid)) {
+        if (udid != null && pid != null) {
             try {
-                session.devicectl.terminate(udid, pid)
+                if (session.devicectl.isRunning(udid, pid)) session.devicectl.terminate(udid, pid)
             } catch (exception: ControlException) {
-                context.log("The device process $pid was already gone: ${exception.message}")
+                context.log("The recorded device process $pid could not be reached: ${exception.message}")
             }
         }
         stateStore.update(Target.DEVICE, null)
@@ -230,8 +230,9 @@ class DeviceLifecycle(
     override fun status(): StatusResult {
         val udid = session.udid()
         val tracked = stateStore.load().device
-        val consoleAlive = TrackedProcess.isAlive(tracked?.consolePid, tracked?.consoleStartedAt)
-        val processAlive = tracked?.pid?.takeIf { tracked.udid == udid }?.let { session.devicectl.isRunning(udid, it) } ?: false
+        val sameDevice = tracked != null && tracked.udid == udid
+        val consoleAlive = sameDevice && TrackedProcess.isAlive(tracked.consolePid, tracked.consoleStartedAt)
+        val processAlive = sameDevice && tracked.pid?.let { session.devicectl.isRunning(udid, it) } == true
         return StatusResult(
             installed = session.isInstalled(udid),
             running = processAlive || consoleAlive,

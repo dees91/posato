@@ -36,6 +36,7 @@ import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.output.ParameterFormatter
 import kotlin.system.exitProcess
 
 private const val EXIT_USAGE = 2
@@ -89,7 +90,9 @@ fun run(args: Array<String>): Int {
 }
 
 private fun emitUsageError(error: UsageError) {
-    val message = listOfNotNull(error.paramName?.let { "Invalid usage of $it" }, error.message).joinToString(": ").ifEmpty { "Invalid usage." }
+    val message = error.context?.let { context -> error.formatMessage(context.localization, ParameterFormatter.Plain) }
+        ?: error.message
+        ?: "Invalid usage."
     val envelope = Envelope(
         ok = false,
         command = "posato-control",
