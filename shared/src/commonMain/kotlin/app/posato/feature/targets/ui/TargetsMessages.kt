@@ -7,6 +7,7 @@ import app.posato.generated.resources.application_entry_error_too_long
 import app.posato.generated.resources.application_group_description
 import app.posato.generated.resources.application_mapping_capacity
 import app.posato.generated.resources.application_mapping_corruption
+import app.posato.generated.resources.application_mapping_corruption_clear_failed
 import app.posato.generated.resources.application_mapping_invalid
 import app.posato.generated.resources.application_mapping_load_failed
 import app.posato.generated.resources.application_mapping_picker_failed
@@ -62,6 +63,7 @@ internal fun ApplicationMappingFailure.applicationMappingMessage(): StringResour
     return when (this) {
         ApplicationMappingFailure.LOAD_FAILED -> Res.string.application_mapping_load_failed
         ApplicationMappingFailure.CORRUPTED_MAPPINGS -> Res.string.application_mapping_corruption
+        ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED -> Res.string.application_mapping_corruption_clear_failed
         ApplicationMappingFailure.PICKER_FAILED -> Res.string.application_mapping_picker_failed
         ApplicationMappingFailure.SAVE_FAILED -> Res.string.application_mapping_save_failed
         ApplicationMappingFailure.SELF_SELECTION -> Res.string.application_mapping_self

@@ -18,6 +18,7 @@ internal enum class TargetMutation { DOMAIN, APPLICATION_POLICY }
 internal enum class ApplicationMappingFailure {
     LOAD_FAILED,
     CORRUPTED_MAPPINGS,
+    CORRUPTED_CLEAR_FAILED,
     PICKER_FAILED,
     SAVE_FAILED,
     SELF_SELECTION,
@@ -58,7 +59,8 @@ internal data class TargetsUiState(
 
     val hasApplicationMappingLoadFailure: Boolean
         get() = applicationMappingFailure == ApplicationMappingFailure.LOAD_FAILED ||
-            applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS
+            applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS ||
+            applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED
 
     override fun toString(): String {
         return "TargetsUiState(redacted)"
@@ -77,6 +79,14 @@ internal fun TargetsUiState.canRemoveApplicationMapping(mappingId: LocalApplicat
 }
 
 internal fun TargetsUiState.canClearApplicationMappings(): Boolean {
+    if (!hasLoadedApplicationMappings || isApplicationMappingLoading || isMutatingApplicationMappings) {
+        return false
+    }
+    if (applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS ||
+        applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED
+    ) {
+        return true
+    }
     return canMutateApplicationMappings() && applicationMappings.isNotEmpty()
 }
 
