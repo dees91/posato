@@ -354,7 +354,7 @@ final class ScenarioExecutor {
     guard let query else {
       throw DriverError(.scenarioInvalid, "\(action) requires a query")
     }
-    try validateRole(query.role)
+    try validateRoles(query)
     var element = resolve(query, action: action)
     var reveals = 0
     let found = poll(timeout: timeout) {
@@ -453,6 +453,14 @@ final class ScenarioExecutor {
   /// closest control below or above a header.
   private static func distance(_ a: CGRect, _ b: CGRect) -> CGFloat {
     abs(a.midY - b.midY) * Self.rowWeight + abs(a.midX - b.midX)
+  }
+
+  /// Validates the role of `query` and of its nested `near` and `within` queries up front, so a
+  /// typo fails immediately instead of polling to the timeout.
+  private func validateRoles(_ query: ElementQuery) throws {
+    try validateRole(query.role)
+    if let near = query.near { try validateRoles(near) }
+    if let within = query.within { try validateRoles(within) }
   }
 
   private func validateRole(_ role: String?) throws {
