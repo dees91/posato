@@ -27,11 +27,17 @@ class RunContext(
 
     val subprocess: Subprocess = Subprocess(::log, timeout)
 
+    private val secrets: List<String> = ConfigurationKey.entries.mapNotNull { key -> configuration.value(key) }.filter {
+        it.length >=
+            MIN_SECRET_LENGTH
+    }
+
     fun log(line: String) {
-        if (verbose) System.err.println(line)
+        val redacted = secrets.fold(line) { current, secret -> current.replace(secret, "<redacted>") }
+        if (verbose) System.err.println(redacted)
         try {
             Files.createDirectories(transcriptFile.parent)
-            Files.writeString(transcriptFile, "[$runId] $line\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND)
+            Files.writeString(transcriptFile, "[$runId] $redacted\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND)
         } catch (_: IOException) {
             // The transcript is best-effort evidence; a failure to write it never fails the command.
         }
@@ -61,6 +67,7 @@ class RunContext(
 
     companion object {
         private const val SUFFIX_BOUND = 0x10000
+        private const val MIN_SECRET_LENGTH = 4
         private val formatter = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")
 
         fun newRunId(now: LocalDateTime = LocalDateTime.now()): String =

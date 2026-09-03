@@ -1,7 +1,10 @@
 package app.posato.control.desktop
 
+import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
+import app.posato.control.core.LaunchedProcess
 import app.posato.control.core.RunContext
+import app.posato.control.core.TrackedProcess
 import java.nio.file.Path
 
 class DesktopProcesses(
@@ -11,6 +14,14 @@ class DesktopProcesses(
 
     fun executablePath(): Path = executable
 
+    /** True only when the tracked pid is alive, started at the recorded instant, and runs the staged executable. */
+    fun isTracked(process: LaunchedProcess?): Boolean {
+        val handle = TrackedProcess.handleOf(process?.pid, process?.startedAt) ?: return false
+        return handle.info().command().map { it == executable.toString() }.orElse(false)
+    }
+
+    fun trackedPid(process: LaunchedProcess?): Long? = process?.pid?.takeIf { isTracked(process) }
+
     fun isAlive(pid: Long): Boolean = ProcessHandle.of(pid).map { it.isAlive }.orElse(false)
 
     fun foreignPids(ownPid: Long?): List<Long> = ProcessHandle.allProcesses()
@@ -19,12 +30,8 @@ class DesktopProcesses(
         .filter { it != ownPid }
         .toList()
 
-    fun terminate(pid: Long) {
-        val handle = ProcessHandle.of(pid).orElse(null) ?: return
-        handle.destroy()
-        val deadline = System.currentTimeMillis() + GRACE_MS
-        while (handle.isAlive && System.currentTimeMillis() < deadline) Thread.sleep(POLL_MS)
-        if (handle.isAlive) handle.destroyForcibly()
+    fun terminate(process: LaunchedProcess?) {
+        if (isTracked(process)) TrackedProcess.terminate(process?.pid, process?.startedAt)
     }
 
     fun signingMode(): String {
@@ -36,16 +43,11 @@ class DesktopProcesses(
 
     fun requireStaged() {
         if (!executable.toFile().isFile) {
-            throw app.posato.control.core.ControlException(
+            throw ControlException(
                 ErrorCode.APP_NOT_STAGED,
                 "The staged desktop application is missing at ${context.layout.relativize(context.layout.stagedDesktopApplication)}.",
                 "Run `posato-control build -t desktop` first.",
             )
         }
-    }
-
-    private companion object {
-        const val GRACE_MS = 5_000L
-        const val POLL_MS = 100L
     }
 }

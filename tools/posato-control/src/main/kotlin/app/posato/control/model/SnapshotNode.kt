@@ -16,6 +16,7 @@ data class SnapshotNode(
     val id: String? = null,
     val label: String? = null,
     val value: String? = null,
+    val placeholder: String? = null,
     val enabled: Boolean = true,
     val focused: Boolean = false,
     val frame: Frame = Frame(),
@@ -39,6 +40,7 @@ data class SnapshotNode(
         id?.let { append(" #").append(it) }
         label?.let { append(" \"").append(it).append('"') }
         value?.let { append(" =").append('"').append(it.take(MAX_VALUE_PREVIEW)).append('"') }
+        placeholder?.let { append(" ph=\"").append(it).append('"') }
         if (!enabled) append(" [disabled]")
         if (focused) append(" [focused]")
         path?.let { append(" @").append(it) }

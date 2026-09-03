@@ -32,8 +32,6 @@ class IosDriverRunner(
     private val xcodeBuild: XcodeBuild,
     private val target: Target,
 ) {
-    private var invocation = 0
-
     fun ensureBuilt(udid: String?): Path = xcodeBuild.driverTestRun(target) ?: xcodeBuild.buildDriver(target, udid)
 
     fun run(
@@ -42,9 +40,8 @@ class IosDriverRunner(
         bundleId: String
     ): DriverRun {
         val testRun = ensureBuilt(udid)
-        invocation += 1
+        val invocation = nextInvocation()
         val resultBundle = context.artifactPath("driver", "$target-$invocation.xcresult")
-        Files.deleteIfExists(resultBundle)
         val encoded = Base64.getEncoder().encodeToString(ControlJson.compact.encodeToString(Scenario.serializer(), scenario).toByteArray())
         val log = context.recordArtifact(context.artifactPath("driver", "$target-$invocation.xcodebuild.log"))
         val exitCode = xcodeBuild.testWithoutBuilding(
@@ -82,6 +79,12 @@ class IosDriverRunner(
         } catch (exception: SerializationException) {
             throw ControlException(ErrorCode.DRIVER_FAILED, "Unreadable driver result: ${exception.message}", cause = exception)
         }
+    }
+
+    private fun nextInvocation(): Int {
+        val directory = context.artifactPath("driver", "placeholder").parent
+        val existing = directory.toFile().listFiles { file -> file.name.startsWith("$target-") && file.name.endsWith(".xcresult") }.orEmpty()
+        return existing.mapNotNull { file -> file.name.removePrefix("$target-").removeSuffix(".xcresult").toIntOrNull() }.maxOrNull()?.plus(1) ?: 1
     }
 
     private fun relocate(

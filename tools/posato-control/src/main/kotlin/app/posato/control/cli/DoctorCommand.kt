@@ -55,7 +55,13 @@ class DoctorCommand :
                 DoctorCheck.fail("xcode.version", "xcodebuild is unavailable.")
             },
         )
-        checks.add(DoctorCheck.pass("sqlite3", if (java.io.File("/usr/bin/sqlite3").exists()) "sqlite3 is available." else "sqlite3 is missing."))
+        checks.add(
+            if (java.io.File("/usr/bin/sqlite3").exists()) {
+                DoctorCheck.pass("sqlite3", "sqlite3 is available.")
+            } else {
+                DoctorCheck.fail("sqlite3", "sqlite3 is missing.", "Install the Xcode command line tools.")
+            },
+        )
         checks.add(
             if (session.layout.gradlew.exists()) {
                 DoctorCheck.pass(

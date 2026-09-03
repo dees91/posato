@@ -19,6 +19,7 @@ import app.posato.control.core.LaunchedProcess
 import app.posato.control.core.RunContext
 import app.posato.control.core.RunStateStore
 import app.posato.control.core.Target
+import app.posato.control.core.TrackedProcess
 import app.posato.control.model.DoctorCheck
 import app.posato.control.model.Severity
 import java.nio.file.Path
@@ -175,13 +176,16 @@ class DeviceLifecycle(
         }
         val logPath = context.artifactPath("device-console.log")
         val consolePid: Long?
+        val consoleStartedAt: Long?
         val pid: Long?
         if (options.captureLogs) {
             consolePid = session.devicectl.startConsole(udid, IOS_BUNDLE_ID, logPath).pid()
+            consoleStartedAt = TrackedProcess.startedAt(consolePid)
             pid = null
             context.recordArtifact(logPath)
         } else {
             consolePid = null
+            consoleStartedAt = null
             pid = session.devicectl.launch(udid, IOS_BUNDLE_ID, options.arguments, options.environment)
         }
         stateStore.update(
@@ -194,6 +198,7 @@ class DeviceLifecycle(
                 },
                 runId = context.runId,
                 consolePid = consolePid,
+                consoleStartedAt = consoleStartedAt,
             ),
         )
         return LaunchResult(pid = pid, udid = udid, logPath = logPath.takeIf { options.captureLogs }?.let { context.layout.relativize(it) })
@@ -202,8 +207,14 @@ class DeviceLifecycle(
     override fun terminate(): StatusResult {
         val udid = session.udid()
         val tracked = stateStore.load().device
-        tracked?.consolePid?.let { consolePid -> ProcessHandle.of(consolePid).ifPresent { it.destroy() } }
-        tracked?.pid?.let { session.devicectl.terminate(udid, it) }
+        TrackedProcess.terminate(tracked?.consolePid, tracked?.consoleStartedAt)
+        tracked?.pid?.let { pid ->
+            try {
+                session.devicectl.terminate(udid, pid)
+            } catch (exception: ControlException) {
+                context.log("The device process $pid was already gone: ${exception.message}")
+            }
+        }
         stateStore.update(Target.DEVICE, null)
         return status()
     }
@@ -211,11 +222,12 @@ class DeviceLifecycle(
     override fun status(): StatusResult {
         val udid = session.udid()
         val tracked = stateStore.load().device
-        val consoleAlive = tracked?.consolePid?.let { consolePid -> ProcessHandle.of(consolePid).map { it.isAlive }.orElse(false) } ?: false
+        val consoleAlive = TrackedProcess.isAlive(tracked?.consolePid, tracked?.consoleStartedAt)
+        val processAlive = tracked?.pid?.let { session.devicectl.isRunning(udid, it) } ?: false
         return StatusResult(
             installed = session.isInstalled(udid),
-            running = tracked?.pid != null || consoleAlive,
-            pid = tracked?.pid,
+            running = processAlive || consoleAlive,
+            pid = tracked?.pid?.takeIf { processAlive },
             udid = udid,
             appPath = xcodeBuild.appProduct(Target.DEVICE, "Debug").takeIf { it.exists() }?.let { context.layout.relativize(it) },
             signingMode = "development",
@@ -285,7 +297,7 @@ class DeviceEvidence(
         val udid = session.udid()
         val installed = session.isInstalled(udid)
         if (dryRun || !installed) return ResetPlan(emptyList(), uninstall = installed, performed = !dryRun && !installed)
-        stateStore.load().device?.consolePid?.let { consolePid -> ProcessHandle.of(consolePid).ifPresent { it.destroy() } }
+        stateStore.load().device?.let { TrackedProcess.terminate(it.consolePid, it.consoleStartedAt) }
         stateStore.update(Target.DEVICE, null)
         session.devicectl.uninstall(udid, IOS_BUNDLE_ID)
         return ResetPlan(emptyList(), uninstall = true, performed = true)
@@ -297,11 +309,13 @@ class DeviceEvidence(
     ): List<String> {
         val actions = mutableListOf<String>()
         val tracked = stateStore.load().device
-        tracked?.consolePid?.let { actions.add("stop the device console attachment (pid $it)") }
+        tracked?.takeIf {
+            TrackedProcess.isAlive(it.consolePid, it.consoleStartedAt)
+        }?.consolePid?.let { actions.add("stop the device console attachment (pid $it)") }
         val derived = listOf(context.layout.derivedData(Target.DEVICE.id), xcodeBuild.driverDerivedData(Target.DEVICE)).filter { it.exists() }
         if (purgeDerivedData) derived.forEach { actions.add("delete ${context.layout.relativize(it)}") }
         if (!dryRun) {
-            tracked?.consolePid?.let { consolePid -> ProcessHandle.of(consolePid).ifPresent { it.destroy() } }
+            tracked?.let { TrackedProcess.terminate(it.consolePid, it.consoleStartedAt) }
             stateStore.update(Target.DEVICE, null)
             if (purgeDerivedData) derived.forEach { directory -> directory.toFile().deleteRecursively() }
         }
@@ -327,9 +341,13 @@ class DeviceBackend private constructor(
             val session = DeviceSession(context, Devicectl(context), udid)
             val xcodeBuild = XcodeBuild(context)
             val stateStore = RunStateStore(context.layout)
-            val interaction = IosInteraction(IosDriverRunner(context, xcodeBuild, Target.DEVICE), session::udid, IOS_BUNDLE_ID)
+            lateinit var lifecycle: DeviceLifecycle
+            val interaction = IosInteraction(IosDriverRunner(context, xcodeBuild, Target.DEVICE), session::udid, IOS_BUNDLE_ID) {
+                lifecycle.launch(LaunchOptions(fresh = true))
+                lifecycle.terminate()
+            }
             val evidence = DeviceEvidence(context, session, xcodeBuild, stateStore, interaction)
-            val lifecycle = DeviceLifecycle(context, session, xcodeBuild, stateStore, evidence)
+            lifecycle = DeviceLifecycle(context, session, xcodeBuild, stateStore, evidence)
             return DeviceBackend(lifecycle, evidence, interaction)
         }
     }

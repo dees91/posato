@@ -313,14 +313,29 @@ func pidArgument(_ index: Int) throws -> pid_t {
   return pid
 }
 
+/// Accessibility access must be granted to the responsible host application before the tree can be
+/// read or driven. The `POSATO_AX_BRIDGE_ASSUME_UNTRUSTED` environment variable simulates a denied
+/// grant so the CLI's failure path can be exercised without revoking the real permission.
+func accessibilityTrusted() -> Bool {
+  let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
+  return AXIsProcessTrustedWithOptions(options)
+    && ProcessInfo.processInfo.environment["POSATO_AX_BRIDGE_ASSUME_UNTRUSTED"] == nil
+}
+
+func requireAccessibilityTrust() throws {
+  if !accessibilityTrusted() {
+    throw BridgeError(
+      code: "TCC_ACCESSIBILITY_DENIED",
+      message: "Accessibility access is not granted to the application that runs this tool.")
+  }
+}
+
 do {
   let command = try argument(1, "command")
   switch command {
   case "permissions":
-    let options =
-      [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false] as CFDictionary
     emit([
-      "accessibility": AXIsProcessTrustedWithOptions(options),
+      "accessibility": accessibilityTrusted(),
       "screenRecording": CGPreflightScreenCaptureAccess(),
     ])
   case "request-permissions":
@@ -332,14 +347,17 @@ do {
   case "windows":
     emit(Bridge.windows(pid: try pidArgument(2)))
   case "snapshot":
+    try requireAccessibilityTrust()
     let pid = try pidArgument(2)
     let maxDepth = CommandLine.arguments.count > 3 ? Int(CommandLine.arguments[3]) ?? 64 : 64
     emit(Bridge.snapshot(pid: pid, maxDepth: maxDepth))
   case "press":
+    try requireAccessibilityTrust()
     let pid = try pidArgument(2)
     try Bridge.press(try Bridge.resolve(pid: pid, path: try argument(3, "path")))
     emit(["ok": true])
   case "type":
+    try requireAccessibilityTrust()
     let pid = try pidArgument(2)
     let element = try Bridge.resolve(pid: pid, path: try argument(3, "path"))
     guard let data = Data(base64Encoded: try argument(4, "textBase64")),
@@ -352,6 +370,7 @@ do {
     let value = try Bridge.type(into: element, text: text, clear: clear, submit: submit, pid: pid)
     emit(["ok": "true", "value": value ?? ""])
   case "key":
+    try requireAccessibilityTrust()
     let pid = try pidArgument(2)
     let modifiers =
       CommandLine.arguments.count > 4
