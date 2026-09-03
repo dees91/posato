@@ -11,7 +11,6 @@ import java.nio.file.Path
 
 @Serializable
 data class BuildOptions(
-    val configuration: String = "Debug",
     val signingIdentity: String? = null,
     val verify: Boolean = false,
     val driver: Boolean = false,
