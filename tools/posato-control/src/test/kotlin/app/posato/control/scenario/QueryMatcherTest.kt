@@ -3,6 +3,7 @@ package app.posato.control.scenario
 import app.posato.control.core.ControlException
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
+import app.posato.control.model.Frame
 import app.posato.control.model.Query
 import app.posato.control.model.SnapshotNode
 import kotlin.test.Test
@@ -44,6 +45,28 @@ class QueryMatcherTest {
         assertEquals("0/0/0/3/0", QueryMatcher.require(root, Query(role = "textField", near = Query(text = "Add website"))).path)
         assertEquals("0/0/0/1/1", QueryMatcher.require(root, Query(role = "textField", near = Query(text = "Add website"), index = 1)).path)
         assertNull(QueryMatcher.find(root, Query(text = "Remove", near = Query(text = "Missing anchor"))))
+    }
+
+    @Test
+    fun `near prefers the anchor's own row over a closer element on the next row`() {
+        fun node(
+            path: String,
+            role: String,
+            label: String,
+            x: Double,
+            y: Double
+        ) = SnapshotNode(role = role, label = label, frame = Frame(x = x, y = y, w = 20.0, h = 20.0), path = path)
+        val tree = SnapshotNode(
+            role = "window",
+            path = "0",
+            children = listOf(
+                node("0/0", "text", "anchor", x = 0.0, y = 0.0),
+                node("0/1", "button", "Go", x = 200.0, y = 0.0),
+                node("0/2", "button", "Go", x = 0.0, y = 100.0),
+            ),
+        )
+        assertEquals("0/1", QueryMatcher.require(tree, Query(text = "Go", near = Query(text = "anchor"))).path)
+        assertEquals("0/2", QueryMatcher.require(tree, Query(text = "Go", near = Query(text = "anchor"), index = 1)).path)
     }
 
     @Test

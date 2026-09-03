@@ -1,6 +1,6 @@
 ---
 name: verify-posato
-description: "Drive the real Posato macOS desktop app and iOS app (Simulator or connected iPhone) through the posato-control CLI to prove a change works: launch, doctor, add, edit, and remove websites and the application group, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behaviour on a real target."
+description: "Drive the real Posato macOS desktop app and iOS app (Simulator or connected iPhone) through the posato-control CLI to prove a change works: launch, doctor, add, edit, and remove websites and the application group, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
 ---
 
 # Verify Posato
@@ -12,8 +12,9 @@ the repository's own CLI, `posato-control` (`tools/posato-control/README.md`),
 which builds, launches, inspects, drives, and resets three targets:
 `desktop`, `simulator` (alias `sim`), and `device` (a connected iPhone).
 Every command prints one JSON envelope: `ok`, `result`, `artifacts`, `error`
-(`code`, `message`, `hint`), with exit codes 0 ok, 2 usage, 3 precondition or
-refused, 4 element or expectation, 5 build or install, 6 unsupported.
+(`code`, `message`, `hint`), with exit codes 0 ok, 1 command or driver
+failed, 2 usage, 3 precondition or refused, 4 element or expectation, 5 build
+or install, 6 unsupported.
 
 Read [`features/README.md`](features/README.md) before driving; it is the
 maintained map of user-facing features and the recipes that prove them.

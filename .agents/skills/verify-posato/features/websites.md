@@ -55,11 +55,12 @@ Preconditions:
 - `Edit` and `Remove` also exist in the application group row; without
   `--near-text` the first match may belong to the group. `near` prefers the
   control on the anchor's own row, so it stays correct with several rows.
-- The newest website appears first; with two or more rows the last row sits at
-  the bottom edge on an iPhone-sized screen, where Compose drops the labels of
-  clipped buttons. `tap` and `type` scroll such a row into view when the
-  `--near-text` anchor is visible; `wait` and `find` do not scroll, so read a
-  clipped row after a `tap` on it or after `scrollTo` in a scenario.
+- Rows are sorted alphabetically by domain; with two or more rows the
+  alphabetically last row sits at the bottom edge on an iPhone-sized screen,
+  where Compose drops the labels of clipped buttons. `tap`, `type`, and
+  `snapshot` with a query scroll such a row into view when the `--near-text`
+  anchor is visible; `wait` and `find` do not scroll, so read a clipped row
+  after a `tap` on it or after `scrollTo` in a scenario.
 - While a mutation is saving, a `Saving` label appears next to the button and
   the controls are disabled; `wait --for enabled --text "Add website"` before
   the next action if a step fails with a disabled element.
