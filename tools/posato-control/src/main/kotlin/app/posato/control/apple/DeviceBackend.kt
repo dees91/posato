@@ -117,10 +117,17 @@ class DeviceLifecycle(
         )
     }
 
-    private fun driverCheck(): DoctorCheck = if (xcodeBuild.driverTestRun(Target.DEVICE) != null) {
-        DoctorCheck.pass("device.driver", "The device driver is built.")
-    } else {
-        DoctorCheck.fail(
+    private fun driverCheck(): DoctorCheck = when (xcodeBuild.driverState(Target.DEVICE)) {
+        XcodeBuild.DriverState.FRESH -> DoctorCheck.pass("device.driver", "The device driver is built and up to date.")
+
+        XcodeBuild.DriverState.STALE -> DoctorCheck.fail(
+            "device.driver",
+            "The device driver build is older than its sources.",
+            "Run `build -t device --driver`; interaction commands rebuild it on demand.",
+            Severity.WARN,
+        )
+
+        XcodeBuild.DriverState.MISSING -> DoctorCheck.fail(
             "device.driver",
             "The device driver is not built yet.",
             "Run `build -t device --driver`; interaction commands build it on demand.",
@@ -130,7 +137,7 @@ class DeviceLifecycle(
 
     override fun build(options: BuildOptions): BuildResult {
         val started = System.currentTimeMillis()
-        val app = xcodeBuild.buildApp(Target.DEVICE, options.configuration, null)
+        val app = xcodeBuild.buildApp(Target.DEVICE, null)
         val driver = if (options.driver) xcodeBuild.buildDriver(Target.DEVICE, null) else null
         return BuildResult(
             context.layout.relativize(app),
@@ -142,7 +149,7 @@ class DeviceLifecycle(
 
     override fun install(): StatusResult {
         val udid = session.udid()
-        val app = xcodeBuild.appProduct(Target.DEVICE, "Debug")
+        val app = xcodeBuild.appProduct(Target.DEVICE)
         if (!app.exists()) {
             throw ControlException(
                 ErrorCode.APP_NOT_STAGED,
@@ -205,10 +212,11 @@ class DeviceLifecycle(
     }
 
     override fun terminate(): StatusResult {
-        val udid = session.udid()
         val tracked = stateStore.load().device
         TrackedProcess.terminate(tracked?.consolePid, tracked?.consoleStartedAt)
-        tracked?.pid?.let { pid ->
+        val udid = tracked?.udid
+        val pid = tracked?.pid
+        if (udid != null && pid != null && session.devicectl.isRunning(udid, pid)) {
             try {
                 session.devicectl.terminate(udid, pid)
             } catch (exception: ControlException) {
@@ -223,13 +231,13 @@ class DeviceLifecycle(
         val udid = session.udid()
         val tracked = stateStore.load().device
         val consoleAlive = TrackedProcess.isAlive(tracked?.consolePid, tracked?.consoleStartedAt)
-        val processAlive = tracked?.pid?.let { session.devicectl.isRunning(udid, it) } ?: false
+        val processAlive = tracked?.pid?.takeIf { tracked.udid == udid }?.let { session.devicectl.isRunning(udid, it) } ?: false
         return StatusResult(
             installed = session.isInstalled(udid),
             running = processAlive || consoleAlive,
             pid = tracked?.pid?.takeIf { processAlive },
             udid = udid,
-            appPath = xcodeBuild.appProduct(Target.DEVICE, "Debug").takeIf { it.exists() }?.let { context.layout.relativize(it) },
+            appPath = xcodeBuild.appProduct(Target.DEVICE).takeIf { it.exists() }?.let { context.layout.relativize(it) },
             signingMode = "development",
             logPath = tracked?.logPath?.takeIf { consoleAlive },
             lastRunId = tracked?.runId,

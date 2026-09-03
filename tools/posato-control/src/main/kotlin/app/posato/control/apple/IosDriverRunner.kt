@@ -32,7 +32,13 @@ class IosDriverRunner(
     private val xcodeBuild: XcodeBuild,
     private val target: Target,
 ) {
-    fun ensureBuilt(udid: String?): Path = xcodeBuild.driverTestRun(target) ?: xcodeBuild.buildDriver(target, udid)
+    /** The driver's `.xctestrun`, rebuilt whenever the driver sources are newer than the last build. */
+    fun ensureBuilt(udid: String?): Path {
+        val existing = xcodeBuild.driverTestRun(target)
+        if (existing != null && xcodeBuild.driverState(target) == XcodeBuild.DriverState.FRESH) return existing
+        context.log(if (existing == null) "Building the iOS driver" else "Rebuilding the iOS driver because its sources changed")
+        return xcodeBuild.buildDriver(target, udid)
+    }
 
     fun run(
         scenario: Scenario,

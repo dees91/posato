@@ -119,10 +119,17 @@ class SimulatorLifecycle(
         return checks
     }
 
-    private fun driverCheck(): DoctorCheck = if (xcodeBuild.driverTestRun(Target.SIMULATOR) != null) {
-        DoctorCheck.pass("simulator.driver", "The simulator driver is built.")
-    } else {
-        DoctorCheck.fail(
+    private fun driverCheck(): DoctorCheck = when (xcodeBuild.driverState(Target.SIMULATOR)) {
+        XcodeBuild.DriverState.FRESH -> DoctorCheck.pass("simulator.driver", "The simulator driver is built and up to date.")
+
+        XcodeBuild.DriverState.STALE -> DoctorCheck.fail(
+            "simulator.driver",
+            "The simulator driver build is older than its sources.",
+            "Run `build -t simulator --driver`; interaction commands rebuild it on demand.",
+            Severity.WARN,
+        )
+
+        XcodeBuild.DriverState.MISSING -> DoctorCheck.fail(
             "simulator.driver",
             "The simulator driver is not built yet.",
             "Run `build -t simulator --driver`; interaction commands build it on demand.",
@@ -133,7 +140,7 @@ class SimulatorLifecycle(
     override fun build(options: BuildOptions): BuildResult {
         val started = System.currentTimeMillis()
         val udid = session.udid()
-        val app = xcodeBuild.buildApp(Target.SIMULATOR, options.configuration, udid)
+        val app = xcodeBuild.buildApp(Target.SIMULATOR, udid)
         val driver = if (options.driver) xcodeBuild.buildDriver(Target.SIMULATOR, udid) else null
         return BuildResult(
             context.layout.relativize(app),
@@ -145,7 +152,7 @@ class SimulatorLifecycle(
 
     override fun install(): StatusResult {
         val udid = session.udid()
-        val app = xcodeBuild.appProduct(Target.SIMULATOR, "Debug")
+        val app = xcodeBuild.appProduct(Target.SIMULATOR)
         if (!app.exists()) {
             throw ControlException(
                 ErrorCode.APP_NOT_STAGED,
@@ -183,8 +190,7 @@ class SimulatorLifecycle(
     }
 
     override fun terminate(): StatusResult {
-        val udid = session.udid()
-        session.simctl.terminate(udid, IOS_BUNDLE_ID)
+        stateStore.load().simulator?.udid?.let { udid -> session.simctl.terminate(udid, IOS_BUNDLE_ID) }
         stateStore.update(Target.SIMULATOR, null)
         return status()
     }
@@ -198,7 +204,7 @@ class SimulatorLifecycle(
             running = running,
             pid = tracked?.pid?.takeIf { running },
             udid = udid,
-            appPath = xcodeBuild.appProduct(Target.SIMULATOR, "Debug").takeIf { it.exists() }?.let { context.layout.relativize(it) },
+            appPath = xcodeBuild.appProduct(Target.SIMULATOR).takeIf { it.exists() }?.let { context.layout.relativize(it) },
             containerPath = session.container(udid)?.toString(),
             signingMode = "unsigned",
             logPath = tracked?.logPath?.takeIf { running },

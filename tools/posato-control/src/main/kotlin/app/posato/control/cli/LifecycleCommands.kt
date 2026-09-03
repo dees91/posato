@@ -24,14 +24,13 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonElement
 
 class BuildCommand : ControlCommand("build", "Build the application for the target (desktop: staged package; iOS: xcodebuild).") {
-    private val configuration by option("--configuration", help = "Xcode configuration for iOS builds.").default("Debug")
     private val signingIdentity by option("--signing-identity", help = "macOS signing identity override for the staged package.")
     private val verify by option("--verify", help = "Run the strict desktop packaging verification after staging.").flag()
     private val driver by option("--driver", help = "Also build the iOS XCUITest driver for the target.").flag()
 
     override fun execute(session: Session): JsonElement = ControlJson.pretty.encodeToJsonElement(
         BuildResult.serializer(),
-        session.backend().build(BuildOptions(configuration, signingIdentity, verify, driver)),
+        session.backend().build(BuildOptions(signingIdentity, verify, driver)),
     )
 }
 

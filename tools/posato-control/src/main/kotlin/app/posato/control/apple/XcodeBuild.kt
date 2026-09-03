@@ -14,26 +14,35 @@ import kotlin.io.path.listDirectoryEntries
 class XcodeBuild(
     private val context: RunContext
 ) {
-    fun appProduct(
-        target: Target,
-        configuration: String
-    ): Path = context.layout.derivedData(
+    fun appProduct(target: Target): Path = context.layout.derivedData(
         target.id,
-    ).resolve("Build").resolve("Products").resolve("$configuration-${sdkSuffix(target)}").resolve("Posato.app")
+    ).resolve("Build").resolve("Products").resolve("$CONFIGURATION-${sdkSuffix(target)}").resolve("Posato.app")
 
     fun driverDerivedData(target: Target): Path = context.layout.derivedData("driver-${target.id}")
+
+    enum class DriverState { MISSING, STALE, FRESH }
+
+    fun driverState(target: Target): DriverState {
+        val testRun = driverTestRun(target) ?: return DriverState.MISSING
+        return if (Files.getLastModifiedTime(testRun).toMillis() <
+            driverSourcesModifiedAt(context.layout.driverProject.parent)
+        ) {
+            DriverState.STALE
+        } else {
+            DriverState.FRESH
+        }
+    }
 
     fun driverTestRun(target: Target): Path? = driverDerivedData(target).resolve("Build").resolve("Products").takeIf { it.exists() }
         ?.listDirectoryEntries("*.xctestrun")?.maxByOrNull { Files.getLastModifiedTime(it) }
 
     fun buildApp(
         target: Target,
-        configuration: String,
         udid: String?
     ): Path {
         val command = buildList {
             addAll(
-                listOf("/usr/bin/xcodebuild", "-project", context.layout.iosProject.toString(), "-scheme", "iosApp", "-configuration", configuration),
+                listOf("/usr/bin/xcodebuild", "-project", context.layout.iosProject.toString(), "-scheme", "iosApp", "-configuration", CONFIGURATION),
             )
             addAll(destination(target, udid))
             addAll(listOf("-derivedDataPath", context.layout.derivedData(target.id).toString()))
@@ -41,7 +50,7 @@ class XcodeBuild(
             add("build")
         }
         run(command, "Building the iOS application")
-        val product = appProduct(target, configuration)
+        val product = appProduct(target)
         if (!product.exists()) {
             throw ControlException(
                 ErrorCode.BUILD_FAILED,
@@ -119,8 +128,6 @@ class XcodeBuild(
         }
     }
 
-    private fun sdkSuffix(target: Target): String = if (target == Target.DEVICE) "iphoneos" else "iphonesimulator"
-
     private fun run(
         command: List<String>,
         what: String
@@ -137,8 +144,19 @@ class XcodeBuild(
     }
 
     private companion object {
+        const val CONFIGURATION = "Debug"
         const val ERROR_LINES = 12
         val BUILD_TIMEOUT: Duration = Duration.ofMinutes(30)
         val TEST_TIMEOUT: Duration = Duration.ofMinutes(15)
     }
+}
+
+private fun sdkSuffix(target: Target): String = if (target == Target.DEVICE) "iphoneos" else "iphonesimulator"
+
+/** The newest modification time among the driver project's tracked inputs (sources, project, scheme). */
+private fun driverSourcesModifiedAt(root: Path): Long = Files.walk(root).use { paths ->
+    paths.filter { path -> Files.isRegularFile(path) && path.none { it.toString() == "xcuserdata" } }
+        .mapToLong { path -> Files.getLastModifiedTime(path).toMillis() }
+        .max()
+        .orElse(0L)
 }

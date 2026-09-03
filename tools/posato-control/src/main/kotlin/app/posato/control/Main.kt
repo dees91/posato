@@ -25,6 +25,10 @@ import app.posato.control.cli.TapCommand
 import app.posato.control.cli.TerminateCommand
 import app.posato.control.cli.TypeCommand
 import app.posato.control.cli.WaitCommand
+import app.posato.control.core.ControlJson
+import app.posato.control.core.ErrorCode
+import app.posato.control.model.Envelope
+import app.posato.control.model.ErrorPayload
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.CliktError
 import com.github.ajalt.clikt.core.Context
@@ -67,19 +71,35 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ArtifactsCommand(),
 )
 
-fun main(args: Array<String>) {
+fun run(args: Array<String>): Int {
     val command = buildCommand()
-    val exitCode = try {
+    return try {
         command.parse(args.toList())
         0
     } catch (result: ProgramResult) {
         result.statusCode
     } catch (error: UsageError) {
+        emitUsageError(error)
         command.echoFormattedHelp(error)
         EXIT_USAGE
     } catch (error: CliktError) {
         command.echoFormattedHelp(error)
         error.statusCode
     }
-    exitProcess(exitCode)
+}
+
+private fun emitUsageError(error: UsageError) {
+    val message = listOfNotNull(error.paramName?.let { "Invalid usage of $it" }, error.message).joinToString(": ").ifEmpty { "Invalid usage." }
+    val envelope = Envelope(
+        ok = false,
+        command = "posato-control",
+        runId = "none",
+        durationMs = 0,
+        error = ErrorPayload(ErrorCode.USAGE.name, message, "Run `posato-control --help` or `posato-control <command> --help`."),
+    )
+    println(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
+}
+
+fun main(args: Array<String>) {
+    exitProcess(run(args))
 }

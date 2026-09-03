@@ -76,12 +76,37 @@
   sidecars, that the Kotlin and Swift contracts agree, and that no identity,
   identifier, or personal path entered tracked files.
 
+## Hosted review
+
+- **Pass 1 (Codex, commit `07953ad`):** three P1 and two P2 findings. The
+  maintainer accepted the three P1 findings as Required, accepted the P2
+  finding about `terminate -t simulator` stopping untracked instances, and
+  resolved the P2 finding about the `--configuration` option by removing the
+  option (Debug is the only iOS configuration the driver builds).
+- **Corrections:** device `terminate` and `status` now use the udid recorded
+  at launch and confirm through `devicectl device info processes` that the
+  pid still runs the Posato executable before terminating; simulator
+  `terminate` acts only on the tracked launch and its simulator; argument
+  parsing failures print the same JSON envelope with code `USAGE` and exit
+  code 2 (unit tests cover an invalid target, a missing option, and
+  `--help`); the iOS driver is rebuilt whenever its sources are newer than
+  the `.xctestrun`, and `doctor` reports a stale driver; the
+  `--configuration` option is gone from `build`.
+- **Evidence:** on the Simulator an instance started outside the tool
+  survived `terminate` while a tracked launch was stopped; touching a driver
+  source turned `doctor` to a stale warning and the next `snapshot` rebuilt
+  the driver; on the iPhone `launch`, `status`, `terminate`, and a repeated
+  `terminate` behaved as documented; `status -t mars`, a missing required
+  option, and an unknown option each returned the `USAGE` envelope.
+- **Pass 2:** requested after these corrections; at most one more hosted pass
+  remains under the `AGENTS.md` budget.
+
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew :posato-control:test :posato-control:detekt :posato-control:ktlintCheck :posato-control:swiftFormatCheck` | `pass` | 25 unit tests over synthetic fixtures after the review corrections; no lint finding; no suppression added. |
-| `./gradlew quality` | `pass` | 126 actionable tasks passed on the worktree after the last correction, including the module's checks and the unchanged suppression allowlist. |
+| `./gradlew :posato-control:test :posato-control:detekt :posato-control:ktlintCheck :posato-control:swiftFormatCheck` | `pass` | 27 unit tests over synthetic fixtures after the review corrections; no lint finding; no suppression added. |
+| `./gradlew quality` | `pass` | Passed on the worktree after the last correction (hosted pass 1 fixes included), with the module's checks and the unchanged suppression allowlist. |
 | Desktop sequence | `pass` | `doctor`, `build`, `install`, `launch`, `status`, `logs`, `snapshot`, `screenshot`, `find`, the `add-website` and `remove-website` scenarios, `db query` (row count 1 then 0), `reset --dry-run` listing exactly the two databases, `reset` refused without `--yes` (exit 3), `reset --yes` leaving an empty database (count 0) with the deleted files backed up in the run directory, `terminate`, `tap` on a missing element (exit 4 with failure evidence), `db` on the device target (exit 6), `snapshot` with accessibility trust withheld (`TCC_ACCESSIBILITY_DENIED`, exit 3) and `doctor` naming the host to grant, and `terminate` against a recorded pid that belonged to a decoy process (the decoy survived). |
 | Simulator sequence | `pass` | `devices boot`, `doctor`, `build --driver`, `install`, `status`, `launch --fresh`, `screenshot`, `snapshot`, `find`, `tap`, `wait`, both scenarios with the row count confirmed through `db query`, `logs` and `logs --stream-seconds`, `reset --dry-run --keep-install`, `reset --yes` (uninstall, `status.installed` false, reinstall, empty state on relaunch), a scenario with `launch.fresh`, `--run-id` reuse, `terminate`. |
 | Device sequence | `pass` | `doctor`, `build --driver`, `install`, `launch`, `status`, `terminate` (also idempotent on a second call, and `status.running` false afterwards), `launch --capture-logs` with `logs`, `screenshot`, `snapshot`, both scenarios, `find` confirming the removed row, `reset --dry-run`, `reset` refused without `--yes`, `reset --yes` (uninstall, reinstall, empty state on relaunch). |

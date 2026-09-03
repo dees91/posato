@@ -113,13 +113,17 @@ class Devicectl(
         logFile,
     )
 
+    /** True when `pid` exists on the device and runs the Posato application executable. */
     fun isRunning(
         udid: String,
         pid: Long
     ): Boolean {
         val result = json(listOf("device", "info", "processes", "--device", udid), ErrorCode.COMMAND_FAILED, "Listing device processes")
-        return result["runningProcesses"]?.jsonArray?.any { it.jsonObject["processIdentifier"]?.jsonPrimitive?.content?.toLongOrNull() == pid }
-            ?: false
+        return result["runningProcesses"]?.jsonArray?.any { entry ->
+            val process = entry.jsonObject
+            process["processIdentifier"]?.jsonPrimitive?.content?.toLongOrNull() == pid &&
+                process["executable"]?.jsonPrimitive?.content?.endsWith("/Posato.app/Posato") == true
+        } ?: false
     }
 
     fun terminate(
