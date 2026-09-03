@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 5
+- **Revision:** 6
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
 - **Last amended:** 2026-09-02
@@ -21,8 +21,11 @@ artifact could not launch. It keeps release signing, notarization, and public
 distribution in `RELEASE-001`. Revision 5 adds the maintainer-accepted
 `SYNC-013` simplification follow-up after hosted review of `SYNC-002` left
 dead queries, unused wiring, a test-only digest helper, and duplicated
-validation layers in place. It changes no other task, dependency, wave, or
-integration group.
+validation layers in place. Revision 6 adds the maintainer-requested
+`QUALITY-002` verification driver so agents can build, drive, inspect, and
+reset both applications on the supported Mac, the Simulator, and the
+supported iPhone without a maintainer in the loop. Neither revision changes
+any other task, dependency, wave, or integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -54,7 +57,7 @@ remain authoritative for their concerns.
 
 ## Task stubs, dependencies, waves, and integration groups
 
-The 37 rows below are the complete amended Gate 6 task set. Future rows stay as
+The 38 rows below are the complete amended Gate 6 task set. Future rows stay as
 stubs.
 [`APPLE-001`](specifications/apple-001-register-apple-resources.md) is the
 completed Gate 7 brief. The Ready to open PR #1 checkpoint is complete and the
@@ -82,6 +85,7 @@ wave barriers add the phase ordering stated above.
 | `TARGETS-004` | Authorize and associate an opaque device-local iOS application selection. | Target management | P2/W2.6 | `TARGETS-002`, `APPLE-001` | PR-IOS-MAPPING |
 | `SYNC-002` | Create and process compatible encrypted operations with deterministic rejection and convergence. | Apple synchronization | P2/W2.6 | `SYNC-001` | PR-SYNC-CORE |
 | `SYNC-013` | Remove dead sync queries, unused iOS wiring, the test-only digest helper, and duplicated validation layers without changing format, schema, or behavior. | Apple synchronization | P2/W2.6b | `SYNC-002` | PR-SYNC-SIMPLIFY |
+| `QUALITY-002` | Build, launch, drive, inspect, screenshot, and reset the macOS and iOS applications on the supported Mac, the Simulator, and the supported iPhone from one agent-facing CLI. | Preparation | P2/W2.6c | `FOUNDATION-001`, `MACOS-006` | PR-VERIFICATION-DRIVER |
 | `SESSION-001` | Provide shared setup, review, start, early-end, and expiry behavior for one manual session, and consolidate only repeated production UI contracts. | Sessions and enforcement | P2/W2.7 | `TARGETS-001`, `TARGETS-002` | PR-SESSION-CORE |
 | `SYNC-004` | Preserve the one-workspace invariant through bootstrap delay, conflict, failure, and restart. | Apple synchronization | P2/W2.8 | `SYNC-003` | PR-BOOTSTRAP-CORE |
 | `MACOS-004` | Deny selected exact domains on the accepted macOS browser matrix with safe recovery. | Sessions and enforcement | P3/W3.1 | `MACOS-002`, `MACOS-006`, `SESSION-001`, `TARGETS-001` | PR-MAC-DOMAINS |

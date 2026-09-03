@@ -125,3 +125,25 @@ maintainer-accepted exception recorded in the quality contract and must be
 replaced by the first compatible stable Detekt 2 release. Generated Compose
 Resources source is excluded from ktlint; repository-owned Kotlin has no lint
 baseline.
+
+## Verification driver
+
+`posato-control` is the agent-facing driver that builds, launches, drives,
+inspects, screenshots, and resets the macOS application and the iOS
+application on the Simulator and on a connected iPhone. It is a platform-build
+and manual-inspection driver, not an automated UI test suite: nothing it
+drives runs in `./gradlew quality` or in CI, and the aggregate gate only runs
+the module's ktlint, Detekt, unit tests, and Swift format check.
+
+```shell
+./gradlew :posato-control:installDist
+tools/posato-control/build/install/posato-control/bin/posato-control doctor
+```
+
+Every command prints one JSON envelope and takes `--target desktop|simulator|device`.
+The desktop backend needs macOS Accessibility and Screen Recording access for
+the terminal or IDE process that runs it; the physical iPhone needs
+`posato.apple.developmentTeam` in the ignored `local.properties` file. All
+evidence stays under the ignored `build/verification/` directory. The command
+reference, query syntax, scenario format, and per-target notes live in
+[`tools/posato-control/README.md`](../../tools/posato-control/README.md).

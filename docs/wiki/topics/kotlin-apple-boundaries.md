@@ -116,6 +116,18 @@ edge.
   behavior back to shared code.
 - Compile every affected target and test common behavior with fakes.
 
+`observed` (2026-09-02, Compose Multiplatform 1.10.3): Compose Desktop
+exposes its semantics tree through macOS accessibility by default (disabled
+only by `compose.accessibility.enable=false` or the
+`COMPOSE_DISABLE_ACCESSIBILITY` environment variable). Buttons surface their
+label as the accessibility description with a press action, text fields accept
+focus but not a direct value write, and `testTag` is not exposed, so desktop
+automation addresses elements by role, text, or tree path and types through
+keyboard events. On iOS the same `testTag` is exposed as the
+`accessibilityIdentifier`, so XCUITest can address tagged elements directly.
+The `posato-control` driver under `tools/posato-control` relies on these
+facts.
+
 ## Open decisions
 
 - Which Apple frameworks used by the MVP are cleanly callable from
