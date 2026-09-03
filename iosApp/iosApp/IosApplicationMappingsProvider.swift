@@ -50,7 +50,6 @@ final class ApplicationMappingsObservation: IosApplicationMappingsObservation {
 }
 
 struct StoredApplicationMapping: Codable, Equatable {
-    let slot: Int
     let token: Data
 }
 
@@ -61,7 +60,7 @@ private struct StoredApplicationMappings: Codable {
 
 struct ApplicationMappingsStore {
     private static let version = 1
-    private static let maximumMappings = 64
+    static let maximumMappings = 64
     private static let maximumFileBytes = 1_048_576
     private static let maximumTokenBytes = 65_536
 
@@ -114,7 +113,7 @@ struct ApplicationMappingsStore {
             throw ApplicationMappingsStoreError.corruption
         }
         try validate(stored.mappings)
-        return stored.mappings.sorted { $0.slot < $1.slot }
+        return stored.mappings
     }
 
     func save(_ mappings: [StoredApplicationMapping]) throws {
@@ -129,11 +128,9 @@ struct ApplicationMappingsStore {
 
     private func validate(_ mappings: [StoredApplicationMapping]) throws {
         guard mappings.count <= Self.maximumMappings,
-              Set(mappings.map(\.slot)).count == mappings.count,
               Set(mappings.map(\.token)).count == mappings.count,
               mappings.allSatisfy({ mapping in
-                  (1...Self.maximumMappings).contains(mapping.slot) &&
-                      !mapping.token.isEmpty &&
+                  !mapping.token.isEmpty &&
                       mapping.token.count <= Self.maximumTokenBytes
               }) else {
             throw ApplicationMappingsStoreError.corruption
@@ -237,7 +234,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         let continueWithPicker = {
             guard self.chooseCompletion != nil else { return }
             guard self.isAuthorizationApproved else {
-                self.completeChoose(with: self.loadResponse())
+                self.completeChoose(with: self.loadResponse(outcome: .accessChanged, access: self.currentAccess()))
                 return
             }
             self.presentPicker()
@@ -303,7 +300,10 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             return
         }
         guard isAuthorizationApproved else {
-            completeChoose(with: loadResponse(), dismissPicker: true)
+            completeChoose(
+                with: loadResponse(outcome: .accessChanged, access: currentAccess()),
+                dismissPicker: true
+            )
             return
         }
         do {
@@ -338,14 +338,13 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             .filter { token in !existingTokens.contains(token) }
             .map { token in try encoder.encode(token) }
             .sorted { identifier(for: $0) < identifier(for: $1) }
-        guard updated.count + newData.count <= 64 else {
+        guard updated.count + newData.count <= ApplicationMappingsStore.maximumMappings else {
             throw ApplicationMappingsProviderError.capacity
         }
-        var availableSlots = Array(1...64).filter { slot in !Set(updated.map(\.slot)).contains(slot) }
         for tokenData in newData {
-            updated.append(StoredApplicationMapping(slot: availableSlots.removeFirst(), token: tokenData))
+            updated.append(StoredApplicationMapping(token: tokenData))
         }
-        return updated.sorted { $0.slot < $1.slot }
+        return updated.sorted { identifier(for: $0.token) < identifier(for: $1.token) }
     }
 
     private func loadResponse() -> IosApplicationMappingsResponse {
@@ -431,7 +430,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         mappings: [StoredApplicationMapping] = []
     ) -> IosApplicationMappingsResponse {
         let references = mappings.map { mapping in
-            IosApplicationMappingReference(identifier: identifier(for: mapping.token), slot: Int32(mapping.slot))
+            IosApplicationMappingReference(identifier: identifier(for: mapping.token))
         }
         return IosApplicationMappingsResponse(
             outcome: outcome,

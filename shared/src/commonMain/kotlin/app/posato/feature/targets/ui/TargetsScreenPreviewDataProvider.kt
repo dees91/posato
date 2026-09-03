@@ -16,18 +16,12 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
             ),
         ),
     )
-    private val numberedMappings = persistentListOf(
-        checkNotNull(
-            LocalApplicationMapping.restoreNumbered(
-                checkNotNull(LocalApplicationMappingId.restore("02".repeat(32))),
-                1,
-            ),
+    private val opaqueMappings = persistentListOf(
+        LocalApplicationMapping.restoreOpaque(
+            checkNotNull(LocalApplicationMappingId.restore("02".repeat(32))),
         ),
-        checkNotNull(
-            LocalApplicationMapping.restoreNumbered(
-                checkNotNull(LocalApplicationMappingId.restore("03".repeat(32))),
-                2,
-            ),
+        LocalApplicationMapping.restoreOpaque(
+            checkNotNull(LocalApplicationMappingId.restore("03".repeat(32))),
         ),
     )
 
@@ -63,7 +57,7 @@ internal class TargetsScreenPreviewDataProvider : PreviewParameterProvider<Targe
         ),
         TargetsPreviewState(
             "Mapped iOS applications",
-            mappingState(applicationPolicyName = "Social feeds", applicationMappings = numberedMappings),
+            mappingState(applicationPolicyName = "Social feeds", applicationMappings = opaqueMappings),
         ),
         TargetsPreviewState(
             "Authorization required with retained mapping",

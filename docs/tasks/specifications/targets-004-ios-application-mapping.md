@@ -98,6 +98,8 @@ not a portable application identifier.
 - `user-confirmed`: the shared screen shows only the iOS mapping count while
   the system Family Controls picker owns native labels and detailed review; UI
   copy stays outside the data adapter.
+- `user-confirmed`: shared and persisted iOS mappings carry no display slot.
+  The derived local identifier provides deterministic ordering and identity.
 - `user-confirmed`: Save atomically replaces the complete selected set, and
   authorization starts only from one contextual shared action.
 - `user-confirmed`: TARGETS-004 uses an app-private store. IOS-001 owns the App

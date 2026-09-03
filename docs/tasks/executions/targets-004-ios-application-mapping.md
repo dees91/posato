@@ -1,7 +1,7 @@
 # Execution: `TARGETS-004`
 
 - **Brief:** [Associate opaque device-local iOS application selections](../specifications/targets-004-ios-application-mapping.md)
-- **Status:** `complete`
+- **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
 - **Reviewer:** independent Codex reviewer
@@ -32,7 +32,7 @@
 
 ## Result
 
-- Implemented the shared numbered mapping and live authorization contract, the
+- Implemented the shared opaque mapping and live authorization contract, the
   cancellable Kotlin/Swift adapter, the native Family Controls picker, and the
   bounded app-private protected store.
 - Enabled Family Controls only for Debug device builds. Simulator and Release
@@ -59,6 +59,10 @@
   re-review also removed post-Xcode-26.3 SDK symbols and added a typed retained-
   snapshot access-change result with native-boundary and ViewModel tests.
 - **Final re-review:** no remaining Critical or Required findings
+- **Follow-up review at `ffdbc06`:** found two small Required corrections: an
+  authorization race returned a successful selection outcome, and five iOS
+  Kotlin tests used nonconforming names. The maintainer also accepted removal
+  of speculative persisted and shared slot numbers before merge.
 
 ## Verification
 
@@ -77,6 +81,11 @@
 | Uninstall and reinstall | passed | App-private group and selection were removed; consent was required again and the picker reopened empty |
 | Post-review picker regressions | passed | Swipe dismissal allowed immediate reopen; unsupported category save was rejected while retaining the prior application |
 | Physical iPhone native store XCTest | passed | Eight tests, including complete file protection and backup exclusion metadata |
+| Correction review (`b8764a1`) | approved | Independent completed-change review; no Critical or Required findings |
+| Correction scope and privacy scan | passed | 12 files; `git diff --check` clean; no Team, device, profile, or personal paths; `swiftc -parse` clean on both Swift files |
+| `./gradlew quality` after correction | blocked | Sandboxed agent shell denies Gradle sockets and `~/.gradle` writes; rerun unrestricted before push |
+| XCTest and device/simulator builds after correction | blocked | CoreSimulator unreachable and `~/Library` denied in the sandboxed shell; rerun unrestricted, then the physical authorization-loss checklist |
+| Push and PR #16 refresh | blocked | SSH unusable in the sandboxed shell; push `--force-with-lease` and conflict check remain maintainer actions |
 
 ## Blockers and accepted risks
 
@@ -86,3 +95,6 @@
   the not-determined state; an ordinary process restart preserved approval.
 - Hosted CI is manual-only through 2026-09-05. Local Xcode 26.6 verification is
   the active gate; the workflow retains Xcode 26.3 compatibility coverage.
+- The correction (`b8764a1`, rebased onto `origin/main`) is reviewed and
+  approved but its `./gradlew quality`, XCTest, build-matrix, physical-device,
+  and push steps need an unrestricted maintainer shell.
