@@ -393,7 +393,10 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         if case .authenticationMethodUnavailable = error {
             return loadResponse(outcome: .accessChanged, access: .restricted)
         }
-        return loadResponse(outcome: .unavailable, access: .unavailable)
+        // Remaining cases, such as a network failure, are transient. The unavailable
+        // outcome is reserved for builds without the capability, so reporting it here
+        // would both state something false and hide the action that retries.
+        return response(outcome: .pickerFailure)
     }
 
     private func loadResponse(
