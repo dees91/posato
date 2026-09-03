@@ -85,7 +85,7 @@
 | Correction scope and privacy scan | passed | 12 files; `git diff --check` clean; no Team, device, profile, or personal paths; `swiftc -parse` clean on both Swift files |
 | `./gradlew quality` after correction | blocked | Sandboxed agent shell denies Gradle sockets and `~/.gradle` writes; rerun unrestricted before push |
 | XCTest and device/simulator builds after correction | blocked | CoreSimulator unreachable and `~/Library` denied in the sandboxed shell; rerun unrestricted, then the physical authorization-loss checklist |
-| Push and PR #16 refresh | blocked | SSH unusable in the sandboxed shell; push `--force-with-lease` and conflict check remain maintainer actions |
+| Push and PR #16 refresh | passed | `push --force-with-lease` moved the remote branch to `1f51172`; PR #16 reports `MERGEABLE`/`CLEAN` |
 
 ## Blockers and accepted risks
 
@@ -95,6 +95,6 @@
   the not-determined state; an ordinary process restart preserved approval.
 - Hosted CI is manual-only through 2026-09-05. Local Xcode 26.6 verification is
   the active gate; the workflow retains Xcode 26.3 compatibility coverage.
-- The correction (`b8764a1`, rebased onto `origin/main`) is reviewed and
-  approved but its `./gradlew quality`, XCTest, build-matrix, physical-device,
-  and push steps need an unrestricted maintainer shell.
+- The correction (rebased onto `origin/main`, pushed as `1f51172`) is
+  reviewed and approved; its `./gradlew quality`, XCTest, build-matrix, and
+  physical-device steps still need a rerun after the rebase.
