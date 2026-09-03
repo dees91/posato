@@ -83,12 +83,12 @@ private fun LoadedApplicationMappings(
         } else if (state.applicationMappings.isEmpty() && state.hasLoadedApplicationMappings) {
             Text(stringResource(Res.string.application_mapping_empty), style = MaterialTheme.typography.bodySmall)
         }
-        val numberedMappingCount = state.applicationMappings.count { mapping ->
-            mapping.display is LocalApplicationMappingDisplay.Numbered
+        val opaqueMappingCount = state.applicationMappings.count { mapping ->
+            mapping.display is LocalApplicationMappingDisplay.Opaque
         }
-        if (numberedMappingCount > 0) {
+        if (opaqueMappingCount > 0) {
             ApplicationMappingSummary(
-                count = numberedMappingCount,
+                count = opaqueMappingCount,
                 enabled = state.canClearApplicationMappings(),
                 onClear = onClear,
                 modifier = Modifier.fillMaxWidth(),

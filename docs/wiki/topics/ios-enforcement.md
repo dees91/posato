@@ -84,11 +84,12 @@ invalid-selection lifecycle remains open.
 `user-confirmed` (2026-09-02): the first production mapping slice stores a
 versioned, bounded set of opaque application tokens in app-private protected
 storage. Shared Kotlin receives only a derived local identifier and stable
-numbered slot. Re-selection matches decoded `ApplicationToken` values by
-equality; a new token is a new local mapping. The native picker owns Apple
+opaque presentation. Re-selection matches decoded `ApplicationToken` values
+by equality; a new token is a new local mapping. The native picker owns Apple
 labels, while shared UI shows only an aggregate selected count and distinct
-live authorization states. The later Device Activity extension migrates this state
-to the accepted App Group with protection available after first unlock.
+live authorization states. Persisted and shared slot numbers were rejected as
+speculative before merge. The later Device Activity extension migrates this
+state to the accepted App Group with protection available after first unlock.
 
 `observed` (2026-09-02): on one development-signed physical iPhone, an ordinary
 process restart preserved both Family Controls approval and the app-private

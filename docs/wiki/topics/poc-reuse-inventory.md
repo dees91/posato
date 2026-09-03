@@ -75,7 +75,7 @@ distinctive fixture was copied.
 confirm Family Controls authorization, picker presentation, opaque token
 equality, protected local persistence, and native label behavior. Production
 code defines a fresh Kotlin/Swift boundary, versioned bounded JSON store,
-numbered shared presentation, and focused failure tests. No feasibility source,
+aggregate opaque presentation, and focused failure tests. No feasibility source,
 runner, trace, entitlement, signing value, device data, or distinctive fixture
 was copied.
 

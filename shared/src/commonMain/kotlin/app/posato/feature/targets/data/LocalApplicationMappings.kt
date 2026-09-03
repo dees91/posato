@@ -61,25 +61,9 @@ public sealed interface LocalApplicationMappingDisplay {
         }
     }
 
-    public class Numbered private constructor(
-        public val slot: Int,
-    ) : LocalApplicationMappingDisplay {
-        override fun equals(other: Any?): Boolean {
-            return other is Numbered && slot == other.slot
-        }
-
-        override fun hashCode(): Int {
-            return slot
-        }
-
+    public object Opaque : LocalApplicationMappingDisplay {
         override fun toString(): String {
-            return "LocalApplicationMappingDisplay.Numbered(redacted)"
-        }
-
-        public companion object {
-            public fun restore(slot: Int): Numbered? {
-                return if (slot in 1..LocalApplicationMappingLimits.MAXIMUM_MAPPINGS) Numbered(slot) else null
-            }
+            return "LocalApplicationMappingDisplay.Opaque(redacted)"
         }
     }
 }
@@ -110,13 +94,8 @@ public class LocalApplicationMapping private constructor(
             return LocalApplicationMapping(id, display)
         }
 
-        public fun restoreNumbered(
-            id: LocalApplicationMappingId,
-            slot: Int,
-        ): LocalApplicationMapping? {
-            val display = LocalApplicationMappingDisplay.Numbered.restore(slot) ?: return null
-
-            return LocalApplicationMapping(id, display)
+        public fun restoreOpaque(id: LocalApplicationMappingId): LocalApplicationMapping {
+            return LocalApplicationMapping(id, LocalApplicationMappingDisplay.Opaque)
         }
     }
 }
@@ -279,9 +258,7 @@ private val applicationMappingComparator = Comparator<LocalApplicationMapping> {
         }
 
         else -> {
-            (left.display as LocalApplicationMappingDisplay.Numbered).slot.compareTo(
-                (right.display as LocalApplicationMappingDisplay.Numbered).slot,
-            )
+            0
         }
     }
 

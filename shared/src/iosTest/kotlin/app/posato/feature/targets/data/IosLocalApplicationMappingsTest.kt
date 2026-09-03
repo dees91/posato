@@ -11,11 +11,11 @@ import kotlin.test.assertTrue
 
 class IosLocalApplicationMappingsTest {
     @Test
-    fun loadRestoresNumberedMappingsAndLiveAccess() = runTest {
+    fun `given denied live access and an opaque mapping when loaded then both are restored`() = runTest {
         val provider = FakeIosApplicationMappingsProvider(
             loadResponse = response(
                 access = IosApplicationMappingsAccess.AUTHORIZATION_DENIED,
-                mappings = listOf(IosApplicationMappingReference(identifier(), 3)),
+                mappings = listOf(IosApplicationMappingReference(identifier())),
             ),
         )
 
@@ -24,16 +24,16 @@ class IosLocalApplicationMappingsTest {
         )
 
         assertEquals(LocalApplicationMappingsAccess.AUTHORIZATION_DENIED, result.access)
-        assertEquals(3, assertIs<LocalApplicationMappingDisplay.Numbered>(result.snapshot.mappings.single().display).slot)
+        assertIs<LocalApplicationMappingDisplay.Opaque>(result.snapshot.mappings.single().display)
     }
 
     @Test
-    fun unavailableRetainsValidMappings() = runTest {
+    fun `given an unavailable provider with a valid mapping when loaded then the mapping is retained`() = runTest {
         val provider = FakeIosApplicationMappingsProvider(
             loadResponse = response(
                 outcome = IosApplicationMappingsOutcome.UNAVAILABLE,
                 access = IosApplicationMappingsAccess.UNAVAILABLE,
-                mappings = listOf(IosApplicationMappingReference(identifier(), 1)),
+                mappings = listOf(IosApplicationMappingReference(identifier())),
             ),
         )
 
@@ -45,12 +45,12 @@ class IosLocalApplicationMappingsTest {
     }
 
     @Test
-    fun duplicateSlotsAreRejectedAsCorruption() = runTest {
+    fun `given duplicate mapping identifiers when loaded then corruption is reported`() = runTest {
         val provider = FakeIosApplicationMappingsProvider(
             loadResponse = response(
                 mappings = listOf(
-                    IosApplicationMappingReference(identifier('a'), 2),
-                    IosApplicationMappingReference(identifier('b'), 2),
+                    IosApplicationMappingReference(identifier('a')),
+                    IosApplicationMappingReference(identifier('a')),
                 ),
             ),
         )
@@ -63,12 +63,12 @@ class IosLocalApplicationMappingsTest {
     }
 
     @Test
-    fun accessChangeRetainsSnapshotAndMapsRestrictedState() = runTest {
+    fun `given access changes during selection when completed then the snapshot and restriction are retained`() = runTest {
         val provider = FakeIosApplicationMappingsProvider(
             selectionResponse = response(
                 outcome = IosApplicationMappingsOutcome.ACCESS_CHANGED,
                 access = IosApplicationMappingsAccess.RESTRICTED,
-                mappings = listOf(IosApplicationMappingReference(identifier(), 4)),
+                mappings = listOf(IosApplicationMappingReference(identifier())),
             ),
         )
 
@@ -77,11 +77,11 @@ class IosLocalApplicationMappingsTest {
         )
 
         assertEquals(LocalApplicationMappingsAccess.RESTRICTED, result.access)
-        assertEquals(4, assertIs<LocalApplicationMappingDisplay.Numbered>(result.snapshot.mappings.single().display).slot)
+        assertIs<LocalApplicationMappingDisplay.Opaque>(result.snapshot.mappings.single().display)
     }
 
     @Test
-    fun invalidationObservationIsCancelledWithCollector() = runTest {
+    fun `given an invalidation collector when collection completes then native observation is cancelled`() = runTest {
         val provider = FakeIosApplicationMappingsProvider()
         val mappings = IosLocalApplicationMappings(provider)
         val collection = async { mappings.invalidations.first() }

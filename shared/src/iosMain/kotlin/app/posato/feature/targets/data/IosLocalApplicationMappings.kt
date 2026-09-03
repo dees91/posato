@@ -25,7 +25,6 @@ enum class IosApplicationMappingsOutcome {
 
 class IosApplicationMappingReference(
     val identifier: String,
-    val slot: Int,
 ) {
     override fun toString(): String {
         return "IosApplicationMappingReference(redacted)"
@@ -190,14 +189,9 @@ private fun IosApplicationMappingsResponse.toRemovalResult(): LocalApplicationRe
 }
 
 private fun IosApplicationMappingsResponse.restoreSnapshot(): LocalApplicationMappingsSnapshot? {
-    if (mappings.size > LocalApplicationMappingLimits.MAXIMUM_MAPPINGS ||
-        mappings.map { reference -> reference.slot }.toSet().size != mappings.size
-    ) {
-        return null
-    }
     val restored = mappings.map { reference ->
         val id = LocalApplicationMappingId.restore(reference.identifier) ?: return null
-        LocalApplicationMapping.restoreNumbered(id, reference.slot) ?: return null
+        LocalApplicationMapping.restoreOpaque(id)
     }
 
     return LocalApplicationMappingsSnapshot.restore(restored)

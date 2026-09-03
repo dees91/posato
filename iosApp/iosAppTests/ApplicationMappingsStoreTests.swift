@@ -19,10 +19,25 @@ final class ApplicationMappingsStoreTests: XCTestCase {
         let store = ApplicationMappingsStore(fileURL: directory.appendingPathComponent("mappings.json"))
         XCTAssertEqual(try store.load(), [])
 
-        let mappings = [StoredApplicationMapping(slot: 2, token: Data([1, 2, 3]))]
+        let mappings = [StoredApplicationMapping(token: Data([1, 2, 3]))]
         try store.save(mappings)
 
         XCTAssertEqual(try store.load(), mappings)
+    }
+
+    func testLegacySlotFieldLoadsAndNextSaveOmitsIt() throws {
+        let fileURL = directory.appendingPathComponent("mappings.json")
+        let store = ApplicationMappingsStore(fileURL: fileURL)
+        let legacy = Data(#"{"version":1,"mappings":[{"slot":7,"token":"AQID"}]}"#.utf8)
+        try legacy.write(to: fileURL)
+
+        let mappings = try store.load()
+        XCTAssertEqual(mappings, [StoredApplicationMapping(token: Data([1, 2, 3]))])
+
+        try store.save(mappings)
+        let saved = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: fileURL)) as? [String: Any])
+        let savedMappings = try XCTUnwrap(saved["mappings"] as? [[String: Any]])
+        XCTAssertNil(try XCTUnwrap(savedMappings.first)["slot"])
     }
 
     func testCorruptFileIsRejected() throws {
@@ -35,7 +50,7 @@ final class ApplicationMappingsStoreTests: XCTestCase {
     func testUnrelatedTemporaryFileDoesNotAffectLoad() throws {
         let fileURL = directory.appendingPathComponent("mappings.json")
         let store = ApplicationMappingsStore(fileURL: fileURL)
-        let mappings = [StoredApplicationMapping(slot: 1, token: Data([4, 5, 6]))]
+        let mappings = [StoredApplicationMapping(token: Data([4, 5, 6]))]
         try store.save(mappings)
         try Data("partial".utf8).write(to: directory.appendingPathComponent("mappings.json.tmp"))
 
@@ -45,38 +60,32 @@ final class ApplicationMappingsStoreTests: XCTestCase {
     func testSaveFailureLeavesExistingFileReadable() throws {
         let fileURL = directory.appendingPathComponent("mappings.json")
         let store = ApplicationMappingsStore(fileURL: fileURL)
-        let mappings = [StoredApplicationMapping(slot: 1, token: Data([7, 8, 9]))]
+        let mappings = [StoredApplicationMapping(token: Data([7, 8, 9]))]
         try store.save(mappings)
         try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: fileURL.path)
         defer { try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: fileURL.path) }
 
-        XCTAssertThrowsError(try store.save([StoredApplicationMapping(slot: 2, token: Data([0]))]))
+        XCTAssertThrowsError(try store.save([StoredApplicationMapping(token: Data([0]))]))
         XCTAssertEqual(try store.load(), mappings)
     }
 
     func testStructuralLimitsAndDuplicateTokensAreRejectedAsCorruption() throws {
         let store = ApplicationMappingsStore(fileURL: directory.appendingPathComponent("mappings.json"))
 
-        assertCorruption { try store.save([StoredApplicationMapping(slot: 1, token: Data())]) }
+        assertCorruption { try store.save([StoredApplicationMapping(token: Data())]) }
         assertCorruption {
             try store.save([
-                StoredApplicationMapping(slot: 1, token: Data([1])),
-                StoredApplicationMapping(slot: 1, token: Data([2])),
-            ])
-        }
-        assertCorruption {
-            try store.save([
-                StoredApplicationMapping(slot: 1, token: Data([1])),
-                StoredApplicationMapping(slot: 2, token: Data([1])),
+                StoredApplicationMapping(token: Data([1])),
+                StoredApplicationMapping(token: Data([1])),
             ])
         }
         assertCorruption {
             try store.save(
-                (1...65).map { slot in StoredApplicationMapping(slot: slot, token: Data([UInt8(slot)])) }
+                (1...65).map { value in StoredApplicationMapping(token: Data([UInt8(value)])) }
             )
         }
         assertCorruption {
-            try store.save([StoredApplicationMapping(slot: 1, token: Data(repeating: 1, count: 65_537))])
+            try store.save([StoredApplicationMapping(token: Data(repeating: 1, count: 65_537))])
         }
     }
 
@@ -88,7 +97,7 @@ final class ApplicationMappingsStoreTests: XCTestCase {
             try storeDirectory.resourceValues(forKeys: [.isExcludedFromBackupKey]).isExcludedFromBackup,
             true
         )
-        try store.save([StoredApplicationMapping(slot: 1, token: Data([1]))])
+        try store.save([StoredApplicationMapping(token: Data([1]))])
 #if !targetEnvironment(simulator)
         let attributes = try FileManager.default.attributesOfItem(atPath: store.fileURL.path)
         XCTAssertEqual(attributes[.protectionKey] as? FileProtectionType, .complete)
@@ -103,7 +112,7 @@ final class ApplicationMappingsStoreTests: XCTestCase {
         XCTAssertEqual(provider.identifier(for: first), provider.identifier(for: first))
         XCTAssertNotEqual(provider.identifier(for: first), provider.identifier(for: second))
         assertCorruption {
-            try provider.validatedMappings([StoredApplicationMapping(slot: 1, token: first)])
+            try provider.validatedMappings([StoredApplicationMapping(token: first)])
         }
     }
 
