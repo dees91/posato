@@ -117,15 +117,19 @@ scenario steps use the same keys in a `query` object:
 | `--role` | `role` | `button`, `textField`, `text`, `group`, `window`, `progress`, `other`, `any`. |
 | `--index` | `index` | The nth match, 0-based. |
 | `--path` | `path` | Desktop accessibility path from a previous snapshot, e.g. `0/0/0/0/9/2`. |
-| `--within-text` + `--within-role` | `within` | Scope: the nearest ancestor with the given role of the element carrying the text; the query then matches inside that scope. |
+| `--within-text` + `--within-role` | `within` | Scope: the nearest ancestor with the given role of the element carrying the text; the query then matches inside that scope. Works where the platform exposes containers (desktop rows). |
+| `--near-text` + `--near-role` | `near` | Prefer the match whose frame centre is closest to the element carrying the text; `index` then picks farther matches. Works on every target, including iOS lists whose rows expose no container. |
 
 Example: the Remove button of the `example.com` row is
-`--text Remove --role button --within-text example.com --within-role group`.
+`--text Remove --role button --near-text example.com`, and the domain field is
+`--role textField --near-text "Add website"`.
 
 Desktop specifics (observed on Compose Multiplatform 1.10.3): buttons expose
 their label, static text exposes its text as both label and value, text fields
-have no label of their own (address them with `--role textField --index 0` or
-by `--path`), and `testTag` is not exposed. Typing goes through keyboard
+have no label of their own (address them with `--role textField --near-text
+"Add website"` or by `--path`), and `testTag` is not exposed. On iOS the text
+field's label is its floating label ("Exact domain"), and the first text field
+in tree order is the application group name, so prefer `near` over `index`. Typing goes through keyboard
 events after focusing the field, so the desktop window may be anywhere but
 must not be minimized.
 
@@ -147,14 +151,20 @@ must not be minimized.
   "continueOnFailure": false,
   "steps": [
     { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Add website" }, "timeoutSeconds": 30 },
-    { "name": "enter-domain", "action": "type", "query": { "role": "textField", "index": 0 }, "text": "example.com", "clear": true },
-    { "name": "submit", "action": "tap", "query": { "text": "Add website" } },
+    { "name": "enter-domain", "action": "type", "query": { "role": "textField", "near": { "text": "Add website" } }, "text": "example.com", "clear": true, "submit": true },
     { "name": "row-visible", "action": "waitFor", "state": "exists", "query": { "text": "example.com", "role": "text" } },
     { "name": "after-add", "action": "screenshot" },
     { "name": "after-add", "action": "snapshot" }
   ]
 }
 ```
+
+iOS keyboard note: Compose drops the accessibility label of content hidden
+behind the software keyboard, and this screen does not pad for it, so the
+"Add website" button is unreachable while the domain field has focus. Finish
+text entry with `"submit": true` (the Return key triggers the field's IME
+action) or `press --key return` before tapping controls below the field. The
+`add-website` fixture does exactly that on every target.
 
 Actions: `waitFor` (`state`: `exists`, `absent`, `enabled`, `disabled`,
 `settled`), `tap`, `type` (`text`, `clear`, `submit`), `press` (`key`,
@@ -196,11 +206,13 @@ for the booted (or configured) simulator with signing disabled; `install`,
 use `simctl`. `db` reads the policy database inside the app container.
 Interaction goes through the XCUITest driver.
 
-**device.** `build` signs with the configured team through automatic signing;
-`install`, `launch`, and `terminate` use `devicectl`. `launch --capture-logs`
-keeps a console attachment whose output `logs` reads. Screenshots and all
-interaction go through the driver; `db` is unsupported, and `reset` means
-uninstall.
+**device.** `build` signs with the configured team through automatic signing
+(the driver signs with the same wildcard development profile and needs no
+entitlement); `install`, `launch`, and `terminate` use `devicectl`.
+`launch --capture-logs` keeps a `devicectl --console` attachment whose output
+`logs` reads; the application lives only as long as that attachment, so
+`terminate` ends both. Screenshots and all interaction go through the driver;
+`db` is unsupported, and `reset` means uninstall.
 
 **iOS driver.** `ios-driver/PosatoDriver.xcodeproj` contains a stub host app
 and a UI-testing bundle that drives the installed Posato app by bundle
@@ -208,8 +220,11 @@ identifier. `build --driver` (or the first interaction command) runs
 `xcodebuild build-for-testing`; every `snapshot`, `tap`, `type`, `wait`,
 `run`, and device `screenshot` then runs `xcodebuild test-without-building`
 with the scenario passed as a base64 environment variable and reads the
-attachments back with `xcresulttool`. Each invocation costs several seconds of
-XCUITest startup, so prefer `run --scenario` over many single commands on iOS.
+attachments back with `xcresulttool`. Each invocation costs roughly 5 s of
+XCUITest startup on the Simulator and 6–12 s on an unlocked iPhone (about a
+minute when the runner must be reinstalled or the phone is locked), so prefer
+`run --scenario` over many single commands on iOS. The xcodebuild transcript
+of every driver run is kept next to its result bundle in the run directory.
 
 ## Workflow for an agent
 

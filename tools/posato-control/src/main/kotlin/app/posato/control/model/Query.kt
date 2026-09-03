@@ -10,10 +10,11 @@ data class Query(
     val role: String? = null,
     val index: Int? = null,
     val within: Query? = null,
+    val near: Query? = null,
     val path: String? = null,
 ) {
     val isEmpty: Boolean
-        get() = id == null && text == null && textContains == null && role == null && index == null && within == null && path == null
+        get() = listOf(id, text, textContains, role, index, within, near, path).all { it == null }
 
     fun describe(): String = buildList {
         id?.let { add("id=$it") }
@@ -23,5 +24,6 @@ data class Query(
         index?.let { add("index=$it") }
         path?.let { add("path=$it") }
         within?.let { add("within(${it.describe()})") }
+        near?.let { add("near(${it.describe()})") }
     }.joinToString(" ")
 }

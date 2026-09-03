@@ -6,10 +6,10 @@
   "steps": [
     { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Add website" }, "timeoutSeconds": 30 },
     { "name": "before", "action": "snapshot" },
-    { "name": "enter-domain", "action": "type", "query": { "role": "textField", "index": 0 }, "text": "example.com", "clear": true },
-    { "name": "submit", "action": "tap", "query": { "text": "Add website" } },
+    { "name": "enter-domain", "action": "type", "query": { "role": "textField", "near": { "text": "Add website" } }, "text": "example.com", "clear": true, "submit": true },
     { "name": "row-visible", "action": "waitFor", "state": "exists", "query": { "text": "example.com", "role": "text" } },
     { "name": "empty-state-gone", "action": "assert", "state": "absent", "query": { "text": "No websites added" } },
+    { "name": "add-button-back", "action": "assert", "state": "exists", "query": { "text": "Add website", "role": "button" } },
     { "name": "after-add", "action": "screenshot" },
     { "name": "after-add", "action": "snapshot" }
   ]

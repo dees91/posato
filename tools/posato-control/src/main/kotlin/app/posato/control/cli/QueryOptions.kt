@@ -14,10 +14,13 @@ class QueryOptions : OptionGroup(name = "Element query") {
     private val path by option("--path", help = "Desktop accessibility path from a previous snapshot, e.g. 0/2/1.")
     private val withinText by option("--within-text", help = "Restrict the search to the subtree of the element with this text.")
     private val withinRole by option("--within-role", help = "Role of the ancestor selected with --within-text.")
+    private val nearText by option("--near-text", help = "Prefer the match whose frame is closest to the element with this text.")
+    private val nearRole by option("--near-role", help = "Role of the anchor selected with --near-text.")
 
     fun toQuery(): Query? {
         val within = withinText?.let { Query(text = it, role = withinRole) }
-        val query = Query(id = id, text = text, textContains = textContains, role = role, index = index, within = within, path = path)
+        val near = nearText?.let { Query(text = it, role = nearRole) }
+        val query = Query(id = id, text = text, textContains = textContains, role = role, index = index, within = within, near = near, path = path)
         return query.takeUnless { it.isEmpty }
     }
 }
