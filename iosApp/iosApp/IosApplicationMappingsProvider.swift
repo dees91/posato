@@ -57,7 +57,13 @@ final class ApplicationMappingsChooseSession {
         completion != nil
     }
 
-    func begin(_ completion: @escaping (IosApplicationMappingsResponse) -> Void) -> UInt64 {
+    func begin(
+        replacingActiveWith replacement: IosApplicationMappingsResponse,
+        _ completion: @escaping (IosApplicationMappingsResponse) -> Void
+    ) -> UInt64 {
+        if isActive {
+            complete(generation, with: replacement)
+        }
         generation += 1
         self.completion = completion
         return generation
@@ -80,21 +86,25 @@ final class ApplicationMappingsChooseSession {
 
 enum ApplicationMappingsPresentationGate {
     static func canPresent(from presenter: UIViewController) -> Bool {
-        presenter.presentedViewController == nil && presenter.view.window != nil
+        presenter.presentedViewController == nil &&
+            presenter.view.window != nil &&
+            presenter.transitionCoordinator == nil &&
+            !presenter.isBeingPresented &&
+            !presenter.isBeingDismissed
     }
 
     static func present(
         _ controller: UIViewController,
         from presenter: UIViewController,
         animated: Bool = true,
-        completion: @escaping (Bool) -> Void
+        completion: ((Bool) -> Void)? = nil
     ) {
         guard canPresent(from: presenter) else {
-            completion(false)
+            completion?(false)
             return
         }
         presenter.present(controller, animated: animated) {
-            completion(presenter.presentedViewController === controller)
+            completion?(presenter.presentedViewController === controller)
         }
     }
 }
@@ -271,11 +281,14 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
 #if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
         completion(response(outcome: .unavailable, access: .unavailable))
 #else
-        guard pickerController == nil, !chooseSession.isActive else {
+        guard pickerController == nil else {
             completion(response(outcome: .pickerFailure))
             return
         }
-        let generation = chooseSession.begin(completion)
+        let generation = chooseSession.begin(
+            replacingActiveWith: response(outcome: .pickerFailure),
+            completion
+        )
         operation.install { [weak self] in
             guard let self else { return }
             self.performOnMain {
@@ -348,15 +361,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         pickerController = controller
         pickerGeneration = generation
         controller.presentationController?.delegate = self
-        ApplicationMappingsPresentationGate.present(controller, from: presenter) { [weak self] presented in
-            guard let self else { return }
-            self.performOnMain {
-                guard self.chooseSession.isCurrent(generation) else { return }
-                if !presented {
-                    self.completeChoose(generation, with: self.response(outcome: .pickerFailure))
-                }
-            }
-        }
+        ApplicationMappingsPresentationGate.present(controller, from: presenter)
     }
 
     private func finishPicker(result: ApplicationPickerResult) {
@@ -497,9 +502,12 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             pickerController = nil
             pickerGeneration = 0
         }
-        chooseSession.complete(generation, with: response)
-        if dismissPicker && ownsPicker {
-            controller?.dismiss(animated: true)
+        if dismissPicker && ownsPicker, let controller {
+            controller.dismiss(animated: true) { [weak self] in
+                self?.chooseSession.complete(generation, with: response)
+            }
+        } else {
+            chooseSession.complete(generation, with: response)
         }
     }
 

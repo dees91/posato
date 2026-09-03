@@ -129,17 +129,19 @@ final class ApplicationMappingsStoreTests: XCTestCase {
         XCTAssertEqual(cancellations, 1)
     }
 
-    func testChooseSessionIgnoresStaleCompletionAfterALaterBegin() {
+    func testChooseSessionCompletesAnActiveBeginBeforeStartingTheNext() {
         let session = ApplicationMappingsChooseSession()
         var first: IosApplicationMappingsOutcome?
         var second: IosApplicationMappingsOutcome?
-        let firstGeneration = session.begin { first = $0.outcome }
-        let secondGeneration = session.begin { second = $0.outcome }
+        let replacement = sessionResponse(.pickerFailure)
+        let firstGeneration = session.begin(replacingActiveWith: replacement) { first = $0.outcome }
+        let secondGeneration = session.begin(replacingActiveWith: replacement) { second = $0.outcome }
 
+        XCTAssertEqual(first, .pickerFailure)
+        XCTAssertNil(second)
         XCTAssertFalse(session.complete(firstGeneration, with: sessionResponse(.cancelled)))
-        XCTAssertNil(first)
-        XCTAssertTrue(session.complete(secondGeneration, with: sessionResponse(.pickerFailure)))
-        XCTAssertEqual(second, .pickerFailure)
+        XCTAssertTrue(session.complete(secondGeneration, with: sessionResponse(.cancelled)))
+        XCTAssertEqual(second, .cancelled)
         XCTAssertFalse(session.isActive)
     }
 
@@ -147,12 +149,13 @@ final class ApplicationMappingsStoreTests: XCTestCase {
         let session = ApplicationMappingsChooseSession()
         var first: IosApplicationMappingsOutcome?
         var second: IosApplicationMappingsOutcome?
-        let firstGeneration = session.begin { first = $0.outcome }
+        let replacement = sessionResponse(.pickerFailure)
+        let firstGeneration = session.begin(replacingActiveWith: replacement) { first = $0.outcome }
 
         XCTAssertTrue(session.complete(firstGeneration, with: sessionResponse(.cancelled)))
         XCTAssertEqual(first, .cancelled)
 
-        let secondGeneration = session.begin { second = $0.outcome }
+        let secondGeneration = session.begin(replacingActiveWith: replacement) { second = $0.outcome }
         XCTAssertFalse(session.complete(firstGeneration, with: sessionResponse(.pickerFailure)))
         XCTAssertNil(second)
         XCTAssertTrue(session.isCurrent(secondGeneration))

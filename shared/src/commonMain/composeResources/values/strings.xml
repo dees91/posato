@@ -23,6 +23,7 @@
     <string name="application_mapping_access_unavailable">Choosing apps is not available in this version of Posato.</string>
     <string name="application_mapping_capacity">This device already has the maximum number of chosen applications.</string>
     <string name="application_mapping_corruption">Chosen applications could not be verified. Nothing was changed.</string>
+    <string name="application_mapping_corruption_clear_failed">Chosen applications could not be verified. The selection could not be cleared.</string>
     <string name="application_mapping_empty">No applications chosen on this device.</string>
     <string name="application_mapping_invalid">Choose signed application bundles that can be verified on this Mac.</string>
     <string name="application_mapping_unsupported">Choose individual applications only.</string>

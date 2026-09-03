@@ -97,7 +97,8 @@ internal fun TargetsViewModel.removeApplicationMapping(mappingId: LocalApplicati
 }
 
 internal fun TargetsViewModel.clearApplicationMappings() {
-    val clearingCorruption = currentState.applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS
+    val clearingCorruption = currentState.applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_MAPPINGS ||
+        currentState.applicationMappingFailure == ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED
     if (!currentState.canClearApplicationMappings()) {
         return
     }
@@ -113,7 +114,7 @@ internal fun TargetsViewModel.clearApplicationMappings() {
             val result = applicationMappings.clear()
             if (clearingCorruption && result is LocalApplicationRemovalResult.Failure) {
                 applicationMappingsState.update { state ->
-                    state.copy(failure = ApplicationMappingFailure.CORRUPTED_MAPPINGS)
+                    state.copy(failure = ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED)
                 }
             } else {
                 applyApplicationRemovalResult(result)
@@ -127,7 +128,7 @@ internal fun TargetsViewModel.clearApplicationMappings() {
             applicationMappingsState.update { state ->
                 state.copy(
                     failure = if (clearingCorruption) {
-                        ApplicationMappingFailure.CORRUPTED_MAPPINGS
+                        ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED
                     } else {
                         ApplicationMappingFailure.SAVE_FAILED
                     },
