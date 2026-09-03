@@ -40,7 +40,6 @@ internal class BootstrapZonePhase(
             is ZoneSaveResult.Created -> null
             is ZoneSaveResult.AlreadyExists -> null
             is ZoneSaveResult.UnknownOutcome -> null
-            is ZoneSaveResult.Conflict -> ZoneGate.Stop(BootstrapResult.ActionRequired)
             is ZoneSaveResult.Retryable -> ZoneGate.Stop(BootstrapResult.Retryable)
             is ZoneSaveResult.AccountChanged -> ZoneGate.Stop(BootstrapResult.ActionRequired)
         }

@@ -8,7 +8,9 @@ import app.posato.feature.sync.domain.WorkspaceId
 private const val IDENTIFIER_BYTES: Int = 16
 private const val ACCOUNT_TEXT_BYTES: Int = 36
 private const val CRC_BYTES: Int = 4
-private const val UUID_SEGMENTS: Int = 5
+private const val UUID_TEXT_FIRST_SEGMENT: Int = 8
+private const val UUID_TEXT_DASH_STEP: Int = 5
+private const val UUID_TEXT_DASHES: Int = 4
 private const val FIRST_SEGMENT_BYTES: Int = 4
 private const val MIDDLE_SEGMENT_BYTES: Int = 2
 private const val LAST_SEGMENT_BYTES: Int = 6
@@ -84,22 +86,13 @@ internal object BootstrapEncoding {
         if (text.length != ACCOUNT_TEXT_BYTES) {
             return false
         }
-        var segment = 0
-        var segmentLength = 0
-        text.forEach { char ->
-            if (char == '-') {
-                if (segmentLength == 0 || segment >= UUID_SEGMENTS - 1) {
-                    return false
-                }
-                segment += 1
-                segmentLength = 0
-            } else if (char in '0'..'9' || char in 'a'..'f') {
-                segmentLength += 1
-            } else {
-                return false
-            }
+        if (text.count { char -> char == '-' } != UUID_TEXT_DASHES) {
+            return false
         }
-        return segment == UUID_SEGMENTS - 1 && segmentLength > 0
+        if (!hasCanonicalDashes(text)) {
+            return false
+        }
+        return text.all { char -> char == '-' || isLowerHexDigit(char) }
     }
 
     fun applyUuidVersionFour(bytes: ByteArray): SyncIdentifier? {
@@ -215,4 +208,19 @@ internal object BootstrapEncoding {
         append(HEX_DIGITS[value ushr HEX_NIBBLE_BITS])
         append(HEX_DIGITS[value and HEX_NIBBLE_MASK])
     }
+}
+
+private fun hasCanonicalDashes(text: String): Boolean {
+    var position = UUID_TEXT_FIRST_SEGMENT
+    repeat(UUID_TEXT_DASHES) {
+        if (text[position] != '-') {
+            return false
+        }
+        position += UUID_TEXT_DASH_STEP
+    }
+    return true
+}
+
+private fun isLowerHexDigit(char: Char): Boolean {
+    return char in '0'..'9' || char in 'a'..'f'
 }

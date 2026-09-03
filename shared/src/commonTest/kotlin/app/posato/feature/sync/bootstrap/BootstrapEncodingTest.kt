@@ -27,6 +27,10 @@ class BootstrapEncodingTest {
         assertTrue(!BootstrapEncoding.isCanonicalAccountText("abcdef00-0000-4000-8000-000000000001".uppercase()))
         assertTrue(!BootstrapEncoding.isCanonicalAccountText("0000000040008000000000000001"))
         assertTrue(!BootstrapEncoding.isCanonicalAccountText(""))
+        assertTrue(!BootstrapEncoding.isCanonicalAccountText("0000000-00000-4000-8000-000000000001"))
+        assertTrue(!BootstrapEncoding.isCanonicalAccountText("00000000-0000-4000-8000-00000000001"))
+        assertTrue(!BootstrapEncoding.isCanonicalAccountText("00000000-0000-4000-8000-0000000000-01"))
+        assertTrue(!BootstrapEncoding.isCanonicalAccountText("00000000-0000-4000-8000-000000-00001"))
     }
 
     @Test
