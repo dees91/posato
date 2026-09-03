@@ -978,3 +978,12 @@
 
 - Removed four unused SQLDelight queries and moved the projection digest into
   test sources without changing schema, format, or runtime behavior.
+
+## [2026-09-02] tooling | Add the agent verification driver
+
+- Added `posato-control`, a Kotlin CLI with a Swift accessibility bridge and
+  an XCUITest driver, so agents can build, launch, drive, inspect, screenshot,
+  and reset the macOS and iOS applications on the Simulator and the supported
+  iPhone with JSON evidence kept under the ignored build directory.
+- Recorded that Compose Desktop exposes controls through macOS accessibility
+  without `testTag`, while iOS maps `testTag` to the accessibility identifier.

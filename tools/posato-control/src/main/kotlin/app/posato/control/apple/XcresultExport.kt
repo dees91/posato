@@ -40,7 +40,7 @@ class XcresultExport(
         if (!manifest.exists()) return destination
         attachments(manifest).forEach { (exportedName, humanName) ->
             val source = exportDirectory.resolve(exportedName)
-            if (source.exists()) Files.copy(source, destination.resolve(humanName), StandardCopyOption.REPLACE_EXISTING)
+            if (source.exists()) Files.copy(source, destination.resolve(attachmentFileName(humanName)), StandardCopyOption.REPLACE_EXISTING)
         }
         return destination
     }
@@ -71,3 +71,8 @@ class XcresultExport(
         }
     }
 }
+
+/** Strips the `_<n>_<uuid>` suffix that `xcresulttool` appends to attachment names, keeping the extension. */
+internal fun attachmentFileName(suggestedName: String): String = ATTACHMENT_SUFFIX.replace(suggestedName, "$1$2")
+
+private val ATTACHMENT_SUFFIX = Regex("""^(.*?)_\d+_[0-9A-Fa-f-]{36}(\.[A-Za-z0-9]+)?$""")

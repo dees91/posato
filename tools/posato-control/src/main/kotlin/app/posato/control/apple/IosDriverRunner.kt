@@ -46,20 +46,19 @@ class IosDriverRunner(
         val resultBundle = context.artifactPath("driver", "$target-$invocation.xcresult")
         Files.deleteIfExists(resultBundle)
         val encoded = Base64.getEncoder().encodeToString(ControlJson.compact.encodeToString(Scenario.serializer(), scenario).toByteArray())
+        val log = context.recordArtifact(context.artifactPath("driver", "$target-$invocation.xcodebuild.log"))
         val exitCode = xcodeBuild.testWithoutBuilding(
             testRun,
             udid,
             resultBundle,
-            mapOf(
-                "POSATO_SCENARIO_B64" to encoded,
-                "POSATO_BUNDLE_ID" to bundleId,
-            ),
+            mapOf("POSATO_SCENARIO_B64" to encoded, "POSATO_BUNDLE_ID" to bundleId),
+            log,
         )
         if (!resultBundle.exists()) {
             throw ControlException(
                 ErrorCode.DRIVER_FAILED,
                 "The driver produced no result bundle (xcodebuild exit $exitCode).",
-                "Unlock the device, keep it connected, and rerun with --verbose.",
+                "Unlock the device, keep it connected, and read ${context.layout.relativize(log)}.",
             )
         }
         val exported = XcresultExport(context).exportAttachments(resultBundle, context.artifactPath("driver", "$target-$invocation"))
@@ -75,7 +74,7 @@ class IosDriverRunner(
             throw ControlException(
                 ErrorCode.DRIVER_FAILED,
                 "The driver finished (xcodebuild exit $exitCode) without a result.json attachment.",
-                "Inspect the transcript in the run directory.",
+                "Read the xcodebuild log next to the result bundle in the run directory.",
             )
         }
         return try {

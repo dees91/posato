@@ -22,7 +22,11 @@ object QueryMatcher {
         query: Query
     ): List<SnapshotNode> {
         val scope = query.within?.let { inner -> scope(root, inner) ?: return emptyList() } ?: root
-        val hits = scope.flatten().filter { node -> matches(node, query) }
+        var hits = scope.flatten().filter { node -> matches(node, query) }
+        query.near?.let { nearQuery ->
+            val anchor = find(root, nearQuery) ?: return emptyList()
+            hits = hits.sortedBy { candidate -> distance(candidate, anchor) }
+        }
         val index = query.index ?: return hits
         return listOfNotNull(hits.getOrNull(index))
     }
@@ -50,7 +54,7 @@ object QueryMatcher {
         root: SnapshotNode,
         within: Query
     ): SnapshotNode? {
-        val anchorQuery = within.copy(role = null, within = null)
+        val anchorQuery = within.copy(role = null, within = null, near = null)
         val ancestors = ArrayDeque<SnapshotNode>()
         var found: SnapshotNode? = null
 
@@ -65,6 +69,15 @@ object QueryMatcher {
         }
         visit(root)
         return found
+    }
+
+    private fun distance(
+        a: SnapshotNode,
+        b: SnapshotNode
+    ): Double {
+        val dx = (a.frame.x + a.frame.w / 2) - (b.frame.x + b.frame.w / 2)
+        val dy = (a.frame.y + a.frame.h / 2) - (b.frame.y + b.frame.h / 2)
+        return dx * dx + dy * dy
     }
 
     private fun roleMatches(

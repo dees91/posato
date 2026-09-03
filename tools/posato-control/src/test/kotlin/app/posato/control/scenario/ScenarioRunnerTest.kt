@@ -69,7 +69,12 @@ class ScenarioRunnerTest {
         val scenario = Scenario(
             steps = listOf(
                 Step(action = Actions.WAIT_FOR, state = States.EXISTS, query = Query(text = "Add website")),
-                Step(action = Actions.TYPE, query = Query(role = "textField", index = 0), text = "example.com", clear = true),
+                Step(
+                    action = Actions.TYPE,
+                    query = Query(role = "textField", near = Query(text = "Add website")),
+                    text = "example.com",
+                    clear = true,
+                ),
                 Step(action = Actions.TAP, query = Query(text = "Add website")),
                 Step(action = Actions.ASSERT, state = States.EXISTS, query = Query(text = "example.com")),
                 Step(action = Actions.SCREENSHOT, name = "after-add"),
@@ -81,8 +86,8 @@ class ScenarioRunnerTest {
         assertTrue(result.ok, result.toString())
         assertEquals(
             listOf(
-                "type 0/0/0/2/0 example.com clear=true submit=false",
-                "tap 0/0/0/2/2",
+                "type 0/0/0/3/0 example.com clear=true submit=false",
+                "tap 0/0/0/3/2",
                 "screenshot screenshot-4-after-add",
                 "snapshot snapshot-5-after-add",
                 "press return ",

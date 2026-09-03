@@ -71,7 +71,8 @@ class XcodeBuild(
         testRun: Path,
         udid: String,
         resultBundle: Path,
-        environment: Map<String, String>
+        environment: Map<String, String>,
+        log: Path
     ): Int {
         val command = listOf(
             "/usr/bin/xcodebuild",
@@ -85,6 +86,8 @@ class XcodeBuild(
             "-only-testing:PosatoDriverUITests/DriverTests/testRunScenario",
         )
         val output = context.subprocess.run(command, environment = environment.mapKeys { (key, _) -> "TEST_RUNNER_$key" }, timeout = TEST_TIMEOUT)
+        Files.createDirectories(log.parent)
+        Files.writeString(log, output.stdout + "\n--- stderr ---\n" + output.stderr)
         return output.exitCode
     }
 
