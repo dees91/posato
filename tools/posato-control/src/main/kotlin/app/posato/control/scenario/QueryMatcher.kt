@@ -71,13 +71,14 @@ object QueryMatcher {
         return found
     }
 
+    /** Row-biased distance: same-line elements win over neighbouring rows; vertical stacking still resolves headers. */
     private fun distance(
         a: SnapshotNode,
         b: SnapshotNode
     ): Double {
         val dx = (a.frame.x + a.frame.w / 2) - (b.frame.x + b.frame.w / 2)
         val dy = (a.frame.y + a.frame.h / 2) - (b.frame.y + b.frame.h / 2)
-        return dx * dx + dy * dy
+        return kotlin.math.abs(dy) * ROW_WEIGHT + kotlin.math.abs(dx)
     }
 
     private fun roleMatches(
@@ -95,3 +96,5 @@ object QueryMatcher {
         return texts.any { it.contains(needle) }
     }
 }
+
+private const val ROW_WEIGHT = 3.0

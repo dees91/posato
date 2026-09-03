@@ -62,9 +62,10 @@ The scenario and result schemas are defined in
 `PosatoDriverUITests/ScenarioModels.swift` and shared with the Kotlin CLI.
 Queries support `id`, `text`, `textContains`, `role`, `index`, `within`
 (the deepest element of the given role that contains the anchor), and
-`near` (the match whose frame centre is closest to the anchor; Compose list
-rows on iOS expose no container, so `near` is the way to address a row's
-button).
+`near` (the match closest to the anchor with vertical distance weighted three
+times, so a control on the anchor's own row wins over the neighbouring row;
+Compose list rows on iOS expose no container, so `near` is the way to address
+a row's button).
 If `terminateExisting` is `false` and the application is already running, the
 driver activates the running instance instead of relaunching it.
 

@@ -987,3 +987,19 @@
   iPhone with JSON evidence kept under the ignored build directory.
 - Recorded that Compose Desktop exposes controls through macOS accessibility
   without `testTag`, while iOS maps `testTag` to the accessibility identifier.
+
+## [2026-09-03] tooling | Add the verify-posato skill
+
+- Added the project-local `verify-posato` skill under `.agents/skills/` with a
+  feature map (websites, application group, macOS application mappings) that
+  tells an agent how to launch, check, drive, prove, and clean up Posato through
+  `posato-control` on the desktop, the Simulator, and the iPhone.
+- The websites and application-group recipes were executed end to end on the
+  Simulator; the macOS application picker is documented as a manual step
+  because its panel belongs to the helper process.
+- Added a root `CLAUDE.md` that imports `AGENTS.md`, so Claude Code loads the
+  shared agent instructions automatically instead of relying on a manual read.
+- The proof runs corrected the iOS driver: `near` now weighs vertical distance
+  so a row's own button wins, a `near` target clipped at the screen edge is
+  scrolled into view, and clearing a field sends a few extra deletes because
+  the first keystrokes can be lost while the keyboard appears.
