@@ -298,6 +298,19 @@ Swift companion rather than the enforcement helper. Kotlin owns bootstrap and
 semantic outcomes; the native process owns only CloudKit and Keychain mechanics.
 Implementation and physical evidence remain with `SYNC-004` through `SYNC-010`.
 
+`observed` (2026-09-03): `SYNC-004` implemented the one-workspace bootstrap
+coordinator in the production shared module (`feature/sync/bootstrap` with a
+`3.sqm` singleton table). A serialized coordinator runs the ADR 0007 ten-step
+protocol against binding-gated fake CloudKit, Keychain, and account ports; the
+workspace key is generated in memory, never persisted, and cleared after use.
+Contract tests cover the full ADR 0007 evidence list for `SYNC-004`, including
+two coordinators converging on one anchor with loser-only cleanup, crash resume
+at each persistence boundary, and account change around indeterminate saves.
+An established workspace re-reads its anchor on every bootstrap, so a replaced
+or missing anchor reports action-required instead of a false ready. Native
+adapters, platform wiring, and physical evidence remain with `SYNC-005`
+through `SYNC-009`; explicit workspace removal stays with `SYNC-009`.
+
 ## Lifecycle and user-visible status
 
 The common orchestration should coalesce overlapping start, resume, native

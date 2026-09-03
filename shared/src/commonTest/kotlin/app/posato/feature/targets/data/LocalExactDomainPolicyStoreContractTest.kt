@@ -75,6 +75,7 @@ class LocalExactDomainPolicyStoreContractTest {
             driver.executeSql("DROP TABLE sync_pending_bundle")
             driver.executeSql("DROP TABLE sync_accepted_bundle")
             driver.executeSql("DROP TABLE sync_replica_state")
+            driver.executeSql("DROP TABLE sync_bootstrap_state")
             driver.executeSql("DROP TABLE application_policy")
             driver.executeSql("PRAGMA user_version = 1")
             driver.close()
@@ -101,6 +102,7 @@ class LocalExactDomainPolicyStoreContractTest {
             driver.executeSql("DROP TABLE sync_pending_bundle")
             driver.executeSql("DROP TABLE sync_accepted_bundle")
             driver.executeSql("DROP TABLE sync_replica_state")
+            driver.executeSql("DROP TABLE sync_bootstrap_state")
             driver.executeSql("PRAGMA user_version = 2")
             driver.close()
 
