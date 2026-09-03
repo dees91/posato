@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 6
+- **Revision:** 7
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-02
+- **Last amended:** 2026-09-03
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -24,8 +24,11 @@ dead queries, unused wiring, a test-only digest helper, and duplicated
 validation layers in place. Revision 6 adds the maintainer-requested
 `QUALITY-002` verification driver so agents can build, drive, inspect, and
 reset both applications on the supported Mac, the Simulator, and the
-supported iPhone without a maintainer in the loop. Neither revision changes
-any other task, dependency, wave, or integration group.
+supported iPhone without a maintainer in the loop. Revision 7 adds the
+maintainer-accepted `TARGETS-005` hardening follow-up after the independent
+review of `TARGETS-004` accepted its blocking findings and deferred four
+advisory recoverability and copy items. None of these revisions changes any
+other task, dependency, wave, or integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -86,6 +89,7 @@ wave barriers add the phase ordering stated above.
 | `SYNC-002` | Create and process compatible encrypted operations with deterministic rejection and convergence. | Apple synchronization | P2/W2.6 | `SYNC-001` | PR-SYNC-CORE |
 | `SYNC-013` | Remove dead sync queries, unused iOS wiring, the test-only digest helper, and duplicated validation layers without changing format, schema, or behavior. | Apple synchronization | P2/W2.6b | `SYNC-002` | PR-SYNC-SIMPLIFY |
 | `QUALITY-002` | Build, launch, drive, inspect, screenshot, and reset the macOS and iOS applications on the supported Mac, the Simulator, and the supported iPhone from one agent-facing CLI. | Preparation | P2/W2.6c | `FOUNDATION-001`, `MACOS-006` | PR-VERIFICATION-DRIVER |
+| `TARGETS-005` | Recover from a stale authorization request, a refused picker presentation, and a corrupted selection store on iOS, and state unavailability in product terms. | Target management | P2/W2.6d | `TARGETS-004` | PR-IOS-MAPPING-HARDENING |
 | `SESSION-001` | Provide shared setup, review, start, early-end, and expiry behavior for one manual session, and consolidate only repeated production UI contracts. | Sessions and enforcement | P2/W2.7 | `TARGETS-001`, `TARGETS-002` | PR-SESSION-CORE |
 | `SYNC-004` | Preserve the one-workspace invariant through bootstrap delay, conflict, failure, and restart. | Apple synchronization | P2/W2.8 | `SYNC-003` | PR-BOOTSTRAP-CORE |
 | `MACOS-004` | Deny selected exact domains on the accepted macOS browser matrix with safe recovery. | Sessions and enforcement | P3/W3.1 | `MACOS-002`, `MACOS-006`, `SESSION-001`, `TARGETS-001` | PR-MAC-DOMAINS |
@@ -119,7 +123,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Accepted outcome | Owning tasks | Terminal evidence |
 | --- | --- | --- |
 | Production shell, target graph, quality gate, and credential-free CI | `APPLE-001`, `FOUNDATION-001`, `QUALITY-001`, `CI-001` | Manual resource results, macOS run, iOS Simulator build, aggregate gate, CI, one review |
-| Local domains and semantic application mappings | `MODEL-001`, `TARGETS-001`–`TARGETS-004` | Persistence and contract tests, UI/accessibility checks, physical native selection |
+| Local domains and semantic application mappings | `MODEL-001`, `TARGETS-001`–`TARGETS-005` | Persistence and contract tests, UI/accessibility checks, physical native selection |
 | Bounded local sessions and platform enforcement | `SESSION-001`, `SESSION-002`, `MACOS-001`–`MACOS-006`, `IOS-001`, `IOS-002` | IPC, launchable development packaging, browser/app matrices, physical start/end/expiry/failure cleanup |
 | Common encrypted operations and one Apple workspace | `SYNC-001`–`SYNC-010` | Security decisions, vectors, tamper/replay rejection, physical Keychain/CloudKit delay and account isolation |
 | First and second installation | `ONBOARDING-001`, `ONBOARDING-002` | Physical flows without a product account or parallel workspace |

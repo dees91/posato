@@ -138,6 +138,28 @@ The accepted boundary and identifier are authoritative in
 - Opaque selections, screenshots, result bundles, and device data stay out of
   tracked evidence and diagnostics.
 
+## Deferred hardening after `TARGETS-004`
+
+`observed` in the independent review of `TARGETS-004`. None blocks the accepted
+mapping contract, all are reachable only through narrow sequences, and each is
+retained for `TARGETS-005` rather than fixed in place:
+
+- A stale authorization request can outlive the selection that started it. The
+  continuation guards only on an active completion, not on which request owns
+  it, so a resurfacing task could drive a later picker. A per-request
+  generation token closes it.
+- A refused modal presentation leaves the selection pending forever. The
+  picker is presented without checking for an existing modal and without a
+  completion handler, so UIKit refusing the presentation strands the native
+  completion and holds the shared adapter mutex against every later load,
+  removal, and clear.
+- A corrupted store is an in-app dead end. A corrupt load blocks the mutating
+  actions, so `Clear selection` — the one action that would overwrite the bad
+  file — is unreachable, and retry re-reads the same file. Only reinstalling
+  recovers today.
+- Unavailability is stated in build terms rather than product terms, so a
+  build without the capability tells a person about the build.
+
 ## Open questions
 
 - Which Family Controls entitlement and distribution paths are available for
@@ -149,3 +171,5 @@ The accepted boundary and identifier are authoritative in
   from backup?
 - Which native APIs can move into `iosMain` without making the boundary harder
   to build, test, or maintain?
+- What should a person be told when a build carries no selection producer, in
+  words that describe the product rather than the build?
