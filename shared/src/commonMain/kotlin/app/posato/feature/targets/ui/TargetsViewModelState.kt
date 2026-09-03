@@ -1,5 +1,6 @@
 package app.posato.feature.targets.ui
 
+import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
 import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalTargetPolicyState
@@ -44,6 +45,7 @@ internal data class ApplicationMappingsState(
     val isLoading: Boolean = true,
     val hasLoaded: Boolean = false,
     val isAvailable: Boolean = false,
+    val access: LocalApplicationMappingsAccess? = null,
     val failure: ApplicationMappingFailure? = null,
     val mutation: ApplicationMappingMutation? = null,
 ) {
@@ -113,6 +115,7 @@ internal fun createUiState(
         isApplicationMappingLoading = applicationMappingsState.isLoading,
         hasLoadedApplicationMappings = applicationMappingsState.hasLoaded,
         isApplicationMappingAvailable = applicationMappingsState.isAvailable,
+        applicationMappingsAccess = applicationMappingsState.access,
         isLoading = policyState.isLoading,
         hasLoaded = policyState.snapshot != null,
     )

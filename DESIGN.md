@@ -227,11 +227,19 @@ The visible name for the singleton semantic application policy is
 **Application group**. Its name may synchronize, but application choices remain
 local to each device. On macOS, a present application group exposes **Choose
 applications**, followed by a plain device-local list with individual Remove
-actions. Cancellation keeps the previous list. Removing the semantic group
+actions. On iOS, the shared screen shows only the selected application count
+because opaque Screen Time tokens do not expose useful product-owned names; the
+system picker remains responsible for recognizable native labels and detailed
+review. The iOS action changes to **Review applications** after the first
+selection, and permission-required, denied, restricted, and unavailable states
+remain visibly distinct. Cancellation keeps the previous list. Removing the semantic group
 retains the local list and says so explicitly; recreating the group makes the
-retained choices effective again. On platforms without an accepted native
-selection producer, the shared UI states **Apps still need to be chosen on this
-device.** and presents no fake or speculative selection action.
+retained choices effective again. Where a native selection producer exists but
+nothing is chosen yet, the shared UI states **Apps still need to be chosen on
+this device.** Where the running build has no such producer, it states that
+application selection is unavailable in that build. In both cases it presents
+no fake or speculative selection action, and it keeps any choices already made
+on the device.
 
 ### Session setup and review
 

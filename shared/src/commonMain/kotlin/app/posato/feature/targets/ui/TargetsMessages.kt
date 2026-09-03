@@ -12,6 +12,7 @@ import app.posato.generated.resources.application_mapping_load_failed
 import app.posato.generated.resources.application_mapping_picker_failed
 import app.posato.generated.resources.application_mapping_save_failed
 import app.posato.generated.resources.application_mapping_self
+import app.posato.generated.resources.application_mapping_unsupported
 import app.posato.generated.resources.domain_input_description
 import app.posato.generated.resources.entry_error_duplicate
 import app.posato.generated.resources.entry_error_empty
@@ -65,6 +66,7 @@ internal fun ApplicationMappingFailure.applicationMappingMessage(): StringResour
         ApplicationMappingFailure.SAVE_FAILED -> Res.string.application_mapping_save_failed
         ApplicationMappingFailure.SELF_SELECTION -> Res.string.application_mapping_self
         ApplicationMappingFailure.INVALID_OR_UNSIGNED -> Res.string.application_mapping_invalid
+        ApplicationMappingFailure.UNSUPPORTED_SELECTION -> Res.string.application_mapping_unsupported
         ApplicationMappingFailure.CAPACITY -> Res.string.application_mapping_capacity
     }
 }

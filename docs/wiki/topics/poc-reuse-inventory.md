@@ -71,6 +71,14 @@ validation service, redacted shared contract, owner-only SQLDelight schema, and
 focused tests. No PoC source, runner, trace, signing material, machine path, or
 distinctive fixture was copied.
 
+`observed` (2026-09-02): TARGETS-004 used the feasibility checkout only to
+confirm Family Controls authorization, picker presentation, opaque token
+equality, protected local persistence, and native label behavior. Production
+code defines a fresh Kotlin/Swift boundary, versioned bounded JSON store,
+aggregate opaque presentation, and focused failure tests. No feasibility source,
+runner, trace, entitlement, signing value, device data, or distinctive fixture
+was copied.
+
 If later work copies a meaningful fragment, the pull request must identify:
 
 - the feasibility source revision and path;

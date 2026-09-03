@@ -27,8 +27,27 @@ class LocalApplicationMappingsContractTest {
 
         val snapshot = assertNotNull(LocalApplicationMappingsSnapshot.restore(listOf(first, second)))
 
-        assertEquals(listOf("alpha", "Zulu"), snapshot.mappings.map { mapping -> mapping.displayName })
+        assertEquals(
+            listOf("alpha", "Zulu"),
+            snapshot.mappings.map { mapping -> (mapping.display as LocalApplicationMappingDisplay.Named).value },
+        )
         assertNull(LocalApplicationMappingsSnapshot.restore(listOf(first, first)))
         assertTrue(snapshot.toString().contains("redacted"))
+    }
+
+    @Test
+    fun `opaque mappings sort by identifier without carrying user interface copy`() {
+        val firstId = assertNotNull(LocalApplicationMappingId.restore("01".repeat(32)))
+        val secondId = assertNotNull(LocalApplicationMappingId.restore("02".repeat(32)))
+        val second = LocalApplicationMapping.restoreOpaque(secondId)
+        val first = LocalApplicationMapping.restoreOpaque(firstId)
+
+        val snapshot = assertNotNull(LocalApplicationMappingsSnapshot.restore(listOf(second, first)))
+
+        assertEquals(
+            listOf(firstId, secondId),
+            snapshot.mappings.map(LocalApplicationMapping::id),
+        )
+        assertTrue(first.display.toString().contains("redacted"))
     }
 }

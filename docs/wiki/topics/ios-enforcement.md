@@ -79,8 +79,26 @@ The same asymmetry may apply to website tokens selected through Screen Time
 APIs, but the accepted product contract requires exact domain policy to
 synchronize. The production boundary must satisfy that contract without
 pretending that opaque platform capabilities are universal identifiers. The
-storage representation, invalid-selection lifecycle, and remapping UX remain
-open.
+invalid-selection lifecycle remains open.
+
+`user-confirmed` (2026-09-02): the first production mapping slice stores a
+versioned, bounded set of opaque application tokens in app-private protected
+storage. Shared Kotlin receives only a derived local identifier and stable
+opaque presentation. Re-selection matches decoded `ApplicationToken` values
+by equality; a new token is a new local mapping. The native picker owns Apple
+labels, while shared UI shows only an aggregate selected count and distinct
+live authorization states. Persisted and shared slot numbers were rejected as
+speculative before merge. The later Device Activity extension migrates this
+state to the accepted App Group with protection available after first unlock.
+
+`observed` (2026-09-02): on one development-signed physical iPhone, an ordinary
+process restart preserved both Family Controls approval and the app-private
+selection. Revoking approval returned the live state to not determined while
+the stored selection remained intact; granting approval again reopened the
+picker with that selection. Uninstalling and reinstalling removed the local
+group and opaque selection, required fresh approval, and opened an empty
+picker. This is bounded lifecycle evidence, not a cross-device or restore-from-
+backup guarantee.
 
 ## Extensions and background behavior
 
@@ -124,11 +142,10 @@ The accepted boundary and identifier are authoritative in
 
 - Which Family Controls entitlement and distribution paths are available for
   the intended public product at implementation time?
-- What App Group state and callback protocol is the minimum safe implementation
-  for scheduled expiry?
+- What App Group callback protocol is the minimum safe implementation for
+  scheduled expiry?
 - Which iOS browsers are included in the support promise?
-- How are local opaque selections associated with synchronized semantic policy?
-- What should happen when authorization is revoked, the selection becomes
-  invalid, or the device restores from backup?
+- What should happen when a selection becomes invalid or the device restores
+  from backup?
 - Which native APIs can move into `iosMain` without making the boundary harder
   to build, test, or maintain?

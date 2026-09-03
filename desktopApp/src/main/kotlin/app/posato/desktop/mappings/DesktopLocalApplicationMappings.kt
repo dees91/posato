@@ -7,6 +7,7 @@ import app.posato.desktop.macos.MacOsHelperClient
 import app.posato.desktop.macos.SelectedMacOsApplication
 import app.posato.desktop.mappings.database.MacOsApplicationMappingsDatabase
 import app.posato.feature.targets.data.LocalApplicationMapping
+import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappingLimits
 import app.posato.feature.targets.data.LocalApplicationMappings
@@ -87,6 +88,22 @@ internal class DesktopLocalApplicationMappings(
         }
     }
 
+    override suspend fun clear(): LocalApplicationRemovalResult {
+        return withContext(ioDispatcher) {
+            operationMutex.withLock {
+                try {
+                    val currentDatabase = openDatabase()
+                    currentDatabase.applicationMappingsQueries.removeAll()
+                    LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty())
+                } catch (cancellationException: CancellationException) {
+                    throw cancellationException
+                } catch (_: Exception) {
+                    LocalApplicationRemovalResult.Failure(LocalApplicationRemovalFailure.STORAGE)
+                }
+            }
+        }
+    }
+
     override fun close() {
         driver?.close()
         picker.closeIfOwned()
@@ -100,9 +117,10 @@ internal class DesktopLocalApplicationMappings(
             val currentDatabase = openDatabase()
             val snapshot = currentDatabase.transactionWithResult {
                 candidates.forEach { candidate ->
+                    val display = candidate.mapping.requireNamedDisplay()
                     currentDatabase.applicationMappingsQueries.insertOrIgnore(
                         mappingId = candidate.mapping.id.canonicalValue.hexToByteArray(),
-                        displayName = candidate.mapping.displayName.encodeToByteArray(),
+                        displayName = display.value.encodeToByteArray(),
                         designatedRequirement = candidate.designatedRequirement,
                     )
                 }
@@ -121,6 +139,10 @@ internal class DesktopLocalApplicationMappings(
         } catch (_: Exception) {
             failure(LocalApplicationSelectionFailure.STORAGE)
         }
+    }
+
+    private fun LocalApplicationMapping.requireNamedDisplay(): LocalApplicationMappingDisplay.Named {
+        return display as? LocalApplicationMappingDisplay.Named ?: throw CorruptApplicationMappingsException()
     }
 
     private fun restoreCandidate(application: SelectedMacOsApplication): StoredApplicationCandidate {
