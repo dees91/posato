@@ -1017,3 +1017,13 @@
   so a row's own button wins, a `near` target clipped at the screen edge is
   scrolled into view, and clearing a field sends a few extra deletes because
   the first keystrokes can be lost while the keyboard appears.
+
+## [2026-09-03] planning | Retain the iOS mapping hardening follow-up
+
+- Added the `TARGETS-005` roadmap stub after the independent review of
+  `TARGETS-004` accepted its blocking findings and deferred four advisory
+  items, so the follow-up survives without pre-expanding a brief.
+- Recorded the deferred items on the iOS enforcement page: a stale
+  authorization request driving a later picker, a refused presentation
+  stranding the selection and holding the adapter mutex, a corrupted store
+  that no in-app action can clear, and unavailability stated in build terms.
