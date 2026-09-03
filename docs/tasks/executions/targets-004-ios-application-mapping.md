@@ -100,6 +100,31 @@
 | Physical authorization loss before `Save` | passed | Picker reopened with one selection, Screen Time access revoked in Settings while it stayed open, then `Save`: the picker closed, `Applications selected: 1` was retained, the access sentence returned, and the action became `Allow and review applications` with no failure message |
 | Relaunch read-back after the access change | passed | The retained selection and the access sentence both survived a process restart with authorization revoked |
 | Clear and group removal after the access change | passed | `Clear selection` reached `No applications chosen on this device.` and group removal reached `No application group yet.`, restoring the device to its post-install state |
+| `./gradlew quality` after review corrections | passed | Xcode 26.6; 126 tasks including `shared:iosSimulatorArm64Test` with the new outcome-mapping tests |
+| Build matrix and Simulator XCTest after review corrections | passed | Xcode 26.6; Debug Simulator, Debug device, and Release Simulator all built and XCTest succeeded; the corrected Swift branch compiles in every configuration |
+
+## Local review after the hosted budget became unavailable
+
+- **Verdict:** `approved after corrections`
+- **Reviewer:** independent local reviewer (hosted `@codex review` is
+  unavailable for several days, so the maintainer directed a local pass)
+- **Critical findings:** none
+- **Required findings:** transient Family Controls errors were mapped to the
+  compile-time `unavailable` outcome, producing a sticky and factually wrong
+  "unavailable in this build" state with no visible retry; the shared empty
+  mapping string was renamed in this change while four assertions in the macOS
+  verification page, two of them executable driver commands, still quoted the
+  old copy; `DESIGN.md` still described the pre-change copy for the
+  unavailable state.
+- **Resolution:** Unenumerated authorization errors now return the picker
+  failure outcome, which keeps the capability available, preserves the prior
+  selection, and leaves the retry action visible. The macOS and application
+  group verification pages quote the current copy. `DESIGN.md` now separates
+  "no producer in this build" from "nothing chosen yet". Added iOS adapter
+  tests pinning the cancelled, capacity, invalid, picker, storage, and
+  unavailable selection outcomes.
+- **Recommended and Optional findings** were recorded and not actioned; they do
+  not expand scope automatically.
 
 ## Blockers and accepted risks
 
@@ -112,6 +137,9 @@
 - The rebased correction is reviewed and approved. Its `./gradlew quality`,
   Simulator XCTest, and three-configuration build matrix were rerun at
   `013f616` and passed.
+- The corrected transient-authorization-error branch is covered by compilation
+  and adapter tests but was not reproduced on the device, because it needs a
+  Screen Time service failure that cannot be induced reliably.
 - Losing authorization while the picker is open is not an error state: the
   selection is retained, the access sentence returns, and the action becomes
   `Allow and review applications`. Revocation again left authorization

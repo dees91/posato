@@ -81,6 +81,44 @@ class IosLocalApplicationMappingsTest {
     }
 
     @Test
+    fun `given a rejecting or failing selection outcome when completed then it maps without a snapshot`() = runTest {
+        val expectations = mapOf(
+            IosApplicationMappingsOutcome.CANCELLED to LocalApplicationSelectionResult.Cancelled,
+            IosApplicationMappingsOutcome.CAPACITY to
+                LocalApplicationSelectionResult.Rejected(LocalApplicationSelectionRejection.CAPACITY),
+            IosApplicationMappingsOutcome.INVALID_SELECTION to
+                LocalApplicationSelectionResult.Rejected(LocalApplicationSelectionRejection.UNSUPPORTED),
+            IosApplicationMappingsOutcome.PICKER_FAILURE to
+                LocalApplicationSelectionResult.Failure(LocalApplicationSelectionFailure.PICKER),
+            IosApplicationMappingsOutcome.STORAGE_FAILURE to
+                LocalApplicationSelectionResult.Failure(LocalApplicationSelectionFailure.STORAGE),
+        )
+
+        expectations.forEach { (outcome, expected) ->
+            val provider = FakeIosApplicationMappingsProvider(
+                selectionResponse = response(outcome = outcome),
+            )
+
+            assertEquals(expected, IosLocalApplicationMappings(provider).chooseApplications(), "outcome $outcome")
+        }
+    }
+
+    @Test
+    fun `given an unavailable build when a selection is requested then the result is unavailable`() = runTest {
+        val provider = FakeIosApplicationMappingsProvider(
+            selectionResponse = response(
+                outcome = IosApplicationMappingsOutcome.UNAVAILABLE,
+                access = IosApplicationMappingsAccess.UNAVAILABLE,
+            ),
+        )
+
+        assertEquals(
+            LocalApplicationSelectionResult.Unavailable,
+            IosLocalApplicationMappings(provider).chooseApplications(),
+        )
+    }
+
+    @Test
     fun `given an invalidation collector when collection completes then native observation is cancelled`() = runTest {
         val provider = FakeIosApplicationMappingsProvider()
         val mappings = IosLocalApplicationMappings(provider)
