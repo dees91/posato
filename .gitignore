@@ -12,6 +12,7 @@
 **/.swiftpm/
 **/DerivedData/
 **/DerivedData-*/
+**/xcuserdata/
 *.xcresult
 *.resultbundle
 *.mobileprovision
