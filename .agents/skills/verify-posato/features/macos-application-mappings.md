@@ -18,8 +18,8 @@ device.
 - Open the desktop app; the `Applications` section shows `No applications
   chosen on this Mac.` and the `Choose applications` button, or the list of
   chosen applications with `Remove`.
-- On iOS the section explains that application choices stay on the device;
-  there is no picker yet.
+- On iOS the same section has its own picker; see
+  [iOS application mappings](./ios-application-mappings.md).
 
 ## Driving it with posato-control
 
@@ -55,5 +55,5 @@ Preconditions:
   application group.`.
 - `Remove` also exists in the group row and in every website row; keep
   `--near-text <application name>`.
-- Chosen applications are device-only; a Simulator or iPhone run cannot show
-  them.
+- Chosen applications are device-only: a Mac shows only its own choices, and
+  an iPhone shows only the ones chosen on that iPhone.

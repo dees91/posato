@@ -1,12 +1,12 @@
 # Execution: `TARGETS-004`
 
 - **Brief:** [Associate opaque device-local iOS application selections](../specifications/targets-004-ios-application-mapping.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
 - **Reviewer:** independent Codex reviewer
 - **Branch:** `feature/targets-004-ios-application-mapping`
-- **Updated:** 2026-09-02
+- **Updated:** 2026-09-03
 
 ## Plan
 
@@ -41,6 +41,11 @@
   Controls capability. Selection save, cancellation, clearing, process restart,
   authorization revocation and recovery, and reinstall behavior matched the
   accepted contract.
+- Rebased-branch verification was rerun at `013f616` through the
+  `verify-posato` driver: losing Screen Time access while the picker is open
+  retains the selection and reports the access state truthfully instead of
+  failing. The verification map now carries an iOS mappings recipe and the
+  boundary between drivable and maintainer-only steps.
 
 ## Completed-change review
 
@@ -83,9 +88,18 @@
 | Physical iPhone native store XCTest | passed | Eight tests, including complete file protection and backup exclusion metadata |
 | Correction review (`b8764a1`) | approved | Independent completed-change review; no Critical or Required findings |
 | Correction scope and privacy scan | passed | 12 files; `git diff --check` clean; no Team, device, profile, or personal paths; `swiftc -parse` clean on both Swift files |
-| `./gradlew quality` after correction | blocked | Sandboxed agent shell denies Gradle sockets and `~/.gradle` writes; rerun unrestricted before push |
-| XCTest and device/simulator builds after correction | blocked | CoreSimulator unreachable and `~/Library` denied in the sandboxed shell; rerun unrestricted, then the physical authorization-loss checklist |
 | Push and PR #16 refresh | passed | `push --force-with-lease` moved the remote branch to `1f51172`; PR #16 reports `MERGEABLE`/`CLEAN` |
+| `./gradlew quality` at `013f616` | passed | Xcode 26.6; 129 actionable tasks including `shared:iosSimulatorArm64Test` |
+| Simulator XCTest at `013f616` | passed | Xcode 26.6, iPhone 17 Pro / iOS 26.5; 16 cases (9 mapping store, 7 CryptoKit) |
+| Credential-free Debug Simulator build at `013f616` | passed | Xcode 26.6; matches the CI gate command |
+| Credential-free Debug device build at `013f616` | passed | Xcode 26.6; Family Controls source path compiled |
+| Credential-free Release Simulator build at `013f616` | passed | Xcode 26.6; capability unavailable by design |
+| Scope and privacy scan at `013f616` | passed | `git diff --check` clean; no team, device, profile, or personal-path values in the diff |
+| PR #16 head at `013f616` | passed | PR head matches local `HEAD`; `MERGEABLE`/`CLEAN`; hosted CI remains manual-only |
+| Device driver run through `posato-control` | passed | Signed Debug device build, install, launch, group creation, and the access and empty states rendered as specified |
+| Physical authorization loss before `Save` | passed | Picker reopened with one selection, Screen Time access revoked in Settings while it stayed open, then `Save`: the picker closed, `Applications selected: 1` was retained, the access sentence returned, and the action became `Allow and review applications` with no failure message |
+| Relaunch read-back after the access change | passed | The retained selection and the access sentence both survived a process restart with authorization revoked |
+| Clear and group removal after the access change | passed | `Clear selection` reached `No applications chosen on this device.` and group removal reached `No application group yet.`, restoring the device to its post-install state |
 
 ## Blockers and accepted risks
 
@@ -95,6 +109,16 @@
   the not-determined state; an ordinary process restart preserved approval.
 - Hosted CI is manual-only through 2026-09-05. Local Xcode 26.6 verification is
   the active gate; the workflow retains Xcode 26.3 compatibility coverage.
-- The correction (rebased onto `origin/main`, pushed as `1f51172`) is
-  reviewed and approved; its `./gradlew quality`, XCTest, build-matrix, and
-  physical-device steps still need a rerun after the rebase.
+- The rebased correction is reviewed and approved. Its `./gradlew quality`,
+  Simulator XCTest, and three-configuration build matrix were rerun at
+  `013f616` and passed.
+- Losing authorization while the picker is open is not an error state: the
+  selection is retained, the access sentence returns, and the action becomes
+  `Allow and review applications`. Revocation again left authorization
+  not determined rather than denied on the tested device.
+- The Screen Time consent alert belongs to SpringBoard and the Family Controls
+  picker list is rendered out of process, so neither appears in the driver's
+  accessibility tree. Only the app's own `Save` and `Cancel` toolbar buttons
+  and the resulting screen state are drivable; granting access, selecting an
+  application, and revoking access in Settings stay maintainer steps. The
+  verification map records this limit.
