@@ -71,3 +71,6 @@ handles, required state, commands, and observable proof.
   removing, and persisting the single application group.
 - [macOS application mappings](./macos-application-mappings.md) covers the
   desktop-only application picker and its limits for scripted verification.
+- [iOS application mappings](./ios-application-mappings.md) covers the
+  device-only Family Controls picker, its access states, and the manual steps
+  the driver cannot reach.
