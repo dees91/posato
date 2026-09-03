@@ -1,0 +1,84 @@
+CREATE TABLE sync_bootstrap_state (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  candidate_workspace_id BLOB CHECK (
+    candidate_workspace_id IS NULL OR
+    (typeof(candidate_workspace_id) = 'blob' AND length(candidate_workspace_id) = 16)
+  ),
+  candidate_transport_epoch_id BLOB CHECK (
+    candidate_transport_epoch_id IS NULL OR
+    (typeof(candidate_transport_epoch_id) = 'blob' AND length(candidate_transport_epoch_id) = 16)
+  ),
+  candidate_key_epoch_id BLOB CHECK (
+    candidate_key_epoch_id IS NULL OR
+    (typeof(candidate_key_epoch_id) = 'blob' AND length(candidate_key_epoch_id) = 16)
+  ),
+  binding BLOB CHECK (
+    binding IS NULL OR
+    (typeof(binding) = 'blob' AND length(binding) = 32)
+  ),
+  established_workspace_id BLOB CHECK (
+    established_workspace_id IS NULL OR
+    (typeof(established_workspace_id) = 'blob' AND length(established_workspace_id) = 16)
+  ),
+  established_transport_epoch_id BLOB CHECK (
+    established_transport_epoch_id IS NULL OR
+    (typeof(established_transport_epoch_id) = 'blob' AND length(established_transport_epoch_id) = 16)
+  ),
+  established_key_epoch_id BLOB CHECK (
+    established_key_epoch_id IS NULL OR
+    (typeof(established_key_epoch_id) = 'blob' AND length(established_key_epoch_id) = 16)
+  )
+);
+
+selectBootstrapState:
+SELECT singleton,
+  candidate_workspace_id,
+  candidate_transport_epoch_id,
+  candidate_key_epoch_id,
+  binding,
+  established_workspace_id,
+  established_transport_epoch_id,
+  established_key_epoch_id
+FROM sync_bootstrap_state;
+
+persistBootstrapCandidate:
+INSERT OR REPLACE INTO sync_bootstrap_state(
+  singleton,
+  candidate_workspace_id,
+  candidate_transport_epoch_id,
+  candidate_key_epoch_id,
+  binding,
+  established_workspace_id,
+  established_transport_epoch_id,
+  established_key_epoch_id
+) VALUES (
+  1,
+  :candidate_workspace_id,
+  :candidate_transport_epoch_id,
+  :candidate_key_epoch_id,
+  :binding,
+  NULL,
+  NULL,
+  NULL
+);
+
+commitEstablishedWorkspace:
+INSERT OR REPLACE INTO sync_bootstrap_state(
+  singleton,
+  candidate_workspace_id,
+  candidate_transport_epoch_id,
+  candidate_key_epoch_id,
+  binding,
+  established_workspace_id,
+  established_transport_epoch_id,
+  established_key_epoch_id
+) VALUES (
+  1,
+  NULL,
+  NULL,
+  NULL,
+  :binding,
+  :established_workspace_id,
+  :established_transport_epoch_id,
+  :established_key_epoch_id
+);
