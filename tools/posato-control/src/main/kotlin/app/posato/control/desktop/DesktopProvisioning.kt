@@ -35,6 +35,8 @@ data class SyncProfile(
 data class ProvisioningFacts(
     val signingIdentity: String?,
     val signingIdentityInKeychain: Boolean,
+    /** The team the configured certificate signs under, from its subject, or null when it could not be read. */
+    val signingIdentityTeam: String?,
     val syncProfileConfigured: Boolean,
     val syncProfileReadable: Boolean,
     val syncProfile: SyncProfile?,
@@ -83,8 +85,32 @@ object DesktopProvisioningChecks {
                 "Install the Apple Development certificate for this Mac, or correct posato.macos.signingIdentity.",
             )
 
-            else -> DoctorCheck.pass("desktop.signingIdentity", "A configured macOS signing identity is present in the keychain.")
+            // The certificate's own team decides what it signs under, not the identifier in its common name, so a
+            // certificate from another team packages under a team the companion profile does not match.
+            signsUnderAnotherTeam(facts) -> DoctorCheck.fail(
+                "desktop.signingIdentity",
+                "The configured macOS signing identity signs under a different Apple development team than " +
+                    "posato.apple.developmentTeam, so packaging would produce a bundle the companion profile does not match.",
+                "Configure the identity issued for the same team, or correct posato.apple.developmentTeam.",
+            )
+
+            facts.signingIdentityTeam == null -> DoctorCheck.unknown(
+                "desktop.signingIdentity",
+                "The configured macOS signing identity is in the keychain, but the team it signs under could not be read.",
+                "Run `security find-certificate -c \"<identity>\" -p | openssl x509 -noout -subject` and check its OU field.",
+            )
+
+            else -> DoctorCheck.pass(
+                "desktop.signingIdentity",
+                "A configured macOS signing identity is present in the keychain and signs under the configured team.",
+            )
         }
+    }
+
+    private fun signsUnderAnotherTeam(facts: ProvisioningFacts): Boolean {
+        val certificateTeam = facts.signingIdentityTeam ?: return false
+        val configuredTeam = facts.developmentTeam ?: return false
+        return certificateTeam != configuredTeam
     }
 
     private fun syncProfile(facts: ProvisioningFacts): DoctorCheck {
