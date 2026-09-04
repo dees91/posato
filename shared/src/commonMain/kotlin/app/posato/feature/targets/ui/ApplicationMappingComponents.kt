@@ -16,9 +16,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.posato.core.designsystem.NoticeCard
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.data.LocalApplicationMappingId
@@ -251,25 +251,25 @@ private fun ApplicationMappingFailureNotice(
     canClear: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    Surface(modifier, color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f), shape = MaterialTheme.shapes.medium) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(Res.string.operation_error_title), fontWeight = FontWeight.SemiBold)
-            Text(stringResource(failure.applicationMappingMessage()))
-            if (failure == ApplicationMappingFailure.LOAD_FAILED ||
-                failure == ApplicationMappingFailure.CORRUPTED_MAPPINGS ||
-                failure == ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED
-            ) {
-                TextButton(onClick = onRetry) { Text(stringResource(Res.string.action_retry)) }
-            }
-            if (failure == ApplicationMappingFailure.CORRUPTED_MAPPINGS ||
-                failure == ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED
-            ) {
-                TextButton(
-                    onClick = onClear,
-                    enabled = canClear,
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                ) { Text(stringResource(Res.string.action_clear_applications)) }
-            }
+    NoticeCard(
+        message = failure.applicationMappingMessage(),
+        modifier = modifier,
+        title = Res.string.operation_error_title,
+    ) {
+        if (failure == ApplicationMappingFailure.LOAD_FAILED ||
+            failure == ApplicationMappingFailure.CORRUPTED_MAPPINGS ||
+            failure == ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED
+        ) {
+            TextButton(onClick = onRetry) { Text(stringResource(Res.string.action_retry)) }
+        }
+        if (failure == ApplicationMappingFailure.CORRUPTED_MAPPINGS ||
+            failure == ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED
+        ) {
+            TextButton(
+                onClick = onClear,
+                enabled = canClear,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) { Text(stringResource(Res.string.action_clear_applications)) }
         }
     }
 }

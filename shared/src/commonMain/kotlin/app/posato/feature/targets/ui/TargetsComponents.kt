@@ -2,7 +2,6 @@ package app.posato.feature.targets.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,7 +11,6 @@ import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -22,10 +20,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import app.posato.core.designsystem.CardSurface
+import app.posato.core.designsystem.LabeledProgress
+import app.posato.core.designsystem.NoticeCard
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.action_add
 import app.posato.generated.resources.action_add_application_group
@@ -123,7 +123,7 @@ private fun ApplicationPolicyEditor(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            EditorSurface(Modifier.fillMaxWidth()) {
+            CardSurface(Modifier.fillMaxWidth()) {
                 if (currentName == null) {
                     Text(stringResource(Res.string.application_group_empty), style = MaterialTheme.typography.bodyMedium)
                 }
@@ -171,7 +171,7 @@ internal fun DomainEditor(
     key(state.domainEditorSession) {
         val inputState = rememberTextFieldState(initialText = state.editingDomain.orEmpty())
         val submit = { onSubmit(inputState.text.toString()) }
-        EditorSurface(modifier) {
+        CardSurface(modifier) {
             OutlinedTextField(
                 state = inputState,
                 modifier = Modifier.fillMaxWidth(),
@@ -201,16 +201,6 @@ internal fun DomainEditor(
 }
 
 @Composable
-private fun EditorSurface(
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Surface(modifier = modifier, tonalElevation = 1.dp, shape = MaterialTheme.shapes.medium) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) { content() }
-    }
-}
-
-@Composable
 private fun EditorActions(
     addLabel: StringResource,
     editing: Boolean,
@@ -226,8 +216,7 @@ private fun EditorActions(
             TextButton(onClick = onCancel, enabled = enabled) { Text(stringResource(Res.string.action_cancel)) }
         }
         if (saving) {
-            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-            Text(stringResource(Res.string.saving_domains), style = MaterialTheme.typography.bodySmall)
+            LabeledProgress(Res.string.saving_domains)
         }
     }
 }
@@ -271,18 +260,18 @@ internal fun OperationFailureNotice(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Surface(modifier, color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f), shape = MaterialTheme.shapes.medium) {
-        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(Res.string.operation_error_title), fontWeight = FontWeight.SemiBold)
-            Text(stringResource(failure.operationMessage()))
-            when (failure) {
-                TargetsOperationFailure.LOAD_FAILED,
-                TargetsOperationFailure.CORRUPTED_POLICY -> TextButton(onClick = onRetry) { Text(stringResource(Res.string.action_retry)) }
+    NoticeCard(
+        message = failure.operationMessage(),
+        modifier = modifier,
+        title = Res.string.operation_error_title,
+    ) {
+        when (failure) {
+            TargetsOperationFailure.LOAD_FAILED,
+            TargetsOperationFailure.CORRUPTED_POLICY -> TextButton(onClick = onRetry) { Text(stringResource(Res.string.action_retry)) }
 
-                TargetsOperationFailure.REVISION_CONFLICT -> TextButton(onClick = onRetry) { Text(stringResource(Res.string.action_reload)) }
+            TargetsOperationFailure.REVISION_CONFLICT -> TextButton(onClick = onRetry) { Text(stringResource(Res.string.action_reload)) }
 
-                TargetsOperationFailure.SAVE_FAILED -> Unit
-            }
+            TargetsOperationFailure.SAVE_FAILED -> Unit
         }
     }
 }
