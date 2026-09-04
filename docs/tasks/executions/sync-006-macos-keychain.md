@@ -23,9 +23,9 @@
 4. Embed, sign, and provision the companion in both packaging modes and
    extend the strict verifier, including wrong-identifier and
    wrong-entitlement rejection.
-5. Stop for the maintainer Keychain Sharing and development-profile gate,
-   then run the physical Mac checklist, `./gradlew quality`, completed-change
-   review, wiki closeout, and the GitHub pull request.
+5. Stop for the untracked development-profile gate, then run the physical
+   Mac checklist, `./gradlew quality`, completed-change review, wiki closeout,
+   and the GitHub pull request.
 
 ## High-risk plan review
 
@@ -39,9 +39,9 @@
   identity to `UnknownOutcome`; (4) echo magic, major, operation, and
   request identity on every response.
 - **Resolution:** the approved plan incorporates all four, plus constructor
-  path injection, Keychain Sharing on the companion App ID, keeping `HOME`
-  in a cleared environment, a per-frame 65,536-byte payload limit, and
-  launching the scripted fake with `java.home` and `java.class.path`.
+  path injection, keeping `HOME` in a cleared environment, a per-frame
+  65,536-byte payload limit, and launching the scripted fake with `java.home`
+  and `java.class.path`.
 
 ## Preflight mapping (aligned with `SYNC-005`)
 
@@ -61,8 +61,8 @@
 - JVM adapters live in `shared/src/jvmMain` over a constructor-supplied
   companion path; they are not wired into Metro.
 - Ad-hoc packaging embeds and signs `PosatoMacOSSync.app`. Apple Development
-  Keychain round-trip is blocked until the maintainer enables Keychain Sharing
-  on `app.posato.macos.sync` and supplies the untracked profile.
+  packaging stamps `com.apple.application-identifier` on the companion.
+  Keychain Sharing is not an App ID capability.
 
 ## Completed-change review
 
@@ -96,17 +96,20 @@
 | Ad-hoc package, nested companion | pass | `:desktopApp:verifyMacOsDevelopmentPackaging` |
 | Desktop smoke launch | pass | posato-control `wait` for "Add website"; run `20260904-100928-fa99` |
 | `./gradlew quality` | pass | 138 tasks after PR-review corrections |
-| Apple Development Keychain round-trip | blocked | Needs Keychain Sharing on `app.posato.macos.sync` and an untracked development profile |
+| Apple Development package | pass | `:desktopApp:verifyMacOsDevelopmentPackaging` with the untracked profile |
+| Apple Development Keychain round-trip | pass | create, identical re-create, exact read, delete-and-verify-absent, then missing; synthetic workspace id; no item left |
+| Locked-keychain read and iCloud sign-out | not run | Needs a live lock and account sign-out on this Mac |
 
 ## Blockers and accepted risks
 
-- A development provisioning profile for `app.posato.macos.sync` with iCloud
-  and Keychain Sharing must exist on the maintainer's Mac before the Apple
-  Development package gate; it is never tracked.
-- Delayed propagation and byte-identical selectors against the iOS adapter
-  are `SYNC-009` evidence, not claimed here.
+- The untracked development profile stays outside Git. Keychain Sharing is
+  not an App ID capability; `keychain-access-groups` is granted by that team
+  profile. CloudKit required `com.apple.application-identifier` on the
+  companion; without it `accountStatus` returned undetermined.
+- Locked-keychain and iCloud sign-out were not driven. Delayed iOS
+  propagation stays `SYNC-009`.
 
 ## Final
 
-- **Status:** `blocked`
-- **Outcome:** code increment met; AC-04 Apple Development round-trip waits on the maintainer profile gate
+- **Status:** `done`
+- **Outcome:** code increment and AC-04 Keychain round-trip met; lock and sign-out checklist steps remain maintainer-driven

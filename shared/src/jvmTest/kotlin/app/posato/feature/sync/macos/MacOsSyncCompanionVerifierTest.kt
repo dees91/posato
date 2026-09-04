@@ -45,7 +45,7 @@ class MacOsSyncCompanionVerifierTest {
     }
 
     @Test
-    fun `given a companion re-signed with sandbox entitlements when verified then verification fails`() {
+    fun `given a companion re-signed after sealing when verified then verification fails`() {
         val root = signedApplication()
         val companion = root.resolve("Contents/Helpers/PosatoMacOSSync.app")
         val entitlements = Files.createTempFile("posato-wrong-entitlements", ".plist")
