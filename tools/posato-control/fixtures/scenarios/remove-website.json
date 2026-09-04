@@ -2,6 +2,8 @@
   "version": 1,
   "launch": { "terminateExisting": false },
   "steps": [
+    { "name": "switch-ready", "action": "waitFor", "state": "exists", "query": { "text": "Paused items", "role": "button" }, "timeoutSeconds": 30 },
+    { "name": "open-paused-items", "action": "tap", "query": { "text": "Paused items", "role": "button" } },
     { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "example.com", "role": "text" }, "timeoutSeconds": 30 },
     { "name": "remove", "action": "tap", "query": { "text": "Remove", "role": "button", "near": { "text": "example.com" } } },
     { "name": "row-gone", "action": "waitFor", "state": "absent", "query": { "text": "example.com", "role": "text" } },
