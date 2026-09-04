@@ -126,4 +126,5 @@
 
 - **Status:** `done`
 - **Outcome:** all acceptance criteria verified; pull request ready for
-  maintainer merge decision.
+  maintainer merge decision. The apps-only mirror rule is
+  maintainer-approved (2026-09-04).

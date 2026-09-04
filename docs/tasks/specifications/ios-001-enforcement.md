@@ -155,10 +155,9 @@ marked open.
   platform fact on the device, not promised in product copy.
 - Decided: apply with domains and no selection pauses websites only,
   matching the `SESSION-001` review rule; nothing-to-enforce is refused.
-- Decided on plan-review authority (maintainer confirms at merge): apply
-  with a selection and no domains pauses applications only, mirroring the
-  websites-only rule; nothing-to-enforce is returned only when both sets
-  are empty.
+- Decided (`user-confirmed`, 2026-09-04): apply with a selection and no
+  domains pauses applications only, mirroring the websites-only rule;
+  nothing-to-enforce is returned only when both sets are empty.
 - Decided: the App Group migration happens here with the token bytes
   unchanged, per the `TARGETS-004` decision; the shared record for `IOS-002`
   is limited to the store name and a version.
