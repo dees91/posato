@@ -59,20 +59,19 @@ not imported.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Swift tests (`swift test`, 117 incl. 60 new) | pass | worktree run 2026-09-04 |
+| Swift tests (`swift test`, 119 incl. decoded round-trip regression) | pass | worktree run 2026-09-04 |
 | Swift format lint + SwiftLint | pass | zero violations |
 | `:shared:jvmTest` macos slice (60 incl. 34 new) | pass | test-report XML, 0 failures |
 | `./gradlew quality` (aggregate incl. Detekt, iOS, packaging) | pass | `BUILD SUCCESSFUL` |
 | `git diff --check`, suppression gate, private-data scan | pass | clean |
-| `AC-06` physical CloudKit round trip + zone cleanup | blocked | needs maintainer gate below |
+| `AC-06` physical CloudKit round trip + zone cleanup | pass | `build/verification/sync-008-ac06-20260904-195503.log`, `SYNC008-PROBE-PASS` |
 
 ## Blockers and accepted risks
 
-- Physical gate (clearing condition): Apple Development package with the
+- Physical gate (cleared 2026-09-04): Apple Development package with the
   untracked companion profile, the maintainer's iCloud account, network, and
-  an absent `PosatoSyncV1` zone. This machine has no provisioning profiles,
-  and the run writes to the maintainer's private database, so the run is a
-  maintainer action with the `AC-06` checklist from the handoff.
+  an absent `PosatoSyncV1` zone. The run wrote to the maintainer's private
+  database and deleted the exact zone afterwards, leaving it as found.
 - The `AC-06` driver instantiates the JVM adapters directly from temporary
   `desktopApp` wiring (outside this task's write surface); no DI, UI, or
   coordinator wiring is committed.
@@ -81,5 +80,9 @@ not imported.
 
 ## Final
 
-- **Status:** blocked on the physical gate; code complete and reviewed.
-- **Outcome:** pending `AC-06` evidence, then PR.
+- **Status:** complete; `AC-06` passed on the maintainer machine with the
+  untracked companion profile, and the temporary probe driver plus companion
+  tracing were removed afterwards.
+- **Outcome:** `AC-06` evidence recorded above; a slice-base fix in
+  `CloudRequestCodec.anchorRequest` (with a decoded round-trip regression
+  test) unblocked the anchor-create step. Ready for PR.
