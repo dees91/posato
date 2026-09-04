@@ -3,6 +3,13 @@ package app.posato.di
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createIosDatabaseDriver
+import app.posato.feature.session.IosSessionTimeFormat
+import app.posato.feature.session.data.LocalSessionStore
+import app.posato.feature.session.data.SqlLocalSessionStore
+import app.posato.feature.session.domain.RandomSessionIdGenerator
+import app.posato.feature.session.domain.SessionClock
+import app.posato.feature.session.domain.SessionIdGenerator
+import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.data.IosCryptoProvider
 import app.posato.feature.sync.data.IosSyncCryptoProvider
 import app.posato.feature.sync.data.SqlSyncReplicaStore
@@ -74,6 +81,36 @@ internal interface IosApplicationGraph : ApplicationGraph {
         @Named("database") databaseDispatcher: CoroutineDispatcher,
     ): SyncReplicaStore {
         return SqlSyncReplicaStore(database, databaseDispatcher)
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionStore(
+        database: PosatoDatabase,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+    ): LocalSessionStore {
+        return SqlLocalSessionStore(
+            database = database,
+            databaseDispatcher = databaseDispatcher,
+        )
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionIds(): SessionIdGenerator {
+        return RandomSessionIdGenerator
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionClock(): SessionClock {
+        return SessionClock { time(null) * MILLIS_PER_SECOND }
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionTimeFormat(): SessionTimeFormat {
+        return IosSessionTimeFormat()
     }
 }
 

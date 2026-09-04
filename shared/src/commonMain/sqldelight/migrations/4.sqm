@@ -1,0 +1,15 @@
+CREATE TABLE local_session (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  session_id BLOB NOT NULL CHECK (typeof(session_id) = 'blob' AND length(session_id) = 16),
+  start_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(start_epoch_millis) = 'integer' AND start_epoch_millis BETWEEN 0 AND 4102444800000
+  ),
+  end_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(end_epoch_millis) = 'integer' AND end_epoch_millis BETWEEN 0 AND 4102444800000
+  ),
+  ended_early INTEGER NOT NULL CHECK (typeof(ended_early) = 'integer' AND ended_early IN (0, 1))
+);
+
+CREATE TABLE local_session_expiry (
+  session_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(session_id) = 'blob' AND length(session_id) = 16)
+);
