@@ -53,15 +53,16 @@ exactly after clear, helper failure, sleep, and reboot.
 - Exclusive write surface while `IOS-001` and `SYNC-008` run in parallel:
   `macosHelper/**`, `desktopApp/src/**`,
   `shared/src/{commonMain,commonTest,jvmMain,jvmTest}/**/feature/enforcement/**`
-  (reserved, expected unused), `docs/wiki/topics/macos-enforcement.md`, a new
-  `.agents/skills/verify-posato/features/macos-web-enforcement.md` and
-  desktop fixtures under `tools/posato-control/fixtures/scenarios/` only if a
-  drivable user path exists. Shared by rebase: `docs/wiki/log.md` and
-  `.agents/skills/verify-posato/features/README.md`. Do not touch
+  (reserved, expected unused), and `docs/wiki/topics/macos-enforcement.md`.
+  Shared by rebase: `docs/wiki/log.md`. Do not touch
   `feature/session/**`, `feature/sync/**`, `feature/targets/**`, the DI
   graphs, `PosatoApplication.kt`, `iosApp/**`, `macosSyncCompanion/**`,
   `desktopApp/build.gradle.kts`, `desktopApp/Config/**`,
-  `settings.gradle.kts`, `gradle/libs.versions.toml`, or `SKILL.md`.
+  `settings.gradle.kts`, `gradle/libs.versions.toml`, or the verify-posato
+  skill, its feature map, and its fixtures.
+- No verify-posato feature file or fixture: enforcement has no drivable user
+  path until `SESSION-002` wires session start, so the skill's "Out of scope"
+  rule applies and the physical proof is the gated harness below.
 - `.research/blocker` (`BoundedHTTPProxy.swift`, `BoundedProxyRequestParser.swift`,
   `MacOSEnforcement.swift`) is read-only evidence; re-derive parsing, routing,
   and the Apple Events scripts here.
@@ -116,6 +117,10 @@ exactly after clear, helper failure, sleep, and reboot.
 - Recommended: the proof harness is a test-scope, environment-gated JVM test
   rather than a product command, hidden menu, or Gradle task; `SESSION-002`
   and `RELEASE-001` are the named repeated consumers of the same checklist.
+- Recommended, answering the `IOS-001` open item: no shared `commonMain`
+  enforcement port this wave. Each platform keeps its own adapter with the
+  outcomes its brief lists, and `SESSION-002` defines the common contract
+  when it wires start, early end, and expiry on both hosts.
 - Recommended: an empty domain set is rejected as invalid input by both the
   orchestrator and the helper; "enforce nothing" is not an activation.
 - Recommended: configure-and-listen uses a 10-second deadline, Apply keeps
