@@ -97,22 +97,33 @@
 | Kotlin `iosSimulatorArm64Test` enforcement | pass | 4 tests, 0 failures |
 | Xcode Simulator suite | pass | `TEST SUCCEEDED`, 50 passed, 1 expected skip (device-only cycle) |
 | Privacy/suppression/log scans | pass | synthetic domains only, no `Suppress`, no logging of values |
-| Physical iPhone device run + manual checklist | blocked | signing requires a development team (see blockers) |
+| Physical iPhone device run + manual checklist | pass | 54 passed, 0 skipped, 0 failed; `AC-01`/`AC-02`/`AC-04` manual steps all pass (see device gate) |
+
+## Device gate (cleared 2026-09-04)
+
+- Signed device build with the team from ignored `local.properties`
+  passed as an ephemeral command parameter; no signing value recorded.
+- Driver (`posato-control`) installed, launched, and drove the app to
+  the Applications section; the maintainer tapped through the system
+  authorization and picked one application in the native picker.
+- Full device XCTest: 54 passed, 0 skipped — real-store apply/clear
+  with the stored selection, foreign-store isolation, migration
+  read-back, and the existing mapping flows.
+- Manual checkpoint (150 s hold, auto-clear): Safari shows the system
+  blocked presentation for the paused domain, the selected application
+  shows the system shield, unselected controls stay usable — all pass.
+- After clear: paused domain and application usable again — pass.
+- After revoking Screen Time authorization: clear runs, owned store
+  empty — pass. Phone left with authorization revoked and no Posato
+  restrictions; the stored selection remains for later flows.
 
 ## Blockers and accepted risks
 
-- Device build fails with "Signing requires a development team"; the
-  project holds no team or provisioning, and portal/profile work stays
-  with the maintainer. Clearing condition: the maintainer selects the
-  development team in Xcode, runs `iosAppTests` on the development-signed
-  iPhone with Screen Time authorization and a stored selection, and
-  records the `AC-01`/`AC-02`/`AC-04` checklist pass or blocked per step.
-- Simulator XCTest shows 1 skip (`testRealStoreApplyClearCycle`); the
-  controlled device run must show 0 skips.
+- None remaining. The `approvedWithDataAccess` note from re-review stays
+  a future-task item outside this diff.
 
 ## Final
 
-- **Status:** `blocked`
-- **Outcome:** implementation and all maintainer-independent verification
-  are complete; the maintainer device gate (signing + run + checklist)
-  is the clearing condition. Tracked in the draft pull request.
+- **Status:** `done`
+- **Outcome:** all acceptance criteria verified; pull request ready for
+  maintainer merge decision.

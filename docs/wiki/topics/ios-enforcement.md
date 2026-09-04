@@ -176,9 +176,15 @@ Simulator and Release builds without the capability report unavailable.
 Kotlin `iosMain` exposes the provider seam and the nine platform-neutral
 outcomes with redacted carriers; no `expect`/`actual`, no `status()`.
 
-`open`: the physical apply/clear device cycle, post-revoke clear behavior,
-and uninstall/reinstall/restore observations are still pending a
-development-signed iPhone run.
+`observed` (2026-09-04, development-signed iPhone): the device suite
+(54 passed, 0 skipped) applies and clears the real set with the stored
+selection; Safari shows the system blocked presentation, the selected
+application shows the system shield, unselected controls stay usable,
+clear restores both, and clear after revoked authorization leaves
+nothing behind.
+
+`open`: uninstall/reinstall and restore-from-backup observations are
+still pending.
 
 ## Open questions
 

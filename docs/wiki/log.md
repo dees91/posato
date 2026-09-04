@@ -1146,6 +1146,7 @@
   reviews passed after brief and code corrections.
 - `./gradlew quality` green, Kotlin enforcement tests 4/4, Simulator
   suite 50 passed with 1 expected device-only skip. The physical iPhone
-  apply/clear cycle is blocked on project signing (no development team)
-  and waits for the maintainer run with the `AC-01`/`AC-02`/`AC-04`
-  checklist.
+  run cleared the gate the same day: signed build with the ephemeral
+  team parameter, 54 device tests passed with 0 skips, and the
+  `AC-01`/`AC-02`/`AC-04` manual steps (Safari block, app shield,
+  unselected controls, clear restores, revoke-then-clear) all pass.
