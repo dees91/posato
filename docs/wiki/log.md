@@ -1065,13 +1065,8 @@
 
 - Added the nested `app.posato.macos.sync` companion, one-shot pipe protocol,
   entitlement guard, and JVM `BootstrapAccountPort`/`BootstrapKeyPort` adapters.
-- Ad-hoc packaging, negative identifier/entitlement probes, Swift tests, JVM
-  fake-process tests, and a posato-control desktop launch all passed. Apple
-  Development Keychain round-trip remains a maintainer profile gate.
-
-## [2026-09-04] correction | SYNC-006 Apple Development Keychain gate
-
-- Keychain Sharing is not an App ID capability; the untracked development
-  profile is the packaging gate. The companion also needs
+- Ad-hoc packaging, Swift and JVM tests, and a posato-control desktop launch
+  passed. Keychain Sharing is not an App ID capability; the untracked
+  development profile is the packaging gate. The companion stamps
   `com.apple.application-identifier`. A synthetic-id create / identical /
   read / delete-and-verify-absent round trip passed and left no item.
