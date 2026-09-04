@@ -36,6 +36,7 @@ rootProject.name = "Posato"
 
 include(":desktopApp")
 include(":macosHelper")
+include(":macosSyncCompanion")
 include(":posato-control")
 include(":quality-rules")
 include(":shared")

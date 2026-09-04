@@ -1060,3 +1060,11 @@
   workspace id and teardown cleanup; Simulator, Kotlin, and quality checks
   pass, and the independent review closed with two fixes and one evidenced
   decline.
+
+## [2026-09-04] implementation | SYNC-006 macOS Keychain companion
+
+- Added the nested `app.posato.macos.sync` companion, one-shot pipe protocol,
+  entitlement guard, and JVM `BootstrapAccountPort`/`BootstrapKeyPort` adapters.
+- Ad-hoc packaging, negative identifier/entitlement probes, Swift tests, JVM
+  fake-process tests, and a posato-control desktop launch all passed. Apple
+  Development Keychain round-trip remains a maintainer profile gate.

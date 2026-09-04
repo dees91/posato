@@ -325,6 +325,16 @@ conflict, and delete-and-verify-absent cycle passed on a physical iPhone with
 a random workspace id and teardown cleanup; Simulator tests cover mapping over
 injected account and `SecItem` seams.
 
+`observed` (2026-09-04): `SYNC-006` added the `app.posato.macos.sync` companion
+as a nested `PosatoMacOSSync.app` launched over one-shot private pipes. The
+companion reads its own iCloud and Keychain Sharing entitlements before any
+CloudKit or `SecItem` call, resolves the local account binding natively, and
+maps exact create/read/delete-and-verify outcomes onto the frozen `SYNC-004`
+ports. Credential-free packaging embeds and signs the companion with empty
+entitlements; missing entitlements return `unavailable`/`retryable` without
+throwing. Apple Development Keychain round-trip evidence and delayed iOS
+propagation remain with the physical gate and `SYNC-009`.
+
 ## Lifecycle and user-visible status
 
 The common orchestration should coalesce overlapping start, resume, native
