@@ -63,22 +63,24 @@ Preconditions:
 - **End early through the fixture.** Run `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/session-early-end.json` against the running app. It waits for `End session early`, taps it, waits for `End session early?`, taps `End session`, and waits for `No session active`; `db query --sql "select ended_early from local_session"` now returns `1` and `"select count(*) from local_session_expiry"` returns `0`.
 - **Expire.** Run `$PC run -t sim --scenario tools/posato-control/fixtures/scenarios/session-expiry.json` or `-t desktop --scenario .../session-expiry-desktop.json` from an inactive state with `example.com` present. The scenario starts a 5-minute session and waits up to 400 seconds for `No session active`; afterwards `find --text-contains "The session ended at"` returns one element and `db query --sql "select count(*) from local_session_expiry"` returns `1`. A relaunch still shows `No session active`.
 - **Proof.** `$PC screenshot -t <target> --name session-active` and `$PC snapshot -t <target> --format text --human` while active; the artifacts show `Session active until` and `End session early`.
-- **Restore.** End the session if it is still active, switch to `Paused items`, and remove `example.com` (`remove-website.json`); on the desktop this is mandatory because the database is the developer's.
+- **Restore.** End the session if it is still active, switch to `Paused items`, and remove `example.com` (`remove-website.json` on `sim` and `device`, `remove-website-desktop.json` on `desktop`); on the desktop this is mandatory because the database is the developer's. Confirm with `db query --sql "select count(*) from exact_domain_policy where canonical_domain='example.com'"` returning `0`.
 
 ## Gotchas
 
 - The minutes field submits only through Return or the IME action; `Review
   session` reads the last submitted value, not the text in the field. Use
-  `--submit` (or `"submit": true`) on iOS and `press --key return` after a
-  `tap` on the field on the desktop.
+  `--submit` (or `"submit": true`) on iOS; on the desktop `type` into the
+  field, wait for `settled`, then `press --key return` (a `tap` on the field
+  right before `type` makes the second lookup fail).
 - `Start session` on the review screen is disabled while nothing would be
   paused; a disabled button is a correct refusal, not a missing element.
 - Expiry is observed only while the app is in the foreground; a session that
   ends while the app is closed shows the expired state on the next launch.
 - The expiry scenarios wait for a real 5-minute session; do not shorten the
   end time through the database.
-- The review and active screens list every website; with many rows the
-  bottom of the card can fall below the desktop window, where the driver
-  cannot see it.
+- The review and active screens list every website near the top, so the
+  desktop scenario proves the saved website there (`review-lists-item`)
+  rather than on `Paused items`, where the row sits below the window when an
+  application group exists.
 - Every `launch` returns to `Session`, so a Websites recipe run after a
   session scenario must switch to `Paused items` again.
