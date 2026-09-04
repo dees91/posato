@@ -141,16 +141,23 @@ Platform traps that invalidate a run:
   first `tap` may only activate the window, so repeat it; `press --key
   return` into a field that lost focus is silently dropped, so prefer `tap`
   on the visible button (`Add website`, `Add group`, `Review session`) where
-  one exists and `tap` the field before typing where it does not (the
-  session minutes field submits only through Return); then decide with
-  `find` or `db query` whether the app ignored the input or the driver never
-  delivered it.
+  one exists; do not `tap` a field and `type` into it as consecutive steps,
+  because the tree is rebuilt while the field takes focus and the second
+  lookup fails with `ELEMENT_NOT_FOUND` (`type` clicks the field itself).
+  Put `waitFor` with `"state": "settled"` between a `type` and the `tap` or
+  `press` that submits it; then decide with `find` or `db query` whether the
+  app ignored the input or the driver never delivered it.
 - Desktop lists compose only the rows inside the window. A row below the
-  fold is absent from the accessibility tree, so `find`, `wait`, and `tap`
-  do not see it and `scrollTo` on the desktop only checks existence, it does
-  not scroll. Keep the window tall, keep scenario data short so the target
-  row stays visible, and treat a missing row as a driver blind spot before
-  calling it an app defect (`db query` settles it).
+  fold (the website rows sit under `Add website`, and an application group
+  pushes them further down) is absent from the accessibility tree, so
+  `find`, `wait`, and `tap` do not see it and `scrollTo` on the desktop only
+  checks existence, it does not scroll. The working way to reach such a row
+  is keyboard focus traversal, which scrolls the focused control into view:
+  `tap` the domain field, then `press --key tab` four times, and the
+  `example.com` row with its `Edit` and `Remove` buttons is in the tree.
+  `add-website-desktop.json` and `remove-website-desktop.json` do exactly
+  that. Treat a missing row as this blind spot before calling it an app
+  defect (`db query` settles it).
 - The `Remove` and `Edit` buttons exist in the application group row and in
   every website row. Always add `--near-text <row text>`.
 - Copy is exact and case-sensitive (`Add website`, `Save change`, `Cancel`,
@@ -229,6 +236,10 @@ so the developer's local data is unchanged.
 - `tools/posato-control/fixtures/scenarios/remove-website.json` switches to
   `Paused items` in the running app, removes that row, and waits for it to
   disappear.
+- `add-website-desktop.json` and `remove-website-desktop.json` are the
+  desktop variants: they submit with the `Add website` button and scroll the
+  row into view through Tab focus traversal before asserting or removing
+  it. Use them on `desktop`; the plain fixtures are for `sim` and `device`.
 - `session-start.json` (Simulator and iPhone) and `session-start-desktop.json`
   relaunch, add `example.com`, and start a 30-minute session through setup
   and review; `session-early-end.json` proves the active session survived a

@@ -191,8 +191,11 @@ commands such as `tap` reuse the running app. A failed step records
 `failure-<index>-screenshot.png` and `failure-<index>-snapshot.json`.
 
 Canonical scenarios live in `fixtures/scenarios/`: `add-website.json` and
-`remove-website.json` exercise the Websites section on every target (both
-switch to `Paused items` first, because the app opens on `Session`);
+`remove-website.json` exercise the Websites section on the Simulator and the
+iPhone (both switch to `Paused items` first, because the app opens on
+`Session`); `add-website-desktop.json` and `remove-website-desktop.json` are
+the desktop variants, which submit with the button and use Tab focus
+traversal to scroll the row into the window;
 `session-start.json`, `session-start-desktop.json`, `session-early-end.json`,
 `session-expiry.json`, and `session-expiry-desktop.json` exercise one manual
 session from setup to early end or real expiry.
