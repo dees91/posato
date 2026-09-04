@@ -42,10 +42,16 @@ picker or reported as unreachable with the measured reason.
   authorization, is reported as `unknown` with the one command that reveals
   it, never guessed.
 - Settle the iOS selection question by measurement: whether a captured
-  selection store can be placed into the App Group container with `devicectl`
-  and whether it survives a reinstall. If it does, the seeding path uses an
-  untracked local artifact kept beside `local.properties`; if it does not, the
-  picker stays manual and the feature file says so with the observed reason.
+  selection store can be placed into the application's container with
+  `devicectl` and whether it survives a reinstall. If it does, the seeding
+  path uses an untracked local artifact kept beside `local.properties`; if it
+  does not, the picker stays manual and the feature file says so with the
+  observed reason.
+- Sequencing with `IOS-001`: the measurement does not depend on where the
+  store lives and runs at any time, but `IOS-001` moves that file into the App
+  Group container, so the seeding path is written against the final location
+  after `IOS-001` merges. Record the measurement as blocked rather than
+  encoding the current path if the merge has not happened yet.
 - Never grant a permission by any means: no write to a TCC database, no SIP
   change, no MDM or PPPC profile, no relaxation of the Apply authorization
   rule, and no product-code change. The tool reports what is missing.
