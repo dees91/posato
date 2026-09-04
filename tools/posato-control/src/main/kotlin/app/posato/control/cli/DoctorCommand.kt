@@ -52,7 +52,7 @@ class DoctorCommand :
                     version.stdout.lines().first(),
                 )
             } else {
-                DoctorCheck.fail("xcode.version", "xcodebuild is unavailable.")
+                DoctorCheck.fail("xcode.version", "xcodebuild is unavailable.", "Install Xcode and select it with xcode-select -s.")
             },
         )
         checks.add(
@@ -69,7 +69,7 @@ class DoctorCommand :
                     "Gradle wrapper found.",
                 )
             } else {
-                DoctorCheck.fail("gradle.wrapper", "gradlew is missing.")
+                DoctorCheck.fail("gradle.wrapper", "gradlew is missing.", "Run the tool from inside the repository checkout.")
             },
         )
         if (deep) checks.add(gradleDaemonCheck(session))

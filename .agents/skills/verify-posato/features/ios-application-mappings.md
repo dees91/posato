@@ -50,6 +50,7 @@ Preconditions:
 - **Reveal the section.** Add a group. Run `$PC type -t device --role textField --near-text "Applications" --input "Social feeds" --clear --submit`, then `$PC wait -t device --for exists --text "Social feeds" --role text`. `snapshot` now lists the access sentence, `No applications chosen on this device.`, and the `Choose applications` button.
 - **Open the picker.** Run the tap inside a scenario, never as a single command: `{ "action": "tap", "query": { "text": "Choose applications", "role": "button" } }` followed by a `sleep` and a `screenshot`. With authorization not determined the screenshot shows the system Screen Time consent alert.
 - **Grant access and pick applications.** This step is manual: the consent alert belongs to SpringBoard and the picker list is rendered out of process, so neither appears in the driver's accessibility tree. Ask the maintainer to accept the alert and select applications, or report the path as unreachable with the command above.
+- **Or seed a captured selection instead of picking.** A selection captured once can be restored, so the picker is not needed on every run (`observed`, 2026-09-04; see the seeding rule in the gotchas). Consent still is: the Screen Time authorization resets to not determined on every reinstall.
 - **Confirm or dismiss the picker.** `Save` and `Cancel` are the app's own toolbar buttons and are drivable: `$PC tap -t device --text Save --role button` and `$PC tap -t device --text Cancel --role button`.
 - **Read the result.** Run `$PC wait -t device --for exists --text-contains "Applications selected:"`, then `$PC screenshot -t device --name ios-mappings`. Cancel instead leaves the previous count unchanged.
 - **Persist.** Run `$PC launch -t device` (no `--fresh`) and `$PC find -t device --text-contains "Applications selected:"`; the device database is not readable, so this relaunch read-back is the side-effect proof.
@@ -67,8 +68,42 @@ Preconditions:
   screenshot, not on English text.
 - The section is hidden entirely without an application group; an empty
   `Applications` section is the expected state, not a defect.
-- Reinstalling returns Screen Time authorization to not determined and removes
-  the stored selection; an ordinary relaunch preserves both.
+- Reinstalling returns Screen Time authorization to not determined and destroys
+  the whole data container, including the stored selection, the policy database
+  and its websites and group; an ordinary relaunch preserves everything.
+- A captured selection can be seeded back, which removes the picker from a
+  rerun but not the consent alert (`observed`, 2026-09-04, iOS 26.5.2). The
+  store is
+  `<container>/Library/Application Support/Posato/ApplicationMappings/mappings-v1.json`,
+  one JSON object with a `version` and one opaque `token` string per selected
+  application. Capture and restore it with the app not running:
+
+  ```shell
+  xcrun devicectl device copy from --device <udid> \
+    --domain-type appDataContainer --domain-identifier app.posato.ios \
+    --source "Library/Application Support/Posato/ApplicationMappings/mappings-v1.json" \
+    --destination <untracked directory beside local.properties>/mappings-v1.json
+  xcrun devicectl device copy to --device <udid> \
+    --domain-type appDataContainer --domain-identifier app.posato.ios \
+    --source <the same file> \
+    --destination "Library/Application Support/Posato/ApplicationMappings/mappings-v1.json"
+  ```
+
+  `copy from` needs a destination file path, not a directory. `copy to` writes
+  the file as the app's own user with mode `0644`, and the app accepts it: after
+  a full uninstall, reinstall, and restore, the section reported
+  `Applications selected: 1` with `Clear selection`. The application group must
+  exist first, otherwise the section stays hidden and you will read the seeding
+  as failed. Keep the captured file untracked: it carries live selection tokens.
+- What seeding does not prove (`open`): the count read-back shows the app loads
+  and validates the restored tokens, not that the tokens still resolve to the
+  same applications for enforcement in a new installation. Screen Time
+  authorization is not determined at that point, so enforcement cannot be
+  exercised anyway. `IOS-001` settles that question.
+- The store moves into the App Group container with `IOS-001`. The commands
+  above then need `--domain-type appGroupDataContainer` with the group
+  identifier; `devicectl` supports both domains, so only the domain and the path
+  change.
 - Selecting a category or a web domain is rejected with `Choose individual
   applications only.` and keeps the previous applications.
 - Simulator and Release builds never open a picker; do not report the iOS

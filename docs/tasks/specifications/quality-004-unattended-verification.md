@@ -63,10 +63,19 @@ picker or reported as unreachable with the measured reason.
 
 ## Acceptance
 
-- `AC-01` — With the helper's panel open, the process selector makes
-  `snapshot` return that window's tree and `press` and `type` reach it; a pid
-  outside the staged bundle and a run with no tracked application are refused
-  with exit code 3, and every command without the selector behaves as before.
+- `AC-01` (amended 2026-09-04, `user-confirmed`) — With the helper's panel
+  open, the process selector makes `press`, `type` and `screenshot` reach that
+  window, and `snapshot` reports `PROCESS_NOT_INSPECTABLE` rather than an empty
+  tree; a pid outside the staged bundle and a run with no tracked application
+  are refused with exit code 3, and every command without the selector behaves
+  as before. The original wording required `snapshot` to return the panel's
+  tree. `observed` (2026-09-04): the helper presents its panel with
+  `NSOpenPanel.runModal()` and never runs an `NSApplication` event loop, so it
+  owns a real window while exposing no accessibility server;
+  `AXUIElementCopyAttributeValue` on it fails immediately with
+  `kAXErrorCannotComplete`, and neither `AXManualAccessibility` nor
+  `AXEnhancedUserInterface` changes that. A named refusal is therefore the
+  correct answer, because an empty tree would read as an absent element.
 - `AC-02` — The macOS mapping recipe selects an application from
   `/Applications` without a human, the mapping row and its `Remove` button
   appear, and the feature file contains no manual step or names the exact

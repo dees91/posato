@@ -19,15 +19,20 @@ class DesktopEvidence(
     private val bridge: AxBridge,
     private val processes: DesktopProcesses,
     private val stateStore: RunStateStore,
+    private val processSelector: String? = null,
 ) : Evidence {
     override fun screenshot(
         name: String,
         out: Path?
     ): Path {
-        val pid = runningPid()
+        val tracked = stateStore.load().desktop
+        val pid = processes.resolveTarget(processSelector, tracked)
         requireScreenRecording()
-        val windowId = bridge.windows(pid).filter { it.layer == 0 }.maxByOrNull { it.w * it.h }?.id
-            ?: throw ControlException(ErrorCode.APP_NOT_RUNNING, "The desktop application has no visible window.")
+        // The tracked application is captured at layer 0 as before; another process may own a panel above that layer.
+        val addressesTracked = pid == tracked?.pid
+        val candidates = bridge.windows(pid).let { windows -> if (addressesTracked) windows.filter { it.layer == 0 } else windows }
+        val windowId = candidates.maxByOrNull { it.w * it.h }?.id
+            ?: throw ControlException(ErrorCode.APP_NOT_RUNNING, "${addressed()} has no visible window.")
         val destination = out ?: context.artifactPath("screenshots", "$name.png")
         Files.createDirectories(destination.toAbsolutePath().parent)
         context.subprocess.run(listOf("/usr/sbin/screencapture", "-x", "-o", "-l", windowId.toString(), destination.toString()))
@@ -35,12 +40,9 @@ class DesktopEvidence(
         return context.recordArtifact(destination)
     }
 
-    private fun runningPid(): Long = processes.trackedPid(stateStore.load().desktop)
-        ?: throw ControlException(
-            ErrorCode.APP_NOT_RUNNING,
-            "No tracked desktop process is running.",
-            "Run `posato-control launch -t desktop` first.",
-        )
+    private fun runningPid(): Long = processes.resolveTarget(processSelector, stateStore.load().desktop)
+
+    private fun addressed(): String = processSelector?.let { "The selected process '$it'" } ?: "The desktop application"
 
     private fun requireScreenRecording() {
         if (bridge.permissions().screenRecording) return

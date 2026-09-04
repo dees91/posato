@@ -7,6 +7,7 @@ import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.parameters.groups.provideDelegate
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
@@ -25,9 +26,10 @@ class ScreenshotCommand :
     ControlCommand("screenshot", "Capture the application window (desktop), the simulator screen, or a device screenshot through the driver.") {
     private val name by option("--name", help = "Artifact name without extension.").default("screenshot")
     private val out by option("--out", help = "Write the PNG to this path instead of the run directory.").path()
+    private val process by ProcessOptions()
 
     override fun execute(session: Session): JsonElement {
-        val path = session.backend().screenshot(name, out)
+        val path = session.backend(process.selector()).screenshot(name, out)
         return buildJsonObject { put("path", session.layout.relativize(path)) }
     }
 }

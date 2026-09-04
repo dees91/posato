@@ -93,10 +93,25 @@ $PC doctor -t <target> | jq '{ok: .result.ok, failing: [.result.checks[] | selec
 Require `ok: true` with no `error`-severity check. Blocking checks:
 `desktop.accessibility` and `desktop.screenRecording` (desktop driving is
 impossible without them), `device.team` and `device.connected` (device),
-`simulator.booted` and `simulator.installed` (simulator). A `warn` on
-`desktop.staged` means the package is ad-hoc signed: everything except the
-macOS application picker still works. `status -t <target>` confirms the
-tracked process is the one you launched.
+`simulator.booted` and `simulator.installed` (simulator). `status -t <target>`
+confirms the tracked process is the one you launched.
+
+`doctor` is also the one-time provisioning gate. Every check carries a `state`
+and one remedy:
+
+- `ok` — satisfied.
+- `missing` — not satisfied; fix it with the check's `hint` before driving.
+- `unknown` — not observable from the host, always `warn`, never blocking. The
+  hint names the one command that reveals it. `desktop.helperBackground` and
+  `device.screenTime` are always `unknown`, because only the application can
+  read the helper's background approval and Screen Time authorization.
+
+A `warn` on `desktop.staged` means the package is ad-hoc signed: everything
+except the macOS application picker still works. Two provisioning conditions
+gate that picker, `desktop.signingIdentity` and `desktop.syncProfile`; both are
+`info` while the checkout is ad-hoc, so an ad-hoc checkout is still `ok: true`.
+Note that `./gradlew quality` restages an ad-hoc package, so rerun
+`$PC build -t desktop` after it before any application-picker recipe.
 
 ## Drive
 
@@ -115,6 +130,18 @@ $PC wait -t sim --for exists --text example.com --role text
 $PC tap  -t sim --text Remove --role button --near-text example.com
 $PC run  -t sim --scenario tools/posato-control/fixtures/scenarios/add-website.json
 ```
+
+On the desktop, `snapshot`, `find`, `tap`, `type`, `press`, `wait`, and
+`screenshot` also take `--process <name|pid>`, which addresses another process
+inside the staged `Posato.app` — in practice `PosatoMacOSHelper`, which owns
+the application picker. Only a process inside the staged bundle is addressable
+and the tracked application must be running; anything else exits 3. The helper
+runs no `NSApplication` event loop, so it has no accessibility tree: `snapshot`
+and `find` on it report `PROCESS_NOT_INSPECTABLE`, while `press`, a queryless
+`type`, `wait --for exists` without a query, and `screenshot` do reach it. See
+[macOS application mappings](./features/macos-application-mappings.md) for the
+worked recipe. `run --scenario` has no selector; scenarios stay on the tracked
+application.
 
 Prefer `run --scenario` on iOS: every single command costs an XCUITest
 launch (about 5 s on the Simulator, 6-12 s on the iPhone), while a scenario

@@ -6,6 +6,7 @@ import app.posato.control.backend.LaunchOptions
 import app.posato.control.backend.LaunchResult
 import app.posato.control.backend.Lifecycle
 import app.posato.control.backend.StatusResult
+import app.posato.control.core.ConfigurationKey
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.LaunchedProcess
@@ -15,6 +16,9 @@ import app.posato.control.core.Target
 import app.posato.control.core.TrackedProcess
 import app.posato.control.model.DoctorCheck
 import app.posato.control.model.Severity
+import java.nio.file.Path
+import java.time.Instant
+import kotlin.io.path.exists
 
 class DesktopLifecycle(
     private val context: RunContext,
@@ -130,9 +134,40 @@ private class DesktopDoctor(
     fun checks(status: StatusResult): List<DoctorCheck> = buildList {
         add(permissionChecks())
         add(stagedCheck(status))
+        add(DesktopProvisioningChecks.checks(provisioningFacts(status)))
         add(runningCheck(status))
         add(databaseCheck())
     }.flatten()
+
+    /** Reads every host-observable provisioning condition once; the decisions themselves live in DesktopProvisioningChecks. */
+    private fun provisioningFacts(status: StatusResult): ProvisioningFacts {
+        val identity = context.configuration.value(ConfigurationKey.MACOS_SIGNING_IDENTITY)
+        val profilePath = context.configuration.value(ConfigurationKey.MACOS_SYNC_PROVISIONING_PROFILE)
+        val profileFile = profilePath?.let { Path.of(it) }
+        val decoded = profileFile?.takeIf { it.exists() }?.let { file ->
+            val output = context.subprocess.run(listOf("/usr/bin/security", "cms", "-D", "-i", file.toAbsolutePath().toString()))
+            if (output.succeeded) SyncProfile.decode(output.stdout) else null
+        }
+        return ProvisioningFacts(
+            signingIdentity = identity,
+            signingIdentityInKeychain = identity != null && identityInKeychain(identity),
+            syncProfileConfigured = profilePath != null,
+            syncProfileReadable = decoded != null,
+            syncProfile = decoded,
+            developmentTeam = context.configuration.value(ConfigurationKey.DEVELOPMENT_TEAM),
+            staged = status.installed,
+            helperExecutablePresent = helperExecutable().exists(),
+            now = Instant.now(),
+        )
+    }
+
+    private fun identityInKeychain(identity: String): Boolean {
+        val output = context.subprocess.run(listOf("/usr/bin/security", "find-identity", "-v", "-p", "codesigning"))
+        return output.succeeded && output.stdout.contains(identity)
+    }
+
+    private fun helperExecutable(): Path = context.layout.stagedDesktopApplication
+        .resolve("Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper")
 
     private fun permissionChecks(): List<DoctorCheck> {
         val permissions = try {
@@ -172,10 +207,20 @@ private class DesktopDoctor(
     private fun stagedCheck(status: StatusResult): List<DoctorCheck> = listOf(
         if (status.installed) {
             val mode = status.signingMode
-            if (mode == "development") {
-                DoctorCheck.pass("desktop.staged", "The staged application is development-signed.")
-            } else {
-                DoctorCheck.fail(
+            val configured = context.configuration.value(ConfigurationKey.MACOS_SIGNING_IDENTITY) != null
+            when {
+                mode == "development" -> DoctorCheck.pass("desktop.staged", "The staged application is development-signed.")
+
+                // `./gradlew quality` restages without the signing properties, so a configured identity can still leave an ad-hoc package.
+                configured -> DoctorCheck.fail(
+                    "desktop.staged",
+                    "The staged application is $mode-signed even though a signing identity is configured, " +
+                        "so it was staged by a Gradle invocation that did not pass it; the application picker needs development signing.",
+                    "Rerun `posato-control build -t desktop`, which passes the identity and the companion profile.",
+                    Severity.WARN,
+                )
+
+                else -> DoctorCheck.fail(
                     "desktop.staged",
                     "The staged application is $mode-signed; the application picker needs development signing.",
                     "Set posato.macos.signingIdentity in local.properties and rerun `build -t desktop`.",
