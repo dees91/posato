@@ -69,6 +69,7 @@
   apply → reconcile clears the unknown`) and split the fake's
   restore/reconcile queues. Reran `./gradlew quality` green after the last
   correction.
+- Draft PR: https://github.com/dees91/posato/pull/28 (`feature/macos-004-browser-domains` against `main`, integration group `PR-MAC-DOMAINS`). Draft until the physical rows, wiki closeout, and hosted review pass.
 
 ## Verification
 
