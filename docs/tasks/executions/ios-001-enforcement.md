@@ -11,9 +11,9 @@
 
 ## Plan
 
-1. Obtain the independent plan review and the maintainer's confirmation of
-   the recommended decisions in the brief (named store, exact `WebDomain`
-   matching, websites-only apply, App Group migration here).
+1. Obtain the independent plan review. The brief's decisions are accepted:
+   the named store, exact `WebDomain` matching, websites-only apply, and the
+   App Group migration here.
 2. Define the public Kotlin `iosMain` provider interface (canonical domain
    strings, mapping identifiers, platform-neutral outcomes) and the internal
    adapter with redacted carriers; cover it with `iosTest` contract and
