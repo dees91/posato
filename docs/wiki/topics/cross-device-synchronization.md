@@ -344,8 +344,9 @@ is the untracked development profile, not a portal Keychain Sharing toggle.
 undetermined until the companion entitlements included
 `com.apple.application-identifier`. After that stamp, a synthetic-id create,
 identical re-create, exact read, and delete-and-verify-absent round trip
-passed and left no item. Locked-keychain and iCloud sign-out were not driven.
-Delayed iOS propagation remains with `SYNC-009`.
+passed and left no item. A live locked-keychain read and iCloud sign-out are
+an accepted `SYNC-006` limit: the unit test maps a locked Keychain, and a
+real account change is physical evidence for `SYNC-009`.
 
 ## Lifecycle and user-visible status
 

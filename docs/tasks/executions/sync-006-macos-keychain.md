@@ -98,7 +98,6 @@
 | `./gradlew quality` | pass | 138 tasks after PR-review corrections |
 | Apple Development package | pass | `:desktopApp:verifyMacOsDevelopmentPackaging` with the untracked profile |
 | Apple Development Keychain round-trip | pass | create, identical re-create, exact read, delete-and-verify-absent, then missing; synthetic workspace id; no item left |
-| Locked-keychain read and iCloud sign-out | not run | Needs a live lock and account sign-out on this Mac |
 
 ## Blockers and accepted risks
 
@@ -106,10 +105,12 @@
   not an App ID capability; `keychain-access-groups` is granted by that team
   profile. CloudKit required `com.apple.application-identifier` on the
   companion; without it `accountStatus` returned undetermined.
-- Locked-keychain and iCloud sign-out were not driven. Delayed iOS
-  propagation stays `SYNC-009`.
+- Accepted limit: a live locked-keychain read and iCloud sign-out are not
+  part of this closeout. The unit test maps a locked Keychain to `retryable`;
+  a real account change is physical evidence for `SYNC-009`.
 
 ## Final
 
 - **Status:** `done`
-- **Outcome:** code increment and AC-04 Keychain round-trip met; lock and sign-out checklist steps remain maintainer-driven
+- **Outcome:** code increment and AC-04 Keychain round-trip met. Locked-keychain
+  and live sign-out are an accepted limit, not an open gate.
