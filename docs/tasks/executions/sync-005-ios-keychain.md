@@ -91,14 +91,35 @@
   cycle) were rerun green after the last correction, as were `./gradlew
   quality` and the Kotlin `iosTest` suite.
 
+## Hosted review (first pass, all P2 advisory)
+
+- Six P2 findings arrived after the PR opened. Four accepted and implemented
+  in the correction commit: (1) the access group is now read at runtime from
+  the `PosatoKeychainAccessGroup` Info.plist key expanded from
+  `$(AppIdentifierPrefix)`, the same variable as the signed entitlement, with
+  a suffix check that fails closed; (2) `temporarilyUnavailable` maps
+  explicitly to `undetermined` through a tested static mapper; (3) account
+  and value-length validation runs before the binding preflight, so invalid
+  input returns deterministic `IntegrityFailure` without consulting the
+  account source; (4) a successful absence read with a `nil` result returns
+  `Retryable` instead of confirming deletion.
+- Two declined with evidence: worst-case CloudKit latency tuning stays out
+  because the two-step resolution is the brief-consistent design and retry
+  timing belongs to its named task; `Dispatchers.IO` confinement stays with
+  `SYNC-009`, which owns the coordinator threading design and can validate it
+  against the real caller.
+- Affected checks rerun after the correction: Simulator suite 20/20 green,
+  physical-iPhone suite 20/20 green including the real-Keychain cycle under
+  the prefix-derived group, `./gradlew quality` clean.
+
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Kotlin `iosTest` on iOS Simulator (`:shared:iosSimulatorArm64Test`) | pass | 15 adapter tests green on a forced rerun |
 | `./gradlew quality`, `git diff --check`, suppression and private-data scans | pass | clean; no `Suppress` tokens; write surface matches the brief |
-| Swift tests on iOS Simulator (`xcodebuild test`, iPhone 17) | pass | `TEST SUCCEEDED`; 18 `SynchronizableKeychainProviderTests` green |
-| Swift tests on the physical iPhone (signed Debug, random workspace id) | pass | 19/19 green incl. create, exact read, duplicate, conflict without replacement, delete-and-verify-absent, and teardown cleanup |
+| Swift tests on iOS Simulator (`xcodebuild test`, iPhone 17) | pass | `TEST SUCCEEDED`; 20 `SynchronizableKeychainProviderTests` green after the hosted-review correction |
+| Swift tests on the physical iPhone (signed Debug, random workspace id) | pass | 20/20 green incl. create, exact read, duplicate, conflict without replacement, delete-and-verify-absent, and teardown cleanup, under the prefix-derived group |
 | Signed entitlements (`codesign -d --entitlements`) | pass | shared group with the team prefix, `iCloud.app.posato.sync` container, CloudKit service |
 | Credential-free CI-style Simulator and device builds | pass | unsigned `BUILD SUCCEEDED` for `iphonesimulator` and `iphoneos` SDKs |
 
