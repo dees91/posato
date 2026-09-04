@@ -124,10 +124,12 @@ touching any restriction Posato did not create.
 - Recommended: the App Group migration happens here with the token bytes
   unchanged, per the `TARGETS-004` decision; the shared record for `IOS-002`
   is limited to the store name and a version.
-- Open for `MACOS-004` (owner of common `feature/enforcement`): a
-  platform-neutral port shaped `apply(domains, mappingIds)`, `clear()`,
-  `status()` with the outcomes above would let `SESSION-002` wire both
-  platforms; `IOS-001` builds against the existing types and adapts later.
+- Resolved with `MACOS-004`, which owns common `feature/enforcement` this
+  wave: no shared `commonMain` port is introduced now. Each platform keeps
+  its own adapter, `IOS-001` builds against the existing types, and
+  `SESSION-002` defines the common contract shaped like
+  `apply(domains, mappingIds)`, `clear()`, and `status()` when it wires both
+  hosts. The maintainer confirms this together with the brief.
 - Physical gates: development-signed iPhone with the maintainer's team,
   Screen Time authorization granted through the real picker with at least
   one application selected (manual, see the mappings feature file). Family
