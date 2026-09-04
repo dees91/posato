@@ -156,6 +156,10 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         val groups = arrays["keychain-access-groups"].orEmpty()
         check(groups.size == 1)
         check(groups.single().endsWith(".app.posato.sync"))
+        val applicationIdentifier = stringEntitlements(companion)["com.apple.application-identifier"]
+        check(applicationIdentifier != null)
+        check(applicationIdentifier.endsWith(".app.posato.macos.sync"))
+        check(applicationIdentifier.removeSuffix(".app.posato.macos.sync").length == 10)
     }
 
     private fun extractSqliteLibrary(applicationCode: File): File {
@@ -208,8 +212,18 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         return entitlementEntries(code).mapNotNull { (key, value) ->
             when (value.nodeName) {
                 "true", "false" -> key to (value.nodeName == "true")
-                "array" -> null
+                "array", "string" -> null
                 else -> error("Unsupported entitlement value ${value.nodeName}")
+            }
+        }.toMap()
+    }
+
+    private fun stringEntitlements(code: File): Map<String, String> {
+        return entitlementEntries(code).mapNotNull { (key, value) ->
+            if (value.nodeName == "string") {
+                key to value.textContent
+            } else {
+                null
             }
         }.toMap()
     }
@@ -359,7 +373,7 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         val profile = companionProvisioningProfile.orNull?.asFile
             ?: throw GradleException(
                 "Apple Development packaging needs an untracked development profile for " +
-                    "app.posato.macos.sync with iCloud and Keychain Sharing. Set " +
+                    "app.posato.macos.sync (iCloud/CloudKit). Set " +
                     "posatoMacOsSyncProvisioningProfile to that file.",
             )
         val teamPrefix = teamIdentifier(profile)

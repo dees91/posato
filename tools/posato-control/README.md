@@ -48,10 +48,12 @@ variable, which wins). `doctor` reports presence and source, never values.
 
 When `posato.macos.signingIdentity` is an Apple Development identity, Gradle
 packaging also needs
-`-PposatoMacOsSyncProvisioningProfile=/absolute/path/to/untracked.mobileprovision`
-for App ID `app.posato.macos.sync` with iCloud and Keychain Sharing. The profile
-is never tracked. Without it the development package fails closed. Do not
-ad-hoc-sign only the companion to bypass the profile; mixed signing is rejected.
+`-PposatoMacOsSyncProvisioningProfile=/absolute/path/to/untracked.provisionprofile`
+for App ID `app.posato.macos.sync` (iCloud/CloudKit). The profile is never
+tracked. `keychain-access-groups` comes from that team profile; it is not a
+separate App ID capability. Without the profile the development package fails
+closed. Do not ad-hoc-sign only the companion to bypass it; mixed signing is
+rejected.
 
 ## Targets and the JSON envelope
 
@@ -207,7 +209,7 @@ Canonical scenarios live in `fixtures/scenarios/`: `add-website.json` and
 (ad-hoc signed unless `posato.macos.signingIdentity` is set; the macOS
 application picker requires development signing). An Apple Development identity
 also requires `-PposatoMacOsSyncProvisioningProfile` pointing at an untracked
-development profile for `app.posato.macos.sync`; mixed ad-hoc companion signing
+`.provisionprofile` for `app.posato.macos.sync`; mixed ad-hoc companion signing
 is not a workaround. `launch` runs the bundle's executable with its output in
 the run directory. Inspection and interaction use
 a single-file Swift bridge (`native/macos/PosatoAxBridge.swift`) compiled on

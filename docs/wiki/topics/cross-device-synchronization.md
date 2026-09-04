@@ -327,13 +327,25 @@ injected account and `SecItem` seams.
 
 `observed` (2026-09-04): `SYNC-006` added the `app.posato.macos.sync` companion
 as a nested `PosatoMacOSSync.app` launched over one-shot private pipes. The
-companion reads its own iCloud and Keychain Sharing entitlements before any
-CloudKit or `SecItem` call, resolves the local account binding natively, and
+companion reads its own iCloud and `keychain-access-groups` entitlements before
+any CloudKit or `SecItem` call, resolves the local account binding natively, and
 maps exact create/read/delete-and-verify outcomes onto the frozen `SYNC-004`
 ports. Credential-free packaging embeds and signs the companion with empty
 entitlements; missing entitlements return `unavailable`/`retryable` without
-throwing. Apple Development Keychain round-trip evidence and delayed iOS
-propagation remain with the physical gate and `SYNC-009`.
+throwing.
+
+`user-confirmed` (2026-09-04): Keychain Sharing is not an App ID capability on
+macOS or iOS. `keychain-access-groups` is granted by any profile of the team
+for team-prefixed groups. The only portal capability the companion needed was
+iCloud/CloudKit, completed in `SYNC-003`. The Apple Development physical gate
+is the untracked development profile, not a portal Keychain Sharing toggle.
+
+`observed` (2026-09-04): with that profile, CloudKit `accountStatus` stayed
+undetermined until the companion entitlements included
+`com.apple.application-identifier`. After that stamp, a synthetic-id create,
+identical re-create, exact read, and delete-and-verify-absent round trip
+passed and left no item. Locked-keychain and iCloud sign-out were not driven.
+Delayed iOS propagation remains with `SYNC-009`.
 
 ## Lifecycle and user-visible status
 
