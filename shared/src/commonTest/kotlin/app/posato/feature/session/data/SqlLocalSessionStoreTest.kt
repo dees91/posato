@@ -1,6 +1,7 @@
 package app.posato.feature.session.data
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
+import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
@@ -157,6 +158,55 @@ class SqlLocalSessionStoreTest {
     }
 
     @Test
+    fun `given stored bytes without a v4 identifier when read then corruption fails closed without a marker`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("session-bad-identifier.db")
+        val driver = testDatabase.openDriver()
+        try {
+            driver.executeSql(
+                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early)" +
+                    " VALUES (1, X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM}, 0)",
+            )
+            val database = PosatoDatabase(driver)
+            val store = SqlLocalSessionStore(database, Dispatchers.Default)
+            val result = store.read(NOW)
+
+            assertIs<LocalSessionResult.Failure>(result)
+            assertEquals(LocalSessionFailure.CORRUPTION, result.reason)
+            val markers = database.localSessionQueries.selectExpiryMarker(ByteArray(16) { 0x11.toByte() }).awaitAsList()
+
+            assertEquals(0, markers.size)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a stored end before its start when read then corruption fails closed without a marker`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("session-inverted-record.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val identifier = testIdentifier(71).copyBytes()
+            driver.executeSql(
+                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early)" +
+                    " VALUES (1, X'${identifier.toHexString()}', ${NOW + MINIMUM}, $NOW, 0)",
+            )
+            val database = PosatoDatabase(driver)
+            val store = SqlLocalSessionStore(database, Dispatchers.Default)
+            val result = store.read(NOW)
+
+            assertIs<LocalSessionResult.Failure>(result)
+            assertEquals(LocalSessionFailure.CORRUPTION, result.reason)
+            val markers = database.localSessionQueries.selectExpiryMarker(identifier).awaitAsList()
+
+            assertEquals(0, markers.size)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
     fun `given a past end when started then the session is refused`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("session-past.db")
         val driver = testDatabase.openDriver()
@@ -176,4 +226,16 @@ class SqlLocalSessionStoreTest {
         const val NOW: Long = 1_000_000_000_000L
         const val MINIMUM: Long = SessionLimits.MIN_DURATION_MILLIS
     }
+}
+
+private fun SqlDriver.executeSql(sql: String) {
+    execute(
+        identifier = null,
+        sql = sql,
+        parameters = 0,
+    ).value
+}
+
+private fun ByteArray.toHexString(): String {
+    return joinToString("") { ((it.toInt() and 0xFF).toString(16)).padStart(2, '0') }
 }

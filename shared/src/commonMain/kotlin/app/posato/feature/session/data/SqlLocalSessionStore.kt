@@ -52,12 +52,15 @@ internal class SqlLocalSessionStore(
     ): LocalSessionResult<LocalSessionStatus> {
         return withContext(databaseDispatcher) {
             transact {
-                when (evaluateStored(nowEpochMillis)) {
+                when (val evaluation = evaluateStored(nowEpochMillis)) {
                     is SessionEvaluation.ShowActive -> {
                         LocalSessionResult.Failure(LocalSessionFailure.ALREADY_ACTIVE)
                     }
 
                     else -> {
+                        if (evaluation is SessionEvaluation.CommitExpiry) {
+                            commitExpiry(evaluation.record)
+                        }
                         startWhenInactive(sessionId, startEpochMillis, endEpochMillis, nowEpochMillis)
                     }
                 }
@@ -125,6 +128,7 @@ internal class SqlLocalSessionStore(
                 if (startEpochMillis != nowEpochMillis || endEpochMillis - startEpochMillis < SessionLimits.MIN_DURATION_MILLIS) {
                     LocalSessionResult.Failure(LocalSessionFailure.INVALID_SESSION)
                 } else {
+                    // Retains only the new session's marker; SYNC-012 reconciles from the current row.
                     database.localSessionQueries.deleteStaleExpiryMarkers(sessionId.value.copyBytes())
                     database.localSessionQueries.replaceSession(
                         session_id = sessionId.value.copyBytes(),

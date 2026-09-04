@@ -115,9 +115,9 @@ internal fun createSessionUiState(
         isStarting = activeCommand == SessionCommand.STARTING,
         isEnding = activeCommand == SessionCommand.ENDING,
         remainingMillis = active?.let { (it.record.endEpochMillis - nowMillis).coerceAtLeast(0) },
-        formattedPreviewEnd = previewEnd?.let(timeFormat::formatTime),
-        formattedReviewEnd = draft.resolvedReviewEnd?.let(timeFormat::formatTime),
-        formattedActiveEnd = lastRecord?.let { timeFormat.formatTime(it.endEpochMillis) },
+        formattedPreviewEnd = previewEnd?.let { timeFormat.formatTime(it, nowMillis) },
+        formattedReviewEnd = draft.resolvedReviewEnd?.let { timeFormat.formatTime(it, nowMillis) },
+        formattedActiveEnd = lastRecord?.let { timeFormat.formatTime(it.endEpochMillis, nowMillis) },
     )
 }
 
