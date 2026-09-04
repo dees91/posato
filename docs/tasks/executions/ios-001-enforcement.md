@@ -33,34 +33,86 @@
 
 ## High-risk plan review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** changes required (independent review, 2026-09-04)
+- **Critical findings:** none
+- **Required findings (6):** wrong App Group identifier (`group.app.posato`
+  instead of the APPLE-001 `group.app.posato.ios.session`); atomic set
+  undefined; post-revoke clear fallback missing; migration failure
+  semantics missing; AC-02 foreign-store test missing; outcome mapping
+  incomplete (auth states, apps-only case).
+- **Resolution:** brief corrected for all six (identifier, validate-before-
+  write with rollback, post-revoke platform-failure fallback, copy-verify-
+  delete migration with corrupt-source refusal, two-store plus injected-
+  failure plus corrupt-migration tests, explicit outcome mapping with the
+  apps-only mirror rule flagged for maintainer confirmation at merge).
+- **Re-confirmation:** approved on 2026-09-04, no remaining Required items;
+  implementation authorized. Scope check: diff touches only the two task
+  files; no write-surface expansion.
 
 ## Result
 
-- pending
+- Kotlin `iosMain` `feature/enforcement`: provider seam, nine outcomes,
+  redacted request carrier, suspend facade with empty-set refusal.
+- Swift `IosManagedSettingsEnforcer` on the named `app.posato.session`
+  store with validate-before-write, verify, rollback, idempotent clear,
+  and injectable store/authorization/capability seams.
+- `ApplicationMappingsStore.liveMigrated` moves the selection store to
+  `group.app.posato.ios.session` (copy-verify-delete, corrupt source
+  refused, re-run safe); App Group entitlement added to Debug.
+- Material deviation: `clear(handler:)` label on the new Kotlin interface
+  only, because `clear(completion:)` collides with the existing mappings
+  provider at the ObjC selector level and renames its Swift requirement.
+  Existing Swift and all `feature/targets` sources are untouched.
+- Wiki `ios-enforcement` gains the implementation synthesis; device
+  observations stay open.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
-- **Advisory findings:** pending
+- **Verdict:** request changes (independent review, 2026-09-04)
+- **Critical findings:** none
+- **Required findings (2):** failed group verify left the group file
+  behind and poisoned re-runs; the `restricted` refusal path had no test
+  proving it writes nothing.
+- **Resolution:** verify failure now removes the group file before
+  throwing, so the next run retries from the intact private source;
+  authorization mapping extracted into the testable
+  `EnforcementAuthorization` type (the platform status enum has no
+  restricted case, so the seam now takes it and `.restricted` is covered
+  end to end with `writes == 0`). Advisory findings declined: the Kotlin
+  clear test stays at the outcomes clear can produce, and the
+  `clear(handler:)` rationale plus the apps-only device step stay in this
+  record rather than expanding the brief.
+- **Re-review:** approved on 2026-09-04, no remaining Required items.
+  The verify-failure cleanup retries from the intact private source, and
+  the authorization seam covers `.restricted` end to end. One non-blocking
+  note recorded for a future task: the mappings provider still compares
+  raw status to `.approved` without the `approvedWithDataAccess`
+  treatment; untouched by this diff.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| pending | pending | pending |
+| `./gradlew quality` after last change | pass | `BUILD SUCCESSFUL`, `diff --check` clean |
+| Kotlin `iosSimulatorArm64Test` enforcement | pass | 4 tests, 0 failures |
+| Xcode Simulator suite | pass | `TEST SUCCEEDED`, 50 passed, 1 expected skip (device-only cycle) |
+| Privacy/suppression/log scans | pass | synthetic domains only, no `Suppress`, no logging of values |
+| Physical iPhone device run + manual checklist | blocked | signing requires a development team (see blockers) |
 
 ## Blockers and accepted risks
 
-- Physical iPhone with the maintainer's development team, Screen Time
-  authorization, and at least one selected application are required for
-  `AC-01`, `AC-02`, and `AC-04`.
+- Device build fails with "Signing requires a development team"; the
+  project holds no team or provisioning, and portal/profile work stays
+  with the maintainer. Clearing condition: the maintainer selects the
+  development team in Xcode, runs `iosAppTests` on the development-signed
+  iPhone with Screen Time authorization and a stored selection, and
+  records the `AC-01`/`AC-02`/`AC-04` checklist pass or blocked per step.
+- Simulator XCTest shows 1 skip (`testRealStoreApplyClearCycle`); the
+  controlled device run must show 0 skips.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `blocked`
+- **Outcome:** implementation and all maintainer-independent verification
+  are complete; the maintainer device gate (signing + run + checklist)
+  is the clearing condition. Tracked in the draft pull request.

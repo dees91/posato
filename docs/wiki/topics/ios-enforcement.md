@@ -163,6 +163,23 @@ the prior count retained, process restart with the selection intact, and
 in-app clear back to an empty local list. No device, team, or profile value is
 recorded.
 
+## Production implementation (`IOS-001`)
+
+`observed` (2026-09-04, Simulator): one named store `app.posato.session`
+applies canonical exact domains as `WebDomain` values and local mapping
+identifiers as stored `ApplicationToken` values, verifies the set, and
+clears only that store. Validation completes before the first write, a
+verify mismatch rolls back to an empty owned store, and clear is
+idempotent. The `TARGETS-004` store migrates to `group.app.posato.ios.session`
+with copy-verify-delete semantics; a corrupt source is never copied.
+Simulator and Release builds without the capability report unavailable.
+Kotlin `iosMain` exposes the provider seam and the nine platform-neutral
+outcomes with redacted carriers; no `expect`/`actual`, no `status()`.
+
+`open`: the physical apply/clear device cycle, post-revoke clear behavior,
+and uninstall/reinstall/restore observations are still pending a
+development-signed iPhone run.
+
 ## Open questions
 
 - Which Family Controls entitlement and distribution paths are available for

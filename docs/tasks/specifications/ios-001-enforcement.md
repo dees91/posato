@@ -7,8 +7,9 @@
   or app, and a wrong clear leaves the phone restricted or removes another
   source's settings.
 - **Dependencies:** completed `SESSION-001`, `TARGETS-004`, `TARGETS-005`,
-  and `APPLE-001` (App Group `group.app.posato` registered, Family Controls
-  development capability on `app.posato.ios`)
+  and `APPLE-001` (App Group `group.app.posato.ios.session` registered and
+  assigned to `app.posato.ios` and `app.posato.ios.activitymonitor`, Family
+  Controls development capability on `app.posato.ios`)
 - **Integration group:** `PR-IOS-ENFORCEMENT`
 - **Authority:** `IOS-001` in MVP roadmap revision 8,
   [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
@@ -32,8 +33,13 @@ touching any restriction Posato did not create.
 - Add a Swift provider in `iosApp` that owns one named `ManagedSettingsStore`
   reserved for Posato, translates canonical exact domains into `WebDomain`
   values and local mapping identifiers into the stored `ApplicationToken`
-  values, applies both as one atomic set, verifies the store reflects the
-  set, and clears only that store. Family Controls, Managed Settings, and
+  values, applies both as one validated set, verifies the store reflects the
+  set, and clears only that store. The set is atomic by ordering, not by the
+  platform: every validation (canonical domain restore, every mapping-id
+  token resolution, the empty-set check) completes before the first write,
+  so a failure refuses before any write. On any mid-apply throw or verify
+  mismatch the provider clears the owned store (rollback) and returns
+  platform-failure. Family Controls, Managed Settings, and
   token types stay in Swift.
 - Add a Kotlin `iosMain` adapter behind a public Swift-facing interface,
   mirroring `IosKeychainProvider`: apply takes canonical domain strings and
@@ -41,24 +47,45 @@ touching any restriction Posato did not create.
   `LocalApplicationMappings` types, clear takes nothing, and both return
   platform-neutral outcomes (applied, cleared, nothing-to-enforce,
   authorization-required, authorization-denied, restricted, unavailable,
-  selection-missing, platform-failure). No `expect`/`actual`.
+  selection-missing, platform-failure). Explicit mapping: authorization not
+  determined returns authorization-required, denied returns
+  authorization-denied, restricted returns restricted, Simulator and Release
+  builds without the capability return unavailable. A selection with no
+  domains applies applications only, mirroring the decided websites-only
+  rule; nothing-to-enforce is returned only when both sets are empty. No
+  `expect`/`actual`.
 - Migrate the `TARGETS-004` selection store from the app-private container
-  with complete protection to the App Group container with protection
-  available after first unlock, keeping the token bytes and identifiers
-  unchanged, so `IOS-002` can read them from the Device Activity extension.
-  Add only the App Group entitlement; no extension target, no expiry
+  with complete protection to the App Group container
+  (`group.app.posato.ios.session`) with protection available after first
+  unlock, keeping the token bytes and identifiers unchanged, so `IOS-002`
+  can read them from the Device Activity extension. The migration runs
+  inside the live store factory, so the `TARGETS-004` and `TARGETS-005`
+  flows keep their paths: copy the source file, verify read-back equality,
+  then delete the app-private file; re-running is safe (a verified group
+  copy is kept, a missing source with a present group copy means done). A
+  corrupt source is never copied: migration reports corruption, the old
+  file stays for the `TARGETS-005` clear-selection path, and apply writes
+  nothing. Any other migration failure surfaces as a storage failure and
+  apply writes nothing. The group copy keeps backup exclusion. Add only
+  the App Group entitlement; no extension target, no expiry
   callback, no custom shield target.
 - Authorization loss: apply with authorization not granted applies nothing
   and reports the distinct state; clear always runs and is idempotent, so a
-  revoked authorization never leaves restrictions behind.
+  revoked authorization never leaves restrictions behind. If a post-revoke
+  clear throws, the provider reports platform-failure as an action-required
+  state rather than cleared; where the product controls the ordering, clear
+  runs before revoking. The `platform-failure` payload carries only a
+  redacted category, never Apple error text.
 - No domain, token, mapping identifier, bundle identifier, or raw Apple error
   reaches logs, diagnostics, `toString()`, or test artifacts.
 - Non-goals: session wiring, DI wiring, UI, and start/end/expiry recovery
   (`SESSION-002`); clearing after expiry while suspended and the extension
   (`IOS-002`); custom shield presentation; synchronization; macOS.
-- `.research/blocker` `IosEnforcementSpike.swift` is read-only behavioral
-  evidence (named store, apply-then-verify, `clearAllSettings` on the owned
-  store); re-derive the shape here.
+- `.research/blocker` `iosApp/BlockerPoc/IosEnforcementSpike.swift` is
+  read-only behavioral evidence (named store, apply-then-verify,
+  `clearAllSettings` on the owned store); re-derive the shape here. The
+  path is absent from agent worktrees, so this three-line summary plus the
+  decisions below is the complete contract for this task.
 - Exclusive write surface while `MACOS-004` and `SYNC-008` run in parallel:
   `iosApp/**` (Swift provider, App Group entitlement, Xcode project,
   `iosAppTests/**`), new `shared/src/iosMain/**/feature/enforcement/**` and
@@ -99,7 +126,11 @@ touching any restriction Posato did not create.
 
 - Swift tests in `iosAppTests` over an injectable store and authorization
   seam: set translation, apply-then-verify, empty-set refusal, unknown
-  identifier refusal, clear idempotence, and the store-migration read-back.
+  identifier refusal, clear idempotence, a two-store test proving clear on
+  `app.posato.session` leaves a differently named store intact, an
+  injected mid-apply failure proving the owned store ends empty, and the
+  store-migration read-back including a corrupt-source case that copies
+  nothing.
 - Kotlin `iosTest` contract tests over a fake provider for every outcome
   mapping plus the enumerated redaction test for the new carriers.
 - Physical iPhone: `iosAppTests` device run for the apply and clear cycle
@@ -124,6 +155,10 @@ marked open.
   platform fact on the device, not promised in product copy.
 - Decided: apply with domains and no selection pauses websites only,
   matching the `SESSION-001` review rule; nothing-to-enforce is refused.
+- Decided on plan-review authority (maintainer confirms at merge): apply
+  with a selection and no domains pauses applications only, mirroring the
+  websites-only rule; nothing-to-enforce is returned only when both sets
+  are empty.
 - Decided: the App Group migration happens here with the token bytes
   unchanged, per the `TARGETS-004` decision; the shared record for `IOS-002`
   is limited to the store name and a version.
