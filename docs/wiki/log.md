@@ -1070,3 +1070,18 @@
   development profile is the packaging gate. The companion stamps
   `com.apple.application-identifier`. A synthetic-id create / identical /
   read / delete-and-verify-absent round trip passed and left no item.
+
+## [2026-09-04] implementation | SESSION-001 one bounded manual session
+
+- Shipped the session core on both shells: 5-minute to 24-hour setup with
+  review of the resolved end time and effective local items, atomic start,
+  confirmed early end, and terminal expiry with the marker committed before
+  the session is exposed as ended; shared Paused-items patterns moved into
+  `core/designsystem` with no behavior change.
+- Independent completed-change review required two corrections, both
+  applied with regression tests: start/end failures stay visible with retry
+  in review instead of being wiped by the refresh, and `startSession()`
+  re-checks the blocking review reasons instead of trusting the button
+  state. `./gradlew quality` and 51 session tests pass; verify-posato
+  start and early-end re-run green on the Simulator, and the desktop
+  re-run gap is documented tooling flakiness in the execution record.
