@@ -311,6 +311,20 @@ or missing anchor reports action-required instead of a false ready. Native
 adapters, platform wiring, and physical evidence remain with `SYNC-005`
 through `SYNC-009`; explicit workspace removal stays with `SYNC-009`.
 
+`observed` (2026-09-04): `SYNC-005` implemented the iOS synchronizable-Keychain
+adapter. A Swift provider in `iosApp` resolves the 32-byte binding from the
+current CloudKit user record, runs each `SecItem` call with the exact format-1
+selector between a binding preflight and postflight plus a `.CKAccountChanged`
+observation window, and returns only platform-neutral statuses with the 84-byte
+value or nothing. A Kotlin `iosMain` adapter maps those onto the frozen
+`BootstrapAccountPort` and `BootstrapKeyPort` outcomes, clears owned copies,
+and re-checks value lengths. The team prefix is read at runtime from the
+`PosatoDevelopmentTeam` `Info.plist` key expanded from `$(DEVELOPMENT_TEAM)`,
+so no team value is tracked. The full create, exact-read, duplicate,
+conflict, and delete-and-verify-absent cycle passed on a physical iPhone with
+a random workspace id and teardown cleanup; Simulator tests cover mapping over
+injected account and `SecItem` seams.
+
 ## Lifecycle and user-visible status
 
 The common orchestration should coalesce overlapping start, resume, native
