@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": false },
+  "defaults": { "timeoutSeconds": 30 },
+  "onFailure": { "screenshot": true, "snapshot": true },
+  "steps": [
+    { "name": "survived-restart", "action": "waitFor", "state": "exists", "query": { "text": "End session early", "role": "button" } },
+    { "name": "restart-shot", "action": "screenshot" },
+    { "name": "request-early-end", "action": "tap", "query": { "text": "End session early", "role": "button" } },
+    { "name": "confirm-open", "action": "waitFor", "state": "exists", "query": { "text": "End session early?" } },
+    { "name": "confirm-end", "action": "tap", "query": { "text": "End session", "role": "button" } },
+    { "name": "inactive-again", "action": "waitFor", "state": "exists", "query": { "text": "No session active" } },
+    { "name": "ended-shot", "action": "screenshot" }
+  ]
+}

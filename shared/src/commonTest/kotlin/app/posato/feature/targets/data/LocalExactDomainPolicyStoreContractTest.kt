@@ -70,6 +70,8 @@ class LocalExactDomainPolicyStoreContractTest {
         try {
             driver.executeSql("UPDATE local_policy_metadata SET revision = 7 WHERE singleton = 1")
             driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
+            driver.executeSql("DROP TABLE local_session_expiry")
+            driver.executeSql("DROP TABLE local_session")
             driver.executeSql("DROP TABLE sync_terminal_expiry")
             driver.executeSql("DROP TABLE sync_staged_bundle")
             driver.executeSql("DROP TABLE sync_pending_bundle")
@@ -97,6 +99,8 @@ class LocalExactDomainPolicyStoreContractTest {
             driver.executeSql("UPDATE local_policy_metadata SET revision = 9 WHERE singleton = 1")
             driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
             driver.executeSql("INSERT INTO application_policy(singleton, canonical_name) VALUES (1, 'Stable group')")
+            driver.executeSql("DROP TABLE local_session_expiry")
+            driver.executeSql("DROP TABLE local_session")
             driver.executeSql("DROP TABLE sync_terminal_expiry")
             driver.executeSql("DROP TABLE sync_staged_bundle")
             driver.executeSql("DROP TABLE sync_pending_bundle")

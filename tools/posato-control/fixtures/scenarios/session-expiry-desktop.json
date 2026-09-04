@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": false },
+  "defaults": { "timeoutSeconds": 30 },
+  "onFailure": { "screenshot": true, "snapshot": true },
+  "steps": [
+    { "name": "home-inactive", "action": "waitFor", "state": "exists", "query": { "text": "No session active" } },
+    { "name": "begin-setup", "action": "tap", "query": { "text": "Start session", "role": "button" } },
+    { "name": "setup-open", "action": "waitFor", "state": "exists", "query": { "text": "Session length" } },
+    { "name": "focus-field", "action": "tap", "query": { "role": "textField", "near": { "text": "Session length" } } },
+    { "name": "clear-one", "action": "press", "key": "delete" },
+    { "name": "clear-two", "action": "press", "key": "delete" },
+    { "name": "enter-five", "action": "press", "key": "5" },
+    { "name": "submit", "action": "press", "key": "return" },
+    { "name": "continue-review", "action": "tap", "query": { "text": "Review session", "role": "button" } },
+    { "name": "review-open", "action": "waitFor", "state": "exists", "query": { "text": "Review session" } },
+    { "name": "start", "action": "tap", "query": { "text": "Start session", "role": "button" } },
+    { "name": "active", "action": "waitFor", "state": "exists", "query": { "text": "End session early", "role": "button" } },
+    { "name": "natural-expiry", "action": "waitFor", "state": "exists", "query": { "text": "No session active" }, "timeoutSeconds": 400 },
+    { "name": "expired-shot", "action": "screenshot" },
+    { "name": "expired-tree", "action": "snapshot" }
+  ]
+}
