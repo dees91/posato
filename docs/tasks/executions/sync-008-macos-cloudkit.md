@@ -11,9 +11,9 @@
 
 ## Plan
 
-1. Obtain the independent plan review and the maintainer's confirmation of
-   the brief's recommendations (payload limit, no `CKSyncEngine`, `jvmMain`
-   mailbox interface, zone deletion primitive, 30-second deadline).
+1. Obtain the independent plan review. The brief's decisions are accepted:
+   the payload limit, no `CKSyncEngine`, the `jvmMain` mailbox interface, the
+   zone deletion primitive, the 30-second deadline, and no anchor re-read.
 2. Add the companion operations 5–11 with the `cloudkit` capability bit, an
    injectable CloudKit seam, record encoding and validation for the zone,
    anchor, and bundle types, the change-fetch pager with the opaque cursor,
