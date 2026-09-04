@@ -21,23 +21,40 @@ enum RequestHandler {
         request.operation == .resolveBinding ? .unavailable : .retryable
       return request.respond(outcome: outcome)
     }
+    let started = DispatchTime.now()
     switch request.operation {
     case .resolveBinding:
-      return resolveBinding(request, accounts: dependencies.accounts)
+      return resolveBinding(request, started: started, accounts: dependencies.accounts)
     case .readItem:
-      return readItem(request, accessGroup: accessGroup, dependencies: dependencies)
+      return readItem(
+        request,
+        accessGroup: accessGroup,
+        started: started,
+        dependencies: dependencies
+      )
     case .createItem:
-      return createItem(request, accessGroup: accessGroup, dependencies: dependencies)
+      return createItem(
+        request,
+        accessGroup: accessGroup,
+        started: started,
+        dependencies: dependencies
+      )
     case .deleteItemAndVerifyAbsent:
-      return deleteItem(request, accessGroup: accessGroup, dependencies: dependencies)
+      return deleteItem(
+        request,
+        accessGroup: accessGroup,
+        started: started,
+        dependencies: dependencies
+      )
     }
   }
 
   private static func resolveBinding(
     _ request: SyncMessage,
+    started: DispatchTime,
     accounts: any AccountBindingSource
   ) -> SyncMessage {
-    switch accounts.resolve(deadlineMilliseconds: request.deadlineMilliseconds) {
+    switch accountBinding(request, started: started, accounts: accounts) {
     case .available(let binding):
       return request.respond(outcome: .found, payload: binding)
     case .unavailable:
@@ -52,13 +69,19 @@ enum RequestHandler {
   private static func readItem(
     _ request: SyncMessage,
     accessGroup: String,
+    started: DispatchTime,
     dependencies: SyncDependencies
   ) -> SyncMessage {
-    guard var fields = keyFields(from: request.payload, expectingItem: false) else {
+    guard var fields = KeyRequestCodec.fields(from: request.payload, expectingItem: false) else {
       return request.respond(outcome: .integrityFailure)
     }
     defer { fields.clear() }
-    switch preflight(request, expected: fields.binding, accounts: dependencies.accounts) {
+    switch preflight(
+      request,
+      expected: fields.binding,
+      started: started,
+      accounts: dependencies.accounts
+    ) {
     case .proceed:
       break
     case .respond(let message):
@@ -67,25 +90,37 @@ enum RequestHandler {
     let (result, changed) = observingAccountChange(name: dependencies.accountChangeName) {
       dependencies.keys.read(account: fields.account, accessGroup: accessGroup)
     }
-    if changed || !postflight(request, expected: fields.binding, accounts: dependencies.accounts) {
+    let bindingHolds = postflight(
+      request,
+      expected: fields.binding,
+      started: started,
+      accounts: dependencies.accounts
+    )
+    if changed || !bindingHolds {
       if case .found(var item) = result {
         item.resetBytes(in: item.startIndex..<item.endIndex)
       }
       return request.respond(outcome: .unknownOutcome)
     }
-    return mapRead(result, request: request)
+    return KeyRequestCodec.mapRead(result, request: request)
   }
 
   private static func createItem(
     _ request: SyncMessage,
     accessGroup: String,
+    started: DispatchTime,
     dependencies: SyncDependencies
   ) -> SyncMessage {
-    guard var fields = keyFields(from: request.payload, expectingItem: true) else {
+    guard var fields = KeyRequestCodec.fields(from: request.payload, expectingItem: true) else {
       return request.respond(outcome: .integrityFailure)
     }
     defer { fields.clear() }
-    switch preflight(request, expected: fields.binding, accounts: dependencies.accounts) {
+    switch preflight(
+      request,
+      expected: fields.binding,
+      started: started,
+      accounts: dependencies.accounts
+    ) {
     case .proceed:
       break
     case .respond(let message):
@@ -98,22 +133,34 @@ enum RequestHandler {
         value: fields.item,
       )
     }
-    if changed || !postflight(request, expected: fields.binding, accounts: dependencies.accounts) {
+    let bindingHolds = postflight(
+      request,
+      expected: fields.binding,
+      started: started,
+      accounts: dependencies.accounts
+    )
+    if changed || !bindingHolds {
       return request.respond(outcome: .unknownOutcome)
     }
-    return mapCreate(result, request: request)
+    return KeyRequestCodec.mapCreate(result, request: request)
   }
 
   private static func deleteItem(
     _ request: SyncMessage,
     accessGroup: String,
+    started: DispatchTime,
     dependencies: SyncDependencies
   ) -> SyncMessage {
-    guard var fields = keyFields(from: request.payload, expectingItem: false) else {
+    guard var fields = KeyRequestCodec.fields(from: request.payload, expectingItem: false) else {
       return request.respond(outcome: .integrityFailure)
     }
     defer { fields.clear() }
-    switch preflight(request, expected: fields.binding, accounts: dependencies.accounts) {
+    switch preflight(
+      request,
+      expected: fields.binding,
+      started: started,
+      accounts: dependencies.accounts
+    ) {
     case .proceed:
       break
     case .respond(let message):
@@ -125,10 +172,16 @@ enum RequestHandler {
         accessGroup: accessGroup,
       )
     }
-    if changed || !postflight(request, expected: fields.binding, accounts: dependencies.accounts) {
+    let bindingHolds = postflight(
+      request,
+      expected: fields.binding,
+      started: started,
+      accounts: dependencies.accounts
+    )
+    if changed || !bindingHolds {
       return request.respond(outcome: .unknownOutcome)
     }
-    return mapDelete(result, request: request)
+    return KeyRequestCodec.mapDelete(result, request: request)
   }
 
   private static func observingAccountChange<Result>(
@@ -156,9 +209,10 @@ enum RequestHandler {
   private static func preflight(
     _ request: SyncMessage,
     expected: Data,
+    started: DispatchTime,
     accounts: any AccountBindingSource
   ) -> Preflight {
-    switch accounts.resolve(deadlineMilliseconds: request.deadlineMilliseconds) {
+    switch accountBinding(request, started: started, accounts: accounts) {
     case .available(let current):
       if ItemCodec.constantTimeEquals(current, expected) {
         return .proceed
@@ -172,9 +226,10 @@ enum RequestHandler {
   private static func postflight(
     _ request: SyncMessage,
     expected: Data,
+    started: DispatchTime,
     accounts: any AccountBindingSource
   ) -> Bool {
-    switch accounts.resolve(deadlineMilliseconds: request.deadlineMilliseconds) {
+    switch accountBinding(request, started: started, accounts: accounts) {
     case .available(let current):
       return ItemCodec.constantTimeEquals(current, expected)
     case .unavailable, .restricted, .undetermined:
@@ -182,7 +237,22 @@ enum RequestHandler {
     }
   }
 
-  private struct KeyFields {
+  private static func accountBinding(
+    _ request: SyncMessage,
+    started: DispatchTime,
+    accounts: any AccountBindingSource
+  ) -> BindingNative {
+    return accounts.resolve(
+      deadlineMilliseconds: DeadlineBudget.remainingMilliseconds(
+        started: started,
+        budgetMilliseconds: request.deadlineMilliseconds
+      )
+    )
+  }
+}
+
+private enum KeyRequestCodec {
+  struct Fields {
     var binding: Data
     var account: String
     var item: Data
@@ -193,7 +263,7 @@ enum RequestHandler {
     }
   }
 
-  private static func keyFields(from payload: Data, expectingItem: Bool) -> KeyFields? {
+  static func fields(from payload: Data, expectingItem: Bool) -> Fields? {
     let expectedCount =
       SyncLimits.bindingBytes + SyncLimits.accountBytes + (expectingItem ? SyncLimits.itemBytes : 0)
     guard payload.count == expectedCount else {
@@ -218,10 +288,10 @@ enum RequestHandler {
     } else {
       item = Data()
     }
-    return KeyFields(binding: binding, account: account, item: item)
+    return Fields(binding: binding, account: account, item: item)
   }
 
-  private static func mapRead(_ result: KeyItemNative, request: SyncMessage) -> SyncMessage {
+  static func mapRead(_ result: KeyItemNative, request: SyncMessage) -> SyncMessage {
     switch result {
     case .found(let item):
       return request.respond(outcome: .found, payload: item)
@@ -238,7 +308,7 @@ enum RequestHandler {
     }
   }
 
-  private static func mapCreate(_ result: KeyItemNative, request: SyncMessage) -> SyncMessage {
+  static func mapCreate(_ result: KeyItemNative, request: SyncMessage) -> SyncMessage {
     switch result {
     case .created:
       return request.respond(outcome: .created)
@@ -255,7 +325,7 @@ enum RequestHandler {
     }
   }
 
-  private static func mapDelete(_ result: KeyItemNative, request: SyncMessage) -> SyncMessage {
+  static func mapDelete(_ result: KeyItemNative, request: SyncMessage) -> SyncMessage {
     switch result {
     case .deletedAndAbsent:
       return request.respond(outcome: .deletedAndAbsent)

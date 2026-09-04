@@ -71,19 +71,31 @@
   (2) the JVM verifier was unused; (3) packaging probes did not run the
   verifier contract; (4) no `CKAccountChanged` observer during `SecItem`.
 - **Resolution:** ad-hoc peers match on identifier and nested path only;
-  `MacOsSyncCompanionClient.verified` is the production factory; probes
-  require `acceptAdHocCompanion` to fail; Keychain ops observe
-  `.CKAccountChanged`. Affected Swift/JVM/packaging checks were rerun.
+  `MacOsSyncCompanionClient.verified` is the production factory; Keychain
+  ops observe `.CKAccountChanged`. Affected Swift/JVM/packaging checks were
+  rerun.
+
+## Pull-request review corrections
+
+- **P1 accepted:** timeout and cancel now destroy the companion from outside
+  the blocked pipe read; hang tests assert elapsed time and `process.isAlive`.
+- **P2 accepted:** remaining CloudKit budget across preflight/postflight;
+  `defer { clear() }` runs before `exit`; `mapFailure` collapsed to
+  `.retryable`; negative identifier and entitlement cases moved onto
+  `MacOsSyncCompanionVerifier`; `posatoMacOsSyncProvisioningProfile`
+  documented next to the desktop signing identity.
+- **P2 declined:** ad-hoc-signing only the companion when the Apple
+  Development profile is absent (mixed signing stays fail-closed).
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Swift tests, format, lint | pass | `:macosSyncCompanion:check`, 27 tests |
-| JVM protocol, adapter, fake-process tests | pass | `:shared:jvmTest` |
-| Ad-hoc package, nested companion, negative probes | pass | `:desktopApp:verifyMacOsDevelopmentPackaging`, `:desktopApp:probeMacOsSyncCompanionPackaging` |
+| Swift tests, format, lint | pass | `:macosSyncCompanion:check`, 34 tests |
+| JVM protocol, adapter, fake-process, verifier tests | pass | `:shared:jvmTest` |
+| Ad-hoc package, nested companion | pass | `:desktopApp:verifyMacOsDevelopmentPackaging` |
 | Desktop smoke launch | pass | posato-control `wait` for "Add website"; run `20260904-100928-fa99` |
-| `./gradlew quality` | pass | 139 tasks after the completed-change corrections |
+| `./gradlew quality` | pass | 138 tasks after PR-review corrections |
 | Apple Development Keychain round-trip | blocked | Needs Keychain Sharing on `app.posato.macos.sync` and an untracked development profile |
 
 ## Blockers and accepted risks

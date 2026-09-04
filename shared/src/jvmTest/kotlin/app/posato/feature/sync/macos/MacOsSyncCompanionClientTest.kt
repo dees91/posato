@@ -1,11 +1,16 @@
 package app.posato.feature.sync.macos
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import java.nio.file.Path
+import java.util.concurrent.TimeUnit
+import kotlin.system.measureTimeMillis
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -36,18 +41,35 @@ class MacOsSyncCompanionClientTest {
 
     @Test
     fun `given a hanging companion when the deadline elapses then the exchange is unknown`() = runBlocking {
-        val exchange = client("hang").transact(request(deadlineMilliseconds = 400))
+        var process: Process? = null
+        val elapsedMilliseconds = measureTimeMillis {
+            val exchange = client("hang") { child -> process = child }
+                .transact(request(deadlineMilliseconds = 400))
+            assertEquals(CompanionExchange.Unknown, exchange)
+        }
+        val child = checkNotNull(process)
 
-        assertEquals(CompanionExchange.Unknown, exchange)
+        assertTrue(elapsedMilliseconds < HANG_LIMIT_MILLISECONDS)
+        assertTrue(child.waitFor(PROCESS_WAIT_SECONDS, TimeUnit.SECONDS))
+        assertFalse(child.isAlive)
     }
 
     @Test
     fun `given a hanging companion when cancelled then no exchange is returned`() = runBlocking {
-        val deferred = async {
-            client("hang").transact(request(deadlineMilliseconds = 30_000))
+        val started = CompletableDeferred<Process>()
+        val elapsedMilliseconds = measureTimeMillis {
+            val deferred = async {
+                client("hang") { process -> started.complete(process) }
+                    .transact(request(deadlineMilliseconds = 30_000))
+            }
+            val process = withTimeout(START_WAIT_MILLISECONDS) { started.await() }
+            deferred.cancelAndJoin()
+            assertTrue(deferred.isCancelled)
+            assertTrue(process.waitFor(PROCESS_WAIT_SECONDS, TimeUnit.SECONDS))
+            assertFalse(process.isAlive)
         }
-        deferred.cancelAndJoin()
-        assertTrue(deferred.isCancelled)
+
+        assertTrue(elapsedMilliseconds < HANG_LIMIT_MILLISECONDS)
     }
 
     private fun request(deadlineMilliseconds: Int = 5_000): SyncCompanionMessage {
@@ -61,7 +83,10 @@ class MacOsSyncCompanionClientTest {
         )
     }
 
-    private fun client(mode: String): MacOsSyncCompanionClient {
+    private fun client(
+        mode: String,
+        onProcessStarted: (Process) -> Unit = {},
+    ): MacOsSyncCompanionClient {
         val javaHome = checkNotNull(System.getProperty("java.home"))
         val java = Path.of(javaHome, "bin", "java")
         val classpath = checkNotNull(System.getProperty("java.class.path"))
@@ -73,6 +98,13 @@ class MacOsSyncCompanionClientTest {
                 FakeSyncCompanionMain::class.java.name,
                 mode,
             ),
+            onProcessStarted = onProcessStarted,
         )
+    }
+
+    private companion object {
+        const val HANG_LIMIT_MILLISECONDS: Long = 10_000L
+        const val START_WAIT_MILLISECONDS: Long = 5_000L
+        const val PROCESS_WAIT_SECONDS: Long = 2L
     }
 }

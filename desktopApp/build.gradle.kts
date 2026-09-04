@@ -460,106 +460,6 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
     }
 }
 
-abstract class ProbeMacOsSyncCompanionPackaging : DefaultTask() {
-    @get:Internal
-    abstract val applicationBundle: DirectoryProperty
-
-    @get:Inject
-    abstract val execOperations: ExecOperations
-
-    @TaskAction
-    fun probe() {
-        val companion = applicationBundle.get().asFile.resolve("Contents/Helpers/PosatoMacOSSync.app")
-        probeWrongIdentifier(companion)
-        probeWrongEntitlements(companion)
-    }
-
-    private fun probeWrongIdentifier(companion: File) {
-        val copy = temporaryDir.resolve("wrong-identifier/PosatoMacOSSync.app")
-        companion.copyRecursively(copy, overwrite = true)
-        sign(copy, identifier = "app.posato.macos.sync.wrong")
-        check(identifierOf(copy) == "app.posato.macos.sync.wrong")
-        check(runCatching { acceptAdHocCompanion(copy) }.isFailure)
-    }
-
-    private fun probeWrongEntitlements(companion: File) {
-        val copy = temporaryDir.resolve("wrong-entitlements/PosatoMacOSSync.app")
-        companion.copyRecursively(copy, overwrite = true)
-        val entitlements = temporaryDir.resolve("wrong.entitlements")
-        entitlements.writeText(
-            """
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-            <plist version="1.0">
-            <dict>
-                <key>com.apple.security.app-sandbox</key>
-                <true/>
-            </dict>
-            </plist>
-            """.trimIndent(),
-        )
-        sign(copy, identifier = "app.posato.macos.sync", entitlements = entitlements)
-        check(runCatching { acceptAdHocCompanion(copy) }.isFailure)
-    }
-
-    private fun acceptAdHocCompanion(companion: File) {
-        check(identifierOf(companion) == "app.posato.macos.sync")
-        val entitlements = command(
-            "/usr/bin/codesign",
-            "--display",
-            "--entitlements",
-            ":-",
-            companion.absolutePath,
-        )
-        check(!entitlements.contains("com.apple.security.app-sandbox"))
-        check(!entitlements.contains("iCloud.app.posato.sync"))
-        check(!entitlements.contains("keychain-access-groups"))
-    }
-
-    private fun sign(
-        code: File,
-        identifier: String,
-        entitlements: File? = null,
-    ) {
-        val arguments = mutableListOf(
-            "/usr/bin/codesign",
-            "--force",
-            "--sign",
-            "-",
-            "--identifier",
-            identifier,
-        )
-        entitlements?.let { file ->
-            arguments += listOf("--entitlements", file.absolutePath)
-        }
-        arguments += code.absolutePath
-        command(*arguments.toTypedArray())
-    }
-
-    private fun identifierOf(code: File): String {
-        val details = command("/usr/bin/codesign", "--display", "--verbose=4", code.absolutePath)
-        return details.lineSequence()
-            .map(String::trim)
-            .first { line -> line.startsWith("Identifier=") }
-            .substringAfter('=')
-    }
-
-    private fun command(vararg arguments: String): String {
-        val standardOutput = ByteArrayOutputStream()
-        val errorOutput = ByteArrayOutputStream()
-        val result = execOperations.exec {
-            commandLine(*arguments)
-            this.standardOutput = standardOutput
-            this.errorOutput = errorOutput
-            isIgnoreExitValue = true
-        }
-        if (result.exitValue != 0) {
-            throw GradleException("Companion packaging probe failed in ${arguments.first()}.")
-        }
-        return standardOutput.toString(Charsets.UTF_8) + errorOutput.toString(Charsets.UTF_8)
-    }
-}
-
 val macOsHelperBundle = project(":macosHelper").layout.buildDirectory
     .dir("bundle/PosatoMacOSHelper.app")
 val macOsSyncCompanionBundle = project(":macosSyncCompanion").layout.buildDirectory
@@ -716,13 +616,6 @@ val verifyMacOsDevelopmentPackaging by tasks.registering(VerifyMacOsDevelopmentP
     dependsOn(stageMacOsDevelopmentPackage)
     applicationBundle.set(macOsDevelopmentApplication)
     signingIdentity.set(macOsSigningIdentity)
-}
-
-val probeMacOsSyncCompanionPackaging by tasks.registering(ProbeMacOsSyncCompanionPackaging::class) {
-    group = "verification"
-    description = "Proves the companion verifier rejects a wrong identifier or entitlement set."
-    dependsOn(verifyMacOsDevelopmentPackaging)
-    applicationBundle.set(macOsDevelopmentApplication)
 }
 
 val packageDmg = tasks.register<AbstractNativeMacApplicationPackageDmgTask>("packageDmg") {

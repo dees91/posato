@@ -13,3 +13,14 @@ import Testing
   #expect(AccountBinding.derive(recordName: "synthetic-record") == expected)
   #expect(expected.count == SyncLimits.bindingBytes)
 }
+
+@Test func givenSpentBudgetWhenRemainingThenZeroIsReturned() {
+  let started = DispatchTime.now() - .milliseconds(25)
+  #expect(DeadlineBudget.remainingMilliseconds(started: started, budgetMilliseconds: 10) == 0)
+}
+
+@Test func givenFreshBudgetWhenRemainingThenTheRemainderIsWithinTheBudget() {
+  let started = DispatchTime.now()
+  let remaining = DeadlineBudget.remainingMilliseconds(started: started, budgetMilliseconds: 5_000)
+  #expect(remaining > 0 && remaining <= 5_000)
+}
