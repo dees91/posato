@@ -4,5 +4,7 @@
 <dict>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
+    <key>PosatoKeychainAccessGroup</key>
+    <string>$(AppIdentifierPrefix)app.posato.sync</string>
 </dict>
 </plist>

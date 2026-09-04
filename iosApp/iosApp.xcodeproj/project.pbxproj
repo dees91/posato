@@ -12,6 +12,8 @@
 		B300000129CC810C00F8E227 /* IosApplicationMappingsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */; };
 		B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */; };
 		B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */; };
+		B500000129CC810C00F8E227 /* SynchronizableKeychainProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B500000229CC810C00F8E227 /* SynchronizableKeychainProvider.swift */; };
+		B600000129CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -33,6 +35,8 @@
 		B300000329CC810C00F8E227 /* PosatoDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PosatoDebug.entitlements; sourceTree = "<group>"; };
 		B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoKitSyncProviderTests.swift; sourceTree = "<group>"; };
 		B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationMappingsStoreTests.swift; sourceTree = "<group>"; };
+		B500000229CC810C00F8E227 /* SynchronizableKeychainProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynchronizableKeychainProvider.swift; sourceTree = "<group>"; };
+		B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynchronizableKeychainProviderTests.swift; sourceTree = "<group>"; };
 		B200000329CC810C00F8E227 /* PosatoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PosatoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -80,6 +84,7 @@
 				A93A953A29CC810C00F8E227 /* iosApp.swift */,
 				B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */,
 				B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */,
+				B500000229CC810C00F8E227 /* SynchronizableKeychainProvider.swift */,
 				B300000329CC810C00F8E227 /* PosatoDebug.entitlements */,
 				A93A953E29CC810D00F8E227 /* Assets.xcassets */,
 			);
@@ -91,6 +96,7 @@
 			children = (
 				B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */,
 				B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */,
+				B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */,
 			);
 			path = iosAppTests;
 			sourceTree = "<group>";
@@ -151,6 +157,14 @@
 				TargetAttributes = {
 					A93A953629CC810C00F8E227 = {
 						CreatedOnToolsVersion = 26.6;
+						SystemCapabilities = {
+							com.apple.Keychain = {
+								enabled = 1;
+							};
+							com.apple.iCloud = {
+								enabled = 1;
+							};
+						};
 					};
 					B200000829CC810C00F8E227 = {
 						CreatedOnToolsVersion = 26.6;
@@ -217,6 +231,7 @@
 				A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */,
 				B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */,
 				B300000129CC810C00F8E227 /* IosApplicationMappingsProvider.swift in Sources */,
+				B500000129CC810C00F8E227 /* SynchronizableKeychainProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -226,6 +241,7 @@
 			files = (
 				B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */,
 				B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */,
+				B600000129CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
