@@ -91,6 +91,31 @@ import Testing
   #expect(response.payload.isEmpty)
 }
 
+@Test func givenElapsedPreflightWhenPostflightRunsThenRemainingDeadlineIsPassed() {
+  let accounts = FakeAccounts(.available(syntheticBinding), .available(syntheticBinding))
+  accounts.pauseFirstResolve = 0.05
+  let backend = InMemoryKeychainBackend()
+  let store = WorkspaceKeyStore(backend: backend)
+  let account = testAccount()
+  #expect(
+    store.create(account: account, accessGroup: syntheticAccessGroup, value: testItem()) == .created
+  )
+  let payload = keyPayload(binding: syntheticBinding, account: account)
+  let response = RequestHandler.handle(
+    testRequest(operation: .readItem, payload: payload, deadline: 1_000),
+    dependencies: SyncDependencies(
+      entitlements: FakeEntitlements(value: provisionedEntitlements()),
+      accounts: accounts,
+      keys: store,
+    ),
+  )
+
+  #expect(response.outcome == .found)
+  #expect(accounts.deadlines.count == 2)
+  #expect(accounts.deadlines[0] <= 1_000)
+  #expect(accounts.deadlines[1] < accounts.deadlines[0])
+}
+
 @Test func givenMatchingBindingWhenCreatedThenCreatedIsReturned() {
   let payload = keyPayload(binding: syntheticBinding, account: testAccount(), item: testItem())
   let response = RequestHandler.handle(

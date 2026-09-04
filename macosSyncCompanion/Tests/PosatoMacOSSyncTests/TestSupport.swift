@@ -66,12 +66,18 @@ struct FakeEntitlements: EntitlementReader {
 
 final class FakeAccounts: AccountBindingSource, @unchecked Sendable {
   private var results: [BindingNative]
+  private(set) var deadlines: [UInt32] = []
+  var pauseFirstResolve: TimeInterval = 0
 
   init(_ results: BindingNative...) {
     self.results = results
   }
 
   func resolve(deadlineMilliseconds: UInt32) -> BindingNative {
+    deadlines.append(deadlineMilliseconds)
+    if deadlines.count == 1, pauseFirstResolve > 0 {
+      Thread.sleep(forTimeInterval: pauseFirstResolve)
+    }
     if results.isEmpty {
       return .undetermined
     }

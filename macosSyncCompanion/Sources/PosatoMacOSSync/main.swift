@@ -18,7 +18,7 @@ do {
   var response = RequestHandler.handle(request, dependencies: dependencies)
   defer { response.clear() }
   try writeFrame(SyncCodec.encode(response))
-  exit(EXIT_SUCCESS)
 } catch {
   exit(EXIT_FAILURE)
 }
+exit(EXIT_SUCCESS)

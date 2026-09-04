@@ -3,17 +3,23 @@ package app.posato.feature.sync.macos
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.runInterruptible
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
+import java.io.Closeable
 import java.io.EOFException
+import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.SecureRandom
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 internal interface SyncCompanionTransport {
     suspend fun transact(message: SyncCompanionMessage): CompanionExchange
@@ -25,17 +31,15 @@ internal class MacOsSyncCompanionClient(
     private val executable: Path,
     private val arguments: List<String> = emptyList(),
     private val random: SecureRandom = SecureRandom(),
+    private val onProcessStarted: (Process) -> Unit = {},
 ) : SyncCompanionTransport {
     override suspend fun transact(message: SyncCompanionMessage): CompanionExchange {
         return withContext(Dispatchers.IO) {
             val process = startProcess()
+            onProcessStarted(process)
             try {
                 val encoded = withTimeout(message.deadlineMilliseconds.toLong()) {
-                    runInterruptible {
-                        write(process, message)
-                        process.outputStream.close()
-                        readFrame(process)
-                    }
+                    readFrameCancellable(process, message)
                 }
                 val response = MacOsSyncCompanionProtocol.decode(encoded)
                 if (matchesRequest(message, response)) {
@@ -49,15 +53,18 @@ internal class MacOsSyncCompanionClient(
                 } else {
                     throw error
                 }
-            } catch (_: java.io.IOException) {
+            } catch (_: IOException) {
+                currentCoroutineContext().ensureActive()
                 CompanionExchange.Unknown
             } catch (_: IllegalArgumentException) {
+                currentCoroutineContext().ensureActive()
                 CompanionExchange.Unknown
             } catch (_: IllegalStateException) {
+                currentCoroutineContext().ensureActive()
                 CompanionExchange.Unknown
             } finally {
                 message.clear()
-                process.destroyForcibly()
+                terminate(process)
             }
         }
     }
@@ -81,6 +88,52 @@ internal class MacOsSyncCompanionClient(
             builder.environment()["HOME"] = home
         }
         return builder.start()
+    }
+
+    private suspend fun readFrameCancellable(
+        process: Process,
+        message: SyncCompanionMessage,
+    ): ByteArray {
+        return suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation {
+                terminate(process)
+            }
+            val worker = Thread(
+                {
+                    try {
+                        write(process, message)
+                        process.outputStream.close()
+                        continuation.resume(readFrame(process))
+                    } catch (error: CancellationException) {
+                        continuation.resumeWithException(error)
+                    } catch (error: IOException) {
+                        continuation.resumeWithException(error)
+                    } catch (error: IllegalArgumentException) {
+                        continuation.resumeWithException(error)
+                    } catch (error: IllegalStateException) {
+                        continuation.resumeWithException(error)
+                    }
+                },
+                COMPANION_WORKER,
+            )
+            worker.isDaemon = true
+            worker.start()
+        }
+    }
+
+    private fun terminate(process: Process) {
+        closeQuietly(process.outputStream)
+        closeQuietly(process.inputStream)
+        closeQuietly(process.errorStream)
+        process.destroyForcibly()
+    }
+
+    private fun closeQuietly(stream: Closeable) {
+        try {
+            stream.close()
+        } catch (_: IOException) {
+            return
+        }
     }
 
     private fun write(
@@ -125,6 +178,7 @@ internal class MacOsSyncCompanionClient(
 
     companion object {
         private const val LENGTH_PREFIX_BYTES: Int = 4
+        private const val COMPANION_WORKER: String = "posato-macos-sync-companion"
 
         fun verified(
             applicationRoot: Path,

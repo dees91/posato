@@ -78,7 +78,7 @@ struct WorkspaceKeyStore: Sendable {
       }
     }
     guard status == errSecSuccess else {
-      return mapFailure(status)
+      return .retryable
     }
     return .created
   }
@@ -86,7 +86,7 @@ struct WorkspaceKeyStore: Sendable {
   func deleteAndVerifyAbsent(account: String, accessGroup: String) -> KeyItemNative {
     let status = backend.delete(exactQuery(account: account, accessGroup: accessGroup))
     guard status == errSecSuccess || status == errSecItemNotFound else {
-      return mapFailure(status)
+      return .retryable
     }
     switch copy(account: account, accessGroup: accessGroup) {
     case .missing:
@@ -135,15 +135,5 @@ struct WorkspaceKeyStore: Sendable {
     query[kSecValueData as String] = value
     query[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlock
     return query
-  }
-
-  private func mapFailure(_ status: OSStatus) -> KeyItemNative {
-    switch status {
-    case errSecMissingEntitlement, errSecAuthFailed, errSecInteractionNotAllowed,
-      errSecNotAvailable:
-      return .retryable
-    default:
-      return .retryable
-    }
   }
 }

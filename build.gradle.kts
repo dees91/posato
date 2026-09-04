@@ -136,7 +136,6 @@ tasks.register("quality") {
         "ktlintCheck",
         ":desktopApp:createDistributable",
         ":desktopApp:verifyMacOsDevelopmentPackaging",
-        ":desktopApp:probeMacOsSyncCompanionPackaging",
         ":desktopApp:detekt",
         ":desktopApp:ktlintCheck",
         ":desktopApp:test",

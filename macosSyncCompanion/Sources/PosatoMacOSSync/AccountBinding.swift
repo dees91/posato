@@ -22,14 +22,39 @@ enum AccountBinding {
   }
 }
 
+enum DeadlineBudget {
+  static func remainingMilliseconds(started: DispatchTime, budgetMilliseconds: UInt32) -> UInt32 {
+    let elapsedNanoseconds = DispatchTime.now().uptimeNanoseconds &- started.uptimeNanoseconds
+    let budgetNanoseconds = UInt64(budgetMilliseconds) * 1_000_000
+    guard elapsedNanoseconds < budgetNanoseconds else {
+      return 0
+    }
+    return UInt32((budgetNanoseconds - elapsedNanoseconds) / 1_000_000)
+  }
+
+  static func remainingSeconds(started: DispatchTime, budgetMilliseconds: UInt32) -> TimeInterval {
+    let remaining = remainingMilliseconds(
+      started: started,
+      budgetMilliseconds: budgetMilliseconds
+    )
+    return TimeInterval(remaining) / 1_000
+  }
+}
+
 struct CloudKitAccountBindingSource: AccountBindingSource {
   func resolve(deadlineMilliseconds: UInt32) -> BindingNative {
-    let timeout = TimeInterval(deadlineMilliseconds) / 1_000
-    guard timeout > 0 else {
+    guard deadlineMilliseconds > 0 else {
       return .undetermined
     }
+    let started = DispatchTime.now()
     let container = CKContainer(identifier: SyncLimits.containerIdentifier)
-    switch accountStatus(container: container, timeout: timeout) {
+    switch accountStatus(
+      container: container,
+      timeout: DeadlineBudget.remainingSeconds(
+        started: started,
+        budgetMilliseconds: deadlineMilliseconds
+      )
+    ) {
     case .noAccount:
       return .unavailable
     case .restricted:
@@ -39,7 +64,15 @@ struct CloudKitAccountBindingSource: AccountBindingSource {
     case .available:
       break
     }
-    guard let recordName = userRecordName(container: container, timeout: timeout) else {
+    guard
+      let recordName = userRecordName(
+        container: container,
+        timeout: DeadlineBudget.remainingSeconds(
+          started: started,
+          budgetMilliseconds: deadlineMilliseconds
+        )
+      )
+    else {
       return .undetermined
     }
     let binding = AccountBinding.derive(recordName: recordName)
@@ -60,6 +93,9 @@ struct CloudKitAccountBindingSource: AccountBindingSource {
     container: CKContainer,
     timeout: TimeInterval
   ) -> CloudStatus {
+    guard timeout > 0 else {
+      return .undetermined
+    }
     let box = BindingBox<CKAccountStatus>()
     let lock = DispatchSemaphore(value: 0)
     container.accountStatus { status, error in
@@ -84,6 +120,9 @@ struct CloudKitAccountBindingSource: AccountBindingSource {
   }
 
   private func userRecordName(container: CKContainer, timeout: TimeInterval) -> String? {
+    guard timeout > 0 else {
+      return nil
+    }
     let box = BindingBox<CKRecord.ID>()
     let lock = DispatchSemaphore(value: 0)
     container.fetchUserRecordID { recordID, error in
