@@ -114,14 +114,17 @@ touching any restriction Posato did not create.
 
 ## Decisions or blockers
 
-- Recommended: one Posato-only named store (`app.posato.session`); clear is
+Every decision below is accepted (`user-confirmed`, 2026-09-04) unless it is
+marked open.
+
+- Decided: one Posato-only named store (`app.posato.session`); clear is
   `clearAllSettings()` on that store only, never on the default store.
-- Recommended: domain matching stays the canonical exact string as a
+- Decided: domain matching stays the canonical exact string as a
   `WebDomain`; whether iOS also pauses subdomains is recorded as an observed
   platform fact on the device, not promised in product copy.
-- Recommended: apply with domains and no selection pauses websites only,
+- Decided: apply with domains and no selection pauses websites only,
   matching the `SESSION-001` review rule; nothing-to-enforce is refused.
-- Recommended: the App Group migration happens here with the token bytes
+- Decided: the App Group migration happens here with the token bytes
   unchanged, per the `TARGETS-004` decision; the shared record for `IOS-002`
   is limited to the store name and a version.
 - Resolved with `MACOS-004`, which owns common `feature/enforcement` this
@@ -129,7 +132,7 @@ touching any restriction Posato did not create.
   its own adapter, `IOS-001` builds against the existing types, and
   `SESSION-002` defines the common contract shaped like
   `apply(domains, mappingIds)`, `clear()`, and `status()` when it wires both
-  hosts. The maintainer confirms this together with the brief.
+  hosts.
 - Physical gates: development-signed iPhone with the maintainer's team,
   Screen Time authorization granted through the real picker with at least
   one application selected (manual, see the mappings feature file). Family
