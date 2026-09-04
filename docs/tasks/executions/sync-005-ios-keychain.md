@@ -36,34 +36,94 @@
 
 ## High-risk plan review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `pass with required revisions incorporated`
+- **Critical or Required findings:** three Required findings, all resolved
+  in the approved plan revision: (1) preflight maps to `Retryable` when
+  unavailable or restricted, `AccountChanged` on a different account, and
+  `UnknownOutcome` on postflight mismatch, since the key ports expose no
+  `Unavailable` or `Restricted` variant; (2) the Swift provider builds the
+  full access-group value from `$(DEVELOPMENT_TEAM)` injected into
+  `Info.plist` via a build setting, read at runtime, with hardcoding and
+  app-group derivation explicitly rejected; (3) the Swift provider takes an
+  injected `SecItem` backend seam, the Simulator exercises mapping only over
+  the fake backend with real-Keychain cases skipped, and `AC-01`
+  real-Keychain proof is iPhone-only.
+- **Resolution:** the revised plan carries all three fixes plus the
+  additional notes (owned-buffer `R-05` boundary, PoC read from the main
+  checkout, device preconditions and propagation note, UDID hygiene); the
+  maintainer approved the revised plan and confirmed the four recommended
+  brief decisions, device availability, and `SYNC-007` resolver reuse.
 
 ## Result
 
-- pending
+- The Kotlin `iosMain` provider interface, the `IosBootstrapKeychainAdapter`,
+  and 15 `iosTest` contract and redaction tests are implemented and green.
+- The Swift `SynchronizableKeychainProvider` with injectable account and
+  `SecItem` seams, plus 19 `iosAppTests` (18 Simulator-safe, one
+  device-only), is implemented and green on the Simulator and the physical
+  iPhone.
+- The iOS target carries `keychain-access-groups`, the iCloud container and
+  CloudKit service entitlements, and the `PosatoDevelopmentTeam` Info.plist
+  key expanded from `$(DEVELOPMENT_TEAM)`; automatic signing provisioned the
+  profile with no manual gate needed.
+- `commonMain` is untouched; no DI wiring, UI, CloudKit, or macOS work was
+  added.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `pass after corrections` (second pass; the first pass was
+  requested but its delivery truncated twice, so a concise re-review is the
+  authoritative pass)
+- **Critical or Required findings:** three Required findings. (1) Fixed: the
+  account-change flag is now a lock-guarded box instead of a captured
+  variable, so a signal posted from a notification thread cannot be missed.
+  (2) Fixed: the found-value carrier is now constructed only after a passing
+  postflight with no observed signal, so a mismatch drops no unzeroed copy;
+  owned read bytes are still cleared on every exit. (3) Declined with
+  evidence: backend-error paths return `Retryable` without an extra
+  postflight; the frozen `SYNC-004` `BootstrapItemCheck` maps key-port
+  `Retryable` and `UnknownOutcome` to the same retryable outcome, every retry
+  re-runs the binding preflight, and the change signal itself still yields
+  `UnknownOutcome` through the observation window, so no unsafe behavior
+  follows.
+- **Resolution:** both fixes are implemented; the Simulator suite (18 tests)
+  and the physical-iPhone suite (19 tests, including the real-Keychain
+  cycle) were rerun green after the last correction, as were `./gradlew
+  quality` and the Kotlin `iosTest` suite.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| pending | pending | pending |
+| Kotlin `iosTest` on iOS Simulator (`:shared:iosSimulatorArm64Test`) | pass | 15 adapter tests green on a forced rerun |
+| `./gradlew quality`, `git diff --check`, suppression and private-data scans | pass | clean; no `Suppress` tokens; write surface matches the brief |
+| Swift tests on iOS Simulator (`xcodebuild test`, iPhone 17) | pass | `TEST SUCCEEDED`; 18 `SynchronizableKeychainProviderTests` green |
+| Swift tests on the physical iPhone (signed Debug, random workspace id) | pass | 19/19 green incl. create, exact read, duplicate, conflict without replacement, delete-and-verify-absent, and teardown cleanup |
+| Signed entitlements (`codesign -d --entitlements`) | pass | shared group with the team prefix, `iCloud.app.posato.sync` container, CloudKit service |
+| Credential-free CI-style Simulator and device builds | pass | unsigned `BUILD SUCCEEDED` for `iphonesimulator` and `iphoneos` SDKs |
 
 ## Blockers and accepted risks
 
-- A physical iPhone with the maintainer's development team in the ignored
-  `local.properties` is required for `AC-01` through `AC-03`.
+- Physical-iPhone evidence is done; no open blocker remains.
+  The device was unlocked with its passcode set and signed into iCloud, which
+  the available binding outcome proves per run.
+- Device tests create one real 84-byte synchronizable item in the
+  maintainer's iCloud Keychain per run and delete it in teardown; an
+  interrupted run can leave one inert item, which is accepted and never
+  enumerated or swept.
+- Clearing boundary (`R-05`): owned Kotlin `ByteArray` copies and the owned
+  Swift read buffer are cleared; immutable bridging copies are released, not
+  zeroed, which is the accepted limit with no erasure claim.
+- Follow-up for `SYNC-009`: the Swift provider bridges async CloudKit calls
+  with a bounded semaphore, so callers must invoke it off the main thread;
+  production provider construction (account source, backend, bundle team key)
+  and the coordinator wiring stay with `SYNC-009`.
 - Cross-device propagation, delay, and real account switching are outside
   this task's evidence and remain with `SYNC-009`.
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** the iOS synchronizable-Keychain adapter meets `AC-01`
+  through `AC-04` with physical-iPhone evidence and independent review
+  complete
