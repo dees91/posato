@@ -33,7 +33,7 @@ func readFrame() throws -> Data? {
 }
 
 func writeFrame(_ frame: Data) throws {
-  guard frame.count <= SyncLimits.maximumFrameBytes else {
+  guard frame.count <= SyncLimits.maximumResponseFrameBytes else {
     throw PipeFailure.invalidFrame
   }
   var length = UInt32(frame.count).bigEndian

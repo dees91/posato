@@ -11,6 +11,9 @@ internal object FakeSyncCompanionMain {
             Thread.sleep(HANG_MILLISECONDS)
             return
         }
+        if (mode == "silent") {
+            return
+        }
         val prefix = System.`in`.readNBytes(LENGTH_PREFIX_BYTES)
         if (prefix.size != LENGTH_PREFIX_BYTES) {
             return
@@ -31,10 +34,13 @@ internal object FakeSyncCompanionMain {
             "unavailable" -> SyncCompanionOutcome.Unavailable
             "found-binding" -> SyncCompanionOutcome.Found
             "wrong-identity" -> SyncCompanionOutcome.Created
+            "full-page" -> SyncCompanionOutcome.Found
             else -> SyncCompanionOutcome.Created
         }
         val payload = if (mode == "found-binding") {
             ByteArray(MacOsSyncCompanionProtocol.BINDING_BYTES) { 7 }
+        } else if (mode == "full-page") {
+            fullPage()
         } else {
             ByteArray(0)
         }
@@ -54,6 +60,22 @@ internal object FakeSyncCompanionMain {
             .array()
         System.out.write(framePrefix)
         System.out.write(response)
+    }
+
+    private fun fullPage(): ByteArray {
+        val cursor = ByteArray(MacOsSyncCompanionProtocol.CURSOR_BYTES) { 5 }
+        val identifier = ByteArray(MacOsSyncCompanionProtocol.BUNDLE_IDENTIFIER_BYTES) { 9 }
+        val bundle = ByteArray(MacOsSyncCompanionProtocol.BUNDLE_BYTES) { 7 }
+        val buffer = ByteBuffer.allocate(MacOsSyncCompanionProtocol.MAXIMUM_RESPONSE_PAYLOAD_BYTES)
+            .order(ByteOrder.BIG_ENDIAN)
+        buffer.put(0)
+        buffer.putInt(cursor.size)
+        buffer.put(cursor)
+        buffer.put(1)
+        buffer.put(identifier)
+        buffer.putInt(bundle.size)
+        buffer.put(bundle)
+        return buffer.array().copyOf(buffer.position())
     }
 
     private val MALFORMED_FRAME: ByteArray = byteArrayOf(0, 0, 0, 4, 1, 2, 3, 4)
