@@ -12,11 +12,17 @@ feature file as the recipe.
   needed), `desktop` (Accessibility and Screen Recording granted to the agent's
   host application), or `device` (connected, unlocked iPhone and
   `posato.apple.developmentTeam` in the ignored `local.properties`).
-- Launch through the CLI (`launch -t <target>`), wait for the `Add website`
-  button, and require `doctor -t <target>` to report `ok: true`.
-- Start recipes from a state with no website named `example.com`; the
-  Simulator can start from `launch --fresh`, the desktop keeps the developer's
-  real data, so remove what you add instead of resetting.
+- Launch through the CLI (`launch -t <target>`), wait for the `Paused items`
+  button (`wait --for exists --text "Paused items" --role button`), and
+  require `doctor -t <target>` to report `ok: true`. The app opens on the
+  `Session` destination after every launch and relaunch.
+- Before a Websites or Applications recipe, switch destination with `tap
+  --text "Paused items" --role button` and wait for `Add website`; the
+  Sessions recipe starts on `Session` and needs at least one website first.
+- Start recipes from a state with no website named `example.com` and no
+  active session; the Simulator can start from `launch --fresh`, the desktop
+  keeps the developer's real data, so remove what you add and end what you
+  start instead of resetting.
 - Never drive an instance that this run did not launch.
 
 ## Driving conventions
@@ -74,3 +80,6 @@ handles, required state, commands, and observable proof.
 - [iOS application mappings](./ios-application-mappings.md) covers the
   device-only Family Controls picker, its access states, and the manual steps
   the driver cannot reach.
+- [Sessions](./sessions.md) covers setting up, reviewing, starting, ending
+  early, and expiring one manual session on every target, and what survives a
+  relaunch.

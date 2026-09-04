@@ -27,8 +27,8 @@ the Simulator and Release builds report it as unavailable.
 
 ## How to get to it (user POV)
 
-- Open the app on a development-signed iPhone build and add an application
-  group under `Applications`; the selection controls appear beneath the group
+- Open the app on a development-signed iPhone build, tap `Paused items` in
+  the switch at the top, and add an application group under `Applications`; the selection controls appear beneath the group
   row with the access sentence as the row's supporting text.
 - Tap `Choose applications` to grant Screen Time access and open the picker,
   or `Review applications` once applications are already selected.
