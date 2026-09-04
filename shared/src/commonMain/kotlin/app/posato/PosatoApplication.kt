@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -42,20 +44,22 @@ class PosatoApplication internal constructor(
     fun Content(modifier: Modifier = Modifier) {
         PosatoTheme {
             var showingSession by remember { mutableStateOf(true) }
-            Column(modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    SessionDestinationSwitch(
-                        onOpenSession = { showingSession = true },
-                        onOpenPausedItems = { showingSession = false },
-                        showingSession = showingSession,
-                        modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(horizontal = 24.dp),
-                    )
-                }
-                Box(Modifier.weight(1f)) {
-                    if (showingSession) {
-                        SessionScreen(sessionStore, store, applicationMappings, sessionIds, clock, timeFormat, { showingSession = false })
-                    } else {
-                        TargetsScreen(store, applicationMappings)
+            Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                        SessionDestinationSwitch(
+                            onOpenSession = { showingSession = true },
+                            onOpenPausedItems = { showingSession = false },
+                            showingSession = showingSession,
+                            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(horizontal = 24.dp),
+                        )
+                    }
+                    Box(Modifier.weight(1f)) {
+                        if (showingSession) {
+                            SessionScreen(sessionStore, store, applicationMappings, sessionIds, clock, timeFormat, { showingSession = false })
+                        } else {
+                            TargetsScreen(store, applicationMappings)
+                        }
                     }
                 }
             }
