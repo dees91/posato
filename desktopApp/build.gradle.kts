@@ -8,6 +8,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import org.jetbrains.compose.desktop.application.tasks.AbstractNativeMacApplicationPackageDmgTask
@@ -81,6 +82,8 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         val application = applicationBundle.get().asFile
         val helper = application.resolve("Contents/Helpers/PosatoMacOSHelper.app")
         val daemon = helper.resolve("Contents/Resources/PosatoProxySettingsDaemon")
+        val companion = application.resolve("Contents/Helpers/PosatoMacOSSync.app")
+        val companionExecutable = companion.resolve("Contents/MacOS/PosatoMacOSSync")
         val runtime = application.resolve("Contents/runtime")
         val applicationCode = application.resolve("Contents/app")
         val launcher = application.resolve("Contents/MacOS/Posato")
@@ -92,8 +95,11 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         check(applicationSignature.identifier == "app.posato.macos")
         check(signature(helper).identifier == "app.posato.macos.helper")
         check(signature(daemon).identifier == "app.posato.macos.proxy-settings")
+        check(signature(companion).identifier == "app.posato.macos.sync")
+        check(signature(companionExecutable).identifier == "app.posato.macos.sync")
         check(entitlements(helper).isEmpty())
         check(entitlements(daemon).isEmpty())
+        verifyCompanionEntitlements(companion, signingIdentity.get())
 
         val signedCode = buildList {
             add(application)
@@ -103,6 +109,8 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
             addAll(machOFiles(applicationCode, recursive = false))
             add(helper)
             add(daemon)
+            add(companion)
+            add(companionExecutable)
             add(sqliteLibrary)
         }
         val signatures = signedCode.map(::signature)
@@ -125,9 +133,33 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         }
         check(entitlements(application) == expectedApplicationEntitlements)
         check(entitlements(launcher) == expectedApplicationEntitlements)
-        signedCode.drop(2).forEach { code ->
+        signedCode.drop(2).filterNot { code ->
+            code == companion || code == companionExecutable
+        }.forEach { code ->
             check(entitlements(code).isEmpty())
         }
+    }
+
+    private fun verifyCompanionEntitlements(
+        companion: File,
+        identity: String,
+    ) {
+        val arrays = stringArrayEntitlements(companion)
+        if (identity == "-") {
+            check(entitlements(companion).isEmpty())
+            check(arrays.isEmpty())
+            return
+        }
+        check(entitlements(companion).isEmpty())
+        check(arrays["com.apple.developer.icloud-container-identifiers"] == listOf("iCloud.app.posato.sync"))
+        check(arrays["com.apple.developer.icloud-services"] == listOf("CloudKit"))
+        val groups = arrays["keychain-access-groups"].orEmpty()
+        check(groups.size == 1)
+        check(groups.single().endsWith(".app.posato.sync"))
+        val applicationIdentifier = stringEntitlements(companion)["com.apple.application-identifier"]
+        check(applicationIdentifier != null)
+        check(applicationIdentifier.endsWith(".app.posato.macos.sync"))
+        check(applicationIdentifier.removeSuffix(".app.posato.macos.sync").length == 10)
     }
 
     private fun extractSqliteLibrary(applicationCode: File): File {
@@ -177,11 +209,48 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
     }
 
     private fun entitlements(code: File): Map<String, Boolean> {
+        return entitlementEntries(code).mapNotNull { (key, value) ->
+            when (value.nodeName) {
+                "true", "false" -> key to (value.nodeName == "true")
+                "array", "string" -> null
+                else -> error("Unsupported entitlement value ${value.nodeName}")
+            }
+        }.toMap()
+    }
+
+    private fun stringEntitlements(code: File): Map<String, String> {
+        return entitlementEntries(code).mapNotNull { (key, value) ->
+            if (value.nodeName == "string") {
+                key to value.textContent
+            } else {
+                null
+            }
+        }.toMap()
+    }
+
+    private fun stringArrayEntitlements(code: File): Map<String, List<String>> {
+        return entitlementEntries(code).mapNotNull { (key, value) ->
+            if (value.nodeName != "array") {
+                null
+            } else {
+                val values = value.childNodes
+                    .let { children -> (0 until children.length).map(children::item) }
+                    .filter { node -> node.nodeType == org.w3c.dom.Node.ELEMENT_NODE }
+                    .map { node ->
+                        check(node.nodeName == "string")
+                        node.textContent
+                    }
+                key to values
+            }
+        }.toMap()
+    }
+
+    private fun entitlementEntries(code: File): List<Pair<String, org.w3c.dom.Element>> {
         val output = command("/usr/bin/codesign", "--display", "--entitlements", ":-", code.absolutePath)
         val start = output.indexOf("<plist")
         val end = output.indexOf("</plist>")
         if (start == -1 || end == -1) {
-            return emptyMap()
+            return emptyList()
         }
         val document = DocumentBuilderFactory.newInstance().apply {
             setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false)
@@ -192,10 +261,10 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
             .let { children -> (0 until children.length).map(children::item) }
             .filter { node -> node.nodeType == org.w3c.dom.Node.ELEMENT_NODE }
         check(entries.size % 2 == 0)
-        return entries.chunked(2).associate { (key, value) ->
+        return entries.chunked(2).map { (key, value) ->
             check(key.nodeName == "key")
-            check(value.nodeName == "true" || value.nodeName == "false")
-            key.textContent to (value.nodeName == "true")
+            check(value is org.w3c.dom.Element)
+            key.textContent to value
         }
     }
 
@@ -240,6 +309,13 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
     @get:InputFile
     abstract val developmentEntitlements: RegularFileProperty
 
+    @get:InputFile
+    abstract val companionEntitlementsTemplate: RegularFileProperty
+
+    @get:InputFile
+    @get:Optional
+    abstract val companionProvisioningProfile: RegularFileProperty
+
     @get:Input
     abstract val signingIdentity: Property<String>
 
@@ -262,6 +338,7 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
             machOFiles(applicationCode, recursive = false).forEach { code -> signCode(code, identity) }
             signCode(daemon, identity, identifier = "app.posato.macos.proxy-settings")
             signCode(helper, identity, identifier = "app.posato.macos.helper")
+            signCompanion(application, identity, entitlements = null)
             signCode(application, identity, preserveEntitlements = true)
             return
         }
@@ -272,12 +349,52 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         machOFiles(applicationCode, recursive = false).forEach { code -> signCode(code, identity) }
         signCode(daemon, identity, identifier = "app.posato.macos.proxy-settings")
         signCode(helper, identity, identifier = "app.posato.macos.helper")
+        signCompanion(application, identity, entitlements = companionEntitlements())
         signCode(
             application,
             identity,
             identifier = "app.posato.macos",
             entitlements = developmentEntitlements.get().asFile,
         )
+    }
+
+    private fun signCompanion(
+        application: File,
+        identity: String,
+        entitlements: File?,
+    ) {
+        val companion = application.resolve("Contents/Helpers/PosatoMacOSSync.app")
+        val executable = companion.resolve("Contents/MacOS/PosatoMacOSSync")
+        signCode(executable, identity, identifier = "app.posato.macos.sync", entitlements = entitlements)
+        signCode(companion, identity, identifier = "app.posato.macos.sync", entitlements = entitlements)
+    }
+
+    private fun companionEntitlements(): File {
+        val profile = companionProvisioningProfile.orNull?.asFile
+            ?: throw GradleException(
+                "Apple Development packaging needs an untracked development profile for " +
+                    "app.posato.macos.sync (iCloud/CloudKit). Set " +
+                    "posatoMacOsSyncProvisioningProfile to that file.",
+            )
+        val teamPrefix = teamIdentifier(profile)
+        val entitlements = temporaryDir.resolve("PosatoMacOSSync.entitlements")
+        entitlements.writeText(
+            companionEntitlementsTemplate.get().asFile.readText()
+                .replace("__APP_IDENTIFIER_PREFIX__", teamPrefix),
+        )
+        val embedded = applicationBundle.get().asFile
+            .resolve("Contents/Helpers/PosatoMacOSSync.app/Contents/embedded.provisionprofile")
+        Files.copy(profile.toPath(), embedded.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        return entitlements
+    }
+
+    private fun teamIdentifier(profile: File): String {
+        val decoded = command("/usr/bin/security", "cms", "-D", "-i", profile.absolutePath)
+        val match = Regex(
+            "<key>TeamIdentifier</key>\\s*<array>\\s*<string>([A-Z0-9]{10})</string>",
+        ).find(decoded)
+            ?: throw GradleException("The companion provisioning profile is missing a TeamIdentifier array.")
+        return match.groupValues[1] + "."
     }
 
     private fun signSqliteLibrary(
@@ -359,6 +476,8 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
 
 val macOsHelperBundle = project(":macosHelper").layout.buildDirectory
     .dir("bundle/PosatoMacOSHelper.app")
+val macOsSyncCompanionBundle = project(":macosSyncCompanion").layout.buildDirectory
+    .dir("bundle/PosatoMacOSSync.app")
 val macOsDistributable = layout.buildDirectory.dir(
     "compose/binaries/main/app/Posato.app",
 )
@@ -445,12 +564,34 @@ val embedMacOsHelper by tasks.registering(Sync::class) {
     )
 }
 
+val embedMacOsSyncCompanion by tasks.registering(Sync::class) {
+    group = "build"
+    description = "Embeds the native macOS synchronization companion in the distributable."
+    dependsOn(":macosSyncCompanion:assembleCompanionBundle", "createDistributable")
+
+    from(macOsSyncCompanionBundle)
+    into(
+        macOsDistributable.map { app ->
+            app.dir("Contents/Helpers/PosatoMacOSSync.app")
+        },
+    )
+}
+
 val signMacOsDevelopmentPackage by tasks.registering(SignMacOsDevelopmentPackage::class) {
     group = "build"
     description = "Signs the generated macOS application and its nested code inside-out."
-    dependsOn(embedMacOsHelper)
+    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion)
     applicationBundle.set(macOsDistributable)
     developmentEntitlements.set(layout.projectDirectory.file("Config/PosatoDevelopment.entitlements"))
+    companionEntitlementsTemplate.set(
+        rootProject.layout.projectDirectory.file(
+            "macosSyncCompanion/Resources/PosatoMacOSSync.entitlements.template",
+        ),
+    )
+    val companionProfile = providers.gradleProperty("posatoMacOsSyncProvisioningProfile")
+    if (companionProfile.isPresent) {
+        companionProvisioningProfile.set(file(companionProfile.get()))
+    }
     signingIdentity.set(macOsSigningIdentity)
     outputs.upToDateWhen { false }
 }
