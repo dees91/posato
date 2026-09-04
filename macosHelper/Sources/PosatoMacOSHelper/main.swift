@@ -29,6 +29,7 @@ private var connectionIdentifier: Data?
 private var sessionIdentifier: Data?
 private var activeRequest: WireMessage?
 private var leaseRenewer: LeaseRenewer?
+private var domainSession: BrowserDomainSession?
 
 do {
   while let encoded = try readFrame() {
@@ -36,7 +37,7 @@ do {
     let request = try WireCodec.decode(
       encoded,
       maximumBytes: WireLimits.maximumFrameBytes,
-      allowsApplicationSelection: true,
+      allowsHelperOnlyOperations: true,
       maximumDeadlineMilliseconds: WireLimits.maximumSelectionDeadlineMilliseconds
     )
     guard sequenceValidator.accept(request.sequence) else {
@@ -80,6 +81,8 @@ do {
         throw PipeFailure.invalidFrame
       }
       leaseRenewer?.cancelAndWait()
+      domainSession?.stop()
+      domainSession = nil
       if let activeRequest, let daemon {
         let restore = try WireMessage(
           kind: .request,
@@ -125,25 +128,30 @@ do {
       guard request.payload.count == 2 else {
         throw PipeFailure.invalidFrame
       }
+    case .configureBrowserDomains:
+      guard !request.payload.isEmpty else {
+        throw PipeFailure.invalidFrame
+      }
     case .reconcile:
       break
     case .none, .renew:
       throw PipeFailure.invalidFrame
     }
+    if request.operation == .configureBrowserDomains {
+      let handled = try BrowserDomainRequestHandler.handleConfigure(
+        request: request,
+        receivedAt: receivedAt,
+        service: service,
+        existing: domainSession
+      )
+      domainSession = handled.session
+      try writeFrame(WireCodec.encode(handled.response))
+      continue
+    }
     if request.operation == .selectApplications {
-      let selection = try ApplicationSelectionService().select()
-      let response = try WireMessage(
-        kind: .response,
-        operation: request.operation,
-        sequence: request.sequence,
-        deadlineMilliseconds: try remainingDeadline(
-          receivedAt: receivedAt,
-          budgetMilliseconds: request.deadlineMilliseconds
-        ),
-        connectionIdentifier: request.connectionIdentifier,
-        sessionIdentifier: request.sessionIdentifier,
-        requestIdentifier: request.requestIdentifier,
-        payload: selection.encode()
+      let response = try BrowserDomainRequestHandler.handleSelectApplications(
+        request: request,
+        receivedAt: receivedAt
       )
       try writeFrame(WireCodec.encode(response))
       continue
@@ -284,7 +292,34 @@ do {
         }
       }
     }
-    let responsePayload = try WireResponsePayload.decode(response.payload)
+    var responsePayload = try WireResponsePayload.decode(response.payload)
+    let applyNeedsRestore =
+      request.operation == .apply
+      && responsePayload.outcome == .success
+      && domainSession?.validateEffectiveChain() != true
+    if applyNeedsRestore {
+      if let daemon {
+        let restore = try WireMessage(
+          kind: .request,
+          operation: .restore,
+          sequence: request.sequence,
+          deadlineMilliseconds: try remainingDeadline(
+            receivedAt: receivedAt,
+            budgetMilliseconds: request.deadlineMilliseconds
+          ),
+          connectionIdentifier: request.connectionIdentifier,
+          sessionIdentifier: request.sessionIdentifier,
+          requestIdentifier: request.requestIdentifier,
+          payload: Data()
+        )
+        if let restored = try? daemon.perform(restore) {
+          response = restored
+          responsePayload = try WireResponsePayload.decode(response.payload)
+        }
+      }
+      domainSession?.stop()
+      domainSession = nil
+    }
     if WireLifecyclePolicy.ownsAppliedMutation(
       requestOperation: request.operation,
       reconcilePayload: reconcilePayload,
@@ -303,6 +338,8 @@ do {
       reconcilePayload: reconcilePayload,
       response: responsePayload
     ) {
+      domainSession?.stop()
+      domainSession = nil
       leaseRenewer = nil
       activeRequest = nil
       if WireLifecyclePolicy.shouldUnregister(
@@ -322,6 +359,8 @@ do {
     }
     try writeFrame(WireCodec.encode(response))
   }
+  domainSession?.stop()
+  domainSession = nil
   if let request = activeRequest, let daemon {
     leaseRenewer?.cancelAndWait()
     let restore = try WireMessage(
@@ -337,6 +376,8 @@ do {
     _ = try? daemon.perform(restore)
   }
 } catch {
+  domainSession?.stop()
+  domainSession = nil
   if let request = activeRequest, let daemon {
     leaseRenewer?.cancelAndWait()
     let restore = try? WireMessage(
