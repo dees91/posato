@@ -21,6 +21,7 @@ private fun profile(
 private fun facts(
     signingIdentity: String? = null,
     signingIdentityInKeychain: Boolean = false,
+    signingIdentityTeam: String? = TEAM,
     syncProfileConfigured: Boolean = false,
     syncProfileReadable: Boolean = false,
     syncProfile: SyncProfile? = null,
@@ -30,6 +31,7 @@ private fun facts(
 ) = ProvisioningFacts(
     signingIdentity = signingIdentity,
     signingIdentityInKeychain = signingIdentityInKeychain,
+    signingIdentityTeam = signingIdentityTeam,
     syncProfileConfigured = syncProfileConfigured,
     syncProfileReadable = syncProfileReadable,
     syncProfile = syncProfile,
@@ -105,6 +107,30 @@ class DesktopProvisioningChecksTest {
             val check = DesktopProvisioningChecks.checks(input).check("desktop.syncProfile")
             assertEquals(Severity.ERROR.name.lowercase(), check.severity, check.detail)
         }
+    }
+
+    @Test
+    fun `an identity from another team is an error even though it is in the keychain`() {
+        val check = DesktopProvisioningChecks.checks(developmentSigned.copy(signingIdentityTeam = OTHER_TEAM))
+            .check("desktop.signingIdentity")
+        assertEquals(Severity.ERROR.name.lowercase(), check.severity)
+        assertEquals("missing", check.state)
+        assertTrue(check.detail.contains("different Apple development team"), check.detail)
+    }
+
+    @Test
+    fun `an unreadable certificate team is unknown rather than a guessed mismatch`() {
+        val check = DesktopProvisioningChecks.checks(developmentSigned.copy(signingIdentityTeam = null))
+            .check("desktop.signingIdentity")
+        assertEquals("unknown", check.state)
+        assertEquals(Severity.WARN.name.lowercase(), check.severity)
+    }
+
+    @Test
+    fun `no configured team means no mismatch can be claimed`() {
+        val check = DesktopProvisioningChecks.checks(developmentSigned.copy(developmentTeam = null, signingIdentityTeam = OTHER_TEAM))
+            .check("desktop.signingIdentity")
+        assertTrue(check.ok, check.detail)
     }
 
     @Test

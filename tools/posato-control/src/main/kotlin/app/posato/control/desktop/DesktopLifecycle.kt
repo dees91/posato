@@ -126,6 +126,8 @@ class DesktopLifecycle(
     }
 }
 
+private val ORGANIZATIONAL_UNIT = Regex("OU\\s*=\\s*([A-Z0-9]{10})")
+
 private class DesktopDoctor(
     private val context: RunContext,
     private val bridge: AxBridge,
@@ -151,6 +153,7 @@ private class DesktopDoctor(
         return ProvisioningFacts(
             signingIdentity = identity,
             signingIdentityInKeychain = identity != null && identityInKeychain(identity),
+            signingIdentityTeam = identity?.let { certificateTeam(it) },
             syncProfileConfigured = profilePath != null,
             syncProfileReadable = decoded != null,
             syncProfile = decoded,
@@ -164,6 +167,21 @@ private class DesktopDoctor(
     private fun identityInKeychain(identity: String): Boolean {
         val output = context.subprocess.run(listOf("/usr/bin/security", "find-identity", "-v", "-p", "codesigning"))
         return output.succeeded && output.stdout.contains(identity)
+    }
+
+    /**
+     * The team a certificate signs under is its subject's organizational unit, not the identifier inside its common
+     * name, so the two are read separately and only the organizational unit is compared.
+     */
+    private fun certificateTeam(identity: String): String? {
+        val certificate = context.subprocess.run(listOf("/usr/bin/security", "find-certificate", "-c", identity, "-p"))
+        if (!certificate.succeeded || certificate.stdout.isBlank()) return null
+        val subject = context.subprocess.run(
+            listOf("/usr/bin/openssl", "x509", "-noout", "-subject"),
+            stdin = certificate.stdout,
+        )
+        if (!subject.succeeded) return null
+        return ORGANIZATIONAL_UNIT.find(subject.stdout)?.groupValues?.get(1)
     }
 
     private fun helperExecutable(): Path = context.layout.stagedDesktopApplication

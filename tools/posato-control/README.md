@@ -108,9 +108,16 @@ as a named check with a state and one remedy sentence:
 `result.ok` stays "no check is `missing` at `error` severity", so an `unknown`
 condition is visible without blocking a run, and a condition is never guessed.
 `error` is reserved for a configuration that packaging genuinely rejects: an
-Apple Development identity that is not in the keychain, or one configured
-without a usable `app.posato.macos.sync` profile. An untouched ad-hoc checkout
-still reports `ok: true`.
+Apple Development identity that is not in the keychain, one that signs under a
+different team than `posato.apple.developmentTeam`, or one configured without a
+usable `app.posato.macos.sync` profile. An untouched ad-hoc checkout still
+reports `ok: true`.
+
+`desktop.signingIdentity` reads the team from the certificate subject's
+organizational unit, not from the identifier inside its common name: in
+`Apple Development: <name> (<id>)` that identifier belongs to the certificate,
+not to the team, so the two are unrelated values. A team that cannot be read is
+`unknown` rather than a guessed mismatch.
 
 `desktop.helperBackground` and `device.screenTime` are always `unknown`: the
 macOS helper's background approval and Screen Time authorization are readable
