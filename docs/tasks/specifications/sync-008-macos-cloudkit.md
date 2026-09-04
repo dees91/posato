@@ -157,8 +157,7 @@ outcome and never a raw CloudKit value, record, token, or error text.
   Development builds use the CloudKit Development environment, so the
   schema is created on first save and production deployment stays with
   `RELEASE-001`.
-- Open: whether the anchor create postflight should re-read the anchor to
-  prove that no concurrent creator won during the same call. Recommended:
-  no, the coordinator already reconciles `UnknownOutcome` and `Conflict`
-  by the exact read, and a second read inside the companion would hide the
-  race from `SYNC-004`.
+- Decided (`user-confirmed`, 2026-09-04): the anchor create postflight does
+  not re-read the anchor. `SYNC-004` already reconciles `UnknownOutcome` and
+  `Conflict` through the exact read, and a second read inside the companion
+  would hide the race from the coordinator that owns it.
