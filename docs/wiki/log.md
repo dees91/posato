@@ -1048,3 +1048,15 @@
   selection store, and product-terms unavailability copy.
 - Recorded the maintainer-accepted sentence "Choosing apps is not available in
   this version of Posato" and that corrupted-store clear has no confirmation.
+
+## [2026-09-04] implementation | Close SYNC-005 iOS synchronizable-Keychain adapter
+
+- Implemented the Swift provider with binding preflight and postflight plus an
+  account-change observation window, the Kotlin `iosMain` adapter over the
+  frozen bootstrap ports, and the iOS target entitlements with the team prefix
+  read at runtime from `Info.plist`, so no team value is tracked.
+- Proved the full create, exact-read, duplicate, conflict, and
+  delete-and-verify-absent cycle on the physical iPhone with a random
+  workspace id and teardown cleanup; Simulator, Kotlin, and quality checks
+  pass, and the independent review closed with two fixes and one evidenced
+  decline.

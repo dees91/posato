@@ -4,5 +4,7 @@
 <dict>
     <key>CADisableMinimumFrameDurationOnPhone</key>
     <true/>
+    <key>PosatoDevelopmentTeam</key>
+    <string>$(DEVELOPMENT_TEAM)</string>
 </dict>
 </plist>
