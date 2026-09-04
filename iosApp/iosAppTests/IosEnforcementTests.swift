@@ -196,32 +196,99 @@ final class IosEnforcementTests: XCTestCase {
 #if targetEnvironment(simulator)
         throw XCTSkip("Requires a development-signed iPhone with authorization and a selection")
 #else
+        let context = try realStoreContext()
+        defer {
+            context.foreign.clearAllSettings()
+            context.probe.clearAllSettings()
+        }
+
+        XCTAssertEqual(
+            try apply(domains: ["example.com"], mappingIds: context.identifiers, enforcer: context.enforcer),
+            .applied
+        )
+        XCTAssertEqual(context.probe.webContent.blockedByFilter, .specific([WebDomain(domain: "example.com")]))
+        XCTAssertEqual(context.probe.shield.applications, context.tokens)
+
+        XCTAssertEqual(try clear(enforcer: context.enforcer), .cleared)
+        XCTAssertEqual(try clear(enforcer: context.enforcer), .cleared)
+        XCTAssertNil(context.probe.webContent.blockedByFilter)
+        XCTAssertNil(context.probe.shield.applications)
+        XCTAssertEqual(context.foreign.webContent.blockedByFilter, .specific([WebDomain(domain: "example.net")]))
+#endif
+    }
+
+    func testManualCheckpointHoldAppliedRealSet() throws {
+#if targetEnvironment(simulator)
+        throw XCTSkip("Requires a development-signed iPhone with authorization and a selection")
+#else
+        let context = try realStoreContext()
+        defer {
+            context.foreign.clearAllSettings()
+            context.probe.clearAllSettings()
+        }
+
+        XCTAssertEqual(
+            try apply(domains: ["example.com"], mappingIds: context.identifiers, enforcer: context.enforcer),
+            .applied
+        )
+        print("POSATO_MANUAL_CHECKPOINT: restrictions active for 150 seconds.")
+        print("POSATO_MANUAL_CHECKPOINT: check Safari blocked presentation, the shielded app, then unselected controls.")
+        Thread.sleep(forTimeInterval: 150)
+        print("POSATO_MANUAL_CHECKPOINT: holding done, clearing.")
+
+        XCTAssertEqual(try clear(enforcer: context.enforcer), .cleared)
+        XCTAssertNil(context.probe.webContent.blockedByFilter)
+        XCTAssertNil(context.probe.shield.applications)
+#endif
+    }
+
+    func testPostRevokeClearEmptiesOwnedStore() throws {
+#if targetEnvironment(simulator)
+        throw XCTSkip("Requires a development-signed iPhone")
+#else
+        let probe = ManagedSettingsStore(named: IosEnforcementStoreName.posato)
+        defer {
+            probe.clearAllSettings()
+        }
+
+        XCTAssertEqual(try clear(enforcer: IosManagedSettingsEnforcer()), .cleared)
+        XCTAssertNil(probe.webContent.blockedByFilter)
+        XCTAssertNil(probe.shield.applications)
+#endif
+    }
+
+#if !targetEnvironment(simulator)
+    private struct RealStoreContext {
+        let enforcer: IosManagedSettingsEnforcer
+        let probe: ManagedSettingsStore
+        let foreign: ManagedSettingsStore
+        let identifiers: [String]
+        let tokens: Set<ApplicationToken>
+    }
+
+    private func realStoreContext() throws -> RealStoreContext {
         guard AuthorizationCenter.shared.authorizationStatus == .approved else {
             throw XCTSkip("Requires granted Screen Time authorization with at least one selected application")
         }
         guard let selection = try? ApplicationMappingsStore.liveMigrated().load(), !selection.isEmpty else {
             throw XCTSkip("Requires a stored application selection from the mappings flow")
         }
-        _ = selection
-        let enforcer = IosManagedSettingsEnforcer()
-        let probe = ManagedSettingsStore(named: IosEnforcementStoreName.posato)
+        let decoder = JSONDecoder()
+        let tokens = try Set(selection.map { mapping in
+            try decoder.decode(ApplicationToken.self, from: mapping.token)
+        })
+        let identifiers = selection.map { ApplicationTokenIdentity.identifier(for: $0.token) }
         let foreign = ManagedSettingsStore(named: ManagedSettingsStore.Name("app.posato.session-test-foreign"))
         foreign.webContent.blockedByFilter = .specific([WebDomain(domain: "example.net")])
-        defer {
-            foreign.clearAllSettings()
-            probe.clearAllSettings()
-        }
-
-        XCTAssertEqual(try apply(domains: ["example.com"], enforcer: enforcer), .applied)
-        XCTAssertEqual(probe.webContent.blockedByFilter, .specific([WebDomain(domain: "example.com")]))
-
-        XCTAssertEqual(try clear(enforcer: enforcer), .cleared)
-        XCTAssertEqual(try clear(enforcer: enforcer), .cleared)
-        XCTAssertNil(probe.webContent.blockedByFilter)
-        XCTAssertNil(probe.shield.applications)
-        XCTAssertEqual(foreign.webContent.blockedByFilter, .specific([WebDomain(domain: "example.net")]))
-#endif
+        return RealStoreContext(
+            enforcer: IosManagedSettingsEnforcer(),
+            probe: ManagedSettingsStore(named: IosEnforcementStoreName.posato),
+            foreign: foreign,
+            identifiers: identifiers,
+            tokens: tokens
+        )
     }
+#endif
 
     private func capableEnforcer(
         store: FakeEnforcementSettingsStore,
