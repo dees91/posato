@@ -28,19 +28,33 @@ final class SynchronizableKeychainProviderTests: XCTestCase {
         Data(repeating: byte, count: SynchronizableKeychainProvider.itemLength)
     }
 
-    func testAccessGroupCompositionRejectsMissingTeam() {
-        XCTAssertNil(SynchronizableKeychainProvider.accessGroup(teamIdentifier: nil))
-        XCTAssertNil(SynchronizableKeychainProvider.accessGroup(teamIdentifier: ""))
-        XCTAssertEqual(SynchronizableKeychainProvider.accessGroup(teamIdentifier: "TEAM1"), "TEAM1.app.posato.sync")
+    func testAccessGroupAcceptsOnlyMatchingGroupValue() {
+        XCTAssertNil(SynchronizableKeychainProvider.accessGroup(value: nil))
+        XCTAssertNil(SynchronizableKeychainProvider.accessGroup(value: ""))
+        XCTAssertNil(SynchronizableKeychainProvider.accessGroup(value: "TEAM1"))
+        XCTAssertNil(SynchronizableKeychainProvider.accessGroup(value: "TEAM1.other.suffix"))
+        XCTAssertEqual(SynchronizableKeychainProvider.accessGroup(value: "TEAM1.app.posato.sync"), "TEAM1.app.posato.sync")
         XCTAssertNil(SynchronizableKeychainProvider.accessGroup(bundle: Bundle.main, key: "PosatoAbsentTestKey"))
     }
 
-    func testProductionInitFailsClosedWithoutTeam() {
-        XCTAssertNil(SynchronizableKeychainProvider(accountSource: FakeKeychainAccountSource(), backend: FakeSecItemBackend(), teamIdentifier: nil))
-        XCTAssertNil(SynchronizableKeychainProvider(accountSource: FakeKeychainAccountSource(), backend: FakeSecItemBackend(), teamIdentifier: ""))
+    func testProductionInitFailsClosedWithoutMatchingGroup() {
+        XCTAssertNil(SynchronizableKeychainProvider(accountSource: FakeKeychainAccountSource(), backend: FakeSecItemBackend(), groupValue: nil))
+        XCTAssertNil(SynchronizableKeychainProvider(accountSource: FakeKeychainAccountSource(), backend: FakeSecItemBackend(), groupValue: "TEAM1"))
         XCTAssertNotNil(
-            SynchronizableKeychainProvider(accountSource: FakeKeychainAccountSource(), backend: FakeSecItemBackend(), teamIdentifier: "TEAM1")
+            SynchronizableKeychainProvider(
+                accountSource: FakeKeychainAccountSource(),
+                backend: FakeSecItemBackend(),
+                groupValue: "TEAM1.app.posato.sync"
+            )
         )
+    }
+
+    func testAccountStatusMappingCoversAllCases() {
+        XCTAssertTrue(CloudKitAccountSource.resolution(for: .noAccount) == .unavailable)
+        XCTAssertTrue(CloudKitAccountSource.resolution(for: .restricted) == .restricted)
+        XCTAssertTrue(CloudKitAccountSource.resolution(for: .couldNotDetermine) == .undetermined)
+        XCTAssertTrue(CloudKitAccountSource.resolution(for: .temporarilyUnavailable) == .undetermined)
+        XCTAssertTrue(CloudKitAccountSource.resolution(for: nil) == .undetermined)
     }
 
     func testBindingDerivationMatchesIndependentGoldenVector() {
@@ -106,11 +120,14 @@ final class SynchronizableKeychainProviderTests: XCTestCase {
     }
 
     func testOperationsRejectInvalidAccountWithoutQuery() {
-        let (provider, _, backend) = makeProvider()
+        let source = FakeKeychainAccountSource(resolutions: [.available(recordName)])
+        let backend = FakeSecItemBackend()
+        let provider = SynchronizableKeychainProvider(accountSource: source, backend: backend, accessGroup: accessGroup)
 
         XCTAssertTrue(provider.createItem(binding: binding(), account: "NOT-A-UUID", value: itemValue()) == .integrityfailure)
         XCTAssertTrue(provider.readItem(binding: binding(), account: "NOT-A-UUID").status == .integrityfailure)
         XCTAssertTrue(provider.deleteItemAndVerifyAbsent(binding: binding(), account: "NOT-A-UUID") == .integrityfailure)
+        XCTAssertEqual(source.calls, 0)
         XCTAssertTrue(backend.added.isEmpty)
         XCTAssertTrue(backend.queried.isEmpty)
         XCTAssertTrue(backend.deleted.isEmpty)
@@ -214,6 +231,11 @@ final class SynchronizableKeychainProviderTests: XCTestCase {
         unreadable.deleteHandler = { _ in errSecSuccess }
         unreadable.copyHandler = { _ in (errSecAuthFailed, nil) }
         XCTAssertTrue(makeProvider(backend: unreadable).0.deleteItemAndVerifyAbsent(binding: expected, account: account) == .retryable)
+
+        let emptySuccess = FakeSecItemBackend()
+        emptySuccess.deleteHandler = { _ in errSecSuccess }
+        emptySuccess.copyHandler = { _ in (errSecSuccess, nil) }
+        XCTAssertTrue(makeProvider(backend: emptySuccess).0.deleteItemAndVerifyAbsent(binding: expected, account: account) == .retryable)
 
         let refused = FakeSecItemBackend()
         refused.deleteHandler = { _ in errSecAuthFailed }
@@ -369,9 +391,8 @@ final class SynchronizableKeychainProviderTests: XCTestCase {
     }
 
     private func makeDeviceProvider() throws -> SynchronizableKeychainProvider {
-        let team = try XCTUnwrap(Bundle.main.object(forInfoDictionaryKey: SynchronizableKeychainProvider.teamKey) as? String)
         return try XCTUnwrap(
-            SynchronizableKeychainProvider(accountSource: CloudKitAccountSource(), backend: SystemSecItemBackend(), teamIdentifier: team)
+            SynchronizableKeychainProvider(accountSource: CloudKitAccountSource(), backend: SystemSecItemBackend(), bundle: Bundle.main)
         )
     }
 

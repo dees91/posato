@@ -32,17 +32,25 @@ final class CloudKitAccountSource: KeychainAccountSource {
 
     func currentRecordName() -> KeychainAccountResolution {
         let container = CKContainer(identifier: containerIdentifier)
-        switch accountStatus(container: container) {
-        case .available:
-            guard let recordID = userRecordID(container: container) else {
-                return .undetermined
-            }
-            return .available(recordID.recordName)
+        let status = accountStatus(container: container)
+        guard status == .available else {
+            return Self.resolution(for: status)
+        }
+        guard let recordID = userRecordID(container: container) else {
+            return .undetermined
+        }
+        return .available(recordID.recordName)
+    }
+
+    static func resolution(for status: CKAccountStatus?) -> KeychainAccountResolution {
+        switch status {
         case .noAccount:
             return .unavailable
         case .restricted:
             return .restricted
-        case .couldNotDetermine, nil:
+        case .couldNotDetermine, .temporarilyUnavailable, nil:
+            return .undetermined
+        case .available:
             return .undetermined
         @unknown default:
             return .undetermined
@@ -143,7 +151,7 @@ final class SystemSecItemBackend: KeychainSecItemBackend {
 final class SynchronizableKeychainProvider: IosKeychainProvider {
     static let service = "app.posato.sync.workspace-key.v1"
     static let itemLength = 84
-    static let teamKey = "PosatoDevelopmentTeam"
+    static let groupKey = "PosatoKeychainAccessGroup"
     static let accessGroupSuffix = "app.posato.sync"
 
     private static let bindingDomainPrefix = "iCloud.app.posato.sync|account-binding|v1"
@@ -158,8 +166,8 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
         self.accessGroup = accessGroup
     }
 
-    convenience init?(accountSource: KeychainAccountSource, backend: KeychainSecItemBackend, teamIdentifier: String?) {
-        guard let accessGroup = Self.accessGroup(teamIdentifier: teamIdentifier) else {
+    convenience init?(accountSource: KeychainAccountSource, backend: KeychainSecItemBackend, groupValue: String?) {
+        guard let accessGroup = Self.accessGroup(value: groupValue) else {
             return nil
         }
         self.init(accountSource: accountSource, backend: backend, accessGroup: accessGroup)
@@ -169,19 +177,19 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
         self.init(
             accountSource: accountSource,
             backend: backend,
-            teamIdentifier: bundle.object(forInfoDictionaryKey: Self.teamKey) as? String
+            groupValue: bundle.object(forInfoDictionaryKey: Self.groupKey) as? String
         )
     }
 
-    static func accessGroup(teamIdentifier: String?) -> String? {
-        guard let teamIdentifier = teamIdentifier, !teamIdentifier.isEmpty else {
+    static func accessGroup(value: String?) -> String? {
+        guard let value = value, !value.isEmpty, value.hasSuffix("." + accessGroupSuffix) else {
             return nil
         }
-        return teamIdentifier + "." + accessGroupSuffix
+        return value
     }
 
-    static func accessGroup(bundle: Bundle, key: String = teamKey) -> String? {
-        accessGroup(teamIdentifier: bundle.object(forInfoDictionaryKey: key) as? String)
+    static func accessGroup(bundle: Bundle, key: String = groupKey) -> String? {
+        accessGroup(value: bundle.object(forInfoDictionaryKey: key) as? String)
     }
 
     static func deriveBinding(recordName: String) -> Data {
@@ -223,6 +231,9 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
     }
 
     func readItem(binding: Data, account: String) -> IosKeychainItemRead {
+        guard Self.isCanonicalAccount(account) else {
+            return IosKeychainItemRead(status: .integrityfailure, value: nil)
+        }
         switch preflight(expectedBinding: binding) {
         case .proceed:
             break
@@ -230,9 +241,6 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
             return IosKeychainItemRead(status: .retryable, value: nil)
         case .accountChanged:
             return IosKeychainItemRead(status: .accountchanged, value: nil)
-        }
-        guard Self.isCanonicalAccount(account) else {
-            return IosKeychainItemRead(status: .integrityfailure, value: nil)
         }
         let (flag, observer) = observingAccountChange()
         let result = performRead(account: account, expectedBinding: binding, changeFlag: flag)
@@ -244,6 +252,9 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
     }
 
     func createItem(binding: Data, account: String, value: Data) -> IosKeychainCreateStatus {
+        guard Self.isCanonicalAccount(account), value.count == Self.itemLength else {
+            return .integrityfailure
+        }
         switch preflight(expectedBinding: binding) {
         case .proceed:
             break
@@ -251,9 +262,6 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
             return .retryable
         case .accountChanged:
             return .accountchanged
-        }
-        guard Self.isCanonicalAccount(account), value.count == Self.itemLength else {
-            return .integrityfailure
         }
         let (flag, observer) = observingAccountChange()
         let result = performCreate(account: account, value: value, expectedBinding: binding)
@@ -265,6 +273,9 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
     }
 
     func deleteItemAndVerifyAbsent(binding: Data, account: String) -> IosKeychainDeleteStatus {
+        guard Self.isCanonicalAccount(account) else {
+            return .integrityfailure
+        }
         switch preflight(expectedBinding: binding) {
         case .proceed:
             break
@@ -272,9 +283,6 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
             return .retryable
         case .accountChanged:
             return .accountchanged
-        }
-        guard Self.isCanonicalAccount(account) else {
-            return .integrityfailure
         }
         let (flag, observer) = observingAccountChange()
         let result = performDelete(account: account, expectedBinding: binding)
@@ -342,10 +350,7 @@ final class SynchronizableKeychainProvider: IosKeychainProvider {
         if readStatus == errSecItemNotFound {
             return confirmDelete(.deletedandabsent, expectedBinding: expectedBinding)
         }
-        if readStatus == errSecSuccess, existing == nil {
-            return confirmDelete(.deletedandabsent, expectedBinding: expectedBinding)
-        }
-        guard readStatus == errSecSuccess else {
+        guard readStatus == errSecSuccess, existing != nil else {
             return .retryable
         }
         return confirmDelete(.integrityfailure, expectedBinding: expectedBinding)
