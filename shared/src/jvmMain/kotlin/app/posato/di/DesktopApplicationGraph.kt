@@ -3,6 +3,13 @@ package app.posato.di
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createDesktopDatabaseDriver
+import app.posato.feature.session.JvmSessionTimeFormat
+import app.posato.feature.session.data.LocalSessionStore
+import app.posato.feature.session.data.SqlLocalSessionStore
+import app.posato.feature.session.domain.RandomSessionIdGenerator
+import app.posato.feature.session.domain.SessionClock
+import app.posato.feature.session.domain.SessionIdGenerator
+import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
@@ -56,6 +63,36 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
             database = database,
             databaseDispatcher = databaseDispatcher,
         )
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionStore(
+        database: PosatoDatabase,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+    ): LocalSessionStore {
+        return SqlLocalSessionStore(
+            database = database,
+            databaseDispatcher = databaseDispatcher,
+        )
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionIds(): SessionIdGenerator {
+        return RandomSessionIdGenerator
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionClock(): SessionClock {
+        return SessionClock { System.currentTimeMillis() }
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionTimeFormat(): SessionTimeFormat {
+        return JvmSessionTimeFormat()
     }
 }
 
