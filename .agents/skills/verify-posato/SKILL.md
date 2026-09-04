@@ -25,9 +25,13 @@ maintained map of user-facing features and the recipes that prove them.
 
 ## Launch
 
-Run everything from the repository root. Build the CLI once per checkout:
+Run everything from the repository root. Provision and build the CLI once per
+checkout; `local.properties` is ignored, so a new worktree starts without it
+and every device command fails until the whole file is copied from the main
+checkout:
 
 ```shell
+cp ../posato/local.properties .   # whole file, in a fresh worktree
 ./gradlew :posato-control:installDist
 PC=tools/posato-control/build/install/posato-control/bin/posato-control
 ```

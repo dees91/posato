@@ -1129,3 +1129,8 @@
   with `devicectl` and survives a reinstall as a count read-back, so the
   picker is not needed on a rerun; the Screen Time consent alert still is, and
   whether the restored tokens still enforce stays `open` for `IOS-001`.
+- Task workflow revision 6, maintainer-requested: a new worktree must copy the
+  whole ignored `local.properties` from the main checkout, which is the
+  canonical copy of every `posato.` key, and run `:posato-control:installDist`
+  before it is usable. `git worktree add` carries neither, and a partial copy
+  fails deep inside a feature recipe instead of at setup.

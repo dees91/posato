@@ -26,8 +26,8 @@
 
 - `--process <name|pid>` reaches every desktop element command.
   `ProcessTargeting` decides over processes whose executable resolves, through
-  `toRealPath()`, inside the staged bundle; the tracked application must be
-  running and every other selector is a refusal. A null selector is unchanged.
+  `toRealPath()`, inside the staged bundle; the tracked application must run and
+  every other selector is a refusal. A null selector is unchanged.
 - `observed`: the helper presents its panel with `NSOpenPanel.runModal()` and
   never runs an `NSApplication` event loop, so it owns a real window while
   exposing no accessibility server; `AXUIElementCopyAttributeValue` fails at
@@ -37,32 +37,31 @@
   tap after the bridge brings that process forward, re-checking the front
   before every character. The fallback is armed only when a process was
   addressed, so no default path changed; `AC-01` was amended and accepted.
-- The picker is driven end to end (`⌘⇧G`, a typed absolute path, `--submit`,
-  one more `Return`), so the manual step is gone from the feature file.
+- The picker is driven end to end (`⌘⇧G`, an absolute path, `--submit`, one more
+  `Return`), so the manual step is gone from the feature file.
 - `doctor` is the provisioning gate. `DoctorCheck` gained a three-valued
   `state`; `DoctorReport.ok` is unchanged, so an `unknown` condition is visible
   without blocking, and `error` is reserved for a configuration packaging
   rejects, so ad-hoc worktrees stay `ok: true`. `GradleStager` now passes the
   new `posato.macos.syncProvisioningProfile`, without which the driver could
   not stage a development-signed package.
-- `observed`: `./gradlew quality` runs the packaging tasks without the signing
-  properties and silently restages ad-hoc, removing the picker; `desktop.staged`
-  now names that case and its remedy.
+- `observed`: `./gradlew quality` restages ad-hoc, since the packaging tasks run
+  without the signing properties, removing the picker; `desktop.staged` names it.
 - `AC-04` is answered. `devicectl device copy from|to` captures and restores
   `Library/Application Support/Posato/ApplicationMappings/mappings-v1.json`;
   after a full uninstall, reinstall and restore the section reported
   `Applications selected: 1`. Seeding removes the picker from a rerun but not
   the consent alert, which resets on every reinstall. Whether the restored
   tokens still enforce stays `open` for `IOS-001`; the path needs no rewrite
-  there beyond the domain, since `devicectl` supports `appGroupDataContainer`.
+  beyond the domain, since `devicectl` supports `appGroupDataContainer`.
 
 ## Completed-change review
 
 - **Verdict:** 0 Critical, 3 Required, 3 Recommended, 2 Optional.
 - **Critical or Required findings:** `awaitWindow` swallowed every precondition
   refusal, so `wait --process` timed out at exit 4 instead of refusing at exit
-  3; the frontmost gate for session-tap typing ran once per call rather than
-  per character, so losing the front mid-string would have typed the rest into
+  3; the frontmost gate for session-tap typing ran once per call, not per
+  character, so losing the front mid-string would have typed the rest into
   another window; `AC-01` was not met as written and carried no amendment.
 - **Resolution:** all three corrected. `WindowWait` now tolerates only
   `PROCESS_NOT_ALLOWED` while polling, reports every other refusal at once, and
@@ -89,32 +88,32 @@
 
 ## Blockers and accepted risks
 
-- The macOS run needs the staged development package and the existing
-  Accessibility and Screen Recording grants; the device run needs the iPhone.
+- The macOS run needs the staged development package and the Accessibility and
+  Screen Recording grants; the device run needs the iPhone.
 - Accepted limit: the administrator authentication for each Apply stays a human
-  step by ADR 0004, and the Screen Time consent alert stays one too. Seeding a
-  captured selection removes the picker from a rerun, but a reinstall returns
+  step by ADR 0004, and so does the Screen Time consent alert. Seeding a
+  captured selection removes the picker from a rerun, but a reinstall resets
   authorization to not determined and the alert belongs to SpringBoard.
-- Accepted risk: this checkout was switched to Apple Development signing to
-  prove `AC-02`, changing machine state the concurrent checkouts share. The
-  identity is per-checkout in the ignored `local.properties`, so they keep
-  staging ad-hoc, but the packaging verifier branches its entitlements on
-  `signingIdentity == "-"` and `keychain-access-groups` exists only in the
-  team-identity branch, so a Keychain item written under one signature can read
-  back as absent under the other, and `SMAppService` registration binds to the
-  signature, so a restage can require a fresh System Settings approval. Treat
-  either symptom as this cause before calling it a defect.
+- Accepted risk: this checkout signs with Apple Development, and revision 6 has
+  every worktree copy the same keys, so signing is uniform rather than mixed.
+  `observed`: an ad-hoc companion has no iCloud or `keychain-access-groups`
+  entitlement, so `EntitlementGuard` fails closed and never writes a Keychain
+  item, leaving nothing orphaned across signatures. What does cross checkouts
+  is the `SMAppService` registration, which binds to the code signature, so a
+  restage under a different signature can require a fresh Settings approval.
 - Accepted limit: the addressed process must stay frontmost for the panel keys;
-  the driver brings it forward and re-checks per character, but a person
-  clicking elsewhere mid-recipe aborts the run with a refusal.
+  the driver brings it forward and re-checks per character, but clicking
+  elsewhere mid-recipe aborts the run with a refusal.
 - `open`: a count read-back does not settle whether a restored iOS selection
   still enforces; `IOS-001` owns that question.
+- Maintainer-requested after the review: `docs/tasks/README.md` revision 6 adds
+  a worktree provisioning requirement, widening the write surface by that one
+  file, untouched by concurrent tasks.
 
 ## Final
 
 - **Status:** `done`
-- **Outcome:** On a provisioned Mac a verification run needs no human step for
-  the application picker, and `doctor` names every one-time provisioning
-  condition with a remedy before a run reaches a feature recipe. On a
-  provisioned iPhone the picker can be replaced by seeding a captured
-  selection; the consent alert remains the one human step, by platform design.
+- **Outcome:** On a provisioned Mac a run needs no human step for the picker,
+  and `doctor` names every one-time condition with a remedy before a run
+  reaches a feature recipe. On an iPhone the picker can be replaced by seeding
+  a captured selection; the consent alert remains the one human step.

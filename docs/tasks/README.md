@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 5
-- **Accepted:** 2026-08-28
+- **Revision:** 6
+- **Accepted:** 2026-09-04
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -254,6 +254,24 @@ contracts, disjoint write surfaces, and an isolated branch and worktree for
 each writer. Review-only agents may inspect concurrently. Shared Gradle, Xcode,
 schema, navigation, dependency-injection, and public-contract ownership
 normally serializes work.
+
+A new worktree is not usable until it is provisioned. `local.properties` is
+ignored, so `git worktree add` does not carry it over, and without it the
+driver cannot reach a device or stage a signed package. Copy the whole file
+from the main checkout, never a subset, and build the driver once:
+
+```shell
+cp ../posato/local.properties .
+./gradlew :posato-control:installDist
+```
+
+The main checkout is the canonical copy and carries every `posato.` key,
+including `posato.macos.signingIdentity` and
+`posato.macos.syncProvisioningProfile`. A partial copy yields a worktree that
+works until a task reaches the macOS application picker or the CloudKit and
+Keychain paths, which is late; `doctor -t desktop` names what is missing.
+Revision 6 adds this requirement after `QUALITY-004` found that a fresh
+worktree fails deep inside a feature recipe rather than at setup.
 
 The initial maximum is three implementation tasks, with two preferred when
 integration risk is non-trivial. The roadmap records waves and integration
