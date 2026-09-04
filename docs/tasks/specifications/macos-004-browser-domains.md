@@ -130,6 +130,19 @@ exactly after clear, helper failure, sleep, and reboot.
   `NSAppleEventsUsageDescription` added to the helper's `Info.plist`; the
   Automation prompt is a physical-gate step, and the release-time persistence
   of that permission stays with `RELEASE-001`.
+- Open, decide before implementation: how the checklist treats the
+  `app.posato.macos.proxy.apply` authentication. `acquireApplyGrant()` builds
+  a fresh `AuthorizationRef` whose `deinit` runs
+  `AuthorizationFree(_, [.destroyRights])`, and the rule is `shared: false`,
+  so the 30-second window never carries a credential into a second Apply:
+  every Apply raises its own SecurityAgent dialog, which no driver may
+  script. Recommended: keep the boundary and split the proof, so the gated
+  harness drives everything up to the request and asserts the reported state,
+  the helper and daemon tests own the privileged path, and the checklist
+  records one maintainer authentication per Apply row. Relaxing the rule on
+  the verification machine is refused: the daemon verifies and repairs the
+  definition, and a check that passes only because the control was removed
+  proves nothing.
 - Physical gates: development-signed package with the team identity, helper
   Enable approval in System Settings, one administrator authentication per
   Apply, Automation prompts for Safari and Chrome, both browsers installed,
