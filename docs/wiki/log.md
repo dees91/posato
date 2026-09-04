@@ -1103,3 +1103,29 @@
   `desktopApp/build`, and added `APPLE-002` (App Store Connect API
   provisioning) and `QUALITY-003` (real desktop `scrollTo`) to the roadmap
   as revision 8.
+
+## [2026-09-04] tooling | QUALITY-004 unattended verification
+
+- The macOS application picker is now driven end to end. `posato-control`
+  element commands take `--process <name|pid>`, resolved only to a process
+  whose executable lives inside the staged `Posato.app`; the panel is reached
+  with `⌘⇧G`, a typed absolute path, and `Return`, and the mapping count went
+  0 to 1 to 0 with no human step. Superseded the earlier conclusion that the
+  picker cannot be scripted.
+- `observed`: the helper presents its panel with `NSOpenPanel.runModal()` and
+  never runs an `NSApplication` event loop, so it owns a real window while
+  exposing no accessibility server. `snapshot` on it reports
+  `PROCESS_NOT_INSPECTABLE` instead of an empty tree, and key events go to the
+  session tap after the driver brings that process forward, refusing rather
+  than typing blindly when it cannot.
+- `doctor` became the provisioning gate: every one-time condition is a named
+  check with a state of `ok`, `missing`, or `unknown` and one remedy. An
+  unobservable condition (the helper's background approval, Screen Time
+  authorization) is `unknown` and never blocks; `error` is reserved for a
+  configuration packaging genuinely rejects, so an ad-hoc checkout stays
+  `ok: true`. `observed`: `./gradlew quality` restages an ad-hoc package and
+  silently removes the picker, which `desktop.staged` now names.
+- `observed` (iOS 26.5.2): a captured iOS selection store can be seeded back
+  with `devicectl` and survives a reinstall as a count read-back, so the
+  picker is not needed on a rerun; the Screen Time consent alert still is, and
+  whether the restored tokens still enforce stays `open` for `IOS-001`.

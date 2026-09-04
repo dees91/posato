@@ -10,6 +10,7 @@ enum class ConfigurationKey(
 ) {
     DEVELOPMENT_TEAM("posato.apple.developmentTeam", "POSATO_APPLE_DEVELOPMENT_TEAM"),
     MACOS_SIGNING_IDENTITY("posato.macos.signingIdentity", "POSATO_MACOS_SIGNING_IDENTITY"),
+    MACOS_SYNC_PROVISIONING_PROFILE("posato.macos.syncProvisioningProfile", "POSATO_MACOS_SYNC_PROVISIONING_PROFILE"),
     SIMULATOR("posato.control.simulator", "POSATO_CONTROL_SIMULATOR"),
     DEVICE("posato.control.device", "POSATO_CONTROL_DEVICE"),
 }

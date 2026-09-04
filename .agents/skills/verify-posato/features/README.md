@@ -76,10 +76,11 @@ handles, required state, commands, and observable proof.
 - [Application group](./application-group.md) covers naming, editing,
   removing, and persisting the single application group.
 - [macOS application mappings](./macos-application-mappings.md) covers the
-  desktop-only application picker and its limits for scripted verification.
+  desktop-only application picker, driven end to end through the helper
+  process, and how to read its result.
 - [iOS application mappings](./ios-application-mappings.md) covers the
-  device-only Family Controls picker, its access states, and the manual steps
-  the driver cannot reach.
+  device-only Family Controls picker, its access states, seeding a captured
+  selection instead of picking, and the consent step the driver cannot reach.
 - [Sessions](./sessions.md) covers setting up, reviewing, starting, ending
   early, and expiring one manual session on every target, and what survives a
   relaunch.

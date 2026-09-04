@@ -46,5 +46,9 @@ class Session(
 
     fun backend(): Backend = cachedBackend ?: Backends.create(target(), context, options.udid).also { cachedBackend = it }
 
+    /** Backend for an element command; a null selector reuses the cached default backend. */
+    fun backend(processSelector: String?): Backend =
+        if (processSelector == null) backend() else Backends.create(target(), context, options.udid, processSelector)
+
     fun backend(target: Target): Backend = Backends.create(target, context, options.udid)
 }

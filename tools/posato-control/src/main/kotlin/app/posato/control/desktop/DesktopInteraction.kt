@@ -25,6 +25,7 @@ class DesktopInteraction(
     private val stateStore: RunStateStore,
     private val lifecycle: Lifecycle,
     private val evidence: DesktopEvidence,
+    private val processSelector: String? = null,
 ) : Interaction {
     override fun snapshot(
         root: Query?,
@@ -44,12 +45,21 @@ class DesktopInteraction(
         return ScenarioRunner(DesktopActions(scenario), context.layout::relativize).run(scenario)
     }
 
-    private fun runningPid(): Long = processes.trackedPid(stateStore.load().desktop)
-        ?: throw ControlException(
-            ErrorCode.APP_NOT_RUNNING,
-            "No tracked desktop process is running.",
-            "Run `posato-control launch -t desktop` first.",
-        )
+    override fun typeFocused(
+        text: String,
+        clear: Boolean,
+        submit: Boolean
+    ) {
+        bridge.typeFocused(runningPid(), text, clear, submit)
+    }
+
+    override fun awaitWindow(timeoutSeconds: Double) {
+        WindowWait.await(timeoutSeconds, processSelector ?: "the desktop application") {
+            bridge.windows(runningPid()).isNotEmpty()
+        }
+    }
+
+    private fun runningPid(): Long = processes.resolveTarget(processSelector, stateStore.load().desktop)
 
     private inner class DesktopActions(
         private val scenario: Scenario
@@ -73,7 +83,7 @@ class DesktopInteraction(
             key: String,
             modifiers: List<String>
         ) {
-            bridge.key(runningPid(), key, modifiers)
+            bridge.key(runningPid(), key, modifiers, sessionFallback = processSelector != null)
         }
 
         override fun screenshot(name: String): Path = evidence.screenshot(name, null)
