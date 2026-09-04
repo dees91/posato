@@ -114,30 +114,33 @@ exactly after clear, helper failure, sleep, and reboot.
 
 ## Decisions or blockers
 
-- Recommended: the proof harness is a test-scope, environment-gated JVM test
+Every decision below is accepted (`user-confirmed`, 2026-09-04) unless it is
+marked open.
+
+- Decided: the proof harness is a test-scope, environment-gated JVM test
   rather than a product command, hidden menu, or Gradle task; `SESSION-002`
   and `RELEASE-001` are the named repeated consumers of the same checklist.
-- Recommended, answering the `IOS-001` open item: no shared `commonMain`
+- Decided, answering the `IOS-001` open item: no shared `commonMain`
   enforcement port this wave. Each platform keeps its own adapter with the
   outcomes its brief lists, and `SESSION-002` defines the common contract
   when it wires start, early end, and expiry on both hosts.
-- Recommended: an empty domain set is rejected as invalid input by both the
+- Decided: an empty domain set is rejected as invalid input by both the
   orchestrator and the helper; "enforce nothing" is not an activation.
-- Recommended: configure-and-listen uses a 10-second deadline, Apply keeps
+- Decided: configure-and-listen uses a 10-second deadline, Apply keeps
   the MACOS-003 120-second maximum because it waits for administrator
   authentication, and the presentation debounce is 1 second per browser.
-- Recommended: presentation is in scope for both browsers, with
+- Decided: presentation is in scope for both browsers, with
   `NSAppleEventsUsageDescription` added to the helper's `Info.plist`; the
   Automation prompt is a physical-gate step, and the release-time persistence
   of that permission stays with `RELEASE-001`.
-- Open, decide before implementation: how the checklist treats the
+- Decided: how the checklist treats the
   `app.posato.macos.proxy.apply` authentication. `acquireApplyGrant()` builds
   a fresh `AuthorizationRef` whose `deinit` runs
   `AuthorizationFree(_, [.destroyRights])`, and the rule is `shared: false`,
   so the 30-second window never carries a credential into a second Apply:
   every Apply raises its own SecurityAgent dialog, which no driver may
-  script. Recommended: keep the boundary and split the proof, so the gated
-  harness drives everything up to the request and asserts the reported state,
+  script. The boundary stays and the proof is split: the gated harness
+  drives everything up to the request and asserts the reported state,
   the helper and daemon tests own the privileged path, and the checklist
   records one maintainer authentication per Apply row. Relaxing the rule on
   the verification machine is refused: the daemon verifies and repairs the

@@ -11,9 +11,9 @@
 
 ## Plan
 
-1. Obtain the independent plan review and the maintainer's confirmation of
-   the five recommended decisions in the brief; confirm that `commonMain`
-   needs no enforcement contract this wave.
+1. Obtain the independent plan review. The brief's decisions are already
+   accepted, including the split proof for the Apply authentication and that
+   `commonMain` gains no enforcement contract this wave.
 2. Add the helper-only pipe operation that carries the bounded canonical
    domain set (and an optional end time for the page), the daemon-side
    rejection, and the `MacOsHelperClient` extension plus the small
