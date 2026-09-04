@@ -304,8 +304,8 @@ enum CloudRequestCodec {
       return nil
     }
     return (
-      payload.prefix(SyncLimits.bindingBytes),
-      payload.suffix(SyncLimits.anchorBytes)
+      Data(payload.prefix(SyncLimits.bindingBytes)),
+      Data(payload.suffix(SyncLimits.anchorBytes))
     )
   }
 
