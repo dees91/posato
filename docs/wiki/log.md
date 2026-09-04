@@ -1085,3 +1085,21 @@
   state. `./gradlew quality` and 51 session tests pass; verify-posato
   start and early-end re-run green on the Simulator, and the desktop
   re-run gap is documented tooling flakiness in the execution record.
+
+## [2026-09-04] tooling | Wave 3 closeout: verify-posato session shell, roadmap revision 8
+
+- Aligned the `verify-posato` skill, feature map, and canonical fixtures with
+  the session shell: launch readiness is the `Paused items` button, every
+  Websites or Applications recipe switches destination first, and a new
+  `features/sessions.md` documents setup, review, start, early end, expiry,
+  and persistence. Documented what the driver does not prove (native
+  Keychain, companion, CloudKit paths) and two desktop traps with their
+  workarounds: rows below the window are reached through Tab focus
+  traversal, and a `type` right after a `tap` on the same field fails.
+- Fixtures re-proven on the Simulator and the desktop (add, remove, session
+  start, early end) with database read-backs; the desktop database was
+  restored afterwards.
+- Removed the companion verifier test that depended on a staged package in
+  `desktopApp/build`, and added `APPLE-002` (App Store Connect API
+  provisioning) and `QUALITY-003` (real desktop `scrollTo`) to the roadmap
+  as revision 8.

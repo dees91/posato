@@ -62,20 +62,6 @@ class MacOsSyncCompanionVerifierTest {
         }
     }
 
-    @Test
-    fun `given the staged ad-hoc application when verified then the companion executable is returned`() {
-        val root = Path.of(
-            "../desktopApp/build/compose/binaries/main/development-package/Posato.app",
-        )
-        if (!Files.isDirectory(root)) {
-            return
-        }
-
-        val executable = MacOsSyncCompanionVerifier().verify(root)
-        checkNotNull(MacOsSyncCompanionClient.verified(root))
-        assertTrue(executable.fileName.toString() == MacOsSyncCompanionProtocol.COMPANION_EXECUTABLE)
-    }
-
     private fun signedApplication(
         applicationIdentifier: String = MacOsSyncCompanionProtocol.APPLICATION_IDENTIFIER,
         companionIdentifier: String = MacOsSyncCompanionProtocol.COMPANION_IDENTIFIER,
