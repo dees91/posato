@@ -15,9 +15,10 @@ device.
 
 ## How to get to it (user POV)
 
-- Open the desktop app; the `Applications` section shows `No applications
-  chosen on this device.` and the `Choose applications` button, or the list of
-  chosen applications with `Remove`.
+- Open the desktop app and tap `Paused items` in the switch at the top; the
+  `Applications` section shows `No applications chosen on this device.` and
+  the `Choose applications` button, or the list of chosen applications with
+  `Remove`.
 - On iOS the same section has its own picker; see
   [iOS application mappings](./ios-application-mappings.md).
 

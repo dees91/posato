@@ -16,8 +16,8 @@ sync while the chosen applications stay on the device.
 
 ## How to get to it (user POV)
 
-- Open Posato on any target and read the `Applications` section under
-  `Paused items`.
+- Open Posato on any target, tap `Paused items` in the switch at the top (the
+  app opens on `Session`), and read the `Applications` section.
 - Without a group the section shows `No application group yet.`, the
   `Application group name` field (placeholder `Social feeds`), the note `The
   group name may sync. App choices stay on this device.`, and `Add group`.
@@ -30,7 +30,7 @@ sync while the chosen applications stay on the device.
 
 Preconditions:
 
-- The app is launched through the CLI and the `Add website` wait returned `ok`.
+- The app is launched through the CLI, the `Paused items` readiness wait returned `ok`, and `tap -t <target> --text "Paused items" --role button` followed by the `Add website` wait returned `ok`.
 - No group exists: `find -t <target> --text "No application group yet."` returns one element. On the desktop the developer may keep a group; remove it only with their agreement and re-add it at the end.
 
 - **Add.** Type a name and submit with Return. Run `$PC type -t <target> --role textField --near-text "Applications" --input "Social feeds" --clear --submit`. `wait --for exists --text "Social feeds" --role text` returns `ok`, the editor disappears, and `find --text "Apps still need to be chosen on this device."` returns at least one element.

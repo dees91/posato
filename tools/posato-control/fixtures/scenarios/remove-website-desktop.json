@@ -4,6 +4,12 @@
   "steps": [
     { "name": "switch-ready", "action": "waitFor", "state": "exists", "query": { "text": "Paused items", "role": "button" }, "timeoutSeconds": 30 },
     { "name": "open-paused-items", "action": "tap", "query": { "text": "Paused items", "role": "button" } },
+    { "name": "targets-ready", "action": "waitFor", "state": "exists", "query": { "text": "Add website" }, "timeoutSeconds": 30 },
+    { "name": "focus-field", "action": "tap", "query": { "role": "textField", "near": { "text": "Add website" } } },
+    { "name": "scroll-1", "action": "press", "key": "tab" },
+    { "name": "scroll-2", "action": "press", "key": "tab" },
+    { "name": "scroll-3", "action": "press", "key": "tab" },
+    { "name": "scroll-4", "action": "press", "key": "tab" },
     { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "example.com", "role": "text" }, "timeoutSeconds": 30 },
     { "name": "remove", "action": "tap", "query": { "text": "Remove", "role": "button", "near": { "text": "example.com" } } },
     { "name": "row-gone", "action": "waitFor", "state": "absent", "query": { "text": "example.com", "role": "text" } },

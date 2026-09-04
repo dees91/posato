@@ -18,7 +18,8 @@ the list unchanged after the app restarts.
 
 ## How to get to it (user POV)
 
-- Open Posato on any target; the `Paused items` screen is the only screen.
+- Open Posato on any target and tap `Paused items` in the switch at the top;
+  the app opens on `Session` after every launch.
 - Scroll to the `Websites` section: an `Exact domain` field (placeholder
   `example.com`), the helper text `Enter an exact domain such as example.com,
   not a full URL.`, the `Add website` button, and one row per saved domain
@@ -29,18 +30,18 @@ the list unchanged after the app restarts.
 
 Preconditions:
 
-- The app is launched through the CLI and `wait -t <target> --for exists --text "Add website" --timeout-seconds 30` returned `ok`.
+- The app is launched through the CLI, `wait -t <target> --for exists --text "Paused items" --role button --timeout-seconds 30` returned `ok`, then `tap -t <target> --text "Paused items" --role button` and `wait -t <target> --for exists --text "Add website" --timeout-seconds 30` returned `ok`.
 - No row named `example.com` or `example.org` exists (`find -t <target> --text example.com` returns an empty list).
 - `PC` points at the installed CLI; replace `<target>` with `sim`, `desktop`, or `device`. The domain field is always `--role textField --near-text "Websites"`.
 
 - **Add.** Type a domain and submit with Return. Run `$PC type -t <target> --role textField --near-text "Websites" --input example.com --clear --submit`. Then `$PC wait -t <target> --for exists --text example.com --role text` returns `ok` and `$PC find -t <target> --text "No websites added"` returns an empty list.
-- **Add through the fixture.** Run `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/add-website.json` instead of the step above when a relaunch is acceptable. Every step reports `ok: true`; the artifacts include `screenshot-6-after-add.png` and `snapshot-7-after-add.json` showing the `example.com` row.
+- **Add through the fixture.** Run `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/add-website.json` (`sim`, `device`) or `add-website-desktop.json` (`desktop`, which submits with the button and scrolls the row into view with Tab) instead of the step above when a relaunch is acceptable. Every step reports `ok: true`; the artifacts include `screenshot-8-after-add.png` and `snapshot-9-after-add.json` (`screenshot-14-after-add.png` and `snapshot-15-after-add.json` for the desktop variant, whose Tab presses are steps 8 to 11) showing the `example.com` row.
 - **Edit.** Choose `Edit` on the row. Run `$PC tap -t <target> --text Edit --role button --near-text example.com`. `$PC find -t <target> --text "Save change" --role button` returns one element. Run `$PC type -t <target> --role textField --near-text "Websites" --input example.org --clear --submit`; `wait --for exists --text example.org --role text` returns `ok` and `find --text example.com --role text` is empty.
 - **Cancel edit.** Choose `Edit` on `example.org`, then `Cancel`. Run `$PC tap -t <target> --text Edit --role button --near-text example.org` and `$PC tap -t <target> --text Cancel --role button`. `find --text example.org --role text` still returns one element and `find --text "Add website" --role button` returns one element.
 - **Reject.** Submit an invalid value, then a duplicate. Run `$PC type -t <target> --role textField --near-text "Websites" --input "not a domain" --clear --submit`; `find --text "Enter a valid domain with at least two labels."` returns one text element and no row named `not a domain` appears. Run `$PC type -t <target> --role textField --near-text "Websites" --input example.org --clear --submit`; `find --text "That exact domain is already in the list."` returns one element. A rejected submit keeps the keyboard open on iOS, so continue with the relaunch below.
 - **Persist.** Relaunch and read back. Run `$PC launch -t <target>` (no `--fresh`) and `$PC wait -t <target> --for exists --text example.org --role text`. On `desktop` and `sim` also run `$PC db query -t <target> --sql "select canonical_domain from exact_domain_policy"`; the rows contain `example.org`. On `device`, the `wait` after the relaunch is the read-back.
 - **Proof.** Capture the populated state. Run `$PC screenshot -t <target> --name websites-populated` and `$PC snapshot -t <target> --format text --human`; the artifacts show `Paused items` and the `example.org` row.
-- **Remove.** Choose `Remove` on the row. Run `$PC tap -t <target> --text Remove --role button --near-text example.org`. `$PC wait -t <target> --for absent --text example.org --role text` returns `ok`; when it was the last row, `find --text "No websites added"` returns one element. The fixture `remove-website.json` does the same for `example.com`.
+- **Remove.** Choose `Remove` on the row. Run `$PC tap -t <target> --text Remove --role button --near-text example.org`. `$PC wait -t <target> --for absent --text example.org --role text` returns `ok`; when it was the last row, `find --text "No websites added"` returns one element. The fixtures `remove-website.json` (`sim`, `device`) and `remove-website-desktop.json` (`desktop`) do the same for `example.com`.
 
 ## Gotchas
 
@@ -61,6 +62,12 @@ Preconditions:
   `snapshot` with a query scroll such a row into view when the `--near-text`
   anchor is visible; `wait` and `find` do not scroll, so read a clipped row
   after a `tap` on it or after `scrollTo` in a scenario.
+- On the desktop the rows sit below `Add website` and are outside the window
+  whenever an application group exists, so they are not in the accessibility
+  tree at all and `scrollTo` does not scroll. `tap` the domain field and
+  `press --key tab` four times; focus traversal scrolls the first row and its
+  `Edit`/`Remove` buttons into view. Confirm a suspected missing row with
+  `db query` before reporting a defect.
 - While a mutation is saving, a `Saving` label appears next to the button and
   the controls are disabled; `wait --for enabled --text "Add website"` before
   the next action if a step fails with a disabled element.
