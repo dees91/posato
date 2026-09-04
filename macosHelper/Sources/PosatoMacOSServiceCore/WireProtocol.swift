@@ -7,12 +7,25 @@ public enum WireLimits {
   public static let maximumXPCBytes = 64 * 1024
   public static let identifierBytes = 16
   public static let maximumDeadlineMilliseconds: UInt32 = 120_000
+  public static let maximumConfigureDeadlineMilliseconds: UInt32 = 10_000
   public static let maximumSelectionDeadlineMilliseconds: UInt32 = 1_800_000
   public static let maximumOperationsPerConnection: UInt32 = 256
   public static let requiredCapabilities: UInt64 = 1
   public static let applicationSelectionCapability: UInt64 = 2
+  public static let browserDomainConfigureCapability: UInt64 = 4
   public static let requiredParentHelperCapabilities: UInt64 =
-    requiredCapabilities | applicationSelectionCapability
+    requiredCapabilities | applicationSelectionCapability | browserDomainConfigureCapability
+
+  public static func maximumDeadlineMilliseconds(for operation: WireOperation) -> UInt32 {
+    switch operation {
+    case .selectApplications:
+      return maximumSelectionDeadlineMilliseconds
+    case .configureBrowserDomains:
+      return maximumConfigureDeadlineMilliseconds
+    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew:
+      return maximumDeadlineMilliseconds
+    }
+  }
 }
 
 public enum WireCapabilities {
@@ -56,6 +69,16 @@ public enum WireOperation: UInt8, Sendable {
   case reconcile = 8
   case renew = 9
   case selectApplications = 10
+  case configureBrowserDomains = 11
+
+  public var isHelperOnly: Bool {
+    switch self {
+    case .selectApplications, .configureBrowserDomains:
+      return true
+    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew:
+      return false
+    }
+  }
 }
 
 public enum WireOutcome: UInt8, Sendable {
@@ -141,10 +164,7 @@ public struct WireMessage: Equatable, Sendable {
     else {
       throw WireProtocolFailure.invalidFrame
     }
-    let maximumDeadline =
-      operation == .selectApplications
-      ? WireLimits.maximumSelectionDeadlineMilliseconds
-      : WireLimits.maximumDeadlineMilliseconds
+    let maximumDeadline = WireLimits.maximumDeadlineMilliseconds(for: operation)
     guard deadlineMilliseconds <= maximumDeadline else {
       throw WireProtocolFailure.invalidDeadline
     }
@@ -201,7 +221,7 @@ public enum WireCodec {
   public static func decode(
     _ encoded: Data,
     maximumBytes: Int,
-    allowsApplicationSelection: Bool = false,
+    allowsHelperOnlyOperations: Bool = false,
     maximumDeadlineMilliseconds: UInt32 = WireLimits.maximumDeadlineMilliseconds
   ) throws -> WireMessage {
     guard encoded.count <= maximumBytes else {
@@ -210,7 +230,7 @@ public enum WireCodec {
     guard encoded.count >= headerBytes else {
       throw WireProtocolFailure.invalidFrame
     }
-    var cursor = DataCursor(data: encoded)
+    var cursor = WireDataCursor(data: encoded)
     guard try cursor.readUInt32() == magic else {
       throw WireProtocolFailure.invalidFrame
     }
@@ -223,7 +243,7 @@ public enum WireCodec {
     guard let operation = WireOperation(rawValue: try cursor.readUInt8()) else {
       throw WireProtocolFailure.invalidOperation
     }
-    guard allowsApplicationSelection || operation != .selectApplications else {
+    guard allowsHelperOnlyOperations || !operation.isHelperOnly else {
       throw WireProtocolFailure.invalidOperation
     }
     let sequence = try cursor.readUInt32()
@@ -341,43 +361,4 @@ public struct WireReconcilePayload: Equatable, Sendable {
   private static let supportedOperations: Set<WireOperation> = [
     .status, .enable, .repair, .apply, .restore, .disable, .remove,
   ]
-}
-
-private struct DataCursor {
-  let data: Data
-  var offset = 0
-
-  var remainingBytes: Int {
-    return data.count - offset
-  }
-
-  mutating func readUInt8() throws -> UInt8 {
-    guard remainingBytes >= 1 else {
-      throw WireProtocolFailure.invalidFrame
-    }
-    defer { offset += 1 }
-    return data[offset]
-  }
-
-  mutating func readUInt16() throws -> UInt16 {
-    let bytes = try readData(count: 2)
-    return bytes.reduce(UInt16(0)) { value, byte in
-      (value << 8) | UInt16(byte)
-    }
-  }
-
-  mutating func readUInt32() throws -> UInt32 {
-    let bytes = try readData(count: 4)
-    return bytes.reduce(UInt32(0)) { value, byte in
-      (value << 8) | UInt32(byte)
-    }
-  }
-
-  mutating func readData(count: Int) throws -> Data {
-    guard count >= 0, remainingBytes >= count else {
-      throw WireProtocolFailure.invalidFrame
-    }
-    defer { offset += count }
-    return data.subdata(in: offset..<(offset + count))
-  }
 }

@@ -89,7 +89,7 @@ extension RequestCoordinator {
       )
     case .renew:
       return try performRenew(request)
-    case .none, .selectApplications:
+    case .none, .selectApplications, .configureBrowserDomains:
       throw ProxyOwnershipFailure.invalidInput
     }
   }
@@ -230,7 +230,7 @@ extension RequestCoordinator {
       try verifyCanonicalEmptyInput(payload)
       try AuthorizationPolicy.verifyApplyRight()
       return try engine.status()
-    case .none, .reconcile, .renew, .selectApplications:
+    case .none, .reconcile, .renew, .selectApplications, .configureBrowserDomains:
       throw ProxyOwnershipFailure.invalidInput
     }
   }

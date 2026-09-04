@@ -19,7 +19,8 @@ import java.util.concurrent.TimeoutException
 internal class MacOsHelperClient(
     helperPath: Path? = null,
 ) : Closeable,
-    MacOsApplicationPicker {
+    MacOsApplicationPicker,
+    MacOsBrowserDomainCommands {
     private val helperPath: Path by lazy { helperPath ?: MacOsHelperSigningVerifier.installedHelperPath() }
     private val random = SecureRandom()
     private val readerExecutor = Executors.newSingleThreadExecutor()
@@ -54,7 +55,16 @@ internal class MacOsHelperClient(
     }
 
     @Synchronized
-    fun apply(port: UShort): HelperResult {
+    override fun configureBrowserDomains(
+        domains: List<String>,
+        sessionEndEpochMilliseconds: Long?,
+    ): BrowserDomainConfigureResponse {
+        val payload = BrowserDomainConfigurePayload(domains, sessionEndEpochMilliseconds).encode()
+        return configureRequest(payload)
+    }
+
+    @Synchronized
+    override fun apply(port: UShort): HelperResult {
         require(port > 0u)
         val payload = ByteBuffer.allocate(2)
             .order(ByteOrder.BIG_ENDIAN)
@@ -64,7 +74,7 @@ internal class MacOsHelperClient(
     }
 
     @Synchronized
-    fun restore(): HelperResult {
+    override fun restore(): HelperResult {
         return request(HelperOperation.Restore)
     }
 
@@ -119,7 +129,7 @@ internal class MacOsHelperClient(
     }
 
     @Synchronized
-    fun reconcileUnknown(): HelperResult {
+    override fun reconcileUnknown(): HelperResult {
         val pending = pendingUnknownRequest ?: return status()
         val result = request(
             operation = HelperOperation.Reconcile,
@@ -154,6 +164,37 @@ internal class MacOsHelperClient(
             output = null
             input = null
             process = null
+        }
+    }
+
+    private fun configureRequest(payload: ByteArray): BrowserDomainConfigureResponse {
+        check(pendingUnknownRequest == null)
+        ensureStarted()
+        check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
+        val requestIdentifier = randomIdentifier()
+        val message = HelperMessage(
+            kind = HelperMessageKind.Request,
+            operation = HelperOperation.ConfigureBrowserDomains,
+            sequence = nextSequence++,
+            deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_CONFIGURE_DEADLINE_MILLISECONDS,
+            connectionIdentifier = connectionIdentifier,
+            sessionIdentifier = sessionIdentifier,
+            requestIdentifier = requestIdentifier,
+            payload = payload,
+        )
+        return try {
+            write(message)
+            val response = readWithDeadline(message.deadlineMilliseconds.toLong())
+            check(response.kind == HelperMessageKind.Response)
+            check(response.operation == message.operation)
+            check(response.sequence == message.sequence)
+            check(response.connectionIdentifier.contentEquals(connectionIdentifier))
+            check(response.sessionIdentifier.contentEquals(sessionIdentifier))
+            check(response.requestIdentifier.contentEquals(requestIdentifier))
+            BrowserDomainConfigureResponse.decode(response.payload)
+        } catch (_: Exception) {
+            terminateProcess(cancellation = message)
+            BrowserDomainConfigureResponse(HelperResult.unknownOutcome(), 0.toUShort())
         }
     }
 
