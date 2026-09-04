@@ -140,8 +140,11 @@ Platform traps that invalidate a run:
   minimized and must be frontmost. When the desktop does not react: the
   first `tap` may only activate the window, so repeat it; `press --key
   return` into a field that lost focus is silently dropped, so prefer `tap`
-  on the visible button (`Add website`, `Add group`, `Review session`) where
-  one exists; do not `tap` a field and `type` into it as consecutive steps,
+  on the visible submit button (`Add website`, `Add group`) where one exists;
+  the session minutes field has no such button, because `Review session`
+  reads the last submitted value, not the field text, so there `type`, wait
+  for `settled`, then `press --key return`. Do not `tap` a field and `type`
+  into it as consecutive steps,
   because the tree is rebuilt while the field takes focus and the second
   lookup fails with `ELEMENT_NOT_FOUND` (`type` clicks the field itself).
   Put `waitFor` with `"state": "settled"` between a `type` and the `tap` or

@@ -65,7 +65,7 @@ remain authoritative for their concerns.
 
 ## Task stubs, dependencies, waves, and integration groups
 
-The 40 rows below are the complete amended Gate 6 task set. Future rows stay as
+The 42 rows below are the complete amended Gate 6 task set. Future rows stay as
 stubs.
 [`APPLE-001`](specifications/apple-001-register-apple-resources.md) is the
 completed Gate 7 brief. The Ready to open PR #1 checkpoint is complete and the
