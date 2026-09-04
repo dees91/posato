@@ -84,6 +84,23 @@
   No Critical findings; advisory items declined without scope change.
 - **Advisory findings:** none accepted
 
+## PR feedback (P2 advisory pass)
+
+- Maintainer five-axis review: approve, no P1; five P2 items, all declined
+  by default per process except those judged correct.
+- Accepted: explicit expiry commit on the start path with a
+  current-marker-only retention note for SYNC-012; day-aware end-time
+  formatting on JVM and iOS with one platform test each; two real-database
+  corruption tests proving fail-closed reads without marker writes.
+- Declined with thread replies: CSPRNG session ids (neither DI graph holds
+  a provider and iOS would need a native-contract change; ids are
+  local-only until SYNC-012 owns sync keying), per-second review derivation
+  (unmeasured; YAGNI next to the expiry path), and dropping the store-side
+  start-time check (defense-in-depth at a trust boundary).
+- Focused independent re-review of the corrections: approved, no
+  Critical/Required findings; one accepted advisory (cross-midnight tests
+  now assert equality against the date-time formatter).
+
 ## Verification
 
 | Check run | Result | Evidence |

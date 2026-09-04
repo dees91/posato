@@ -23,7 +23,10 @@ internal class FakeSessionIdGenerator : SessionIdGenerator {
 }
 
 internal class FakeSessionTimeFormat : SessionTimeFormat {
-    override fun formatTime(epochMillis: Long): String {
+    override fun formatTime(
+        epochMillis: Long,
+        nowEpochMillis: Long,
+    ): String {
         return "formatted-$epochMillis"
     }
 }
