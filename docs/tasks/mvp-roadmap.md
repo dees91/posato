@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 7
+- **Revision:** 8
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-03
+- **Last amended:** 2026-09-04
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -27,8 +27,13 @@ reset both applications on the supported Mac, the Simulator, and the
 supported iPhone without a maintainer in the loop. Revision 7 adds the
 maintainer-accepted `TARGETS-005` hardening follow-up after the independent
 review of `TARGETS-004` accepted its blocking findings and deferred four
-advisory recoverability and copy items. None of these revisions changes any
-other task, dependency, wave, or integration group.
+advisory recoverability and copy items. Revision 8 adds the
+maintainer-accepted `APPLE-002` App Store Connect API provisioning task, after
+the `SYNC-006` development profile had to be created by hand in the portal,
+and the `QUALITY-003` desktop scrolling follow-up for the verification driver,
+after `SESSION-001` verification found below-the-fold desktop rows
+undrivable. None of these revisions changes any other task, dependency, wave,
+or integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -60,7 +65,7 @@ remain authoritative for their concerns.
 
 ## Task stubs, dependencies, waves, and integration groups
 
-The 38 rows below are the complete amended Gate 6 task set. Future rows stay as
+The 40 rows below are the complete amended Gate 6 task set. Future rows stay as
 stubs.
 [`APPLE-001`](specifications/apple-001-register-apple-resources.md) is the
 completed Gate 7 brief. The Ready to open PR #1 checkpoint is complete and the
@@ -98,6 +103,8 @@ wave barriers add the phase ordering stated above.
 | `IOS-002` | Clear Posato-owned restrictions after normal expiry while the iOS app is suspended. | Sessions and enforcement | P3/W3.2 | `IOS-001` | PR-IOS-EXPIRY |
 | `SYNC-005` | Implement the iOS synchronizable-Keychain adapter and truthful service outcomes. | Apple synchronization | P3/W3.3 | `SYNC-003` | PR-IOS-KEYCHAIN |
 | `SYNC-006` | Implement the macOS synchronizable-Keychain native boundary and truthful outcomes. | Apple synchronization | P3/W3.3 | `SYNC-003` | PR-MAC-KEYCHAIN |
+| `APPLE-002` | Create and renew development profiles and certificates for every Posato App ID through the App Store Connect API with a maintainer-created team key kept outside Git, so no portal step blocks an agent. | Preparation | P3/W3.3a | `APPLE-001`, `SYNC-006` | PR-ASC-PROVISIONING |
+| `QUALITY-003` | Make desktop `scrollTo` in posato-control scroll the window until the queried row is composed, so below-the-fold LazyColumn rows are drivable like on iOS. | Preparation | P3/W3.3b | `QUALITY-002`, `SESSION-001` | PR-VERIFICATION-DRIVER-SCROLL |
 | `SYNC-007` | Exchange bounded encrypted mailbox bundles through iOS private CloudKit. | Apple synchronization | P3/W3.4 | `SYNC-003` | PR-IOS-CLOUDKIT |
 | `SYNC-008` | Exchange bounded encrypted mailbox bundles through the macOS CloudKit native boundary. | Apple synchronization | P3/W3.4 | `SYNC-003` | PR-MAC-CLOUDKIT |
 | `SESSION-002` | Integrate safe local start, enforcement, early end, expiry, failure, and recovery. | Sessions and enforcement | P3/W3.5 | `MACOS-004`, `MACOS-005`, `IOS-002`, `SESSION-001` | PR-LOCAL-SESSION |
@@ -141,6 +148,7 @@ integrated increment, not three task cycles plus another holistic review.
 | iOS suspended expiry opportunity | `IOS-002` | A physical callback clears owned restrictions without promising exact wake time. |
 | macOS helper signing and privilege path | `MACOS-003` | Physical authentication, authorization, failure, and removal/recovery evidence passes. |
 | macOS development package launch | `MACOS-006` | The unchanged Gradle-produced application passes strict nested-signature verification and launches on the supported physical Mac without manual re-signing. |
+| App Store Connect API team key | `APPLE-002` | The maintainer creates one App Store Connect team key with the Admin role and keeps the `.p8`, key id, and issuer id outside Git; the task records pass or blocked without key values. |
 | Browser support and proxy coexistence | `MACOS-002` / `MACOS-004` | Accepted support contract and physical browser matrix pass. |
 | CloudKit and Keychain environments | `SYNC-005`–`SYNC-010` | Physical account, delay, restart, error, and cleanup evidence passes. |
 | Complete product flow | `MVP-001` | The accepted Mac-and-iPhone matrix passes without manual repair. |
