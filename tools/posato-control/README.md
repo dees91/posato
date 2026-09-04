@@ -46,6 +46,15 @@ variable, which wins). `doctor` reports presence and source, never values.
 | `posato.control.device` | `POSATO_CONTROL_DEVICE` | Device name or UDID to use instead of the first connected iPhone. |
 | — | `POSATO_CONTROL_TARGET` | Default for `--target`. |
 
+When `posato.macos.signingIdentity` is an Apple Development identity, Gradle
+packaging also needs
+`-PposatoMacOsSyncProvisioningProfile=/absolute/path/to/untracked.provisionprofile`
+for App ID `app.posato.macos.sync` (iCloud/CloudKit). The profile is never
+tracked. `keychain-access-groups` comes from that team profile; it is not a
+separate App ID capability. Without the profile the development package fails
+closed. Do not ad-hoc-sign only the companion to bypass it; mixed signing is
+rejected.
+
 ## Targets and the JSON envelope
 
 Every command takes `--target/-t desktop|simulator|device` (`sim` is an
@@ -198,8 +207,11 @@ Canonical scenarios live in `fixtures/scenarios/`: `add-website.json` and
 
 **desktop.** `build` stages `desktopApp/build/compose/binaries/main/development-package/Posato.app`
 (ad-hoc signed unless `posato.macos.signingIdentity` is set; the macOS
-application picker requires development signing). `launch` runs the bundle's
-executable with its output in the run directory. Inspection and interaction use
+application picker requires development signing). An Apple Development identity
+also requires `-PposatoMacOsSyncProvisioningProfile` pointing at an untracked
+`.provisionprofile` for `app.posato.macos.sync`; mixed ad-hoc companion signing
+is not a workaround. `launch` runs the bundle's executable with its output in
+the run directory. Inspection and interaction use
 a single-file Swift bridge (`native/macos/PosatoAxBridge.swift`) compiled on
 demand into `build/verification/native/`; it reads the accessibility tree,
 presses buttons, focuses fields and types through keyboard events, and reports

@@ -152,6 +152,7 @@ tasks.register("quality") {
         ":shared:ktlintCheck",
         ":shared:verifySqlDelightMigration",
         ":macosHelper:check",
+        ":macosSyncCompanion:check",
         ":posato-control:detekt",
         ":posato-control:ktlintCheck",
         ":posato-control:swiftFormatCheck",
