@@ -132,23 +132,26 @@ outcome and never a raw CloudKit value, record, token, or error text.
 
 ## Decisions or blockers
 
-- Recommended: raise the companion frame payload limit from 65,536 to
+Every decision below is accepted (`user-confirmed`, 2026-09-04) unless it is
+marked open.
+
+- Decided: raise the companion frame payload limit from 65,536 to
   65,584 bytes on both sides so a full-size bundle travels with its 32-byte
   binding and 16-byte identifier; the limit is not part of the wire format,
   so the major version stays 1.
-- Recommended: no `CKSyncEngine` in the one-shot companion; explicit
+- Decided: no `CKSyncEngine` in the one-shot companion; explicit
   record-zone-changes operations with the server change token as the opaque
   cursor satisfy the ADR 0007 preflight, postflight, and invalidation rules
   without persisting engine state across processes. `SYNC-010` decides
   whether the desktop ever needs an engine.
-- Recommended: the mailbox primitive interface lives in `jvmMain` until
+- Decided: the mailbox primitive interface lives in `jvmMain` until
   `SYNC-010` defines the common port; the wire layouts in this brief are the
   contract `SYNC-007` mirrors so both platforms return identical outcomes.
-- Recommended: `deleteZoneAndVerifyAbsent` ships now because the physical
+- Decided: `deleteZoneAndVerifyAbsent` ships now because the physical
   proof must leave the maintainer's database as found and `SYNC-009` needs
   the same primitive for explicit removal; it deletes only the exact zone
   under the established binding and verifies absence independently.
-- Recommended: the JVM cloud adapter uses a 30-second default deadline,
+- Decided: the JVM cloud adapter uses a 30-second default deadline,
   longer than the 15-second Keychain default, since each CloudKit call is a
   network round trip within the same budget.
 - Manual gate: the Apple Development package with the untracked companion
@@ -157,7 +160,7 @@ outcome and never a raw CloudKit value, record, token, or error text.
   Development builds use the CloudKit Development environment, so the
   schema is created on first save and production deployment stays with
   `RELEASE-001`.
-- Decided (`user-confirmed`, 2026-09-04): the anchor create postflight does
+- Decided: the anchor create postflight does
   not re-read the anchor. `SYNC-004` already reconciles `UnknownOutcome` and
   `Conflict` through the exact read, and a second read inside the companion
   would hide the race from the coordinator that owns it.
