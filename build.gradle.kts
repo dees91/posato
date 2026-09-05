@@ -157,6 +157,9 @@ tasks.register("quality") {
         ":posato-control:ktlintCheck",
         ":posato-control:swiftFormatCheck",
         ":posato-control:test",
+        ":posato-provisioning:detekt",
+        ":posato-provisioning:ktlintCheck",
+        ":posato-provisioning:test",
         verifyApprovedQualityExceptions,
     )
 }
