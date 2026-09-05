@@ -1203,3 +1203,29 @@
   workspace key in the synchronizable Keychain, an iCloud item rather than a
   local one, which `reset -t desktop` does not clear and `doctor` does not
   report.
+## [2026-09-05] implementation | APPLE-002 App Store Connect provisioning
+
+- `posato-provisioning` obtains Apple development provisioning for the five
+  Posato App IDs through the App Store Connect API, so the portal step that
+  `SYNC-006` had to perform by hand no longer blocks an agent. It is JDK-only:
+  the ES256 token is signed with `java.security` and requests go through
+  `java.net.http`, adding no dependency.
+- Three provisioning facts are worth keeping because each one fails silently.
+  A Mac's Provisioning UDID is not its Platform UUID, and on Apple silicon the
+  two differ in value and length; an iPhone's is `hardwareProperties.udid`,
+  not devicectl's `identifier`. App Store Connect's `filter[identifier]` is a
+  contains match, so `app.posato.ios` also selects the activity-monitor
+  extension and App IDs must be matched exactly on the client. `ES256`
+  requires a raw `r||s` signature while the JDK emits DER, and the padding
+  difference only shows up in a fraction of signatures.
+- A local signing identity is correlated to the account by exact certificate
+  bytes before a profile is built around it, because a profile naming a
+  certificate this Mac holds no private key for installs and reports success
+  while signing nothing.
+- Only `GET` is retried. A retried `POST` that had already been applied would
+  create a duplicate certificate against Apple's per-team cap, a conflicting
+  device, or a second profile claiming a name Apple keeps unique per team.
+- The two `doctor` reports are deliberately separate: the verification driver
+  asks whether this checkout can build, sign, and drive right now, while this
+  one asks whether the Mac can obtain Apple resources and whether the account
+  holds them. Their check identifiers do not overlap.
