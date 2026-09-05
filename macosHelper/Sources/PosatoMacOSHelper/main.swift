@@ -30,6 +30,7 @@ private var sessionIdentifier: Data?
 private var activeRequest: WireMessage?
 private var leaseRenewer: LeaseRenewer?
 private var domainSession: BrowserDomainSession?
+private var applications = ApplicationSessionHost()
 
 do {
   while let encoded = try readFrame() {
@@ -83,6 +84,7 @@ do {
       leaseRenewer?.cancelAndWait()
       domainSession?.stop()
       domainSession = nil
+      applications.stop()
       if let activeRequest, let daemon {
         let restore = try WireMessage(
           kind: .request,
@@ -128,7 +130,7 @@ do {
       guard request.payload.count == 2 else {
         throw PipeFailure.invalidFrame
       }
-    case .configureBrowserDomains:
+    case .configureBrowserDomains, .configureApplications:
       guard !request.payload.isEmpty else {
         throw PipeFailure.invalidFrame
       }
@@ -138,15 +140,13 @@ do {
       throw PipeFailure.invalidFrame
     }
     if request.operation == .configureBrowserDomains {
-      let handled = try BrowserDomainRequestHandler.handleConfigure(
-        request: request,
-        receivedAt: receivedAt,
-        service: service,
-        existing: domainSession,
-        applyOwned: activeRequest != nil
+      domainSession = try BrowserDomainRequestHandler.dispatch(
+        request: request, receivedAt: receivedAt, service: service,
+        existing: domainSession, applyOwned: activeRequest != nil
       )
-      domainSession = handled.session
-      try writeFrame(WireCodec.encode(handled.response))
+      continue
+    }
+    if try applications.dispatch(request: request, receivedAt: receivedAt, service: service) {
       continue
     }
     if request.operation == .apply, domainSession == nil {
@@ -370,6 +370,7 @@ do {
   }
   domainSession?.stop()
   domainSession = nil
+  applications.stop()
   if let request = activeRequest, let daemon {
     leaseRenewer?.cancelAndWait()
     let restore = try restoreMessage(
@@ -382,6 +383,7 @@ do {
 } catch {
   domainSession?.stop()
   domainSession = nil
+  applications.stop()
   if let request = activeRequest, let daemon {
     leaseRenewer?.cancelAndWait()
     let restore = try? restoreMessage(
