@@ -1,7 +1,7 @@
 # Posato prototype Compose design system
 
-A reusable Compose Multiplatform companion to the [HTML interaction study](../index.html),
-with a native desktop component catalog. The HTML refinement at `bfc4a49` is its
+A reusable Compose Multiplatform library for the [native interaction prototype](../README.md),
+with a native desktop component catalog. The historical HTML refinement at `bfc4a49` is its
 visual source. [DESIGN.md](../../../DESIGN.md) remains the accepted design authority.
 
 This is a prototype library, not a replacement for the production design system
@@ -37,7 +37,8 @@ platform. Native compilation alone does not demonstrate iOS runtime behavior.
 
 The module has no dependency on `shared/`, `desktopApp/`, or `iosApp/`.
 Consumers opt in with `implementation(project(":prototypeDesignSystem"))` only
-when prototype reuse is intended; this change does not add that dependency to an app.
+when prototype reuse is intended. Only `:prototypeApp`, not a production app,
+uses this library as its application design system.
 
 ## Foundations
 

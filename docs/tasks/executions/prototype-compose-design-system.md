@@ -1,7 +1,7 @@
 # Execution: PROTOTYPE-DS-001
 
 - **Brief:** [PROTOTYPE-DS-001](../specifications/prototype-compose-design-system.md)
-- **Status:** complete
+- **Status:** done
 - **Review tier:** Standard
 - **Implementer:** Codex
 - **Reviewer:** Independent Codex completed-change reviewer

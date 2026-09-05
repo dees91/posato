@@ -52,6 +52,7 @@ These are direction constraints, not a complete architecture.
 - [Accepted MVP scope](docs/product/mvp-scope.md)
 - [Accepted product identity](docs/product/product-identity.md)
 - [Accepted design system](DESIGN.md)
+- [Native interaction prototype](prototypes/mvp-interaction-flow/README.md)
 - [Engineering quality contract](docs/development/engineering-quality-contract.md)
 - [Task workflow](docs/tasks/README.md)
 - [Feasibility results and limits](docs/wiki/topics/feasibility-results-and-limits.md)

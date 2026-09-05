@@ -236,6 +236,12 @@ supporting information, not an animated spectacle.
 
 ### SESSION-001 design-system consolidation checkpoint
 
+The [interaction study](../sources/mvp-interaction-prototype.md) now runs as an
+isolated Compose prototype on macOS and iPhone Simulator. Its reusable component
+library and native mock flows replace the maintained HTML target, but remain
+prototype evidence. Neither migration nor native inspection changes the
+production consolidation boundary below or accepts new `DESIGN.md` tokens.
+
 - `user-confirmed` (2026-08-31): `SESSION-001` is the first explicit
   design-system consolidation checkpoint. It compares the production Paused
   items screen and the new session states with `DESIGN.md` and the disposable

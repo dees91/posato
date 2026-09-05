@@ -1204,22 +1204,13 @@
   local one, which `reset -t desktop` does not clear and `doctor` does not
   report.
 
-## [2026-09-05] design | Refine the MVP interaction prototype
+## [2026-09-05] experiment | Move the interaction study to native Compose hosts
 
-- Refined the standalone prototype with warm paper and moss treatments,
-  light/dark appearance, responsive session/items navigation, and an optional
-  inspection workbench. Added working duration presets, custom duration,
-  return paths, and a full-screen simulation dock; retained strict product
-  paths and independent Free play actions. Updated the
-  [prototype source](sources/mvp-interaction-prototype.md) with observed
-  behavior and explicit hypothesis boundaries. The refinement adds no
-  production UI or accepted design contract.
-
-## [2026-09-05] design | Add a Compose companion to the interaction study
-
-- Added an isolated reusable component library and native desktop catalog for
-  the refined prototype, with a complete HTML-family mapping, common previews,
-  and light/dark, contrast, and enlarged-text inspection. Recorded the
-  [companion's evidence boundaries](sources/mvp-interaction-prototype.md#compose-component-companion):
-  it has no production application consumers and does not implement product
-  services or promote prototype geometry into the accepted design contract.
+- Refined the warm paper and moss visual direction and extracted a reusable
+  Compose component library, desktop catalog, and deterministic previews.
+- Replaced the maintained HTML target with an isolated mock iPhone and macOS
+  prototype using the existing Compose component library. Preserved strict
+  flows, configurable items, guided scenarios, independent Free play, and the
+  manual clock; added hidden native inspection controls and common regression
+  coverage. Recorded [native evidence and limits](sources/mvp-interaction-prototype.md#native-interaction-prototype)
+  without changing production design, platform services, or architecture.

@@ -4,8 +4,9 @@
 
 - **Original evidence revision:**
   `a081d4278cf8517c46b4322ed3c098462f153570`
-- **Artifact:** `prototypes/mvp-interaction-flow/index.html`
-- **Compose companion:** `prototypes/mvp-interaction-flow/compose/`
+- **Current artifact:** [native interaction prototype](../../../prototypes/mvp-interaction-flow/README.md)
+- **Design-system library:** `prototypes/mvp-interaction-flow/compose/`
+- **Historical HTML and Node suite:** retained in Git at `566bdb6`
 - **Source type:** disposable interactive UX prototype
 - **Reviewed:** 2026-09-05
 - **Authority:** evidence only; not a product, design, architecture, or
@@ -14,7 +15,7 @@
 ## Why this source exists
 
 The prototype makes the accepted low-fidelity MVP flows inspectable as one
-interactive browser artifact. It is useful for finding missing states,
+interactive UX study, now running in two isolated native hosts. It is useful for finding missing states,
 contradictory actions, large-window layout problems, and unclear local-versus-
 shared ownership before production UI work starts.
 
@@ -37,7 +38,7 @@ implementation as a product contract.
   task content and its primary action visually related.
 - `user-confirmed`: the prototype is an MVP UX artifact, not production code.
 
-## Browser-observed evidence
+## Historical browser-observed evidence
 
 At the pinned revision, browser checks directly exercised representative
 strict product paths for:
@@ -58,7 +59,7 @@ and automated browser accessibility scanning in the checked states.
 
 These are `observed` prototype results, not production acceptance evidence.
 
-## Visual and interaction refinement
+## Historical visual and interaction refinement
 
 - `user-confirmed`: refine this existing prototype in a dedicated worktree,
   with a distinctive, pleasant design and intuitive interactions appropriate
@@ -81,14 +82,14 @@ These are `observed` prototype results, not production acceptance evidence.
 - `observed`: external iCloud results, sync completion/failure, the paused
   message, and expiry remain explicitly simulated. A simulation dock is
   also available within the Mac full-screen preview.
-- `observed`: the dependency-free model regression checks cover duration
+- `observed`: the former dependency-free model regression checks covered duration
   boundaries, return navigation, active-session mapping repair, and the four
-  guided scenarios. Run them with
-  `node --test prototypes/mvp-interaction-flow/interaction-flow.test.cjs`.
+  guided scenarios. The 24 Node cases are retained at `566bdb6`; current checks
+  run as common Kotlin tests through `:prototypeApp:jvmTest`.
 
-The single HTML artifact still opens directly in a browser. It adds no build
-step, remote assets, persistence, network requests, or native application
-implementation. Browser evidence remains subject to the limits below.
+The single HTML artifact had no build step, remote assets, persistence, or
+network requests. It has been superseded by the native prototype; historical
+browser evidence does not become native runtime evidence through migration.
 
 ## Compose component companion
 
@@ -111,15 +112,47 @@ implementation. Browser evidence remains subject to the limits below.
   inspection and reuse without treating the HTML study as accepted production
   geometry. No production application depends on the new module.
 
-This companion is a presentation library, not a native port of the HTML reducer
+This companion remains a presentation library, not a native port of the HTML reducer
 or an implementation of blocking, storage, permissions, or iCloud behavior.
 Compilation and desktop catalog checks do not establish iOS runtime behavior,
 native Apple accessibility conformance, or production design acceptance.
 
+## Native interaction prototype
+
+- `user-confirmed`: migrate the study to Compose Multiplatform, with separate
+  iPhone and macOS runtime targets, synthetic data, shared design-system screens,
+  a toggled inspection overlay, and retirement of HTML after native parity checks.
+- `observed`: `:prototypeApp` contains all 16 surfaces, a strict immutable reducer,
+  a ViewModel, four guided scenarios, independently exercisable Free play actions,
+  and deterministic compact/expanded previews. It depends on the prototype design
+  system, not production modules. The SwiftUI host only embeds the Compose controller.
+- `observed`: each installation owns independent memory-only state. Restart
+  returns to ready fixtures; the fixed 17:45 clock and external outcomes remain
+  manually controlled. No production permission, persistence, synchronization,
+  enforcement, or helper boundary is invoked.
+- `observed`: native checks exercised website entry, rejected edits, multiple
+  synthetic applications, custom duration review, session start, early-end
+  cancellation and confirmation, and the hidden controls. The macOS editor
+  retained its draft across overlay dismissal and the layout breakpoint. iPhone
+  Simulator checks exercised dark appearance, stronger contrast, larger text,
+  and workspace-key waiting in the native bottom sheet and full-screen content.
+- `observed`: 22 common test methods include table-driven boundary cases and
+  both platform variants, replacing the old 24-case Node suite. Regression
+  corrections cover guided progress through normal duration and application forms.
+- `inferred`: native rendering now provides a more useful inspection surface
+  for later Compose work, without promoting the study's geometry or reducer into
+  accepted product code.
+
+The [run instructions](../../../prototypes/mvp-interaction-flow/README.md) cover
+desktop packaging, Xcode launch, controls, and verification. The original HTML
+and Node suite remain recoverable in Git; they are no longer maintained runtime
+targets. Review and verification details belong to the task execution record,
+not to this source's authority.
+
 ## Evidence limits
 
-- The artifact runs in a browser and does not prove Compose behavior, native
-  Apple component behavior, platform authorization, enforcement, CloudKit,
+- Historical browser checks do not prove native behavior. Current native checks
+  cover only the mock macOS app and iPhone Simulator, not platform authorization, enforcement, CloudKit,
   Keychain, helper IPC, extension lifecycle, accessibility technology support,
   performance, security, or physical-device behavior.
 - Synthetic application names, sample domains, validation and normalization
