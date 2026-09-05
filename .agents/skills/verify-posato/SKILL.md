@@ -147,7 +147,8 @@ On the desktop, `snapshot`, `find`, `tap`, `type`, `press`, `wait`, and
 inside the staged `Posato.app` — in practice `PosatoMacOSHelper`, which owns
 the application picker and, since `MACOS-004`, also the loopback proxy and the
 browser-domain session. Only a process inside the staged bundle is addressable
-and the tracked application must be running; anything else exits 3. The helper
+and the tracked application must be running; anything else exits 3, including a
+name that two processes inside the bundle share — pass a pid instead. The helper
 never runs an `NSApplication` event loop, in either role, so it has no
 accessibility tree at any time: `snapshot` and `find` on it report
 `PROCESS_NOT_INSPECTABLE`, while `press`, a queryless `type`, a queryless

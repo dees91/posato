@@ -187,26 +187,12 @@ object DesktopProvisioningChecks {
         return DoctorCheck.pass(id, "The companion provisioning profile matches $SYNC_APPLICATION_IDENTIFIER and is current$compared.")
     }
 
-    private fun helperBundle(facts: ProvisioningFacts): DoctorCheck {
-        val id = "desktop.helperBundle"
-        return when {
-            !facts.staged -> DoctorCheck.fail(
-                id,
-                "No staged desktop application, so the nested macOS helper is absent.",
-                "Run `posato-control build -t desktop`.",
-                Severity.WARN,
-            )
-
-            !facts.helperExecutablePresent -> DoctorCheck.fail(
-                id,
-                "The staged application does not contain the nested macOS helper executable.",
-                "Rerun `posato-control build -t desktop --verify` and inspect the packaging verification failure.",
-                Severity.WARN,
-            )
-
-            else -> DoctorCheck.pass(id, "The staged application contains the nested macOS helper executable.")
-        }
-    }
+    private fun helperBundle(facts: ProvisioningFacts): DoctorCheck = nestedComponent(
+        id = "desktop.helperBundle",
+        present = facts.helperExecutablePresent,
+        staged = facts.staged,
+        component = "the nested macOS helper executable",
+    )
 
     private fun proxyDaemon(facts: ProvisioningFacts): DoctorCheck = nestedComponent(
         id = "desktop.proxyDaemon",

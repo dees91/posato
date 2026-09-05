@@ -1199,6 +1199,7 @@
   (`MACOS-004`) and iOS restrictions (`IOS-001`) have no user path until
   `SESSION-002`, their proof is the gated JVM harness and the device XCTest
   run, and `PosatoMacOSHelper` is no longer picker-only. `observed`: a harness
-  or companion run leaves the root-owned proxy ownership record and the login
-  Keychain workspace key, which `reset -t desktop` does not clear and `doctor`
-  does not report.
+  or companion run leaves the root-owned proxy ownership record and the
+  workspace key in the synchronizable Keychain, an iCloud item rather than a
+  local one, which `reset -t desktop` does not clear and `doctor` does not
+  report.
