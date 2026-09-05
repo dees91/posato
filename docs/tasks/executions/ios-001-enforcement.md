@@ -35,16 +35,12 @@
 
 - **Verdict:** changes required (independent review, 2026-09-04)
 - **Critical findings:** none
-- **Required findings (6):** wrong App Group identifier (`group.app.posato`
-  instead of the APPLE-001 `group.app.posato.ios.session`); atomic set
-  undefined; post-revoke clear fallback missing; migration failure
-  semantics missing; AC-02 foreign-store test missing; outcome mapping
-  incomplete (auth states, apps-only case).
-- **Resolution:** brief corrected for all six (identifier, validate-before-
-  write with rollback, post-revoke platform-failure fallback, copy-verify-
-  delete migration with corrupt-source refusal, two-store plus injected-
-  failure plus corrupt-migration tests, explicit outcome mapping with the
-  apps-only mirror rule flagged for maintainer confirmation at merge).
+- **Required findings (6):** wrong App Group identifier, undefined
+  atomicity, missing post-revoke fallback, missing migration failure
+  semantics, missing AC-02 foreign-store test, incomplete outcome
+  mapping.
+- **Resolution:** brief corrected for all six; apps-only mirror rule
+  flagged for maintainer confirmation at merge (since approved).
 - **Re-confirmation:** approved on 2026-09-04, no remaining Required items;
   implementation authorized. Scope check: diff touches only the two task
   files; no write-surface expansion.
