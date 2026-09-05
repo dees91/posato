@@ -99,10 +99,11 @@ wall-clock instant.
 
 ## Decisions or blockers
 
-- Open (maintainer decision): sessions shorter than the Device Activity
-  minimum interval of 15 minutes cannot be scheduled. Recommended: report
-  `below-platform-minimum` and let `SESSION-002` rely on foreground expiry for
-  such sessions, stating the limit in product copy; do not pad the schedule.
+- `user-confirmed` (2026-09-05): sessions shorter than the Device Activity
+  minimum interval of 15 minutes cannot be scheduled. The scheduler reports
+  `below-platform-minimum` and starts nothing; `SESSION-002` relies on
+  foreground expiry for such sessions, stating the limit in product copy.
+  Do not pad the schedule.
 - Decided by authority: the App Group record is the minimum (version, session
   identifier, cleared-at); selection tokens and domains never enter it.
 - Physical gate: the new target needs a development profile for

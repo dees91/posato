@@ -186,12 +186,34 @@ nothing behind.
 `open`: uninstall/reinstall and restore-from-backup observations are
 still pending.
 
+## Production implementation (`IOS-002`, simulator-verified)
+
+`observed` (2026-09-05, Simulator): Xcode-owned Device Activity monitor
+extension `app.posato.ios.activitymonitor` clears only the named store
+`app.posato.session` on the fixed-activity interval-end callback and writes
+one versioned App Group record (schema version, session identifier,
+cleared-at) into its own `SuspendedExpiry` directory; a foreign activity
+clears nothing. The Swift scheduler starts one non-repeating wall-clock
+schedule, validates duration against the 15-minute platform minimum and
+authorization before any write, stops idempotently, and strips all Apple
+error text at the boundary. Kotlin `iosMain` exposes the scheduler seam with
+six platform-neutral outcomes, an expired/unknown reconciliation read that
+never reports active, and redacted carriers; no `expect`/`actual`.
+Simulator suite 67 passed, 0 failed; `./gradlew quality` and the three
+credential-free CI builds pass.
+
+`open`: the extension's development profile does not auto-provision (wildcard
+team profile lacks App Groups and Family Controls development); the physical
+callback rows are blocked on that profile plus a maintainer device session.
+Observed callback delay and reboot-inside-interval behavior are still pending.
+
 ## Open questions
 
 - Which Family Controls entitlement and distribution paths are available for
   the intended public product at implementation time?
-- What App Group callback protocol is the minimum safe implementation for
-  scheduled expiry?
+- ~~What App Group callback protocol is the minimum safe implementation for
+  scheduled expiry?~~ Answered for the MVP by `IOS-002`: pending/cleared
+  versioned records in a dedicated `SuspendedExpiry` directory.
 - Which iOS browsers are included in the support promise?
 - What should happen when a selection becomes invalid or the device restores
   from backup?
