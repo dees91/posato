@@ -147,9 +147,9 @@ On the desktop, `snapshot`, `find`, `tap`, `type`, `press`, `wait`, and
 inside the staged `Posato.app` — in practice `PosatoMacOSHelper`, which owns
 the application picker and, since `MACOS-004`, also the loopback proxy and the
 browser-domain session. Only a process inside the staged bundle is addressable
-and the tracked application must be running; anything else exits 3. While it
-presents the picker the helper runs no `NSApplication` event loop, so it has
-no accessibility tree: `snapshot` and `find` on it report
+and the tracked application must be running; anything else exits 3. The helper
+never runs an `NSApplication` event loop, in either role, so it has no
+accessibility tree at any time: `snapshot` and `find` on it report
 `PROCESS_NOT_INSPECTABLE`, while `press`, a queryless `type`, a queryless
 `wait --for exists` or `--for absent`, and `screenshot` do reach it. See
 [macOS application mappings](./features/macos-application-mappings.md) for the
@@ -279,7 +279,8 @@ maintainer at the Mac and is not an unattended check.
 A harness run leaves state that `reset -t desktop` cannot clear, because that
 command only deletes the local databases: the root-owned ownership record at
 `/Library/Application Support/Posato/ProxySettings/ownership-v1.plist` and,
-after companion work, the workspace key in the login Keychain. `doctor` does
+after companion work, the workspace key in the synchronizable Keychain, which
+is an iCloud item rather than a local one. `doctor` does
 not report either. Treat a desktop run that follows a harness or companion run
 as carrying that state; do not delete the root-owned path from a recipe.
 

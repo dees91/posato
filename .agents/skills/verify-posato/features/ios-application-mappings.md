@@ -75,8 +75,10 @@ Preconditions:
   selection's survival across a reinstall as unverified and read the count back
   rather than assuming either outcome.
 - A captured selection can be seeded back, which removes the picker from a
-  rerun but not the consent alert (`observed`, 2026-09-04, iOS 26.5.2). Since
-  `IOS-001` the live store is in the App Group container
+  rerun but not the consent alert (`observed`, 2026-09-04, iOS 26.5.2, against
+  the private container that `IOS-001` has since replaced; the same procedure
+  against the group container is `inferred` until a run confirms it). The live
+  store is now in the App Group container
   `group.app.posato.ios.session` at `ApplicationMappings/mappings-v1.json`,
   one JSON object with a `version` and one opaque `token` string per selected
   application. Capture and restore it with the app not running:
@@ -97,7 +99,10 @@ Preconditions:
   a full uninstall, reinstall, and restore, the section reported
   `Applications selected: 1` with `Clear selection`. The application group must
   exist first, otherwise the section stays hidden and you will read the seeding
-  as failed. Keep the captured file untracked: it carries live selection tokens.
+  as failed. Launch the app once after a reinstall before `copy to`: the first
+  launch creates `ApplicationMappings/` in the group container, and `copy to`
+  into a missing parent directory fails. Keep the captured file untracked: it
+  carries live selection tokens.
 - The private-container path
   `Library/Application Support/Posato/ApplicationMappings/mappings-v1.json`
   (`--domain-type appDataContainer --domain-identifier app.posato.ios`) is the
