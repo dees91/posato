@@ -66,6 +66,12 @@ Preconditions:
   `PROCESS_NOT_INSPECTABLE`. That is the expected answer, not a broken
   selector. Drive the panel by key events and read the result in the
   application's own tree.
+- `PosatoMacOSHelper` is not a picker-only process: since `MACOS-004` the same
+  helper also runs the loopback proxy and the browser-domain session. A helper
+  that is already running, or one whose window never appears, may be doing
+  enforcement work rather than presenting a panel, so treat the queryless
+  `--for exists` wait as the only readiness signal and never infer a picker
+  state from the process being alive.
 - The helper must be frontmost for those key events, because a process with no
   accessibility server cannot receive a per-process post. The driver brings it
   forward itself and refuses with `PROCESS_NOT_ALLOWED` if it cannot, so a
