@@ -36,22 +36,26 @@ class LocalDevicesTest {
 
     // Every identifier below is a made-up sequence in the right shape. No real device identifier is committed.
     @Test
-    fun `takes each connected iPhone's hardware identifier and not its connection identifier`() {
+    fun `takes each wired iPhone's hardware identifier and not its connection identifier`() {
         // devicectl's `identifier` is a 36-character connection identifier, while the identifier Apple registers is
-        // `hardwareProperties.udid`. Only a connected iPhone is registered, so a paired phone that is not in use
-        // does not silently consume one of the team's limited device slots.
+        // `hardwareProperties.udid`.
+        //
+        // Selection is on transportType, not tunnelState. A phone paired over the local network also reports a
+        // tunnel, and that tunnel's state changes between readings, so selecting on it would register a different
+        // set of devices depending on when the command ran, and would let a phone that merely shares the network
+        // consume one of the team's limited device slots.
         val json =
             """
             {"result":{"devices":[
               {"identifier":"AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
                "hardwareProperties":{"platform":"iOS","udid":"00008030-000102030405061E"},
-               "connectionProperties":{"tunnelState":"connected"}},
+               "connectionProperties":{"transportType":"wired","tunnelState":"connected"}},
               {"identifier":"FFFFFFFF-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
                "hardwareProperties":{"platform":"iOS","udid":"00008030-0A0B0C0D0E0F101E"},
-               "connectionProperties":{"tunnelState":"disconnected"}},
+               "connectionProperties":{"transportType":"localNetwork","tunnelState":"connected"}},
               {"identifier":"99999999-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
                "hardwareProperties":{"platform":"macOS","udid":"00008030-AAAAAAAAAAAAAA1E"},
-               "connectionProperties":{"tunnelState":"connected"}}
+               "connectionProperties":{"transportType":"wired","tunnelState":"connected"}}
             ]}}
             """.trimIndent()
 

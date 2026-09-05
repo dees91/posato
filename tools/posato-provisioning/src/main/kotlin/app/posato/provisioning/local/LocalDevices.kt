@@ -25,6 +25,11 @@ data class LocalDevice(
  * record no profile will ever match. An iPhone's Provisioning UDID is `hardwareProperties.udid` and not the
  * `identifier` field, which is a devicectl connection identifier. Both parsers take the right field and are pinned
  * by tests over recorded shapes.
+ *
+ * "Connected" means wired. A phone paired over the local network also reports a tunnel, and that tunnel's state
+ * flips between readings, so selecting on it would register a different set of devices depending on when the
+ * command ran. Requiring the cable makes the selection deterministic and keeps a phone that merely shares the
+ * network from consuming one of the team's limited device slots.
  */
 object LocalDevices {
     fun parseMacUdid(json: String): String? {
@@ -38,7 +43,7 @@ object LocalDevices {
         return devices
             .map { entry -> entry.jsonObject }
             .filter { device -> device["hardwareProperties"]?.jsonObject?.get("platform")?.jsonPrimitive?.content == "iOS" }
-            .filter { device -> device["connectionProperties"]?.jsonObject?.get("tunnelState")?.jsonPrimitive?.content == "connected" }
+            .filter { device -> device["connectionProperties"]?.jsonObject?.get("transportType")?.jsonPrimitive?.content == "wired" }
             .mapNotNull { device -> device["hardwareProperties"]?.jsonObject?.get("udid")?.jsonPrimitive?.content }
             .distinct()
     }
