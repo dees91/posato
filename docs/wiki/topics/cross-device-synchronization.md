@@ -348,6 +348,20 @@ passed and left no item. A live locked-keychain read and iCloud sign-out are
 an accepted `SYNC-006` limit: the unit test maps a locked Keychain, and a
 real account change is physical evidence for `SYNC-009`.
 
+`observed` (2026-09-05): `SYNC-008` implemented the macOS CloudKit boundary
+in production code: the nested `app.posato.macos.sync` companion serves zone
+fetch and save, fixed anchor read and create-if-absent, immutable bundle
+save, and bounded change fetch from an opaque cursor, each between a binding
+preflight and postflight plus an account-change observation window. JVM
+`BootstrapCloudPort` and mailbox adapters map every outcome over the v1
+framing with per-operation payload bounds. The AC-06 physical round trip on
+one Mac passed: zone save and confirm, anchor create plus conflict on
+identical re-create, bundle save plus identical re-save, change fetch of that
+bundle, different-bytes rejection, then exact zone delete verified absent,
+leaving the private database as found. This proves the macOS leg only;
+cross-device exchange stays with `SYNC-009` and delayed delivery with
+`SYNC-010`.
+
 ## Lifecycle and user-visible status
 
 The common orchestration should coalesce overlapping start, resume, native

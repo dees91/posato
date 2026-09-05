@@ -1151,3 +1151,17 @@
   team parameter, 54 device tests passed with 0 skips, and the
   `AC-01`/`AC-02`/`AC-04` manual steps (Safari block, app shield,
   unselected controls, clear restores, revoke-then-clear) all pass.
+
+## [2026-09-05] implementation | SYNC-008 macOS CloudKit boundary
+
+- Added macOS CloudKit operations 5-11 to the nested `app.posato.macos.sync`
+  companion (zone, anchor, bundle, bounded change fetch) with binding
+  preflight/postflight and JVM `BootstrapCloudPort`/mailbox adapters.
+- AC-06 physical round trip passed on one Mac with the untracked development
+  profile: zone save and confirm, anchor create plus conflict on identical
+  re-create, bundle save plus identical re-save, one-bundle change fetch,
+  different-bytes rejection, exact zone delete verified absent.
+- Review follow-ons fixed: anchor-request slice copy, dropped zeroing
+  theater, `PageCursor` buffer copy, direction-keyed fetch frame cap,
+  `uuidTextBytes` constant. Proves the macOS leg only; cross-device exchange
+  stays with SYNC-009.

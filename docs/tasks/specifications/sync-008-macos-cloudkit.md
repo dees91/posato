@@ -87,8 +87,8 @@ outcomes so both platforms return identical results.
   operation 10; every other frame keeps the 65,584-byte request limit.
 - Run the `SYNC-006` binding preflight and postflight plus the
   `CKAccountChanged` observation window around every CloudKit call; a
-  mismatch after the call discards fetched records and cursor, confirms no
-  creation, and returns `unknown-outcome`. An unavailable, restricted, or
+  mismatch after the call returns no records or cursor and reports
+  `unknown-outcome`. An unavailable, restricted, or
   undetermined preflight value returns `retryable` without any CloudKit call,
   following the `SYNC-006` precedent. Zone absence, anchor absence, and
   account failure are separate outcomes and never collapse into each other.

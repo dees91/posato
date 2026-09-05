@@ -1,13 +1,13 @@
 # Execution: `SYNC-008`
 
 - **Brief:** [Exchange bounded encrypted bundles through the macOS CloudKit boundary](../specifications/sync-008-macos-cloudkit.md)
-- **Status:** `blocked`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** agent session `satin-comet`
 - **Reviewer:** independent agents (plan review, re-review, change review, F-01 recheck)
 - **Branch:** `feature/sync-008-macos-cloudkit`
 - **Worktree:** `~/Projects/Polyglot/posato-sync-008`
-- **Updated:** 2026-09-04
+- **Updated:** 2026-09-05
 
 ## Plan
 
@@ -54,6 +54,11 @@ not imported.
 - **Declined:** F-03 (postflight clears on value copies) — same shape as the
   accepted `SYNC-006` precedent, no leak either way.
 - **Advisory:** no YAGNI concern; op 11 justified by `AC-06`/`SYNC-009`.
+- **Post-review GitHub pass (six P2):** four accepted (drop `discardPage`
+  zeroing theater, copy the `PageCursor` buffer, key the relaxed
+  `FetchChanges` cap on response direction, add `uuidTextBytes`), two
+  declined (terminal `integrityFailure` for anomalous batches stays;
+  seven-path preflight/postflight helper deferred to `SYNC-009`/`SYNC-010`).
 
 ## Verification
 
