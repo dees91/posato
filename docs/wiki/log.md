@@ -1180,3 +1180,26 @@
   Restore response, and an Apply reconciled to `Idle` was reported as active.
   The effective-chain check now waits for configd propagation. IP literals
   stay relayed as unselected hosts and `AC-01` was amended to say so.
+
+## [2026-09-05] tooling | Align verify-posato and doctor with the wave-4 merges
+
+- Corrected the one recipe the merges made wrong: the iOS selection store now
+  lives in the App Group container `group.app.posato.ios.session` at
+  `ApplicationMappings/mappings-v1.json`, so capture and seeding use
+  `--domain-type appGroupDataContainer`. The private container is only a
+  migration source, adopted while the group file is absent or empty and
+  deleted afterwards, so a capture taken from it after any migrated launch
+  reads nothing.
+- `doctor` observes the three nested components of the staged package
+  separately (`desktop.helperBundle`, `desktop.proxyDaemon`,
+  `desktop.syncCompanion`). Packaging verified them only at build time, so an
+  incomplete stage previously reported `ok: true` and failed later inside a
+  recipe; presence is now a named check with one remedy.
+- The skill records what the driver must not fake: macOS browser-domain denial
+  (`MACOS-004`) and iOS restrictions (`IOS-001`) have no user path until
+  `SESSION-002`, their proof is the gated JVM harness and the device XCTest
+  run, and `PosatoMacOSHelper` is no longer picker-only. `observed`: a harness
+  or companion run leaves the root-owned proxy ownership record and the
+  workspace key in the synchronizable Keychain, an iCloud item rather than a
+  local one, which `reset -t desktop` does not clear and `doctor` does not
+  report.

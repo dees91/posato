@@ -157,7 +157,9 @@ private class DesktopDoctor(
             syncProfile = decoded,
             developmentTeam = context.configuration.value(ConfigurationKey.DEVELOPMENT_TEAM),
             staged = status.installed,
-            helperExecutablePresent = helperExecutable().exists(),
+            helperExecutablePresent = nested(HELPER_EXECUTABLE).exists(),
+            proxyDaemonPresent = nested(PROXY_DAEMON).exists() && nested(PROXY_DAEMON_PLIST).exists(),
+            syncCompanionPresent = nested(SYNC_COMPANION_EXECUTABLE).exists(),
             now = Instant.now(),
         )
     }
@@ -182,8 +184,8 @@ private class DesktopDoctor(
         return CertificateSubject.team(subject.stdout)
     }
 
-    private fun helperExecutable(): Path = context.layout.stagedDesktopApplication
-        .resolve("Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper")
+    /** Resolves one nested component of the staged package, whose layout `stageMacOsDevelopmentPackage` produces. */
+    private fun nested(relativePath: String): Path = context.layout.stagedDesktopApplication.resolve(relativePath)
 
     private fun permissionChecks(): List<DoctorCheck> {
         val permissions = try {
@@ -275,5 +277,13 @@ private class DesktopDoctor(
             handle = handle.parent().orElse(null)
         }
         return "the terminal application"
+    }
+
+    private companion object {
+        const val HELPER_EXECUTABLE = "Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper"
+        const val PROXY_DAEMON = "Contents/Helpers/PosatoMacOSHelper.app/Contents/Resources/PosatoProxySettingsDaemon"
+        const val PROXY_DAEMON_PLIST = "Contents/Helpers/PosatoMacOSHelper.app/Contents/Library/LaunchDaemons/" +
+            "app.posato.macos.proxy-settings.plist"
+        const val SYNC_COMPANION_EXECUTABLE = "Contents/Helpers/PosatoMacOSSync.app/Contents/MacOS/PosatoMacOSSync"
     }
 }
