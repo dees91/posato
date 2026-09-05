@@ -46,7 +46,7 @@ every known value redacted.
 | Command | Effect |
 | --- | --- |
 | `doctor` | Reports every provisioning condition as OK, MISSING, or UNKNOWN with one action that would clear it. Exits non-zero while an error-severity condition is unmet. |
-| `devices register` | Registers this Mac and every connected iPhone the account does not already hold. |
+| `devices register` | Registers this Mac and every **wired** iPhone the account does not already hold. |
 | `certificates ensure [--create]` | Confirms this Mac signs with a certificate the account also holds. With `--create`, generates a key pair, requests a certificate, and imports it. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes the development profile for one App ID current and installs it. |
 
@@ -164,6 +164,10 @@ The two reports answer different questions and share no check identifiers.
   to silence later prompts, because that needs the keychain password. Whether
   the import produced a usable identity is only knowable by asking the keychain
   again, which is what the command reports on.
-- **No connected iPhone** — reported as UNKNOWN, never as a failure. Only a
-  connected iPhone is registered, so a paired phone that is not in use does not
-  consume one of the team's limited device slots.
+- **No connected iPhone** — reported as UNKNOWN, never as a failure. "Connected"
+  means wired: a phone paired over the local network also reports a tunnel, and
+  that tunnel's state changes between readings, so selecting on it would
+  register a different set of devices depending on when the command ran.
+  Requiring the cable keeps the selection deterministic and stops a phone that
+  merely shares the network from consuming one of the team's limited device
+  slots. Connect the phone you develop on and rerun `devices register`.
