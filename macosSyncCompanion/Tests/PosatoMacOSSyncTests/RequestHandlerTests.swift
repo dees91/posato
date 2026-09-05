@@ -12,6 +12,7 @@ import Testing
       entitlements: FakeEntitlements(value: nil),
       accounts: accounts,
       keys: WorkspaceKeyStore(backend: backend),
+      clouds: CloudStore(backend: FakeCloudBackend()),
     ),
   )
 
@@ -28,6 +29,7 @@ import Testing
       entitlements: FakeEntitlements(value: nil),
       accounts: FakeAccounts(.available(syntheticBinding)),
       keys: WorkspaceKeyStore(backend: backend),
+      clouds: CloudStore(backend: FakeCloudBackend()),
     ),
   )
 
@@ -45,6 +47,7 @@ import Testing
       entitlements: FakeEntitlements(value: provisionedEntitlements()),
       accounts: FakeAccounts(.available(other)),
       keys: WorkspaceKeyStore(backend: backend),
+      clouds: CloudStore(backend: FakeCloudBackend()),
     ),
   )
 
@@ -62,6 +65,7 @@ import Testing
       entitlements: FakeEntitlements(value: provisionedEntitlements()),
       accounts: FakeAccounts(.unavailable),
       keys: WorkspaceKeyStore(backend: backend),
+      clouds: CloudStore(backend: FakeCloudBackend()),
     ),
   )
 
@@ -84,6 +88,7 @@ import Testing
       entitlements: FakeEntitlements(value: provisionedEntitlements()),
       accounts: FakeAccounts(.available(syntheticBinding), .available(other)),
       keys: store,
+      clouds: CloudStore(backend: FakeCloudBackend()),
     ),
   )
 
@@ -107,6 +112,7 @@ import Testing
       entitlements: FakeEntitlements(value: provisionedEntitlements()),
       accounts: accounts,
       keys: store,
+      clouds: CloudStore(backend: FakeCloudBackend()),
     ),
   )
 
@@ -124,6 +130,7 @@ import Testing
       entitlements: FakeEntitlements(value: provisionedEntitlements()),
       accounts: FakeAccounts(.available(syntheticBinding)),
       keys: WorkspaceKeyStore(backend: InMemoryKeychainBackend()),
+      clouds: CloudStore(backend: FakeCloudBackend()),
     ),
   )
 
@@ -162,6 +169,7 @@ import Testing
       entitlements: FakeEntitlements(value: provisionedEntitlements()),
       accounts: FakeAccounts(.available(syntheticBinding)),
       keys: store,
+      clouds: CloudStore(backend: FakeCloudBackend()),
       accountChangeName: changeName,
     ),
   )

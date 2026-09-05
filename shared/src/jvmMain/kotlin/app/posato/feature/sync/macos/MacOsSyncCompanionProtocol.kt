@@ -11,10 +11,17 @@ internal object MacOsSyncCompanionProtocol {
     const val BINDING_BYTES: Int = 32
     const val ACCOUNT_BYTES: Int = 36
     const val ITEM_BYTES: Int = 84
-    const val MAXIMUM_PAYLOAD_BYTES: Int = 65_536
+    const val MAXIMUM_PAYLOAD_BYTES: Int = 65_584
+    const val MAXIMUM_RESPONSE_PAYLOAD_BYTES: Int = 81_946
     const val MAXIMUM_FRAME_BYTES: Int = HEADER_BYTES + MAXIMUM_PAYLOAD_BYTES
+    const val MAXIMUM_RESPONSE_FRAME_BYTES: Int = HEADER_BYTES + MAXIMUM_RESPONSE_PAYLOAD_BYTES
     const val MAXIMUM_DEADLINE_MILLISECONDS: Int = 120_000
     const val KEYCHAIN_CAPABILITY: Long = 1L
+    const val CLOUDKIT_CAPABILITY: Long = 2L
+    const val ANCHOR_BYTES: Int = 48
+    const val BUNDLE_IDENTIFIER_BYTES: Int = 16
+    const val BUNDLE_BYTES: Int = 65_536
+    const val CURSOR_BYTES: Int = 16_384
     const val COMPANION_IDENTIFIER: String = "app.posato.macos.sync"
     const val APPLICATION_IDENTIFIER: String = "app.posato.macos"
     const val COMPANION_EXECUTABLE: String = "PosatoMacOSSync"
@@ -23,6 +30,13 @@ internal object MacOsSyncCompanionProtocol {
     const val OPERATION_READ_ITEM: Byte = 2
     const val OPERATION_CREATE_ITEM: Byte = 3
     const val OPERATION_DELETE_ITEM: Byte = 4
+    const val OPERATION_FETCH_ZONE: Byte = 5
+    const val OPERATION_SAVE_ZONE: Byte = 6
+    const val OPERATION_READ_ANCHOR: Byte = 7
+    const val OPERATION_CREATE_ANCHOR: Byte = 8
+    const val OPERATION_SAVE_BUNDLE: Byte = 9
+    const val OPERATION_FETCH_CHANGES: Byte = 10
+    const val OPERATION_DELETE_ZONE: Byte = 11
     const val OUTCOME_FOUND: Byte = 1
     const val OUTCOME_MISSING: Byte = 2
     const val OUTCOME_CREATED: Byte = 3
@@ -35,10 +49,12 @@ internal object MacOsSyncCompanionProtocol {
     const val OUTCOME_RESTRICTED: Byte = 10
     const val OUTCOME_UNDETERMINED: Byte = 11
     const val OUTCOME_DELETED: Byte = 12
+    const val OUTCOME_ALREADY_EXISTS: Byte = 13
+    const val OUTCOME_CONFLICT: Byte = 14
 
     fun encode(message: SyncCompanionMessage): ByteArray {
         require(message.requestIdentifier.size == IDENTIFIER_BYTES)
-        require(message.payload.size <= MAXIMUM_PAYLOAD_BYTES)
+        require(message.payload.size <= MAXIMUM_RESPONSE_PAYLOAD_BYTES)
         require(message.deadlineMilliseconds in 1..MAXIMUM_DEADLINE_MILLISECONDS)
         return ByteBuffer.allocate(HEADER_BYTES + message.payload.size)
             .order(ByteOrder.BIG_ENDIAN)
@@ -55,7 +71,7 @@ internal object MacOsSyncCompanionProtocol {
     }
 
     fun decode(encoded: ByteArray): SyncCompanionMessage {
-        require(encoded.size in HEADER_BYTES..MAXIMUM_FRAME_BYTES)
+        require(encoded.size in HEADER_BYTES..MAXIMUM_RESPONSE_FRAME_BYTES)
         val buffer = ByteBuffer.wrap(encoded).order(ByteOrder.BIG_ENDIAN)
         require(buffer.int == MAGIC)
         require(buffer.short == MAJOR_VERSION)
@@ -73,6 +89,9 @@ internal object MacOsSyncCompanionProtocol {
         }
         val payloadSize = buffer.int
         require(payloadSize >= 0 && payloadSize == buffer.remaining())
+        if (operation != SyncCompanionOperation.FetchChanges || outcome == null) {
+            require(payloadSize <= MAXIMUM_PAYLOAD_BYTES)
+        }
         val payload = ByteArray(payloadSize).also(buffer::get)
         return SyncCompanionMessage(
             operation = operation,
@@ -99,6 +118,40 @@ internal object MacOsSyncCompanionProtocol {
             binding + accountBytes + item
         }
     }
+
+    fun cloudPayload(binding: ByteArray): ByteArray {
+        require(binding.size == BINDING_BYTES)
+        return binding.copyOf()
+    }
+
+    fun anchorPayload(
+        binding: ByteArray,
+        anchor: ByteArray,
+    ): ByteArray {
+        require(binding.size == BINDING_BYTES)
+        require(anchor.size == ANCHOR_BYTES)
+        return binding + anchor
+    }
+
+    fun bundlePayload(
+        binding: ByteArray,
+        identifier: ByteArray,
+        bundle: ByteArray,
+    ): ByteArray {
+        require(binding.size == BINDING_BYTES)
+        require(identifier.size == BUNDLE_IDENTIFIER_BYTES)
+        require(bundle.size in 1..BUNDLE_BYTES)
+        return binding + identifier + bundle
+    }
+
+    fun cursorPayload(
+        binding: ByteArray,
+        cursor: ByteArray,
+    ): ByteArray {
+        require(binding.size == BINDING_BYTES)
+        require(cursor.size in 0..CURSOR_BYTES)
+        return binding + cursor
+    }
 }
 
 internal enum class SyncCompanionOperation(
@@ -108,6 +161,13 @@ internal enum class SyncCompanionOperation(
     ReadItem(MacOsSyncCompanionProtocol.OPERATION_READ_ITEM),
     CreateItem(MacOsSyncCompanionProtocol.OPERATION_CREATE_ITEM),
     DeleteItemAndVerifyAbsent(MacOsSyncCompanionProtocol.OPERATION_DELETE_ITEM),
+    FetchZone(MacOsSyncCompanionProtocol.OPERATION_FETCH_ZONE),
+    SaveZone(MacOsSyncCompanionProtocol.OPERATION_SAVE_ZONE),
+    ReadAnchor(MacOsSyncCompanionProtocol.OPERATION_READ_ANCHOR),
+    CreateAnchor(MacOsSyncCompanionProtocol.OPERATION_CREATE_ANCHOR),
+    SaveBundle(MacOsSyncCompanionProtocol.OPERATION_SAVE_BUNDLE),
+    FetchChanges(MacOsSyncCompanionProtocol.OPERATION_FETCH_CHANGES),
+    DeleteZoneAndVerifyAbsent(MacOsSyncCompanionProtocol.OPERATION_DELETE_ZONE),
     ;
 
     companion object {
@@ -132,6 +192,8 @@ internal enum class SyncCompanionOutcome(
     Restricted(MacOsSyncCompanionProtocol.OUTCOME_RESTRICTED),
     Undetermined(MacOsSyncCompanionProtocol.OUTCOME_UNDETERMINED),
     DeletedAndAbsent(MacOsSyncCompanionProtocol.OUTCOME_DELETED),
+    AlreadyExists(MacOsSyncCompanionProtocol.OUTCOME_ALREADY_EXISTS),
+    Conflict(MacOsSyncCompanionProtocol.OUTCOME_CONFLICT),
     ;
 
     companion object {

@@ -52,3 +52,39 @@ import Testing
     _ = try SyncCodec.decode(encoded)
   }
 }
+
+@Test func givenReservedOperationWhenDecodedThenItIsRejected() throws {
+  for code: UInt8 in [12, 13, 14, 15] {
+    var encoded = try SyncCodec.encode(testRequest(operation: .readItem))
+    encoded[6] = code
+    #expect(throws: SyncProtocolFailure.invalidOperation) {
+      try SyncCodec.decode(encoded)
+    }
+  }
+}
+
+@Test func givenCloudOperationsWhenRoundTrippedThenFieldsArePreserved() throws {
+  for operation: SyncOperation in [
+    .fetchZone, .saveZone, .readAnchor, .createAnchor, .saveBundle, .fetchChanges,
+    .deleteZoneAndVerifyAbsent,
+  ] {
+    let decoded = try SyncCodec.decode(try SyncCodec.encode(cloudRequest(operation: operation)))
+
+    #expect(decoded.operation == operation)
+  }
+}
+
+@Test func givenNewOutcomesWhenRoundTrippedThenTheyArePreserved() throws {
+  for outcome: SyncOutcome in [.alreadyExists, .conflict] {
+    let decoded = try SyncCodec.decode(
+      try SyncCodec.encode(testRequest(operation: .fetchZone).respond(outcome: outcome))
+    )
+
+    #expect(decoded.outcome == outcome)
+  }
+}
+
+@Test func givenRequestLimitWhenExceededThenItIsRejected() {
+  #expect(SyncLimits.maximumPayloadBytes == 65_584)
+  #expect(SyncLimits.maximumResponsePayloadBytes == 81_946)
+}

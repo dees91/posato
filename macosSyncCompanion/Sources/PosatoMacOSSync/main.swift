@@ -14,6 +14,7 @@ do {
     entitlements: SecTaskEntitlementReader(),
     accounts: CloudKitAccountBindingSource(),
     keys: WorkspaceKeyStore(),
+    clouds: CloudStore(backend: CKCloudDatabase()),
   )
   var response = RequestHandler.handle(request, dependencies: dependencies)
   defer { response.clear() }
