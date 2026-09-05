@@ -45,6 +45,7 @@ private fun prototypePreviewStates(): List<Pair<String, PrototypeState>> {
     val editor = reducePrototype(items, ItemAction.OpenDomain())
     val picker = reducePrototype(items, ItemAction.OpenApplications)
     val recovery = PrototypeFixtures.recovery(platform)
+    val longList = PrototypeFixtures.longList(platform)
 
     return listOf(
         "Welcome" to initial,
@@ -60,6 +61,10 @@ private fun prototypePreviewStates(): List<Pair<String, PrototypeState>> {
         "Empty application selection" to reducePrototype(picker, ItemAction.SaveApplications(persistentListOf())),
         "Paused items" to items,
         "Ready" to ready,
+        "Long list - ready" to longList,
+        "Long list - paused items" to reducePrototype(longList, ItemAction.OpenItems),
+        "Long list - review" to longList.copy(surface = PrototypeSurface.SessionReview, session = review.session),
+        "Long list - active" to longList.copy(surface = PrototypeSurface.Active, session = active.session),
         "Ready needing attention" to recovery,
         "Empty selection" to ready.copy(policy = initial.policy),
         "Duration" to setup,

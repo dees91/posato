@@ -3,6 +3,7 @@ package app.posato.prototype.model
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.persistentMapOf
+import kotlinx.collections.immutable.toPersistentList
 
 object PrototypeClock {
     const val NOW: String = "17:45"
@@ -29,6 +30,7 @@ object PrototypeFixtures {
     const val DOMAIN: String = "news.example"
     const val APPLICATION: String = "Example Social"
     const val APPLICATION_GROUP: String = "Social feeds"
+    private const val LONG_LIST_DOMAIN_COUNT: Int = 50
 
     fun applications(platform: PrototypePlatform): PersistentList<String> {
         return when (platform) {
@@ -54,6 +56,17 @@ object PrototypeFixtures {
             ),
             sync = PrototypeSync(PrototypeSyncStatus.Completed, lastCompletedOnDevice = "17:42"),
         ).withOutcome("Setup is complete on this device. No session is active.", OutcomeTone.Success)
+    }
+
+    fun longList(platform: PrototypePlatform): PrototypeState {
+        val initial = ready(platform)
+        val domains = List(LONG_LIST_DOMAIN_COUNT) { index ->
+            "reading-${(index + 1).toString().padStart(2, '0')}.example"
+        }.toPersistentList()
+
+        return initial.copy(policy = initial.policy.copy(domains = domains))
+            .withLocalApplications(applications(platform))
+            .withOutcome("Long-list study: 50 synthetic websites and four local applications.", OutcomeTone.Info)
     }
 
     fun active(platform: PrototypePlatform): PrototypeState {

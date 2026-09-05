@@ -136,12 +136,32 @@ native Apple accessibility conformance, or production design acceptance.
   retained its draft across overlay dismissal and the layout breakpoint. iPhone
   Simulator checks exercised dark appearance, stronger contrast, larger text,
   and workspace-key waiting in the native bottom sheet and full-screen content.
-- `observed`: 22 common test methods include table-driven boundary cases and
+- `observed`: 24 common test methods include table-driven boundary cases and
   both platform variants, replacing the old 24-case Node suite. Regression
   corrections cover guided progress through normal duration and application forms.
 - `inferred`: native rendering now provides a more useful inspection surface
   for later Compose work, without promoting the study's geometry or reducer into
   accepted product code.
+
+### Long-list usability probe
+
+- `user-confirmed`: add many synthetic website rows and evaluate whether Session
+  and Paused items remain useful with a long selection.
+- `observed`: the selectable long-list moment contains 50 websites and four
+  local applications without changing the default ready fixture. Native macOS
+  inspection places the session start action after the entire selection and
+  the application chooser after all website rows, several viewports below the
+  beginning. Rows remain readable and desktop scrolling reaches both actions.
+- `observed`: on iPhone Simulator, the session action was reachable by scrolling;
+  the Paused items probe exhausted the driver's ten-swipe budget around website
+  30, before reaching application management. This is a discoverability and
+  navigation-cost result: a continued native run reached the chooser and verified
+  opening and cancelling the application picker without changing the selection.
+- `hypothesis`: a short session selection summary with an adjacent primary action,
+  plus separate website/application management and website search, would scale
+  better than presenting every row before task actions.
+- `open`: choose and verify the long-list presentation before treating the
+  prototype's current list geometry as suitable for larger real selections.
 
 The [run instructions](../../../prototypes/mvp-interaction-flow/README.md) cover
 desktop packaging, Xcode launch, controls, and verification. The original HTML

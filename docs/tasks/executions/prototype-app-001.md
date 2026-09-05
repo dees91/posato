@@ -29,7 +29,7 @@
 ## Verification
 
 - `:prototypeApp:verifyPrototype` and root `quality` passed after implementation:
-  formatting, Detekt, 22 common test methods, both iOS frameworks, unsigned
+  formatting, Detekt, 24 common test methods, both iOS frameworks, unsigned
   Simulator host, and bundled desktop application.
 - Native macOS AX checks completed all four strict walkthroughs, including
   intentionally blocked steps, recovery, local sync failure/retry, and expiry.
@@ -43,6 +43,11 @@
   no production verification API or hidden model mutation hook was added.
 - Inspected native screenshots and accessibility trees; captures and run
   identifiers remain under ignored `build/verification/`.
+- Added the maintainer-requested 50-website/four-application fixture and four
+  preview cases. Native checks exposed costly scrolling to session actions and
+  application management; the underlying list layout remains unchanged.
+- Integrated current `main` without dropping either side's build targets or wiki
+  entry; focused independent integration review and the aggregate gate passed.
 
 ## Completed-change review
 
@@ -58,3 +63,5 @@
 - Prototype-only behavior does not establish production enforcement, synchronization, or accessibility conformance.
 - Runtime checks cover a local Apple Silicon Mac and iPhone Simulator, not a
   physical iPhone or the full supported OS and assistive-technology matrix.
+- Long-list UX remains a documented design follow-up: use a shorter session
+  summary and improve management navigation after maintainer acceptance.

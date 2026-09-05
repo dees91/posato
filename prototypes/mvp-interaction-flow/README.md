@@ -46,7 +46,7 @@ action is **Open prototype controls**. On Mac, **Command–Shift–P** toggles t
 panel. Use **Close controls**, Escape on Mac, or the sheet's dismissal gesture
 on iPhone to return to the app.
 
-- **Moments:** ready, first visit, active session, recovery, and waiting for a key.
+- **Moments:** ready, long list, first visit, active session, recovery, and waiting for a key.
 - **Walkthrough:** four strict guided scenarios, progress, and restart.
 - **Free play:** independently exercise an action; prerequisites may be prepared.
 - **State:** inspect workspace, permission, items, session, and local sync state.
@@ -62,6 +62,20 @@ resets it; the Mac and iPhone do not communicate. The demo clock is fixed at
 17:45. Durations accept whole minutes from 5 to 1,440, with 25/45/60 presets.
 Expiry, permission changes, key delivery, sync outcomes, and the paused message
 are explicit mock events, not background platform work.
+
+### Long-list study
+
+Choose **Long list · 50 websites** to load 50 synthetic domains and four local
+applications. Use Session and Paused items normally; choosing **Ready** restores
+the small fixture. Compact and expanded previews also cover the long-list ready,
+review, active, and management surfaces.
+
+The fixture intentionally exposes the current layout's scaling limit: session
+actions follow the entire selection, and application management follows all
+website rows. These controls remain reachable by scrolling, but become costly
+to find. The study does not yet add search, compact rows, section switching, or
+a shortened session summary; those are design follow-ups, not hidden changes
+to the current layout.
 
 ## Structure and checks
 

@@ -92,6 +92,7 @@ enum class PrototypeMoment(
     val label: String
 ) {
     Ready("Ready"),
+    LongList("Long list · 50 websites"),
     FirstVisit("First visit"),
     Active("Active"),
     Recovery("Recovery"),
@@ -100,6 +101,7 @@ enum class PrototypeMoment(
     fun state(platform: PrototypePlatform): PrototypeState {
         return when (this) {
             Ready -> PrototypeFixtures.ready(platform)
+            LongList -> PrototypeFixtures.longList(platform)
             FirstVisit -> PrototypeState(platform)
             Active -> PrototypeFixtures.active(platform)
             Recovery -> PrototypeFixtures.recovery(platform).copy(surface = PrototypeSurface.Recovery)

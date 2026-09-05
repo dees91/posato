@@ -1245,3 +1245,5 @@
   manual clock; added hidden native inspection controls and common regression
   coverage. Recorded [native evidence and limits](sources/mvp-interaction-prototype.md#native-interaction-prototype)
   without changing production design, platform services, or architecture.
+- A 50-website native probe exposed the current lists' scrolling cost; retained
+  the selectable fixture and recorded the long-list design question explicitly.
