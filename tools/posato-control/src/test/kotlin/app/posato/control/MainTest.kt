@@ -49,6 +49,59 @@ class MainTest {
     }
 
     @Test
+    fun `every desktop element command accepts the process selector`() {
+        val commands = listOf("snapshot", "find", "tap", "type", "press", "wait", "screenshot")
+        commands.forEach { command ->
+            val (exitCode, output) = capture(command, "-t", "desktop", "--process", "PosatoMacOSHelper", "--help")
+            assertEquals(0, exitCode, command)
+            assertTrue(output.contains("--process"), command)
+        }
+    }
+
+    @Test
+    fun `the process selector is refused on an iOS target`() {
+        val (exitCode, output) = capture("snapshot", "-t", "sim", "--process", "PosatoMacOSHelper")
+        assertEquals(6, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertEquals("UNSUPPORTED_ON_TARGET", envelope.error?.code)
+        assertTrue(envelope.error?.message.orEmpty().contains("--process"), envelope.error?.message)
+    }
+
+    @Test
+    fun `a scenario run does not accept the process selector`() {
+        val (exitCode, output) = capture("run", "-t", "desktop", "--scenario", "-", "--process", "PosatoMacOSHelper")
+        assertEquals(2, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertEquals("USAGE", envelope.error?.code)
+    }
+
+    @Test
+    fun `an element command without a query or a process selector still needs a query`() {
+        val (exitCode, output) = capture("type", "-t", "desktop", "--input", "text")
+        assertEquals(2, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertEquals("USAGE", envelope.error?.code)
+        assertTrue(envelope.error?.message.orEmpty().contains("query"), envelope.error?.message)
+    }
+
+    @Test
+    fun `typing into the focused element is refused on an iOS target`() {
+        val (exitCode, output) = capture("type", "-t", "sim", "--input", "text", "--process", "PosatoMacOSHelper")
+        assertEquals(6, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertEquals("UNSUPPORTED_ON_TARGET", envelope.error?.code)
+    }
+
+    @Test
+    fun `a queryless process wait refuses a state that has no window meaning`() {
+        val (exitCode, output) = capture("wait", "-t", "desktop", "--process", "PosatoMacOSHelper", "--for", "settled")
+        assertEquals(2, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertEquals("USAGE", envelope.error?.code)
+        assertTrue(envelope.error?.message.orEmpty().contains("exists or absent"), envelope.error?.message)
+    }
+
+    @Test
     fun `help still exits with zero`() {
         val (exitCode, output) = capture("--help")
         assertEquals(0, exitCode)

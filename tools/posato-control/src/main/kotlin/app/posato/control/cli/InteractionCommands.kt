@@ -9,6 +9,7 @@ import app.posato.control.model.Query
 import app.posato.control.model.RunResult
 import app.posato.control.model.Scenario
 import app.posato.control.model.SnapshotNode
+import app.posato.control.model.States
 import app.posato.control.model.Step
 import app.posato.control.scenario.QueryMatcher
 import com.github.ajalt.clikt.parameters.groups.provideDelegate
@@ -23,6 +24,8 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import java.nio.file.Files
 import java.nio.file.Path
 
@@ -47,20 +50,22 @@ private fun failIfStepFailed(result: RunResult): RunResult {
 
 class SnapshotCommand : ControlCommand("snapshot", "Dump the accessibility tree as JSON (or an indented outline with --format text).") {
     private val query by QueryOptions()
+    private val process by ProcessOptions()
     private val maxDepth by option("--max-depth", help = "Limit the tree depth.").int()
     private val format by option("--format", help = "json or text").default("json")
 
     override fun execute(session: Session): JsonElement {
-        val node = session.backend().snapshot(query.toQuery(), maxDepth)
+        val node = session.backend(process.selector()).snapshot(query.toQuery(), maxDepth)
         return if (format == "text") JsonPrimitive(node.outline()) else ControlJson.pretty.encodeToJsonElement(SnapshotNode.serializer(), node)
     }
 }
 
 class FindCommand : ControlCommand("find", "Return every element matching the query without touching the application.") {
     private val query by QueryOptions()
+    private val process by ProcessOptions()
 
     override fun execute(session: Session): JsonElement {
-        val root = session.backend().snapshot(null, null)
+        val root = session.backend(process.selector()).snapshot(null, null)
         val matches = QueryMatcher.findAll(root, requireQuery(query.toQuery(), "find")).map { it.copy(children = emptyList()) }
         return ControlJson.pretty.encodeToJsonElement(ListSerializer(SnapshotNode.serializer()), matches)
     }
@@ -68,9 +73,13 @@ class FindCommand : ControlCommand("find", "Return every element matching the qu
 
 class TapCommand : ControlCommand("tap", "Press a button or tap an element matching the query.") {
     private val query by QueryOptions()
+    private val process by ProcessOptions()
 
     override fun execute(session: Session): JsonElement = runResultElement(
-        failIfStepFailed(session.backend().runScenario(singleStep(Step(action = Actions.TAP, query = requireQuery(query.toQuery(), "tap"))))),
+        failIfStepFailed(
+            session.backend(process.selector())
+                .runScenario(singleStep(Step(action = Actions.TAP, query = requireQuery(query.toQuery(), "tap")))),
+        ),
     )
 }
 
@@ -79,10 +88,18 @@ class TypeCommand : ControlCommand("type", "Type text into the element matching 
     private val text by option("--text-input", "--input", help = "Text to type.").required()
     private val clear by option("--clear", help = "Clear the field first.").flag()
     private val submit by option("--submit", help = "Press return after typing.").flag()
+    private val process by ProcessOptions()
 
     override fun execute(session: Session): JsonElement {
-        val step = Step(action = Actions.TYPE, query = requireQuery(query.toQuery(), "type"), text = text, clear = clear, submit = submit)
-        return runResultElement(failIfStepFailed(session.backend().runScenario(singleStep(step))))
+        val backend = session.backend(process.selector())
+        val target = query.toQuery()
+        // Addressing a process without a query types into whatever it has focused, the only path into a panel with no tree.
+        if (target == null && process.selector() != null) {
+            backend.typeFocused(text, clear, submit)
+            return buildJsonObject { put("ok", true) }
+        }
+        val step = Step(action = Actions.TYPE, query = requireQuery(target, "type"), text = text, clear = clear, submit = submit)
+        return runResultElement(failIfStepFailed(backend.runScenario(singleStep(step))))
     }
 }
 
@@ -90,19 +107,44 @@ class PressCommand :
     ControlCommand("press", "Press a key: return, escape, tab, delete, space, arrows, letters (desktop with --modifiers), or home (iOS).") {
     private val key by option("--key", help = "Key name.").required()
     private val modifiers by option("--modifiers", help = "Comma-separated: cmd, shift, alt, ctrl (desktop only).").split(",").default(emptyList())
+    private val process by ProcessOptions()
 
-    override fun execute(session: Session): JsonElement =
-        runResultElement(failIfStepFailed(session.backend().runScenario(singleStep(Step(action = Actions.PRESS, key = key, modifiers = modifiers)))))
+    override fun execute(session: Session): JsonElement = runResultElement(
+        failIfStepFailed(
+            session.backend(process.selector())
+                .runScenario(singleStep(Step(action = Actions.PRESS, key = key, modifiers = modifiers))),
+        ),
+    )
 }
 
 class WaitCommand : ControlCommand("wait", "Wait until an element exists, is absent, enabled, disabled, or until the UI has settled.") {
     private val query by QueryOptions()
     private val state by option("--for", help = "exists, absent, enabled, disabled, or settled.").required()
     private val timeout by option("--timeout-seconds", help = "Give up after this many seconds.").double().default(DEFAULT_WAIT_SECONDS)
+    private val process by ProcessOptions()
 
     override fun execute(session: Session): JsonElement {
-        val step = Step(action = Actions.WAIT_FOR, state = state, query = query.toQuery(), timeoutSeconds = timeout)
-        return runResultElement(failIfStepFailed(session.backend().runScenario(singleStep(step))))
+        val backend = session.backend(process.selector())
+        val target = query.toQuery()
+        // Addressing a process without a query waits on its window, which needs no element tree. Only presence and
+        // absence have a meaning there; the tree-based states would silently answer from an empty query instead.
+        if (target == null && process.selector() != null) {
+            val present = when (state) {
+                States.EXISTS -> true
+
+                States.ABSENT -> false
+
+                else -> throw ControlException(
+                    ErrorCode.USAGE,
+                    "`--process` without an element query waits on that process's window, so --for accepts only exists or absent.",
+                    "Add an element query, or use --for exists or --for absent.",
+                )
+            }
+            backend.awaitWindow(timeout, present)
+            return buildJsonObject { put("ok", true) }
+        }
+        val step = Step(action = Actions.WAIT_FOR, state = state, query = target, timeoutSeconds = timeout)
+        return runResultElement(failIfStepFailed(backend.runScenario(singleStep(step))))
     }
 
     private companion object {

@@ -151,7 +151,18 @@ enum Bridge {
     )
   }
 
-  static func snapshot(pid: pid_t, maxDepth: Int) -> Node {
+  static func requireInspectable(pid: pid_t) throws {
+    guard inspectable(pid: pid) else {
+      throw BridgeError(
+        code: "PROCESS_NOT_INSPECTABLE",
+        message:
+          "Process \(pid) exposes no accessibility server, so it has no element tree; "
+          + "press, type and screenshot still reach it while it is frontmost.")
+    }
+  }
+
+  static func snapshot(pid: pid_t, maxDepth: Int) throws -> Node {
+    try requireInspectable(pid: pid)
     let application = AXUIElementCreateApplication(pid)
     let windows = children(application).filter { string($0, kAXRoleAttribute) == kAXWindowRole }
     let windowNodes = windows.enumerated().map { index, window in
@@ -172,6 +183,7 @@ enum Bridge {
   }
 
   static func resolve(pid: pid_t, path: String) throws -> AXUIElement {
+    try requireInspectable(pid: pid)
     let application = AXUIElementCreateApplication(pid)
     let windows = children(application).filter { string($0, kAXRoleAttribute) == kAXWindowRole }
     let indexes = path.split(separator: "/").compactMap { Int($0) }
@@ -219,28 +231,141 @@ enum Bridge {
     }
   }
 
-  static func postKey(_ code: CGKeyCode, flags: CGEventFlags, pid: pid_t) {
-    guard let down = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true),
-      let up = CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: false)
+  /// True when the process answers accessibility requests at all. A helper that only runs a modal panel never
+  /// starts an NSApplication event loop, so it owns a real window while exposing no accessibility server.
+  static func inspectable(pid: pid_t) -> Bool {
+    let application = AXUIElementCreateApplication(pid)
+    AXUIElementSetMessagingTimeout(application, 2)
+    var value: AnyObject?
+    return AXUIElementCopyAttributeValue(application, kAXRoleAttribute as CFString, &value)
+      == .success
+  }
+
+  static let activationAttempts = 20
+  static let activationInterval: TimeInterval = 0.1
+
+  static func frontmostPid() -> pid_t? {
+    NSWorkspace.shared.frontmostApplication?.processIdentifier
+  }
+
+  /// Hands the front to the addressed process. A plain command-line tool cannot do that until it has become an
+  /// application itself, so the bridge registers as an accessory app first and then yields activation.
+  static func activate(pid: pid_t) {
+    guard let target = NSRunningApplication(processIdentifier: pid) else { return }
+    let application = NSApplication.shared
+    application.setActivationPolicy(.accessory)
+    application.activate()
+    RunLoop.current.run(until: Date().addingTimeInterval(activationInterval))
+    target.activate(options: [.activateAllWindows])
+    for _ in 0..<activationAttempts where frontmostPid() != pid {
+      RunLoop.current.run(until: Date().addingTimeInterval(activationInterval))
+    }
+  }
+
+  /// How a keyboard event reaches the addressed process.
+  enum Delivery {
+    /// The process answers accessibility requests, so events are posted straight to it. This is the default path.
+    case process(pid_t)
+    /// The process exposes no accessibility server, so events go to the session tap while it is frontmost.
+    case session
+  }
+
+  /// A session-tap event needs a real event source; a per-process post works with none, and keeping that difference
+  /// preserves the existing behavior of every command that addresses the tracked application.
+  static func source(for delivery: Delivery) -> CGEventSource? {
+    switch delivery {
+    case .process: return nil
+    case .session: return CGEventSource(stateID: .hidSystemState)
+    }
+  }
+
+  /// A process with no accessibility server cannot receive a per-process post, so its events go to the session tap
+  /// instead — but only while it is frontmost, so a keystroke is never delivered to a window the caller did not
+  /// address.
+  /// `sessionFallback` is on only when the caller addressed a process explicitly. Without it every command keeps the
+  /// per-process post it has always used, so no default path can start stealing the front or posting globally.
+  static func route(pid: pid_t, sessionFallback: Bool) throws -> Delivery {
+    if !sessionFallback || inspectable(pid: pid) { return .process(pid) }
+    guard !windows(pid: pid).isEmpty else {
+      throw BridgeError(
+        code: "PROCESS_NOT_ALLOWED",
+        message:
+          "Process \(pid) exposes no accessibility server and owns no visible window, so no event can reach it."
+      )
+    }
+    // The addressed process was named explicitly, so bringing its own window forward is what the caller asked for.
+    // Activation must happen inside this process and hold until the events are posted: a helper activated by a tool
+    // that then exits loses the front again immediately.
+    if frontmostPid() != pid { activate(pid: pid) }
+    try requireFrontmost(pid: pid)
+    return .session
+  }
+
+  static func requireFrontmost(pid: pid_t) throws {
+    let frontmost = frontmostPid()
+    guard frontmost == pid else {
+      throw BridgeError(
+        code: "PROCESS_NOT_ALLOWED",
+        message:
+          "Process \(pid) exposes no accessibility server and is not frontmost, so its keyboard events cannot be "
+          + "delivered; frontmost is \(frontmost.map(String.init) ?? "none").")
+    }
+  }
+
+  static func post(_ events: [CGEvent], through delivery: Delivery) {
+    for event in events {
+      switch delivery {
+      case .process(let pid): event.postToPid(pid)
+      case .session: event.post(tap: .cgSessionEventTap)
+      }
+    }
+  }
+
+  static func postKey(
+    _ code: CGKeyCode, flags: CGEventFlags, pid: pid_t, sessionFallback: Bool = false
+  ) throws {
+    let delivery = try route(pid: pid, sessionFallback: sessionFallback)
+    let eventSource = source(for: delivery)
+    guard let down = CGEvent(keyboardEventSource: eventSource, virtualKey: code, keyDown: true),
+      let up = CGEvent(keyboardEventSource: eventSource, virtualKey: code, keyDown: false)
     else { return }
     down.flags = flags
     up.flags = flags
-    down.postToPid(pid)
-    up.postToPid(pid)
+    post([down, up], through: delivery)
     usleep(20_000)
   }
 
-  static func typeText(_ text: String, pid: pid_t) {
+  static func typeText(_ text: String, pid: pid_t, sessionFallback: Bool = false) throws {
+    let delivery = try route(pid: pid, sessionFallback: sessionFallback)
+    let eventSource = source(for: delivery)
     for scalar in text.unicodeScalars {
+      // Session-tap events are global, so the front is re-checked before every character. Losing it mid-string
+      // aborts with a refusal instead of typing the rest of the text into whatever took over.
+      if case .session = delivery { try requireFrontmost(pid: pid) }
       var units = Array(String(scalar).utf16)
-      guard let down = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true),
-        let up = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false)
+      guard let down = CGEvent(keyboardEventSource: eventSource, virtualKey: 0, keyDown: true),
+        let up = CGEvent(keyboardEventSource: eventSource, virtualKey: 0, keyDown: false)
       else { continue }
       down.keyboardSetUnicodeString(stringLength: units.count, unicodeString: &units)
       up.keyboardSetUnicodeString(stringLength: units.count, unicodeString: &units)
-      down.postToPid(pid)
-      up.postToPid(pid)
+      post([down, up], through: delivery)
       usleep(8_000)
+    }
+  }
+
+  /// Types into whatever the addressed process has focused, without resolving an element. This is the only way to
+  /// reach a window that exposes no accessibility tree, such as the helper's open panel.
+  static func typeFocused(_ text: String, clear: Bool, submit: Bool, pid: pid_t) throws {
+    if clear {
+      try postKey(keyCodes["a"]!, flags: .maskCommand, pid: pid, sessionFallback: true)
+      try postKey(keyCodes["delete"]!, flags: [], pid: pid, sessionFallback: true)
+      usleep(100_000)
+    }
+    try typeText(text, pid: pid, sessionFallback: true)
+    usleep(200_000)
+    if submit {
+      try postKey(keyCodes["return"]!, flags: [], pid: pid, sessionFallback: true)
+      usleep(100_000)
     }
   }
 
@@ -258,11 +383,12 @@ enum Bridge {
     return flags
   }
 
-  static func key(named name: String, modifiers: [String], pid: pid_t) throws {
+  static func key(named name: String, modifiers: [String], pid: pid_t, sessionFallback: Bool) throws
+  {
     guard let code = keyCodes[name.lowercased()] else {
       throw BridgeError(code: "SCENARIO_INVALID", message: "Unknown key '\(name)'.")
     }
-    postKey(code, flags: flags(from: modifiers), pid: pid)
+    try postKey(code, flags: flags(from: modifiers), pid: pid, sessionFallback: sessionFallback)
   }
 
   static func type(into element: AXUIElement, text: String, clear: Bool, submit: Bool, pid: pid_t)
@@ -271,14 +397,14 @@ enum Bridge {
     try press(element)
     usleep(250_000)
     if clear {
-      postKey(keyCodes["a"]!, flags: .maskCommand, pid: pid)
-      postKey(keyCodes["delete"]!, flags: [], pid: pid)
+      try postKey(keyCodes["a"]!, flags: .maskCommand, pid: pid)
+      try postKey(keyCodes["delete"]!, flags: [], pid: pid)
       usleep(100_000)
     }
-    typeText(text, pid: pid)
+    try typeText(text, pid: pid)
     usleep(200_000)
     if submit {
-      postKey(keyCodes["return"]!, flags: [], pid: pid)
+      try postKey(keyCodes["return"]!, flags: [], pid: pid)
       usleep(100_000)
     }
     return string(element, kAXValueAttribute)
@@ -350,7 +476,7 @@ do {
     try requireAccessibilityTrust()
     let pid = try pidArgument(2)
     let maxDepth = CommandLine.arguments.count > 3 ? Int(CommandLine.arguments[3]) ?? 64 : 64
-    emit(Bridge.snapshot(pid: pid, maxDepth: maxDepth))
+    emit(try Bridge.snapshot(pid: pid, maxDepth: maxDepth))
   case "press":
     try requireAccessibilityTrust()
     let pid = try pidArgument(2)
@@ -369,13 +495,28 @@ do {
     let submit = (try? argument(6, "submit")) == "1"
     let value = try Bridge.type(into: element, text: text, clear: clear, submit: submit, pid: pid)
     emit(["ok": "true", "value": value ?? ""])
+  case "type-focused":
+    try requireAccessibilityTrust()
+    let pid = try pidArgument(2)
+    guard let data = Data(base64Encoded: try argument(3, "textBase64")),
+      let text = String(data: data, encoding: .utf8)
+    else {
+      throw BridgeError(code: "USAGE", message: "The text must be base64-encoded UTF-8.")
+    }
+    let clear = (try? argument(4, "clear")) == "1"
+    let submit = (try? argument(5, "submit")) == "1"
+    try Bridge.typeFocused(text, clear: clear, submit: submit, pid: pid)
+    emit(["ok": true])
   case "key":
     try requireAccessibilityTrust()
     let pid = try pidArgument(2)
     let modifiers =
       CommandLine.arguments.count > 4
       ? CommandLine.arguments[4].split(separator: ",").map(String.init) : []
-    try Bridge.key(named: try argument(3, "key"), modifiers: modifiers, pid: pid)
+    let sessionFallback = (try? argument(5, "sessionFallback")) == "1"
+    try Bridge.key(
+      named: try argument(3, "key"), modifiers: modifiers, pid: pid,
+      sessionFallback: sessionFallback)
     emit(["ok": true])
   default:
     throw BridgeError(code: "USAGE", message: "Unknown command '\(command)'.")
