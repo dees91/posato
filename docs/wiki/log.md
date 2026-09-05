@@ -1214,3 +1214,12 @@
   [prototype source](sources/mvp-interaction-prototype.md) with observed
   behavior and explicit hypothesis boundaries. The refinement adds no
   production UI or accepted design contract.
+
+## [2026-09-05] design | Add a Compose companion to the interaction study
+
+- Added an isolated reusable component library and native desktop catalog for
+  the refined prototype, with a complete HTML-family mapping, common previews,
+  and light/dark, contrast, and enlarged-text inspection. Recorded the
+  [companion's evidence boundaries](sources/mvp-interaction-prototype.md#compose-component-companion):
+  it has no production application consumers and does not implement product
+  services or promote prototype geometry into the accepted design contract.

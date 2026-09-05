@@ -5,6 +5,7 @@
 - **Original evidence revision:**
   `a081d4278cf8517c46b4322ed3c098462f153570`
 - **Artifact:** `prototypes/mvp-interaction-flow/index.html`
+- **Compose companion:** `prototypes/mvp-interaction-flow/compose/`
 - **Source type:** disposable interactive UX prototype
 - **Reviewed:** 2026-09-05
 - **Authority:** evidence only; not a product, design, architecture, or
@@ -88,6 +89,32 @@ These are `observed` prototype results, not production acceptance evidence.
 The single HTML artifact still opens directly in a browser. It adds no build
 step, remote assets, persistence, network requests, or native application
 implementation. Browser evidence remains subject to the limits below.
+
+## Compose component companion
+
+- `user-confirmed`: after committing the HTML refinement, provide a complete
+  reusable design system for the prototype as Compose functions.
+- `observed`: the isolated `:prototypeDesignSystem` module provides Material 3
+  theme tokens, identity, controls, fields, lists, notices, session patterns,
+  adaptive navigation, and separately packaged prototype inspection chrome.
+  The [component map](../../../prototypes/mvp-interaction-flow/compose/README.md)
+  connects each reusable HTML family to a composable or slot-based composition.
+- `observed`: the common-code catalog has six sections and two preview sizes
+  sharing eighteen deterministic appearance/section cases. JVM, iOS device,
+  iOS simulator, and preview-only Android source sets compile using the
+  repository's pinned toolchain and quality gates.
+- `observed`: the native desktop catalog supports editable text, synthetic
+  callback feedback, light/dark and stronger-contrast variants, and enlarged
+  text. Manual checks exercised compact and expanded layouts and preservation
+  of the field value and error state when crossing the layout breakpoint.
+- `inferred`: keeping this companion outside production modules permits
+  inspection and reuse without treating the HTML study as accepted production
+  geometry. No production application depends on the new module.
+
+This companion is a presentation library, not a native port of the HTML reducer
+or an implementation of blocking, storage, permissions, or iCloud behavior.
+Compilation and desktop catalog checks do not establish iOS runtime behavior,
+native Apple accessibility conformance, or production design acceptance.
 
 ## Evidence limits
 
