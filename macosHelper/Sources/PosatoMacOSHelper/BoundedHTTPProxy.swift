@@ -10,12 +10,13 @@ enum BoundedHTTPProxyError: Error, Equatable, Sendable {
 final class BoundedHTTPProxy: @unchecked Sendable {
   static let maximumTrackedConnections = 128
   static let idleConnectionTimeout: TimeInterval = 30
-  static let headerTimeout: TimeInterval = 5
+  static let defaultHeaderTimeout: TimeInterval = 5
   static let receiveChunkLength = 16_384
 
   let selectedHosts: Set<String>
   let sessionEndEpochMilliseconds: UInt64?
   let resolveUpstream: (String, UInt16) -> (String, UInt16)
+  let headerTimeout: TimeInterval
   let blockedRequestHandlerLock = NSLock()
   let queue = DispatchQueue(label: "app.posato.macos.helper.proxy")
   let startupCondition = NSCondition()
@@ -33,11 +34,13 @@ final class BoundedHTTPProxy: @unchecked Sendable {
     resolveUpstream: @escaping (String, UInt16) -> (String, UInt16) = { host, port in
       (host, port)
     },
+    headerTimeout: TimeInterval = BoundedHTTPProxy.defaultHeaderTimeout,
     blockedRequestHandler: (@Sendable () -> Void)? = nil
   ) {
     self.selectedHosts = selectedHosts
     self.sessionEndEpochMilliseconds = sessionEndEpochMilliseconds
     self.resolveUpstream = resolveUpstream
+    self.headerTimeout = headerTimeout
     self.blockedRequestHandler = blockedRequestHandler
   }
 
@@ -92,7 +95,7 @@ final class BoundedHTTPProxy: @unchecked Sendable {
     }
     let identifier = ObjectIdentifier(connection)
     connections[identifier] = connection
-    scheduleTimeout(after: Self.headerTimeout, for: [connection])
+    scheduleTimeout(after: headerTimeout, for: [connection])
     connection.stateUpdateHandler = { [weak self, weak connection] state in
       guard let self, let connection else {
         return

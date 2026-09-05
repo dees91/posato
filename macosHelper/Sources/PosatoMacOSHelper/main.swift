@@ -142,10 +142,21 @@ do {
         request: request,
         receivedAt: receivedAt,
         service: service,
-        existing: domainSession
+        existing: domainSession,
+        applyOwned: activeRequest != nil
       )
       domainSession = handled.session
       try writeFrame(WireCodec.encode(handled.response))
+      continue
+    }
+    if request.operation == .apply, domainSession == nil {
+      let refused = try localResponse(
+        request: request,
+        payload: BrowserDomainRequestHandler.applyWithoutSessionResponse(
+          serviceState: serviceState(service.status)
+        )
+      )
+      try writeFrame(WireCodec.encode(refused))
       continue
     }
     if request.operation == .selectApplications {
@@ -361,15 +372,10 @@ do {
   domainSession = nil
   if let request = activeRequest, let daemon {
     leaseRenewer?.cancelAndWait()
-    let restore = try WireMessage(
-      kind: .request,
-      operation: .restore,
-      sequence: request.sequence,
-      deadlineMilliseconds: 5_000,
-      connectionIdentifier: request.connectionIdentifier,
-      sessionIdentifier: request.sessionIdentifier,
-      requestIdentifier: try randomIdentifier(),
-      payload: Data()
+    let restore = try restoreMessage(
+      after: request,
+      deadlineMilliseconds: WireLimits.fallbackRestoreDeadlineMilliseconds,
+      requestIdentifier: try randomIdentifier()
     )
     _ = try? daemon.perform(restore)
   }
@@ -378,15 +384,10 @@ do {
   domainSession = nil
   if let request = activeRequest, let daemon {
     leaseRenewer?.cancelAndWait()
-    let restore = try? WireMessage(
-      kind: .request,
-      operation: .restore,
-      sequence: request.sequence,
-      deadlineMilliseconds: 5_000,
-      connectionIdentifier: request.connectionIdentifier,
-      sessionIdentifier: request.sessionIdentifier,
-      requestIdentifier: Data(repeating: 0, count: WireLimits.identifierBytes),
-      payload: Data()
+    let restore = try? restoreMessage(
+      after: request,
+      deadlineMilliseconds: WireLimits.fallbackRestoreDeadlineMilliseconds,
+      requestIdentifier: Data(repeating: 0, count: WireLimits.identifierBytes)
     )
     if let restore {
       _ = try? daemon.perform(restore)

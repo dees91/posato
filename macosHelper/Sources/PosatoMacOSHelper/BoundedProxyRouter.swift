@@ -30,15 +30,6 @@ extension BoundedProxyRequestParser {
     return fixedLengthFraming(parsed: parsed, contentLengths: contentLengths)
   }
 
-  static func expectsContinue(requestData: Data) -> Bool {
-    guard let parsed = parseHeader(requestData) else {
-      return false
-    }
-    let expectations = values(for: "Expect", in: parsed.headers)
-    return expectations.count == 1
-      && expectations[0].caseInsensitiveCompare("100-continue") == .orderedSame
-  }
-
   static func route(
     requestData: Data,
     selectedHosts: Set<String>,

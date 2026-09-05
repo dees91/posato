@@ -35,3 +35,21 @@ import Testing
   #expect(response.ownershipPhase == .recoveryRequired)
   #expect(response.actionRequired == .manualRecovery)
 }
+
+@Test func givenOwnedApplyWhenConfigureArrivesThenItIsRefusedAsInvalidInputWithoutAPort() throws {
+  let response = try BrowserDomainRequestHandler.configureRefusedWhileAppliedResponse(
+    serviceState: .ready)
+
+  #expect(response.port == 0)
+  #expect(response.outcome.outcome == .failure)
+  #expect(response.outcome.ownershipPhase == .applied)
+  #expect(response.outcome.failure == .invalidInput)
+}
+
+@Test func givenNoSessionWhenApplyArrivesThenItIsRefusedBeforeAuthorization() {
+  let response = BrowserDomainRequestHandler.applyWithoutSessionResponse(serviceState: .ready)
+
+  #expect(response.outcome == .failure)
+  #expect(response.ownershipPhase == .idle)
+  #expect(response.failure == .invalidInput)
+}

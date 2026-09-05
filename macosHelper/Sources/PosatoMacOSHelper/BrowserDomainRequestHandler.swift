@@ -3,13 +3,28 @@ import PosatoMacOSServiceCore
 import ServiceManagement
 
 enum BrowserDomainRequestHandler {
+  /// Configure replaces the domain session. While an Apply is owned the system proxy points at
+  /// the live listener, so the request is refused without touching that session; otherwise the
+  /// replacement listener starts first and the previous one stops only afterwards, so no
+  /// applied port is ever left without a listener.
   static func handleConfigure(
     request: WireMessage,
     receivedAt: DispatchTime,
     service: SMAppService,
-    existing: BrowserDomainSession?
+    existing: BrowserDomainSession?,
+    applyOwned: Bool
   ) throws -> (response: WireMessage, session: BrowserDomainSession?) {
-    existing?.stop()
+    if applyOwned {
+      let refused = try configureResponseMessage(
+        request: request,
+        receivedAt: receivedAt,
+        response: configureRefusedWhileAppliedResponse(
+          serviceState: serviceState(service.status)
+        )
+      )
+      return (refused, existing)
+    }
+    defer { existing?.stop() }
     let configureResponse: BrowserDomainConfigureResponse
     var session: BrowserDomainSession?
     do {
@@ -40,7 +55,47 @@ enum BrowserDomainRequestHandler {
         port: 0
       )
     }
-    let response = try WireMessage(
+    let response = try configureResponseMessage(
+      request: request,
+      receivedAt: receivedAt,
+      response: configureResponse
+    )
+    return (response, session)
+  }
+
+  /// A configure that arrives while this helper owns an applied mutation is a caller error, not
+  /// an environment change; the applied session stays untouched.
+  static func configureRefusedWhileAppliedResponse(
+    serviceState: ServiceState
+  ) throws -> BrowserDomainConfigureResponse {
+    return try BrowserDomainConfigureResponse(
+      outcome: WireResponsePayload(
+        outcome: .failure,
+        serviceState: serviceState,
+        ownershipPhase: .applied,
+        failure: .invalidInput
+      ),
+      port: 0
+    )
+  }
+
+  /// Apply without a configured session would authenticate and mutate the proxy toward a port
+  /// with no listener; it is refused before the authorization prompt.
+  static func applyWithoutSessionResponse(serviceState: ServiceState) -> WireResponsePayload {
+    return WireResponsePayload(
+      outcome: .failure,
+      serviceState: serviceState,
+      ownershipPhase: .idle,
+      failure: .invalidInput
+    )
+  }
+
+  private static func configureResponseMessage(
+    request: WireMessage,
+    receivedAt: DispatchTime,
+    response: BrowserDomainConfigureResponse
+  ) throws -> WireMessage {
+    return try WireMessage(
       kind: .response,
       operation: request.operation,
       sequence: request.sequence,
@@ -51,9 +106,8 @@ enum BrowserDomainRequestHandler {
       connectionIdentifier: request.connectionIdentifier,
       sessionIdentifier: request.sessionIdentifier,
       requestIdentifier: request.requestIdentifier,
-      payload: configureResponse.encode()
+      payload: response.encode()
     )
-    return (response, session)
   }
 
   @MainActor
