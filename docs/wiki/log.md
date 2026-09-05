@@ -1203,3 +1203,14 @@
   workspace key in the synchronizable Keychain, an iCloud item rather than a
   local one, which `reset -t desktop` does not clear and `doctor` does not
   report.
+
+## [2026-09-05] design | Refine the MVP interaction prototype
+
+- Refined the standalone prototype with warm paper and moss treatments,
+  light/dark appearance, responsive session/items navigation, and an optional
+  inspection workbench. Added working duration presets, custom duration,
+  return paths, and a full-screen simulation dock; retained strict product
+  paths and independent Free play actions. Updated the
+  [prototype source](sources/mvp-interaction-prototype.md) with observed
+  behavior and explicit hypothesis boundaries. The refinement adds no
+  production UI or accepted design contract.

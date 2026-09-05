@@ -2,11 +2,11 @@
 
 ## Source identity
 
-- **Repository revision:**
+- **Original evidence revision:**
   `a081d4278cf8517c46b4322ed3c098462f153570`
 - **Artifact:** `prototypes/mvp-interaction-flow/index.html`
 - **Source type:** disposable interactive UX prototype
-- **Reviewed:** 2026-08-25
+- **Reviewed:** 2026-09-05
 - **Authority:** evidence only; not a product, design, architecture, or
   implementation authority
 
@@ -56,6 +56,38 @@ Mac and iPhone application mappings, keyboard submission, responsive overflow,
 and automated browser accessibility scanning in the checked states.
 
 These are `observed` prototype results, not production acceptance evidence.
+
+## Visual and interaction refinement
+
+- `user-confirmed`: refine this existing prototype in a dedicated worktree,
+  with a distinctive, pleasant design and intuitive interactions appropriate
+  to Posato. This does not accept new production navigation or geometry.
+- `observed`: the refined preview opens at the ready state. A separate
+  inspection panel retains the guided walkthroughs, state facts, and every
+  independently exercisable Free play action. Moment shortcuts expose first
+  visit, active session, recovery, and Keychain waiting without opening that
+  panel.
+- `hypothesis`: warm paper surfaces, moss accents, an asymmetric open-interval
+  motif, restrained separators, and a compact session/items navigation make
+  the status-led experience calmer and easier to scan. Explicit light/dark
+  appearance controls make both treatments inspectable; the initial choice
+  follows the browser's system preference.
+- `observed`: the duration form supports 25-, 45-, and 60-minute presets and
+  validated custom whole-minute durations from 5 minutes to 24 hours. Review,
+  active state, and early-end cancellation use the same resolved end time,
+  including the next-day case. These bounds and the fixed 17:45 demo clock
+  remain prototype fixtures, not new product requirements.
+- `observed`: external iCloud results, sync completion/failure, the paused
+  message, and expiry remain explicitly simulated. A simulation dock is
+  also available within the Mac full-screen preview.
+- `observed`: the dependency-free model regression checks cover duration
+  boundaries, return navigation, active-session mapping repair, and the four
+  guided scenarios. Run them with
+  `node --test prototypes/mvp-interaction-flow/interaction-flow.test.cjs`.
+
+The single HTML artifact still opens directly in a browser. It adds no build
+step, remote assets, persistence, network requests, or native application
+implementation. Browser evidence remains subject to the limits below.
 
 ## Evidence limits
 
