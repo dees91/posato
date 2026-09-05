@@ -1,5 +1,4 @@
 import Combine
-import CryptoKit
 import FamilyControls
 import ManagedSettings
 import PosatoShared
@@ -121,10 +120,86 @@ private struct StoredApplicationMappings: Codable {
 struct ApplicationMappingsStore {
     private static let version = 1
     static let maximumMappings = 64
+    static let appGroupIdentifier = "group.app.posato.ios.session"
     private static let maximumFileBytes = 1_048_576
     private static let maximumTokenBytes = 65_536
 
     let fileURL: URL
+
+    static func liveMigrated(
+        fileManager: FileManager = .default,
+        groupContainer: URL? = FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: appGroupIdentifier
+        )
+    ) throws -> ApplicationMappingsStore {
+        guard let groupContainer else {
+            return try live(fileManager: fileManager)
+        }
+        return try migrate(
+            privateStore: live(fileManager: fileManager),
+            groupContainer: groupContainer,
+            fileManager: fileManager
+        )
+    }
+
+    static func migrate(
+        privateStore: ApplicationMappingsStore,
+        groupContainer: URL,
+        fileManager: FileManager = .default
+    ) throws -> ApplicationMappingsStore {
+        let groupDirectory = groupContainer.appendingPathComponent("ApplicationMappings", isDirectory: true)
+        let groupStore = ApplicationMappingsStore(
+            fileURL: groupDirectory.appendingPathComponent("mappings-v1.json")
+        )
+        if fileManager.fileExists(atPath: groupStore.fileURL.path) {
+            let existing = try groupStore.load()
+            if existing.isEmpty, fileManager.fileExists(atPath: privateStore.fileURL.path) {
+                let pending = try privateStore.load()
+                if !pending.isEmpty {
+                    try writeGroupCopy(pending, groupDirectory: groupDirectory, groupURL: groupStore.fileURL, fileManager: fileManager)
+                    try? fileManager.removeItem(at: privateStore.fileURL)
+                    return groupStore
+                }
+            }
+            if fileManager.fileExists(atPath: privateStore.fileURL.path) {
+                try? fileManager.removeItem(at: privateStore.fileURL)
+            }
+            return groupStore
+        }
+        if fileManager.fileExists(atPath: privateStore.fileURL.path) {
+            let current = try privateStore.load()
+            try writeGroupCopy(current, groupDirectory: groupDirectory, groupURL: groupStore.fileURL, fileManager: fileManager)
+            try? fileManager.removeItem(at: privateStore.fileURL)
+        } else {
+            try writeGroupCopy([], groupDirectory: groupDirectory, groupURL: groupStore.fileURL, fileManager: fileManager)
+        }
+        return groupStore
+    }
+
+    private static func writeGroupCopy(
+        _ mappings: [StoredApplicationMapping],
+        groupDirectory: URL,
+        groupURL: URL,
+        fileManager: FileManager
+    ) throws {
+        try fileManager.createDirectory(
+            at: groupDirectory,
+            withIntermediateDirectories: true,
+            attributes: [.protectionKey: FileProtectionType.completeUntilFirstUserAuthentication]
+        )
+        var values = URLResourceValues()
+        values.isExcludedFromBackup = true
+        var mutableDirectory = groupDirectory
+        try mutableDirectory.setResourceValues(values)
+        let data = try JSONEncoder().encode(StoredApplicationMappings(version: version, mappings: mappings))
+        try data.write(to: groupURL, options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+        guard try Data(contentsOf: groupURL) == data,
+              try ApplicationMappingsStore(fileURL: groupURL).load() == mappings
+        else {
+            try? fileManager.removeItem(at: groupURL)
+            throw ApplicationMappingsStoreError.migrationFailed
+        }
+    }
 
     static func live(fileManager: FileManager = .default) throws -> ApplicationMappingsStore {
         let applicationSupport = try fileManager.url(
@@ -200,6 +275,7 @@ struct ApplicationMappingsStore {
 
 enum ApplicationMappingsStoreError: Error {
     case corruption
+    case migrationFailed
 }
 
 final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicationMappingsProvider {
@@ -211,7 +287,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
     private var pickerGeneration: UInt64 = 0
 
     init(
-        storeFactory: @escaping () throws -> ApplicationMappingsStore = { try ApplicationMappingsStore.live() }
+        storeFactory: @escaping () throws -> ApplicationMappingsStore = { try ApplicationMappingsStore.liveMigrated() }
     ) {
         self.storeFactory = storeFactory
     }
@@ -530,19 +606,11 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
     }
 
     func identifier(for token: Data) -> String {
-        return SHA256.hash(data: token).map { String(format: "%02x", $0) }.joined()
+        ApplicationTokenIdentity.identifier(for: token)
     }
 
     func validatedMappings(_ mappings: [StoredApplicationMapping]) throws -> [StoredApplicationMapping] {
-        let decoder = JSONDecoder()
-        do {
-            for mapping in mappings {
-                _ = try decoder.decode(ApplicationToken.self, from: mapping.token)
-            }
-        } catch {
-            throw ApplicationMappingsStoreError.corruption
-        }
-        return mappings
+        try ApplicationTokenIdentity.validatedMappings(mappings)
     }
 
     private func performOnMain(_ action: @escaping () -> Void) {

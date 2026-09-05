@@ -1136,3 +1136,18 @@
   canonical copy of every `posato.` key, and run `:posato-control:installDist`
   before it is usable. `git worktree add` carries neither, and a partial copy
   fails deep inside a feature recipe instead of at setup.
+
+## [2026-09-04] implementation | IOS-001 Posato-owned iOS restrictions
+
+- Enforce exact domains and the opaque application selection through one
+  named Managed Settings store (`app.posato.session`) with
+  validate-before-write, verify, rollback to empty, and idempotent clear;
+  the selection store migrates to `group.app.posato.ios.session` with
+  copy-verify-delete semantics. Independent plan and completed-change
+  reviews passed after brief and code corrections.
+- `./gradlew quality` green, Kotlin enforcement tests 4/4, Simulator
+  suite 50 passed with 1 expected device-only skip. The physical iPhone
+  run cleared the gate the same day: signed build with the ephemeral
+  team parameter, 54 device tests passed with 0 skips, and the
+  `AC-01`/`AC-02`/`AC-04` manual steps (Safari block, app shield,
+  unselected controls, clear restores, revoke-then-clear) all pass.
