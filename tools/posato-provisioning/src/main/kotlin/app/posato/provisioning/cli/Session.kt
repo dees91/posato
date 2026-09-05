@@ -12,6 +12,7 @@ import app.posato.provisioning.core.RepoLayout
 import app.posato.provisioning.core.Subprocess
 import app.posato.provisioning.core.Transcript
 import app.posato.provisioning.core.UserPaths
+import app.posato.provisioning.local.KeychainReader
 import app.posato.provisioning.local.LocalDeviceReader
 import java.nio.file.Path
 import java.time.Clock
@@ -41,6 +42,8 @@ class Session(
     val subprocess: Subprocess = Subprocess(transcript, HELPER_TIMEOUT)
 
     val devices: LocalDeviceReader = LocalDeviceReader(subprocess) { value -> redaction.register(value) }
+
+    val keychain: KeychainReader = KeychainReader(subprocess) { value -> redaction.register(value) }
 
     val developmentTeam: String
         get() = configuration.require(ConfigurationKey.DEVELOPMENT_TEAM, "Provisioning for this team")

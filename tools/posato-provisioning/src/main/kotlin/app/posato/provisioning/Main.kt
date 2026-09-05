@@ -1,5 +1,7 @@
 package app.posato.provisioning
 
+import app.posato.provisioning.cli.CertificatesCommand
+import app.posato.provisioning.cli.CertificatesEnsureCommand
 import app.posato.provisioning.cli.DevicesCommand
 import app.posato.provisioning.cli.DevicesRegisterCommand
 import app.posato.provisioning.core.ErrorCode
@@ -29,6 +31,7 @@ class PosatoProvisioning : CliktCommand(name = "posato-provisioning") {
 
 fun buildCommand(): PosatoProvisioning = PosatoProvisioning().subcommands(
     DevicesCommand().subcommands(DevicesRegisterCommand()),
+    CertificatesCommand().subcommands(CertificatesEnsureCommand()),
 )
 
 fun run(args: Array<String>): Int {
