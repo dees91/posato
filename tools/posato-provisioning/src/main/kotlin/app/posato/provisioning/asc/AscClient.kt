@@ -25,9 +25,31 @@ import app.posato.provisioning.model.RelationshipRef
 import app.posato.provisioning.model.ToMany
 import app.posato.provisioning.model.ToOne
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
 
 private const val PAGE_LIMIT = "200"
 private val LIMIT = "limit" to PAGE_LIMIT
+
+/**
+ * Turns a decoding failure into a message that names the resource and nothing else.
+ *
+ * kotlinx reports a decoding error by quoting the input around the offset. For a `devices` or `certificates`
+ * document that slice is other people's device identifiers and certificate bytes, none of which redaction knows
+ * about, and it would travel into an envelope that gets pasted into a record.
+ */
+private fun <T> decodeDocument(
+    path: String,
+    read: () -> T
+): T = try {
+    read()
+} catch (exception: SerializationException) {
+    throw ProvisioningException(
+        ErrorCode.ASC_REJECTED,
+        "App Store Connect returned a $path document this tool could not read.",
+        "Rerun with --verbose; if it repeats, the App Store Connect response shape has changed.",
+        exception,
+    )
+}
 
 /**
  * The six App Store Connect operations this tool performs, named rather than generalized.
@@ -124,7 +146,7 @@ class AscClient(
         serializer: KSerializer<T>,
     ): List<T> {
         val response = executor.execute(AscRequest(HttpMethod.GET, path, query + LIMIT))
-        val decoded = ProvisioningJson.lenient.decodeFromString(AscList.serializer(serializer), response.body)
+        val decoded = decodeDocument(path) { ProvisioningJson.lenient.decodeFromString(AscList.serializer(serializer), response.body) }
         if (decoded.links.next != null) {
             throw ProvisioningException(
                 ErrorCode.ASC_TOO_MANY_RESULTS,
@@ -141,6 +163,6 @@ class AscClient(
         serializer: KSerializer<T>,
     ): T {
         val response = executor.execute(AscRequest(HttpMethod.POST, path, emptyList(), body))
-        return ProvisioningJson.lenient.decodeFromString(AscSingle.serializer(serializer), response.body).data
+        return decodeDocument(path) { ProvisioningJson.lenient.decodeFromString(AscSingle.serializer(serializer), response.body) }.data
     }
 }

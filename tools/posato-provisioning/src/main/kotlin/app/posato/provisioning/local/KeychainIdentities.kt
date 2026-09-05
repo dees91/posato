@@ -1,6 +1,6 @@
 package app.posato.provisioning.local
 
-import app.posato.provisioning.core.Subprocess
+import app.posato.provisioning.core.CommandRunner
 import java.io.ByteArrayInputStream
 import java.security.cert.CertificateException
 import java.security.cert.CertificateFactory
@@ -83,7 +83,7 @@ object KeychainIdentities {
 
 /** Runs the two keychain queries and keeps only certificates this Mac holds a private key for. */
 class KeychainReader(
-    private val subprocess: Subprocess,
+    private val subprocess: CommandRunner,
     private val register: (String) -> Unit,
 ) {
     fun developmentIdentities(): List<KeychainIdentity> {

@@ -63,7 +63,15 @@ abstract class ProvisioningCommand(
             failure = wrap(exception)
             null
         } catch (exception: SerializationException) {
-            failure = wrap(exception)
+            // Never the exception's own message: a kotlinx decoding failure quotes the input around the offset, so
+            // a malformed App Store Connect response would print a slice of a document holding other devices'
+            // identifiers, which nothing has registered as a secret.
+            failure = ProvisioningException(
+                ErrorCode.COMMAND_FAILED,
+                "A document could not be read.",
+                "Rerun with --verbose for the redacted request transcript.",
+                exception,
+            )
             null
         } catch (exception: IllegalStateException) {
             failure = wrap(exception)

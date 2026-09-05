@@ -62,7 +62,7 @@ class CertificatesEnsureCommand :
         client: AscClient,
         team: String?
     ): JsonElement {
-        val creation = CertificateCreation(session.subprocess, session.userPaths.posatoDeveloperDirectory)
+        val creation = CertificateCreation(session.subprocess, session.userPaths)
         val request = creation.signingRequest()
         val issued = try {
             client.createCertificate(request.pem)

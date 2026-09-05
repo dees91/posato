@@ -35,6 +35,12 @@ class Session(
     val configuration: LocalConfiguration = LocalConfiguration.load(layout)
     val redaction: Redaction = Redaction().apply {
         ConfigurationKey.entries.forEach { key -> register(configuration.value(key)) }
+        // The home directory and the checkout path are not configured values, but they name a person and reach the
+        // same places: a transcript line quoting a helper command, a stderr tail from a tool that echoes the file it
+        // failed on, and an IOException message. Registering both here closes every one of those at once instead of
+        // chasing each message, and envelopes get pasted into records where personal paths are forbidden.
+        register(userPaths.home.toString())
+        register(layout.root.toString())
     }
 
     private val transcript = Transcript { line -> if (options.verbose) System.err.println(redaction.redact(line)) }

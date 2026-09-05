@@ -1,8 +1,8 @@
 package app.posato.provisioning.local
 
+import app.posato.provisioning.core.CommandRunner
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningJson
-import app.posato.provisioning.core.Subprocess
 import app.posato.provisioning.model.ApplePlatform
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
@@ -62,7 +62,7 @@ object LocalDevices {
 
 /** Runs the two local tools that know these identifiers. Everything it reads is registered as a secret at once. */
 class LocalDeviceReader(
-    private val subprocess: Subprocess,
+    private val subprocess: CommandRunner,
     private val register: (String) -> Unit,
 ) {
     fun mac(): LocalDevice? {

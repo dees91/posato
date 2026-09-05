@@ -31,20 +31,27 @@ fun interface Transcript {
 }
 
 /**
- * The local Apple tools this command surface depends on, run with a deadline.
+ * The local Apple tools this command surface depends on.
+ *
+ * The seam exists so the code that installs a profile, reads the keychain, or registers a device can be tested
+ * against recorded tool output. Those are the file-writing and boundary paths the quality contract asks for tests
+ * on, and none of them is reachable when the only implementation spawns a real process.
+ */
+fun interface CommandRunner {
+    fun run(command: List<String>): ProcessOutput
+}
+
+/**
+ * Runs a command with a deadline.
  *
  * Output is captured through temporary files rather than pipes so a command that writes more than a pipe buffer
  * cannot deadlock against a process this tool is already waiting on.
  */
 class Subprocess(
     private val transcript: Transcript,
-    private val defaultTimeout: Duration,
-) {
-    fun run(
-        command: List<String>,
-        timeout: Duration = defaultTimeout,
-        stdin: String? = null
-    ): ProcessOutput {
+    private val timeout: Duration,
+) : CommandRunner {
+    override fun run(command: List<String>): ProcessOutput {
         transcript.record("$ " + command.joinToString(" "))
         val builder = ProcessBuilder(command)
         val stdoutFile = Files.createTempFile("posato-provisioning-stdout", ".txt")
@@ -61,7 +68,7 @@ class Subprocess(
                     cause = exception,
                 )
             }
-            process.outputStream.use { stream -> stdin?.let { stream.write(it.toByteArray()) } }
+            process.outputStream.close()
             if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
                 process.destroyForcibly()
                 throw ProvisioningException(ErrorCode.COMMAND_FAILED, "${command.first()} did not finish within ${timeout.toSeconds()} s.")
