@@ -10,10 +10,18 @@ enum SyncLimits {
   static let keyBytes = 32
   static let checksumBytes = 4
   static let itemBytes = 84
-  static let maximumPayloadBytes = 65_536
+  static let maximumPayloadBytes = 65_584
+  static let maximumResponsePayloadBytes = 81_946
   static let maximumFrameBytes = headerBytes + maximumPayloadBytes
+  static let maximumResponseFrameBytes = headerBytes + maximumResponsePayloadBytes
   static let maximumDeadlineMilliseconds: UInt32 = 120_000
   static let keychainCapability: UInt64 = 1
+  static let cloudkitCapability: UInt64 = 2
+  static let anchorBytes = 48
+  static let bundleIdentifierBytes = 16
+  static let uuidTextBytes = 36
+  static let bundleBytes = 65_536
+  static let cursorBytes = 16_384
   static let containerIdentifier = "iCloud.app.posato.sync"
   static let keyService = "app.posato.sync.workspace-key.v1"
   static let accessGroupSuffix = "app.posato.sync"
@@ -28,6 +36,13 @@ enum SyncOperation: UInt8, Sendable {
   case readItem = 2
   case createItem = 3
   case deleteItemAndVerifyAbsent = 4
+  case fetchZone = 5
+  case saveZone = 6
+  case readAnchor = 7
+  case createAnchor = 8
+  case saveBundle = 9
+  case fetchChanges = 10
+  case deleteZoneAndVerifyAbsent = 11
 }
 
 enum SyncOutcome: UInt8, Sendable {
@@ -43,6 +58,8 @@ enum SyncOutcome: UInt8, Sendable {
   case restricted = 10
   case undetermined = 11
   case deletedAndAbsent = 12
+  case alreadyExists = 13
+  case conflict = 14
 }
 
 enum SyncProtocolFailure: Error, Equatable {
@@ -80,7 +97,7 @@ struct SyncMessage: Equatable, Sendable, CustomStringConvertible {
 enum SyncCodec {
   static func encode(_ message: SyncMessage) throws -> Data {
     guard message.requestIdentifier.count == SyncLimits.identifierBytes,
-      message.payload.count <= SyncLimits.maximumPayloadBytes
+      message.payload.count <= SyncLimits.maximumResponsePayloadBytes
     else {
       throw SyncProtocolFailure.invalidFrame
     }
@@ -94,7 +111,7 @@ enum SyncCodec {
     encoded.append(message.outcome?.rawValue ?? 0)
     encoded.appendBigEndian(UInt32(message.payload.count))
     encoded.append(message.payload)
-    guard encoded.count <= SyncLimits.maximumFrameBytes else {
+    guard encoded.count <= SyncLimits.maximumResponseFrameBytes else {
       throw SyncProtocolFailure.oversizedFrame
     }
     return encoded

@@ -103,7 +103,7 @@ internal class MacOsSyncCompanionClient(
                     try {
                         write(process, message)
                         process.outputStream.close()
-                        continuation.resume(readFrame(process))
+                        continuation.resume(readFrame(process, frameLimit(message.operation)))
                     } catch (error: CancellationException) {
                         continuation.resumeWithException(error)
                     } catch (error: IOException) {
@@ -152,19 +152,30 @@ internal class MacOsSyncCompanionClient(
         encoded.fill(0)
     }
 
-    private fun readFrame(process: Process): ByteArray {
+    private fun readFrame(
+        process: Process,
+        frameLimit: Int,
+    ): ByteArray {
         val stream = BufferedInputStream(process.inputStream)
         val prefix = stream.readNBytes(LENGTH_PREFIX_BYTES)
         if (prefix.size != LENGTH_PREFIX_BYTES) {
             throw EOFException("Companion response ended")
         }
         val size = ByteBuffer.wrap(prefix).order(ByteOrder.BIG_ENDIAN).int
-        require(size in 1..MacOsSyncCompanionProtocol.MAXIMUM_FRAME_BYTES)
+        require(size in 1..frameLimit)
         val encoded = stream.readNBytes(size)
         if (encoded.size != size) {
             throw EOFException("Companion response was incomplete")
         }
         return encoded
+    }
+
+    private fun frameLimit(operation: SyncCompanionOperation): Int {
+        return if (operation == SyncCompanionOperation.FetchChanges) {
+            MacOsSyncCompanionProtocol.MAXIMUM_RESPONSE_FRAME_BYTES
+        } else {
+            MacOsSyncCompanionProtocol.MAXIMUM_FRAME_BYTES
+        }
     }
 
     private fun matchesRequest(

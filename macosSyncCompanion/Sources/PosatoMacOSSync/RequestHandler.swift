@@ -5,13 +5,13 @@ struct SyncDependencies: Sendable {
   var entitlements: any EntitlementReader
   var accounts: any AccountBindingSource
   var keys: WorkspaceKeyStore
+  var clouds: CloudStore
   var accountChangeName: Notification.Name = .CKAccountChanged
 }
 
 enum RequestHandler {
   static func handle(_ request: SyncMessage, dependencies: SyncDependencies) -> SyncMessage {
-    guard request.capabilities & SyncLimits.keychainCapability == SyncLimits.keychainCapability
-    else {
+    guard hasRequiredCapability(request) else {
       return request.respond(outcome: .unknownOutcome)
     }
     guard let entitlements = dependencies.entitlements.load(),
@@ -22,6 +22,31 @@ enum RequestHandler {
       return request.respond(outcome: outcome)
     }
     let started = DispatchTime.now()
+    switch request.operation {
+    case .resolveBinding, .readItem, .createItem, .deleteItemAndVerifyAbsent:
+      return handleKeychain(
+        request,
+        accessGroup: accessGroup,
+        started: started,
+        dependencies: dependencies
+      )
+    case .fetchZone,
+      .saveZone,
+      .readAnchor,
+      .createAnchor,
+      .saveBundle,
+      .fetchChanges,
+      .deleteZoneAndVerifyAbsent:
+      return handleCloud(request, started: started, dependencies: dependencies)
+    }
+  }
+
+  private static func handleKeychain(
+    _ request: SyncMessage,
+    accessGroup: String,
+    started: DispatchTime,
+    dependencies: SyncDependencies
+  ) -> SyncMessage {
     switch request.operation {
     case .resolveBinding:
       return resolveBinding(request, started: started, accounts: dependencies.accounts)
@@ -46,6 +71,14 @@ enum RequestHandler {
         started: started,
         dependencies: dependencies
       )
+    case .fetchZone,
+      .saveZone,
+      .readAnchor,
+      .createAnchor,
+      .saveBundle,
+      .fetchChanges,
+      .deleteZoneAndVerifyAbsent:
+      return request.respond(outcome: .unknownOutcome)
     }
   }
 
@@ -54,7 +87,7 @@ enum RequestHandler {
     started: DispatchTime,
     accounts: any AccountBindingSource
   ) -> SyncMessage {
-    switch accountBinding(request, started: started, accounts: accounts) {
+    switch RequestSupport.accountBinding(request, started: started, accounts: accounts) {
     case .available(let binding):
       return request.respond(outcome: .found, payload: binding)
     case .unavailable:
@@ -76,7 +109,7 @@ enum RequestHandler {
       return request.respond(outcome: .integrityFailure)
     }
     defer { fields.clear() }
-    switch preflight(
+    switch RequestSupport.preflight(
       request,
       expected: fields.binding,
       started: started,
@@ -87,10 +120,12 @@ enum RequestHandler {
     case .respond(let message):
       return message
     }
-    let (result, changed) = observingAccountChange(name: dependencies.accountChangeName) {
+    let (result, changed) = RequestSupport.observingAccountChange(
+      name: dependencies.accountChangeName
+    ) {
       dependencies.keys.read(account: fields.account, accessGroup: accessGroup)
     }
-    let bindingHolds = postflight(
+    let bindingHolds = RequestSupport.postflight(
       request,
       expected: fields.binding,
       started: started,
@@ -115,7 +150,7 @@ enum RequestHandler {
       return request.respond(outcome: .integrityFailure)
     }
     defer { fields.clear() }
-    switch preflight(
+    switch RequestSupport.preflight(
       request,
       expected: fields.binding,
       started: started,
@@ -126,14 +161,16 @@ enum RequestHandler {
     case .respond(let message):
       return message
     }
-    let (result, changed) = observingAccountChange(name: dependencies.accountChangeName) {
+    let (result, changed) = RequestSupport.observingAccountChange(
+      name: dependencies.accountChangeName
+    ) {
       dependencies.keys.create(
         account: fields.account,
         accessGroup: accessGroup,
         value: fields.item,
       )
     }
-    let bindingHolds = postflight(
+    let bindingHolds = RequestSupport.postflight(
       request,
       expected: fields.binding,
       started: started,
@@ -155,7 +192,7 @@ enum RequestHandler {
       return request.respond(outcome: .integrityFailure)
     }
     defer { fields.clear() }
-    switch preflight(
+    switch RequestSupport.preflight(
       request,
       expected: fields.binding,
       started: started,
@@ -166,13 +203,15 @@ enum RequestHandler {
     case .respond(let message):
       return message
     }
-    let (result, changed) = observingAccountChange(name: dependencies.accountChangeName) {
+    let (result, changed) = RequestSupport.observingAccountChange(
+      name: dependencies.accountChangeName
+    ) {
       dependencies.keys.deleteAndVerifyAbsent(
         account: fields.account,
         accessGroup: accessGroup,
       )
     }
-    let bindingHolds = postflight(
+    let bindingHolds = RequestSupport.postflight(
       request,
       expected: fields.binding,
       started: started,
@@ -184,71 +223,6 @@ enum RequestHandler {
     return KeyRequestCodec.mapDelete(result, request: request)
   }
 
-  private static func observingAccountChange<Result>(
-    name: Notification.Name,
-    _ body: () -> Result
-  ) -> (Result, Bool) {
-    let flag = AccountChangeFlag()
-    let observer = NotificationCenter.default.addObserver(
-      forName: name,
-      object: nil,
-      queue: nil
-    ) { _ in
-      flag.mark()
-    }
-    defer { NotificationCenter.default.removeObserver(observer) }
-    let result = body()
-    return (result, flag.isMarked)
-  }
-
-  private enum Preflight {
-    case proceed
-    case respond(SyncMessage)
-  }
-
-  private static func preflight(
-    _ request: SyncMessage,
-    expected: Data,
-    started: DispatchTime,
-    accounts: any AccountBindingSource
-  ) -> Preflight {
-    switch accountBinding(request, started: started, accounts: accounts) {
-    case .available(let current):
-      if ItemCodec.constantTimeEquals(current, expected) {
-        return .proceed
-      }
-      return .respond(request.respond(outcome: .accountChanged))
-    case .unavailable, .restricted, .undetermined:
-      return .respond(request.respond(outcome: .retryable))
-    }
-  }
-
-  private static func postflight(
-    _ request: SyncMessage,
-    expected: Data,
-    started: DispatchTime,
-    accounts: any AccountBindingSource
-  ) -> Bool {
-    switch accountBinding(request, started: started, accounts: accounts) {
-    case .available(let current):
-      return ItemCodec.constantTimeEquals(current, expected)
-    case .unavailable, .restricted, .undetermined:
-      return false
-    }
-  }
-
-  private static func accountBinding(
-    _ request: SyncMessage,
-    started: DispatchTime,
-    accounts: any AccountBindingSource
-  ) -> BindingNative {
-    return accounts.resolve(
-      deadlineMilliseconds: DeadlineBudget.remainingMilliseconds(
-        started: started,
-        budgetMilliseconds: request.deadlineMilliseconds
-      )
-    )
-  }
 }
 
 private enum KeyRequestCodec {
@@ -338,22 +312,5 @@ private enum KeyRequestCodec {
     case .found, .missing, .created, .identical:
       return request.respond(outcome: .unknownOutcome)
     }
-  }
-}
-
-private final class AccountChangeFlag: @unchecked Sendable {
-  private let lock = NSLock()
-  private var marked = false
-
-  func mark() {
-    lock.lock()
-    marked = true
-    lock.unlock()
-  }
-
-  var isMarked: Bool {
-    lock.lock()
-    defer { lock.unlock() }
-    return marked
   }
 }

@@ -40,6 +40,27 @@ class MacOsSyncCompanionClientTest {
     }
 
     @Test
+    fun `given a full size page when fetching changes then the page is returned`() = runBlocking {
+        val exchange = client("full-page").transact(
+            request(
+                operation = SyncCompanionOperation.FetchChanges,
+                capabilities = MacOsSyncCompanionProtocol.CLOUDKIT_CAPABILITY,
+            ),
+        )
+
+        val message = assertIs<CompanionExchange.Message>(exchange).message
+        assertEquals(SyncCompanionOutcome.Found, message.outcome)
+        assertEquals(MacOsSyncCompanionProtocol.MAXIMUM_RESPONSE_PAYLOAD_BYTES, message.payload.size)
+    }
+
+    @Test
+    fun `given a silent companion when transacting then the exchange is unknown`() = runBlocking {
+        val exchange = client("silent").transact(request())
+
+        assertEquals(CompanionExchange.Unknown, exchange)
+    }
+
+    @Test
     fun `given a hanging companion when the deadline elapses then the exchange is unknown`() = runBlocking {
         var process: Process? = null
         val elapsedMilliseconds = measureTimeMillis {
@@ -72,12 +93,16 @@ class MacOsSyncCompanionClientTest {
         assertTrue(elapsedMilliseconds < HANG_LIMIT_MILLISECONDS)
     }
 
-    private fun request(deadlineMilliseconds: Int = 5_000): SyncCompanionMessage {
+    private fun request(
+        deadlineMilliseconds: Int = 5_000,
+        operation: SyncCompanionOperation = SyncCompanionOperation.CreateItem,
+        capabilities: Long = MacOsSyncCompanionProtocol.KEYCHAIN_CAPABILITY,
+    ): SyncCompanionMessage {
         return SyncCompanionMessage(
-            operation = SyncCompanionOperation.CreateItem,
+            operation = operation,
             requestIdentifier = ByteArray(MacOsSyncCompanionProtocol.IDENTIFIER_BYTES) { 9 },
             deadlineMilliseconds = deadlineMilliseconds,
-            capabilities = MacOsSyncCompanionProtocol.KEYCHAIN_CAPABILITY,
+            capabilities = capabilities,
             outcome = null,
             payload = ByteArray(0),
         )
