@@ -7,7 +7,7 @@
 - **Reviewer:** independent agent
 - **Branch:** `feature/quality-004-unattended-verification`
 - **Worktree:** `~/Projects/Polyglot/posato-quality-004`
-- **Updated:** 2026-09-04
+- **Updated:** 2026-09-05
 
 ## Plan
 
@@ -67,8 +67,8 @@
   own refusal; `typeText` re-checks the front per character; `AC-01` was amended
   and accepted. The driven macOS run was repeated after the last correction.
 - **Advisory findings:** the review's five were applied as one-line correctness
-  or accuracy fixes. A hosted pass then raised four P2, all accepted as a
-  maintainer scope decision because each named a defect, not a preference: a
+  or accuracy fixes. An independent GitHub review then raised four P2, all
+  accepted as a maintainer scope decision because each named a defect: a
   dead `runningPid()`; the one host-format-dependent parse untested, now the
   pure `CertificateSubject` with both `openssl` renderings pinned; two `pass`
   details claiming a team comparison no configured team had made; and a
@@ -81,7 +81,7 @@
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | `:posato-control:test` | pass, 80 tests (was 30) | selector and wait refusals both directions, containment and symlink escape, doctor inventory, the ad-hoc `ok: true` regression, both certificate-subject renderings, redaction |
-| Driven macOS run: panel selection and removal | pass | run `20260904-163447-f56b`: count 0, 1, 0 with four screenshots |
+| Driven macOS run: panel selection and removal | pass | run `20260905-084133-0961`, after the last correction: count 0, 1, 0, the panel asserted absent before opening and after confirming, four screenshots |
 | `--process` refusals on the real host | pass | foreign pid, dead pid, unknown name, no tracked application, and `wait --process` all exit 3 |
 | Device run: iOS selection-store measurement | pass | runs `20260904-1617*`, `1621*`, `1622*`: capture, reinstall, restore, `Applications selected: 1` |
 | `./gradlew quality` | pass, no new suppression | rerun after the last correction |
