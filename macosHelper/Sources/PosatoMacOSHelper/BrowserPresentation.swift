@@ -80,7 +80,9 @@ struct BrowserPresentationAdapter {
     do {
       let captured = try runner.run(browser.readScript)
       let parts = captured.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
-      guard parts.count == 3, let currentURL = parts.last else {
+      guard parts.count == 3, let currentURL = parts.last,
+        Self.isNumeric(parts[0]), Self.isNumeric(parts[1])
+      else {
         return .skipped
       }
       guard shouldReplace(urlString: currentURL, selectedHosts: selectedHosts) else {
@@ -88,7 +90,7 @@ struct BrowserPresentationAdapter {
       }
       let destination = "http://127.0.0.1:\(port)/blocked"
       let written = try runner.run(
-        browser.writeScript(windowID: parts[0], tabID: parts[1], url: destination)
+        browser.writeScript(windowID: parts[0], tabReference: parts[1], url: destination)
       )
       guard isBlockedPage(urlString: written, port: port) else {
         return .skipped
@@ -105,6 +107,10 @@ struct BrowserPresentationAdapter {
 
   mutating func reset() {
     lastPresented.removeAll()
+  }
+
+  private static func isNumeric(_ value: String) -> Bool {
+    return !value.isEmpty && value.utf8.allSatisfy { byte in byte >= 0x30 && byte <= 0x39 }
   }
 
   private static func systemFrontmostBrowser() -> SupportedBrowser? {
@@ -159,7 +165,7 @@ extension SupportedBrowser {
           if not (exists front window) then return ""
           set theWindow to front window
           set theTab to current tab of theWindow
-          return (id of theWindow as text) & "\t" & (id of theTab as text) & "\t" & (URL of theTab as text)
+          return (id of theWindow as text) & "\t" & (index of theTab as text) & "\t" & (URL of theTab as text)
         end tell
         """
     case .chrome:
@@ -174,20 +180,22 @@ extension SupportedBrowser {
     }
   }
 
-  func writeScript(windowID: String, tabID: String, url: String) -> String {
+  /// Safari tabs expose no `id`, so the Safari reference is the tab index inside its window;
+  /// Chrome tabs are addressed by their stable `id`. Both values are digits captured by `readScript`.
+  func writeScript(windowID: String, tabReference: String, url: String) -> String {
     switch self {
     case .safari:
       return """
         tell application "Safari"
-          set URL of tab id \(tabID) of window id \(windowID) to "\(url)"
-          return URL of tab id \(tabID) of window id \(windowID)
+          set URL of tab \(tabReference) of window id \(windowID) to "\(url)"
+          return URL of tab \(tabReference) of window id \(windowID)
         end tell
         """
     case .chrome:
       return """
         tell application "Google Chrome"
-          set URL of tab id \(tabID) of window id \(windowID) to "\(url)"
-          return URL of tab id \(tabID) of window id \(windowID)
+          set URL of tab id \(tabReference) of window id \(windowID) to "\(url)"
+          return URL of tab id \(tabReference) of window id \(windowID)
         end tell
         """
     }

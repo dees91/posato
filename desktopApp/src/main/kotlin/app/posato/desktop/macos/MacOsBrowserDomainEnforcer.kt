@@ -44,7 +44,9 @@ internal class MacOsBrowserDomainEnforcer(
         if (applied.outcome == HelperResult.Outcome.UnknownOutcome) {
             applied = commands.reconcileUnknown()
         }
-        if (applied.outcome != HelperResult.Outcome.Success) {
+        val verifiedActive = applied.outcome == HelperResult.Outcome.Success &&
+            applied.ownershipPhase == HelperResult.Phase.Applied
+        if (!verifiedActive) {
             clear()
             return BrowserDomainEnforcementResult.Failed(applied)
         }

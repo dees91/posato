@@ -77,6 +77,28 @@ enum BrowserDomainRequestHandler {
     )
   }
 
+  /// Apply succeeded in the daemon but the effective proxy chain still contained another route, so
+  /// the helper restored the baseline. The Apply request fails as incompatible instead of echoing
+  /// the Restore outcome; a restoration that did not reach Idle surfaces as recovery required.
+  static func effectiveChainFailureResponse(restored: WireResponsePayload?) -> WireResponsePayload {
+    guard let restored, restored.outcome == .success, restored.ownershipPhase == .idle else {
+      return WireResponsePayload(
+        outcome: .actionRequired,
+        serviceState: .recoveryRequired,
+        ownershipPhase: restored?.ownershipPhase ?? .recoveryRequired,
+        actionRequired: .manualRecovery,
+        failure: .unavailable
+      )
+    }
+    return WireResponsePayload(
+      outcome: .actionRequired,
+      serviceState: .unavailableOrIncompatible,
+      ownershipPhase: .idle,
+      actionRequired: .incompatible,
+      failure: .unavailable
+    )
+  }
+
   private static func configureFailureResponse(
     failure: BrowserDomainSessionFailure,
     service: SMAppService

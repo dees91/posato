@@ -16,8 +16,15 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 
+/**
+ * Parent-side client of the normal-user helper. [helperPath] defaults to the helper embedded in the
+ * running packaged application. [launchPrefix] is a test-only parent process signed as the
+ * application, which the maintainer-gated physical harness needs because the helper accepts only
+ * a parent carrying the application identifier; production leaves it empty.
+ */
 internal class MacOsHelperClient(
     helperPath: Path? = null,
+    private val launchPrefix: List<String> = emptyList(),
 ) : Closeable,
     MacOsApplicationPicker,
     MacOsBrowserDomainCommands {
@@ -241,7 +248,7 @@ internal class MacOsHelperClient(
         check(!isClosed)
         check(Files.isRegularFile(helperPath) && Files.isExecutable(helperPath))
         val verifiedHelper = MacOsHelperSigningVerifier.verify(helperPath)
-        val builder = ProcessBuilder(verifiedHelper.toString())
+        val builder = ProcessBuilder(launchPrefix + verifiedHelper.toString())
         builder.environment().clear()
         val started = builder.start()
         process = started

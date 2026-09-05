@@ -298,27 +298,25 @@ do {
       && responsePayload.outcome == .success
       && domainSession?.validateEffectiveChain() != true
     if applyNeedsRestore {
+      var restoredPayload: WireResponsePayload?
       if let daemon {
-        let restore = try WireMessage(
-          kind: .request,
-          operation: .restore,
-          sequence: request.sequence,
-          deadlineMilliseconds: try remainingDeadline(
+        let restore = try restoreMessage(
+          after: request,
+          deadlineMilliseconds: (try? remainingDeadline(
             receivedAt: receivedAt,
             budgetMilliseconds: request.deadlineMilliseconds
-          ),
-          connectionIdentifier: request.connectionIdentifier,
-          sessionIdentifier: request.sessionIdentifier,
-          requestIdentifier: request.requestIdentifier,
-          payload: Data()
+          )) ?? WireLimits.fallbackRestoreDeadlineMilliseconds
         )
         if let restored = try? daemon.perform(restore) {
-          response = restored
-          responsePayload = try WireResponsePayload.decode(response.payload)
+          restoredPayload = try? WireResponsePayload.decode(restored.payload)
         }
       }
       domainSession?.stop()
       domainSession = nil
+      responsePayload = BrowserDomainRequestHandler.effectiveChainFailureResponse(
+        restored: restoredPayload
+      )
+      response = try localResponse(request: request, payload: responsePayload)
     }
     if WireLifecyclePolicy.ownsAppliedMutation(
       requestOperation: request.operation,

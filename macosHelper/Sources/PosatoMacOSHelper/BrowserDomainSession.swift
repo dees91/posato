@@ -10,6 +10,8 @@ final class BrowserDomainSession: @unchecked Sendable {
   private let chain = ProxyChainValidator()
   private let compatibility = NetworkCompatibility(reader: SystemNetworkCompatibilityReader())
   private(set) var port: UInt16 = 0
+  private let effectiveChainSettleMilliseconds = 2_000
+  private let effectiveChainPollSeconds: TimeInterval = 0.1
 
   init(payload: BrowserDomainConfigurePayload) {
     self.payload = payload
@@ -40,13 +42,23 @@ final class BrowserDomainSession: @unchecked Sendable {
     return port
   }
 
+  /// The daemon commits the proxy tuples through SCPreferences; configd republishes them to the
+  /// dynamic store that CFNetwork resolves against a moment later, so the effective check polls for a
+  /// bounded settle window before it treats another route as a failure.
   func validateEffectiveChain() -> Bool {
-    let settings = CFNetworkCopySystemProxySettings()?.takeRetainedValue()
-    return chain.containsOnlyLoopback(
-      selectedHosts: Set(payload.domains),
-      port: port,
-      settings: settings
-    )
+    let deadline = DispatchTime.now() + .milliseconds(effectiveChainSettleMilliseconds)
+    while true {
+      let settings = CFNetworkCopySystemProxySettings()?.takeRetainedValue()
+      let onlyLoopback = chain.containsOnlyLoopback(
+        selectedHosts: Set(payload.domains),
+        port: port,
+        settings: settings
+      )
+      if onlyLoopback || DispatchTime.now() >= deadline {
+        return onlyLoopback
+      }
+      Thread.sleep(forTimeInterval: effectiveChainPollSeconds)
+    }
   }
 
   func stop() {
