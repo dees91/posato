@@ -82,10 +82,12 @@ exactly after clear, helper failure, sleep, and reboot.
   fails closed for that connection with no direct fallback and no upstream
   connection, and the helper never recurses through its own listener.
 - `AC-03` — Activation is refused before mutation when a manual, managed,
-  PAC, autodiscovery, VPN, relay, or Private Relay route is detected, and a
-  post-Apply chain that contains anything but the loopback route enters
-  restoration; the maintainer's proxy baseline is byte-identical after clear,
-  forced helper termination, sleep and wake, and reboot.
+  PAC, autodiscovery, VPN, or relay route is detected, and a post-Apply chain
+  that contains anything but the loopback route enters restoration; iCloud
+  Private Relay has no public detection and stays a recorded non-resistant
+  residual owned by `RELEASE-001`; the maintainer's proxy baseline is
+  byte-identical after clear, forced helper termination, sleep and wake, and
+  reboot.
 - `AC-04` — Presentation failure (Automation denied, browser not running,
   captured tab no longer selected) leaves network denial intact and reports
   only a target-free capability status; the page cannot end or change a
@@ -148,6 +150,10 @@ marked open.
   the verification machine is refused: the daemon verifies and repairs the
   definition, and a check that passes only because the control was removed
   proves nothing.
+- Decided (`user-confirmed`, 2026-09-05): iCloud Private Relay is not a
+  detected refusal condition, because macOS exposes no public API for it;
+  `AC-03` names it as the recorded residual and `RELEASE-001` owns the
+  disclosure.
 - Decided (`user-confirmed`, 2026-09-05): IP literals stay relayed as
   unselected hosts rather than rejected, because rejecting them would deny
   unrelated local-network and developer traffic without a product benefit;

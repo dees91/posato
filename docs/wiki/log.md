@@ -1165,6 +1165,7 @@
   theater, `PageCursor` buffer copy, direction-keyed fetch frame cap,
   `uuidTextBytes` constant. Proves the macOS leg only; cross-device exchange
   stays with SYNC-009.
+
 ## [2026-09-05] verification | MACOS-004 physical matrix and harness corrections
 
 - The gated JVM harness now drives the installed development package through
