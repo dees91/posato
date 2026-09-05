@@ -2,6 +2,9 @@ package app.posato.provisioning.model
 
 import kotlinx.serialization.Serializable
 
+/** The states App Store Connect uses to say a profile is finished. Only these authorise a delete. */
+private val DEAD_PROFILE_STATES = setOf("INVALID", "EXPIRED")
+
 @Serializable
 data class AscLinks(
     val next: String? = null,
@@ -103,4 +106,13 @@ data class ProfileResource(
     val relationships: ProfileRelationships = ProfileRelationships(),
 ) {
     val active: Boolean get() = attributes.profileState == "ACTIVE"
+
+    /**
+     * A state App Store Connect uses to say the profile is finished.
+     *
+     * Only these authorise a delete. Anything else, including a state this tool has never seen and a response that
+     * omits the attribute, is treated as possibly-valid, because deleting a working profile is not recoverable by
+     * rerunning the command.
+     */
+    val dead: Boolean get() = attributes.profileState in DEAD_PROFILE_STATES
 }

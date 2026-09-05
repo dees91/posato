@@ -134,6 +134,19 @@ class AscHttpTest {
     }
 
     @Test
+    fun `gives the exchange the remaining deadline and the size bound`() {
+        // The bound has to reach the transport: a body read outside the deadline would hang the command past the
+        // limit the tool promises, however carefully the retry loop accounts for time.
+        val exchange = ScriptedExchange(listOf(Reply(200, "{}")))
+
+        httpWith(exchange, mutableListOf()).execute(AscRequest(HttpMethod.GET, "bundleIds"))
+
+        assertEquals(BODY_CAP, exchange.caps.single())
+        assertTrue(exchange.timeouts.single() <= Duration.ofSeconds(60))
+        assertTrue(exchange.timeouts.single() > Duration.ZERO)
+    }
+
+    @Test
     fun `sends the signed token as a bearer credential`() {
         val exchange = ScriptedExchange(listOf(Reply(200, "{}")))
 
@@ -166,19 +179,24 @@ class AscHttpTest {
     ) : HttpExchange {
         val sent = mutableListOf<URI>()
         val tokens = mutableListOf<String>()
+        val caps = mutableListOf<Int>()
+        val timeouts = mutableListOf<Duration>()
 
         override fun send(
             uri: URI,
             method: HttpMethod,
             body: String?,
             token: String,
-            timeout: Duration
+            timeout: Duration,
+            maxBytes: Int,
         ): RawResponse {
             val reply = replies[sent.size]
             sent.add(uri)
             tokens.add(token)
+            caps.add(maxBytes)
+            timeouts.add(timeout)
             reply.failure?.let { throw it }
-            return RawResponse(reply.status, reply.body.byteInputStream())
+            return RawResponse(reply.status, reply.body.toByteArray().copyOf(minOf(reply.body.length, maxBytes + 1)))
         }
     }
 }

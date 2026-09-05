@@ -43,14 +43,25 @@ object ProfileDecisions {
         replaceRequested: Boolean,
     ): ProfileDecision {
         if (existing == null) return ProfileDecision(ProfileAction.CREATE, "no profile of this name exists")
-        val expired = existing.attributes.expirationDate?.let { value -> parse(value)?.isBefore(now) } ?: false
+        val declaredExpiry = existing.attributes.expirationDate
+        val expiry = declaredExpiry?.let { value -> parse(value) }
         val certificates = existing.relationships.certificates.data.map { reference -> reference.id }.toSet()
         val devices = existing.relationships.devices.data.map { reference -> reference.id }.toSet()
         return when {
-            !existing.active -> ProfileDecision(ProfileAction.REPLACE, "the profile is not active")
-            expired -> ProfileDecision(ProfileAction.REPLACE, "the profile has expired")
+            existing.dead -> ProfileDecision(ProfileAction.REPLACE, "the profile is ${existing.attributes.profileState?.lowercase()}")
+
+            expiry != null && expiry.isBefore(now) -> ProfileDecision(ProfileAction.REPLACE, "the profile has expired")
+
+            // Everything below is a condition this tool cannot confirm, so it asks rather than deleting. An expiry
+            // it cannot parse and a state it does not recognise both mean the profile might still be working.
+            declaredExpiry != null && expiry == null -> stale("its expiry could not be read", replaceRequested)
+
+            !existing.active -> stale("its state is not one this tool recognises", replaceRequested)
+
             certificateId !in certificates -> stale("it does not reference this Mac's certificate", replaceRequested)
+
             !devices.containsAll(requiredDeviceIds) -> stale("it does not cover every registered device", replaceRequested)
+
             else -> ProfileDecision(ProfileAction.REUSE, "the profile is current")
         }
     }

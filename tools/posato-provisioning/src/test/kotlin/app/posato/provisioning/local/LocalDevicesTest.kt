@@ -21,10 +21,13 @@ class LocalDevicesTest {
     }
 
     @Test
-    fun `falls back to the platform identifier only where no provisioning identifier is reported`() {
+    fun `never falls back to the platform identifier`() {
+        // Apple accepts the platform UUID, so a fallback would register successfully, report the Mac as registered,
+        // and permanently consume one of the team's device slots for a record no profile can ever match. Reporting
+        // nothing lets doctor say the identifier could not be read, which is recoverable.
         val json = """{"SPHardwareDataType":[{"platform_UUID":"11111111-2222-3333-4444-555555555555"}]}"""
 
-        assertEquals("11111111-2222-3333-4444-555555555555", LocalDevices.parseMacUdid(json))
+        assertNull(LocalDevices.parseMacUdid(json))
     }
 
     @Test

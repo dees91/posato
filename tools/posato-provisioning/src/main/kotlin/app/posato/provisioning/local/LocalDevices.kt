@@ -34,8 +34,11 @@ data class LocalDevice(
 object LocalDevices {
     fun parseMacUdid(json: String): String? {
         val hardware = decode(json)?.get("SPHardwareDataType")?.jsonArray?.firstOrNull()?.jsonObject ?: return null
+        // There is deliberately no fall back to platform_UUID. Apple accepts it, so the registration would appear to
+        // succeed, doctor would report the Mac as registered, and every profile built afterwards would name a device
+        // record that matches nothing -- while permanently consuming one of the team's device slots. Reporting
+        // nothing lets doctor say the identifier could not be read, which is recoverable.
         return hardware["provisioning_UDID"]?.jsonPrimitive?.content
-            ?: hardware["platform_UUID"]?.jsonPrimitive?.content
     }
 
     fun parseConnectedIphones(json: String): List<String> {
