@@ -29,6 +29,8 @@ private fun facts(
     developmentTeam: String? = TEAM,
     staged: Boolean = true,
     helperExecutablePresent: Boolean = true,
+    proxyDaemonPresent: Boolean = true,
+    syncCompanionPresent: Boolean = true,
 ) = ProvisioningFacts(
     signingIdentity = signingIdentity,
     signingIdentityInKeychain = signingIdentityInKeychain,
@@ -39,6 +41,8 @@ private fun facts(
     developmentTeam = developmentTeam,
     staged = staged,
     helperExecutablePresent = helperExecutablePresent,
+    proxyDaemonPresent = proxyDaemonPresent,
+    syncCompanionPresent = syncCompanionPresent,
     now = NOW,
 )
 
@@ -84,7 +88,14 @@ class DesktopProvisioningChecksTest {
     fun `every one-time condition is reported as a named check`() {
         val ids = DesktopProvisioningChecks.checks(facts()).map { it.id }
         assertEquals(
-            listOf("desktop.signingIdentity", "desktop.syncProfile", "desktop.helperBundle", "desktop.helperBackground"),
+            listOf(
+                "desktop.signingIdentity",
+                "desktop.syncProfile",
+                "desktop.helperBundle",
+                "desktop.proxyDaemon",
+                "desktop.syncCompanion",
+                "desktop.helperBackground",
+            ),
             ids,
         )
     }
@@ -175,6 +186,36 @@ class DesktopProvisioningChecksTest {
     fun `a missing nested helper is a warning, not an error`() {
         val check = DesktopProvisioningChecks.checks(developmentSigned.copy(helperExecutablePresent = false)).check("desktop.helperBundle")
         assertEquals(Severity.WARN.name.lowercase(), check.severity)
+    }
+
+    @Test
+    fun `a staged package missing the proxy daemon or the companion names the missing component`() {
+        val withoutDaemon = DesktopProvisioningChecks.checks(developmentSigned.copy(proxyDaemonPresent = false))
+        assertEquals(Severity.WARN.name.lowercase(), withoutDaemon.check("desktop.proxyDaemon").severity)
+        assertFalse(withoutDaemon.check("desktop.proxyDaemon").ok)
+        // The helper executable can be present while the daemon it installs is not, so the checks stay independent.
+        assertTrue(withoutDaemon.check("desktop.helperBundle").ok)
+        assertTrue(withoutDaemon.check("desktop.syncCompanion").ok)
+
+        val withoutCompanion = DesktopProvisioningChecks.checks(developmentSigned.copy(syncCompanionPresent = false))
+        assertFalse(withoutCompanion.check("desktop.syncCompanion").ok)
+        assertTrue(withoutCompanion.check("desktop.proxyDaemon").ok)
+    }
+
+    @Test
+    fun `an unstaged checkout reports every nested component as absent rather than missing`() {
+        val unstaged = facts(
+            staged = false,
+            helperExecutablePresent = false,
+            proxyDaemonPresent = false,
+            syncCompanionPresent = false,
+        )
+        val checks = DesktopProvisioningChecks.checks(unstaged)
+        listOf("desktop.helperBundle", "desktop.proxyDaemon", "desktop.syncCompanion").forEach { id ->
+            val check = checks.check(id)
+            assertFalse(check.ok, id)
+            assertTrue(check.hint.orEmpty().contains("build -t desktop"), id)
+        }
     }
 
     @Test

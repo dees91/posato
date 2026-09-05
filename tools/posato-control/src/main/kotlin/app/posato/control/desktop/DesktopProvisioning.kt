@@ -57,6 +57,9 @@ data class ProvisioningFacts(
     val developmentTeam: String?,
     val staged: Boolean,
     val helperExecutablePresent: Boolean,
+    /** Both the daemon binary and its launchd plist, because the helper installs the proxy service from the pair. */
+    val proxyDaemonPresent: Boolean,
+    val syncCompanionPresent: Boolean,
     val now: Instant,
 )
 
@@ -80,6 +83,8 @@ object DesktopProvisioningChecks {
         signingIdentity(facts),
         syncProfile(facts),
         helperBundle(facts),
+        proxyDaemon(facts),
+        syncCompanion(facts),
         helperBackground(),
     )
 
@@ -201,6 +206,47 @@ object DesktopProvisioningChecks {
 
             else -> DoctorCheck.pass(id, "The staged application contains the nested macOS helper executable.")
         }
+    }
+
+    private fun proxyDaemon(facts: ProvisioningFacts): DoctorCheck = nestedComponent(
+        id = "desktop.proxyDaemon",
+        present = facts.proxyDaemonPresent,
+        staged = facts.staged,
+        component = "the nested proxy-settings daemon and its launchd property list",
+    )
+
+    private fun syncCompanion(facts: ProvisioningFacts): DoctorCheck = nestedComponent(
+        id = "desktop.syncCompanion",
+        present = facts.syncCompanionPresent,
+        staged = facts.staged,
+        component = "the nested synchronization companion executable",
+    )
+
+    /**
+     * One nested component of the staged package. Packaging verifies the same components at build time, so a report
+     * that names the missing one turns a later failure deep inside a recipe into a setup answer.
+     */
+    private fun nestedComponent(
+        id: String,
+        present: Boolean,
+        staged: Boolean,
+        component: String,
+    ): DoctorCheck = when {
+        !staged -> DoctorCheck.fail(
+            id,
+            "No staged desktop application, so $component is absent.",
+            "Run `posato-control build -t desktop`.",
+            Severity.WARN,
+        )
+
+        !present -> DoctorCheck.fail(
+            id,
+            "The staged application does not contain $component.",
+            "Rerun `posato-control build -t desktop --verify` and inspect the packaging verification failure.",
+            Severity.WARN,
+        )
+
+        else -> DoctorCheck.pass(id, "The staged application contains $component.")
     }
 
     private fun helperBackground(): DoctorCheck = DoctorCheck.unknown(
