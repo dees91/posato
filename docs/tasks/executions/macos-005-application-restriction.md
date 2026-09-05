@@ -70,9 +70,23 @@
 ## Completed-change re-review (late fixes)
 
 - **Scope:** stale-snapshot re-resolution in `poll`, `destroySpawnedHelper`,
-  harness `destroyHelper` simplification, record rows for runs 2–4.
-- **Verdict:** pending (independent review agent).
-- **Resolution:** pending; rerun affected verification after any correction.
+  harness `destroyHelper` simplification, record rows for runs 2–4
+  (committed diff `3a157b5..c244436`).
+- **Verdict:** `changes-required` (independent review agent, 2026-09-05):
+  no pipe/capability violation, no privacy leak; 2 Required, 2 advisory.
+- **Triage:**
+
+  | Finding | Class | Decision | Rule | Cost |
+  | --- | --- | --- | --- | --- |
+  | Failed/truncated pid enumeration reads as mass exit and disarms tracking | Required | accept, fixed | correctness | sizing-query + bounded retry, nil skips the tick; 1 new test |
+  | Recycled pid inherits grace state without re-match | Required | accept, fixed | correctness (5s grace) | per-tick re-match of tracked pids, silent drop on doubt; 1 new test |
+  | `destroySpawnedHelper` can no-op on grandchildren | Advisory | decline | test seam scope | helper spawns nothing; direct-child kill is exact for this harness |
+  | `Failed` wrapping `Success` on count mismatch | Advisory | decline | brief-locked | R3 pins this mapping; changing it needs a brief amendment |
+- **Resolution:** both Required findings fixed in source; `poll` split into
+  `poll`/`refresh` to satisfy the lint complexity/length gates (no
+  suppression). Swift suite 148/148, `swiftFormatCheck`/`swiftLintCheck`
+  clean, `./gradlew quality` green, team-signed package rebuilt, reinstalled,
+  and deep-strict verified. Physical rerun (run 5) pending below.
 
 ## Verification
 

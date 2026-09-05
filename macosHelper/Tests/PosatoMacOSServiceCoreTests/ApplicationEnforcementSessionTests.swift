@@ -35,9 +35,9 @@ final class StubRunningApplication: RunningApplicationSnapshot {
 }
 
 final class StubApplicationListing: ApplicationSnapshotListing {
-  var applications: [StubRunningApplication] = []
+  var applications: [StubRunningApplication]? = []
 
-  func runningApplications() -> [any RunningApplicationSnapshot] {
+  func runningApplications() -> [any RunningApplicationSnapshot]? {
     return applications
   }
 }
@@ -225,8 +225,49 @@ final class SessionStubs {
 
   let snapshot = listing.runningApplications()
 
-  #expect(!snapshot.isEmpty)
-  #expect(snapshot.contains { $0.bundleIdentifier != nil && !$0.isTerminated })
+  #expect(snapshot?.isEmpty == false)
+  #expect(snapshot?.contains { $0.bundleIdentifier != nil && !$0.isTerminated } == true)
+}
+
+@Test func givenFailedListingWhenPolledThenTrackingSurvives() {
+  let stubs = SessionStubs()
+  let session = stubs.session()
+  let application = StubRunningApplication(processIdentifier: 401)
+  application.refuseGraceful = true
+  stubs.listing.applications = [application]
+  stubs.matcher.matched = [401: stubRequirement]
+
+  session.poll(now: 0)
+  #expect(application.terminateCalls == 1)
+
+  stubs.listing.applications = nil
+  session.poll(now: 1)
+
+  #expect(stubs.notices.posts.isEmpty)
+  stubs.listing.applications = [application]
+  session.poll(now: 6)
+
+  #expect(application.forceTerminateCalls == 1)
+  #expect(stubs.notices.posts.isEmpty)
+}
+
+@Test func givenTrackedOccupantStopsMatchingWhenPolledThenItIsDroppedSilently() {
+  let stubs = SessionStubs()
+  let session = stubs.session()
+  let application = StubRunningApplication(processIdentifier: 402)
+  application.refuseGraceful = true
+  stubs.listing.applications = [application]
+  stubs.matcher.matched = [402: stubRequirement]
+
+  session.poll(now: 0)
+  #expect(application.terminateCalls == 1)
+
+  stubs.matcher.matched = [:]
+  session.poll(now: 1)
+  session.poll(now: 6)
+
+  #expect(stubs.notices.posts.isEmpty)
+  #expect(application.forceTerminateCalls == 0)
 }
 
 @Test func givenStaleTrackedSnapshotWhenFreshShowsTerminatedThenNoticePosts() {

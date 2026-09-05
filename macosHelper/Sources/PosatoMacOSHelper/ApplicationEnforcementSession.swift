@@ -15,28 +15,38 @@ protocol RunningApplicationSnapshot: AnyObject {
 extension NSRunningApplication: RunningApplicationSnapshot {}
 
 protocol ApplicationSnapshotListing {
-  func runningApplications() -> [any RunningApplicationSnapshot]
+  /// Returns nil when enumeration fails. The session skips that tick: a
+  /// partial listing is indistinguishable from mass process exit.
+  func runningApplications() -> [any RunningApplicationSnapshot]?
 }
 
 struct ProcessApplicationListing: ApplicationSnapshotListing {
   /// `NSWorkspace.runningApplications` does not refresh in a process without
   /// a run loop, so the helper enumerates process identifiers directly and
   /// hydrates each one on demand. The snapshot is fresh on every poll.
-  func runningApplications() -> [any RunningApplicationSnapshot] {
-    var identifiers = [pid_t](repeating: 0, count: 2_048)
-    let bytes = identifiers.withUnsafeMutableBytes { buffer in
-      proc_listpids(UInt32(PROC_ALL_PIDS), 0, buffer.baseAddress, Int32(buffer.count))
-    }
-    guard bytes > 0 else {
-      return []
-    }
-    let count = min(Int(bytes) / MemoryLayout<pid_t>.size, identifiers.count)
-    return identifiers.prefix(count).compactMap { identifier in
-      guard identifier > 1 else {
+  func runningApplications() -> [any RunningApplicationSnapshot]? {
+    for _ in 0..<3 {
+      let needed = proc_listpids(UInt32(PROC_ALL_PIDS), 0, nil, 0)
+      guard needed > 0 else {
         return nil
       }
-      return NSRunningApplication(processIdentifier: identifier)
+      var identifiers = [pid_t](repeating: 0, count: Int(needed) / MemoryLayout<pid_t>.size + 1)
+      let capacity = identifiers.count * MemoryLayout<pid_t>.size
+      let bytes = identifiers.withUnsafeMutableBytes { buffer in
+        proc_listpids(UInt32(PROC_ALL_PIDS), 0, buffer.baseAddress, Int32(buffer.count))
+      }
+      guard bytes > 0, Int(bytes) < capacity else {
+        continue
+      }
+      let count = Int(bytes) / MemoryLayout<pid_t>.size
+      return identifiers.prefix(count).compactMap { identifier in
+        guard identifier > 1 else {
+          return nil
+        }
+        return NSRunningApplication(processIdentifier: identifier)
+      }
     }
+    return nil
   }
 }
 
@@ -211,11 +221,15 @@ final class ApplicationEnforcementSession: @unchecked Sendable {
   }
 
   func poll(now: TimeInterval) {
+    // A failed listing reads as mass exit, so the whole tick is skipped.
+    guard let running = listing.runningApplications() else {
+      return
+    }
     // Held snapshots never refresh in a process without a run loop, so every
     // tick re-resolves tracked entries against a fresh listing pass. A pid
     // that vanishes from enumeration is treated as terminated.
     var live: [pid_t: any RunningApplicationSnapshot] = [:]
-    for application in listing.runningApplications() {
+    for application in running {
       live[application.processIdentifier] = application
       guard !isPosato(application), tracked[application.processIdentifier] == nil else {
         continue
@@ -232,31 +246,51 @@ final class ApplicationEnforcementSession: @unchecked Sendable {
       }
     }
     for identifier in Array(tracked.keys) {
-      guard var entry = tracked[identifier] else {
-        continue
-      }
-      guard let current = live[identifier] else {
-        postDebouncedNotice(requirement: entry.requirement, now: now)
-        tracked.removeValue(forKey: identifier)
-        continue
-      }
-      entry.application = current
-      if current.isTerminated {
-        postDebouncedNotice(requirement: entry.requirement, now: now)
-        tracked.removeValue(forKey: identifier)
-        continue
-      }
-      if let requestedAt = entry.gracefulRequestedAt {
-        if now - requestedAt >= graceSeconds {
-          _ = entry.application.forceTerminate()
-        }
-      } else {
-        // A refused graceful request keeps the same force deadline; only the grace bounds work loss.
-        _ = entry.application.terminate()
-        entry.gracefulRequestedAt = now
-      }
-      tracked[identifier] = entry
+      refresh(identifier: identifier, live: live, now: now)
     }
+  }
+
+  private func refresh(
+    identifier: pid_t,
+    live: [pid_t: any RunningApplicationSnapshot],
+    now: TimeInterval
+  ) {
+    guard var entry = tracked[identifier] else {
+      return
+    }
+    guard let current = live[identifier] else {
+      postDebouncedNotice(requirement: entry.requirement, now: now)
+      tracked.removeValue(forKey: identifier)
+      return
+    }
+    guard
+      matcher.matchingRequirement(
+        processIdentifier: identifier,
+        requirements: [entry.requirement]
+      ) != nil
+    else {
+      // The occupant changed or validation blinked: drop it silently. Never
+      // terminate or announce on identity doubt; a still-present target is
+      // re-tracked with a fresh grace on the next tick.
+      tracked.removeValue(forKey: identifier)
+      return
+    }
+    entry.application = current
+    if current.isTerminated {
+      postDebouncedNotice(requirement: entry.requirement, now: now)
+      tracked.removeValue(forKey: identifier)
+      return
+    }
+    if let requestedAt = entry.gracefulRequestedAt {
+      if now - requestedAt >= graceSeconds {
+        _ = entry.application.forceTerminate()
+      }
+    } else {
+      // A refused graceful request keeps the same force deadline; only the grace bounds work loss.
+      _ = entry.application.terminate()
+      entry.gracefulRequestedAt = now
+    }
+    tracked[identifier] = entry
   }
 
   private func postDebouncedNotice(requirement: Data, now: TimeInterval) {
