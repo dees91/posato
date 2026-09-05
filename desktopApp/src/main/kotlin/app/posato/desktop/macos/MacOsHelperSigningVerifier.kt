@@ -13,17 +13,23 @@ internal object MacOsHelperSigningVerifier {
     private const val MAXIMUM_OUTPUT_BYTES = 16 * 1024
     private const val COMMAND_TIMEOUT_MILLISECONDS = 5_000L
     private const val MAXIMUM_BUNDLE_PARENT_DEPTH = 16
+    private const val HELPER_RELATIVE_PATH = "Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper"
+    private const val HELPER_RELATIVE_DEPTH = 6
     private val teamPattern = Regex("[A-Za-z0-9]{10}")
 
+    /**
+     * Verifies the helper at [helper] together with the application bundle that embeds it and
+     * returns the resolved executable path. The bundle is derived from the helper location, so the
+     * packaged application verifies its own embedded helper and the maintainer-gated physical
+     * harness can verify the installed development package it drives.
+     */
     fun verify(helper: Path): Path {
-        val appBundle = applicationBundle()
-        val expectedHelper = appBundle.resolve(
-            "Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper",
-        ).toAbsolutePath().normalize()
         check(!Files.isSymbolicLink(helper))
         check(Files.isRegularFile(helper, LinkOption.NOFOLLOW_LINKS))
         check(Files.isExecutable(helper))
         val resolvedHelper = helper.toRealPath(LinkOption.NOFOLLOW_LINKS)
+        val appBundle = enclosingApplicationBundle(resolvedHelper)
+        val expectedHelper = appBundle.resolve(HELPER_RELATIVE_PATH).toAbsolutePath().normalize()
         check(resolvedHelper == expectedHelper)
         val helperBundle = checkNotNull(resolvedHelper.parent?.parent?.parent)
 
@@ -40,10 +46,16 @@ internal object MacOsHelperSigningVerifier {
     }
 
     fun installedHelperPath(): Path {
-        val appBundle = applicationBundle()
-        return appBundle.resolve(
-            "Contents/Helpers/PosatoMacOSHelper.app/Contents/MacOS/PosatoMacOSHelper",
-        ).toAbsolutePath().normalize()
+        return applicationBundle().resolve(HELPER_RELATIVE_PATH).toAbsolutePath().normalize()
+    }
+
+    private fun enclosingApplicationBundle(helper: Path): Path {
+        val appBundle = generateSequence(helper) { path -> path.parent }
+            .drop(HELPER_RELATIVE_DEPTH)
+            .firstOrNull()
+            ?: error("Helper is not embedded in an application bundle")
+        check(appBundle.name.endsWith(".app"))
+        return appBundle
     }
 
     private fun applicationBundle(): Path {
