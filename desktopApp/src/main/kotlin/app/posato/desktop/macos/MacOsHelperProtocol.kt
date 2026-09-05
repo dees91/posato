@@ -12,10 +12,13 @@ internal object MacOsHelperProtocol {
     const val MAXIMUM_OPERATIONS: Int = 256
     const val HEADER_BYTES: Int = 68
     const val MAXIMUM_LIFECYCLE_DEADLINE_MILLISECONDS: Int = 120_000
+    const val MAXIMUM_CONFIGURE_DEADLINE_MILLISECONDS: Int = 10_000
     const val MAXIMUM_SELECTION_DEADLINE_MILLISECONDS: Int = 1_800_000
     const val LIFECYCLE_CAPABILITY: Long = 1L
     const val APPLICATION_SELECTION_CAPABILITY: Long = 2L
-    const val REQUIRED_PARENT_HELPER_CAPABILITIES: Long = LIFECYCLE_CAPABILITY or APPLICATION_SELECTION_CAPABILITY
+    const val BROWSER_DOMAIN_CONFIGURE_CAPABILITY: Long = 4L
+    const val REQUIRED_PARENT_HELPER_CAPABILITIES: Long =
+        LIFECYCLE_CAPABILITY or APPLICATION_SELECTION_CAPABILITY or BROWSER_DOMAIN_CONFIGURE_CAPABILITY
     private const val MAGIC: Int = 0x5053544F
     private const val MAJOR_VERSION: Short = 1
 
@@ -55,6 +58,7 @@ internal object MacOsHelperProtocol {
         val deadline = buffer.int
         val maximumDeadline = when (operation) {
             HelperOperation.SelectApplications -> MAXIMUM_SELECTION_DEADLINE_MILLISECONDS
+            HelperOperation.ConfigureBrowserDomains -> MAXIMUM_CONFIGURE_DEADLINE_MILLISECONDS
             else -> MAXIMUM_LIFECYCLE_DEADLINE_MILLISECONDS
         }
         require(deadline in 0..maximumDeadline)
@@ -123,6 +127,7 @@ internal enum class HelperOperation(
     Reconcile(8),
     Renew(9),
     SelectApplications(10),
+    ConfigureBrowserDomains(11),
 }
 
 internal data class HelperMessage(

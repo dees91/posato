@@ -1165,3 +1165,18 @@
   theater, `PageCursor` buffer copy, direction-keyed fetch frame cap,
   `uuidTextBytes` constant. Proves the macOS leg only; cross-device exchange
   stays with SYNC-009.
+
+## [2026-09-05] verification | MACOS-004 physical matrix and harness corrections
+
+- The gated JVM harness now drives the installed development package through
+  a parent process signed with the maintainer's development identity, and the
+  physical matrix passed on macOS 26.5.2 with Safari 26.5.2 and Chrome 152:
+  denial and same-tab presentation in Safari regular and Chrome regular and
+  Incognito windows, controls reachable, conflict preflight, listener stall,
+  helper kill, sleep/wake, reboot, and privacy canary; the Safari Private
+  Browsing rows passed after the Screen Time passcode was lifted.
+- The rows exposed and the closeout fixed three defects: Safari tabs have no
+  AppleScript `id`, a failed post-Apply chain check answered Apply with the
+  Restore response, and an Apply reconciled to `Idle` was reported as active.
+  The effective-chain check now waits for configd propagation. IP literals
+  stay relayed as unselected hosts and `AC-01` was amended to say so.

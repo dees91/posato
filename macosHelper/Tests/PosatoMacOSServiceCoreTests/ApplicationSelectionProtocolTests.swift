@@ -47,7 +47,7 @@ import Testing
     try WireCodec.decode(
       encoded,
       maximumBytes: WireLimits.maximumFrameBytes,
-      allowsApplicationSelection: true,
+      allowsHelperOnlyOperations: true,
       maximumDeadlineMilliseconds: WireLimits.maximumSelectionDeadlineMilliseconds
     ) == message
   )

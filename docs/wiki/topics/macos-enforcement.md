@@ -400,11 +400,68 @@ SQLite sidecars are owner read/write only. Selection identity remains absent
 from the root daemon, synchronized policy, diagnostics, and logs. Process
 matching and termination remain deferred to MACOS-005.
 
+## MACOS-004 physical verification
+
+`observed` (2026-09-05, one Apple silicon Mac on macOS 26.5.2 with Safari
+26.5.2 and Chrome Stable 152, development-signed package): exact-domain denial
+held for HTTP and HTTPS in Safari regular windows and in Chrome regular and
+Incognito windows, with the fixed local page written into the same tab; the
+control, subdomain, suffix-sibling, and other-suffix hosts stayed reachable;
+nonstandard ports were rejected without a direct route; a stalled listener
+returned no bytes and never fell back direct; conflict preflight refused an
+enabled manual proxy before Apply; forced helper termination, a real
+sleep/wake cycle, and a reboot each restored the recorded baseline
+byte-identically and left the daemon `Idle`; a synthetic canary never reached
+the unified log, evidence, or client output. Safari Private Browsing rows
+passed in a second run after the maintainer lifted the Screen Time passcode,
+which disables Private Browsing entirely on such a Mac.
+
+`observed`: Safari tabs expose no AppleScript `id` (error -1700 on macOS
+26.5.2), so a Safari adapter must address the current tab by index within its
+window; Chrome tabs keep a stable `id`. A tab closed or reordered between the
+read and the write therefore falls under the accepted no-compare-and-swap
+residual of ADR 0005. Unit tests with a stubbed Apple Events runner cannot
+catch this class of defect; only the physical rows did.
+
+`observed`: after `SCPreferencesApplyChanges` the settings that
+`CFNetworkCopySystemProxySettings` returns lag behind by a short interval, so
+an effective-chain check right after Apply must poll within a bounded settle
+window. When that check fails, the helper must answer the Apply request with
+its own failure payload; echoing the Restore response produces an operation
+mismatch that the parent client can only treat as an unknown outcome, and an
+Apply reconciled to `Success`/`Idle` must never count as active enforcement.
+
+`observed`: the helper accepts only a parent process signed with the
+application identifier and team, so an out-of-bundle harness needs a parent
+process signed with the maintainer's development identity; TCC attributes the
+helper's Apple Events to the responsible process (the terminal) rather than to
+the helper bundle.
+
+`open` (2026-09-05): the helper refuses a `utun`, `ipsec`, or `ppp` primary
+interface and an unsatisfied path, but iCloud Private Relay exposes no public
+detection, so activation is not refused while Private Relay is on; ADR 0005
+treats such undetectable overrides as a non-resistant residual and
+`RELEASE-001` owns the disclosure.
+
+`observed` (2026-09-05, maintainer review): a configure that replaces the
+domain session must be refused while an Apply is owned and must start the
+replacement listener before it stops the previous one, otherwise the system
+proxy can point at a closed port; Apply without a configured session is refused
+before the authorization prompt; and browser presentation must leave the
+proxy's serial queue, because an Apple Events round trip or the Automation
+prompt would otherwise stall all relayed traffic and the restore path.
+
+`user-confirmed` (2026-09-05): IP-literal authorities never match an exact
+domain and are relayed like unselected hosts; rejecting them would deny
+unrelated local-network and developer traffic, so typing a selected site's
+address stays a stated non-resistant residual rather than a rejected route.
+
 ## Open questions
 
-- Does MACOS-004 pass every accepted automated and physical browser,
-  coexistence, privacy-canary, transition, failure, and cleanup row on the
-  release versions?
+- Does the full MACOS-004 matrix pass on the release versions and on the
+  immediately preceding macOS major line (`RELEASE-001`)?
+- Is there a supported way to detect iCloud Private Relay before Apply, or
+  does the release disclose it as an unsupported coexistence?
 - How are signed installation, update, notarization, supported removal, public
   support disclosure, and manual recovery verified for the selected release
   channel?
