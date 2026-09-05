@@ -1225,6 +1225,10 @@
 - Only `GET` is retried. A retried `POST` that had already been applied would
   create a duplicate certificate against Apple's per-team cap, a conflicting
   device, or a second profile claiming a name Apple keeps unique per team.
+- "Connected iPhone" has to mean wired. `devicectl` reports a phone paired
+  over the local network as connected as well, and its `tunnelState` changed
+  between two consecutive listings on the same Mac, so selecting on that would
+  register a different set of devices depending on when the command ran.
 - The two `doctor` reports are deliberately separate: the verification driver
   asks whether this checkout can build, sign, and drive right now, while this
   one asks whether the Mac can obtain Apple resources and whether the account
