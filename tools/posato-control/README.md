@@ -214,6 +214,9 @@ owns a real window while exposing no accessibility server. Consequences:
 - `wait --process <name>` with no query waits on that process's window:
   `--for exists` is the readiness gate after the action that opens it, and
   `--for absent` asserts it closed, which a process that exited also satisfies.
+  A selector that never resolved, a misspelled name for instance, is
+  indistinguishable from one that exited and so satisfies `absent` at once;
+  assert `exists` first when the point is that a window was there and went away.
   Every other `--for` state is refused as `USAGE`, because the tree-based states
   would answer from an empty query instead of observing the window.
 - `screenshot --process <name>` captures that process's largest window at any
