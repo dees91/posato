@@ -57,6 +57,14 @@ step; every secret stays outside Git.
   row needs correction. Shared by rebase: `docs/wiki/log.md`. Do not touch
   `desktopApp/**`, `iosApp/**`, `macosHelper/**`, `shared/**`, or
   `tools/posato-control/**`.
+- Corrected write surface (2026-09-05): the list above omitted three files the
+  accepted criteria require. `AC-04` cannot hold without the module's
+  `detekt`, `ktlintCheck`, and `test` tasks in the root `build.gradle.kts`
+  `quality` list; `AC-04` is better defended with `*.p8`, `*.csr`, and
+  `*.provisionprofile` in `.gitignore`; and a guide nothing links to is
+  invisible, so `docs/development/README.md` gains one paragraph. Each is a
+  contiguous addition. `MACOS-005` and `IOS-002` have their Gradle files out
+  of scope, so no conflict is expected.
 
 ## Acceptance
 
@@ -101,3 +109,17 @@ step; every secret stays outside Git.
 - Decided by authority: profiles and keys stay untracked; the tool reads
   `posato.apple.developmentTeam` from the same `local.properties` rather than
   a second team configuration.
+- Decided (2026-09-05): "expired or invalid profiles are replaced" and
+  "nothing is deleted without an explicit `--replace`" are reconciled as
+  follows. An expired or invalid profile is deleted and recreated without
+  asking, because App Store Connect keeps profile names unique within a team,
+  so the dead profile blocks the name its replacement needs and grants nothing
+  that could be lost. A profile that is still valid but no longer covers a
+  newly registered device is never replaced automatically: the command stops
+  with `PROFILE_STALE` and asks for `--replace`.
+- Decided (2026-09-05): certificate creation sits behind `--create`. It is the
+  only irreversible write in the tool, putting a private key into the login
+  keychain and consuming one of the team's certificate slots, and on a Mac
+  that already holds a valid identity it cannot be exercised without revoking
+  that identity. `AC-01` and `AC-02` are unaffected; the reuse path is the one
+  the acceptance run takes.

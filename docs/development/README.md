@@ -147,3 +147,13 @@ the terminal or IDE process that runs it; the physical iPhone needs
 evidence stays under the ignored `build/verification/` directory. The command
 reference, query syntax, scenario format, and per-target notes live in
 [`tools/posato-control/README.md`](../../tools/posato-control/README.md).
+
+## Apple development provisioning
+
+`posato-provisioning` obtains the Apple development certificate, device
+registrations, and provisioning profiles the Posato targets need, so no
+developer-portal step blocks an agent. It needs an App Store Connect API team
+key the maintainer creates once and keeps outside Git, and like the
+verification driver it never runs in CI. Setup, the command reference, the
+profile destinations, and the privacy boundary are in
+[`apple-provisioning.md`](apple-provisioning.md).
