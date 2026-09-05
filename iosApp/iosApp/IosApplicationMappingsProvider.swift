@@ -152,7 +152,15 @@ struct ApplicationMappingsStore {
             fileURL: groupDirectory.appendingPathComponent("mappings-v1.json")
         )
         if fileManager.fileExists(atPath: groupStore.fileURL.path) {
-            _ = try groupStore.load()
+            let existing = try groupStore.load()
+            if existing.isEmpty, fileManager.fileExists(atPath: privateStore.fileURL.path) {
+                let pending = try privateStore.load()
+                if !pending.isEmpty {
+                    try writeGroupCopy(pending, groupDirectory: groupDirectory, groupURL: groupStore.fileURL, fileManager: fileManager)
+                    try? fileManager.removeItem(at: privateStore.fileURL)
+                    return groupStore
+                }
+            }
             if fileManager.fileExists(atPath: privateStore.fileURL.path) {
                 try? fileManager.removeItem(at: privateStore.fileURL)
             }
@@ -161,7 +169,7 @@ struct ApplicationMappingsStore {
         if fileManager.fileExists(atPath: privateStore.fileURL.path) {
             let current = try privateStore.load()
             try writeGroupCopy(current, groupDirectory: groupDirectory, groupURL: groupStore.fileURL, fileManager: fileManager)
-            try fileManager.removeItem(at: privateStore.fileURL)
+            try? fileManager.removeItem(at: privateStore.fileURL)
         } else {
             try writeGroupCopy([], groupDirectory: groupDirectory, groupURL: groupStore.fileURL, fileManager: fileManager)
         }

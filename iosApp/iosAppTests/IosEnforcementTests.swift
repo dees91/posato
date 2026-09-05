@@ -10,10 +10,11 @@ final class FakeEnforcementSettingsStore: IosEnforcementSettingsStore {
     var writes = 0
     var clears = 0
     var lieOnRead = false
+    var corruptApplicationsOnRead = false
 
     var blockedWebFilter: WebContentSettings.FilterPolicy? {
         get {
-            lieOnRead ? .none : storedFilter
+            lieOnRead ? WebContentSettings.FilterPolicy.none : storedFilter
         }
         set {
             writes += 1
@@ -23,7 +24,7 @@ final class FakeEnforcementSettingsStore: IosEnforcementSettingsStore {
 
     var shieldedApplications: Set<ApplicationToken>? {
         get {
-            storedApplications
+            corruptApplicationsOnRead ? Set() : storedApplications
         }
         set {
             writes += 1
@@ -113,14 +114,47 @@ final class IosEnforcementTests: XCTestCase {
     }
 
     func testVerifyMismatchRollsBackToAnEmptyOwnedStore() throws {
-        let store = FakeEnforcementSettingsStore()
-        store.lieOnRead = true
-        let enforcer = capableEnforcer(store: store, storedMappings: [])
+        for corruptApplications in [false, true] {
+            let store = FakeEnforcementSettingsStore()
+            store.lieOnRead = !corruptApplications
+            store.corruptApplicationsOnRead = corruptApplications
+            let enforcer = capableEnforcer(store: store, storedMappings: [])
 
-        XCTAssertEqual(try apply(domains: ["example.com"], enforcer: enforcer), .platformFailure)
-        XCTAssertEqual(store.clears, 1)
-        XCTAssertNil(store.storedFilter)
-        XCTAssertNil(store.storedApplications)
+            XCTAssertEqual(
+                try apply(domains: ["example.com"], enforcer: enforcer),
+                .platformFailure,
+                "corruptApplications \(corruptApplications)"
+            )
+            XCTAssertEqual(store.clears, 1, "corruptApplications \(corruptApplications)")
+            XCTAssertNil(store.storedFilter, "corruptApplications \(corruptApplications)")
+            XCTAssertNil(store.storedApplications, "corruptApplications \(corruptApplications)")
+        }
+    }
+
+    func testMigrationRemigratesAPrivateSelectionOverAnEmptyGroup() throws {
+        let privateDirectory = try temporaryDirectory()
+        let groupContainer = try temporaryDirectory()
+        defer {
+            try? FileManager.default.removeItem(at: privateDirectory)
+            try? FileManager.default.removeItem(at: groupContainer)
+        }
+        let privateStore = try ApplicationMappingsStore.create(in: privateDirectory.appendingPathComponent("Private"))
+        var migrated = try ApplicationMappingsStore.migrate(
+            privateStore: privateStore,
+            groupContainer: groupContainer
+        )
+        XCTAssertEqual(try migrated.load(), [])
+        XCTAssertFalse(FileManager.default.fileExists(atPath: privateStore.fileURL.path))
+
+        let mappings = [StoredApplicationMapping(token: Data([9, 9, 9]))]
+        try privateStore.save(mappings)
+
+        migrated = try ApplicationMappingsStore.migrate(
+            privateStore: privateStore,
+            groupContainer: groupContainer
+        )
+        XCTAssertEqual(try migrated.load(), mappings)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: privateStore.fileURL.path))
     }
 
     func testClearIsIdempotentAndLeavesAForeignStoreIntact() throws {
