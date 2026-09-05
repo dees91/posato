@@ -101,30 +101,23 @@
 
 ## Device gate (cleared 2026-09-04)
 
-- Signed device build with the team from ignored `local.properties`
-  passed as an ephemeral command parameter; no signing value recorded.
-- Driver (`posato-control`) installed, launched, and drove the app to
-  the Applications section; the maintainer tapped through the system
-  authorization and picked one application in the native picker.
-- Full device XCTest: 54 passed, 0 skipped — real-store apply/clear
-  with the stored selection, foreign-store isolation, migration
-  read-back, and the existing mapping flows.
-- Manual checkpoint (150 s hold, auto-clear): Safari shows the system
-  blocked presentation for the paused domain, the selected application
-  shows the system shield, unselected controls stay usable — all pass.
-- After clear: paused domain and application usable again — pass.
-- After revoking Screen Time authorization: clear runs, owned store
-  empty — pass. Phone left with authorization revoked and no Posato
-  restrictions; the stored selection remains for later flows.
+- Signed build with the ephemeral team parameter; driver drove the app
+  to Applications, maintainer authorized and picked one application.
+- Device XCTest 54 passed, 0 skipped; manual checkpoint all pass
+  (Safari block, app shield, unselected usable, clear restores,
+  revoke-then-clear empty). Phone left revoked, restriction-free.
+- Hosted review (P2 only, no P1): 3 accepted (re-migrate over empty
+  group, best-effort post-copy cleanup, explicit fake read + shield
+  rollback test), 3 declined (nil-container fallback, layered
+  refusal precedence, unmeasured caching). Verified, pushed, replied.
 
 ## Blockers and accepted risks
 
-- None remaining. The `approvedWithDataAccess` note from re-review stays
-  a future-task item outside this diff.
+- None remaining. The `approvedWithDataAccess` note stays a
+  future-task item outside this diff.
 
 ## Final
 
 - **Status:** `done`
-- **Outcome:** all acceptance criteria verified; pull request ready for
-  maintainer merge decision. The apps-only mirror rule is
-  maintainer-approved (2026-09-04).
+- **Outcome:** all acceptance criteria verified; apps-only rule
+  maintainer-approved (2026-09-04). Awaiting merge decision.
