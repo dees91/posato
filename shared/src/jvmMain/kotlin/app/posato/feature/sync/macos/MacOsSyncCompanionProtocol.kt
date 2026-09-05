@@ -89,7 +89,7 @@ internal object MacOsSyncCompanionProtocol {
         }
         val payloadSize = buffer.int
         require(payloadSize >= 0 && payloadSize == buffer.remaining())
-        if (operation != SyncCompanionOperation.FetchChanges) {
+        if (operation != SyncCompanionOperation.FetchChanges || outcome == null) {
             require(payloadSize <= MAXIMUM_PAYLOAD_BYTES)
         }
         val payload = ByteArray(payloadSize).also(buffer::get)

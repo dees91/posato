@@ -79,7 +79,7 @@ enum RecordCodec {
       return nil
     }
     var text = [UInt8]()
-    text.reserveCapacity(SyncLimits.accountBytes)
+    text.reserveCapacity(SyncLimits.uuidTextBytes)
     for index in 0..<4 {
       appendByte(identifier[index], to: &text)
     }
@@ -103,7 +103,7 @@ enum RecordCodec {
   }
 
   static func isCanonicalUUID(_ text: String) -> Bool {
-    guard text.utf8.count == SyncLimits.accountBytes else {
+    guard text.utf8.count == SyncLimits.uuidTextBytes else {
       return false
     }
     let scalars = Array(text.unicodeScalars)
@@ -345,6 +345,10 @@ enum CloudRequestCodec {
 private struct PageCursor {
   let data: Data
   var offset = 0
+
+  init(data: Data) {
+    self.data = Data(data)
+  }
 
   var isDrained: Bool {
     return offset == data.count

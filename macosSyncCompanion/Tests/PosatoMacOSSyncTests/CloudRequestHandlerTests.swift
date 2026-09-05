@@ -209,7 +209,7 @@ import Testing
   #expect(response.outcome == .missing)
 }
 
-@Test func givenPostflightMismatchWhenFetchingChangesThenPageIsDiscarded() {
+@Test func givenPostflightMismatchWhenFetchingChangesThenUnknownOutcomeIsReturned() {
   let backend = FakeCloudBackend()
   backend.changes = .fetched(
     BackendChanges(

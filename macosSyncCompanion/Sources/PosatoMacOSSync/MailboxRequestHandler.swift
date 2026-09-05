@@ -99,23 +99,9 @@ extension RequestHandler {
       accounts: dependencies.accounts
     )
     if changed || !bindingHolds {
-      discardPage(result)
       return request.respond(outcome: .unknownOutcome)
     }
     return mapChangeFetch(result, request: request)
-  }
-
-  static func discardPage(_ result: ChangeFetchNative) {
-    if case .page(let page) = result {
-      var cursor = page.cursor
-      cursor.resetBytes(in: cursor.startIndex..<cursor.endIndex)
-      if var identifier = page.bundleIdentifier {
-        identifier.resetBytes(in: identifier.startIndex..<identifier.endIndex)
-      }
-      if var bundle = page.bundle {
-        bundle.resetBytes(in: bundle.startIndex..<bundle.endIndex)
-      }
-    }
   }
 
   static func mapChangeFetch(
