@@ -1,7 +1,7 @@
 # Execution: `APPLE-002`
 
 - **Brief:** [Provision development profiles and certificates through the App Store Connect API](../specifications/apple-002-asc-provisioning.md)
-- **Status:** `blocked`
+- **Status:** `active`
 - **Review tier:** `standard`
 - **Implementer:** agent (worktree `posato-apple-002`)
 - **Reviewer:** pending until assigned
@@ -21,9 +21,10 @@
 
 ## Result
 
-Steps 1 to 9 are complete as `:posato-provisioning` (`tools/posato-provisioning`),
+All ten steps are complete as `:posato-provisioning` (`tools/posato-provisioning`),
 JDK-only apart from the existing clikt and kotlinx-serialization catalog
-entries. Step 10 is blocked on the maintainer's App Store Connect team key.
+entries. The maintainer created the App Store Connect team key on 2026-09-05
+and the acceptance run passed on the real account.
 
 Three defects were found by the independent plan review and corrected before
 implementation. Each would have produced a tool that reported success on a
@@ -41,6 +42,13 @@ wrong result:
 - only `GET` is retried. A retried `POST` that had already been applied would
   create a duplicate certificate against Apple's per-team cap, a conflicting
   device, or a second profile claiming a unique name.
+
+The acceptance run found one further defect. `devicectl` reports a phone
+paired over the local network as connected as well, and its `tunnelState`
+changed between two consecutive listings on this Mac, so the original filter
+would have registered a different set of devices depending on when it ran and
+would have consumed a device slot for a phone that merely shares the network.
+Selection now requires `transportType` of `wired`.
 
 Deliberate deviations from the brief, both recorded there: certificate
 creation sits behind `--create`, and the expired-versus-valid reading of the
@@ -68,17 +76,21 @@ rather than the whole HTTP client.
 | `AC-03` no key configured | pass | `doctor` exits 3, reports "No request was attempted", and `profiles ensure` exits 3; `~/Library/Developer/Posato/` unchanged by checksum |
 | `AC-03` rejected credential | pass | Unit-level: 401 maps to `ASC_UNAUTHORIZED` and is never retried |
 | Private-data scan | pass | `git diff --check` clean; no team, device, key, or personal path in the diff; device fixtures confirmed not to collide with this Mac's real identifiers |
-| `AC-02` real-account run | blocked | Needs the App Store Connect team key |
-| `AC-04` secret-free tracked files | partial | The scan above passes; the account half completes with `AC-02` |
+| `AC-02` iOS extension profile | pass | `profiles ensure app.posato.ios.activitymonitor` installed a profile carrying the Family Controls entitlement, the `group.app.posato.ios.session` App Group, this Mac's certificate, and the registered devices, to both the Posato directory and the Xcode directory |
+| `AC-02` macOS sync profile | pass | `profiles ensure app.posato.macos.sync` replaced the hand-made `SYNC-006` file in place; `:desktopApp:verifyMacOsDevelopmentPackaging` passes against it with the development identity, so its signed companion-entitlement assertions hold |
+| `AC-02` repetition | pass | Repeating `devices register`, `certificates ensure`, and both `profiles ensure` cases reports `already-registered`/`reused`, issues no `POST` or `DELETE`, and leaves every installed file unchanged by checksum |
+| `AC-04` secret-free tracked files | pass | The scan above, plus `doctor` reporting all fifteen conditions without printing a key, issuer, team, device identifier, or path |
+| All five profiles installed | pass | `doctor` reports 15 of 15 conditions ok |
 
 ## Blockers and accepted risks
 
-- Maintainer action: create one App Store Connect API team key with the Admin
-  role, download the `.p8` once, store it under `~/Library/Developer/Posato/`,
-  and add `posato.asc.keyId`, `posato.asc.issuerId`, and
-  `posato.asc.privateKeyPath` to `local.properties` in the main checkout, then
-  copy the whole file into this worktree. `AC-02` and the account half of
-  `AC-04` stay unverified until then.
+- Cleared 2026-09-05: the maintainer created the App Store Connect team key and
+  configured the three `posato.asc.` values. No blocker remains.
+- Observed once: a `profiles ensure app.posato.macos` run failed before its
+  profile was created, and the immediate rerun succeeded reporting that no
+  profile of that name existed. No duplicate was produced, which is the
+  behaviour the `POST`-never-retried rule exists to give; the failure category
+  was not captured and is not reproducible.
 - Write surface: three files outside the brief's list were changed and the
   brief now records why — root `build.gradle.kts` (three lines in `quality`,
   without which `AC-04` is unsatisfiable), `.gitignore`, and one paragraph in
@@ -93,6 +105,8 @@ rather than the whole HTTP client.
 
 ## Final
 
-- **Status:** `blocked`
-- **Outcome:** Implementation complete and locally verified; the real-account
-  acceptance run waits on the maintainer's App Store Connect key.
+- **Status:** `active`
+- **Outcome:** Implementation complete and accepted against the real account:
+  all five development profiles are installed, `doctor` reports fifteen of
+  fifteen conditions ok, and the macOS packaging verification passes with the
+  tool-produced profile. Awaiting the independent completed-change review.
