@@ -28,6 +28,22 @@ abstract class ProvisioningCommand(
 ) : CliktCommand(name = name) {
     private val group by GlobalOptionsGroup()
 
+    private var reported: ProvisioningException? = null
+
+    /**
+     * Records a truthful failure that is not an exception.
+     *
+     * `doctor` has to print its whole report and still exit non-zero when a condition is missing, so the envelope
+     * carries the result and the error together rather than one replacing the other.
+     */
+    protected fun reportFailure(
+        code: ErrorCode,
+        message: String,
+        hint: String
+    ) {
+        reported = ProvisioningException(code, message, hint)
+    }
+
     override fun help(context: Context): String = helpText
 
     protected abstract fun execute(session: Session): JsonElement?
@@ -59,6 +75,7 @@ abstract class ProvisioningCommand(
             failure = wrap(exception)
             null
         }
+        failure = failure ?: reported
         val redact: (String) -> String = { text -> session?.redaction?.redact(text) ?: text }
         val envelope = Envelope(
             ok = failure == null,

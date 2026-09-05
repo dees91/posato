@@ -128,7 +128,7 @@ class ProfilesEnsureCommand :
         if (requested != null && requested != identifier.platform) {
             throw ProvisioningException(
                 ErrorCode.USAGE,
-                "${identifier.bundleId} is a ${identifier.platform.name.lowercase()} App ID, not $platform.",
+                "${identifier.bundleId} belongs to ${identifier.platform.displayName}, so --platform $platform does not apply.",
                 "Drop --platform; the App ID already determines it.",
             )
         }

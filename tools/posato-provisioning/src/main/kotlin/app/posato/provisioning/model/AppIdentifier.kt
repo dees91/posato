@@ -4,10 +4,11 @@ import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningException
 
 enum class ApplePlatform(
-    val ascName: String
+    val ascName: String,
+    val displayName: String,
 ) {
-    IOS("IOS"),
-    MACOS("MAC_OS"),
+    IOS("IOS", "iOS"),
+    MACOS("MAC_OS", "macOS"),
 }
 
 /**
