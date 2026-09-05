@@ -128,6 +128,14 @@ path of the `.p8`, and any response body. A failed request reports its category
 and, at most, App Store Connect's enumerated error codes, which are a closed
 vocabulary carrying no data. The tool writes no transcript file.
 
+Two paths into a message are closed deliberately. A response whose shape the
+tool cannot read is reported by naming the resource only, because the decoder
+quotes the input around the offset and that slice would be other devices'
+identifiers. The home directory and the checkout path are registered as
+secrets, so a helper command, a tool's own error output, or a file-system
+failure renders them as `<redacted>/Library/...` rather than naming a person in
+an envelope that gets pasted into a record.
+
 The names sent to Apple when registering are the fixed strings
 `Posato Development Mac` and `Posato Development iPhone`, never the host name
 or the device name.
@@ -159,11 +167,16 @@ The two reports answer different questions and share no check identifiers.
   like. Run `certificates ensure --create`.
 - **`CERTIFICATE_IMPORT_FAILED`** — `security import` writes both the private key
   and the certificate into the login keychain and may raise a keychain prompt.
-  Approve it and rerun; the issued certificate is reused rather than requested
-  again. This tool deliberately does not run `security set-key-partition-list`
-  to silence later prompts, because that needs the keychain password. Whether
-  the import produced a usable identity is only knowable by asking the keychain
-  again, which is what the command reports on.
+  By this point App Store Connect has already issued the certificate and
+  consumed one of the team's slots, so the tool **keeps** the issued `.cer` and
+  its private key in the owner-only working directory it names in the message,
+  rather than deleting them. Approve the prompt and import both by hand with
+  `security import <file> -T /usr/bin/codesign`. Do not rerun with `--create`:
+  that requests a second certificate against the same cap while the first stays
+  unusable. This tool deliberately does not run
+  `security set-key-partition-list` to silence later prompts, because that needs
+  the keychain password. Whether the import produced a usable identity is only
+  knowable by asking the keychain again, which is what the command reports on.
 - **No connected iPhone** — reported as UNKNOWN, never as a failure. "Connected"
   means wired: a phone paired over the local network also reports a tunnel, and
   that tunnel's state changes between readings, so selecting on it would

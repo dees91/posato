@@ -1,8 +1,8 @@
 package app.posato.provisioning.local
 
+import app.posato.provisioning.core.CommandRunner
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningException
-import app.posato.provisioning.core.Subprocess
 import app.posato.provisioning.core.UserPaths
 import app.posato.provisioning.model.AppIdentifier
 import app.posato.provisioning.model.ApplePlatform
@@ -32,7 +32,7 @@ data class InstallResult(
  * never named.
  */
 class ProfileInstaller(
-    private val subprocess: Subprocess,
+    private val subprocess: CommandRunner,
     private val userPaths: UserPaths,
     private val team: String,
 ) {

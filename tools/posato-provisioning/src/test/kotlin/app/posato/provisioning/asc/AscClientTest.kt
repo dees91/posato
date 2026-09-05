@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -108,6 +109,19 @@ class AscClientTest {
         assertEquals("BID", relationships["bundleId"]!!.jsonObject["data"]!!.jsonObject["id"]!!.jsonPrimitive.content)
         assertEquals(listOf("CERT"), ids(relationships, "certificates"))
         assertEquals(listOf("MAC", "PHONE"), ids(relationships, "devices"))
+    }
+
+    @Test
+    fun `names the resource and nothing else when a response cannot be read`() {
+        // kotlinx reports a decoding failure by quoting the input around the offset. For a devices document that
+        // slice is other people's device identifiers, which redaction has never seen and cannot rewrite.
+        val executor = RecordingExecutor("""{"data":[{"attributes":{"udid":"SECRET-DEVICE-UDID"}}]}""")
+
+        val failure = assertFailsWith<ProvisioningException> { AscClient(executor).devices() }
+
+        assertEquals(ErrorCode.ASC_REJECTED, failure.code)
+        assertTrue(failure.message.orEmpty().contains("devices"))
+        assertFalse(failure.message.orEmpty().contains("SECRET-DEVICE-UDID"))
     }
 
     @Test

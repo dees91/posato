@@ -93,12 +93,35 @@ rather than the whole HTTP client.
   does not describe the branch it exercises, and `doctor` exiting 0 when every
   account-side condition is UNKNOWN.
 
+A second independent review of the pull request raised four P2 findings and no
+P1. P2 is advisory by default; the maintainer accepted all four, and one was
+arguably higher than its class:
+
+  1. `CertificateCreation.install` deleted the private key even when the
+     keychain import failed, after App Store Connect had already issued the
+     certificate and consumed a team slot. That stranded the certificate
+     permanently and the offered remedy would have requested a second one
+     against the same cap. The key and the issued `.cer` are now kept, and the
+     message names the directory in tilde form with the manual import to run.
+  2. A response the decoder could not read reached the envelope through
+     `kotlinx`, which quotes the input around the offset; for a `devices`
+     document that slice is other devices' identifiers. Decoding failures are
+     now reported by naming the resource only.
+  3. The home directory and the checkout path were not registered as secrets,
+     so helper transcript lines, tool error output, and file-system failures
+     carried a personal path into envelopes that get pasted into records. Both
+     are registered before the transcript exists.
+  4. `ProfileInstaller` had no test, because `Subprocess` was concrete, leaving
+     the file-writing boundary unexercised. `CommandRunner` is now a seam and
+     the installer and the certificate creation path have tests over a
+     temporary home.
+
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | `./gradlew quality` | pass | Full aggregate gate with the new module's detekt, ktlintCheck, and test included, rerun after the last correction |
-| `:posato-provisioning:test` | pass | 79 tests, including a 200-sample ES256 signature round trip verified against a generated public key |
+| `:posato-provisioning:test` | pass | 91 tests, including a 200-sample ES256 signature round trip verified against a generated public key |
 | `AC-01` doctor inventory | pass | 15 checks in a fixed order, each unmet one carrying a remedy; a test asserts no configured or discovered value appears in any detail or hint |
 | `AC-03` no key configured | pass | `doctor` exits 3, reports "No request was attempted", and `profiles ensure` exits 3; `~/Library/Developer/Posato/` unchanged by checksum |
 | `AC-03` rejected credential | pass | Unit-level: 401 maps to `ASC_UNAUTHORIZED` and is never retried |
@@ -108,7 +131,8 @@ rather than the whole HTTP client.
 | `AC-02` repetition | pass | Repeating `devices register`, `certificates ensure`, and both `profiles ensure` cases reports `already-registered`/`reused`, issues no `POST` or `DELETE`, and leaves every installed file unchanged by checksum |
 | `AC-04` secret-free tracked files | pass | The scan above, plus `doctor` reporting all fifteen conditions without printing a key, issuer, team, device identifier, or path |
 | All five profiles installed | pass | `doctor` reports 15 of 15 conditions ok |
-| Re-verified after the review corrections | pass | `quality`, 79 tests, `doctor` still 15 of 15 on the real account, and a repeat `profiles ensure app.posato.macos.sync` still reports `reuse` with no mutating request |
+| Redaction on the real machine | pass | `doctor --verbose` renders helper paths as `<redacted>/Library/...` with no occurrence of the home directory |
+| Re-verified after the review corrections | pass | `quality`, 91 tests, `doctor` still 15 of 15 on the real account, and a repeat `profiles ensure app.posato.macos.sync` still reports `reuse` with no mutating request |
 
 ## Blockers and accepted risks
 
