@@ -7,6 +7,7 @@ final class BrowserDomainSession: @unchecked Sendable {
   private var proxy: BoundedHTTPProxy?
   private var presentation = BrowserPresentationAdapter()
   private let presentationLock = NSLock()
+  private let presentationQueue = DispatchQueue(label: "app.posato.macos.helper.presentation")
   private let chain = ProxyChainValidator()
   private let compatibility = NetworkCompatibility(reader: SystemNetworkCompatibilityReader())
   private(set) var port: UInt16 = 0
@@ -26,7 +27,11 @@ final class BrowserDomainSession: @unchecked Sendable {
       selectedHosts: selected,
       sessionEndEpochMilliseconds: payload.sessionEndEpochMilliseconds,
       blockedRequestHandler: { [weak self] in
-        self?.presentBlockedPage()
+        // Apple Events round trips and the Automation prompt must not stall the proxy queue.
+        guard let session = self else {
+          return
+        }
+        session.presentationQueue.async { session.presentBlockedPage() }
       }
     )
     let port = try proxy.start()
@@ -61,19 +66,26 @@ final class BrowserDomainSession: @unchecked Sendable {
     }
   }
 
+  /// Terminal for the session: only the port is cleared under the lock, so a stop from the pipe
+  /// thread never waits behind an Apple Events call or the Automation prompt.
   func stop() {
     presentationLock.lock()
-    presentation.reset()
+    port = 0
     presentationLock.unlock()
     proxy?.stop()
     proxy = nil
-    port = 0
   }
 
+  /// Runs on `presentationQueue`, which serialises every use of the adapter; the lock protects
+  /// only the port read, so the Apple Events round trips happen outside it.
   private func presentBlockedPage() {
     presentationLock.lock()
-    defer { presentationLock.unlock() }
-    _ = presentation.presentBlockedPage(port: port, selectedHosts: Set(payload.domains))
+    let activePort = port
+    presentationLock.unlock()
+    guard activePort != 0 else {
+      return
+    }
+    _ = presentation.presentBlockedPage(port: activePort, selectedHosts: Set(payload.domains))
   }
 
   private func validateCandidateChain(port: UInt16, selected: Set<String>) throws {

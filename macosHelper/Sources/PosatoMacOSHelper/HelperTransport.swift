@@ -295,10 +295,12 @@ func remainingDeadline(
   )
 }
 
-/// A Restore request that follows `request` on the same connection, session, and request identity.
+/// A Restore request that follows `request` on the same connection and session, reusing its
+/// request identity unless the caller supplies a fresh or anonymous one.
 func restoreMessage(
   after request: WireMessage,
-  deadlineMilliseconds: UInt32
+  deadlineMilliseconds: UInt32,
+  requestIdentifier: Data? = nil
 ) throws -> WireMessage {
   return try WireMessage(
     kind: .request,
@@ -307,7 +309,7 @@ func restoreMessage(
     deadlineMilliseconds: deadlineMilliseconds,
     connectionIdentifier: request.connectionIdentifier,
     sessionIdentifier: request.sessionIdentifier,
-    requestIdentifier: request.requestIdentifier,
+    requestIdentifier: requestIdentifier ?? request.requestIdentifier,
     payload: Data()
   )
 }

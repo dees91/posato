@@ -437,6 +437,20 @@ process signed with the maintainer's development identity; TCC attributes the
 helper's Apple Events to the responsible process (the terminal) rather than to
 the helper bundle.
 
+`open` (2026-09-05): the helper refuses a `utun`, `ipsec`, or `ppp` primary
+interface and an unsatisfied path, but iCloud Private Relay exposes no public
+detection, so activation is not refused while Private Relay is on; ADR 0005
+treats such undetectable overrides as a non-resistant residual and
+`RELEASE-001` owns the disclosure.
+
+`observed` (2026-09-05, maintainer review): a configure that replaces the
+domain session must be refused while an Apply is owned and must start the
+replacement listener before it stops the previous one, otherwise the system
+proxy can point at a closed port; Apply without a configured session is refused
+before the authorization prompt; and browser presentation must leave the
+proxy's serial queue, because an Apple Events round trip or the Automation
+prompt would otherwise stall all relayed traffic and the restore path.
+
 `user-confirmed` (2026-09-05): IP-literal authorities never match an exact
 domain and are relayed like unselected hosts; rejecting them would deny
 unrelated local-network and developer traffic, so typing a selected site's
@@ -446,6 +460,8 @@ address stays a stated non-resistant residual rather than a rejected route.
 
 - Does the full MACOS-004 matrix pass on the release versions and on the
   immediately preceding macOS major line (`RELEASE-001`)?
+- Is there a supported way to detect iCloud Private Relay before Apply, or
+  does the release disclose it as an unsupported coexistence?
 - How are signed installation, update, notarization, supported removal, public
   support disclosure, and manual recovery verified for the selected release
   channel?

@@ -30,6 +30,22 @@ struct WireDataCursor {
     }
   }
 
+  mutating func readUInt64() throws -> UInt64 {
+    let bytes = try readData(count: 8)
+    return bytes.reduce(UInt64(0)) { value, byte in
+      (value << 8) | UInt64(byte)
+    }
+  }
+
+  /// One length byte followed by that many bytes; empty and oversized values are invalid.
+  mutating func readBoundedData(maximumBytes: Int) throws -> Data {
+    let count = Int(try readUInt8())
+    guard count > 0, count <= maximumBytes else {
+      throw WireProtocolFailure.invalidFrame
+    }
+    return try readData(count: count)
+  }
+
   mutating func readData(count: Int) throws -> Data {
     guard count >= 0, remainingBytes >= count else {
       throw WireProtocolFailure.invalidFrame

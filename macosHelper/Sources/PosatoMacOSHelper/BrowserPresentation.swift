@@ -105,10 +105,6 @@ struct BrowserPresentationAdapter {
     }
   }
 
-  mutating func reset() {
-    lastPresented.removeAll()
-  }
-
   private static func isNumeric(_ value: String) -> Bool {
     return !value.isEmpty && value.utf8.allSatisfy { byte in byte >= 0x30 && byte <= 0x39 }
   }

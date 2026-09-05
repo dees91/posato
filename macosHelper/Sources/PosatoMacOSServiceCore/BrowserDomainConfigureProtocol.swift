@@ -48,7 +48,7 @@ public struct BrowserDomainConfigurePayload: Equatable, Sendable {
   }
 
   public static func decode(_ data: Data) throws -> BrowserDomainConfigurePayload {
-    var cursor = BrowserDomainConfigureCursor(data: data)
+    var cursor = WireDataCursor(data: data)
     let count = Int(try cursor.readUInt16())
     guard count >= 1, count <= BrowserDomainConfigureLimits.maximumDomainCount else {
       throw WireProtocolFailure.invalidFrame
@@ -165,52 +165,5 @@ extension BrowserDomainConfigureResponse: CustomStringConvertible, CustomDebugSt
 
   public var debugDescription: String {
     return description
-  }
-}
-
-private struct BrowserDomainConfigureCursor {
-  let data: Data
-  var offset = 0
-
-  var remainingBytes: Int {
-    return data.count - offset
-  }
-
-  mutating func readUInt8() throws -> UInt8 {
-    guard remainingBytes >= 1 else {
-      throw WireProtocolFailure.invalidFrame
-    }
-    defer { offset += 1 }
-    return data[offset]
-  }
-
-  mutating func readUInt16() throws -> UInt16 {
-    let bytes = try readData(count: 2)
-    return bytes.reduce(UInt16(0)) { value, byte in
-      (value << 8) | UInt16(byte)
-    }
-  }
-
-  mutating func readUInt64() throws -> UInt64 {
-    let bytes = try readData(count: 8)
-    return bytes.reduce(UInt64(0)) { value, byte in
-      (value << 8) | UInt64(byte)
-    }
-  }
-
-  mutating func readBoundedData(maximumBytes: Int) throws -> Data {
-    let count = Int(try readUInt8())
-    guard count > 0, count <= maximumBytes else {
-      throw WireProtocolFailure.invalidFrame
-    }
-    return try readData(count: count)
-  }
-
-  mutating func readData(count: Int) throws -> Data {
-    guard count >= 0, remainingBytes >= count else {
-      throw WireProtocolFailure.invalidFrame
-    }
-    defer { offset += count }
-    return data.subdata(in: offset..<(offset + count))
   }
 }
