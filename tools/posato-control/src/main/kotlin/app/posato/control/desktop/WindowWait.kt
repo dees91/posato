@@ -8,6 +8,9 @@ fun interface WindowProbe {
     fun windowPresent(): Boolean
 }
 
+/** Which way a queryless `--process` wait is satisfied. */
+enum class WindowState { PRESENT, ABSENT }
+
 /**
  * Waits for the addressed process to own a visible window.
  *
@@ -21,6 +24,7 @@ object WindowWait {
     fun await(
         timeoutSeconds: Double,
         describe: String,
+        state: WindowState = WindowState.PRESENT,
         clock: () -> Long = System::currentTimeMillis,
         sleep: (Long) -> Unit = Thread::sleep,
         pollIntervalMs: Long = DEFAULT_POLL_INTERVAL_MS,
@@ -34,15 +38,24 @@ object WindowWait {
                 probe.windowPresent()
             } catch (exception: ControlException) {
                 if (exception.code != ErrorCode.PROCESS_NOT_ALLOWED) throw exception
+                // A selector that no longer resolves is the strongest form of an absent window: the process is gone.
+                if (state == WindowState.ABSENT) return
                 refusal = exception
                 false
             }
-            if (present) return
+            if (present == (state == WindowState.PRESENT)) return
             if (clock() >= deadline) {
+                val expectation = if (state == WindowState.PRESENT) "a window of" else "the window of"
+                val remedy = if (state == WindowState.PRESENT) {
+                    "Confirm the action that opens the window actually ran."
+                } else {
+                    "Confirm the action that closes the window actually ran."
+                }
                 throw refusal ?: ControlException(
                     ErrorCode.WAIT_TIMEOUT,
-                    "Timed out after $timeoutSeconds s waiting for a window of $describe.",
-                    "Confirm the action that opens the window actually ran.",
+                    "Timed out after $timeoutSeconds s waiting for $expectation $describe to " +
+                        if (state == WindowState.PRESENT) "appear." else "close.",
+                    remedy,
                 )
             }
             sleep(pollIntervalMs)

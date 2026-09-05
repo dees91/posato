@@ -29,6 +29,20 @@ data class SyncProfile(
 }
 
 /**
+ * The team a certificate signs under, read from its subject.
+ *
+ * `openssl x509 -noout -subject` renders a subject in two shapes depending on the implementation: LibreSSL, which
+ * ships with macOS, separates fields with slashes, while OpenSSL 3 uses commas and pads the equals sign. Both are
+ * accepted, because a rendering this parser fails to read would silently degrade every certificate to `unknown` and
+ * the team-mismatch error would never fire.
+ */
+object CertificateSubject {
+    private val organizationalUnit = Regex("""(?:^|[/,])\s*OU\s*=\s*([A-Za-z0-9]{10})\s*(?:[/,]|$)""")
+
+    fun team(subject: String): String? = organizationalUnit.find(subject)?.groupValues?.get(1)
+}
+
+/**
  * Host-observable provisioning state, gathered once. Keeping it as plain data makes the check inventory testable
  * without a Mac, a keychain, or a staged bundle.
  */
@@ -100,6 +114,12 @@ object DesktopProvisioningChecks {
                 "Run `security find-certificate -c \"<identity>\" -p | openssl x509 -noout -subject` and check its OU field.",
             )
 
+            // Nothing was compared when no team is configured, so the detail must not claim a match.
+            facts.developmentTeam == null -> DoctorCheck.pass(
+                "desktop.signingIdentity",
+                "A configured macOS signing identity is present in the keychain; no development team is configured to compare it against.",
+            )
+
             else -> DoctorCheck.pass(
                 "desktop.signingIdentity",
                 "A configured macOS signing identity is present in the keychain and signs under the configured team.",
@@ -158,7 +178,8 @@ object DesktopProvisioningChecks {
                 "Use a profile issued for the configured team, or correct posato.apple.developmentTeam.",
             )
         }
-        return DoctorCheck.pass(id, "The companion provisioning profile matches $SYNC_APPLICATION_IDENTIFIER and is current.")
+        val compared = if (team == null) "; no development team is configured to compare it against" else " for the configured team"
+        return DoctorCheck.pass(id, "The companion provisioning profile matches $SYNC_APPLICATION_IDENTIFIER and is current$compared.")
     }
 
     private fun helperBundle(facts: ProvisioningFacts): DoctorCheck {

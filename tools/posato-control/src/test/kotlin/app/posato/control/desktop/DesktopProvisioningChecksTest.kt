@@ -6,6 +6,7 @@ import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 private const val TEAM = "AAAAAAAAAA"
@@ -50,6 +51,33 @@ private val developmentSigned = facts(
 )
 
 private fun List<DoctorCheck>.check(id: String): DoctorCheck = single { it.id == id }
+
+class CertificateSubjectTest {
+    @Test
+    fun `the LibreSSL rendering that ships with macOS is read`() {
+        val subject = "subject= /UID=CCCCCCCCCC/CN=Apple Development: Someone (BBBBBBBBBB)/OU=AAAAAAAAAA/O=Someone/C=US"
+        assertEquals(TEAM, CertificateSubject.team(subject))
+    }
+
+    @Test
+    fun `the OpenSSL 3 rendering is read`() {
+        val subject = "subject=UID = CCCCCCCCCC, CN = Apple Development: Someone (BBBBBBBBBB), OU = AAAAAAAAAA, O = Someone, C = US"
+        assertEquals(TEAM, CertificateSubject.team(subject))
+    }
+
+    @Test
+    fun `a subject without an organizational unit yields nothing rather than a neighbouring field`() {
+        assertNull(CertificateSubject.team("subject= /UID=CCCCCCCCCC/CN=Apple Development: Someone (BBBBBBBBBB)/O=Someone/C=US"))
+        assertNull(CertificateSubject.team(""))
+    }
+
+    @Test
+    fun `the certificate identifier inside the common name is never mistaken for the team`() {
+        // BBBBBBBBBB sits in the common name and AAAAAAAAAA in the organizational unit; only the latter is the team.
+        val subject = "subject= /CN=Apple Development: Someone (BBBBBBBBBB)/OU=AAAAAAAAAA/C=US"
+        assertEquals(TEAM, CertificateSubject.team(subject))
+    }
+}
 
 class DesktopProvisioningChecksTest {
     @Test
@@ -127,10 +155,13 @@ class DesktopProvisioningChecksTest {
     }
 
     @Test
-    fun `no configured team means no mismatch can be claimed`() {
-        val check = DesktopProvisioningChecks.checks(developmentSigned.copy(developmentTeam = null, signingIdentityTeam = OTHER_TEAM))
-            .check("desktop.signingIdentity")
-        assertTrue(check.ok, check.detail)
+    fun `no configured team means no mismatch can be claimed, and no match is claimed either`() {
+        val checks = DesktopProvisioningChecks.checks(developmentSigned.copy(developmentTeam = null, signingIdentityTeam = OTHER_TEAM))
+        val identity = checks.check("desktop.signingIdentity")
+        assertTrue(identity.ok, identity.detail)
+        assertFalse(identity.detail.contains("signs under the configured team"), identity.detail)
+        assertTrue(identity.detail.contains("no development team is configured"), identity.detail)
+        assertFalse(checks.check("desktop.syncProfile").detail.contains("for the configured team"))
     }
 
     @Test

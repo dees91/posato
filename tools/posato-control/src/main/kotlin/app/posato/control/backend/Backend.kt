@@ -131,8 +131,11 @@ interface Interaction {
         "Pass an element query, or use -t desktop with --process.",
     )
 
-    /** Waits until the addressed process owns a visible window: the readiness gate for a window with no element tree. */
-    fun awaitWindow(timeoutSeconds: Double): Unit = throw ControlException(
+    /** Waits until the addressed process owns, or no longer owns, a visible window; for a window with no element tree. */
+    fun awaitWindow(
+        timeoutSeconds: Double,
+        present: Boolean
+    ): Unit = throw ControlException(
         ErrorCode.UNSUPPORTED_ON_TARGET,
         "Waiting for a process window is a desktop capability.",
         "Pass an element query, or use -t desktop with --process.",

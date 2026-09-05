@@ -93,6 +93,15 @@ class MainTest {
     }
 
     @Test
+    fun `a queryless process wait refuses a state that has no window meaning`() {
+        val (exitCode, output) = capture("wait", "-t", "desktop", "--process", "PosatoMacOSHelper", "--for", "settled")
+        assertEquals(2, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertEquals("USAGE", envelope.error?.code)
+        assertTrue(envelope.error?.message.orEmpty().contains("exists or absent"), envelope.error?.message)
+    }
+
+    @Test
     fun `help still exits with zero`() {
         val (exitCode, output) = capture("--help")
         assertEquals(0, exitCode)

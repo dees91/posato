@@ -142,7 +142,8 @@ the application picker. Only a process inside the staged bundle is addressable
 and the tracked application must be running; anything else exits 3. The helper
 runs no `NSApplication` event loop, so it has no accessibility tree: `snapshot`
 and `find` on it report `PROCESS_NOT_INSPECTABLE`, while `press`, a queryless
-`type`, `wait --for exists` without a query, and `screenshot` do reach it. See
+`type`, a queryless `wait --for exists` or `--for absent`, and `screenshot` do
+reach it. See
 [macOS application mappings](./features/macos-application-mappings.md) for the
 worked recipe. `run --scenario` has no selector; scenarios stay on the tracked
 application.
