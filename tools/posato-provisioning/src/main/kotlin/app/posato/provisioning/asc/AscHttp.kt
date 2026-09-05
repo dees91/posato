@@ -90,8 +90,8 @@ class AscHttp(
     ): AscResponse {
         transcript.record("${request.method} ${request.path}")
         val uri = uriFor(request)
-        val raw = exchange.send(uri, request.method, request.body, tokenSource.token(), remaining)
-        val body = raw.body.use { stream -> stream.readNBytes(MAX_BODY_BYTES + 1) }
+        val raw = exchange.send(uri, request.method, request.body, tokenSource.token(), remaining, MAX_BODY_BYTES)
+        val body = raw.body
         if (body.size > MAX_BODY_BYTES) {
             throw ProvisioningException(
                 ErrorCode.ASC_RESPONSE_TOO_LARGE,

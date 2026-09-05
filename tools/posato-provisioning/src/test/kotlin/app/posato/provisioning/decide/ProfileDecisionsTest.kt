@@ -28,7 +28,7 @@ class ProfileDecisionsTest {
     }
 
     @Test
-    fun `replaces an expired or inactive profile without being asked`() {
+    fun `replaces an expired or explicitly dead profile without being asked`() {
         // App Store Connect keeps profile names unique per team, so the dead profile blocks the name its replacement
         // needs. It grants nothing, so removing it loses nothing.
         val expired = ProfileDecisions.decide(
@@ -38,10 +38,36 @@ class ProfileDecisionsTest {
             NOW,
             replaceRequested = false,
         )
-        val inactive = ProfileDecisions.decide(profile(state = "INVALID"), CERT, setOf("MAC"), NOW, replaceRequested = false)
 
         assertEquals(ProfileAction.REPLACE, expired.action)
-        assertEquals(ProfileAction.REPLACE, inactive.action)
+        listOf("INVALID", "EXPIRED").forEach { state ->
+            assertEquals(ProfileAction.REPLACE, ProfileDecisions.decide(profile(state = state), CERT, setOf("MAC"), NOW, false).action, state)
+        }
+    }
+
+    @Test
+    fun `never deletes a profile whose state it does not recognise`() {
+        // Only a state App Store Connect uses to say the profile is finished authorises a delete. A state this tool
+        // has not seen, or a response that omits it, may still describe a working profile that something else relies
+        // on, and deleting it is not recoverable by rerunning.
+        listOf("PENDING", "SOMETHING_NEW", null).forEach { state ->
+            val decision = ProfileDecisions.decide(profile(state = state), CERT, setOf("MAC"), NOW, replaceRequested = false)
+
+            assertEquals(ProfileAction.STALE, decision.action, "state=$state")
+        }
+    }
+
+    @Test
+    fun `asks rather than reusing a profile whose expiry it cannot read`() {
+        // Treating an unreadable expiry as "not expired" would reuse the profile, and the download would then be
+        // rejected as expired with a hint naming --replace that this branch never honoured.
+        val decision = ProfileDecisions.decide(profile(expiration = "next Tuesday"), CERT, setOf("MAC"), NOW, replaceRequested = false)
+
+        assertEquals(ProfileAction.STALE, decision.action)
+        assertEquals("its expiry could not be read", decision.reason)
+
+        val replacing = ProfileDecisions.decide(profile(expiration = "next Tuesday"), CERT, setOf("MAC"), NOW, replaceRequested = true)
+        assertEquals(ProfileAction.REPLACE, replacing.action)
     }
 
     @Test
@@ -80,7 +106,7 @@ class ProfileDecisionsTest {
     }
 
     private fun profile(
-        state: String = "ACTIVE",
+        state: String? = "ACTIVE",
         expiration: String = "2027-01-01T00:00:00.000+0000",
         certificates: List<String> = listOf(CERT),
         devices: List<String> = listOf("MAC"),
