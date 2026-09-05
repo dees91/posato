@@ -34,6 +34,7 @@ class LocalDevicesTest {
         assertTrue(LocalDevices.parseConnectedIphones("not json").isEmpty())
     }
 
+    // Every identifier below is a made-up sequence in the right shape. No real device identifier is committed.
     @Test
     fun `takes each connected iPhone's hardware identifier and not its connection identifier`() {
         // devicectl's `identifier` is a 36-character connection identifier, while the identifier Apple registers is
@@ -43,17 +44,17 @@ class LocalDevicesTest {
             """
             {"result":{"devices":[
               {"identifier":"AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
-               "hardwareProperties":{"platform":"iOS","udid":"00008103-000A4D2E0A88001E"},
+               "hardwareProperties":{"platform":"iOS","udid":"00008030-000102030405061E"},
                "connectionProperties":{"tunnelState":"connected"}},
               {"identifier":"FFFFFFFF-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
-               "hardwareProperties":{"platform":"iOS","udid":"00008110-001122334455001E"},
+               "hardwareProperties":{"platform":"iOS","udid":"00008030-0A0B0C0D0E0F101E"},
                "connectionProperties":{"tunnelState":"disconnected"}},
               {"identifier":"99999999-BBBB-CCCC-DDDD-EEEEEEEEEEEE",
-               "hardwareProperties":{"platform":"macOS","udid":"00009999-999999999999001E"},
+               "hardwareProperties":{"platform":"macOS","udid":"00008030-AAAAAAAAAAAAAA1E"},
                "connectionProperties":{"tunnelState":"connected"}}
             ]}}
             """.trimIndent()
 
-        assertEquals(listOf("00008103-000A4D2E0A88001E"), LocalDevices.parseConnectedIphones(json))
+        assertEquals(listOf("00008030-000102030405061E"), LocalDevices.parseConnectedIphones(json))
     }
 }

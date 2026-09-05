@@ -11,7 +11,7 @@ import kotlin.test.assertTrue
 private const val SECRET_KEY_ID = "KEYID12345"
 private const val SECRET_ISSUER = "11112222-3333-4444-5555-666677778888"
 private const val SECRET_TEAM = "ABCDE12345"
-private const val SECRET_UDID = "00008103-000A4D2E0A88001E"
+private const val SECRET_UDID = "00008030-000102030405061E"
 private const val SECRET_PATH = "/Users/someone/Library/Developer/Posato/AuthKey.p8"
 private const val SECRET_NAME = "Apple Development: Someone (AB12CD34EF)"
 
