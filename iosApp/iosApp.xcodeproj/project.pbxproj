@@ -16,6 +16,12 @@
 		B600000129CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */; };
 		B700000129CC810C00F8E227 /* IosEnforcementProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B700000229CC810C00F8E227 /* IosEnforcementProvider.swift */; };
 		B800000129CC810C00F8E227 /* IosEnforcementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B800000229CC810C00F8E227 /* IosEnforcementTests.swift */; };
+		C900001029CC810C00F8E227 /* DeviceActivityMonitorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000229CC810C00F8E227 /* DeviceActivityMonitorExtension.swift */; };
+		C900001129CC810C00F8E227 /* SuspendedExpiryClear.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000529CC810C00F8E227 /* SuspendedExpiryClear.swift */; };
+		C900001229CC810C00F8E227 /* SuspendedExpiryClear.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000529CC810C00F8E227 /* SuspendedExpiryClear.swift */; };
+		C900001329CC810C00F8E227 /* SuspendedExpiryScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000629CC810C00F8E227 /* SuspendedExpiryScheduler.swift */; };
+		C900001429CC810C00F8E227 /* SuspendedExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000729CC810C00F8E227 /* SuspendedExpiryTests.swift */; };
+		C900001529CC810C00F8E227 /* ActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = C900000129CC810C00F8E227 /* ActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
 
@@ -27,7 +33,28 @@
 			remoteGlobalIDString = A93A953629CC810C00F8E227;
 			remoteInfo = iosApp;
 		};
+		C900003229CC810C00F8E227 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A93A952F29CC810C00F8E227 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C900003029CC810C00F8E227;
+			remoteInfo = ActivityMonitor;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		C900002229CC810C00F8E227 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C900001529CC810C00F8E227 /* ActivityMonitor.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A93A953729CC810C00F8E227 /* Posato.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Posato.app"; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -42,6 +69,13 @@
 		B800000229CC810C00F8E227 /* IosEnforcementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosEnforcementTests.swift; sourceTree = "<group>"; };
 		B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynchronizableKeychainProviderTests.swift; sourceTree = "<group>"; };
 		B200000329CC810C00F8E227 /* PosatoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PosatoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C900000129CC810C00F8E227 /* ActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C900000229CC810C00F8E227 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
+		C900000329CC810C00F8E227 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C900000429CC810C00F8E227 /* ActivityMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ActivityMonitor.entitlements; sourceTree = "<group>"; };
+		C900000529CC810C00F8E227 /* SuspendedExpiryClear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendedExpiryClear.swift; sourceTree = "<group>"; };
+		C900000629CC810C00F8E227 /* SuspendedExpiryScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendedExpiryScheduler.swift; sourceTree = "<group>"; };
+		C900000729CC810C00F8E227 /* SuspendedExpiryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendedExpiryTests.swift; sourceTree = "<group>"; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -60,6 +94,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C900002129CC810C00F8E227 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -67,6 +108,7 @@
 			isa = PBXGroup;
 			children = (
 				A93A953929CC810C00F8E227 /* iosApp */,
+				C900005029CC810C00F8E227 /* ActivityMonitor */,
 				B200000429CC810C00F8E227 /* iosAppTests */,
 				A93A953829CC810C00F8E227 /* Products */,
 				C4127409AE3703430489E7BC /* Frameworks */,
@@ -77,9 +119,20 @@
 			isa = PBXGroup;
 			children = (
 				A93A953729CC810C00F8E227 /* Posato.app */,
+				C900000129CC810C00F8E227 /* ActivityMonitor.appex */,
 				B200000329CC810C00F8E227 /* PosatoTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C900005029CC810C00F8E227 /* ActivityMonitor */ = {
+			isa = PBXGroup;
+			children = (
+				C900000229CC810C00F8E227 /* DeviceActivityMonitorExtension.swift */,
+				C900000329CC810C00F8E227 /* Info.plist */,
+				C900000429CC810C00F8E227 /* ActivityMonitor.entitlements */,
+			);
+			path = ActivityMonitor;
 			sourceTree = "<group>";
 		};
 		A93A953929CC810C00F8E227 /* iosApp */ = {
@@ -90,6 +143,8 @@
 				B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */,
 				B500000229CC810C00F8E227 /* SynchronizableKeychainProvider.swift */,
 				B700000229CC810C00F8E227 /* IosEnforcementProvider.swift */,
+				C900000529CC810C00F8E227 /* SuspendedExpiryClear.swift */,
+				C900000629CC810C00F8E227 /* SuspendedExpiryScheduler.swift */,
 				B300000329CC810C00F8E227 /* PosatoDebug.entitlements */,
 				A93A953E29CC810D00F8E227 /* Assets.xcassets */,
 			);
@@ -103,6 +158,7 @@
 				B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */,
 				B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */,
 				B800000229CC810C00F8E227 /* IosEnforcementTests.swift */,
+				C900000729CC810C00F8E227 /* SuspendedExpiryTests.swift */,
 			);
 			path = iosAppTests;
 			sourceTree = "<group>";
@@ -124,11 +180,13 @@
 				A9D80A052AAB5CDE006C8738 /* ShellScript */,
 				A93A953329CC810C00F8E227 /* Sources */,
 				A93A953429CC810C00F8E227 /* Frameworks */,
+				C900002229CC810C00F8E227 /* Embed App Extensions */,
 				A93A953529CC810C00F8E227 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				C900003129CC810C00F8E227 /* PBXTargetDependency */,
 			);
 			name = iosApp;
 			productName = iosApp;
@@ -151,6 +209,22 @@
 			productName = PosatoTests;
 			productReference = B200000329CC810C00F8E227 /* PosatoTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		C900003029CC810C00F8E227 /* ActivityMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C900004229CC810C00F8E227 /* Build configuration list for PBXNativeTarget "ActivityMonitor" */;
+			buildPhases = (
+				C900002029CC810C00F8E227 /* Sources */,
+				C900002129CC810C00F8E227 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ActivityMonitor;
+			productName = ActivityMonitor;
+			productReference = C900000129CC810C00F8E227 /* ActivityMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -176,6 +250,9 @@
 						CreatedOnToolsVersion = 26.6;
 						TestTargetID = A93A953629CC810C00F8E227;
 					};
+					C900003029CC810C00F8E227 = {
+						CreatedOnToolsVersion = 26.6;
+					};
 				};
 			};
 			buildConfigurationList = A93A953229CC810C00F8E227 /* Build configuration list for PBXProject "iosApp" */;
@@ -192,6 +269,7 @@
 			projectRoot = "";
 			targets = (
 				A93A953629CC810C00F8E227 /* iosApp */,
+				C900003029CC810C00F8E227 /* ActivityMonitor */,
 				B200000829CC810C00F8E227 /* iosAppTests */,
 			);
 		};
@@ -239,6 +317,8 @@
 				B300000129CC810C00F8E227 /* IosApplicationMappingsProvider.swift in Sources */,
 				B500000129CC810C00F8E227 /* SynchronizableKeychainProvider.swift in Sources */,
 				B700000129CC810C00F8E227 /* IosEnforcementProvider.swift in Sources */,
+				C900001229CC810C00F8E227 /* SuspendedExpiryClear.swift in Sources */,
+				C900001329CC810C00F8E227 /* SuspendedExpiryScheduler.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -250,6 +330,16 @@
 				B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */,
 				B600000129CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift in Sources */,
 				B800000129CC810C00F8E227 /* IosEnforcementTests.swift in Sources */,
+				C900001429CC810C00F8E227 /* SuspendedExpiryTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C900002029CC810C00F8E227 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C900001029CC810C00F8E227 /* DeviceActivityMonitorExtension.swift in Sources */,
+				C900001129CC810C00F8E227 /* SuspendedExpiryClear.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +350,11 @@
 			isa = PBXTargetDependency;
 			target = A93A953629CC810C00F8E227 /* iosApp */;
 			targetProxy = B200000C29CC810C00F8E227 /* PBXContainerItemProxy */;
+		};
+		C900003129CC810C00F8E227 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C900003029CC810C00F8E227 /* ActivityMonitor */;
+			targetProxy = C900003229CC810C00F8E227 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -458,6 +553,50 @@
 			};
 			name = Release;
 		};
+		C900004029CC810C00F8E227 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = ActivityMonitor/ActivityMonitor.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ActivityMonitor/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.posato.ios.activitymonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C900004129CC810C00F8E227 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = ActivityMonitor/ActivityMonitor.entitlements;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ActivityMonitor/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = app.posato.ios.activitymonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -484,6 +623,15 @@
 			buildConfigurations = (
 				B200000929CC810C00F8E227 /* Debug */,
 				B200000A29CC810C00F8E227 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C900004229CC810C00F8E227 /* Build configuration list for PBXNativeTarget "ActivityMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C900004029CC810C00F8E227 /* Debug */,
+				C900004129CC810C00F8E227 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

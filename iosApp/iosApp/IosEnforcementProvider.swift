@@ -5,7 +5,7 @@ import ManagedSettings
 import PosatoShared
 
 enum IosEnforcementStoreName {
-    static let posato = ManagedSettingsStore.Name("app.posato.session")
+    static let posato = PosatoManagedSettingsStore.name
 }
 
 protocol IosEnforcementSettingsStore: AnyObject {

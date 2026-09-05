@@ -1250,3 +1250,15 @@
   run (the client now kills only the launcher's child via `ProcessHandle`).
   Physical packaging must use the Apple Development identity; the ad-hoc
   fallback fails the client team check.
+
+## [2026-09-05] implementation | IOS-002 suspended-expiry Simulator verification
+
+- The Device Activity monitor extension, Swift scheduler seam, and Kotlin
+  adapter are implemented and Simulator-verified: 67 Xcode tests pass with no
+  failures, 8 Kotlin enforcement tests pass, `./gradlew quality` and the three
+  credential-free CI builds pass, and plan plus completed-change reviews are
+  recorded as approved with no open Critical or Required findings.
+- The extension's development profile is the remaining physical gate:
+  automatic signing cannot provision App Groups plus Family Controls
+  (Development) for the new target, so the device callback rows stay blocked
+  on the parallel `APPLE-002` tooling or a maintainer portal profile.
