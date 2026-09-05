@@ -1,5 +1,7 @@
 package app.posato.provisioning
 
+import app.posato.provisioning.cli.DevicesCommand
+import app.posato.provisioning.cli.DevicesRegisterCommand
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningJson
 import app.posato.provisioning.model.Envelope
@@ -10,6 +12,7 @@ import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.core.UsageError
 import com.github.ajalt.clikt.core.parse
+import com.github.ajalt.clikt.core.subcommands
 import com.github.ajalt.clikt.output.ParameterFormatter
 import kotlin.system.exitProcess
 
@@ -24,7 +27,9 @@ class PosatoProvisioning : CliktCommand(name = "posato-provisioning") {
     override fun run() = Unit
 }
 
-fun buildCommand(): PosatoProvisioning = PosatoProvisioning()
+fun buildCommand(): PosatoProvisioning = PosatoProvisioning().subcommands(
+    DevicesCommand().subcommands(DevicesRegisterCommand()),
+)
 
 fun run(args: Array<String>): Int {
     val command = buildCommand()
