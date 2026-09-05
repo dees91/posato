@@ -74,27 +74,26 @@
 | `./gradlew quality` after last change | pass | `BUILD SUCCESSFUL` |
 | CI credential-free builds (Debug sim, Debug device, Release sim) | pass | three `BUILD SUCCEEDED` |
 | `git diff --check`, suppression and private-data scans | pass | clean; no `Suppress`; synthetic fixtures only |
-| Physical iPhone checklist | blocked | rows below; devices paired but extension profile missing |
+| Physical iPhone checklist | partial | packaging pass; callback rows open, see below |
 
-## Physical checklist (all rows blocked, none attempted on device)
+## Physical checklist (packaging cleared; callback rows need a device session)
 
 | Row | State | Clearing condition |
 | --- | --- | --- |
-| AC-01 extension clear after force-quit, delay recorded not promised | blocked | profile + maintainer device session |
-| AC-02 foreign store untouched on device | blocked | profile + maintainer device session |
-| Cancelled schedule never fires | blocked | profile + maintainer device session |
-| Reopen reads ended (AC-04) | blocked | profile + maintainer device session |
-| Callback delay and reboot-inside-interval observations | blocked | profile + maintainer device session |
+| Signed Debug device build, app plus embedded extension | pass | `-allowProvisioningUpdates`; exact managed profiles now exist |
+| AC-01 extension clear after force-quit, delay recorded not promised | open | maintainer device session (authorization, selection, 15+ min wait) |
+| AC-02 foreign store untouched on device | open | same device session |
+| Cancelled schedule never fires | open | same device session |
+| Reopen reads ended (AC-04) | open | same device session |
+| Callback delay and reboot-inside-interval observations | open | same device session |
 
 ## Blockers and accepted risks
 
 - Decided 2026-09-05 (maintainer): sub-15-minute sessions report
   `below-platform-minimum`; foreground expiry covers them (`SESSION-002`).
-- Signed device build of the extension fails at provisioning, as the brief
-  anticipated: the wildcard team profile lacks App Groups and Family Controls
-  (Development). First path (automatic signing) exhausted; named consumer is
-  the parallel `APPLE-002` tooling, otherwise the maintainer creates the
-  `app.posato.ios.activitymonitor` development profile in the portal.
+- The `APPLE-002` profile unblocked packaging as its agent reported: the
+  installed profile carries Family Controls and the App Group, and the signed
+  device build passes once Xcode may contact the portal. No portal step taken.
 - No verify-posato feature file: no user path exists until `SESSION-002`.
 
 ## Final
