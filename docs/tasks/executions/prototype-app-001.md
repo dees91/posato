@@ -25,6 +25,10 @@
   and remembered drafts across dismissal and compact/expanded layout changes.
 - Retired HTML and its Node suite after common regression and native parity
   checks; both remain recoverable at `566bdb6`. Added native run instructions.
+- Reworked the 50-website study with primary session actions above two counted
+  summaries, read-only selection details, separate website/app tabs, search,
+  lazy rows, and labelled options menus. Browser state belongs to composition
+  above editor navigation; no production model, service, or dependency changed.
 
 ## Verification
 
@@ -44,8 +48,12 @@
 - Inspected native screenshots and accessibility trees; captures and run
   identifiers remain under ignored `build/verification/`.
 - Added the maintainer-requested 50-website/four-application fixture and four
-  preview cases. Native checks exposed costly scrolling to session actions and
-  application management; the underlying list layout remains unchanged.
+  whole-app previews, then nine browser cases at compact and expanded sizes.
+  After the requested redesign, focused gates and root `quality` passed with
+  27 common test methods. Native checks exercised filter/clear/no-match states,
+  website menu edit/save/remove, tab retention across the application picker,
+  read-only details, review/start/active-session actions, compact IME layout,
+  dark appearance, larger text, and Mac breakpoint changes.
 - Integrated current `main` without dropping either side's build targets or wiki
   entry; focused independent integration review and the aggregate gate passed.
 
@@ -57,11 +65,16 @@
 - Native checks corrected semantic dark text color and keyboard ownership:
   window-level shortcuts survive screen transitions, and the dialog takes focus
   and handles dismissal. The independent reviewer inspected the corrections.
+- Long-list native checks caught and corrected an iOS text-field saved-state
+  restoration crash, insufficient keyboard-visible result space, and list-key
+  anchoring after clearing search. Independent review inspected state ownership,
+  focus, component APIs, filtering tests, native replay evidence, and documentation.
 
 ## Blockers and accepted risks
 
 - Prototype-only behavior does not establish production enforcement, synchronization, or accessibility conformance.
 - Runtime checks cover a local Apple Silicon Mac and iPhone Simulator, not a
   physical iPhone or the full supported OS and assistive-technology matrix.
-- Long-list UX remains a documented design follow-up: use a shorter session
-  summary and improve management navigation after maintainer acceptance.
+- The redesigned long-list presentation remains a prototype hypothesis for
+  human usability and full Apple assistive-technology testing, not production
+  design authority or proof of universally optimal UX.

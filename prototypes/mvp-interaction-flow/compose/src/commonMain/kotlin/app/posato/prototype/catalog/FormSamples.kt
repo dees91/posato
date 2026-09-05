@@ -18,6 +18,7 @@ import app.posato.prototype.designsystem.PosatoActionRow
 import app.posato.prototype.designsystem.PosatoButton
 import app.posato.prototype.designsystem.PosatoButtonStyle
 import app.posato.prototype.designsystem.PosatoCaption
+import app.posato.prototype.designsystem.PosatoSearchField
 import app.posato.prototype.designsystem.PosatoSection
 import app.posato.prototype.designsystem.PosatoSpace
 import app.posato.prototype.designsystem.PosatoTextField
@@ -29,6 +30,10 @@ internal fun FormSamples(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Spacious)) {
         WebsiteFieldSamples(onAction)
+        PosatoSection(titleContent = { Text("Search a selection") }) {
+            PosatoSearchField(state = rememberTextFieldState("reading"), label = "Search websites")
+            PosatoCaption("Clear restores the complete list. Search submission dismisses the keyboard.")
+        }
         DurationFieldSamples(onAction)
         SelectionSamples(onAction)
         PosatoCaption("The catalog exposes callbacks and error presentation. Validation policy, saving, and the real app picker belong to callers.")

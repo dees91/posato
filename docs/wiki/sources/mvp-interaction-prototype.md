@@ -136,9 +136,10 @@ native Apple accessibility conformance, or production design acceptance.
   retained its draft across overlay dismissal and the layout breakpoint. iPhone
   Simulator checks exercised dark appearance, stronger contrast, larger text,
   and workspace-key waiting in the native bottom sheet and full-screen content.
-- `observed`: 24 common test methods include table-driven boundary cases and
+- `observed`: 27 common test methods include table-driven boundary cases and
   both platform variants, replacing the old 24-case Node suite. Regression
-  corrections cover guided progress through normal duration and application forms.
+  corrections cover guided progress through normal duration and application forms;
+  three additional methods cover website filtering without changing source order.
 - `inferred`: native rendering now provides a more useful inspection surface
   for later Compose work, without promoting the study's geometry or reducer into
   accepted product code.
@@ -148,20 +149,37 @@ native Apple accessibility conformance, or production design acceptance.
 - `user-confirmed`: add many synthetic website rows and evaluate whether Session
   and Paused items remain useful with a long selection.
 - `observed`: the selectable long-list moment contains 50 websites and four
-  local applications without changing the default ready fixture. Native macOS
-  inspection places the session start action after the entire selection and
-  the application chooser after all website rows, several viewports below the
-  beginning. Rows remain readable and desktop scrolling reaches both actions.
-- `observed`: on iPhone Simulator, the session action was reachable by scrolling;
+  local applications without changing the default ready fixture.
+- `superseded`: the first native layout put the session action after the entire
+  selection and application management after all website rows, several viewports
+  below the beginning. Desktop scrolling reached both actions. On iPhone Simulator,
+  the session action was reachable by scrolling;
   the Paused items probe exhausted the driver's ten-swipe budget around website
   30, before reaching application management. This is a discoverability and
   navigation-cost result: a continued native run reached the chooser and verified
   opening and cancelling the application picker without changing the selection.
-- `hypothesis`: a short session selection summary with an adjacent primary action,
-  plus separate website/application management and website search, would scale
-  better than presenting every row before task actions.
-- `open`: choose and verify the long-list presentation before treating the
-  prototype's current list geometry as suitable for larger real selections.
+- `user-confirmed`: implement the short session summary, separate website/app
+  sections, and website search in the prototype, prioritizing usable long lists.
+- `observed`: Session and its review now place the primary action above two
+  counted disclosure rows. Full selection details are read-only. Paused items
+  keeps category tabs, search, and section actions above independently scrolling
+  lazy lists. Native checks found the last website by search, opened/cancelled
+  both editors without losing the query or tab, saved and removed a website
+  through its menu, and inspected the selection during an active session.
+- `observed`: compact keyboard layout leaves complete search results visible on
+  the tested iPhone Simulator, including the larger-text treatment. The Mac
+  preserves filtering when resizing across the compact/expanded breakpoint;
+  clearing a query returns results to the beginning instead of following the
+  previously matched row's key into the full list.
+- `observed`: restoring a searched text field through a saved subtree crashed
+  the tested iOS prototype in `TextUndoManager.Saver.restore`. Composition-owned
+  browser state above editor navigation removed that path; the exact native
+  search/edit/cancel replay passed. This is bounded prototype runtime evidence,
+  not a general claim about other Compose versions or platforms.
+- `open`: validate the revised presentation with people and production Apple
+  accessibility technologies before adopting its exact geometry. Native probes
+  establish reachable controls and state retention, not user preference or a
+  universally optimal layout.
 
 The [run instructions](../../../prototypes/mvp-interaction-flow/README.md) cover
 desktop packaging, Xcode launch, controls, and verification. The original HTML

@@ -70,12 +70,24 @@ applications. Use Session and Paused items normally; choosing **Ready** restores
 the small fixture. Compact and expanded previews also cover the long-list ready,
 review, active, and management surfaces.
 
-The fixture intentionally exposes the current layout's scaling limit: session
-actions follow the entire selection, and application management follows all
-website rows. These controls remain reachable by scrolling, but become costly
-to find. The study does not yet add search, compact rows, section switching, or
-a shortened session summary; those are design follow-ups, not hidden changes
-to the current layout.
+Session keeps its primary action above a two-row selection summary. Open either
+row to inspect the complete selection in a read-only sheet on iPhone or a dialog
+on Mac. **Close list** returns without changing the selection or session.
+
+Paused items separates **Websites** and **Apps** into counted tabs with their own
+scroll positions. Website search ignores case and surrounding spaces; **Clear
+search** restores every row. Search, section switching, and Add website/Choose
+apps stay above the scrolling results. Open a website row to edit it, or use its
+labelled options menu to edit/remove it. Application menus remove local mappings.
+Returning from an editor preserves the tab, query, and list position. Choosing a
+new prototype moment or relaunching deliberately resets this presentation state.
+
+On compact screens, opening the keyboard temporarily removes the wordmark and
+duplicate management heading to leave room for results. The app navigation,
+section tabs, search, and section action remain available. Submit search to
+dismiss the keyboard and restore the complete header, including prototype controls.
+Additional browser previews cover filtering, no matches, empty sections, long
+domains, and read-only selection details at compact and expanded widths.
 
 ## Structure and checks
 

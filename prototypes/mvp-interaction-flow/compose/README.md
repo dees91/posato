@@ -76,8 +76,11 @@ Screen-specific combinations use slots instead of one wrapper per CSS class.
 | Duration presets and other exclusive choices | `PosatoDurationChoice`, `PosatoChoiceTile`, `PosatoChoiceGroup` |
 | Application picker checkbox rows | `PosatoSelectionRow` |
 | Website/custom-duration inputs and inline errors | `PosatoTextField`, `PosatoFieldMessage` |
+| Website search with clear and keyboard submission | `PosatoSearchField` with caller-owned `TextFieldState` |
 | `panel`, section headings, separators, action clusters | `PosatoPanel`, `PosatoSection`, `PosatoSectionHeader`, `PosatoDivider`, `PosatoActionRow` |
 | `surface-list`, `surface-row`, item identity and tags | `PosatoItemList`, `PosatoItemRow`, `PosatoItemSymbol`, `PosatoBadge` |
+| Clickable selection summaries and website rows | `PosatoDisclosureRow` with headline, supporting, leading, and trailing slots |
+| Labelled per-item options | `PosatoItemMenu` with a dismiss callback for caller-provided menu entries |
 | Ready/session state, warning, failure, recovery notices | `PosatoStatusLabel`, `PosatoNotice` with neutral, positive, caution, or critical tone |
 | Session end-time and synchronization status | `PosatoEndTime`, `PosatoSyncFooter` |
 | Privacy statements and local-device identity | `PosatoPrivacyPoint`, `PosatoDeviceLabel` |
@@ -152,6 +155,10 @@ patterns, and prototype tools. Try the appearance switches, duration choices,
 checkboxes, error presentation, frame switch, walkthrough progress, and action
 buttons. A persistent feedback strip reports synthetic callback invocations.
 Text fields are editable; no entry is saved or sent anywhere.
+Forms include search and clearing; product patterns include bounded selection
+summaries and item menus. The native app owns lazy lists, filtering, tab/scroll
+state, and read-only detail presentation rather than embedding those policies in
+the design-system primitives.
 
 Two common-source previews use the same `CatalogPreviewDataProvider`: compact
 390 × 1000 and expanded 1200 × 900. Each has 18 deterministic cases: six sections

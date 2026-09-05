@@ -3,6 +3,7 @@ package app.posato.prototype.catalog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,6 +13,7 @@ import app.posato.prototype.designsystem.PosatoBadge
 import app.posato.prototype.designsystem.PosatoButton
 import app.posato.prototype.designsystem.PosatoButtonStyle
 import app.posato.prototype.designsystem.PosatoCaption
+import app.posato.prototype.designsystem.PosatoDisclosureRow
 import app.posato.prototype.designsystem.PosatoEmptyState
 import app.posato.prototype.designsystem.PosatoEndTime
 import app.posato.prototype.designsystem.PosatoHeading
@@ -20,6 +22,7 @@ import app.posato.prototype.designsystem.PosatoIcon
 import app.posato.prototype.designsystem.PosatoIcons
 import app.posato.prototype.designsystem.PosatoIntervalArtwork
 import app.posato.prototype.designsystem.PosatoItemList
+import app.posato.prototype.designsystem.PosatoItemMenu
 import app.posato.prototype.designsystem.PosatoItemRow
 import app.posato.prototype.designsystem.PosatoItemSymbol
 import app.posato.prototype.designsystem.PosatoLayout
@@ -64,21 +67,21 @@ private fun SessionPattern(
             artworkContent = { PosatoIntervalArtwork() },
         )
         PosatoEndTime("Until 18:30", Modifier.fillMaxWidth(), supportingText = "A clear ending. You can also end early.")
+        PosatoButton(onClick = { onAction("Early-end confirmation requested.") }, style = PosatoButtonStyle.Quiet) { Text("End session early") }
         PosatoItemList(Modifier.fillMaxWidth()) {
-            PosatoItemRow(
-                headlineContent = { Text("news.example") },
-                supportingContent = { PosatoCaption("Exact website domain") },
+            PosatoDisclosureRow(
+                onClick = { onAction("Read-only website list requested.") },
+                headlineContent = { Text("50 websites") },
+                supportingContent = { PosatoCaption("Shared exact domains · view all") },
                 leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
-                trailingContent = { PosatoBadge("Shared") },
             )
-            PosatoItemRow(
-                headlineContent = { Text("Social feeds") },
-                supportingContent = { PosatoCaption("Example Social") },
+            PosatoDisclosureRow(
+                onClick = { onAction("Read-only application list requested.") },
+                headlineContent = { Text("4 applications") },
+                supportingContent = { PosatoCaption("On this Mac · view all") },
                 leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Apps, null) } },
-                trailingContent = { PosatoBadge("This Mac") },
             )
         }
-        PosatoButton(onClick = { onAction("Early-end confirmation requested.") }, style = PosatoButtonStyle.Quiet) { Text("End session early") }
         PosatoSyncFooter("Last sync completed on this device at 17:45.")
     }
 }
@@ -95,13 +98,19 @@ private fun ConfigurationPattern(
         actionContent = { PosatoButton(onClick = { onAction("Add website requested.") }, style = PosatoButtonStyle.Compact) { Text("Add website") } },
     ) {
         PosatoItemList(Modifier.fillMaxWidth()) {
-            PosatoItemRow(
+            PosatoDisclosureRow(
+                onClick = { onAction("Edit website requested.") },
                 headlineContent = { Text("reading.example") },
-                supportingContent = { PosatoCaption("Shared exact domain") },
                 trailingContent = {
-                    Column {
-                        PosatoButton(onClick = { onAction("Edit website requested.") }, style = PosatoButtonStyle.Compact) { Text("Edit") }
-                        PosatoButton(onClick = { onAction("Remove website requested.") }, style = PosatoButtonStyle.Quiet) { Text("Remove") }
+                    PosatoItemMenu("More options for reading.example") { dismiss ->
+                        DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                            dismiss()
+                            onAction("Edit website requested.")
+                        })
+                        DropdownMenuItem(text = { Text("Remove") }, onClick = {
+                            dismiss()
+                            onAction("Remove website requested.")
+                        })
                     }
                 },
             )

@@ -23,6 +23,10 @@ object PosatoIcons {
     val Mac = lineIcon("Mac", "M3 4H21V17H3ZM8 21H16M12 17V21")
     val Phone = lineIcon("Phone", "M9 2H15Q17 2 17 4V20Q17 22 15 22H9Q7 22 7 20V4Q7 2 9 2M11 18H13")
     val Arrow = lineIcon("Arrow", "M5 12H19M14 7L19 12L14 17")
+    val Chevron = lineIcon("Chevron", "M9 5L16 12L9 19")
+    val Search = lineIcon("Search", "M3 10A7 7 0 1 0 17 10A7 7 0 1 0 3 10M15 15L21 21")
+    val Close = lineIcon("Close", "M6 6L18 18M18 6L6 18")
+    val More = lineIcon("More", "M5 11V13M12 11V13M19 11V13")
 }
 
 @Composable

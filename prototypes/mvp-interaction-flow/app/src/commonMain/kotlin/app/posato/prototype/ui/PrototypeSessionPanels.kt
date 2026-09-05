@@ -35,7 +35,6 @@ internal fun PrototypeSessionOverview(
         })
         if (active) PrototypeSessionEnd(state)
         if (issues && state.effectiveItemCount() > 0) PrototypeRepairNotice(state, onAction)
-        PrototypeSelectedItems(state)
         if (active) {
             PosatoButton(onClick = { onAction(SessionAction.RequestEarlyEnd) }, style = PosatoButtonStyle.Quiet) { Text("End session early") }
         } else {
@@ -44,6 +43,7 @@ internal fun PrototypeSessionOverview(
                 Text(if (hasItems) "Start a session" else "Choose paused items")
             }
         }
+        PrototypeSelectedItems(state)
         PrototypeSyncStatus(state, onAction)
     }
 }
@@ -97,11 +97,12 @@ internal fun PrototypeSessionReview(
             },
         )
         PrototypeSessionEnd(state)
-        if (issues) PrototypeRepairNotice(state, onAction) else PrototypeSelectedItems(state)
+        if (issues) PrototypeRepairNotice(state, onAction)
         PosatoActionRow {
             PosatoButton(onClick = { onAction(SessionAction.Start) }, enabled = !issues) { Text("Start this pause") }
             PosatoButton(onClick = { onAction(SessionAction.OpenSetup) }, style = PosatoButtonStyle.Quiet) { Text("Change duration") }
         }
+        PrototypeSelectedItems(state)
     }
 }
 
