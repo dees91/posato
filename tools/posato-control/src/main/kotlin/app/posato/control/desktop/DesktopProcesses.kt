@@ -5,10 +5,19 @@ import app.posato.control.core.ErrorCode
 import app.posato.control.core.LaunchedProcess
 import app.posato.control.core.RunContext
 import app.posato.control.core.TrackedProcess
+import java.io.IOException
 import java.nio.file.Path
+import kotlin.io.path.exists
+
+/** One live process reduced to what process targeting needs: its pid and the executable it runs. */
+data class ProcessEntry(
+    val pid: Long,
+    val command: String,
+)
 
 class DesktopProcesses(
-    private val context: RunContext
+    private val context: RunContext,
+    private val liveProcesses: () -> List<ProcessEntry> = ::currentProcesses,
 ) {
     private val executable: Path = context.layout.stagedDesktopApplication.resolve("Contents").resolve("MacOS").resolve("Posato")
 
@@ -24,11 +33,34 @@ class DesktopProcesses(
 
     fun isAlive(pid: Long): Boolean = ProcessHandle.of(pid).map { it.isAlive }.orElse(false)
 
-    fun foreignPids(ownPid: Long?): List<Long> = ProcessHandle.allProcesses()
-        .filter { handle -> handle.info().command().map { it == executable.toString() }.orElse(false) }
-        .map { it.pid() }
+    fun foreignPids(ownPid: Long?): List<Long> = liveProcesses()
+        .filter { it.command == executable.toString() }
+        .map { it.pid }
         .filter { it != ownPid }
-        .toList()
+
+    /**
+     * Resolves the process an element command addresses. A null selector keeps the tracked application, so every
+     * command without `--process` behaves exactly as before. Any other outcome is a precondition failure.
+     */
+    fun resolveTarget(
+        selector: String?,
+        tracked: LaunchedProcess?
+    ): Long = ProcessTargeting.resolve(selector, trackedPid(tracked)) { containedProcesses() }
+
+    /** Every live process whose executable resolves inside the staged bundle, so nothing outside it is addressable. */
+    fun containedProcesses(): List<ProcessEntry> {
+        val bundle = realPath(context.layout.stagedDesktopApplication) ?: return emptyList()
+        return liveProcesses().filter { entry ->
+            val command = realPath(Path.of(entry.command)) ?: return@filter false
+            command != bundle && command.startsWith(bundle)
+        }
+    }
+
+    private fun realPath(path: Path): Path? = try {
+        if (path.exists()) path.toRealPath() else null
+    } catch (_: IOException) {
+        null
+    }
 
     fun terminate(process: LaunchedProcess?) {
         if (isTracked(process)) TrackedProcess.terminate(process?.pid, process?.startedAt)
@@ -51,3 +83,7 @@ class DesktopProcesses(
         }
     }
 }
+
+private fun currentProcesses(): List<ProcessEntry> = ProcessHandle.allProcesses()
+    .toList()
+    .mapNotNull { handle -> handle.info().command().orElse(null)?.let { ProcessEntry(handle.pid(), it) } }

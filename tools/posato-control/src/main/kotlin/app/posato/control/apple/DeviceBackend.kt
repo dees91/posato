@@ -70,52 +70,7 @@ class DeviceLifecycle(
     private val stateStore: RunStateStore,
     private val evidence: Evidence,
 ) : Lifecycle {
-    override fun doctor(): List<DoctorCheck> {
-        val checks = mutableListOf(teamCheck())
-        val devices = session.devicectl.listDevices()
-        val connected = devices.filter { it.connected }
-        checks.add(connectionCheck(devices, connected))
-        connected.firstOrNull()?.let { device -> checks.add(installedCheck(device.udid)) }
-        checks.add(driverCheck())
-        return checks
-    }
-
-    private fun teamCheck(): DoctorCheck {
-        val source = context.configuration.source(ConfigurationKey.DEVELOPMENT_TEAM)
-        return if (source == ConfigurationSource.ABSENT) {
-            DoctorCheck.fail(
-                "device.team",
-                "No Apple development team is configured.",
-                "Add posato.apple.developmentTeam=<team id> to the ignored local.properties file.",
-            )
-        } else {
-            DoctorCheck.pass("device.team", "The Apple development team comes from ${source.name.lowercase().replace('_', ' ')}.")
-        }
-    }
-
-    private fun connectionCheck(
-        devices: List<PhysicalDevice>,
-        connected: List<PhysicalDevice>
-    ): DoctorCheck = if (connected.isEmpty()) {
-        DoctorCheck.fail("device.connected", "No iPhone is connected (${devices.size} paired).", "Connect and unlock the iPhone.", Severity.WARN)
-    } else {
-        val device = connected.first()
-        DoctorCheck.pass(
-            "device.connected",
-            "Connected: ${device.model ?: "iPhone"} on iOS ${device.osVersion ?: "?"}; developer mode ${device.developerMode ?: "unknown"}.",
-        )
-    }
-
-    private fun installedCheck(udid: String): DoctorCheck = if (session.isInstalled(udid)) {
-        DoctorCheck.pass("device.installed", "Posato is installed on the device.")
-    } else {
-        DoctorCheck.fail(
-            "device.installed",
-            "Posato is not installed on the device.",
-            "Run `build -t device` then `install -t device`.",
-            Severity.WARN,
-        )
-    }
+    override fun doctor(): List<DoctorCheck> = DeviceDoctor(context, session).checks(driverCheck())
 
     private fun driverCheck(): DoctorCheck = when (xcodeBuild.driverState(Target.DEVICE)) {
         XcodeBuild.DriverState.FRESH -> DoctorCheck.pass("device.driver", "The device driver is built and up to date.")
@@ -360,4 +315,80 @@ class DeviceBackend private constructor(
             return DeviceBackend(lifecycle, evidence, interaction)
         }
     }
+}
+
+/**
+ * The one-time iPhone provisioning conditions. Developer mode and Screen Time are reported, never granted: Screen Time
+ * authorization is a per-installation state that only the application can read, so it stays unknown with the command
+ * that reveals it.
+ */
+private class DeviceDoctor(
+    private val context: RunContext,
+    private val session: DeviceSession,
+) {
+    fun checks(driver: DoctorCheck): List<DoctorCheck> {
+        val devices = session.devicectl.listDevices()
+        val connected = devices.filter { it.connected }
+        return listOfNotNull(
+            teamCheck(),
+            connectionCheck(devices, connected),
+            developerModeCheck(connected.firstOrNull()),
+            connected.firstOrNull()?.let { installedCheck(it.udid) },
+            driver,
+            screenTimeCheck(),
+        )
+    }
+
+    private fun teamCheck(): DoctorCheck {
+        val source = context.configuration.source(ConfigurationKey.DEVELOPMENT_TEAM)
+        return if (source == ConfigurationSource.ABSENT) {
+            DoctorCheck.fail(
+                "device.team",
+                "No Apple development team is configured.",
+                "Add posato.apple.developmentTeam=<team id> to the ignored local.properties file.",
+            )
+        } else {
+            DoctorCheck.pass("device.team", "The Apple development team comes from ${source.name.lowercase().replace('_', ' ')}.")
+        }
+    }
+
+    private fun connectionCheck(
+        devices: List<PhysicalDevice>,
+        connected: List<PhysicalDevice>
+    ): DoctorCheck = if (connected.isEmpty()) {
+        DoctorCheck.fail("device.connected", "No iPhone is connected (${devices.size} paired).", "Connect and unlock the iPhone.", Severity.WARN)
+    } else {
+        val device = connected.first()
+        DoctorCheck.pass("device.connected", "Connected: ${device.model ?: "iPhone"} on iOS ${device.osVersion ?: "?"}.")
+    }
+
+    private fun developerModeCheck(device: PhysicalDevice?): DoctorCheck {
+        val id = "device.developerMode"
+        val status = device?.developerMode
+        val remedy = "Settings > Privacy & Security > Developer Mode on the iPhone, then restart it."
+        return when {
+            device == null -> DoctorCheck.unknown(id, "No iPhone is connected, so developer mode cannot be read.", "Connect and unlock the iPhone.")
+            status == null -> DoctorCheck.unknown(id, "devicectl did not report a developer mode status for this iPhone.", remedy)
+            status.equals("enabled", ignoreCase = true) -> DoctorCheck.pass(id, "Developer mode is enabled on the connected iPhone.")
+            else -> DoctorCheck.fail(id, "Developer mode is $status on the connected iPhone.", remedy, Severity.WARN)
+        }
+    }
+
+    private fun installedCheck(udid: String): DoctorCheck = if (session.isInstalled(udid)) {
+        DoctorCheck.pass("device.installed", "Posato is installed on the device.")
+    } else {
+        DoctorCheck.fail(
+            "device.installed",
+            "Posato is not installed on the device.",
+            "Run `build -t device` then `install -t device`.",
+            Severity.WARN,
+        )
+    }
+
+    private fun screenTimeCheck(): DoctorCheck = DoctorCheck.unknown(
+        "device.screenTime",
+        "Screen Time authorization for Posato is readable only by the application itself.",
+        "Drive the application to Paused items > Applications and read the access sentence with " +
+            "`posato-control find -t device --text-contains \"Screen Time\"`.",
+    )
 }

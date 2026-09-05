@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 8
+- **Revision:** 9
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
 - **Last amended:** 2026-09-04
@@ -32,8 +32,12 @@ maintainer-accepted `APPLE-002` App Store Connect API provisioning task, after
 the `SYNC-006` development profile had to be created by hand in the portal,
 and the `QUALITY-003` desktop scrolling follow-up for the verification driver,
 after `SESSION-001` verification found below-the-fold desktop rows
-undrivable. None of these revisions changes any other task, dependency, wave,
-or integration group.
+undrivable. Revision 9 adds the maintainer-requested `QUALITY-004`
+unattended-verification task, after a review of the verification driver found
+that the two remaining manual steps in the feature map come from the driver
+addressing only the application process and from `doctor` reporting no
+one-time provisioning state, not from a platform limit. None of these
+revisions changes any other task, dependency, wave, or integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -99,6 +103,7 @@ wave barriers add the phase ordering stated above.
 | `SYNC-004` | Preserve the one-workspace invariant through bootstrap delay, conflict, failure, and restart. | Apple synchronization | P2/W2.8 | `SYNC-003` | PR-BOOTSTRAP-CORE |
 | `MACOS-004` | Deny selected exact domains on the accepted macOS browser matrix with safe recovery. | Sessions and enforcement | P3/W3.1 | `MACOS-002`, `MACOS-006`, `SESSION-001`, `TARGETS-001` | PR-MAC-DOMAINS |
 | `IOS-001` | Apply and clear only Posato-owned iOS website and application restrictions. | Sessions and enforcement | P3/W3.1 | `SESSION-001`, `TARGETS-004`, `APPLE-001` | PR-IOS-ENFORCEMENT |
+| `QUALITY-004` | Address the macOS helper's own window from the verification driver, report every one-time provisioning condition of both targets from `doctor`, and settle whether a captured iOS selection can be restored, so a run on a provisioned machine needs no human step. | Preparation | P3/W3.1a | `QUALITY-002`, `TARGETS-003`, `TARGETS-005` | PR-VERIFICATION-PROVISIONING |
 | `MACOS-005` | Restrict locally mapped macOS applications without affecting unselected applications. | Sessions and enforcement | P3/W3.2 | `MACOS-006`, `SESSION-001`, `TARGETS-003` | PR-MAC-APPS |
 | `IOS-002` | Clear Posato-owned restrictions after normal expiry while the iOS app is suspended. | Sessions and enforcement | P3/W3.2 | `IOS-001` | PR-IOS-EXPIRY |
 | `SYNC-005` | Implement the iOS synchronizable-Keychain adapter and truthful service outcomes. | Apple synchronization | P3/W3.3 | `SYNC-003` | PR-IOS-KEYCHAIN |

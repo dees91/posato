@@ -1,5 +1,7 @@
 package app.posato.control.backend
 
+import app.posato.control.core.ControlException
+import app.posato.control.core.ErrorCode
 import app.posato.control.core.Target
 import app.posato.control.model.DoctorCheck
 import app.posato.control.model.Query
@@ -114,6 +116,30 @@ interface Interaction {
     ): SnapshotNode
 
     fun runScenario(scenario: Scenario): RunResult
+
+    /**
+     * Types into whatever the addressed process has focused, without resolving an element. A window that exposes no
+     * accessibility tree, such as the macOS helper's open panel, can be reached no other way.
+     */
+    fun typeFocused(
+        text: String,
+        clear: Boolean,
+        submit: Boolean
+    ): Unit = throw ControlException(
+        ErrorCode.UNSUPPORTED_ON_TARGET,
+        "Typing into the focused element without a query is a desktop capability.",
+        "Pass an element query, or use -t desktop with --process.",
+    )
+
+    /** Waits until the addressed process owns, or no longer owns, a visible window; for a window with no element tree. */
+    fun awaitWindow(
+        timeoutSeconds: Double,
+        present: Boolean
+    ): Unit = throw ControlException(
+        ErrorCode.UNSUPPORTED_ON_TARGET,
+        "Waiting for a process window is a desktop capability.",
+        "Pass an element query, or use -t desktop with --process.",
+    )
 }
 
 interface Backend :

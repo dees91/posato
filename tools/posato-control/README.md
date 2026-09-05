@@ -42,18 +42,24 @@ variable, which wins). `doctor` reports presence and source, never values.
 | --- | --- | --- |
 | `posato.apple.developmentTeam` | `POSATO_APPLE_DEVELOPMENT_TEAM` | Automatic signing for the device build and the device driver. |
 | `posato.macos.signingIdentity` | `POSATO_MACOS_SIGNING_IDENTITY` | Development signing for the staged desktop package (needed by the macOS application picker). |
+| `posato.macos.syncProvisioningProfile` | `POSATO_MACOS_SYNC_PROVISIONING_PROFILE` | Absolute path to the untracked `app.posato.macos.sync` development profile that development signing requires. |
 | `posato.control.simulator` | `POSATO_CONTROL_SIMULATOR` | Simulator name or UDID to use instead of the booted one. |
 | `posato.control.device` | `POSATO_CONTROL_DEVICE` | Device name or UDID to use instead of the first connected iPhone. |
 | — | `POSATO_CONTROL_TARGET` | Default for `--target`. |
 
 When `posato.macos.signingIdentity` is an Apple Development identity, Gradle
-packaging also needs
-`-PposatoMacOsSyncProvisioningProfile=/absolute/path/to/untracked.provisionprofile`
-for App ID `app.posato.macos.sync` (iCloud/CloudKit). The profile is never
-tracked. `keychain-access-groups` comes from that team profile; it is not a
-separate App ID capability. Without the profile the development package fails
-closed. Do not ad-hoc-sign only the companion to bypass it; mixed signing is
-rejected.
+packaging also needs the untracked development profile for App ID
+`app.posato.macos.sync` (iCloud/CloudKit). Set
+`posato.macos.syncProvisioningProfile` and `build -t desktop` passes it as
+`-PposatoMacOsSyncProvisioningProfile`; `doctor` reports whether the profile's
+App ID, expiry, and team match, without printing any of them or its path. The profile is never tracked.
+`keychain-access-groups` comes from that team profile; it is not a separate App
+ID capability. Without the profile the development package fails closed. Do not
+ad-hoc-sign only the companion to bypass it; mixed signing is rejected.
+
+`./gradlew quality` runs the packaging tasks without those properties, so it
+restages an ad-hoc package and silently removes the application picker. Rerun
+`build -t desktop` after it; `doctor` names this case on `desktop.staged`.
 
 ## Targets and the JSON envelope
 
@@ -83,10 +89,40 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors, which print the same envelope) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |
+
+## The provisioning gate
+
+`doctor` reports every one-time condition a machine must satisfy before a run,
+as a named check with a state and one remedy sentence:
+
+| `state` | `ok` | `severity` | Meaning |
+| --- | --- | --- | --- |
+| `ok` | `true` | `info` | Observed and satisfied. |
+| `missing` | `false` | `error`, `warn`, or `info` | Observed and not satisfied. |
+| `unknown` | `false` | always `warn` | Not observable from the host. The remedy names the one command that reveals it. |
+
+`result.ok` stays "no check is `missing` at `error` severity", so an `unknown`
+condition is visible without blocking a run, and a condition is never guessed.
+`error` is reserved for a configuration that packaging genuinely rejects: an
+Apple Development identity that is not in the keychain, one that signs under a
+different team than `posato.apple.developmentTeam`, or one configured without a
+usable `app.posato.macos.sync` profile. An untouched ad-hoc checkout still
+reports `ok: true`.
+
+`desktop.signingIdentity` reads the team from the certificate subject's
+organizational unit, not from the identifier inside its common name: in
+`Apple Development: <name> (<id>)` that identifier belongs to the certificate,
+not to the team, so the two are unrelated values. A team that cannot be read is
+`unknown` rather than a guessed mismatch.
+
+`desktop.helperBackground` and `device.screenTime` are always `unknown`: the
+macOS helper's background approval and Screen Time authorization are readable
+only by the application itself. The tool reports what is missing; it never
+grants a permission.
 
 ## Commands
 
@@ -141,6 +177,51 @@ field's label is its floating label ("Exact domain"), and the first text field
 in tree order is the application group name, so prefer `near` over `index`. Typing goes through keyboard
 events after focusing the field, so the desktop window may be anywhere but
 must not be minimized.
+
+### Process targeting (desktop only)
+
+`snapshot`, `find`, `tap`, `type`, `press`, `wait`, and `screenshot` accept
+`--process <name|pid>`, which addresses another process inside the staged
+`Posato.app` instead of the tracked application. The name is an executable file
+name, for example `PosatoMacOSHelper`. Without the option nothing changes.
+
+Resolution is deliberately narrow. The tracked application must be running,
+and only a process whose executable resolves inside the staged bundle — after
+symbolic links are followed — can be addressed. A pid outside the bundle, a
+name that matches nothing, and a name that matches several processes are all
+refused with `PROCESS_NOT_ALLOWED` and exit code 3, and the hint lists what is
+addressable. `run --scenario` has no selector: scenarios stay on the tracked
+application. On the Simulator and the device the option is
+`UNSUPPORTED_ON_TARGET`, because those targets address the app by bundle
+identifier and have no pid path.
+
+The macOS helper is the reason this exists, and it also shows the limit
+(`observed`, 2026-09-04). The helper presents its open panel with
+`NSOpenPanel.runModal()` and never runs an `NSApplication` event loop, so it
+owns a real window while exposing no accessibility server. Consequences:
+
+- `snapshot` and `find` on it fail with `PROCESS_NOT_INSPECTABLE` rather than
+  returning an empty tree, so an absent element is never mistaken for an
+  absent window.
+- `press` and `type` still reach it. When the addressed process answers
+  accessibility requests the events are posted to it directly, exactly as
+  before; when it does not, the bridge brings that process forward and posts
+  to the session tap instead. The activation is why the events land in the
+  window you addressed and nowhere else, and a process that cannot be brought
+  forward is refused rather than typed into blindly.
+- `type` with `--process` and no element query types into whatever that
+  process has focused. This is the only way into a window with no tree.
+- `wait --process <name>` with no query waits on that process's window:
+  `--for exists` is the readiness gate after the action that opens it, and
+  `--for absent` asserts it closed, which a process that exited also satisfies.
+  A selector that never resolved, a misspelled name for instance, is
+  indistinguishable from one that exited and so satisfies `absent` at once;
+  assert `exists` first when the point is that a window was there and went away.
+  Every other `--for` state is refused as `USAGE`, because the tree-based states
+  would answer from an empty query instead of observing the window.
+- `screenshot --process <name>` captures that process's largest window at any
+  window layer, so a panel above the application window is captured; without
+  the selector the tracked application is still captured at layer 0.
 
 ### Snapshot node
 

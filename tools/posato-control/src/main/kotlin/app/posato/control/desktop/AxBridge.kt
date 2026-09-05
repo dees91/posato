@@ -10,10 +10,7 @@ import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
-import java.nio.file.Files
 import java.util.Base64
-import kotlin.io.path.exists
-import kotlin.io.path.getLastModifiedTime
 
 @Serializable
 data class Permissions(
@@ -66,29 +63,31 @@ class AxBridge(
         return parseObject(output)["value"]?.jsonPrimitive?.content.orEmpty()
     }
 
+    /** Types into whatever the addressed process has focused; the only path into a window with no element tree. */
+    fun typeFocused(
+        pid: Long,
+        text: String,
+        clear: Boolean,
+        submit: Boolean
+    ) {
+        val encoded = Base64.getEncoder().encodeToString(text.toByteArray())
+        invoke("type-focused", pid.toString(), encoded, if (clear) "1" else "0", if (submit) "1" else "0")
+    }
+
+    /** [sessionFallback] is set only when the caller addressed a process explicitly; see the bridge's routing rule. */
     fun key(
         pid: Long,
         key: String,
-        modifiers: List<String>
+        modifiers: List<String>,
+        sessionFallback: Boolean
     ) {
-        invoke("key", pid.toString(), key, modifiers.joinToString(","))
+        invoke("key", pid.toString(), key, modifiers.joinToString(","), if (sessionFallback) "1" else "0")
     }
 
-    fun ensureBuilt() {
-        val source = layout.accessibilityBridgeSource
-        val binary = layout.accessibilityBridgeBinary
-        if (!source.exists()) {
-            throw ControlException(ErrorCode.COMMAND_FAILED, "The accessibility bridge source is missing at ${layout.relativize(source)}.")
-        }
-        if (binary.exists() && binary.getLastModifiedTime() >= source.getLastModifiedTime()) return
-        Files.createDirectories(binary.parent)
-        context.log("Compiling the accessibility bridge")
-        context.subprocess.run(listOf("/usr/bin/xcrun", "swiftc", "-O", "-o", binary.toString(), source.toString()))
-            .requireSuccess(ErrorCode.BUILD_FAILED, "Compiling the accessibility bridge", "Install Xcode command line tools.")
-    }
+    private val binary = AxBridgeBinary(context)
 
     private fun invoke(vararg arguments: String): String {
-        ensureBuilt()
+        binary.ensureBuilt()
         val output = context.subprocess.run(listOf(layout.accessibilityBridgeBinary.toString()) + arguments)
         if (output.exitCode != 0) throw bridgeFailure(output.stdout, output.stderr)
         return output.stdout
