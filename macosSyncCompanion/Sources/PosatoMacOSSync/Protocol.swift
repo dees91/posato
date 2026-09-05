@@ -19,6 +19,7 @@ enum SyncLimits {
   static let cloudkitCapability: UInt64 = 2
   static let anchorBytes = 48
   static let bundleIdentifierBytes = 16
+  static let uuidTextBytes = 36
   static let bundleBytes = 65_536
   static let cursorBytes = 16_384
   static let containerIdentifier = "iCloud.app.posato.sync"

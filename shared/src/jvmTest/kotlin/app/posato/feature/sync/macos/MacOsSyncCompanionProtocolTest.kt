@@ -207,4 +207,20 @@ class MacOsSyncCompanionProtocolTest {
 
         assertEquals(MacOsSyncCompanionProtocol.MAXIMUM_RESPONSE_PAYLOAD_BYTES, decoded.payload.size)
     }
+
+    @Test
+    fun `given an oversized fetch request frame when decoded then it fails`() {
+        val message = SyncCompanionMessage(
+            operation = SyncCompanionOperation.FetchChanges,
+            requestIdentifier = ByteArray(MacOsSyncCompanionProtocol.IDENTIFIER_BYTES) { 9 },
+            deadlineMilliseconds = 30_000,
+            capabilities = MacOsSyncCompanionProtocol.CLOUDKIT_CAPABILITY,
+            outcome = null,
+            payload = ByteArray(MacOsSyncCompanionProtocol.MAXIMUM_PAYLOAD_BYTES + 1),
+        )
+
+        assertFails {
+            MacOsSyncCompanionProtocol.decode(MacOsSyncCompanionProtocol.encode(message))
+        }
+    }
 }
