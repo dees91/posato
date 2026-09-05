@@ -69,24 +69,29 @@ Preconditions:
 - The section is hidden entirely without an application group; an empty
   `Applications` section is the expected state, not a defect.
 - Reinstalling returns Screen Time authorization to not determined and destroys
-  the whole data container, including the stored selection, the policy database
-  and its websites and group; an ordinary relaunch preserves everything.
+  the whole data container, including the policy database and its websites and
+  group; an ordinary relaunch preserves everything. That was `observed` before
+  `IOS-001` moved the selection into the App Group container, so treat the
+  selection's survival across a reinstall as unverified and read the count back
+  rather than assuming either outcome.
 - A captured selection can be seeded back, which removes the picker from a
-  rerun but not the consent alert (`observed`, 2026-09-04, iOS 26.5.2). The
-  store is
-  `<container>/Library/Application Support/Posato/ApplicationMappings/mappings-v1.json`,
+  rerun but not the consent alert (`observed`, 2026-09-04, iOS 26.5.2, against
+  the private container that `IOS-001` has since replaced; the same procedure
+  against the group container is `inferred` until a run confirms it). The live
+  store is now in the App Group container
+  `group.app.posato.ios.session` at `ApplicationMappings/mappings-v1.json`,
   one JSON object with a `version` and one opaque `token` string per selected
   application. Capture and restore it with the app not running:
 
   ```shell
   xcrun devicectl device copy from --device <udid> \
-    --domain-type appDataContainer --domain-identifier app.posato.ios \
-    --source "Library/Application Support/Posato/ApplicationMappings/mappings-v1.json" \
+    --domain-type appGroupDataContainer --domain-identifier group.app.posato.ios.session \
+    --source "ApplicationMappings/mappings-v1.json" \
     --destination <untracked directory beside local.properties>/mappings-v1.json
   xcrun devicectl device copy to --device <udid> \
-    --domain-type appDataContainer --domain-identifier app.posato.ios \
+    --domain-type appGroupDataContainer --domain-identifier group.app.posato.ios.session \
     --source <the same file> \
-    --destination "Library/Application Support/Posato/ApplicationMappings/mappings-v1.json"
+    --destination "ApplicationMappings/mappings-v1.json"
   ```
 
   `copy from` needs a destination file path, not a directory. `copy to` writes
@@ -94,16 +99,25 @@ Preconditions:
   a full uninstall, reinstall, and restore, the section reported
   `Applications selected: 1` with `Clear selection`. The application group must
   exist first, otherwise the section stays hidden and you will read the seeding
-  as failed. Keep the captured file untracked: it carries live selection tokens.
-- What seeding does not prove (`open`): the count read-back shows the app loads
-  and validates the restored tokens, not that the tokens still resolve to the
-  same applications for enforcement in a new installation. Screen Time
-  authorization is not determined at that point, so enforcement cannot be
-  exercised anyway. `IOS-001` settles that question.
-- The store moves into the App Group container with `IOS-001`. The commands
-  above then need `--domain-type appGroupDataContainer` with the group
-  identifier; `devicectl` supports both domains, so only the domain and the path
-  change.
+  as failed. Launch the app once after a reinstall before `copy to`: the first
+  launch creates `ApplicationMappings/` in the group container, and `copy to`
+  into a missing parent directory fails. Keep the captured file untracked: it
+  carries live selection tokens.
+- The private-container path
+  `Library/Application Support/Posato/ApplicationMappings/mappings-v1.json`
+  (`--domain-type appDataContainer --domain-identifier app.posato.ios`) is the
+  pre-`IOS-001` location and is now only a migration source: the first launch
+  copies it into the group container, verifies the copy, and deletes it, and it
+  is adopted only while the group file is absent or empty. Always capture from
+  the group container; a capture from the private one reads an empty or missing
+  file after any migrated launch.
+- What seeding does not prove: the count read-back shows the app loads and
+  validates the restored tokens, not that the tokens still resolve to the same
+  applications for enforcement in a new installation. `IOS-001` verified apply
+  and clear on the device against a selection made by the picker in that same
+  installation, so restored-token enforcement across a reinstall stays `open`.
+  Screen Time authorization is not determined right after a reinstall anyway,
+  so enforcement cannot be exercised at that point.
 - Selecting a category or a web domain is rejected with `Choose individual
   applications only.` and keeps the previous applications.
 - Simulator and Release builds never open a picker; do not report the iOS
