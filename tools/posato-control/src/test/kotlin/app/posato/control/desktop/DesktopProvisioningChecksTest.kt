@@ -203,7 +203,7 @@ class DesktopProvisioningChecksTest {
     }
 
     @Test
-    fun `an unstaged checkout reports every nested component as absent rather than missing`() {
+    fun `an unstaged checkout points every nested component at staging, not at packaging verification`() {
         val unstaged = facts(
             staged = false,
             helperExecutablePresent = false,
@@ -214,7 +214,9 @@ class DesktopProvisioningChecksTest {
         listOf("desktop.helperBundle", "desktop.proxyDaemon", "desktop.syncCompanion").forEach { id ->
             val check = checks.check(id)
             assertFalse(check.ok, id)
-            assertTrue(check.hint.orEmpty().contains("build -t desktop"), id)
+            // The remedy is staging, not a packaging verification that never ran, and both branches mention `build -t desktop`.
+            assertTrue(check.detail.startsWith("No staged desktop application"), check.detail)
+            assertEquals("Run `posato-control build -t desktop`.", check.hint, id)
         }
     }
 

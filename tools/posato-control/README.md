@@ -122,8 +122,10 @@ not to the team, so the two are unrelated values. A team that cannot be read is
 `desktop.helperBundle`, `desktop.proxyDaemon`, and `desktop.syncCompanion`
 observe the three nested components of the staged package separately, so an
 incomplete stage names the component that is missing instead of failing later
-inside a recipe. Their content is verified at build time by
-`:desktopApp:verifyMacOsHelperStructure`; `doctor` only reports presence.
+inside a recipe. `doctor` only reports presence; the content is verified at
+build time, the helper and the daemon by `:desktopApp:verifyMacOsHelperStructure`
+and the companion by `:desktopApp:verifyMacOsDevelopmentPackaging`, both of
+which `build -t desktop --verify` runs.
 
 `desktop.helperBackground` and `device.screenTime` are always `unknown`: the
 macOS helper's background approval and Screen Time authorization are readable
