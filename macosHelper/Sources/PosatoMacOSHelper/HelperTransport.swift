@@ -295,6 +295,23 @@ func remainingDeadline(
   )
 }
 
+/// A Restore request that follows `request` on the same connection, session, and request identity.
+func restoreMessage(
+  after request: WireMessage,
+  deadlineMilliseconds: UInt32
+) throws -> WireMessage {
+  return try WireMessage(
+    kind: .request,
+    operation: .restore,
+    sequence: request.sequence,
+    deadlineMilliseconds: deadlineMilliseconds,
+    connectionIdentifier: request.connectionIdentifier,
+    sessionIdentifier: request.sessionIdentifier,
+    requestIdentifier: request.requestIdentifier,
+    payload: Data()
+  )
+}
+
 func localResponse(
   request: WireMessage,
   payload: WireResponsePayload

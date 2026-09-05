@@ -66,6 +66,38 @@ import Testing
   #expect(runner.writeSource == nil)
 }
 
+@Test func givenSafariScriptsWhenRenderedThenTabsAreAddressedByIndexNotId() {
+  let write = SupportedBrowser.safari.writeScript(
+    windowID: "7", tabReference: "2", url: "http://127.0.0.1:4443/blocked")
+
+  #expect(SupportedBrowser.safari.readScript.contains("index of theTab"))
+  #expect(!SupportedBrowser.safari.readScript.contains("id of theTab"))
+  #expect(write.contains("tab 2 of window id 7"))
+  #expect(!write.contains("tab id"))
+}
+
+@Test func givenChromeScriptsWhenRenderedThenTabsAreAddressedById() {
+  let write = SupportedBrowser.chrome.writeScript(
+    windowID: "7", tabReference: "2", url: "http://127.0.0.1:4443/blocked")
+
+  #expect(SupportedBrowser.chrome.readScript.contains("id of theTab"))
+  #expect(write.contains("tab id 2 of window id 7"))
+}
+
+@Test func givenNonNumericTabReferenceWhenPresentedThenNoWriteOccurs() {
+  let runner = StubAppleEventRunner(readResult: "1\tmissing value\thttps://example.com/")
+  var adapter = BrowserPresentationAdapter(
+    runner: runner,
+    now: { 10 },
+    frontmostBrowser: { .safari }
+  )
+
+  let status = adapter.presentBlockedPage(port: 4_443, selectedHosts: ["example.com"])
+
+  #expect(status == .skipped)
+  #expect(runner.writeSource == nil)
+}
+
 @Test func givenPresentationTypesWhenRenderedThenHostsStayRedacted() {
   let status = BrowserPresentationStatus.presented
   #expect(!String(describing: status).contains("example.com"))

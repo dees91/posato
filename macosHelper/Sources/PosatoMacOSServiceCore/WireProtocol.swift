@@ -2,6 +2,8 @@ import CryptoKit
 import Foundation
 
 public enum WireLimits {
+  /// Restoration budget when the originating request's deadline is already exhausted.
+  public static let fallbackRestoreDeadlineMilliseconds: UInt32 = 5_000
   public static let protocolMajor: UInt16 = 1
   public static let maximumFrameBytes = 512 * 1024
   public static let maximumXPCBytes = 64 * 1024

@@ -92,6 +92,37 @@ class MacOsBrowserDomainEnforcerTest {
     }
 
     @Test
+    fun `given successful apply without the applied phase when started then restore follows and the result is failed`() {
+        val commands = FakeBrowserDomainCommands(
+            configurePort = 4_443u,
+            applyResults = mutableListOf(successHelperResult().copy(ownershipPhase = HelperResult.Phase.Idle)),
+        )
+        val enforcer = MacOsBrowserDomainEnforcer(commands)
+
+        val result = enforcer.start(listOf("example.com"))
+
+        assertIs<BrowserDomainEnforcementResult.Failed>(result)
+        assertEquals(HelperResult.Phase.Idle, result.result.ownershipPhase)
+        assertEquals(1, commands.restoreCalls)
+    }
+
+    @Test
+    fun `given unknown apply reconciled to idle when started then restore follows and the result is failed`() {
+        val commands = FakeBrowserDomainCommands(
+            configurePort = 4_443u,
+            applyResults = mutableListOf(HelperResult.unknownOutcome()),
+            reconcileResults = mutableListOf(successHelperResult().copy(ownershipPhase = HelperResult.Phase.Idle)),
+        )
+        val enforcer = MacOsBrowserDomainEnforcer(commands)
+
+        val result = enforcer.start(listOf("example.com"))
+
+        assertIs<BrowserDomainEnforcementResult.Failed>(result)
+        assertEquals(1, commands.reconcileCalls)
+        assertEquals(1, commands.restoreCalls)
+    }
+
+    @Test
     fun `given sensitive values when rendered then they remain redacted`() {
         val active = BrowserDomainEnforcementResult.Active(4_443u)
         val failed = BrowserDomainEnforcementResult.Failed(successHelperResult())
