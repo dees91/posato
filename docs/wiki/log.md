@@ -1136,6 +1136,7 @@
   canonical copy of every `posato.` key, and run `:posato-control:installDist`
   before it is usable. `git worktree add` carries neither, and a partial copy
   fails deep inside a feature recipe instead of at setup.
+
 ## [2026-09-04] implementation | IOS-001 Posato-owned iOS restrictions
 
 - Enforce exact domains and the opaque application selection through one

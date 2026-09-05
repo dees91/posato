@@ -1,13 +1,13 @@
 # Execution: `IOS-001`
 
 - **Brief:** [Apply and clear only Posato-owned iOS restrictions](../specifications/ios-001-enforcement.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
-- **Implementer:** pending
-- **Reviewer:** pending
+- **Implementer:** Muse Code (session `waxen-apogee`)
+- **Reviewer:** independent plan reviewer; independent completed-change reviewers; independent GitHub reviewer
 - **Branch:** `feature/ios-001-enforcement`
 - **Worktree:** `~/Projects/Polyglot/posato-ios-001`
-- **Updated:** 2026-09-04
+- **Updated:** 2026-09-05
 
 ## Plan
 
@@ -102,7 +102,7 @@
 - Device XCTest 54 passed, 0 skipped; manual checkpoint all pass
   (Safari block, app shield, unselected usable, clear restores,
   revoke-then-clear empty). Phone left revoked, restriction-free.
-- Hosted review (P2 only, no P1): 3 accepted (re-migrate over empty
+- Independent GitHub review (P2 only, no P1): 3 accepted (re-migrate over empty
   group, best-effort post-copy cleanup, explicit fake read + shield
   rollback test), 3 declined (nil-container fallback, layered
   refusal precedence, unmeasured caching). Verified, pushed, replied.
