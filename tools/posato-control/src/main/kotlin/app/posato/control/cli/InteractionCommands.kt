@@ -126,9 +126,21 @@ class WaitCommand : ControlCommand("wait", "Wait until an element exists, is abs
     override fun execute(session: Session): JsonElement {
         val backend = session.backend(process.selector())
         val target = query.toQuery()
-        // Addressing a process without a query waits for its window, which needs no element tree.
-        if (target == null && process.selector() != null && state == States.EXISTS) {
-            backend.awaitWindow(timeout)
+        // Addressing a process without a query waits on its window, which needs no element tree. Only presence and
+        // absence have a meaning there; the tree-based states would silently answer from an empty query instead.
+        if (target == null && process.selector() != null) {
+            val present = when (state) {
+                States.EXISTS -> true
+
+                States.ABSENT -> false
+
+                else -> throw ControlException(
+                    ErrorCode.USAGE,
+                    "`--process` without an element query waits on that process's window, so --for accepts only exists or absent.",
+                    "Add an element query, or use --for exists or --for absent.",
+                )
+            }
+            backend.awaitWindow(timeout, present)
             return buildJsonObject { put("ok", true) }
         }
         val step = Step(action = Actions.WAIT_FOR, state = state, query = target, timeoutSeconds = timeout)

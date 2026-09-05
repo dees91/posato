@@ -53,10 +53,15 @@ class DesktopInteraction(
         bridge.typeFocused(runningPid(), text, clear, submit)
     }
 
-    override fun awaitWindow(timeoutSeconds: Double) {
-        WindowWait.await(timeoutSeconds, processSelector ?: "the desktop application") {
-            bridge.windows(runningPid()).isNotEmpty()
-        }
+    override fun awaitWindow(
+        timeoutSeconds: Double,
+        present: Boolean
+    ) {
+        WindowWait.await(
+            timeoutSeconds = timeoutSeconds,
+            describe = processSelector ?: "the desktop application",
+            state = if (present) WindowState.PRESENT else WindowState.ABSENT,
+        ) { bridge.windows(runningPid()).isNotEmpty() }
     }
 
     private fun runningPid(): Long = processes.resolveTarget(processSelector, stateStore.load().desktop)

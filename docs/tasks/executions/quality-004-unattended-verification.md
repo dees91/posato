@@ -11,16 +11,16 @@
 
 ## Plan
 
-1. Measure where the helper's panel lives and whether its pid is resolvable
-   under the staged-bundle containment rule.
+1. Measure where the helper's panel lives and whether its pid resolves under
+   the staged-bundle containment rule.
 2. Add the process selector with its refusals and tests, default path unchanged.
 3. Drive the panel with `⌘⇧G` and an absolute path, prove one selection and
    removal, and rewrite the manual step in the feature file.
-4. Extend `doctor` into the provisioning gate, one named check and remedy per
+4. Extend `doctor` into the provisioning gate, one check and remedy per
    one-time condition.
 5. Measure the iOS selection store on the device and state the resulting rule.
-6. Run `./gradlew quality`, complete the independent review, rerun affected
-   checks, and close this record in the closeout commit.
+6. Run `./gradlew quality`, complete the review, rerun affected checks, and
+   close this record in the closeout commit.
 
 ## Result
 
@@ -30,15 +30,14 @@
   every other selector is a refusal. A null selector is unchanged.
 - `observed`: the helper presents its panel with `NSOpenPanel.runModal()` and
   never runs an `NSApplication` event loop, so it owns a real window while
-  exposing no accessibility server; `AXUIElementCopyAttributeValue` fails at
-  once with `kAXErrorCannotComplete` and neither `AXManualAccessibility` nor
+  exposing no accessibility server; `AXUIElementCopyAttributeValue` fails at once
+  with `kAXErrorCannotComplete` and neither `AXManualAccessibility` nor
   `AXEnhancedUserInterface` changes it. `snapshot` therefore reports
   `PROCESS_NOT_INSPECTABLE`, and key events reach the panel through the session
-  tap after the bridge brings that process forward, re-checking the front
-  before every character. The fallback is armed only when a process was
-  addressed, so no default path changed; `AC-01` was amended and accepted.
-- The picker is driven end to end (`⌘⇧G`, an absolute path, `--submit`, one more
-  `Return`), so the manual step is gone from the feature file.
+  tap after the bridge brings that process forward, re-checking the front before
+  every character. The fallback is armed only when a process was addressed, so
+  no default path changed; `AC-01` was amended and accepted.
+- The picker is driven end to end; the feature file has no manual step.
 - `doctor` is the provisioning gate. `DoctorCheck` gained a three-valued
   `state`; `DoctorReport.ok` is unchanged, so an `unknown` condition is visible
   without blocking, and `error` is reserved for a configuration packaging
@@ -59,27 +58,29 @@
 
 - **Verdict:** 0 Critical, 3 Required, 3 Recommended, 2 Optional.
 - **Critical or Required findings:** `awaitWindow` swallowed every precondition
-  refusal, so `wait --process` timed out at exit 4 instead of refusing at exit
-  3; the frontmost gate for session-tap typing ran once per call, not per
-  character, so losing the front mid-string would have typed the rest into
-  another window; `AC-01` was not met as written and carried no amendment.
-- **Resolution:** all three corrected. `WindowWait` now tolerates only
-  `PROCESS_NOT_ALLOWED` while polling, reports every other refusal at once, and
-  ends a never-resolving selector as its own refusal; `typeText` re-checks the
-  front per character on the session path; `AC-01` was amended and accepted.
-  The driven macOS run was repeated after the last correction.
-- **Advisory findings:** all three Recommended and both Optional were applied,
-  each a one-line correctness or accuracy fix inside the diff: the session
-  fallback is armed only when a process was addressed; the screenshot layer
-  rule keys off the resolved pid, not the option; dead imports removed; the pid
-  rule is ASCII-only; and a README sentence overstating what `doctor` prints was
-  corrected. None expanded scope.
+  refusal, so `wait --process` timed out at exit 4 instead of refusing at exit 3;
+  the frontmost gate for session-tap typing ran once per call, not per character,
+  so losing the front mid-string would have typed the rest into another window;
+  `AC-01` was not met as written and carried no amendment.
+- **Resolution:** all three corrected. `WindowWait` tolerates only
+  `PROCESS_NOT_ALLOWED` while polling and ends a never-resolving selector as its
+  own refusal; `typeText` re-checks the front per character; `AC-01` was amended
+  and accepted. The driven macOS run was repeated after the last correction.
+- **Advisory findings:** the review's five were applied as one-line correctness
+  or accuracy fixes. A hosted pass then raised four P2, all accepted as a
+  maintainer scope decision because each named a defect, not a preference: a
+  dead `runningPid()`; the one host-format-dependent parse untested, now the
+  pure `CertificateSubject` with both `openssl` renderings pinned; two `pass`
+  details claiming a team comparison no configured team had made; and a
+  queryless `wait --process` whose other states fell through to a tree that
+  either refuses or answers trivially, now `absent` plus a `USAGE` refusal.
+  Nothing expanded scope.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `:posato-control:test` | pass, 69 tests (was 30) | selector and wait refusals, containment and symlink escape, doctor inventory, the ad-hoc `ok: true` regression, profile decode, redaction |
+| `:posato-control:test` | pass, 80 tests (was 30) | selector and wait refusals both directions, containment and symlink escape, doctor inventory, the ad-hoc `ok: true` regression, both certificate-subject renderings, redaction |
 | Driven macOS run: panel selection and removal | pass | run `20260904-163447-f56b`: count 0, 1, 0 with four screenshots |
 | `--process` refusals on the real host | pass | foreign pid, dead pid, unknown name, no tracked application, and `wait --process` all exit 3 |
 | Device run: iOS selection-store measurement | pass | runs `20260904-1617*`, `1621*`, `1622*`: capture, reinstall, restore, `Applications selected: 1` |

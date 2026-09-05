@@ -11,9 +11,13 @@ class WindowWaitTest {
     private var now = 0L
     private val slept = mutableListOf<Long>()
 
-    private fun await(probe: WindowProbe) = WindowWait.await(
+    private fun await(
+        state: WindowState = WindowState.PRESENT,
+        probe: WindowProbe
+    ) = WindowWait.await(
         timeoutSeconds = 1.0,
         describe = "PosatoMacOSHelper",
+        state = state,
         clock = { now },
         sleep = { millis ->
             slept.add(millis)
@@ -64,6 +68,29 @@ class WindowWaitTest {
         val failure = assertFailsWith<ControlException> { await { false } }
         assertEquals(ErrorCode.WAIT_TIMEOUT, failure.code)
         assertTrue(failure.message.orEmpty().contains("PosatoMacOSHelper"), failure.message)
+    }
+
+    @Test
+    fun `a window that is already gone satisfies the absent wait`() {
+        await(WindowState.ABSENT) { false }
+        assertTrue(slept.isEmpty())
+    }
+
+    @Test
+    fun `a process that exits satisfies the absent wait, because its window cannot outlive it`() {
+        var polls = 0
+        await(WindowState.ABSENT) {
+            polls++
+            if (polls < 2) true else throw ControlException(ErrorCode.PROCESS_NOT_ALLOWED, "no longer running")
+        }
+        assertEquals(2, polls)
+    }
+
+    @Test
+    fun `a window that never closes is a timeout naming the close`() {
+        val failure = assertFailsWith<ControlException> { await(WindowState.ABSENT) { true } }
+        assertEquals(ErrorCode.WAIT_TIMEOUT, failure.code)
+        assertTrue(failure.message.orEmpty().contains("close"), failure.message)
     }
 
     @Test

@@ -40,8 +40,6 @@ class DesktopEvidence(
         return context.recordArtifact(destination)
     }
 
-    private fun runningPid(): Long = processes.resolveTarget(processSelector, stateStore.load().desktop)
-
     private fun addressed(): String = processSelector?.let { "The selected process '$it'" } ?: "The desktop application"
 
     private fun requireScreenRecording() {

@@ -126,8 +126,6 @@ class DesktopLifecycle(
     }
 }
 
-private val ORGANIZATIONAL_UNIT = Regex("OU\\s*=\\s*([A-Z0-9]{10})")
-
 private class DesktopDoctor(
     private val context: RunContext,
     private val bridge: AxBridge,
@@ -181,7 +179,7 @@ private class DesktopDoctor(
             stdin = certificate.stdout,
         )
         if (!subject.succeeded) return null
-        return ORGANIZATIONAL_UNIT.find(subject.stdout)?.groupValues?.get(1)
+        return CertificateSubject.team(subject.stdout)
     }
 
     private fun helperExecutable(): Path = context.layout.stagedDesktopApplication

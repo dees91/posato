@@ -211,9 +211,11 @@ owns a real window while exposing no accessibility server. Consequences:
   forward is refused rather than typed into blindly.
 - `type` with `--process` and no element query types into whatever that
   process has focused. This is the only way into a window with no tree.
-- `wait --process <name> --for exists` with no query waits for that process to
-  own a visible window. Use it as the readiness gate after the action that
-  opens the window.
+- `wait --process <name>` with no query waits on that process's window:
+  `--for exists` is the readiness gate after the action that opens it, and
+  `--for absent` asserts it closed, which a process that exited also satisfies.
+  Every other `--for` state is refused as `USAGE`, because the tree-based states
+  would answer from an empty query instead of observing the window.
 - `screenshot --process <name>` captures that process's largest window at any
   window layer, so a panel above the application window is captured; without
   the selector the tracked application is still captured at layer 0.

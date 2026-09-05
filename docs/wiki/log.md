@@ -1124,7 +1124,9 @@
   authorization) is `unknown` and never blocks; `error` is reserved for a
   configuration packaging genuinely rejects, so an ad-hoc checkout stays
   `ok: true`. `observed`: `./gradlew quality` restages an ad-hoc package and
-  silently removes the picker, which `desktop.staged` now names.
+  silently removes the picker, which `desktop.staged` now names; the first such
+  run after a development-signed stage also fails packaging verification on the
+  mixed state and passes on a rerun.
 - `observed` (iOS 26.5.2): a captured iOS selection store can be seeded back
   with `devicectl` and survives a reinstall as a count read-back, so the
   picker is not needed on a rerun; the Screen Time consent alert still is, and
