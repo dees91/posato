@@ -72,8 +72,10 @@ exactly after clear, helper failure, sleep, and reboot.
 - `AC-01` — With the domain set configured and Apply verified, Safari and
   Chrome in regular and private windows receive the fixed page for a selected
   host over HTTP and HTTPS, while the control host, a sibling, and a subdomain
-  of a selected host load normally; nonstandard ports and IP literals are
-  rejected rather than routed direct.
+  of a selected host load normally; nonstandard ports are rejected rather
+  than routed direct, and IP literals never match a selected host and are
+  relayed like any unselected host (ADR 0005), which leaves typing a selected
+  site's address as a stated non-resistant residual.
 - `AC-02` — Every ADR 0005 negative parsing case (raw Unicode, userinfo,
   missing, duplicate, or conflicting `Host`, invalid port, two terminal dots,
   origin-form other than the exact `/blocked` route, oversized or slow input)
@@ -146,6 +148,13 @@ marked open.
   the verification machine is refused: the daemon verifies and repairs the
   definition, and a check that passes only because the control was removed
   proves nothing.
+- Decided (`user-confirmed`, 2026-09-05): IP literals stay relayed as
+  unselected hosts rather than rejected, because rejecting them would deny
+  unrelated local-network and developer traffic without a product benefit;
+  `AC-01` was amended accordingly. The gated harness may drive the installed
+  package through a test-only parent process signed with the maintainer's
+  development identity and the application identifier, which is the peer the
+  helper already requires.
 - Physical gates: development-signed package with the team identity, helper
   Enable approval in System Settings, one administrator authentication per
   Apply, Automation prompts for Safari and Chrome, both browsers installed,
