@@ -16,7 +16,10 @@
 *.xcresult
 *.resultbundle
 *.mobileprovision
+*.provisionprofile
 *.p12
+*.p8
+*.csr
 *.cer
 *.pem
 *.key
