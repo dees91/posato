@@ -4,6 +4,8 @@ import app.posato.provisioning.cli.CertificatesCommand
 import app.posato.provisioning.cli.CertificatesEnsureCommand
 import app.posato.provisioning.cli.DevicesCommand
 import app.posato.provisioning.cli.DevicesRegisterCommand
+import app.posato.provisioning.cli.ProfilesCommand
+import app.posato.provisioning.cli.ProfilesEnsureCommand
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningJson
 import app.posato.provisioning.model.Envelope
@@ -32,6 +34,7 @@ class PosatoProvisioning : CliktCommand(name = "posato-provisioning") {
 fun buildCommand(): PosatoProvisioning = PosatoProvisioning().subcommands(
     DevicesCommand().subcommands(DevicesRegisterCommand()),
     CertificatesCommand().subcommands(CertificatesEnsureCommand()),
+    ProfilesCommand().subcommands(ProfilesEnsureCommand()),
 )
 
 fun run(args: Array<String>): Int {
