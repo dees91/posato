@@ -70,7 +70,7 @@ rather than the whole HTTP client.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | pass | Full aggregate gate with the new module's detekt, ktlintCheck, and test included |
+| `./gradlew quality` | pass | Full aggregate gate with the new module's detekt, ktlintCheck, and test included, rerun after the last correction |
 | `:posato-provisioning:test` | pass | 76 tests, including a 200-sample ES256 signature round trip verified against a generated public key |
 | `AC-01` doctor inventory | pass | 15 checks in a fixed order, each unmet one carrying a remedy; a test asserts no configured or discovered value appears in any detail or hint |
 | `AC-03` no key configured | pass | `doctor` exits 3, reports "No request was attempted", and `profiles ensure` exits 3; `~/Library/Developer/Posato/` unchanged by checksum |
@@ -86,6 +86,12 @@ rather than the whole HTTP client.
 
 - Cleared 2026-09-05: the maintainer created the App Store Connect team key and
   configured the three `posato.asc.` values. No blocker remains.
+- Local build state: verifying `AC-02` requires staging the desktop package
+  with the development identity, which leaves it signed that way. `quality`
+  runs without those properties and expects the ad-hoc entitlements, so rerun
+  `:desktopApp:verifyMacOsDevelopmentPackaging` with no properties afterwards
+  to restage. This is a property of the existing packaging tasks, not of this
+  change.
 - Observed once: a `profiles ensure app.posato.macos` run failed before its
   profile was created, and the immediate rerun succeeded reporting that no
   profile of that name existed. No duplicate was produced, which is the
