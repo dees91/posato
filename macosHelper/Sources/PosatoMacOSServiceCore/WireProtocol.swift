@@ -15,14 +15,16 @@ public enum WireLimits {
   public static let requiredCapabilities: UInt64 = 1
   public static let applicationSelectionCapability: UInt64 = 2
   public static let browserDomainConfigureCapability: UInt64 = 4
+  public static let applicationEnforcementCapability: UInt64 = 8
   public static let requiredParentHelperCapabilities: UInt64 =
     requiredCapabilities | applicationSelectionCapability | browserDomainConfigureCapability
+    | applicationEnforcementCapability
 
   public static func maximumDeadlineMilliseconds(for operation: WireOperation) -> UInt32 {
     switch operation {
     case .selectApplications:
       return maximumSelectionDeadlineMilliseconds
-    case .configureBrowserDomains:
+    case .configureBrowserDomains, .configureApplications:
       return maximumConfigureDeadlineMilliseconds
     case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew:
       return maximumDeadlineMilliseconds
@@ -72,10 +74,11 @@ public enum WireOperation: UInt8, Sendable {
   case renew = 9
   case selectApplications = 10
   case configureBrowserDomains = 11
+  case configureApplications = 12
 
   public var isHelperOnly: Bool {
     switch self {
-    case .selectApplications, .configureBrowserDomains:
+    case .selectApplications, .configureBrowserDomains, .configureApplications:
       return true
     case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew:
       return false
