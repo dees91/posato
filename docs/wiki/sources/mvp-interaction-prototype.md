@@ -6,7 +6,8 @@
   `a081d4278cf8517c46b4322ed3c098462f153570`
 - **Current artifact:** [native interaction prototype](../../../prototypes/mvp-interaction-flow/README.md)
 - **Design-system library:** `prototypes/mvp-interaction-flow/compose/`
-- **Historical HTML and Node suite:** retained in Git at `566bdb6`
+- **Historical HTML and Node suite:** non-release tag
+  `archive/mvp-interaction-flow-html`, pinned to `566bdb6`
 - **Source type:** disposable interactive UX prototype
 - **Reviewed:** 2026-09-06
 - **Authority:** evidence only; not a product, design, architecture, or
@@ -45,6 +46,9 @@ parameters into production requirements.
 - `user-confirmed` (2026-09-06): update `DESIGN.md` to describe the current
   prototype accurately, including the refined controls, lists, duration entry,
   and platform-specific main navigation.
+- `user-confirmed` (2026-09-06): preserve the retired HTML and Node suite under
+  the non-release archive tag so squash merging or deleting the work branch
+  cannot remove their only durable reference.
 
 ## Historical browser-observed evidence
 

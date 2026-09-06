@@ -13,7 +13,6 @@ import app.posato.prototype.designsystem.PosatoActionRow
 import app.posato.prototype.designsystem.PosatoButton
 import app.posato.prototype.designsystem.PosatoButtonStyle
 import app.posato.prototype.designsystem.PosatoCaption
-import app.posato.prototype.designsystem.PosatoChoiceTile
 import app.posato.prototype.designsystem.PosatoSpace
 import app.posato.prototype.designsystem.PosatoToggleButton
 import app.posato.prototype.designsystem.workbench.PrototypeInspector
@@ -126,9 +125,11 @@ internal fun PrototypeFreePlayControls(
         prototypeFreePlayGroups.forEach { group ->
             Text(group.title, style = MaterialTheme.typography.titleMedium)
             group.actions.forEach { action ->
-                PosatoChoiceTile(modifier = Modifier.fillMaxWidth(), selected = false, onClick = { onControl(PrototypeControl.FreePlay(action)) }) {
-                    Text(action.label)
-                }
+                PosatoButton(
+                    modifier = Modifier.fillMaxWidth(),
+                    onClick = { onControl(PrototypeControl.FreePlay(action)) },
+                    style = PosatoButtonStyle.Secondary,
+                ) { Text(action.label) }
             }
         }
     }

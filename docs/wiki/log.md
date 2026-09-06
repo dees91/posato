@@ -1259,3 +1259,6 @@
   tokens, reusable components, native layouts, screen behavior, and inspection
   controls. Separated source-observed prototype choices from retained production
   requirements, mock services, and unverified accessibility/platform parity.
+- Preserved the retired HTML and Node suite under the maintainer-approved
+  non-release tag `archive/mvp-interaction-flow-html`, independently of a squash
+  merge or work-branch deletion; confirmed recovery with a tag-only fetch.

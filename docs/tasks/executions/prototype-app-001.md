@@ -18,12 +18,11 @@
 
 - Added isolated `:prototypeApp` and a thin iPhone SwiftUI host using the existing
   prototype design system; production code and services remain untouched.
-- Ported all 16 surfaces, strict transitions, configurable items and duration,
-  four walkthroughs, Free play, mock events, and deterministic previews.
-- Added hidden controls, platform-appropriate presentation, appearance options,
-  and remembered drafts across dismissal and compact/expanded layout changes.
+- Ported 16 surfaces, four walkthroughs, strict transitions, Free play, mock
+  events, previews, hidden controls, appearance options, and retained drafts.
 - Retired HTML and its Node suite after common regression and native parity
-  checks; both remain recoverable at `566bdb6`. Added native run instructions.
+  checks; the non-release tag `archive/mvp-interaction-flow-html` retains both
+  at `566bdb6` independently of a squash merge or work-branch deletion.
 - Reworked the 50-website study with primary session actions above two counted
   summaries, read-only selection details, separate website/app tabs, search,
   lazy rows, and labelled options menus. Browser state belongs to composition
@@ -42,28 +41,19 @@
 
 ## Verification
 
-- Initial focused/root gates passed with 24 common tests, both iOS frameworks,
-  an unsigned Simulator host, and the bundled desktop application.
-- Native macOS AX checks completed all four strict walkthroughs, including
-  intentionally blocked steps, recovery, local sync failure/retry, and expiry.
-  Checked initial and repeated window shortcuts, form submission, website
-  save/remove, session start, and draft retention across controls and resizing.
-- The repository iOS driver, with the prototype bundle override, passed the
-  43-step configuration/session flow and a 15-step overlay, appearance, and
-  key-wait flow on an iPhone Simulator. A further 12-step split check confirmed
-  keyboard-safe editor layout, draft retention across the sheet, and cancellation.
-  Reused lower-level drivers without production API changes or hidden mutation hooks.
-- Inspected native screenshots and accessibility trees; captures and run
-  identifiers remain under ignored `build/verification/`.
-- Added the maintainer-requested 50-website/four-application fixture and four
-  whole-app previews, then nine browser cases at compact and expanded sizes.
-  After the requested redesign, focused gates and root `quality` passed with
-  27 common test methods. Native checks exercised filter/clear/no-match states,
-  website menu edit/save/remove, tab retention across the application picker,
-  read-only details, review/start/active-session actions, compact IME layout,
-  dark appearance, larger text, and Mac breakpoint changes.
-- Integrated current `main` without dropping either side's build targets or wiki
-  entry; focused independent integration review and the aggregate gate passed.
+- Initial focused/root gates passed with 24 common tests and both native hosts.
+- Native macOS AX checks completed all four strict walkthroughs, blocked steps,
+  recovery, sync failure/retry, expiry, shortcuts, website submission/save/remove,
+  session start, and draft retention across controls and resizing.
+- The repository iOS driver, with the prototype bundle override, passed 43-step
+  configuration/session, 15-step overlay/appearance/key-wait, and 12-step
+  keyboard/draft/cancellation flows. No production API or mutation hook changed.
+- Native screenshots, accessibility trees, and identifiers stay in ignored `build/verification/`.
+- The 50-website/four-application fixture, four whole-app previews, and nine
+  browser cases passed focused/root gates with 27 common test methods.
+  Native checks covered filtering, editing, picker retention, read-only details,
+  sessions, compact IME layout, dark/larger text, and Mac breakpoint changes.
+- Integrated `main`; independent review and the aggregate gate passed.
 - Entry refinements passed focused gates and root `quality` with 37 common test
   methods. Coverage includes all valid duration values, batch order/deduplication,
   partial failures, guided progress, and one-shot draft acknowledgment.
@@ -87,8 +77,16 @@
   dark/keyboard iPhone flows; keyboard-restoration checks wait for IME dismissal.
   Native Mac checks confirmed sidebar navigation, draft retention across destination
   changes/resizing, and minimum-width enforcement with enlarged text. The final
-  host correction passed independent review. Final pre-push root `quality` passed:
-  199 tasks, including the prototype gate and 37 common test methods.
+  host correction passed independent review.
+- Final root `quality` passed after the accepted advisories: 199 tasks, including
+  the prototype gate, 37 common test methods, packaging, and both iOS frameworks.
+  Live Mac AX checks confirmed all 31 Free play commands are buttons and active
+  copy remains consistent through sync, failure, retry, completion, and expiry.
+  iPhone checks passed 11-step active/sync and 15-step retry/early-end flows;
+  Free play activation and button traits were inspected. Two preliminary checks
+  needed a settled post-scroll tap and an explicit scroll to reveal Retry sync.
+  No app correction was needed; the mock session was ended after verification.
+  A fresh tag-only fetch recovered both retired files and the `bfc4a49` ancestry.
 - `DESIGN.md` schema validation and `git diff --check` passed at closeout.
 
 ## Completed-change review
@@ -103,15 +101,17 @@
   restoration crash, insufficient keyboard-visible result space, and list-key
   anchoring after clearing search. Independent review inspected state ownership,
   focus, component APIs, filtering tests, native replay evidence, and documentation.
-- Entry review checked wheel/preset coordination and draft acknowledgment;
-  alignment is observable state and each submission acknowledgment applies once.
-  Field focus targets the input independently of its trailing Add action.
-  Independent source review and JVM verification found no unresolved Critical
-  or Required findings after these corrections.
+- Entry review and JVM checks found no unresolved Critical or Required findings
+  in wheel coordination, one-shot draft acknowledgment, or input focus ownership.
 - Independent visual-polish and platform-navigation reviews found no introduced
   Critical or Required defects in component APIs, state, boundaries, or the host correction.
-- Independent design-reference review checked tokens, call sites, native hosts,
-  and retained authorities; no introduced Critical or Required findings.
+- Independent design-reference and accepted-advisory reviews found no introduced
+  Critical or Required findings. The latter checked the whole Free play loop,
+  unchanged callbacks, shared active copy, and the remote archive tag.
+- The maintainer explicitly accepted all three hosted P2 advisories after triage:
+  remove contradictory active reassurance, use existing Secondary buttons for
+  commands, and preserve HTML via the non-release tag. All were addressed;
+  no second hosted pass was requested. Static copy/roles need no new unit tests.
 
 ## Blockers and accepted risks
 

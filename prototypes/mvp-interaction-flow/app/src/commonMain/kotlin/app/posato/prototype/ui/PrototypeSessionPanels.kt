@@ -63,7 +63,7 @@ private fun PrototypeOverviewHeading(
     }
     val description = when {
         active && issues -> "This session is still active, but some items may not be paused on this device."
-        active -> "Your selected items are paused on this ${state.platform.label}. There’s nothing else you need to do."
+        active -> "Your selected items are paused on this ${state.platform.label}."
         state.effectiveItemCount() == 0 -> "Start with a website or app you’d like a little space from."
         issues -> "Your choices are saved. A small setup step is needed before your next pause."
         else -> "A quiet pause is ready when you are. Choose a little space from the things that pull you away."
