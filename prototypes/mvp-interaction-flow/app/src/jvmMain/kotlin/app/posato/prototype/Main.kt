@@ -8,6 +8,7 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -21,17 +22,22 @@ import java.awt.Dimension
 fun main() {
     application {
         val controls = rememberPrototypeControlsState()
+        val windowState = rememberWindowState(width = PrototypeUiTokens.DesktopWidth, height = PrototypeUiTokens.DesktopHeight)
         Window(
             onCloseRequest = ::exitApplication,
             title = "Posato Prototype",
-            state = rememberWindowState(width = PrototypeUiTokens.DesktopWidth, height = PrototypeUiTokens.DesktopHeight),
+            state = windowState,
             onPreviewKeyEvent = { event ->
                 val shortcut = event.key == Key.P && event.isMetaPressed && event.isShiftPressed && event.type == KeyEventType.KeyDown
                 if (shortcut) controls.isOpen = !controls.isOpen
                 shortcut
             },
         ) {
+            PrototypeWindowChrome(window, fullscreen = windowState.placement == WindowPlacement.Fullscreen)
             SideEffect {
+                window.rootPane.putClientProperty("apple.awt.fullWindowContent", true)
+                window.rootPane.putClientProperty("apple.awt.transparentTitleBar", true)
+                window.rootPane.putClientProperty("apple.awt.windowTitleVisible", false)
                 window.minimumSize = Dimension((PosatoSize.NavigationSidebar + PosatoSize.Phone).value.toInt(), 0)
             }
             val prototypeViewModel = viewModel { PrototypeViewModel(PrototypePlatform.Mac) }

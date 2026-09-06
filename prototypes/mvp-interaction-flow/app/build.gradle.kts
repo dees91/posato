@@ -7,6 +7,39 @@ plugins {
     alias(libs.plugins.kotlin.multiplatform)
 }
 
+val windowChromeResources = layout.buildDirectory.dir("generated/window-chrome")
+val windowChromeLibrary = windowChromeResources.map { it.file("native/libPosatoPrototypeWindow.dylib") }
+val prototypeJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(21))
+}
+val compileWindowChrome by tasks.registering(Exec::class) {
+    val source = layout.projectDirectory.file("src/macosMain/objc/PrototypeWindowChrome.m")
+    val javaInstallation = prototypeJavaLauncher.get().metadata.installationPath.asFile
+    val compiledLibrary = windowChromeLibrary.get().asFile
+    inputs.file(source)
+    outputs.file(compiledLibrary)
+    doFirst { compiledLibrary.parentFile.mkdirs() }
+    commandLine(
+        "xcrun",
+        "clang",
+        "-dynamiclib",
+        "-fobjc-arc",
+        "-Wall",
+        "-Werror",
+        "-target",
+        "arm64-apple-macos15.0",
+        "-framework",
+        "AppKit",
+        "-framework",
+        "QuartzCore",
+        "-I$javaInstallation/include",
+        "-I$javaInstallation/include/darwin",
+        source.asFile.absolutePath,
+        "-o",
+        compiledLibrary.absolutePath,
+    )
+}
+
 kotlin {
     jvm {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
@@ -23,6 +56,7 @@ kotlin {
         freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
     }
     sourceSets {
+        jvmMain { resources.srcDir(windowChromeResources) }
         commonMain.dependencies {
             implementation(project(":prototypeDesignSystem"))
             implementation(libs.kotlinx.collections.immutable)
@@ -40,6 +74,8 @@ kotlin {
         }
     }
 }
+
+tasks.named("jvmProcessResources") { dependsOn(compileWindowChrome) }
 
 compose.desktop {
     application {

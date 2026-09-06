@@ -232,6 +232,14 @@ native Apple accessibility conformance, or production design acceptance.
   count onto two lines. The prototype host now reserves a phone-width content
   area beside the sidebar; native resizing honors this minimum and the enlarged
   labels remain readable. This is prototype geometry, not a production window contract.
+- `user-confirmed`: integrate the Mac title area with the app background and
+  use larger rounded corners while retaining native window controls.
+- `observed`: the prototype JVM host uses AWT full-content properties and a
+  narrow AppKit/JNI bridge for a unified toolbar and 20 pt frame-layer clipping.
+  This is an explicit prototype radius, not the OS-selected default. Fullscreen
+  disables clipping; the iPhone shell and production modules are unchanged.
+  The native frame hierarchy is an OS/runtime integration assumption that needs
+  fresh verification before production use or a runtime upgrade.
 
 The [run instructions](../../../prototypes/mvp-interaction-flow/README.md) cover
 desktop packaging, Xcode launch, controls, and verification. The original HTML

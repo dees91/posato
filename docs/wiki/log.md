@@ -1262,3 +1262,7 @@
 - Preserved the retired HTML and Node suite under the maintainer-approved
   non-release tag `archive/mvp-interaction-flow-html`, independently of a squash
   merge or work-branch deletion; confirmed recovery with a tag-only fetch.
+- Integrated the Mac title area with the app background and added an explicit
+  20 pt native frame mask, disabled in fullscreen. Kept system window controls
+  and verified native resizing, dragging, appearance, and draft retention;
+  the AppKit integration remains prototype-only and runtime-specific evidence.

@@ -21,12 +21,24 @@ For a standalone app with a bundled runtime:
 ./gradlew :prototypeApp:runDistributable
 ```
 
-The app opens in a normal resizable macOS window. There is no simulated device
-frame, browser container, or custom replacement for the system title bar.
+The app opens in a resizable full-content macOS window: the sidebar and body
+extend behind a transparent title area, without a separate title strip.
+Native traffic lights, top-region dragging, resizing, and fullscreen remain.
+The window has 20 pt rounded corners, disabled in fullscreen. There is no
+simulated device frame, browser container, or Compose-drawn window button.
 Its bundle identifier is `app.posato.prototype.macos`.
 Session and Paused items live in an icon-and-label sidebar. The minimum window
 width reserves a 390 dp content area beside the sidebar; resizing changes content
 density without replacing desktop navigation with a phone layout.
+
+The JVM host sets the AWT full-content properties. A small Objective-C/JNI
+bridge configures the AppKit toolbar and clips its native frame layer; stock
+OpenJDK does not expose a corner-radius property. Gradle compiles the bridge
+with the existing Xcode/Java toolchains and bundles it as a JVM resource for
+both launch modes. Loading extracts a process-specific temporary library,
+scheduled for deletion on normal JVM exit. It adds no third-party dependency
+and does not integrate with production services. Native layer behavior still
+needs verification on each supported macOS/runtime combination before adoption.
 
 ## Run on iPhone
 

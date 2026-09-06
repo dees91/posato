@@ -31,6 +31,7 @@ import app.posato.prototype.designsystem.PosatoSpace
 import app.posato.prototype.designsystem.PosatoWordmark
 import app.posato.prototype.model.ItemAction
 import app.posato.prototype.model.PrototypeAction
+import app.posato.prototype.model.PrototypePlatform
 import app.posato.prototype.model.PrototypeState
 import app.posato.prototype.model.PrototypeSurface
 import app.posato.prototype.model.SessionAction
@@ -43,7 +44,9 @@ internal fun PrototypeNavigationHeader(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier.padding(PosatoSpace.Section),
+        modifier.padding(PosatoSpace.Section).then(
+            if (state.platform == PrototypePlatform.Mac) Modifier.padding(top = PosatoSpace.Section + PosatoSpace.Small) else Modifier,
+        ),
         verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
     ) {
         PosatoWordmark(

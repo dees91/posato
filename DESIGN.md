@@ -601,7 +601,7 @@ Navigation placement follows the host, not the content breakpoint:
 | Identity | Wordmark header above the body | Wordmark at the top of the sidebar |
 | Navigation layout | Two equal-width icon-over-label destinations | Two stacked icon-and-label destinations |
 | Device scope | Expressed in the relevant content | Additional quiet device label below sidebar navigation |
-| Window | Fits the native screen and safe area | Standard decorated, resizable system window; initially 1060 × 780 dp |
+| Window | Fits the native screen and safe area | Full-content resizable system window; transparent, untitled native header; initially 1060 × 780 dp |
 | Minimum width | Supplied by the host | 614 logical window pixels; 224 sidebar + 390 body |
 | During text entry | Header and bottom navigation hide while the keyboard is visible | Sidebar remains present |
 
@@ -611,7 +611,8 @@ has 8 dp padding, a 24 dp icon, a 4 dp icon/label gap, and a 12/18 sp medium
 label. Its height follows content and the minimum target; it is not a fixed
 height that clips larger labels.
 
-The sidebar uses `surfaceContainer`, with 24 dp header padding. Its navigation
+The sidebar uses `surfaceContainer`, with 24 dp header padding plus a 32 dp
+Mac-only top inset, keeping the wordmark below the native window buttons. Its navigation
 region uses 12 dp horizontal and 8 dp vertical padding, 8 dp between items, and
 12 dp item padding. An 18 dp icon and medium-weight body label sit 12 dp apart.
 The device caption is inset to align with the wordmark and item contents.
@@ -622,7 +623,17 @@ The SwiftUI root lets Compose own insets. Compose applies safe-drawing and IME
 padding once at the application root. The iPhone bottom bar is outside the
 scrolling body; it does not cover the last row. While typing in compact item
 management, the repeated page heading also disappears to preserve room for
-entry and list results. Native window chrome is not part of the Posato palette.
+entry and list results.
+
+On Mac, the sidebar and body backgrounds extend behind a transparent native
+title area. The visible window title is hidden, but its identity remains
+available to the operating system. A native unified toolbar provides the
+system traffic lights and draggable top region; it contains no app commands
+or separate colored strip. System resize, minimize, and fullscreen controls
+are retained. The prototype's AppKit bridge clips the native frame layer to
+**20 pt corners**, with no corner clipping in fullscreen. This is a prototype
+override, not a claim that macOS chooses that radius or a production adoption.
+The native button glyphs and window shadow remain system-owned.
 
 ### Content canvas and reflow
 
