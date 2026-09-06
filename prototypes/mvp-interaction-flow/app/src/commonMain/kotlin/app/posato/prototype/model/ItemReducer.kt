@@ -5,6 +5,7 @@ internal fun reduceItems(
     action: ItemAction
 ): PrototypeState {
     return when (action) {
+        is ItemAction.AddDomains -> addDomains(state, action.input)
         ItemAction.OpenItems -> openItems(state)
         ItemAction.CloseItems -> closeItems(state)
         is ItemAction.OpenDomain -> openDomain(state, action.original)

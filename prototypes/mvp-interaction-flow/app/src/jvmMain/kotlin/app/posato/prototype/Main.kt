@@ -1,5 +1,6 @@
 package app.posato.prototype
 
+import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.isMetaPressed
@@ -10,10 +11,12 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import androidx.lifecycle.viewmodel.compose.viewModel
+import app.posato.prototype.designsystem.PosatoSize
 import app.posato.prototype.model.PrototypePlatform
 import app.posato.prototype.ui.PosatoPrototypeApp
 import app.posato.prototype.ui.PrototypeUiTokens
 import app.posato.prototype.ui.rememberPrototypeControlsState
+import java.awt.Dimension
 
 fun main() {
     application {
@@ -28,6 +31,9 @@ fun main() {
                 shortcut
             },
         ) {
+            SideEffect {
+                window.minimumSize = Dimension((PosatoSize.NavigationSidebar + PosatoSize.Phone).value.toInt(), 0)
+            }
             val prototypeViewModel = viewModel { PrototypeViewModel(PrototypePlatform.Mac) }
             PosatoPrototypeApp(prototypeViewModel, controls = controls)
         }

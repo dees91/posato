@@ -11,12 +11,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import app.posato.prototype.designsystem.PosatoButton
-import app.posato.prototype.designsystem.PosatoButtonStyle
 import app.posato.prototype.designsystem.PosatoCaption
 import app.posato.prototype.designsystem.PosatoLayout
 import app.posato.prototype.designsystem.PosatoSectionHeader
 import app.posato.prototype.designsystem.PosatoSpace
-import app.posato.prototype.model.ItemAction
 import app.posato.prototype.model.PrototypeAction
 import app.posato.prototype.model.PrototypeState
 import app.posato.prototype.model.PrototypeSurface
@@ -37,11 +35,6 @@ internal fun PrototypeItems(
         if (!compactInput) {
             PosatoSectionHeader(
                 titleContent = { Text(if (setup) "Make room for a pause." else "Paused items", style = MaterialTheme.typography.headlineSmall) },
-                actionContent = {
-                    if (!setup) {
-                        PosatoButton(onClick = { onAction(ItemAction.CloseItems) }, style = PosatoButtonStyle.Quiet) { Text("Done") }
-                    }
-                },
             )
         }
         if (setup && !compactInput) PosatoCaption("Choose a website and an app. You can change these after setup.")

@@ -11,6 +11,7 @@ import app.posato.prototype.model.PrototypeSync
 import app.posato.prototype.model.PrototypeSyncStatus
 import app.posato.prototype.model.RecoveryAction
 import app.posato.prototype.model.SessionAction
+import app.posato.prototype.model.SetDuration
 import app.posato.prototype.model.SetupAction
 import app.posato.prototype.model.reducePrototype
 import kotlinx.collections.immutable.persistentListOf
@@ -68,6 +69,9 @@ private fun prototypePreviewStates(): List<Pair<String, PrototypeState>> {
         "Ready needing attention" to recovery,
         "Empty selection" to ready.copy(policy = initial.policy),
         "Duration" to setup,
+        "Minimum duration" to reducePrototype(setup, SetDuration("5")),
+        "Custom duration" to reducePrototype(setup, SetDuration("77")),
+        "Maximum duration" to reducePrototype(setup, SetDuration("1440")),
         "Review" to review,
         "Review needing repair" to recovery.copy(surface = PrototypeSurface.SessionReview, session = review.session),
         "Active" to active,

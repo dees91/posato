@@ -13,6 +13,18 @@ import kotlin.test.assertNotEquals
 
 class PrototypeGuidedFormsTest {
     @Test
+    fun `given website step when inline input fails then only a successful addition advances it`() {
+        val viewModel = PrototypeViewModel(PrototypePlatform.IPhone)
+        viewModel.selectScenario(PrototypeScenario.FirstSession)
+        repeat(4) { viewModel.runGuidedStep(it) }
+        val before = viewModel.uiState.value.progress
+        viewModel.dispatch(ItemAction.AddDomains("localhost"))
+        assertEquals(before, viewModel.uiState.value.progress)
+        viewModel.dispatch(ItemAction.AddDomains("reading.example"))
+        assertEquals(before + 1, viewModel.uiState.value.progress)
+    }
+
+    @Test
     fun `given pending duration step when form is submitted then duration and review both advance`() {
         for (input in listOf("25", "90")) {
             val viewModel = PrototypeViewModel(PrototypePlatform.Mac)

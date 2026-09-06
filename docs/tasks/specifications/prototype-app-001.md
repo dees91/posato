@@ -26,6 +26,9 @@ existing design system, running as an iPhone app and a resizable macOS app.
 - `AC-03` — iPhone safe areas and desktop resizing preserve usable content and editor drafts.
 - `AC-04` — macOS packaged launch and iOS Simulator launch demonstrate mocked native flows.
 - `AC-05` — Equivalent common regression coverage passes before HTML and Node tests are removed.
+- `AC-06` — Custom duration uses keyboard-free wheels with step arrows; website
+  entry stays inline for repeated and batch additions, with secondary search and
+  recoverable validation feedback. These remain mock prototype interactions.
 
 ## Verification
 

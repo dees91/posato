@@ -1,43 +1,31 @@
 package app.posato.prototype.ui
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.semantics.semantics
-import app.posato.prototype.designsystem.PosatoActionRow
-import app.posato.prototype.designsystem.PosatoAppScaffold
-import app.posato.prototype.designsystem.PosatoCaption
-import app.posato.prototype.designsystem.PosatoDeviceLabel
 import app.posato.prototype.designsystem.PosatoLayout
-import app.posato.prototype.designsystem.PosatoNavigationItem
+import app.posato.prototype.designsystem.PosatoNavigationPlacement
+import app.posato.prototype.designsystem.PosatoNavigationScaffold
 import app.posato.prototype.designsystem.PosatoSize
 import app.posato.prototype.designsystem.PosatoSpace
-import app.posato.prototype.designsystem.PosatoWordmark
-import app.posato.prototype.model.ItemAction
 import app.posato.prototype.model.PrototypeAction
+import app.posato.prototype.model.PrototypePlatform
 import app.posato.prototype.model.PrototypeState
 import app.posato.prototype.model.PrototypeSurface
-import app.posato.prototype.model.SessionAction
 
 @Composable
 internal fun PrototypeApplicationLayout(
@@ -49,9 +37,21 @@ internal fun PrototypeApplicationLayout(
     modifier: Modifier = Modifier
 ) {
     val itemBrowserState = rememberPrototypeItemBrowserState()
-    PosatoAppScaffold(
+    val placement = if (state.platform == PrototypePlatform.IPhone) PosatoNavigationPlacement.Bottom else PosatoNavigationPlacement.Sidebar
+    val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    PosatoNavigationScaffold(
         modifier = modifier.fillMaxSize(),
-        navigationContent = { layout -> PrototypeNavigation(state, layout, brandFocus, onOpenControls, onAction) },
+        placement = placement,
+        headerContent = {
+            if (placement == PosatoNavigationPlacement.Sidebar || !keyboardVisible) {
+                PrototypeNavigationHeader(state, brandFocus, onOpenControls)
+            }
+        },
+        navigationContent = {
+            if (placement == PosatoNavigationPlacement.Sidebar || !keyboardVisible) {
+                PrototypeDestinationNavigation(state, placement, onAction)
+            }
+        },
     ) { layout ->
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
             val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
@@ -75,46 +75,6 @@ internal fun PrototypeApplicationLayout(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun PrototypeNavigation(
-    state: PrototypeState,
-    layout: PosatoLayout,
-    brandFocus: FocusRequester,
-    onOpenControls: () -> Unit,
-    onAction: (PrototypeAction) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val items = state.surface in setOf(PrototypeSurface.Items, PrototypeSurface.DomainEditor, PrototypeSurface.AppPicker)
-    val padding = if (layout == PosatoLayout.Expanded) PosatoSpace.Section else PosatoSpace.Tiny
-    val browsing = state.surface == PrototypeSurface.Items || state.surface == PrototypeSurface.Targets
-    val compactInput = browsing && layout == PosatoLayout.Compact && WindowInsets.ime.getBottom(LocalDensity.current) > 0
-    Column(modifier = modifier.padding(padding), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {
-        if (!compactInput) {
-            PosatoWordmark(
-                Modifier.heightIn(min = PosatoSize.Control).focusRequester(brandFocus)
-                    .combinedClickable(onClick = {}, onLongClickLabel = "Open prototype controls", onLongClick = onOpenControls)
-                    .semantics {
-                        customActions = listOf(
-                            CustomAccessibilityAction("Open prototype controls") {
-                                onOpenControls()
-                                true
-                            },
-                        )
-                    },
-            )
-        }
-        if (state.onboardingComplete) {
-            PosatoActionRow {
-                PosatoNavigationItem(!items, onClick = { onAction(SessionAction.ReturnToSession) }) { Text("Session") }
-                PosatoNavigationItem(items, onClick = { onAction(ItemAction.OpenItems) }, enabled = !state.session.active) { Text("Paused items") }
-            }
-        } else {
-            PosatoCaption("A quiet pause, in a few steps.")
-        }
-        if (layout == PosatoLayout.Expanded) PosatoDeviceLabel("On this ${state.platform.label}")
     }
 }
 

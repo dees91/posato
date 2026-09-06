@@ -103,6 +103,8 @@ private fun matchesGuidedAction(
 
         action is ItemAction.SaveDomain && expected == SetupAction.AddExampleDomain -> submittedEditor
 
+        action is ItemAction.AddDomains && expected == SetupAction.AddExampleDomain -> after.policy.domains.size > before.policy.domains.size
+
         action is ItemAction.SaveApplications && expected in setOf(
             SetupAction.MapExampleApplication,
             RecoveryAction.RemapApplication,

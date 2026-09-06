@@ -86,6 +86,7 @@ data class PrototypeState(
     val permission: PrototypePermission = PrototypePermission.NotRequested,
     val policy: PrototypePolicy = PrototypePolicy(),
     val editor: PrototypeEditor = PrototypeEditor(),
+    val websiteEntry: PrototypeWebsiteEntry = PrototypeWebsiteEntry(),
     val session: PrototypeSession = PrototypeSession(),
     val sync: PrototypeSync = PrototypeSync(),
     val outcome: PrototypeOutcome = PrototypeOutcome("Prototype ready. Choose a walkthrough or use Free play.")

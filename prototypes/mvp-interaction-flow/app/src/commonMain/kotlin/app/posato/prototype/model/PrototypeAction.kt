@@ -64,6 +64,12 @@ enum class RecoveryAction(
 }
 
 sealed interface ItemAction : PrototypeAction {
+    data class AddDomains(
+        val input: String
+    ) : ItemAction {
+        override val label: String = "Add websites"
+    }
+
     data object OpenItems : ItemAction {
         override val label: String = "Manage paused items"
     }

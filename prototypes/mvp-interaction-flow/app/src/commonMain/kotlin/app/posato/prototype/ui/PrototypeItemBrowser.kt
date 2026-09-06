@@ -2,10 +2,12 @@ package app.posato.prototype.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.input.clearText
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -16,11 +18,14 @@ import app.posato.prototype.designsystem.PosatoButton
 import app.posato.prototype.designsystem.PosatoButtonStyle
 import app.posato.prototype.designsystem.PosatoCaption
 import app.posato.prototype.designsystem.PosatoDivider
-import app.posato.prototype.designsystem.PosatoNavigationItem
+import app.posato.prototype.designsystem.PosatoIcon
+import app.posato.prototype.designsystem.PosatoIcons
 import app.posato.prototype.designsystem.PosatoPrototypeTheme
 import app.posato.prototype.designsystem.PosatoSearchField
 import app.posato.prototype.designsystem.PosatoSectionHeader
 import app.posato.prototype.designsystem.PosatoSpace
+import app.posato.prototype.designsystem.PosatoTab
+import app.posato.prototype.designsystem.PosatoTabBar
 import app.posato.prototype.model.ItemAction
 import app.posato.prototype.model.PrototypeAction
 import app.posato.prototype.model.PrototypeState
@@ -41,27 +46,13 @@ internal fun PrototypeItemBrowser(
             focus.clearFocus()
             browser.section = it
         })
-        if (section == PrototypeItemSection.Websites) PosatoSearchField(state = search, label = "Search websites")
-        PosatoSectionHeader(
-            titleContent = {
-                PosatoCaption(
-                    if (section == PrototypeItemSection.Websites) {
-                        "${websites.size} of ${state.policy.domains.size} · shared exact domains"
-                    } else {
-                        "On this ${state.platform.label} only"
-                    },
-                )
-            },
-            actionContent = onAction?.let { dispatch ->
-                {
-                    PosatoButton(onClick = {
-                        focus.clearFocus()
-                        dispatch(if (section == PrototypeItemSection.Websites) ItemAction.OpenDomain() else ItemAction.OpenApplications)
-                    }, style = PosatoButtonStyle.Secondary) {
-                        Text(if (section == PrototypeItemSection.Websites) "Add website" else "Choose apps")
-                    }
-                }
-            },
+        PrototypeBrowserInput(state, browser, onAction)
+        PrototypeBrowserToolbar(
+            modifier = Modifier.padding(top = PosatoSpace.Medium, bottom = PosatoSpace.Small),
+            state = state,
+            browser = browser,
+            websiteCount = websites.size,
+            onAction = onAction,
         )
         PosatoDivider()
         PrototypeBrowserList(
@@ -81,22 +72,93 @@ internal fun PrototypeItemBrowser(
 }
 
 @Composable
+private fun PrototypeBrowserToolbar(
+    state: PrototypeState,
+    browser: PrototypeItemBrowserState,
+    websiteCount: Int,
+    onAction: ((PrototypeAction) -> Unit)?,
+    modifier: Modifier = Modifier
+) {
+    val section = browser.section
+    val search = browser.search
+    val totalLabel = if (websiteCount == 1) "1 website" else "$websiteCount websites"
+    val focus = LocalFocusManager.current
+    PosatoSectionHeader(
+        modifier = modifier,
+        titleContent = {
+            PosatoCaption(
+                if (section == PrototypeItemSection.Websites) {
+                    if (search.text.isNotEmpty()) "$websiteCount of ${state.policy.domains.size}" else totalLabel
+                } else {
+                    "On this ${state.platform.label} only"
+                },
+            )
+        },
+        actionContent = onAction?.let { dispatch ->
+            {
+                PosatoButton(onClick = {
+                    focus.clearFocus()
+                    if (section == PrototypeItemSection.Websites) {
+                        search.clearText()
+                        browser.searching = !browser.searching
+                    } else {
+                        dispatch(ItemAction.OpenApplications)
+                    }
+                }, style = if (section == PrototypeItemSection.Websites) PosatoButtonStyle.Quiet else PosatoButtonStyle.Primary) {
+                    if (section == PrototypeItemSection.Websites) {
+                        PosatoIcon(if (browser.searching) PosatoIcons.Close else PosatoIcons.Search, contentDescription = null)
+                        Spacer(Modifier.width(PosatoSpace.Tiny))
+                        Text(if (browser.searching) "Back to adding" else "Search")
+                    } else {
+                        Text("Choose apps")
+                    }
+                }
+            }
+        },
+    )
+}
+
+@Composable
+private fun PrototypeBrowserInput(
+    state: PrototypeState,
+    browser: PrototypeItemBrowserState,
+    onAction: ((PrototypeAction) -> Unit)?
+) {
+    if (browser.section != PrototypeItemSection.Websites) return
+    if (onAction == null || browser.searching) {
+        PosatoSearchField(state = browser.search, label = "Search websites")
+    } else {
+        PrototypeWebsiteEntry(browser = browser, result = state.websiteEntry, onAction = onAction)
+    }
+}
+
+@Composable
 private fun PrototypeItemTabs(
     state: PrototypeState,
     section: PrototypeItemSection,
     onSelect: (PrototypeItemSection) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Row(modifier = modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+    PosatoTabBar(
+        modifier = modifier.fillMaxWidth().padding(bottom = PosatoSpace.Small),
+    ) {
         PrototypeItemSection.entries.forEach { destination ->
-            PosatoNavigationItem(
+            PosatoTab(
                 modifier = Modifier.weight(1f),
                 selected = section == destination,
                 onClick = { onSelect(destination) },
+                countContent = {
+                    Text(
+                        when (destination) {
+                            PrototypeItemSection.Websites -> state.policy.domains.size
+                            PrototypeItemSection.Applications -> state.localApplications().size
+                        }.toString(),
+                    )
+                },
             ) {
                 val label = when (destination) {
-                    PrototypeItemSection.Websites -> "Websites ${state.policy.domains.size}"
-                    PrototypeItemSection.Applications -> "Apps ${state.localApplications().size}"
+                    PrototypeItemSection.Websites -> "Websites"
+                    PrototypeItemSection.Applications -> "Apps"
                 }
                 Text(label)
             }
