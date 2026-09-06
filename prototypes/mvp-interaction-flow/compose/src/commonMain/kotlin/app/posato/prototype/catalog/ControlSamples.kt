@@ -2,6 +2,7 @@ package app.posato.prototype.catalog
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -19,6 +20,8 @@ import app.posato.prototype.designsystem.PosatoDurationChoice
 import app.posato.prototype.designsystem.PosatoSection
 import app.posato.prototype.designsystem.PosatoSelectionRow
 import app.posato.prototype.designsystem.PosatoSpace
+import app.posato.prototype.designsystem.PosatoTab
+import app.posato.prototype.designsystem.PosatoTabBar
 import app.posato.prototype.designsystem.PosatoToggleButton
 
 @Composable
@@ -38,7 +41,32 @@ internal fun ControlSamples(
         }
         DurationSamples(onAction)
         ToggleSamples(onAction)
+        ContentTabSamples(onAction)
+        NavigationSamples(onAction)
         SelectionSamples(onAction)
+    }
+}
+
+@Composable
+private fun ContentTabSamples(
+    onAction: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selected by remember { mutableIntStateOf(0) }
+    PosatoSection(modifier = modifier, titleContent = { Text("Content tabs") }) {
+        PosatoTabBar(Modifier.fillMaxWidth()) {
+            listOf("Websites" to "50", "Apps" to "4").forEachIndexed { index, (label, count) ->
+                PosatoTab(
+                    modifier = Modifier.weight(1f),
+                    selected = selected == index,
+                    onClick = {
+                        selected = index
+                        onAction("$label tab selected.")
+                    },
+                    countContent = { Text(count) },
+                ) { Text(label) }
+            }
+        }
     }
 }
 

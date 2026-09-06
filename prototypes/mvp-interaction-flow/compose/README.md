@@ -59,7 +59,7 @@ uses this library as its application design system.
   explicitly prototype-only large-radius treatment. Components add no decorative
   shadows, gradients, progress rings, or animations.
 - `PosatoMark`, `PosatoWordmark`, and `PosatoIntervalArtwork` draw the open interval
-  directly in Compose. `PosatoIcons` contains the study's nine line icons; no bitmap,
+  directly in Compose. `PosatoIcons` contains the study's line icons and ellipsis; no bitmap,
   remote asset, icon font, or additional icon dependency is needed.
 
 ## Complete prototype component map
@@ -75,16 +75,21 @@ Screen-specific combinations use slots instead of one wrapper per CSS class.
 | Appearance and inspection toggles | `PosatoToggleButton` |
 | Duration presets and other exclusive choices | `PosatoDurationChoice`, `PosatoChoiceTile`, `PosatoChoiceGroup` |
 | Application picker checkbox rows | `PosatoSelectionRow` |
-| Website/custom-duration inputs and inline errors | `PosatoTextField`, `PosatoFieldMessage` |
+| Website inputs and inline errors | `PosatoTextField`, `PosatoFieldMessage`; optional line limits and trailing-action slot, with `inputModifier` for field focus |
+| Bounded custom-number selection | `PosatoNumberWheel` with caller-owned value/range, snapping scroll, one-unit arrows, keyboard and adjustable semantics |
 | Website search with clear and keyboard submission | `PosatoSearchField` with caller-owned `TextFieldState` |
 | `panel`, section headings, separators, action clusters | `PosatoPanel`, `PosatoSection`, `PosatoSectionHeader`, `PosatoDivider`, `PosatoActionRow` |
 | `surface-list`, `surface-row`, item identity and tags | `PosatoItemList`, `PosatoItemRow`, `PosatoItemSymbol`, `PosatoBadge` |
 | Clickable selection summaries and website rows | `PosatoDisclosureRow` with headline, supporting, leading, and trailing slots |
-| Labelled per-item options | `PosatoItemMenu` with a dismiss callback for caller-provided menu entries |
+| Labelled per-item options | `PosatoItemMenu` and `PosatoItemMenuAction`, with icon slots, destructive color, and a dismiss callback |
 | Ready/session state, warning, failure, recovery notices | `PosatoStatusLabel`, `PosatoNotice` with neutral, positive, caution, or critical tone |
 | Session end-time and synchronization status | `PosatoEndTime`, `PosatoSyncFooter` |
 | Privacy statements and local-device identity | `PosatoPrivacyPoint`, `PosatoDeviceLabel` |
-| Sidebar, compact navigation, onboarding progress | `PosatoSidebar`, `PosatoNavigationItem`, `PosatoSetupStep`, `PosatoAppScaffold` |
+| Catalog sidebar, adaptive catalog shell, onboarding progress | `PosatoSidebar`, `PosatoNavigationItem`, `PosatoSetupStep`, `PosatoAppScaffold` |
+| Platform-specific application shell | `PosatoNavigationScaffold` with explicit bottom/sidebar placement and header, navigation, and adaptive body slots |
+| iPhone main destinations | `PosatoBottomNavigation` and `PosatoBottomNavigationItem` with icon and label slots |
+| Mac main destinations | `PosatoSidebarNavigationItem` with icon and label slots |
+| Counted in-screen category tabs | `PosatoTabBar` shared segmented surface and `PosatoTab` with padded labels, optional counts, and disabled state |
 | Hero, ready/empty presentation, confirmation layout | `PosatoHero`, `PosatoEmptyState`; compose headings, notices, and action rows for confirmation |
 | Study header and preview toolbar | `PrototypeHeader`; `PosatoSectionHeader` action slot with choice and button controls |
 | Mac/iPhone frame and simulated window/status bar | `PrototypeFrame`, `PrototypeWindowChrome`, `PrototypeDevice` |
@@ -97,6 +102,25 @@ Browser-only skip links, fullscreen API calls, live-region plumbing, and DOM
 visibility attributes are not native widgets. Use focus order, semantics, caller
 state, and native window APIs at their owning boundary. The catalog does not
 pretend its demo callbacks implement the HTML scenarios.
+
+The number wheel does not wrap at its bounds. The screen owns duration conversion
+and dependent hour/minute ranges; the design system owns only integer selection.
+The text-field container modifier covers the field and its message; use
+`inputModifier` when focus must target the input instead of a trailing action.
+The tab bar owns the shared mist surface, inset, spacing, and selection-group
+semantics; callers own placement and segment widths. Segments use
+centered padded labels with quiet counts, and selection adds a paper surface
+and outline. Inactive segments keep normal text contrast inside the shared surface.
+Disabled tabs retain native input semantics and reduce text opacity. The native
+prototype keeps these segments for Websites/Apps. Main destinations use separate
+bottom and sidebar items with icon/label slots, mist selection, and disabled semantics.
+`PosatoNavigationScaffold` keeps placement independent of content width and retains
+slot state when placement changes. The application owns destination selection,
+onboarding/keyboard visibility, and safe-area insets; the scaffold adds no insets.
+The desktop host reserves at least a phone-width body beside its sidebar. The
+catalog's older width-adaptive `PosatoAppScaffold` remains independent.
+Section-header actions align vertically
+with the title, and the sync footer does not duplicate a preceding row separator.
 
 ## Reuse example
 

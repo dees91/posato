@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -19,6 +20,7 @@ fun PosatoSectionHeader(
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
         verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
+        itemVerticalAlignment = Alignment.CenterVertically,
     ) {
         Column(
             Modifier.weight(1f),

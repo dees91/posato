@@ -45,7 +45,6 @@ fun PosatoSyncFooter(
     actionContent: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {
-        PosatoDivider()
         Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Medium), verticalAlignment = Alignment.CenterVertically) {
             PosatoIcon(PosatoIcons.Cloud, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
             PosatoCaption(message, Modifier.weight(1f))

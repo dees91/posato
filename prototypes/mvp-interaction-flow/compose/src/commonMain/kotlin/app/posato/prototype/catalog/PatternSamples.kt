@@ -3,7 +3,6 @@ package app.posato.prototype.catalog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +22,7 @@ import app.posato.prototype.designsystem.PosatoIcons
 import app.posato.prototype.designsystem.PosatoIntervalArtwork
 import app.posato.prototype.designsystem.PosatoItemList
 import app.posato.prototype.designsystem.PosatoItemMenu
+import app.posato.prototype.designsystem.PosatoItemMenuAction
 import app.posato.prototype.designsystem.PosatoItemRow
 import app.posato.prototype.designsystem.PosatoItemSymbol
 import app.posato.prototype.designsystem.PosatoLayout
@@ -103,14 +103,14 @@ private fun ConfigurationPattern(
                 headlineContent = { Text("reading.example") },
                 trailingContent = {
                     PosatoItemMenu("More options for reading.example") { dismiss ->
-                        DropdownMenuItem(text = { Text("Edit") }, onClick = {
+                        PosatoItemMenuAction(leadingContent = { PosatoIcon(PosatoIcons.Edit, null) }, onClick = {
                             dismiss()
                             onAction("Edit website requested.")
-                        })
-                        DropdownMenuItem(text = { Text("Remove") }, onClick = {
+                        }) { Text("Edit") }
+                        PosatoItemMenuAction(destructive = true, leadingContent = { PosatoIcon(PosatoIcons.Remove, null) }, onClick = {
                             dismiss()
                             onAction("Remove website requested.")
-                        })
+                        }) { Text("Remove") }
                     }
                 },
             )

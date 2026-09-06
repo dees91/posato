@@ -27,10 +27,12 @@ object PosatoSize {
     val ArtWidth = 122.dp
     val ArtHeight = 144.dp
     val Sidebar = 185.dp
+    val NavigationSidebar = 224.dp
     val Content = 820.dp
     val CompactBreakpoint = 600.dp
     val Phone = 390.dp
     val Input = 100.dp
+    val Menu = 200.dp
 }
 
 object PosatoShapes {
@@ -54,6 +56,11 @@ object PosatoControlDefaults {
 enum class PosatoLayout {
     Compact,
     Expanded,
+}
+
+enum class PosatoNavigationPlacement {
+    Bottom,
+    Sidebar,
 }
 
 enum class PosatoTone {

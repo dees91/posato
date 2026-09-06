@@ -8,6 +8,7 @@ import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -18,6 +19,7 @@ import app.posato.prototype.designsystem.PosatoActionRow
 import app.posato.prototype.designsystem.PosatoButton
 import app.posato.prototype.designsystem.PosatoButtonStyle
 import app.posato.prototype.designsystem.PosatoCaption
+import app.posato.prototype.designsystem.PosatoNumberWheel
 import app.posato.prototype.designsystem.PosatoSearchField
 import app.posato.prototype.designsystem.PosatoSection
 import app.posato.prototype.designsystem.PosatoSpace
@@ -35,8 +37,21 @@ internal fun FormSamples(
             PosatoCaption("Clear restores the complete list. Search submission dismisses the keyboard.")
         }
         DurationFieldSamples(onAction)
+        NumberWheelSample(onAction)
         SelectionSamples(onAction)
         PosatoCaption("The catalog exposes callbacks and error presentation. Validation policy, saving, and the real app picker belong to callers.")
+    }
+}
+
+@Composable
+private fun NumberWheelSample(onAction: (String) -> Unit) {
+    var value by remember { mutableIntStateOf(17) }
+    PosatoSection(titleContent = { Text("Number wheel") }) {
+        PosatoNumberWheel(value = value, range = 0..59, label = "Minutes", onValueChange = {
+            value = it
+            onAction("Wheel changed to $it.")
+        })
+        PosatoCaption("Scroll, tap an adjacent value, or use the step arrows. Keyboard arrows and Home/End work while focused.")
     }
 }
 

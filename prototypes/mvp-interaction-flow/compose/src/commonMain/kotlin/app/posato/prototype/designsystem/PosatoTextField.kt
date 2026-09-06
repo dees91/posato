@@ -26,10 +26,13 @@ fun PosatoTextField(
     placeholder: String? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     onSubmit: (() -> Unit)? = null,
+    lineLimits: TextFieldLineLimits = TextFieldLineLimits.SingleLine,
+    trailingContent: (@Composable () -> Unit)? = null,
+    inputModifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         OutlinedTextField(
-            modifier = Modifier.fillMaxWidth().semantics { errorMessage?.let { error(it) } },
+            modifier = inputModifier.fillMaxWidth().semantics { errorMessage?.let { error(it) } },
             state = state,
             enabled = enabled,
             label = { Text(label) },
@@ -37,7 +40,8 @@ fun PosatoTextField(
             isError = errorMessage != null,
             textStyle = MaterialTheme.typography.bodyLarge,
             shape = MaterialTheme.shapes.small,
-            lineLimits = TextFieldLineLimits.SingleLine,
+            lineLimits = lineLimits,
+            trailingIcon = trailingContent,
             keyboardOptions = keyboardOptions,
             onKeyboardAction = onSubmit?.let { callback -> KeyboardActionHandler { callback() } },
         )
