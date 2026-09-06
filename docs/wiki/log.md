@@ -1235,7 +1235,7 @@
   one asks whether the Mac can obtain Apple resources and whether the account
   holds them. Their check identifiers do not overlap.
 
-## [2026-09-05] experiment | Move the interaction study to native Compose hosts
+## [2026-09-06] experiment | Move the interaction study to native Compose hosts
 
 - Refined the warm paper and moss visual direction and extracted a reusable
   Compose component library, desktop catalog, and deterministic previews.
@@ -1249,3 +1249,13 @@
   acceptance, added bounded session summaries, read-only details, separate
   website/app lists, and search. Recorded native keyboard, editing, filtering,
   and state-retention evidence without promoting prototype geometry to authority.
+- Further maintainer feedback replaced bare custom-time input with hour/minute
+  wheels and step arrows, and prioritized inline/batch website entry over search.
+  Refined segmented categories, app-chooser priority, metadata spacing, and row
+  menus. Following further acceptance, moved main navigation to an iPhone bottom
+  bar and Mac sidebar with a readable minimum window width. Kept these
+  interactions and their validation in the isolated mock prototype.
+- At the maintainer's request, reconciled `DESIGN.md` with the current Compose
+  tokens, reusable components, native layouts, screen behavior, and inspection
+  controls. Separated source-observed prototype choices from retained production
+  requirements, mock services, and unverified accessibility/platform parity.

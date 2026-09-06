@@ -8,7 +8,7 @@
 - **Design-system library:** `prototypes/mvp-interaction-flow/compose/`
 - **Historical HTML and Node suite:** retained in Git at `566bdb6`
 - **Source type:** disposable interactive UX prototype
-- **Reviewed:** 2026-09-05
+- **Reviewed:** 2026-09-06
 - **Authority:** evidence only; not a product, design, architecture, or
   implementation authority
 
@@ -26,6 +26,11 @@ remain authoritative. Future task plans may cite this source as usability
 evidence, but they must not import its reducer, geometry, fixtures, or web
 implementation as a product contract.
 
+`DESIGN.md` now also contains a source-backed description of the current native
+prototype, explicitly labelled as a prototype reference. Recording its concrete
+appearance and behavior does not promote its mock services or implementation
+parameters into production requirements.
+
 ## Maintainer-confirmed evidence
 
 - `user-confirmed`: Free play is an inspection workbench. It may prepare
@@ -37,6 +42,9 @@ implementation as a product contract.
 - `user-confirmed`: macOS needs a large-window presentation that keeps sparse
   task content and its primary action visually related.
 - `user-confirmed`: the prototype is an MVP UX artifact, not production code.
+- `user-confirmed` (2026-09-06): update `DESIGN.md` to describe the current
+  prototype accurately, including the refined controls, lists, duration entry,
+  and platform-specific main navigation.
 
 ## Historical browser-observed evidence
 
@@ -136,10 +144,11 @@ native Apple accessibility conformance, or production design acceptance.
   retained its draft across overlay dismissal and the layout breakpoint. iPhone
   Simulator checks exercised dark appearance, stronger contrast, larger text,
   and workspace-key waiting in the native bottom sheet and full-screen content.
-- `observed`: 27 common test methods include table-driven boundary cases and
+- `observed`: common test methods include table-driven boundary cases and
   both platform variants, replacing the old 24-case Node suite. Regression
   corrections cover guided progress through normal duration and application forms;
-  three additional methods cover website filtering without changing source order.
+  further coverage includes website filtering without changing source order,
+  batch additions, draft acknowledgment, and every valid whole-minute duration.
 - `inferred`: native rendering now provides a more useful inspection surface
   for later Compose work, without promoting the study's geometry or reducer into
   accepted product code.
@@ -180,6 +189,45 @@ native Apple accessibility conformance, or production design acceptance.
   accessibility technologies before adopting its exact geometry. Native probes
   establish reachable controls and state retention, not user preference or a
   universally optimal layout.
+
+### Entry-first interaction correction
+
+- `user-confirmed`: entering a custom duration should avoid a bare numeric field;
+  add up/down controls to the proposed hour/minute wheels. Adding websites should
+  be more direct than searching, including repeated or multi-website entry.
+- `observed`: the prototype now offers bounded hour/minute wheels, one-unit
+  arrows, desktop keyboard steps, and an immediately resolved end time. Website
+  entry is inline; comma/newline batches reuse exact-host validation, skip
+  duplicates, and retain invalid entries. Search is secondary in management but
+  remains directly available in read-only selection details.
+- `inferred`: these controls reduce keyboard switching and repeated navigation
+  during setup. They do not establish human preference or change production
+  timing, validation, or design authority.
+- `user-confirmed`: separate entry guidance from list metadata, emphasize the
+  app chooser, keep inactive category tabs visibly selectable and aligned with
+  screen content, and make row menus consistent with the prototype palette.
+- `superseded`: counted underline tabs improved inactive-state visibility, but
+  the maintainer rejected their visual fit as too close to default Material styling.
+- `user-confirmed`: keep inactive segments visibly selectable; labels may have
+  horizontal padding when the control's outer edge aligns with screen content.
+- `observed`: the replacement uses a shared mist surface, an outlined paper
+  selection, and centered padded labels with optional quiet inline counts. Metadata/actions
+  stay centered, the app chooser is primary, and row menus are icon-led. The sync
+  footer adds no second separator. These remain study-level presentation choices.
+- `superseded`: the maintainer first accepted the same segmented component for
+  application and category navigation, including two controls on the compact
+  management screen. The later platform-navigation direction replaces that placement.
+- `user-confirmed`: move Session/Paused items to bottom navigation on iPhone and
+  an icon-and-label sidebar on Mac, retaining Websites/Apps inside the destination.
+- `observed`: the separate destination components preserve the prototype palette,
+  selected/disabled semantics, and active-session editing restrictions. Main
+  navigation appears after onboarding; the management destination no longer has
+  Done. iPhone keyboard entry hides the header and bottom navigation; dismissal
+  restores them without discarding the website draft or category selection.
+- `observed`: a very narrow Mac window with enlarged text squeezed a category
+  count onto two lines. The prototype host now reserves a phone-width content
+  area beside the sidebar; native resizing honors this minimum and the enlarged
+  labels remain readable. This is prototype geometry, not a production window contract.
 
 The [run instructions](../../../prototypes/mvp-interaction-flow/README.md) cover
 desktop packaging, Xcode launch, controls, and verification. The original HTML
