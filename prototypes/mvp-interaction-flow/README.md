@@ -34,11 +34,16 @@ density without replacing desktop navigation with a phone layout.
 The JVM host sets the AWT full-content properties. A small Objective-C/JNI
 bridge configures the AppKit toolbar and clips its native frame layer; stock
 OpenJDK does not expose a corner-radius property. Gradle compiles the bridge
-with the existing Xcode/Java toolchains and bundles it as a JVM resource for
-both launch modes. Loading extracts a process-specific temporary library,
-scheduled for deletion on normal JVM exit. It adds no third-party dependency
-and does not integrate with production services. Native layer behavior still
-needs verification on each supported macOS/runtime combination before adoption.
+with the existing Xcode/Java toolchains only for native launch/package tasks.
+Compose application resources supply the library directly in both launch modes;
+JVM model tests neither compile nor load it. Packaging declares the library as
+an explicit input because Compose 1.10.3 does not track `appResourcesDir`;
+native-only changes therefore invalidate the app image as well as resource preparation.
+Configuration is queued on AppKit
+without blocking AWT, with a strong window reference retained until completion.
+It adds no third-party dependency and does not integrate with production services.
+Native layer behavior still needs verification on each supported macOS/runtime
+combination before adoption.
 
 ## Run on iPhone
 
@@ -138,15 +143,19 @@ JVM/iOS entry points. `iosApp/` contains only the SwiftUI host and Xcode project
 
 ```sh
 ./gradlew :prototypeApp:jvmTest
-./gradlew :prototypeApp:verifyIosPrototype
 ./gradlew :prototypeApp:verifyPrototype
 ./gradlew quality
+./gradlew :prototypeApp:verifyPrototypeHosts
 ```
 
-The module gate checks formatting, Detekt, common tests on JVM, both iOS
-frameworks, an unsigned Simulator host, and desktop packaging. The root quality
-gate includes it. Common tests replace the former Node model suite; they do not
-establish native rendering or accessibility conformance.
+The root quality gate includes `verifyPrototype`: formatting, Detekt, common
+tests on JVM, and shared iOS Simulator compilation. It does not package the
+prototype or run its Xcode project. The explicit `verifyPrototypeHosts` adds
+both iOS framework links, the unsigned Simulator host, and desktop packaging.
+Run that host gate before reviewing a prototype PR and after native-host,
+resource, packaging, or build-wiring changes; then drive the affected native
+app. Other production checks in root quality are unchanged. Common tests
+replace the former Node model suite, not native rendering or accessibility QA.
 
 The former HTML study and Node tests are preserved by the non-release tag
 `archive/mvp-interaction-flow-html`, pinned to `566bdb6`. The tag keeps this
@@ -160,4 +169,5 @@ git show archive/mvp-interaction-flow-html:prototypes/mvp-interaction-flow/index
 
 The earlier refinement at `bfc4a49` remains in the archived ancestry as visual
 provenance, not an accepted production design contract.
-[DESIGN.md](../../DESIGN.md) remains authoritative.
+[The root DESIGN.md](../../DESIGN.md) remains the production authority.
+[The prototype design reference](DESIGN.md) describes the current mock in full.

@@ -1,4 +1,5 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -8,11 +9,11 @@ plugins {
 }
 
 val windowChromeResources = layout.buildDirectory.dir("generated/window-chrome")
-val windowChromeLibrary = windowChromeResources.map { it.file("native/libPosatoPrototypeWindow.dylib") }
+val windowChromeLibrary = windowChromeResources.map { it.file("macos-arm64/native/libPosatoPrototypeWindow.dylib") }
 val prototypeJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {
     languageVersion.set(JavaLanguageVersion.of(21))
 }
-val compileWindowChrome by tasks.registering(Exec::class) {
+val compileWindowChrome = tasks.register<Exec>("compileWindowChrome") {
     val source = layout.projectDirectory.file("src/macosMain/objc/PrototypeWindowChrome.m")
     val javaInstallation = prototypeJavaLauncher.get().metadata.installationPath.asFile
     val compiledLibrary = windowChromeLibrary.get().asFile
@@ -56,7 +57,6 @@ kotlin {
         freeCompilerArgs.add("-opt-in=androidx.compose.material3.ExperimentalMaterial3Api")
     }
     sourceSets {
-        jvmMain { resources.srcDir(windowChromeResources) }
         commonMain.dependencies {
             implementation(project(":prototypeDesignSystem"))
             implementation(libs.kotlinx.collections.immutable)
@@ -75,12 +75,11 @@ kotlin {
     }
 }
 
-tasks.named("jvmProcessResources") { dependsOn(compileWindowChrome) }
-
 compose.desktop {
     application {
         mainClass = "app.posato.prototype.MainKt"
         nativeDistributions {
+            appResourcesRootDir.set(compileWindowChrome.map { windowChromeResources.get() })
             targetFormats(TargetFormat.Dmg)
             packageName = "Posato Prototype"
             packageVersion = "1.0.0"
@@ -92,10 +91,22 @@ compose.desktop {
     }
 }
 
+tasks.withType<AbstractJPackageTask>().configureEach {
+    inputs.file(compileWindowChrome.map { windowChromeLibrary.get() })
+        .withPropertyName("prototypeWindowChrome")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 tasks.register("verifyPrototype") {
     group = "verification"
-    description = "Checks the mock prototype model and compiles both native hosts."
-    dependsOn("ktlintCheck", "detekt", "jvmTest", "linkDebugFrameworkIosArm64", "verifyIosPrototype", "createDistributable")
+    description = "Checks the mock prototype model, static analysis, and shared Simulator compilation."
+    dependsOn("ktlintCheck", "detekt", "jvmTest", "compileKotlinIosSimulatorArm64")
+}
+
+tasks.register("verifyPrototypeHosts") {
+    group = "verification"
+    description = "Builds both prototype hosts and the device framework before native review."
+    dependsOn("verifyPrototype", "linkDebugFrameworkIosArm64", "verifyIosPrototype", "createDistributable")
 }
 
 tasks.register<Exec>("verifyIosPrototype") {

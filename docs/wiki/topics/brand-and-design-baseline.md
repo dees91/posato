@@ -16,10 +16,11 @@ application shell and near-term MVP flows coherent. It does not finalize a
 logo, custom typeface, illustration system, marketing site, launch campaign,
 or complete component library.
 
-As of 2026-09-06, `DESIGN.md` also describes the current native interaction
-prototype's concrete tokens, components, screen hierarchy, and behavior at the
-maintainer's request (`user-confirmed`). It explicitly separates that prototype
-reference from retained production requirements and unverified platform parity.
+As of 2026-09-06, the root `DESIGN.md` links to the separate
+[prototype design reference](../../../prototypes/mvp-interaction-flow/DESIGN.md),
+documenting its tokens, components, screen hierarchy, and behavior at the
+maintainer's request (`user-confirmed`). Unlabelled root statements remain the
+production contract; the prototype reference does not establish platform parity.
 
 ## Accepted brand foundation
 
@@ -197,7 +198,7 @@ supporting information, not an animated spectacle.
   continuity. The iPhone variant retains its bottom-reachable action pattern.
 - `observed`: the current native prototype uses a top-centered, 820 dp maximum
   body canvas, compact/expanded padding, and a persistent 224 dp Mac sidebar.
-  These implementation values are now documented in `DESIGN.md` as prototype
+  These implementation values are documented in the prototype design reference as
   parameters, not accepted production tokens.
 - `open`: adopting or adapting that geometry in production still requires the
   production consolidation review and rendered evidence below.
@@ -217,7 +218,7 @@ supporting information, not an animated spectacle.
 - `inferred`: prerequisite preparation and automatic scrolling belong to the
   disposable workbench, not to the product state model or accepted application
   UX. They do not relax the low-fidelity flow order or the production contract
-  in `DESIGN.md`; its prototype description records the workbench separately.
+  in the root `DESIGN.md`; the prototype reference records the workbench separately.
 
 ### Paused-item configuration prototype experiment
 
@@ -249,7 +250,7 @@ isolated Compose prototype on macOS and iPhone Simulator. Its reusable component
 library and native mock flows replace the maintained HTML target, but remain
 prototype evidence. Neither migration nor native inspection changes the
 production consolidation boundary below or accepts new production tokens.
-Documenting the current prototype in `DESIGN.md` does not authorize wholesale
+Documenting the current prototype in its own design reference does not authorize wholesale
 reuse or supersede that boundary.
 
 - `user-confirmed` (2026-08-31): `SESSION-001` is the first explicit

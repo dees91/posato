@@ -27,9 +27,8 @@ remain authoritative. Future task plans may cite this source as usability
 evidence, but they must not import its reducer, geometry, fixtures, or web
 implementation as a product contract.
 
-`DESIGN.md` now also contains a source-backed description of the current native
-prototype, explicitly labelled as a prototype reference. Recording its concrete
-appearance and behavior does not promote its mock services or implementation
+The root `DESIGN.md` links to a separate [prototype design reference](../../../prototypes/mvp-interaction-flow/DESIGN.md).
+Recording its source-backed appearance and behavior does not promote its mock services or implementation
 parameters into production requirements.
 
 ## Maintainer-confirmed evidence
@@ -240,6 +239,10 @@ native Apple accessibility conformance, or production design acceptance.
   disables clipping; the iPhone shell and production modules are unchanged.
   The native frame hierarchy is an OS/runtime integration assumption that needs
   fresh verification before production use or a runtime upgrade.
+- `observed`: AppKit configuration is dispatched asynchronously so AWT does
+  not wait on the main queue. The queued block retains its native window until
+  completion. The native library belongs to Compose application resources,
+  not JVM test resources; explicit host verification retains packaging checks.
 
 The [run instructions](../../../prototypes/mvp-interaction-flow/README.md) cover
 desktop packaging, Xcode launch, controls, and verification. The original HTML

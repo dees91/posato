@@ -35,6 +35,9 @@ provenance rather than a parallel public brand.
   MVP task-stub, dependency, wave, evidence, and integration-group authority.
 - [../../DESIGN.md](../../DESIGN.md) — accepted, tool-neutral Posato brand and
   product design system for the Apple MVP.
+- [Prototype design reference](../../prototypes/mvp-interaction-flow/DESIGN.md)
+  — implemented mock tokens, components, native layouts, and interactions;
+  evidence for consolidation, not production acceptance.
 
 ## Product and architecture
 

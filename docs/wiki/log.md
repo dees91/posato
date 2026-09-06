@@ -1255,10 +1255,11 @@
   menus. Following further acceptance, moved main navigation to an iPhone bottom
   bar and Mac sidebar with a readable minimum window width. Kept these
   interactions and their validation in the isolated mock prototype.
-- At the maintainer's request, reconciled `DESIGN.md` with the current Compose
-  tokens, reusable components, native layouts, screen behavior, and inspection
-  controls. Separated source-observed prototype choices from retained production
-  requirements, mock services, and unverified accessibility/platform parity.
+- At the maintainer's request, documented current Compose tokens, components,
+  layouts, behavior, and controls. Review clarified the authority split: root
+  `DESIGN.md` keeps accepted production requirements, while the full
+  [prototype reference](../../prototypes/mvp-interaction-flow/DESIGN.md) records
+  mock implementation evidence without adopting its geometry in production.
 - Preserved the retired HTML and Node suite under the maintainer-approved
   non-release tag `archive/mvp-interaction-flow-html`, independently of a squash
   merge or work-branch deletion; confirmed recovery with a tag-only fetch.
@@ -1266,3 +1267,7 @@
   20 pt native frame mask, disabled in fullscreen. Kept system window controls
   and verified native resizing, dragging, appearance, and draft retention;
   the AppKit integration remains prototype-only and runtime-specific evidence.
+- Follow-up review removed the blocking AWT-to-AppKit dispatch, retaining the
+  window through queued configuration. Separated fast prototype verification
+  from explicit host builds; native application resources and declared package
+  inputs keep JVM model tests independent while tracking native-only changes.

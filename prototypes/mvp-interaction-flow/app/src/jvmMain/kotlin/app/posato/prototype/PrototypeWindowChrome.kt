@@ -5,7 +5,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.awt.ComposeWindow
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
-import java.nio.file.Files
+import java.io.File
 
 @Composable
 internal fun PrototypeWindowChrome(
@@ -31,11 +31,8 @@ internal fun PrototypeWindowChrome(
 
 internal object PrototypeMacWindow {
     init {
-        val library = Files.createTempFile("posato-prototype-window-", ".dylib").toFile()
-        library.deleteOnExit()
-        checkNotNull(javaClass.getResourceAsStream("/native/libPosatoPrototypeWindow.dylib")).use { source ->
-            library.outputStream().use { destination -> source.copyTo(destination) }
-        }
+        val resourcesDirectory = checkNotNull(System.getProperty("compose.application.resources.dir"))
+        val library = File(resourcesDirectory, "native/libPosatoPrototypeWindow.dylib")
         System.load(library.absolutePath)
     }
 

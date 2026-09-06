@@ -9,8 +9,8 @@ JNIEXPORT void JNICALL Java_app_posato_prototype_PrototypeMacWindow_configure(
     jboolean fullscreen
 ) {
     if (windowHandle == 0) return;
+    NSWindow *window = (__bridge NSWindow *)(void *)windowHandle;
     void (^configure)(void) = ^{
-        NSWindow *window = (__bridge NSWindow *)(void *)windowHandle;
         if (window.toolbar == nil) {
             NSToolbar *toolbar = [[NSToolbar alloc] initWithIdentifier:@"app.posato.prototype.window"];
             toolbar.displayMode = NSToolbarDisplayModeIconOnly;
@@ -29,6 +29,6 @@ JNIEXPORT void JNICALL Java_app_posato_prototype_PrototypeMacWindow_configure(
     if ([NSThread isMainThread]) {
         configure();
     } else {
-        dispatch_sync(dispatch_get_main_queue(), configure);
+        dispatch_async(dispatch_get_main_queue(), configure);
     }
 }
