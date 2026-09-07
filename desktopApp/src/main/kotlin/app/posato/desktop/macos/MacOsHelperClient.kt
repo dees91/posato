@@ -195,44 +195,36 @@ internal class MacOsHelperClient(
     }
 
     private fun configureApplicationRequest(payload: ByteArray): ApplicationEnforcementResponse {
-        check(pendingUnknownRequest == null)
-        ensureStarted()
-        check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
-        val requestIdentifier = randomIdentifier()
-        val message = HelperMessage(
-            kind = HelperMessageKind.Request,
+        return helperOnlyRequest(
             operation = HelperOperation.ConfigureApplications,
-            sequence = nextSequence++,
-            deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_CONFIGURE_DEADLINE_MILLISECONDS,
-            connectionIdentifier = connectionIdentifier,
-            sessionIdentifier = sessionIdentifier,
-            requestIdentifier = requestIdentifier,
             payload = payload,
+            decode = ApplicationEnforcementResponse::decode,
+            unknown = { ApplicationEnforcementResponse(HelperResult.unknownOutcome(), 0) },
         )
-        return try {
-            write(message)
-            val response = readWithDeadline(message.deadlineMilliseconds.toLong())
-            check(response.kind == HelperMessageKind.Response)
-            check(response.operation == message.operation)
-            check(response.sequence == message.sequence)
-            check(response.connectionIdentifier.contentEquals(connectionIdentifier))
-            check(response.sessionIdentifier.contentEquals(sessionIdentifier))
-            check(response.requestIdentifier.contentEquals(requestIdentifier))
-            ApplicationEnforcementResponse.decode(response.payload)
-        } catch (_: Exception) {
-            terminateProcess(cancellation = message)
-            ApplicationEnforcementResponse(HelperResult.unknownOutcome(), 0)
-        }
     }
 
     private fun configureRequest(payload: ByteArray): BrowserDomainConfigureResponse {
+        return helperOnlyRequest(
+            operation = HelperOperation.ConfigureBrowserDomains,
+            payload = payload,
+            decode = BrowserDomainConfigureResponse::decode,
+            unknown = { BrowserDomainConfigureResponse(HelperResult.unknownOutcome(), 0.toUShort()) },
+        )
+    }
+
+    private fun <T> helperOnlyRequest(
+        operation: HelperOperation,
+        payload: ByteArray,
+        decode: (ByteArray) -> T,
+        unknown: () -> T,
+    ): T {
         check(pendingUnknownRequest == null)
         ensureStarted()
         check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
         val requestIdentifier = randomIdentifier()
         val message = HelperMessage(
             kind = HelperMessageKind.Request,
-            operation = HelperOperation.ConfigureBrowserDomains,
+            operation = operation,
             sequence = nextSequence++,
             deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_CONFIGURE_DEADLINE_MILLISECONDS,
             connectionIdentifier = connectionIdentifier,
@@ -249,10 +241,10 @@ internal class MacOsHelperClient(
             check(response.connectionIdentifier.contentEquals(connectionIdentifier))
             check(response.sessionIdentifier.contentEquals(sessionIdentifier))
             check(response.requestIdentifier.contentEquals(requestIdentifier))
-            BrowserDomainConfigureResponse.decode(response.payload)
+            decode(response.payload)
         } catch (_: Exception) {
             terminateProcess(cancellation = message)
-            BrowserDomainConfigureResponse(HelperResult.unknownOutcome(), 0.toUShort())
+            unknown()
         }
     }
 

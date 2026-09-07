@@ -7,10 +7,26 @@ import UserNotifications
 protocol RunningApplicationSnapshot: AnyObject {
   var processIdentifier: pid_t { get }
   var bundleIdentifier: String? { get }
+  var bundleURL: URL? { get }
   var isTerminated: Bool { get }
   func terminate() -> Bool
   func forceTerminate() -> Bool
 }
+
+/// Bundle identifiers of system-critical processes that enforcement must
+/// never terminate, even when selected (threat T-08). The helper cannot trust
+/// the requirement set it is handed; the picker-side refusal is a TARGETS-003
+/// follow-up.
+private let systemCriticalBundleIdentifiers: Set<String> = [
+  "com.apple.finder",
+  "com.apple.dock",
+  "com.apple.loginwindow",
+  "com.apple.systemuiserver",
+  "com.apple.controlcenter",
+  "com.apple.notificationcenterui",
+  "com.apple.systempreferences",
+  "com.apple.SystemSettings",
+]
 
 extension NSRunningApplication: RunningApplicationSnapshot {}
 
@@ -55,37 +71,6 @@ protocol ApplicationRequirementMatching {
     processIdentifier: pid_t,
     requirements: Set<Data>
   ) -> Data?
-}
-
-struct SecurityApplicationMatcher: ApplicationRequirementMatching {
-  func matchingRequirement(
-    processIdentifier: pid_t,
-    requirements: Set<Data>
-  ) -> Data? {
-    guard processIdentifier > 1 else {
-      return nil
-    }
-    let attributes = [kSecGuestAttributePid as String: processIdentifier] as CFDictionary
-    var code: SecCode?
-    guard SecCodeCopyGuestWithAttributes(nil, attributes, [], &code) == errSecSuccess,
-      let code
-    else {
-      return nil
-    }
-    for requirementData in requirements {
-      var requirement: SecRequirement?
-      guard
-        SecRequirementCreateWithData(requirementData as CFData, [], &requirement) == errSecSuccess,
-        let requirement
-      else {
-        continue
-      }
-      if SecCodeCheckValidity(code, [], requirement) == errSecSuccess {
-        return requirementData
-      }
-    }
-    return nil
-  }
 }
 
 protocol ApplicationNoticePosting {
@@ -231,7 +216,9 @@ final class ApplicationEnforcementSession: @unchecked Sendable {
     var live: [pid_t: any RunningApplicationSnapshot] = [:]
     for application in running {
       live[application.processIdentifier] = application
-      guard !isPosato(application), tracked[application.processIdentifier] == nil else {
+      guard !isPosato(application), !isSystemCritical(application),
+        tracked[application.processIdentifier] == nil
+      else {
         continue
       }
       if let requirement = matcher.matchingRequirement(
@@ -263,12 +250,12 @@ final class ApplicationEnforcementSession: @unchecked Sendable {
       tracked.removeValue(forKey: identifier)
       return
     }
-    guard
+    let stillMatches =
       matcher.matchingRequirement(
         processIdentifier: identifier,
         requirements: [entry.requirement]
       ) != nil
-    else {
+    guard stillMatches else {
       // The occupant changed or validation blinked: drop it silently. Never
       // terminate or announce on identity doubt; a still-present target is
       // re-tracked with a fresh grace on the next tick.
@@ -305,5 +292,17 @@ final class ApplicationEnforcementSession: @unchecked Sendable {
     let identifier = ServiceContract.applicationIdentifier
     return application.bundleIdentifier == identifier
       || application.bundleIdentifier?.hasPrefix("\(identifier).") == true
+  }
+
+  private func isSystemCritical(_ application: any RunningApplicationSnapshot) -> Bool {
+    let underCoreServices =
+      application.bundleURL?.path.hasPrefix("/System/Library/CoreServices/") == true
+    if underCoreServices {
+      return true
+    }
+    guard let bundleIdentifier = application.bundleIdentifier else {
+      return false
+    }
+    return systemCriticalBundleIdentifiers.contains(bundleIdentifier)
   }
 }

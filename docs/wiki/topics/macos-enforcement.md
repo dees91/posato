@@ -137,7 +137,10 @@ identity and lifecycle details.
 `decided` (2026-09-05, MACOS-005): identity is the exact binary designated
 requirement validated with the Security framework across all architectures,
 strict, no network; ad-hoc signatures are refused and the Posato namespace
-never matches even if sent. Observation enumerates process identifiers
+never matches even if sent. System-critical processes are refused in the
+helper even when selected (fixed bundle-identifier set plus
+`/System/Library/CoreServices/`, threat T-08); the picker-side refusal is a
+`TARGETS-003` follow-up. Observation enumerates process identifiers
 directly and hydrates each one on demand, because
 `NSWorkspace.runningApplications` does not refresh in a process without a
 run loop and would miss applications launched after activation. Child

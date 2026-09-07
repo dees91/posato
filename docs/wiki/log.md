@@ -1233,7 +1233,8 @@
   asks whether this checkout can build, sign, and drive right now, while this
   one asks whether the Mac can obtain Apple resources and whether the account
   holds them. Their check identifiers do not overlap.
-## [2026-09-05] verification | MACOS-005 physical matrix and harness corrections
+
+## [2026-09-07] verification | MACOS-005 physical matrix and harness corrections
 
 - The gated JVM harness drove the installed development package through all 8
   rows: launch-during and running-at-activation termination, the paused notice
