@@ -2,7 +2,9 @@
 
 Session provides a local timer from five minutes to 24 hours, backed by the
 existing session store. Setup, review, early end, expiry, and restart reflect
-real persisted state. Session-driven blocking and synchronization remain unwired.
+real persisted state. Starting a session applies the accepted local
+enforcement for the frozen start set and the active surface reports the real
+enforcement state with Retry; synchronization remains unwired.
 
 ## Sub-features
 
@@ -36,9 +38,21 @@ Preconditions:
   session. Preserve existing data and reserve example.com for the fixture.
 - The expiry fixtures require example.com to be present and remove it afterwards.
 
-- **Start:** `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/session-start.json`
-  (use session-start-desktop.json on Mac). It adds example.com, selects 25 min,
-  reviews, and starts. Expect End session early and an active screenshot/snapshot.
+- **Start:** `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/session-start.json`.
+  It adds example.com, selects 25 min, reviews, and starts. Expect End session early
+  and an active screenshot/snapshot. On `sim` enforcement reports unavailable truthfully:
+  the session is active and the attention notice is visible.
+- **Start without confirmation (desktop, unattended):**
+  `$PC run -t desktop --scenario tools/posato-control/fixtures/scenarios/session-start-action-required-desktop.json`.
+  Use it when nobody confirms the administrator prompt at the Mac: Start leaves the session
+  active with the Retry notice, the run asserts it, ends early through the
+  nothing-restricted confirmation, and removes example.com. The Retry wait allows up to
+  240 seconds for the helper deadline path.
+- **Start with enforcement (desktop, attended):** run session-start-desktop.json while the
+  maintainer confirms the administrator prompt at the Mac when it appears. No driver step
+  can script the SecurityAgent dialog; an unconfirmed prompt lands in the action-required
+  path above instead. The same split applies to session-expiry-desktop.json: the full
+  five-minute expiry with enforcement is a maintainer-attended physical row.
 - **Duration:** In setup use `$PC tap -t <target> --text "Increase Hours" --role button`
   and the corresponding Decrease Hours / Increase Minutes / Decrease Minutes
   buttons. Read the changed values and Ends at preview. At 24 hours minutes are
@@ -64,6 +78,11 @@ Preconditions:
 
 ## Gotchas
 
+- Starting on the Mac raises the administrator prompt for the helper Apply. The driver
+  cannot confirm it; plan attended runs with the maintainer at the Mac, otherwise expect
+  the action-required state with Retry.
+- The active summary shows the frozen start set. Paused-items edits during a session apply
+  to the next pause; relaunching the Mac app during a session needs Resume restrictions.
 - There is no minutes text field. Arrow and wheel changes are immediate; Review
   session reads the current value, not an unsubmitted string.
 - The active/review summary stays compact with hundreds of rows. Open Selected

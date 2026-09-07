@@ -1,0 +1,54 @@
+package app.posato.desktop.session
+
+import app.posato.desktop.macos.ApplicationEnforcementResult
+import app.posato.desktop.macos.BrowserDomainEnforcementResult
+import app.posato.desktop.macos.HelperResult
+import app.posato.desktop.macos.MacOsApplicationEnforcer
+import app.posato.desktop.macos.MacOsBrowserDomainEnforcer
+import app.posato.desktop.macos.MacOsHelperClient
+import app.posato.desktop.mappings.DesktopLocalApplicationMappings
+import app.posato.feature.enforcement.ApplicationEnforcementLink
+import app.posato.feature.enforcement.BrowserEnforcementLink
+import app.posato.feature.targets.data.LocalApplicationMappingId
+
+internal class MacOsBrowserEnforcementLink(
+    private val enforcer: MacOsBrowserDomainEnforcer,
+    private val helper: MacOsHelperClient,
+) : BrowserEnforcementLink {
+    override fun start(
+        domains: List<String>,
+        sessionEndEpochMillis: Long,
+    ): Boolean {
+        return enforcer.start(domains, sessionEndEpochMillis) is BrowserDomainEnforcementResult.Active
+    }
+
+    override fun clear(): Boolean {
+        return enforcer.clear().outcome == HelperResult.Outcome.Success
+    }
+
+    override fun isApplied(): Boolean? {
+        return try {
+            val status = helper.status()
+            status.outcome == HelperResult.Outcome.Success && status.ownershipPhase == HelperResult.Phase.Applied
+        } catch (_: Exception) {
+            null
+        }
+    }
+}
+
+internal class MacOsApplicationEnforcementLink(
+    private val enforcer: MacOsApplicationEnforcer,
+    private val mappings: DesktopLocalApplicationMappings,
+) : ApplicationEnforcementLink {
+    override suspend fun start(
+        mappingIds: List<String>,
+        sessionEndEpochMillis: Long,
+    ): Boolean {
+        val ids = mappingIds.map { canonical -> LocalApplicationMappingId.restore(canonical) ?: return false }
+        return enforcer.start(ids, sessionEndEpochMillis) is ApplicationEnforcementResult.Active
+    }
+
+    override suspend fun clear(): Boolean {
+        return enforcer.clear().outcome == HelperResult.Outcome.Success
+    }
+}

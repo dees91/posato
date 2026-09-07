@@ -51,7 +51,15 @@ class SessionViewModelTest {
     @Test
     fun `given uiState without a collector when ViewModel is created then storage is not read`() = runTest(dispatcher) {
         val store = FakeLocalSessionStore()
-        SessionViewModel(store, policyStoreOf(), FakeSessionMappings(), FakeSessionIdGenerator(), FakeSessionClock(NOW), FakeSessionTimeFormat())
+        SessionViewModel(
+            store,
+            policyStoreOf(),
+            FakeSessionMappings(),
+            FakeSessionIdGenerator(),
+            FakeSessionClock(NOW),
+            FakeSessionTimeFormat(),
+            FakeEnforcementPort(),
+        )
         scheduler.runCurrent()
 
         assertTrue(store.reads.isEmpty())
@@ -73,6 +81,7 @@ class SessionViewModelTest {
             FakeSessionIdGenerator(),
             FakeSessionClock(NOW),
             FakeSessionTimeFormat(),
+            FakeEnforcementPort(),
         )
 
         viewModel.setSetupVisible(true)
@@ -335,6 +344,7 @@ class SessionViewModelTest {
         domains: List<String> = emptyList(),
         groupName: String? = null,
         mappings: FakeSessionMappings = FakeSessionMappings(),
+        enforcement: FakeEnforcementPort = FakeEnforcementPort(),
     ): SessionViewModel {
         val viewModel = SessionViewModel(
             store,
@@ -343,6 +353,7 @@ class SessionViewModelTest {
             FakeSessionIdGenerator(),
             clock,
             FakeSessionTimeFormat(),
+            enforcement,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
         scheduler.runCurrent()

@@ -39,6 +39,8 @@ public interface IosEnforcementProvider {
     )
 
     public fun clear(handler: (IosEnforcementOutcome) -> Unit)
+
+    public fun status(handler: (IosEnforcementOutcome) -> Unit)
 }
 
 public class IosEnforcement(
@@ -56,6 +58,12 @@ public class IosEnforcement(
     public suspend fun clear(): IosEnforcementOutcome {
         return suspendCoroutine { continuation ->
             provider.clear { outcome -> continuation.resume(outcome) }
+        }
+    }
+
+    public suspend fun status(): IosEnforcementOutcome {
+        return suspendCoroutine { continuation ->
+            provider.status { outcome -> continuation.resume(outcome) }
         }
     }
 }

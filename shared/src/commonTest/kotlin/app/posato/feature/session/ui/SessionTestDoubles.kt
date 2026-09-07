@@ -1,5 +1,9 @@
 package app.posato.feature.session.ui
 
+import app.posato.feature.enforcement.EnforcementApplyReport
+import app.posato.feature.enforcement.EnforcementOutcome
+import app.posato.feature.enforcement.EnforcementPort
+import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.domain.SessionId
@@ -43,6 +47,40 @@ internal class FakeSessionPolicyStore(
         policy: TargetPolicy,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         throw UnsupportedOperationException()
+    }
+}
+
+internal class FakeEnforcementPort(
+    var applyReport: EnforcementApplyReport = EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false),
+    var clearOutcome: EnforcementOutcome = EnforcementOutcome.CLEARED,
+    var statusOutcome: EnforcementOutcome = EnforcementOutcome.APPLIED,
+    var expiredSessionIds: Set<String> = emptySet(),
+    override val reapplyRequiresPrompt: Boolean = false,
+) : EnforcementPort {
+    val calls = mutableListOf<String>()
+    var lastRequest: EnforcementRequest? = null
+
+    override suspend fun apply(request: EnforcementRequest): EnforcementApplyReport {
+        calls += "apply"
+        lastRequest = request
+        return applyReport
+    }
+
+    override suspend fun clear(): EnforcementOutcome {
+        calls += "clear"
+        return clearOutcome
+    }
+
+    override suspend fun status(): EnforcementOutcome {
+        calls += "status"
+        return statusOutcome
+    }
+
+    override suspend fun pollSuspendedExpiry(sessionId: String): Boolean {
+        calls += "poll"
+        val expired = sessionId in expiredSessionIds
+        expiredSessionIds -= sessionId
+        return expired
     }
 }
 

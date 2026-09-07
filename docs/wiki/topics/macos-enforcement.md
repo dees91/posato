@@ -483,6 +483,24 @@ domain and are relayed like unselected hosts; rejecting them would deny
 unrelated local-network and developer traffic, so typing a selected site's
 address stays a stated non-resistant residual rather than a rejected route.
 
+## Local session integration (`SESSION-002`)
+
+`observed` (worktree verification, `./gradlew quality` green, Simulator driver
+evidence): the shared enforcement port sequences commit, apply, report on
+start and commit, clear, report on end and expiry. The JVM adapter applies the
+browser denial first and restores it when the application configure fails, so
+an active claim always means both; Retry clears before re-applying because the
+helper refuses configure while an Apply is owned. A refused or failed Apply
+leaves the session active with an action-required state and Retry, never an
+active claim. Relaunch during an active session reports action-required with an
+explicit Resume action instead of raising the administrator prompt
+automatically. The active summary shows the frozen start set; Paused-items
+edits apply to the next pause.
+
+`open`: the maintainer-attended physical Mac rows (Safari row, disposable
+application row, early end, expiry, byte-identical proxy baseline) and the
+desktop driver accessibility-tree investigation.
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the

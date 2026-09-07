@@ -19,6 +19,8 @@ import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
+import app.posato.feature.enforcement.EnforcementActionKind
+import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind
@@ -35,9 +37,11 @@ internal fun SessionOverviewContent(
     onSetup: () -> Unit,
     onEnd: () -> Unit,
     onItems: () -> Unit,
+    onRetryEnforcement: () -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
-    val hasItems = state.review.domains.isNotEmpty() || (state.review.applicationGroupName != null && (state.review.selectedMappingCount ?: 0) > 0)
+    val hasItems = state.displayDomains().isNotEmpty() ||
+        (state.review.applicationGroupName != null && (state.displayApplicationCount() ?: 0) > 0)
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHero(layout = layout, artworkContent = { PosatoIntervalArtwork() }, headingContent = {
             PosatoHeading(
@@ -51,6 +55,7 @@ internal fun SessionOverviewContent(
                 layout = layout,
             )
         })
+        EnforcementNotice(state, onRetryEnforcement)
         if (active) {
             PosatoEndTime("Until ${state.formattedActiveEnd.orEmpty()}", supportingText = state.remainingMillis?.let { remainingText(it) })
             PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, enabled = state.canRequestEarlyEnd()) { Text("End session early") }
@@ -61,7 +66,61 @@ internal fun SessionOverviewContent(
             }
         }
         SessionSelectionSummary(state, deviceLabel)
-        PosatoCaption("Saved on this device. Session-driven blocking and synchronization are not connected yet.")
+        if (state.showsFrozenSet()) {
+            PosatoCaption("Changes in Paused items apply to the next pause.")
+        }
+        PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
+    }
+}
+
+@Composable
+private fun EnforcementNotice(
+    state: SessionUiState,
+    onRetryEnforcement: () -> Unit,
+) {
+    when (val enforcement = state.enforcement) {
+        is EnforcementState.Active -> {
+            if (enforcement.belowPlatformMinimum) {
+                PosatoCaption("Short pause — iPhone restricts it only while the app stays open.")
+            } else {
+                PosatoCaption("Restrictions active.")
+            }
+        }
+
+        is EnforcementState.ActionRequired -> {
+            PosatoNotice(
+                tone = PosatoTone.Critical,
+                actionContent = {
+                    PosatoButton(onRetryEnforcement, enabled = !state.enforcementBusy) {
+                        Text(if (enforcement.kind == EnforcementActionKind.RESUME_REQUIRED) "Resume restrictions" else "Retry")
+                    }
+                },
+            ) {
+                Text(enforcement.attentionMessage())
+            }
+        }
+
+        is EnforcementState.Inactive -> {}
+    }
+}
+
+private fun EnforcementState.ActionRequired.attentionMessage(): String {
+    return when (kind) {
+        EnforcementActionKind.APPLY_FAILED -> {
+            if (repeatsSystemPrompt) {
+                "Restrictions need attention — approving again applies them."
+            } else {
+                "Restrictions need attention."
+            }
+        }
+
+        EnforcementActionKind.CLEAR_FAILED -> {
+            "Restrictions may still apply — retry clearing them."
+        }
+
+        EnforcementActionKind.RESUME_REQUIRED -> {
+            "Restrictions stopped when the app closed."
+        }
     }
 }
 
@@ -113,7 +172,7 @@ internal fun SessionReviewContent(
                 PosatoButton(onChangeDuration, style = PosatoButtonStyle.Quiet, enabled = !state.isStarting) { Text("Change duration") }
             }
             SessionSelectionSummary(state, deviceLabel)
-            PosatoCaption("This starts the local session timer. Session-driven blocking is not connected yet.")
+            PosatoCaption("This starts the session and applies the chosen restrictions on this device.")
         }
     }
 }
