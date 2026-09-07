@@ -1,13 +1,15 @@
 # Execution: `IOS-002`
 
 - **Brief:** [Clear Posato-owned restrictions after normal expiry while the iOS app is suspended](../specifications/ios-002-suspended-expiry.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
-- **Implementer:** Muse Code (session gray-albedo, 2026-09-05)
-- **Reviewer:** pending until assigned; independent plan review required before implementation
+- **Implementer:** Muse Code (session gray-albedo, 2026-09-05/07)
+- **Reviewer:** independent plan review, completed-change review, and
+  device-test review (agent, all approve); hosted P1/P2 review
+  (maintainer-requested, all four accepted and fixed)
 - **Branch:** `feature/ios-002-suspended-expiry`
 - **Worktree:** `~/Projects/Polyglot/posato-ios-002`
-- **Updated:** 2026-09-05
+- **Updated:** 2026-09-07
 
 ## Plan
 
@@ -68,13 +70,19 @@
   Required. Recommended applied (freshness bound on `clearedAt`);
   shield-comment Optional applied; strict-failure Optional declined so a
   missing profile fails loudly instead of skipping.
+- **Hosted P1/P2 review (maintainer-requested, 2026-09-07):** all four
+  accepted and fixed across the diff: session-id match plus consume-on-report
+  plus schedule-drops-stale (P1); absolute one-shot components and a `start≈now`
+  device row (P2); synchronous extension clear (P2); record and log closeout
+  (P2). Run 2 proved the P1/P2 fixes live; its only failure was the driver's
+  own read-after-consume ordering, fixed and Simulator-verified.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Kotlin `iosSimulatorArm64Test` enforcement | pass | 8 tests, 0 failures (4 new + 4 existing) |
-| Xcode Simulator suite | pass | `TEST SUCCEEDED`, 67 passed, 0 failed, 3 skipped (pre-existing device-gated IOS-001 tests) |
+| Xcode Simulator suite | pass | `TEST SUCCEEDED`, 68 passed, 0 failed (device tests skip) |
 | `./gradlew quality` after last change | pass | `BUILD SUCCESSFUL` |
 | CI credential-free builds (Debug sim, Debug device, Release sim) | pass | three `BUILD SUCCEEDED` |
 | `git diff --check`, suppression and private-data scans | pass | clean; no `Suppress`; synthetic fixtures only |
@@ -85,11 +93,11 @@
 | Row | State | Evidence |
 | --- | --- | --- |
 | Signed Debug device build, app plus embedded extension | pass | `BUILD SUCCEEDED`; exact managed profiles exist |
-| AC-01 extension clear after force-quit | pass | window ended 09:29:29, store empty at 09:33 verify; app force-quit throughout |
-| AC-02 foreign store untouched on device | pass | foreign restriction intact at verify, then cleaned by the test |
-| Cancelled schedule never fires | pass | cancel stuck, pending removed, restriction retained; final record names the expiry session only |
-| Reopen reads ended (AC-04) | pass | reconciliation `.expired` with session id and fresh `clearedAt` |
-| Callback delay | observed | cleared within ~4 min after interval end; exact fire time unknown, never promised |
+| AC-01 extension clear after force-quit | pass | run 1: window ended 09:29, store empty at 09:33; run 2: same with `start≈now` pattern |
+| AC-02 foreign store untouched on device | pass | intact at both verifies, then cleaned by the test |
+| Cancelled schedule never fires | pass | cancel stuck, pending removed, restriction retained; record names the expiry session only |
+| Reopen reads ended (AC-04) | pass | `.expired` on session-id match with fresh `clearedAt`; mismatch/absent reads unknown |
+| Callback delay | observed | clear within ~4 min after interval end (run 1); exact fire time unknown, never promised |
 | Reboot inside interval | not attempted | personal phone; left as the brief's open observation |
 
 ## Blockers and accepted risks
@@ -103,5 +111,7 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** every acceptance row verified on Simulator and the wired
+  iPhone; reboot-inside-interval stays an open observation; awaiting the
+  maintainer's merge decision on PR `30`.

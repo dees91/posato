@@ -55,9 +55,11 @@ final class SuspendedExpiryDeviceTests: XCTestCase {
         let probe = ManagedSettingsStore(named: IosEnforcementStoreName.posato)
         XCTAssertEqual(probe.webContent.blockedByFilter, .specific([WebDomain(domain: domain)]))
 
-        // Expiry row: schedule the real window.
-        let start = now.addingTimeInterval(60)
-        let end = now.addingTimeInterval(1_020)
+        // Expiry row: schedule the real window starting now, the way the
+        // session integration will call it, so monitoring begins inside an
+        // interval that has already started by seconds.
+        let start = now
+        let end = now.addingTimeInterval(960)
         XCTAssertEqual(
             try schedule(sessionId: sessionId, start: start, end: end, scheduler: scheduler),
             .scheduled
@@ -86,12 +88,15 @@ final class SuspendedExpiryDeviceTests: XCTestCase {
         foreign.clearAllSettings()
 
         // Reconciliation must read the clear attributed to our session.
-        let scheduler = SuspendedExpiryScheduler()
-        XCTAssertEqual(try reconcile(scheduler: scheduler), .expired)
+        // Read the raw record first: reporting through the adapter consumes
+        // it, so the order below is load-bearing.
         let cleared = try XCTUnwrap(try recordStore().readCleared())
         XCTAssertEqual(cleared.sessionId, sessionId)
         // The clear must come from this checklist run, not a stale record.
         XCTAssertGreaterThan(cleared.clearedAt, Date().timeIntervalSince1970 - 3_600)
+        let scheduler = SuspendedExpiryScheduler()
+        XCTAssertEqual(try reconcile(sessionId: sessionId, scheduler: scheduler), .expired)
+        XCTAssertNil(try recordStore().readCleared())
 
         // Leave no monitoring behind.
         XCTAssertEqual(try cancel(scheduler: scheduler), .cancelled)
@@ -133,9 +138,9 @@ final class SuspendedExpiryDeviceTests: XCTestCase {
         return try XCTUnwrap(result)
     }
 
-    private func reconcile(scheduler: SuspendedExpiryScheduler) throws -> IosExpiryReconciliation {
+    private func reconcile(sessionId: String, scheduler: SuspendedExpiryScheduler) throws -> IosExpiryReconciliation {
         var result: IosExpiryReconciliation?
-        scheduler.readReconciliation { result = $0 }
+        scheduler.readReconciliation(sessionId: sessionId) { result = $0 }
         return try XCTUnwrap(result)
     }
 #endif

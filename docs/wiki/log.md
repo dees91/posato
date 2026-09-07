@@ -1251,15 +1251,17 @@
   Physical packaging must use the Apple Development identity; the ad-hoc
   fallback fails the client team check.
 
-## [2026-09-05] implementation | IOS-002 suspended-expiry Simulator verification
+## [2026-09-07] verification | IOS-002 suspended-expiry Simulator and device runs
 
 - The Device Activity monitor extension, Swift scheduler seam, and Kotlin
-  adapter are implemented and Simulator-verified: 67 Xcode tests pass with no
-  failures, 8 Kotlin enforcement tests pass, `./gradlew quality` and the three
-  credential-free CI builds pass, and plan plus completed-change reviews are
-  recorded as approved with no open Critical or Required findings.
-- The `APPLE-002` profile then cleared the physical gate: the signed device
-  build passes with portal updates allowed, and the device checklist passed
-  on a wired iPhone (force-quit clear, foreign store intact, cancel verified,
-  reconciliation expired; clear observed within ~4 minutes after interval end,
-  never promised). Reboot-inside-interval stays an open observation.
+  adapter are implemented and verified: 68 Xcode tests pass with no failures,
+  8 Kotlin enforcement tests pass, `./gradlew quality` and the three
+  credential-free CI builds pass, and plan, completed-change, device-test,
+  and hosted P1/P2 reviews are recorded as approved with no open findings.
+- The `APPLE-002` profile cleared the physical gate: the signed device build
+  passes with portal updates allowed, and two device windows passed on a wired
+  iPhone (force-quit clear, foreign store intact, cancel verified,
+  session-matched reconciliation expired; clear observed within minutes after
+  interval end, never promised). The review's fixes (session attribution,
+  absolute one-shot schedule, synchronous extension clear) were proven live in
+  the second run. Reboot-inside-interval stays an open observation.

@@ -80,13 +80,17 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
             return
         }
         do {
+            // A stale cleared record from an earlier session must never read
+            // as this session's expiry, so it goes before the new pending.
+            store.removeCleared()
             try store.writePending(sessionId: request.sessionId)
-            // Device Activity matches daily wall-clock components, not absolute
-            // instants, and fires the one-shot expiry at the next occurrence.
+            // Absolute one-shot components: hour/minute alone cannot tell a
+            // 24-hour session's identical ends apart and wrap at midnight.
             // The product never promises the exact wall-clock instant.
+            let components: Set<Calendar.Component> = [.year, .month, .day, .hour, .minute]
             let schedule = DeviceActivitySchedule(
-                intervalStart: calendar.dateComponents([.hour, .minute], from: start),
-                intervalEnd: calendar.dateComponents([.hour, .minute], from: end),
+                intervalStart: calendar.dateComponents(components, from: start),
+                intervalEnd: calendar.dateComponents(components, from: end),
                 repeats: false
             )
             try monitoring.startMonitoring(SuspendedExpiryActivity.name, during: schedule)
@@ -103,11 +107,19 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
         handler(.cancelled)
     }
 
-    func readReconciliation(handler: @escaping (IosExpiryReconciliation) -> Void) {
-        guard records()?.readCleared() != nil else {
+    func readReconciliation(sessionId: String, handler: @escaping (IosExpiryReconciliation) -> Void) {
+        // Fail closed: only a cleared record for this exact session reads as
+        // its expiry. Anything else is unknown, never active. Reporting
+        // consumes the record so a later session cannot inherit it.
+        guard SuspendedExpiryRecordStore.isValidSessionId(sessionId),
+              let store = records(),
+              let cleared = store.readCleared(),
+              cleared.sessionId == sessionId
+        else {
             handler(.unknown)
             return
         }
+        store.removeCleared()
         handler(.expired)
     }
 }
