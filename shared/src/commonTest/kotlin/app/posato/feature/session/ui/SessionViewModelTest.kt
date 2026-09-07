@@ -110,15 +110,15 @@ class SessionViewModelTest {
 
         viewModel.submitDurationMinutes("abc")
         scheduler.runCurrent()
-        assertEquals(30, viewModel.uiState.value.durationMinutes)
+        assertEquals(25, viewModel.uiState.value.durationMinutes)
         assertEquals(SessionSetupFailure.TOO_SHORT, viewModel.uiState.value.setupFailure)
         viewModel.submitDurationMinutes("3")
         scheduler.runCurrent()
-        assertEquals(30, viewModel.uiState.value.durationMinutes)
+        assertEquals(25, viewModel.uiState.value.durationMinutes)
         assertEquals(SessionSetupFailure.TOO_SHORT, viewModel.uiState.value.setupFailure)
         viewModel.submitDurationMinutes("1500")
         scheduler.runCurrent()
-        assertEquals(30, viewModel.uiState.value.durationMinutes)
+        assertEquals(25, viewModel.uiState.value.durationMinutes)
         assertEquals(SessionSetupFailure.TOO_LONG, viewModel.uiState.value.setupFailure)
         viewModel.submitDurationMinutes("45")
         scheduler.runCurrent()
@@ -197,7 +197,7 @@ class SessionViewModelTest {
         assertIs<LocalSessionStatus.Active>(state.status)
         assertFalse(state.isSettingUp)
         assertFalse(state.isReviewing)
-        assertEquals("formatted-${NOW + 30 * 60_000L}", state.formattedActiveEnd)
+        assertEquals("formatted-${NOW + 25 * 60_000L}", state.formattedActiveEnd)
     }
 
     @Test

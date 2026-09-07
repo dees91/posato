@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 60
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {"name":"open-items","action":"tap","query":{"text":"Paused items","role":"button"}},
+    {"name":"add-batch","action":"type","query":{"role":"textField"},"text":"https://design-proof-01.example/synthetic?test=discarded, design-proof-02.example, design-proof-03.example, design-proof-04.example, design-proof-05.example, design-proof-06.example, design-proof-07.example, design-proof-08.example, design-proof-09.example, design-proof-10.example, design-proof-11.example, design-proof-12.example, design-proof-13.example, design-proof-14.example, design-proof-15.example, design-proof-16.example, design-proof-17.example, design-proof-18.example, design-proof-19.example, design-proof-20.example, design-proof-21.example, design-proof-22.example, design-proof-23.example, design-proof-24.example, design-proof-25.example, design-proof-26.example, design-proof-27.example, design-proof-28.example, design-proof-29.example, design-proof-30.example, design-proof-31.example, design-proof-32.example, design-proof-33.example, design-proof-34.example, design-proof-35.example, design-proof-36.example, design-proof-37.example, design-proof-38.example, design-proof-39.example, design-proof-40.example, design-proof-41.example, design-proof-42.example, design-proof-43.example, design-proof-44.example, design-proof-45.example, design-proof-46.example, design-proof-47.example, design-proof-48.example, design-proof-49.example, design-proof-50.example, design-proof-01.example, invalid","clear":true,"submit":true},
+    {"name":"finish-adding","action":"tap","query":{"text":"Done","role":"button"}},
+    {"name":"partial-result","action":"assert","state":"exists","query":{"role":"textField","text":"invalid"}},
+    {"name":"last-row","action":"scrollTo","query":{"text":"design-proof-50.example","role":"text","within":{"text":"Saved websites","role":"group"}}},
+    {"name":"last-row","action":"screenshot"},
+    {"name":"last-row","action":"snapshot"},
+    {"name":"first-row","action":"scrollTo","query":{"text":"design-proof-01.example","role":"text","within":{"text":"Saved websites","role":"group"}}},
+    {"name":"first-row","action":"screenshot"},
+    {"name":"search","action":"tap","query":{"text":"Search","role":"button"}},
+    {"name":"filter","action":"type","query":{"role":"textField"},"text":"design-proof-24.example","clear":true},
+    {"name":"hide-keyboard","action":"tap","query":{"text":"Done","role":"button"}},
+    {"name":"filtered-row","action":"waitFor","state":"exists","query":{"text":"design-proof-24.example","role":"text"}},
+    {"name":"filtered","action":"screenshot"},
+    {"name":"back-to-adding","action":"tap","query":{"text":"Back to adding","role":"button"}},
+    {"name":"draft-retained","action":"assert","state":"exists","query":{"role":"textField","text":"invalid"}},
+    {"name":"session-summary","action":"tap","query":{"text":"Session","role":"button"}},
+    {"name":"compact-summary","action":"screenshot"},
+    {"name":"return-items","action":"tap","query":{"text":"Paused items","role":"button"}},
+    {"name":"draft-survived-navigation","action":"assert","state":"exists","query":{"role":"textField","text":"invalid"}}
+  ]
+}

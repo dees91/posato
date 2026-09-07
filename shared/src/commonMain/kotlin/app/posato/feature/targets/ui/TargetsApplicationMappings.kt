@@ -32,26 +32,37 @@ internal fun TargetsViewModel.chooseApplications() {
     viewModelScope.launch {
         try {
             when (val result = applicationMappings.chooseApplications()) {
-                is LocalApplicationSelectionResult.Success -> applicationMappingsState.update { state ->
-                    state.copy(snapshot = result.snapshot, failure = null)
+                is LocalApplicationSelectionResult.Success -> {
+                    applicationMappingsState.update { state -> state.copy(snapshot = result.snapshot, failure = null, mutation = null) }
+                    if (result.snapshot.mappings.isNotEmpty()) {
+                        activateApplicationPolicy()
+                    }
                 }
 
-                LocalApplicationSelectionResult.Cancelled -> Unit
+                LocalApplicationSelectionResult.Cancelled -> {}
 
-                is LocalApplicationSelectionResult.AccessChanged -> applicationMappingsState.update { state ->
-                    state.copy(snapshot = result.snapshot, access = result.access, failure = null)
+                is LocalApplicationSelectionResult.AccessChanged -> {
+                    applicationMappingsState.update { state ->
+                        state.copy(snapshot = result.snapshot, access = result.access, failure = null)
+                    }
                 }
 
-                LocalApplicationSelectionResult.Unavailable -> applicationMappingsState.update { state ->
-                    state.copy(isAvailable = false)
+                LocalApplicationSelectionResult.Unavailable -> {
+                    applicationMappingsState.update { state ->
+                        state.copy(isAvailable = false)
+                    }
                 }
 
-                is LocalApplicationSelectionResult.Rejected -> applicationMappingsState.update { state ->
-                    state.copy(failure = result.reason.toUiFailure())
+                is LocalApplicationSelectionResult.Rejected -> {
+                    applicationMappingsState.update { state ->
+                        state.copy(failure = result.reason.toUiFailure())
+                    }
                 }
 
-                is LocalApplicationSelectionResult.Failure -> applicationMappingsState.update { state ->
-                    state.copy(failure = result.reason.toUiFailure())
+                is LocalApplicationSelectionResult.Failure -> {
+                    applicationMappingsState.update { state ->
+                        state.copy(failure = result.reason.toUiFailure())
+                    }
                 }
             }
         } catch (cancellationException: CancellationException) {
@@ -93,6 +104,13 @@ internal fun TargetsViewModel.removeApplicationMapping(mappingId: LocalApplicati
         } finally {
             applicationMappingsState.update { state -> state.copy(mutation = null) }
         }
+    }
+}
+
+internal fun TargetsViewModel.activateApplicationPolicy() {
+    val state = currentState
+    if (state.canMutatePolicy() && state.applicationPolicyName == null && state.applicationMappings.isNotEmpty()) {
+        submitApplicationPolicy("Applications")
     }
 }
 
@@ -165,24 +183,26 @@ internal fun TargetsViewModel.observeApplicationMappingReads(): Flow<Unit> {
         emit(Unit)
         when (val result = applicationMappings.load()) {
             is LocalApplicationMappingsLoadResult.Success -> {
-                applicationMappingsState.update {
+                applicationMappingsState.update { state ->
                     ApplicationMappingsState(
                         snapshot = result.snapshot,
                         isLoading = false,
                         hasLoaded = true,
                         isAvailable = true,
                         access = result.access,
+                        mutation = state.mutation,
                     )
                 }
             }
 
             is LocalApplicationMappingsLoadResult.Unavailable -> {
-                applicationMappingsState.update {
+                applicationMappingsState.update { state ->
                     ApplicationMappingsState(
                         snapshot = result.snapshot,
                         isLoading = false,
                         hasLoaded = true,
                         isAvailable = false,
+                        mutation = state.mutation,
                     )
                 }
             }

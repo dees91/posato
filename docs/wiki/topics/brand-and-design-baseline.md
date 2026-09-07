@@ -11,16 +11,30 @@ Agents must use `DESIGN.md` as the canonical contract for future brand,
 product-design, UI, and application-shell work. This page retains the synthesis,
 evidence, low-fidelity flows, and proposal history that support that contract.
 
-This baseline defines only enough brand and product design to keep the first
-application shell and near-term MVP flows coherent. It does not finalize a
-logo, custom typeface, illustration system, marketing site, launch campaign,
-or complete component library.
+`user-confirmed` (2026-09-07): the native prototype design is adopted for the
+real MVP, with practically 1:1 presentation and a complete reusable Compose
+component library adapted to existing ViewModels. The current exact palette,
+typography, spacing, controls, iOS bottom navigation, and macOS sidebar/window
+contract live in `DESIGN.md`. Historical proposals below do not compete with
+that contract. Store artwork, custom typefaces, illustration, and marketing
+remain outside this adoption.
+
+`observed` (2026-09-07): physical keyboard verification found that chaining
+generic `windowInsetsPadding(safeDrawing)` with Skiko `imePadding` in Compose
+1.10.3 subtracts keyboard space twice; their consumption mechanisms differ.
+The product root uses only the former. The modal selection sheet has a separate
+dialog boundary that consumes and excludes IME before its content; native search
+verification confirmed it does not require the same correction. Recheck these
+boundaries when changing the Compose version or application shell.
 
 As of 2026-09-06, the root `DESIGN.md` links to the separate
 [prototype design reference](../../../prototypes/mvp-interaction-flow/DESIGN.md),
 documenting its tokens, components, screen hierarchy, and behavior at the
 maintainer's request (`user-confirmed`). Unlabelled root statements remain the
 production contract; the prototype reference does not establish platform parity.
+That evidence-only status for concrete presentation choices was superseded by
+the explicit adoption on 2026-09-07. Mock services and unimplemented product
+flows remain evidence only.
 
 ## Accepted brand foundation
 
@@ -198,10 +212,9 @@ supporting information, not an animated spectacle.
   continuity. The iPhone variant retains its bottom-reachable action pattern.
 - `observed`: the current native prototype uses a top-centered, 820 dp maximum
   body canvas, compact/expanded padding, and a persistent 224 dp Mac sidebar.
-  These implementation values are documented in the prototype design reference as
-  parameters, not accepted production tokens.
-- `open`: adopting or adapting that geometry in production still requires the
-  production consolidation review and rendered evidence below.
+  These values were explicitly adopted into `DESIGN.md` on 2026-09-07.
+- `superseded`: the adoption decision is now accepted; real-application
+  rendered verification remains an implementation acceptance criterion.
 
 ### Interaction-prototype workbench boundary
 
@@ -396,8 +409,7 @@ change.
 ## Deferred work
 
 Final logo and app-icon production, custom typography, a complete identity
-system, marketing design, and production adoption of prototype geometry and
-navigation remain separate decisions. Current prototype geometry and navigation
-are documented, not unknown. Later production decisions must not silently alter
+system, and marketing design remain separate decisions. Prototype geometry and
+navigation were adopted on 2026-09-07 under `DESIGN.md`. Later decisions must not silently alter
 the accepted brand foundation, language, accessibility boundary, or historical
 PR #1 shell contract.

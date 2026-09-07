@@ -8,22 +8,32 @@
 - **Gate 3:** Complete
 
 The canonical, tool-neutral design contract is [DESIGN.md](../../DESIGN.md).
-It defines the accepted minimum brand foundation, product language, visual
-direction, interface hierarchy, conceptual component contracts, platform and
-accessibility constraints, and exact PR #1 shell content.
+It defines the accepted brand foundation, product language, visual tokens,
+reusable Compose components, current MVP screens, platform navigation, and
+accessibility constraints.
 
 The maintained low-fidelity flow diagrams and proposal history remain in the
 [brand and product design synthesis](../wiki/topics/brand-and-design-baseline.md).
 Current authoritative Apple design evidence is summarized in the
 [source digest](../wiki/sources/apple-design-guidance.md).
 
-The baseline is intentionally incomplete where no implementation or repeated
-rendered evidence exists. Final logo and icon production, custom typography,
-complete brand identity, exact spacing and shape tokens, final navigation, and
-component-level visual specifications remain deferred to the first reviewed
-slice that needs them.
+## Native design adoption
 
-## Prototype documentation amendment
+`user-confirmed` (2026-09-07): adopt the accepted native prototype presentation
+and complete reusable design system in the real MVP in one pull request. Keep
+the visual result practically 1:1 while adapting Compose code to the existing
+ViewModels, persistence, and native application-selection boundaries. The
+frozen reference is revision `c879ff7df7ad29f286b7976756e707b0179520d3`.
+
+This supersedes the previous deferral of exact tokens, component visuals,
+and navigation. The root `DESIGN.md` now owns those specifications; the
+prototype remains reference evidence, not a runtime dependency. Mock session,
+sync, enforcement, onboarding, and overlay behavior is not adopted. Final
+store artwork, a custom typeface, and unimplemented product flows remain
+outside this adoption. Verification tooling and its maintained skill are
+part of the same change.
+
+## Historical prototype documentation amendment
 
 `user-confirmed` (2026-09-06): the maintainer requested an accurate, complete
 description of the current native interaction prototype. The root `DESIGN.md`
@@ -32,4 +42,4 @@ retains the accepted production contract and routes to the separately scoped
 Its concrete tokens, navigation, copy variants, and component states describe
 the mock; they are evidence for the existing design-system consolidation
 checkpoint, not acceptance of those choices for production. The production
-deferrals above remain in force until explicitly adopted with rendered evidence.
+deferrals remained in force until the explicit adoption above (`superseded`).

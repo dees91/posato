@@ -1,16 +1,16 @@
 package app.posato
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,16 +18,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalDensity
+import app.posato.core.designsystem.PosatoLayout
+import app.posato.core.designsystem.PosatoNavigationPlacement
+import app.posato.core.designsystem.PosatoNavigationScaffold
+import app.posato.core.designsystem.PosatoSize
+import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
+import app.posato.core.designsystem.platformNavigationPlacement
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
-import app.posato.feature.session.ui.SessionDestinationSwitch
 import app.posato.feature.session.ui.SessionScreen
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.ui.TargetsBrowserState
 import app.posato.feature.targets.ui.TargetsScreen
 import dev.zacsweers.metro.Inject
 
@@ -41,25 +47,53 @@ class PosatoApplication internal constructor(
     private val timeFormat: SessionTimeFormat,
 ) {
     @Composable
-    fun Content(modifier: Modifier = Modifier) {
-        PosatoTheme {
-            var showingSession by remember { mutableStateOf(true) }
-            Surface(modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-                Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing)) {
-                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                        SessionDestinationSwitch(
-                            onOpenSession = { showingSession = true },
-                            onOpenPausedItems = { showingSession = false },
-                            showingSession = showingSession,
-                            modifier = Modifier.widthIn(max = 720.dp).fillMaxWidth().padding(horizontal = 24.dp),
-                        )
+    fun Content(
+        modifier: Modifier = Modifier,
+        highContrast: Boolean? = null
+    ) {
+        val browser = remember { TargetsBrowserState() }
+        var showingSession by remember { mutableStateOf(true) }
+        val placement = platformNavigationPlacement()
+        val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+        val hideNavigation = placement == PosatoNavigationPlacement.Bottom && keyboardVisible
+        val deviceLabel = if (placement == PosatoNavigationPlacement.Sidebar) "On this Mac only" else "On this iPhone only"
+        PosatoTheme(highContrast = highContrast) {
+            PosatoNavigationScaffold(
+                placement = placement,
+                modifier = modifier.fillMaxSize().background(
+                    MaterialTheme.colorScheme.surface,
+                ).windowInsetsPadding(WindowInsets.safeDrawing),
+                headerContent = { if (!hideNavigation) ApplicationNavigationHeader(placement) },
+                navigationContent = {
+                    if (!hideNavigation) {
+                        ApplicationNavigation(placement, showingSession, { showingSession = it })
                     }
-                    Box(Modifier.weight(1f)) {
-                        if (showingSession) {
-                            SessionScreen(sessionStore, store, applicationMappings, sessionIds, clock, timeFormat, { showingSession = false })
-                        } else {
-                            TargetsScreen(store, applicationMappings)
-                        }
+                },
+            ) { layout ->
+                val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
+                    if (showingSession) {
+                        SessionScreen(
+                            sessionStore,
+                            store,
+                            applicationMappings,
+                            sessionIds,
+                            clock,
+                            timeFormat,
+                            onOpenPausedItems = { showingSession = false },
+                            modifier = contentModifier,
+                            layout = layout,
+                            deviceLabel = deviceLabel,
+                        )
+                    } else {
+                        TargetsScreen(
+                            store,
+                            applicationMappings,
+                            contentModifier.padding(horizontal = inset, vertical = PosatoSpace.Medium),
+                            browser,
+                            deviceLabel,
+                        )
                     }
                 }
             }

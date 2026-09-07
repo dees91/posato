@@ -3,13 +3,13 @@ schema: design-md/v1
 name: "Posato"
 sources:
   - type: source-code
-    path: "docs/wiki/topics/brand-and-design-baseline.md"
+    path: "shared/src/commonMain/kotlin/app/posato/core/designsystem"
+    platform: cross-platform
+  - type: source-code
+    path: "prototypes/mvp-interaction-flow/DESIGN.md"
     platform: cross-platform
   - type: source-code
     path: "docs/product/mvp-scope.md"
-    platform: cross-platform
-  - type: source-code
-    path: "docs/product/product-identity.md"
     platform: cross-platform
   - type: source-code
     path: "docs/wiki/sources/apple-design-guidance.md"
@@ -18,35 +18,43 @@ confidence:
   overall: high
   colors: high
   typography: high
-  spacing: unknown
-  components: medium
-  responsive: low
-  interaction: medium
+  spacing: high
+  components: high
+  responsive: medium
+  interaction: high
   accessibility: medium
 tokens:
   colors:
-    brand-ink: "#18231F"
-    brand-paper: "#F5F2EA"
-    brand-moss: "#2E5D50"
-    brand-clay: "#A54B35"
-    brand-mist: "#DCE4DF"
-    dark-canvas-reference: "#121A17"
-    dark-text-reference: "#F7F5EF"
-    dark-moss-reference: "#76B29E"
-    dark-clay-reference: "#E49A82"
+    light-surface: "#FFFEFA"
+    light-ink: "#18231F"
+    light-primary: "#2E5D50"
+    light-container: "#E4EBE5"
+    dark-surface: "#1C2520"
+    dark-ink: "#F2F2E9"
+    dark-primary: "#A7C3A2"
+    dark-container: "#334436"
   typography:
     application:
-      family: "San Francisco through platform semantic text styles"
-      size: "Semantic; 17pt default on iOS and 13pt default on macOS"
+      family: "Platform-resolved system sans-serif"
+      size: "Compose sp tokens; system font scale is preserved"
       weight: "Regular 400, Medium 500, Semibold 600"
-      lineHeight: "Platform semantic"
-    early-web-and-docs:
-      family: "System sans-serif stack"
-      size: "Context dependent"
-      weight: "Regular 400, Medium 500, Semibold 600"
-      lineHeight: "Context dependent"
-  spacing: {}
-  radii: {}
+      lineHeight: "Explicit token values where declared"
+  spacing:
+    hairline: 1
+    tiny: 4
+    small: 8
+    medium: 12
+    large: 16
+    section: 24
+    spacious: 32
+    canvas: 48
+  radii:
+    extra-small: 6
+    small: 8
+    medium: 10
+    large: 14
+    extra-large: 24
+    macos-native-window: 20
   shadows: {}
 ---
 
@@ -54,420 +62,373 @@ tokens:
 
 ## Design Intent
 
-This is the accepted minimum brand and product design authority for the Apple
-MVP. It was accepted by the maintainer on 2026-08-25 after review of the Gate 3
-candidate and its rendered brand board. It is deliberately smaller than a
-complete identity or component system.
+This is the accepted design authority for the Apple MVP in progress.
+The maintainer accepted the native prototype and its design-system adoption on
+2026-09-07. The current contract supersedes the former minimal shell-only
+geometry, platform-color-only theme, and top segmented navigation. The original
+2026-08-25 brand promise, privacy boundary, and respectful tone remain.
 
-Unlabelled requirements in this file describe the accepted production contract.
-The separately labelled [prototype reference](#native-prototype-reference-evidence-only)
-is evidence for consolidation, not automatic production adoption.
+The reference is the native prototype at `c879ff7`. Product components are
+adapted into `shared/core/designsystem`; the real app does not depend on a
+prototype module. Preserve visual hierarchy, palette, typography, geometry,
+and interaction patterns practically one-to-one while adapting code to the
+existing feature ViewModels and real service outcomes.
 
 ### Positioning
 
-Posato helps self-directed people interrupt automatic use of selected websites
-and apps with calm, time-bounded limits across their own Apple devices, without
-surveillance or a product account.
-
-The primary audience is an adult who owns a Mac and iPhone, recognizes an
-automatic digital habit, and wants deliberate friction under their own control.
-Posato is not parental control, employee monitoring, administrator security, or
-a productivity-scoring system.
-
-### Brand promise and line
+Posato helps self-directed adults interrupt automatic use of selected websites
+and apps across their own Apple devices, without surveillance or a product
+account. It is not parental control, employee monitoring, administrator security,
+or a productivity-scoring system.
 
 - Brand promise: **a quiet pause between impulse and action.**
 - Product line: **Pause. Then choose.**
+- Character: calm, respectful, candid, precise, composed.
+- Avoid shame, urgency, streaks, scores, gamification, and claims of perfect prevention.
 
-Posato promises a clear and respectful interruption, not perfect prevention.
-It reports time, device scope, synchronization, and failure without overstating
-what the application or cloud has accomplished.
+### Current implementation boundary
 
-### Character and tone
+The actual app contains Session and Paused items, real local persistence,
+native application-selection boundaries, and the local session timer.
+Synchronization and session-driven enforcement are not connected to these
+screens. Never show the prototype's demo clock, invented synchronization time,
+mock application names, onboarding success, simulated permission outcome,
+or inspection overlay in the real app.
 
-The character is calm, respectful, candid, precise, and composed. It must not
-be punitive, paternalistic, moralizing, alarmist, gamified, clinical, or framed
-around productivity guilt.
-
-Use short, concrete sentences. State the current condition first, its
-consequence second, and an available action third. Never congratulate, shame,
-score, or diagnose the person.
-
-### Information hierarchy and density
-
-Every primary product surface answers these questions in order:
-
-1. Is a session active?
-2. When does the current state end, or what requires attention?
-3. What is paused on this device?
-4. Is local work pending, or did the latest local sync attempt complete?
-5. What is the single most useful action now?
-
-Use one dominant status, one primary action, and progressively disclosed
-details. Do not turn these answers into a dashboard of equal cards. A countdown
-is supporting information, not an animated spectacle.
+The UI says that data is saved on this device and that blocking/synchronization
+are not connected yet. A running timer is not evidence that a restriction is
+active. Future flows below are requirements, not current controls.
 
 ## Foundations
 
-### Color
+### Semantic palette
 
-The brand palette expresses warm restraint. It is not a replacement for Apple
-semantic application colors.
+The accepted application palette is the prototype's warm light surface and
+deep green dark surface, expressed as Material 3 semantic tokens. The historical
+brand-board Paper `#F5F2EA`, Clay `#A54B35`, and Mist `#DCE4DF` remain
+brand provenance, not replacements for the current application colors.
 
-| Token | Value | Role |
+| Role | Light | Dark |
 | --- | --- | --- |
-| Brand Ink | `#18231F` | Primary brand text and dark neutral |
-| Brand Paper | `#F5F2EA` | Warm light brand surface |
-| Brand Moss | `#2E5D50` | Primary brand color and application tint |
-| Brand Clay | `#A54B35` | Sparse secondary emphasis, never a generic error color |
-| Brand Mist | `#DCE4DF` | Quiet supporting surface or illustration field |
+| surface | `#FFFEFA` | `#1C2520` |
+| onSurface | `#18231F` | `#F2F2E9` |
+| primary / secondary | `#2E5D50` | `#A7C3A2` |
+| onPrimary / onSecondary | `#FFFFFF` | `#18231F` |
+| primaryContainer | `#E4EBE5` | `#334436` |
+| secondaryContainer | `#EDF2EA` | `#2A3A2E` |
+| onSurfaceVariant | `#626B63` | `#AFB9AE` |
+| surfaceContainer / surfaceVariant | `#F6F6F0` | `#232E26` |
+| surfaceContainerLow | `#F8F8F2` | `#202A23` |
+| outline | `#A3AFA2` | `#6D816E` |
+| outlineVariant | `#DEDFD5` | `#39453B` |
+| tertiary (caution) | `#805811` | `#EDC780` |
+| tertiaryContainer | `#FBF3DF` | `#352E20` |
+| error | `#A93228` | `#FFA69B` |
+| errorContainer | `#FFF0EC` | `#392823` |
+| background (outer canvas) | `#EEEEE8` | `#141B17` |
 
-Application backgrounds, labels, separators, warnings, and destructive states
-use platform semantic colors. Brand Moss is the default application tint for
-primary actions and selected state. Brand Clay may appear in brand material or
-sparse non-status emphasis; it must not compete with system warning or
-destructive semantics.
+The complete ColorScheme mapping is in
+[PosatoPalette.kt](shared/src/commonMain/kotlin/app/posato/core/designsystem/PosatoPalette.kt).
+Ordinary application content uses surface, not the outer canvas color.
+Safe-area regions use the same surface as the application.
 
-Dark appearance references are `#121A17` for the deep canvas, `#F7F5EF` for
-text, `#76B29E` for Moss, and `#E49A82` for Clay. They are starting references,
-not proof of final platform asset variants. Dark Mode and Increase Contrast
-assets require component-level verification.
+Increase Contrast maps muted text to onSurface, quiet outlines to outline,
+and outline to onSurface. iOS observes the system darker-colors notification;
+macOS reads the native setting when the window opens or regains activation.
+Dark appearance follows the system. These integrations are not a claim that
+every control state has passed a measured contrast or assistive-technology audit.
 
 ### Typography
 
-Applications use San Francisco through platform semantic text styles. Use
-Regular, Medium, and Semibold weights; avoid thin display weights. Hierarchy
-comes from semantic size, weight, spacing, and content priority rather than a
-second typeface.
+Use the existing platform-resolved sans-serif rendering, without bundling a
+new font. Explicit text dimensions are Compose sp; do not replace LocalDensity's
+font scale with a fixed value. The prototype's simulated Larger text switch is
+not copied into the app.
 
-Support the full iOS Dynamic Type range. On macOS, use the system control and
-text styles appropriate to each native component. Early web and repository
-material uses a system sans-serif stack. A custom brand typeface is deferred
-and requires a separate licensing decision.
+| Token | Size / line height (sp) | Weight |
+| --- | --- | --- |
+| displaySmall | 40 / 46 | Medium |
+| headlineLarge | 38 / 44 | Medium |
+| headlineMedium | 30 / 36 | Medium |
+| titleLarge | 25 / 32 | Semibold |
+| titleMedium | 20 / 27 | Medium |
+| titleSmall | 14 / 21 | Medium |
+| bodyLarge | 16 / 25 | Regular |
+| bodyMedium | 14 / 23 | Regular |
+| bodySmall | 12 / 19 | Regular |
+| labelLarge | 13 / 20 | Medium |
+| labelMedium | 12 / 18 | Medium |
+| labelSmall | 10 / 16 | Semibold |
+
+Headline letter spacing is -1.8, -1.5, and -1 sp for displaySmall,
+headlineLarge, and headlineMedium; titleLarge is -1 sp; eyebrow labelSmall
+is +1.2 sp. Unspecified typography roles, including headlineSmall used for
+section titles and wheel values, retain the pinned Material typography default.
+Use the same roles as the reference rather than approximating them by eye.
 
 ### Spacing, shape, borders, and elevation
 
-No product spacing scale, radius scale, border system, or shadow token is
-accepted yet. Use native platform spacing and component geometry until repeated
-product screens establish a stable need. Do not copy web brand-board pixel
-values into Apple application points.
+All geometry below uses Compose dp; native window radius uses Apple points.
 
-Favor stable alignment and deliberate negative space. Avoid excessive rounding,
-heavy shadows, gradients, decorative panels, and stock card grids. Product
-hierarchy should remain legible without elevation effects.
+- Spacing: 1, 4, 8, 12, 16, 24, 32, 48.
+- Shapes: extraSmall 6, small 8, medium 10, large 14, extraLarge 24.
+- Interactive minimum: 44 on both app hosts.
+- Standard button padding: horizontal 18, vertical 11; compact padding 12 / 8.
+- Standard icons 18; prominent/navigation icons 24; item-symbol surface 36.
+- Wordmark mark 24 × 32; decorative interval artwork 122 × 144.
+- Primary sidebar 224; content maximum 820; compact breakpoint 600.
+- Phone reference / duration-wheel maximum width 390; menu minimum width 200.
+- Hairline borders/dividers: 1 using outlineVariant.
+- Disabled content alpha: 0.5.
+- Do not add card stacks, generic dashboard shadows, or gratuitous dividers.
 
-### Application implementation foundation
+The complete token definitions are in
+[PosatoTokens.kt](shared/src/commonMain/kotlin/app/posato/core/designsystem/PosatoTokens.kt).
+The smaller Sidebar token belongs to the alternate reusable scaffold, not the
+current primary navigation shell. Phone is a sizing reference, not a frame.
 
-TARGETS-001, the first reviewed product screen, establishes the reusable
-application foundation: one root `PosatoTheme` backed only by Material 3 and
-adapted from the existing platform semantic colors and text styles. Feature
-screens consume that theme instead of creating their own theme boundary.
+### Identity and iconography
 
-This foundation does not create a generic wrapper for every Material 3
-component. Promote a feature component or add spacing, shape, border, or
-elevation tokens only after repeated screen evidence establishes a shared
-contract.
+The open-interval mark uses two asymmetric, softly rounded, forward-leaning
+forms. The lowercase posato wordmark and sparse larger interval artwork are
+code-native, not raster images. Artwork is decorative and omitted in compact
+hero layouts.
 
-`SESSION-001` is the first explicit design-system consolidation checkpoint.
-Its session setup, review, active, early-end, expiry, and action-required
-states must be reviewed alongside the implemented Paused items screen, this
-contract, and the disposable interaction prototype. Promote only patterns that
-repeat in production screens into `app.posato.core.designsystem`, and add exact
-tokens or responsive rules here only when rendered macOS and iOS evidence
-supports them. The checkpoint does not require a comprehensive component
-library, copy prototype geometry, or separate design-system implementation
-from the `SESSION-001` vertical product slice.
-
-### Iconography and imagery
-
-Use SF Symbols for familiar interface actions and give essential symbols text
-or accessible labels. Keep symbol weight and scale consistent with surrounding
-semantic text styles.
-
-The placeholder product mark is an **open interval**: two softly weighted,
-asymmetric vertical forms separated by deliberate negative space, with a subtle
-forward shift that suggests pause followed by continued choice. It may echo a
-pause mark without copying a media-control glyph. It must work in one color,
-contain no text, and remain recognizable at small sizes.
-
-Avoid shields, padlocks, stop signs, warning tape, flames, dopamine imagery,
-achievement rings, screenshots, and generic productivity illustrations. Final
-logo geometry, rendering layers, and platform icon assets are unknown.
+PosatoIcons supplies consistent vector strokes for pause, items, globe,
+applications, search, arrows, edit, remove, close, and state symbols. Essential
+icons have a visible label or accessibility description. Native pickers keep
+their own recognizable system labels; the shared iOS UI must not invent app names.
 
 ## Components
 
-The following are product contracts, not implemented components. Their exact
-geometry and framework ownership remain open.
+All product components live in
+[app.posato.core.designsystem](shared/src/commonMain/kotlin/app/posato/core/designsystem).
+They consume the single PosatoTheme and accept state/callback/content slots;
+they do not own policy persistence or construct feature ViewModels.
 
-### Application shell
+| Family | Reusable components |
+| --- | --- |
+| Identity | PosatoMark, PosatoWordmark, PosatoIntervalArtwork |
+| Text | PosatoEyebrow, PosatoTitle, PosatoBody, PosatoCaption, PosatoHeading |
+| Layout | PosatoPanel, PosatoDivider, PosatoActionRow, PosatoSection, PosatoSectionHeader |
+| Shell | PosatoNavigationScaffold, PosatoAppScaffold, PosatoSidebar |
+| Main navigation | PosatoBottomNavigation, PosatoBottomNavigationItem, PosatoSidebarNavigationItem |
+| Choices/navigation | PosatoTabBar, PosatoTab, PosatoNavigationItem, PosatoChoiceGroup, PosatoSetupStep, PosatoDeviceLabel |
+| Actions/input | PosatoButton, PosatoTextField, PosatoFieldMessage, PosatoSearchField, PosatoNumberWheel |
+| Items | PosatoItemList, PosatoItemRow, PosatoItemSymbol, PosatoBadge, PosatoDisclosureRow |
+| Menus | PosatoItemMenu, PosatoItemMenuAction |
+| Selection | PosatoToggleButton, PosatoChoiceTile, PosatoSelectionRow, PosatoDurationChoice |
+| Status/content | PosatoNotice, PosatoStatusLabel, PosatoHero, PosatoEmptyState |
+| Session/support | PosatoEndTime, PosatoSyncFooter, PosatoPrivacyPoint |
+| Icons | PosatoIcons, PosatoIcon |
 
-The shell establishes one status-led content region and a platform-native place
-for secondary navigation or settings. It does not introduce a dashboard grid.
-The PR #1 shell contains only:
+The complete product component set is retained for subsequent MVP slices,
+including currently unused support patterns. Prototype catalog/workbench,
+fake-device wrappers, reducer, mock datasets, and control overlay stay outside
+the product modules.
 
-- product name: **Posato**;
-- primary line: **Pause. Then choose.**;
-- supporting line: **A quiet pause between impulse and action.**; and
-- build-state note: **This build contains the application shell only.**
+### Buttons and input
 
-It has no fake controls, unfinished navigation, illustration, gradient, or
-placeholder icon pretending to be final.
+Primary buttons use primary/onPrimary; secondary and quiet actions remain
+visually subordinate. Action rows wrap with 12 horizontal / 8 vertical spacing.
+Do not substitute raw default-styled Material controls where a Posato pattern exists.
 
-### Status summary
+Text fields use the product outlined treatment, supporting/error copy, and
+UI-owned TextFieldState. Website entry is multiline (up to two visible lines),
+with inline Add and a URI keyboard/Go action. Return submits; Shift-Return adds
+a line break on desktop. Add remains easy to repeat without dismissing focus.
 
-The status summary contains the current session state, end time or
-action-required reason, device scope when relevant, and one primary action.
-Supported semantic states include inactive, active, waiting, pending,
-retryable, and action required. State never relies on color alone.
+### Nested tab bar
 
-### Paused-item list and row
+The Websites / Apps control is a soft primaryContainer tray, large radius,
+4 padding, and 4 between segments. A selected segment uses surface,
+a hairline outlineVariant border, medium radius, and primary text.
+Inactive segments retain normal onSurface text, not low-contrast disabled styling.
+Labels/counts are centered vertically and horizontally; counts are muted.
+The tray's outer edge aligns with the surrounding content.
 
-The list separates exact shared domains from application policies whose native
-selection is local to each device. A row identifies type, current local mapping,
-and whether action is required. Editing preserves the previous valid value
-until replacement input validates.
+Use this component for peer choices within a destination. Session / Paused items
+uses the platform-specific primary navigation, not a second nested tab bar.
 
-The visible name for the singleton semantic application policy is
-**Application group**. Its name may synchronize, but application choices remain
-local to each device. On macOS, a present application group exposes **Choose
-applications**, followed by a plain device-local list with individual Remove
-actions. On iOS, the shared screen shows only the selected application count
-because opaque Screen Time tokens do not expose useful product-owned names; the
-system picker remains responsible for recognizable native labels and detailed
-review. The iOS action changes to **Review applications** after the first
-selection, and permission-required, denied, restricted, and unavailable states
-remain visibly distinct. Cancellation keeps the previous list. Removing the semantic group
-retains the local list and says so explicitly; recreating the group makes the
-retained choices effective again. Where a native selection producer exists but
-nothing is chosen yet, the shared UI states **Apps still need to be chosen on
-this device.** Where the running build has no such producer, it states
-**Choosing apps is not available in this version of Posato.** In both cases it presents
-no fake or speculative selection action, and it keeps any choices already made
-on the device.
+### Rows, menus, and notices
 
-### Session setup and review
+Rows align a 36 symbol surface, readable title/supporting text, and trailing
+action. Separators belong to rows; do not stack another separator immediately
+after a final row. Disclosure rows expose a clear chevron and a button role.
 
-Session setup collects duration or end time. Review shows the resolved end time,
-effective local items, and any missing permission or mapping before the start
-action. It does not use urgency, scoring, or commitment theater.
+The ellipsis is a 44 circular control with a 24 icon and a quiet background.
+The open menu is at least 200 wide, uses surface, large radius, and a subtle
+outline. Edit and Remove are full menu actions; Remove uses the error color.
+Both expose actionable semantics without changing the accepted visual treatment.
 
-### Active-session surface
-
-The active surface leads with **Session active until [time]**, shows effective
-local items and truthful local sync state, and offers a clearly labeled route
-to **End session early**. Early termination uses a clear confirmation, not a
-hidden, tiny, timed, or gesture-only control.
-
-### Synchronization status and action
-
-Synchronization distinguishes local-only, pending local work, syncing, last
-completed local attempt, retryable failure, waiting for the iCloud Keychain
-workspace key, and action-required failure. **Sync now** is a manual action.
-Completion never claims that every other device received the change.
-
-### Action-required notice
-
-The notice names the bounded problem, preserves the last valid state, and gives
-one exact repair or retry action. Permission loss, invalid local selection,
-helper or proxy failure, network or quota failure, and delayed key delivery are
-different states rather than one generic error.
-
-### Blocked presentation
-
-The platform-owned blocked presentation says that the selected site or app is
-paused, gives the session end time when available, and provides a route to
-Posato. It does not display or retain browsing history, full attempted URLs, or
-application-usage timelines.
+Notices use Neutral, Positive, Caution, or Critical tone. State must be named
+in text and offer a precise available action. Loading, denied/restricted access,
+corruption, retryable failure, and saved-but-not-enabled choices stay distinct.
 
 ## Layout and Responsive Behavior
 
-### Shared structure
-
-macOS and iOS share hierarchy, state names, product vocabulary, and policy
-meaning. They do not share forced-identical chrome or navigation. The primary
-status and action remain easy to find as the surrounding platform layout
-changes.
-
 ### iOS
 
-Keep the primary action comfortably reachable, limit simultaneous controls,
-and use standard navigation, sheets, dialogs, and system permission prompts.
-Layouts reflow for the full Dynamic Type range instead of truncating the end
-time, action-required reason, or primary action.
+The app fills the real device viewport, without a fake phone frame.
+Respect safe drawing and keyboard insets. The wordmark sits above content;
+Session / Paused items lives in the bottom navigation. A visible software
+keyboard temporarily hides the wordmark and bottom navigation to make room
+for entry; Done clears focus and restores them.
+The root applies `windowInsetsPadding(WindowInsets.safeDrawing)` once; these
+insets already include the keyboard. Do not append a second IME padding modifier.
+
+Content uses 24 horizontal padding in compact layout. Session uses the same
+vertical inset inside its scrollable canvas; Paused items uses 12 vertically.
+Lists consume the remaining height
+and scroll independently of entry, category tabs, and toolbar. Selected-item
+details use a modal bottom sheet with keyboard insets and Close list.
 
 ### macOS
 
-Use a resizable system window, a denser but still calm information layout,
-menu-bar commands, standard keyboard shortcuts, and keyboard-complete flows.
-Do not stretch a mobile screen to desktop width or replace standard window
-behavior with custom chrome.
+Use a real resizable native window, initially 1060 × 780, with minimum width
+614 and a 224 sidebar. Main content is centered within its available pane,
+capped at 820 including inner horizontal padding of 48 in expanded layout
+(24 below the 600 breakpoint). Session uses that inset vertically; Paused items
+uses 12 vertically.
+The wordmark has room below native traffic lights.
 
-### Adaptation limits
+The native title remains Posato for accessibility/window identity while the
+visible title strip is hidden. Full-content transparent titlebar, native traffic
+lights, dragging, resizing, and fullscreen behavior remain; there are no fake
+window buttons. The AppKit frame uses a 20-point corner radius, zero in fullscreen.
+The small window library is packaged and signed with the application.
 
-No exact application width, grid, breakpoint, sidebar behavior, minimum window
-size, orientation rule, or overflow strategy is accepted for production yet. Define these in
-the first reviewed screen slice that needs them and update this document from
-rendered evidence.
+Selected-item details use a dialog, not an imitation phone sheet. Compact mode
+changes content arrangement, not the Mac sidebar into mobile navigation.
 
-## Interaction and Motion
+### Reflow
 
-### Core flows
+Essential status, end time, warning, and primary action must remain accessible
+at larger text sizes. Prefer wrapped action rows, expanding row height, and
+scrolling rather than clipping labels or forcing fixed-height cards. The full Apple accessibility
+text-size range and all supported window sizes still require native verification;
+a normal-size screenshot alone does not prove coverage.
 
-- Onboarding explains purpose and privacy, invokes **Sync with iCloud**, waits
-  for an existing workspace key instead of creating a parallel workspace,
-  requests platform permissions in context, then collects shared domains and
-  device-local app mappings.
-- Paused-item management validates locally, displays the local result, and
-  marks encrypted work pending for synchronization.
-- Manual session setup chooses duration or end time, reviews effective local
-  items, resolves action-required state, and starts the session.
-- Active blocking presents **paused until**, routes to Posato, expires normally,
-  or follows the explicit early-end confirmation and synchronized stop path.
-- Synchronization commits local state and pending work atomically, reports only
-  the local attempt result, retains valid state across retryable failure, and
-  distinguishes delayed key delivery from other errors.
-- Recovery identifies the bounded failure category, offers a precise action,
-  verifies the repaired state, and returns to truthful status.
+## Current Screens and Interactions
 
-The maintained low-fidelity diagrams live in
-`docs/wiki/topics/brand-and-design-baseline.md`.
+### Session
 
-### Feedback and language
+- Inactive: NO SESSION ACTIVE, Room for what matters., one primary start action.
+  Without effective items, Choose paused items routes to the editor.
+- Setup: YOUR NEXT PAUSE, How much space do you need?, presets 25 / 45 / 60,
+  then Hours / Minutes wheels with explicit Increase / Decrease buttons.
+- Bounds: five minutes through 24 hours. Zero hours restricts minutes to 5–59;
+  24 hours restricts minutes to zero. Changing hours clamps the total safely.
+- Wheels snap, support arrow keys and Home/End on desktop, and expose a range
+  and adjustable value to accessibility. Controls grow with wheel text.
+- Review: ONE LAST LOOK, resolved end time, real selection/authorization state,
+  Start this pause and Change duration. A missing effective selection or mapping
+  load failure cannot be presented as ready.
+- Active: SESSION ACTIVE, timer end and remaining duration, End session early,
+  compact item summary. Copy explicitly describes a local timer.
+- Early end: Ready to return?, End session, Keep this pause.
+- Ended/expired: inactive state plus the real early-end or expiration message.
+- Summary: two disclosure rows, not every website/app. Selected items opens a
+  read-only browser with category tabs, website search, and Close list.
+  iOS shows opaque application counts; Mac shows actual local names.
 
-Prefer **No session active**, **Session active until [time]**, **This site is
-paused until [time]**, **End session early**, **Last sync completed on this
-device at [time]**, **waiting**, and **needs your attention**.
+Main navigation stays available during active sessions, and Paused items editing
+retains its existing availability. Do not add an unrelated active-session lock.
 
-Avoid **locked in**, **access denied** in ordinary product copy, **give up**,
-**break focus**, **everything is synced**, **detox**, **addiction**,
-**discipline**, **streak**, and language that describes a person as a failure.
+### Paused items: websites
 
-### Motion
+- Add websites is the primary input. Search is a quiet secondary action below it.
+- Commas/newlines separate entries; domain names and HTTP(S) URLs are accepted.
+  Only canonical exact hosts reach policy storage; paths/query/fragment do not.
+- Limits: 65,536 UTF-16 code units per batch, 1,024 per trimmed entry, 1,024
+  unique domains in the policy. Credentials, other schemes, IPs, wildcards,
+  malformed hosts, and overflow are rejected.
+- One batch creates one policy revision for all valid new domains. Duplicates
+  are counted; rejected entries remain editable. Failed writes keep the entire
+  submitted draft; a late acknowledgement cannot erase newer text.
+- Search temporarily replaces entry; Back to adding restores the draft.
+  Changing query resets list position. Counts and Search align vertically.
+- A lazy list provides row menus; the list has the accessibility name Saved websites.
+  Edit opens Website domain with Save changes and Cancel.
+- Add/search/edit drafts belong to UI state and survive destination changes.
+  They are not persisted across application relaunch.
 
-Motion is functional and restrained. Honor Reduce Motion. Do not animate every
-countdown tick, create urgency through motion, auto-dismiss decision-critical
-information, or announce every background retry. Exact transition durations,
-easing, and component animations are unknown until an implemented interaction
-is reviewed.
+### Paused items: applications
 
-## Accessibility
+Choose apps is the primary action next to the device-scope caption.
+The native picker controls recognizable application selection. Mac lists names
+with row Remove menus; iOS shows only a private selection count and Clear selection.
+Unavailable, permission-required, denied, restricted, and corrupted states remain real.
 
-- Treat WCAG 2.1 AA contrast as a minimum reference and test all real states in
-  light, dark, and increased-contrast appearances.
-- Pair color with text and, where useful, a distinct symbol for active, paused,
-  pending, success, warning, and error state.
-- Support VoiceOver, Voice Control, Switch Control, Full Keyboard Access, and a
-  logical focus order for every primary flow.
-- Target 44 by 44 point controls on iOS and 28 by 28 point controls on macOS;
-  never go below Apple's current platform minimums.
-- Preserve essential content at accessibility text sizes. Reflow rather than
-  truncating end time, action-required reason, or primary action.
-- Present permission rationale before the system prompt. Do not imitate System
-  Settings or imply that Posato granted a permission.
-- Announce meaningful state changes, not countdown seconds or routine retries.
-- Keep early termination deliberate through copy and confirmation, never by
-  reducing accessibility.
+A successful nonempty selection creates the singleton Applications group only
+when absent. Existing custom group names are preserved. Cancel or an empty
+first selection creates no group. If native choices save but group metadata
+fails, retain them and offer Enable selected apps after resolving the failure.
+Reloading alone does not silently activate retained choices.
+Clearing choices keeps group metadata. Manual group-name CRUD is not exposed
+in the new UI.
 
-Declared accessibility intent is not implementation evidence. Every component
-and flow still requires keyboard, assistive-technology, text-scaling, contrast,
-and reduced-motion verification on supported physical platforms.
+## Future Product Contracts
 
-## Evidence, Inferences, and Unknowns
+These patterns exist in the accepted product direction but are not simulated
+as working controls in the current MVP.
 
-### Observed
+- Onboarding explains purpose/privacy, invokes Sync with iCloud, waits for an
+  existing workspace key, and asks permissions in context.
+- Synchronization distinguishes local-only, pending, syncing, completed local
+  attempt, retryable failure, waiting for workspace key, and action required.
+  Sync now never claims every other device received a change.
+- Session-driven restrictions report actual enforcement state and failures;
+  a timer or saved policy alone is not enforcement proof.
+- Platform-owned blocked presentation explains paused until, offers a route
+  to Posato, and does not retain browsing history or full attempted URLs.
 
-- `Observed`: the maintainer accepted the complete Gate 3 direction on
-  2026-08-25 after viewing the rendered brand board and requested this
-  `DESIGN.md` representation.
-- `Observed`: `docs/wiki/topics/brand-and-design-baseline.md` explicitly
-  declares positioning, audience, tone, palette, typography, icon direction,
-  hierarchy, accessibility constraints, flows, and PR #1 copy.
-- `Observed`: `docs/product/mvp-scope.md` fixes the Apple-first outcome,
-  intentional early termination, truthful synchronization boundary, and
-  privacy non-goals that this design preserves.
-- `Observed`: `docs/wiki/sources/apple-design-guidance.md` records the current
-  authoritative platform guidance used by the baseline.
-- `Observed`: no production application UI or final brand asset exists in the
-  repository at acceptance time.
+## Accessibility and Motion
 
-### Derived
+Target 44-point actions on both hosts, meaningful labels/roles, logical focus,
+keyboard navigation, VoiceOver/Voice Control/Switch Control, and non-color state
+cues. Preserve system font scale and expose wheel range adjustment. Native
+permissions remain system-owned; Posato never grants its own authorization.
 
-- `Derived`: WCAG 2.x sRGB contrast is 14.45:1 for Ink on Paper, 6.71:1 for
-  Moss on Paper, 7.51:1 for white on Moss, 5.13:1 for Clay on Paper, and
-  5.74:1 for white on Clay.
-- `Derived`: the accepted information questions reduce to one status-led
-  hierarchy rather than an equal-weight dashboard because state, end or repair
-  condition, local scope, sync state, and action have an explicit priority.
+Honor Reduce Motion and keep motion functional: no ticking animation, urgency,
+auto-dismissal of decision-critical information, or distracting decorative loops.
+Do not claim complete accessibility from default framework semantics.
 
-### Inferred
+WCAG 2.1 AA is the contrast reference. Historical brand-board contrast numbers
+do not prove this different semantic palette, disabled-alpha states, or native
+controls. Full high-contrast, large-text, assistive-technology, and reduced-motion
+coverage remains a verification obligation, not a label of production readiness.
 
-- `Inferred`: the open-interval mark best expresses the accepted promise when
-  it reads as space deliberately opened rather than a barrier imposed.
-- `Inferred`: status summary, paused-item row, session review, synchronization
-  status, action-required notice, and blocked presentation are the smallest
-  reusable component contracts implied by the accepted flows.
-- `Inferred`: platform semantic surfaces with Moss as the sole control tint
-  preserve Apple familiarity while allowing the brand to remain recognizable.
+## Reproduction and Evidence
 
-### Unknown
+1. Start in the real shared design-system package and use the current theme.
+2. Preserve the frozen prototype's visual role/token mapping; adapt state and
+   events to existing ViewModels rather than importing its reducer.
+3. Keep real failure, authorization, timer, and device-scope meanings.
+4. Verify the application through tools/posato-control and its maintained
+   verify-posato feature map. Capture matching screens, keyboard states,
+   long lists, menus, and session transitions.
+5. Keep runtime screenshots, identifiers, logs, and database evidence ignored
+   under build/verification; do not commit them as documentation assets.
+6. Record verified limits and durable changes in the relevant wiki authority
+   routing without promoting an untested inference to a product decision.
 
-- `Unknown`: final logo geometry, icon layers, wordmark treatment, custom
-  typeface, illustration system, and marketing design.
-- `Unknown`: exact application spacing, radii, borders, shadows, component
-  dimensions, navigation model, breakpoints, and minimum macOS window size.
-- `Unknown`: final Dark Mode and Increase Contrast asset values beyond the
-  accepted reference colors.
-- `Unknown`: implemented semantics, focus order, assistive-technology output,
-  text reflow, localization expansion, and motion behavior.
-- `Unknown`: final system-blocked presentation within the limits of each
-  enforcement mechanism.
+### Provenance and limits
 
-No material source contradiction remains. The rendered brand direction uses
-Paper and Mist as expressive brand surfaces, while the application contract
-uses platform semantic surfaces; these are separate contexts. Moss is the sole
-default control tint, while Clay remains non-status secondary brand emphasis.
+- `user-confirmed`: the accepted native prototype is the visual reference, its
+  product design system is adopted in one PR, and existing ViewModels remain.
+- `observed`: product source contains the semantic palette, reusable components,
+  platform-specific navigation, real-data screens, and native window adaptation.
+- `superseded`: minimal shell-only copy, platform-color-only styling, manual
+  group-name UI, and top-level Session / Paused items segmented navigation.
+- `open`: complete physical assistive-technology coverage, extreme text-size
+  reflow, full-state measured contrast, final platform icon assets, and future
+  synchronization/enforcement surfaces.
 
-## Reproduction Guidelines
+### Native prototype reference
 
-1. Start with the current platform's native window, navigation, typography,
-   semantic surfaces, labels, controls, dialogs, and accessibility behavior.
-2. Apply Brand Moss as the single default control tint. Use the remaining brand
-   palette for identity and sparse content emphasis, not as replacements for
-   semantic system states.
-3. Build every primary surface around current status, end or repair condition,
-   local effective scope, truthful local sync state, and one primary action.
-4. Preserve product vocabulary exactly until a reviewed copy decision updates
-   it. Never introduce scoring, shame, surveillance, or cloud-delivery claims.
-5. Keep macOS and iOS semantically aligned but structurally native. Do not
-   translate Apple point values into web pixels or force shared chrome.
-6. Implement accessible semantics, focus, text scaling, contrast variants,
-   keyboard behavior, and reduced motion with each component rather than as a
-   later polish pass.
-7. Add an exact token only when declaration, implementation, or repeated
-   rendered evidence proves it. Record platform-specific exceptions instead of
-   averaging them into a false cross-platform value.
-8. For PR #1, render only the accepted four shell text elements using system
-   background, label colors, typography, and Moss tint. Do not add fake
-   functionality or the unfinished icon.
-9. After each reviewed UI slice, reconcile intended tokens, requested component
-   values, and rendered evidence, then update confidence and Unknown claims.
-
-## Native prototype reference (evidence only)
-
-`user-confirmed` (2026-09-06): the maintainer requested a complete description
-of the current Compose prototype. That description is maintained in
-[prototypes/mvp-interaction-flow/DESIGN.md](prototypes/mvp-interaction-flow/DESIGN.md),
-separate from the production contract above. It covers all sixteen surfaces,
-source-declared palettes and typography, spacing and shapes, reusable controls,
-duration wheels, batch entry, bounded lists, menus, and the inspection overlay.
-
-Its iPhone bottom navigation, 224 dp Mac sidebar, 20 pt native window corners,
-and concrete interaction variants are implemented prototype choices. They do
-not accept production geometry, navigation, mock services, synthetic app names,
-or accessibility parity. High confidence in the prototype reference means
-accurate extraction from that implementation, not production readiness.
-
-Use both references at the existing design-system consolidation checkpoint:
-compare repeated production patterns with the study, obtain rendered macOS and
-iOS evidence, and explicitly accept any adoption in this production contract.
-The [baseline record](docs/product/design-baseline.md) preserves that boundary.
+[The prototype design record](prototypes/mvp-interaction-flow/DESIGN.md) remains
+frozen at the adoption reference. It records the mock flows and design evidence,
+including the workbench/overlay; those are not product capabilities.
+The root DESIGN.md is the continuing MVP authority. Further product design work
+updates this file and the shared components, not both runtimes in parallel.

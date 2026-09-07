@@ -8,13 +8,17 @@ import app.posato.feature.session.domain.SessionReview
 import app.posato.feature.session.domain.SessionReviewDerivation
 import app.posato.feature.session.domain.SessionSetupFailure
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.domain.TargetPolicy
+import kotlinx.collections.immutable.PersistentList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toPersistentList
 
 internal enum class SessionOperationFailure { LOAD_FAILED, CORRUPTED_SESSION, START_FAILED, END_FAILED }
 
-internal const val DEFAULT_SETUP_MINUTES: Int = 30
+internal const val DEFAULT_SETUP_MINUTES: Int = 25
 
 @Immutable
 internal data class SessionUiState(
@@ -27,6 +31,7 @@ internal data class SessionUiState(
     val isReviewReady: Boolean = false,
     val review: SessionReview = SessionReview(),
     val mappingsAccess: LocalApplicationMappingsAccess? = null,
+    val applicationMappings: PersistentList<LocalApplicationMapping> = persistentListOf(),
     val confirmingEarlyEnd: Boolean = false,
     val isStarting: Boolean = false,
     val isEnding: Boolean = false,
@@ -111,6 +116,7 @@ internal fun createSessionUiState(
         isReviewReady = policy != null && mappings != null,
         review = review,
         mappingsAccess = (mappings as? LocalApplicationMappingsLoadResult.Success)?.access,
+        applicationMappings = mappings.selectedApplications(),
         confirmingEarlyEnd = confirming,
         isStarting = activeCommand == SessionCommand.STARTING,
         isEnding = activeCommand == SessionCommand.ENDING,
@@ -122,3 +128,11 @@ internal fun createSessionUiState(
 }
 
 private const val MILLIS_PER_MINUTE: Long = 60_000L
+
+private fun LocalApplicationMappingsLoadResult?.selectedApplications(): PersistentList<LocalApplicationMapping> {
+    return when (this) {
+        is LocalApplicationMappingsLoadResult.Success -> snapshot.mappings.toPersistentList()
+        is LocalApplicationMappingsLoadResult.Unavailable -> snapshot.mappings.toPersistentList()
+        is LocalApplicationMappingsLoadResult.Failure, null -> persistentListOf()
+    }
+}

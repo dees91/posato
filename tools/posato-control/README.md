@@ -173,18 +173,21 @@ scenario steps use the same keys in a `query` object:
 | `--within-text` + `--within-role` | `within` | Scope: the nearest ancestor with the given role of the element carrying the text; the query then matches inside that scope. Works where the platform exposes containers (desktop rows). |
 | `--near-text` + `--near-role` | `near` | Prefer the match closest to the element carrying the text, with vertical distance weighted three times, so a control on the anchor's row wins over the neighbouring row; `index` then picks farther matches. Works on every target, including iOS lists whose rows expose no container. |
 
-Example: the Remove button of the `example.com` row is
-`--text Remove --role button --near-text example.com`, and the domain field is
-`--role textField --near-text "Add website"`.
+Example: open a website's menu with
+`--text "Actions for example.com" --role button`, then choose
+`--text Remove --role button`. Website add/search/edit surfaces each expose
+one text field, so use `--role textField` after selecting the surface.
+Nested Websites / Apps tabs include counts in their labels; select with
+`--text-contains Websites --role button`, not a hardcoded count.
 
-Desktop specifics (observed on Compose Multiplatform 1.10.3): buttons expose
-their label, static text exposes its text as both label and value, text fields
-have no label of their own (address them with `--role textField --near-text
-"Add website"` or by `--path`), and `testTag` is not exposed. On iOS the text
-field's label is its floating label ("Exact domain"), and the first text field
-in tree order is the application group name, so prefer `near` over `index`. Typing goes through keyboard
-events after focusing the field, so the desktop window may be anywhere but
-must not be minimized.
+Desktop buttons expose labels; fields may expose only their value, and
+`testTag` is not exposed. On iOS a focused field may append its value to its
+label. Avoid selectors tied to the complete dynamic label. Desktop taps use
+accessibility actions without explicit activation. Typing, key presses, and
+`scrollTo` bring the tracked window forward: native verification found that
+per-process key delivery alone did not populate the background Compose field.
+The helper's non-inspectable picker also needs foreground delivery. Keep the
+Mac unlocked and avoid competing foreground automation during input.
 
 ### Process targeting (desktop only)
 
@@ -234,7 +237,7 @@ owns a real window while exposing no accessibility server. Consequences:
 ### Snapshot node
 
 ```json
-{ "role": "button", "id": null, "label": "Add website", "value": null, "enabled": true, "focused": false,
+{ "role": "button", "id": null, "label": "Add", "value": null, "enabled": true, "focused": false,
   "frame": { "x": 128, "y": 561, "w": 133, "h": 40 }, "platformRole": "AXButton", "path": "0/0/0/0/9/2", "children": [] }
 ```
 
@@ -250,44 +253,61 @@ owns a real window while exposing no accessibility server. Consequences:
   "steps": [
     { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Paused items", "role": "button" }, "timeoutSeconds": 30 },
     { "name": "open-paused-items", "action": "tap", "query": { "text": "Paused items", "role": "button" } },
-    { "name": "targets-ready", "action": "waitFor", "state": "exists", "query": { "text": "Add website" }, "timeoutSeconds": 30 },
-    { "name": "enter-domain", "action": "type", "query": { "role": "textField", "near": { "text": "Add website" } }, "text": "example.com", "clear": true, "submit": true },
-    { "name": "row-visible", "action": "waitFor", "state": "exists", "query": { "text": "example.com", "role": "text" } },
+    { "name": "targets-ready", "action": "waitFor", "state": "exists", "query": { "text": "Search" }, "timeoutSeconds": 30 },
+    { "name": "enter-domain", "action": "type", "query": { "role": "textField" }, "text": "example.com", "clear": true, "submit": true },
+    { "name": "finish-adding", "action": "tap", "query": { "text": "Done", "role": "button" } },
+    { "name": "row-visible", "action": "scrollTo", "query": { "text": "example.com", "role": "text", "within": { "text": "Saved websites", "role": "group" } } },
     { "name": "after-add", "action": "screenshot" },
     { "name": "after-add", "action": "snapshot" }
   ]
 }
 ```
 
-iOS keyboard note: Compose drops the accessibility label of content hidden
-behind the software keyboard or clipped at the screen edge, and this screen
-does not pad for the keyboard, so the "Add website" button is unreachable
-while the domain field has focus. When a `near` anchor is visible but the
-target is not, the driver scrolls the anchor toward the centre of the screen
-(up to three swipes) before giving up. Finish
-text entry with `"submit": true` (the Return key triggers the field's IME
-action) or `press --key return` before tapping controls below the field. The
-`add-website` fixture does exactly that on every target.
+The shell accounts for the software keyboard. Batch Add / Return keeps focus
+for the next entry; tap Done to hide the keyboard and restore iOS bottom
+navigation. Search / Back to adding and category changes also clear focus.
+Rejected text stays editable and does not require a relaunch.
 
-Actions: `waitFor` (`state`: `exists`, `absent`, `enabled`, `disabled`,
-`settled`), `tap`, `type` (`text`, `clear`, `submit`), `press` (`key`,
-`modifiers`), `assert` (`state`), `screenshot`, `snapshot` (`query`,
-`maxDepth`), `sleep` (`seconds`), `scrollTo` (iOS swipes until the element is
-hittable; the desktop only checks that it exists), `terminate`, `relaunch`.
-`launch.fresh` resets the application state on every target before the run. With
-`terminateExisting: true` (the default) the scenario restarts the app; single
-commands such as `tap` reuse the running app. A failed step records
+Actions: `waitFor` (`exists`, `absent`, `enabled`, `disabled`, `settled`),
+`tap`, `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
+`assert`, `screenshot`, `snapshot` (`query`, `maxDepth`), `sleep`
+(`seconds`), `scrollTo`, `terminate`, and `relaunch`.
+
+`scrollTo` performs native scrolling on both hosts, not an existence check.
+It chooses the largest visible scroll area in the requested scope, moves
+toward the end, reverses when visible content stops changing, and stops at the
+timeout or attempt bound. A matching row must be inside the viewport. Use
+`query.within: {"text":"Saved websites","role":"group"}` for website rows,
+including on iOS where the outer Compose scroll wrapper spans the whole screen.
+Visibility does not require static row text to be individually tappable.
+The 50-row fixture allows 60 seconds per step; cleanup allows 90 seconds for
+finding the first row from an arbitrary retained scroll position. Desktop pointer and wheel
+events are sent through the session event tap only after validating the
+tracked process and bringing its window forward; losing the foreground is
+a refusal. Coordinates come from the current accessibility bounds, never
+hardcoded screen positions. Read-only find/wait/snapshot do not scroll.
+
+`launch.fresh` resets application state. `terminateExisting: true` (the
+scenario default) restarts the app; false reuses it. A failed step records
 `failure-<index>-screenshot.png` and `failure-<index>-snapshot.json`.
 
-Canonical scenarios live in `fixtures/scenarios/`: `add-website.json` and
-`remove-website.json` exercise the Websites section on the Simulator and the
-iPhone (both switch to `Paused items` first, because the app opens on
-`Session`); `add-website-desktop.json` and `remove-website-desktop.json` are
-the desktop variants, which submit with the button and use Tab focus
-traversal to scroll the row into the window;
-`session-start.json`, `session-start-desktop.json`, `session-early-end.json`,
-`session-expiry.json`, and `session-expiry-desktop.json` exercise one manual
-session from setup to early end or real expiry.
+Canonical scenarios in `fixtures/scenarios/`:
+
+- `website-edit.json`: short-list editor/keyboard regression, draft retention,
+  cancellation, saved edit and cleanup read back after real relaunches. Reserve
+  `edit-proof.example` and `changed-proof.example` before running.
+- add-website and remove-website (including desktop variants) use inline Add,
+  Done, real scrolling, and row menus.
+- website-batch-list adds 50 synthetic domains plus duplicate/invalid input,
+  tests both list ends, search, and draft retention. Its cleanup companion
+  removes those 50 domains through UI. Reserve these names before running.
+- session-start variants select 25 minutes and use the real review/start path.
+- session-early-end relaunches before verifying and ending the active session.
+- session-expiry variants select a real five-minute duration with arrow
+  buttons, await natural expiry, then remove the fixture website.
+
+Read the maintained [.agents/skills/verify-posato](../../.agents/skills/verify-posato/SKILL.md)
+and its feature map for exact setup, native picker limits, and cleanup.
 
 ## Evidence and state
 
@@ -346,13 +366,14 @@ of every driver run is kept next to its result bundle in the run directory.
 1. `doctor -t <target>` and act on any failed check.
 2. `build -t <target>` (add `--driver` on iOS the first time), then `install`
    on iOS.
-3. `launch -t <target> --fresh` for a clean state, or `launch` to keep it.
+3. `launch -t <target>` to preserve state. Use `--fresh` only when an empty
+   disposable target is intended; it is not routine developer-data cleanup.
 4. `snapshot --format text` to learn the current labels, then `run --scenario`
    or single `tap`/`type`/`wait` commands.
 5. `screenshot` and `db query` to collect evidence; `logs` when something is
    off.
-6. `terminate` (and `reset --yes` if the state should not leak into the next
-   run). `cleanup` stops anything left behind.
+6. Restore only the rows/selections changed by the run, then `terminate`
+   and `cleanup`. Never reset developer data as a substitute for scoped cleanup.
 
 ## Development
 
