@@ -100,8 +100,11 @@ account value, or error text.
   confirms no creation or deletion.
 - `AC-05` — An oversized cursor or payload and a malformed anchor or bundle
   are refused before any CloudKit access; a deadline or cancellation yields
-  `UnknownOutcome`; the Simulator and an unsigned build report `unavailable`
-  without opening a container.
+  `UnknownOutcome`; unit tests open no container (injectable account-source
+  and backend seams); the device test skips on the Simulator; the live
+  provider surfaces the true `CKAccountStatus` through binding resolution and
+  performs no CloudKit call on a non-available preflight, mapping permission
+  failures per the shared CloudKit error table.
 - `AC-06` — On the development-signed iPhone with the maintainer's account
   and a private database without the zone, one controlled device test
   performs zone save and confirm, anchor create and conflict-on-identical
@@ -135,15 +138,13 @@ account value, or error text.
 
 ## Decisions or blockers
 
-- Open (maintainer decision before implementation): where the mailbox result
-  types live. `SYNC-008` left `BundleSaveResult`, `ChangeFetchResult`,
-  `ChangePage`, `ZoneDeleteResult`, and `MailboxCursor` in `jvmMain` until a
-  common port exists. A second implementation now makes them two copies.
-  Recommended: move the platform-neutral result types (not the adapter
-  interface) into `shared/src/commonMain/**/feature/sync/mailbox/**` in this
-  task, with the JVM imports updated mechanically, so `SYNC-010` lifts one
-  vocabulary; the alternative mirrors them in `iosMain` and accepts the
-  duplicate until `SYNC-010`.
+- Decided (`user-confirmed`, 2026-09-07): the mailbox result types live in
+  `shared/src/commonMain/**/feature/sync/mailbox/**` from this task, with the
+  JVM imports updated mechanically, so `SYNC-010` lifts one vocabulary. The
+  lift covers six types: `MailboxBundle`, `MailboxCursor`, `ChangePage`,
+  `BundleSaveResult`, `ChangeFetchResult`, and `ZoneDeleteResult`. Only the
+  types move; the `ByteBuffer` page-frame parser stays in `jvmMain`, and the
+  iOS provider parses its page fields natively.
 - Decided by authority: wire outcomes, record layout, bounds, one bundle per
   page, explicit change operations without `CKSyncEngine`, and the 30 s
   deadline mirror `SYNC-008`; the anchor create postflight does not re-read
