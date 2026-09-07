@@ -1,5 +1,8 @@
 package app.posato.core.designsystem
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -11,6 +14,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 internal object PosatoIcons {
@@ -69,3 +73,41 @@ private fun lineIcon(
 
 private const val ICON_VIEWPORT = 24f
 private const val ICON_STROKE = 1.6f
+
+@Preview(name = "Icon set", widthDp = 390)
+@Composable
+private fun PosatoIconsPreview() {
+    val icons = listOf(
+        PosatoIcons.Pause,
+        PosatoIcons.Items,
+        PosatoIcons.Apps,
+        PosatoIcons.Globe,
+        PosatoIcons.Cloud,
+        PosatoIcons.Clock,
+        PosatoIcons.Check,
+        PosatoIcons.Mac,
+        PosatoIcons.Phone,
+        PosatoIcons.Arrow,
+        PosatoIcons.Chevron,
+        PosatoIcons.ChevronUp,
+        PosatoIcons.ChevronDown,
+        PosatoIcons.Search,
+        PosatoIcons.Close,
+        PosatoIcons.Edit,
+        PosatoIcons.Remove,
+        PosatoIcons.More,
+    )
+    PosatoComponentPreview {
+        FlowRow(
+            horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
+            verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
+        ) {
+            icons.forEach { icon ->
+                Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+                    PosatoIcon(icon, icon.name)
+                    PosatoCaption(icon.name)
+                }
+            }
+        }
+    }
+}

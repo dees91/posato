@@ -6,6 +6,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.KeyboardActionHandler
 import androidx.compose.foundation.text.input.TextFieldLineLimits
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoSearchField(
@@ -40,4 +42,13 @@ internal fun PosatoSearchField(
         keyboardOptions = KeyboardOptions(autoCorrectEnabled = false, imeAction = ImeAction.Search),
         onKeyboardAction = KeyboardActionHandler { focus.clearFocus() },
     )
+}
+
+@Preview(name = "Empty and populated search", widthDp = 390)
+@Composable
+private fun PosatoSearchFieldPreview() {
+    PosatoComponentPreview {
+        PosatoSearchField(state = rememberTextFieldState(), label = "Search websites")
+        PosatoSearchField(state = rememberTextFieldState("example"), label = "Search websites")
+    }
 }

@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoPanel(
@@ -71,5 +73,26 @@ internal fun PosatoSection(
             actionContent = actionContent,
         )
         content()
+    }
+}
+
+@Preview(name = "Panel and section", widthDp = 390)
+@Composable
+private fun PosatoLayoutPreview() {
+    PosatoComponentPreview {
+        PosatoPanel(headerContent = { Text("Your next pause") }) {
+            PosatoBody("A clear ending leaves room for what matters.")
+            PosatoActionRow {
+                PosatoButton(onClick = {}) { Text("Review session") }
+                PosatoButton(onClick = {}, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
+            }
+        }
+        PosatoSection(
+            titleContent = { Text("What will be paused") },
+            descriptionContent = { PosatoCaption("Your saved selection") },
+            actionContent = { PosatoButton(onClick = {}, style = PosatoButtonStyle.Quiet) { Text("View all") } },
+        ) {
+            PosatoBody("50 websites and 4 applications")
+        }
     }
 }

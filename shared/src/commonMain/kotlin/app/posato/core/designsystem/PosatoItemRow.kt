@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoItemList(
@@ -83,5 +84,29 @@ internal fun PosatoBadge(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodySmall,
         )
+    }
+}
+
+@Preview(name = "Item rows and badge", widthDp = 390)
+@Composable
+private fun PosatoItemRowPreview() {
+    PosatoComponentPreview {
+        PosatoItemList {
+            PosatoItemRow(
+                headlineContent = { Text("example.com") },
+                leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
+                trailingContent = {
+                    PosatoItemMenu("Actions for example.com") { dismiss ->
+                        PosatoItemMenuAction(onClick = dismiss, destructive = true) { Text("Remove") }
+                    }
+                },
+            )
+            PosatoItemRow(
+                headlineContent = { Text("Selected applications") },
+                supportingContent = { PosatoCaption("On this device only") },
+                leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Apps, null) } },
+                trailingContent = { PosatoBadge("4 apps") },
+            )
+        }
     }
 }

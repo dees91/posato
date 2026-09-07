@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoEndTime(
@@ -66,4 +67,26 @@ internal fun PosatoPrivacyPoint(
         leadingContent = leadingContent,
         supportingContent = supportingContent,
     )
+}
+
+@Preview(name = "End time", widthDp = 390)
+@Composable
+private fun PosatoEndTimePreview() {
+    PosatoComponentPreview {
+        PosatoEndTime("Until 18:30", supportingText = "45 minutes")
+        PosatoEndTime("Until tomorrow, 08:00")
+    }
+}
+
+@Preview(name = "Sync footer and privacy", widthDp = 390)
+@Composable
+private fun PosatoSupportPatternsPreview() {
+    PosatoComponentPreview {
+        PosatoSyncFooter("Saved on this device. Synchronization is not connected yet.")
+        PosatoPrivacyPoint(
+            headlineContent = { Text("Your choices stay yours") },
+            leadingContent = { PosatoIcon(PosatoIcons.Check, null) },
+            supportingContent = { PosatoCaption("No browsing history or productivity scores.") },
+        )
+    }
 }

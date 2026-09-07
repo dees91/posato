@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoNavigationItem(
@@ -86,5 +87,22 @@ internal fun PosatoDeviceLabel(
     Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small), verticalAlignment = Alignment.CenterVertically) {
         leadingContent?.invoke()
         PosatoCaption(label)
+    }
+}
+
+@Preview(name = "Catalog navigation", widthDp = 280)
+@Composable
+private fun PosatoNavigationPreview() {
+    PosatoComponentPreview {
+        PosatoSidebar(footerContent = { PosatoDeviceLabel("On this Mac") }) {
+            PosatoNavigationItem(selected = true, onClick = {}, leadingContent = { PosatoIcon(PosatoIcons.Items, null) }) {
+                Text("Components")
+            }
+            PosatoNavigationItem(selected = false, onClick = {}) { Text("Typography") }
+            PosatoNavigationItem(selected = false, onClick = {}, enabled = false) { Text("Unavailable") }
+        }
+        PosatoSetupStep("1", "Choose items", current = true)
+        PosatoSetupStep("2", "Choose duration", current = false)
+        PosatoDeviceLabel("On this iPhone", leadingContent = { PosatoIcon(PosatoIcons.Phone, null) })
     }
 }
