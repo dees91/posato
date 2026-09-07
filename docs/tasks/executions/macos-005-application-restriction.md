@@ -123,7 +123,9 @@
   | `configureApplicationRequest` duplicates `configureRequest` | P2 | accept, fixed | no-drift duplication | shared `helperOnlyRequest` |
   | Record status/date/count drift; wiki-log date | P2 | accept, fixed | process | this closeout |
 - **Resolution:** all four accepted; affected verification rerun after the
-  correction (Swift suite, quality, team-signed package, physical run 8).
+  correction: Swift suite 151/151, `./gradlew quality` green, team-signed
+  package rebuilt/reinstalled/deep-strict verified, physical run 8
+  `BUILD SUCCESSFUL` with all 8 rows, canary clean, no stray processes.
 
 ## Final
 
