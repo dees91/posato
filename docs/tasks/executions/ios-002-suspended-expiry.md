@@ -64,6 +64,10 @@
 - **Resolution:** one Recommended added (records-nil unavailable test);
   two Optionals declined (vacuous-assertion keep, async-main keep matching
   `IOS-001`); affected suite re-run green. No re-review needed.
+- **Device-test addition review (Standard):** `approve`, no Critical or
+  Required. Recommended applied (freshness bound on `clearedAt`);
+  shield-comment Optional applied; strict-failure Optional declined so a
+  missing profile fails loudly instead of skipping.
 
 ## Verification
 
@@ -74,18 +78,19 @@
 | `./gradlew quality` after last change | pass | `BUILD SUCCESSFUL` |
 | CI credential-free builds (Debug sim, Debug device, Release sim) | pass | three `BUILD SUCCEEDED` |
 | `git diff --check`, suppression and private-data scans | pass | clean; no `Suppress`; synthetic fixtures only |
-| Physical iPhone checklist | partial | packaging pass; callback rows open, see below |
+| Physical iPhone checklist | pass | device tests pass; delay observed, see below |
 
-## Physical checklist (packaging cleared; callback rows need a device session)
+## Physical checklist (passed 2026-09-07, wired iPhone, synthetic fixtures)
 
-| Row | State | Clearing condition |
+| Row | State | Evidence |
 | --- | --- | --- |
-| Signed Debug device build, app plus embedded extension | pass | `-allowProvisioningUpdates`; exact managed profiles now exist |
-| AC-01 extension clear after force-quit, delay recorded not promised | open | maintainer device session (authorization, selection, 15+ min wait) |
-| AC-02 foreign store untouched on device | open | same device session |
-| Cancelled schedule never fires | open | same device session |
-| Reopen reads ended (AC-04) | open | same device session |
-| Callback delay and reboot-inside-interval observations | open | same device session |
+| Signed Debug device build, app plus embedded extension | pass | `BUILD SUCCEEDED`; exact managed profiles exist |
+| AC-01 extension clear after force-quit | pass | window ended 09:29:29, store empty at 09:33 verify; app force-quit throughout |
+| AC-02 foreign store untouched on device | pass | foreign restriction intact at verify, then cleaned by the test |
+| Cancelled schedule never fires | pass | cancel stuck, pending removed, restriction retained; final record names the expiry session only |
+| Reopen reads ended (AC-04) | pass | reconciliation `.expired` with session id and fresh `clearedAt` |
+| Callback delay | observed | cleared within ~4 min after interval end; exact fire time unknown, never promised |
+| Reboot inside interval | not attempted | personal phone; left as the brief's open observation |
 
 ## Blockers and accepted risks
 

@@ -202,10 +202,13 @@ never reports active, and redacted carriers; no `expect`/`actual`.
 Simulator suite 67 passed, 0 failed; `./gradlew quality` and the three
 credential-free CI builds pass.
 
-`open`: the extension's development profile does not auto-provision (wildcard
-team profile lacks App Groups and Family Controls development); the physical
-callback rows are blocked on that profile plus a maintainer device session.
-Observed callback delay and reboot-inside-interval behavior are still pending.
+`observed` (2026-09-07, development-signed iPhone): with the `APPLE-002`
+profile installed, the signed device build passes once Xcode may contact the
+portal. A 17-minute window scheduled from the app, followed by force-quit,
+was clear at verify ~4 minutes after interval end; the foreign store
+survived, reconciliation read expired with the session id, and the cancelled
+probe schedule cleared nothing. Reboot-inside-interval behavior is still
+pending by choice (personal phone).
 
 ## Open questions
 
