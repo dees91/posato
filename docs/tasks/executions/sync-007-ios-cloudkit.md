@@ -96,5 +96,9 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending completed-change review and pull request
+- **Status:** `done`
+- **Outcome:** pull request #37 open with the full change, green local
+  quality, both independent reviews complete, and no unresolved Critical or
+  Required finding; hosted `@codex review` skipped (no Codex activity on
+  recent PRs, same unavailability as in `TARGETS-004`); merge decision stays
+  with the maintainer
