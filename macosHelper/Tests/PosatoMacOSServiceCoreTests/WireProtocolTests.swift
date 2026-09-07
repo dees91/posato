@@ -171,3 +171,29 @@ private let syntheticIdentifier = Data(repeating: 7, count: 16)
 
   #expect(first.canonicalInputDigest != second.canonicalInputDigest)
 }
+
+@Test func givenApplicationFrameWhenDecodedForDaemonThenItIsRejected() throws {
+  let message = try WireMessage(
+    kind: .request,
+    operation: .configureApplications,
+    sequence: 1,
+    deadlineMilliseconds: WireLimits.maximumConfigureDeadlineMilliseconds,
+    connectionIdentifier: syntheticIdentifier,
+    sessionIdentifier: syntheticIdentifier,
+    requestIdentifier: syntheticIdentifier,
+    payload: Data([0, 0])
+  )
+  let encoded = try WireCodec.encode(message)
+
+  #expect(throws: WireProtocolFailure.invalidOperation) {
+    try WireCodec.decode(encoded, maximumBytes: WireLimits.maximumFrameBytes)
+  }
+  #expect(
+    try WireCodec.decode(
+      encoded,
+      maximumBytes: WireLimits.maximumFrameBytes,
+      allowsHelperOnlyOperations: true,
+      maximumDeadlineMilliseconds: WireLimits.maximumConfigureDeadlineMilliseconds
+    ) == message
+  )
+}

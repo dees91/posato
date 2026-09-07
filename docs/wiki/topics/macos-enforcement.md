@@ -134,6 +134,33 @@ A generic process killer is not an acceptable shared API. Shared Kotlin should
 express application policy intent; the native leaf should own platform process
 identity and lifecycle details.
 
+`decided` (2026-09-05, MACOS-005): identity is the exact binary designated
+requirement validated with the Security framework across all architectures,
+strict, no network; ad-hoc signatures are refused and the Posato namespace
+never matches even if sent. System-critical processes are refused in the
+helper even when selected (fixed bundle-identifier set plus
+`/System/Library/CoreServices/`, threat T-08); the picker-side refusal is a
+`TARGETS-003` follow-up. Observation enumerates process identifiers
+directly and hydrates each one on demand, because
+`NSWorkspace.runningApplications` does not refresh in a process without a
+run loop and would miss applications launched after activation. Child
+processes carry different identities and are not targets; an application
+modified on disk after launch loses dynamic
+validity and is not matched (fail-open). Already-running applications get
+the same grace rule as launched ones (graceful request, force after 5 s);
+`SESSION-002` owns the "save your work" copy. Replacing the set starts the
+new observer before stopping the old one; an empty set clears; a corrupt
+payload keeps the existing session. The notice is the fixed generic "This
+app is paused" with the end time, posted once per requirement per debounce
+window from the helper bundle; presentation failure never blocks
+termination. Transport is helper-only pipe operation `12` with capability
+bit `8`; the daemon learns nothing, and an unknown outcome kills the
+helper and reports `Failed` with no reconciliation. Unit evidence is Swift
+and JVM tests including a redaction canary; a spike verified dynamic
+matching and graceful termination on a disposable development-signed
+application. The gated physical rows run on the maintainer's Mac before
+the pull request.
+
 ## Desktop application packaging
 
 `observed` (2026-08-27): the SQLDelight desktop host uses its SQLite JDBC

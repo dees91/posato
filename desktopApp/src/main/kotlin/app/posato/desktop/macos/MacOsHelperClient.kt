@@ -27,7 +27,8 @@ internal class MacOsHelperClient(
     private val launchPrefix: List<String> = emptyList(),
 ) : Closeable,
     MacOsApplicationPicker,
-    MacOsBrowserDomainCommands {
+    MacOsBrowserDomainCommands,
+    MacOsApplicationCommands {
     private val helperPath: Path by lazy { helperPath ?: MacOsHelperSigningVerifier.installedHelperPath() }
     private val random = SecureRandom()
     private val readerExecutor = Executors.newSingleThreadExecutor()
@@ -68,6 +69,15 @@ internal class MacOsHelperClient(
     ): BrowserDomainConfigureResponse {
         val payload = BrowserDomainConfigurePayload(domains, sessionEndEpochMilliseconds).encode()
         return configureRequest(payload)
+    }
+
+    @Synchronized
+    override fun configureApplications(
+        requirements: List<ByteArray>,
+        sessionEndEpochMilliseconds: Long?,
+    ): ApplicationEnforcementResponse {
+        val payload = ApplicationEnforcementPayload(requirements, sessionEndEpochMilliseconds).encode()
+        return configureApplicationRequest(payload)
     }
 
     @Synchronized
@@ -150,6 +160,16 @@ internal class MacOsHelperClient(
         return result
     }
 
+    /**
+     * Test-only crash simulation: kills the spawned helper without touching the launcher process.
+     * A `pkill -f` pattern is unsafe here because the harness launcher command line itself embeds
+     * the helper path, so this resolves the helper as the launcher's child instead of matching text.
+     */
+    fun destroySpawnedHelper() {
+        val launcher = synchronized(this) { process } ?: return
+        launcher.children().forEach { helper -> helper.destroyForcibly() }
+    }
+
     override fun close() {
         isClosed = true
         activeSelectionProcess?.let { selectionProcess ->
@@ -174,14 +194,37 @@ internal class MacOsHelperClient(
         }
     }
 
+    private fun configureApplicationRequest(payload: ByteArray): ApplicationEnforcementResponse {
+        return helperOnlyRequest(
+            operation = HelperOperation.ConfigureApplications,
+            payload = payload,
+            decode = ApplicationEnforcementResponse::decode,
+            unknown = { ApplicationEnforcementResponse(HelperResult.unknownOutcome(), 0) },
+        )
+    }
+
     private fun configureRequest(payload: ByteArray): BrowserDomainConfigureResponse {
+        return helperOnlyRequest(
+            operation = HelperOperation.ConfigureBrowserDomains,
+            payload = payload,
+            decode = BrowserDomainConfigureResponse::decode,
+            unknown = { BrowserDomainConfigureResponse(HelperResult.unknownOutcome(), 0.toUShort()) },
+        )
+    }
+
+    private fun <T> helperOnlyRequest(
+        operation: HelperOperation,
+        payload: ByteArray,
+        decode: (ByteArray) -> T,
+        unknown: () -> T,
+    ): T {
         check(pendingUnknownRequest == null)
         ensureStarted()
         check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
         val requestIdentifier = randomIdentifier()
         val message = HelperMessage(
             kind = HelperMessageKind.Request,
-            operation = HelperOperation.ConfigureBrowserDomains,
+            operation = operation,
             sequence = nextSequence++,
             deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_CONFIGURE_DEADLINE_MILLISECONDS,
             connectionIdentifier = connectionIdentifier,
@@ -198,10 +241,10 @@ internal class MacOsHelperClient(
             check(response.connectionIdentifier.contentEquals(connectionIdentifier))
             check(response.sessionIdentifier.contentEquals(sessionIdentifier))
             check(response.requestIdentifier.contentEquals(requestIdentifier))
-            BrowserDomainConfigureResponse.decode(response.payload)
+            decode(response.payload)
         } catch (_: Exception) {
             terminateProcess(cancellation = message)
-            BrowserDomainConfigureResponse(HelperResult.unknownOutcome(), 0.toUShort())
+            unknown()
         }
     }
 

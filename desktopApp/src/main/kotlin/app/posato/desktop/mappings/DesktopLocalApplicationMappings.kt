@@ -111,13 +111,29 @@ internal class DesktopLocalApplicationMappings(
         database = null
     }
 
+    internal suspend fun designatedRequirements(ids: List<LocalApplicationMappingId>): List<ByteArray> {
+        return withContext(ioDispatcher) {
+            operationMutex.withLock {
+                val currentDatabase = openDatabase()
+                val stored = currentDatabase.applicationMappingsQueries.selectAll { mappingId, _, designatedRequirement ->
+                    mappingId.toHex() to designatedRequirement.copyOf()
+                }.executeAsList().toMap()
+                files.secureDatabaseArtifacts()
+                ids.map { id ->
+                    stored[id.canonicalValue] ?: throw IllegalArgumentException("Unknown application mapping")
+                }
+            }
+        }
+    }
+
     private fun persistSelection(applications: List<SelectedMacOsApplication>): LocalApplicationSelectionResult {
         return try {
             val candidates = applications.map(::restoreCandidate).distinctBy { candidate -> candidate.mapping.id }
             val currentDatabase = openDatabase()
             val snapshot = currentDatabase.transactionWithResult {
                 candidates.forEach { candidate ->
-                    val display = candidate.mapping.requireNamedDisplay()
+                    val display = candidate.mapping.display as? LocalApplicationMappingDisplay.Named
+                        ?: corruptApplicationMappings()
                     currentDatabase.applicationMappingsQueries.insertOrIgnore(
                         mappingId = candidate.mapping.id.canonicalValue.hexToByteArray(),
                         displayName = display.value.encodeToByteArray(),
@@ -139,10 +155,6 @@ internal class DesktopLocalApplicationMappings(
         } catch (_: Exception) {
             failure(LocalApplicationSelectionFailure.STORAGE)
         }
-    }
-
-    private fun LocalApplicationMapping.requireNamedDisplay(): LocalApplicationMappingDisplay.Named {
-        return display as? LocalApplicationMappingDisplay.Named ?: throw CorruptApplicationMappingsException()
     }
 
     private fun restoreCandidate(application: SelectedMacOsApplication): StoredApplicationCandidate {
