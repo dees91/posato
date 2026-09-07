@@ -1,13 +1,13 @@
 # Execution: `MACOS-005`
 
 - **Brief:** [Restrict locally mapped macOS applications without affecting unselected applications](../specifications/macos-005-application-restriction.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
-- **Implementer:** Muse Code session (2026-09-05)
-- **Reviewer:** maintainer (plan review, 2026-09-05); independent review agent (completed-change review, 2026-09-05)
+- **Implementer:** Muse Code session (2026-09-05/07)
+- **Reviewer:** maintainer (plan review, 2026-09-05; PR review P1/P2, 2026-09-07); independent review agent (completed-change review, 2026-09-05; re-review, 2026-09-05)
 - **Branch:** `feature/macos-005-application-restriction`
 - **Worktree:** `~/Projects/Polyglot/posato-macos-005`
-- **Updated:** 2026-09-05
+- **Updated:** 2026-09-07
 
 ## Plan
 
@@ -84,7 +84,7 @@
   | `Failed` wrapping `Success` on count mismatch | Advisory | decline | brief-locked | R3 pins this mapping; changing it needs a brief amendment |
 - **Resolution:** both Required findings fixed in source; `poll` split into
   `poll`/`refresh` to satisfy the lint complexity/length gates (no
-  suppression). Swift suite 148/148, `swiftFormatCheck`/`swiftLintCheck`
+  suppression). Swift suite 151/151, `swiftFormatCheck`/`swiftLintCheck`
   clean, `./gradlew quality` green, team-signed package rebuilt, reinstalled,
   and deep-strict verified. Physical rerun (run 7) passed all 8 rows on the
   corrected binary after two gate timeouts without maintainer input.
@@ -93,13 +93,13 @@
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Swift unit tests (strict) | pass | `:macosHelper:swiftTest` via `quality`: 143+ tests incl. 20 new enforcement rows |
+| Swift unit tests (strict) | pass | `:macosHelper:swiftTest` via `quality`: 151 tests incl. 17 enforcement-session rows |
 | JVM unit tests | pass | `:desktopApp:test`: `ApplicationEnforcementProtocolTest` 7/7, `MacOsApplicationEnforcerTest` 7/7, redaction 1/1, mappings 7/7 |
 | `./gradlew quality` | pass | `BUILD SUCCESSFUL`, rerun after the last correction |
 | `git diff --check`, suppression, private-data scans | pass | no whitespace errors, no new `Suppress`, no logging or identity in added lines |
 | Spike (matching + terminate) | pass | `/tmp/macos005-spike`: `MATCH` on live disposable app, `NO_MATCH` on Finder, graceful quit verified |
 | Gated physical harness rows | pass | run 7 `BUILD SUCCESSFUL` on the corrected binary: all 8 rows in `build/verification/macos-005/run.md` (launch-during, notice `NOTIFY_GO` with maintainer-allowed banner, control, running-at-activation, clear, forced-termination, parent-exit, done); canary scan of evidence empty; no stray processes (runs 2–3 abandoned with defects above; runs 5–6 timed out at `NOTIFY_GO` with no maintainer input) |
-| Stale-snapshot notice defect (found by run 2) | fixed, unit-proven | run 2 `launch-during` passed but no notification prompt ever appeared: held `NSRunningApplication` snapshots never refresh without a run loop, so `isTerminated` stayed false and `requestAuthorization` never ran (confirmed via `usernoted` log silence). Fix: each poll re-resolves tracked entries against a fresh listing pass; a pid vanished from enumeration counts as terminated. Swift suite 146/146 incl. 2 new regression rows; `swiftFormatCheck`/`swiftLintCheck` clean; `verifyMacOsDevelopmentPackaging` green on the rebuilt bundle |
+| Stale-snapshot notice defect (found by run 2) | fixed, unit-proven | run 2 `launch-during` passed but no notification prompt ever appeared: held `NSRunningApplication` snapshots never refresh without a run loop, so `isTerminated` stayed false and `requestAuthorization` never ran (confirmed via `usernoted` log silence). Fix: each poll re-resolves tracked entries against a fresh listing pass; a pid vanished from enumeration counts as terminated. Swift suite green at the time incl. 2 new regression rows; `swiftFormatCheck`/`swiftLintCheck` clean; `verifyMacOsDevelopmentPackaging` green on the rebuilt bundle (final: 151/151) |
 | Harness self-kill defect (found by run 3) | fixed | run 3 passed control/activation/clear rows, then `destroyHelper` ran `pkill -9 -f PosatoMacOSHelper`, whose pattern also matched the harness launcher command line (it embeds the helper path), SIGKILLing the run itself. Fix: `MacOsHelperClient.destroySpawnedHelper()` kills only the launcher's child via `ProcessHandle`; the `pkill` is gone. Lesson: the harness must be relaunched with the Apple Development identity (`-PposatoMacOsSigningIdentity` + `-PposatoMacOsSyncProvisioningProfile` from `local.properties`); the ad-hoc fallback fails the client team check. `./gradlew quality` green after the fix |
 
 ## Blockers and accepted risks
@@ -110,7 +110,22 @@
   one notification allow, six harness rows); the pull request follows
   that evidence. The single wiki-log entry lands in the pre-PR commit.
 
+## PR review (maintainer, 2026-09-07)
+
+- **Scope:** committed diff at `025dfa8`; reviewer-verified `swift test`
+  148/148, JVM 52/52, Detekt clean, no suppression token.
+- **Triage:**
+
+  | Finding | Class | Decision | Rule | Cost |
+  | --- | --- | --- | --- | --- |
+  | No system-critical refusal: selected Finder/Dock terminated in a loop (T-08) | P1 | accept, fixed | threat-model safety | fixed refusal set + CoreServices path guard in helper, 1 unit test |
+  | Per-tick full re-validation, no negative cache | P2 | accept, fixed | performance | parse-once blobs, `(pid, start)` miss cache, 2 unit tests |
+  | `configureApplicationRequest` duplicates `configureRequest` | P2 | accept, fixed | no-drift duplication | shared `helperOnlyRequest` |
+  | Record status/date/count drift; wiki-log date | P2 | accept, fixed | process | this closeout |
+- **Resolution:** all four accepted; affected verification rerun after the
+  correction (Swift suite, quality, team-signed package, physical run 8).
+
 ## Final
 
-- **Status:** `ready-for-pr`
-- **Outcome:** met (all verification green, re-review findings resolved)
+- **Status:** `done`
+- **Outcome:** met (all verification green, all review findings resolved)

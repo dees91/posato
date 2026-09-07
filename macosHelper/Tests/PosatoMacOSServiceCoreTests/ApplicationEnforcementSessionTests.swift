@@ -8,6 +8,7 @@ let stubRequirement = Data([7, 7, 7])
 final class StubRunningApplication: RunningApplicationSnapshot {
   let processIdentifier: pid_t
   let bundleIdentifier: String?
+  var bundleURL: URL?
   var isTerminated = false
   var terminateCalls = 0
   var forceTerminateCalls = 0
@@ -249,6 +250,52 @@ final class SessionStubs {
 
   #expect(application.forceTerminateCalls == 1)
   #expect(stubs.notices.posts.isEmpty)
+}
+
+@Test func givenSystemCriticalAppsWhenMatchedThenTheyAreUntouched() {
+  let stubs = SessionStubs()
+  let session = stubs.session()
+  let finder = StubRunningApplication(
+    processIdentifier: 501,
+    bundleIdentifier: "com.apple.finder"
+  )
+  let coreService = StubRunningApplication(processIdentifier: 502)
+  coreService.bundleURL = URL(fileURLWithPath: "/System/Library/CoreServices/Dock.app")
+  stubs.listing.applications = [finder, coreService]
+  stubs.matcher.matched = [501: stubRequirement, 502: stubRequirement]
+
+  session.poll(now: 0)
+  session.poll(now: 9)
+
+  #expect(finder.terminateCalls == 0)
+  #expect(finder.forceTerminateCalls == 0)
+  #expect(coreService.terminateCalls == 0)
+  #expect(coreService.forceTerminateCalls == 0)
+  #expect(stubs.notices.posts.isEmpty)
+}
+
+@Test func givenMissCacheWhenRecordedThenSameIncarnationHits() {
+  var cache = ProcessMissCache()
+  let incarnation = ProcessIncarnation(processIdentifier: 601, startTime: 700)
+
+  #expect(!cache.isKnownMiss(incarnation))
+  cache.recordMiss(incarnation)
+
+  #expect(cache.isKnownMiss(incarnation))
+  #expect(!cache.isKnownMiss(ProcessIncarnation(processIdentifier: 601, startTime: 701)))
+  #expect(!cache.isKnownMiss(ProcessIncarnation(processIdentifier: 602, startTime: 700)))
+}
+
+@Test func givenMissCacheWhenOverCapacityThenItDropsEverything() {
+  var cache = ProcessMissCache(capacity: 2)
+  let first = ProcessIncarnation(processIdentifier: 601, startTime: 700)
+  let second = ProcessIncarnation(processIdentifier: 602, startTime: 700)
+  cache.recordMiss(first)
+  cache.recordMiss(second)
+  cache.recordMiss(ProcessIncarnation(processIdentifier: 603, startTime: 700))
+
+  #expect(!cache.isKnownMiss(first))
+  #expect(!cache.isKnownMiss(second))
 }
 
 @Test func givenTrackedOccupantStopsMatchingWhenPolledThenItIsDroppedSilently() {
