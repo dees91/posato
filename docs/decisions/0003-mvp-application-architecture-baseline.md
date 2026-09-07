@@ -7,6 +7,28 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## DESIGN-001 window-presentation amendment
+
+`user-confirmed` (2026-09-07): the maintainer accepts one narrow in-process
+AppKit/JNI leaf in `desktopApp` to preserve the accepted native prototype's
+window appearance: full-content transparent titlebar, native window controls,
+rounded frame, fullscreen treatment, and system contrast queries.
+
+This is an exception to the rejected in-process native baseline below, not a
+replacement for the helper or synchronization companion. The leaf owns window
+presentation only: no privilege, enforcement, IPC, network, or product policy.
+It stays outside shared feature contracts, loads from application resources,
+and is signed and verified inside the desktop bundle. AppKit window changes
+remain asynchronously dispatched with the native window retained until completion.
+
+The maintainer accepts that a native crash in this leaf terminates the JVM
+application; it has no process-isolation recovery boundary. Removing the leaf
+and retaining only AWT client properties would lose the accepted window
+treatment and native contrast query, so that alternative is not selected.
+Native frame-hierarchy assumptions need fresh verification after relevant
+macOS or Compose runtime upgrades. All enforcement, privilege, and
+synchronization process boundaries remain unchanged.
+
 ## SYNC-003 amendment
 
 `user-confirmed` (2026-08-28):

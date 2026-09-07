@@ -182,9 +182,12 @@ Nested Websites / Apps tabs include counts in their labels; select with
 
 Desktop buttons expose labels; fields may expose only their value, and
 `testTag` is not exposed. On iOS a focused field may append its value to its
-label. Avoid selectors tied to the complete dynamic label. Desktop mutations
-activate the addressed window before interaction; keep the Mac unlocked and
-do not run competing foreground automation during keyboard entry.
+label. Avoid selectors tied to the complete dynamic label. Desktop taps use
+accessibility actions without explicit activation. Typing, key presses, and
+`scrollTo` bring the tracked window forward: native verification found that
+per-process key delivery alone did not populate the background Compose field.
+The helper's non-inspectable picker also needs foreground delivery. Keep the
+Mac unlocked and avoid competing foreground automation during input.
 
 ### Process targeting (desktop only)
 

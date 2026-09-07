@@ -34,6 +34,13 @@ See the [adoption brief](../../tasks/specifications/design-001-mvp-design-adopti
 and [current design contract](../../../DESIGN.md). Native macOS window chrome
 belongs to the desktop host, not the application-selection helper protocol.
 
+`user-confirmed` (2026-09-07): the maintainer explicitly accepts the narrow
+in-process AppKit/JNI window-presentation exception in
+[ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md#design-001-window-presentation-amendment).
+The signed, verified desktop leaf owns window chrome and contrast queries,
+not privilege, enforcement, IPC, networking, or product policy. A native crash
+can terminate the application; helper and synchronization boundaries stay intact.
+
 - **Status:** Accepted
 - **Accepted:** 2026-08-25
 - **Decision authority:**

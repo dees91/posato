@@ -32,7 +32,7 @@
 - Aggregate `quality` passed after the final source correction. A full
   `--rerun-tasks` pass covered build changes; subsequent corrections used the
   normal aggregate gate. No quality exception was added.
-  Shared JVM tests: 351 passed. Driver tests: 87 passed. iOS test/build targets,
+  Shared JVM tests: 351 passed. Driver tests: 88 passed. iOS test/build targets,
   native packaging checks, formatting, Detekt, and skill validation passed.
 - Development-signed desktop and physical iPhone builds passed; the physical
   app installed and launched. Native Mac checks passed for batch entry, long-list
@@ -64,6 +64,24 @@
 - All verification-created websites and application choices were removed.
   Existing user data and group names were preserved; no database reset,
   captured-token injection, or physical-device data reset was used.
+
+## PR review closeout
+
+The correction to `b236b9d` uses Standard review, completed independently by
+`pr34_correction_review`; its six focused driver tests and diff check passed.
+
+| Finding class | Count | Decision |
+| --- | --- | --- |
+| Required: missing JNI architecture authority | 1 | Maintainer explicitly accepted the presentation-only exception; ADR 0003 and both architecture wiki topics now agree. |
+| Advisory: excessive window activation | 1 | Remove tap activation only. Background per-process keyboard input failed twice with an unchanged empty field; retain activation for type/press and scrolling. README and skill state this limit. |
+| Advisory: dependency authority mismatch | 1 | Align the roadmap with the brief. Revision 10 already explains the shared QUALITY-003 PR. |
+
+After the final code correction, aggregate quality passed with 88 driver tests,
+the development-signed Mac package passed verification, and native checks
+passed for 50-row batch entry, scrolling, search, draft retention, menus, and
+cleanup. Database read-back confirmed the original website data was restored.
+Background taps worked; keyboard entry succeeded with activation restored.
+Skill validation passed. No Critical or Required finding remains open.
 
 ## Resolved blocker and evidence limits
 

@@ -108,7 +108,7 @@ class ScenarioRunner(
         scenario: Scenario
     ) {
         val timeoutMs = ((step.timeoutSeconds ?: scenario.defaults.timeoutSeconds) * MILLIS_PER_SECOND).toLong()
-        if (step.action in setOf(Actions.TAP, Actions.TYPE, Actions.PRESS, Actions.SCROLL_TO)) {
+        if (step.action in setOf(Actions.TYPE, Actions.PRESS, Actions.SCROLL_TO)) {
             actions.prepareInteraction()
         }
         when (step.action) {

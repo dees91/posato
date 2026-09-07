@@ -108,7 +108,19 @@ class ScenarioRunnerTest {
             actions.events,
         )
         assertEquals(listOf("screenshots/screenshot-4-after-add.png"), result.steps[4].artifacts)
-        assertEquals(3, actions.preparedInteractions)
+        assertEquals(2, actions.preparedInteractions)
+    }
+
+    @Test
+    fun `given a tap when running the step then the native window is not activated`() {
+        val actions = RecordingActions(tree)
+        val scenario = Scenario(steps = listOf(Step(action = Actions.TAP, query = Query(text = "Add website"))))
+
+        val result = ScenarioRunner(actions, Path::toString).run(scenario)
+
+        assertTrue(result.ok)
+        assertEquals(listOf("tap 0/0/0/3/2"), actions.events)
+        assertEquals(0, actions.preparedInteractions)
     }
 
     @Test

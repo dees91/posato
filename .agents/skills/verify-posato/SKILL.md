@@ -179,9 +179,12 @@ Platform traps that invalidate a run:
   `--role button`; do not hardcode a count.
 - Row menus open through `Actions for <domain or app name>`, then `Edit`
   or `Remove`. These actions are not permanently visible in each row.
-- Desktop mutations activate the addressed window first and refuse if it
-  cannot become frontmost. Keep the Mac unlocked and avoid simultaneous
-  native-driving sessions or foreground changes during keyboard entry.
+- Desktop taps use accessibility actions without explicitly activating the
+  application. Typing, key presses, and `scrollTo` activate the tracked window
+  and refuse if it cannot become frontmost: per-process key delivery alone
+  did not populate the background Compose field in native verification.
+  The helper's non-inspectable picker also requires foreground delivery.
+  Keep the Mac unlocked and avoid competing foreground automation during input.
   Read-only inspection does not activate the window.
 - Lazy lists expose only composed rows. Use a scenario `scrollTo` step before
   an offscreen-row action; `find` and `wait` do not scroll. Desktop scrolling
