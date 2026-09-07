@@ -59,6 +59,10 @@ MVP. It was accepted by the maintainer on 2026-08-25 after review of the Gate 3
 candidate and its rendered brand board. It is deliberately smaller than a
 complete identity or component system.
 
+Unlabelled requirements in this file describe the accepted production contract.
+The separately labelled [prototype reference](#native-prototype-reference-evidence-only)
+is evidence for consolidation, not automatic production adoption.
+
 ### Positioning
 
 Posato helps self-directed people interrupt automatic use of selected websites
@@ -301,7 +305,7 @@ behavior with custom chrome.
 ### Adaptation limits
 
 No exact application width, grid, breakpoint, sidebar behavior, minimum window
-size, orientation rule, or overflow strategy is evidenced yet. Define these in
+size, orientation rule, or overflow strategy is accepted for production yet. Define these in
 the first reviewed screen slice that needs them and update this document from
 rendered evidence.
 
@@ -447,3 +451,23 @@ default control tint, while Clay remains non-status secondary brand emphasis.
    functionality or the unfinished icon.
 9. After each reviewed UI slice, reconcile intended tokens, requested component
    values, and rendered evidence, then update confidence and Unknown claims.
+
+## Native prototype reference (evidence only)
+
+`user-confirmed` (2026-09-06): the maintainer requested a complete description
+of the current Compose prototype. That description is maintained in
+[prototypes/mvp-interaction-flow/DESIGN.md](prototypes/mvp-interaction-flow/DESIGN.md),
+separate from the production contract above. It covers all sixteen surfaces,
+source-declared palettes and typography, spacing and shapes, reusable controls,
+duration wheels, batch entry, bounded lists, menus, and the inspection overlay.
+
+Its iPhone bottom navigation, 224 dp Mac sidebar, 20 pt native window corners,
+and concrete interaction variants are implemented prototype choices. They do
+not accept production geometry, navigation, mock services, synthetic app names,
+or accessibility parity. High confidence in the prototype reference means
+accurate extraction from that implementation, not production readiness.
+
+Use both references at the existing design-system consolidation checkpoint:
+compare repeated production patterns with the study, obtain rendered macOS and
+iOS evidence, and explicitly accept any adoption in this production contract.
+The [baseline record](docs/product/design-baseline.md) preserves that boundary.
