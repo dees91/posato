@@ -8,6 +8,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoHero(
@@ -41,5 +42,42 @@ internal fun PosatoEmptyState(
         Text(title, style = MaterialTheme.typography.titleMedium)
         description?.let { PosatoBody(it) }
         actionContent?.invoke()
+    }
+}
+
+@Preview(name = "Compact hero", widthDp = 390)
+@Composable
+private fun PosatoHeroCompactPreview() {
+    PosatoComponentPreview {
+        PosatoHero(
+            layout = PosatoLayout.Compact,
+            headingContent = { PosatoHeading("Room for what matters.", eyebrow = "NO SESSION ACTIVE", layout = PosatoLayout.Compact) },
+            supportingContent = { PosatoBody("A quiet pause is ready when you are.") },
+            artworkContent = { PosatoIntervalArtwork() },
+        )
+    }
+}
+
+@Preview(name = "Expanded hero", widthDp = 760)
+@Composable
+private fun PosatoHeroExpandedPreview() {
+    PosatoComponentPreview {
+        PosatoHero(
+            headingContent = { PosatoHeading("Room for what matters.", eyebrow = "NO SESSION ACTIVE") },
+            supportingContent = { PosatoBody("A quiet pause is ready when you are.") },
+            artworkContent = { PosatoIntervalArtwork() },
+        )
+    }
+}
+
+@Preview(name = "Empty state", widthDp = 390)
+@Composable
+private fun PosatoEmptyStatePreview() {
+    PosatoComponentPreview {
+        PosatoEmptyState(
+            title = "Nothing here yet",
+            description = "Choose the websites you want to pause.",
+            actionContent = { PosatoButton(onClick = {}) { Text("Add websites") } },
+        )
     }
 }

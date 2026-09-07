@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoEyebrow(
@@ -58,5 +59,23 @@ internal fun PosatoHeading(
         eyebrow?.let { PosatoEyebrow(it) }
         PosatoTitle(title, layout = layout)
         description?.let { PosatoBody(it) }
+    }
+}
+
+@Preview(name = "Text hierarchy", widthDp = 390)
+@Composable
+private fun PosatoTextPreview() {
+    PosatoComponentPreview {
+        PosatoEyebrow("YOUR NEXT PAUSE")
+        PosatoTitle("Room for what matters.", layout = PosatoLayout.Compact)
+        PosatoTitle("Room for what matters.", layout = PosatoLayout.Expanded)
+        PosatoBody("A quiet pause is ready when you are.")
+        PosatoCaption("Saved on this device.")
+        PosatoHeading(
+            title = "How much space do you need?",
+            eyebrow = "YOUR NEXT PAUSE",
+            description = "Give this pause a clear ending.",
+            layout = PosatoLayout.Compact,
+        )
     }
 }
