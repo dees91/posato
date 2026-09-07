@@ -477,14 +477,13 @@ roadmap groups the foundation, local quality, and CI milestones into one PR #1
 execution and review cycle completed before PR #1 merges or the first parallel
 implementation wave starts, whichever occurs first.
 
-`user-confirmed` (2026-09-07): GitHub-hosted CI is manual-only, replacing the
-earlier time-limited pause and automatic-trigger policy. Before merge, require
-a successful dispatched run for the current PR head alongside local quality
-and review. The maintainer subsequently enabled Pro and authorized `main`
-protection: an up-to-date PR and `Quality` from GitHub Actions are required,
-including for administrators, with no force push, deletion, or bypass allowance.
-This supersedes the same day's procedural-only decision. The quality contract
-owns the rule and the development guide owns its manual checklist.
+`user-confirmed` (2026-09-07, latest decision): disable GitHub CI and remove its
+workflow source and required status check. Local `./gradlew quality` plus
+proportional review is the procedural merge gate; GitHub cannot verify its
+result. Preserve the PR requirement, administrator enforcement, and force-push/
+deletion restrictions. This supersedes the same day's manual-CI and required
+hosted-check decisions, with no automatic restoration date. The quality contract
+owns the rule and the development guide owns the local merge checklist.
 
 `observed` (2026-09-07): the aggregate gate includes native Swift XCTest on
 an isolated temporary iOS Simulator as well as Kotlin tests. Physical-device

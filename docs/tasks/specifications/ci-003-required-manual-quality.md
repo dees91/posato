@@ -1,4 +1,18 @@
-# CI-003: Require manually dispatched quality before merge
+# CI-003: Local quality and repository merge protection
+
+## Superseding maintainer decision
+
+`user-confirmed` (2026-09-07): use local `./gradlew quality` and the required
+review as the merge gate for now. Disable the hosted CI workflow and remove
+only the required status-check protection from `main`. Preserve the PR
+requirement, administrator enforcement, and force-push/deletion restrictions.
+Remove the workflow source; Git history retains the recovery path. Do not
+disable repository-wide Actions, change application behavior, or merge this PR.
+This authorization correction retains High-risk plan and completed-change review.
+Verify the exact protection delta and disabled workflow through API readback;
+update onboarding, authorities, and the existing PR record without another log entry.
+
+## Earlier scope (superseded where inconsistent above)
 
 - Record path: recorded; review tier: High-risk because repository merge
   authorization changes. The maintainer explicitly authorized it after enabling Pro.

@@ -112,8 +112,8 @@ supporting iPhone 17. The gate creates and deletes its own Simulator without
 using the maintainer's existing Simulator or device data. It builds Kotlin
 first, then invokes Xcode with the prebuilt framework and Compose resources,
 avoiding nested Gradle builds. Every invocation runs tests again. Reports and
-`.xcresult` bundles remain under ignored `build/ios-swift-tests.*/`; CI uploads
-them even on failure. Interrupted runs retain their reports.
+`.xcresult` bundles remain under ignored `build/ios-swift-tests.*/`.
+Interrupted runs retain their reports; there is no hosted report upload.
 
 The shared Xcode scheme includes `iosAppTests`. Native simulator-compatible
 mapping-store, CryptoKit, Keychain-boundary, enforcement, and expiry tests run
@@ -132,37 +132,27 @@ replaced by the first compatible stable Detekt 2 release. Generated Compose
 Resources source is excluded from ktlint; repository-owned Kotlin has no lint
 baseline.
 
-## Manual CI and merge check
+## Local quality and merge check
 
-CI uses only `workflow_dispatch`: no commit, PR, ready-for-review, or `main`
-push automatically starts it. Run it explicitly once the branch is ready:
+`user-confirmed` (2026-09-07): GitHub CI is disabled for now, superseding the
+manual-dispatch and required hosted-check policies. The CI workflow is disabled
+on GitHub and removed from source; Git history preserves it for a deliberate
+future restoration. No automatic restoration date is defined.
 
-```shell
-gh pr view <pr-number> --json headRefName,headRefOid
-gh workflow run ci.yml --ref <pr-head-branch>
-gh run list --workflow ci.yml --branch <pr-head-branch> --event workflow_dispatch
-gh run watch <run-id> --exit-status
-gh run view <run-id> --json headSha,status,conclusion,url,jobs
-gh pr view <pr-number> --json headRefOid
-```
+Before merge:
 
-Immediately before merge, require `status: completed`, `conclusion: success`,
-and a successful `Quality` job, with run `headSha` exactly matching the freshly
-read PR `headRefOid`. Do not accept an older green run or a skipped job. Any
-new commit needs another explicit dispatch, including documentation changes.
-The Actions UI's **Run workflow** branch selector is an equivalent entry point.
+1. Run `./gradlew quality` locally after the last correction, including native
+   iOS Swift tests. Resolve failures rather than treating disabled CI as a waiver.
+2. Complete the task's required review and applicable native/device verification.
+3. Record the tested revision and result in the PR, and confirm that the merged
+   source still matches the reviewed and verified change. Rerun affected checks
+   after subsequent changes, following the quality contract.
 
-`main` is protected: it requires `Quality` from GitHub Actions, an up-to-date
-branch, and a PR. Rules apply to administrators; force pushes and deletion are
-disabled. No mandatory GitHub approval count or bypass allowance is configured.
-If `main` advances, update the PR branch and manually dispatch CI again.
-
-Administrators can still edit the protection itself; this is not protection
-against an administrator intentionally changing policy. Keep the explicit
-success check above because GitHub accepts skipped/neutral required checks as
-well; `Quality` must remain unconditional. If CI cannot run, stop before merge
-and request a maintainer decision. Local `./gradlew quality` after the last
-material correction and the selected review tier still apply.
+`main` still requires a PR, including for administrators; force pushes and
+deletion remain disabled. No required status check, strict up-to-date check, or
+mandatory GitHub approval count is configured. GitHub cannot enforce a local
+test result: the maintainer or merging agent owns this checklist. Administrators
+can still edit branch protection itself.
 
 ## Verification driver
 

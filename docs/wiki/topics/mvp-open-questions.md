@@ -398,15 +398,14 @@ temporary merge gate, and the complete workflow remains available by manual
 dispatch. The 2026-09-07 manual-only decision below replaces the proposed
 restoration of automatic triggers.
 
-`user-confirmed` (2026-09-07): CI runs only by explicit dispatch; pushes and
-ready-for-review transitions do not start it. A successful run for the current
-PR head is required alongside local quality and review. After enabling Pro,
-the maintainer also authorized server-side `main` protection, superseding the
-earlier procedural-only decision: require GitHub Actions `Quality`, an
-up-to-date PR, and administrator enforcement without force pushes, deletion,
-or bypass allowances. The
+`user-confirmed` (2026-09-07, latest decision): GitHub CI is disabled and the
+workflow source removed. Local `./gradlew quality` and required review replace
+the same day's hosted-check requirement. `main` retains a PR requirement,
+administrator enforcement, and force-push/deletion restrictions, but no required
+status check or strict up-to-date setting. Local success is procedural rather
+than server-enforced; restoring CI needs an explicit maintainer decision. The
 [quality contract](../../development/engineering-quality-contract.md#continuous-integration)
-and [development checklist](../../development/README.md#manual-ci-and-merge-check)
+and [development checklist](../../development/README.md#local-quality-and-merge-check)
 own the current rule. The aggregate gate now also executes simulator-compatible
 Swift XCTest; physical-device skips remain explicit.
 

@@ -93,9 +93,8 @@ Xcode, host launch, native provisioning, and verification-driver setup.
 alongside Kotlin tests, static checks, target compilation, and macOS packaging.
 Physical-device checks remain separate where Simulator coverage is insufficient.
 
-GitHub Actions runs only by explicit manual dispatch. Before merge, require a
-successful CI run for the current PR head commit as well as applicable local
-verification and review. Branch protection requires `Quality` from GitHub
-Actions and an up-to-date PR branch, including for administrators. The
-[manual CI checklist](docs/development/README.md#manual-ci-and-merge-check)
-explains dispatch and commit matching.
+GitHub CI is disabled for now. Before merge, run local `./gradlew quality`
+after the last correction and complete the required review. Branch protection
+retains the PR requirement, administrator enforcement, and force-push/deletion
+restrictions, but cannot verify a local test result. See the
+[local merge checklist](docs/development/README.md#local-quality-and-merge-check).

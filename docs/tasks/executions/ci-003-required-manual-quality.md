@@ -2,6 +2,23 @@
 
 Status: done
 
+## Latest maintainer decision
+
+- After the hosted run, the maintainer explicitly chose local quality and review
+  instead of GitHub CI for now. Independent High-risk plan review approved
+  removing only required status-check protection and disabling the CI workflow.
+- Removed `main` required status checks, including their strict up-to-date
+  setting. API readback preserves PR requirements, administrator enforcement,
+  zero mandatory approvals, and force-push/deletion restrictions.
+- Disabled the single hosted CI workflow and removed its tracked source. Git
+  history preserves restoration; historical runs and repository-wide Actions
+  settings are untouched. No merge was performed.
+- The earlier scope and results below are historical where superseded here.
+- Independent completed-change review confirmed the exact protection delta,
+  disabled sole workflow, and consistent authorities with no Critical/Required
+  findings. Final local `./gradlew quality` passed in 2m 8s; `git diff --check`
+  passed. No hosted run is required under the superseding maintainer decision.
+
 ## Plan
 
 1. Inspect current protection and check identity; review the narrow protection plan.
@@ -81,6 +98,8 @@ Status: done
   signature. Shortening its name fixed the source without an exception; its
   assertions are unchanged. After that correction, full `./gradlew quality`
   passed, including all 151 parallel helper tests and native iOS XCTest.
-- This closes local implementation and review. The required manual current-head
-  macOS 15/Xcode 26.3 CI run follows the push; its result belongs in PR #36.
-  Local success alone does not establish the CI fix or authorize merge.
+- The macOS 15/Xcode 26.3 hosted run passed all 151 parallel helper tests in
+  3.354 seconds, confirming the starvation correction. The aggregate then failed
+  at iOS compilation: its older SDK lacks `approvedWithDataAccess`. Local quality
+  passes on Xcode 26.6. That SDK mismatch remains a restoration consideration,
+  not a claim of successful hosted quality or a change to authorization behavior.

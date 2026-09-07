@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 12
+- **Revision:** 13
 - **Accepted:** 2026-09-07
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -13,7 +13,7 @@ This document defines the standing quality bar for Posato. The
 must be capable of finding a defect in the actual change, not fill a generic
 matrix.
 
-Every increment requires applicable local verification, the CI merge check
+Every increment requires applicable local verification, the local merge check
 below, and its selected review tier before merge.
 
 ## Kotlin and Compose tools
@@ -202,8 +202,8 @@ browsing-history and allowed-navigation diagnostics remains in force.
 
 ## Continuous integration
 
-CI runs the repository-owned aggregate quality gate and credential-free
-JVM, iOS, and macOS surfaces. The aggregate gate includes `iosSwiftTest`,
+The local aggregate quality gate covers repository-owned JVM, iOS, and macOS
+surfaces. It includes `iosSwiftTest`,
 which builds the Debug iOS host and executes the existing native Swift XCTest
 suites on an isolated temporary Simulator. Physical-device-only cases remain
 explicitly skipped there; Simulator success does not prove iCloud Keychain,
@@ -214,34 +214,24 @@ application credentials, or private device data. The preview-only Android KMP
 library uses Android SDK Platform 36 and Build Tools 36.0.0 to compile shared
 preview code; it does not add an Android product host or emulator job.
 
-`user-confirmed` (2026-09-07): CI is manual-only through `workflow_dispatch`.
-Pushing commits, opening a pull request, and marking it ready do not allocate
-a runner. This replaces the 2026-08-27 automatic-trigger policy and the
-2026-08-28 pause through September 5; there is no automatic-restoration date.
+`user-confirmed` (2026-09-07, latest decision): GitHub CI is disabled for now.
+Remove the CI workflow from source and its required `Quality` status check
+from `main`. This supersedes the earlier automatic, paused, manual-only, and
+required-hosted-check policies. Restoration needs an explicit maintainer
+decision; there is no automatic-restoration date.
 
-Before merging, the maintainer or merging agent must verify a completed,
-successful CI run whose `headSha` equals the current pull request's
-`headRefOid`. A new commit invalidates the previous run, including a
-documentation-only commit. A failed, cancelled, skipped, missing, or stale run
-does not satisfy this rule. Dispatch once the branch is ready rather than on
-each correction. The local aggregate gate and proportional review still apply.
-See the [manual checklist](README.md#manual-ci-and-merge-check).
+Before merging, require successful local `./gradlew quality` after the last
+correction, the selected review tier, and applicable native/device verification.
+Record the tested revision and result in the PR and confirm that it still
+represents the change being merged. Follow the local verification rules above
+after later corrections. See the [local checklist](README.md#local-quality-and-merge-check).
 
-`user-confirmed` (2026-09-07, superseding the earlier procedural-only decision):
-the maintainer enabled GitHub Pro and authorized server-side protection of
-`main`. Require the `Quality` check from GitHub Actions, a branch up to date
-with `main`, and a pull request with zero mandatory approving reviews. Enforce
-these rules for administrators, with no bypass allowances; disallow force
-pushes and deletion. Updating a branch requires another manual run for its new
-head. The repository's independent-review process still applies even though
-GitHub does not require an approval count.
-
-Protection prevents ordinary merges without the required check; it does not
-prevent an authorized administrator from editing or removing the protection
-itself. GitHub also accepts neutral/skipped required check conclusions, so the
-workflow must keep `Quality` unconditional and the explicit success check
-above remains part of the merge process. If hosted CI is unavailable, stop
-before merge; do not disable protection or substitute a local pass automatically.
+Keep `main` protected by a PR requirement with zero mandatory approving reviews,
+administrator enforcement, no bypass allowances, and force-push/deletion
+restrictions. Required status checks and their strict up-to-date setting are
+removed. GitHub cannot enforce local quality results; the maintainer or merging
+agent owns that procedural gate. Administrators can still edit protection itself.
+Disabled CI does not waive local failures or the independent-review process.
 
 ## Definition of Done
 
