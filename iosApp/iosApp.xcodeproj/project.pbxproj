@@ -21,6 +21,7 @@
 		C900001229CC810C00F8E227 /* SuspendedExpiryClear.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000529CC810C00F8E227 /* SuspendedExpiryClear.swift */; };
 		C900001329CC810C00F8E227 /* SuspendedExpiryScheduler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000629CC810C00F8E227 /* SuspendedExpiryScheduler.swift */; };
 		C900001429CC810C00F8E227 /* SuspendedExpiryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000729CC810C00F8E227 /* SuspendedExpiryTests.swift */; };
+		C900001729CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900001629CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift */; };
 		C900001529CC810C00F8E227 /* ActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = C900000129CC810C00F8E227 /* ActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
 /* End PBXBuildFile section */
@@ -76,6 +77,7 @@
 		C900000529CC810C00F8E227 /* SuspendedExpiryClear.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendedExpiryClear.swift; sourceTree = "<group>"; };
 		C900000629CC810C00F8E227 /* SuspendedExpiryScheduler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendedExpiryScheduler.swift; sourceTree = "<group>"; };
 		C900000729CC810C00F8E227 /* SuspendedExpiryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendedExpiryTests.swift; sourceTree = "<group>"; };
+		C900001629CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendedExpiryDeviceTests.swift; sourceTree = "<group>"; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -159,6 +161,7 @@
 				B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */,
 				B800000229CC810C00F8E227 /* IosEnforcementTests.swift */,
 				C900000729CC810C00F8E227 /* SuspendedExpiryTests.swift */,
+				C900001629CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift */,
 			);
 			path = iosAppTests;
 			sourceTree = "<group>";
@@ -331,6 +334,7 @@
 				B600000129CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift in Sources */,
 				B800000129CC810C00F8E227 /* IosEnforcementTests.swift in Sources */,
 				C900001429CC810C00F8E227 /* SuspendedExpiryTests.swift in Sources */,
+				C900001729CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

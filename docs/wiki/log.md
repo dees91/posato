@@ -1258,7 +1258,8 @@
   failures, 8 Kotlin enforcement tests pass, `./gradlew quality` and the three
   credential-free CI builds pass, and plan plus completed-change reviews are
   recorded as approved with no open Critical or Required findings.
-- The extension's development profile is the remaining physical gate:
-  automatic signing cannot provision App Groups plus Family Controls
-  (Development) for the new target, so the device callback rows stay blocked
-  on the parallel `APPLE-002` tooling or a maintainer portal profile.
+- The `APPLE-002` profile then cleared the physical gate: the signed device
+  build passes with portal updates allowed, and the device checklist passed
+  on a wired iPhone (force-quit clear, foreign store intact, cancel verified,
+  reconciliation expired; clear observed within ~4 minutes after interval end,
+  never promised). Reboot-inside-interval stays an open observation.
