@@ -5,12 +5,12 @@ import Testing
 
 @testable import PosatoMacOSHelper
 
-@Test func givenSelectedHTTPWhenProxiedThenTheFixedPageIsUncacheable() throws {
+@Test func givenSelectedHTTPWhenProxiedThenTheFixedPageIsUncacheable() async throws {
   let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"])
-  let port = try proxy.start()
+  let port = try await runBlockingTestOperation { try proxy.start() }
   defer { proxy.stop() }
 
-  let denied = try sendLoopbackRequest(
+  let denied = try await sendLoopbackRequest(
     port: port,
     request:
       "GET http://example.com/private HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"
@@ -23,7 +23,7 @@ import Testing
   #expect(!denied.lowercased().contains("<script"))
 }
 
-@Test func givenSelectedCONNECTWhenProxiedThenAHostFreeSignalIsEmitted() throws {
+@Test func givenSelectedCONNECTWhenProxiedThenAHostFreeSignalIsEmitted() async throws {
   let blockedEvent = expectation(description: "host-free blocked signal")
   let proxy = BoundedHTTPProxy(
     selectedHosts: ["example.com"],
@@ -31,10 +31,10 @@ import Testing
       blockedEvent.fulfill()
     }
   )
-  let port = try proxy.start()
+  let port = try await runBlockingTestOperation { try proxy.start() }
   defer { proxy.stop() }
 
-  let denied = try sendLoopbackRequest(
+  let denied = try await sendLoopbackRequest(
     port: port,
     request: "CONNECT example.com:443 HTTP/1.1\r\nHost: example.com:443\r\n\r\n"
   )
@@ -42,15 +42,15 @@ import Testing
   #expect(denied.contains("Cache-Control: no-store"))
   #expect(denied.contains("Connection: close"))
   #expect(!denied.contains("example.com"))
-  wait(for: [blockedEvent], timeout: 1)
+  try await wait(for: [blockedEvent], timeout: 1)
 }
 
-@Test func givenLocalBlockedRouteWhenRequestedThenThePageIsUncacheable() throws {
+@Test func givenLocalBlockedRouteWhenRequestedThenThePageIsUncacheable() async throws {
   let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"])
-  let port = try proxy.start()
+  let port = try await runBlockingTestOperation { try proxy.start() }
   defer { proxy.stop() }
 
-  let page = try sendLoopbackRequest(
+  let page = try await sendLoopbackRequest(
     port: port,
     request: "GET /blocked HTTP/1.1\r\nHost: 127.0.0.1:\(port)\r\nConnection: close\r\n\r\n"
   )
@@ -60,8 +60,8 @@ import Testing
   #expect(page.contains("This site is paused"))
 }
 
-@Test func givenAllowedHTTPWhenProxiedThenTheControlOriginReceivesOneRequest() throws {
-  let origin = try LocalHTTPOrigin()
+@Test func givenAllowedHTTPWhenProxiedThenTheControlOriginReceivesOneRequest() async throws {
+  let origin = try await LocalHTTPOrigin()
   defer { origin.stop() }
   let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"]) { host, port in
     if host == "example.org", port == 80 {
@@ -69,10 +69,10 @@ import Testing
     }
     return (host, port)
   }
-  let proxyPort = try proxy.start()
+  let proxyPort = try await runBlockingTestOperation { try proxy.start() }
   defer { proxy.stop() }
 
-  let response = try sendLoopbackRequest(
+  let response = try await sendLoopbackRequest(
     port: proxyPort,
     request:
       "GET http://example.org/allowed HTTP/1.1\r\nHost: example.org\r\nConnection: close\r\n\r\n"
@@ -82,8 +82,8 @@ import Testing
   #expect(origin.receivedHosts() == ["example.org"])
 }
 
-@Test func givenSecondHTTPRequestOnTheSameConnectionWhenSelectedThenItIsNotForwarded() throws {
-  let origin = try LocalHTTPOrigin()
+@Test func givenPipelinedSelectedHTTPRequestWhenProxiedThenItIsNotForwarded() async throws {
+  let origin = try await LocalHTTPOrigin()
   defer { origin.stop() }
   let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"]) { host, port in
     if host == "example.org", port == 80 {
@@ -91,35 +91,35 @@ import Testing
     }
     return (host, port)
   }
-  let proxyPort = try proxy.start()
+  let proxyPort = try await runBlockingTestOperation { try proxy.start() }
   defer { proxy.stop() }
 
-  let descriptor = try connectedLoopbackSocket(port: proxyPort)
+  let descriptor = try await connectedLoopbackSocket(port: proxyPort)
   defer { Darwin.close(descriptor) }
-  try send(
+  try await send(
     "GET http://example.org/allowed HTTP/1.1\r\nHost: example.org\r\nConnection: close\r\n\r\n",
     to: descriptor
   )
-  let first = try receiveToEnd(from: descriptor)
+  let first = try await receiveToEnd(from: descriptor)
   #expect(first.hasPrefix("HTTP/1.1 200 OK\r\n"))
 
-  let secondDescriptor = try connectedLoopbackSocket(port: proxyPort)
+  let secondDescriptor = try await connectedLoopbackSocket(port: proxyPort)
   defer { Darwin.close(secondDescriptor) }
   let pipelinedFirst =
     "GET http://example.org/first HTTP/1.1\r\nHost: example.org\r\nConnection: close\r\n\r\n"
   let pipelinedSecond =
     "GET http://example.com/second HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"
-  try send(pipelinedFirst + pipelinedSecond, to: secondDescriptor)
-  _ = try? receiveToEnd(from: secondDescriptor)
+  try await send(pipelinedFirst + pipelinedSecond, to: secondDescriptor)
+  _ = try? await receiveToEnd(from: secondDescriptor)
   #expect(!origin.receivedHosts().contains("example.com"))
 }
 
-@Test func givenCONNECTToTheListenerWhenRequestedThenItIsRejectedWithoutUpstream() throws {
+@Test func givenCONNECTToTheListenerWhenRequestedThenItIsRejectedWithoutUpstream() async throws {
   let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"])
-  let port = try proxy.start()
+  let port = try await runBlockingTestOperation { try proxy.start() }
   defer { proxy.stop() }
 
-  let denied = try sendLoopbackRequest(
+  let denied = try await sendLoopbackRequest(
     port: port,
     request: "CONNECT 127.0.0.1:\(port) HTTP/1.1\r\nHost: 127.0.0.1:\(port)\r\n\r\n"
   )

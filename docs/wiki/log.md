@@ -1325,3 +1325,23 @@
   variants cover dark appearance, larger text, disabled/error states, and reflow.
 - Theme, token definitions, and full application scaffolds remain outside the
   standalone preview set. Runtime implementations and prototype sources are unchanged.
+
+## [2026-09-07] maintenance | Run native Swift tests in the local quality gate
+
+- Added simulator-compatible Swift XCTest to the aggregate quality gate with
+  a shared Xcode scheme, prebuilt Kotlin framework/resources, isolated temporary
+  Simulator ownership, and retained test reports. Device-only cases remain
+  separate physical checks rather than implied Simulator coverage.
+- Preserved unsigned Debug device and Release Simulator host compilation in
+  local quality, including Swift branches excluded from Simulator tests.
+- The maintainer's latest decision disables GitHub CI and removes its workflow
+  source and required status check, superseding the earlier manual-CI policy.
+  Local quality and review remain mandatory; `main` retains PR and administrator
+  enforcement without force pushes, deletion, or bypass allowances.
+- Refreshed onboarding to describe the real MVP-in-progress applications and
+  tests while retaining the unconnected synchronization/enforcement boundary.
+- Isolated the macOS CI proxy timeouts to blocking native test orchestration
+  starving queued work. Same-runner serialized controls passed without timeout
+  changes. Replaced blocking test-task waits with an awaited dedicated-thread
+  boundary, retaining assertions, deadlines, and parallel execution. Temporary
+  diagnostics were removed, with no product behavior change.

@@ -9,9 +9,10 @@ func expectation(description: String) -> BlockingExpectation {
   BlockingExpectation(description: description)
 }
 
-func wait(for expectations: [BlockingExpectation], timeout: TimeInterval) {
+func wait(for expectations: [BlockingExpectation], timeout: TimeInterval) async throws {
   for item in expectations {
-    #expect(item.wait(timeout: timeout), "\(item.description) timed out")
+    let fulfilled = try await runBlockingTestOperation { item.wait(timeout: timeout) }
+    #expect(fulfilled, "\(item.description) timed out")
   }
 }
 
@@ -41,111 +42,119 @@ final class BlockingExpectation: @unchecked Sendable {
   }
 }
 
-func sendLoopbackRequest(port: UInt16, request: String) throws -> String {
-  let descriptor = try connectedLoopbackSocket(port: port)
+func sendLoopbackRequest(port: UInt16, request: String) async throws -> String {
+  let descriptor = try await connectedLoopbackSocket(port: port)
   defer { Darwin.close(descriptor) }
-  try send(request, to: descriptor)
-  return try receiveToEnd(from: descriptor)
+  try await send(request, to: descriptor)
+  return try await receiveToEnd(from: descriptor)
 }
 
-func connectedLoopbackSocket(port: UInt16) throws -> Int32 {
-  let descriptor = socket(AF_INET, SOCK_STREAM, 0)
-  guard descriptor >= 0 else {
-    throw POSIXError(.ENOTSOCK)
+func connectedLoopbackSocket(port: UInt16) async throws -> Int32 {
+  try await runBlockingTestOperation {
+    let descriptor = socket(AF_INET, SOCK_STREAM, 0)
+    guard descriptor >= 0 else {
+      throw POSIXError(.ENOTSOCK)
+    }
+    var timeout = timeval(tv_sec: 3, tv_usec: 0)
+    setsockopt(
+      descriptor,
+      SOL_SOCKET,
+      SO_RCVTIMEO,
+      &timeout,
+      socklen_t(MemoryLayout.size(ofValue: timeout))
+    )
+    var address = sockaddr_in()
+    address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
+    address.sin_family = sa_family_t(AF_INET)
+    address.sin_port = port.bigEndian
+    address.sin_addr = in_addr(s_addr: inet_addr("127.0.0.1"))
+    let connected = withUnsafePointer(to: &address) { pointer in
+      pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockaddrPointer in
+        Darwin.connect(descriptor, sockaddrPointer, socklen_t(MemoryLayout<sockaddr_in>.size))
+      }
+    }
+    guard connected == 0 else {
+      Darwin.close(descriptor)
+      throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .ECONNREFUSED)
+    }
+    return descriptor
   }
-  var timeout = timeval(tv_sec: 3, tv_usec: 0)
-  setsockopt(
-    descriptor,
-    SOL_SOCKET,
-    SO_RCVTIMEO,
-    &timeout,
-    socklen_t(MemoryLayout.size(ofValue: timeout))
-  )
-  var address = sockaddr_in()
-  address.sin_len = UInt8(MemoryLayout<sockaddr_in>.size)
-  address.sin_family = sa_family_t(AF_INET)
-  address.sin_port = port.bigEndian
-  address.sin_addr = in_addr(s_addr: inet_addr("127.0.0.1"))
-  let connected = withUnsafePointer(to: &address) { pointer in
-    pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { sockaddrPointer in
-      Darwin.connect(descriptor, sockaddrPointer, socklen_t(MemoryLayout<sockaddr_in>.size))
+}
+
+func send(_ request: String, to descriptor: Int32) async throws {
+  try await send(Data(request.utf8), to: descriptor)
+}
+
+func send(_ data: Data, to descriptor: Int32) async throws {
+  try await runBlockingTestOperation {
+    try data.withUnsafeBytes { buffer in
+      guard let baseAddress = buffer.baseAddress else {
+        throw POSIXError(.EIO)
+      }
+      var offset = 0
+      while offset < buffer.count {
+        let written = Darwin.send(
+          descriptor,
+          baseAddress.advanced(by: offset),
+          buffer.count - offset,
+          0
+        )
+        guard written > 0 else {
+          throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+        }
+        offset += written
+      }
     }
   }
-  guard connected == 0 else {
-    Darwin.close(descriptor)
-    throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .ECONNREFUSED)
-  }
-  return descriptor
 }
 
-func send(_ request: String, to descriptor: Int32) throws {
-  try send(Data(request.utf8), to: descriptor)
-}
-
-func send(_ data: Data, to descriptor: Int32) throws {
-  try data.withUnsafeBytes { buffer in
-    guard let baseAddress = buffer.baseAddress else {
-      throw POSIXError(.EIO)
-    }
-    var offset = 0
-    while offset < buffer.count {
-      let written = Darwin.send(
-        descriptor,
-        baseAddress.advanced(by: offset),
-        buffer.count - offset,
-        0
-      )
-      guard written > 0 else {
+func receiveLine(from descriptor: Int32) async throws -> String {
+  try await runBlockingTestOperation {
+    var line = Data()
+    var byte: UInt8 = 0
+    while true {
+      let count = Darwin.recv(descriptor, &byte, 1, 0)
+      guard count == 1 else {
         throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
       }
-      offset += written
+      line.append(byte)
+      if line.count >= 2, line[line.count - 2] == 13, byte == 10 {
+        break
+      }
     }
+    guard let text = String(bytes: line, encoding: .utf8) else {
+      throw POSIXError(.EILSEQ)
+    }
+    return text
   }
 }
 
-func receiveLine(from descriptor: Int32) throws -> String {
-  var line = Data()
-  var byte: UInt8 = 0
-  while true {
-    let count = Darwin.recv(descriptor, &byte, 1, 0)
-    guard count == 1 else {
-      throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+func receiveToEnd(from descriptor: Int32) async throws -> String {
+  try await runBlockingTestOperation {
+    var response = Data()
+    var buffer = [UInt8](repeating: 0, count: 4_096)
+    while true {
+      let count = Darwin.recv(descriptor, &buffer, buffer.count, 0)
+      if count == 0 {
+        break
+      }
+      guard count > 0 else {
+        throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
+      }
+      response.append(buffer, count: count)
     }
-    line.append(byte)
-    if line.count >= 2, line[line.count - 2] == 13, byte == 10 {
-      break
+    guard let text = String(bytes: response, encoding: .utf8) else {
+      throw POSIXError(.EILSEQ)
     }
+    return text
   }
-  guard let text = String(bytes: line, encoding: .utf8) else {
-    throw POSIXError(.EILSEQ)
-  }
-  return text
-}
-
-func receiveToEnd(from descriptor: Int32) throws -> String {
-  var response = Data()
-  var buffer = [UInt8](repeating: 0, count: 4_096)
-  while true {
-    let count = Darwin.recv(descriptor, &buffer, buffer.count, 0)
-    if count == 0 {
-      break
-    }
-    guard count > 0 else {
-      throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
-    }
-    response.append(buffer, count: count)
-  }
-  guard let text = String(bytes: response, encoding: .utf8) else {
-    throw POSIXError(.EILSEQ)
-  }
-  return text
 }
 
 final class LocalHTTPOrigin: @unchecked Sendable {
   private let listener: NWListener
   let port: UInt16
 
-  init() throws {
+  init() async throws {
     let parameters = NWParameters.tcp
     parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
     let listener = try NWListener(using: parameters)
@@ -163,7 +172,8 @@ final class LocalHTTPOrigin: @unchecked Sendable {
       Self.accept(connection, queue: originQueue, hosts: recordedHosts)
     }
     listener.start(queue: originQueue)
-    guard ready.wait(timeout: .now() + 2) == .success, let port = selectedPort.value else {
+    let started = try await runBlockingTestOperation { ready.wait(timeout: .now() + 2) }
+    guard started == .success, let port = selectedPort.value else {
       listener.cancel()
       throw BoundedHTTPProxyError.listenerTimeout
     }
