@@ -186,12 +186,40 @@ nothing behind.
 `open`: uninstall/reinstall and restore-from-backup observations are
 still pending.
 
+## Production implementation (`IOS-002`, simulator-verified)
+
+`observed` (2026-09-05, Simulator): Xcode-owned Device Activity monitor
+extension `app.posato.ios.activitymonitor` clears only the named store
+`app.posato.session` on the fixed-activity interval-end callback and writes
+one versioned App Group record (schema version, session identifier,
+cleared-at) into its own `SuspendedExpiry` directory; a foreign activity
+clears nothing. The Swift scheduler starts one non-repeating wall-clock
+schedule, validates duration against the 15-minute platform minimum and
+authorization before any write, stops idempotently, and strips all Apple
+error text at the boundary. Kotlin `iosMain` exposes the scheduler seam with
+six platform-neutral outcomes, an expired/unknown reconciliation read that
+never reports active, and redacted carriers; no `expect`/`actual`.
+Simulator suite 68 passed, 0 failed; `./gradlew quality` and the three
+credential-free CI builds pass. Reconciliation reports expiry only for the
+exact session identifier and consumes the record on report; scheduling drops
+a stale cleared record first, so a previous session's clear never reads as
+the current session's expiry.
+
+`observed` (2026-09-07, development-signed iPhone): with the `APPLE-002`
+profile installed, the signed device build passes once Xcode may contact the
+portal. A 17-minute window scheduled from the app, followed by force-quit,
+was clear at verify ~4 minutes after interval end; the foreign store
+survived, reconciliation read expired with the session id, and the cancelled
+probe schedule cleared nothing. Reboot-inside-interval behavior is still
+pending by choice (personal phone).
+
 ## Open questions
 
 - Which Family Controls entitlement and distribution paths are available for
   the intended public product at implementation time?
-- What App Group callback protocol is the minimum safe implementation for
-  scheduled expiry?
+- ~~What App Group callback protocol is the minimum safe implementation for
+  scheduled expiry?~~ Answered for the MVP by `IOS-002`: pending/cleared
+  versioned records in a dedicated `SuspendedExpiry` directory.
 - Which iOS browsers are included in the support promise?
 - What should happen when a selection becomes invalid or the device restores
   from backup?
