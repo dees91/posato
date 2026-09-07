@@ -143,6 +143,8 @@ tasks.register("quality") {
         ":quality-rules:detekt",
         ":quality-rules:ktlintCheck",
         ":quality-rules:test",
+        ":prototypeDesignSystem:verifyDesignSystem",
+        ":prototypeApp:verifyPrototype",
         ":shared:compileKotlinIosArm64",
         ":shared:compileKotlinIosSimulatorArm64",
         ":shared:compileAndroidMain",

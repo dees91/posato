@@ -16,6 +16,12 @@ application shell and near-term MVP flows coherent. It does not finalize a
 logo, custom typeface, illustration system, marketing site, launch campaign,
 or complete component library.
 
+As of 2026-09-06, the root `DESIGN.md` links to the separate
+[prototype design reference](../../../prototypes/mvp-interaction-flow/DESIGN.md),
+documenting its tokens, components, screen hierarchy, and behavior at the
+maintainer's request (`user-confirmed`). Unlabelled root statements remain the
+production contract; the prototype reference does not establish platform parity.
+
 ## Accepted brand foundation
 
 ### Positioning
@@ -190,10 +196,12 @@ supporting information, not an animated spectacle.
   keeping its action adjacent to the final content block, and constraining
   supporting notices and lists will feel calm without weakening task
   continuity. The iPhone variant retains its bottom-reachable action pattern.
-- `open`: the exact content width, large-window placement, and spacing remain
-  prototype parameters. They are not accepted product tokens and require
-  maintainer review across sparse and information-dense surfaces before any
-  update to `DESIGN.md`.
+- `observed`: the current native prototype uses a top-centered, 820 dp maximum
+  body canvas, compact/expanded padding, and a persistent 224 dp Mac sidebar.
+  These implementation values are documented in the prototype design reference as
+  parameters, not accepted production tokens.
+- `open`: adopting or adapting that geometry in production still requires the
+  production consolidation review and rendered evidence below.
 
 ### Interaction-prototype workbench boundary
 
@@ -209,7 +217,8 @@ supporting information, not an animated spectacle.
   required walkthrough remains blocked until its repair steps are complete.
 - `inferred`: prerequisite preparation and automatic scrolling belong to the
   disposable workbench, not to the product state model or accepted application
-  UX. They do not relax the low-fidelity flow order or change `DESIGN.md`.
+  UX. They do not relax the low-fidelity flow order or the production contract
+  in the root `DESIGN.md`; the prototype reference records the workbench separately.
 
 ### Paused-item configuration prototype experiment
 
@@ -235,6 +244,14 @@ supporting information, not an animated spectacle.
   implementation evidence.
 
 ### SESSION-001 design-system consolidation checkpoint
+
+The [interaction study](../sources/mvp-interaction-prototype.md) now runs as an
+isolated Compose prototype on macOS and iPhone Simulator. Its reusable component
+library and native mock flows replace the maintained HTML target, but remain
+prototype evidence. Neither migration nor native inspection changes the
+production consolidation boundary below or accepts new production tokens.
+Documenting the current prototype in its own design reference does not authorize wholesale
+reuse or supersede that boundary.
 
 - `user-confirmed` (2026-08-31): `SESSION-001` is the first explicit
   design-system consolidation checkpoint. It compares the production Paused
@@ -379,6 +396,8 @@ change.
 ## Deferred work
 
 Final logo and app-icon production, custom typography, a complete identity
-system, marketing design, exact component geometry, and platform navigation
-remain later decisions. They must not silently alter the accepted brand
-foundation, language, accessibility boundary, or PR #1 shell contract.
+system, marketing design, and production adoption of prototype geometry and
+navigation remain separate decisions. Current prototype geometry and navigation
+are documented, not unknown. Later production decisions must not silently alter
+the accepted brand foundation, language, accessibility boundary, or historical
+PR #1 shell contract.

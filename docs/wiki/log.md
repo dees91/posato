@@ -1203,6 +1203,7 @@
   workspace key in the synchronizable Keychain, an iCloud item rather than a
   local one, which `reset -t desktop` does not clear and `doctor` does not
   report.
+
 ## [2026-09-05] implementation | APPLE-002 App Store Connect provisioning
 
 - `posato-provisioning` obtains Apple development provisioning for the five
@@ -1233,6 +1234,43 @@
   asks whether this checkout can build, sign, and drive right now, while this
   one asks whether the Mac can obtain Apple resources and whether the account
   holds them. Their check identifiers do not overlap.
+
+## [2026-09-06] experiment | Move the interaction study to native Compose hosts
+
+- Refined the warm paper and moss visual direction and extracted a reusable
+  Compose component library, desktop catalog, and deterministic previews.
+- Replaced the maintained HTML target with an isolated mock iPhone and macOS
+  prototype using the existing Compose component library. Preserved strict
+  flows, configurable items, guided scenarios, independent Free play, and the
+  manual clock; added hidden native inspection controls and common regression
+  coverage. Recorded [native evidence and limits](sources/mvp-interaction-prototype.md#native-interaction-prototype)
+  without changing production design, platform services, or architecture.
+- A 50-website native probe exposed excessive scrolling. Following maintainer
+  acceptance, added bounded session summaries, read-only details, separate
+  website/app lists, and search. Recorded native keyboard, editing, filtering,
+  and state-retention evidence without promoting prototype geometry to authority.
+- Further maintainer feedback replaced bare custom-time input with hour/minute
+  wheels and step arrows, and prioritized inline/batch website entry over search.
+  Refined segmented categories, app-chooser priority, metadata spacing, and row
+  menus. Following further acceptance, moved main navigation to an iPhone bottom
+  bar and Mac sidebar with a readable minimum window width. Kept these
+  interactions and their validation in the isolated mock prototype.
+- At the maintainer's request, documented current Compose tokens, components,
+  layouts, behavior, and controls. Review clarified the authority split: root
+  `DESIGN.md` keeps accepted production requirements, while the full
+  [prototype reference](../../prototypes/mvp-interaction-flow/DESIGN.md) records
+  mock implementation evidence without adopting its geometry in production.
+- Preserved the retired HTML and Node suite under the maintainer-approved
+  non-release tag `archive/mvp-interaction-flow-html`, independently of a squash
+  merge or work-branch deletion; confirmed recovery with a tag-only fetch.
+- Integrated the Mac title area with the app background and added an explicit
+  20 pt native frame mask, disabled in fullscreen. Kept system window controls
+  and verified native resizing, dragging, appearance, and draft retention;
+  the AppKit integration remains prototype-only and runtime-specific evidence.
+- Follow-up review removed the blocking AWT-to-AppKit dispatch, retaining the
+  window through queued configuration. Separated fast prototype verification
+  from explicit host builds; native application resources and declared package
+  inputs keep JVM model tests independent while tracking native-only changes.
 
 ## [2026-09-07] verification | MACOS-005 physical matrix and harness corrections
 
