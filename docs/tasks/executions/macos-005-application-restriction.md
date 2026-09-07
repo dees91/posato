@@ -86,7 +86,8 @@
   `poll`/`refresh` to satisfy the lint complexity/length gates (no
   suppression). Swift suite 148/148, `swiftFormatCheck`/`swiftLintCheck`
   clean, `./gradlew quality` green, team-signed package rebuilt, reinstalled,
-  and deep-strict verified. Physical rerun (run 5) pending below.
+  and deep-strict verified. Physical rerun (run 7) passed all 8 rows on the
+  corrected binary after two gate timeouts without maintainer input.
 
 ## Verification
 
@@ -97,7 +98,7 @@
 | `./gradlew quality` | pass | `BUILD SUCCESSFUL`, rerun after the last correction |
 | `git diff --check`, suppression, private-data scans | pass | no whitespace errors, no new `Suppress`, no logging or identity in added lines |
 | Spike (matching + terminate) | pass | `/tmp/macos005-spike`: `MATCH` on live disposable app, `NO_MATCH` on Finder, graceful quit verified |
-| Gated physical harness rows | pass | run 4 `BUILD SUCCESSFUL`: all 8 rows in `build/verification/macos-005/run.md` (launch-during, notice `NOTIFY_GO` with maintainer-allowed banner, control, running-at-activation, clear, forced-termination, parent-exit, done); canary scan of evidence empty; no stray processes (runs 2–3 abandoned with defects above) |
+| Gated physical harness rows | pass | run 7 `BUILD SUCCESSFUL` on the corrected binary: all 8 rows in `build/verification/macos-005/run.md` (launch-during, notice `NOTIFY_GO` with maintainer-allowed banner, control, running-at-activation, clear, forced-termination, parent-exit, done); canary scan of evidence empty; no stray processes (runs 2–3 abandoned with defects above; runs 5–6 timed out at `NOTIFY_GO` with no maintainer input) |
 | Stale-snapshot notice defect (found by run 2) | fixed, unit-proven | run 2 `launch-during` passed but no notification prompt ever appeared: held `NSRunningApplication` snapshots never refresh without a run loop, so `isTerminated` stayed false and `requestAuthorization` never ran (confirmed via `usernoted` log silence). Fix: each poll re-resolves tracked entries against a fresh listing pass; a pid vanished from enumeration counts as terminated. Swift suite 146/146 incl. 2 new regression rows; `swiftFormatCheck`/`swiftLintCheck` clean; `verifyMacOsDevelopmentPackaging` green on the rebuilt bundle |
 | Harness self-kill defect (found by run 3) | fixed | run 3 passed control/activation/clear rows, then `destroyHelper` ran `pkill -9 -f PosatoMacOSHelper`, whose pattern also matched the harness launcher command line (it embeds the helper path), SIGKILLing the run itself. Fix: `MacOsHelperClient.destroySpawnedHelper()` kills only the launcher's child via `ProcessHandle`; the `pkill` is gone. Lesson: the harness must be relaunched with the Apple Development identity (`-PposatoMacOsSigningIdentity` + `-PposatoMacOsSyncProvisioningProfile` from `local.properties`); the ad-hoc fallback fails the client team check. `./gradlew quality` green after the fix |
 
@@ -111,5 +112,5 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending (physical rows, then pull request)
+- **Status:** `ready-for-pr`
+- **Outcome:** met (all verification green, re-review findings resolved)
