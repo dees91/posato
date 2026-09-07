@@ -1325,3 +1325,15 @@
   variants cover dark appearance, larger text, disabled/error states, and reflow.
 - Theme, token definitions, and full application scaffolds remain outside the
   standalone preview set. Runtime implementations and prototype sources are unchanged.
+
+## [2026-09-07] maintenance | Run native Swift tests in the manual quality gate
+
+- Added simulator-compatible Swift XCTest to the aggregate quality gate with
+  a shared Xcode scheme, prebuilt Kotlin framework/resources, isolated temporary
+  Simulator ownership, and retained test reports. Device-only cases remain
+  separate physical checks rather than implied Simulator coverage.
+- Replaced the expired automatic-CI pause with the accepted manual-only workflow
+  and current-PR-head success check before merge. Enforcement is procedural;
+  account upgrades and GitHub branch-protection configuration are out of scope.
+- Refreshed onboarding to describe the real MVP-in-progress applications and
+  tests while retaining the unconnected synchronization/enforcement boundary.

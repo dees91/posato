@@ -477,8 +477,13 @@ roadmap groups the foundation, local quality, and CI milestones into one PR #1
 execution and review cycle completed before PR #1 merges or the first parallel
 implementation wave starts, whichever occurs first.
 
-`user-confirmed` (2026-08-28): automatic GitHub-hosted CI is paused through
-2026-09-05 after the account exhausted its included Actions minutes. A fresh
-local aggregate quality pass is the temporary merge gate, and the complete
-workflow remains manually dispatchable. Automatic pull-request and `main`
-push triggers return when hosted minutes become available.
+`user-confirmed` (2026-09-07): GitHub-hosted CI is manual-only, replacing the
+earlier time-limited pause and automatic-trigger policy. Before merge, require
+a successful dispatched run for the current PR head alongside local quality
+and review. This is procedural, not server-enforced: an account upgrade and
+protected-branch configuration are outside scope. The quality contract owns
+the rule and the development guide owns its manual checklist.
+
+`observed` (2026-09-07): the aggregate gate includes native Swift XCTest on
+an isolated temporary iOS Simulator as well as Kotlin tests. Physical-device
+cases retain explicit skips and do not become Simulator coverage claims.

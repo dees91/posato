@@ -34,8 +34,9 @@ merges or the first parallel implementation wave begins, whichever happens
 first.
 
 `FOUNDATION-001`, `QUALITY-001`, and `CI-001` are complete. The first hosted
-GitHub Actions run and the manual Codex review passed; PR #1 remains open for
-the maintainer's merge decision.
+GitHub Actions run and the manual Codex review passed, and the foundation was
+merged. This section preserves its original boundary; the root
+[README](../../README.md#current-mvp-implementation) describes today's MVP.
 
 ## Foundation local use
 
@@ -83,11 +84,9 @@ xcodebuild \
   build
 ```
 
-PR #1 does not implement website blocking, application blocking,
-synchronization, enrollment, recovery, or production helpers. Implementation
-starts only after all seven gates and the ready checkpoint in the
-[first MVP PR preparation checklist](../tasks/first-mvp-pr-preparation-todo.md)
-are complete and explicitly accepted.
+The original PR #1 omitted blocking, synchronization, and native helpers.
+Later increments added behavior and native foundations; use the
+[MVP roadmap](../tasks/mvp-roadmap.md) for the remaining integration work.
 
 ## Local quality gate
 
@@ -99,25 +98,32 @@ Run the repository-owned aggregate gate from the repository root:
 
 It checks root and module Kotlin formatting with ktlint, analyzes both
 application modules with Detekt and Compose Rules, compiles warning-free JVM,
-iOS, and preview-only Android source, runs the shared JVM and desktop test
-tasks when test sources exist, and creates the macOS distributable. The current
-static shell has no behavior-focused tests. Detekt writes Checkstyle, HTML,
+iOS, and preview-only Android source, runs shared JVM/iOS, desktop, tooling,
+and native helper tests, and creates and checks the macOS distributable.
+It also runs the Swift XCTest suites through `iosSwiftTest`.
+Detekt writes Checkstyle, HTML,
 Markdown, and SARIF reports under each module's `build/reports/detekt/`;
 ktlint writes plain-text and Checkstyle reports under `build/reports/ktlint/`
 in each checked project.
 
-Draft pull requests allocate no GitHub Actions runner; moving one to ready for
-review triggers CI, while returning one to draft cancels its in-progress run.
-GitHub Actions then runs the full gate on macOS for every pull request
-containing a non-Markdown change and for every push to `main`. A Markdown-only
-pull request runs the lightweight scope job and reports the macOS `Quality` job
-as skipped; any classification failure falls back to running `Quality`.
+Run native Swift tests alone with `./gradlew iosSwiftTest`. This requires an
+Apple Silicon Mac, selected Xcode, and an installed iOS Simulator runtime
+supporting iPhone 17. The gate creates and deletes its own Simulator without
+using the maintainer's existing Simulator or device data. It builds Kotlin
+first, then invokes Xcode with the prebuilt framework and Compose resources,
+avoiding nested Gradle builds. Every invocation runs tests again. Reports and
+`.xcresult` bundles remain under ignored `build/ios-swift-tests.*/`; CI uploads
+them even on failure. Interrupted runs retain their reports.
 
-Automatic GitHub Actions triggers are temporarily paused through 2026-09-05
-because the account exhausted its included runner minutes. Until they are
-restored, run `./gradlew quality` locally after the last material correction
-and treat that result as the merge gate. The CI workflow remains available for
-manual dispatch when spending permits.
+The shared Xcode scheme includes `iosAppTests`. Native simulator-compatible
+mapping-store, CryptoKit, Keychain-boundary, enforcement, and expiry tests run
+without signing credentials. Device-only tests keep their existing Simulator
+skip conditions; their physical-device checklists remain required for those
+capabilities. This is not an automated UI or release-readiness claim.
+The scheme's all-tests action is intended for Simulator use. On a physical
+iPhone, select only the named cases from the relevant device checklist:
+suspended-expiry setup and verification require a human force-quit/wait
+interval and must not run back-to-back through a blanket Test action.
 
 The pinned quality set is ktlint Gradle plugin 14.2.0, ktlint 1.8.0, Detekt
 2.0.0-alpha.6, and Compose Rules 0.6.4. The Detekt prerelease is the narrow
@@ -125,6 +131,32 @@ maintainer-accepted exception recorded in the quality contract and must be
 replaced by the first compatible stable Detekt 2 release. Generated Compose
 Resources source is excluded from ktlint; repository-owned Kotlin has no lint
 baseline.
+
+## Manual CI and merge check
+
+CI uses only `workflow_dispatch`: no commit, PR, ready-for-review, or `main`
+push automatically starts it. Run it explicitly once the branch is ready:
+
+```shell
+gh pr view <pr-number> --json headRefName,headRefOid
+gh workflow run ci.yml --ref <pr-head-branch>
+gh run list --workflow ci.yml --branch <pr-head-branch> --event workflow_dispatch
+gh run watch <run-id> --exit-status
+gh run view <run-id> --json headSha,status,conclusion,url,jobs
+gh pr view <pr-number> --json headRefOid
+```
+
+Immediately before merge, require `status: completed`, `conclusion: success`,
+and a successful `Quality` job, with run `headSha` exactly matching the freshly
+read PR `headRefOid`. Do not accept an older green run or a skipped job. Any
+new commit needs another explicit dispatch, including documentation changes.
+The Actions UI's **Run workflow** branch selector is an equivalent entry point.
+
+This is a maintainer/agent process requirement, not a protected-branch check:
+the current private-repository plan cannot enforce it. Account upgrades,
+branch protection, and rulesets are out of scope. If CI cannot run, stop before
+merge and request a maintainer decision. Local `./gradlew quality` after the
+last material correction and the selected review tier still apply.
 
 ## Verification driver
 

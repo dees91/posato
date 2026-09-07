@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 10
-- **Accepted:** 2026-08-31
+- **Revision:** 11
+- **Accepted:** 2026-09-07
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -13,8 +13,8 @@ This document defines the standing quality bar for Posato. The
 must be capable of finding a defect in the actual change, not fill a generic
 matrix.
 
-The first production increment remains blocked from merge until its local and
-CI quality boundaries and integrated completed-change review pass.
+Every increment requires applicable local verification, the CI merge check
+below, and its selected review tier before merge.
 
 ## Kotlin and Compose tools
 
@@ -202,33 +202,37 @@ browsing-history and allowed-navigation diagnostics remains in force.
 
 ## Continuous integration
 
-CI is implemented with PR #1 and must work before PR #1 merges or before the
-first parallel implementation wave, whichever comes first. It runs the
-repository-owned aggregate quality gate and the credential-free JVM, iOS, and
-macOS surfaces introduced by that increment.
+CI runs the repository-owned aggregate quality gate and credential-free
+JVM, iOS, and macOS surfaces. The aggregate gate includes `iosSwiftTest`,
+which builds the Debug iOS host and executes the existing native Swift XCTest
+suites on an isolated temporary Simulator. Physical-device-only cases remain
+explicitly skipped there; Simulator success does not prove iCloud Keychain,
+Screen Time authorization, or suspended-device expiry behavior.
 
 Routine CI must not require personal signing identities, provisioning profiles,
 application credentials, or private device data. The preview-only Android KMP
 library uses Android SDK Platform 36 and Build Tools 36.0.0 to compile shared
-preview code; it does not add an Android product host or emulator job. Exact
-jobs and commands are chosen in the shared PR #1 execution cycle.
+preview code; it does not add an Android product host or emulator job.
 
-`user-confirmed` (2026-08-27): draft pull requests allocate no runner; moving a
-pull request to ready for review triggers CI. The full macOS quality job runs
-for every review-ready pull-request diff containing a non-Markdown file and
-every push to `main`. Markdown-only review-ready pull requests retain reported
-job results but skip macOS after a cheap whole-diff classification.
-Classification failure must run macOS rather than silently weakening the gate.
-Do not classify only the latest push because cancellation could otherwise
-leave earlier substantive changes unverified.
+`user-confirmed` (2026-09-07): CI is manual-only through `workflow_dispatch`.
+Pushing commits, opening a pull request, and marking it ready do not allocate
+a runner. This replaces the 2026-08-27 automatic-trigger policy and the
+2026-08-28 pause through September 5; there is no automatic-restoration date.
 
-`user-confirmed` (2026-08-28): GitHub-hosted automatic CI is paused through
-2026-09-05 because the account exhausted its included Actions minutes. During
-the pause, a fresh local `./gradlew quality` pass after the last material
-correction is the required merge gate. The workflow retains manual dispatch
-for exceptional use. Restore the pull-request and `main` push triggers when
-hosted minutes become available; this temporary exception does not weaken the
-quality command or the proportional review requirement.
+Before merging, the maintainer or merging agent must verify a completed,
+successful CI run whose `headSha` equals the current pull request's
+`headRefOid`. A new commit invalidates the previous run, including a
+documentation-only commit. A failed, cancelled, skipped, missing, or stale run
+does not satisfy this rule. Dispatch once the branch is ready rather than on
+each correction. The local aggregate gate and proportional review still apply.
+See the [manual checklist](README.md#manual-ci-and-merge-check).
+
+The current private repository cannot enforce required status checks with its
+account plan. Enforcement is procedural; GitHub may still offer Merge without
+a successful run. An account upgrade, branch protection, and rulesets are
+explicitly outside this change. If hosted CI is unavailable, stop before merge
+and ask for a maintainer decision rather than treating a local pass as an
+automatic substitute.
 
 ## Definition of Done
 

@@ -381,7 +381,7 @@ hosted pass; P2 and lower findings remain advisory unless explicitly accepted
 by the maintainer. Routine post-review bookkeeping stays in the pull-request
 conversation rather than creating another commit and CI run.
 
-`user-confirmed` (2026-08-27): draft pull requests allocate no runner; moving
+`superseded` (2026-08-27): draft pull requests allocate no runner; moving
 one to ready for review triggers CI. The full credential-free macOS gate then
 runs for every pull request containing a non-Markdown file and every push to
 `main`. Markdown-only review-ready pull requests run a cheap whole-diff
@@ -395,7 +395,18 @@ changes.
 `main` push triggers are temporarily paused after the account exhausted its
 included Actions minutes. A fresh local aggregate quality pass is the accepted
 temporary merge gate, and the complete workflow remains available by manual
-dispatch. Restore the automatic triggers when hosted minutes become available.
+dispatch. The 2026-09-07 manual-only decision below replaces the proposed
+restoration of automatic triggers.
+
+`user-confirmed` (2026-09-07): CI runs only by explicit dispatch; pushes and
+ready-for-review transitions do not start it. A successful run for the current
+PR head is a procedural merge requirement, alongside local quality and review.
+The current private-repository plan cannot enforce required checks; account
+upgrades and server-side branch protection are outside scope. The
+[quality contract](../../development/engineering-quality-contract.md#continuous-integration)
+and [development checklist](../../development/README.md#manual-ci-and-merge-check)
+own the current rule. The aggregate gate now also executes simulator-compatible
+Swift XCTest; physical-device skips remain explicit.
 
 ## Gate 6 roadmap (complete)
 

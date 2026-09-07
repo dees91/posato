@@ -129,11 +129,20 @@ val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityEx
     )
 }
 
+val iosSwiftTest by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Runs native Swift XCTest suites on an isolated, credential-free iOS Simulator."
+    dependsOn(":shared:linkDebugFrameworkIosSimulatorArm64", ":shared:iosSimulatorArm64AggregateResources")
+    workingDir(layout.projectDirectory)
+    commandLine("bash", "tools/quality/ios-swift-test.sh")
+}
+
 tasks.register("quality") {
     group = "verification"
     description = "Runs Posato's formatting, analysis, test, compilation, packaging, and report checks."
     dependsOn(
         "ktlintCheck",
+        iosSwiftTest,
         ":desktopApp:createDistributable",
         ":desktopApp:verifyMacOsDevelopmentPackaging",
         ":desktopApp:detekt",

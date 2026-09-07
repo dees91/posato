@@ -11,74 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  change_scope:
-    name: Change scope
-    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft == false }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    outputs:
-      run_quality: ${{ steps.scope.outputs.run_quality }}
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-
-      - id: scope
-        name: Classify pull-request changes
-        env:
-          BASE_SHA: ${{ github.event.pull_request.base.sha }}
-          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          if [[ ! "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]] || [[ ! "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Unable to identify the pull-request commit range."
-            exit 1
-          fi
-
-          if ! git cat-file -e "${BASE_SHA}^{commit}" || ! git cat-file -e "${HEAD_SHA}^{commit}"; then
-            echo "Unable to resolve the pull-request commit range."
-            exit 1
-          fi
-
-          changed_files="$RUNNER_TEMP/changed-files"
-          git diff --name-only --diff-filter=ACDMRTUXB -z "$BASE_SHA...$HEAD_SHA" > "$changed_files"
-
-          has_changes=false
-          run_quality=false
-          while IFS= read -r -d '' path; do
-            has_changes=true
-            if [[ "$path" != *.md ]]; then
-              run_quality=true
-              break
-            fi
-          done < "$changed_files"
-
-          if [[ "$has_changes" == "false" ]]; then
-            run_quality=true
-          fi
-
-          echo "run_quality=$run_quality" >> "$GITHUB_OUTPUT"
-
   quality:
     name: Quality
-    needs: change_scope
-    if: >-
-      ${{
-        always() &&
-        (
-          github.event_name == 'workflow_dispatch' ||
-          (
-            github.event_name == 'pull_request' &&
-            github.event.pull_request.draft == false &&
-            (
-              needs.change_scope.result != 'success' ||
-              needs.change_scope.outputs.run_quality == 'true'
-            )
-          )
-        )
-      }}
     runs-on: macos-15
     timeout-minutes: 30
 
@@ -102,18 +36,6 @@ jobs:
 
       - name: Run aggregate quality gate
         run: ./gradlew quality
-
-      - name: Build credential-free Debug iOS Simulator host
-        run: |
-          xcodebuild \
-            -project iosApp/iosApp.xcodeproj \
-            -scheme iosApp \
-            -configuration Debug \
-            -sdk iphonesimulator \
-            -destination 'generic/platform=iOS Simulator' \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            build
 
       - name: Build credential-free Debug iOS device host
         run: |
@@ -150,5 +72,8 @@ jobs:
             desktopApp/build/reports/ktlint
             shared/build/reports/detekt
             shared/build/reports/ktlint
+            build/ios-swift-tests.*
+            shared/build/reports/tests
+            desktopApp/build/reports/tests
           if-no-files-found: warn
           retention-days: 14

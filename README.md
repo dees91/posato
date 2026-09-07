@@ -6,9 +6,9 @@ collected data and maintenance burden.
 
 ## Status
 
-This repository contains the accepted product knowledge base and the first
-production application skeleton. The skeleton is not a complete MVP, release,
-or production-readiness claim. The accepted public name is **Posato**,
+This repository contains the accepted product knowledge base and an Apple MVP
+in progress, with working macOS and iOS applications. It is not a complete MVP,
+release, or production-readiness claim. The accepted public name is **Posato**,
 `posato.app` is the maintainer-controlled canonical domain, and `app.posato` is
 the accepted stable technical root. The accepted contracts are recorded under
 `docs/product/`.
@@ -60,30 +60,41 @@ These are direction constraints, not a complete architecture.
 - [First MVP PR preparation plan](docs/tasks/first-mvp-pr-preparation-plan.md)
 - [First MVP PR preparation checklist](docs/tasks/first-mvp-pr-preparation-todo.md)
 
-## Active milestone: the first MVP code PR
+## Current MVP implementation
 
-The first production pull request is active. Its seven preparation gates and
-ready checkpoint are complete. `FOUNDATION-001` has added the Apple-only
-application shell, `QUALITY-001` has added `./gradlew quality`, and `CI-001`
-has passed its first hosted GitHub Actions run.
+The preparation gates and foundation increment are complete. The applications
+now use the accepted Compose design system, iPhone bottom navigation, and a
+native macOS sidebar/window. Session and Paused items use real ViewModels and
+local persistence, including batch website entry, searchable lists,
+device-local application selection, and a manual session timer.
 
-The MVP scope, product identity, minimum brand and product design baseline,
-[MVP application architecture](docs/decisions/0003-mvp-application-architecture-baseline.md),
-and [engineering quality contract](docs/development/engineering-quality-contract.md)
-are accepted. [Gate 6 MVP roadmap revision 2](docs/tasks/mvp-roadmap.md) retains
-future work as concise task stubs.
-The accepted route and verification criteria live in the
-[preparation plan](docs/tasks/first-mvp-pr-preparation-plan.md) and
-[checklist](docs/tasks/first-mvp-pr-preparation-todo.md).
+Shared and native tests cover behavior-bearing code, including persistence,
+session state, cryptographic boundaries, and native enforcement logic.
+Synchronization and enforcement foundations exist, but the user-facing sync
+flow and session-driven enforcement are not yet connected. A running timer
+does not establish that blocking is active.
 
-PR #1 uses fresh KMP application modules, accepted identifiers, and one minimal
-shared Compose screen running on macOS and iOS. It has one aggregate local
-quality gate and a credential-free CI workflow. It does not implement blocking
-or synchronization and does not adopt the PoC module graph as its starting
-point. The current static shell has no business behavior that warrants an
-automated test.
+The [MVP roadmap](docs/tasks/mvp-roadmap.md) owns remaining implementation
+ordering. [DESIGN.md](DESIGN.md) is the current visual authority; the separate
+mock prototype is a frozen reference, not the application under test.
 
-Gate 5 did not configure CI. The accepted roadmap groups `FOUNDATION-001`,
-`QUALITY-001`, and `CI-001` into one PR #1 brief, execution record, and
-completed-change review. PR #1 passed its manual Codex review and now awaits
-the maintainer's merge decision before any parallel implementation wave begins.
+## Development and verification
+
+See the [development guide](docs/development/README.md) for JDK, Android SDK,
+Xcode, host launch, native provisioning, and verification-driver setup.
+
+```shell
+./gradlew :desktopApp:run
+./gradlew quality
+./gradlew iosSwiftTest
+```
+
+`quality` includes the native Swift XCTest gate on a temporary iOS Simulator,
+alongside Kotlin tests, static checks, target compilation, and macOS packaging.
+Physical-device checks remain separate where Simulator coverage is insufficient.
+
+GitHub Actions runs only by explicit manual dispatch. Before merge, require a
+successful CI run for the current PR head commit as well as applicable local
+verification and review. This is a process rule, not a GitHub-enforced merge
+block. The [manual CI checklist](docs/development/README.md#manual-ci-and-merge-check)
+explains dispatch and commit matching.
