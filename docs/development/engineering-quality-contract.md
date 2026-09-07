@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 13
+- **Revision:** 14
 - **Accepted:** 2026-09-07
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -208,6 +208,12 @@ which builds the Debug iOS host and executes the existing native Swift XCTest
 suites on an isolated temporary Simulator. Physical-device-only cases remain
 explicitly skipped there; Simulator success does not prove iCloud Keychain,
 Screen Time authorization, or suspended-device expiry behavior.
+
+`user-confirmed` (2026-09-07): local `quality` also includes `iosHostBuildCheck`
+for unsigned Debug `iphoneos` and Release Simulator host compilation, preserving
+the configuration coverage of the removed workflow. Kotlin device compilation
+alone does not check device-only Swift branches. These checks require no physical
+device and do not establish physical-device behavior.
 
 Routine CI must not require personal signing identities, provisioning profiles,
 application credentials, or private device data. The preview-only Android KMP

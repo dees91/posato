@@ -488,6 +488,9 @@ owns the rule and the development guide owns the local merge checklist.
 `observed` (2026-09-07): the aggregate gate includes native Swift XCTest on
 an isolated temporary iOS Simulator as well as Kotlin tests. Physical-device
 cases retain explicit skips and do not become Simulator coverage claims.
+The local gate also compiles unsigned Debug device and Release Simulator hosts,
+preserving device-only Swift branch coverage after hosted CI removal. Matching
+Kotlin frameworks are built first; these are compilation checks, not device runs.
 
 `observed` (2026-09-07): a macOS 15/Xcode 26.3 CI reproduction isolated native
 test thread-pool starvation. Three parallel synchronous proxy tests blocked in

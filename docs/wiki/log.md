@@ -1332,6 +1332,8 @@
   a shared Xcode scheme, prebuilt Kotlin framework/resources, isolated temporary
   Simulator ownership, and retained test reports. Device-only cases remain
   separate physical checks rather than implied Simulator coverage.
+- Preserved unsigned Debug device and Release Simulator host compilation in
+  local quality, including Swift branches excluded from Simulator tests.
 - The maintainer's latest decision disables GitHub CI and removes its workflow
   source and required status check, superseding the earlier manual-CI policy.
   Local quality and review remain mandatory; `main` retains PR and administrator

@@ -12,6 +12,11 @@ This authorization correction retains High-risk plan and completed-change review
 Verify the exact protection delta and disabled workflow through API readback;
 update onboarding, authorities, and the existing PR record without another log entry.
 
+The maintainer subsequently accepted review P2 to preserve the removed Debug
+device and Release Simulator Swift host compilation checks inside local `quality`.
+Use unsigned builds with matching prebuilt Kotlin frameworks; no phone, signing,
+hosted CI, or runtime behavior change. This build correction uses Standard review.
+
 ## Earlier scope (superseded where inconsistent above)
 
 - Record path: recorded; review tier: High-risk because repository merge

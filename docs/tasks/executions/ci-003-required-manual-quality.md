@@ -2,6 +2,19 @@
 
 Status: done
 
+## Accepted host-build coverage correction
+
+| Finding | Class | Decision | Result |
+| --- | --- | --- | --- |
+| Removed CI host builds left device-only Swift and Release outside local quality | P2 | Explicitly accepted by maintainer | Added unsigned Debug device and Release Simulator builds with matching Kotlin frameworks |
+
+- Standard independent review approved the task graph, script, configuration
+  flags, failure propagation, and documentation with no Critical/Required findings.
+- Focused `iosHostBuildCheck` passed both builds in 3m 33s; its Debug compiler
+  command includes `POSATO_FAMILY_CONTROLS_DEVELOPMENT`. Final `./gradlew quality`
+  passed in 1m 8s with warmed local outputs, including both host builds and iOS
+  XCTest. Shell syntax and `git diff --check` passed. No hosted rerun is required.
+
 ## Latest maintainer decision
 
 - After the hosted run, the maintainer explicitly chose local quality and review

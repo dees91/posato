@@ -115,6 +115,15 @@ avoiding nested Gradle builds. Every invocation runs tests again. Reports and
 `.xcresult` bundles remain under ignored `build/ios-swift-tests.*/`.
 Interrupted runs retain their reports; there is no hosted report upload.
 
+`./gradlew iosHostBuildCheck`, also included in `quality`, compiles the unsigned
+Debug iOS device host and Release Simulator host. It prepares the matching Kotlin
+frameworks first and skips nested Gradle invocation from Xcode. These compile-only
+checks need no connected phone or signing credentials. Debug `iphoneos` includes
+the real picker/authorization code excluded from Simulator builds; Release covers
+the fallback configuration. Logs remain in ignored `build/ios-host-builds.*/`.
+The host checks run sequentially after Swift XCTest when both tasks are requested,
+with separate derived data from the test runner. They do not install or launch apps.
+
 The shared Xcode scheme includes `iosAppTests`. Native simulator-compatible
 mapping-store, CryptoKit, Keychain-boundary, enforcement, and expiry tests run
 without signing credentials. Device-only tests keep their existing Simulator
