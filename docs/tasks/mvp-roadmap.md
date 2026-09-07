@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 9
+- **Revision:** 10
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-04
+- **Last amended:** 2026-09-07
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -39,6 +39,10 @@ addressing only the application process and from `doctor` reporting no
 one-time provisioning state, not from a platform limit. None of these
 revisions changes any other task, dependency, wave, or integration group.
 
+Revision 10 adds the maintainer-approved `DESIGN-001` presentation adoption
+and includes `QUALITY-003` in the same PR, together with the verification
+skill and recipes. It preserves existing ViewModels and native services.
+
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
 [architecture baseline](../decisions/0003-mvp-application-architecture-baseline.md),
@@ -59,6 +63,9 @@ remain authoritative for their concerns.
   are checked when that wave starts.
 - The disposable interaction prototype is bounded UX evidence, not production
   code or a product requirement.
+- `DESIGN-001` explicitly adopts its accepted presentation and complete
+  reusable component set under `DESIGN.md`, without adopting mock state or
+  making the real applications depend on prototype modules.
 - `SESSION-001` is the first design-system consolidation checkpoint. It reviews
   repeated production UI patterns against `DESIGN.md` and the prototype while
   keeping implementation inside the session vertical slice; it does not create
@@ -69,7 +76,7 @@ remain authoritative for their concerns.
 
 ## Task stubs, dependencies, waves, and integration groups
 
-The 42 rows below are the complete amended Gate 6 task set. Future rows stay as
+The 43 rows below are the complete amended Gate 6 task set. Future rows stay as
 stubs.
 [`APPLE-001`](specifications/apple-001-register-apple-resources.md) is the
 completed Gate 7 brief. The Ready to open PR #1 checkpoint is complete and the
@@ -109,7 +116,8 @@ wave barriers add the phase ordering stated above.
 | `SYNC-005` | Implement the iOS synchronizable-Keychain adapter and truthful service outcomes. | Apple synchronization | P3/W3.3 | `SYNC-003` | PR-IOS-KEYCHAIN |
 | `SYNC-006` | Implement the macOS synchronizable-Keychain native boundary and truthful outcomes. | Apple synchronization | P3/W3.3 | `SYNC-003` | PR-MAC-KEYCHAIN |
 | `APPLE-002` | Create and renew development profiles and certificates for every Posato App ID through the App Store Connect API with a maintainer-created team key kept outside Git, so no portal step blocks an agent. | Preparation | P3/W3.3a | `APPLE-001`, `SYNC-006` | PR-ASC-PROVISIONING |
-| `QUALITY-003` | Make desktop `scrollTo` in posato-control scroll the window until the queried row is composed, so below-the-fold LazyColumn rows are drivable like on iOS. | Preparation | P3/W3.3b | `QUALITY-002`, `SESSION-001` | PR-VERIFICATION-DRIVER-SCROLL |
+| `DESIGN-001` | Adopt the accepted native prototype design and reusable Compose components in the real MVP, preserving existing ViewModels and updating verification tooling. [Brief](specifications/design-001-mvp-design-adoption.md). | Preparation | P3/W3.3b | `SESSION-001`, `TARGETS-001`–`TARGETS-005`, `MACOS-006`, `QUALITY-002` | PR-MVP-DESIGN |
+| `QUALITY-003` | Make bounded, scoped `scrollTo` drive below-the-fold lazy rows in both directions; included in the design adoption PR. | Preparation | P3/W3.3b | `QUALITY-002`, `SESSION-001` | PR-MVP-DESIGN |
 | `SYNC-007` | Exchange bounded encrypted mailbox bundles through iOS private CloudKit. | Apple synchronization | P3/W3.4 | `SYNC-003` | PR-IOS-CLOUDKIT |
 | `SYNC-008` | Exchange bounded encrypted mailbox bundles through the macOS CloudKit native boundary. | Apple synchronization | P3/W3.4 | `SYNC-003` | PR-MAC-CLOUDKIT |
 | `SESSION-002` | Integrate safe local start, enforcement, early end, expiry, failure, and recovery. | Sessions and enforcement | P3/W3.5 | `MACOS-004`, `MACOS-005`, `IOS-002`, `SESSION-001` | PR-LOCAL-SESSION |

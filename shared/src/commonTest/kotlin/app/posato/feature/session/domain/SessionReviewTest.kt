@@ -14,6 +14,21 @@ import kotlin.test.assertNull
 
 class SessionReviewTest {
     @Test
+    fun `given retained mappings without group metadata then applications are not effective items`() {
+        val review = SessionReviewDerivation.derive(
+            policyOf(emptyList()),
+            LocalApplicationMappingsLoadResult.Success(
+                snapshotOf(mapping("Example", "a")),
+                LocalApplicationMappingsAccess.READY,
+            ),
+        )
+
+        assertEquals(SessionActionRequired.NO_EFFECTIVE_ITEMS, review.actionRequired)
+        assertEquals(1, review.selectedMappingCount)
+        assertNull(review.applicationGroupName)
+    }
+
+    @Test
     fun `given domains and no group when derived then no action is required`() {
         val review = SessionReviewDerivation.derive(
             policyOf(listOf("stable.example")),

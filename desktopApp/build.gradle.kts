@@ -11,6 +11,7 @@ import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
+import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.desktop.application.tasks.AbstractNativeMacApplicationPackageDmgTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.ByteArrayOutputStream
@@ -88,6 +89,8 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         val applicationCode = application.resolve("Contents/app")
         val launcher = application.resolve("Contents/MacOS/Posato")
         val sqliteLibrary = extractSqliteLibrary(applicationCode)
+        val windowLibrary = applicationCode.resolve("resources/native/libPosatoWindow.dylib")
+        check(windowLibrary.isFile) { "The packaged window chrome library is missing." }
 
         command("/usr/bin/codesign", "--verify", "--deep", "--strict", application.absolutePath)
 
@@ -112,6 +115,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
             add(companion)
             add(companionExecutable)
             add(sqliteLibrary)
+            add(windowLibrary)
         }
         val signatures = signedCode.map(::signature)
         val expectedApplicationEntitlements = if (signingIdentity.get() == "-") {
@@ -330,6 +334,9 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         val runtime = application.resolve("Contents/runtime")
         val applicationCode = application.resolve("Contents/app")
         val identity = signingIdentity.get()
+        val windowLibrary = applicationCode.resolve("resources/native/libPosatoWindow.dylib")
+        check(windowLibrary.isFile) { "The packaged window chrome library is missing." }
+        signCode(windowLibrary, identity)
 
         if (identity == "-") {
             signSqliteLibrary(applicationCode, identity)
@@ -534,11 +541,51 @@ sqldelight {
     }
 }
 
+val windowChromeResources = layout.buildDirectory.dir("generated/window-chrome")
+val windowChromeLibrary = windowChromeResources.map { it.file("macos-arm64/native/libPosatoWindow.dylib") }
+val windowChromeJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(21))
+}
+val compileWindowChrome = tasks.register<Exec>("compileWindowChrome") {
+    val source = layout.projectDirectory.file("src/main/objc/WindowChrome.m")
+    val javaInstallation = windowChromeJavaLauncher.get().metadata.installationPath.asFile
+    val compiledLibrary = windowChromeLibrary.get().asFile
+    inputs.file(source)
+    outputs.file(compiledLibrary)
+    doFirst { compiledLibrary.parentFile.mkdirs() }
+    commandLine(
+        "xcrun",
+        "clang",
+        "-dynamiclib",
+        "-fobjc-arc",
+        "-Wall",
+        "-Werror",
+        "-target",
+        "arm64-apple-macos15.0",
+        "-framework",
+        "AppKit",
+        "-framework",
+        "QuartzCore",
+        "-I$javaInstallation/include",
+        "-I$javaInstallation/include/darwin",
+        source.asFile.absolutePath,
+        "-o",
+        compiledLibrary.absolutePath,
+    )
+}
+
+tasks.withType<AbstractJPackageTask>().configureEach {
+    inputs.file(compileWindowChrome.map { windowChromeLibrary.get() })
+        .withPropertyName("windowChrome")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
 compose.desktop {
     application {
         mainClass = "app.posato.desktop.MainKt"
 
         nativeDistributions {
+            appResourcesRootDir.set(compileWindowChrome.map { windowChromeResources.get() })
             packageName = "Posato"
             packageVersion = "1.0.0"
             modules("java.sql")

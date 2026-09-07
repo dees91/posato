@@ -231,6 +231,42 @@ enum Bridge {
     }
   }
 
+  static func scroll(pid: pid_t, path: String, forward: Bool) throws {
+    try requireFrontmost(pid: pid)
+    let element = try resolve(pid: pid, path: path)
+    guard string(element, kAXRoleAttribute) == kAXScrollAreaRole else {
+      throw BridgeError(
+        code: "ELEMENT_NOT_FOUND", message: "The requested element is not a scroll area.")
+    }
+    let bounds = frame(element)
+    guard bounds.w > 0, bounds.h > 0 else {
+      throw BridgeError(
+        code: "ELEMENT_NOT_FOUND", message: "The scroll area has no visible bounds.")
+    }
+    let distance = Int32(min(bounds.h * 0.75, 1000)) * (forward ? -1 : 1)
+    guard
+      let event = CGEvent(
+        scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1, wheel1: distance, wheel2: 0,
+        wheel3: 0)
+    else {
+      throw BridgeError(code: "AX_ERROR", message: "Could not create a scrolling event.")
+    }
+    let location = CGPoint(x: bounds.x + bounds.w / 2, y: bounds.y + bounds.h / 2)
+    guard
+      let movement = CGEvent(
+        mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: location,
+        mouseButton: .left)
+    else {
+      throw BridgeError(
+        code: "AX_ERROR", message: "Could not position the pointer over the scroll area.")
+    }
+    movement.post(tap: .cgSessionEventTap)
+    Thread.sleep(forTimeInterval: 0.05)
+    event.location = location
+    try requireFrontmost(pid: pid)
+    event.post(tap: .cgSessionEventTap)
+  }
+
   /// True when the process answers accessibility requests at all. A helper that only runs a modal panel never
   /// starts an NSApplication event loop, so it owns a real window while exposing no accessibility server.
   static func inspectable(pid: pid_t) -> Bool {
@@ -307,7 +343,7 @@ enum Bridge {
       throw BridgeError(
         code: "PROCESS_NOT_ALLOWED",
         message:
-          "Process \(pid) exposes no accessibility server and is not frontmost, so its keyboard events cannot be "
+          "Process \(pid) is not frontmost, so its input events cannot be "
           + "delivered; frontmost is \(frontmost.map(String.init) ?? "none").")
     }
   }
@@ -477,6 +513,22 @@ do {
     let pid = try pidArgument(2)
     let maxDepth = CommandLine.arguments.count > 3 ? Int(CommandLine.arguments[3]) ?? 64 : 64
     emit(try Bridge.snapshot(pid: pid, maxDepth: maxDepth))
+  case "activate":
+    try requireAccessibilityTrust()
+    let pid = try pidArgument(2)
+    guard !Bridge.windows(pid: pid).isEmpty else {
+      throw BridgeError(
+        code: "PROCESS_NOT_ALLOWED", message: "The addressed process owns no visible window.")
+    }
+    Bridge.activate(pid: pid)
+    try Bridge.requireFrontmost(pid: pid)
+    emit(["ok": true])
+  case "scroll":
+    try requireAccessibilityTrust()
+    let pid = try pidArgument(2)
+    try Bridge.scroll(
+      pid: pid, path: try argument(3, "path"), forward: try argument(4, "direction") == "down")
+    emit(["ok": true])
   case "press":
     try requireAccessibilityTrust()
     let pid = try pidArgument(2)

@@ -14,6 +14,15 @@ import app.posato.control.model.StepResult
 import java.nio.file.Path
 
 interface NativeActions {
+    fun prepareInteraction() {}
+
+    fun scrollTo(
+        query: Query,
+        timeoutMs: Long
+    ) {
+        throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "This native driver does not implement scrolling.")
+    }
+
     fun snapshot(maxDepth: Int?): SnapshotNode
 
     fun tap(node: SnapshotNode)
@@ -99,13 +108,16 @@ class ScenarioRunner(
         scenario: Scenario
     ) {
         val timeoutMs = ((step.timeoutSeconds ?: scenario.defaults.timeoutSeconds) * MILLIS_PER_SECOND).toLong()
+        if (step.action in setOf(Actions.TYPE, Actions.PRESS, Actions.SCROLL_TO)) {
+            actions.prepareInteraction()
+        }
         when (step.action) {
             Actions.WAIT_FOR -> waitFor(step, timeoutMs)
             Actions.TAP -> actions.tap(locate(step))
             Actions.TYPE -> actions.type(locate(step), requireField(step.text, "type needs text"), step.clear, step.submit)
             Actions.PRESS -> actions.press(requireField(step.key, "press needs a key"), step.modifiers)
             Actions.ASSERT -> assertState(step)
-            Actions.SCROLL_TO -> locate(step)
+            Actions.SCROLL_TO -> actions.scrollTo(step.query ?: throw invalid("scrollTo needs a query"), timeoutMs)
             else -> throw invalid("Unknown action '${step.action}'.")
         }
     }

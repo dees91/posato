@@ -11,6 +11,8 @@ import app.posato.feature.targets.domain.ApplicationPolicyNameResult
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationFailure
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
+import kotlinx.collections.immutable.toPersistentList
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +36,23 @@ internal class TargetsViewModel(
     private val domainEditorState = MutableStateFlow(ExactDomainEditorState())
     private val applicationEditorState = MutableStateFlow(ApplicationPolicyEditorState())
     private val submissionState = MutableStateFlow<TargetsSubmissionState>(TargetsSubmissionState.Idle)
-    private val policyReadLifecycle = observePolicyReads()
+    private val policyReadLifecycle: Flow<Unit> = refreshRequests.onStart { emit(Unit) }.transform {
+        policyState.update { state -> state.copy(isLoading = true, failure = null) }
+        emit(Unit)
+        when (val result = store.read()) {
+            is LocalPolicyResult.Success -> {
+                domainEditorState.reconcileDomainEditorWith(result.value)
+                applicationEditorState.reconcileApplicationEditorWith(result.value)
+                policyState.update { TargetsPolicyState(snapshot = result.value) }
+            }
+
+            is LocalPolicyResult.Failure -> {
+                policyState.update { state ->
+                    TargetsPolicyState(snapshot = state.snapshot, failure = result.reason.toLoadFailure())
+                }
+            }
+        }
+    }
     private val applicationMappingsReadLifecycle = observeApplicationMappingReads()
     private val policyPresentationState = combine(
         policyState,
@@ -116,6 +134,39 @@ internal class TargetsViewModel(
         }
     }
 
+    fun submitWebsites(
+        input: String,
+        submissionId: Long
+    ) {
+        val state = currentState
+        if (!state.canMutatePolicy() || state.editingDomain != null) {
+            domainEditorState.update { it.copy(batchReceipt = WebsiteBatchReceipt(submissionId, saved = false)) }
+            return
+        }
+        when (val submission = createWebsiteBatchSubmission(input, state.domains)) {
+            WebsiteBatchSubmission.TooLong -> {
+                domainEditorState.update { it.copy(batchReceipt = WebsiteBatchReceipt(submissionId, saved = false, tooLong = true)) }
+            }
+
+            is WebsiteBatchSubmission.Ready -> {
+                val receipt = WebsiteBatchReceipt(
+                    submissionId = submissionId,
+                    saved = true,
+                    addedCount = submission.addedCount,
+                    duplicateCount = submission.duplicateCount,
+                    rejectedIndices = submission.rejectedIndices.toPersistentList(),
+                )
+                if (submission.addedCount == 0) {
+                    domainEditorState.update { it.copy(batchReceipt = receipt) }
+                } else {
+                    persist(submission.canonicalDomains, state.applicationPolicyName, TargetMutation.DOMAIN) { saved ->
+                        domainEditorState.update { it.copy(batchReceipt = if (saved) receipt else WebsiteBatchReceipt(submissionId, saved = false)) }
+                    }
+                }
+            }
+        }
+    }
+
     fun beginEditingApplicationPolicy() {
         val state = currentState
         val currentName = state.applicationPolicyName
@@ -158,30 +209,11 @@ internal class TargetsViewModel(
         }
     }
 
-    private fun observePolicyReads(): Flow<Unit> {
-        return refreshRequests.onStart { emit(Unit) }.transform {
-            policyState.update { state -> state.copy(isLoading = true, failure = null) }
-            emit(Unit)
-            when (val result = store.read()) {
-                is LocalPolicyResult.Success -> {
-                    domainEditorState.reconcileDomainEditorWith(result.value)
-                    applicationEditorState.reconcileApplicationEditorWith(result.value)
-                    policyState.update { TargetsPolicyState(snapshot = result.value) }
-                }
-
-                is LocalPolicyResult.Failure -> {
-                    policyState.update { state ->
-                        TargetsPolicyState(snapshot = state.snapshot, failure = result.reason.toLoadFailure())
-                    }
-                }
-            }
-        }
-    }
-
     private fun persist(
         canonicalDomains: List<String>,
         applicationPolicyName: String?,
-        mutation: TargetMutation
+        mutation: TargetMutation,
+        onCompleted: (Boolean) -> Unit = {},
     ) {
         val policy = when (val result = TargetPolicy.fromStoredValues(canonicalDomains, applicationPolicyName)) {
             is TargetPolicyValidationResult.Success -> {
@@ -194,16 +226,19 @@ internal class TargetsViewModel(
                 } else {
                     submissionState.update { TargetsSubmissionState.Failed(TargetsOperationFailure.CORRUPTED_POLICY) }
                 }
+                onCompleted(false)
                 return
             }
         }
         val expectedRevision = policyState.value.snapshot?.revision
         if (expectedRevision == null) {
             submissionState.update { TargetsSubmissionState.Failed(TargetsOperationFailure.LOAD_FAILED) }
+            onCompleted(false)
             return
         }
         submissionState.update { TargetsSubmissionState.Saving(mutation) }
         viewModelScope.launch {
+            var saved = false
             try {
                 when (val result = store.replace(expectedRevision, policy)) {
                     is LocalPolicyResult.Success -> {
@@ -213,14 +248,20 @@ internal class TargetsViewModel(
                             TargetMutation.APPLICATION_POLICY -> applicationEditorState.resetApplicationEditor()
                         }
                         submissionState.update { TargetsSubmissionState.Idle }
+                        saved = true
                     }
 
                     is LocalPolicyResult.Failure -> {
                         submissionState.update { TargetsSubmissionState.Failed(result.reason.toSaveFailure()) }
                     }
                 }
+            } catch (cancellationException: CancellationException) {
+                throw cancellationException
+            } catch (_: Exception) {
+                submissionState.update { TargetsSubmissionState.Failed(TargetsOperationFailure.SAVE_FAILED) }
             } finally {
                 submissionState.update { state -> if (state is TargetsSubmissionState.Saving) TargetsSubmissionState.Idle else state }
+                onCompleted(saved)
             }
         }
     }

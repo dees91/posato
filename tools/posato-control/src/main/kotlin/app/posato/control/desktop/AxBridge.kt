@@ -51,6 +51,8 @@ class AxBridge(
         invoke("press", pid.toString(), path)
     }
 
+    val windowActions = AxWindowActions { arguments -> invoke(*arguments) }
+
     fun type(
         pid: Long,
         path: String,

@@ -49,8 +49,23 @@ internal class SessionViewModel(
     private val targetsState = MutableStateFlow(SessionTargetsState())
     private val command = MutableStateFlow<SessionCommand?>(null)
     private val confirmingEarlyEnd = MutableStateFlow(false)
-    private val sessionReadLifecycle = observeSessionReads()
-    private val targetsReadLifecycle = observeTargetsReads()
+    private val sessionReadLifecycle: Flow<Unit> = refreshRequests.onStart { emit(Unit) }.transform {
+        sessionLoad.update { SessionLoadState() }
+        emit(Unit)
+        when (val result = sessionStore.read(clock.currentEpochMillis())) {
+            is LocalSessionResult.Success -> {
+                sessionLoad.update { SessionLoadState(status = result.value) }
+            }
+
+            is LocalSessionResult.Failure -> {
+                sessionLoad.update { SessionLoadState(failure = result.reason.toLoadFailure()) }
+            }
+        }
+    }
+    private val targetsReadLifecycle: Flow<Unit> = targetsRefreshRequests.onStart { emit(Unit) }.transform {
+        emit(Unit)
+        targetsState.update { loadSessionTargets(policyStore, applicationMappings) }
+    }
     private val ticker = observeTicks()
 
     val uiState: StateFlow<SessionUiState> = combine(
@@ -91,6 +106,17 @@ internal class SessionViewModel(
             val adjusted = (draft.durationMinutes + deltaMinutes).coerceIn(SessionLimits.MIN_DURATION_MINUTES, SessionLimits.MAX_DURATION_MINUTES)
             draft.copy(durationMinutes = adjusted, failure = null)
         }
+    }
+
+    fun setDurationMinutes(minutes: Int) {
+        if (minutes !in SessionLimits.MIN_DURATION_MINUTES..SessionLimits.MAX_DURATION_MINUTES) {
+            return
+        }
+        setupDraft.update { draft -> draft.copy(durationMinutes = minutes, failure = null) }
+    }
+
+    fun refreshTargets() {
+        targetsRefreshRequests.tryEmit(Unit)
     }
 
     fun submitDurationMinutes(input: String) {
@@ -233,29 +259,6 @@ internal class SessionViewModel(
         sessionLoad.update { SessionLoadState() }
         refreshRequests.tryEmit(Unit)
         targetsRefreshRequests.tryEmit(Unit)
-    }
-
-    private fun observeSessionReads(): Flow<Unit> {
-        return refreshRequests.onStart { emit(Unit) }.transform {
-            sessionLoad.update { SessionLoadState() }
-            emit(Unit)
-            when (val result = sessionStore.read(clock.currentEpochMillis())) {
-                is LocalSessionResult.Success -> {
-                    sessionLoad.update { SessionLoadState(status = result.value) }
-                }
-
-                is LocalSessionResult.Failure -> {
-                    sessionLoad.update { SessionLoadState(failure = result.reason.toLoadFailure()) }
-                }
-            }
-        }
-    }
-
-    private fun observeTargetsReads(): Flow<Unit> {
-        return targetsRefreshRequests.onStart { emit(Unit) }.transform {
-            emit(Unit)
-            targetsState.update { loadSessionTargets(policyStore, applicationMappings) }
-        }
     }
 
     private fun observeTicks(): Flow<Long> {

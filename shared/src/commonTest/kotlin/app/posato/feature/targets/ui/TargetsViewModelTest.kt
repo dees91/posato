@@ -39,6 +39,198 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
+class TargetsDesignAdoptionViewModelTest {
+    private val scheduler = TestCoroutineScheduler()
+    private val dispatcher = StandardTestDispatcher(scheduler)
+
+    @Test
+    fun `given a stale add callback during editing then rejection releases the pending draft`() {
+        runTest(dispatcher) {
+            val store = FakeTargetPolicyStore(stateOf(0, listOf("first.example")))
+            val viewModel = TargetsViewModel(store)
+            observe(viewModel)
+            scheduler.runCurrent()
+            viewModel.beginEditingDomain("first.example")
+            scheduler.runCurrent()
+            val browser = TargetsBrowserState()
+            browser.websiteDraft.edit { append("next.example") }
+
+            browser.submit(viewModel::submitWebsites)
+            scheduler.runCurrent()
+            browser.accept(viewModel.uiState.value.websiteBatchReceipt)
+
+            assertEquals("next.example", browser.websiteDraft.text.toString())
+            assertFalse(checkNotNull(browser.lastReceipt).saved)
+            assertEquals(0, store.replaceCalls)
+            viewModel.cancelEditingDomain()
+            scheduler.runCurrent()
+            browser.submit(viewModel::submitWebsites)
+            scheduler.runCurrent()
+            browser.accept(viewModel.uiState.value.websiteBatchReceipt)
+            assertTrue(checkNotNull(browser.lastReceipt).saved)
+        }
+    }
+
+    @Test
+    fun `given a cancelled batch save when retried then the draft receives a failed receipt and can be resubmitted`() {
+        runTest(dispatcher) {
+            val store = FakeTargetPolicyStore(stateOf(0))
+            val viewModel = TargetsViewModel(store)
+            observe(viewModel)
+            scheduler.runCurrent()
+            store.cancelNextReplace = true
+
+            viewModel.submitWebsites("first.example", 1)
+            scheduler.runCurrent()
+
+            assertFalse(checkNotNull(viewModel.uiState.value.websiteBatchReceipt).saved)
+            assertFalse(viewModel.uiState.value.isSaving)
+            assertEquals(emptyList(), viewModel.uiState.value.domains)
+            viewModel.submitWebsites("first.example", 2)
+            scheduler.runCurrent()
+            assertTrue(checkNotNull(viewModel.uiState.value.websiteBatchReceipt).saved)
+            assertEquals(listOf("first.example"), viewModel.uiState.value.domains)
+        }
+    }
+
+    @Test
+    fun `given a custom group when native selection succeeds then its name is preserved`() {
+        runTest(dispatcher) {
+            val store = FakeTargetPolicyStore(stateOf(0, applicationPolicyName = "Quiet work"))
+            val mappings = FakeApplicationMappings()
+            mappings.selectionResult = LocalApplicationSelectionResult.Success(snapshotOf(mapping("Example App", "ab")))
+            val viewModel = TargetsViewModel(store, mappings)
+            observe(viewModel)
+            scheduler.runCurrent()
+
+            viewModel.chooseApplications()
+            scheduler.runCurrent()
+
+            assertEquals("Quiet work", viewModel.uiState.value.applicationPolicyName)
+            assertEquals(0, store.replaceCalls)
+        }
+    }
+
+    @Test
+    fun `given a batch when submitted then one revision saves all valid unique websites`() {
+        runTest(dispatcher) {
+            val store = FakeTargetPolicyStore(stateOf(0))
+            val viewModel = TargetsViewModel(store)
+            observe(viewModel)
+            scheduler.runCurrent()
+
+            viewModel.submitWebsites("https://first.example/path, invalid, second.example, FIRST.EXAMPLE", 1)
+            scheduler.runCurrent()
+
+            assertEquals(listOf("first.example", "second.example"), viewModel.uiState.value.domains)
+            assertEquals(1, store.replaceCalls)
+            val receipt = checkNotNull(viewModel.uiState.value.websiteBatchReceipt)
+            assertEquals(1L, receipt.submissionId)
+            assertTrue(receipt.saved)
+            assertEquals(2, receipt.addedCount)
+            assertEquals(1, receipt.duplicateCount)
+            assertEquals(listOf(1), receipt.rejectedIndices)
+        }
+    }
+
+    @Test
+    fun `given a batch revision conflict when submitted then no successful receipt or partial save is produced`() {
+        runTest(dispatcher) {
+            val store = FakeTargetPolicyStore(stateOf(0))
+            val viewModel = TargetsViewModel(store)
+            observe(viewModel)
+            scheduler.runCurrent()
+            store.replaceExternally(domains = listOf("external.example"))
+
+            viewModel.submitWebsites("first.example,second.example", 2)
+            scheduler.runCurrent()
+
+            assertEquals(TargetsOperationFailure.REVISION_CONFLICT, viewModel.uiState.value.operationFailure)
+            assertFalse(checkNotNull(viewModel.uiState.value.websiteBatchReceipt).saved)
+            viewModel.retry()
+            scheduler.runCurrent()
+            assertEquals(listOf("external.example"), viewModel.uiState.value.domains)
+        }
+    }
+
+    @Test
+    fun `given no application group when a nonempty selection succeeds then the default group is created`() {
+        runTest(dispatcher) {
+            val store = FakeTargetPolicyStore(stateOf(0))
+            val mappings = FakeApplicationMappings()
+            mappings.selectionResult = LocalApplicationSelectionResult.Success(snapshotOf(mapping("Example App", "ab")))
+            val viewModel = TargetsViewModel(store, mappings)
+            observe(viewModel)
+            scheduler.runCurrent()
+
+            assertTrue(viewModel.uiState.value.canChooseApplications())
+            viewModel.chooseApplications()
+            scheduler.runCurrent()
+
+            assertEquals("Applications", viewModel.uiState.value.applicationPolicyName)
+            assertEquals(1, viewModel.uiState.value.applicationMappings.size)
+            assertEquals(1, store.replaceCalls)
+        }
+    }
+
+    @Test
+    fun `given no application group when selection is cancelled or empty then no group is created`() {
+        runTest(dispatcher) {
+            val store = FakeTargetPolicyStore(stateOf(0))
+            val mappings = FakeApplicationMappings()
+            val viewModel = TargetsViewModel(store, mappings)
+            observe(viewModel)
+            scheduler.runCurrent()
+
+            viewModel.chooseApplications()
+            scheduler.runCurrent()
+            mappings.selectionResult = LocalApplicationSelectionResult.Success(LocalApplicationMappingsSnapshot.empty())
+            viewModel.chooseApplications()
+            scheduler.runCurrent()
+
+            assertEquals(null, viewModel.uiState.value.applicationPolicyName)
+            assertEquals(0, store.replaceCalls)
+        }
+    }
+
+    @Test
+    fun `given a saved selection when group creation conflicts then mappings survive and activation requires an explicit retry`() {
+        runTest(dispatcher) {
+            val store = FakeTargetPolicyStore(stateOf(0))
+            val mappings = FakeApplicationMappings()
+            mappings.selectionResult = LocalApplicationSelectionResult.Success(snapshotOf(mapping("Example App", "ab")))
+            val viewModel = TargetsViewModel(store, mappings)
+            observe(viewModel)
+            scheduler.runCurrent()
+            store.replaceExternally(domains = listOf("external.example"))
+
+            viewModel.chooseApplications()
+            scheduler.runCurrent()
+            assertEquals(null, viewModel.uiState.value.applicationPolicyName)
+            assertEquals(1, viewModel.uiState.value.applicationMappings.size)
+            assertEquals(TargetsOperationFailure.REVISION_CONFLICT, viewModel.uiState.value.operationFailure)
+
+            viewModel.retry()
+            scheduler.runCurrent()
+            assertEquals(null, viewModel.uiState.value.applicationPolicyName)
+            viewModel.activateApplicationPolicy()
+            scheduler.runCurrent()
+            assertEquals("Applications", viewModel.uiState.value.applicationPolicyName)
+            assertEquals(listOf("external.example"), viewModel.uiState.value.domains)
+        }
+    }
+
+    @BeforeTest
+    fun setUp() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+}
+
 class TargetsViewModelTest {
     private val scheduler = TestCoroutineScheduler()
     private val dispatcher = StandardTestDispatcher(scheduler)

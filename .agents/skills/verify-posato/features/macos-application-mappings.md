@@ -3,22 +3,22 @@
 On a Mac, a user chooses which locally installed applications belong to the
 application group through a native picker, sees the chosen applications listed
 under `Applications`, and removes them one by one. The choices never leave the
-device. The picker is fully drivable; nothing here needs a human.
+device. The panel is keyboard-drivable once development signing and helper approval
+are provisioned; any operating-system consent still belongs to the maintainer.
 
 ## Sub-features
 
-- `mapping-choose` opens the native application picker from `Choose applications`.
+- `mapping-choose` opens the native application picker from `Choose apps`.
 - `mapping-list` shows each chosen application with a `Remove` action.
 - `mapping-remove` deletes one chosen application.
-- `mapping-empty` shows `No applications chosen on this device.` when none is chosen.
+- `mapping-empty` shows `Make room beyond the browser.` when none is chosen.
 - `mapping-errors` explains a failed pick (`The application picker could not be opened.`, `Posato cannot be added to its own application group.`, capacity and verification messages).
 
 ## How to get to it (user POV)
 
-- Open the desktop app and tap `Paused items` in the switch at the top; the
-  `Applications` section shows `No applications chosen on this device.` and
-  the `Choose applications` button, or the list of chosen applications with
-  `Remove`.
+- Open the desktop app and tap `Paused items` in the sidebar, then select Apps; the application list shows `Make room beyond the browser.` and
+  the `Choose apps` button, or the list of chosen applications with
+  an ellipsis menu for each application.
 - On iOS the same section has its own picker; see
   [iOS application mappings](./ios-application-mappings.md).
 
@@ -40,8 +40,8 @@ Preconditions:
   driver brings the helper forward itself and refuses rather than typing
   blindly if it cannot.
 
-- **Empty state.** Read the section. Run `$PC find -t desktop --text "No applications chosen on this device."`; one text element is returned.
-- **Open the picker.** Choose the button. Run `$PC tap -t desktop --text "Choose applications" --role button`. A native open panel appears, owned by the helper process, and the Posato window stays where it was.
+- **Empty state.** Read the section. Run `$PC find -t desktop --text "Make room beyond the browser."`; one text element is returned.
+- **Open the picker.** Choose the button. Run `$PC tap -t desktop --text "Choose apps" --role button`. A native open panel appears, owned by the helper process, and the Posato window stays where it was.
 - **Wait for the panel.** Run `$PC wait -t desktop --process PosatoMacOSHelper --for exists --timeout-seconds 30`. With no query this waits for the helper to own a visible window, which is the readiness gate; the panel has no accessibility tree to wait on.
 - **Pick an application.** Drive the panel by keyboard only, with no coordinates and no localized labels:
 
@@ -53,7 +53,7 @@ Preconditions:
 
   `⌘⇧G` opens the panel's go-to-folder field, `--clear --submit` replaces any remembered path and resolves this one, and the second `Return` confirms `Choose`. Exactly two returns are needed: `--submit` resolves the path, the second confirms. Choose any installed application except Posato itself.
 - **Confirm the panel closed.** Run `$PC wait -t desktop --process PosatoMacOSHelper --for absent --timeout-seconds 20`. A queryless `--process` wait accepts `exists` and `absent` only; the helper exits with its panel, and a selector that no longer resolves counts as absent. The earlier `--for exists` is what makes this meaningful: on its own, `absent` is also satisfied by a name that never resolved at all.
-- **List and remove.** Run `$PC wait -t desktop --for exists --text Safari`; the row with the application name and its `Remove` button appears in the application's own tree. Run `$PC tap -t desktop --text Remove --role button --near-text Safari`; `wait --for exists --text "No applications chosen on this device."` returns `ok`.
+- **List and remove.** Run `$PC wait -t desktop --for exists --text Safari`; the row with the application name and its ellipsis button appears in the application's own tree. Run `$PC tap -t desktop --text "Actions for Safari" --role button`, then `$PC tap -t desktop --text Remove --role button`; `wait --for exists --text "Make room beyond the browser."` returns `ok`.
 - **Persist.** Run `$PC db query -t desktop --database macos-application-mappings.db --sql "select count(*) as mappings from localApplicationMapping"` before and after removal; the count goes from 1 to 0 (the stored columns are opaque blobs, so read only the count).
 - **Proof.** Run `$PC screenshot -t desktop --process PosatoMacOSHelper --name panel-open` while the panel is up, and `$PC screenshot -t desktop --name mappings` after the pick and after the removal. The panel screenshot needs the selector because the panel sits above the application's window layer.
 
@@ -85,7 +85,8 @@ Preconditions:
   be opened.`; that message is the expected outcome, not a defect.
 - Choosing Posato itself is rejected with `Posato cannot be added to its own
   application group.`.
-- `Remove` also exists in the group row and in every website row; keep
-  `--near-text <application name>`.
+- Remove is inside the application row's ellipsis menu. Open
+  `Actions for <application name>` first. Removing the last choice keeps
+  group metadata; successful first selection creates Applications only if absent.
 - Chosen applications are device-only: a Mac shows only its own choices, and
   an iPhone shows only the ones chosen on that iPhone.

@@ -17,7 +17,7 @@ feature file as the recipe.
   require `doctor -t <target>` to report `ok: true`. The app opens on the
   `Session` destination after every launch and relaunch.
 - Before a Websites or Applications recipe, switch destination with `tap
-  --text "Paused items" --role button` and wait for `Add website`; the
+  --text "Paused items" --role button` and wait for `Search`; the
   Sessions recipe starts on `Session` and needs at least one website first.
 - Start recipes from a state with no website named `example.com` and no
   active session; the Simulator can start from `launch --fresh`, the desktop
@@ -29,14 +29,14 @@ feature file as the recipe.
 
 - Every recipe names the exact `posato-control` command; keep labels, flags,
   and quoted copy unchanged.
-- Address controls by visible copy plus `--near-text` for anything that
-  appears once per row (`Edit`, `Remove`); address text fields by role and the
-  section header above them (`--role textField --near-text "Websites"` or
-  `"Applications"`), never by label or index.
-- On iOS finish text entry with `--submit` (or `"submit": true` in a
-  scenario) before tapping controls below the field; the keyboard hides them
-  and Compose drops their labels. After a rejected submit the keyboard stays
-  open, so relaunch before the next step.
+- Main navigation is at the bottom on iOS and in the sidebar on Mac.
+  Nested category-tab labels include counts; use `textContains` with role
+  `button`. Open a row's `Actions for <name>` menu before Edit or Remove.
+- Each website mode has one text field, selected with `--role textField`.
+  Return submits the add batch and keeps focus; tap `Done` to dismiss the
+  keyboard and restore the iOS bottom navigation.
+- Use scenario `scrollTo` for offscreen rows on both targets. Do not substitute
+  Tab counts or database writes for the real list interaction.
 - Prefer `run --scenario <file>` over many single commands on iOS.
 - Restore data after a mutation. Do not remove proof artifacts during cleanup.
 
@@ -73,14 +73,13 @@ handles, required state, commands, and observable proof.
 
 - [Websites](./websites.md) covers adding, rejecting, editing, removing, and
   persisting exact domains on every target.
-- [Application group](./application-group.md) covers naming, editing,
-  removing, and persisting the single application group.
+- [Application group](./application-group.md) covers automatic creation,
+  name preservation, and recovery after a partial metadata-save failure.
 - [macOS application mappings](./macos-application-mappings.md) covers the
   desktop-only application picker, driven end to end through the helper
   process, and how to read its result.
 - [iOS application mappings](./ios-application-mappings.md) covers the
-  device-only Family Controls picker, its access states, seeding a captured
-  selection instead of picking, and the consent step the driver cannot reach.
+  device-only Family Controls picker, its access states, and the consent and selection steps that need the maintainer.
 - [Sessions](./sessions.md) covers setting up, reviewing, starting, ending
   early, and expiring one manual session on every target, and what survives a
   relaunch.

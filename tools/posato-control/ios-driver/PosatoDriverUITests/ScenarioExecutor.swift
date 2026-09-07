@@ -12,7 +12,7 @@ final class ScenarioExecutor {
   private static let focusTimeout: TimeInterval = 2
   private static let pollInterval: TimeInterval = 0.25
   private static let settleInterval: TimeInterval = 0.5
-  private static let scrollAttempts = 10
+  private static let scrollAttempts = 80
   private static let revealAttempts = 3
   private static let keyboardSettle: TimeInterval = 0.3
   private static let extraDeletes = 3
@@ -143,7 +143,7 @@ final class ScenarioExecutor {
       }
       Thread.sleep(forTimeInterval: seconds)
     case "scrollTo":
-      try scrollTo(step)
+      try scrollTo(step, timeout: timeout)
     case "terminate":
       app.terminate()
     case "relaunch":
@@ -289,18 +289,59 @@ final class ScenarioExecutor {
     }
   }
 
-  private func scrollTo(_ step: Step) throws {
+  private func scrollTo(_ step: Step, timeout: TimeInterval) throws {
+    let scope: XCUIElement
+    if let query = step.query?.within {
+      scope = try self.scope(for: query)
+    } else {
+      scope = app
+    }
+    let containers =
+      step.query?.within != nil || scope.elementType == .scrollView
+      ? [scope] : scope.scrollViews.allElementsBoundByIndex
+    guard
+      let container = containers.filter({
+        $0.exists && !$0.frame.isEmpty && $0.frame.intersects(app.frame)
+      })
+      .max(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height })
+    else {
+      throw DriverError(.elementNotFound, "No visible scroll area matches the requested scope")
+    }
+    let deadline = Date().addingTimeInterval(timeout)
+    var previous: [String]?
+    var forward = true
+    var unchanged = 0
     for _ in 0..<Self.scrollAttempts {
-      if let element = resolve(step.query, action: step.action), element.exists, element.isHittable
+      if let element = resolve(step.query, action: step.action), element.exists,
+        !element.frame.isEmpty,
+        container.frame.intersection(app.frame).contains(element.frame)
       {
         return
       }
-      app.swipeUp()
+      let current = Self.scrollLabels(SnapshotSerializer.node(from: try container.snapshot()))
+      unchanged = current == previous ? unchanged + 1 : 0
+      if Date() >= deadline || (!forward && unchanged >= 2) { break }
+      if unchanged >= 2 {
+        forward = false
+        unchanged = 0
+      }
+      previous = current
+      let start = container.coordinate(
+        withNormalizedOffset: CGVector(dx: 0.5, dy: forward ? 0.85 : 0.15))
+      let end = container.coordinate(
+        withNormalizedOffset: CGVector(dx: 0.5, dy: forward ? 0.15 : 0.85))
+      start.press(forDuration: 0.05, thenDragTo: end)
+      Thread.sleep(forTimeInterval: Self.scrollSettle)
     }
     throw DriverError(
       .elementNotFound,
-      "element not reached after \(Self.scrollAttempts) swipes: \(describe(step.query))"
+      "element not reached within the scrolling limit: \(describe(step.query))"
     )
+  }
+
+  private static func scrollLabels(_ node: SnapshotNode) -> [String] {
+    let own = node.role == "text" ? [node.label ?? ""] : []
+    return own + node.children.flatMap(scrollLabels)
   }
 
   // MARK: - Evidence
@@ -423,7 +464,11 @@ final class ScenarioExecutor {
     }
     let containers = base.descendants(matching: .any).matching(Self.rolePredicate(role))
       .containing(anchorPredicate)
-    guard let deepest = containers.allElementsBoundByIndex.last else {
+    guard
+      let deepest = containers.allElementsBoundByIndex.last(where: {
+        $0.descendants(matching: .any).matching(anchorPredicate).count > 0
+      })
+    else {
       throw DriverError(
         .elementNotFound, "no \(role) contains an element matching \(describe(inner))")
     }

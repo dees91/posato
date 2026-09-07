@@ -1,12 +1,24 @@
 {
   "version": 1,
-  "launch": { "terminateExisting": false },
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
   "steps": [
-    { "name": "switch-ready", "action": "waitFor", "state": "exists", "query": { "text": "Paused items", "role": "button" }, "timeoutSeconds": 30 },
-    { "name": "open-paused-items", "action": "tap", "query": { "text": "Paused items", "role": "button" } },
-    { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "example.com", "role": "text" }, "timeoutSeconds": 30 },
-    { "name": "remove", "action": "tap", "query": { "text": "Remove", "role": "button", "near": { "text": "example.com" } } },
-    { "name": "row-gone", "action": "waitFor", "state": "absent", "query": { "text": "example.com", "role": "text" } },
-    { "name": "after-remove", "action": "screenshot" }
+    {"name":"ready","action":"waitFor","state":"exists","query":{"text":"Paused items","role":"button"}},
+    {"name":"open-paused-items","action":"tap","query":{"text":"Paused items","role":"button"}},
+    {"name":"entry-ready","action":"waitFor","state":"exists","query":{"text":"Search","role":"button"}},
+    {"name":"reach-row","action":"scrollTo","query":{"text":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
+    {"name":"open-row-menu","action":"tap","query":{"text":"Actions for example.com","role":"button"}},
+    {"name":"remove-domain","action":"tap","query":{"text":"Remove","role":"button"}},
+    {"name":"row-removed","action":"waitFor","state":"absent","query":{"text":"example.com","role":"text"}},
+    {"name":"removed-shot","action":"screenshot"},
+    {"name":"removed-tree","action":"snapshot"}
   ]
 }

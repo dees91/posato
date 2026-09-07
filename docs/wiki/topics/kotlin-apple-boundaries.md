@@ -82,6 +82,13 @@ macOS enforcement APIs therefore live in a separate signed native helper behind
 authenticated, versioned local IPC. JNI, JNA, and a different desktop host are
 not the accepted baseline.
 
+`user-confirmed` (2026-09-07):
+[ADR 0003's window-presentation amendment](../../decisions/0003-mvp-application-architecture-baseline.md#design-001-window-presentation-amendment)
+accepts one signed, bundled AppKit/JNI leaf in the desktop host for window
+chrome and contrast queries, with same-process native crash risk. This narrow
+presentation exception does not move enforcement, synchronization, privilege,
+IPC, networking, or product policy into the JVM's native leaf.
+
 `user-confirmed` (2026-08-26):
 [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
 selects Swift for a short-lived normal-user session helper and a minimal root
