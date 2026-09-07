@@ -65,8 +65,9 @@ class MacOsHelperProtocolTest {
 
     @Test
     fun `capability payload is fixed width and big endian`() {
-        assertEquals("0000000000000007", MacOsHelperProtocol.capabilityPayload().toHex())
-        assertEquals(true, MacOsHelperProtocol.supportsRequiredParentCapabilities(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 7)))
+        assertEquals("000000000000000f", MacOsHelperProtocol.capabilityPayload().toHex())
+        assertEquals(true, MacOsHelperProtocol.supportsRequiredParentCapabilities(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 15)))
+        assertEquals(false, MacOsHelperProtocol.supportsRequiredParentCapabilities(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 7)))
         assertEquals(false, MacOsHelperProtocol.supportsRequiredParentCapabilities(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 3)))
         assertEquals(false, MacOsHelperProtocol.supportsRequiredParentCapabilities(byteArrayOf(0, 0, 0, 0, 0, 0, 0, 1)))
     }

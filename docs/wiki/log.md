@@ -1233,3 +1233,20 @@
   asks whether this checkout can build, sign, and drive right now, while this
   one asks whether the Mac can obtain Apple resources and whether the account
   holds them. Their check identifiers do not overlap.
+
+## [2026-09-07] verification | MACOS-005 physical matrix and harness corrections
+
+- The gated JVM harness drove the installed development package through all 8
+  rows: launch-during and running-at-activation termination, the paused notice
+  after a maintainer-allowed notification prompt, control survival, clear,
+  forced helper termination, and parent exit; the privacy canary is absent
+  from the evidence.
+- The rows exposed and the closeout fixed three defects: `NSWorkspace`
+  snapshots never refresh without a run loop (replaced with `libproc` pid
+  enumeration plus per-pid hydration), held `NSRunningApplication` snapshots
+  go stale so the notice never fired (each poll re-resolves tracked entries
+  against a fresh listing, vanished pid counts as terminated), and the
+  harness `pkill -f` matched its own launcher command line and SIGKILLed the
+  run (the client now kills only the launcher's child via `ProcessHandle`).
+  Physical packaging must use the Apple Development identity; the ad-hoc
+  fallback fails the client team check.
