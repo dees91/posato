@@ -388,7 +388,7 @@ private class DeviceDoctor(
     private fun screenTimeCheck(): DoctorCheck = DoctorCheck.unknown(
         "device.screenTime",
         "Screen Time authorization for Posato is readable only by the application itself.",
-        "Drive the application to Paused items > Applications and read the access sentence with " +
+        "Drive the application to Paused items > Apps and read the access sentence with " +
             "`posato-control find -t device --text-contains \"Screen Time\"`.",
     )
 }

@@ -24,6 +24,19 @@ class ScenarioRunnerTest {
         private val tree: SnapshotNode
     ) : NativeActions {
         val events = mutableListOf<String>()
+        var preparedInteractions = 0
+        var scrollRequest: Pair<Query, Long>? = null
+
+        override fun prepareInteraction() {
+            preparedInteractions++
+        }
+
+        override fun scrollTo(
+            query: Query,
+            timeoutMs: Long
+        ) {
+            scrollRequest = query to timeoutMs
+        }
 
         override fun snapshot(maxDepth: Int?): SnapshotNode = tree
 
@@ -95,6 +108,22 @@ class ScenarioRunnerTest {
             actions.events,
         )
         assertEquals(listOf("screenshots/screenshot-4-after-add.png"), result.steps[4].artifacts)
+        assertEquals(3, actions.preparedInteractions)
+    }
+
+    @Test
+    fun `scroll delegates the offscreen query and timeout after preparing the native window`() {
+        val actions = RecordingActions(tree)
+        val query = Query(text = "not-composed.example", within = Query(text = "Saved websites", role = "group"))
+        val scenario = Scenario(
+            steps = listOf(Step(action = Actions.SCROLL_TO, query = query, timeoutSeconds = 12.5)),
+        )
+
+        val result = ScenarioRunner(actions, Path::toString).run(scenario)
+
+        assertTrue(result.ok)
+        assertEquals(query to 12500L, actions.scrollRequest)
+        assertEquals(1, actions.preparedInteractions)
     }
 
     @Test

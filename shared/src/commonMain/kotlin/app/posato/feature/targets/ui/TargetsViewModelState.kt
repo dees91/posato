@@ -23,6 +23,7 @@ internal data class ExactDomainEditorState(
     val session: Long = 0,
     val editingDomain: String? = null,
     val failure: ExactDomainEntryFailure? = null,
+    val batchReceipt: WebsiteBatchReceipt? = null,
 ) {
     override fun toString(): String {
         return "ExactDomainEditorState(redacted)"
@@ -67,7 +68,7 @@ internal sealed interface TargetsSubmissionState {
 }
 
 internal fun MutableStateFlow<ExactDomainEditorState>.resetDomainEditor() {
-    update { state -> ExactDomainEditorState(session = state.session + 1) }
+    update { state -> ExactDomainEditorState(session = state.session + 1, batchReceipt = state.batchReceipt) }
 }
 
 internal fun MutableStateFlow<ApplicationPolicyEditorState>.resetApplicationEditor() {
@@ -103,6 +104,7 @@ internal fun createUiState(
         domainEditorSession = domainEditorState.session,
         editingDomain = domainEditorState.editingDomain,
         domainInputFailure = domainEditorState.failure,
+        websiteBatchReceipt = domainEditorState.batchReceipt,
         applicationPolicyName = policy?.applicationPolicyName?.canonicalValue,
         applicationEditorSession = applicationEditorState.session,
         isEditingApplicationPolicy = applicationEditorState.isEditing,
@@ -142,6 +144,6 @@ internal fun LocalPolicyFailure.toSaveFailure(): TargetsOperationFailure {
 }
 
 internal fun TargetsUiState.canMutatePolicy(): Boolean {
-    return hasLoaded && !isLoading && !isSaving &&
+    return hasLoaded && !isLoading && !isSaving && !isMutatingApplicationMappings &&
         (operationFailure == null || operationFailure == TargetsOperationFailure.SAVE_FAILED)
 }

@@ -9,7 +9,8 @@
 - **Historical HTML and Node suite:** non-release tag
   `archive/mvp-interaction-flow-html`, pinned to `566bdb6`
 - **Source type:** disposable interactive UX prototype
-- **Reviewed:** 2026-09-06
+- **Frozen adoption reference:** `c879ff7df7ad29f286b7976756e707b0179520d3`
+- **Reviewed:** 2026-09-07
 - **Authority:** evidence only; not a product, design, architecture, or
   implementation authority
 
@@ -24,8 +25,10 @@ The accepted [design authority](../../../DESIGN.md),
 [MVP scope](../../product/mvp-scope.md), and
 [architecture baseline](../../decisions/0003-mvp-application-architecture-baseline.md)
 remain authoritative. Future task plans may cite this source as usability
-evidence, but they must not import its reducer, geometry, fixtures, or web
-implementation as a product contract.
+evidence, but they must not import its reducer, fixtures, or web implementation
+as a product contract. Concrete presentation and reusable components were
+explicitly adopted into the root design authority on 2026-09-07; the source
+remains frozen reference evidence rather than a runtime dependency.
 
 The root `DESIGN.md` links to a separate [prototype design reference](../../../prototypes/mvp-interaction-flow/DESIGN.md).
 Recording its source-backed appearance and behavior does not promote its mock services or implementation
@@ -33,6 +36,10 @@ parameters into production requirements.
 
 ## Maintainer-confirmed evidence
 
+- `user-confirmed` (2026-09-07): adopt the visual screens and complete Compose
+  design system practically 1:1 in the real MVP, adapting implementation to
+  existing ViewModels in one PR. Update the verification driver and its skill
+  in the same change. Do not import mock behavior or a parallel state model.
 - `user-confirmed`: Free play is an inspection workbench. It may prepare
   deterministic prerequisite state so every listed prototype action can be
   exercised independently.
@@ -188,8 +195,8 @@ native Apple accessibility conformance, or production design acceptance.
   browser state above editor navigation removed that path; the exact native
   search/edit/cancel replay passed. This is bounded prototype runtime evidence,
   not a general claim about other Compose versions or platforms.
-- `open`: validate the revised presentation with people and production Apple
-  accessibility technologies before adopting its exact geometry. Native probes
+- `open`: validate the adopted presentation with people and Apple
+  accessibility technologies. Native probes
   establish reachable controls and state retention, not user preference or a
   universally optimal layout.
 

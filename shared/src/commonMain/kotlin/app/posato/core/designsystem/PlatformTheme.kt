@@ -1,73 +1,44 @@
 package app.posato.core.designsystem
 
-import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
 
 @Immutable
 internal data class PlatformTheme(
     val isLight: Boolean,
-    val background: Color,
-    val label: Color,
-    val productNameStyle: TextStyle,
-    val primaryLineStyle: TextStyle,
-    val supportingLineStyle: TextStyle,
-    val buildNoteStyle: TextStyle,
+    val highContrast: Boolean = false,
 )
 
 @Composable
 internal expect fun platformTheme(): PlatformTheme
 
 @Composable
-internal fun PosatoTheme(content: @Composable () -> Unit) {
-    val platformTheme = platformTheme()
-
-    MaterialTheme(
-        colorScheme = platformTheme.materialColorScheme(),
-        typography = platformTheme.materialTypography(),
-        content = content,
-    )
-}
-
-private fun PlatformTheme.materialColorScheme(): ColorScheme {
-    val primaryTint = if (isLight) LightMoss else DarkMoss
-
-    return if (isLight) {
-        lightColorScheme(
-            primary = primaryTint,
-            secondary = primaryTint,
-            background = background,
-            surface = background,
-            onBackground = label,
-            onSurface = label,
-        )
+internal fun PosatoTheme(
+    highContrast: Boolean? = null,
+    content: @Composable () -> Unit
+) {
+    val platform = platformTheme()
+    val palette = if (platform.isLight) PosatoPalette.Light else PosatoPalette.Dark
+    val colors = if (highContrast ?: platform.highContrast) {
+        palette.copy(onSurfaceVariant = palette.onSurface, outlineVariant = palette.outline, outline = palette.onSurface)
     } else {
-        darkColorScheme(
-            primary = primaryTint,
-            secondary = primaryTint,
-            background = background,
-            surface = background,
-            onBackground = label,
-            onSurface = label,
+        palette
+    }
+    CompositionLocalProvider(
+        LocalMinimumInteractiveComponentSize provides PosatoSize.Control,
+        LocalContentColor provides colors.onSurface,
+    ) {
+        MaterialTheme(
+            colorScheme = colors,
+            typography = PosatoTypography.Tokens,
+            shapes = PosatoShapes.Tokens,
+            content = content,
         )
     }
 }
 
-private fun PlatformTheme.materialTypography(): Typography = Typography(
-    headlineMedium = primaryLineStyle,
-    titleLarge = productNameStyle,
-    titleMedium = productNameStyle,
-    titleSmall = productNameStyle,
-    bodyLarge = supportingLineStyle,
-    bodyMedium = supportingLineStyle,
-    bodySmall = buildNoteStyle,
-)
-
-private val LightMoss = Color(0xFF2E5D50)
-private val DarkMoss = Color(0xFF76B29E)
+internal expect fun platformNavigationPlacement(): PosatoNavigationPlacement

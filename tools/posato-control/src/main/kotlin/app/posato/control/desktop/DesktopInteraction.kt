@@ -69,6 +69,20 @@ class DesktopInteraction(
     private inner class DesktopActions(
         private val scenario: Scenario
     ) : NativeActions {
+        override fun prepareInteraction() {
+            bridge.windowActions.activate(runningPid())
+        }
+
+        override fun scrollTo(
+            query: Query,
+            timeoutMs: Long
+        ) {
+            DesktopScroller(
+                snapshot = { snapshot(null) },
+                scroll = { node, forward -> bridge.windowActions.scroll(runningPid(), requirePath(node), forward) },
+            ).scrollTo(query, timeoutMs)
+        }
+
         override fun snapshot(maxDepth: Int?): SnapshotNode = bridge.snapshot(runningPid(), maxDepth)
 
         override fun tap(node: SnapshotNode) {

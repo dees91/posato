@@ -65,7 +65,8 @@ internal object SessionReviewDerivation {
         access: LocalApplicationMappingsAccess?,
     ): SessionReview {
         val domains = policy.domains.map { domain -> domain.canonicalValue }.toPersistentList()
-        val effectiveCount = domains.size + (selectedMappingCount ?: 0)
+        val effectiveApplications = if (policy.applicationPolicyName != null) selectedMappingCount ?: 0 else 0
+        val effectiveCount = domains.size + effectiveApplications
         val actionRequired = when {
             effectiveCount == 0 -> {
                 SessionActionRequired.NO_EFFECTIVE_ITEMS

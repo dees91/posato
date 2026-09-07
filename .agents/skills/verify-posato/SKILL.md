@@ -1,6 +1,6 @@
 ---
 name: verify-posato
-description: "Drive the real Posato macOS desktop app and iOS app (Simulator or connected iPhone) through the posato-control CLI to prove a change works: launch, doctor, add, edit, and remove websites and the application group, start, end early, and expire a manual session, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
+description: "Drive the real Posato macOS desktop app and iOS app (Simulator or connected iPhone) through the posato-control CLI to prove a change works: launch, doctor, batch-add, edit, and remove websites, choose device-local applications, start, end early, and expire a manual session, capture screenshots, accessibility snapshots, and database evidence, then clean up. Use after changing shared/, desktopApp/, iosApp/, macosHelper/, or tools/posato-control/, or whenever asked to verify Posato behavior on a real target."
 ---
 
 # Verify Posato
@@ -8,9 +8,10 @@ description: "Drive the real Posato macOS desktop app and iOS app (Simulator or 
 Posato is a Kotlin Multiplatform app with two destinations on two hosts, a
 Compose Desktop macOS app and a Compose iOS app: `Session` (the screen shown
 after every launch) and `Paused items` (websites and the application group).
-A segmented control at the top of both shells switches between them with the
-buttons `Session` and `Paused items`; the choice is not remembered across a
-relaunch. There is no web UI, no HTTP API, and no debug menu. The only
+iOS uses bottom navigation and macOS uses a sidebar, with the buttons
+`Session` and `Paused items`; the choice is not remembered across a relaunch.
+The nested `Websites` / `Apps` tabs include counts in their accessibility labels.
+The native prototype is a frozen reference, not the application under test. There is no web UI, no HTTP API, and no debug menu. The only
 scripted way to drive either app is
 the repository's own CLI, `posato-control` (`tools/posato-control/README.md`),
 which builds, launches, inspects, drives, and resets three targets:
@@ -66,12 +67,12 @@ $PC wait -t device --for exists --text "Paused items" --role button --timeout-se
 ```
 
 Ready means the `wait` above returns `ok: true`; the `Paused items` button is
-present in every session state, while `Add website` is not on screen until
-you navigate. Before any Websites or Applications recipe, switch destination:
+present in every session state without the software keyboard. It is hidden
+while the keyboard is open; `Done` clears focus and restores navigation. Before any Websites or Applications recipe, switch destination:
 
 ```shell
 $PC tap  -t <target> --text "Paused items" --role button
-$PC wait -t <target> --for exists --text "Add website" --timeout-seconds 30
+$PC wait -t <target> --for exists --text "Search" --timeout-seconds 30
 ```
 
 Every `launch` and scenario `relaunch` returns to `Session`, so repeat the
@@ -136,9 +137,11 @@ none exist yet); `--path` (desktop accessibility path from a snapshot).
 
 ```shell
 $PC snapshot -t sim --format text --human       # learn the current labels first
-$PC type -t sim --role textField --near-text "Websites" --input example.com --clear --submit
+$PC type -t sim --role textField --input example.com --clear --submit
+$PC tap -t sim --text Done --role button
 $PC wait -t sim --for exists --text example.com --role text
-$PC tap  -t sim --text Remove --role button --near-text example.com
+$PC tap -t sim --text "Actions for example.com" --role button
+$PC tap -t sim --text Remove --role button
 $PC run  -t sim --scenario tools/posato-control/fixtures/scenarios/add-website.json
 ```
 
@@ -166,46 +169,37 @@ failed step records `failure-<index>-screenshot.png` and
 
 Platform traps that invalidate a run:
 
-- iPhone and Simulator: content hidden behind the software keyboard loses its
-  accessibility label, and the `Add website` and `Add group` buttons sit
-  under the keyboard while their field has focus. Finish text entry with
-  `--submit` (or `"submit": true`), which triggers the field's IME action,
-  before tapping anything below the field. A rejected submit keeps the
-  keyboard open; relaunch (`launch -t <target>`, no `--fresh`) to recover.
-- Anchor text fields on the section headers, which stay visible and labeled
-  whatever the keyboard does: the domain field is `--role textField
-  --near-text "Websites"`, the group field is `--role textField --near-text
-  "Applications"`. Text fields expose no label on the desktop and only their
-  floating label on iOS, so never address them by label or by index.
-- Desktop typing goes through keyboard events, so the window must not be
-  minimized and must be frontmost. When the desktop does not react: the
-  first `tap` may only activate the window, so repeat it; `press --key
-  return` into a field that lost focus is silently dropped, so prefer `tap`
-  on the visible submit button (`Add website`, `Add group`) where one exists;
-  the session minutes field has no such button, because `Review session`
-  reads the last submitted value, not the field text, so there `type`, wait
-  for `settled`, then `press --key return`. Do not `tap` a field and `type`
-  into it as consecutive steps,
-  because the tree is rebuilt while the field takes focus and the second
-  lookup fails with `ELEMENT_NOT_FOUND` (`type` clicks the field itself).
-  Put `waitFor` with `"state": "settled"` between a `type` and the `tap` or
-  `press` that submits it; then decide with `find` or `db query` whether the
-  app ignored the input or the driver never delivered it.
-- Desktop lists compose only the rows inside the window. A row below the
-  fold (the website rows sit under `Add website`, and an application group
-  pushes them further down) is absent from the accessibility tree, so
-  `find`, `wait`, and `tap` do not see it and `scrollTo` on the desktop only
-  checks existence, it does not scroll. The working way to reach such a row
-  is keyboard focus traversal, which scrolls the focused control into view:
-  `tap` the domain field, then `press --key tab` four times, and the
-  `example.com` row with its `Edit` and `Remove` buttons is in the tree.
-  `add-website-desktop.json` and `remove-website-desktop.json` do exactly
-  that. Treat a missing row as this blind spot before calling it an app
-  defect (`db query` settles it).
-- The `Remove` and `Edit` buttons exist in the application group row and in
-  every website row. Always add `--near-text <row text>`.
-- Copy is exact and case-sensitive (`Add website`, `Save change`, `Cancel`,
-  `No websites added`). Do not paraphrase labels.
+- Batch entry keeps focus after Add or Return so another domain can be entered.
+  Tap `Done` to hide the keyboard before using bottom navigation or scrolling
+  the list. Search / Back to adding and category changes also clear focus;
+  rejected input no longer requires a relaunch.
+- Websites exposes one text field: the add draft, search, or active editor.
+  Use `--role textField` after confirming the relevant surface. Labels with
+  counts use `--text-contains Websites` or `--text-contains Apps` plus
+  `--role button`; do not hardcode a count.
+- Row menus open through `Actions for <domain or app name>`, then `Edit`
+  or `Remove`. These actions are not permanently visible in each row.
+- Desktop mutations activate the addressed window first and refuse if it
+  cannot become frontmost. Keep the Mac unlocked and avoid simultaneous
+  native-driving sessions or foreground changes during keyboard entry.
+  Read-only inspection does not activate the window.
+- Lazy lists expose only composed rows. Use a scenario `scrollTo` step before
+  an offscreen-row action; `find` and `wait` do not scroll. Desktop scrolling
+  sends real pointer/wheel events inside the largest visible scroll area,
+  reverses at the end, and stops at its timeout or attempt bound. Use
+  `query.within: {"text":"Saved websites","role":"group"}` for website rows;
+  Compose's outer iOS scroll wrapper can span the whole screen, so the named
+  list provides the actual gesture viewport. Static row text need not be
+  tappable to be visibly reached. No fixed
+  coordinates, Tab-count workaround, or product test hook is needed.
+- Time setup has presets `25 min`, `45 min`, `60 min` and two wheels.
+  The explicit buttons are `Increase Hours`, `Decrease Hours`,
+  `Increase Minutes`, and `Decrease Minutes`. There is no minutes text field.
+- Choosing apps no longer requires manually creating a group. A successful
+  nonempty native selection creates `Applications` only if the group is absent;
+  existing names survive. Partial metadata-save failure retains the selection
+  and offers `Enable selected apps`. Do not inject a group or native tokens
+  to stand in for this user path.
 
 ## Evidence
 
@@ -310,14 +304,18 @@ so the developer's local data is unchanged.
 - `tools/posato-control/fixtures/scenarios/remove-website.json` switches to
   `Paused items` in the running app, removes that row, and waits for it to
   disappear.
-- `add-website-desktop.json` and `remove-website-desktop.json` are the
-  desktop variants: they submit with the `Add website` button and scroll the
-  row into view through Tab focus traversal before asserting or removing
-  it. Use them on `desktop`; the plain fixtures are for `sim` and `device`.
-- `session-start.json` (Simulator and iPhone) and `session-start-desktop.json`
-  relaunch, add `example.com`, and start a 30-minute session through setup
-  and review; `session-early-end.json` proves the active session survived a
-  relaunch and ends it through the confirmation dialog;
-  `session-expiry.json` and `session-expiry-desktop.json` start a 5-minute
-  session and wait for the real expiry (`timeoutSeconds` 400), then remove
-  the website. See `features/sessions.md`.
+- `add-website-desktop.json` and `remove-website-desktop.json` use the same
+  user controls on Mac, with real `scrollTo` before row interaction.
+- `website-edit.json` checks the software-keyboard editor, draft retention,
+  Cancel, saved edits after restart, and removal after restart. Reserve its
+  two synthetic domains and use a short list; see the Websites recipe.
+- `website-batch-list.json` adds 50 synthetic domains, a duplicate, and an
+  invalid entry; proves scrolling in both directions, filtering, and draft
+  retention across destination changes. Start with no `design-proof-*.example`
+  rows. Run `website-batch-list-cleanup.json` afterwards and check the database.
+  A failed run may need cleanup limited to the rows that actually saved.
+- `session-start.json` and `session-start-desktop.json` add `example.com`
+  and start 25 minutes through setup/review. `session-early-end.json` relaunches
+  before ending early. The expiry fixtures select 25 minutes, decrease minutes
+  twenty times, wait for a real five-minute expiry, and remove `example.com`.
+  See `features/sessions.md`.

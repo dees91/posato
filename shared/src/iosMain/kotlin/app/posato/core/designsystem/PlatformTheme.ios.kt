@@ -2,78 +2,31 @@ package app.posato.core.designsystem
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.sp
-import kotlinx.cinterop.alloc
-import kotlinx.cinterop.memScoped
-import kotlinx.cinterop.ptr
-import kotlinx.cinterop.value
-import platform.CoreGraphics.CGFloatVar
-import platform.UIKit.UIColor
-import platform.UIKit.UIFont
-import platform.UIKit.UIFontTextStyleBody
-import platform.UIKit.UIFontTextStyleFootnote
-import platform.UIKit.UIFontTextStyleHeadline
-import platform.UIKit.UIFontTextStyleLargeTitle
-import platform.UIKit.UITraitCollection
-import platform.UIKit.currentTraitCollection
-import platform.UIKit.labelColor
-import platform.UIKit.resolvedColorWithTraitCollection
-import platform.UIKit.systemBackgroundColor
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import platform.Foundation.NSNotificationCenter
+import platform.Foundation.NSOperationQueue
+import platform.UIKit.UIAccessibilityDarkerSystemColorsEnabled
+import platform.UIKit.UIAccessibilityDarkerSystemColorsStatusDidChangeNotification
 
 @Composable
 internal actual fun platformTheme(): PlatformTheme {
-    val isLight = !isSystemInDarkTheme()
-
-    return PlatformTheme(
-        isLight = isLight,
-        background = UIColor.systemBackgroundColor.toComposeColor(),
-        label = UIColor.labelColor.toComposeColor(),
-        productNameStyle = platformTextStyle(UIFontTextStyleHeadline, FontWeight.SemiBold),
-        primaryLineStyle = platformTextStyle(UIFontTextStyleLargeTitle, FontWeight.SemiBold),
-        supportingLineStyle = platformTextStyle(UIFontTextStyleBody, FontWeight.Normal),
-        buildNoteStyle = platformTextStyle(UIFontTextStyleFootnote, FontWeight.Normal),
-    )
-}
-
-@Composable
-private fun platformTextStyle(
-    textStyle: String?,
-    fontWeight: FontWeight,
-): TextStyle = TextStyle(
-    fontFamily = FontFamily.Default,
-    fontSize = platformFontSize(textStyle),
-    fontWeight = fontWeight,
-)
-
-@Composable
-private fun platformFontSize(textStyle: String?): TextUnit {
-    val preferredPointSize = UIFont.preferredFontForTextStyle(textStyle).pointSize.toFloat()
-    val fontScale = LocalDensity.current.fontScale
-
-    return (preferredPointSize / fontScale).sp
-}
-
-private fun UIColor.toComposeColor(): Color = memScoped {
-    val red = alloc<CGFloatVar>()
-    val green = alloc<CGFloatVar>()
-    val blue = alloc<CGFloatVar>()
-    val alpha = alloc<CGFloatVar>()
-    val resolvedColor = resolvedColorWithTraitCollection(UITraitCollection.currentTraitCollection)
-
-    check(resolvedColor.getRed(red.ptr, green.ptr, blue.ptr, alpha.ptr)) {
-        "UIKit semantic color could not be converted to RGB"
+    var highContrast by remember { mutableStateOf(UIAccessibilityDarkerSystemColorsEnabled()) }
+    DisposableEffect(Unit) {
+        val center = NSNotificationCenter.defaultCenter
+        val observer = center.addObserverForName(
+            name = UIAccessibilityDarkerSystemColorsStatusDidChangeNotification,
+            `object` = null,
+            queue = NSOperationQueue.mainQueue,
+        ) { highContrast = UIAccessibilityDarkerSystemColorsEnabled() }
+        onDispose { center.removeObserver(observer) }
     }
+    return PlatformTheme(isLight = !isSystemInDarkTheme(), highContrast = highContrast)
+}
 
-    Color(
-        red = red.value.toFloat(),
-        green = green.value.toFloat(),
-        blue = blue.value.toFloat(),
-        alpha = alpha.value.toFloat(),
-    )
+internal actual fun platformNavigationPlacement(): PosatoNavigationPlacement {
+    return PosatoNavigationPlacement.Bottom
 }

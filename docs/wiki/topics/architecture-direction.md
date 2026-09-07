@@ -25,6 +25,15 @@ implementation, or distribution process.
 
 ## Accepted Gate 4 baseline
 
+`user-confirmed` (2026-09-07): native prototype design adoption is a
+presentation migration, not an architecture replacement. Reusable components
+belong to the existing `shared/core/designsystem`; real screens keep the
+existing ViewModels, Metro ownership, persistence, and semantic platform
+services. The prototype reducer, fixtures, and workbench stay isolated.
+See the [adoption brief](../../tasks/specifications/design-001-mvp-design-adoption.md)
+and [current design contract](../../../DESIGN.md). Native macOS window chrome
+belongs to the desktop host, not the application-selection helper protocol.
+
 - **Status:** Accepted
 - **Accepted:** 2026-08-25
 - **Decision authority:**

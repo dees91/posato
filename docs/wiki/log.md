@@ -1303,3 +1303,17 @@
   interval end, never promised). The review's fixes (session attribution,
   absolute one-shot schedule, synchronous extension clear) were proven live in
   the second run. Reboot-inside-interval stays an open observation.
+
+## [2026-09-07] implementation | Adopt the native prototype design in the MVP
+
+- Adopted the accepted native prototype's palette, complete reusable Compose
+  components, iPhone bottom navigation, and native Mac sidebar/window into the
+  real Session and Paused items screens, retaining existing ViewModels and
+  service boundaries. The prototype remains frozen reference evidence.
+- Added bounded batch entry, retained drafts, searchable lazy lists, compact
+  selection details, duration wheels, and automatic application-group activation.
+  DESIGN.md and the maintained verification driver/skill now describe these
+  real user paths without implying connected synchronization or enforcement.
+- Native keyboard verification corrected double IME subtraction in the root;
+  the design topic records why the modal dialog does not share that correction.
+  Physical picker and timer checks retain their platform and accessibility limits.

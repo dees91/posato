@@ -35,6 +35,7 @@ internal data class TargetsUiState(
     val domainEditorSession: Long = 0,
     val editingDomain: String? = null,
     val domainInputFailure: ExactDomainEntryFailure? = null,
+    val websiteBatchReceipt: WebsiteBatchReceipt? = null,
     val applicationPolicyName: String? = null,
     val applicationEditorSession: Long = 0,
     val isEditingApplicationPolicy: Boolean = false,
@@ -71,7 +72,7 @@ internal fun TargetsUiState.canChooseApplications(): Boolean {
     val canRequestSelection = applicationMappingsAccess == LocalApplicationMappingsAccess.READY ||
         applicationMappingsAccess == LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED
 
-    return applicationPolicyName != null && canRequestSelection && canMutateApplicationMappings()
+    return canMutatePolicy() && canRequestSelection && canMutateApplicationMappings()
 }
 
 internal fun TargetsUiState.canRemoveApplicationMapping(mappingId: LocalApplicationMappingId): Boolean {

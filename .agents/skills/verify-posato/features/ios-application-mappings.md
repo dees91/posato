@@ -1,124 +1,74 @@
 # iOS application mappings
 
-On an iPhone a person allows Screen Time access, chooses applications with the
-system Family Controls picker, and sees how many applications are selected on
-that device. The choices are opaque platform tokens: the app never learns the
-application names, the count is the only shared detail, and nothing leaves the
-device. The capability exists only in a development-signed Debug device build;
-the Simulator and Release builds report it as unavailable.
+On a development-signed iPhone a person grants Screen Time access and chooses
+individual applications through Family Controls. The shared UI knows only a
+count, not application names. Simulator and Release builds report this
+capability as unavailable.
 
 ## Sub-features
 
-- `ios-mapping-gate` shows the selection controls only once an application
-  group exists, mappings exist, or loading failed.
-- `ios-mapping-access` maps live Screen Time authorization to `Allow Screen
-  Time access to choose apps. Your choices stay on this device.`
-  (not determined), `Screen Time access is off for Posato. Enable it in
-  Settings to review chosen apps.` (denied), `Screen Time access is not
-  available for this account or device.` (restricted), and `Choosing apps is
-  not available in this version of Posato.` (Simulator and Release).
-- `ios-mapping-choose` opens the system picker from `Choose applications`,
-  `Review applications`, or `Allow and review applications`.
-- `ios-mapping-count` shows `Applications selected: <n>` with `Clear selection`.
-- `ios-mapping-empty` shows `No applications chosen on this device.`
-- `ios-mapping-retain` keeps the prior selection on cancel, on a category or
-  web-domain selection (`Choose individual applications only.`), and when
-  authorization is lost before `Save`.
+- `ios-mapping-access` reports not-determined, denied, restricted, and unavailable
+  states without implying authorization succeeded.
+- `ios-mapping-choose` opens Choose apps without requiring an existing group.
+- `ios-mapping-count` shows the private selection count and Clear selection.
+- `ios-mapping-retain` keeps prior choices after Cancel, rejected category/domain
+  selection, or authorization loss before Save.
+- `ios-mapping-automatic-group` creates Applications after a successful nonempty
+  selection only when metadata is absent.
+- `ios-mapping-empty` shows Make room beyond the browser.
 
 ## How to get to it (user POV)
 
-- Open the app on a development-signed iPhone build, tap `Paused items` in
-  the switch at the top, and add an application group under `Applications`; the selection controls appear beneath the group
-  row with the access sentence as the row's supporting text.
-- Tap `Choose applications` to grant Screen Time access and open the picker,
-  or `Review applications` once applications are already selected.
-- Tap `Clear selection` to remove every choice on that device.
-- On the Simulator and in Release builds the same section reports the
-  capability as unavailable and opens no picker.
+- Open Paused items from the bottom navigation and select Apps.
+- Read On this iPhone only and the real access state, then tap Choose apps.
+- Allow Screen Time access if requested, choose individual applications, and
+  Save. Cancel keeps the previous selection.
+- Clear selection removes device choices; it does not delete group metadata.
 
 ## Driving it with posato-control
 
 Preconditions:
 
-- Target `device` only, with `posato.apple.developmentTeam` in the ignored
-  `local.properties`, the iPhone connected and unlocked, and `doctor -t device`
-  reporting `ok: true`. The Family Controls entitlement and the picker code
-  path exist only in the Debug `iphoneos` build.
-- An application group must exist first, otherwise the whole section is hidden
-  by design.
+- Target device, connected and unlocked, with development-team configuration
+  in ignored local.properties. Require doctor to pass and a Debug iphoneos build.
+- Record existing choices. No manual group creation or token injection is needed.
 
-- **Reveal the section.** Add a group. Run `$PC type -t device --role textField --near-text "Applications" --input "Social feeds" --clear --submit`, then `$PC wait -t device --for exists --text "Social feeds" --role text`. `snapshot` now lists the access sentence, `No applications chosen on this device.`, and the `Choose applications` button.
-- **Open the picker.** Run the tap inside a scenario, never as a single command: `{ "action": "tap", "query": { "text": "Choose applications", "role": "button" } }` followed by a `sleep` and a `screenshot`. With authorization not determined the screenshot shows the system Screen Time consent alert.
-- **Grant access and pick applications.** This step is manual: the consent alert belongs to SpringBoard and the picker list is rendered out of process, so neither appears in the driver's accessibility tree. Ask the maintainer to accept the alert and select applications, or report the path as unreachable with the command above.
-- **Or seed a captured selection instead of picking.** A selection captured once can be restored, so the picker is not needed on every run (`observed`, 2026-09-04; see the seeding rule in the gotchas). Consent still is: the Screen Time authorization resets to not determined on every reinstall.
-- **Confirm or dismiss the picker.** `Save` and `Cancel` are the app's own toolbar buttons and are drivable: `$PC tap -t device --text Save --role button` and `$PC tap -t device --text Cancel --role button`.
-- **Read the result.** Run `$PC wait -t device --for exists --text-contains "Applications selected:"`, then `$PC screenshot -t device --name ios-mappings`. Cancel instead leaves the previous count unchanged.
-- **Persist.** Run `$PC launch -t device` (no `--fresh`) and `$PC find -t device --text-contains "Applications selected:"`; the device database is not readable, so this relaunch read-back is the side-effect proof.
-- **Clear.** Run `$PC tap -t device --text "Clear selection" --role button`, then `$PC wait -t device --for exists --text "No applications chosen on this device."`.
+- **Open Apps:** `$PC tap -t device --text "Paused items" --role button`, then
+  `$PC tap -t device --text-contains Apps --role button`.
+- **Open picker:** Put `{"action":"tap","query":{"text":"Choose apps","role":"button"}}`
+  and a screenshot in the same scenario. With undetermined authorization,
+  capture the system consent alert before another XCUITest invocation dismisses it.
+- **Grant and select:** Ask the maintainer to approve the system alert and
+  choose individual applications. The consent alert belongs to SpringBoard
+  and the selection list is rendered out of process; neither is reliably
+  represented by the app's accessibility tree. Stop when this human action
+  is required; do not substitute a fixture or captured token file.
+- **Save or cancel:** The app-owned toolbar is drivable with
+  `$PC tap -t device --text Save --role button` or the same command for Cancel.
+- **Read back:** Capture the app's count with `$PC snapshot -t device --format text --human`
+  and `$PC screenshot -t device --name ios-mappings`. Confirm the Apps-tab
+  count matches the private-selection row. A cancellation leaves it unchanged.
+- **Persist:** Relaunch without fresh, re-enter Apps, and capture the same count.
+  The device database is not readable through the driver.
+- **Clear:** `$PC tap -t device --text "Clear selection" --role button`.
+  Expect Make room beyond the browser and an Apps count of zero.
+- **Unavailable:** On Simulator, open Apps and capture
+  Choosing apps is not available in this version of Posato. The picker must
+  not open; this is not proof of the device-only path.
 
 ## Gotchas
 
-- Every single command costs an XCUITest launch, which dismisses any system
-  alert that is on screen. A tap whose result is a system alert must be in the
-  same scenario as the screenshot that captures it, or the evidence is lost.
-- The consent alert and the picker list are not in the app's accessibility
-  tree; a `snapshot` after the tap looks unchanged even though the alert is on
-  the device. Never conclude from the tree alone that no alert appeared.
-- System alert copy follows the device language, not the app's; match on the
-  screenshot, not on English text.
-- The section is hidden entirely without an application group; an empty
-  `Applications` section is the expected state, not a defect.
-- Reinstalling returns Screen Time authorization to not determined and destroys
-  the whole data container, including the policy database and its websites and
-  group; an ordinary relaunch preserves everything. That was `observed` before
-  `IOS-001` moved the selection into the App Group container, so treat the
-  selection's survival across a reinstall as unverified and read the count back
-  rather than assuming either outcome.
-- A captured selection can be seeded back, which removes the picker from a
-  rerun but not the consent alert (`observed`, 2026-09-04, iOS 26.5.2, against
-  the private container that `IOS-001` has since replaced; the same procedure
-  against the group container is `inferred` until a run confirms it). The live
-  store is now in the App Group container
-  `group.app.posato.ios.session` at `ApplicationMappings/mappings-v1.json`,
-  one JSON object with a `version` and one opaque `token` string per selected
-  application. Capture and restore it with the app not running:
-
-  ```shell
-  xcrun devicectl device copy from --device <udid> \
-    --domain-type appGroupDataContainer --domain-identifier group.app.posato.ios.session \
-    --source "ApplicationMappings/mappings-v1.json" \
-    --destination <untracked directory beside local.properties>/mappings-v1.json
-  xcrun devicectl device copy to --device <udid> \
-    --domain-type appGroupDataContainer --domain-identifier group.app.posato.ios.session \
-    --source <the same file> \
-    --destination "ApplicationMappings/mappings-v1.json"
-  ```
-
-  `copy from` needs a destination file path, not a directory. `copy to` writes
-  the file as the app's own user with mode `0644`, and the app accepts it: after
-  a full uninstall, reinstall, and restore, the section reported
-  `Applications selected: 1` with `Clear selection`. The application group must
-  exist first, otherwise the section stays hidden and you will read the seeding
-  as failed. Launch the app once after a reinstall before `copy to`: the first
-  launch creates `ApplicationMappings/` in the group container, and `copy to`
-  into a missing parent directory fails. Keep the captured file untracked: it
-  carries live selection tokens.
-- The private-container path
-  `Library/Application Support/Posato/ApplicationMappings/mappings-v1.json`
-  (`--domain-type appDataContainer --domain-identifier app.posato.ios`) is the
-  pre-`IOS-001` location and is now only a migration source: the first launch
-  copies it into the group container, verifies the copy, and deletes it, and it
-  is adopted only while the group file is absent or empty. Always capture from
-  the group container; a capture from the private one reads an empty or missing
-  file after any migrated launch.
-- What seeding does not prove: the count read-back shows the app loads and
-  validates the restored tokens, not that the tokens still resolve to the same
-  applications for enforcement in a new installation. `IOS-001` verified apply
-  and clear on the device against a selection made by the picker in that same
-  installation, so restored-token enforcement across a reinstall stays `open`.
-  Screen Time authorization is not determined right after a reinstall anyway,
-  so enforcement cannot be exercised at that point.
-- Selecting a category or a web domain is rejected with `Choose individual
-  applications only.` and keeps the previous applications.
-- Simulator and Release builds never open a picker; do not report the iOS
-  picker as verified from a Simulator run.
+- A new XCUITest invocation can dismiss a system alert. Capture it in the same
+  scenario as the action that presents it, then request the human step.
+- An unchanged accessibility tree does not prove no consent alert appeared.
+  Inspect the screenshot; system copy follows the device language.
+- Reinstalling can reset authorization and application-container data.
+  Do not reinstall or reset a user's device as routine cleanup.
+- The maintained store is in the App Group container; the old private-container
+  location is only a migration source. Historical captured-token restoration
+  is not proof of current selection, automatic group creation, or enforcement.
+- Category/web-domain selection is rejected with Choose individual applications
+  only and must preserve prior application choices.
+- A native selection saved before metadata failure stays on the phone; use
+  Enable selected apps after resolving the real failure, not a second picker.
+- Simulator and Release runs cannot verify the Family Controls picker.
