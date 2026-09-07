@@ -152,11 +152,17 @@ read PR `headRefOid`. Do not accept an older green run or a skipped job. Any
 new commit needs another explicit dispatch, including documentation changes.
 The Actions UI's **Run workflow** branch selector is an equivalent entry point.
 
-This is a maintainer/agent process requirement, not a protected-branch check:
-the current private-repository plan cannot enforce it. Account upgrades,
-branch protection, and rulesets are out of scope. If CI cannot run, stop before
-merge and request a maintainer decision. Local `./gradlew quality` after the
-last material correction and the selected review tier still apply.
+`main` is protected: it requires `Quality` from GitHub Actions, an up-to-date
+branch, and a PR. Rules apply to administrators; force pushes and deletion are
+disabled. No mandatory GitHub approval count or bypass allowance is configured.
+If `main` advances, update the PR branch and manually dispatch CI again.
+
+Administrators can still edit the protection itself; this is not protection
+against an administrator intentionally changing policy. Keep the explicit
+success check above because GitHub accepts skipped/neutral required checks as
+well; `Quality` must remain unconditional. If CI cannot run, stop before merge
+and request a maintainer decision. Local `./gradlew quality` after the last
+material correction and the selected review tier still apply.
 
 ## Verification driver
 

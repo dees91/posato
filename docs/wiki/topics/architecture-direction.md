@@ -480,10 +480,28 @@ implementation wave starts, whichever occurs first.
 `user-confirmed` (2026-09-07): GitHub-hosted CI is manual-only, replacing the
 earlier time-limited pause and automatic-trigger policy. Before merge, require
 a successful dispatched run for the current PR head alongside local quality
-and review. This is procedural, not server-enforced: an account upgrade and
-protected-branch configuration are outside scope. The quality contract owns
-the rule and the development guide owns its manual checklist.
+and review. The maintainer subsequently enabled Pro and authorized `main`
+protection: an up-to-date PR and `Quality` from GitHub Actions are required,
+including for administrators, with no force push, deletion, or bypass allowance.
+This supersedes the same day's procedural-only decision. The quality contract
+owns the rule and the development guide owns its manual checklist.
 
 `observed` (2026-09-07): the aggregate gate includes native Swift XCTest on
 an isolated temporary iOS Simulator as well as Kotlin tests. Physical-device
 cases retain explicit skips and do not become Simulator coverage claims.
+
+`observed` (2026-09-07): a macOS 15/Xcode 26.3 CI reproduction isolated native
+test thread-pool starvation. Three parallel synchronous proxy tests blocked in
+socket reads while the upstream utility-queue work did not start until their
+deadlines released workers. The same runner passed single/serialized controls
+and all 151 native tests serialized, without changing deadlines or assertions.
+The parallel suite also exposed the same class of wait in lease-renewal tests.
+Blocking test orchestration must not occupy Swift concurrency workers while
+waiting for queued future work. The maintainer authorized an asynchronous test
+boundary: dedicated test threads perform blocking operations and checked
+continuations resume the test task, which retains assertion attribution.
+The native suite keeps parallel execution and its existing deadlines;
+serialization remains a diagnostic control, not a permanent reduction in
+concurrency coverage. This matches the
+[Swift runtime explanation](https://forums.swift.org/t/deadlock-when-using-dispatchqueue-from-swift-task/66058/25).
+No runtime proxy fix or timeout increase follows from this experiment.

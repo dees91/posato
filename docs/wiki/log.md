@@ -1332,8 +1332,14 @@
   a shared Xcode scheme, prebuilt Kotlin framework/resources, isolated temporary
   Simulator ownership, and retained test reports. Device-only cases remain
   separate physical checks rather than implied Simulator coverage.
-- Replaced the expired automatic-CI pause with the accepted manual-only workflow
-  and current-PR-head success check before merge. Enforcement is procedural;
-  account upgrades and GitHub branch-protection configuration are out of scope.
+- Replaced the expired automatic-CI pause with manual-only execution and a
+  current-PR-head success check. After enabling Pro, the maintainer authorized
+  `main` protection requiring GitHub Actions `Quality` and an up-to-date PR,
+  including administrators, without force pushes, deletion, or bypass allowances.
 - Refreshed onboarding to describe the real MVP-in-progress applications and
   tests while retaining the unconnected synchronization/enforcement boundary.
+- Isolated the macOS CI proxy timeouts to blocking native test orchestration
+  starving queued work. Same-runner serialized controls passed without timeout
+  changes. Replaced blocking test-task waits with an awaited dedicated-thread
+  boundary, retaining assertions, deadlines, and parallel execution. Temporary
+  diagnostics were removed, with no product behavior change.

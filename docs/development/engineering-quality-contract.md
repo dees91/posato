@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 11
+- **Revision:** 12
 - **Accepted:** 2026-09-07
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -227,12 +227,21 @@ does not satisfy this rule. Dispatch once the branch is ready rather than on
 each correction. The local aggregate gate and proportional review still apply.
 See the [manual checklist](README.md#manual-ci-and-merge-check).
 
-The current private repository cannot enforce required status checks with its
-account plan. Enforcement is procedural; GitHub may still offer Merge without
-a successful run. An account upgrade, branch protection, and rulesets are
-explicitly outside this change. If hosted CI is unavailable, stop before merge
-and ask for a maintainer decision rather than treating a local pass as an
-automatic substitute.
+`user-confirmed` (2026-09-07, superseding the earlier procedural-only decision):
+the maintainer enabled GitHub Pro and authorized server-side protection of
+`main`. Require the `Quality` check from GitHub Actions, a branch up to date
+with `main`, and a pull request with zero mandatory approving reviews. Enforce
+these rules for administrators, with no bypass allowances; disallow force
+pushes and deletion. Updating a branch requires another manual run for its new
+head. The repository's independent-review process still applies even though
+GitHub does not require an approval count.
+
+Protection prevents ordinary merges without the required check; it does not
+prevent an authorized administrator from editing or removing the protection
+itself. GitHub also accepts neutral/skipped required check conclusions, so the
+workflow must keep `Quality` unconditional and the explicit success check
+above remains part of the merge process. If hosted CI is unavailable, stop
+before merge; do not disable protection or substitute a local pass automatically.
 
 ## Definition of Done
 

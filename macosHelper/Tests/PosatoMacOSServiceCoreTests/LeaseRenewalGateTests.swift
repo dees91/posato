@@ -42,7 +42,7 @@ import Testing
   #expect(!state.shouldRestoreOnInvalidation())
 }
 
-@Test func givenInFlightRenewalWhenRetiredThenRetirementWaitsAndLaterWorkIsSkipped() {
+@Test func givenInFlightRenewalWhenRetiredThenRetirementWaitsAndLaterWorkIsSkipped() async throws {
   let gate = LeaseRenewalGate()
   let renewalStarted = DispatchSemaphore(value: 0)
   let finishRenewal = DispatchSemaphore(value: 0)
@@ -55,18 +55,30 @@ import Testing
       finishRenewal.wait()
     }
   }
-  #expect(renewalStarted.wait(timeout: .now() + .seconds(1)) == .success)
+  let renewalDidStart = try await runBlockingTestOperation {
+    renewalStarted.wait(timeout: .now() + .seconds(1))
+  }
+  #expect(renewalDidStart == .success)
 
   DispatchQueue.global().async {
     retirementStarted.signal()
     gate.retire()
     retirementFinished.signal()
   }
-  #expect(retirementStarted.wait(timeout: .now() + .seconds(1)) == .success)
-  #expect(retirementFinished.wait(timeout: .now() + .milliseconds(100)) == .timedOut)
+  let retirementDidStart = try await runBlockingTestOperation {
+    retirementStarted.wait(timeout: .now() + .seconds(1))
+  }
+  #expect(retirementDidStart == .success)
+  let prematureRetirement = try await runBlockingTestOperation {
+    retirementFinished.wait(timeout: .now() + .milliseconds(100))
+  }
+  #expect(prematureRetirement == .timedOut)
 
   finishRenewal.signal()
-  #expect(retirementFinished.wait(timeout: .now() + .seconds(1)) == .success)
+  let retirementDidFinish = try await runBlockingTestOperation {
+    retirementFinished.wait(timeout: .now() + .seconds(1))
+  }
+  #expect(retirementDidFinish == .success)
 
   var laterWorkRan = false
   gate.run {

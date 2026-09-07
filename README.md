@@ -95,6 +95,7 @@ Physical-device checks remain separate where Simulator coverage is insufficient.
 
 GitHub Actions runs only by explicit manual dispatch. Before merge, require a
 successful CI run for the current PR head commit as well as applicable local
-verification and review. This is a process rule, not a GitHub-enforced merge
-block. The [manual CI checklist](docs/development/README.md#manual-ci-and-merge-check)
+verification and review. Branch protection requires `Quality` from GitHub
+Actions and an up-to-date PR branch, including for administrators. The
+[manual CI checklist](docs/development/README.md#manual-ci-and-merge-check)
 explains dispatch and commit matching.

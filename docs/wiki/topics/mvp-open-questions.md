@@ -400,9 +400,11 @@ restoration of automatic triggers.
 
 `user-confirmed` (2026-09-07): CI runs only by explicit dispatch; pushes and
 ready-for-review transitions do not start it. A successful run for the current
-PR head is a procedural merge requirement, alongside local quality and review.
-The current private-repository plan cannot enforce required checks; account
-upgrades and server-side branch protection are outside scope. The
+PR head is required alongside local quality and review. After enabling Pro,
+the maintainer also authorized server-side `main` protection, superseding the
+earlier procedural-only decision: require GitHub Actions `Quality`, an
+up-to-date PR, and administrator enforcement without force pushes, deletion,
+or bypass allowances. The
 [quality contract](../../development/engineering-quality-contract.md#continuous-integration)
 and [development checklist](../../development/README.md#manual-ci-and-merge-check)
 own the current rule. The aggregate gate now also executes simulator-compatible
