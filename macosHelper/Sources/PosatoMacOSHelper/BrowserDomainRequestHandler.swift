@@ -3,6 +3,24 @@ import PosatoMacOSServiceCore
 import ServiceManagement
 
 enum BrowserDomainRequestHandler {
+  static func dispatch(
+    request: WireMessage,
+    receivedAt: DispatchTime,
+    service: SMAppService,
+    existing: BrowserDomainSession?,
+    applyOwned: Bool
+  ) throws -> BrowserDomainSession? {
+    let handled = try handleConfigure(
+      request: request,
+      receivedAt: receivedAt,
+      service: service,
+      existing: existing,
+      applyOwned: applyOwned
+    )
+    try writeFrame(WireCodec.encode(handled.response))
+    return handled.session
+  }
+
   /// Configure replaces the domain session. While an Apply is owned the system proxy points at
   /// the live listener, so the request is refused without touching that session; otherwise the
   /// replacement listener starts first and the previous one stops only afterwards, so no

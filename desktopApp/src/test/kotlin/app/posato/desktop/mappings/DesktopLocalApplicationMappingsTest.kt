@@ -4,6 +4,7 @@ import app.posato.desktop.macos.MacOsApplicationPicker
 import app.posato.desktop.macos.MacOsApplicationPickerResult
 import app.posato.desktop.macos.SelectedMacOsApplication
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
+import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.data.LocalApplicationRemovalResult
@@ -18,6 +19,7 @@ import java.util.concurrent.Executors
 import kotlin.io.path.createTempDirectory
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -67,6 +69,22 @@ class DesktopLocalApplicationMappingsTest {
             assertEquals(LocalApplicationSelectionRejection.CAPACITY, rejection.reason)
             assertEquals(1, assertIs<LocalApplicationMappingsLoadResult.Success>(runBlocking { tooMany.load() }).snapshot.mappings.size)
             tooMany.close()
+        }
+    }
+
+    @Test
+    fun `designated requirements resolve by id and reject unknown ids`() {
+        withStore(MacOsApplicationPickerResult.Success(listOf(application("Browser", 1)))) { store, _ ->
+            val selected = assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications() })
+            val id = selected.snapshot.mappings.single().id
+            val blobs = runBlocking { store.designatedRequirements(listOf(id)) }
+            assertEquals(1, blobs.size)
+            assertTrue(blobs.single().contentEquals(byteArrayOf(1)))
+            val unknown = LocalApplicationMappingId.restore("bb".repeat(32))
+                ?: error("Synthetic mapping id is invalid")
+            assertFailsWith<IllegalArgumentException> {
+                runBlocking { store.designatedRequirements(listOf(unknown)) }
+            }
         }
     }
 
