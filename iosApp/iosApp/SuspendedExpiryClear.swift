@@ -101,6 +101,10 @@ struct SuspendedExpiryRecordStore {
         try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.pendingFileName))
     }
 
+    func removeCleared() {
+        try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.clearedFileName))
+    }
+
     func writeCleared(sessionId: String, clearedAt: TimeInterval) throws {
         let record = SuspendedExpiryClearedRecord(
             version: SuspendedExpiryActivity.recordSchemaVersion,

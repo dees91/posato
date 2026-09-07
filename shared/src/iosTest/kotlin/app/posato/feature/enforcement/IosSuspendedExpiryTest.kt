@@ -28,11 +28,12 @@ class IosSuspendedExpiryTest {
     }
 
     @Test
-    fun `given a reconciliation read when completed then every state is preserved`() = runTest {
+    fun `given a reconciliation read when completed then every state is preserved and the session is forwarded`() = runTest {
         IosExpiryReconciliation.entries.forEach { reconciliation ->
             val provider = FakeIosSuspendedExpiryProvider(reconciliation = reconciliation)
 
-            assertEquals(reconciliation, IosSuspendedExpiry(provider).readReconciliation(), "state $reconciliation")
+            assertEquals(reconciliation, IosSuspendedExpiry(provider).readReconciliation("session"), "state $reconciliation")
+            assertEquals("session", provider.seenSessionId, "state $reconciliation")
             assertTrue(provider.reconciliationCalled, "state $reconciliation")
         }
     }
@@ -57,6 +58,8 @@ private class FakeIosSuspendedExpiryProvider(
         private set
     var seenRequest: IosSuspendedExpiryRequest? = null
         private set
+    var seenSessionId: String? = null
+        private set
 
     override fun schedule(
         request: IosSuspendedExpiryRequest,
@@ -71,8 +74,12 @@ private class FakeIosSuspendedExpiryProvider(
         handler(cancelOutcome)
     }
 
-    override fun readReconciliation(handler: (IosExpiryReconciliation) -> Unit) {
+    override fun readReconciliation(
+        sessionId: String,
+        handler: (IosExpiryReconciliation) -> Unit,
+    ) {
         reconciliationCalled = true
+        seenSessionId = sessionId
         handler(reconciliation)
     }
 }

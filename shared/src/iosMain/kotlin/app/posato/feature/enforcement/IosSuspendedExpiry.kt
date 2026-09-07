@@ -46,7 +46,10 @@ public interface IosSuspendedExpiryProvider {
 
     public fun cancel(handler: (IosSuspendedExpiryOutcome) -> Unit)
 
-    public fun readReconciliation(handler: (IosExpiryReconciliation) -> Unit)
+    public fun readReconciliation(
+        sessionId: String,
+        handler: (IosExpiryReconciliation) -> Unit,
+    )
 }
 
 public class IosSuspendedExpiry(
@@ -64,9 +67,9 @@ public class IosSuspendedExpiry(
         }
     }
 
-    public suspend fun readReconciliation(): IosExpiryReconciliation {
+    public suspend fun readReconciliation(sessionId: String): IosExpiryReconciliation {
         return suspendCoroutine { continuation ->
-            provider.readReconciliation { reconciliation -> continuation.resume(reconciliation) }
+            provider.readReconciliation(sessionId) { reconciliation -> continuation.resume(reconciliation) }
         }
     }
 }

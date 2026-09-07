@@ -77,7 +77,10 @@ wall-clock instant.
   behind.
 - `AC-04` — After an extension clear, the application reads the App Group
   record and reports the session as ended by expiry rather than active; a
-  missing or newer-version record reads as unknown, never as active.
+  missing or newer-version record reads as unknown, never as active. Expiry
+  requires the record's session identifier to equal the current session;
+  reporting consumes the record and scheduling drops a stale one first, so a
+  previous session's clear never reads as the current session's expiry.
 - `AC-05` — No domain, token, identifier, or Apple error text appears in any
   `toString()`, log, diagnostic, or test artifact; `./gradlew quality` and the
   Kotlin `iosTest` suite pass on the Simulator.

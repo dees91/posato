@@ -267,11 +267,13 @@ final class SuspendedExpiryTests: XCTestCase {
         XCTAssertEqual(monitoring.started.count, 1)
         XCTAssertEqual(monitoring.started.first?.activity, SuspendedExpiryActivity.name)
         // 1700000000 is 22:13 UTC and 1700003600 is 23:13 UTC on 2023-11-14.
+        // Full date components keep a 24-hour session's identical clock times
+        // apart and remove the midnight-wrap ambiguity.
         XCTAssertEqual(
             monitoring.started.first?.schedule,
             DeviceActivitySchedule(
-                intervalStart: DateComponents(hour: 22, minute: 13),
-                intervalEnd: DateComponents(hour: 23, minute: 13),
+                intervalStart: DateComponents(year: 2023, month: 11, day: 14, hour: 22, minute: 13),
+                intervalEnd: DateComponents(year: 2023, month: 11, day: 14, hour: 23, minute: 13),
                 repeats: false
             )
         )
@@ -303,14 +305,43 @@ final class SuspendedExpiryTests: XCTestCase {
         let records = try isolatedRecordStore()
         let scheduler = capableScheduler(monitoring: monitoring, records: { records })
 
-        XCTAssertEqual(try reconcile(scheduler: scheduler), .unknown)
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
 
         try records.writeCleared(sessionId: "session", clearedAt: 1_700_003_600)
-        XCTAssertEqual(try reconcile(scheduler: scheduler), .expired)
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .expired)
 
         let clearedURL = records.directoryURL.appendingPathComponent("cleared-v1.json")
         try Data("{\"version\":999,\"sessionId\":\"session\",\"clearedAt\":1700003600}".utf8).write(to: clearedURL)
-        XCTAssertEqual(try reconcile(scheduler: scheduler), .unknown)
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
+    }
+
+    func testReconciliationIgnoresAnotherSessionsClearAndConsumesItsOwn() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+
+        try records.writeCleared(sessionId: "other-session", clearedAt: 1_700_003_600)
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
+        XCTAssertNotNil(records.readCleared())
+
+        try records.writeCleared(sessionId: "session", clearedAt: 1_700_003_600)
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .expired)
+        XCTAssertNil(records.readCleared())
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
+    }
+
+    func testScheduleRemovesAStaleClearedRecord() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+        try records.writeCleared(sessionId: "earlier-session", clearedAt: 1_699_000_000)
+
+        XCTAssertEqual(
+            try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
+            .scheduled
+        )
+        XCTAssertNil(records.readCleared())
+        XCTAssertEqual(records.readPending()?.sessionId, "session")
     }
 
     // MARK: - Helpers
@@ -350,9 +381,9 @@ final class SuspendedExpiryTests: XCTestCase {
         return try XCTUnwrap(result)
     }
 
-    private func reconcile(scheduler: SuspendedExpiryScheduler) throws -> IosExpiryReconciliation {
+    private func reconcile(sessionId: String, scheduler: SuspendedExpiryScheduler) throws -> IosExpiryReconciliation {
         var result: IosExpiryReconciliation?
-        scheduler.readReconciliation { result = $0 }
+        scheduler.readReconciliation(sessionId: sessionId) { result = $0 }
         return try XCTUnwrap(result)
     }
 

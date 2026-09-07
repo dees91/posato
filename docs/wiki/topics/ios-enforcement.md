@@ -199,8 +199,11 @@ authorization before any write, stops idempotently, and strips all Apple
 error text at the boundary. Kotlin `iosMain` exposes the scheduler seam with
 six platform-neutral outcomes, an expired/unknown reconciliation read that
 never reports active, and redacted carriers; no `expect`/`actual`.
-Simulator suite 67 passed, 0 failed; `./gradlew quality` and the three
-credential-free CI builds pass.
+Simulator suite 68 passed, 0 failed; `./gradlew quality` and the three
+credential-free CI builds pass. Reconciliation reports expiry only for the
+exact session identifier and consumes the record on report; scheduling drops
+a stale cleared record first, so a previous session's clear never reads as
+the current session's expiry.
 
 `observed` (2026-09-07, development-signed iPhone): with the `APPLE-002`
 profile installed, the signed device build passes once Xcode may contact the
