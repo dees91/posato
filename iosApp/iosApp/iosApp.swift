@@ -16,7 +16,9 @@ private struct ComposeRoot: UIViewControllerRepresentable {
         let applicationMappingsProvider = IosFamilyControlsApplicationMappingsProvider()
         let controller = MainViewControllerKt.mainViewController(
             cryptoProvider: CryptoKitSyncProvider(),
-            applicationMappingsProvider: applicationMappingsProvider
+            applicationMappingsProvider: applicationMappingsProvider,
+            enforcementProvider: IosManagedSettingsEnforcer(),
+            suspendedExpiryProvider: SuspendedExpiryScheduler()
         )
         applicationMappingsProvider.presenter = controller
         return controller

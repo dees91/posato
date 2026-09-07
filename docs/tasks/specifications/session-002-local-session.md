@@ -47,14 +47,22 @@ active, and the whole flow is drivable through `verify-posato`.
   platform-neutral outcomes (applied, cleared, nothing-to-enforce,
   authorization-required, incompatible, unavailable, unknown, failed) and
   redacted carriers. The JVM adapter composes `MacOsBrowserDomainEnforcer`
-  and `MacOsApplicationEnforcer` over one helper client; the iOS adapter
-  composes `IosEnforcement` and `IosSuspendedExpiry`. Apple types, helper
-  results, and process handles stay in the platform source sets.
+  and `MacOsApplicationEnforcer` over one helper client with the browser Apply
+  first and a browser Restore on application failure (fail-closed); the iOS
+  adapter composes `IosEnforcement` and `IosSuspendedExpiry`. iOS `status()`
+  reads the live named-store state through the existing
+  `IosEnforcementProvider` (`status` read only, no new Swift); JVM `status()`
+  combines the helper ownership phase with the in-memory configured
+  application session. Apple types, helper results, and process handles stay
+  in the platform source sets.
 - Sequence start as: commit the session record, then apply enforcement, then
   derive the enforcement state; a failed, refused, or unknown apply leaves the
   session active with an action-required enforcement state and Retry, never
   an active claim. Retry clears before it re-applies, because the helper
-  refuses configure while an Apply is owned.
+  refuses configure while an Apply is owned. The effective set is frozen at
+  Start and shown in the active summary with next-pause copy for later
+  Paused-items edits; macOS Resume applies the current set, iOS re-applies it
+  silently on relaunch and foreground.
 - Sequence early end and observed expiry as: commit the session end (the
   terminal marker for expiry, per ADR 0006), then clear enforcement, then
   report; a failed or unknown clear is an action-required state with Retry,
@@ -76,10 +84,13 @@ active, and the whole flow is drivable through `verify-posato`.
   adapter, extensions of the existing `iosMain` files), the DI graphs
   `shared/src/*/kotlin/app/posato/di/**`, `PosatoApplication.kt`,
   `MainViewController.kt`, `desktopApp/src/main/kotlin/app/posato/desktop/**`,
-  `iosApp/iosApp/iosApp.swift` (pass the existing `IosManagedSettingsEnforcer`
-  and `SuspendedExpiryScheduler` into `mainViewController`),
+  `iosApp/iosApp/iosApp.swift` (construct the existing `IosManagedSettingsEnforcer`
+  and `SuspendedExpiryScheduler` in the host and pass them into
+  `mainViewController`), `iosApp/iosApp/IosEnforcementProvider.swift`
+  (`status` read only, no new Swift, no project change),
   `.agents/skills/verify-posato/features/sessions.md` with the session
-  scenario fixtures, and the `SESSION-002` sections of
+  scenario fixtures, the session-helper lines of
+  `.agents/skills/verify-posato/SKILL.md` (desktop split only), and the `SESSION-002` sections of
   `docs/wiki/topics/macos-enforcement.md` and `ios-enforcement.md`. Shared
   by rebase: `docs/wiki/log.md`. Do not add Swift files or touch
   `iosApp/iosApp.xcodeproj/**` (`SYNC-007` owns them), `macosHelper/**` (the
@@ -129,7 +140,10 @@ active, and the whole flow is drivable through `verify-posato`.
   `MacOsApplicationCommands` (both-active rule, partial failure policy, clear
   ordering); `iosTest` adapter tests over fake providers.
 - `verify-posato` runs on `desktop` and `sim` with the updated session
-  scenarios; physical Mac run (development-signed package, helper enabled,
+  scenarios: desktop fixtures split into unattended action-required variants
+  plus a maintainer-attended full-enforcement row driven by marker files
+  (`APPLY_GO`, `ROWS_DONE`, `ABORT` under `build/verification/session-002/`);
+  physical Mac run (development-signed package, helper enabled,
   Safari row, disposable test application row, early end, expiry, proxy
   baseline) and physical iPhone run (Screen Time granted, site presentation,
   force-quit expiry, reopen reconciliation); evidence under the ignored

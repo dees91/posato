@@ -1,6 +1,9 @@
 package app.posato.feature.session.ui
 
 import androidx.compose.runtime.Immutable
+import app.posato.feature.enforcement.EnforcedSet
+import app.posato.feature.enforcement.EnforcementActionKind
+import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.LocalSessionStatus.Active
 import app.posato.feature.session.domain.LocalSessionStatus.Ended
@@ -39,10 +42,44 @@ internal data class SessionUiState(
     val formattedPreviewEnd: String? = null,
     val formattedReviewEnd: String? = null,
     val formattedActiveEnd: String? = null,
+    val enforcement: EnforcementState = EnforcementState.Inactive,
+    val enforced: EnforcedSet = EnforcedSet(),
+    val enforcementBusy: Boolean = false,
 ) {
     override fun toString(): String {
         return "SessionUiState(redacted)"
     }
+}
+
+internal data class EnforcementViewState(
+    val state: EnforcementState = EnforcementState.Inactive,
+    val enforced: EnforcedSet = EnforcedSet(),
+    val busy: Boolean = false,
+) {
+    override fun toString(): String {
+        return "EnforcementViewState(redacted)"
+    }
+}
+
+internal fun SessionUiState.displayDomains(): PersistentList<String> {
+    return if (status is Active && enforced.hasContent()) enforced.domains else review.domains
+}
+
+internal fun SessionUiState.displayApplicationCount(): Int? {
+    return if (status is Active && enforced.hasContent()) enforced.applicationCount else review.selectedMappingCount
+}
+
+internal fun SessionUiState.showsFrozenSet(): Boolean {
+    return status is Active && enforcement !is EnforcementState.Inactive && enforced.hasContent()
+}
+
+internal fun SessionUiState.nothingIsRestricted(): Boolean {
+    val action = enforcement as? EnforcementState.ActionRequired ?: return false
+    return status is Active && action.kind == EnforcementActionKind.APPLY_FAILED
+}
+
+private fun EnforcedSet.hasContent(): Boolean {
+    return domains.isNotEmpty() || applicationCount != null
 }
 
 internal data class SessionLoadState(
@@ -94,6 +131,7 @@ internal fun createSessionUiState(
     confirming: Boolean,
     nowMillis: Long,
     timeFormat: SessionTimeFormat,
+    enforcementView: EnforcementViewState = EnforcementViewState(),
 ): SessionUiState {
     val policy = targets.policy
     val mappings = targets.mappings
@@ -124,6 +162,9 @@ internal fun createSessionUiState(
         formattedPreviewEnd = previewEnd?.let { timeFormat.formatTime(it, nowMillis) },
         formattedReviewEnd = draft.resolvedReviewEnd?.let { timeFormat.formatTime(it, nowMillis) },
         formattedActiveEnd = lastRecord?.let { timeFormat.formatTime(it.endEpochMillis, nowMillis) },
+        enforcement = enforcementView.state,
+        enforced = enforcementView.enforced,
+        enforcementBusy = enforcementView.busy,
     )
 }
 

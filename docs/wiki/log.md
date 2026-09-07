@@ -1345,3 +1345,14 @@
   changes. Replaced blocking test-task waits with an awaited dedicated-thread
   boundary, retaining assertions, deadlines, and parallel execution. Temporary
   diagnostics were removed, with no product behavior change.
+
+## [2026-09-07] implementation | SESSION-002 local session enforcement
+
+- Wired session start, early end, and observed expiry to the accepted local
+  enforcement on both platforms: commit, apply or clear, report, with a frozen
+  effective set shown in the active surface and Retry or Resume on every failed
+  or refused path. macOS applies browser denial first and restores it when the
+  application configure fails; iOS reads live restriction state and consumes
+  the suspended-expiry reconciliation once. `./gradlew quality` and the
+  Simulator driver rows pass; the physical Mac and iPhone rows stay pending
+  with the maintainer, as does the desktop driver accessibility-tree finding.

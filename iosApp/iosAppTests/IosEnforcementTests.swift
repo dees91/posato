@@ -353,6 +353,36 @@ final class IosEnforcementTests: XCTestCase {
         return try XCTUnwrap(result)
     }
 
+    func testStatusReadsLiveStoreState() throws {
+        let store = FakeEnforcementSettingsStore()
+        let enforcer = capableEnforcer(store: store)
+
+        XCTAssertEqual(try status(enforcer: enforcer), .cleared)
+        XCTAssertEqual(try apply(domains: ["example.com"], enforcer: enforcer), .applied)
+        XCTAssertEqual(try status(enforcer: enforcer), .applied)
+        XCTAssertEqual(try clear(enforcer: enforcer), .cleared)
+        XCTAssertEqual(try status(enforcer: enforcer), .cleared)
+    }
+
+    func testStatusReportsCapabilityAndAuthorization() throws {
+        let incapable = IosManagedSettingsEnforcer(
+            storeFactory: { FakeEnforcementSettingsStore() },
+            authorization: { .approved },
+            isCapable: false,
+            storedMappings: { [] }
+        )
+        XCTAssertEqual(try status(enforcer: incapable), .unavailable)
+
+        let unauthorized = capableEnforcer(store: FakeEnforcementSettingsStore(), authorization: .notDetermined)
+        XCTAssertEqual(try status(enforcer: unauthorized), .authorizationRequired)
+    }
+
+    private func status(enforcer: IosManagedSettingsEnforcer) throws -> IosEnforcementOutcome {
+        var result: IosEnforcementOutcome?
+        enforcer.status { result = $0 }
+        return try XCTUnwrap(result)
+    }
+
     private func temporaryDirectory() throws -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)

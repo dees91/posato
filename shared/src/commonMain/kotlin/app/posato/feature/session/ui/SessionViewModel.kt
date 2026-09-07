@@ -2,6 +2,7 @@ package app.posato.feature.session.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.data.LocalSessionStore
@@ -41,6 +42,7 @@ internal class SessionViewModel(
     private val sessionIds: SessionIdGenerator,
     private val clock: SessionClock,
     private val timeFormat: SessionTimeFormat,
+    enforcement: EnforcementPort,
 ) : ViewModel() {
     private val refreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val targetsRefreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
@@ -49,12 +51,20 @@ internal class SessionViewModel(
     private val targetsState = MutableStateFlow(SessionTargetsState())
     private val command = MutableStateFlow<SessionCommand?>(null)
     private val confirmingEarlyEnd = MutableStateFlow(false)
+    private val enforcementCoordinator = SessionEnforcementCoordinator(
+        enforcement,
+        viewModelScope,
+        { loadSessionTargets(policyStore, applicationMappings) },
+        { refreshRequests.tryEmit(Unit) },
+    )
+    private var tickCounter = 0L
     private val sessionReadLifecycle: Flow<Unit> = refreshRequests.onStart { emit(Unit) }.transform {
         sessionLoad.update { SessionLoadState() }
         emit(Unit)
         when (val result = sessionStore.read(clock.currentEpochMillis())) {
             is LocalSessionResult.Success -> {
                 sessionLoad.update { SessionLoadState(status = result.value) }
+                enforcementCoordinator.settle(result.value)
             }
 
             is LocalSessionResult.Failure -> {
@@ -66,7 +76,18 @@ internal class SessionViewModel(
         emit(Unit)
         targetsState.update { loadSessionTargets(policyStore, applicationMappings) }
     }
-    private val ticker = observeTicks()
+    private val ticker = observeSessionTicks(clock) { now ->
+        val status = sessionLoad.value.status
+        if (status is Active && now >= status.record.endEpochMillis) {
+            refreshRequests.tryEmit(Unit)
+        }
+        if (status is Active) {
+            tickCounter += 1
+            if (tickCounter % STATUS_POLL_TICKS == 0L) {
+                enforcementCoordinator.onTickSecond(status)
+            }
+        }
+    }
 
     val uiState: StateFlow<SessionUiState> = combine(
         combine(sessionLoad, setupDraft, targetsState) { load, draft, targets ->
@@ -77,8 +98,18 @@ internal class SessionViewModel(
         },
         sessionReadLifecycle,
         targetsReadLifecycle,
-    ) { left, right, _, _ ->
-        createSessionUiState(left.first, left.second, left.third, right.first, right.second, right.third, timeFormat)
+        enforcementCoordinator.view,
+    ) { left, right, _, _, enforcementView ->
+        createSessionUiState(
+            left.first,
+            left.second,
+            left.third,
+            right.first,
+            right.second,
+            right.third,
+            timeFormat,
+            enforcementView,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SessionUiState())
 
     fun setSetupVisible(visible: Boolean) {
@@ -91,6 +122,7 @@ internal class SessionViewModel(
                 confirmingEarlyEnd.value,
                 clock.currentEpochMillis(),
                 timeFormat,
+                enforcementCoordinator.view.value,
             )
             if (!current.canEnterSetup()) {
                 return
@@ -115,8 +147,9 @@ internal class SessionViewModel(
         setupDraft.update { draft -> draft.copy(durationMinutes = minutes, failure = null) }
     }
 
-    fun refreshTargets() {
+    fun onScreenEntered() {
         targetsRefreshRequests.tryEmit(Unit)
+        refreshRequests.tryEmit(Unit)
     }
 
     fun submitDurationMinutes(input: String) {
@@ -185,8 +218,12 @@ internal class SessionViewModel(
                 }
                 when (val result = sessionStore.start(sessionIds.create(), now, end, now)) {
                     is LocalSessionResult.Success -> {
+                        val active = result.value as? Active
                         sessionLoad.update { SessionLoadState(status = result.value) }
                         setupDraft.update { SessionSetupDraft() }
+                        if (active != null) {
+                            enforcementCoordinator.applyAfterStart(active.record, targets)
+                        }
                     }
 
                     is LocalSessionResult.Failure -> {
@@ -218,6 +255,7 @@ internal class SessionViewModel(
                 confirmingEarlyEnd.value,
                 clock.currentEpochMillis(),
                 timeFormat,
+                enforcementCoordinator.view.value,
             )
             if (current.canRequestEarlyEnd()) {
                 confirmingEarlyEnd.update { true }
@@ -239,6 +277,7 @@ internal class SessionViewModel(
                 when (val result = sessionStore.endEarly(clock.currentEpochMillis())) {
                     is LocalSessionResult.Success -> {
                         sessionLoad.update { SessionLoadState(status = result.value) }
+                        enforcementCoordinator.clearAfterEnd()
                     }
 
                     is LocalSessionResult.Failure -> {
@@ -261,17 +300,21 @@ internal class SessionViewModel(
         targetsRefreshRequests.tryEmit(Unit)
     }
 
-    private fun observeTicks(): Flow<Long> {
-        return flow {
-            while (true) {
-                val now = clock.currentEpochMillis()
-                val status = sessionLoad.value.status
-                if (status is Active && now >= status.record.endEpochMillis) {
-                    refreshRequests.tryEmit(Unit)
-                }
-                emit(now)
-                delay(TICK_MILLIS)
-            }
+    fun retryEnforcement() {
+        enforcementCoordinator.retry(sessionLoad.value.status)
+    }
+}
+
+internal fun observeSessionTicks(
+    clock: SessionClock,
+    onSecond: suspend (nowEpochMillis: Long) -> Unit,
+): Flow<Long> {
+    return flow {
+        while (true) {
+            val now = clock.currentEpochMillis()
+            onSecond(now)
+            emit(now)
+            delay(TICK_MILLIS)
         }
     }
 }
@@ -308,3 +351,4 @@ private fun isStartBlocked(targets: SessionTargetsState): Boolean {
 }
 
 private const val TICK_MILLIS: Long = 1_000L
+private const val STATUS_POLL_TICKS: Long = 15L

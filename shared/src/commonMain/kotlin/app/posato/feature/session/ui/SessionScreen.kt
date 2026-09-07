@@ -25,6 +25,7 @@ import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
+import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
@@ -41,16 +42,17 @@ internal fun SessionScreen(
     sessionIds: SessionIdGenerator,
     clock: SessionClock,
     timeFormat: SessionTimeFormat,
+    enforcement: EnforcementPort,
     onOpenPausedItems: () -> Unit,
     modifier: Modifier = Modifier,
     layout: PosatoLayout = PosatoLayout.Compact,
     deviceLabel: String = "On this device",
     viewModel: SessionViewModel = viewModel {
-        SessionViewModel(sessionStore, policyStore, applicationMappings, sessionIds, clock, timeFormat)
+        SessionViewModel(sessionStore, policyStore, applicationMappings, sessionIds, clock, timeFormat, enforcement)
     },
 ) {
     val state by viewModel.uiState.collectAsState()
-    LaunchedEffect(viewModel) { viewModel.refreshTargets() }
+    LaunchedEffect(viewModel) { viewModel.onScreenEntered() }
     SessionScreen(
         state = state,
         onEnterSetup = { viewModel.setSetupVisible(true) },
@@ -63,6 +65,7 @@ internal fun SessionScreen(
         onCancelEarlyEnd = { viewModel.setEarlyEndConfirmation(false) },
         onConfirmEarlyEnd = viewModel::confirmEarlyEnd,
         onRetry = viewModel::retry,
+        onRetryEnforcement = viewModel::retryEnforcement,
         onOpenPausedItems = onOpenPausedItems,
         modifier = modifier,
         layout = layout,
@@ -86,6 +89,7 @@ internal fun SessionScreen(
     onCancelEarlyEnd: () -> Unit = {},
     onConfirmEarlyEnd: () -> Unit = {},
     onRetry: () -> Unit = {},
+    onRetryEnforcement: () -> Unit = {},
     onOpenPausedItems: () -> Unit = {},
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
@@ -111,7 +115,11 @@ internal fun SessionScreen(
                     PosatoHeading(
                         "Ready to return?",
                         eyebrow = "END THIS PAUSE",
-                        description = "You can end this session early. Your saved choices will stay ready for another time.",
+                        description = if (state.nothingIsRestricted()) {
+                            "Nothing is restricted in this pause. You can end it now."
+                        } else {
+                            "You can end this session early. Your saved choices will stay ready for another time."
+                        },
                         layout = layout,
                     )
                     PosatoButton(onConfirmEarlyEnd, enabled = !state.isEnding) { Text("End session") }
@@ -127,7 +135,15 @@ internal fun SessionScreen(
                 }
 
                 else -> {
-                    SessionOverviewContent(state, layout, deviceLabel, onEnterSetup, onRequestEarlyEnd, onOpenPausedItems)
+                    SessionOverviewContent(
+                        state,
+                        layout,
+                        deviceLabel,
+                        onEnterSetup,
+                        onRequestEarlyEnd,
+                        onOpenPausedItems,
+                        onRetryEnforcement,
+                    )
                 }
             }
         }

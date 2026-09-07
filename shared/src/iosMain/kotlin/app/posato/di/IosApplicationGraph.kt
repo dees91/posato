@@ -3,6 +3,12 @@ package app.posato.di
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createIosDatabaseDriver
+import app.posato.feature.enforcement.EnforcementPort
+import app.posato.feature.enforcement.IosEnforcement
+import app.posato.feature.enforcement.IosEnforcementProvider
+import app.posato.feature.enforcement.IosSessionEnforcement
+import app.posato.feature.enforcement.IosSuspendedExpiry
+import app.posato.feature.enforcement.IosSuspendedExpiryProvider
 import app.posato.feature.session.IosSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.data.SqlLocalSessionStore
@@ -40,6 +46,7 @@ internal interface IosApplicationGraph : ApplicationGraph {
     fun interface Factory {
         fun create(
             @Provides applicationMappings: LocalApplicationMappings,
+            @Provides enforcement: EnforcementPort,
         ): IosApplicationGraph
     }
 
@@ -122,9 +129,15 @@ internal data class IosApplicationRuntime(
 internal fun createIosApplicationRuntime(
     cryptoProvider: IosCryptoProvider,
     applicationMappingsProvider: IosApplicationMappingsProvider,
+    enforcementProvider: IosEnforcementProvider,
+    suspendedExpiryProvider: IosSuspendedExpiryProvider,
 ): IosApplicationRuntime {
     val applicationMappings = IosLocalApplicationMappings(applicationMappingsProvider)
-    val graph = createGraphFactory<IosApplicationGraph.Factory>().create(applicationMappings)
+    val enforcement = IosSessionEnforcement(
+        IosEnforcement(enforcementProvider),
+        IosSuspendedExpiry(suspendedExpiryProvider),
+    )
+    val graph = createGraphFactory<IosApplicationGraph.Factory>().create(applicationMappings, enforcement)
     val syncOperationCore = SyncOperationCore(
         store = graph.syncReplicaStore,
         cryptoProvider = IosSyncCryptoProvider(cryptoProvider),
