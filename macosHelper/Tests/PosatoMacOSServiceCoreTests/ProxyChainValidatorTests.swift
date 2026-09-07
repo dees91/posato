@@ -30,9 +30,9 @@ import Testing
   )
 }
 
-@Test func givenListenerFailureWhenResolvingThenChainNeverFallsBackDirect() throws {
+@Test func givenListenerFailureWhenResolvingThenChainNeverFallsBackDirect() async throws {
   let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"])
-  let port = try proxy.start()
+  let port = try await runBlockingTestOperation { try proxy.start() }
   proxy.stop()
 
   let resolver = StubResolver(hops: [.loopback(port: port)])

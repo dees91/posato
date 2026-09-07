@@ -129,11 +129,30 @@ val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityEx
     )
 }
 
+val iosSwiftTest by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Runs native Swift XCTest suites on an isolated, credential-free iOS Simulator."
+    dependsOn(":shared:linkDebugFrameworkIosSimulatorArm64", ":shared:iosSimulatorArm64AggregateResources")
+    workingDir(layout.projectDirectory)
+    commandLine("bash", "tools/quality/ios-swift-test.sh")
+}
+
+val iosHostBuildCheck by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Compiles unsigned Debug iOS device and Release Simulator hosts."
+    dependsOn(":shared:linkDebugFrameworkIosArm64", ":shared:linkReleaseFrameworkIosSimulatorArm64")
+    mustRunAfter(iosSwiftTest)
+    workingDir(layout.projectDirectory)
+    commandLine("bash", "tools/quality/ios-host-build-check.sh")
+}
+
 tasks.register("quality") {
     group = "verification"
     description = "Runs Posato's formatting, analysis, test, compilation, packaging, and report checks."
     dependsOn(
         "ktlintCheck",
+        iosSwiftTest,
+        iosHostBuildCheck,
         ":desktopApp:createDistributable",
         ":desktopApp:verifyMacOsDevelopmentPackaging",
         ":desktopApp:detekt",

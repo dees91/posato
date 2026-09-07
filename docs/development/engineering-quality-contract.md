@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 10
-- **Accepted:** 2026-08-31
+- **Revision:** 14
+- **Accepted:** 2026-09-07
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -13,8 +13,8 @@ This document defines the standing quality bar for Posato. The
 must be capable of finding a defect in the actual change, not fill a generic
 matrix.
 
-The first production increment remains blocked from merge until its local and
-CI quality boundaries and integrated completed-change review pass.
+Every increment requires applicable local verification, the local merge check
+below, and its selected review tier before merge.
 
 ## Kotlin and Compose tools
 
@@ -202,33 +202,42 @@ browsing-history and allowed-navigation diagnostics remains in force.
 
 ## Continuous integration
 
-CI is implemented with PR #1 and must work before PR #1 merges or before the
-first parallel implementation wave, whichever comes first. It runs the
-repository-owned aggregate quality gate and the credential-free JVM, iOS, and
-macOS surfaces introduced by that increment.
+The local aggregate quality gate covers repository-owned JVM, iOS, and macOS
+surfaces. It includes `iosSwiftTest`,
+which builds the Debug iOS host and executes the existing native Swift XCTest
+suites on an isolated temporary Simulator. Physical-device-only cases remain
+explicitly skipped there; Simulator success does not prove iCloud Keychain,
+Screen Time authorization, or suspended-device expiry behavior.
+
+`user-confirmed` (2026-09-07): local `quality` also includes `iosHostBuildCheck`
+for unsigned Debug `iphoneos` and Release Simulator host compilation, preserving
+the configuration coverage of the removed workflow. Kotlin device compilation
+alone does not check device-only Swift branches. These checks require no physical
+device and do not establish physical-device behavior.
 
 Routine CI must not require personal signing identities, provisioning profiles,
 application credentials, or private device data. The preview-only Android KMP
 library uses Android SDK Platform 36 and Build Tools 36.0.0 to compile shared
-preview code; it does not add an Android product host or emulator job. Exact
-jobs and commands are chosen in the shared PR #1 execution cycle.
+preview code; it does not add an Android product host or emulator job.
 
-`user-confirmed` (2026-08-27): draft pull requests allocate no runner; moving a
-pull request to ready for review triggers CI. The full macOS quality job runs
-for every review-ready pull-request diff containing a non-Markdown file and
-every push to `main`. Markdown-only review-ready pull requests retain reported
-job results but skip macOS after a cheap whole-diff classification.
-Classification failure must run macOS rather than silently weakening the gate.
-Do not classify only the latest push because cancellation could otherwise
-leave earlier substantive changes unverified.
+`user-confirmed` (2026-09-07, latest decision): GitHub CI is disabled for now.
+Remove the CI workflow from source and its required `Quality` status check
+from `main`. This supersedes the earlier automatic, paused, manual-only, and
+required-hosted-check policies. Restoration needs an explicit maintainer
+decision; there is no automatic-restoration date.
 
-`user-confirmed` (2026-08-28): GitHub-hosted automatic CI is paused through
-2026-09-05 because the account exhausted its included Actions minutes. During
-the pause, a fresh local `./gradlew quality` pass after the last material
-correction is the required merge gate. The workflow retains manual dispatch
-for exceptional use. Restore the pull-request and `main` push triggers when
-hosted minutes become available; this temporary exception does not weaken the
-quality command or the proportional review requirement.
+Before merging, require successful local `./gradlew quality` after the last
+correction, the selected review tier, and applicable native/device verification.
+Record the tested revision and result in the PR and confirm that it still
+represents the change being merged. Follow the local verification rules above
+after later corrections. See the [local checklist](README.md#local-quality-and-merge-check).
+
+Keep `main` protected by a PR requirement with zero mandatory approving reviews,
+administrator enforcement, no bypass allowances, and force-push/deletion
+restrictions. Required status checks and their strict up-to-date setting are
+removed. GitHub cannot enforce local quality results; the maintainer or merging
+agent owns that procedural gate. Administrators can still edit protection itself.
+Disabled CI does not waive local failures or the independent-review process.
 
 ## Definition of Done
 

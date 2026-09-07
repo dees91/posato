@@ -361,7 +361,7 @@ final class SessionStubs {
   #expect(application.forceTerminateCalls == 0)
 }
 
-@Test func givenStoppedSessionWhenTimerWouldFireThenNoTerminationFollows() throws {
+@Test func givenStoppedSessionWhenTimerWouldFireThenNoTerminationFollows() async throws {
   let stubs = SessionStubs()
   let application = StubRunningApplication(processIdentifier: 108)
   application.refuseGraceful = true
@@ -377,11 +377,11 @@ final class SessionStubs {
   )
 
   session.start()
-  Thread.sleep(forTimeInterval: 1.5)
+  try await Task.sleep(for: .milliseconds(1_500))
   session.stop()
   let callsAfterStop = application.terminateCalls
   #expect(callsAfterStop > 0)
-  Thread.sleep(forTimeInterval: 1.5)
+  try await Task.sleep(for: .milliseconds(1_500))
 
   #expect(application.terminateCalls == callsAfterStop)
 }
