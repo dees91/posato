@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.FlowRowScope
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoChoiceGroup(
@@ -18,4 +19,16 @@ internal fun PosatoChoiceGroup(
         verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small),
         content = content,
     )
+}
+
+@Preview(name = "Wrapping choices", widthDp = 280)
+@Composable
+private fun PosatoChoiceGroupPreview() {
+    PosatoComponentPreview {
+        PosatoChoiceGroup {
+            PosatoDurationChoice("25", "minutes", selected = true, onClick = {})
+            PosatoDurationChoice("45", "minutes", selected = false, onClick = {})
+            PosatoDurationChoice("60", "minutes", selected = false, onClick = {})
+        }
+    }
 }

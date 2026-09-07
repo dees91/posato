@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoButton(
@@ -49,4 +51,18 @@ internal fun PosatoButton(
         contentPadding = if (style == PosatoButtonStyle.Compact) PosatoControlDefaults.CompactPadding else PosatoControlDefaults.ContentPadding,
         content = content,
     )
+}
+
+@Preview(name = "Button styles", widthDp = 390)
+@Preview(name = "Button styles · dark", widthDp = 390, uiMode = 0x20)
+@Composable
+private fun PosatoButtonPreview() {
+    PosatoComponentPreview {
+        PosatoButtonStyle.entries.forEach { style ->
+            PosatoActionRow {
+                PosatoButton(onClick = {}, style = style) { Text(style.name) }
+                PosatoButton(onClick = {}, style = style, enabled = false) { Text("Disabled") }
+            }
+        }
+    }
 }

@@ -1317,3 +1317,11 @@
 - Native keyboard verification corrected double IME subtraction in the root;
   the design topic records why the modal dialog does not share that correction.
   Physical picker and timer checks retain their platform and accessibility limits.
+
+## [2026-09-07] implementation | Add focused design-system component previews
+
+- Added colocated Compose previews for visual component families, using small
+  synthetic examples without providers, ViewModels, or live services. Selected
+  variants cover dark appearance, larger text, disabled/error states, and reflow.
+- Theme, token definitions, and full application scaffolds remain outside the
+  standalone preview set. Runtime implementations and prototype sources are unchanged.

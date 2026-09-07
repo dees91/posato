@@ -7,6 +7,7 @@ import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.sizeIn
@@ -18,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -38,6 +40,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.tooling.preview.Preview
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -161,5 +164,30 @@ private fun WheelArrow(
 ) {
     IconButton(modifier = Modifier.sizeIn(minWidth = PosatoSize.Control, minHeight = PosatoSize.Control), onClick = onClick, enabled = enabled) {
         PosatoIcon(if (increasing) PosatoIcons.ChevronUp else PosatoIcons.ChevronDown, contentDescription = label)
+    }
+}
+
+@Preview(name = "Adjustable time wheels", widthDp = 390)
+@Preview(name = "Adjustable time wheels · larger text", widthDp = 390, fontScale = 1.5f)
+@Composable
+private fun PosatoNumberWheelPreview() {
+    var hours by remember { mutableIntStateOf(1) }
+    var minutes by remember { mutableIntStateOf(25) }
+    PosatoComponentPreview {
+        Row {
+            PosatoNumberWheel(modifier = Modifier.weight(1f), value = hours, range = 0..23, label = "Hours", onValueChange = { hours = it })
+            PosatoNumberWheel(modifier = Modifier.weight(1f), value = minutes, range = 0..59, label = "Minutes", onValueChange = { minutes = it })
+        }
+    }
+}
+
+@Preview(name = "Wheel limits", widthDp = 390)
+@Composable
+private fun PosatoNumberWheelLimitsPreview() {
+    PosatoComponentPreview {
+        Row {
+            PosatoNumberWheel(modifier = Modifier.weight(1f), value = 5, range = 5..59, label = "Minimum", onValueChange = {})
+            PosatoNumberWheel(modifier = Modifier.weight(1f), value = 59, range = 5..59, label = "Maximum", onValueChange = {})
+        }
     }
 }

@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -63,3 +64,13 @@ private val ArtInset = 17.dp
 private val ArtStroke = 36.dp
 private val ArtLength = 103.dp
 private const val ART_ANGLE = 10f
+
+@Preview(name = "Identity", widthDp = 280)
+@Composable
+private fun PosatoIdentityPreview() {
+    PosatoComponentPreview {
+        PosatoMark()
+        PosatoWordmark()
+        PosatoIntervalArtwork()
+    }
+}

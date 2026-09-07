@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoToggleButton(
@@ -115,5 +116,38 @@ internal fun PosatoDurationChoice(
         supportingContent = { PosatoCaption(unitLabel) },
     ) {
         Text(valueLabel, style = MaterialTheme.typography.titleLarge)
+    }
+}
+
+@Preview(name = "Selection states", widthDp = 390)
+@Composable
+private fun PosatoSelectionPreview() {
+    PosatoComponentPreview {
+        PosatoChoiceGroup {
+            PosatoToggleButton(selected = true, onClick = {}) { Text("Selected") }
+            PosatoToggleButton(selected = false, onClick = {}) { Text("Available") }
+            PosatoToggleButton(selected = false, onClick = {}, enabled = false) { Text("Disabled") }
+        }
+        PosatoChoiceGroup {
+            PosatoChoiceTile(selected = true, onClick = {}) { Text("Selected") }
+            PosatoChoiceTile(selected = false, onClick = {}, enabled = false) { Text("Disabled") }
+        }
+        PosatoSelectionRow(checked = true, onCheckedChange = {}, supportingContent = { PosatoCaption("On this device only") }) {
+            Text("Selected applications")
+        }
+        PosatoSelectionRow(checked = false, onCheckedChange = {}) { Text("Available selection") }
+        PosatoSelectionRow(checked = true, onCheckedChange = {}, enabled = false) { Text("Disabled selection") }
+    }
+}
+
+@Preview(name = "Duration choices", widthDp = 390)
+@Composable
+private fun PosatoDurationChoicePreview() {
+    PosatoComponentPreview {
+        PosatoChoiceGroup {
+            PosatoDurationChoice("25", "minutes", selected = false, onClick = {})
+            PosatoDurationChoice("45", "minutes", selected = true, onClick = {})
+            PosatoDurationChoice("60", "minutes", selected = false, onClick = {})
+        }
     }
 }

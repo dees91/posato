@@ -2,6 +2,7 @@ package app.posato.core.designsystem
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.heightIn
@@ -13,6 +14,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuDefaults
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -22,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoItemMenu(
@@ -71,4 +75,25 @@ internal fun PosatoItemMenuAction(
         colors = MenuDefaults.itemColors(textColor = color, leadingIconColor = color),
         contentPadding = PaddingValues(horizontal = PosatoSpace.Large, vertical = PosatoSpace.Tiny),
     )
+}
+
+@Preview(name = "Menu trigger and actions", widthDp = 280)
+@Preview(name = "Menu trigger and actions · dark", widthDp = 280, uiMode = 0x20)
+@Composable
+private fun PosatoItemMenuPreview() {
+    PosatoComponentPreview {
+        PosatoItemMenu("Actions for example.com") { dismiss ->
+            PosatoItemMenuAction(onClick = dismiss, leadingContent = { PosatoIcon(PosatoIcons.Edit, null) }) { Text("Edit") }
+            PosatoItemMenuAction(onClick = dismiss, destructive = true, leadingContent = { PosatoIcon(PosatoIcons.Remove, null) }) { Text("Remove") }
+        }
+        Surface(
+            shape = MaterialTheme.shapes.large,
+            border = BorderStroke(PosatoSpace.Hairline, MaterialTheme.colorScheme.outlineVariant),
+        ) {
+            Column {
+                PosatoItemMenuAction(onClick = {}, leadingContent = { PosatoIcon(PosatoIcons.Edit, null) }) { Text("Edit") }
+                PosatoItemMenuAction(onClick = {}, destructive = true, leadingContent = { PosatoIcon(PosatoIcons.Remove, null) }) { Text("Remove") }
+            }
+        }
+    }
 }

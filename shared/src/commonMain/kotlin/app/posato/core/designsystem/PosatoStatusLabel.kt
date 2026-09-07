@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -33,3 +34,14 @@ internal fun PosatoStatusLabel(
 }
 
 private val StatusDotSize = 6.dp
+
+@Preview(name = "Status tones", widthDp = 390)
+@Composable
+private fun PosatoStatusLabelPreview() {
+    PosatoComponentPreview {
+        PosatoStatusLabel("NO SESSION ACTIVE", tone = PosatoTone.Neutral)
+        PosatoStatusLabel("SESSION ACTIVE", tone = PosatoTone.Positive)
+        PosatoStatusLabel("ACTION REQUIRED", tone = PosatoTone.Caution)
+        PosatoStatusLabel("UNABLE TO SAVE", tone = PosatoTone.Critical)
+    }
+}

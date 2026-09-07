@@ -11,6 +11,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,6 +19,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 
 @Composable
 internal fun PosatoTabBar(
@@ -71,6 +73,22 @@ internal fun PosatoTab(
                     count,
                 )
             }
+        }
+    }
+}
+
+@Preview(name = "Counted tabs", widthDp = 390)
+@Preview(name = "Counted tabs · dark", widthDp = 390, uiMode = 0x20)
+@Composable
+private fun PosatoTabBarPreview() {
+    PosatoComponentPreview {
+        PosatoTabBar {
+            PosatoTab(modifier = Modifier.weight(1f), selected = true, onClick = {}, countContent = { Text("50") }) { Text("Websites") }
+            PosatoTab(modifier = Modifier.weight(1f), selected = false, onClick = {}, countContent = { Text("4") }) { Text("Apps") }
+        }
+        PosatoTabBar {
+            PosatoTab(modifier = Modifier.weight(1f), selected = false, onClick = {}) { Text("Websites") }
+            PosatoTab(modifier = Modifier.weight(1f), selected = false, onClick = {}, enabled = false) { Text("Unavailable") }
         }
     }
 }
