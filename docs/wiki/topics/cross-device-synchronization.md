@@ -392,3 +392,6 @@ not claim that every other device has received the update.
 - How are portable enrollment, recovery, revocation, export, import, deletion,
   and transport migration presented and tested?
 - When should portable-folder provider experiments begin?
+- `open` (`SYNC-010` owner): on both Apple platforms an expired server change
+  token (`changeTokenExpired`) maps to `unknown-outcome` with no recovery
+  path; the retry or re-baseline story for an expired cursor is undecided.

@@ -1,5 +1,8 @@
 package app.posato.feature.sync.macos
 
+import app.posato.feature.sync.mailbox.MAILBOX_BUNDLE_BYTES
+import app.posato.feature.sync.mailbox.MAILBOX_BUNDLE_IDENTIFIER_BYTES
+import app.posato.feature.sync.mailbox.MAILBOX_CURSOR_BYTES
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -19,9 +22,9 @@ internal object MacOsSyncCompanionProtocol {
     const val KEYCHAIN_CAPABILITY: Long = 1L
     const val CLOUDKIT_CAPABILITY: Long = 2L
     const val ANCHOR_BYTES: Int = 48
-    const val BUNDLE_IDENTIFIER_BYTES: Int = 16
-    const val BUNDLE_BYTES: Int = 65_536
-    const val CURSOR_BYTES: Int = 16_384
+    const val BUNDLE_IDENTIFIER_BYTES: Int = MAILBOX_BUNDLE_IDENTIFIER_BYTES
+    const val BUNDLE_BYTES: Int = MAILBOX_BUNDLE_BYTES
+    const val CURSOR_BYTES: Int = MAILBOX_CURSOR_BYTES
     const val COMPANION_IDENTIFIER: String = "app.posato.macos.sync"
     const val APPLICATION_IDENTIFIER: String = "app.posato.macos"
     const val COMPANION_EXECUTABLE: String = "PosatoMacOSSync"

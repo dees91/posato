@@ -13,7 +13,11 @@
 		B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */; };
 		B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */; };
 		B500000129CC810C00F8E227 /* SynchronizableKeychainProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B500000229CC810C00F8E227 /* SynchronizableKeychainProvider.swift */; };
+		D100000129CC810C00F8E227 /* CloudKitMailboxProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D100000229CC810C00F8E227 /* CloudKitMailboxProvider.swift */; };
+		D200000129CC810C00F8E227 /* CloudKitMailboxLiveBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = D200000229CC810C00F8E227 /* CloudKitMailboxLiveBackend.swift */; };
 		B600000129CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */; };
+		D300000129CC810C00F8E227 /* CloudKitMailboxProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D300000229CC810C00F8E227 /* CloudKitMailboxProviderTests.swift */; };
+		E100000129CC810C00F8E227 /* CloudKitMailboxDeviceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E100000229CC810C00F8E227 /* CloudKitMailboxDeviceTests.swift */; };
 		B700000129CC810C00F8E227 /* IosEnforcementProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B700000229CC810C00F8E227 /* IosEnforcementProvider.swift */; };
 		B800000129CC810C00F8E227 /* IosEnforcementTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B800000229CC810C00F8E227 /* IosEnforcementTests.swift */; };
 		C900001029CC810C00F8E227 /* DeviceActivityMonitorExtension.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900000229CC810C00F8E227 /* DeviceActivityMonitorExtension.swift */; };
@@ -66,9 +70,13 @@
 		B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoKitSyncProviderTests.swift; sourceTree = "<group>"; };
 		B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicationMappingsStoreTests.swift; sourceTree = "<group>"; };
 		B500000229CC810C00F8E227 /* SynchronizableKeychainProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynchronizableKeychainProvider.swift; sourceTree = "<group>"; };
+		D100000229CC810C00F8E227 /* CloudKitMailboxProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitMailboxProvider.swift; sourceTree = "<group>"; };
+		D200000229CC810C00F8E227 /* CloudKitMailboxLiveBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitMailboxLiveBackend.swift; sourceTree = "<group>"; };
 		B700000229CC810C00F8E227 /* IosEnforcementProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosEnforcementProvider.swift; sourceTree = "<group>"; };
 		B800000229CC810C00F8E227 /* IosEnforcementTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosEnforcementTests.swift; sourceTree = "<group>"; };
 		B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynchronizableKeychainProviderTests.swift; sourceTree = "<group>"; };
+		D300000229CC810C00F8E227 /* CloudKitMailboxProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitMailboxProviderTests.swift; sourceTree = "<group>"; };
+		E100000229CC810C00F8E227 /* CloudKitMailboxDeviceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudKitMailboxDeviceTests.swift; sourceTree = "<group>"; };
 		B200000329CC810C00F8E227 /* PosatoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PosatoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C900000129CC810C00F8E227 /* ActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		C900000229CC810C00F8E227 /* DeviceActivityMonitorExtension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceActivityMonitorExtension.swift; sourceTree = "<group>"; };
@@ -144,6 +152,8 @@
 				B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */,
 				B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */,
 				B500000229CC810C00F8E227 /* SynchronizableKeychainProvider.swift */,
+				D100000229CC810C00F8E227 /* CloudKitMailboxProvider.swift */,
+				D200000229CC810C00F8E227 /* CloudKitMailboxLiveBackend.swift */,
 				B700000229CC810C00F8E227 /* IosEnforcementProvider.swift */,
 				C900000529CC810C00F8E227 /* SuspendedExpiryClear.swift */,
 				C900000629CC810C00F8E227 /* SuspendedExpiryScheduler.swift */,
@@ -159,6 +169,8 @@
 				B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */,
 				B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */,
 				B600000229CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift */,
+				D300000229CC810C00F8E227 /* CloudKitMailboxProviderTests.swift */,
+				E100000229CC810C00F8E227 /* CloudKitMailboxDeviceTests.swift */,
 				B800000229CC810C00F8E227 /* IosEnforcementTests.swift */,
 				C900000729CC810C00F8E227 /* SuspendedExpiryTests.swift */,
 				C900001629CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift */,
@@ -319,6 +331,8 @@
 				B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */,
 				B300000129CC810C00F8E227 /* IosApplicationMappingsProvider.swift in Sources */,
 				B500000129CC810C00F8E227 /* SynchronizableKeychainProvider.swift in Sources */,
+				D100000129CC810C00F8E227 /* CloudKitMailboxProvider.swift in Sources */,
+				D200000129CC810C00F8E227 /* CloudKitMailboxLiveBackend.swift in Sources */,
 				B700000129CC810C00F8E227 /* IosEnforcementProvider.swift in Sources */,
 				C900001229CC810C00F8E227 /* SuspendedExpiryClear.swift in Sources */,
 				C900001329CC810C00F8E227 /* SuspendedExpiryScheduler.swift in Sources */,
@@ -332,6 +346,8 @@
 				B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */,
 				B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */,
 				B600000129CC810C00F8E227 /* SynchronizableKeychainProviderTests.swift in Sources */,
+				D300000129CC810C00F8E227 /* CloudKitMailboxProviderTests.swift in Sources */,
+				E100000129CC810C00F8E227 /* CloudKitMailboxDeviceTests.swift in Sources */,
 				B800000129CC810C00F8E227 /* IosEnforcementTests.swift in Sources */,
 				C900001429CC810C00F8E227 /* SuspendedExpiryTests.swift in Sources */,
 				C900001729CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift in Sources */,
