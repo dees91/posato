@@ -119,19 +119,29 @@
 | `git diff --check`, secret and path scans | `pass` | no findings; no `Suppress` added |
 | Physical iPhone join row (fresh install, same account) | `pass` | consent press joined the Mac workspace; relaunch adopts; `build/verification/runs/20260908-141036-708f` |
 | Navigation during the device attempt | `pass` | outcome observed after return; holder ownership unit-covered |
-| Physical from-empty reruns (simultaneous opt-in, reverse order) | `pending` | maintainer keep-vs-reset decision |
-| CloudKit Console one-zone one-anchor confirmation | `pending` | maintainer console access |
+| Physical iPhone-first order from an empty account | `pass` | iPhone press established, Mac press joined, one row, second press idempotent; `build/verification/runs/20260908-151742-b1f1`, `-151842-a8cb`, `-151852-9637`, `-151902-a7e8` |
+| Physical simultaneous opt-in (presses 0.1 s apart) | `pass` | iPhone won in 4.3 s; the Mac held `waiting-for-workspace-key` past 120 s with a persisted candidate and no established workspace, then adopted on the next press with the candidate cleared; `build/verification/runs/20260908-153208-6844`, `-153443-0f09`, `-153505-beb3`, `-153510-17ce` |
+| CloudKit Console one-zone confirmation | `pass` | maintainer confirmed exactly one `PosatoSyncV1` zone after the converged run |
 
 ## Blockers and accepted risks
 
 - `D1` and `D2` are decided; implementation is unblocked. The ADR 0007
   destructive-removal evidence is deferred to `SYNC-010` by maintainer
   decision and is not claimed here.
-- The iPhone join row ran on the maintainer's cabled iPhone (same iCloud
-  account): fresh install, consent press, `Ready`, relaunch adopts. A
-  from-empty simultaneous opt-in or reverse-order rerun needs a maintainer
-  decision (keep as join fixture or reset the private database manually,
-  since removal is `SYNC-010` work).
+- The physical matrix is complete. Three from-empty runs were possible only
+  because the maintainer deleted the `PosatoSyncV1` zone in the CloudKit
+  Console between them; the applications have no unlink path until `SYNC-010`,
+  so every later from-empty row carries that manual cost. Local resets used a
+  scoped `delete from sync_bootstrap_state` on the Mac and `launch --fresh` on
+  the iPhone, never a whole-database reset.
+- Two `AC-03` observations stay outside the driver: the count of surviving
+  synchronizable Keychain accounts and the absence of the losing candidate's
+  own item. Synchronizable items are invisible to the `security` command line
+  and to the driver, so they are covered by `BootstrapCoordinatorTest` (the
+  interleaved-race and lost-race cleanup cases) rather than physically. What
+  the race did prove physically is the loser's truthful waiting state, its
+  later adoption with the candidate cleared, and the winner's item still
+  readable afterwards.
 - The `DeferredCloudKitMailboxBackend` residual: a first bootstrap use on a
   build without the container entitlement would trap instead of degrading;
   signed artifacts carry the entitlement, so this stays a build-configuration
@@ -143,6 +153,10 @@
 ## Final
 
 - **Status:** `active`
-- **Outcome:** implementation, automated verification, independent review,
-  and the iPhone join row complete; PR opened; Console check and the
-  from-empty rerun decision pending maintainer.
+- **Outcome:** implementation, automated verification, independent review, and
+  the full physical matrix complete: Mac-first join, iPhone-first join, and a
+  genuine simultaneous opt-in that converged on one workspace with the
+  maintainer confirming a single zone. The branch is rebased on `main` after
+  `SESSION-003` merged, `./gradlew quality` is green on the rebase, and the
+  verification skill gained the `Sync with iCloud` feature file the action
+  needs.
