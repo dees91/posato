@@ -67,6 +67,13 @@
   reports no Critical or Required defect.
 - **Resolution:** all Critical and Required findings resolved; affected
   verification rerun
+- **PR review follow-up (2026-09-08):** one P1 (blocking suspend calls now
+  hop to `Dispatchers.Default`; `Dispatchers.IO` is internal on Native)
+  with a same-dispatcher cancellation test proven to fail without the hop;
+  one P2 timeout fix (explicit failure instead of partial state, no unit
+  test possible behind the live boundary); one P2 serial-use contract
+  documented; one P2 readability refactor declined (mirror shape is
+  deliberate). Full quality rerun green; replies posted inline.
 
 ## Verification
 
