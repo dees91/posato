@@ -56,6 +56,10 @@ recorded as a named, detectable state instead of a silent one.
   not touch `shared/**/feature/session/**`, `feature/sync/**`, or the
   dependency injection graphs, which belong to `SESSION-003` and `SYNC-009` in
   this wave.
+- `desktopApp/**/Main.kt` is shared with `SYNC-009`, which adds the graph
+  composition root there while this task may change only the window-property
+  block. The regions are disjoint and this task merges first, so `SYNC-009`
+  rebases onto it.
 
 ## Acceptance
 
