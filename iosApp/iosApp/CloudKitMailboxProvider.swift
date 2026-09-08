@@ -113,6 +113,11 @@ protocol CloudKitMailboxBackend {
 /// signal, single-entry partial-failure unwrap, and unknown for the rest
 /// (including change-token expiry, unauthenticated, and permission failures).
 enum MailboxErrorMapper {
+    static func isTokenExpired(_ error: NSError) -> Bool {
+        let unwrapped = unwrapSinglePartial(error)
+        return unwrapped.domain == CKError.errorDomain && unwrapped.code == CKError.changeTokenExpired.rawValue
+    }
+
     static func isRetryable(_ error: NSError) -> Bool {
         let unwrapped = unwrapSinglePartial(error)
         guard unwrapped.domain == CKError.errorDomain,
@@ -391,6 +396,7 @@ struct MailboxPage: Equatable {
 }
 
 enum MailboxChangeFetch: Equatable {
+    case tokenExpired
     case page(MailboxPage)
     case zoneMissing
     case retryable
@@ -532,6 +538,7 @@ struct MailboxStore {
         case .invalidCursor:
             return .integrityFailure
         case .failed(let error):
+            if MailboxErrorMapper.isTokenExpired(error) { return .tokenExpired }
             return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
         case .fetched(let fetched):
             return collectPage(fetched)
@@ -922,6 +929,8 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
                 bundleIdentifier: page.bundleIdentifier ,
                 bundlePayload: page.bundle 
             )
+        case .tokenExpired:
+            return confirmPage(.tokenexpired, expectedBinding: binding as Data)
         case .zoneMissing:
             return confirmPage(.zonemissing, expectedBinding: binding as Data)
         case .retryable:

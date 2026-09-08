@@ -19,6 +19,12 @@ import kotlin.test.assertTrue
 
 class MacOsMailboxAdapterTest {
     @Test
+    fun `given an expired token when fetching then recovery has a distinct outcome`() = runTest {
+        val adapter = MacOsMailboxAdapter(FakeTransport(outcome(SyncCompanionOutcome.TokenExpired)))
+        assertEquals(ChangeFetchResult.TokenExpired, adapter.fetchChanges(binding(), cursor()))
+    }
+
+    @Test
     fun `given created bundle when saving then saved is returned`() = runTest {
         val adapter = MacOsMailboxAdapter(FakeTransport(outcome(SyncCompanionOutcome.Created)))
 

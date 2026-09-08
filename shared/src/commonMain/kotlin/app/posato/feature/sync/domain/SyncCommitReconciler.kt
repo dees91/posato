@@ -1,5 +1,6 @@
 package app.posato.feature.sync.domain
 
+import app.posato.feature.sync.data.DurableClockState
 import app.posato.feature.sync.data.SyncReplicaSnapshot
 import app.posato.feature.sync.data.SyncReplicaStore
 import app.posato.feature.sync.data.SyncStoreResult
@@ -9,8 +10,20 @@ import kotlinx.coroutines.withContext
 
 internal class SyncCommitReconciler(
     private val store: SyncReplicaStore,
-    private val onCommitCancellation: (SyncReplicaSnapshot?) -> Unit,
+    private val onCheckpointResolved: (SyncReplicaSnapshot?) -> Unit,
 ) {
+    suspend fun commitExhaustion(checkpoint: SyncReplicaSnapshot): Boolean {
+        if (checkpoint.clockState.isExhausted) return true
+        val exhaustedState = DurableClockState(
+            HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER),
+            true,
+        )
+        val expected = checkpoint.copy(revision = checkpoint.revision + 1, clockState = exhaustedState)
+        val committed = commitRemote(checkpoint, expected) { store.commitLocal(checkpoint, emptyList(), exhaustedState) }
+        onCheckpointResolved(committed)
+        return committed != null
+    }
+
     suspend fun commitLocal(
         checkpoint: SyncReplicaSnapshot,
         prepared: PreparedLocalMutation
@@ -63,7 +76,7 @@ internal class SyncCommitReconciler(
                 null
             }
         }
-        onCommitCancellation(reconciled)
+        onCheckpointResolved(reconciled)
     }
 
     private suspend fun retryLocal(

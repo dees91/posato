@@ -262,6 +262,7 @@ class IosCloudKitMailboxAdapterTest {
     @Test
     fun `given a non page outcome when fetched then the outcome matches`() = runTest {
         val cases = listOf(
+            IosCloudChangeFetchStatus.TokenExpired to ChangeFetchResult.TokenExpired,
             IosCloudChangeFetchStatus.ZoneMissing to ChangeFetchResult.ZoneMissing,
             IosCloudChangeFetchStatus.Retryable to ChangeFetchResult.Retryable,
             IosCloudChangeFetchStatus.AccountChanged to ChangeFetchResult.AccountChanged,

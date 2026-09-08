@@ -109,42 +109,45 @@ internal class BootstrapCoordinator(
         binding: AccountBinding,
         workspace: EstablishedWorkspace
     ): BootstrapResult {
-        val zone = zones.ensureZone(binding, hasEstablished = true)
-        if (zone is ZoneGate.Stop) {
-            return zone.result
+        if (binding != workspace.binding) return BootstrapResult.ActionRequired
+        return when (cloud.checkEstablished(workspace).status) {
+            EstablishedStatus.READY -> BootstrapResult.Ready(workspace.context)
+
+            EstablishedStatus.RETRYABLE -> BootstrapResult.Retryable
+
+            EstablishedStatus.LOCAL_ONLY, EstablishedStatus.ZONE_MISSING,
+            EstablishedStatus.DIFFERENT_ANCHOR, EstablishedStatus.ACTION_REQUIRED -> BootstrapResult.ActionRequired
         }
-        return when (val anchor = cloud.readAnchor(binding)) {
-            is AnchorReadResult.Found -> {
-                val expected = WorkspaceAnchor(
-                    workspace.context.workspaceId,
-                    workspace.context.transportEpochId,
-                    workspace.context.keyEpochId,
-                )
-                if (anchor.anchor == expected) {
-                    BootstrapResult.Ready(workspace.context)
-                } else {
-                    BootstrapResult.ActionRequired
+    }
+
+    suspend fun checkEstablished(): EstablishedCheck {
+        return mutex.withLock {
+            when (val result = store.read()) {
+                is BootstrapStoreResult.Failure -> {
+                    EstablishedCheck(EstablishedStatus.ACTION_REQUIRED)
                 }
-            }
 
-            is AnchorReadResult.Missing -> {
-                BootstrapResult.ActionRequired
-            }
+                is BootstrapStoreResult.Success -> {
+                    val state = result.value
+                    if (state !is BootstrapState.Established) return@withLock EstablishedCheck(EstablishedStatus.LOCAL_ONLY)
+                    when (val binding = account.resolveBinding()) {
+                        is BindingResolution.Available -> {
+                            if (binding.binding == state.workspace.binding) {
+                                cloud.checkEstablished(state.workspace)
+                            } else {
+                                EstablishedCheck(EstablishedStatus.ACTION_REQUIRED)
+                            }
+                        }
 
-            is AnchorReadResult.Retryable -> {
-                BootstrapResult.Retryable
-            }
+                        BindingResolution.Undetermined -> {
+                            EstablishedCheck(EstablishedStatus.RETRYABLE)
+                        }
 
-            is AnchorReadResult.UnknownOutcome -> {
-                BootstrapResult.Retryable
-            }
-
-            is AnchorReadResult.IntegrityFailure -> {
-                BootstrapResult.ActionRequired
-            }
-
-            is AnchorReadResult.AccountChanged -> {
-                BootstrapResult.ActionRequired
+                        BindingResolution.Unavailable, BindingResolution.Restricted -> {
+                            EstablishedCheck(EstablishedStatus.ACTION_REQUIRED)
+                        }
+                    }
+                }
             }
         }
     }

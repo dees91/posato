@@ -309,7 +309,7 @@ at each persistence boundary, and account change around indeterminate saves.
 An established workspace re-reads its anchor on every bootstrap, so a replaced
 or missing anchor reports action-required instead of a false ready. Native
 adapters, platform wiring, and physical evidence remain with `SYNC-005`
-through `SYNC-009`; explicit workspace removal stays with `SYNC-009`.
+through `SYNC-009`; explicit workspace removal belongs to `SYNC-010`.
 
 `observed` (2026-09-04): `SYNC-005` implemented the iOS synchronizable-Keychain
 adapter. A Swift provider in `iosApp` resolves the 32-byte binding from the
@@ -382,6 +382,37 @@ Useful status distinctions are:
 A local success means the local synchronization transaction completed. It must
 not claim that every other device has received the update.
 
+## Established Apple exchange
+
+- `observed` (`SYNC-009`): the shipped consent control and process flight use
+  the bootstrap coordinator to establish or adopt one workspace, retain its
+  account binding, and report key waiting without inventing a linked outcome.
+  See the [execution record](../../tasks/executions/sync-009-apple-bootstrap.md)
+  for the original checks and physical evidence.
+- `observed` (`SYNC-010`, local tests): exchange, consent, local authoring, and
+  removal share the flight mutex. Production graph creation retains one core
+  and writer per process. The workspace's 32 bytes become the transport key
+  directly; scoped key use clears the owned read buffer.
+- Publication confirmation is a writer mutation under its checkpoint and
+  revision check. Removing an outbox row directly would invalidate the
+  writer's snapshot and freeze subsequent authoring. Saved and identical
+  responses acknowledge the exact immutable bundle; uncertain responses
+  preserve it for retry.
+- Binding, zone, and anchor checks gate both exchange legs and removal. A
+  different anchor stops exchange and zone deletion, while explicit removal
+  may clear only the old known key and local sync state. Local websites stay.
+- Native token expiry is distinct from an unknown outcome. An attempt restarts
+  fetch once from the first page, retaining accepted operations and pending
+  work; repeated expiry reports retryable. Both native operations disable
+  automatic fetching of all pages so each bounded page is accepted before the
+  next request. Apple's [fetchAllChanges contract](https://developer.apple.com/documentation/cloudkit/ckfetchrecordzonechangesoperation/fetchallchanges)
+  defaults to fetching all pages.
+- `user-confirmed` limits: neither adapter offers exact refetch, so rejection
+  pins the cursor. Exact-domain edits commit locally before authoring into the
+  outbox; failure of that second step preserves the local save and reports
+  action required. Pre-link edits are not backfilled, and remote operations
+  do not yet change visible policies or sessions (`SYNC-011` / `SYNC-012`).
+
 ## Open production questions
 
 - How are production CloudKit schema, environment promotion, quota, and
@@ -392,6 +423,3 @@ not claim that every other device has received the update.
 - How are portable enrollment, recovery, revocation, export, import, deletion,
   and transport migration presented and tested?
 - When should portable-folder provider experiments begin?
-- `open` (`SYNC-010` owner): on both Apple platforms an expired server change
-  token (`changeTokenExpired`) maps to `unknown-outcome` with no recovery
-  path; the retry or re-baseline story for an expired cursor is undecided.

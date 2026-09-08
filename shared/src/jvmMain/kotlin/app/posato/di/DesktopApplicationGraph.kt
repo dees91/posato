@@ -13,15 +13,21 @@ import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.bootstrap.AppleBootstrap
+import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.BootstrapCoordinator
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
 import app.posato.feature.sync.data.JdkSyncCryptoProvider
+import app.posato.feature.sync.data.SqlSyncReplicaStore
+import app.posato.feature.sync.domain.SyncOperationCore
+import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.macos.MacOsBootstrapCloudAdapter
 import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
+import app.posato.feature.sync.macos.MacOsMailboxAdapter
 import app.posato.feature.sync.macos.defaultSyncCompanionTransport
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
+import app.posato.feature.targets.data.SyncTargetPolicyStore
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -35,7 +41,11 @@ import kotlinx.coroutines.Dispatchers
 @DependencyGraph(AppScope::class)
 internal interface DesktopApplicationGraph : ApplicationGraph {
     val localTargetPolicyStore: LocalTargetPolicyStore
+    val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
+        get() {
+            return appleSync.bootstrap
+        }
 
     @DependencyGraph.Factory
     fun interface Factory {
@@ -68,13 +78,11 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun providePolicyStore(
+        sync: AppleSync,
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
     ): LocalTargetPolicyStore {
-        return SqlLocalTargetPolicyStore(
-            database = database,
-            databaseDispatcher = databaseDispatcher,
-        )
+        return SyncTargetPolicyStore(SqlLocalTargetPolicyStore(database, databaseDispatcher), sync)
     }
 
     @Provides
@@ -109,25 +117,17 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideAppleBootstrap(
+    fun provideAppleSync(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): AppleBootstrap {
+    ): AppleSync {
         val transport = defaultSyncCompanionTransport()
         val keys = MacOsBootstrapKeychainAdapter(transport)
-        return AppleBootstrap(
-            coordinator = BootstrapCoordinator(
-                account = keys,
-                cloud = MacOsBootstrapCloudAdapter(transport),
-                keys = keys,
-                store = SqlBootstrapStore(
-                    database = database,
-                    databaseDispatcher = databaseDispatcher,
-                ),
-                crypto = JdkSyncCryptoProvider(),
-            ),
-            backgroundDispatcher = Dispatchers.IO,
-        )
+        val crypto = JdkSyncCryptoProvider()
+        val store = SqlBootstrapStore(database, databaseDispatcher)
+        val coordinator = BootstrapCoordinator(keys, MacOsBootstrapCloudAdapter(transport), keys, store, crypto)
+        val core = SyncOperationCore(SqlSyncReplicaStore(database, databaseDispatcher), crypto, SyncWallClock { System.currentTimeMillis() })
+        return AppleSync(coordinator, core, MacOsMailboxAdapter(transport), keys, store, crypto, Dispatchers.IO)
     }
 }
 
@@ -136,5 +136,20 @@ fun createDesktopApplicationGraph(
     enforcement: EnforcementPort,
     databasePath: String = defaultDesktopPolicyDatabasePath(),
 ): ApplicationGraph {
-    return createGraphFactory<DesktopApplicationGraph.Factory>().create(applicationMappings, enforcement, databasePath)
+    return synchronized(desktopGraphLock) {
+        val existing = processDesktopGraph
+        if (existing != null) {
+            require(processDatabasePath == databasePath)
+            existing
+        } else {
+            createGraphFactory<DesktopApplicationGraph.Factory>().create(applicationMappings, enforcement, databasePath).also {
+                processDatabasePath = databasePath
+                processDesktopGraph = it
+            }
+        }
+    }
 }
+
+private val desktopGraphLock = Any()
+private var processDesktopGraph: ApplicationGraph? = null
+private var processDatabasePath: String? = null

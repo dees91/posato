@@ -96,3 +96,13 @@ private func zoneID() -> CKRecordZone.ID {
 
   #expect(!CloudErrorMapper.isServerRecordChanged(error))
 }
+
+@Test func givenExpiredTokenWhenMappingThenItHasADistinctOutcome() {
+  let error = ckError(.changeTokenExpired)
+  #expect(CloudErrorMapper.isTokenExpired(error))
+  let collector = ChangesCollector()
+  collector.zoneFailure(error)
+  #expect(collector.drain() == .tokenExpired)
+  let wrapped = ckError(.partialFailure, partials: [CKRecord.ID(recordName: "workspace"): error])
+  #expect(CloudErrorMapper.isTokenExpired(wrapped))
+}

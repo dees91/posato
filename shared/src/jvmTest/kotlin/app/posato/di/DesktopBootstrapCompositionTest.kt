@@ -13,6 +13,16 @@ import kotlin.test.assertSame
 
 class DesktopBootstrapCompositionTest {
     @Test
+    fun `given repeated desktop application creation then the process graph and core are retained`() {
+        val path = isolatedDatabasePath()
+        val first = createDesktopApplicationGraph(FakeSessionMappings(), FakeEnforcementPort(), path) as DesktopApplicationGraph
+        val second = createDesktopApplicationGraph(FakeSessionMappings(), FakeEnforcementPort(), path) as DesktopApplicationGraph
+
+        assertSame(first, second)
+        assertSame(first.appleSync.core, second.appleSync.core)
+    }
+
+    @Test
     fun `given the real desktop graph when resolved twice then the bootstrap facade is a singleton`() {
         val databasePath = isolatedDatabasePath()
         val graph = createGraphFactory<DesktopApplicationGraph.Factory>().create(

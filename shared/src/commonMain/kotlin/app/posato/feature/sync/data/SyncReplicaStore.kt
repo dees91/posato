@@ -126,6 +126,11 @@ internal interface SyncReplicaStore {
 
     suspend fun read(context: SyncContext): SyncStoreResult<SyncReplicaSnapshot>
 
+    suspend fun acknowledgePublication(
+        expectedCheckpoint: SyncReplicaSnapshot,
+        bundleId: BundleId,
+    ): SyncStoreResult<SyncReplicaSnapshot>
+
     suspend fun commitLocal(
         expectedCheckpoint: SyncReplicaSnapshot,
         bundles: List<PreparedStoredBundle>,

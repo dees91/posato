@@ -46,6 +46,14 @@ internal class WorkspaceKeyValue private constructor(
         return bytes.copyOf()
     }
 
+    fun <T> useAndClear(block: (ByteArray) -> T): T {
+        return try {
+            block(bytes)
+        } finally {
+            bytes.fill(0)
+        }
+    }
+
     override fun equals(other: Any?): Boolean {
         return other is WorkspaceKeyValue && bytes.contentEquals(other.bytes)
     }

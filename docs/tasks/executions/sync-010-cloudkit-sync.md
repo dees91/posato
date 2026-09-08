@@ -3,8 +3,8 @@
 - **Brief:** [Publish and consume pending encrypted bundles with truthful sync status and retry](../specifications/sync-010-cloudkit-sync.md)
 - **Status:** `active`
 - **Review tier:** `high-risk`
-- **Implementer:** pending assignment (brief prepared 2026-09-08)
-- **Reviewer:** independent plan review complete (changes-required, resolved in the brief); completed-change review pending
+- **Implementer:** Codex
+- **Reviewer:** independent plan review complete (changes-required, resolved in the brief); completed-change code review passed; physical verification pending
 - **Branch:** `feature/sync-010-cloudkit-sync`
 - **Worktree:** `~/Projects/Polyglot/posato-sync-010`
 - **Updated:** 2026-09-08
@@ -72,19 +72,35 @@
 
 ## Result
 
-- Pending.
+- Implemented the process-owned exchange and writer, revision-checked publication
+  acknowledgement, cursor acceptance and expiry restart, established gating,
+  confirmed workspace removal, and local-domain outbox feed. No schema migration.
+- Added the existing pinned lifecycle runtime Compose component for foreground
+  events. Native bounded fetch now disables automatic all-page fetching; Apple's
+  default would otherwise exceed the one-bundle page contract. These are the two
+  concrete additions to the planned write surface, with no version upgrade.
+- PoC lifecycle and immutable-retry evidence informed ownership and tests; no
+  experiment source, runners, or captures were imported.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `pass` (independent completed-change code review, 2026-09-08).
+- **Critical or Required findings:** none.
+- **Resolution:** reviewer inspected all tracked and new files, ran 32 focused
+  JVM tests successfully, and passed `git diff --check`. Aggregate and physical
+  results remain separate verification obligations.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| pending | | |
+| `./gradlew quality` | pass | JVM, Kotlin/Native, Swift tests, build/format/static/migration gates |
+| Independent focused JVM review checks | pass | 32 tests; no Critical or Required findings |
+| Signed Mac and iPhone builds + phone install | pass | ignored run `sync-010-physical` |
+| Mac established launch | partial | completed caption and non-null cursor; locked host blocks UI driving |
+| iPhone launch and explicit retry | retryable | no completed attempt within either 45-second wait |
+| Physical two-way/account/removal/race matrix | pending | requires unlocked targets and maintainer account steps |
+| `git diff --check` and scoped privacy scan | pass | no new private material |
 
 ## Blockers and accepted risks
 
@@ -98,4 +114,4 @@
 ## Final
 
 - **Status:** `active`
-- **Outcome:** pending
+- **Outcome:** implementation and local gates complete; physical acceptance pending.
