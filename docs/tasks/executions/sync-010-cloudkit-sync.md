@@ -4,7 +4,7 @@
 - **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
-- **Reviewer:** independent plan review complete (changes-required, resolved in the brief); completed-change code review passed; physical verification pending
+- **Reviewer:** independent plan review complete (changes-required, resolved in the brief); completed-change code review passed; remaining physical matrix pending
 - **Branch:** `feature/sync-010-cloudkit-sync`
 - **Worktree:** `~/Projects/Polyglot/posato-sync-010`
 - **Updated:** 2026-09-08
@@ -88,7 +88,8 @@
 - **Critical or Required findings:** none.
 - **Resolution:** reviewer inspected all tracked and new files, ran 32 focused
   JVM tests successfully, and passed `git diff --check`. Aggregate and physical
-  results remain separate verification obligations.
+  results remain separate verification obligations. Standard correction review
+  also passed: empty-cursor guard and regression, 20 iOS adapter tests.
 
 ## Verification
 
@@ -97,9 +98,10 @@
 | `./gradlew quality` | pass | JVM, Kotlin/Native, Swift tests, build/format/static/migration gates |
 | Independent focused JVM review checks | pass | 32 tests; no Critical or Required findings |
 | Signed Mac and iPhone builds + phone install | pass | ignored run `sync-010-physical` |
-| Mac established launch | partial | completed caption and non-null cursor; locked host blocks UI driving |
-| iPhone launch and explicit retry | retryable | no completed attempt within either 45-second wait |
-| Physical two-way/account/removal/race matrix | pending | requires unlocked targets and maintainer account steps |
+| Empty first-page cursor regression | red then green | real iOS adapter threw before native fetch; 20 adapter tests now pass |
+| Physical Mac/iPhone exchange | pass | `sync-010-fixed`: completion on both; Mac accepted 2 then 4, pending 0 |
+| Fixture cleanup | pass | Mac accepted 6, pending 0; original website counts restored |
+| Offline/account/removal/race matrix | pending | maintainer deferred account steps; PR remains draft |
 | `git diff --check` and scoped privacy scan | pass | no new private material |
 
 ## Blockers and accepted risks
@@ -114,4 +116,5 @@
 ## Final
 
 - **Status:** `active`
-- **Outcome:** implementation and local gates complete; physical acceptance pending.
+- **Outcome:** first-fetch iOS crash fixed; local gates and two-way physical
+  exchange pass. Remaining physical matrix is pending.

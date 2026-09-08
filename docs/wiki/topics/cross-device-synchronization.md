@@ -407,6 +407,11 @@ not claim that every other device has received the update.
   automatic fetching of all pages so each bounded page is accepted before the
   next request. Apple's [fetchAllChanges contract](https://developer.apple.com/documentation/cloudkit/ckfetchrecordzonechangesoperation/fetchallchanges)
   defaults to fetching all pages.
+- `observed` (`SYNC-010`, physical iPhone): a valid empty first-page cursor
+  originally caused `ArrayIndexOutOfBoundsException` in the Kotlin-to-NSData
+  bridge before CloudKit fetch. An explicit empty NSData branch fixes it;
+  a native adapter regression reproduces the failure before the guard. Both
+  devices now complete exchange and the Mac accepts iPhone-authored operations.
 - `user-confirmed` limits: neither adapter offers exact refetch, so rejection
   pins the cursor. Exact-domain edits commit locally before authoring into the
   outbox; failure of that second step preserves the local save and reports

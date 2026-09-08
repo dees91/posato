@@ -40,6 +40,27 @@ import kotlin.test.assertTrue
 
 class IosCloudKitMailboxAdapterTest {
     @Test
+    fun `given the first page cursor when fetched then an empty native cursor reaches the provider`() = runTest {
+        val nextCursor = testCursor()
+        val provider = FakeIosCloudKitMailboxProvider(
+            changePage = IosCloudChangePage(
+                IosCloudChangeFetchStatus.Page,
+                false,
+                nextCursor.copyBytes().toCloudNSData(),
+                null,
+                null,
+            ),
+        )
+        val firstPage = checkNotNull(MailboxCursor.fromBytes(byteArrayOf()))
+
+        val result = IosMailboxAdapter(provider).fetchChanges(testBinding(), firstPage)
+
+        assertEquals(ChangeFetchResult.Page(ChangePage(null, false, nextCursor)), result)
+        assertContentEquals(byteArrayOf(), provider.seenCursors.single())
+        assertContentEquals(testBinding().copyBytes(), provider.seenBindings.single())
+    }
+
+    @Test
     fun `given a zone outcome when fetched then the outcome matches`() = runTest {
         val cases = listOf(
             IosCloudZoneFetchStatus.Found to ZoneFetchResult.Found,
@@ -554,6 +575,7 @@ private fun ByteArray.toCloudNSData(): NSData {
 @OptIn(BetaInteropApi::class)
 private fun NSData.copyBytes(): ByteArray {
     val result = ByteArray(length.toInt())
+    if (result.isEmpty()) return result
     result.usePinned { pinned ->
         memcpy(pinned.addressOf(0), bytes, length)
     }

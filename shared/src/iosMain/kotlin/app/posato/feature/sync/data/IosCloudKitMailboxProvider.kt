@@ -492,6 +492,7 @@ private suspend fun <T> IosCloudKitMailboxProvider.cancellableCall(call: IosClou
 
 @OptIn(BetaInteropApi::class)
 private fun ByteArray.toNSData(): NSData {
+    if (isEmpty()) return NSData.create(bytes = null, length = 0uL)
     return usePinned { pinned ->
         NSData.create(bytes = pinned.addressOf(0), length = size.toULong())
     }
