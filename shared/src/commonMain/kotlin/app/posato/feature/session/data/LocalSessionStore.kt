@@ -1,5 +1,6 @@
 package app.posato.feature.session.data
 
+import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.sync.domain.SessionId
 
@@ -33,6 +34,7 @@ internal interface LocalSessionStore {
         startEpochMillis: Long,
         endEpochMillis: Long,
         nowEpochMillis: Long,
+        frozenStartSet: FrozenStartSet,
     ): LocalSessionResult<LocalSessionStatus>
 
     suspend fun endEarly(nowEpochMillis: Long): LocalSessionResult<LocalSessionStatus>

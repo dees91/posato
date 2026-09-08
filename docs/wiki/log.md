@@ -1378,3 +1378,13 @@
 - The picker now refuses the same system-critical set the enforcement helper guards (8 bundle identifiers plus `/System/Library/CoreServices/`), before signature inspection with whole-batch rejection; both sides share one source in the `PosatoMacOSHelper` target, and the stale picker-follow-up comment and wiki sentence are corrected.
 - Outcome byte `7` flows into shared rejection `SYSTEM` with the copy "System components such as Finder cannot be added to this group."; existing `SELF`, `INVALID_OR_UNSIGNED`, and iOS-owned `UNSUPPORTED` paths are unchanged.
 - Verified by focused Swift (155/155) and JVM suites, aggregate `./gradlew quality` (197 tasks), a driver run proving the Finder refusal row and the Safari control row with restart persistence, and two independent completed-change reviews with no findings.
+
+## [2026-09-08] implementation | SESSION-003 frozen start set persists across relaunch
+
+- The active session now persists its frozen start set (exact domains plus the
+  application count, no opaque identifiers) with the session row and shows it
+  in the summary and Selected items after a relaunch, while Resume and the
+  silent re-converge keep applying the current Paused items; the active copy
+  states both halves. Migration `5.sqm` preserves existing rows with a live
+  fallback for pre-upgrade sessions. `./gradlew quality`, the session suites,
+  and a desktop driver relaunch row pass with an independent review approval.

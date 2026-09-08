@@ -6,6 +6,7 @@ import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.enforcement.reconciliationId
 import app.posato.feature.session.domain.FakeSessionClock
+import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.session.domain.SessionRecord
@@ -15,6 +16,7 @@ import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -30,6 +32,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -275,6 +278,74 @@ class SessionEnforcementTest {
         scheduler.runCurrent()
 
         assertTrue(enforcement.calls.contains("clear"))
+    }
+
+    @Test
+    fun `given a persisted frozen set when relaunching with edited policy then the summary keeps the frozen set`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        store.record = SessionRecord(SessionId(testIdentifier(21)), NOW - 600_000L, NOW + 1_200_000L)
+        store.frozenStartSet = FrozenStartSet(persistentListOf("frozen.example"), 1)
+        val viewModel = collectedViewModel(store = store, domains = listOf("edited.example"))
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(listOf("frozen.example"), state.displayDomains())
+        assertEquals(1, state.displayApplicationCount())
+        assertTrue(state.showsFrozenSet())
+        assertTrue(state.showsPersistedStartSet())
+    }
+
+    @Test
+    fun `given a persisted frozen set when relaunching with cleared enforcement then reapply uses the current policy`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        store.record = SessionRecord(SessionId(testIdentifier(22)), NOW - 600_000L, NOW + 1_200_000L)
+        store.frozenStartSet = FrozenStartSet(persistentListOf("frozen.example"), 1)
+        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
+        val viewModel = collectedViewModel(
+            store = store,
+            domains = listOf("edited.example"),
+            enforcement = enforcement,
+        )
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(listOf("frozen.example"), state.displayDomains())
+        assertEquals(listOf("edited.example"), enforcement.lastRequest?.domains)
+        assertEquals(EnforcementState.Active(false), state.enforcement)
+    }
+
+    @Test
+    fun `given no persisted set when relaunching then the summary falls back to the live policy`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        store.record = SessionRecord(SessionId(testIdentifier(23)), NOW - 600_000L, NOW + 1_200_000L)
+        val viewModel = collectedViewModel(store = store, domains = listOf("edited.example"))
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(listOf("edited.example"), state.displayDomains())
+        assertTrue(state.showsFrozenSet())
+        assertFalse(state.showsPersistedStartSet())
+    }
+
+    @Test
+    fun `given a persisted set when reconciliation fails then the summary still shows the frozen set`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        store.record = SessionRecord(SessionId(testIdentifier(24)), NOW - 600_000L, NOW + 1_200_000L)
+        store.frozenStartSet = FrozenStartSet(persistentListOf("frozen.example"), 1)
+        val enforcement = FakeEnforcementPort(statusError = IllegalStateException("status lost"))
+        val viewModel = collectedViewModel(store = store, domains = listOf("edited.example"), enforcement = enforcement)
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(listOf("frozen.example"), state.displayDomains())
+        assertEquals(1, state.displayApplicationCount())
+        assertTrue(state.showsPersistedStartSet())
+        val action = assertIs<EnforcementState.ActionRequired>(state.enforcement)
+        assertEquals(EnforcementActionKind.APPLY_FAILED, action.kind)
     }
 
     private fun TestScope.collectedViewModel(
