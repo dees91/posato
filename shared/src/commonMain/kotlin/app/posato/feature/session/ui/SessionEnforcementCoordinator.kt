@@ -157,42 +157,50 @@ internal class SessionEnforcementCoordinator(
         if (mutableView.value.busy || mutableView.value.state !is EnforcementState.Active) {
             return
         }
+        val outcome: EnforcementOutcome
         try {
-            when (enforcement.status()) {
-                EnforcementOutcome.APPLIED -> {
-                    unknownStreak = 0
-                }
+            outcome = enforcement.status()
+        } catch (expectedCancellation: CancellationException) {
+            throw expectedCancellation
+        } catch (_: Exception) {
+            mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+            return
+        }
+        if (mutableView.value.busy || mutableView.value.state !is EnforcementState.Active) {
+            return
+        }
+        when (outcome) {
+            EnforcementOutcome.APPLIED -> {
+                unknownStreak = 0
+            }
 
-                EnforcementOutcome.CLEARED -> {
-                    unknownStreak = 0
-                    if (enforcement.reapplyRequiresPrompt) {
-                        applyFailed()
-                    } else {
-                        reapplyCurrent(record)
-                    }
-                }
+            EnforcementOutcome.CLEARED -> {
+                unknownStreak = 0
+                handlePollLoss(record)
+            }
 
-                else -> {
-                    unknownStreak += 1
-                    if (unknownStreak >= CONSECUTIVE_UNKNOWN_LIMIT) {
-                        unknownStreak = 0
-                        if (enforcement.reapplyRequiresPrompt) {
-                            applyFailed()
-                        } else {
-                            reapplyCurrent(record)
-                        }
-                    }
+            else -> {
+                unknownStreak += 1
+                if (unknownStreak >= CONSECUTIVE_UNKNOWN_LIMIT) {
+                    unknownStreak = 0
+                    handlePollLoss(record)
                 }
+            }
+        }
+    }
+
+    private suspend fun handlePollLoss(record: SessionRecord) {
+        try {
+            if (enforcement.reapplyRequiresPrompt) {
+                mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+            } else {
+                reapplyCurrent(record)
             }
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (_: Exception) {
-            applyFailed()
+            mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
         }
-    }
-
-    private fun applyFailed() {
-        mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
     }
 
     private fun reconcileActiveSession(record: SessionRecord) {
