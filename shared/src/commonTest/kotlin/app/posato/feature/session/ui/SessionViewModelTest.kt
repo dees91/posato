@@ -2,6 +2,7 @@ package app.posato.feature.session.ui
 
 import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.domain.FakeSessionClock
+import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind
@@ -14,6 +15,7 @@ import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
@@ -336,6 +338,16 @@ class SessionViewModelTest {
         assertEquals(SessionEndKind.EXPIRED, ended.kind)
         assertEquals(1, store.startCalls)
         assertEquals("formatted-${NOW + 5 * 60_000L}", state.formattedActiveEnd)
+    }
+
+    @Test
+    fun `given domains when starting then the frozen start set is persisted with the session`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val viewModel = collectedViewModel(store = store, domains = listOf("stable.example"))
+        startThroughUi(viewModel)
+
+        assertIs<LocalSessionStatus.Active>(viewModel.uiState.value.status)
+        assertEquals(FrozenStartSet(persistentListOf("stable.example"), null), store.frozenStartSet)
     }
 
     private fun TestScope.collectedViewModel(

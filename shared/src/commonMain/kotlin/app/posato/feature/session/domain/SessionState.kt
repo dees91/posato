@@ -28,6 +28,7 @@ internal sealed interface LocalSessionStatus {
     data class Active(
         val record: SessionRecord,
         val remainingMillis: Long,
+        val frozenStartSet: FrozenStartSet? = null,
     ) : LocalSessionStatus {
         override fun toString(): String {
             return "LocalSessionStatus.Active(redacted)"
@@ -50,6 +51,7 @@ internal sealed interface SessionEvaluation {
     data class ShowActive(
         val record: SessionRecord,
         val remainingMillis: Long,
+        val frozenStartSet: FrozenStartSet? = null,
     ) : SessionEvaluation {
         override fun toString(): String {
             return "SessionEvaluation.ShowActive(redacted)"

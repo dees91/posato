@@ -7,7 +7,12 @@ CREATE TABLE local_session (
   end_epoch_millis INTEGER NOT NULL CHECK (
     typeof(end_epoch_millis) = 'integer' AND end_epoch_millis BETWEEN 0 AND 4102444800000
   ),
-  ended_early INTEGER NOT NULL CHECK (typeof(ended_early) = 'integer' AND ended_early IN (0, 1))
+  ended_early INTEGER NOT NULL CHECK (typeof(ended_early) = 'integer' AND ended_early IN (0, 1)),
+  frozen_domains TEXT CHECK (frozen_domains IS NULL OR typeof(frozen_domains) = 'text'),
+  frozen_application_count INTEGER CHECK (
+    frozen_application_count IS NULL OR
+    (typeof(frozen_application_count) = 'integer' AND frozen_application_count >= 0)
+  )
 );
 
 CREATE TABLE local_session_expiry (
@@ -15,7 +20,7 @@ CREATE TABLE local_session_expiry (
 );
 
 selectSession:
-SELECT session_id, start_epoch_millis, end_epoch_millis, ended_early
+SELECT session_id, start_epoch_millis, end_epoch_millis, ended_early, frozen_domains, frozen_application_count
 FROM local_session
 WHERE singleton = 1;
 
@@ -25,8 +30,13 @@ FROM local_session_expiry
 WHERE session_id = :session_id;
 
 replaceSession:
-INSERT OR REPLACE INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early)
-VALUES (1, :session_id, :start_epoch_millis, :end_epoch_millis, 0);
+INSERT OR REPLACE INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, frozen_domains, frozen_application_count)
+VALUES (1, :session_id, :start_epoch_millis, :end_epoch_millis, 0, :frozen_domains, :frozen_application_count);
+
+clearFrozenStartSet:
+UPDATE local_session
+SET frozen_domains = NULL, frozen_application_count = NULL
+WHERE singleton = 1;
 
 markEndedEarly:
 UPDATE local_session

@@ -3,6 +3,7 @@ package app.posato.feature.session.ui
 import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.data.LocalSessionStore
+import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.session.domain.SessionEvaluation
@@ -15,6 +16,7 @@ import app.posato.feature.sync.domain.SessionId
 
 internal class FakeLocalSessionStore : LocalSessionStore {
     var record: SessionRecord? = null
+    var frozenStartSet: FrozenStartSet? = null
     var endedEarly: Boolean = false
     var expiryMarked: Boolean = false
     var startFailure: LocalSessionFailure? = null
@@ -31,7 +33,7 @@ internal class FakeLocalSessionStore : LocalSessionStore {
             }
 
             is SessionEvaluation.ShowActive -> {
-                LocalSessionResult.Success(LocalSessionStatus.Active(evaluation.record, evaluation.remainingMillis))
+                LocalSessionResult.Success(LocalSessionStatus.Active(evaluation.record, evaluation.remainingMillis, frozenStartSet))
             }
 
             is SessionEvaluation.ShowEnded -> {
@@ -40,6 +42,7 @@ internal class FakeLocalSessionStore : LocalSessionStore {
 
             is SessionEvaluation.CommitExpiry -> {
                 expiryMarked = true
+                frozenStartSet = null
                 LocalSessionResult.Success(
                     LocalSessionStatus.Ended(evaluation.record, SessionEndKind.EXPIRED),
                 )
@@ -52,6 +55,7 @@ internal class FakeLocalSessionStore : LocalSessionStore {
         startEpochMillis: Long,
         endEpochMillis: Long,
         nowEpochMillis: Long,
+        frozenStartSet: FrozenStartSet,
     ): LocalSessionResult<LocalSessionStatus> {
         startCalls += 1
         startFailure?.let { return LocalSessionResult.Failure(it) }
@@ -68,9 +72,10 @@ internal class FakeLocalSessionStore : LocalSessionStore {
 
             else -> {
                 record = SessionRecord(sessionId, startEpochMillis, endEpochMillis)
+                this.frozenStartSet = frozenStartSet
                 endedEarly = false
                 expiryMarked = false
-                LocalSessionResult.Success(LocalSessionStatus.Active(record!!, endEpochMillis - nowEpochMillis))
+                LocalSessionResult.Success(LocalSessionStatus.Active(record!!, endEpochMillis - nowEpochMillis, frozenStartSet))
             }
         }
     }
@@ -81,6 +86,7 @@ internal class FakeLocalSessionStore : LocalSessionStore {
         return when (val evaluation = evaluate(nowEpochMillis)) {
             is SessionEvaluation.ShowActive -> {
                 endedEarly = true
+                frozenStartSet = null
                 LocalSessionResult.Success(
                     LocalSessionStatus.Ended(evaluation.record, SessionEndKind.ENDED_EARLY),
                 )
@@ -96,6 +102,7 @@ internal class FakeLocalSessionStore : LocalSessionStore {
 
             is SessionEvaluation.CommitExpiry -> {
                 expiryMarked = true
+                frozenStartSet = null
                 LocalSessionResult.Success(
                     LocalSessionStatus.Ended(evaluation.record, SessionEndKind.EXPIRED),
                 )

@@ -25,35 +25,50 @@
 
 ## Result
 
-- Pending implementation.
+- Persisted the frozen start set as `FrozenStartSet` (exact domains plus the
+  application count, redacted string form), carried on
+  `LocalSessionStatus.Active`, written atomically with the session row by
+  migration `5.sqm` (two nullable columns on `local_session`), and cleared on
+  early end and on expiry commit. Malformed bytes fail closed to `CORRUPTION`;
+  a missing set on a pre-upgrade row falls back to live targets.
+- The coordinator displays the persisted set on the `settle`, `reconcile`,
+  and re-apply paths while `apply` requests keep using the current targets
+  (`D2`); the active copy now states both halves. No new suppression; two
+  Detekt findings were fixed at the source.
+- Wave boundary kept: only `shared/**/feature/session/**` plus the session
+  schema and migration. Known residual: the Selected-items application-names
+  list stays live because `D1` persists the count only.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `approve` (independent review, no Critical, no Required,
+  1 Recommended, 3 Optional observations needing no action)
+- **Critical or Required findings:** none
+- **Resolution:** the Recommended closeout is this update. The Optional notes
+  stand as decided: `toFrozenStartSet` mirrors `toEnforcedSet`, tampered bytes
+  on an ended row report `CORRUPTION`, and the caption describes the
+  post-re-converge steady state.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | `pending` | |
-| `commonTest` store and coordinator rows | `pending` | |
-| Migration with existing rows | `pending` | automated migration verification is off in the build |
-| Driver relaunch row (desktop) | `pending` | |
+| `./gradlew quality` after the last correction | `pass` | worktree run, 197 tasks, `BUILD SUCCESSFUL` |
+| `commonTest`/`jvmTest` session suites | `pass` | 15 store, 16 coordinator, 20 ViewModel, 5 frozen-set rows, 0 failures |
+| Migration with existing rows | `pass` | v5 simulation keeps policy rev 7, replica and session rows, null fallback |
+| Driver relaunch row (desktop) | `pass` | `build/verification/runs/20260908-123255-d78f`; frozen 2-set survives relaunch with Resume, end clears, synthetics removed, `wp.pl` intact |
 
 ## Blockers and accepted risks
 
 - `D1` and `D2` are decided; implementation is unblocked. The persisted set
   carries no opaque mapping identifier, so the `A-03` boundary is unchanged.
-- The desktop driver's accessibility tree is unproven on this machine, which is
-  the subject of `QUALITY-005` in the same wave. If the relaunch row cannot be
-  driven here, record it as blocked with that clearing condition rather than
-  claiming a pass.
-- Wave 7 parallel boundary: this task must not touch `feature/sync/**`, the
+- The desktop driver worked in this worktree (accessibility and screen
+  recording granted); the `QUALITY-005` empty-tree finding did not reproduce
+  here.
+- Wave 7 parallel boundary kept: no touch of `feature/sync/**`, the
   dependency injection graphs, or `tools/posato-control/**`.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** implemented, verified, and reviewed on `feature/session-003-frozen-start-set`

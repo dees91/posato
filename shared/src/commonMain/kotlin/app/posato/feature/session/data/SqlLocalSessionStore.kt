@@ -2,6 +2,7 @@ package app.posato.feature.session.data
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.session.domain.SessionEvaluation
@@ -29,7 +30,9 @@ internal class SqlLocalSessionStore(
                     }
 
                     is SessionEvaluation.ShowActive -> {
-                        LocalSessionResult.Success(LocalSessionStatus.Active(evaluation.record, evaluation.remainingMillis))
+                        LocalSessionResult.Success(
+                            LocalSessionStatus.Active(evaluation.record, evaluation.remainingMillis, evaluation.frozenStartSet),
+                        )
                     }
 
                     is SessionEvaluation.ShowEnded -> {
@@ -49,6 +52,7 @@ internal class SqlLocalSessionStore(
         startEpochMillis: Long,
         endEpochMillis: Long,
         nowEpochMillis: Long,
+        frozenStartSet: FrozenStartSet,
     ): LocalSessionResult<LocalSessionStatus> {
         return withContext(databaseDispatcher) {
             transact {
@@ -61,7 +65,7 @@ internal class SqlLocalSessionStore(
                         if (evaluation is SessionEvaluation.CommitExpiry) {
                             commitExpiry(evaluation.record)
                         }
-                        startWhenInactive(sessionId, startEpochMillis, endEpochMillis, nowEpochMillis)
+                        startWhenInactive(sessionId, startEpochMillis, endEpochMillis, nowEpochMillis, frozenStartSet)
                     }
                 }
             }
@@ -74,6 +78,7 @@ internal class SqlLocalSessionStore(
                 when (val evaluation = evaluateStored(nowEpochMillis)) {
                     is SessionEvaluation.ShowActive -> {
                         database.localSessionQueries.markEndedEarly()
+                        database.localSessionQueries.clearFrozenStartSet()
                         LocalSessionResult.Success(LocalSessionStatus.Ended(evaluation.record, SessionEndKind.ENDED_EARLY))
                     }
 
@@ -109,8 +114,24 @@ internal class SqlLocalSessionStore(
 
     private suspend fun evaluateStored(nowEpochMillis: Long): SessionEvaluation {
         val stored = readStoredOrThrow()
+        if (stored == null) {
+            return SessionEvaluation.NoSession
+        }
+        val frozenStartSet = try {
+            FrozenStartSet.parseStored(stored.frozenDomains, stored.frozenApplicationCount)
+        } catch (_: IllegalArgumentException) {
+            fail(LocalSessionFailure.CORRUPTION)
+        }
 
-        return SessionState.evaluate(stored?.record, stored?.endedEarly == true, stored?.expiryMarked == true, nowEpochMillis)
+        return when (val evaluation = SessionState.evaluate(stored.record, stored.endedEarly, stored.expiryMarked, nowEpochMillis)) {
+            is SessionEvaluation.ShowActive -> {
+                evaluation.copy(frozenStartSet = frozenStartSet)
+            }
+
+            else -> {
+                evaluation
+            }
+        }
     }
 
     private suspend fun startWhenInactive(
@@ -118,6 +139,7 @@ internal class SqlLocalSessionStore(
         startEpochMillis: Long,
         endEpochMillis: Long,
         nowEpochMillis: Long,
+        frozenStartSet: FrozenStartSet,
     ): LocalSessionResult<LocalSessionStatus> {
         return when (SessionSetup.validateEndTime(endEpochMillis, nowEpochMillis)) {
             is SessionSetupResult.Invalid -> {
@@ -134,11 +156,14 @@ internal class SqlLocalSessionStore(
                         session_id = sessionId.value.copyBytes(),
                         start_epoch_millis = startEpochMillis,
                         end_epoch_millis = endEpochMillis,
+                        frozen_domains = frozenStartSet.toStorageValue(),
+                        frozen_application_count = frozenStartSet.applicationCount?.toLong(),
                     )
                     LocalSessionResult.Success(
                         LocalSessionStatus.Active(
                             SessionRecord(sessionId, startEpochMillis, endEpochMillis),
                             endEpochMillis - nowEpochMillis,
+                            frozenStartSet,
                         ),
                     )
                 }
@@ -148,6 +173,7 @@ internal class SqlLocalSessionStore(
 
     private suspend fun commitExpiry(record: SessionRecord): LocalSessionResult<LocalSessionStatus> {
         database.localSessionQueries.insertExpiryMarker(record.sessionId.value.copyBytes())
+        database.localSessionQueries.clearFrozenStartSet()
 
         return LocalSessionResult.Success(LocalSessionStatus.Ended(record, SessionEndKind.EXPIRED))
     }
@@ -172,7 +198,7 @@ internal class SqlLocalSessionStore(
             fail(LocalSessionFailure.CORRUPTION)
         }
 
-        return StoredLocalSession(record, row.ended_early == 1L, markers.isNotEmpty())
+        return StoredLocalSession(record, row.ended_early == 1L, markers.isNotEmpty(), row.frozen_domains, row.frozen_application_count)
     }
 }
 
@@ -180,6 +206,8 @@ private class StoredLocalSession(
     val record: SessionRecord,
     val endedEarly: Boolean,
     val expiryMarked: Boolean,
+    val frozenDomains: String?,
+    val frozenApplicationCount: Long?,
 )
 
 private class LocalSessionStoreException(
