@@ -672,6 +672,23 @@ class TargetsViewModelTest {
     }
 
     @Test
+    fun `given system selection when choosing then prior snapshot remains visible`() = runTest(dispatcher) {
+        val mapping = mapping("Browser", "02")
+        val mappings = FakeApplicationMappings(snapshotOf(mapping)).apply {
+            selectionResult = LocalApplicationSelectionResult.Rejected(LocalApplicationSelectionRejection.SYSTEM)
+        }
+        val viewModel = TargetsViewModel(FakeTargetPolicyStore(stateOf(1, applicationPolicyName = "Apps")), mappings)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        viewModel.chooseApplications()
+        scheduler.runCurrent()
+
+        assertEquals(listOf(mapping), viewModel.uiState.value.applicationMappings)
+        assertEquals(ApplicationMappingFailure.SYSTEM_SELECTION, viewModel.uiState.value.applicationMappingFailure)
+    }
+
+    @Test
     fun `given access change when choosing then retained snapshot and restricted state remain visible`() = runTest(dispatcher) {
         val mapping = mapping("Browser", "04")
         val mappings = FakeApplicationMappings().apply {

@@ -73,6 +73,20 @@ class DesktopLocalApplicationMappingsTest {
     }
 
     @Test
+    fun `system application refusal preserves prior snapshot`() {
+        withStore(MacOsApplicationPickerResult.Success(listOf(application("Existing", 1)))) { store, path ->
+            assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications() })
+            store.close()
+
+            val refused = createStore(path, MacOsApplicationPickerResult.SystemApplication)
+            val rejection = assertIs<LocalApplicationSelectionResult.Rejected>(runBlocking { refused.chooseApplications() })
+            assertEquals(LocalApplicationSelectionRejection.SYSTEM, rejection.reason)
+            assertEquals(1, assertIs<LocalApplicationMappingsLoadResult.Success>(runBlocking { refused.load() }).snapshot.mappings.size)
+            refused.close()
+        }
+    }
+
+    @Test
     fun `designated requirements resolve by id and reject unknown ids`() {
         withStore(MacOsApplicationPickerResult.Success(listOf(application("Browser", 1)))) { store, _ ->
             val selected = assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications() })

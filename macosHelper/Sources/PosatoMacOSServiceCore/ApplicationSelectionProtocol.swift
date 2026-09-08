@@ -13,6 +13,7 @@ public enum ApplicationSelectionOutcome: UInt8, Sendable {
   case invalidOrUnsigned = 4
   case capacity = 5
   case failure = 6
+  case systemApplication = 7
 }
 
 public struct SelectedApplicationIdentity: Equatable, Sendable {

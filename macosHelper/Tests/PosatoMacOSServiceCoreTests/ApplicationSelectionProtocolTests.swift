@@ -53,6 +53,12 @@ import Testing
   )
 }
 
+@Test func givenSystemApplicationOutcomeWhenRoundTrippedThenOutcomeIsPreserved() throws {
+  let payload = try ApplicationSelectionPayload(outcome: .systemApplication)
+
+  #expect(try ApplicationSelectionPayload.decode(payload.encode()) == payload)
+}
+
 @Test func givenSensitiveSelectionValuesWhenRenderedThenTheyRemainRedacted() throws {
   let secret = "Secret Browser"
   let identity = try SelectedApplicationIdentity(
