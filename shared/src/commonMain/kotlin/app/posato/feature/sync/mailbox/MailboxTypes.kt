@@ -106,6 +106,8 @@ internal sealed interface BundleSaveResult {
 }
 
 internal sealed interface ChangeFetchResult {
+    data object TokenExpired : ChangeFetchResult
+
     data class Page(
         val page: ChangePage,
     ) : ChangeFetchResult

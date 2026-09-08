@@ -483,6 +483,16 @@ final class CloudKitMailboxProviderTests: XCTestCase {
 
     // MARK: - Delete
 
+    func testExpiredTokenReturnsDistinctOutcomeWithoutPageData() {
+        let backend = FakeMailboxBackend()
+        backend.changesHandler = { _, _ in .failed(self.ckError(.changeTokenExpired)) }
+        let (provider, _, _) = makeProvider(backend: backend)
+        let page = provider.fetchChanges(binding: binding(), cursor: Data())
+        XCTAssertEqual(page.status, .tokenexpired)
+        XCTAssertNil(page.nextCursor)
+        XCTAssertNil(page.bundlePayload)
+    }
+
     func testDeleteZoneVerifiesAbsence() {
         let backend = FakeMailboxBackend()
         var deleted = false

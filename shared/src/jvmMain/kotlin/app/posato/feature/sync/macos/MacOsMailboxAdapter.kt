@@ -6,6 +6,7 @@ import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
+import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.ZoneDeleteResult
 import kotlinx.coroutines.CancellationException
 import java.nio.BufferUnderflowException
@@ -15,8 +16,8 @@ import java.nio.ByteOrder
 internal class MacOsMailboxAdapter(
     private val transport: SyncCompanionTransport,
     private val deadlineMilliseconds: Int = DEFAULT_DEADLINE_MILLISECONDS,
-) {
-    suspend fun saveBundle(
+) : MailboxPort {
+    override suspend fun saveBundle(
         expectedBinding: AccountBinding,
         identifier: ByteArray,
         payload: ByteArray,
@@ -40,7 +41,7 @@ internal class MacOsMailboxAdapter(
         }
     }
 
-    suspend fun fetchChanges(
+    override suspend fun fetchChanges(
         expectedBinding: AccountBinding,
         cursor: MailboxCursor,
     ): ChangeFetchResult {
@@ -61,7 +62,7 @@ internal class MacOsMailboxAdapter(
         }
     }
 
-    suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult {
+    override suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult {
         val binding = expectedBinding.copyBytes()
         return try {
             val response = exchange(
@@ -139,6 +140,7 @@ internal class MacOsMailboxAdapter(
             SyncCompanionOutcome.Undetermined,
             SyncCompanionOutcome.DeletedAndAbsent,
             SyncCompanionOutcome.AlreadyExists,
+            SyncCompanionOutcome.TokenExpired,
             null -> {
                 BundleSaveResult.UnknownOutcome
             }
@@ -147,6 +149,10 @@ internal class MacOsMailboxAdapter(
 
     private fun mapFetchChanges(message: SyncCompanionMessage): ChangeFetchResult {
         return when (message.outcome) {
+            SyncCompanionOutcome.TokenExpired -> {
+                ChangeFetchResult.TokenExpired
+            }
+
             SyncCompanionOutcome.Found -> {
                 val page = parsePage(message.payload)
                 if (page == null) {
@@ -218,6 +224,7 @@ internal class MacOsMailboxAdapter(
             SyncCompanionOutcome.Undetermined,
             SyncCompanionOutcome.AlreadyExists,
             SyncCompanionOutcome.Conflict,
+            SyncCompanionOutcome.TokenExpired,
             null -> {
                 ZoneDeleteResult.UnknownOutcome
             }

@@ -173,6 +173,14 @@ internal class FakeBootstrapStore(
     var commitCalls = 0
         private set
 
+    override suspend fun clearEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit> {
+        val failure = writeFailure
+        if (failure != null) return BootstrapStoreResult.Failure(failure)
+        if (state != BootstrapState.Established(workspace)) return BootstrapStoreResult.Failure(BootstrapStoreFailure.CORRUPTION)
+        state = BootstrapState.None
+        return BootstrapStoreResult.Success(Unit)
+    }
+
     override suspend fun read(): BootstrapStoreResult<BootstrapState> {
         val failure = readFailure
         return if (failure == null) {

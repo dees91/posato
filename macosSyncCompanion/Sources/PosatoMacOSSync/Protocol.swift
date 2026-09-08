@@ -60,6 +60,7 @@ enum SyncOutcome: UInt8, Sendable {
   case deletedAndAbsent = 12
   case alreadyExists = 13
   case conflict = 14
+  case tokenExpired = 15
 }
 
 enum SyncProtocolFailure: Error, Equatable {

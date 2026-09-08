@@ -44,6 +44,7 @@ class BootstrapRedactionTest {
 
         assertEquals("PersistedCandidate(redacted)", candidate.toString())
         assertEquals("EstablishedWorkspace(redacted)", established.toString())
+        assertEquals("EstablishedCheck(redacted)", EstablishedCheck(EstablishedStatus.READY, established).toString())
         assertEquals("DecodedKeyItem(redacted)", decodedItem().toString())
     }
 

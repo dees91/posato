@@ -50,6 +50,30 @@ import kotlin.test.assertSame
 
 class IosBootstrapCompositionTest {
     @Test
+    fun `given repeated ios runtime creation then the process graph and core are retained`() {
+        val first = createIosApplicationRuntime(
+            InertCryptoProvider(),
+            InertMappingsProvider(),
+            InertEnforcementProvider(),
+            InertSuspendedExpiryProvider(),
+            InertKeychainProvider(),
+            InertMailboxProvider(),
+        )
+        val second = createIosApplicationRuntime(
+            InertCryptoProvider(),
+            InertMappingsProvider(),
+            InertEnforcementProvider(),
+            InertSuspendedExpiryProvider(),
+            InertKeychainProvider(),
+            InertMailboxProvider(),
+        )
+
+        assertSame(first, second)
+        assertSame(first.applicationGraph, second.applicationGraph)
+        assertSame(first.syncOperationCore, second.syncOperationCore)
+    }
+
+    @Test
     fun `given the real ios graph when resolved twice then the bootstrap facade is a singleton`() = runTest {
         val graph = compositionGraph()
 

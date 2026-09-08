@@ -37,6 +37,28 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
+class SyncMailboxWriterTest {
+    @Test
+    fun `given published work when acknowledged then the next mutation keeps the writer active`() = runTest {
+        val store = FakeSyncReplicaStore(snapshot())
+        val writer = assertIs<OpenSyncWriterResult.Success>(
+            SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
+        ).writer
+        try {
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+            val published = writer.pendingBundles.first()
+            assertTrue(writer.acknowledgePublication(published))
+            assertEquals(1, writer.pendingBundles.size)
+            assertEquals(2, store.current.acceptedBundles.size)
+            assertTrue(writer.commitTransportProgress(testTransportProgress(1)))
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+            assertEquals(testTransportProgress(1), writer.transportProgress)
+        } finally {
+            writer.close()
+        }
+    }
+}
+
 class SyncWriterOpenTest {
     @Test
     fun `given an open writer when converted to strings then its identity remains redacted`() = runTest {
@@ -1166,6 +1188,15 @@ private class FakeSyncReplicaStore(
         currentCoroutineContext().ensureActive()
         if (remoteCommitCompleted) remoteReconciliationReadFailure?.let { throw it }
         return SyncStoreResult.Success(current)
+    }
+
+    override suspend fun acknowledgePublication(
+        expectedCheckpoint: SyncReplicaSnapshot,
+        bundleId: BundleId,
+    ): SyncStoreResult<SyncReplicaSnapshot> {
+        checkpointConflict(expectedCheckpoint)?.let { return it }
+        current = current.copy(revision = current.revision + 1, pendingBundles = current.pendingBundles - bundleId)
+        return remoteResult()
     }
 
     override suspend fun commitLocal(

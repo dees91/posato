@@ -65,6 +65,7 @@ kotlin {
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.lifecycle.viewmodel.compose)
+            implementation(libs.lifecycle.runtime.compose)
             implementation(libs.sqldelight.async.extensions)
             implementation(libs.sqldelight.runtime)
         }
