@@ -216,7 +216,7 @@ internal class SessionViewModel(
                 if (isStartBlocked(targets)) {
                     return@launch
                 }
-                when (val result = sessionStore.start(sessionIds.create(), now, end, now)) {
+                when (val result = sessionStore.start(sessionIds.create(), now, end, now, targets.toFrozenStartSet())) {
                     is LocalSessionResult.Success -> {
                         val active = result.value as? Active
                         sessionLoad.update { SessionLoadState(status = result.value) }

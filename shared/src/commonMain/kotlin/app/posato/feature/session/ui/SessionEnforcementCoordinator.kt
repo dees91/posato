@@ -8,10 +8,12 @@ import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.enforcement.reconciliationId
+import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.session.domain.SessionRecord
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -32,18 +34,21 @@ internal class SessionEnforcementCoordinator(
     private var reconcileJob: Job? = null
     private var unknownStreak = 0
     private var expiryClearDoneFor: String? = null
+    private var frozenStartSet: FrozenStartSet? = null
 
     val view: StateFlow<EnforcementViewState> = mutableView.asStateFlow()
 
     suspend fun settle(status: LocalSessionStatus) {
-        val active = (status as? LocalSessionStatus.Active)?.record
+        val active = status as? LocalSessionStatus.Active
         if (active != null) {
+            frozenStartSet = active.frozenStartSet
             val view = mutableView.value
             if (view.state is EnforcementState.Inactive && !view.busy) {
-                reconcileActiveSession(active)
+                reconcileActiveSession(active.record, active.frozenStartSet)
             }
             return
         }
+        frozenStartSet = null
         reconcileJob?.cancel()
         reconcileJob = null
         val ended = status as? LocalSessionStatus.Ended
@@ -71,6 +76,7 @@ internal class SessionEnforcementCoordinator(
             if (entering is EnforcementState.ActionRequired && entering.kind == EnforcementActionKind.CLEAR_FAILED) {
                 enforcement.clear()
             }
+            frozenStartSet = targets.toFrozenStartSet()
             val frozen = targets.toEnforcedSet()
             val report = enforcement.apply(record.toEnforcementRequest(frozen, targets))
             mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = frozen) }
@@ -99,6 +105,7 @@ internal class SessionEnforcementCoordinator(
         if (entering !is EnforcementState.Active && entering !is EnforcementState.ActionRequired) {
             return
         }
+        frozenStartSet = null
         mutableView.update { view -> view.copy(busy = true) }
         try {
             when (enforcement.clear()) {
@@ -139,7 +146,7 @@ internal class SessionEnforcementCoordinator(
             try {
                 val record = (status as? LocalSessionStatus.Active)?.record
                 if (record != null) {
-                    reapplyCurrent(record)
+                    reapplyCurrent(record, frozenStartSet)
                 } else {
                     clearAfterEnd()
                 }
@@ -194,7 +201,7 @@ internal class SessionEnforcementCoordinator(
             if (enforcement.reapplyRequiresPrompt) {
                 mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
             } else {
-                reapplyCurrent(record)
+                reapplyCurrent(record, frozenStartSet)
             }
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
@@ -203,13 +210,16 @@ internal class SessionEnforcementCoordinator(
         }
     }
 
-    private fun reconcileActiveSession(record: SessionRecord) {
+    private fun reconcileActiveSession(
+        record: SessionRecord,
+        frozen: FrozenStartSet?,
+    ) {
         if (reconcileJob?.isActive == true) {
             return
         }
         reconcileJob = scope.launch {
             try {
-                reconcile(record)
+                reconcile(record, frozen)
             } catch (expectedCancellation: CancellationException) {
                 throw expectedCancellation
             } catch (_: Exception) {
@@ -224,7 +234,11 @@ internal class SessionEnforcementCoordinator(
         }
     }
 
-    private suspend fun reconcile(record: SessionRecord) {
+    private suspend fun reconcile(
+        record: SessionRecord,
+        frozen: FrozenStartSet?,
+    ) {
+        val displayed = frozen?.toEnforcedSet() ?: loadTargets().toEnforcedSet()
         val sessionId = record.sessionId.reconciliationId()
         if (enforcement.pollSuspendedExpiry(sessionId)) {
             when (enforcement.clear()) {
@@ -236,7 +250,7 @@ internal class SessionEnforcementCoordinator(
                     mutableView.update { view ->
                         view.copy(
                             state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt),
-                            enforced = loadTargets().toEnforcedSet(),
+                            enforced = displayed,
                         )
                     }
                     refreshSession()
@@ -247,7 +261,7 @@ internal class SessionEnforcementCoordinator(
         if (enforcement.status() == EnforcementOutcome.APPLIED) {
             mutableView.update { view ->
                 if (view.state is EnforcementState.Inactive) {
-                    view.copy(state = EnforcementState.Active(false), enforced = loadTargets().toEnforcedSet())
+                    view.copy(state = EnforcementState.Active(false), enforced = displayed)
                 } else {
                     view
                 }
@@ -261,20 +275,24 @@ internal class SessionEnforcementCoordinator(
                         EnforcementActionKind.RESUME_REQUIRED,
                         repeatsSystemPrompt = true,
                     ),
-                    enforced = loadTargets().toEnforcedSet(),
+                    enforced = displayed,
                 )
             }
             return
         }
-        reapplyCurrent(record)
+        reapplyCurrent(record, frozen)
     }
 
-    private suspend fun reapplyCurrent(record: SessionRecord) {
+    private suspend fun reapplyCurrent(
+        record: SessionRecord,
+        frozen: FrozenStartSet?,
+    ) {
         val targets = loadTargets()
-        val frozen = targets.toEnforcedSet()
+        val applied = targets.toEnforcedSet()
         enforcement.clear()
-        val report = enforcement.apply(record.toEnforcementRequest(frozen, targets))
-        mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = frozen) }
+        val report = enforcement.apply(record.toEnforcementRequest(applied, targets))
+        val displayed = frozen?.toEnforcedSet() ?: targets.toEnforcedSet()
+        mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = displayed) }
         if (report.outcome == EnforcementOutcome.APPLIED) {
             unknownStreak = 0
         }
@@ -297,6 +315,19 @@ internal fun SessionTargetsState.toEnforcedSet(): EnforcedSet {
         domains = policy.domains.map { domain -> domain.canonicalValue }.toPersistentList(),
         applicationCount = mappings?.size,
     )
+}
+
+internal fun SessionTargetsState.toFrozenStartSet(): FrozenStartSet {
+    val policy = this.policy ?: return FrozenStartSet(persistentListOf(), null)
+    val mappings = (mappings as? LocalApplicationMappingsLoadResult.Success)?.snapshot?.mappings
+    return FrozenStartSet(
+        domains = policy.domains.map { domain -> domain.canonicalValue }.toPersistentList(),
+        applicationCount = mappings?.size,
+    )
+}
+
+internal fun FrozenStartSet.toEnforcedSet(): EnforcedSet {
+    return EnforcedSet(domains = domains, applicationCount = applicationCount)
 }
 
 internal fun SessionRecord.toEnforcementRequest(

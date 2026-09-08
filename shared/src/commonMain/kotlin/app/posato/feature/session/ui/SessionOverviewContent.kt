@@ -67,7 +67,7 @@ internal fun SessionOverviewContent(
         }
         SessionSelectionSummary(state, deviceLabel)
         if (state.showsFrozenSet()) {
-            PosatoCaption("Changes in Paused items apply to the next pause.")
+            PosatoCaption("Showing what this pause started with. Restrictions follow your current Paused items.")
         }
         PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
     }
