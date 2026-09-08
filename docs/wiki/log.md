@@ -1361,3 +1361,14 @@
   zone save and confirm, anchor create with conflict, bundle save with
   identical re-save, change fetch, different-bytes rejection, and verified zone
   deletion, leaving the private database as found.
+
+## [2026-09-07] implementation | SESSION-002 local session enforcement
+
+- Wired session start, early end, and observed expiry to the accepted local
+  enforcement on both platforms: commit, apply or clear, report, with a frozen
+  effective set shown in the active surface and Retry or Resume on every failed
+  or refused path. macOS applies browser denial first and restores it when the
+  application configure fails; iOS reads live restriction state and consumes
+  the suspended-expiry reconciliation once. `./gradlew quality` and the
+  Simulator driver rows pass; the physical Mac and iPhone rows stay pending
+  with the maintainer, as does the desktop driver accessibility-tree finding.

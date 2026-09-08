@@ -1,0 +1,45 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": true
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {"name":"ready","action":"waitFor","state":"exists","query":{"text":"Paused items","role":"button"}},
+    {"name":"open-paused-items","action":"tap","query":{"text":"Paused items","role":"button"}},
+    {"name":"entry-ready","action":"waitFor","state":"exists","query":{"text":"Search","role":"button"}},
+    {"name":"enter-domain","action":"type","query":{"role":"textField"},"text":"example.com","clear":true,"submit":true},
+    {"name":"finish-adding","action":"tap","query":{"text":"Done","role":"button"}},
+    {"name":"row-visible","action":"scrollTo","query":{"text":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
+    {"name":"open-session","action":"tap","query":{"text":"Session","role":"button"}},
+    {"name":"home-inactive","action":"waitFor","state":"exists","query":{"text":"NO SESSION ACTIVE"}},
+    {"name":"begin-setup","action":"tap","query":{"text":"Start a session","role":"button"}},
+    {"name":"setup-open","action":"waitFor","state":"exists","query":{"text":"YOUR NEXT PAUSE"}},
+    {"name":"preset","action":"tap","query":{"text":"25 min","role":"button"}},
+    {"name":"continue-review","action":"tap","query":{"text":"Review session","role":"button"}},
+    {"name":"review-open","action":"waitFor","state":"exists","query":{"text":"ONE LAST LOOK"}},
+    {"name":"start","action":"tap","query":{"text":"Start this pause","role":"button"}},
+    {"name":"active","action":"waitFor","state":"exists","query":{"text":"End session early","role":"button"}},
+    {"name":"attention","action":"waitFor","state":"exists","query":{"text":"Retry","role":"button"},"timeoutSeconds":240},
+    {"name":"attention-shot","action":"screenshot"},
+    {"name":"attention-tree","action":"snapshot"},
+    {"name":"request-early-end","action":"tap","query":{"text":"End session early","role":"button"}},
+    {"name":"confirm-nothing-restricted","action":"waitFor","state":"exists","query":{"text":"Nothing is restricted in this pause."}},
+    {"name":"confirm-end","action":"tap","query":{"text":"End session","role":"button"}},
+    {"name":"ended","action":"waitFor","state":"exists","query":{"text":"NO SESSION ACTIVE"}},
+    {"name":"no-retry","action":"waitFor","state":"absent","query":{"text":"Retry","role":"button"},"timeoutSeconds":30},
+    {"name":"open-paused-items","action":"tap","query":{"text":"Paused items","role":"button"}},
+    {"name":"entry-ready-again","action":"waitFor","state":"exists","query":{"text":"Search","role":"button"}},
+    {"name":"reach-row","action":"scrollTo","query":{"text":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
+    {"name":"open-row-menu","action":"tap","query":{"text":"Actions for example.com","role":"button"}},
+    {"name":"remove-domain","action":"tap","query":{"text":"Remove","role":"button"}},
+    {"name":"row-removed","action":"waitFor","state":"absent","query":{"text":"example.com","role":"text"}},
+    {"name":"return-session","action":"tap","query":{"text":"Session","role":"button"}}
+  ]
+}

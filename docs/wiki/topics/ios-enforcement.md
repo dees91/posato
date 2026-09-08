@@ -213,6 +213,23 @@ survived, reconciliation read expired with the session id, and the cancelled
 probe schedule cleared nothing. Reboot-inside-interval behavior is still
 pending by choice (personal phone).
 
+## Local session integration (`SESSION-002`)
+
+`observed` (worktree verification, `./gradlew quality` green including the
+Simulator XCTest suites, Simulator driver evidence): the iOS adapter applies
+the Posato-owned restrictions and schedules the suspended-expiry interval, or
+reports the platform minimum for a short session while the session stays active
+on foreground expiry. A `status` read on the existing provider reports the live
+named-store state, so post-relaunch state never comes from the timer alone.
+Screen entry and foreground read the reconciliation record for the active
+session identifier and consume it on report; a stale record never ends the
+current session, and clear stays idempotent. Relaunch and foreground silently
+re-apply the current set because no administrator prompt exists on this
+platform; failure surfaces action-required with Retry.
+
+`open`: the physical iPhone rows (Screen Time granted, site presentation,
+force-quit expiry, reopen reconciliation).
+
 ## Open questions
 
 - Which Family Controls entitlement and distribution paths are available for
