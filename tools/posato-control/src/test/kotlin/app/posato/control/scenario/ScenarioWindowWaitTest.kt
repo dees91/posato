@@ -102,6 +102,10 @@ class ScenarioWindowWaitTest {
         val result = waitFor(actions, timeoutSeconds = 0.1)
         assertFalse(result.ok)
         assertEquals("DESKTOP_WINDOW_UNAVAILABLE", result.steps.single().error?.code)
+        assertTrue(
+            result.steps.single().error?.message.orEmpty().contains("Relaunch it through `posato-control launch -t desktop`"),
+            result.steps.single().error?.message,
+        )
     }
 
     @Test

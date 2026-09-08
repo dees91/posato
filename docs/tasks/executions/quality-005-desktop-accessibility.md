@@ -83,3 +83,4 @@
 
 - **Status:** `done`
 - **Outcome:** all four acceptance criteria met; PR #42 opened from `feature/quality-005-desktop-accessibility`.
+- **Post-review correction:** accepted the inline P2 (recovery instructions were confined to `ControlException.hint`, which `StepError` drops on the scenario path). The message itself now carries the relaunch sentence; the hint keeps the detail. Covered by message assertions in both new tests; affected checks rerun green. Correction tier: trivial self-check (narrow error-text change, fully asserted).
