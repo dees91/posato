@@ -38,6 +38,11 @@
 - Wave boundary kept: only `shared/**/feature/session/**` plus the session
   schema and migration. Known residual: the Selected-items application-names
   list stays live because `D1` persists the count only.
+- PR correction round: two accepted P2 findings. A throwing reconcile path
+  now publishes the persisted set alongside the action state, and the caption
+  distinguishes the persisted set from the pre-upgrade live fallback via
+  `hasPersistedStartSet` (extracted `FrozenSetCaption` keeps the complexity
+  gate green).
 
 ## Completed-change review
 
@@ -48,15 +53,19 @@
   stand as decided: `toFrozenStartSet` mirrors `toEnforcedSet`, tampered bytes
   on an ended row report `CORRUPTION`, and the caption describes the
   post-re-converge steady state.
+- **Correction re-review:** `approve` (no Critical or Required, 1
+  non-blocking Recommended applied: caption-branch asserts in the failure
+  test).
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | `./gradlew quality` after the last correction | `pass` | worktree run, 197 tasks, `BUILD SUCCESSFUL` |
-| `commonTest`/`jvmTest` session suites | `pass` | 15 store, 16 coordinator, 20 ViewModel, 5 frozen-set rows, 0 failures |
+| `commonTest`/`jvmTest` session suites | `pass` | 15 store, 17 coordinator, 20 ViewModel, 5 frozen-set rows, 0 failures |
 | Migration with existing rows | `pass` | v5 simulation keeps policy rev 7, replica and session rows, null fallback |
 | Driver relaunch row (desktop) | `pass` | `build/verification/runs/20260908-123255-d78f`; frozen 2-set survives relaunch with Resume, end clears, synthetics removed, `wp.pl` intact |
+| Reconcile-failure repro | `pass` | new test failed pre-fix (`edited` shown), passes post-fix with frozen display |
 
 ## Blockers and accepted risks
 

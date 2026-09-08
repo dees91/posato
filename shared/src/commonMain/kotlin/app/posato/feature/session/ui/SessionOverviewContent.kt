@@ -66,9 +66,7 @@ internal fun SessionOverviewContent(
             }
         }
         SessionSelectionSummary(state, deviceLabel)
-        if (state.showsFrozenSet()) {
-            PosatoCaption("Showing what this pause started with. Restrictions follow your current Paused items.")
-        }
+        FrozenSetCaption(state)
         PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
     }
 }
@@ -122,6 +120,20 @@ private fun EnforcementState.ActionRequired.attentionMessage(): String {
             "Restrictions stopped when the app closed."
         }
     }
+}
+
+@Composable
+private fun FrozenSetCaption(state: SessionUiState) {
+    if (!state.showsFrozenSet()) {
+        return
+    }
+    PosatoCaption(
+        if (state.showsPersistedStartSet()) {
+            "Showing what this pause started with. Restrictions follow your current Paused items."
+        } else {
+            "Showing your current Paused items."
+        },
+    )
 }
 
 @Composable
