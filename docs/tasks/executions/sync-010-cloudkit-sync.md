@@ -3,7 +3,7 @@
 - **Brief:** [Publish and consume pending encrypted bundles with truthful sync status and retry](../specifications/sync-010-cloudkit-sync.md)
 - **Status:** `active`
 - **Review tier:** `high-risk`
-- **Implementer:** implementation agent (2026-09-08)
+- **Implementer:** pending assignment (brief prepared 2026-09-08)
 - **Reviewer:** independent plan review complete (changes-required, resolved in the brief); completed-change review pending
 - **Branch:** `feature/sync-010-cloudkit-sync`
 - **Worktree:** `~/Projects/Polyglot/posato-sync-010`
