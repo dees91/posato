@@ -4,7 +4,7 @@
 - **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** implementation agent (2026-09-08)
-- **Reviewer:** independent plan review complete (changes-required, resolved); completed-change review pass (2 Required, resolved)
+- **Reviewer:** independent plan review complete (changes-required, resolved); completed-change review pass (2 Required, resolved); P2 correction reviewed, pass
 - **Branch:** `feature/sync-009-apple-bootstrap`
 - **Worktree:** `~/Projects/Polyglot/posato-sync-009`
 - **Updated:** 2026-09-08
@@ -100,6 +100,10 @@
 - **Resolution:** both fixed, re-verified, full `./gradlew quality` green.
   One `Optional` declined as factually incorrect (`defaultDesktopPolicyDatabasePath`
   is consumed in-diff by the graph default argument).
+- **P2 correction (post-PR review):** the consent attempt and outcome moved
+  from composition-bound state to a `Content`-owned holder so ordinary
+  navigation no longer cancels the attempt; correction review pass with 2
+  nits applied (suspend refresh, `@Stable`) and affected gates re-verified.
 
 ## Verification
 
