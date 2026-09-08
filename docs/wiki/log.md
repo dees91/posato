@@ -1430,5 +1430,7 @@ Recorded SYNC-010 process ownership, writer-owned publication confirmation,
 transactional cursor progress, token-expiry restart, and anchor-gated removal.
 Updated the current design and physical verification recipe, retained the
 accepted pre-link and exact-refetch limits, and restored the missing SYNC-009
-bootstrap observation. Local automated gates pass; physical acceptance remains
-pending in the execution record.
+bootstrap observation. A physical iPhone probe exposed and fixed an empty-cursor
+NSData conversion failure before native fetch; its adapter regression and
+cross-device exchange pass. The remaining physical matrix is pending in the
+execution record.
