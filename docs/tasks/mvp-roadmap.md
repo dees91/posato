@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 10
+- **Revision:** 11
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-07
+- **Last amended:** 2026-09-08
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -42,6 +42,12 @@ revisions changes any other task, dependency, wave, or integration group.
 Revision 10 adds the maintainer-approved `DESIGN-001` presentation adoption
 and includes `QUALITY-003` in the same PR, together with the verification
 skill and recipes. It preserves existing ViewModels and native services.
+
+Revision 11 adds the maintainer-accepted `SESSION-003` follow-up after the
+`SESSION-002` review recorded that the frozen start set is re-derived from the
+live policy once the application is relaunched, so the active summary and its
+next-pause copy stop being true for the rest of that session. It changes no
+other task, dependency, wave, or integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -121,6 +127,7 @@ wave barriers add the phase ordering stated above.
 | `SYNC-007` | Exchange bounded encrypted mailbox bundles through iOS private CloudKit. | Apple synchronization | P3/W3.4 | `SYNC-003` | PR-IOS-CLOUDKIT |
 | `SYNC-008` | Exchange bounded encrypted mailbox bundles through the macOS CloudKit native boundary. | Apple synchronization | P3/W3.4 | `SYNC-003` | PR-MAC-CLOUDKIT |
 | `SESSION-002` | Integrate safe local start, enforcement, early end, expiry, failure, and recovery. | Sessions and enforcement | P3/W3.5 | `MACOS-004`, `MACOS-005`, `IOS-002`, `SESSION-001` | PR-LOCAL-SESSION |
+| `SESSION-003` | Keep the active session's frozen start set truthful across a relaunch. | Sessions and enforcement | P3/W3.5a | `SESSION-002` | PR-SESSION-FROZEN-SET |
 | `SYNC-009` | Integrate Keychain and CloudKit bootstrap on both apps without creating a parallel workspace. | Apple synchronization | P3/W3.6 | `SYNC-002`, `SYNC-004`, `SYNC-005`, `SYNC-006`, `SYNC-007`, `SYNC-008` | PR-APPLE-BOOTSTRAP |
 | `SYNC-010` | Publish and consume pending encrypted bundles with truthful sync status and retry. | Apple synchronization | P3/W3.7 | `SYNC-009`, `MODEL-001` | PR-CLOUDKIT-SYNC |
 | `ONBOARDING-001` | Complete first-install privacy, Apple workspace, authorization, and target setup without a product account. | Apple synchronization | P4/W4.1 | `SYNC-010`, `TARGETS-001`, `TARGETS-003`, `TARGETS-004` | PR-FIRST-INSTALL |
