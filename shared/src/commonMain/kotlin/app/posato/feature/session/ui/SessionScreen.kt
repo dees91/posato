@@ -30,6 +30,7 @@ import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import org.jetbrains.compose.resources.stringResource
@@ -47,6 +48,7 @@ internal fun SessionScreen(
     modifier: Modifier = Modifier,
     layout: PosatoLayout = PosatoLayout.Compact,
     deviceLabel: String = "On this device",
+    syncState: SyncBootstrapUiState? = null,
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(sessionStore, policyStore, applicationMappings, sessionIds, clock, timeFormat, enforcement)
     },
@@ -70,6 +72,7 @@ internal fun SessionScreen(
         modifier = modifier,
         layout = layout,
         deviceLabel = deviceLabel,
+        syncState = syncState,
     )
 }
 
@@ -91,6 +94,7 @@ internal fun SessionScreen(
     onRetry: () -> Unit = {},
     onRetryEnforcement: () -> Unit = {},
     onOpenPausedItems: () -> Unit = {},
+    syncState: SyncBootstrapUiState? = null,
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
         val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
@@ -143,6 +147,7 @@ internal fun SessionScreen(
                         onRequestEarlyEnd,
                         onOpenPausedItems,
                         onRetryEnforcement,
+                        syncState,
                     )
                 }
             }

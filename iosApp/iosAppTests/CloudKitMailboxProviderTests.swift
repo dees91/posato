@@ -604,3 +604,31 @@ private final class LockedResult<Value>: @unchecked Sendable {
         return value
     }
 }
+
+final class DeferredCloudKitMailboxBackendTests: XCTestCase {
+    func testConstructionIsDeferredUntilFirstCall() {
+        var constructions = 0
+        let deferred = DeferredCloudKitMailboxBackend {
+            constructions += 1
+            return FakeMailboxBackend()
+        }
+
+        XCTAssertEqual(constructions, 0)
+        _ = deferred.fetchZone(zoneID: MailboxRecordCodec.zoneID(), timeout: 1)
+        XCTAssertEqual(constructions, 1)
+        _ = deferred.fetchZone(zoneID: MailboxRecordCodec.zoneID(), timeout: 1)
+        XCTAssertEqual(constructions, 1)
+    }
+
+    func testCancelBeforeConstructionIsANoOp() {
+        var constructions = 0
+        let deferred = DeferredCloudKitMailboxBackend {
+            constructions += 1
+            return FakeMailboxBackend()
+        }
+
+        deferred.cancelInflight()
+
+        XCTAssertEqual(constructions, 0)
+    }
+}

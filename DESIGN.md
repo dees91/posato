@@ -89,15 +89,21 @@ or a productivity-scoring system.
 ### Current implementation boundary
 
 The actual app contains Session and Paused items, real local persistence,
-native application-selection boundaries, and the local session timer.
-Synchronization and session-driven enforcement are not connected to these
-screens. Never show the prototype's demo clock, invented synchronization time,
-mock application names, onboarding success, simulated permission outcome,
-or inspection overlay in the real app.
+native application-selection boundaries, the local session timer, and one
+explicit **Sync with iCloud** control on the Session screen. Session-driven
+enforcement is not connected to these screens. Never show the prototype's
+demo clock, invented synchronization time, mock application names, onboarding
+success, simulated permission outcome, or inspection overlay in the real app.
 
-The UI says that data is saved on this device and that blocking/synchronization
-are not connected yet. A running timer is not evidence that a restriction is
-active. Future flows below are requirements, not current controls.
+The UI says that data is saved on this device. A running timer is not evidence
+that a restriction is active. Future flows below are requirements, not current
+controls.
+
+The **Sync with iCloud** control states that it links this device to the
+private iCloud workspace, runs one bootstrap attempt per press, and reports
+only the outcome the bootstrap returned: linked, waiting for the workspace
+key, unfinished, or needing attention. It shows no synchronization time, no
+device list, and no claim beyond that outcome.
 
 ## Foundations
 
