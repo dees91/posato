@@ -223,7 +223,7 @@ removing device starts a new workspace without a console step.
 
 ## Decisions or blockers
 
-- `D1` open, blocking (what fills the outbox): today no production path
+- `D1` decided (`user-confirmed`, 2026-09-08, the recommendation below): today no production path
   constructs a `LocalSyncMutation`, so the outbox is empty on every device and
   `AC-01` through `AC-03` have no physical observable. Recommended: on a
   linked device, an accepted exact-domain edit first commits the local store,
@@ -233,11 +233,11 @@ removing device starts a new workspace without a console step.
   action required; a frozen writer reopens on the next exchange. Edits made
   before linking, or while the writer is unavailable, are not backfilled here;
   `SYNC-011` owns the read side, the backfill, and reconciling the two stores,
-  and that interim divergence is an accepted risk. Alternative: keep the outbox
-  empty and defer every physical publish row to `SYNC-011`, which leaves this
-  task with fake-only evidence for its own outcome.
-- `D2` open, blocking (removal surface): ADR 0007 names the action but no
-  control. Recommended: a secondary **Remove workspace** control in the sync
+  and that interim divergence is an accepted risk. The rejected alternative
+  kept the outbox empty and deferred every physical publish row to `SYNC-011`,
+  leaving this task with fake-only evidence for its own outcome.
+- `D2` decided (`user-confirmed`, 2026-09-08): ADR 0007 names the action but
+  no control. Accepted: a secondary **Remove workspace** control in the sync
   section, shown only when linked, in the destructive color from
   `DESIGN.md`, with a confirmation that states it deletes the shared
   workspace from iCloud, that changes not yet delivered from this device are
@@ -245,18 +245,18 @@ removing device starts a new workspace without a console step.
   must remove and link again, and that **Sync with iCloud** is required
   afterwards. It clears the bootstrap state and the `sync_*` replica tables,
   never `exact_domain_policy`, `application_policy`, or `local_session`.
-- `D3` open, blocking (status surface and `DESIGN.md`): this task extends the
+- `D3` decided (`user-confirmed`, 2026-09-08): this task extends the
   `SYNC-009` section from bootstrap outcomes to the seven accepted states plus
   one **Sync now** action on a linked device, and amends the "current
   implementation boundary" of `DESIGN.md` for that one section. Full
   onboarding presentation stays with `ONBOARDING-001`.
-- `D4` recommended, closes the wiki open question: an expired server change
+- `D4` decided (`user-confirmed`, 2026-09-08), closes the wiki open question: an expired server change
   token becomes a distinct outcome on both native providers and adapters,
   inside the unchanged protocol version, and common code restarts from the
   first page without touching accepted state, because bundles are immutable
   and a duplicate advances the cursor in its own transaction. Today both
   adapters map it to `UnknownOutcome` with no recovery.
-- `D5` recommended (retry policy): retry is an explicit opportunity, not a
+- `D5` decided (`user-confirmed`, 2026-09-08, retry policy): retry is an explicit opportunity, not a
   loop: the person's **Sync now**, application launch or foreground on an
   established workspace, and the end of a local commit under `D1`, coalesced
   to one running and at most one queued exchange. No backoff timer, no

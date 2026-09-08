@@ -11,7 +11,7 @@
 
 ## Plan
 
-1. Maintainer answers `D1` through `D3`; `D4` and `D5` stand unless changed.
+1. `D1` through `D5` accepted by the maintainer on 2026-09-08 as recommended.
 2. Common mailbox port over `MailboxTypes`; both adapters implement it; the
    `D4` token-expiry outcome on both native providers and adapters.
 3. Acknowledgement and clear queries in `SyncReplica.sq` and
@@ -88,8 +88,6 @@
 
 ## Blockers and accepted risks
 
-- `D1`, `D2`, and `D3` are maintainer decisions; implementation of the
-  affected steps waits for them.
 - The maintainer's iCloud account already holds the `SYNC-009` workspace, so
   the physical matrix begins from an established state and the first
   from-empty row depends on the removal built here.
