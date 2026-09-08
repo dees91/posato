@@ -9,6 +9,7 @@ import app.posato.control.core.ErrorCode
 import app.posato.control.core.RunContext
 import app.posato.control.core.RunStateStore
 import app.posato.control.model.Query
+import app.posato.control.model.Roles
 import app.posato.control.model.RunResult
 import app.posato.control.model.Scenario
 import app.posato.control.model.SnapshotNode
@@ -17,6 +18,24 @@ import app.posato.control.scenario.QueryMatcher
 import app.posato.control.scenario.ScenarioRunner
 import java.nio.file.Files
 import java.nio.file.Path
+
+/**
+ * Rejects a tree with no addressable window before any query runs against it,
+ * so an empty tree reads as a named failure instead of an empty success. A
+ * query for a single element of a healthy tree still resolves normally.
+ */
+internal fun requireAddressableWindow(full: SnapshotNode): SnapshotNode {
+    if (full.children.none { it.role == Roles.WINDOW }) {
+        throw ControlException(
+            ErrorCode.DESKTOP_WINDOW_UNAVAILABLE,
+            "The desktop application answered but exposes no accessibility window. " +
+                "Relaunch it through `posato-control launch -t desktop` and take a new snapshot.",
+            "Confirm the window is visible and Accessibility access is granted, then take a new snapshot. " +
+                "If it persists, report the staged signing mode with the snapshot.",
+        )
+    }
+    return full
+}
 
 class DesktopInteraction(
     private val context: RunContext,
@@ -31,7 +50,7 @@ class DesktopInteraction(
         root: Query?,
         maxDepth: Int?
     ): SnapshotNode {
-        val full = bridge.snapshot(runningPid(), maxDepth)
+        val full = requireAddressableWindow(bridge.snapshot(runningPid(), maxDepth))
         return root?.let { QueryMatcher.require(full, it) } ?: full
     }
 
@@ -83,7 +102,7 @@ class DesktopInteraction(
             ).scrollTo(query, timeoutMs)
         }
 
-        override fun snapshot(maxDepth: Int?): SnapshotNode = bridge.snapshot(runningPid(), maxDepth)
+        override fun snapshot(maxDepth: Int?): SnapshotNode = requireAddressableWindow(bridge.snapshot(runningPid(), maxDepth))
 
         override fun tap(node: SnapshotNode) {
             bridge.press(runningPid(), requirePath(node))
