@@ -18,6 +18,7 @@ internal fun LocalApplicationSelectionRejection.toUiFailure(): ApplicationMappin
         LocalApplicationSelectionRejection.INVALID_OR_UNSIGNED -> ApplicationMappingFailure.INVALID_OR_UNSIGNED
         LocalApplicationSelectionRejection.UNSUPPORTED -> ApplicationMappingFailure.UNSUPPORTED_SELECTION
         LocalApplicationSelectionRejection.CAPACITY -> ApplicationMappingFailure.CAPACITY
+        LocalApplicationSelectionRejection.SYSTEM -> ApplicationMappingFailure.SYSTEM_SELECTION
     }
 }
 

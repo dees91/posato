@@ -13,6 +13,7 @@ internal object MacOsApplicationSelectionProtocol {
     private const val INVALID_OR_UNSIGNED: Byte = 4
     private const val CAPACITY: Byte = 5
     private const val FAILURE: Byte = 6
+    private const val SYSTEM_APPLICATION: Byte = 7
     const val MAXIMUM_REQUIREMENT_BYTES: Int = 4_096
 
     fun decode(payload: ByteArray): MacOsApplicationPickerResult {
@@ -27,6 +28,7 @@ internal object MacOsApplicationSelectionProtocol {
                 SELF_SELECTION -> MacOsApplicationPickerResult.SelfSelection
                 INVALID_OR_UNSIGNED -> MacOsApplicationPickerResult.InvalidOrUnsigned
                 CAPACITY -> MacOsApplicationPickerResult.CapacityExceeded
+                SYSTEM_APPLICATION -> MacOsApplicationPickerResult.SystemApplication
                 FAILURE -> MacOsApplicationPickerResult.Failure
                 else -> error("Unknown application selection outcome")
             }

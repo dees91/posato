@@ -139,8 +139,9 @@ requirement validated with the Security framework across all architectures,
 strict, no network; ad-hoc signatures are refused and the Posato namespace
 never matches even if sent. System-critical processes are refused in the
 helper even when selected (fixed bundle-identifier set plus
-`/System/Library/CoreServices/`, threat T-08); the picker-side refusal is a
-`TARGETS-003` follow-up. Observation enumerates process identifiers
+`/System/Library/CoreServices/`, threat T-08); the picker refuses the same
+set at selection time before signature inspection (`observed`, 2026-09-08,
+`TARGETS-003` follow-up). Observation enumerates process identifiers
 directly and hydrates each one on demand, because
 `NSWorkspace.runningApplications` does not refresh in a process without a
 run loop and would miss applications launched after activation. Child

@@ -21,6 +21,8 @@ internal sealed interface MacOsApplicationPickerResult {
 
     data object CapacityExceeded : MacOsApplicationPickerResult
 
+    data object SystemApplication : MacOsApplicationPickerResult
+
     data object Failure : MacOsApplicationPickerResult
 }
 
