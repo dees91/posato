@@ -159,7 +159,7 @@ public sealed interface LocalApplicationMappingsLoadResult {
     ) : LocalApplicationMappingsLoadResult
 }
 
-public enum class LocalApplicationSelectionRejection { SELF, INVALID_OR_UNSIGNED, UNSUPPORTED, CAPACITY }
+public enum class LocalApplicationSelectionRejection { SELF, INVALID_OR_UNSIGNED, UNSUPPORTED, CAPACITY, SYSTEM }
 
 public enum class LocalApplicationSelectionFailure { PICKER, STORAGE }
 

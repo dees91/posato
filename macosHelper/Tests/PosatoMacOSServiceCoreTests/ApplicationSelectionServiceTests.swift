@@ -36,6 +36,63 @@ import Testing
 }
 
 @MainActor
+@Test func givenSystemCriticalBundleAmongSelectionWhenSelectedThenWholeBatchIsRejected() throws {
+  for identifier in [
+    "com.apple.finder",
+    "com.apple.dock",
+    "com.apple.SystemSettings",
+  ] {
+    let candidates = [
+      candidate(name: "Browser", identifier: "example.browser"),
+      candidate(name: "Finder", identifier: identifier),
+    ]
+    let inspector = StubInspector(requirements: [Data([1])])
+
+    let result = try ApplicationSelectionService(
+      chooser: StubChooser(.selected(candidates)),
+      inspector: inspector
+    ).select()
+
+    #expect(result.outcome == .systemApplication)
+    #expect(result.applications.isEmpty)
+  }
+}
+
+@MainActor
+@Test func givenCoreServicesPathWhenSelectedThenWholeBatchIsRejected() throws {
+  let candidates = [
+    candidate(name: "Browser", identifier: "example.browser"),
+    candidate(
+      name: "Dock",
+      identifier: "example.dock",
+      url: URL(fileURLWithPath: "/System/Library/CoreServices/Dock.app"),
+    ),
+  ]
+
+  let result = try ApplicationSelectionService(
+    chooser: StubChooser(.selected(candidates)),
+    inspector: StubInspector(requirements: [Data([1])])
+  ).select()
+
+  #expect(result.outcome == .systemApplication)
+  #expect(result.applications.isEmpty)
+}
+
+@MainActor
+@Test func givenMissingIdentifierOutsideCoreServicesWhenSelectedThenItIsInspected() throws {
+  let candidates = [candidate(name: "Browser", identifier: nil)]
+  let requirement = Data([1, 2, 3])
+
+  let result = try ApplicationSelectionService(
+    chooser: StubChooser(.selected(candidates)),
+    inspector: StubInspector(requirements: [requirement])
+  ).select()
+
+  #expect(result.outcome == .success)
+  #expect(result.applications.count == 1)
+}
+
+@MainActor
 @Test func givenDuplicateRequirementsWhenSelectedThenOnlyOneIdentityIsReturned() throws {
   let candidates = [
     candidate(name: "Browser", identifier: "app.posato.macosx"),
@@ -100,9 +157,13 @@ private enum StubFailure: Error {
   case missingRequirement
 }
 
-private func candidate(name: String, identifier: String) -> ApplicationSelectionCandidate {
+private func candidate(
+  name: String,
+  identifier: String?,
+  url: URL? = nil
+) -> ApplicationSelectionCandidate {
   return ApplicationSelectionCandidate(
-    url: URL(fileURLWithPath: "/Applications/\(name).app"),
+    url: url ?? URL(fileURLWithPath: "/Applications/\(name).app"),
     displayName: name,
     bundleIdentifier: identifier
   )

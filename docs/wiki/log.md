@@ -1345,3 +1345,9 @@
   changes. Replaced blocking test-task waits with an awaited dedicated-thread
   boundary, retaining assertions, deadlines, and parallel execution. Temporary
   diagnostics were removed, with no product behavior change.
+
+## [2026-09-08] implementation | Refuse system-critical applications in the macOS picker
+
+- The picker now refuses the same system-critical set the enforcement helper guards (8 bundle identifiers plus `/System/Library/CoreServices/`), before signature inspection with whole-batch rejection; both sides share one source in the `PosatoMacOSHelper` target, and the stale picker-follow-up comment and wiki sentence are corrected.
+- Outcome byte `7` flows into shared rejection `SYSTEM` with the copy "System components such as Finder cannot be added to this group."; existing `SELF`, `INVALID_OR_UNSIGNED`, and iOS-owned `UNSUPPORTED` paths are unchanged.
+- Verified by focused Swift (155/155) and JVM suites, aggregate `./gradlew quality` (197 tasks), a driver run proving the Finder refusal row and the Safari control row with restart persistence, and two independent completed-change reviews with no findings.

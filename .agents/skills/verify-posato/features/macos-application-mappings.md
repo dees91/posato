@@ -12,7 +12,7 @@ are provisioned; any operating-system consent still belongs to the maintainer.
 - `mapping-list` shows each chosen application with a `Remove` action.
 - `mapping-remove` deletes one chosen application.
 - `mapping-empty` shows `Make room beyond the browser.` when none is chosen.
-- `mapping-errors` explains a failed pick (`The application picker could not be opened.`, `Posato cannot be added to its own application group.`, capacity and verification messages).
+- `mapping-errors` explains a failed pick (`The application picker could not be opened.`, `Posato cannot be added to its own application group.`, `System components such as Finder cannot be added to this group.`, capacity and verification messages).
 
 ## How to get to it (user POV)
 
@@ -85,6 +85,10 @@ Preconditions:
   be opened.`; that message is the expected outcome, not a defect.
 - Choosing Posato itself is rejected with `Posato cannot be added to its own
   application group.`.
+- Choosing a system component is rejected with `System components such as
+  Finder cannot be added to this group.`; drive it by typing
+  `/System/Library/CoreServices/Finder.app` after `⌘⇧G`. Prior mappings stay
+  intact.
 - Remove is inside the application row's ellipsis menu. Open
   `Actions for <application name>` first. Removing the last choice keeps
   group metadata; successful first selection creates Applications only if absent.

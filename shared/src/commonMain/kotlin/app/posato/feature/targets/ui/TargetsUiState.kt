@@ -25,6 +25,7 @@ internal enum class ApplicationMappingFailure {
     INVALID_OR_UNSIGNED,
     UNSUPPORTED_SELECTION,
     CAPACITY,
+    SYSTEM_SELECTION,
 }
 
 internal enum class ApplicationMappingMutation { CHOOSE, REMOVE, CLEAR }

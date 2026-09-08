@@ -32,6 +32,7 @@
     <string name="application_mapping_retained">These device-only choices are retained without an application group.</string>
     <string name="application_mapping_save_failed">This application change could not be saved.</string>
     <string name="application_mapping_self">Posato cannot be added to its own application group.</string>
+    <string name="application_mapping_system">System components such as Finder cannot be added to this group.</string>
     <string name="application_mapping_selected_count">Applications selected: %1$d</string>
     <string name="application_group_title">Applications</string>
     <string name="application_entry_error_empty">Enter an application group name.</string>

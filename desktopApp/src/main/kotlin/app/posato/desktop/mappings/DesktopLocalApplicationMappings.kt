@@ -63,6 +63,7 @@ internal class DesktopLocalApplicationMappings(
                     MacOsApplicationPickerResult.SelfSelection -> rejected(LocalApplicationSelectionRejection.SELF)
                     MacOsApplicationPickerResult.InvalidOrUnsigned -> rejected(LocalApplicationSelectionRejection.INVALID_OR_UNSIGNED)
                     MacOsApplicationPickerResult.CapacityExceeded -> rejected(LocalApplicationSelectionRejection.CAPACITY)
+                    MacOsApplicationPickerResult.SystemApplication -> rejected(LocalApplicationSelectionRejection.SYSTEM)
                     MacOsApplicationPickerResult.Failure -> failure(LocalApplicationSelectionFailure.PICKER)
                 }
             }
