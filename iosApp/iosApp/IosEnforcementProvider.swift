@@ -150,6 +150,25 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
         }
     }
 
+    func status(handler: @escaping (IosEnforcementOutcome) -> Void) {
+        performOnMain {
+            guard self.isCapable else {
+                handler(.unavailable)
+                return
+            }
+            if let refusal = self.authorizationRefusal() {
+                handler(refusal)
+                return
+            }
+            let store = self.storeFactory()
+            if store.blockedWebFilter != nil || !(store.shieldedApplications?.isEmpty ?? true) {
+                handler(.applied)
+            } else {
+                handler(.cleared)
+            }
+        }
+    }
+
     private func applyOnMain(request: IosEnforcementRequest) -> IosEnforcementOutcome {
         guard isCapable else {
             return .unavailable

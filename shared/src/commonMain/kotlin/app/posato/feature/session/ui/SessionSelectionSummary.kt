@@ -55,17 +55,19 @@ internal fun SessionSelectionSummary(
     deviceLabel: String
 ) {
     var details by remember { mutableStateOf<TargetsCategory?>(null) }
+    val domains = state.displayDomains()
+    val applicationCount = state.displayApplicationCount()
     PosatoSection(titleContent = { Text("Selected items") }) {
         PosatoDisclosureRow(
             onClick = { details = TargetsCategory.WEBSITES },
-            headlineContent = { Text(if (state.review.domains.size == 1) "1 website" else "${state.review.domains.size} websites") },
+            headlineContent = { Text(if (domains.size == 1) "1 website" else "${domains.size} websites") },
             supportingContent = { PosatoCaption("Exact domains · view all") },
             leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
         )
         PosatoDisclosureRow(
             onClick = { details = TargetsCategory.APPLICATIONS },
             headlineContent = {
-                Text(state.review.selectedMappingCount?.let { if (it == 1) "1 application" else "$it applications" } ?: "Applications unavailable")
+                Text(applicationCount?.let { if (it == 1) "1 application" else "$it applications" } ?: "Applications unavailable")
             },
             supportingContent = {
                 PosatoCaption(
@@ -114,12 +116,12 @@ private fun SessionSelectionPanel(
             titleContent = { Text("Selected items", style = MaterialTheme.typography.headlineSmall) },
             actionContent = { PosatoButton(onDismiss, Modifier.focusRequester(focus), style = PosatoButtonStyle.Quiet) { Text("Close list") } },
         )
-        TargetsCategoryTabs(category, state.review.domains.size, state.applicationMappings.size) {
+        TargetsCategoryTabs(category, state.displayDomains().size, state.applicationMappings.size) {
             focusManager.clearFocus()
             category = it
         }
         val values = when (category) {
-            TargetsCategory.WEBSITES -> state.review.domains
+            TargetsCategory.WEBSITES -> state.displayDomains()
 
             TargetsCategory.APPLICATIONS -> state.applicationMappings.mapNotNull { mapping ->
                 when (val display = mapping.display) {

@@ -26,6 +26,7 @@ import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformNavigationPlacement
+import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
@@ -45,6 +46,7 @@ class PosatoApplication internal constructor(
     private val sessionIds: SessionIdGenerator,
     private val clock: SessionClock,
     private val timeFormat: SessionTimeFormat,
+    private val enforcement: EnforcementPort,
 ) {
     @Composable
     fun Content(
@@ -81,6 +83,7 @@ class PosatoApplication internal constructor(
                             sessionIds,
                             clock,
                             timeFormat,
+                            enforcement,
                             onOpenPausedItems = { showingSession = false },
                             modifier = contentModifier,
                             layout = layout,
