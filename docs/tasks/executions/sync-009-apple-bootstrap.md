@@ -117,7 +117,9 @@
 | Staged Mac: consent press establishes, relaunch adopts | `pass` | `build/verification/runs/20260908-124319-658f`, `-124437-21b8`; one DB row |
 | Fresh sim: consent control renders, attempt degrades live | `pass` | `build/verification/runs/20260908-124738-2266`, `-124954-9881` |
 | `git diff --check`, secret and path scans | `pass` | no findings; no `Suppress` added |
-| Physical iPhone rows, both device orders | `pending` | maintainer iPhone and iCloud account |
+| Physical iPhone join row (fresh install, same account) | `pass` | consent press joined the Mac workspace; relaunch adopts; `build/verification/runs/20260908-141036-708f` |
+| Navigation during the device attempt | `pass` | outcome observed after return; holder ownership unit-covered |
+| Physical from-empty reruns (simultaneous opt-in, reverse order) | `pending` | maintainer keep-vs-reset decision |
 | CloudKit Console one-zone one-anchor confirmation | `pending` | maintainer console access |
 
 ## Blockers and accepted risks
@@ -125,11 +127,11 @@
 - `D1` and `D2` are decided; implementation is unblocked. The ADR 0007
   destructive-removal evidence is deferred to `SYNC-010` by maintainer
   decision and is not claimed here.
-- The iPhone rows need the maintainer's iPhone on the same iCloud account,
-  sequential with other physical work. The Mac side already established the
-  workspace, so the iPhone rows start from the established state; a from-empty
-  simultaneous opt-in rerun needs a maintainer decision (keep as join fixture
-  or reset the private database manually, since removal is `SYNC-010` work).
+- The iPhone join row ran on the maintainer's cabled iPhone (same iCloud
+  account): fresh install, consent press, `Ready`, relaunch adopts. A
+  from-empty simultaneous opt-in or reverse-order rerun needs a maintainer
+  decision (keep as join fixture or reset the private database manually,
+  since removal is `SYNC-010` work).
 - The `DeferredCloudKitMailboxBackend` residual: a first bootstrap use on a
   build without the container entitlement would trap instead of degrading;
   signed artifacts carry the entitlement, so this stays a build-configuration
@@ -141,5 +143,6 @@
 ## Final
 
 - **Status:** `active`
-- **Outcome:** implementation, automated verification, and independent review
-  complete; PR opened; iPhone physical rows pending maintainer.
+- **Outcome:** implementation, automated verification, independent review,
+  and the iPhone join row complete; PR opened; Console check and the
+  from-empty rerun decision pending maintainer.
