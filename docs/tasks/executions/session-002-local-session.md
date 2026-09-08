@@ -76,7 +76,8 @@
   start after `CLEAR_FAILED` clears first; app-only `status()` requires a
   ready helper service; one transient `UNKNOWN` keeps the state, demotion
   after three consecutive; the poll runs fire-and-forget from the ticker so a
-  slow helper never stalls the countdown. The dedicated coordinator poll loop
+  slow helper never stalls the countdown, with `busy` re-checked after the
+  status round trip. The dedicated coordinator poll loop
   was reverted: an immortal `viewModelScope` loop hangs `runTest` teardown.
   Polling stays subscriber-driven (re-settle on entry covers foreground).
 
