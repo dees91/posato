@@ -1346,6 +1346,22 @@
   boundary, retaining assertions, deadlines, and parallel execution. Temporary
   diagnostics were removed, with no product behavior change.
 
+## [2026-09-07] implementation | Exchange mailbox bundles through iOS private CloudKit
+
+- Implemented `SYNC-007`: the six platform-neutral mailbox result types moved
+  from `jvmMain` to `commonMain` (the `ByteBuffer` page parser stays in
+  `jvmMain`); a Swift CloudKit provider behind the `iosMain` cloud and mailbox
+  adapters mirrors the macOS companion error table, explicit record-zone-changes
+  paging, and create-only reconciliation behind binding preflight/postflight and
+  an account-change window, with cancellable calls and redacted carriers.
+- An expired server change token maps to `unknown-outcome` with no recovery
+  path on both platforms; that retry story stays an open `SYNC-010` question.
+- Proof is 28/28 Swift unit tests, 16/16 JVM and 18/18 iOS contract tests, a
+  clean aggregate quality gate, and one controlled physical-iPhone run covering
+  zone save and confirm, anchor create with conflict, bundle save with
+  identical re-save, change fetch, different-bytes rejection, and verified zone
+  deletion, leaving the private database as found.
+
 ## [2026-09-07] implementation | SESSION-002 local session enforcement
 
 - Wired session start, early end, and observed expiry to the accepted local
