@@ -30,9 +30,8 @@
   workspace; no product account),
   [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
   (injection, no platform type in `commonMain`),
-  [`DESIGN.md`](../../../DESIGN.md) (today the UI states that synchronization is
-  not connected; any consent surface added here is a design change), and the
-  diagnostics and privacy policies
+  [`DESIGN.md`](../../../DESIGN.md) (amended by this task for the one consent
+  control, per decision `D1`), and the diagnostics and privacy policies
 
 ## Outcome
 
@@ -51,9 +50,13 @@ action.
   desktop graph; the two iOS adapters and `IosSyncCryptoProvider` in the iOS
   graph. No new bootstrap phase, port method, wire operation, or persistence
   shape.
-- Nothing reaches CloudKit or the synchronizable Keychain before the explicit
-  action resolved in `D1`. Construction is allowed at graph time; provider
+- Nothing reaches CloudKit or the synchronizable Keychain before the person
+  chooses the explicit action. Construction is allowed at graph time; provider
   access is not.
+- The consent control is the minimum that satisfies ADR 0007: it states what it
+  will do, runs one bootstrap attempt, and reports a truthful outcome. It shows
+  no invented synchronization time, no device list, and no success claim beyond
+  the outcome the coordinator returned.
 - The companion client is constructed lazily and never fatally.
   `MacOsSyncCompanionVerifier.verify` is a chain of `check(...)` and throws
   whenever the desktop application is not a verifiable signed package, which is
@@ -77,7 +80,7 @@ action.
   the same `Main.kt`; the regions are disjoint and that task merges first, so
   this branch rebases onto it. No replica-store wiring: it has no consumer
   until `SYNC-010`.
-- Non-goal: publishing or consuming bundles, sync status copy, retry
+- Non-goal: publishing or consuming bundles, workspace removal, retry
   affordances, and onboarding presentation. `SYNC-010` and `ONBOARDING-001` own
   those. This task exposes the established context to the graph only.
 - Non-goal: `feature/session/**`, `feature/enforcement/**`, the session schema,
@@ -88,8 +91,9 @@ action.
 
 ## Acceptance
 
-- `AC-01` — Before the explicit action, no CloudKit or synchronizable-Keychain
-  access occurs on either platform, and no bootstrap state is written. After
+- `AC-01` — Before the person chooses the consent control, no CloudKit or
+  synchronizable-Keychain access occurs on either platform, and no bootstrap
+  state is written. After
   it, one attempt establishes one zone, one anchor, and one Keychain item; a
   relaunch adopts the established workspace and creates nothing.
 - `AC-02` — With the anchor already established by the other device and the key
@@ -129,28 +133,21 @@ action.
 
 ## Decisions or blockers
 
-- Blocking (`D1`, maintainer): how the explicit **Sync with iCloud** action is
-  represented. ADR 0007 and ADR 0002 make it the consent gate, and `DESIGN.md`
-  currently states that synchronization is not connected, so no surface exists
-  and `ONBOARDING-001` owns the full flow but depends on this task.
-  Recommendation: add the minimal explicit action in the accepted design
-  language and amend `DESIGN.md` for that one control, rather than amending
-  ADR 0007 to let bootstrap run unprompted. Implementation does not start until
-  this is answered; running bootstrap at graph construction or on first screen
-  entry would silently amend an accepted decision.
-- Blocking (`D2`, maintainer): destructive removal. ADR 0007 requires `SYNC-009`
-  to prove "destructive removal under the established binding" and also calls it
-  "a separate explicit destructive action", but `BootstrapCloudPort` has no zone
-  delete and the existing `deleteZoneAndVerifyAbsent` sits on the mailbox
-  adapters outside the coordinator. Recommendation: record a maintainer
-  deferral of the removal flow to `SYNC-010` and drop it from this task's
-  evidence, because building it here needs a new port method and a consent
-  surface of its own. Calling the mailbox adapter directly from a test or the
-  driver would not exercise the product path and is not acceptable evidence.
-- Open (`D3`): what the graph exposes. Recommendation: the coordinator behind a
-  narrow facade plus a suspending established-context read. `BootstrapCoordinator`,
-  `WorkspaceKeyValue`, and `SyncContext` are `internal` today; making
-  `WorkspaceKeyValue` public would create exactly the key exposure this
-  decision exists to prevent.
+- `D1` decided (`user-confirmed`, 2026-09-08): this task adds the minimal
+  explicit **Sync with iCloud** action in the accepted design language and
+  amends `DESIGN.md` for that one control. Nothing else about the
+  synchronization surface changes, and `ONBOARDING-001` still owns the full
+  first-install flow. The `DESIGN.md` amendment is part of this pull request,
+  and the sentence stating that synchronization is not connected is corrected
+  to match what the control actually does.
+- `D2` decided (`user-confirmed`, 2026-09-08): the ADR 0007 destructive-removal
+  evidence is deferred to `SYNC-010`, which owns the removal flow, its port
+  method, and its own consent surface. This task neither builds nor claims it,
+  and no test or driver row calls a mailbox adapter directly to simulate it.
+- `D3` decided by the implementer, recorded for the completed-change review:
+  the graph exposes the coordinator behind a narrow facade plus a suspending
+  established-context read. `BootstrapCoordinator`, `WorkspaceKeyValue`, and
+  `SyncContext` stay `internal`; making `WorkspaceKeyValue` public would create
+  exactly the key exposure this decision exists to prevent.
 - Physical gate: one iPhone and one Mac under the maintainer's iCloud account,
   sequential with any other physical work in this wave.

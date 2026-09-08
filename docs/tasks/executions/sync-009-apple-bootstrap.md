@@ -1,7 +1,7 @@
 # Execution: `SYNC-009`
 
 - **Brief:** [Integrate Keychain and CloudKit bootstrap on both apps without creating a parallel workspace](../specifications/sync-009-apple-bootstrap.md)
-- **Status:** `blocked`
+- **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** implementation agent (2026-09-08)
 - **Reviewer:** independent plan review complete (changes-required, resolved); completed-change review pending
@@ -11,9 +11,9 @@
 
 ## Plan
 
-1. Blocked on `D1` (how the explicit **Sync with iCloud** action is
-   represented) and `D2` (destructive removal deferral). Implementation does
-   not start until the maintainer answers both.
+1. `D1` and `D2` answered by the maintainer on 2026-09-08: add the minimal
+   explicit consent control and amend `DESIGN.md` for it; defer destructive
+   removal to `SYNC-010`.
 2. Add the narrow `commonMain` composition entry point: process-scoped
    single-flight, background dispatcher, established-context read, and no
    provider access before the action; `commonTest` over fakes.
@@ -22,8 +22,9 @@
    `Main.kt`.
 4. iOS graph: both iOS adapters and `IosSyncCryptoProvider`; adopt the deferred
    `SYNC-007` production provider construction and off-main-thread rule.
-5. Physical Mac and iPhone rows in both device orders under the maintainer's
-   iCloud account, `./gradlew quality`, independent completed-change review,
+5. The minimal consent control and its `DESIGN.md` amendment, then physical
+   Mac and iPhone rows in both device orders under the maintainer's iCloud
+   account, `./gradlew quality`, independent completed-change review,
    closeout and PR.
 
 ## High-risk plan review
@@ -79,10 +80,9 @@
 
 ## Blockers and accepted risks
 
-- `D1` and `D2` block implementation. `D1` decides how the explicit consent
-  action exists at all before `ONBOARDING-001`; `D2` decides whether the
-  ADR 0007 destructive-removal evidence is built here or deferred to
-  `SYNC-010`.
+- `D1` and `D2` are decided; implementation is unblocked. The ADR 0007
+  destructive-removal evidence is deferred to `SYNC-010` by maintainer
+  decision and is not claimed here.
 - The physical rows need the maintainer's iCloud account on both devices and a
   CloudKit private database without the custom zone. Whichever way `D2` is
   answered, the run leaves that database as found.
@@ -93,5 +93,5 @@
 
 ## Final
 
-- **Status:** `blocked`
-- **Outcome:** pending `D1` and `D2`
+- **Status:** `active`
+- **Outcome:** pending
