@@ -22,6 +22,8 @@ public interface ApplicationEnforcementLink {
     ): Boolean
 
     public suspend fun clear(): Boolean
+
+    public suspend fun isServiceReady(): Boolean?
 }
 
 public class JvmSessionEnforcement(
@@ -69,7 +71,11 @@ public class JvmSessionEnforcement(
                     null -> EnforcementOutcome.UNKNOWN
                 }
             } else {
-                EnforcementOutcome.APPLIED
+                when (applications.isServiceReady()) {
+                    true -> EnforcementOutcome.APPLIED
+                    false -> EnforcementOutcome.CLEARED
+                    null -> EnforcementOutcome.UNKNOWN
+                }
             }
         }
     }

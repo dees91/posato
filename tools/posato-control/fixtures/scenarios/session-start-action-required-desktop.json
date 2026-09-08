@@ -33,6 +33,7 @@
     {"name":"confirm-nothing-restricted","action":"waitFor","state":"exists","query":{"text":"Nothing is restricted in this pause."}},
     {"name":"confirm-end","action":"tap","query":{"text":"End session","role":"button"}},
     {"name":"ended","action":"waitFor","state":"exists","query":{"text":"NO SESSION ACTIVE"}},
+    {"name":"no-retry","action":"waitFor","state":"absent","query":{"text":"Retry","role":"button"},"timeoutSeconds":30},
     {"name":"open-paused-items","action":"tap","query":{"text":"Paused items","role":"button"}},
     {"name":"entry-ready-again","action":"waitFor","state":"exists","query":{"text":"Search","role":"button"}},
     {"name":"reach-row","action":"scrollTo","query":{"text":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},

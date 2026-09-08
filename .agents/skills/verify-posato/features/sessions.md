@@ -44,10 +44,11 @@ Preconditions:
   the session is active and the attention notice is visible.
 - **Start without confirmation (desktop, unattended):**
   `$PC run -t desktop --scenario tools/posato-control/fixtures/scenarios/session-start-action-required-desktop.json`.
-  Use it when nobody confirms the administrator prompt at the Mac: Start leaves the session
-  active with the Retry notice, the run asserts it, ends early through the
-  nothing-restricted confirmation, and removes example.com. The Retry wait allows up to
-  240 seconds for the helper deadline path.
+  Requires a Mac with the helper enabled. Use it when nobody confirms the administrator
+  prompt: Start leaves the session active with the Retry notice, the run asserts it, ends
+  early through the nothing-restricted confirmation, asserts Retry is gone after the clean
+  end, and removes example.com. The Retry wait allows up to 240 seconds for the helper
+  deadline path.
 - **Start with enforcement (desktop, attended):** run session-start-desktop.json while the
   maintainer confirms the administrator prompt at the Mac when it appears. No driver step
   can script the SecurityAgent dialog; an unconfirmed prompt lands in the action-required

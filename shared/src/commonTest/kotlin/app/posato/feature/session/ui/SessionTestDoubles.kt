@@ -54,6 +54,7 @@ internal class FakeEnforcementPort(
     var applyReport: EnforcementApplyReport = EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false),
     var clearOutcome: EnforcementOutcome = EnforcementOutcome.CLEARED,
     var statusOutcome: EnforcementOutcome = EnforcementOutcome.APPLIED,
+    var statusSequence: ArrayDeque<EnforcementOutcome>? = null,
     var expiredSessionIds: Set<String> = emptySet(),
     override val reapplyRequiresPrompt: Boolean = false,
 ) : EnforcementPort {
@@ -73,7 +74,8 @@ internal class FakeEnforcementPort(
 
     override suspend fun status(): EnforcementOutcome {
         calls += "status"
-        return statusOutcome
+        val next = statusSequence?.removeFirstOrNull()
+        return next ?: statusOutcome
     }
 
     override suspend fun pollSuspendedExpiry(sessionId: String): Boolean {

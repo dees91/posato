@@ -57,7 +57,6 @@ internal class SessionViewModel(
         { loadSessionTargets(policyStore, applicationMappings) },
         { refreshRequests.tryEmit(Unit) },
     )
-    private var tickCounter = 0L
     private val sessionReadLifecycle: Flow<Unit> = refreshRequests.onStart { emit(Unit) }.transform {
         sessionLoad.update { SessionLoadState() }
         emit(Unit)
@@ -76,6 +75,7 @@ internal class SessionViewModel(
         emit(Unit)
         targetsState.update { loadSessionTargets(policyStore, applicationMappings) }
     }
+    private var tickCounter = 0L
     private val ticker = observeSessionTicks(clock) { now ->
         val status = sessionLoad.value.status
         if (status is Active && now >= status.record.endEpochMillis) {
@@ -84,7 +84,7 @@ internal class SessionViewModel(
         if (status is Active) {
             tickCounter += 1
             if (tickCounter % STATUS_POLL_TICKS == 0L) {
-                enforcementCoordinator.onTickSecond(status)
+                enforcementCoordinator.pollNow(status.record)
             }
         }
     }

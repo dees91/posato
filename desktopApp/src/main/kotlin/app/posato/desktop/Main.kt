@@ -29,6 +29,7 @@ fun main() {
                 MacOsApplicationEnforcementLink(
                     MacOsApplicationEnforcer(enforcementClient, applicationMappings::designatedRequirements),
                     applicationMappings,
+                    enforcementClient,
                 ),
             )
             val applicationGraph = createDesktopApplicationGraph(applicationMappings, enforcement)
