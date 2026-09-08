@@ -1391,6 +1391,25 @@
 
 ## [2026-09-08] implementation | SYNC-009 Apple bootstrap composition and consent control
 
-- Both apps compose the accepted bootstrap behind the narrow `AppleBootstrap` facade (process-scoped single-flight, background dispatcher, established-context read); the desktop companion client resolves lazily and degrades to a truthful non-Ready outcome, and the iOS CloudKit backend defers container resolution past startup after eager construction trapped the Swift test host.
-- The Session screen carries one explicit Sync with iCloud control that states what it does, runs one attempt per press, and reports only the coordinator outcome; `DESIGN.md` names the control and no longer claims synchronization is unconnected.
-- Verified by `./gradlew quality`, real-graph composition tests on JVM and simulator, Swift tests, a staged-Mac run that established the development-account workspace on the consented press with relaunch adoption, and a fresh-simulator run degrading live; iPhone physical rows stay pending with the maintainer.
+- Both apps compose the accepted bootstrap behind the narrow `AppleBootstrap`
+  facade (process-scoped single-flight, background dispatcher,
+  established-context read); the desktop companion client resolves lazily and
+  degrades to a truthful non-Ready outcome, and the iOS CloudKit backend defers
+  container resolution past startup after eager construction trapped the Swift
+  test host.
+- The Session screen carries one explicit Sync with iCloud control that states
+  what it does, runs one attempt per press, and reports only the coordinator
+  outcome; `DESIGN.md` names the control and no longer claims synchronization is
+  unconnected.
+- Verified by `./gradlew quality`, real-graph composition tests on JVM and
+  simulator, Swift tests, and the full physical matrix on the maintainer's
+  account: Mac-first and iPhone-first joins from an empty account, and a
+  simultaneous opt-in with the two presses 0.1 s apart in which the loser held
+  `waiting-for-workspace-key`, kept a candidate without establishing anything,
+  then adopted the winner's workspace on the next press while the winner stayed
+  readable. The maintainer confirmed exactly one zone in the CloudKit Console.
+- Two limits are recorded rather than claimed: a from-empty rerun needs the
+  maintainer to delete the zone by hand until `SYNC-010` adds removal, and the
+  count of surviving synchronizable Keychain accounts is invisible to both the
+  `security` command line and the driver, so the losing candidate's cleanup
+  stays covered by tests instead of physical observation.

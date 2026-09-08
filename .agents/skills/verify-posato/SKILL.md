@@ -235,10 +235,12 @@ Do not report a path as verified through a different target.
 ## Out of scope
 
 The driver proves user paths. Native work with no user action yet is not
-driven and must not be faked through the UI: the iOS synchronizable-Keychain
-adapter (`SYNC-005`), the macOS sync companion, its pipe protocol, and its
-entitlements (`SYNC-006`), CloudKit adapters (`SYNC-008`), provisioning, and
-signing. Session start now applies enforcement (`SESSION-002`): the macOS
+driven and must not be faked through the UI: provisioning and signing, and the
+internals behind the synchronization adapters. Since `SYNC-009` the iOS
+synchronizable-Keychain adapter (`SYNC-005`), the macOS sync companion with its
+pipe protocol and entitlements (`SYNC-006`), and the CloudKit adapters
+(`SYNC-008`) are reachable only through the one consent action in
+[Sync with iCloud](./features/sync.md); never drive them another way. Session start now applies enforcement (`SESSION-002`): the macOS
 browser-domain denial (`MACOS-004`), the macOS application restriction
 (`MACOS-005`), and the Posato-owned iOS restrictions (`IOS-001` plus the
 `IOS-002` suspended-expiry schedule) are drivable through the session recipes
@@ -254,9 +256,9 @@ xcodebuild test-without-building -project iosApp/iosApp.xcodeproj -scheme iosApp
 Split the build from the run and keep the output line-buffered, otherwise a
 hung device run looks identical to a slow one. After a native packaging
 change the only driver check is the launch smoke above (`Paused items`
-readiness on the desktop). Synchronization gets its own feature file when
-`SYNC-009` adds the `Sync with iCloud` action, and enforcement gets one when
-`SESSION-002` starts a session that applies it.
+readiness on the desktop). The `Sync with iCloud` action has its own
+feature file, and it drives a real iCloud account, so read
+[Sync with iCloud](./features/sync.md) before pressing it.
 
 The macOS browser matrix has its own proof: the environment-gated JVM harness
 `MacOsBrowserDomainPhysicalHarnessTest` in `desktopApp`, which enables the
