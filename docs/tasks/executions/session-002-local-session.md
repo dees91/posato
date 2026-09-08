@@ -80,6 +80,13 @@
   status round trip. The dedicated coordinator poll loop
   was reverted: an immortal `viewModelScope` loop hangs `runTest` teardown.
   Polling stays subscriber-driven (re-settle on entry covers foreground).
+- **PR re-review follow-up (P1 residual + 1 non-blocking, both accepted):**
+  the JVM adapter maps the helper `NotRegistered` / `ApprovalRequired` /
+  `UnavailableOrIncompatible` clear states and a link throw with nothing
+  owned to `UNAVAILABLE` (clean end after an apply failure; `FAILED` while
+  restrictions are owned), and `retry()` sets `busy` synchronously before
+  `launch`. Pinned by three `JvmSessionEnforcementTest` cases and a desktop
+  `MacOsClearOutcomeTest` for the state mapping; `quality` rerun green.
 
 ## Verification
 
