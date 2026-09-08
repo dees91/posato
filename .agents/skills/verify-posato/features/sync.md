@@ -73,7 +73,9 @@ Preconditions:
   adopts. Never select the identifier or binding columns themselves; they must
   not reach evidence.
 - **Adopt after relaunch:** relaunch without `--fresh`, then wait for the linked
-  status again. The count must still be `1`.
+  status again. The count must still be `1`. This proves the device kept its
+  established workspace; it is not a key check, because the linked status comes
+  from the local row.
 - **Second device joins:** run the press on the second target only after the
   first reported linked. Expect linked, or the waiting status followed by linked
   on a later press once iCloud Keychain has delivered the item.
@@ -133,3 +135,7 @@ Preconditions:
   candidate's item are not observable here. Synchronizable items are invisible
   to both `security find-generic-password` and the driver; the coordinator
   tests own that half of the convergence claim.
+- No user path reads the workspace key yet, so no driver row can prove the key
+  is readable. The linked status is a local-state read, and a press on an
+  established workspace stops at the zone and anchor. Never present a linked
+  caption as evidence that a key survived a cleanup.
