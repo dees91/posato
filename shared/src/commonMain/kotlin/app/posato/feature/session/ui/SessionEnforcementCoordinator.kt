@@ -134,8 +134,8 @@ internal class SessionEnforcementCoordinator(
         if (mutableView.value.busy) {
             return
         }
+        mutableView.update { view -> view.copy(busy = true) }
         scope.launch {
-            mutableView.update { view -> view.copy(busy = true) }
             try {
                 val record = (status as? LocalSessionStatus.Active)?.record
                 if (record != null) {

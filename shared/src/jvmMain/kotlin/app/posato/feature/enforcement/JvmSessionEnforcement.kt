@@ -10,7 +10,13 @@ public interface BrowserEnforcementLink {
         sessionEndEpochMillis: Long,
     ): Boolean
 
-    public fun clear(): Boolean
+    /**
+     * Reports [EnforcementOutcome.CLEARED] when nothing remains enforced,
+     * [EnforcementOutcome.UNAVAILABLE] when the helper service is not registered,
+     * approved, or compatible (nothing can be owned there), and
+     * [EnforcementOutcome.FAILED] otherwise. May throw when the helper cannot be reached.
+     */
+    public fun clear(): EnforcementOutcome
 
     public fun isApplied(): Boolean?
 }
@@ -21,7 +27,13 @@ public interface ApplicationEnforcementLink {
         sessionEndEpochMillis: Long,
     ): Boolean
 
-    public suspend fun clear(): Boolean
+    /**
+     * Reports [EnforcementOutcome.CLEARED] when nothing remains enforced,
+     * [EnforcementOutcome.UNAVAILABLE] when the helper service is not registered,
+     * approved, or compatible (nothing can be owned there), and
+     * [EnforcementOutcome.FAILED] otherwise. May throw when the helper cannot be reached.
+     */
+    public suspend fun clear(): EnforcementOutcome
 
     public suspend fun isServiceReady(): Boolean?
 }
@@ -48,14 +60,21 @@ public class JvmSessionEnforcement(
 
     override suspend fun clear(): EnforcementOutcome {
         return withContext(ioDispatcher) {
-            val browserCleared = browser.clear()
-            val applicationsCleared = applications.clear()
-            appliedBrowsers = false
-            appliedApplications = false
-            if (browserCleared && applicationsCleared) {
-                EnforcementOutcome.CLEARED
-            } else {
-                EnforcementOutcome.FAILED
+            try {
+                val browserOutcome = browser.clear()
+                val applicationsOutcome = applications.clear()
+                appliedBrowsers = false
+                appliedApplications = false
+                combineClearOutcomes(browserOutcome, applicationsOutcome)
+            } catch (_: Exception) {
+                val owned = appliedBrowsers || appliedApplications
+                appliedBrowsers = false
+                appliedApplications = false
+                if (owned) {
+                    EnforcementOutcome.FAILED
+                } else {
+                    EnforcementOutcome.UNAVAILABLE
+                }
             }
         }
     }
@@ -103,5 +122,18 @@ public class JvmSessionEnforcement(
             appliedApplications = false
         }
         return EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
+    }
+
+    private fun combineClearOutcomes(
+        browserOutcome: EnforcementOutcome,
+        applicationsOutcome: EnforcementOutcome,
+    ): EnforcementOutcome {
+        return if (browserOutcome == EnforcementOutcome.CLEARED && applicationsOutcome == EnforcementOutcome.CLEARED) {
+            EnforcementOutcome.CLEARED
+        } else if (browserOutcome == EnforcementOutcome.FAILED || applicationsOutcome == EnforcementOutcome.FAILED) {
+            EnforcementOutcome.FAILED
+        } else {
+            EnforcementOutcome.UNAVAILABLE
+        }
     }
 }

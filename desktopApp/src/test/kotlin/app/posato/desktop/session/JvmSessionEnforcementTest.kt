@@ -70,7 +70,41 @@ class JvmSessionEnforcementTest {
 
     @Test
     fun `given a failed restore when clearing then the outcome stays failed`() {
-        val links = recordingLinks(browserClear = false)
+        val links = recordingLinks(browserClearOutcome = EnforcementOutcome.FAILED)
+        val enforcement = JvmSessionEnforcement(links.browser, links.applications)
+        runBlocking { enforcement.apply(request()) }
+
+        val outcome = runBlocking { enforcement.clear() }
+
+        assertEquals(EnforcementOutcome.FAILED, outcome)
+    }
+
+    @Test
+    fun `given an unregistered helper when clearing with nothing applied then the outcome is unavailable`() {
+        val links = recordingLinks(
+            browserClearOutcome = EnforcementOutcome.CLEARED,
+            appClearOutcome = EnforcementOutcome.UNAVAILABLE,
+        )
+        val enforcement = JvmSessionEnforcement(links.browser, links.applications)
+
+        val outcome = runBlocking { enforcement.clear() }
+
+        assertEquals(EnforcementOutcome.UNAVAILABLE, outcome)
+    }
+
+    @Test
+    fun `given a missing helper when clearing with nothing applied then the outcome is unavailable`() {
+        val links = recordingLinks(clearThrows = true)
+        val enforcement = JvmSessionEnforcement(links.browser, links.applications)
+
+        val outcome = runBlocking { enforcement.clear() }
+
+        assertEquals(EnforcementOutcome.UNAVAILABLE, outcome)
+    }
+
+    @Test
+    fun `given a missing helper when clearing owned restrictions then the outcome stays failed`() {
+        val links = recordingLinks(clearThrows = true)
         val enforcement = JvmSessionEnforcement(links.browser, links.applications)
         runBlocking { enforcement.apply(request()) }
 
@@ -141,9 +175,10 @@ class JvmSessionEnforcementTest {
 
     private fun recordingLinks(
         browserStart: Boolean = true,
-        browserClear: Boolean = true,
+        browserClearOutcome: EnforcementOutcome = EnforcementOutcome.CLEARED,
         appStart: Boolean = true,
-        appClear: Boolean = true,
+        appClearOutcome: EnforcementOutcome = EnforcementOutcome.CLEARED,
+        clearThrows: Boolean = false,
         applied: Boolean? = true,
         serviceReady: Boolean? = true,
     ): RecordingLinks {
@@ -157,9 +192,10 @@ class JvmSessionEnforcementTest {
                 return browserStart
             }
 
-            override fun clear(): Boolean {
+            override fun clear(): EnforcementOutcome {
                 calls.addLast("browserClear")
-                return browserClear
+                check(!clearThrows) { "helper is missing" }
+                return browserClearOutcome
             }
 
             override fun isApplied(): Boolean? {
@@ -176,9 +212,9 @@ class JvmSessionEnforcementTest {
                 return appStart
             }
 
-            override suspend fun clear(): Boolean {
+            override suspend fun clear(): EnforcementOutcome {
                 calls.addLast("appClear")
-                return appClear
+                return appClearOutcome
             }
 
             override suspend fun isServiceReady(): Boolean? {

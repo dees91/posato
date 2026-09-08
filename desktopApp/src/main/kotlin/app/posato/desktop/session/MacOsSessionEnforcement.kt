@@ -9,6 +9,7 @@ import app.posato.desktop.macos.MacOsHelperClient
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.feature.enforcement.ApplicationEnforcementLink
 import app.posato.feature.enforcement.BrowserEnforcementLink
+import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.targets.data.LocalApplicationMappingId
 
 internal class MacOsBrowserEnforcementLink(
@@ -22,8 +23,8 @@ internal class MacOsBrowserEnforcementLink(
         return enforcer.start(domains, sessionEndEpochMillis) is BrowserDomainEnforcementResult.Active
     }
 
-    override fun clear(): Boolean {
-        return enforcer.clear().outcome == HelperResult.Outcome.Success
+    override fun clear(): EnforcementOutcome {
+        return enforcer.clear().toClearOutcome()
     }
 
     override fun isApplied(): Boolean? {
@@ -49,8 +50,8 @@ internal class MacOsApplicationEnforcementLink(
         return enforcer.start(ids, sessionEndEpochMillis) is ApplicationEnforcementResult.Active
     }
 
-    override suspend fun clear(): Boolean {
-        return enforcer.clear().outcome == HelperResult.Outcome.Success
+    override suspend fun clear(): EnforcementOutcome {
+        return enforcer.clear().toClearOutcome()
     }
 
     override suspend fun isServiceReady(): Boolean? {
@@ -59,5 +60,17 @@ internal class MacOsApplicationEnforcementLink(
         } catch (_: Exception) {
             null
         }
+    }
+}
+
+internal fun HelperResult.toClearOutcome(): EnforcementOutcome {
+    return when {
+        outcome == HelperResult.Outcome.Success -> EnforcementOutcome.CLEARED
+
+        serviceState == HelperResult.State.NotRegistered ||
+            serviceState == HelperResult.State.ApprovalRequired ||
+            serviceState == HelperResult.State.UnavailableOrIncompatible -> EnforcementOutcome.UNAVAILABLE
+
+        else -> EnforcementOutcome.FAILED
     }
 }
