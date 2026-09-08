@@ -48,7 +48,11 @@ Preconditions:
   prompt: Start leaves the session active with the Retry notice, the run asserts it, ends
   early through the nothing-restricted confirmation, asserts Retry is gone after the clean
   end, and removes example.com. The Retry wait allows up to 240 seconds for the helper
-  deadline path.
+  deadline path. The nothing-restricted step matches by `textContains` because the
+  accepted copy continues with a second sentence. A confirmed prompt instead lands in
+  the attended path below (active claim, no Retry): `QUALITY-005` proved both on
+  2026-09-08 — confirmed runs show `authd` authentication seconds after the prompt,
+  while the unconfirmed run reaches Retry with no authentication at all.
 - **Start with enforcement (desktop, attended):** run session-start-desktop.json while the
   maintainer confirms the administrator prompt at the Mac when it appears. No driver step
   can script the SecurityAgent dialog; an unconfirmed prompt lands in the action-required

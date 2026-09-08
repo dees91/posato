@@ -56,10 +56,9 @@ recorded as a named, detectable state instead of a silent one.
   not touch `shared/**/feature/session/**`, `feature/sync/**`, or the
   dependency injection graphs, which belong to `SESSION-003` and `SYNC-009` in
   this wave.
-- `desktopApp/**/Main.kt` is shared with `SYNC-009`, which adds the graph
-  composition root there while this task may change only the window-property
-  block. The regions are disjoint and this task merges first, so `SYNC-009`
-  rebases onto it.
+- `desktopApp/**/Main.kt` already carries the `SYNC-009` graph composition
+  root (merged in PR #41, this branch rebased onto it). This task may change
+  only the window-property block and must not touch the composition root.
 
 ## Acceptance
 
@@ -96,5 +95,6 @@ recorded as a named, detectable state instead of a silent one.
   it stays in the driver rather than in the product.
 - Blocker risk: the failing run directory was deleted with its worktree, so the
   exact shape of the empty tree is unrecorded. If reproduction fails in both
-  staging modes, close `AC-01` with that finding, keep `AC-02`, and record the
-  fixture as unproven rather than manufacturing a fix for an unobserved cause.
+  staging modes, close `AC-01` with that finding and keep `AC-02`, but still
+  run the fixture: only its actual failure records `blocked`/unproven. Never
+  manufacture a fix for an unobserved cause.

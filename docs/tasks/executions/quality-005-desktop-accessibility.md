@@ -26,23 +26,43 @@
 
 ## Result
 
-- Pending implementation.
+- Rebased onto `origin/main` (PR #40 `SESSION-003`, PR #41 `SYNC-009`); the
+  `Main.kt` composition root is untouched, only the window-property block stays
+  in scope (unused — no product change was needed).
+- `AC-01`: bounded no-repro. Ad-hoc (`20260908-160504-5cff`) and
+  development-signed (`20260908-160528-9fb2`) runs both expose a full tree from
+  the first readiness wait, so no recorded lead was bisected and no fix was
+  manufactured. The `SESSION-002` empty tree does not reproduce on the current
+  application.
+- `AC-02`: new `DESKTOP_WINDOW_UNAVAILABLE` (exit 4) with message and hint,
+  enforced by shared guard `requireAddressableWindow` on both the public
+  snapshot path (before subtree selection) and the scenario path;
+  `ScenarioRunner.waitFor` tolerates a transient empty tree while polling and
+  reports the named failure at the deadline instead of `WAIT_TIMEOUT`.
+- `AC-03`: fixture proven unattended (`20260908-162338-ebbd`, 30/30 steps).
+  Two earlier runs were operator-confirmed (`authd` authentication seconds
+  after the prompt) and landed in the attended active-claim path; the proof
+  run shows no authentication and reaches Retry. Fixed one stale exact-text
+  expectation (`textContains` against the accepted `SESSION-003` copy).
+- Maintainer data unchanged throughout: pre/post-flight `[wp.pl]`, no active
+  session, proxy restored, app terminated.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `approve`, no Critical or Required findings (independent review, read-only; live evidence taken as implementer-reported and checked for consistency).
+- **Critical or Required findings:** none.
+- **Resolution:** accepted one Recommended advisory (foreign-error propagation test for the new `waitFor` branch — added to `ScenarioWindowWaitTest`, affected checks rerun green); declined none. The Optional zero-timeout note needs no action (no caller uses a zero timeout).
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Reproduction in both staging modes | `pending` | |
-| Focused test for the unaddressable-window failure | `pending` | |
-| `session-start-action-required-desktop.json` unattended | `pending` | |
-| Control desktop fixture | `pending` | |
-| `./gradlew quality` | `pending` | |
+| Reproduction in both staging modes | `done`, no repro | `20260908-160504-5cff` (adhoc), `20260908-160528-9fb2` (development) |
+| Focused tests for the unaddressable-window failure | `pass` | `DesktopWindowGuardTest`, `ScenarioWindowWaitTest`, full `:posato-control:test` |
+| Public error plumbing | `pass` | named-error envelope `ok:false` + exit 3 demo; new code exit 4 asserted in test |
+| `session-start-action-required-desktop.json` unattended | `pass` | `20260908-162338-ebbd`, 30/30 steps, no `authd` authentication |
+| Control desktop fixture | `pass` | `add-website-desktop.json` + `remove-website-desktop.json`, `[wp.pl]` intact |
+| `./gradlew quality` | `pass` | full aggregate gate green after the last correction |
 
 ## Blockers and accepted risks
 
@@ -51,13 +71,13 @@
   2026-09-08 drove the same desktop application successfully, and the failing
   run directory was deleted with its worktree. If reproduction fails in both
   staging modes, that finding is the result; do not manufacture a fix for an
-  unobserved cause.
-- Wave 7 parallel boundary: this task owns `tools/posato-control/**` and
+  unobserved cause. The fixture still runs regardless: only its actual failure
+  records `blocked`/unproven.
+- Wave boundary: this task owns `tools/posato-control/**` and
   `.agents/skills/verify-posato/**` and at most the desktop window leaf. It
   must not touch `shared/**/feature/session/**`, `feature/sync/**`, or the
-  dependency injection graphs.
-- `SESSION-003` in this wave needs a desktop relaunch row and is blocked on the
-  same tooling; report the outcome as soon as `AC-01` is answered.
+  dependency injection graphs. `SYNC-009` is merged; its `Main.kt` composition
+  root is hands off.
 
 ## Final
 

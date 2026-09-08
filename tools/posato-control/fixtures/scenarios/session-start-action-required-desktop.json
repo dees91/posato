@@ -30,7 +30,7 @@
     {"name":"attention-shot","action":"screenshot"},
     {"name":"attention-tree","action":"snapshot"},
     {"name":"request-early-end","action":"tap","query":{"text":"End session early","role":"button"}},
-    {"name":"confirm-nothing-restricted","action":"waitFor","state":"exists","query":{"text":"Nothing is restricted in this pause."}},
+    {"name":"confirm-nothing-restricted","action":"waitFor","state":"exists","query":{"textContains":"Nothing is restricted in this pause."}},
     {"name":"confirm-end","action":"tap","query":{"text":"End session","role":"button"}},
     {"name":"ended","action":"waitFor","state":"exists","query":{"text":"NO SESSION ACTIVE"}},
     {"name":"no-retry","action":"waitFor","state":"absent","query":{"text":"Retry","role":"button"},"timeoutSeconds":30},

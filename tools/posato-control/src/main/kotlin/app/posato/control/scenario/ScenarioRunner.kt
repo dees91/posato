@@ -138,22 +138,49 @@ class ScenarioRunner(
         val state = step.state ?: throw invalid("waitFor needs a state")
         val deadline = System.currentTimeMillis() + timeoutMs
         var previous: SnapshotNode? = null
-        while (true) {
-            val root = actions.snapshot(null)
+        // A tree with no addressable window may be transient while the application starts, so polling
+        // tolerates it and only reports the named failure when the deadline passes without a window.
+        val poll = PollState()
+        while (poll.failure == null && System.currentTimeMillis() < deadline) {
+            val root = pollTree(poll)
+            if (root == null) {
+                Thread.sleep(POLL_INTERVAL_MS)
+                continue
+            }
             val satisfied = if (state == States.SETTLED) {
                 (previous == root).also { previous = root }
             } else {
                 stateHolds(root, state, step.query)
             }
             if (satisfied) return
-            if (System.currentTimeMillis() >= deadline) {
-                throw ControlException(
-                    ErrorCode.WAIT_TIMEOUT,
-                    "Timed out after $timeoutMs ms waiting for $state ${step.query?.describe().orEmpty()}.",
-                )
-            }
             Thread.sleep(if (state == States.SETTLED) SETTLE_INTERVAL_MS else POLL_INTERVAL_MS)
         }
+        throw poll.failure ?: poll.windowError ?: ControlException(
+            ErrorCode.WAIT_TIMEOUT,
+            "Timed out after $timeoutMs ms waiting for $state ${step.query?.describe().orEmpty()}.",
+        )
+    }
+
+    /**
+     * Reads one polling snapshot. A tree with no addressable window may be transient while the
+     * application starts, so it is recorded for the deadline instead of failing the poll; any
+     * other failure stops polling immediately.
+     */
+    private fun pollTree(poll: PollState): SnapshotNode? = try {
+        actions.snapshot(null).also { poll.windowError = null }
+    } catch (error: ControlException) {
+        if (error.code == ErrorCode.DESKTOP_WINDOW_UNAVAILABLE) {
+            poll.windowError = error
+            null
+        } else {
+            poll.failure = error
+            null
+        }
+    }
+
+    private class PollState {
+        var failure: ControlException? = null
+        var windowError: ControlException? = null
     }
 
     private fun assertState(step: Step) {

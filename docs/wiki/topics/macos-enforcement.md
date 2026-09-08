@@ -499,8 +499,15 @@ automatically. The active summary shows the frozen start set; Paused-items
 edits apply to the next pause.
 
 `open`: the maintainer-attended physical Mac rows (Safari row, disposable
-application row, early end, expiry, byte-identical proxy baseline) and the
-desktop driver accessibility-tree investigation.
+application row, early end, expiry, byte-identical proxy baseline).
+
+`observed` (2026-09-08, `QUALITY-005`): the `SESSION-002` empty desktop
+accessibility tree does not reproduce on the current application in either
+staging mode (ad-hoc or development-signed) — both runs expose a full tree
+from the first readiness wait. The driver now reports a tree with no
+addressable window as named failure `DESKTOP_WINDOW_UNAVAILABLE` instead of an
+empty success, and the previously unproven unattended
+`session-start-action-required-desktop.json` fixture passes end to end.
 
 ## Open questions
 
