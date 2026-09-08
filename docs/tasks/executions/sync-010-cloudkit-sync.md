@@ -1,38 +1,24 @@
 # Execution: `SYNC-010`
 
 - **Brief:** [Publish and consume pending encrypted bundles with truthful sync status and retry](../specifications/sync-010-cloudkit-sync.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
-- **Reviewer:** independent plan review complete (changes-required, resolved in the brief); completed-change code review passed; remaining physical matrix pending
+- **Reviewer:** independent plan review complete (changes-required, resolved in the brief); completed-change code review passed; physical verification complete with the accepted Mac sign-out waiver
 - **Branch:** `feature/sync-010-cloudkit-sync`
-- **Worktree:** `~/Projects/Polyglot/posato-sync-010`
 - **Updated:** 2026-09-08
 
 ## Plan
 
-1. `D1` through `D5` accepted by the maintainer on 2026-09-08 as recommended.
-2. Common mailbox port over `MailboxTypes`; both adapters implement it; the
-   `D4` token-expiry outcome on both native providers and adapters.
-3. Acknowledgement and clear queries in `SyncReplica.sq` and
-   `SyncBootstrap.sq` (no schema migration), a writer-owned acknowledgement
-   under the revision check, `BootstrapStore.clearEstablished`;
-   `SqlSyncReplicaStoreContractTest`.
-4. Exchange orchestrator beside `AppleBootstrap`: established check first,
-   workspace-key read used directly as the transport key, writer open and
-   reopen, publish leg, consume leg with `exactRefetchAvailable = false`,
-   account handling, coalesced process-scoped single flight; `commonTest`
-   over fakes.
-5. Anchor-gated removal sequence (zone, key item, local clear) with the `D2`
-   control; `D1` outbox feed after the exact-domain commit.
-6. Process-scoped core and graph composition on both platforms inside the
-   existing single provider functions; real-graph `jvmTest` and `iosTest`.
-7. Status section under `D3`, strings, `DESIGN.md` amendment, the
-   `verify-posato` sync recipe rows, then the physical matrix, `./gradlew
-   quality`, independent completed-change review, closeout and PR. Closeout
-   also corrects the wiki sentence that still keeps explicit removal with
-   `SYNC-009` and adds the missing `observed` entries for `SYNC-009` and this
-   task.
+1. Implement accepted `D1`–`D5`: mailbox port and token expiry on both platforms.
+2. Add query-only acknowledgement and clear operations, owned by the writer
+   under its checkpoint/revision check; clear bootstrap and replica atomically.
+3. Compose one process-owned core, writer, and coalesced exchange under the
+   bootstrap flight; use workspace bytes directly as TransportKey.
+4. Gate exchange and removal on binding/zone/anchor; feed exact-domain changes
+   after local save, and show the seven truthful status categories.
+5. Verify common/store/adapter/real-graph tests and signed physical flows;
+   update design, verification recipe, wiki and records, review, then open PR.
 
 ## High-risk plan review
 
@@ -88,8 +74,8 @@
 - **Critical or Required findings:** none.
 - **Resolution:** reviewer inspected all tracked and new files, ran 32 focused
   JVM tests successfully, and passed `git diff --check`. Aggregate and physical
-  results remain separate verification obligations. Standard correction review
-  also passed: empty-cursor guard and regression, 20 iOS adapter tests.
+  checks passed separately. Standard correction review also passed:
+  empty-cursor guard and regression, 20 iOS adapter tests.
 
 ## Verification
 
@@ -101,20 +87,28 @@
 | Empty first-page cursor regression | red then green | real iOS adapter threw before native fetch; 20 adapter tests now pass |
 | Physical Mac/iPhone exchange | pass | `sync-010-fixed`: completion on both; Mac accepted 2 then 4, pending 0 |
 | Fixture cleanup | pass | Mac accepted 6, pending 0; original website counts restored |
-| Offline/account/removal/race matrix | pending | maintainer deferred account steps; PR remains draft |
+| iPhone offline/reconnect | pass | `sync-010-account`: accepted 6→8, repeated exchange stayed 8 |
+| iPhone sign-out/sign-in | pass | action required and local domain retained; Mac stayed 8, then 9 once |
+| Mac sign-out | waived | maintainer accepted iPhone evidence; working Mac was never signed out |
+| Removal/rejoin, both initiators | pass | `sync-010-removal`: local domains kept, peer blocked, fresh consent succeeds |
+| Foreign-anchor cleanup, both directions | pass | newly created zone survives the old peer's own removal |
+| Concurrent consent and losing-device key | pass | `sync-010-race`: overlapping taps, Mac waits, adopts, authors and relaunches |
+| Final cleanup | pass | Mac: linked, pending 0, accepted 6, original 1 website; iPhone: 0 websites |
 | `git diff --check` and scoped privacy scan | pass | no new private material |
 
 ## Blockers and accepted risks
 
-- The maintainer's iCloud account already holds the `SYNC-009` workspace, so
-  the physical matrix begins from an established state and the first
-  from-empty row depends on the removal built here.
+- `user-confirmed` (2026-09-08): iPhone sign-out evidence is sufficient for
+  `AC-03`; the maintainer declined sign-out on the working Mac. Mac account
+  gating retains adapter/common tests, with no physical Mac sign-out claim.
+- iPhone replica rows and key-item absence are not independently readable by
+  the driver; native verified outcomes, status, and Mac receipt are the evidence.
 - Accepted MVP limits recorded by the plan review: a rejected bundle pins the
   cursor until a later task adds exact refetch; edits made before linking are
   not backfilled until `SYNC-011`.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** first-fetch iOS crash fixed; local gates and two-way physical
-  exchange pass. Remaining physical matrix is pending.
+- **Status:** `done`
+- **Outcome:** implementation, checks, independent reviews and accepted physical
+  matrix complete. PR #43 is ready for review; no merge performed.

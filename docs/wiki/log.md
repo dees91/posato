@@ -1432,5 +1432,8 @@ Updated the current design and physical verification recipe, retained the
 accepted pre-link and exact-refetch limits, and restored the missing SYNC-009
 bootstrap observation. A physical iPhone probe exposed and fixed an empty-cursor
 NSData conversion failure before native fetch; its adapter regression and
-cross-device exchange pass. The remaining physical matrix is pending in the
-execution record.
+cross-device exchange pass. Signed physical tests also cover offline retry,
+iPhone sign-out recovery, removal and foreign-anchor protection in both
+directions, and concurrent consent with losing-device key adoption. The
+maintainer accepted iPhone sign-out evidence and waived sign-out on the working
+Mac; that coverage limit remains explicit in the brief and execution record.
