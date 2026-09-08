@@ -22,7 +22,8 @@ class DesktopWindowGuardTest {
         assertEquals(ErrorCode.DESKTOP_WINDOW_UNAVAILABLE, failure.code)
         assertEquals(4, failure.code.exitCode)
         assertTrue(failure.message.orEmpty().contains("no accessibility window"), failure.message)
-        assertTrue(failure.hint.orEmpty().contains("launch -t desktop"), failure.hint)
+        assertTrue(failure.message.orEmpty().contains("Relaunch it through `posato-control launch -t desktop`"), failure.message)
+        assertTrue(failure.hint.orEmpty().contains("Accessibility access is granted"), failure.hint)
     }
 
     @Test

@@ -28,9 +28,10 @@ internal fun requireAddressableWindow(full: SnapshotNode): SnapshotNode {
     if (full.children.none { it.role == Roles.WINDOW }) {
         throw ControlException(
             ErrorCode.DESKTOP_WINDOW_UNAVAILABLE,
-            "The desktop application answered but exposes no accessibility window.",
-            "Relaunch through `posato-control launch -t desktop`, confirm the window is visible and Accessibility access is granted, " +
-                "then take a new snapshot. If it persists, report the staged signing mode with the snapshot.",
+            "The desktop application answered but exposes no accessibility window. " +
+                "Relaunch it through `posato-control launch -t desktop` and take a new snapshot.",
+            "Confirm the window is visible and Accessibility access is granted, then take a new snapshot. " +
+                "If it persists, report the staged signing mode with the snapshot.",
         )
     }
     return full
