@@ -1,0 +1,5 @@
+ALTER TABLE local_session ADD COLUMN frozen_domains TEXT CHECK (frozen_domains IS NULL OR typeof(frozen_domains) = 'text');
+ALTER TABLE local_session ADD COLUMN frozen_application_count INTEGER CHECK (
+  frozen_application_count IS NULL OR
+  (typeof(frozen_application_count) = 'integer' AND frozen_application_count >= 0)
+);
