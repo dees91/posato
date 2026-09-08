@@ -11,8 +11,9 @@
 
 ## Plan
 
-1. Resolve `D1` (what the persisted set contains) and `D2` (frozen or current
-   set on Resume) with the maintainer.
+1. `D1` and `D2` answered by the maintainer on 2026-09-08: persist domains and
+   the application count; Resume keeps applying the current set and the
+   post-relaunch copy is corrected.
 2. Extend the session schema and add the next migration; persist the set in the
    same transaction as the session row and clear it on end and expiry.
 3. Read the persisted set in the coordinator's `settle` and reconcile paths;
@@ -43,8 +44,8 @@
 
 ## Blockers and accepted risks
 
-- `D1` and `D2` block implementation until the maintainer answers; `D2` decides
-  whether the persisted set needs the opaque mapping identifiers at all.
+- `D1` and `D2` are decided; implementation is unblocked. The persisted set
+  carries no opaque mapping identifier, so the `A-03` boundary is unchanged.
 - The desktop driver's accessibility tree is unproven on this machine, which is
   the subject of `QUALITY-005` in the same wave. If the relaunch row cannot be
   driven here, record it as blocked with that clearing condition rather than
