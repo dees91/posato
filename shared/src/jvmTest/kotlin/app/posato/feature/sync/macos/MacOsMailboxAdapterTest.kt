@@ -2,6 +2,12 @@ package app.posato.feature.sync.macos
 
 import app.posato.feature.sync.bootstrap.ACCOUNT_BINDING_BYTES
 import app.posato.feature.sync.bootstrap.AccountBinding
+import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.ChangeFetchResult
+import app.posato.feature.sync.mailbox.ChangePage
+import app.posato.feature.sync.mailbox.MailboxBundle
+import app.posato.feature.sync.mailbox.MailboxCursor
+import app.posato.feature.sync.mailbox.ZoneDeleteResult
 import kotlinx.coroutines.test.runTest
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
