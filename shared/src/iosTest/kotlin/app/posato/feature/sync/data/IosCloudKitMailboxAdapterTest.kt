@@ -313,6 +313,22 @@ class IosCloudKitMailboxAdapterTest {
     }
 
     @Test
+    fun `given a call on the test dispatcher when cancelled then cancel is still delivered`() = runTest {
+        val provider = BlockingFakeMailboxProvider()
+        val job = launch {
+            IosMailboxAdapter(provider).fetchChanges(testBinding(), testCursor())
+        }
+
+        while (!provider.entered) {
+            kotlinx.coroutines.delay(10)
+        }
+        job.cancelAndJoin()
+
+        assertTrue(provider.cancelRecorded)
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
     fun `given the new mailbox carriers when described then values stay redacted`() {
         assertEquals(
             "IosCloudAnchorRead(redacted)",

@@ -23,7 +23,9 @@ import app.posato.feature.sync.mailbox.ZoneDeleteResult
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import platform.Foundation.NSData
 import platform.Foundation.create
 import platform.posix.memcpy
@@ -109,6 +111,13 @@ enum class IosCloudZoneDeleteStatus {
     UnknownOutcome,
 }
 
+/**
+ * One in-flight call per instance: implementations keep a single CloudKit
+ * operation handle, so callers must not overlap calls on one instance and
+ * [cancelInflight] aborts whichever call is current. Overlapping calls may
+ * observe `UnknownOutcome`. Caller serialization stays with the future
+ * coordinator; adapters already leave the calling thread.
+ */
 interface IosCloudKitMailboxProvider {
     fun fetchZone(binding: NSData): IosCloudZoneFetchStatus
 
@@ -462,10 +471,16 @@ internal class IosMailboxAdapter(
 
 private suspend fun <T> IosCloudKitMailboxProvider.cancellableCall(call: IosCloudKitMailboxProvider.() -> T): T {
     val provider = this
-    return suspendCancellableCoroutine { continuation ->
-        continuation.invokeOnCancellation { provider.cancelInflight() }
-        val result = provider.call()
-        continuation.resumeWith(Result.success(result))
+    // Dispatchers.IO is internal on Kotlin/Native; Default is this
+    // platform's background pool and keeps the blocking provider off the
+    // calling thread, which also makes cancellation deliverable from any
+    // dispatcher. This mirrors the JVM peer, which hops to Dispatchers.IO.
+    return withContext(Dispatchers.Default) {
+        suspendCancellableCoroutine { continuation ->
+            continuation.invokeOnCancellation { provider.cancelInflight() }
+            val result = provider.call()
+            continuation.resumeWith(Result.success(result))
+        }
     }
 }
 

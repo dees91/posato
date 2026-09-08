@@ -157,7 +157,12 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
             }
             done.signal()
         }
-        return run(operation, timeout: timeout, done: done) {
+        return run(
+            operation,
+            timeout: timeout,
+            done: done,
+            onTimeout: .failed(Self.timeoutFault())
+        ) {
             box.get() ?? .failed(NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue))
         }
     }
@@ -181,7 +186,12 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
             }
             done.signal()
         }
-        return run(operation, timeout: timeout, done: done) {
+        return run(
+            operation,
+            timeout: timeout,
+            done: done,
+            onTimeout: Self.timeoutFault()
+        ) {
             box.get()
         }
     }
@@ -207,7 +217,12 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
             }
             done.signal()
         }
-        return run(operation, timeout: timeout, done: done) {
+        return run(
+            operation,
+            timeout: timeout,
+            done: done,
+            onTimeout: .failed(Self.timeoutFault())
+        ) {
             box.get() ?? .failed(NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue))
         }
     }
@@ -229,7 +244,12 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
             }
             done.signal()
         }
-        return run(operation, timeout: timeout, done: done) {
+        return run(
+            operation,
+            timeout: timeout,
+            done: done,
+            onTimeout: .failed(Self.timeoutFault())
+        ) {
             box.get()
         }
     }
@@ -281,7 +301,12 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
             }
             done.signal()
         }
-        return run(operation, timeout: timeout, done: done) {
+        return run(
+            operation,
+            timeout: timeout,
+            done: done,
+            onTimeout: .failed(Self.timeoutFault())
+        ) {
             collector.drain()
         }
     }
@@ -305,19 +330,39 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
             }
             done.signal()
         }
-        return run(operation, timeout: timeout, done: done) {
+        return run(
+            operation,
+            timeout: timeout,
+            done: done,
+            onTimeout: Self.timeoutFault()
+        ) {
             box.get()
         }
     }
 
-    private func run<T>(_ operation: CKDatabaseOperation, timeout: TimeInterval, done: DispatchSemaphore, produce: () -> T) -> T {
+    /// A timeout cancels the operation and reports the explicit failure
+    /// instead of reading partial callback state: progress callbacks may
+    /// already have stored a token, which must never surface as a caught-up
+    /// page for a fetch that never completed.
+    private func run<T>(
+        _ operation: CKDatabaseOperation,
+        timeout: TimeInterval,
+        done: DispatchSemaphore,
+        onTimeout: T,
+        produce: () -> T
+    ) -> T {
         inflight.set(operation)
         defer { inflight.set(nil) }
         database.add(operation)
         if done.wait(timeout: .now() + timeout) == .timedOut {
             operation.cancel()
+            return onTimeout
         }
         return produce()
+    }
+
+    private static func timeoutFault() -> NSError {
+        return NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue)
     }
 
     private func mapZoneLookup(_ error: NSError) -> MailboxZoneLookup {
