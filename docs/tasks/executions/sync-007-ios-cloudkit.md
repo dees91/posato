@@ -68,7 +68,8 @@
 - **Resolution:** all Critical and Required findings resolved; affected
   verification rerun
 - **PR review follow-up (2026-09-08):** one P1 (blocking suspend calls now
-  hop to `Dispatchers.Default`; `Dispatchers.IO` is internal on Native)
+  hop to `Dispatchers.IO` via the explicit `kotlinx.coroutines.IO` import;
+  the earlier `Default` hop worked but `IO` matches the JVM peer literally)
   with a same-dispatcher cancellation test proven to fail without the hop;
   one P2 timeout fix (explicit failure instead of partial state, no unit
   test possible behind the live boundary); one P2 serial-use contract

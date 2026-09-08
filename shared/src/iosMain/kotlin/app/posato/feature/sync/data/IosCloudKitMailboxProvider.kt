@@ -24,6 +24,7 @@ import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSData
@@ -471,11 +472,10 @@ internal class IosMailboxAdapter(
 
 private suspend fun <T> IosCloudKitMailboxProvider.cancellableCall(call: IosCloudKitMailboxProvider.() -> T): T {
     val provider = this
-    // Dispatchers.IO is internal on Kotlin/Native; Default is this
-    // platform's background pool and keeps the blocking provider off the
-    // calling thread, which also makes cancellation deliverable from any
-    // dispatcher. This mirrors the JVM peer, which hops to Dispatchers.IO.
-    return withContext(Dispatchers.Default) {
+    // Like the JVM peer, hop off the calling thread: the provider blocks
+    // in CloudKit waits, and the hop also makes cancellation deliverable
+    // from any dispatcher.
+    return withContext(Dispatchers.IO) {
         suspendCancellableCoroutine { continuation ->
             continuation.invokeOnCancellation { provider.cancelInflight() }
             val result = provider.call()
