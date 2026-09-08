@@ -43,7 +43,8 @@ session.
   diagnosed, and never used for policy resolution, which stays current-state
   based per ADR 0006.
 - Non-goal: changing how enforcement chooses what to apply on Resume or on the
-  silent iOS re-converge, unless decision `D2` below changes it.
+  silent iOS re-converge. Per decision `D2` it keeps applying the current set;
+  only the copy changes.
 - This task owns `shared/**/feature/session/**`, the session SQLDelight schema
   and its migration. It must not touch `feature/sync/**`, the dependency
   injection graphs, `tools/posato-control/**`, or the enforcement adapters,
@@ -80,16 +81,17 @@ session.
 
 ## Decisions or blockers
 
-- Open (`D1`, maintainer decision before implementation): what the persisted
-  set contains. Recommendation: the exact domains plus the application count,
-  mirroring what the summary shows today. The alternative, also persisting the
-  64-hex opaque mapping identifiers, would copy `A-03` platform values from
-  their own app-private store into the shared database and is only needed if
-  `D2` is answered "frozen".
-- Open (`D2`, maintainer decision): after a relaunch, does Resume on macOS and
-  the silent iOS re-converge apply the frozen set or the current set?
-  `SESSION-002` accepted "the current set", but the shipped copy says changes
-  apply to the next pause. Recommendation: keep applying the current set and
-  correct the copy for the post-relaunch case, because re-applying a frozen set
-  needs the mapping identifiers from `D1` and a stale set can name items the
-  person has since removed.
+- `D1` decided (`user-confirmed`, 2026-09-08): the persisted set contains the
+  exact domains and the application count, mirroring what the summary shows.
+  The 64-hex opaque mapping identifiers are not copied out of their own
+  app-private store into the shared database, so the `A-03` boundary is
+  unchanged and the threat model needs no amendment.
+- `D2` decided (`user-confirmed`, 2026-09-08): Resume on macOS and the silent
+  iOS re-converge keep applying the current set, as `SESSION-002` accepted. The
+  copy is corrected for the post-relaunch case so it no longer promises that
+  Paused-items edits wait for the next pause when they do not. Enforcement
+  therefore needs no mapping identifiers from the persisted set.
+- Consequence to keep visible in the review: after a relaunch the summary shows
+  the frozen set while enforcement applies the current set. Both statements are
+  true, and the corrected copy must make that difference legible rather than
+  hide it.
