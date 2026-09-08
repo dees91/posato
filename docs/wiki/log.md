@@ -1417,3 +1417,9 @@
   press on an established workspace stops at the anchor. The losing candidate's
   cleanup and the winner's key readability therefore stay covered by tests
   instead of physical observation.
+
+## [2026-09-08] result | QUALITY-005 desktop accessibility diagnosis and unattended fixture proof
+
+- The `SESSION-002` empty desktop accessibility tree does not reproduce on the current application in either staging mode; both runs expose a full tree from the first readiness wait.
+- The driver reports a tree with no addressable window as named failure `DESKTOP_WINDOW_UNAVAILABLE` (exit 4) instead of an empty success; `waitFor` polling tolerates a transient empty tree and reports the named failure at the deadline.
+- The unattended `session-start-action-required-desktop.json` fixture passes end to end; confirmed prompts land in the attended active-claim path instead (distinguished by `authd` evidence), and the fixture's nothing-restricted step matches by `textContains` against the accepted `SESSION-003` copy.

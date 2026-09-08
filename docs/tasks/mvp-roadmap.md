@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 11
+- **Revision:** 12
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
 - **Last amended:** 2026-09-08
@@ -48,6 +48,12 @@ Revision 11 adds the maintainer-accepted `SESSION-003` follow-up after the
 live policy once the application is relaunched, so the active summary and its
 next-pause copy stop being true for the rest of that session. It changes no
 other task, dependency, wave, or integration group.
+
+Revision 12 adds the maintainer-accepted `QUALITY-005` follow-up after
+`SESSION-002` verification found the desktop application's accessibility tree
+empty while the application rendered, which left a committed unattended
+fixture unproven and blocks unattended desktop evidence for later rows. It
+changes no other task, dependency, wave, or integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -117,6 +123,7 @@ wave barriers add the phase ordering stated above.
 | `MACOS-004` | Deny selected exact domains on the accepted macOS browser matrix with safe recovery. | Sessions and enforcement | P3/W3.1 | `MACOS-002`, `MACOS-006`, `SESSION-001`, `TARGETS-001` | PR-MAC-DOMAINS |
 | `IOS-001` | Apply and clear only Posato-owned iOS website and application restrictions. | Sessions and enforcement | P3/W3.1 | `SESSION-001`, `TARGETS-004`, `APPLE-001` | PR-IOS-ENFORCEMENT |
 | `QUALITY-004` | Address the macOS helper's own window from the verification driver, report every one-time provisioning condition of both targets from `doctor`, and settle whether a captured iOS selection can be restored, so a run on a provisioned machine needs no human step. | Preparation | P3/W3.1a | `QUALITY-002`, `TARGETS-003`, `TARGETS-005` | PR-VERIFICATION-PROVISIONING |
+| `QUALITY-005` | Make the desktop accessibility tree readable by the verification driver and prove the unattended session fixture. | Preparation | P3/W3.1b | `QUALITY-004`, `DESIGN-001`, `SESSION-002` | PR-VERIFICATION-ACCESSIBILITY |
 | `MACOS-005` | Restrict locally mapped macOS applications without affecting unselected applications. | Sessions and enforcement | P3/W3.2 | `MACOS-006`, `SESSION-001`, `TARGETS-003` | PR-MAC-APPS |
 | `IOS-002` | Clear Posato-owned restrictions after normal expiry while the iOS app is suspended. | Sessions and enforcement | P3/W3.2 | `IOS-001` | PR-IOS-EXPIRY |
 | `SYNC-005` | Implement the iOS synchronizable-Keychain adapter and truthful service outcomes. | Apple synchronization | P3/W3.3 | `SYNC-003` | PR-IOS-KEYCHAIN |
