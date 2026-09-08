@@ -24,6 +24,8 @@ import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind
+import app.posato.feature.sync.bootstrap.AppleBootstrap
+import app.posato.feature.sync.ui.SyncBootstrapSection
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.session_ended_early
 import app.posato.generated.resources.session_ended_expired
@@ -38,6 +40,7 @@ internal fun SessionOverviewContent(
     onEnd: () -> Unit,
     onItems: () -> Unit,
     onRetryEnforcement: () -> Unit = {},
+    bootstrap: AppleBootstrap? = null,
 ) {
     val active = state.status is LocalSessionStatus.Active
     val hasItems = state.displayDomains().isNotEmpty() ||
@@ -68,7 +71,13 @@ internal fun SessionOverviewContent(
         SessionSelectionSummary(state, deviceLabel)
         FrozenSetCaption(state)
         PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
+        SyncSection(bootstrap)
     }
+}
+
+@Composable
+private fun SyncSection(bootstrap: AppleBootstrap?) {
+    bootstrap?.let { SyncBootstrapSection(it) }
 }
 
 @Composable

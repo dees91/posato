@@ -3,6 +3,7 @@ package app.posato.di
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createDesktopDatabaseDriver
+import app.posato.core.database.defaultDesktopPolicyDatabasePath
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.session.JvmSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionStore
@@ -11,6 +12,13 @@ import app.posato.feature.session.domain.RandomSessionIdGenerator
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.bootstrap.AppleBootstrap
+import app.posato.feature.sync.bootstrap.BootstrapCoordinator
+import app.posato.feature.sync.bootstrap.SqlBootstrapStore
+import app.posato.feature.sync.data.JdkSyncCryptoProvider
+import app.posato.feature.sync.macos.MacOsBootstrapCloudAdapter
+import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
+import app.posato.feature.sync.macos.defaultSyncCompanionTransport
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
@@ -27,12 +35,14 @@ import kotlinx.coroutines.Dispatchers
 @DependencyGraph(AppScope::class)
 internal interface DesktopApplicationGraph : ApplicationGraph {
     val localTargetPolicyStore: LocalTargetPolicyStore
+    val appleBootstrap: AppleBootstrap
 
     @DependencyGraph.Factory
     fun interface Factory {
         fun create(
             @Provides applicationMappings: LocalApplicationMappings,
             @Provides enforcement: EnforcementPort,
+            @Provides databasePath: String,
         ): DesktopApplicationGraph
     }
 
@@ -45,8 +55,8 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideDatabaseDriver(): SqlDriver {
-        return createDesktopDatabaseDriver()
+    fun provideDatabaseDriver(databasePath: String): SqlDriver {
+        return createDesktopDatabaseDriver(databasePath)
     }
 
     @Provides
@@ -96,11 +106,35 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
     fun provideSessionTimeFormat(): SessionTimeFormat {
         return JvmSessionTimeFormat()
     }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideAppleBootstrap(
+        database: PosatoDatabase,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+    ): AppleBootstrap {
+        val transport = defaultSyncCompanionTransport()
+        val keys = MacOsBootstrapKeychainAdapter(transport)
+        return AppleBootstrap(
+            coordinator = BootstrapCoordinator(
+                account = keys,
+                cloud = MacOsBootstrapCloudAdapter(transport),
+                keys = keys,
+                store = SqlBootstrapStore(
+                    database = database,
+                    databaseDispatcher = databaseDispatcher,
+                ),
+                crypto = JdkSyncCryptoProvider(),
+            ),
+            backgroundDispatcher = Dispatchers.IO,
+        )
+    }
 }
 
 fun createDesktopApplicationGraph(
     applicationMappings: LocalApplicationMappings,
     enforcement: EnforcementPort,
+    databasePath: String = defaultDesktopPolicyDatabasePath(),
 ): ApplicationGraph {
-    return createGraphFactory<DesktopApplicationGraph.Factory>().create(applicationMappings, enforcement)
+    return createGraphFactory<DesktopApplicationGraph.Factory>().create(applicationMappings, enforcement, databasePath)
 }

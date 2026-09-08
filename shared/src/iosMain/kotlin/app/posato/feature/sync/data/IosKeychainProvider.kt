@@ -14,6 +14,9 @@ import app.posato.feature.sync.bootstrap.WorkspaceKeyItem
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
+import kotlinx.coroutines.withContext
 import platform.Foundation.NSData
 import platform.Foundation.create
 import platform.posix.memcpy
@@ -94,7 +97,7 @@ internal class IosBootstrapKeychainAdapter(
 ) : BootstrapAccountPort,
     BootstrapKeyPort {
     override suspend fun resolveBinding(): BindingResolution {
-        val result = provider.resolveBinding()
+        val result = offMainThread { provider.resolveBinding() }
         val bytes = result.value?.toByteArray(ACCOUNT_BINDING_BYTES)
         try {
             return when (result.status) {
@@ -131,7 +134,7 @@ internal class IosBootstrapKeychainAdapter(
     ): KeyItemReadResult {
         val binding = expectedBinding.copyBytes()
         try {
-            val result = provider.readItem(binding.toNSData(), account.text)
+            val result = offMainThread { provider.readItem(binding.toNSData(), account.text) }
             val bytes = result.value?.toByteArray(KEYCHAIN_ITEM_BYTES)
             try {
                 return when (result.status) {
@@ -181,7 +184,7 @@ internal class IosBootstrapKeychainAdapter(
         val binding = expectedBinding.copyBytes()
         val bytes = value.copyBytes()
         try {
-            val status = provider.createItem(binding.toNSData(), account.text, bytes.toNSData())
+            val status = offMainThread { provider.createItem(binding.toNSData(), account.text, bytes.toNSData()) }
             return when (status) {
                 IosKeychainCreateStatus.Created -> KeyItemCreateResult.Created
                 IosKeychainCreateStatus.AlreadyExists -> KeyItemCreateResult.AlreadyExists
@@ -202,7 +205,7 @@ internal class IosBootstrapKeychainAdapter(
     ): KeyItemDeleteResult {
         val binding = expectedBinding.copyBytes()
         try {
-            val status = provider.deleteItemAndVerifyAbsent(binding.toNSData(), account.text)
+            val status = offMainThread { provider.deleteItemAndVerifyAbsent(binding.toNSData(), account.text) }
             return when (status) {
                 IosKeychainDeleteStatus.DeletedAndAbsent -> KeyItemDeleteResult.DeletedAndAbsent
                 IosKeychainDeleteStatus.Retryable -> KeyItemDeleteResult.Retryable
@@ -213,6 +216,40 @@ internal class IosBootstrapKeychainAdapter(
         } finally {
             binding.fill(0)
         }
+    }
+}
+
+internal object UnavailableIosKeychainProvider : IosKeychainProvider {
+    override fun resolveBinding(): IosKeychainBinding {
+        return IosKeychainBinding(IosKeychainBindingStatus.Undetermined, null)
+    }
+
+    override fun readItem(
+        binding: NSData,
+        account: String,
+    ): IosKeychainItemRead {
+        return IosKeychainItemRead(IosKeychainReadStatus.UnknownOutcome, null)
+    }
+
+    override fun createItem(
+        binding: NSData,
+        account: String,
+        value: NSData,
+    ): IosKeychainCreateStatus {
+        return IosKeychainCreateStatus.UnknownOutcome
+    }
+
+    override fun deleteItemAndVerifyAbsent(
+        binding: NSData,
+        account: String,
+    ): IosKeychainDeleteStatus {
+        return IosKeychainDeleteStatus.UnknownOutcome
+    }
+}
+
+private suspend fun <T> offMainThread(call: () -> T): T {
+    return withContext(Dispatchers.IO) {
+        call()
     }
 }
 
