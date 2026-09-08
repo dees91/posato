@@ -12,6 +12,7 @@
     <string name="action_remove">Remove</string>
     <string name="action_retry">Retry</string>
     <string name="action_save">Save change</string>
+    <string name="action_sync_with_icloud">Sync with iCloud</string>
     <string name="application_group_description">The group name may sync. App choices stay on this device.</string>
     <string name="application_group_empty">No application group yet.</string>
     <string name="application_group_input_label">Application group name</string>
@@ -58,6 +59,12 @@
     <string name="paused_items_title">Paused items</string>
     <string name="product_name">Posato</string>
     <string name="saving_domains">Saving</string>
+    <string name="sync_icloud_action_required">Sync with iCloud needs attention before it can continue.</string>
+    <string name="sync_icloud_description">Sync with iCloud links this device to your private iCloud workspace.</string>
+    <string name="sync_icloud_linked">This device is linked to your iCloud workspace.</string>
+    <string name="sync_icloud_retryable">Sync with iCloud didn’t finish.</string>
+    <string name="sync_icloud_running">Sync with iCloud is running.</string>
+    <string name="sync_icloud_waiting_for_key">Waiting for the workspace key from your other device.</string>
     <string name="websites_description">Choose the exact websites where you want a quiet pause before access.</string>
     <string name="websites_title">Websites</string>
     <string name="session_title">Session</string>

@@ -83,3 +83,6 @@ handles, required state, commands, and observable proof.
 - [Sessions](./sessions.md) covers setting up, reviewing, starting, ending
   early, and expiring one manual session on every target, and what survives a
   relaunch.
+- [Sync with iCloud](./sync.md) covers the one consent action, the truthful
+  outcomes it reports, joining in either device order, and what a from-empty
+  rerun costs the maintainer.

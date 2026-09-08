@@ -390,3 +390,60 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
         return .failed(error)
     }
 }
+
+/// Defers `CloudKitMailboxLiveBackend` construction until the first mailbox
+/// call. Resolving the CloudKit container traps in processes without the
+/// container entitlement such as the Swift test host, so production wires
+/// this wrapper at startup and the live backend is built only after the
+/// explicit sync action reaches it.
+final class DeferredCloudKitMailboxBackend: CloudKitMailboxBackend {
+    private let make: () -> any CloudKitMailboxBackend
+    private let lock = NSLock()
+    private var live: (any CloudKitMailboxBackend)?
+
+    init(make: @escaping () -> any CloudKitMailboxBackend) {
+        self.make = make
+    }
+
+    func fetchZone(zoneID: CKRecordZone.ID, timeout: TimeInterval) -> MailboxZoneLookup {
+        return backend().fetchZone(zoneID: zoneID, timeout: timeout)
+    }
+
+    func saveZone(zoneID: CKRecordZone.ID, timeout: TimeInterval) -> NSError? {
+        return backend().saveZone(zoneID: zoneID, timeout: timeout)
+    }
+
+    func fetchRecord(id: CKRecord.ID, timeout: TimeInterval) -> MailboxRecordLookup {
+        return backend().fetchRecord(id: id, timeout: timeout)
+    }
+
+    func saveRecordIfAbsent(_ record: CKRecord, timeout: TimeInterval) -> MailboxRecordSave {
+        return backend().saveRecordIfAbsent(record, timeout: timeout)
+    }
+
+    func fetchChanges(zoneID: CKRecordZone.ID, tokenData: Data?, timeout: TimeInterval) -> MailboxChangesResult {
+        return backend().fetchChanges(zoneID: zoneID, tokenData: tokenData, timeout: timeout)
+    }
+
+    func deleteZone(zoneID: CKRecordZone.ID, timeout: TimeInterval) -> NSError? {
+        return backend().deleteZone(zoneID: zoneID, timeout: timeout)
+    }
+
+    func cancelInflight() {
+        lock.lock()
+        let backend = live
+        lock.unlock()
+        backend?.cancelInflight()
+    }
+
+    private func backend() -> any CloudKitMailboxBackend {
+        lock.lock()
+        defer { lock.unlock() }
+        if let live {
+            return live
+        }
+        let backend = make()
+        live = backend
+        return backend
+    }
+}

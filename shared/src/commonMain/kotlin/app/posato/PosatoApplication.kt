@@ -32,6 +32,8 @@ import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.session.ui.SessionScreen
+import app.posato.feature.sync.bootstrap.AppleBootstrap
+import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.TargetsBrowserState
@@ -47,6 +49,7 @@ class PosatoApplication internal constructor(
     private val clock: SessionClock,
     private val timeFormat: SessionTimeFormat,
     private val enforcement: EnforcementPort,
+    private val bootstrap: AppleBootstrap,
 ) {
     @Composable
     fun Content(
@@ -55,6 +58,7 @@ class PosatoApplication internal constructor(
     ) {
         val browser = remember { TargetsBrowserState() }
         var showingSession by remember { mutableStateOf(true) }
+        val syncState = rememberSyncBootstrapUiState(bootstrap)
         val placement = platformNavigationPlacement()
         val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
         val hideNavigation = placement == PosatoNavigationPlacement.Bottom && keyboardVisible
@@ -88,6 +92,7 @@ class PosatoApplication internal constructor(
                             modifier = contentModifier,
                             layout = layout,
                             deviceLabel = deviceLabel,
+                            syncState = syncState,
                         )
                     } else {
                         TargetsScreen(

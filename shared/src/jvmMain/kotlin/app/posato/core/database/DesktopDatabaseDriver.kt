@@ -17,7 +17,7 @@ internal fun createDesktopDatabaseDriver(databasePath: String = defaultDesktopPo
     )
 }
 
-private fun defaultDesktopPolicyDatabasePath(): String {
+internal fun defaultDesktopPolicyDatabasePath(): String {
     val homeDirectory = checkNotNull(System.getProperty("user.home"))
     return Path
         .of(
