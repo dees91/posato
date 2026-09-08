@@ -225,7 +225,10 @@ internal class SessionEnforcementCoordinator(
             } catch (_: Exception) {
                 mutableView.update { view ->
                     if (view.state is EnforcementState.Inactive) {
-                        view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt))
+                        view.copy(
+                            state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt),
+                            enforced = frozen?.toEnforcedSet() ?: view.enforced,
+                        )
                     } else {
                         view
                     }

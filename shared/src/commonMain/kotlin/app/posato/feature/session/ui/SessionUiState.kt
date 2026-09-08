@@ -45,6 +45,7 @@ internal data class SessionUiState(
     val enforcement: EnforcementState = EnforcementState.Inactive,
     val enforced: EnforcedSet = EnforcedSet(),
     val enforcementBusy: Boolean = false,
+    val hasPersistedStartSet: Boolean = false,
 ) {
     override fun toString(): String {
         return "SessionUiState(redacted)"
@@ -71,6 +72,10 @@ internal fun SessionUiState.displayApplicationCount(): Int? {
 
 internal fun SessionUiState.showsFrozenSet(): Boolean {
     return status is Active && enforcement !is EnforcementState.Inactive && enforced.hasContent()
+}
+
+internal fun SessionUiState.showsPersistedStartSet(): Boolean {
+    return showsFrozenSet() && hasPersistedStartSet
 }
 
 internal fun SessionUiState.nothingIsRestricted(): Boolean {
@@ -146,6 +151,7 @@ internal fun createSessionUiState(
 
     return SessionUiState(
         status = load.status,
+        hasPersistedStartSet = active?.frozenStartSet != null,
         operationFailure = load.failure,
         isSettingUp = draft.isSettingUp,
         durationMinutes = draft.durationMinutes,

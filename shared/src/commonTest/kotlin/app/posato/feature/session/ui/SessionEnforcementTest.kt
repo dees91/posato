@@ -32,6 +32,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -292,6 +293,7 @@ class SessionEnforcementTest {
         assertEquals(listOf("frozen.example"), state.displayDomains())
         assertEquals(1, state.displayApplicationCount())
         assertTrue(state.showsFrozenSet())
+        assertTrue(state.showsPersistedStartSet())
     }
 
     @Test
@@ -324,6 +326,26 @@ class SessionEnforcementTest {
 
         assertIs<LocalSessionStatus.Active>(state.status)
         assertEquals(listOf("edited.example"), state.displayDomains())
+        assertTrue(state.showsFrozenSet())
+        assertFalse(state.showsPersistedStartSet())
+    }
+
+    @Test
+    fun `given a persisted set when reconciliation fails then the summary still shows the frozen set`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        store.record = SessionRecord(SessionId(testIdentifier(24)), NOW - 600_000L, NOW + 1_200_000L)
+        store.frozenStartSet = FrozenStartSet(persistentListOf("frozen.example"), 1)
+        val enforcement = FakeEnforcementPort(statusError = IllegalStateException("status lost"))
+        val viewModel = collectedViewModel(store = store, domains = listOf("edited.example"), enforcement = enforcement)
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(listOf("frozen.example"), state.displayDomains())
+        assertEquals(1, state.displayApplicationCount())
+        assertTrue(state.showsPersistedStartSet())
+        val action = assertIs<EnforcementState.ActionRequired>(state.enforcement)
+        assertEquals(EnforcementActionKind.APPLY_FAILED, action.kind)
     }
 
     private fun TestScope.collectedViewModel(
