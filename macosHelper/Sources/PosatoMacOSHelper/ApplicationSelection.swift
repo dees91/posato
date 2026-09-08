@@ -211,11 +211,12 @@ struct ApplicationSelectionService {
       var requirements: Set<Data> = []
       identities.reserveCapacity(candidates.count)
       for candidate in candidates {
-        let isPosatoBundle =
-          candidate.bundleIdentifier == posatoIdentifier
-          || candidate.bundleIdentifier?.hasPrefix(posatoPrefix) == true
-        if isPosatoBundle {
-          return try ApplicationSelectionPayload(outcome: .selfSelection)
+        if let refusal = refusalOutcome(
+          for: candidate,
+          posatoIdentifier: posatoIdentifier,
+          posatoPrefix: posatoPrefix
+        ) {
+          return try ApplicationSelectionPayload(outcome: refusal)
         }
         do {
           let requirement = try inspector.designatedRequirement(for: candidate.url)
@@ -236,5 +237,25 @@ struct ApplicationSelectionService {
       }
       return try ApplicationSelectionPayload(outcome: .success, applications: identities)
     }
+  }
+
+  private func refusalOutcome(
+    for candidate: ApplicationSelectionCandidate,
+    posatoIdentifier: String,
+    posatoPrefix: String
+  ) -> ApplicationSelectionOutcome? {
+    if SystemCriticalApplication.isSystemCritical(
+      bundleIdentifier: candidate.bundleIdentifier,
+      bundleURL: candidate.url
+    ) {
+      return .systemApplication
+    }
+    let isPosatoBundle =
+      candidate.bundleIdentifier == posatoIdentifier
+      || candidate.bundleIdentifier?.hasPrefix(posatoPrefix) == true
+    if isPosatoBundle {
+      return .selfSelection
+    }
+    return nil
   }
 }

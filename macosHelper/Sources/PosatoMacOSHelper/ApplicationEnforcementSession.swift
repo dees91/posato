@@ -13,21 +13,6 @@ protocol RunningApplicationSnapshot: AnyObject {
   func forceTerminate() -> Bool
 }
 
-/// Bundle identifiers of system-critical processes that enforcement must
-/// never terminate, even when selected (threat T-08). The helper cannot trust
-/// the requirement set it is handed; the picker-side refusal is a TARGETS-003
-/// follow-up.
-private let systemCriticalBundleIdentifiers: Set<String> = [
-  "com.apple.finder",
-  "com.apple.dock",
-  "com.apple.loginwindow",
-  "com.apple.systemuiserver",
-  "com.apple.controlcenter",
-  "com.apple.notificationcenterui",
-  "com.apple.systempreferences",
-  "com.apple.SystemSettings",
-]
-
 extension NSRunningApplication: RunningApplicationSnapshot {}
 
 protocol ApplicationSnapshotListing {
@@ -295,14 +280,9 @@ final class ApplicationEnforcementSession: @unchecked Sendable {
   }
 
   private func isSystemCritical(_ application: any RunningApplicationSnapshot) -> Bool {
-    let underCoreServices =
-      application.bundleURL?.path.hasPrefix("/System/Library/CoreServices/") == true
-    if underCoreServices {
-      return true
-    }
-    guard let bundleIdentifier = application.bundleIdentifier else {
-      return false
-    }
-    return systemCriticalBundleIdentifiers.contains(bundleIdentifier)
+    return SystemCriticalApplication.isSystemCritical(
+      bundleIdentifier: application.bundleIdentifier,
+      bundleURL: application.bundleURL
+    )
   }
 }

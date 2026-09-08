@@ -42,8 +42,15 @@ class MacOsApplicationSelectionProtocolTest {
             MacOsApplicationPickerResult.SelfSelection,
             MacOsApplicationSelectionProtocol.decode(byteArrayOf(3, 0, 0)),
         )
+        assertEquals(
+            MacOsApplicationPickerResult.SystemApplication,
+            MacOsApplicationSelectionProtocol.decode(byteArrayOf(7, 0, 0)),
+        )
         assertFailsWith<IllegalArgumentException> {
             MacOsApplicationSelectionProtocol.decode(byteArrayOf(2, 0, 1))
+        }
+        assertFailsWith<IllegalStateException> {
+            MacOsApplicationSelectionProtocol.decode(byteArrayOf(8, 0, 0))
         }
     }
 
