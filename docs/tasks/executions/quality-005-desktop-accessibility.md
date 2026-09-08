@@ -81,5 +81,5 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** all four acceptance criteria met; PR #42 opened from `feature/quality-005-desktop-accessibility`.
