@@ -1406,10 +1406,14 @@
   account: Mac-first and iPhone-first joins from an empty account, and a
   simultaneous opt-in with the two presses 0.1 s apart in which the loser held
   `waiting-for-workspace-key`, kept a candidate without establishing anything,
-  then adopted the winner's workspace on the next press while the winner stayed
-  readable. The maintainer confirmed exactly one zone in the CloudKit Console.
-- Two limits are recorded rather than claimed: a from-empty rerun needs the
-  maintainer to delete the zone by hand until `SYNC-010` adds removal, and the
+  then adopted the winner's workspace on the next press while the winner kept
+  its established status. The maintainer confirmed exactly one zone in the
+  CloudKit Console.
+- Three limits are recorded rather than claimed: a from-empty rerun needs the
+  maintainer to delete the zone by hand until `SYNC-010` adds removal; the
   count of surviving synchronizable Keychain accounts is invisible to both the
-  `security` command line and the driver, so the losing candidate's cleanup
-  stays covered by tests instead of physical observation.
+  `security` command line and the driver; and no user path reads the workspace
+  key at all in this task, since the linked status is a local-state read and a
+  press on an established workspace stops at the anchor. The losing candidate's
+  cleanup and the winner's key readability therefore stay covered by tests
+  instead of physical observation.

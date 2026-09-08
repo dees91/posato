@@ -120,7 +120,7 @@
 | Physical iPhone join row (fresh install, same account) | `pass` | consent press joined the Mac workspace; relaunch adopts; `build/verification/runs/20260908-141036-708f` |
 | Navigation during the device attempt | `pass` | outcome observed after return; holder ownership unit-covered |
 | Physical iPhone-first order from an empty account | `pass` | iPhone press established, Mac press joined, one row, second press idempotent; `build/verification/runs/20260908-151742-b1f1`, `-151842-a8cb`, `-151852-9637`, `-151902-a7e8` |
-| Physical simultaneous opt-in (presses 0.1 s apart) | `pass` | iPhone won in 4.3 s; the Mac held `waiting-for-workspace-key` past 120 s with a persisted candidate and no established workspace, then adopted on the next press with the candidate cleared; `build/verification/runs/20260908-153208-6844`, `-153443-0f09`, `-153505-beb3`, `-153510-17ce` |
+| Physical simultaneous opt-in (presses 0.1 s apart) | `pass` | iPhone won in 4.3 s; the Mac held `waiting-for-workspace-key` past 120 s with a persisted candidate and no established workspace, then adopted on the next press with the candidate cleared; the winner kept its linked status afterwards, which is a local-state read, not a key read; `build/verification/runs/20260908-153208-6844`, `-153443-0f09`, `-153505-beb3`, `-153510-17ce` |
 | CloudKit Console one-zone confirmation | `pass` | maintainer confirmed exactly one `PosatoSyncV1` zone after the converged run |
 
 ## Blockers and accepted risks
@@ -134,14 +134,19 @@
   so every later from-empty row carries that manual cost. Local resets used a
   scoped `delete from sync_bootstrap_state` on the Mac and `launch --fresh` on
   the iPhone, never a whole-database reset.
-- Two `AC-03` observations stay outside the driver: the count of surviving
-  synchronizable Keychain accounts and the absence of the losing candidate's
-  own item. Synchronizable items are invisible to the `security` command line
-  and to the driver, so they are covered by `BootstrapCoordinatorTest` (the
-  interleaved-race and lost-race cleanup cases) rather than physically. What
-  the race did prove physically is the loser's truthful waiting state, its
-  later adoption with the candidate cleared, and the winner's item still
-  readable afterwards.
+- Three `AC-03` observations stay outside the driver: the count of surviving
+  synchronizable Keychain accounts, the absence of the losing candidate's own
+  item, and the winner's key remaining readable after that cleanup. The first
+  two are invisible to both the `security` command line and the driver. The
+  third has no user path to exercise at all in this task: the linked status
+  comes from `establishedContext()`, which reads the local `Established` row,
+  and a further consent press on an established workspace checks the zone and
+  anchor with `keys.readCalls == 0`. Only `readWorkspaceKey()` reads the item,
+  and it has no consumer until `SYNC-010`. All three are covered by
+  `BootstrapCoordinatorTest` (the interleaved-race and lost-race cleanup cases)
+  rather than physically. What the race did prove physically is the loser's
+  truthful waiting state, its later adoption with the candidate cleared, and
+  the winner keeping its established status.
 - The `DeferredCloudKitMailboxBackend` residual: a first bootstrap use on a
   build without the container entitlement would trap instead of degrading;
   signed artifacts carry the entitlement, so this stays a build-configuration
@@ -154,9 +159,11 @@
 
 - **Status:** `active`
 - **Outcome:** implementation, automated verification, independent review, and
-  the full physical matrix complete: Mac-first join, iPhone-first join, and a
-  genuine simultaneous opt-in that converged on one workspace with the
-  maintainer confirming a single zone. The branch is rebased on `main` after
+  the physical matrix complete as far as user paths reach: Mac-first join,
+  iPhone-first join, and a genuine simultaneous opt-in that converged on one
+  workspace with the maintainer confirming a single zone. Post-cleanup key
+  readability is the one `AC-03` clause with no physical evidence here, for the
+  reason recorded above. The branch is rebased on `main` after
   `SESSION-003` merged, `./gradlew quality` is green on the rebase, and the
   verification skill gained the `Sync with iCloud` feature file the action
   needs.
