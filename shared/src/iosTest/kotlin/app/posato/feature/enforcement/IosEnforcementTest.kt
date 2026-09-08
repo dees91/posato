@@ -61,6 +61,7 @@ class IosEnforcementTest {
 private class FakeIosEnforcementProvider(
     private val applyOutcome: IosEnforcementOutcome = IosEnforcementOutcome.APPLIED,
     private val clearOutcome: IosEnforcementOutcome = IosEnforcementOutcome.CLEARED,
+    private val statusOutcome: IosEnforcementOutcome = IosEnforcementOutcome.CLEARED,
 ) : IosEnforcementProvider {
     var applyCalled = false
         private set
@@ -81,5 +82,9 @@ private class FakeIosEnforcementProvider(
     override fun clear(handler: (IosEnforcementOutcome) -> Unit) {
         clearCalled = true
         handler(clearOutcome)
+    }
+
+    override fun status(handler: (IosEnforcementOutcome) -> Unit) {
+        handler(statusOutcome)
     }
 }
