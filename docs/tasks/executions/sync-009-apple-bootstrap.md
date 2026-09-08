@@ -4,7 +4,7 @@
 - **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** implementation agent (2026-09-08)
-- **Reviewer:** independent plan review complete (changes-required, resolved); completed-change review pending
+- **Reviewer:** independent plan review complete (changes-required, resolved); completed-change review pass (2 Required, resolved)
 - **Branch:** `feature/sync-009-apple-bootstrap`
 - **Worktree:** `~/Projects/Polyglot/posato-sync-009`
 - **Updated:** 2026-09-08
@@ -61,37 +61,81 @@
 
 ## Result
 
-- Pending implementation.
+- Implemented on `feature/sync-009-apple-bootstrap`. New: `AppleBootstrap`
+  facade (`commonMain`), `MacOsSyncTransport` lazy non-fatal transport
+  (`jvmMain`), `IosBootstrapKeychainAdapter` off-main-thread hop plus
+  `UnavailableIosKeychainProvider` (`iosMain`), `DeferredCloudKitMailboxBackend`
+  (`iosApp`), `SyncBootstrapSection` consent control with strings (`commonMain`
+  sync ui), single-function `provideAppleBootstrap` on both Metro graphs,
+  `IosApplicationGraph` factory provider params, `MainViewController` provider
+  params, `iosApp.swift` production providers, `PosatoApplication` bootstrap
+  param, and the `D1` `DESIGN.md` amendment.
+- Deliberate deviations from the plan, all inside the brief boundaries:
+  `Main.kt` needed no change (the database-path default keeps the call site
+  stable, so the `QUALITY-005` region is untouched); `SessionScreen` and
+  `SessionOverviewContent` carry additive optional bootstrap params as the
+  `D1`-mandated control host (prop-drilling only, no session logic; no file
+  overlap with the `SESSION-003` or `QUALITY-005` branches); a `databasePath`
+  factory seam keeps the real-graph `jvmTest` off the developer database;
+  single-function graph composition replaces granular bindings after Detekt
+  `TooManyFunctions`; `DeferredCloudKitMailboxBackend` replaces eager
+  `CKContainer` construction after it trapped the Swift test host at launch.
+- The staged-Mac consent tap established a real workspace (zone, anchor,
+  synchronizable keychain item) on the development iCloud account and the
+  local `Established` row; relaunch adopts it. The account is therefore no
+  longer pristine: the remaining iPhone rows start from the established state.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `pass` (two independent reviews, 2026-09-08; first report
+  truncated in transit, its one visible finding fixed; second compact review
+  completed).
+- **Critical or Required findings:** `R-a` the consent button set its guard
+  inside the launched coroutine, so a rapid double-tap queued two attempts;
+  fixed with a synchronous main-thread guard. `R-b` a mid-flight provider
+  failure escaped the facade and crashed the tap coroutine instead of
+  reporting; fixed with a cancellation-safe catch-all mapping to `Retryable`
+  plus a red-to-green test. The catch-all passes the Detekt gate as written,
+  so no suppression or allowlist change was needed.
+- **Resolution:** both fixed, re-verified, full `./gradlew quality` green.
+  One `Optional` declined as factually incorrect (`defaultDesktopPolicyDatabasePath`
+  is consumed in-diff by the graph default argument).
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | `pending` | |
-| `commonTest` composition entry point | `pending` | |
-| `jvmTest` and `iosTest` graph composition | `pending` | |
-| Physical Mac and iPhone rows, both device orders | `pending` | maintainer iCloud account, sequential with other physical work |
+| `./gradlew quality` | `pass` | 197 tasks green after review fixes |
+| `commonTest` facade (`AppleBootstrapTest`, 7 tests) | `pass` | single-flight across two runtimes, dispatcher honored, failure degrades |
+| `jvmTest` real desktop graph (3 tests) | `pass` | singleton, `Dispatchers.IO`, unverifiable companion degrades |
+| `iosTest` real iOS graph on simulator (4 tests) | `pass` | singleton, IO dispatcher, undetermined binding degrades |
+| Swift tests incl. 2 deferral tests | `pass` | `TEST EXECUTE SUCCEEDED` |
+| Staged Mac: consent press establishes, relaunch adopts | `pass` | `build/verification/runs/20260908-124319-658f`, `-124437-21b8`; one DB row |
+| Fresh sim: consent control renders, attempt degrades live | `pass` | `build/verification/runs/20260908-124738-2266`, `-124954-9881` |
+| `git diff --check`, secret and path scans | `pass` | no findings; no `Suppress` added |
+| Physical iPhone rows, both device orders | `pending` | maintainer iPhone and iCloud account |
+| CloudKit Console one-zone one-anchor confirmation | `pending` | maintainer console access |
 
 ## Blockers and accepted risks
 
 - `D1` and `D2` are decided; implementation is unblocked. The ADR 0007
   destructive-removal evidence is deferred to `SYNC-010` by maintainer
   decision and is not claimed here.
-- The physical rows need the maintainer's iCloud account on both devices and a
-  CloudKit private database without the custom zone. Whichever way `D2` is
-  answered, the run leaves that database as found.
-- Wave 7 runs in parallel with `QUALITY-005` (verification driver) and
-  `SESSION-003` (session schema). Write surfaces are disjoint by design; this
-  task must not touch `feature/session/**`, `feature/enforcement/**`, or
-  `tools/posato-control/**`.
+- The iPhone rows need the maintainer's iPhone on the same iCloud account,
+  sequential with other physical work. The Mac side already established the
+  workspace, so the iPhone rows start from the established state; a from-empty
+  simultaneous opt-in rerun needs a maintainer decision (keep as join fixture
+  or reset the private database manually, since removal is `SYNC-010` work).
+- The `DeferredCloudKitMailboxBackend` residual: a first bootstrap use on a
+  build without the container entitlement would trap instead of degrading;
+  signed artifacts carry the entitlement, so this stays a build-configuration
+  property, not a runtime branch.
+- Wave 7 surfaces stayed disjoint: no `feature/enforcement/**`,
+  `tools/posato-control/**`, or session-schema changes; the two session-ui
+  files carry additive optional params only.
 
 ## Final
 
 - **Status:** `active`
-- **Outcome:** pending
+- **Outcome:** implementation, automated verification, and independent review
+  complete; PR opened; iPhone physical rows pending maintainer.

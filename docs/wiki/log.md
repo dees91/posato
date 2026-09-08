@@ -1388,3 +1388,9 @@
   states both halves. Migration `5.sqm` preserves existing rows with a live
   fallback for pre-upgrade sessions. `./gradlew quality`, the session suites,
   and a desktop driver relaunch row pass with an independent review approval.
+
+## [2026-09-08] implementation | SYNC-009 Apple bootstrap composition and consent control
+
+- Both apps compose the accepted bootstrap behind the narrow `AppleBootstrap` facade (process-scoped single-flight, background dispatcher, established-context read); the desktop companion client resolves lazily and degrades to a truthful non-Ready outcome, and the iOS CloudKit backend defers container resolution past startup after eager construction trapped the Swift test host.
+- The Session screen carries one explicit Sync with iCloud control that states what it does, runs one attempt per press, and reports only the coordinator outcome; `DESIGN.md` names the control and no longer claims synchronization is unconnected.
+- Verified by `./gradlew quality`, real-graph composition tests on JVM and simulator, Swift tests, a staged-Mac run that established the development-account workspace on the consented press with relaunch adoption, and a fresh-simulator run degrading live; iPhone physical rows stay pending with the maintainer.
