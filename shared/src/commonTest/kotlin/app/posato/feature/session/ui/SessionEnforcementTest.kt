@@ -96,6 +96,23 @@ class SessionEnforcementTest {
     }
 
     @Test
+    fun `given a failed apply when ending early then the end is clean`() = runTest(dispatcher) {
+        val enforcement = FakeEnforcementPort(
+            applyReport = EnforcementApplyReport(EnforcementOutcome.FAILED, false, false),
+            clearOutcome = EnforcementOutcome.UNAVAILABLE,
+        )
+        val viewModel = collectedViewModel(domains = listOf("stable.example"), enforcement = enforcement)
+        startThroughUi(viewModel)
+        viewModel.setEarlyEndConfirmation(true)
+        viewModel.confirmEarlyEnd()
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Ended>(state.status)
+        assertEquals(EnforcementState.Inactive, state.enforcement)
+    }
+
+    @Test
     fun `given a failed clear when ending early then the end stays action required`() = runTest(dispatcher) {
         val enforcement = FakeEnforcementPort(clearOutcome = EnforcementOutcome.FAILED)
         val viewModel = collectedViewModel(domains = listOf("stable.example"), enforcement = enforcement)
@@ -191,6 +208,61 @@ class SessionEnforcementTest {
 
         assertEquals(listOf("apply", "status", "clear", "apply"), enforcement.calls)
         assertEquals(EnforcementState.Active(false), state.enforcement)
+    }
+
+    @Test
+    fun `given transient unknown polls when the limit is not reached then the session stays active`() = runTest(dispatcher) {
+        val enforcement = FakeEnforcementPort(
+            statusSequence = ArrayDeque(
+                listOf(
+                    EnforcementOutcome.UNKNOWN,
+                    EnforcementOutcome.UNKNOWN,
+                    EnforcementOutcome.UNKNOWN,
+                ),
+            ),
+            reapplyRequiresPrompt = true,
+        )
+        val viewModel = collectedViewModel(domains = listOf("stable.example"), enforcement = enforcement)
+        startThroughUi(viewModel)
+
+        advanceTimeBy(15_000)
+        scheduler.runCurrent()
+        assertEquals(EnforcementState.Active(false), viewModel.uiState.value.enforcement)
+
+        advanceTimeBy(15_000)
+        scheduler.runCurrent()
+        assertEquals(EnforcementState.Active(false), viewModel.uiState.value.enforcement)
+
+        advanceTimeBy(15_000)
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        val action = assertIs<EnforcementState.ActionRequired>(state.enforcement)
+        assertEquals(EnforcementActionKind.APPLY_FAILED, action.kind)
+    }
+
+    @Test
+    fun `given a pending failed clear when starting then the previous restrictions are cleared first`() = runTest(dispatcher) {
+        val enforcement = FakeEnforcementPort(clearOutcome = EnforcementOutcome.FAILED)
+        val viewModel = collectedViewModel(domains = listOf("stable.example"), enforcement = enforcement)
+        startThroughUi(viewModel)
+        viewModel.setEarlyEndConfirmation(true)
+        viewModel.confirmEarlyEnd()
+        scheduler.runCurrent()
+        assertIs<EnforcementState.ActionRequired>(viewModel.uiState.value.enforcement)
+
+        viewModel.setSetupVisible(true)
+        scheduler.runCurrent()
+        viewModel.submitDurationMinutes(30.toString())
+        viewModel.setReviewVisible(true)
+        scheduler.runCurrent()
+        viewModel.startSession()
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(EnforcementState.Active(false), state.enforcement)
+        assertEquals(listOf("apply", "clear", "clear", "apply"), enforcement.calls)
     }
 
     @Test

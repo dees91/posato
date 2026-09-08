@@ -108,6 +108,24 @@ class JvmSessionEnforcementTest {
         assertEquals(EnforcementOutcome.UNKNOWN, runBlocking { unknownEnforcement.status() })
     }
 
+    @Test
+    fun `given an applications only session when reading status then the helper service state decides`() {
+        val ready = recordingLinks(serviceReady = true)
+        val readyEnforcement = JvmSessionEnforcement(ready.browser, ready.applications)
+        runBlocking { readyEnforcement.apply(request(emptyList())) }
+        assertEquals(EnforcementOutcome.APPLIED, runBlocking { readyEnforcement.status() })
+
+        val down = recordingLinks(serviceReady = false)
+        val downEnforcement = JvmSessionEnforcement(down.browser, down.applications)
+        runBlocking { downEnforcement.apply(request(emptyList())) }
+        assertEquals(EnforcementOutcome.CLEARED, runBlocking { downEnforcement.status() })
+
+        val unknown = recordingLinks(serviceReady = null)
+        val unknownEnforcement = JvmSessionEnforcement(unknown.browser, unknown.applications)
+        runBlocking { unknownEnforcement.apply(request(emptyList())) }
+        assertEquals(EnforcementOutcome.UNKNOWN, runBlocking { unknownEnforcement.status() })
+    }
+
     private fun request(
         domains: List<String> = listOf("stable.example"),
         mappingIds: List<String> = listOf("aa".repeat(32)),
@@ -127,6 +145,7 @@ class JvmSessionEnforcementTest {
         appStart: Boolean = true,
         appClear: Boolean = true,
         applied: Boolean? = true,
+        serviceReady: Boolean? = true,
     ): RecordingLinks {
         val calls = ArrayDeque<String>()
         val browser = object : BrowserEnforcementLink {
@@ -160,6 +179,11 @@ class JvmSessionEnforcementTest {
             override suspend fun clear(): Boolean {
                 calls.addLast("appClear")
                 return appClear
+            }
+
+            override suspend fun isServiceReady(): Boolean? {
+                calls.addLast("serviceStatus")
+                return serviceReady
             }
         }
         return RecordingLinks(calls, browser, applications)

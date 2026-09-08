@@ -30,6 +30,7 @@ internal class SessionEnforcementCoordinator(
 ) {
     private val mutableView = MutableStateFlow(EnforcementViewState())
     private var reconcileJob: Job? = null
+    private var unknownStreak = 0
     private var expiryClearDoneFor: String? = null
 
     val view: StateFlow<EnforcementViewState> = mutableView.asStateFlow()
@@ -51,15 +52,31 @@ internal class SessionEnforcementCoordinator(
         }
     }
 
+    fun pollNow(record: SessionRecord) {
+        if (mutableView.value.busy || mutableView.value.state !is EnforcementState.Active) {
+            return
+        }
+        scope.launch {
+            onTickSecond(record)
+        }
+    }
+
     suspend fun applyAfterStart(
         record: SessionRecord,
         targets: SessionTargetsState,
     ) {
+        val entering = mutableView.value.state
         mutableView.update { view -> view.copy(busy = true) }
         try {
-            val frozen = freezeEffectiveSet(targets)
+            if (entering is EnforcementState.ActionRequired && entering.kind == EnforcementActionKind.CLEAR_FAILED) {
+                enforcement.clear()
+            }
+            val frozen = targets.toEnforcedSet()
             val report = enforcement.apply(record.toEnforcementRequest(frozen, targets))
             mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = frozen) }
+            if (report.outcome == EnforcementOutcome.APPLIED) {
+                unknownStreak = 0
+            }
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (_: Exception) {
@@ -69,7 +86,7 @@ internal class SessionEnforcementCoordinator(
                         EnforcementActionKind.APPLY_FAILED,
                         enforcement.reapplyRequiresPrompt,
                     ),
-                    enforced = freezeEffectiveSet(targets),
+                    enforced = targets.toEnforcedSet(),
                 )
             }
         } finally {
@@ -78,8 +95,8 @@ internal class SessionEnforcementCoordinator(
     }
 
     suspend fun clearAfterEnd() {
-        val current = mutableView.value
-        if (current.state !is EnforcementState.Active && current.state !is EnforcementState.ActionRequired) {
+        val entering = mutableView.value.state
+        if (entering !is EnforcementState.Active && entering !is EnforcementState.ActionRequired) {
             return
         }
         mutableView.update { view -> view.copy(busy = true) }
@@ -87,6 +104,17 @@ internal class SessionEnforcementCoordinator(
             when (enforcement.clear()) {
                 EnforcementOutcome.CLEARED -> {
                     mutableView.update { EnforcementViewState() }
+                }
+
+                EnforcementOutcome.UNAVAILABLE,
+                EnforcementOutcome.AUTHORIZATION_REQUIRED -> {
+                    if (entering.isApplyFailure()) {
+                        mutableView.update { EnforcementViewState() }
+                    } else {
+                        mutableView.update { view ->
+                            view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
+                        }
+                    }
                 }
 
                 else -> {
@@ -125,25 +153,46 @@ internal class SessionEnforcementCoordinator(
         }
     }
 
-    suspend fun onTickSecond(status: LocalSessionStatus?) {
-        val record = (status as? LocalSessionStatus.Active)?.record ?: return
+    private suspend fun onTickSecond(record: SessionRecord) {
         if (mutableView.value.busy || mutableView.value.state !is EnforcementState.Active) {
             return
         }
         try {
-            if (enforcement.status() == EnforcementOutcome.APPLIED) {
-                return
+            when (enforcement.status()) {
+                EnforcementOutcome.APPLIED -> {
+                    unknownStreak = 0
+                }
+
+                EnforcementOutcome.CLEARED -> {
+                    unknownStreak = 0
+                    if (enforcement.reapplyRequiresPrompt) {
+                        applyFailed()
+                    } else {
+                        reapplyCurrent(record)
+                    }
+                }
+
+                else -> {
+                    unknownStreak += 1
+                    if (unknownStreak >= CONSECUTIVE_UNKNOWN_LIMIT) {
+                        unknownStreak = 0
+                        if (enforcement.reapplyRequiresPrompt) {
+                            applyFailed()
+                        } else {
+                            reapplyCurrent(record)
+                        }
+                    }
+                }
             }
-            if (enforcement.reapplyRequiresPrompt) {
-                mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
-                return
-            }
-            reapplyCurrent(record)
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (_: Exception) {
-            mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+            applyFailed()
         }
+    }
+
+    private fun applyFailed() {
+        mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
     }
 
     private fun reconcileActiveSession(record: SessionRecord) {
@@ -179,7 +228,7 @@ internal class SessionEnforcementCoordinator(
                     mutableView.update { view ->
                         view.copy(
                             state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt),
-                            enforced = freezeEffectiveSet(loadTargets()),
+                            enforced = loadTargets().toEnforcedSet(),
                         )
                     }
                     refreshSession()
@@ -190,7 +239,7 @@ internal class SessionEnforcementCoordinator(
         if (enforcement.status() == EnforcementOutcome.APPLIED) {
             mutableView.update { view ->
                 if (view.state is EnforcementState.Inactive) {
-                    view.copy(state = EnforcementState.Active(false), enforced = freezeEffectiveSet(loadTargets()))
+                    view.copy(state = EnforcementState.Active(false), enforced = loadTargets().toEnforcedSet())
                 } else {
                     view
                 }
@@ -204,7 +253,7 @@ internal class SessionEnforcementCoordinator(
                         EnforcementActionKind.RESUME_REQUIRED,
                         repeatsSystemPrompt = true,
                     ),
-                    enforced = freezeEffectiveSet(loadTargets()),
+                    enforced = loadTargets().toEnforcedSet(),
                 )
             }
             return
@@ -214,10 +263,13 @@ internal class SessionEnforcementCoordinator(
 
     private suspend fun reapplyCurrent(record: SessionRecord) {
         val targets = loadTargets()
-        val frozen = freezeEffectiveSet(targets)
+        val frozen = targets.toEnforcedSet()
         enforcement.clear()
         val report = enforcement.apply(record.toEnforcementRequest(frozen, targets))
         mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = frozen) }
+        if (report.outcome == EnforcementOutcome.APPLIED) {
+            unknownStreak = 0
+        }
     }
 
     private suspend fun clearAfterObservedExpiry(record: SessionRecord) {
@@ -227,10 +279,6 @@ internal class SessionEnforcementCoordinator(
         }
         expiryClearDoneFor = sessionId
         clearAfterEnd()
-    }
-
-    private fun freezeEffectiveSet(targets: SessionTargetsState): EnforcedSet {
-        return targets.toEnforcedSet()
     }
 }
 
@@ -273,3 +321,9 @@ internal fun EnforcementApplyReport.toActiveState(): EnforcementState {
 internal fun EnforcementActionKind.toAction(repeatsSystemPrompt: Boolean): EnforcementState.ActionRequired {
     return EnforcementState.ActionRequired(this, repeatsSystemPrompt)
 }
+
+internal fun EnforcementState.isApplyFailure(): Boolean {
+    return this is EnforcementState.ActionRequired && kind == EnforcementActionKind.APPLY_FAILED
+}
+
+private const val CONSECUTIVE_UNKNOWN_LIMIT: Int = 3

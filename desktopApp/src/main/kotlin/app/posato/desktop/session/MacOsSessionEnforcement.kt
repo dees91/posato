@@ -39,6 +39,7 @@ internal class MacOsBrowserEnforcementLink(
 internal class MacOsApplicationEnforcementLink(
     private val enforcer: MacOsApplicationEnforcer,
     private val mappings: DesktopLocalApplicationMappings,
+    private val helper: MacOsHelperClient,
 ) : ApplicationEnforcementLink {
     override suspend fun start(
         mappingIds: List<String>,
@@ -50,5 +51,13 @@ internal class MacOsApplicationEnforcementLink(
 
     override suspend fun clear(): Boolean {
         return enforcer.clear().outcome == HelperResult.Outcome.Success
+    }
+
+    override suspend fun isServiceReady(): Boolean? {
+        return try {
+            helper.status().serviceState == HelperResult.State.Ready
+        } catch (_: Exception) {
+            null
+        }
     }
 }
