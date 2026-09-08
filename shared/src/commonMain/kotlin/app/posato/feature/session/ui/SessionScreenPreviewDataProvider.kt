@@ -1,6 +1,9 @@
 package app.posato.feature.session.ui
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
+import app.posato.feature.enforcement.EnforcedSet
+import app.posato.feature.enforcement.EnforcementActionKind
+import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.session.domain.LocalSessionStatus.Active
 import app.posato.feature.session.domain.LocalSessionStatus.Ended
 import app.posato.feature.session.domain.LocalSessionStatus.Inactive
@@ -84,6 +87,33 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
                 ),
                 remainingMillis = 42 * 60_000L,
                 formattedActiveEnd = "15:12",
+                enforcement = EnforcementState.Active(false),
+                enforced = EnforcedSet(
+                    domains = persistentListOf("example.com"),
+                    applicationCount = 1,
+                ),
+            ),
+        ),
+        SessionPreviewState(
+            "Active needs attention",
+            SessionUiState(
+                status = Active(record, 42 * 60_000L),
+                review = SessionReview(domains = persistentListOf("example.com")),
+                remainingMillis = 42 * 60_000L,
+                formattedActiveEnd = "15:12",
+                enforcement = EnforcementState.ActionRequired(EnforcementActionKind.APPLY_FAILED, true),
+                enforced = EnforcedSet(domains = persistentListOf("example.com")),
+            ),
+        ),
+        SessionPreviewState(
+            "Active resume",
+            SessionUiState(
+                status = Active(record, 42 * 60_000L),
+                review = SessionReview(domains = persistentListOf("example.com")),
+                remainingMillis = 42 * 60_000L,
+                formattedActiveEnd = "15:12",
+                enforcement = EnforcementState.ActionRequired(EnforcementActionKind.RESUME_REQUIRED, true),
+                enforced = EnforcedSet(domains = persistentListOf("example.com")),
             ),
         ),
         SessionPreviewState(

@@ -238,11 +238,13 @@ The driver proves user paths. Native work with no user action yet is not
 driven and must not be faked through the UI: the iOS synchronizable-Keychain
 adapter (`SYNC-005`), the macOS sync companion, its pipe protocol, and its
 entitlements (`SYNC-006`), CloudKit adapters (`SYNC-008`), provisioning, and
-signing. Enforcement is in the same position until `SESSION-002` wires session
-start to it: the macOS browser-domain denial (`MACOS-004`) and the
-Posato-owned iOS restrictions (`IOS-001`) have no drivable user path yet. Their
-proof is the Swift and Kotlin test suites, `./gradlew quality`, the packaging
-verifier, and, for device-only behavior, an XCTest run on the iPhone:
+signing. Session start now applies enforcement (`SESSION-002`): the macOS
+browser-domain denial (`MACOS-004`), the macOS application restriction
+(`MACOS-005`), and the Posato-owned iOS restrictions (`IOS-001` plus the
+`IOS-002` suspended-expiry schedule) are drivable through the session recipes
+in `features/sessions.md`, with the Swift and Kotlin test suites,
+`./gradlew quality`, the packaging verifier, and, for device-only behavior, an
+XCTest run on the iPhone as the remaining proof:
 
 ```shell
 xcodebuild build-for-testing -project iosApp/iosApp.xcodeproj -scheme iosApp -destination "platform=iOS,name=<device name>" 2>&1 | grep --line-buffered -E "error:|warning:|BUILD"
@@ -321,4 +323,7 @@ so the developer's local data is unchanged.
   and start 25 minutes through setup/review. `session-early-end.json` relaunches
   before ending early. The expiry fixtures select 25 minutes, decrease minutes
   twenty times, wait for a real five-minute expiry, and remove `example.com`.
-  See `features/sessions.md`.
+  Desktop session runs split: `session-start-action-required-desktop.json` proves the
+  unattended action-required path when the administrator prompt goes unconfirmed, while
+  the full desktop start and expiry with enforcement are maintainer-attended rows because
+  no driver step can script the SecurityAgent dialog. See `features/sessions.md`.

@@ -3,6 +3,7 @@ package app.posato.di
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createDesktopDatabaseDriver
+import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.session.JvmSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.data.SqlLocalSessionStore
@@ -30,7 +31,8 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
     @DependencyGraph.Factory
     fun interface Factory {
         fun create(
-            @Provides applicationMappings: LocalApplicationMappings
+            @Provides applicationMappings: LocalApplicationMappings,
+            @Provides enforcement: EnforcementPort,
         ): DesktopApplicationGraph
     }
 
@@ -96,6 +98,9 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
     }
 }
 
-fun createDesktopApplicationGraph(applicationMappings: LocalApplicationMappings): ApplicationGraph {
-    return createGraphFactory<DesktopApplicationGraph.Factory>().create(applicationMappings)
+fun createDesktopApplicationGraph(
+    applicationMappings: LocalApplicationMappings,
+    enforcement: EnforcementPort,
+): ApplicationGraph {
+    return createGraphFactory<DesktopApplicationGraph.Factory>().create(applicationMappings, enforcement)
 }
