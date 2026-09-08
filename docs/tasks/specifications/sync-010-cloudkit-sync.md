@@ -168,8 +168,11 @@ removing device starts a new workspace without a console step.
   pending, common code receives no fetched bytes, acknowledges no bundle, and
   advances no cursor, and the status reports action required; after the
   original account returns, the next exchange restages the unchanged pending
-  work and the other device receives that bundle once. Proven physically in
-  both directions; the mid-operation postflight stays with adapter tests.
+  work and the other device receives that bundle once. Physical sign-out is
+  verified on iPhone; on 2026-09-08 the maintainer accepted that evidence as
+  sufficient and waived sign-out on the working Mac. No physical Mac sign-out
+  claim is made; its account gate and mid-operation postflight remain covered
+  by common and adapter tests.
 - `AC-04` — The sync section reports exactly one of the seven states from the
   local attempt, never a time, device list, or delivery claim; each retryable
   outcome offers the same explicit retry; a press during a running exchange

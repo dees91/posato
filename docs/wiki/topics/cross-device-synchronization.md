@@ -412,6 +412,16 @@ not claim that every other device has received the update.
   bridge before CloudKit fetch. An explicit empty NSData branch fixes it;
   a native adapter regression reproduces the failure before the guard. Both
   devices now complete exchange and the Mac accepts iPhone-authored operations.
+- `observed` (`SYNC-010`, signed Mac/iPhone): offline retry and iPhone
+  sign-out/sign-in preserve the pending change through the interruption and
+  yield one additional acceptance on Mac after sign-in. Removal from either
+  device preserves local websites, blocks the old peer, and permits fresh
+  consent. Old-anchor cleanup on either peer leaves the newly created zone
+  intact. Overlapping consent produces a winning iPhone and a waiting Mac;
+  the Mac then adopts the key, authors successfully, and completes after relaunch.
+- `user-confirmed` evidence limit (2026-09-08): the maintainer accepted iPhone
+  sign-out evidence and waived sign-out on the working Mac. Mac account
+  isolation is unit/adapter-tested; it is not claimed as physically verified.
 - `user-confirmed` limits: neither adapter offers exact refetch, so rejection
   pins the cursor. Exact-domain edits commit locally before authoring into the
   outbox; failure of that second step preserves the local save and reports

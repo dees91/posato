@@ -67,6 +67,8 @@ local behavior and truthful degradation without its own iCloud account.
    Coordinate presses against one absolute wall-clock time, allowing for iOS
    driver startup. Retry the losing side after key delivery; a completed
    exchange after relaunch proves that its adopted key opens the writer.
+   XCTest log output may be buffered: calibrate startup before scheduling the
+   presses, then verify their overlap from the recorded timestamps afterward.
 
 Useful Mac queries (`db query -t desktop --sql "…"`):
 
