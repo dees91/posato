@@ -5,6 +5,13 @@ import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createIosDatabaseDriver
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.IosEnforcement
+import app.posato.feature.onboarding.ApplicationAccessPort
+import app.posato.feature.onboarding.IosApplicationAccess
+import app.posato.feature.onboarding.MacHelperPort
+import app.posato.feature.onboarding.OnboardingPermissionPlatform
+import app.posato.feature.onboarding.UnavailableMacHelper
+import app.posato.feature.onboarding.data.LocalSetupStore
+import app.posato.feature.onboarding.data.SqlLocalSetupStore
 import app.posato.feature.enforcement.IosEnforcementProvider
 import app.posato.feature.enforcement.IosSessionEnforcement
 import app.posato.feature.enforcement.IosSuspendedExpiry
@@ -62,12 +69,41 @@ internal interface IosApplicationGraph : ApplicationGraph {
     @DependencyGraph.Factory
     fun interface Factory {
         fun create(
-            @Provides applicationMappings: LocalApplicationMappings,
+            @Provides applicationMappings: IosLocalApplicationMappings,
             @Provides enforcement: EnforcementPort,
             @Provides keychainProvider: IosKeychainProvider,
             @Provides mailboxProvider: IosCloudKitMailboxProvider,
             @Provides cryptoProvider: IosCryptoProvider,
         ): IosApplicationGraph
+    }
+
+    @Provides
+    fun provideApplicationMappings(implementation: IosLocalApplicationMappings): LocalApplicationMappings {
+        return implementation
+    }
+
+    @Provides
+    fun provideApplicationAccess(mappings: IosLocalApplicationMappings): ApplicationAccessPort {
+        return IosApplicationAccess(mappings)
+    }
+
+    @Provides
+    fun provideMacHelper(): MacHelperPort {
+        return UnavailableMacHelper
+    }
+
+    @Provides
+    fun providePermissionPlatform(): OnboardingPermissionPlatform {
+        return OnboardingPermissionPlatform.IOS
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSetupStore(
+        database: PosatoDatabase,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+    ): LocalSetupStore {
+        return SqlLocalSetupStore(database, databaseDispatcher)
     }
 
     @Provides

@@ -76,7 +76,7 @@ internal fun SyncBootstrapSection(
     }
 }
 
-private fun SyncStatus.message(linked: Boolean): StringResource {
+internal fun SyncStatus.message(linked: Boolean): StringResource {
     return when (this) {
         SyncStatus.LOCAL_ONLY -> Res.string.sync_icloud_description
         SyncStatus.PENDING -> Res.string.sync_pending

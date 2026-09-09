@@ -5,6 +5,12 @@ import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createDesktopDatabaseDriver
 import app.posato.core.database.defaultDesktopPolicyDatabasePath
 import app.posato.feature.enforcement.EnforcementPort
+import app.posato.feature.onboarding.ApplicationAccessPort
+import app.posato.feature.onboarding.MacHelperPort
+import app.posato.feature.onboarding.OnboardingPermissionPlatform
+import app.posato.feature.onboarding.UnavailableApplicationAccess
+import app.posato.feature.onboarding.data.LocalSetupStore
+import app.posato.feature.onboarding.data.SqlLocalSetupStore
 import app.posato.feature.session.JvmSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.data.SqlLocalSessionStore
@@ -53,6 +59,7 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
             @Provides applicationMappings: LocalApplicationMappings,
             @Provides enforcement: EnforcementPort,
             @Provides databasePath: String,
+            @Provides macHelper: MacHelperPort,
         ): DesktopApplicationGraph
     }
 
@@ -99,6 +106,25 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
+    fun provideSetupStore(
+        database: PosatoDatabase,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+    ): LocalSetupStore {
+        return SqlLocalSetupStore(database, databaseDispatcher)
+    }
+
+    @Provides
+    fun provideApplicationAccess(): ApplicationAccessPort {
+        return UnavailableApplicationAccess
+    }
+
+    @Provides
+    fun providePermissionPlatform(): OnboardingPermissionPlatform {
+        return OnboardingPermissionPlatform.MAC
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
     fun provideSessionIds(): SessionIdGenerator {
         return RandomSessionIdGenerator
     }
@@ -134,6 +160,7 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
 fun createDesktopApplicationGraph(
     applicationMappings: LocalApplicationMappings,
     enforcement: EnforcementPort,
+    macHelper: MacHelperPort,
     databasePath: String = defaultDesktopPolicyDatabasePath(),
 ): ApplicationGraph {
     return synchronized(desktopGraphLock) {
@@ -142,7 +169,12 @@ fun createDesktopApplicationGraph(
             require(processDatabasePath == databasePath)
             existing
         } else {
-            createGraphFactory<DesktopApplicationGraph.Factory>().create(applicationMappings, enforcement, databasePath).also {
+            createGraphFactory<DesktopApplicationGraph.Factory>().create(
+                applicationMappings,
+                enforcement,
+                databasePath,
+                macHelper,
+            ).also {
                 processDatabasePath = databasePath
                 processDesktopGraph = it
             }
