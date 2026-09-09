@@ -100,9 +100,14 @@ tests own this injected boundary. Both adapters lack exact refetch; a rejected
 bundle pins the cursor and requires action. Mid-operation account changes are
 also an adapter-test boundary, not a physically observable driver row.
 
-Local exact-domain save precedes outbox authoring. Failure or an unavailable
-writer preserves the local save and reports action required. Changes made
-before linking are not backfilled. Tests own this accepted interim limit.
+Local exact-domain save returns after committing locally and handing off its
+ordered changes; it does not wait for network exchange. A linked device opens
+its writer on demand. Authoring failure preserves the local save and reports
+action required; key waiting or unavailability retains its specific status.
+The handoff is volatile until outbox authoring, so process exit can lose an
+unauthored diff while retaining local websites. Changes made before linking or
+whose authoring fails are not backfilled. Tests own these interim limits and
+the exclusion of old queued changes after removal and re-linking.
 
 Removal stops at an uncertain account, zone, key, or storage outcome. A missing
 zone permits remaining cleanup; a different anchor permits only the old known

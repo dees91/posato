@@ -1,7 +1,6 @@
 package app.posato.feature.sync.ui
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,7 +55,6 @@ internal class SyncBootstrapUiState(
 internal fun rememberSyncBootstrapUiState(sync: AppleSync): SyncBootstrapUiState {
     val scope = rememberCoroutineScope()
     val state = remember(sync) { SyncBootstrapUiState(sync, scope) }
-    LaunchedEffect(state) { state.onForeground() }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = state::onForeground)
     return state
 }

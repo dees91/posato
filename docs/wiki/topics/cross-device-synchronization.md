@@ -424,9 +424,22 @@ not claim that every other device has received the update.
   isolation is unit/adapter-tested; it is not claimed as physically verified.
 - `user-confirmed` limits: neither adapter offers exact refetch, so rejection
   pins the cursor. Exact-domain edits commit locally before authoring into the
-  outbox; failure of that second step preserves the local save and reports
-  action required. Pre-link edits are not backfilled, and remote operations
+  outbox; failure of that second step preserves the local save.
+- `user-confirmed` (2026-09-09): local saves hand ordered domain diffs to a
+  process-owned FIFO without waiting for network work. Each diff retains the
+  established workspace captured before its local commit; removal or a new
+  workspace invalidates old queued work. The writer opens on demand under the
+  shared flight. A failed authoring pass retains its failure status instead
+  of running an exchange that could immediately overwrite it with completion.
+  The queue is volatile until the outbox commit, so process exit can lose an
+  unauthored diff while retaining local policy. Pre-link edits and failed
+  authoring are not backfilled, and remote operations
   do not yet change visible policies or sessions (`SYNC-011` / `SYNC-012`).
+- `observed` (2026-09-09 correction): controlled common tests prove local saves
+  complete while established checks or fetches are suspended. Signed Mac/iPhone
+  edits, persistence after relaunch, removal of the test domains, and exchange
+  pass; repeated fetch adds no accepted bundles. These physical runs do not
+  inject network delays or replace the existing account-gate evidence.
 
 ## Open production questions
 

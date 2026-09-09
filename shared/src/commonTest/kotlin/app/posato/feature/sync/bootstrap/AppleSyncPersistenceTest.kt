@@ -29,7 +29,7 @@ class AppleSyncPersistenceTest {
             harness.sync.onForeground()
             advanceUntilIdle()
             harness.mailbox.saveResult = BundleSaveResult.UnknownOutcome
-            harness.sync.recordDomainChanges(testPolicy(), testPolicy("pending.example"))
+            harness.recordDomainChanges(testPolicy(), testPolicy("pending.example"))
             advanceUntilIdle()
             val before = harness.snapshot()
             val bootstrapBefore = harness.store.read()
@@ -60,7 +60,7 @@ class AppleSyncPersistenceTest {
             source.establish()
             source.sync.onForeground()
             advanceUntilIdle()
-            source.sync.recordDomainChanges(testPolicy(), testPolicy("one.example"))
+            source.recordDomainChanges(testPolicy(), testPolicy("one.example"))
             advanceUntilIdle()
             val bundles = source.mailbox.saved
             destination.establish()
@@ -93,7 +93,7 @@ class AppleSyncPersistenceTest {
             val policy = testPolicy("kept.example")
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.replace(before.revision, policy))
             harness.mailbox.saveResult = BundleSaveResult.Retryable
-            harness.sync.recordDomainChanges(testPolicy(), policy)
+            harness.recordDomainChanges(testPolicy(), policy)
             advanceUntilIdle()
             val replicaBefore = harness.snapshot()
             harness.keys.scriptDelete(KeyItemDeleteResult.UnknownOutcome)
@@ -119,10 +119,12 @@ class AppleSyncPersistenceTest {
         val harness = AppleSyncTestHarness(dispatcher)
         try {
             harness.establish()
+            harness.keys.scriptRead(KeyItemReadResult.IntegrityFailure)
             val local = SyncTargetPolicyStore(SqlLocalTargetPolicyStore(harness.database, dispatcher), harness.sync)
             val initial = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.read()).value
             val saved = local.replace(initial.revision, testPolicy("kept.example"))
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(saved)
+            advanceUntilIdle()
             assertEquals(SyncStatus.ACTION_REQUIRED, harness.sync.state.value.status)
             assertEquals(saved, local.read())
             assertEquals(0, harness.mailbox.saved.size)

@@ -1437,3 +1437,8 @@ iPhone sign-out recovery, removal and foreign-anchor protection in both
 directions, and concurrent consent with losing-device key adoption. The
 maintainer accepted iPhone sign-out evidence and waived sign-out on the working
 Mac; that coverage limit remains explicit in the brief and execution record.
+Review corrections make local saves independent of the network flight through
+an ordered, workspace-bound handoff and on-demand writer opening. Tests cover
+cancellation, failed authoring, and exclusion of old workspace changes; signed
+Mac/iPhone edit, relaunch, cleanup and repeated exchange also pass. The volatile
+handoff before outbox authoring remains an explicit D1 limit.

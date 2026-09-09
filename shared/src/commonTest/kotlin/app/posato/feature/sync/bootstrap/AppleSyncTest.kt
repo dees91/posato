@@ -40,7 +40,7 @@ class AppleSyncTest {
             harness.sync.onForeground()
             advanceUntilIdle()
             harness.mailbox.saveResult = BundleSaveResult.UnknownOutcome
-            harness.sync.recordDomainChanges(testPolicy(), testPolicy("one.example"))
+            harness.recordDomainChanges(testPolicy(), testPolicy("one.example"))
             advanceUntilIdle()
             assertEquals(2, harness.snapshot().pendingBundles.size)
             val original = harness.mailbox.saved.first()
@@ -49,7 +49,7 @@ class AppleSyncTest {
             advanceUntilIdle()
             assertEquals(original, harness.mailbox.saved[1])
             assertTrue(harness.snapshot().pendingBundles.isEmpty())
-            harness.sync.recordDomainChanges(testPolicy("one.example"), testPolicy("two.example"))
+            harness.recordDomainChanges(testPolicy("one.example"), testPolicy("two.example"))
             advanceUntilIdle()
             assertEquals(4, harness.snapshot().acceptedBundles.size)
             assertEquals(SyncStatus.COMPLETED, harness.sync.state.value.status)
@@ -67,7 +67,7 @@ class AppleSyncTest {
             harness.sync.onForeground()
             advanceUntilIdle()
             harness.mailbox.saveResult = BundleSaveResult.Retryable
-            harness.sync.recordDomainChanges(testPolicy(), testPolicy("one.example"))
+            harness.recordDomainChanges(testPolicy(), testPolicy("one.example"))
             advanceUntilIdle()
             val before = harness.snapshot()
             val sends = harness.mailbox.saved.size
@@ -124,7 +124,7 @@ class AppleSyncTest {
             harness.establish()
             harness.sync.onForeground()
             advanceUntilIdle()
-            harness.sync.recordDomainChanges(testPolicy(), testPolicy("one.example"))
+            harness.recordDomainChanges(testPolicy(), testPolicy("one.example"))
             advanceUntilIdle()
             val before = harness.snapshot()
             harness.mailbox.pages.add(ChangeFetchResult.TokenExpired)
