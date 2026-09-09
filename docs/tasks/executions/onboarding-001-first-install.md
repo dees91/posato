@@ -11,8 +11,8 @@
 
 ## Plan
 
-1. Maintainer answers `D1` through `D3`; `D4` through `D6` stand unless
-   changed.
+1. `D1` through `D6` accepted by the maintainer on 2026-09-09 as
+   recommended, after the plan-review corrections.
 2. `LocalSetup.sq` and `6.sqm` with the singleton completion row and the
    upgrade seed, its store with the tri-state read, and migration
    verification for the empty and the seeded case.
@@ -92,8 +92,6 @@
 
 ## Blockers and accepted risks
 
-- `D1`, `D2`, and `D3` are maintainer decisions; implementation of the
-  affected steps waits for them.
 - The maintainer's Mac already approved the helper, so the approval-required
   branch of the Mac permission step has unit evidence only.
 - The handoff between the upgrade seed and the fresh-database rule depends on
