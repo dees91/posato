@@ -3,7 +3,7 @@
 - **Brief:** [Complete first-install privacy, Apple workspace, authorization, and target setup without a product account](../specifications/onboarding-001-first-install.md)
 - **Status:** `active`
 - **Review tier:** `high-risk`
-- **Implementer:** pending assignment (brief prepared 2026-09-09)
+- **Implementer:** Muse Code (assigned 2026-09-09, plan approved by maintainer)
 - **Reviewer:** independent plan review complete (changes-required, resolved in the brief); completed-change review pending
 - **Branch:** `feature/onboarding-001-first-install`
 - **Worktree:** `~/Projects/Polyglot/posato-onboarding-001`
@@ -76,7 +76,18 @@
 
 ## Result
 
-- Pending.
+- Persistence (`LocalSetup.sq`, `6.sqm` with upgrade seed), tri-state
+  `SqlLocalSetupStore`, both platform ports with their actuals, the step
+  holder and screens hosted outside the scaffold, both graphs, the
+  `first-install.json` / `first-install-skip.json` fixtures, the
+  `features/onboarding.md` recipe, and the `DESIGN.md` / wiki closeout are
+  implemented and verified on Simulator, Mac, and the physical iPhone.
+- Detekt decided the provider question: one `OnboardingDependencies` provider
+  per graph. Zero new suppressions.
+- `./gradlew quality` passes; one transient
+  `:desktopApp:verifyMacOsDevelopmentPackaging` failure reproduced once and
+  passed standalone and on the next two full runs (stale staged bundle, no
+  source change needed).
 
 ## Completed-change review
 
@@ -88,7 +99,12 @@
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| pending | | |
+| `./gradlew quality` (ktlint, Detekt, tests incl. `SqlLocalSetupStoreTest`, `SqlLocalSetupMigrationTest`, `OnboardingUiStateTest`, `DesktopMacHelperStateTest`, `ApplicationAuthorizationAccessTests`) | pass | full runs 2026-09-09, final `BUILD SUCCESSFUL`, 197 tasks |
+| Simulator first-install full row (permission request → unavailable → Later → `example.com` → summary → Session) | pass | `build/verification/runs/20260909-103321-5559`, 23/23 steps, screenshots + snapshot |
+| Simulator skip row (`first-install-skip.json` prelude to Session) | pass | `build/verification/runs/20260909-103647-c218`, 15/15 steps |
+| Mac fresh launch, helper enable, upgrade seed, DB restore byte-identical | pass | `build/verification/runs/20260909-103758-5591`, `20260909-104001-f812`, `20260909-104237-808a` (`desktop-app.log`, `backup/desktop`, screenshots) |
+| Physical iPhone Later row (fresh → 6 steps → Session) | pass | `build/verification/runs/20260909-104533-31f6`, 23/23 steps, screenshots + snapshot |
+| Physical iPhone attended approval row (Ask → Apple Screen Time sheet → grant → Later → website → summary `Screen Time is allowed.` → Session) | pass | `build/verification/runs/20260909-104630-eb93` (Ask tap + system sheet) and `build/verification/runs/20260909-111713-b8a4` (13/13 steps to Session) |
 
 ## Blockers and accepted risks
 
@@ -101,5 +117,6 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `ready-for-review`
+- **Outcome:** implementation and verification complete; independent
+  completed-change review and PR outstanding

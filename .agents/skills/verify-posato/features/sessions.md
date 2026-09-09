@@ -96,3 +96,5 @@ Preconditions:
   without group metadata is not an effective application target.
 - Expiry needs a real five-minute wait; do not alter the database or clock.
 - Restart returns to Session, so re-enter Paused items before website cleanup.
+  A fresh database shows the first-install flow instead; run
+  `first-install-skip.json` first (see [First install](./onboarding.md)).

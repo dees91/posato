@@ -2,6 +2,8 @@ package app.posato.feature.onboarding
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalFocusManager
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoBody
 import app.posato.core.designsystem.PosatoButton
@@ -174,6 +176,12 @@ internal fun WebsiteStep(
     onDefer: () -> Unit,
     layout: PosatoLayout,
 ) {
+    val focus = LocalFocusManager.current
+    LaunchedEffect(state.savedWebsites) {
+        if (state.savedWebsites > 0) {
+            focus.clearFocus()
+        }
+    }
     PosatoHeading(stringResource(Res.string.onboarding_website_title), layout = layout)
     PosatoBody(stringResource(Res.string.onboarding_website_body))
     WebsiteEntry(browser = browser, enabled = !state.websiteSaving, onSubmit = onSubmitWebsites)
