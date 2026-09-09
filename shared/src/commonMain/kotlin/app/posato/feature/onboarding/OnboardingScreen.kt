@@ -2,25 +2,23 @@ package app.posato.feature.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import app.posato.core.designsystem.PosatoActionRow
-import app.posato.core.designsystem.PosatoButton
-import app.posato.core.designsystem.PosatoButtonStyle
-import app.posato.core.designsystem.PosatoHeading
+import app.posato.core.designsystem.PosatoCaption
+import app.posato.core.designsystem.PosatoEyebrow
 import app.posato.core.designsystem.PosatoLayout
-import app.posato.core.designsystem.PosatoSetupStep
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.feature.onboarding.data.LocalSetupStore
@@ -29,8 +27,7 @@ import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.TargetsBrowserState
 import app.posato.generated.resources.Res
-import app.posato.generated.resources.onboarding_action_later
-import app.posato.generated.resources.onboarding_permission_title
+import app.posato.generated.resources.onboarding_progress
 import app.posato.generated.resources.onboarding_step_device
 import app.posato.generated.resources.onboarding_step_icloud
 import app.posato.generated.resources.onboarding_step_privacy
@@ -107,53 +104,44 @@ internal fun OnboardingScreen(
 ) {
     val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
     Column(
-        modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
+        modifier.fillMaxSize().padding(inset),
         verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
     ) {
         OnboardingProgress(current = state.step)
-        when (state.step) {
-            OnboardingStep.PURPOSE -> {
-                PurposeStep(onContinue, layout)
-            }
-
-            OnboardingStep.PRIVACY -> {
-                PrivacyStep(onContinue, layout)
-            }
-
-            OnboardingStep.ICLOUD -> {
-                IcloudStep(syncSnapshot, syncRunning, onSync, onDefer, layout)
-            }
-
-            OnboardingStep.PERMISSION -> {
-                PosatoHeading(stringResource(Res.string.onboarding_permission_title), layout = layout)
-                when (permissionPlatform) {
-                    OnboardingPermissionPlatform.IOS -> {
-                        IosPermissionStep(state.accessResult, state.permissionRunning, onRequestAccess)
-                    }
-
-                    OnboardingPermissionPlatform.MAC -> {
-                        MacPermissionStep(
-                            state.helperReadiness,
-                            state.permissionRunning,
-                            onEnableHelper,
-                            onRecheckHelper,
-                            onOpenHelperSettings,
-                        )
-                    }
+        key(state.step) {
+            when (state.step) {
+                OnboardingStep.PURPOSE -> {
+                    PurposeStep(onContinue, layout)
                 }
-                PosatoActionRow {
-                    PosatoButton(onClick = onDefer, style = PosatoButtonStyle.Quiet) {
-                        Text(stringResource(Res.string.onboarding_action_later))
-                    }
+
+                OnboardingStep.PRIVACY -> {
+                    PrivacyStep(onContinue, layout)
                 }
-            }
 
-            OnboardingStep.WEBSITE -> {
-                WebsiteStep(state, browser, onSubmitWebsites, onContinue, onDefer, layout)
-            }
+                OnboardingStep.ICLOUD -> {
+                    IcloudStep(syncSnapshot, syncRunning, onSync, onDefer, layout)
+                }
 
-            OnboardingStep.SUMMARY -> {
-                SummaryStep(state, permissionPlatform, deviceNoun, syncSnapshot.linked, onFinish, layout)
+                OnboardingStep.PERMISSION -> {
+                    PermissionStep(
+                        state,
+                        permissionPlatform,
+                        layout,
+                        onRequestAccess,
+                        onEnableHelper,
+                        onRecheckHelper,
+                        onOpenHelperSettings,
+                        onDefer,
+                    )
+                }
+
+                OnboardingStep.WEBSITE -> {
+                    WebsiteStep(state, browser, onSubmitWebsites, onContinue, onDefer, layout)
+                }
+
+                OnboardingStep.SUMMARY -> {
+                    SummaryStep(state, permissionPlatform, deviceNoun, syncSnapshot.linked, onFinish, layout)
+                }
             }
         }
     }
@@ -161,13 +149,21 @@ internal fun OnboardingScreen(
 
 @Composable
 private fun OnboardingProgress(current: OnboardingStep) {
-    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-        PosatoSetupStep("1", stringResource(Res.string.onboarding_step_purpose), current = current == OnboardingStep.PURPOSE)
-        PosatoSetupStep("2", stringResource(Res.string.onboarding_step_privacy), current = current == OnboardingStep.PRIVACY)
-        PosatoSetupStep("3", stringResource(Res.string.onboarding_step_icloud), current = current == OnboardingStep.ICLOUD)
-        PosatoSetupStep("4", stringResource(Res.string.onboarding_step_device), current = current == OnboardingStep.PERMISSION)
-        PosatoSetupStep("5", stringResource(Res.string.onboarding_step_website), current = current == OnboardingStep.WEBSITE)
-        PosatoSetupStep("6", stringResource(Res.string.onboarding_step_summary), current = current == OnboardingStep.SUMMARY)
+    val label = when (current) {
+        OnboardingStep.PURPOSE -> Res.string.onboarding_step_purpose
+        OnboardingStep.PRIVACY -> Res.string.onboarding_step_privacy
+        OnboardingStep.ICLOUD -> Res.string.onboarding_step_icloud
+        OnboardingStep.PERMISSION -> Res.string.onboarding_step_device
+        OnboardingStep.WEBSITE -> Res.string.onboarding_step_website
+        OnboardingStep.SUMMARY -> Res.string.onboarding_step_summary
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Large),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        PosatoEyebrow(stringResource(label), Modifier.weight(1f))
+        PosatoCaption(stringResource(Res.string.onboarding_progress, current.ordinal + 1, OnboardingStep.entries.size))
     }
 }
 

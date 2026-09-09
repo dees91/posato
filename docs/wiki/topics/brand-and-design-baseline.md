@@ -36,6 +36,24 @@ That evidence-only status for concrete presentation choices was superseded by
 the explicit adoption on 2026-09-07. Mock services and unimplemented product
 flows remain evidence only.
 
+## Accepted first-install presentation
+
+`user-confirmed` (2026-09-09): the maintainer accepted the isolated PR #44
+UI proposal for production integration. It restores the prototype's interval
+artwork and welcome hierarchy, replaces the full six-row progress list with
+one step label/count, shortens privacy copy into icon-led rows, and keeps
+compact actions reachable below scrolling content. Expanded text uses a
+600 dp column within the existing outer canvas. The six-step sequence,
+consent operations, persistence, and synchronization boundaries are unchanged.
+
+`observed`: Screen Time authorization gates iOS website enforcement as well
+as app enforcement; onboarding rationale therefore names both. Returned
+ready states offer Continue, while unavailable versions omit impossible
+settings-repair instructions. The continuing contract is the first-install
+section in [DESIGN.md](../../../DESIGN.md); the frozen prototype remains
+reference evidence. This acceptance does not adopt the separate suggestion
+to shorten or reorder the six-step flow.
+
 ## Accepted brand foundation
 
 ### Positioning

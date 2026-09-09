@@ -71,6 +71,13 @@ step action; every state the flow shows is read back from the real service;
 an install upgraded by this build opens on Session as before; and no later
 launch shows the flow again unless the local database is gone.
 
+## Accepted presentation amendment
+
+The maintainer accepted the isolated UI proposal on 2026-09-09 for PR #44.
+The first-install section of `DESIGN.md` is its visual and wording authority.
+This Standard UI correction preserves the original High-risk task's service,
+permission, database, and six-step sequencing boundaries.
+
 ## Boundaries
 
 - The flow is a linear first-run stepper under `feature/onboarding`, hosted by
@@ -79,8 +86,8 @@ launch shows the flow again unless the local database is gone.
   `PosatoNavigationScaffold`, under `PosatoTheme` and the safe-drawing insets
   with `ApplicationNavigationHeader` and the `PosatoSize.Content` width,
   because the sidebar branch of the scaffold always draws its column.
-  `PosatoSetupStep` shows progress and each step is a real state from an
-  existing service. No new navigation library: a linear setup has no back
+  The accepted compact step label/count shows progress, and service states
+  come from existing services. No new navigation library: a linear setup has no back
   stack, so ADR 0003's Navigation 3 clause does not fire; the step state
   lives in one `@Stable` holder like `SyncBootstrapUiState`.
 - Completion is read as one of unknown, incomplete, or complete before
@@ -88,15 +95,17 @@ launch shows the flow again unless the local database is gone.
   driver's `Paused items` wait cannot pass early. A failed completion write
   still lands on Session for this process; the flow returning at the next
   launch is the truthful outcome.
-- Purpose and privacy come first and Continue is their only acknowledgement;
+- Purpose and privacy come first, acknowledged through Make some space
+  and Continue;
   every service step (iCloud, permission, first website) offers a defer
   action that leaves the device local-only or unpermitted, because the
-  product must work without iCloud and without Screen Time.
+  product remains usable for local configuration without iCloud or Screen
+  Time; iOS pausing itself still requires Screen Time authorization.
 - The privacy step states only what an accepted authority proves: no product
   account; no browsing history, allowed-navigation events, or usage counters;
   settings in the person's private iCloud database, encrypted before they
   leave the device; application choices stay on each device; the Apple
-  Account and iCloud Keychain decide which devices join; no telemetry or
+  Account and iCloud Keychain remain the device-admission boundary; no telemetry or
   crash upload. No sentence states that websites, applications, or sessions
   appear on another device, because convergence is `SYNC-011` and
   `SYNC-012`; the iCloud step describes linking this device and that changes
@@ -141,10 +150,10 @@ launch shows the flow again unless the local database is gone.
   and store; the draft stays in the composable's text-field state;
   websites-only is a valid setup; onboarding creates no application group
   and no application selection (`D2`).
-- The summary step reads its sentences from the services ("Local only on
-  this iPhone. Screen Time not enabled. 1 website.") and offers one action,
-  **Open Session**. It congratulates nothing and claims nothing the status
-  does not say.
+- The summary shows the saved website count, returned permission/helper
+  result, and iCloud link state, with the accepted UI labels and contextual
+  setup guidance. **Go to Session** opens Session without starting a pause.
+  It congratulates nothing and claims nothing the state does not say.
 - Completion is one local fact in a singleton `local_setup_state` row added
   by migration `6.sqm` (`D5`). The migration seeds the row when the database
   already carries product state (a domain, an application policy, a bootstrap
@@ -207,7 +216,7 @@ launch shows the flow again unless the local database is gone.
   on an unverifiable helper without touching the client, reports the real
   helper state after **Enable on this Mac**, opens System Settings and offers
   **Check again** when approval is required, and describes the administrator
-  authentication without raising it. "Later" is available on both and leaves
+  authentication without raising it. "Not now" defers unconfigured access on both and leaves
   the existing contextual paths intact.
 - `AC-05` — The first-website step adds a domain through the existing
   validation and it appears in Paused items and the Session summary; skipping
@@ -242,7 +251,7 @@ launch shows the flow again unless the local database is gone.
   now" on iCloud, permission unavailable, add one website, land on Session;
   `db query` shows zero `sync_bootstrap_state` rows and one domain. The
   degraded iCloud outcome is a separate manual row. A `first-install-skip.json`
-  prelude (Continue, Continue, Not now, Later, Skip) is referenced by every
+  prelude (Make some space, Continue, Not now, Not now, Not now) is referenced by every
   recipe that launches fresh.
 - Physical iPhone, attended: uninstall and install, the flow, the real Screen
   Time prompt (maintainer step), **Sync with iCloud** establishing on an

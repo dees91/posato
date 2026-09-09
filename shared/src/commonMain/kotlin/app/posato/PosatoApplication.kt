@@ -175,7 +175,10 @@ class PosatoApplication internal constructor(
         ) {
             val layout = if (maxWidth < PosatoSize.CompactBreakpoint) PosatoLayout.Compact else PosatoLayout.Expanded
             Column(Modifier.fillMaxSize()) {
-                ApplicationNavigationHeader(placement)
+                val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+                if (placement != PosatoNavigationPlacement.Bottom || !keyboardVisible) {
+                    ApplicationNavigationHeader(placement)
+                }
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                     OnboardingScreen(
                         holder = onboarding,
