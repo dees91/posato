@@ -1,0 +1,10 @@
+CREATE TABLE local_setup_state (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
+);
+
+INSERT INTO local_setup_state(singleton)
+SELECT 1
+WHERE EXISTS (SELECT 1 FROM exact_domain_policy)
+  OR EXISTS (SELECT 1 FROM application_policy)
+  OR EXISTS (SELECT 1 FROM sync_bootstrap_state)
+  OR EXISTS (SELECT 1 FROM local_session);

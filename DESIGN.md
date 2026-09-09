@@ -95,6 +95,16 @@ enforcement is not connected to these screens. Never show the prototype's
 demo clock, invented synchronization time, mock application names, onboarding
 success, simulated permission outcome, or inspection overlay in the real app.
 
+On a first install the app opens a six-step first-run flow before the two
+destinations: purpose, privacy, Sync with iCloud, this-device permission,
+first website, and a summary read back from the services. Purpose and privacy
+cannot be skipped; every service step offers a defer action that leaves the
+device local-only or unpermitted. Completion is one local row that an upgrade
+migration seeds for databases that already hold product state. Nothing
+reaches iCloud, the synchronizable Keychain, a system prompt, or the helper
+before the person's explicit step action, and no sentence promises that
+websites, applications, or sessions appear on another device.
+
 The UI says that data is saved on this device. A running timer is not evidence
 that a restriction is active. Future flows below are requirements, not current
 controls.
@@ -324,6 +334,38 @@ text-size range and all supported window sizes still require native verification
 a normal-size screenshot alone does not prove coverage.
 
 ## Current Screens and Interactions
+
+### First-install onboarding
+
+`user-confirmed` (2026-09-09): adopt the reviewed onboarding UI proposal
+in PR #44. The six steps and existing service/persistence behavior remain.
+
+- Show one current-step label and an `n of 6` caption instead of the full
+  step list. Each new step starts at the top of its own content.
+- Welcome uses the existing interval artwork, “A little space. For what
+  matters.”, a short explanation, and **Make some space**.
+- Privacy uses “Your choices stay yours.” and three icon-led rows for
+  browsing-history exclusion, encryption before optional iCloud upload, and
+  device-local app choices. Supporting copy is subordinate to each row title.
+- iCloud remains optional. An unlinked device offers **Sync with iCloud** and
+  **Not now**. A linked device offers **Continue** and secondary **Sync now**;
+  “Connected to iCloud” describes linking, never delivery to other devices.
+  Waiting, retryable, syncing, and action-required states keep their real meaning.
+- Permission rationale names websites and apps on both platforms. No item is
+  paused until a session starts. **Continue** replaces the request action only
+  after the returned access/helper state is ready. **Not now** defers setup;
+  unavailable versions never suggest a settings change can enable them.
+- Website entry uses “What pulls you away?”, the existing domain form and
+  validation, and **Continue** after a saved addition. Before an addition,
+  **Not now** keeps an empty setup possible.
+- Summary leads with saved choices, device access, and local/iCloud scope.
+  When applicable, a notice names the remaining setup and its existing route.
+  **Go to Session** opens Session; it does not start a pause.
+- Compact pages keep actions beneath independently scrolling content, with a
+  full-width primary button. The iPhone wordmark hides while typing. Expanded
+  pages keep actions adjacent to content in a scrolling column capped at
+  600 dp inside the existing 820 dp outer canvas. Use the existing typography,
+  spacing, colors, safe-area handling, and native permission presentation.
 
 ### Session
 

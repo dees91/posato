@@ -287,12 +287,17 @@ tracked process and bringing its window forward; losing the foreground is
 a refusal. Coordinates come from the current accessibility bounds, never
 hardcoded screen positions. Read-only find/wait/snapshot do not scroll.
 
-`launch.fresh` resets application state. `terminateExisting: true` (the
+`launch.fresh` resets application state, so the app opens on the first-install
+flow instead of `Session`. `terminateExisting: true` (the
 scenario default) restarts the app; false reuses it. A failed step records
 `failure-<index>-screenshot.png` and `failure-<index>-snapshot.json`.
 
 Canonical scenarios in `fixtures/scenarios/`:
 
+- `first-install.json` / `first-install-skip.json`: the six-step first-run
+  flow on a fresh database (`launch --fresh` or `reset`), full and skip
+  variants. Run the skip variant as a prelude before any older recipe after a
+  fresh launch or reset; older recipes assume the app opens on `Session`.
 - `website-edit.json`: short-list editor/keyboard regression, draft retention,
   cancellation, saved edit and cleanup read back after real relaunches. Reserve
   `edit-proof.example` and `changed-proof.example` before running.

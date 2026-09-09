@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "launch": {"terminateExisting": true, "fresh": true},
+  "defaults": {"timeoutSeconds": 30},
+  "onFailure": {"screenshot": true, "snapshot": true},
+  "steps": [
+    {"name":"purpose-ready","action":"waitFor","state":"exists","query":{"text":"Make some space","role":"button"}},
+    {"name":"purpose-continue","action":"tap","query":{"text":"Make some space","role":"button"}},
+    {"name":"privacy-ready","action":"waitFor","state":"exists","query":{"text":"Your choices stay yours."}},
+    {"name":"privacy-reveal","action":"scrollTo","query":{"text":"Continue","role":"button"},"timeoutSeconds":60},
+    {"name":"privacy-continue","action":"tap","query":{"text":"Continue","role":"button"}},
+    {"name":"icloud-ready","action":"waitFor","state":"exists","query":{"text":"Not now","role":"button"}},
+    {"name":"icloud-decline","action":"tap","query":{"text":"Not now","role":"button"}},
+    {"name":"permission-ready","action":"waitFor","state":"exists","query":{"text":"Allow Screen Time access","role":"button"}},
+    {"name":"permission-request","action":"tap","query":{"text":"Allow Screen Time access","role":"button"}},
+    {"name":"permission-unavailable","action":"waitFor","state":"exists","query":{"text":"Screen Time access is not available in this version of Posato.","role":"text"}},
+    {"name":"permission-unavailable-no-request","action":"waitFor","state":"absent","query":{"text":"Allow Screen Time access","role":"button"}},
+    {"name":"permission-defer","action":"tap","query":{"text":"Not now","role":"button"}},
+    {"name":"website-ready","action":"waitFor","state":"exists","query":{"role":"textField"}},
+    {"name":"website-enter","action":"type","query":{"role":"textField"},"text":"example.com","clear":true,"submit":true},
+    {"name":"website-saved","action":"waitFor","state":"exists","query":{"text-contains":"added","role":"text"}},
+    {"name":"website-reveal","action":"scrollTo","query":{"text":"Continue","role":"button"},"timeoutSeconds":60},
+    {"name":"website-continue-ready","action":"waitFor","state":"exists","query":{"text":"Continue","role":"button"}},
+    {"name":"website-continue","action":"tap","query":{"text":"Continue","role":"button"}},
+    {"name":"summary-ready","action":"waitFor","state":"exists","query":{"text":"A pause, on your terms."}},
+    {"name":"summary-websites","action":"waitFor","state":"exists","query":{"text":"1 website saved","role":"text"}},
+    {"name":"summary-shot","action":"screenshot"},
+    {"name":"summary-tree","action":"snapshot"},
+    {"name":"summary-open-session","action":"tap","query":{"text":"Go to Session","role":"button"}},
+    {"name":"session-ready","action":"waitFor","state":"exists","query":{"text":"Paused items","role":"button"}}
+  ]
+}

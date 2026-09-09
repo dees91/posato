@@ -1,5 +1,7 @@
 package app.posato.di
 
+import app.posato.feature.onboarding.MacHelperPort
+import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.session.ui.FakeEnforcementPort
 import app.posato.feature.session.ui.FakeSessionMappings
 import app.posato.feature.sync.bootstrap.BootstrapResult
@@ -15,8 +17,8 @@ class DesktopBootstrapCompositionTest {
     @Test
     fun `given repeated desktop application creation then the process graph and core are retained`() {
         val path = isolatedDatabasePath()
-        val first = createDesktopApplicationGraph(FakeSessionMappings(), FakeEnforcementPort(), path) as DesktopApplicationGraph
-        val second = createDesktopApplicationGraph(FakeSessionMappings(), FakeEnforcementPort(), path) as DesktopApplicationGraph
+        val first = createDesktopApplicationGraph(FakeSessionMappings(), FakeEnforcementPort(), FakeMacHelperPort(), path) as DesktopApplicationGraph
+        val second = createDesktopApplicationGraph(FakeSessionMappings(), FakeEnforcementPort(), FakeMacHelperPort(), path) as DesktopApplicationGraph
 
         assertSame(first, second)
         assertSame(first.appleSync.core, second.appleSync.core)
@@ -29,6 +31,7 @@ class DesktopBootstrapCompositionTest {
             FakeSessionMappings(),
             FakeEnforcementPort(),
             databasePath,
+            FakeMacHelperPort(),
         )
 
         assertSame(graph.appleBootstrap, graph.appleBootstrap)
@@ -41,11 +44,25 @@ class DesktopBootstrapCompositionTest {
             FakeSessionMappings(),
             FakeEnforcementPort(),
             databasePath,
+            FakeMacHelperPort(),
         )
 
         val result = runBlocking { graph.appleBootstrap.syncWithIcloud() }
 
         assertIs<BootstrapResult.Retryable>(result)
+    }
+
+    @Test
+    fun `given the real desktop graph when created then onboarding dependencies resolve without touching providers`() {
+        val databasePath = isolatedDatabasePath()
+        val graph = createGraphFactory<DesktopApplicationGraph.Factory>().create(
+            FakeSessionMappings(),
+            FakeEnforcementPort(),
+            databasePath,
+            FakeMacHelperPort(),
+        )
+
+        assertIs<DesktopApplicationGraph>(graph)
     }
 
     @Test
@@ -55,6 +72,7 @@ class DesktopBootstrapCompositionTest {
             FakeSessionMappings(),
             FakeEnforcementPort(),
             databasePath,
+            FakeMacHelperPort(),
         )
 
         assertSame(Dispatchers.IO, graph.appleBootstrap.backgroundDispatcher)
@@ -64,5 +82,19 @@ class DesktopBootstrapCompositionTest {
         val directory = Files.createTempDirectory("posato-sync-009-test")
 
         return directory.resolve("posato-policy.db").toString()
+    }
+}
+
+private class FakeMacHelperPort : MacHelperPort {
+    override suspend fun enable(): MacHelperReadiness {
+        throw AssertionError("graph construction must not touch the helper port")
+    }
+
+    override suspend fun recheck(): MacHelperReadiness {
+        throw AssertionError("graph construction must not touch the helper port")
+    }
+
+    override fun openApprovalSettings() {
+        throw AssertionError("graph construction must not touch the helper port")
     }
 }

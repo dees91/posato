@@ -75,6 +75,14 @@ opaque selection remains local and is not treated as a portable application
 identifier or automatic macOS match. The onboarding flow requires a local
 selection on each platform.
 
+`superseded` (2026-09-09, by `ONBOARDING-001` decision `D2`): the previous
+sentence's onboarding clause no longer holds. The first website is offered,
+not required, and applications are described as optional device-local choices
+made later from Paused items, because websites-only is already valid product
+copy, applications are unavailable on the Simulator and on a Mac without a
+development-signed package, and the MVP outcome needs a local selection only
+on the device that will pause applications.
+
 The same asymmetry may apply to website tokens selected through Screen Time
 APIs, but the accepted product contract requires exact domain policy to
 synchronize. The production boundary must satisfy that contract without

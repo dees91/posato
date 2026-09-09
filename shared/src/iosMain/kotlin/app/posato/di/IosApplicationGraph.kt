@@ -9,6 +9,12 @@ import app.posato.feature.enforcement.IosEnforcementProvider
 import app.posato.feature.enforcement.IosSessionEnforcement
 import app.posato.feature.enforcement.IosSuspendedExpiry
 import app.posato.feature.enforcement.IosSuspendedExpiryProvider
+import app.posato.feature.onboarding.ApplicationAccessPort
+import app.posato.feature.onboarding.IosApplicationAccess
+import app.posato.feature.onboarding.OnboardingDependencies
+import app.posato.feature.onboarding.OnboardingPermissionPlatform
+import app.posato.feature.onboarding.UnavailableMacHelper
+import app.posato.feature.onboarding.data.SqlLocalSetupStore
 import app.posato.feature.session.IosSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.data.SqlLocalSessionStore
@@ -67,7 +73,23 @@ internal interface IosApplicationGraph : ApplicationGraph {
             @Provides keychainProvider: IosKeychainProvider,
             @Provides mailboxProvider: IosCloudKitMailboxProvider,
             @Provides cryptoProvider: IosCryptoProvider,
+            @Provides applicationAccess: ApplicationAccessPort,
         ): IosApplicationGraph
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideOnboarding(
+        database: PosatoDatabase,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+        applicationAccess: ApplicationAccessPort,
+    ): OnboardingDependencies {
+        return OnboardingDependencies(
+            setupStore = SqlLocalSetupStore(database, databaseDispatcher),
+            applicationAccess = applicationAccess,
+            macHelper = UnavailableMacHelper,
+            permissionPlatform = OnboardingPermissionPlatform.IOS,
+        )
     }
 
     @Provides
@@ -205,6 +227,7 @@ private fun buildIosApplicationRuntime(
         keychainProvider,
         mailboxProvider,
         cryptoProvider,
+        IosApplicationAccess(applicationMappings),
     )
     return IosApplicationRuntime(graph, graph.appleSync.core)
 }

@@ -306,6 +306,14 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         return operation
     }
 
+    func requestAuthorization(completion: @escaping (IosApplicationMappingsResponse) -> Void) -> IosApplicationMappingsOperation {
+        let operation = ApplicationMappingsOperation()
+        performOnMain {
+            self.beginAuthorizationRequest(operation: operation, completion: completion)
+        }
+        return operation
+    }
+
     func remove(
         identifier: String,
         completion: @escaping (IosApplicationMappingsResponse) -> Void
@@ -389,6 +397,40 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             }
         } else {
             continueWithPicker(generation: generation)
+        }
+#endif
+    }
+
+    private func beginAuthorizationRequest(
+        operation: ApplicationMappingsOperation,
+        completion: @escaping (IosApplicationMappingsResponse) -> Void
+    ) {
+#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
+        completion(response(outcome: .unavailable, access: .unavailable))
+#else
+        let generation = chooseSession.begin(
+            replacingActiveWith: response(outcome: .pickerFailure),
+            completion
+        )
+        operation.install { [weak self] in
+            guard let self else { return }
+            self.performOnMain {
+                self.completeChoose(generation, with: self.response(outcome: .cancelled))
+            }
+        }
+        guard chooseSession.isCurrent(generation) else { return }
+        Task { @MainActor in
+            do {
+                try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+                self.completeChoose(
+                    generation,
+                    with: self.loadResponse(outcome: .success, access: self.currentAccess())
+                )
+            } catch let error as FamilyControlsError {
+                self.completeChoose(generation, with: self.authorizationFailureResponse(error))
+            } catch {
+                self.completeChoose(generation, with: self.response(outcome: .pickerFailure))
+            }
         }
 #endif
     }
@@ -520,16 +562,21 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
 
     private func currentAccess() -> IosApplicationMappingsAccess {
         let status = AuthorizationCenter.shared.authorizationStatus
+        let answer: ApplicationAuthorizationAnswer
         if status == .approved {
-            return .ready
+            answer = .approved
+        } else if status == .notDetermined {
+            answer = .notDetermined
+        } else if status == .denied {
+            answer = .denied
+        } else {
+            answer = .unavailable
         }
-        if status == .notDetermined {
-            return .authorizationRequired
-        }
-        if status == .denied {
-            return .authorizationDenied
-        }
-        return .unavailable
+        return ApplicationAuthorizationAccess.access(for: answer)
+    }
+
+    private func restrictedAccess() -> IosApplicationMappingsAccess {
+        ApplicationAuthorizationAccess.access(for: .restricted)
     }
 
     private var isAuthorizationApproved: Bool {
@@ -541,13 +588,13 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             return response(outcome: .cancelled)
         }
         if case .restricted = error {
-            return loadResponse(outcome: .accessChanged, access: .restricted)
+            return loadResponse(outcome: .accessChanged, access: restrictedAccess())
         }
         if case .invalidAccountType = error {
-            return loadResponse(outcome: .accessChanged, access: .restricted)
+            return loadResponse(outcome: .accessChanged, access: restrictedAccess())
         }
         if case .authenticationMethodUnavailable = error {
-            return loadResponse(outcome: .accessChanged, access: .restricted)
+            return loadResponse(outcome: .accessChanged, access: restrictedAccess())
         }
         // Remaining cases, such as a network failure, are transient. The unavailable
         // outcome is reserved for builds without the capability, so reporting it here
