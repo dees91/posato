@@ -91,9 +91,14 @@
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `approve` (independent review, 2026-09-09, full
+  `main...HEAD` diff against the brief and this record)
+- **Critical or Required findings:** none; all seven check areas hold
+  (6.sqm upgrade seed, tri-state read with hosting outside the scaffold, one
+  provider per graph, Mac `Dispatchers.IO` + Login Items + Check again, no
+  cross-device promises, single `SyncBootstrapUiState` reuse, skip prelude).
+  Zero new suppressions confirmed.
+- **Resolution:** no corrections required
 
 ## Verification
 
@@ -118,5 +123,5 @@
 ## Final
 
 - **Status:** `ready-for-review`
-- **Outcome:** implementation and verification complete; independent
-  completed-change review and PR outstanding
+- **Outcome:** implementation, verification, and independent review complete;
+  PR outstanding
