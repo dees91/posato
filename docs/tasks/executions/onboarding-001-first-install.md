@@ -1,7 +1,7 @@
 # Execution: `ONBOARDING-001`
 
 - **Brief:** [First-install setup](../specifications/onboarding-001-first-install.md)
-- **Status:** `blocked`
+- **Status:** `done`
 - **Review tier:** original task `high-risk`; accepted UI correction `standard`
 - **Branch:** `feature/onboarding-001-first-install` (PR #44)
 - **Updated:** 2026-09-09
@@ -38,17 +38,15 @@
 - The maintainer accepted the UI proposal on 2026-09-09. It uses the interval
   artwork, compact progress, icon-led privacy rows, contextual permission
   explanations, reachable compact actions, and state-aware continuation.
-- DESIGN.md and the brand topic record that acceptance. The UI correction
-  changes no consent operation, database schema, synchronization implementation,
-  website validation, or six-step sequencing.
+- DESIGN.md and the brand topic record acceptance; consent, schema, sync,
+  website validation, and six-step sequencing remain unchanged.
 - Fixtures follow the accepted labels and wait for distinct step content when
   consecutive screens share Not now.
 
 ## Completed-change reviews
 
-- Original full implementation: independent `approve`, no Critical/Required
-  findings; checked upgrade seeding, tri-state hosting, provider ownership,
-  helper threading/settings, truthful sync copy, and the skip prelude.
+- Original full implementation: independent `approve`; checked upgrade seeding,
+  tri-state hosting, ownership, helper threading/settings, sync copy and skip.
 - Accepted UI proposal and final integration: independent `approve`, no
   Critical/Required findings. Reviewed responsive layout, wording against
   returned service states, callback preservation, preview cases, fixtures,
@@ -58,6 +56,7 @@
 ## Verification
 
 Evidence remains in ignored `build/verification/`; this record is categorical.
+
 | Scope | Check | Result |
 | --- | --- | --- |
 | Final integrated UI | `./gradlew quality` | Pass; 200 tasks, including lint, shared/desktop tests, native tests and packaging |
@@ -74,13 +73,13 @@ Evidence remains in ignored `build/verification/`; this record is categorical.
 | Review correction | `git diff --check`; independent code and documentation review | Pass; no new Critical/Required defects |
 
 ## Review follow-up
-The maintainer authorized valid PR feedback fixes. This is a Standard correction;
-no new brief or waiver was introduced. Independent review of the five changed
-implementation/test/fixture files found no Critical/Required defects.
+
+The authorized Standard feedback correction required no new brief. Independent
+review of the five implementation/test/fixture files found no Critical/Required defects.
 
 | Finding class | Count | Decision |
 | --- | --- | --- |
-| Required verification/closeout evidence | 1 | Accept; complete available evidence, keep AC-06 open until its native checks pass |
+| Required verification/closeout evidence | 1 | Available evidence completed; remaining AC-06 pre-merge evidence waived by maintainer below |
 | Advisory Mac recovery/administrator copy | 1 | Correct the real route and websites-only authorization; reject the suggested universal prompt/retry claims |
 | Advisory unavailable request action | 1 | Hide the ineffective action, retain Not now |
 | Advisory settings-launch failure | 1 | Catch IOException; regression test failed before the fix and passes after it |
@@ -106,15 +105,16 @@ erasure claim is made, preserving `R-04`/`R-05`.
 
 ## Limits
 
-- Required AC-06 remains open: attended VoiceOver on both platforms, iPhone
-  keyboard navigation, and native Mac larger-text coverage are missing. No
-  supported Mac text-scaling control was found; a preview is not native proof.
-  No maintainer waiver has been requested or assumed.
+- `user-confirmed` (2026-09-09): after the remaining AC-06 gaps were listed,
+  the maintainer instructed merging PR #44. This waives attended VoiceOver on
+  both platforms, iPhone keyboard navigation, and native Mac larger-text proof
+  as pre-merge evidence for this PR only. They remain unverified; no broader
+  accessibility claim or standing design-requirement waiver is implied.
 - The maintainer Mac already approves the helper; the approval-required branch
   has unit evidence only.
 - An existing database without any domain, policy, bootstrap row, or session
   shows setup once; this is the accepted upgrade-seed boundary.
 
 ## Outcome
-The review fixes and available checks pass. PR #44 remains blocked by the
-uncompleted AC-06 evidence above; the Required thread must remain open.
+The reviewed code and local checks pass at `fda6af1`. The maintainer authorized
+merge with the bounded AC-06 waiver above; this closeout changes only records.
