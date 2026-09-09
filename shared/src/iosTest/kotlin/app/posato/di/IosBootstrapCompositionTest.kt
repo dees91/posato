@@ -126,6 +126,10 @@ private class InertMappingsProvider : IosApplicationMappingsProvider {
         throw UnsupportedOperationException()
     }
 
+    override fun requestAuthorization(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation {
+        throw UnsupportedOperationException()
+    }
+
     override fun remove(
         identifier: String,
         completion: (IosApplicationMappingsResponse) -> Unit,
