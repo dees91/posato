@@ -2,11 +2,11 @@ package app.posato.desktop.macos
 
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
-import java.net.URI
-import java.nio.file.Path
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import java.net.URI
+import java.nio.file.Path
 
 internal class DesktopMacHelperState(
     private val commands: MacHelperCommands,
@@ -57,7 +57,9 @@ internal class DesktopMacHelperState(
                 MacHelperReadiness.APPROVAL_REQUIRED
             }
 
-            else -> MacHelperReadiness.UNAVAILABLE
+            else -> {
+                MacHelperReadiness.UNAVAILABLE
+            }
         }
     }
 

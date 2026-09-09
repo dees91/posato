@@ -23,6 +23,5 @@ internal object UnavailableMacHelper : MacHelperPort {
         return MacHelperReadiness.UNAVAILABLE
     }
 
-    override fun openApprovalSettings() {
-    }
+    override fun openApprovalSettings() = Unit
 }

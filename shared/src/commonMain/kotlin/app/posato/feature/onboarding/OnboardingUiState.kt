@@ -2,6 +2,7 @@ package app.posato.feature.onboarding
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import app.posato.feature.onboarding.data.LocalSetupResult
@@ -63,7 +64,7 @@ internal class OnboardingUiState(
         private set
     var helperReadiness by mutableStateOf<MacHelperReadiness?>(null)
         private set
-    var savedWebsites by mutableStateOf(0)
+    var savedWebsites by mutableIntStateOf(0)
         private set
 
     fun snapshot(): OnboardingViewState {
@@ -205,7 +206,9 @@ internal class OnboardingUiState(
                 ready.toReceipt(submissionId, saved = true)
             }
 
-            is LocalPolicyResult.Failure -> WebsiteBatchReceipt(submissionId, saved = false)
+            is LocalPolicyResult.Failure -> {
+                WebsiteBatchReceipt(submissionId, saved = false)
+            }
         }
     }
 }

@@ -318,6 +318,7 @@ class SqlLocalSessionStoreTest {
             )
             driver.executeSql("ALTER TABLE local_session DROP COLUMN frozen_domains")
             driver.executeSql("ALTER TABLE local_session DROP COLUMN frozen_application_count")
+            driver.executeSql("DROP TABLE local_setup_state")
             driver.executeSql("PRAGMA user_version = 5")
             driver.close()
 

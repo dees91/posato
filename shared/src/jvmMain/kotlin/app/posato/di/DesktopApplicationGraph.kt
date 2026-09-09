@@ -5,11 +5,10 @@ import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createDesktopDatabaseDriver
 import app.posato.core.database.defaultDesktopPolicyDatabasePath
 import app.posato.feature.enforcement.EnforcementPort
-import app.posato.feature.onboarding.ApplicationAccessPort
 import app.posato.feature.onboarding.MacHelperPort
+import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.UnavailableApplicationAccess
-import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.onboarding.data.SqlLocalSetupStore
 import app.posato.feature.session.JvmSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionStore
@@ -106,21 +105,17 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideSetupStore(
+    fun provideOnboarding(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): LocalSetupStore {
-        return SqlLocalSetupStore(database, databaseDispatcher)
-    }
-
-    @Provides
-    fun provideApplicationAccess(): ApplicationAccessPort {
-        return UnavailableApplicationAccess
-    }
-
-    @Provides
-    fun providePermissionPlatform(): OnboardingPermissionPlatform {
-        return OnboardingPermissionPlatform.MAC
+        macHelper: MacHelperPort,
+    ): OnboardingDependencies {
+        return OnboardingDependencies(
+            setupStore = SqlLocalSetupStore(database, databaseDispatcher),
+            applicationAccess = UnavailableApplicationAccess,
+            macHelper = macHelper,
+            permissionPlatform = OnboardingPermissionPlatform.MAC,
+        )
     }
 
     @Provides

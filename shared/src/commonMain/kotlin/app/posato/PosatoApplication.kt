@@ -30,10 +30,9 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformNavigationPlacement
 import app.posato.feature.enforcement.EnforcementPort
-import app.posato.feature.onboarding.ApplicationAccessPort
-import app.posato.feature.onboarding.MacHelperPort
-import app.posato.feature.onboarding.OnboardingPermissionPlatform
+import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingScreen
+import app.posato.feature.onboarding.OnboardingUiState
 import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.onboarding.data.SetupCompletion
 import app.posato.feature.onboarding.rememberOnboardingUiState
@@ -43,6 +42,7 @@ import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.session.ui.SessionScreen
 import app.posato.feature.sync.bootstrap.AppleSync
+import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
@@ -60,26 +60,23 @@ class PosatoApplication internal constructor(
     private val timeFormat: SessionTimeFormat,
     private val enforcement: EnforcementPort,
     private val bootstrap: AppleSync,
-    private val setupStore: LocalSetupStore,
-    private val applicationAccess: ApplicationAccessPort,
-    private val macHelper: MacHelperPort,
-    private val permissionPlatform: OnboardingPermissionPlatform,
+    private val onboardingDependencies: OnboardingDependencies,
 ) {
     @Composable
     fun Content(
         modifier: Modifier = Modifier,
         highContrast: Boolean? = null
     ) {
-        val browser = remember { TargetsBrowserState() }
-        var showingSession by remember { mutableStateOf(true) }
         var setupDone by remember { mutableStateOf(false) }
         val syncState = rememberSyncBootstrapUiState(bootstrap)
-        val onboarding = rememberOnboardingUiState(setupStore, store, applicationAccess, macHelper)
+        val onboarding = rememberOnboardingUiState(
+            onboardingDependencies.setupStore,
+            store,
+            onboardingDependencies.applicationAccess,
+            onboardingDependencies.macHelper,
+        )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
         val placement = platformNavigationPlacement()
-        val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-        val hideNavigation = placement == PosatoNavigationPlacement.Bottom && keyboardVisible
-        val deviceLabel = if (placement == PosatoNavigationPlacement.Sidebar) "On this Mac only" else "On this iPhone only"
         val deviceNoun = if (placement == PosatoNavigationPlacement.Sidebar) "Mac" else "iPhone"
         PosatoTheme(highContrast = highContrast) {
             val completion = onboarding.completion
@@ -90,68 +87,105 @@ class PosatoApplication internal constructor(
                     ).windowInsetsPadding(WindowInsets.safeDrawing),
                 )
             } else if (completion == SetupCompletion.INCOMPLETE && !setupDone) {
-                BoxWithConstraints(
-                    modifier.fillMaxSize().background(
-                        MaterialTheme.colorScheme.surface,
-                    ).windowInsetsPadding(WindowInsets.safeDrawing),
-                ) {
-                    val layout = if (maxWidth < PosatoSize.CompactBreakpoint) PosatoLayout.Compact else PosatoLayout.Expanded
-                    Column(Modifier.fillMaxSize()) {
-                        ApplicationNavigationHeader(placement)
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                            OnboardingScreen(
-                                holder = onboarding,
-                                syncState = syncState,
-                                permissionPlatform = permissionPlatform,
-                                deviceNoun = deviceNoun,
-                                onFinished = { setupDone = true },
-                                modifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth(),
-                                layout = layout,
-                            )
-                        }
-                    }
-                }
-            } else {
-                PosatoNavigationScaffold(
+                OnboardingHost(
+                    onboarding = onboarding,
+                    syncState = syncState,
                     placement = placement,
-                    modifier = modifier.fillMaxSize().background(
-                        MaterialTheme.colorScheme.surface,
-                    ).windowInsetsPadding(WindowInsets.safeDrawing),
-                    headerContent = { if (!hideNavigation) ApplicationNavigationHeader(placement) },
-                    navigationContent = {
-                        if (!hideNavigation) {
-                            ApplicationNavigation(placement, showingSession, { showingSession = it })
-                        }
-                    },
-                ) { layout ->
-                    val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
-                        val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
-                        if (showingSession) {
-                            SessionScreen(
-                                sessionStore,
-                                store,
-                                applicationMappings,
-                                sessionIds,
-                                clock,
-                                timeFormat,
-                                enforcement,
-                                onOpenPausedItems = { showingSession = false },
-                                modifier = contentModifier,
-                                layout = layout,
-                                deviceLabel = deviceLabel,
-                                syncState = syncState,
-                            )
-                        } else {
-                            TargetsScreen(
-                                store,
-                                applicationMappings,
-                                contentModifier.padding(horizontal = inset, vertical = PosatoSpace.Medium),
-                                browser,
-                                deviceLabel,
-                            )
-                        }
-                    }
+                    deviceNoun = deviceNoun,
+                    onSetupComplete = { setupDone = true },
+                    modifier = modifier,
+                )
+            } else {
+                DestinationsHost(
+                    syncState = syncState,
+                    placement = placement,
+                    modifier = modifier,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun DestinationsHost(
+        syncState: SyncBootstrapUiState,
+        placement: PosatoNavigationPlacement,
+        modifier: Modifier = Modifier,
+    ) {
+        val browser = remember { TargetsBrowserState() }
+        var showingSession by remember { mutableStateOf(true) }
+        val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+        val hideNavigation = placement == PosatoNavigationPlacement.Bottom && keyboardVisible
+        val deviceLabel = if (placement == PosatoNavigationPlacement.Sidebar) "On this Mac only" else "On this iPhone only"
+        PosatoNavigationScaffold(
+            placement = placement,
+            modifier = modifier.fillMaxSize().background(
+                MaterialTheme.colorScheme.surface,
+            ).windowInsetsPadding(WindowInsets.safeDrawing),
+            headerContent = { if (!hideNavigation) ApplicationNavigationHeader(placement) },
+            navigationContent = {
+                if (!hideNavigation) {
+                    ApplicationNavigation(placement, showingSession, { showingSession = it })
+                }
+            },
+        ) { layout ->
+            val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
+                if (showingSession) {
+                    SessionScreen(
+                        sessionStore,
+                        store,
+                        applicationMappings,
+                        sessionIds,
+                        clock,
+                        timeFormat,
+                        enforcement,
+                        onOpenPausedItems = { showingSession = false },
+                        modifier = contentModifier,
+                        layout = layout,
+                        deviceLabel = deviceLabel,
+                        syncState = syncState,
+                    )
+                } else {
+                    TargetsScreen(
+                        store,
+                        applicationMappings,
+                        contentModifier.padding(horizontal = inset, vertical = PosatoSpace.Medium),
+                        browser,
+                        deviceLabel,
+                    )
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun OnboardingHost(
+        onboarding: OnboardingUiState,
+        syncState: SyncBootstrapUiState,
+        placement: PosatoNavigationPlacement,
+        deviceNoun: String,
+        onSetupComplete: () -> Unit,
+        modifier: Modifier = Modifier,
+    ) {
+        BoxWithConstraints(
+            modifier.fillMaxSize().background(
+                MaterialTheme.colorScheme.surface,
+            ).windowInsetsPadding(WindowInsets.safeDrawing),
+        ) {
+            val layout = if (maxWidth < PosatoSize.CompactBreakpoint) PosatoLayout.Compact else PosatoLayout.Expanded
+            Column(Modifier.fillMaxSize()) {
+                ApplicationNavigationHeader(placement)
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
+                    OnboardingScreen(
+                        holder = onboarding,
+                        syncState = syncState,
+                        permissionPlatform = onboardingDependencies.permissionPlatform,
+                        deviceNoun = deviceNoun,
+                        onComplete = onSetupComplete,
+                        modifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth(),
+                        layout = layout,
+                    )
                 }
             }
         }
