@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.test.runTest
+import java.io.IOException
 import java.net.URI
 import java.nio.file.Path
 import kotlin.coroutines.CoroutineContext
@@ -111,6 +112,27 @@ class DesktopMacHelperStateTest {
         state.openApprovalSettings()
 
         assertEquals("x-apple.systempreferences:com.apple.LoginItems-Settings.extension", opened.toString())
+    }
+
+    @Test
+    fun `given settings cannot open when requested then approval remains available for manual recovery`() = runTest {
+        val commands = FakeHelperCommands({ readyResult() }, { approvalRequiredResult() })
+        var attempts = 0
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { throw AssertionError("settings must not verify") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = {
+                attempts += 1
+                throw IOException("settings unavailable")
+            },
+        )
+
+        state.openApprovalSettings()
+
+        assertEquals(1, attempts)
+        assertTrue(commands.calls.isEmpty())
+        assertEquals(MacHelperReadiness.APPROVAL_REQUIRED, state.recheck())
     }
 
     private fun readyResult(): HelperResult {

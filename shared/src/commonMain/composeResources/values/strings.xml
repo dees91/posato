@@ -135,8 +135,6 @@ For what matters.</string>
     <string name="onboarding_icloud_body">Connect Posato to your private iCloud storage. New settings changes are encrypted before they leave this device.</string>
     <string name="onboarding_action_continue">Continue</string>
     <string name="onboarding_action_not_now">Not now</string>
-    <string name="onboarding_action_later">Not now</string>
-    <string name="onboarding_action_skip">Not now</string>
     <string name="onboarding_action_open_session">Go to Session</string>
     <string name="onboarding_permission_title">Make room on this device.</string>
     <string name="onboarding_permission_ios_body">Screen Time access lets Posato pause the websites and apps you choose on this iPhone.</string>
@@ -144,7 +142,7 @@ For what matters.</string>
     <string name="onboarding_permission_check_failed">Access could not be checked. You can allow it later from Paused items.</string>
     <string name="onboarding_permission_mac_body">Posato needs a background helper to pause websites and apps on this Mac. macOS may ask you to allow it in System Settings.</string>
     <string name="onboarding_permission_mac_action">Enable on this Mac</string>
-    <string name="onboarding_permission_mac_unavailable">The helper could not be enabled on this Mac. You can try again later from the Session screen.</string>
+    <string name="onboarding_permission_mac_unavailable">The helper could not be enabled. Choose Enable on this Mac to try again.</string>
     <string name="onboarding_permission_mac_approval">The helper needs background approval. Open System Settings, allow Posato, then check again.</string>
     <string name="onboarding_permission_mac_open_settings">Open System Settings</string>
     <string name="onboarding_permission_mac_check_again">Check again</string>
@@ -169,8 +167,8 @@ For what matters.</string>
     <string name="onboarding_privacy_local_apps_detail">Choose apps separately on each device.</string>
     <string name="onboarding_icloud_optional">Optional — Posato works without iCloud.</string>
     <string name="onboarding_permission_control">Nothing is paused until you start a session.</string>
-    <string name="onboarding_permission_mac_admin">Starting a session may also require administrator approval.</string>
-    <string name="onboarding_permission_defer">You can save your choices now and allow access before your first pause.</string>
+    <string name="onboarding_permission_mac_admin">Pausing websites on this Mac requires administrator approval.</string>
+    <string name="onboarding_permission_defer">You can continue and save your choices without enabling access.</string>
     <string name="onboarding_permission_unavailable">Screen Time access is not available in this version of Posato.</string>
     <string name="onboarding_permission_required">Allow Screen Time access before pausing websites or apps.</string>
     <string name="onboarding_permission_denied">Screen Time access is off for Posato. You can change this in Settings.</string>
@@ -178,5 +176,5 @@ For what matters.</string>
     <string name="onboarding_summary_empty_body">Start by adding a website or choosing apps in Paused items.</string>
     <string name="onboarding_summary_scope">You can change your choices at any time.</string>
     <string name="onboarding_summary_access_note">Allow Screen Time access in Paused items before pausing websites or apps.</string>
-    <string name="onboarding_summary_helper_note">Finish Mac setup from Session before starting your first pause.</string>
+    <string name="onboarding_summary_helper_note">Website pauses are unavailable until Mac setup is complete.</string>
 </resources>

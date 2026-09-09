@@ -131,12 +131,14 @@ internal fun PermissionStep(
             } else {
                 when (platform) {
                     OnboardingPermissionPlatform.IOS -> {
-                        OnboardingPrimaryAction(
-                            stringResource(Res.string.onboarding_permission_ios_action),
-                            layout,
-                            onRequestAccess,
-                            enabled = !state.permissionRunning,
-                        )
+                        if (state.accessResult != ApplicationAccessResult.Unavailable) {
+                            OnboardingPrimaryAction(
+                                stringResource(Res.string.onboarding_permission_ios_action),
+                                layout,
+                                onRequestAccess,
+                                enabled = !state.permissionRunning,
+                            )
+                        }
                     }
 
                     OnboardingPermissionPlatform.MAC -> {
