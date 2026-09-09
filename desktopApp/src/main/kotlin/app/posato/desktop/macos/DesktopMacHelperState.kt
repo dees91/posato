@@ -5,6 +5,7 @@ import app.posato.feature.onboarding.MacHelperReadiness
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import java.io.IOException
 import java.net.URI
 import java.nio.file.Path
 
@@ -43,7 +44,11 @@ internal class DesktopMacHelperState(
     }
 
     override fun openApprovalSettings() {
-        openSettings(URI(LOGIN_ITEMS_SETTINGS))
+        try {
+            openSettings(URI(LOGIN_ITEMS_SETTINGS))
+        } catch (_: IOException) {
+            return
+        }
     }
 
     private fun HelperResult.toReadiness(): MacHelperReadiness {

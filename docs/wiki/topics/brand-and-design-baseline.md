@@ -54,6 +54,18 @@ section in [DESIGN.md](../../../DESIGN.md); the frozen prototype remains
 reference evidence. This acceptance does not adopt the separate suggestion
 to shorten or reorder the six-step flow.
 
+## Deferred Mac setup route
+
+`observed` (PR #44 review): Session's Retry action reapplies enforcement; it
+never invokes helper registration. The existing registration action is
+**Enable on this Mac** during onboarding. Recovery copy must name that action,
+not promise a Session setup control. Administrator approval applies to website
+pauses, not every apps-only session.
+
+`open`: provide a reachable helper-setup action after onboarding is completed
+or deferred. The current summary reports the limitation without inventing a
+recovery route; the entry point remains a product-design follow-up.
+
 ## Accepted brand foundation
 
 ### Positioning

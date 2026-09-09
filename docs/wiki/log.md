@@ -1454,3 +1454,5 @@ cross-device promise boundaries remain unchanged. Native verification covers
 Simulator full/skip paths, Mac setup, and the original physical iPhone consent
 path. The Mac approval-required branch retains unit-only evidence on hardware
 where the helper is already approved.
+Review also identified the missing post-onboarding Mac helper-setup entry point;
+the brand topic records it as open, and UI copy no longer promises that route.
