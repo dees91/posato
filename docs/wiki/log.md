@@ -1443,5 +1443,14 @@ cancellation, failed authoring, and exclusion of old workspace changes; signed
 Mac/iPhone edit, relaunch, cleanup and repeated exchange also pass. The volatile
 handoff before outbox authoring remains an explicit D1 limit.
 
-## [2026-09-09] implementation | ONBOARDING-001 six-step first-install flow verified on Simulator, Mac, and iPhone
-The app opens a purpose, privacy, iCloud, permission, website, and summary flow before Session on a fresh database; one local completion row (seeded by migration `6.sqm` for upgraded databases) skips it afterwards. Ports stay narrow with one provider per graph and zero new suppressions. Verified end to end on Simulator (full, skip), Mac (fresh, helper enable, upgrade with byte-identical DB restore), and the physical iPhone (Later row plus the attended Screen Time approval row, summary read back `Screen Time is allowed.`). `first-install-skip.json` is now the required prelude after every fresh launch or reset. Remaining limit: the Mac approval-required branch is unit-tested only on maintainer hardware, where the helper is already approved.
+## [2026-09-09] implementation | First-install flow and accepted onboarding UI
+
+The six-step first-install flow uses a local completion row and migration seed
+for existing product data. The maintainer accepted the reviewed UI: compact
+progress, prototype-inspired welcome, icon-led privacy points, contextual
+permission copy, responsive actions, and service-state-aware continuation.
+DESIGN.md records the accepted presentation; service, persistence, and
+cross-device promise boundaries remain unchanged. Native verification covers
+Simulator full/skip paths, Mac setup, and the original physical iPhone consent
+path. The Mac approval-required branch retains unit-only evidence on hardware
+where the helper is already approved.

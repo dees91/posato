@@ -23,9 +23,9 @@ that seeds completion opens on Session without the flow.
 
 - Fresh install, reinstall, `launch --fresh`, or `reset` shows the flow; the
   navigation chrome is absent until the summary is finished.
-- Continue moves through purpose and privacy. Not now leaves iCloud
-  local-only. Later leaves the permission unrequested. Skip leaves the
-  website list empty. Open Session finishes and persists completion.
+- Make some space opens privacy, then Continue opens iCloud. Not now
+  defers an unconfigured service or leaves the website list empty. Configured
+  services offer Continue. Go to Session finishes and persists completion.
 - On iPhone the permission step asks for Screen Time access through the real
   system request and shows the read-back answer. On Mac Enable on this Mac
   enables the helper; approval required opens System Settings with Check
@@ -45,7 +45,7 @@ Preconditions:
 
 - **Full flow:** `$PC run -t sim --scenario tools/posato-control/fixtures/scenarios/first-install.json`.
   It declines iCloud, takes the unavailable permission answer, adds
-  `example.com`, waits for `1 website.` on the summary, captures a screenshot
+  `example.com`, waits for `1 website saved` on the summary, captures a screenshot
   and a snapshot, and lands on Session. Confirm the side effects with
   `$PC db query -t sim --sql "select canonical_domain from exact_domain_policy"`
   (one row) and zero `sync_bootstrap_state` rows.
@@ -70,7 +70,7 @@ Preconditions:
 ## Gotchas
 
 - The flow has no navigation chrome; do not wait for `Paused items` until
-  Open Session is pressed.
+  Go to Session is pressed.
 - The iCloud press runs exactly one bootstrap attempt. Do not press Sync with
   iCloud on a maintainer account without emptying the workspace first with
   Remove workspace.
