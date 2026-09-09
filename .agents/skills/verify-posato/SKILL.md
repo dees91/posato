@@ -76,7 +76,10 @@ $PC wait -t <target> --for exists --text "Search" --timeout-seconds 30
 ```
 
 Every `launch` and scenario `relaunch` returns to `Session`, so repeat the
-switch after each one. Teardown is `$PC terminate -t <target>` followed by
+switch after each one. A fresh database shows the first-install flow instead:
+run `first-install-skip.json` after every `--fresh` launch or `reset` before
+any older recipe (see [First install](./features/onboarding.md)), then wait
+for `Paused items`. Teardown is `$PC terminate -t <target>` followed by
 `$PC cleanup -t <target>`.
 
 Isolation: one instance per target. The tool tracks what it launched in

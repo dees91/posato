@@ -95,6 +95,16 @@ enforcement is not connected to these screens. Never show the prototype's
 demo clock, invented synchronization time, mock application names, onboarding
 success, simulated permission outcome, or inspection overlay in the real app.
 
+On a first install the app opens a six-step first-run flow before the two
+destinations: purpose, privacy, Sync with iCloud, this-device permission,
+first website, and a summary read back from the services. Purpose and privacy
+cannot be skipped; every service step offers a defer action that leaves the
+device local-only or unpermitted. Completion is one local row that an upgrade
+migration seeds for databases that already hold product state. Nothing
+reaches iCloud, the synchronizable Keychain, a system prompt, or the helper
+before the person's explicit step action, and no sentence promises that
+websites, applications, or sessions appear on another device.
+
 The UI says that data is saved on this device. A running timer is not evidence
 that a restriction is active. Future flows below are requirements, not current
 controls.

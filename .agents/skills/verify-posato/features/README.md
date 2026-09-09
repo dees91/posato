@@ -15,7 +15,9 @@ feature file as the recipe.
 - Launch through the CLI (`launch -t <target>`), wait for the `Paused items`
   button (`wait --for exists --text "Paused items" --role button`), and
   require `doctor -t <target>` to report `ok: true`. The app opens on the
-  `Session` destination after every launch and relaunch.
+  `Session` destination after every launch and relaunch, except on a fresh
+  database, which shows the [first-install flow](./onboarding.md) first; run
+  `first-install-skip.json` after every `--fresh` launch or `reset`.
 - Before a Websites or Applications recipe, switch destination with `tap
   --text "Paused items" --role button` and wait for `Search`; the
   Sessions recipe starts on `Session` and needs at least one website first.
@@ -86,3 +88,6 @@ handles, required state, commands, and observable proof.
 - [Sync with iCloud](./sync.md) covers the one consent action, the truthful
   outcomes it reports, joining in either device order, and what a from-empty
   rerun costs the maintainer.
+- [First install](./onboarding.md) covers the six-step first-run flow, the
+  skip prelude every fresh launch needs, the upgrade row, and the degraded
+  iCloud outcome.
