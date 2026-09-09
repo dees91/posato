@@ -20,9 +20,9 @@ import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.enforcement.JvmSessionEnforcement
+import kotlinx.coroutines.Dispatchers
 import java.awt.Desktop
 import java.awt.Dimension
-import kotlinx.coroutines.Dispatchers
 
 fun main() {
     MacOsHelperClient().use { enforcementClient ->

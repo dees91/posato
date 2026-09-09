@@ -207,9 +207,13 @@ private fun IosApplicationMappingsResponse.toAccessResult(): ApplicationAccessRe
             }
         }
 
-        IosApplicationMappingsOutcome.UNAVAILABLE -> ApplicationAccessResult.Unavailable
+        IosApplicationMappingsOutcome.UNAVAILABLE -> {
+            ApplicationAccessResult.Unavailable
+        }
 
-        else -> ApplicationAccessResult.Failed
+        else -> {
+            ApplicationAccessResult.Failed
+        }
     }
 }
 

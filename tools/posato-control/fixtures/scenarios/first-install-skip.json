@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "launch": {"terminateExisting": false},
+  "defaults": {"timeoutSeconds": 30},
+  "onFailure": {"screenshot": true, "snapshot": true},
+  "steps": [
+    {"name":"purpose-ready","action":"waitFor","state":"exists","query":{"text":"Continue","role":"button"}},
+    {"name":"purpose-continue","action":"tap","query":{"text":"Continue","role":"button"}},
+    {"name":"privacy-ready","action":"waitFor","state":"exists","query":{"text":"Continue","role":"button"}},
+    {"name":"privacy-continue","action":"tap","query":{"text":"Continue","role":"button"}},
+    {"name":"icloud-ready","action":"waitFor","state":"exists","query":{"text":"Not now","role":"button"}},
+    {"name":"icloud-decline","action":"tap","query":{"text":"Not now","role":"button"}},
+    {"name":"permission-ready","action":"waitFor","state":"exists","query":{"text":"Later","role":"button"}},
+    {"name":"permission-defer","action":"tap","query":{"text":"Later","role":"button"}},
+    {"name":"website-ready","action":"waitFor","state":"exists","query":{"text":"Skip","role":"button"}},
+    {"name":"website-skip","action":"tap","query":{"text":"Skip","role":"button"}},
+    {"name":"summary-ready","action":"waitFor","state":"exists","query":{"text":"Open Session","role":"button"}},
+    {"name":"summary-open-session","action":"tap","query":{"text":"Open Session","role":"button"}},
+    {"name":"session-ready","action":"waitFor","state":"exists","query":{"text":"Paused items","role":"button"}}
+  ]
+}

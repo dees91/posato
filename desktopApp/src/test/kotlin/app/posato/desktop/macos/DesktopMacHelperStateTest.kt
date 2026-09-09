@@ -1,16 +1,16 @@
 package app.posato.desktop.macos
 
 import app.posato.feature.onboarding.MacHelperReadiness
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.test.runTest
 import java.net.URI
 import java.nio.file.Path
 import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Runnable
-import kotlinx.coroutines.test.runTest
 
 class DesktopMacHelperStateTest {
     @Test
@@ -31,7 +31,10 @@ class DesktopMacHelperStateTest {
     fun `given a verifiable helper when enabled then enable runs before status on the io dispatcher`() = runTest {
         var dispatched = false
         val ioDispatcher = object : CoroutineDispatcher() {
-            override fun dispatch(context: CoroutineContext, block: Runnable) {
+            override fun dispatch(
+                context: CoroutineContext,
+                block: Runnable,
+            ) {
                 dispatched = true
                 block.run()
             }
