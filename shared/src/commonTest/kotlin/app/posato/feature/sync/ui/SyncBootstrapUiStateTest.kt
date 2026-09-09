@@ -1,72 +1,42 @@
 package app.posato.feature.sync.ui
 
-import app.posato.feature.sync.FakeSyncCryptoProvider
-import app.posato.feature.sync.bootstrap.AppleBootstrap
-import app.posato.feature.sync.bootstrap.BootstrapCoordinator
-import app.posato.feature.sync.bootstrap.BootstrapResult
-import app.posato.feature.sync.bootstrap.BootstrapState
-import app.posato.feature.sync.bootstrap.EstablishedWorkspace
-import app.posato.feature.sync.bootstrap.FakeBootstrapAccountPort
-import app.posato.feature.sync.bootstrap.FakeBootstrapCloudPort
-import app.posato.feature.sync.bootstrap.FakeBootstrapKeyPort
-import app.posato.feature.sync.bootstrap.FakeBootstrapStore
-import app.posato.feature.sync.bootstrap.bindingA
-import app.posato.feature.sync.testContext
+import app.posato.feature.sync.bootstrap.AppleSyncTestHarness
+import app.posato.feature.sync.bootstrap.SyncStatus
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 class SyncBootstrapUiStateTest {
     @Test
-    fun `given a fresh holder when sync runs twice rapidly then one attempt establishes readiness`() = runTest {
-        val account = FakeBootstrapAccountPort()
-        val holder = SyncBootstrapUiState(
-            AppleBootstrap(
-                BootstrapCoordinator(
-                    account,
-                    FakeBootstrapCloudPort(),
-                    FakeBootstrapKeyPort(),
-                    FakeBootstrapStore(),
-                    FakeSyncCryptoProvider(),
-                ),
-                StandardTestDispatcher(testScheduler),
-            ),
-            this,
-        )
-
-        holder.sync()
-        holder.sync()
-        advanceUntilIdle()
-
-        assertEquals(1, account.calls)
-        assertIs<BootstrapResult.Ready>(holder.outcome)
+    fun `given a fresh holder when sync runs twice rapidly then only one workspace is created`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            val holder = SyncBootstrapUiState(harness.sync, this)
+            holder.sync()
+            holder.sync()
+            advanceUntilIdle()
+            assertEquals(1, harness.cloud.anchorCreateCalls)
+            assertEquals(true, holder.syncState.value.linked)
+            assertEquals(SyncStatus.COMPLETED, holder.syncState.value.status)
+        } finally {
+            harness.close()
+        }
     }
 
     @Test
-    fun `given an established store when refreshed then linked is true without provider access`() = runTest {
-        val account = FakeBootstrapAccountPort()
-        val store = FakeBootstrapStore()
-        store.state = BootstrapState.Established(EstablishedWorkspace(testContext, bindingA))
-        val holder = SyncBootstrapUiState(
-            AppleBootstrap(
-                BootstrapCoordinator(
-                    account,
-                    FakeBootstrapCloudPort(),
-                    FakeBootstrapKeyPort(),
-                    store,
-                    FakeSyncCryptoProvider(),
-                ),
-                StandardTestDispatcher(testScheduler),
-            ),
-            this,
-        )
-
-        holder.refreshLinked()
-
-        assertEquals(true, holder.linked)
-        assertEquals(0, account.calls)
+    fun `given an established workspace when foreground arrives then the linked device exchanges`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            val holder = SyncBootstrapUiState(harness.sync, this)
+            holder.onForeground()
+            advanceUntilIdle()
+            assertEquals(true, holder.syncState.value.linked)
+            assertEquals(1, harness.mailbox.cursors.size)
+        } finally {
+            harness.close()
+        }
     }
 }

@@ -32,7 +32,7 @@ import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.session.ui.SessionScreen
-import app.posato.feature.sync.bootstrap.AppleBootstrap
+import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
@@ -49,7 +49,7 @@ class PosatoApplication internal constructor(
     private val clock: SessionClock,
     private val timeFormat: SessionTimeFormat,
     private val enforcement: EnforcementPort,
-    private val bootstrap: AppleBootstrap,
+    private val bootstrap: AppleSync,
 ) {
     @Composable
     fun Content(

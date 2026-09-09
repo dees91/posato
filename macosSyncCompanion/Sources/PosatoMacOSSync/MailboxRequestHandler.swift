@@ -109,6 +109,8 @@ extension RequestHandler {
     request: SyncMessage
   ) -> SyncMessage {
     switch result {
+    case .tokenExpired:
+      return request.respond(outcome: .tokenExpired)
     case .page(let page):
       guard
         let encoded = PageCodec.encode(

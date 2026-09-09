@@ -99,11 +99,19 @@ The UI says that data is saved on this device. A running timer is not evidence
 that a restriction is active. Future flows below are requirements, not current
 controls.
 
-The **Sync with iCloud** control states that it links this device to the
-private iCloud workspace, runs one bootstrap attempt per press, and reports
-only the outcome the bootstrap returned: linked, waiting for the workspace
-key, unfinished, or needing attention. It shows no synchronization time, no
-device list, and no claim beyond that outcome.
+The **Sync with iCloud** control requests consent to link this device to the
+private iCloud workspace. Once linked, **Sync now** requests an exchange;
+launch, foreground, and exact-domain commits also offer an exchange. Status
+reports local-only, pending, syncing, completed local attempt, retryable,
+waiting for the key, or action required. A completed attempt makes no claim
+about receipt on another device. There is no synchronization time or device
+list. Incoming operations remain in the replica until the later convergence
+slices connect them to visible policies and sessions.
+
+A linked device also offers **Remove workspace** with destructive confirmation:
+it deletes the iCloud workspace and undelivered device changes, preserves local
+websites, and requires other devices to remove their old workspace and link
+again. The removing device can then use **Sync with iCloud** to start again.
 
 ## Foundations
 

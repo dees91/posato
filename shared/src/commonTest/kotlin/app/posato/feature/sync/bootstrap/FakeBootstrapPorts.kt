@@ -37,6 +37,7 @@ internal class FakeBootstrapCloudPort(
     var anchorCreateCalls = 0
         private set
     val createdAnchors = mutableListOf<WorkspaceAnchor>()
+    var beforeZoneFetch: suspend () -> Unit = {}
 
     fun scriptZoneFetch(vararg results: ZoneFetchResult) {
         results.forEach { zoneFetches.addLast(it) }
@@ -56,6 +57,7 @@ internal class FakeBootstrapCloudPort(
 
     override suspend fun fetchZone(expectedBinding: AccountBinding): ZoneFetchResult {
         zoneFetchCalls += 1
+        beforeZoneFetch()
         return zoneFetches.removeFirstOrNull()
             ?: if (zoneExists) ZoneFetchResult.Found else ZoneFetchResult.Missing
     }
@@ -172,6 +174,14 @@ internal class FakeBootstrapStore(
         private set
     var commitCalls = 0
         private set
+
+    override suspend fun clearEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit> {
+        val failure = writeFailure
+        if (failure != null) return BootstrapStoreResult.Failure(failure)
+        if (state != BootstrapState.Established(workspace)) return BootstrapStoreResult.Failure(BootstrapStoreFailure.CORRUPTION)
+        state = BootstrapState.None
+        return BootstrapStoreResult.Success(Unit)
+    }
 
     override suspend fun read(): BootstrapStoreResult<BootstrapState> {
         val failure = readFailure

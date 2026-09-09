@@ -7,46 +7,54 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import app.posato.feature.sync.bootstrap.AppleBootstrap
-import app.posato.feature.sync.bootstrap.BootstrapResult
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import app.posato.feature.sync.bootstrap.AppleSync
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @Stable
 internal class SyncBootstrapUiState(
-    private val bootstrap: AppleBootstrap,
+    private val sync: AppleSync,
     private val scope: CoroutineScope,
 ) {
+    val syncState = sync.state
     var running by mutableStateOf(false)
         private set
-    var outcome by mutableStateOf<BootstrapResult?>(null)
-        private set
-    var linked by mutableStateOf<Boolean?>(null)
-        private set
-
-    suspend fun refreshLinked() {
-        linked = bootstrap.establishedContext() != null
-    }
 
     fun sync() {
-        if (running) {
-            return
-        }
+        if (running) return
         running = true
         scope.launch {
             try {
-                val result = bootstrap.syncWithIcloud()
-                outcome = result
-                linked = result is BootstrapResult.Ready
+                if (syncState.value.linked) sync.syncNow() else sync.syncWithIcloud()
             } finally {
                 running = false
             }
         }
     }
+
+    fun removeWorkspace() {
+        if (running) return
+        running = true
+        scope.launch {
+            try {
+                sync.removeWorkspace()
+            } finally {
+                running = false
+            }
+        }
+    }
+
+    fun onForeground() {
+        scope.launch { sync.onForeground() }
+    }
 }
 
 @Composable
-internal fun rememberSyncBootstrapUiState(bootstrap: AppleBootstrap): SyncBootstrapUiState {
+internal fun rememberSyncBootstrapUiState(sync: AppleSync): SyncBootstrapUiState {
     val scope = rememberCoroutineScope()
-    return remember(bootstrap) { SyncBootstrapUiState(bootstrap, scope) }
+    val state = remember(sync) { SyncBootstrapUiState(sync, scope) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = state::onForeground)
+    return state
 }

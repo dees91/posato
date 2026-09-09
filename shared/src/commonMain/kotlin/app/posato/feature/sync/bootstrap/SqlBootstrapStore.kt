@@ -60,6 +60,8 @@ internal enum class BootstrapStoreFailure {
 }
 
 internal interface BootstrapStore {
+    suspend fun clearEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit>
+
     suspend fun read(): BootstrapStoreResult<BootstrapState>
 
     suspend fun persistCandidate(candidate: PersistedCandidate): BootstrapStoreResult<Unit>
@@ -71,6 +73,22 @@ internal class SqlBootstrapStore(
     private val database: PosatoDatabase,
     private val databaseDispatcher: CoroutineDispatcher
 ) : BootstrapStore {
+    override suspend fun clearEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit> {
+        return databaseCall {
+            val row = database.syncBootstrapQueries.selectBootstrapState().awaitAsList().singleOrNull()
+                ?: failBootstrapStore(BootstrapStoreFailure.CORRUPTION)
+            if (restoreState(row) != BootstrapState.Established(workspace)) {
+                failBootstrapStore(BootstrapStoreFailure.CORRUPTION)
+            }
+            database.syncReplicaQueries.clearPendingBundles()
+            database.syncReplicaQueries.clearStagedBundles()
+            database.syncReplicaQueries.clearTerminalExpiry()
+            database.syncReplicaQueries.clearAcceptedBundles()
+            database.syncReplicaQueries.clearReplicaState()
+            database.syncBootstrapQueries.clearEstablishedWorkspace()
+        }
+    }
+
     override suspend fun read(): BootstrapStoreResult<BootstrapState> {
         return databaseCall {
             val rows = database.syncBootstrapQueries.selectBootstrapState().awaitAsList()

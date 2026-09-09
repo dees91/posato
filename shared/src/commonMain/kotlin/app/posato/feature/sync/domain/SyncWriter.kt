@@ -248,7 +248,7 @@ internal class SyncWriter internal constructor(
             val isFirstMutation = authoringIncarnation == null
             val reservedClocks = reserveLocalClocks(checkpoint.clockState, wallTime, if (isFirstMutation) 2 else 1)
             if (reservedClocks == null) {
-                val exhausted = commitExhaustion()
+                val exhausted = commitReconciler.commitExhaustion(checkpoint)
                 return@withLock if (exhausted) {
                     LocalMutationResult.Failure(LocalMutationFailure.HLC_EXHAUSTED)
                 } else {
@@ -256,7 +256,10 @@ internal class SyncWriter internal constructor(
                 }
             }
             val prepared = localMutationPreparer.prepare(payload, reservedClocks, authoringIncarnation, checkpoint.context)
-                ?: return@withLock LocalMutationResult.Failure(freezeForPreparationFailure())
+            if (prepared == null) {
+                freeze()
+                return@withLock LocalMutationResult.Failure(LocalMutationFailure.CRYPTOGRAPHY_FAILURE)
+            }
             authoringIncarnation = prepared.nextIncarnation
             val committedSnapshot = try {
                 commitReconciler.commitLocal(checkpoint, prepared)
@@ -314,6 +317,45 @@ internal class SyncWriter internal constructor(
             outcome.snapshot?.let { checkpoint = it }
             if (outcome.commitUncertain) freeze()
             outcome.result
+        }
+    }
+
+    val isActive: Boolean
+        get() {
+            return state == WriterState.ACTIVE
+        }
+
+    val transportProgress: OpaqueTransportProgress?
+        get() {
+            return checkpoint.transportProgress
+        }
+
+    suspend fun acknowledgePublication(bundle: EncryptedBundle): Boolean {
+        return mutex.withLock {
+            if (state != WriterState.ACTIVE || !verifyCheckpoint()) return@withLock false
+            val identifier = checkpoint.pendingBundles.entries.firstOrNull { it.value == bundle }?.key
+                ?: return@withLock false
+            val expected = checkpoint.copy(
+                revision = checkpoint.revision + 1,
+                pendingBundles = checkpoint.pendingBundles - identifier,
+            )
+            val committed = commitReconciler.commitRemote(checkpoint, expected) {
+                store.acknowledgePublication(checkpoint, identifier)
+            }
+            if (committed != null) checkpoint = committed else freeze()
+            committed != null
+        }
+    }
+
+    suspend fun commitTransportProgress(progress: OpaqueTransportProgress): Boolean {
+        return mutex.withLock {
+            if (state != WriterState.ACTIVE || !verifyCheckpoint()) return@withLock false
+            if (checkpoint.transportProgress == progress) return@withLock true
+            val committed = commitReconciler.commitRemote(checkpoint, checkpoint.expectedAfterProgress(progress)) {
+                store.commitTransportProgress(checkpoint, progress)
+            }
+            if (committed != null) checkpoint = committed else freeze()
+            committed != null
         }
     }
 
@@ -375,22 +417,6 @@ internal class SyncWriter internal constructor(
         return "SyncWriter(redacted)"
     }
 
-    private suspend fun commitExhaustion(): Boolean {
-        if (checkpoint.clockState.isExhausted) {
-            return true
-        }
-        val exhaustedState = DurableClockState(
-            HybridLogicalClock(SyncFormatLimits.MAX_PHYSICAL_MILLIS, SyncFormatLimits.MAX_LOGICAL_COUNTER),
-            true,
-        )
-        val expected = checkpoint.copy(revision = checkpoint.revision + 1, clockState = exhaustedState)
-        val committed = commitReconciler.commitRemote(checkpoint, expected) {
-            store.commitLocal(checkpoint, emptyList(), exhaustedState)
-        }
-        if (committed != null) checkpoint = committed else freeze()
-        return committed != null
-    }
-
     private suspend fun verifyCheckpoint(): Boolean {
         return when (val observed = store.read(checkpoint.context)) {
             is SyncStoreResult.Success -> {
@@ -407,11 +433,6 @@ internal class SyncWriter internal constructor(
                 false
             }
         }
-    }
-
-    private fun freezeForPreparationFailure(): LocalMutationFailure {
-        freeze()
-        return LocalMutationFailure.CRYPTOGRAPHY_FAILURE
     }
 
     private fun freeze() {

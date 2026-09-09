@@ -269,3 +269,22 @@ ORDER BY session_id;
 insertTerminalExpiry:
 INSERT OR IGNORE INTO sync_terminal_expiry(session_id)
 VALUES (:session_id);
+
+
+deletePendingBundle:
+DELETE FROM sync_pending_bundle WHERE bundle_id = ?;
+
+clearPendingBundles:
+DELETE FROM sync_pending_bundle;
+
+clearStagedBundles:
+DELETE FROM sync_staged_bundle;
+
+clearAcceptedBundles:
+DELETE FROM sync_accepted_bundle;
+
+clearTerminalExpiry:
+DELETE FROM sync_terminal_expiry;
+
+clearReplicaState:
+DELETE FROM sync_replica_state;

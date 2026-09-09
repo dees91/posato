@@ -1423,3 +1423,22 @@
 - The `SESSION-002` empty desktop accessibility tree does not reproduce on the current application in either staging mode; both runs expose a full tree from the first readiness wait.
 - The driver reports a tree with no addressable window as named failure `DESKTOP_WINDOW_UNAVAILABLE` (exit 4) instead of an empty success; `waitFor` polling tolerates a transient empty tree and reports the named failure at the deadline.
 - The unattended `session-start-action-required-desktop.json` fixture passes end to end; confirmed prompts land in the attended active-claim path instead (distinguished by `authd` evidence), and the fixture's nothing-restricted step matches by `textContains` against the accepted `SESSION-003` copy.
+
+## [2026-09-08] implementation | Established Apple mailbox exchange
+
+Recorded SYNC-010 process ownership, writer-owned publication confirmation,
+transactional cursor progress, token-expiry restart, and anchor-gated removal.
+Updated the current design and physical verification recipe, retained the
+accepted pre-link and exact-refetch limits, and restored the missing SYNC-009
+bootstrap observation. A physical iPhone probe exposed and fixed an empty-cursor
+NSData conversion failure before native fetch; its adapter regression and
+cross-device exchange pass. Signed physical tests also cover offline retry,
+iPhone sign-out recovery, removal and foreign-anchor protection in both
+directions, and concurrent consent with losing-device key adoption. The
+maintainer accepted iPhone sign-out evidence and waived sign-out on the working
+Mac; that coverage limit remains explicit in the brief and execution record.
+Review corrections make local saves independent of the network flight through
+an ordered, workspace-bound handoff and on-demand writer opening. Tests cover
+cancellation, failed authoring, and exclusion of old workspace changes; signed
+Mac/iPhone edit, relaunch, cleanup and repeated exchange also pass. The volatile
+handoff before outbox authoring remains an explicit D1 limit.
