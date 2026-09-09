@@ -2,6 +2,12 @@ import CloudKit
 import Foundation
 
 enum CloudErrorMapper {
+  static func isTokenExpired(_ error: NSError) -> Bool {
+    let unwrapped = unwrapSinglePartial(error)
+    return unwrapped.domain == CKError.errorDomain
+      && unwrapped.code == CKError.changeTokenExpired.rawValue
+  }
+
   static func isRetryable(_ error: NSError) -> Bool {
     let unwrapped = unwrapSinglePartial(error)
     guard unwrapped.domain == CKError.errorDomain,

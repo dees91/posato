@@ -33,6 +33,7 @@ struct BackendChanges: Equatable, Sendable {
 }
 
 enum BackendChangesResult: Equatable, Sendable {
+  case tokenExpired
   case fetched(BackendChanges)
   case zoneMissing
   case failed(BackendFault)
@@ -92,6 +93,7 @@ final class ChangesCollector: @unchecked Sendable {
 
   func drain() -> BackendChangesResult {
     if let error = failure.get() {
+      if CloudErrorMapper.isTokenExpired(error) { return .tokenExpired }
       if CloudErrorMapper.isZoneAbsent(error) {
         return .zoneMissing
       }
@@ -302,6 +304,7 @@ struct CKCloudDatabase: CloudBackend, @unchecked Sendable {
       recordZoneIDs: [zoneID],
       configurationsByRecordZoneID: [zoneID: configuration]
     )
+    operation.fetchAllChanges = false
     operation.recordWasChangedBlock = { _, result in
       collector.recordChanged(result)
     }

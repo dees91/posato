@@ -110,6 +110,8 @@ struct CloudStore: Sendable {
     }
     let changes: BackendChanges
     switch backend.fetchChanges(token: serverToken, timeout: timeout) {
+    case .tokenExpired:
+      return .tokenExpired
     case .zoneMissing:
       return .zoneMissing
     case .failed(let fault):

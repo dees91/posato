@@ -61,7 +61,6 @@
     <string name="saving_domains">Saving</string>
     <string name="sync_icloud_action_required">Sync with iCloud needs attention before it can continue.</string>
     <string name="sync_icloud_description">Sync with iCloud links this device to your private iCloud workspace.</string>
-    <string name="sync_icloud_linked">This device is linked to your iCloud workspace.</string>
     <string name="sync_icloud_retryable">Sync with iCloud didn’t finish.</string>
     <string name="sync_icloud_running">Sync with iCloud is running.</string>
     <string name="sync_icloud_waiting_for_key">Waiting for the workspace key from your other device.</string>
@@ -111,4 +110,12 @@
     <string name="session_ending">Ending</string>
     <string name="end_session_confirm_title">End session early?</string>
     <string name="end_session_confirm_body">Paused websites and applications become available again.</string>
+    <string name="action_sync_now">Sync now</string>
+    <string name="sync_pending">Changes are saved on this device and waiting to sync. Choose Sync now to try.</string>
+    <string name="sync_completed">This device completed its latest sync attempt. Other devices may still need to sync.</string>
+    <string name="sync_retryable">Sync didn’t finish. Choose Sync now to try again.</string>
+    <string name="sync_action_required">Sync needs attention. Check your iCloud account and workspace before trying again.</string>
+    <string name="sync_remove_workspace">Remove workspace</string>
+    <string name="sync_cancel_removal">Keep workspace</string>
+    <string name="sync_remove_confirmation">This deletes the shared workspace from iCloud. Changes not yet delivered from this device are discarded. Websites saved on this device stay. Every other device must remove the old workspace and link again. Afterwards, choose Sync with iCloud to link this device again.</string>
 </resources>

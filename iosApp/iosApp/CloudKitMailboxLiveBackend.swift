@@ -276,6 +276,7 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
             recordZoneIDs: [zoneID],
             configurationsByRecordZoneID: [zoneID: configuration]
         )
+        operation.fetchAllChanges = false
         operation.recordWasChangedBlock = { _, result in
             collector.recordChanged(result)
         }

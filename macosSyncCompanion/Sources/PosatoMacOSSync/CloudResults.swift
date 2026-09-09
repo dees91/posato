@@ -47,6 +47,7 @@ struct ChangePageNative: Equatable, Sendable {
 }
 
 enum ChangeFetchNative: Equatable, Sendable {
+  case tokenExpired
   case page(ChangePageNative)
   case zoneMissing
   case retryable

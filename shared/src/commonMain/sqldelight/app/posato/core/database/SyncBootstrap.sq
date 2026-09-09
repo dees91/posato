@@ -82,3 +82,7 @@ INSERT OR REPLACE INTO sync_bootstrap_state(
   :established_transport_epoch_id,
   :established_key_epoch_id
 );
+
+
+clearEstablishedWorkspace:
+DELETE FROM sync_bootstrap_state;

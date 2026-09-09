@@ -54,6 +54,7 @@ internal object MacOsSyncCompanionProtocol {
     const val OUTCOME_DELETED: Byte = 12
     const val OUTCOME_ALREADY_EXISTS: Byte = 13
     const val OUTCOME_CONFLICT: Byte = 14
+    const val OUTCOME_TOKEN_EXPIRED: Byte = 15
 
     fun encode(message: SyncCompanionMessage): ByteArray {
         require(message.requestIdentifier.size == IDENTIFIER_BYTES)
@@ -197,6 +198,7 @@ internal enum class SyncCompanionOutcome(
     DeletedAndAbsent(MacOsSyncCompanionProtocol.OUTCOME_DELETED),
     AlreadyExists(MacOsSyncCompanionProtocol.OUTCOME_ALREADY_EXISTS),
     Conflict(MacOsSyncCompanionProtocol.OUTCOME_CONFLICT),
+    TokenExpired(MacOsSyncCompanionProtocol.OUTCOME_TOKEN_EXPIRED),
     ;
 
     companion object {

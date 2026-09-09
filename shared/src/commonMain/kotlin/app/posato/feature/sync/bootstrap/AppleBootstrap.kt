@@ -34,6 +34,6 @@ internal class AppleBootstrap(
     }
 
     companion object {
-        private val flight = Mutex()
+        internal val flight = Mutex()
     }
 }

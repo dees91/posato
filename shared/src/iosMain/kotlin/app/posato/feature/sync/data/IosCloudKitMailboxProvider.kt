@@ -19,6 +19,7 @@ import app.posato.feature.sync.mailbox.MAILBOX_BUNDLE_IDENTIFIER_BYTES
 import app.posato.feature.sync.mailbox.MAILBOX_CURSOR_BYTES
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
+import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.ZoneDeleteResult
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.addressOf
@@ -85,6 +86,7 @@ enum class IosCloudBundleSaveStatus {
 }
 
 enum class IosCloudChangeFetchStatus {
+    TokenExpired,
     Page,
     ZoneMissing,
     Retryable,
@@ -327,8 +329,8 @@ internal class IosBootstrapCloudAdapter(
 
 internal class IosMailboxAdapter(
     private val provider: IosCloudKitMailboxProvider,
-) {
-    suspend fun saveBundle(
+) : MailboxPort {
+    override suspend fun saveBundle(
         expectedBinding: AccountBinding,
         identifier: ByteArray,
         payload: ByteArray,
@@ -375,7 +377,7 @@ internal class IosMailboxAdapter(
         }
     }
 
-    suspend fun fetchChanges(
+    override suspend fun fetchChanges(
         expectedBinding: AccountBinding,
         cursor: MailboxCursor,
     ): ChangeFetchResult {
@@ -390,7 +392,7 @@ internal class IosMailboxAdapter(
         }
     }
 
-    suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult {
+    override suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult {
         val binding = expectedBinding.copyBytes()
         try {
             return when (provider.cancellableCall { deleteZoneAndVerifyAbsent(binding.toNSData()) }) {
@@ -437,6 +439,10 @@ internal class IosMailboxAdapter(
 
     private fun IosCloudChangePage.mapTerminalStatus(): ChangeFetchResult {
         return when (status) {
+            IosCloudChangeFetchStatus.TokenExpired -> {
+                ChangeFetchResult.TokenExpired
+            }
+
             IosCloudChangeFetchStatus.ZoneMissing -> {
                 ChangeFetchResult.ZoneMissing
             }
@@ -486,6 +492,7 @@ private suspend fun <T> IosCloudKitMailboxProvider.cancellableCall(call: IosClou
 
 @OptIn(BetaInteropApi::class)
 private fun ByteArray.toNSData(): NSData {
+    if (isEmpty()) return NSData.create(bytes = null, length = 0uL)
     return usePinned { pinned ->
         NSData.create(bytes = pinned.addressOf(0), length = size.toULong())
     }

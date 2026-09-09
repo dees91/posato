@@ -1,141 +1,116 @@
 # Sync with iCloud
 
-The Session screen carries one explicit **Sync with iCloud** control at the
-bottom, under the "Saved on this device." caption. Nothing reaches iCloud
-before a person presses it. One press runs one bootstrap attempt against the
-person's own iCloud account and the status line above the button reports only
-the outcome that attempt returned: linked, waiting for the key from the other
-device, needs attention, or didn’t finish. There is no synchronization time, no
-device list, and no in-app way to unlink; removal belongs to `SYNC-010`.
+Before linking, the Session screen offers **Sync with iCloud**. Launch and
+foreground do not touch CloudKit or synchronizable Keychain on an unlinked
+device. A linked device offers **Sync now** and **Remove workspace**. Exchange
+opportunities also follow launch, foreground, and local exact-domain commits;
+one active exchange can retain at most one queued opportunity.
 
 ## Sub-features
 
-- `sync-consent-gate` shows the description copy and touches neither CloudKit
-  nor the synchronizable Keychain until the button is pressed.
-- `sync-establish` turns the first consented press on an empty account into one
-  workspace and reports linked.
-- `sync-join` lets the second device adopt the workspace the first established,
-  in either device order, without a second workspace.
-- `sync-waiting-key` reports the truthful waiting state when the anchor exists
-  but the key item has not arrived yet, and adopts it on a later press.
-- `sync-degrade` reports a truthful non-linked outcome with no partial
-  establishment when the account is missing, restricted, or the macOS package
-  is not verifiable.
-- `sync-adopt-relaunch` shows the linked status after a relaunch without a
-  second press.
-- `sync-single-attempt` disables the button for the duration of one attempt, so
-  a double press cannot start two.
-
-## How to get to it (user POV)
-
-- Launch either app; the Session destination opens by default and the control
-  is the last element on it. Scroll to the bottom when the window is short.
-- Read the status line, then press **Sync with iCloud**.
-- Leave for Paused items and come back: an attempt started before leaving keeps
-  running and its outcome is still shown on return.
-- Relaunch: a linked device states it is linked without another press.
+- `sync-consent-gate`: unlinked launch remains local-only until explicit consent.
+- `sync-establish` / `sync-join`: establish or adopt the same private workspace,
+  including simultaneous opt-in and waiting for a synchronizable key.
+- `sync-exchange`: publish immutable pending bundles and accept remote bundles
+  into the replica in both directions. Incoming operations do not yet change
+  local websites, applications, or sessions (`SYNC-011` / `SYNC-012`).
+- `sync-retry`: offline or uncertain outcomes preserve pending bytes; retry on
+  **Sync now** or a later foreground. No timer or delivery guarantee exists.
+- `sync-account-gate`: sign-out before an attempt stops both exchange legs;
+  returning to the original account allows the same pending work to retry.
+- `sync-remove`: confirmation deletes the workspace and undelivered changes,
+  retains local websites, and permits a new consent without a console reset.
+  Other devices must remove their old workspace before joining the new one.
+- `sync-adopt-relaunch`: a linked relaunch attempts exchange using the adopted
+  key; completion therefore exercises the key read and writer open.
 
 ## Driving it with posato-control
 
-Preconditions:
+Read `tools/posato-control/README.md` for commands and scenario syntax. Use a
+signed Mac package and a connected unlocked development-signed iPhone on the
+same maintainer-owned iCloud account. `doctor` must confirm the signing identity,
+profile, companion, development team, and device. The Simulator proves only
+local behavior and truthful degradation without its own iCloud account.
 
-- The maintainer's own iCloud account is signed in on every target used, and
-  the same account on both when a two-device row is driven. The account's data
-  is real; treat every row as mutating it.
-- Desktop needs a signed staged package: `posato.macos.signingIdentity` and
-  `posato.macos.syncProvisioningProfile` in the ignored `local.properties`, and
-  `doctor -t desktop` reporting `desktop.syncCompanion`, `desktop.signingIdentity`,
-  and `desktop.syncProfile` as `ok`. An ad-hoc package proves `sync-degrade`
-  only.
-- Device needs `posato.apple.developmentTeam`, a connected unlocked iPhone, and
-  a Debug iphoneos build.
-- A from-empty row needs an empty account first; see the reset bullet below.
+1. Build both applications; use `build -t device --driver`, then `install`.
+   `quality` restages an ad-hoc Mac package, so run `build -t desktop` after it.
+   Launch preserving existing state, never with `--fresh`.
+2. Capture `snapshot --format text` and a screenshot of Session. For an
+   unlinked device expect **Sync with iCloud** and a local-only description;
+   `select count(*) from sync_bootstrap_state` is zero on desktop.
+3. Press **Sync with iCloud** once. Expect completion or **Waiting for the
+   workspace key from your other device.** Retry consent on the waiting side
+   after delivery. Completion is **This device completed its latest sync
+   attempt. Other devices may still need to sync.**
+4. Through Paused items, add a reserved synthetic domain on one device. Return
+   to Session and wait for completion. Press **Sync now** on the other device.
+   Repeat in the reverse direction. Local websites must remain device-local.
+   On Mac, compare counts before and after each step using the read-only
+   queries below; registrations are also bundles, so establish the baseline
+   before adding the domain. A repeat exchange must not add accepted entries.
+5. For offline retry, ask the maintainer to disconnect the authoring target
+   (airplane mode with Wi-Fi off on iPhone). Add a domain; the save stays local
+   while sync reports retryable. Reconnect, press **Sync now**, and verify one
+   acceptance on the peer. Never alter system connectivity without coordination.
+6. For the account gate, arrange pending work offline, then ask the maintainer
+   to sign out before the next attempt. Expect action required, unchanged
+   pending/accepted counts and cursor state. Restore the original account and
+   retry, then verify one peer acceptance. Run in both directions. Device DB
+   access is unavailable; Mac reception and device status are the evidence.
+7. Press **Remove workspace**, inspect the destructive confirmation, and
+   confirm. Expect local-only with local websites retained. The peer's next
+   attempt must require action. Establish a new workspace on the removing
+   device, then remove the old workspace on the peer and link again. The
+   peer's old anchor must never delete the newly established zone. Repeat with
+   the devices reversed. Remove only the synthetic website fixtures afterward.
+8. Exercise simultaneous opt-in from a state cleared through the removal UI.
+   Coordinate presses against one absolute wall-clock time, allowing for iOS
+   driver startup. Retry the losing side after key delivery; a completed
+   exchange after relaunch proves that its adopted key opens the writer.
+   XCTest log output may be buffered: calibrate startup before scheduling the
+   presses, then verify their overlap from the recorded timestamps afterward.
 
-- **Read the consent state:** `$PC snapshot -t <target> --format text --human`
-  and expect `Sync with iCloud links this device to your private iCloud
-  workspace.` above the button. Prove that nothing ran before the press with
-  `$PC db query -t <desktop|sim> --sql "select count(*) from sync_bootstrap_state"`,
-  which must be `0`.
-- **Press once:** `$PC tap -t <target> --text "Sync with iCloud" --role button`,
-  or the same step inside a scenario on iOS, followed by a screenshot step.
-- **Read the outcome:** `$PC wait -t <target> --for exists --role text
-  --text "This device is linked to your iCloud workspace." --timeout-seconds 60`.
-  The other four outcomes are `Waiting for the workspace key from your other
-  device.`, `Sync with iCloud needs attention before it can continue.`,
-  `Sync with iCloud didn’t finish.` (typographic apostrophe), and, while an
-  attempt runs, `Sync with iCloud is running.`.
-- **Verify the side effect:** `$PC db query -t <desktop|sim> --sql "select
-  count(*) from sync_bootstrap_state"` must be `1` after a linked outcome, and
-  stay `1` after a second press. To tell a waiting device from a linked one
-  without reading any identifier, select null-ness only: `select
-  candidate_workspace_id is null, established_workspace_id is null from
-  sync_bootstrap_state`. A loser mid-race is `0|1` and becomes `1|0` once it
-  adopts. Never select the identifier or binding columns themselves; they must
-  not reach evidence.
-- **Adopt after relaunch:** relaunch without `--fresh`, then wait for the linked
-  status again. The count must still be `1`. This proves the device kept its
-  established workspace; it is not a key check, because the linked status comes
-  from the local row.
-- **Second device joins:** run the press on the second target only after the
-  first reported linked. Expect linked, or the waiting status followed by linked
-  on a later press once iCloud Keychain has delivered the item.
-- **Simultaneous opt-in:** aim both presses at one absolute wall-clock second,
-  not at a delay from each command's own start. A device scenario spends about
-  7 s launching XCUITest before its first step, so start it at `T` minus 9 s
-  with a 2 s `sleep` step before the tap, and have the desktop tap wait for `T`
-  itself; that lands the two presses within a few tenths of a second. Expect one
-  device linked and the other reporting the waiting status, then press the
-  waiting device again to adopt.
-- **Device read-back:** the device database is not readable. Relaunch and use
-  `$PC find -t device --text "This device is linked to your iCloud workspace."
-  --role text` instead.
-- **Confirm one workspace:** this needs the maintainer in the CloudKit Console
-  (Private Database, Development environment): exactly one `PosatoSyncV1` zone
-  next to the system `_defaultZone`, holding one `PosatoWorkspaceV1` record.
-  The driver cannot see the account.
-- **Reset to empty for a from-empty rerun:** ask the maintainer to delete the
-  `PosatoSyncV1` zone in the console, clear the local state with `sqlite3
-  "$HOME/Library/Application Support/Posato/posato-policy.db" "delete from
-  sync_bootstrap_state"` while the desktop app is quit, and delete the app from
-  the iPhone. Do not use `reset -t desktop` for this: it clears the whole local
-  database rather than this one table.
+Useful Mac queries (`db query -t desktop --sql "…"`):
 
-## Gotchas
+```sql
+select count(*) from sync_bootstrap_state;
+select candidate_workspace_id is null, established_workspace_id is null
+from sync_bootstrap_state;
+select count(*) from sync_pending_bundle;
+select count(*) from sync_accepted_bundle;
+select count(*) from sync_staged_bundle;
+select transport_progress is null from sync_replica_state;
+```
 
-- `./gradlew quality` restages an ad-hoc desktop package. Rerun `$PC build -t
-  desktop` with the signing identity configured before any row other than
-  `sync-degrade`, or the press degrades instead of establishing.
-- Every consented press writes to a real iCloud account. After the first
-  establishing row the account is no longer pristine, and every later
-  from-empty row costs the maintainer a console deletion, because the app has
-  no unlink path until `SYNC-010`.
-- Deleting the app from the iPhone and clearing `sync_bootstrap_state` on the
-  Mac do not remove the workspace key from the synchronizable Keychain. A
-  leftover item is inert, because the next workspace mints a fresh identifier
-  and the item is addressed by that identifier, but it stays on the account.
-- Deleting the zone alone is not a reset. A device that keeps its local state
-  still reports linked against a workspace that no longer exists in the cloud.
-- The status line is the only truthful source. A screenshot of the button
-  proves nothing about the outcome; capture the caption text with it.
-- One press equals one attempt and the button is disabled while it runs. The
-  driver is too slow to observe `Sync with iCloud is running.` reliably; unit
-  tests own that state, so do not report its absence as a defect.
-- The control is absent, rather than failing, when the graph provides no
-  bootstrap. Treat a missing button as a composition problem, not a degraded
-  outcome.
-- The simulator has no iCloud account by default, so it proves the truthful
-  non-linked path and nothing about establishing or joining.
-- A `wait` for the linked status times out on the losing side of a real race.
-  That is the correct outcome, not a driver failure: read the status line before
-  calling the row failed.
-- `waiting-for-workspace-key` is hard to catch outside a race. When one device
-  presses well before the other, iCloud Keychain usually delivers the item
-  first and the second device reports linked immediately.
-- The count of surviving Keychain accounts and the absence of a losing
-  candidate's item are not observable here. Synchronizable items are invisible
-  to both `security find-generic-password` and the driver; the coordinator
-  tests own that half of the convergence claim.
-- No user path reads the workspace key yet, so no driver row can prove the key
-  is readable. The linked status is a local-state read, and a press on an
-  established workspace stops at the zone and anchor. Never present a linked
-  caption as evidence that a key survived a cleanup.
+Never select key material, bindings, anchors, identifiers, bundle bytes, or
+cursor bytes. Keep screenshots, logs, snapshots, and run output under ignored
+`build/verification/runs/`. Record categorical outcomes and counts only. The
+phone database cannot be inspected, so do not claim its row counts from UI.
+
+## Evidence limits and failure behavior
+
+Status has seven categories: local-only, pending, syncing, completed local
+attempt, retryable, waiting for key, and action required. The caption contains
+no synchronization time, value count, history, or promise of peer receipt.
+A screenshot of a button alone does not prove the outcome.
+
+An expired CloudKit token restarts fetch from the first page once per attempt,
+retaining accepted state. A second expiry is retryable. Adapter and common
+tests own this injected boundary. Both adapters lack exact refetch; a rejected
+bundle pins the cursor and requires action. Mid-operation account changes are
+also an adapter-test boundary, not a physically observable driver row.
+
+Local exact-domain save returns after committing locally and handing off its
+ordered changes; it does not wait for network exchange. A linked device opens
+its writer on demand. Authoring failure preserves the local save and reports
+action required; key waiting or unavailability retains its specific status.
+The handoff is volatile until outbox authoring, so process exit can lose an
+unauthored diff while retaining local websites. Changes made before linking or
+whose authoring fails are not backfilled. Tests own these interim limits and
+the exclusion of old queued changes after removal and re-linking.
+
+Removal stops at an uncertain account, zone, key, or storage outcome. A missing
+zone permits remaining cleanup; a different anchor permits only the old known
+key and local cleanup, with action required. An absent or unreadable anchor
+stops cleanup. Never replace this flow with database deletion, app uninstall,
+or console deletion: those bypass the behavior being verified.

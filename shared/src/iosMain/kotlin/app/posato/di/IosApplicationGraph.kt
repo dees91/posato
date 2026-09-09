@@ -17,6 +17,7 @@ import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.bootstrap.AppleBootstrap
+import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.BootstrapCoordinator
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
 import app.posato.feature.sync.data.IosBootstrapCloudAdapter
@@ -24,6 +25,7 @@ import app.posato.feature.sync.data.IosBootstrapKeychainAdapter
 import app.posato.feature.sync.data.IosCloudKitMailboxProvider
 import app.posato.feature.sync.data.IosCryptoProvider
 import app.posato.feature.sync.data.IosKeychainProvider
+import app.posato.feature.sync.data.IosMailboxAdapter
 import app.posato.feature.sync.data.IosSyncCryptoProvider
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.data.SyncReplicaStore
@@ -34,6 +36,7 @@ import app.posato.feature.targets.data.IosLocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
+import app.posato.feature.targets.data.SyncTargetPolicyStore
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -43,13 +46,18 @@ import dev.zacsweers.metro.createGraphFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import platform.Foundation.NSRecursiveLock
 import platform.posix.time
 
 @DependencyGraph(AppScope::class)
 internal interface IosApplicationGraph : ApplicationGraph {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val syncReplicaStore: SyncReplicaStore
+    val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
+        get() {
+            return appleSync.bootstrap
+        }
 
     @DependencyGraph.Factory
     fun interface Factory {
@@ -84,13 +92,11 @@ internal interface IosApplicationGraph : ApplicationGraph {
     @Provides
     @SingleIn(AppScope::class)
     fun providePolicyStore(
+        sync: AppleSync,
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
     ): LocalTargetPolicyStore {
-        return SqlLocalTargetPolicyStore(
-            database = database,
-            databaseDispatcher = databaseDispatcher,
-        )
+        return SyncTargetPolicyStore(SqlLocalTargetPolicyStore(database, databaseDispatcher), sync)
     }
 
     @Provides
@@ -134,27 +140,20 @@ internal interface IosApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideAppleBootstrap(
+    fun provideAppleSync(
         keychainProvider: IosKeychainProvider,
         mailboxProvider: IosCloudKitMailboxProvider,
         cryptoProvider: IosCryptoProvider,
         database: PosatoDatabase,
+        replica: SyncReplicaStore,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): AppleBootstrap {
+    ): AppleSync {
         val keys = IosBootstrapKeychainAdapter(keychainProvider)
-        return AppleBootstrap(
-            coordinator = BootstrapCoordinator(
-                account = keys,
-                cloud = IosBootstrapCloudAdapter(mailboxProvider),
-                keys = keys,
-                store = SqlBootstrapStore(
-                    database = database,
-                    databaseDispatcher = databaseDispatcher,
-                ),
-                crypto = IosSyncCryptoProvider(cryptoProvider),
-            ),
-            backgroundDispatcher = Dispatchers.IO,
-        )
+        val crypto = IosSyncCryptoProvider(cryptoProvider)
+        val store = SqlBootstrapStore(database, databaseDispatcher)
+        val coordinator = BootstrapCoordinator(keys, IosBootstrapCloudAdapter(mailboxProvider), keys, store, crypto)
+        val core = SyncOperationCore(replica, crypto, SyncWallClock { time(null) * MILLIS_PER_SECOND })
+        return AppleSync(coordinator, core, IosMailboxAdapter(mailboxProvider), keys, store, crypto, Dispatchers.IO)
     }
 }
 
@@ -164,6 +163,30 @@ internal data class IosApplicationRuntime(
 )
 
 internal fun createIosApplicationRuntime(
+    cryptoProvider: IosCryptoProvider,
+    applicationMappingsProvider: IosApplicationMappingsProvider,
+    enforcementProvider: IosEnforcementProvider,
+    suspendedExpiryProvider: IosSuspendedExpiryProvider,
+    keychainProvider: IosKeychainProvider,
+    mailboxProvider: IosCloudKitMailboxProvider,
+): IosApplicationRuntime {
+    runtimeLock.lock()
+    try {
+        processRuntime?.let { return it }
+        return buildIosApplicationRuntime(
+            cryptoProvider,
+            applicationMappingsProvider,
+            enforcementProvider,
+            suspendedExpiryProvider,
+            keychainProvider,
+            mailboxProvider,
+        ).also { processRuntime = it }
+    } finally {
+        runtimeLock.unlock()
+    }
+}
+
+private fun buildIosApplicationRuntime(
     cryptoProvider: IosCryptoProvider,
     applicationMappingsProvider: IosApplicationMappingsProvider,
     enforcementProvider: IosEnforcementProvider,
@@ -183,13 +206,10 @@ internal fun createIosApplicationRuntime(
         mailboxProvider,
         cryptoProvider,
     )
-    val syncOperationCore = SyncOperationCore(
-        store = graph.syncReplicaStore,
-        cryptoProvider = IosSyncCryptoProvider(cryptoProvider),
-        wallClock = SyncWallClock { time(null) * MILLIS_PER_SECOND },
-    )
-
-    return IosApplicationRuntime(graph, syncOperationCore)
+    return IosApplicationRuntime(graph, graph.appleSync.core)
 }
 
 private const val MILLIS_PER_SECOND = 1_000
+
+private val runtimeLock = NSRecursiveLock()
+private var processRuntime: IosApplicationRuntime? = null

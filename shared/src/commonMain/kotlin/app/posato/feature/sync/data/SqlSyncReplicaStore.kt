@@ -47,6 +47,16 @@ internal class SqlSyncReplicaStore(
         }
     }
 
+    override suspend fun acknowledgePublication(
+        expectedCheckpoint: SyncReplicaSnapshot,
+        bundleId: BundleId,
+    ): SyncStoreResult<SyncReplicaSnapshot> {
+        return mutate(expectedCheckpoint) { current ->
+            database.syncReplicaQueries.deletePendingBundle(bundleId.value.copyBytes())
+            advanceState(expectedCheckpoint.revision, current.clockState, current.transportProgress)
+        }
+    }
+
     override suspend fun commitLocal(
         expectedCheckpoint: SyncReplicaSnapshot,
         bundles: List<PreparedStoredBundle>,
@@ -54,7 +64,7 @@ internal class SqlSyncReplicaStore(
     ): SyncStoreResult<SyncReplicaSnapshot> {
         return mutate(expectedCheckpoint) { current ->
             bundles.forEach { bundle ->
-                insertAccepted(bundle)
+                database.insertAccepted(bundle)
                 database.syncReplicaQueries.insertPendingBundle(
                     bundle_id = bundle.operation.operationId.value.copyBytes(),
                     bundle_bytes = bundle.bundle.copyBytes(),
@@ -72,7 +82,7 @@ internal class SqlSyncReplicaStore(
         transportProgress: OpaqueTransportProgress?,
     ): SyncStoreResult<SyncReplicaSnapshot> {
         return mutate(expectedCheckpoint) { current ->
-            bundles.forEach { bundle -> insertAccepted(bundle) }
+            bundles.forEach { bundle -> database.insertAccepted(bundle) }
             stagedBundleIdsToDelete.forEach { bundleId ->
                 database.syncReplicaQueries.deleteStagedBundle(bundleId.value.copyBytes())
             }
@@ -135,19 +145,6 @@ internal class SqlSyncReplicaStore(
             mutation(current)
             snapshotReader.readSnapshotOrThrow(context)
         }
-    }
-
-    private suspend fun insertAccepted(bundle: PreparedStoredBundle) {
-        database.syncReplicaQueries.insertAcceptedBundle(
-            bundle_id = bundle.operation.operationId.value.copyBytes(),
-            bundle_bytes = bundle.bundle.copyBytes(),
-            operation_bytes = bundle.operationBytes.copyBytes(),
-            author_id = bundle.operation.authorId.value.copyBytes(),
-            author_sequence = bundle.operation.authorSequence,
-            public_key = bundle.operation.publicSigningKey.copyBytes(),
-            hlc_physical = bundle.operation.clock.physicalMillis,
-            hlc_logical = bundle.operation.clock.logicalCounter.toLong(),
-        )
     }
 
     private suspend fun advanceState(
@@ -405,4 +402,17 @@ private class SyncStoreException(
 
 private fun failStore(reason: SyncStoreFailure): Nothing {
     throw SyncStoreException(reason)
+}
+
+private suspend fun PosatoDatabase.insertAccepted(bundle: PreparedStoredBundle) {
+    syncReplicaQueries.insertAcceptedBundle(
+        bundle_id = bundle.operation.operationId.value.copyBytes(),
+        bundle_bytes = bundle.bundle.copyBytes(),
+        operation_bytes = bundle.operationBytes.copyBytes(),
+        author_id = bundle.operation.authorId.value.copyBytes(),
+        author_sequence = bundle.operation.authorSequence,
+        public_key = bundle.operation.publicSigningKey.copyBytes(),
+        hlc_physical = bundle.operation.clock.physicalMillis,
+        hlc_logical = bundle.operation.clock.logicalCounter.toLong(),
+    )
 }
