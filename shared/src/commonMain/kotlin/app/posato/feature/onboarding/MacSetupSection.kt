@@ -12,7 +12,6 @@ import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoComponentPreview
 import app.posato.core.designsystem.PosatoEyebrow
-import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_setup_check
@@ -23,13 +22,13 @@ import app.posato.generated.resources.mac_setup_title
 import app.posato.generated.resources.mac_setup_unavailable
 import app.posato.generated.resources.onboarding_permission_mac_action
 import app.posato.generated.resources.onboarding_permission_mac_check_again
+import app.posato.generated.resources.onboarding_permission_mac_open_settings
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun MacSetupSection(
     presentation: MacSetupPresentation,
-    layout: PosatoLayout,
     onCheck: () -> Unit,
     onEnable: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -42,7 +41,7 @@ internal fun MacSetupSection(
         presentation.readiness?.let { readiness ->
             MacHelperReadinessNotice(readiness, Res.string.mac_setup_unavailable)
         }
-        MacSetupActions(presentation.readiness, running, layout, onCheck, onEnable, onOpenSettings)
+        MacSetupActions(presentation.readiness, running, onCheck, onEnable, onOpenSettings)
     }
 }
 
@@ -50,7 +49,6 @@ internal fun MacSetupSection(
 private fun MacSetupActions(
     readiness: MacHelperReadiness?,
     running: Boolean,
-    layout: PosatoLayout,
     onCheck: () -> Unit,
     onEnable: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -61,22 +59,27 @@ private fun MacSetupActions(
         }
 
         MacHelperReadiness.READY -> {
-            CheckAgainButton(running, onCheck, PosatoButtonStyle.Quiet)
+            CheckAgainButton(running, onCheck)
         }
 
         MacHelperReadiness.NOT_ENABLED -> {
             PosatoActionRow {
                 PosatoButton(onClick = onEnable, enabled = !running) { Text(stringResource(Res.string.onboarding_permission_mac_action)) }
-                CheckAgainButton(running, onCheck, PosatoButtonStyle.Quiet)
+                CheckAgainButton(running, onCheck)
             }
         }
 
         MacHelperReadiness.APPROVAL_REQUIRED -> {
-            MacHelperApprovalActions(layout, running, onOpenSettings, onCheck)
+            PosatoActionRow {
+                PosatoButton(onClick = onOpenSettings, enabled = !running) {
+                    Text(stringResource(Res.string.onboarding_permission_mac_open_settings))
+                }
+                CheckAgainButton(running, onCheck)
+            }
         }
 
         MacHelperReadiness.UNAVAILABLE -> {
-            CheckAgainButton(running, onCheck, PosatoButtonStyle.Secondary)
+            CheckAgainButton(running, onCheck)
         }
     }
 }
@@ -85,9 +88,8 @@ private fun MacSetupActions(
 private fun CheckAgainButton(
     running: Boolean,
     onCheck: () -> Unit,
-    style: PosatoButtonStyle,
 ) {
-    PosatoButton(onClick = onCheck, style = style, enabled = !running) {
+    PosatoButton(onClick = onCheck, style = PosatoButtonStyle.Quiet, enabled = !running) {
         Text(stringResource(Res.string.onboarding_permission_mac_check_again))
     }
 }
@@ -111,7 +113,7 @@ private fun MacSetupSectionPreview() {
             MacSetupPresentation(readiness = MacHelperReadiness.APPROVAL_REQUIRED),
             MacSetupPresentation(readiness = MacHelperReadiness.UNAVAILABLE),
         ).forEach { presentation ->
-            MacSetupSection(presentation, PosatoLayout.Expanded, onCheck = {}, onEnable = {}, onOpenSettings = {})
+            MacSetupSection(presentation, onCheck = {}, onEnable = {}, onOpenSettings = {})
         }
     }
 }

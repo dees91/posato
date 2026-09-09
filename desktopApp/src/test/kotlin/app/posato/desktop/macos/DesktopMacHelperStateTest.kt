@@ -170,7 +170,7 @@ class DesktopMacHelperStateTest {
             { readyResult() },
             {
                 statusCalls += 1
-                if (statusCalls == 1) throw IOException("helper pipe closed") else throw IllegalStateException("pending unknown request")
+                if (statusCalls == 1) HelperResult.unknownOutcome() else throw IllegalStateException("pending unknown request")
             },
         )
         val state = DesktopMacHelperState(
