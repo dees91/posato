@@ -92,7 +92,7 @@ removing device starts a new workspace without a console step.
   operation into `exact_domain_policy`, `application_policy`, or
   `local_session`; `SYNC-011` and `SYNC-012` own convergence and the visible
   effect.
-- Open the writer on a user path: the first exchange after linking reads the
+- Open the writer on a user path: the first authoring or exchange after linking reads the
   key through `BootstrapCoordinator.readWorkspaceKey`, uses the 32 bytes as
   the `TransportKey` exactly as ADR 0006 defines it, with no further
   derivation or label, opens `SyncOperationCore` for the established
@@ -100,7 +100,8 @@ removing device starts a new workspace without a console step.
   `WorkspaceKeyValue`. `WorkspaceKeyValue`, `TransportKey`, and `SyncContext`
   stay `internal`; the key never reaches the database, a graph accessor that
   outlives the read, a `toString()`, a log, or driver evidence. A frozen
-  writer is closed and reopened with a fresh key read on the next exchange.
+  writer is closed and reopened with a fresh key read on the next authoring
+  or exchange opportunity.
 - The core, the writer, and the exchange are process-scoped, sharing the
   `AppleBootstrap` flight mutex, because `ComposeRoot.makeUIViewController`
   can build a second iOS runtime and two cores over one database freeze each
@@ -186,8 +187,8 @@ removing device starts a new workspace without a console step.
   device establishes a new workspace with no console deletion, and the other
   device reports action required until its own removal, after which it can
   join the new workspace.
-- `AC-06` — The first exchange after linking reads the workspace key through
-  the coordinator, opens the writer, and clears the key copy; on a device that
+- `AC-06` — The first authoring or exchange after linking reads the workspace key
+  through the coordinator, opens the writer, and clears the key copy; on a device that
   lost a simultaneous opt-in, the adopted key still opens the writer, which
   closes the `SYNC-009` `AC-03` readability clause physically. No key byte,
   binding, anchor, or cursor appears in any `toString()`, log, status string,
@@ -230,11 +231,17 @@ removing device starts a new workspace without a console step.
   constructs a `LocalSyncMutation`, so the outbox is empty on every device and
   `AC-01` through `AC-03` have no physical observable. Recommended: on a
   linked device, an accepted exact-domain edit first commits the local store,
-  which stays the visible truth, then commits the per-domain `PresentDomain`
-  or `RemoveDomain` mutations through the writer as a separate transaction.
-  A failed or uncertain mutation leaves the local store as truth and surfaces
-  action required; a frozen writer reopens on the next exchange. Edits made
-  before linking, or while the writer is unavailable, are not backfilled here;
+  which stays the visible truth, then hands the per-domain `PresentDomain`
+  or `RemoveDomain` mutations to a process-owned FIFO for a separate writer
+  transaction. `user-confirmed` (2026-09-09): local success does not await
+  network work; the writer opens on demand for the workspace captured before
+  the local commit. A short cancellation-protected commit and handoff keeps
+  successful saves ordered, and queued changes never cross workspace removal
+  or replacement. The queue is volatile until the outbox commit: process exit
+  may lose an unauthored diff while retaining the local policy. A failed or
+  uncertain mutation retains local truth and reports action required; missing
+  or unavailable keys retain their waiting/retry/action-required outcome.
+  Edits made before linking, or whose authoring fails, are not backfilled here;
   `SYNC-011` owns the read side, the backfill, and reconciling the two stores,
   and that interim divergence is an accepted risk. The rejected alternative
   kept the outbox empty and deferred every physical publish row to `SYNC-011`,

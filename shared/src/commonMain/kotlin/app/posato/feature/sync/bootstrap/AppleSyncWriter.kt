@@ -10,8 +10,7 @@ internal class AppleSyncWriter(
     private val core: SyncOperationCore,
     private val publish: (SyncStatus) -> Unit,
 ) {
-    var current: SyncWriter? = null
-        private set
+    private var current: SyncWriter? = null
 
     suspend fun open(): SyncWriter? {
         current?.takeIf { it.isActive }?.let { return it }

@@ -56,6 +56,13 @@ internal class AppleSyncTestHarness(
         ).copyBytes()
     }
 
+    suspend fun recordDomainChanges(
+        before: TargetPolicy,
+        after: TargetPolicy
+    ) {
+        sync.enqueueDomainChanges(sync.captureWorkspace(), before, after)
+    }
+
     suspend fun snapshot(): SyncReplicaSnapshot {
         return assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(replica.read(testContext)).value
     }

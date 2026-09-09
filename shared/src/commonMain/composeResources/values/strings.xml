@@ -61,7 +61,6 @@
     <string name="saving_domains">Saving</string>
     <string name="sync_icloud_action_required">Sync with iCloud needs attention before it can continue.</string>
     <string name="sync_icloud_description">Sync with iCloud links this device to your private iCloud workspace.</string>
-    <string name="sync_icloud_linked">This device is linked to your iCloud workspace.</string>
     <string name="sync_icloud_retryable">Sync with iCloud didn’t finish.</string>
     <string name="sync_icloud_running">Sync with iCloud is running.</string>
     <string name="sync_icloud_waiting_for_key">Waiting for the workspace key from your other device.</string>
