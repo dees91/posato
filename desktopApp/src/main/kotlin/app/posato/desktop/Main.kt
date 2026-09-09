@@ -10,15 +10,19 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import app.posato.desktop.macos.DesktopMacHelperState
 import app.posato.desktop.macos.MacOsApplicationEnforcer
 import app.posato.desktop.macos.MacOsBrowserDomainEnforcer
 import app.posato.desktop.macos.MacOsHelperClient
+import app.posato.desktop.macos.MacOsHelperSigningVerifier
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.enforcement.JvmSessionEnforcement
+import java.awt.Desktop
 import java.awt.Dimension
+import kotlinx.coroutines.Dispatchers
 
 fun main() {
     MacOsHelperClient().use { enforcementClient ->
@@ -32,7 +36,15 @@ fun main() {
                     enforcementClient,
                 ),
             )
-            val applicationGraph = createDesktopApplicationGraph(applicationMappings, enforcement)
+            val helperState = DesktopMacHelperState(
+                commands = enforcementClient,
+                verifyHelper = {
+                    MacOsHelperSigningVerifier.verify(MacOsHelperSigningVerifier.installedHelperPath())
+                },
+                ioDispatcher = Dispatchers.IO,
+                openSettings = { uri -> Desktop.getDesktop().browse(uri) },
+            )
+            val applicationGraph = createDesktopApplicationGraph(applicationMappings, enforcement, helperState)
 
             application {
                 var highContrast by remember { mutableStateOf(false) }
