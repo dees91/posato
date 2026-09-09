@@ -394,10 +394,10 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   is not enabled, **Open System Settings** plus **Check again** when background
   approval is required, a positive "Background helper enabled" when ready, and
   a caution notice with **Check again** when the helper could not be checked
-  (the notice says to quit and reopen Posato when checking again does not
-  help). Every known state keeps a quiet **Check again**. While a call runs the
-  caption reads "Checking Mac setup…" or "Enabling the background helper…" and
-  the actions are disabled. No time or success claim.
+  or enabled (the notice says to quit and reopen Posato when checking again
+  does not help). Every known state keeps a quiet **Check again**. While a
+  call runs the caption reads "Checking Mac setup…" or "Enabling the
+  background helper…" and the actions are disabled. No time or success claim.
 
 Main navigation stays available during active sessions, and Paused items editing
 retains its existing availability. Do not add an unrelated active-session lock.

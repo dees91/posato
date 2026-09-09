@@ -277,6 +277,23 @@ class OnboardingUiStateTest {
     }
 
     @Test
+    fun `given a running helper call when the view state is read then the permission step reports busy`() = runTest {
+        val gate = CompletableDeferred<MacHelperReadiness>()
+        val helperSetup = MacHelperSetupUiState(FakeMacHelper(gate = gate), this)
+        val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), FakeApplicationAccess(), helperSetup, this)
+
+        holder.enableHelper()
+        runCurrent()
+        assertTrue(holder.snapshot().permissionRunning)
+
+        gate.complete(MacHelperReadiness.READY)
+        runCurrent()
+
+        assertEquals(false, holder.snapshot().permissionRunning)
+        assertEquals(MacHelperReadiness.READY, holder.helperReadiness)
+    }
+
+    @Test
     fun `given a failing completion write when finished then the flow still closes`() = runTest {
         val holder = OnboardingUiState(
             FailingSetupStore(),
@@ -370,17 +387,18 @@ private class FakeApplicationAccess(
 
 private class FakeMacHelper(
     private val readiness: MacHelperReadiness = MacHelperReadiness.UNAVAILABLE,
+    private val gate: CompletableDeferred<MacHelperReadiness>? = null,
 ) : MacHelperPort {
     val calls = mutableListOf<String>()
 
     override suspend fun enable(): MacHelperReadiness {
         calls.add("enable")
-        return readiness
+        return gate?.await() ?: readiness
     }
 
     override suspend fun recheck(): MacHelperReadiness {
         calls.add("recheck")
-        return readiness
+        return gate?.await() ?: readiness
     }
 
     override fun openApprovalSettings() {

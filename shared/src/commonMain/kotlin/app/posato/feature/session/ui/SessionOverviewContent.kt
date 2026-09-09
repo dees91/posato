@@ -79,7 +79,7 @@ internal fun SessionOverviewContent(
         PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
         SyncSection(syncState)
         macSetup?.let { presentation ->
-            MacSetupSection(presentation, layout, onMacSetupCheck, onMacSetupEnable, onMacSetupOpenSettings)
+            MacSetupSection(presentation, onMacSetupCheck, onMacSetupEnable, onMacSetupOpenSettings)
         }
     }
 }

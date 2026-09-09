@@ -226,7 +226,7 @@ internal fun MacHelperReadinessNotice(
 }
 
 @Composable
-internal fun MacHelperApprovalActions(
+private fun MacHelperApprovalActions(
     layout: PosatoLayout,
     running: Boolean,
     onOpenSettings: () -> Unit,
@@ -236,6 +236,7 @@ internal fun MacHelperApprovalActions(
         stringResource(Res.string.onboarding_permission_mac_open_settings),
         layout,
         onOpenSettings,
+        enabled = !running,
     )
     PosatoButton(
         onClick = onRecheck,
