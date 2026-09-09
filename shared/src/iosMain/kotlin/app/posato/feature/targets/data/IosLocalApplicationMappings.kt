@@ -1,5 +1,6 @@
 package app.posato.feature.targets.data
 
+import app.posato.feature.onboarding.ApplicationAccessResult
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -54,6 +55,8 @@ interface IosApplicationMappingsProvider {
 
     fun choose(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation
 
+    fun requestAuthorization(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation
+
     fun remove(
         identifier: String,
         completion: (IosApplicationMappingsResponse) -> Unit,
@@ -93,6 +96,20 @@ internal class IosLocalApplicationMappings(
                 }
                 continuation.invokeOnCancellation { operation.cancel() }
             }
+        }
+    }
+
+    suspend fun requestAuthorization(): ApplicationAccessResult {
+        return operationMutex.withLock {
+            val response = suspendCancellableCoroutine { continuation ->
+                val operation = provider.requestAuthorization { result ->
+                    if (continuation.isActive) {
+                        continuation.resume(result)
+                    }
+                }
+                continuation.invokeOnCancellation { operation.cancel() }
+            }
+            response.toAccessResult()
         }
     }
 
@@ -174,6 +191,25 @@ private fun IosApplicationMappingsResponse.toSelectionResult(): LocalApplication
         else -> {
             LocalApplicationSelectionResult.Failure(LocalApplicationSelectionFailure.STORAGE)
         }
+    }
+}
+
+private fun IosApplicationMappingsResponse.toAccessResult(): ApplicationAccessResult {
+    return when (outcome) {
+        IosApplicationMappingsOutcome.SUCCESS,
+        IosApplicationMappingsOutcome.CANCELLED,
+        IosApplicationMappingsOutcome.ACCESS_CHANGED -> {
+            val commonAccess = access.toCommonAccess()
+            if (commonAccess != null) {
+                ApplicationAccessResult.Determined(commonAccess)
+            } else {
+                ApplicationAccessResult.Unavailable
+            }
+        }
+
+        IosApplicationMappingsOutcome.UNAVAILABLE -> ApplicationAccessResult.Unavailable
+
+        else -> ApplicationAccessResult.Failed
     }
 }
 

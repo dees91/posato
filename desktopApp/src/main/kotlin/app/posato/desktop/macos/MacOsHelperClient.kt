@@ -26,6 +26,7 @@ internal class MacOsHelperClient(
     helperPath: Path? = null,
     private val launchPrefix: List<String> = emptyList(),
 ) : Closeable,
+    MacHelperCommands,
     MacOsApplicationPicker,
     MacOsBrowserDomainCommands,
     MacOsApplicationCommands {
@@ -46,12 +47,12 @@ internal class MacOsHelperClient(
     private var pendingUnknownRequest: HelperMessage? = null
 
     @Synchronized
-    fun status(): HelperResult {
+    override fun status(): HelperResult {
         return request(HelperOperation.Status)
     }
 
     @Synchronized
-    fun enable(): HelperResult {
+    override fun enable(): HelperResult {
         return request(HelperOperation.Enable)
     }
 
