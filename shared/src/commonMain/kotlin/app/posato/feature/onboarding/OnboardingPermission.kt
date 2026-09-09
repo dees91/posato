@@ -2,6 +2,7 @@ package app.posato.feature.onboarding
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -12,6 +13,7 @@ import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.application_mapping_access_restricted
+import app.posato.generated.resources.mac_setup_not_enabled
 import app.posato.generated.resources.onboarding_action_continue
 import app.posato.generated.resources.onboarding_action_not_now
 import app.posato.generated.resources.onboarding_permission_check_failed
@@ -35,6 +37,7 @@ import app.posato.generated.resources.onboarding_summary_access_on
 import app.posato.generated.resources.onboarding_summary_access_unchecked
 import app.posato.generated.resources.onboarding_summary_helper_off
 import app.posato.generated.resources.onboarding_summary_helper_on
+import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -180,22 +183,65 @@ private fun PermissionStatus(
     state: OnboardingViewState,
     platform: OnboardingPermissionPlatform,
 ) {
-    val message = when (platform) {
-        OnboardingPermissionPlatform.IOS -> state.accessResult?.accessMessage()
+    when (platform) {
+        OnboardingPermissionPlatform.IOS -> {
+            val message = state.accessResult?.accessMessage()
+            if (message != null) {
+                PosatoNotice(
+                    tone = if (state.hasDeviceAccess(platform)) PosatoTone.Positive else PosatoTone.Caution,
+                    announceChanges = true,
+                ) { Text(message) }
+            }
+        }
 
-        OnboardingPermissionPlatform.MAC -> when (state.helperReadiness) {
-            MacHelperReadiness.READY -> stringResource(Res.string.onboarding_summary_helper_on)
-            MacHelperReadiness.APPROVAL_REQUIRED -> stringResource(Res.string.onboarding_permission_mac_approval)
-            MacHelperReadiness.UNAVAILABLE -> stringResource(Res.string.onboarding_permission_mac_unavailable)
-            null -> null
+        OnboardingPermissionPlatform.MAC -> {
+            state.helperReadiness?.let { readiness ->
+                MacHelperReadinessNotice(readiness, Res.string.onboarding_permission_mac_unavailable)
+            }
         }
     }
-    if (message != null) {
-        PosatoNotice(
-            tone = if (state.hasDeviceAccess(platform)) PosatoTone.Positive else PosatoTone.Caution,
-            announceChanges = true,
-        ) { Text(message) }
+}
+
+@Composable
+internal fun MacHelperReadiness.message(unavailable: StringResource): String {
+    return when (this) {
+        MacHelperReadiness.READY -> stringResource(Res.string.onboarding_summary_helper_on)
+        MacHelperReadiness.APPROVAL_REQUIRED -> stringResource(Res.string.onboarding_permission_mac_approval)
+        MacHelperReadiness.NOT_ENABLED -> stringResource(Res.string.mac_setup_not_enabled)
+        MacHelperReadiness.UNAVAILABLE -> stringResource(unavailable)
     }
+}
+
+@Composable
+internal fun MacHelperReadinessNotice(
+    readiness: MacHelperReadiness,
+    unavailable: StringResource,
+    modifier: Modifier = Modifier,
+) {
+    PosatoNotice(
+        modifier = modifier,
+        tone = if (readiness == MacHelperReadiness.READY) PosatoTone.Positive else PosatoTone.Caution,
+        announceChanges = true,
+    ) { Text(readiness.message(unavailable)) }
+}
+
+@Composable
+internal fun MacHelperApprovalActions(
+    layout: PosatoLayout,
+    running: Boolean,
+    onOpenSettings: () -> Unit,
+    onRecheck: () -> Unit,
+) {
+    OnboardingPrimaryAction(
+        stringResource(Res.string.onboarding_permission_mac_open_settings),
+        layout,
+        onOpenSettings,
+    )
+    PosatoButton(
+        onClick = onRecheck,
+        style = PosatoButtonStyle.Secondary,
+        enabled = !running,
+    ) { Text(stringResource(Res.string.onboarding_permission_mac_check_again)) }
 }
 
 internal fun OnboardingViewState.hasDeviceAccess(platform: OnboardingPermissionPlatform): Boolean {
@@ -219,16 +265,7 @@ private fun MacPermissionActions(
     onOpenHelperSettings: () -> Unit,
 ) {
     if (state.helperReadiness == MacHelperReadiness.APPROVAL_REQUIRED) {
-        OnboardingPrimaryAction(
-            stringResource(Res.string.onboarding_permission_mac_open_settings),
-            layout,
-            onOpenHelperSettings,
-        )
-        PosatoButton(
-            onClick = onRecheckHelper,
-            style = PosatoButtonStyle.Secondary,
-            enabled = !state.permissionRunning,
-        ) { Text(stringResource(Res.string.onboarding_permission_mac_check_again)) }
+        MacHelperApprovalActions(layout, state.permissionRunning, onOpenHelperSettings, onRecheckHelper)
     } else {
         OnboardingPrimaryAction(
             stringResource(Res.string.onboarding_permission_mac_action),

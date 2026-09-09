@@ -30,11 +30,14 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformNavigationPlacement
 import app.posato.feature.enforcement.EnforcementPort
+import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.OnboardingDependencies
+import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.OnboardingScreen
 import app.posato.feature.onboarding.OnboardingUiState
 import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.onboarding.data.SetupCompletion
+import app.posato.feature.onboarding.rememberMacHelperSetupUiState
 import app.posato.feature.onboarding.rememberOnboardingUiState
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.domain.SessionClock
@@ -69,11 +72,12 @@ class PosatoApplication internal constructor(
     ) {
         var setupDone by remember { mutableStateOf(false) }
         val syncState = rememberSyncBootstrapUiState(bootstrap)
+        val helperSetup = rememberMacHelperSetupUiState(onboardingDependencies.macHelper)
         val onboarding = rememberOnboardingUiState(
             onboardingDependencies.setupStore,
             store,
             onboardingDependencies.applicationAccess,
-            onboardingDependencies.macHelper,
+            helperSetup,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
         val placement = platformNavigationPlacement()
@@ -98,6 +102,7 @@ class PosatoApplication internal constructor(
             } else {
                 DestinationsHost(
                     syncState = syncState,
+                    macSetupState = helperSetup.takeIf { onboardingDependencies.permissionPlatform == OnboardingPermissionPlatform.MAC },
                     placement = placement,
                     modifier = modifier,
                 )
@@ -108,6 +113,7 @@ class PosatoApplication internal constructor(
     @Composable
     private fun DestinationsHost(
         syncState: SyncBootstrapUiState,
+        macSetupState: MacHelperSetupUiState?,
         placement: PosatoNavigationPlacement,
         modifier: Modifier = Modifier,
     ) {
@@ -145,6 +151,7 @@ class PosatoApplication internal constructor(
                         layout = layout,
                         deviceLabel = deviceLabel,
                         syncState = syncState,
+                        macSetupState = macSetupState,
                     )
                 } else {
                     TargetsScreen(

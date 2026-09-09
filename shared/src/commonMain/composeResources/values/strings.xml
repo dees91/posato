@@ -177,4 +177,11 @@ For what matters.</string>
     <string name="onboarding_summary_scope">You can change your choices at any time.</string>
     <string name="onboarding_summary_access_note">Allow Screen Time access in Paused items before pausing websites or apps.</string>
     <string name="onboarding_summary_helper_note">Website pauses are unavailable until Mac setup is complete.</string>
+    <string name="mac_setup_title">This Mac</string>
+    <string name="mac_setup_description">Pausing websites on this Mac needs a background helper.</string>
+    <string name="mac_setup_check">Check Mac setup</string>
+    <string name="mac_setup_checking">Checking Mac setup…</string>
+    <string name="mac_setup_enabling">Enabling the background helper…</string>
+    <string name="mac_setup_not_enabled">The background helper is not enabled on this Mac.</string>
+    <string name="mac_setup_unavailable">The background helper could not be checked. Check again; if that does not help, quit and reopen Posato.</string>
 </resources>

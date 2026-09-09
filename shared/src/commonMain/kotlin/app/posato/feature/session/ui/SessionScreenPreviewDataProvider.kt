@@ -4,6 +4,9 @@ import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import app.posato.feature.enforcement.EnforcedSet
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
+import app.posato.feature.onboarding.MacHelperReadiness
+import app.posato.feature.onboarding.MacSetupActivity
+import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.session.domain.LocalSessionStatus.Active
 import app.posato.feature.session.domain.LocalSessionStatus.Ended
 import app.posato.feature.session.domain.LocalSessionStatus.Inactive
@@ -31,6 +34,26 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
                 status = Inactive,
                 review = SessionReview(domains = persistentListOf("example.com", "news.example")),
             ),
+        ),
+        SessionPreviewState(
+            "Inactive Mac setup unchecked",
+            inactiveWithItems(),
+            macSetup = MacSetupPresentation(),
+        ),
+        SessionPreviewState(
+            "Inactive Mac setup checking",
+            inactiveWithItems(),
+            macSetup = MacSetupPresentation(activity = MacSetupActivity.CHECKING),
+        ),
+        SessionPreviewState(
+            "Inactive Mac setup ready",
+            inactiveWithItems(),
+            macSetup = MacSetupPresentation(readiness = MacHelperReadiness.READY),
+        ),
+        SessionPreviewState(
+            "Inactive Mac setup approval required",
+            inactiveWithItems(),
+            macSetup = MacSetupPresentation(readiness = MacHelperReadiness.APPROVAL_REQUIRED),
         ),
         SessionPreviewState(
             "Setup",
@@ -144,7 +167,15 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
     internal class SessionPreviewState(
         val name: String,
         val state: SessionUiState,
+        val macSetup: MacSetupPresentation? = null,
     )
+
+    private fun inactiveWithItems(): SessionUiState {
+        return SessionUiState(
+            status = Inactive,
+            review = SessionReview(domains = persistentListOf("example.com", "news.example")),
+        )
+    }
 
     private companion object {
         const val START: Long = 1_000_000_000_000L

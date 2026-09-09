@@ -90,7 +90,7 @@ class DesktopMacHelperStateTest {
         val commands = FakeHelperCommands({ readyResult() }, { approvalRequiredResult() })
         val state = DesktopMacHelperState(
             commands = commands,
-            verifyHelper = { throw AssertionError("recheck must not verify") },
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
             ioDispatcher = Dispatchers.Unconfined,
             openSettings = { },
         )
@@ -120,7 +120,7 @@ class DesktopMacHelperStateTest {
         var attempts = 0
         val state = DesktopMacHelperState(
             commands = commands,
-            verifyHelper = { throw AssertionError("settings must not verify") },
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
             ioDispatcher = Dispatchers.Unconfined,
             openSettings = {
                 attempts += 1
@@ -133,6 +133,56 @@ class DesktopMacHelperStateTest {
         assertEquals(1, attempts)
         assertTrue(commands.calls.isEmpty())
         assertEquals(MacHelperReadiness.APPROVAL_REQUIRED, state.recheck())
+    }
+
+    @Test
+    fun `given a never enabled helper when rechecked then not enabled is reported`() = runTest {
+        val commands = FakeHelperCommands({ readyResult() }, { notRegisteredResult() })
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.NOT_ENABLED, state.recheck())
+        assertEquals(listOf("status"), commands.calls.map { it.operation })
+    }
+
+    @Test
+    fun `given an unverifiable helper when rechecked then the client is never touched`() = runTest {
+        val commands = FakeHelperCommands({ readyResult() }, { readyResult() })
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { throw IllegalStateException("unverifiable") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNAVAILABLE, state.recheck())
+        assertTrue(commands.calls.isEmpty())
+    }
+
+    @Test
+    fun `given a lost helper connection when checked again then unavailable is reported both times`() = runTest {
+        var statusCalls = 0
+        val commands = FakeHelperCommands(
+            { readyResult() },
+            {
+                statusCalls += 1
+                if (statusCalls == 1) throw IOException("helper pipe closed") else throw IllegalStateException("pending unknown request")
+            },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNAVAILABLE, state.recheck())
+        assertEquals(MacHelperReadiness.UNAVAILABLE, state.recheck())
+        assertEquals(listOf("status", "status"), commands.calls.map { it.operation })
     }
 
     private fun readyResult(): HelperResult {
@@ -152,6 +202,16 @@ class DesktopMacHelperStateTest {
             ownershipPhase = HelperResult.Phase.Prepared,
             requiredAction = HelperResult.RequiredAction.BackgroundApproval,
             failure = HelperResult.Failure.None,
+        )
+    }
+
+    private fun notRegisteredResult(): HelperResult {
+        return HelperResult(
+            outcome = HelperResult.Outcome.ActionRequired,
+            serviceState = HelperResult.State.NotRegistered,
+            ownershipPhase = HelperResult.Phase.RecoveryRequired,
+            requiredAction = HelperResult.RequiredAction.ManualRecovery,
+            failure = HelperResult.Failure.Lifecycle,
         )
     }
 }
