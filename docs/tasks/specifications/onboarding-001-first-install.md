@@ -261,7 +261,7 @@ launch shows the flow again unless the local database is gone.
 
 ## Decisions or blockers
 
-- `D1` open, blocking (flow placement and `DESIGN.md`): recommended: a
+- `D1` decided (`user-confirmed`, 2026-09-09, the recommendation below): a
   dedicated first-run flow before the two destinations, hosted outside the
   navigation scaffold as described, with the "current implementation
   boundary" section of `DESIGN.md` amended in this pull request to describe
@@ -269,7 +269,7 @@ launch shows the flow again unless the local database is gone.
   setup checklist on the Session screen that routes to the existing controls;
   cheaper, but it cannot put purpose and privacy before the first service
   prompt and leaves the accepted onboarding pattern unbuilt.
-- `D2` open, blocking (target setup gate): recommended: no gate. The first
+- `D2` decided (`user-confirmed`, 2026-09-09): no gate. The first
   website is offered, not required, and applications are described as
   optional device-local choices made later from Paused items. This supersedes
   the `user-confirmed` (2026-08-25) sentence "The onboarding flow requires a
@@ -281,8 +281,8 @@ launch shows the flow again unless the local database is gone.
   needs a local selection only on the device that will pause applications.
   Alternative: keep the sentence and require one website and one local
   selection where available before completion.
-- `D3` open, blocking (permissions in context): recommended: the reading
-  that both explains and acts. iPhone: the step runs the real request through
+- `D3` decided (`user-confirmed`, 2026-09-09): the reading that both
+  explains and acts. iPhone: the step runs the real request through
   the new provider capability, which amends the `TARGETS-004` rule
   "authorization starts only from one contextual shared action" to "from the
   contextual picker action or the first-install rationale step"; the request
@@ -292,19 +292,19 @@ launch shows the flow again unless the local database is gone.
   authentication to the first session start. Alternative: explain only and
   route to the existing controls, which keeps `TARGETS-004` untouched but
   makes "asks permissions in context" a signpost rather than a step.
-- `D4` recommended (waiting for the key): the iCloud step renders every
+- `D4` decided (`user-confirmed`, 2026-09-09, waiting for the key): the iCloud step renders every
   `AppleSync` status, including waiting for the key, because the code is
   shared and either device may find an existing anchor; `ONBOARDING-002`
   owns the physical proof of join and wait. This task proves establishing on
   an empty account per platform. A reinstalled iPhone whose account still
   holds a key item joins truthfully through the same step.
-- `D5` recommended (completion persistence): one singleton row through
+- `D5` decided (`user-confirmed`, 2026-09-09, completion persistence): one singleton row through
   `6.sqm`, seeded for databases that already hold product state, no
   timestamp, cleared only with the database, so `reset` and `launch --fresh`
   re-show the flow and the driver has one reset path. Alternative: platform
   preferences, which add a second reset path and a platform seam for one
   boolean and still need the upgrade seed.
-- `D6` recommended (evidence): first-install runs on each platform
+- `D6` decided (`user-confirmed`, 2026-09-09, evidence): first-install runs on each platform
   independently as listed under verification; a "first installation" is one
   device, so no two-device row belongs here.
 - Physical gate: the maintainer's iPhone and Mac; the Screen Time prompt and
