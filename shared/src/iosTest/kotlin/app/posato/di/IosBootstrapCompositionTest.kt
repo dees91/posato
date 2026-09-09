@@ -10,6 +10,7 @@ import app.posato.feature.enforcement.IosSuspendedExpiry
 import app.posato.feature.enforcement.IosSuspendedExpiryOutcome
 import app.posato.feature.enforcement.IosSuspendedExpiryProvider
 import app.posato.feature.enforcement.IosSuspendedExpiryRequest
+import app.posato.feature.onboarding.UnavailableApplicationAccess
 import app.posato.feature.sync.bootstrap.BindingResolution
 import app.posato.feature.sync.bootstrap.BootstrapResult
 import app.posato.feature.sync.data.IosBootstrapKeychainAdapter
@@ -113,6 +114,7 @@ class IosBootstrapCompositionTest {
             InertKeychainProvider(),
             InertMailboxProvider(),
             InertCryptoProvider(),
+            UnavailableApplicationAccess,
         )
     }
 }
@@ -123,6 +125,10 @@ private class InertMappingsProvider : IosApplicationMappingsProvider {
     }
 
     override fun choose(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation {
+        throw UnsupportedOperationException()
+    }
+
+    override fun requestAuthorization(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation {
         throw UnsupportedOperationException()
     }
 

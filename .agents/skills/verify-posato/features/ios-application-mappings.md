@@ -49,6 +49,8 @@ Preconditions:
   and `$PC screenshot -t device --name ios-mappings`. Confirm the Apps-tab
   count matches the private-selection row. A cancellation leaves it unchanged.
 - **Persist:** Relaunch without fresh, re-enter Apps, and capture the same count.
+  After a fresh launch or reset, run `first-install-skip.json` first (see
+  [First install](./onboarding.md)).
   The device database is not readable through the driver.
 - **Clear:** `$PC tap -t device --text "Clear selection" --role button`.
   Expect Make room beyond the browser and an Apps count of zero.

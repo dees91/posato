@@ -60,6 +60,8 @@ Preconditions:
   the saved row. On Mac/Simulator also use
   `$PC db query -t <target> --sql "select canonical_domain from exact_domain_policy"`.
   The database contains domains, never the submitted URL path/query/fragment.
+  After a fresh launch or reset, run `first-install-skip.json` first (see
+  [First install](./onboarding.md)).
 - **Remove:** Open `Actions for example.org`, then `Remove`, and wait for
   that domain to be absent. The remove-website fixtures remove `example.com`.
 - **Restore batch:** Run `website-batch-list-cleanup.json` from Websites.
