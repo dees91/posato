@@ -20,6 +20,9 @@ enforcement state with Retry; synchronization remains unwired.
 - `session-early-end` asks Ready to return? with End session and Keep this pause.
 - `session-expiry` persists natural expiry and does not revive after restart.
 - `session-persist` preserves the active session and its end time across relaunch.
+- `session-mac-setup` (Mac only) offers Check Mac setup below Sync with iCloud,
+  reads nothing before the press, then names the real helper state with one
+  action and a quiet Check again.
 
 ## How to get to it (user POV)
 
@@ -29,6 +32,9 @@ enforcement state with Retry; synchronization remains unwired.
 - Open a summary disclosure to inspect a long list without editing it.
 - End session early opens its own confirmation surface. Paused items remains
   editable during an active session.
+- On the Mac, This Mac sits below Sync with iCloud. Check Mac setup reports the
+  helper state; Enable on this Mac registers it; Open System Settings and Check
+  again cover background approval. Nothing runs until a button is pressed.
 
 ## Driving it with posato-control
 
@@ -78,6 +84,16 @@ Preconditions:
 - **Empty selection:** Without effective items, Choose paused items routes to
   the editor. If items disappear while reviewing, Start this pause is disabled
   with the real action-required notice.
+- **Mac setup (desktop, the deferred-onboarding route):** back up and
+  `reset -t desktop`, launch, and drive the first-install flow to the permission
+  step with the `first-install-skip.json` steps (Not now on the permission
+  step), then finish to Session. `pgrep -f PosatoMacOSHelper` is empty; switch
+  to Paused items and back to Session and it stays empty. `$PC snapshot -t
+  desktop --format text` shows `Check Mac setup`; `$PC tap -t desktop --text
+  "Check Mac setup" --role button`; `$PC wait -t desktop --for exists --text
+  "Background helper enabled" --timeout-seconds 130`; screenshot and snapshot.
+  `pgrep` is now non-empty, which is the on-demand evidence. Press the quiet
+  `Check again` once and expect the same state. Restore the database afterwards.
 - **Restore:** End any session this run started and remove example.com if the
   expiry fixture did not already remove it. Preserve the user's other rows.
 
@@ -98,3 +114,8 @@ Preconditions:
 - Restart returns to Session, so re-enter Paused items before website cleanup.
   A fresh database shows the first-install flow instead; run
   `first-install-skip.json` first (see [First install](./onboarding.md)).
+- Only the enabled branch of This Mac is reachable on a Mac whose helper is
+  already approved; not enabled, approval required, unavailable, and the
+  lost-connection case stay unit-only. Each helper request has a 120-second
+  deadline; the caption reads Checking Mac setup… meanwhile. After a lost
+  helper connection Check again cannot recover; quit and reopen Posato.

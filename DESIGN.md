@@ -89,8 +89,9 @@ or a productivity-scoring system.
 ### Current implementation boundary
 
 The actual app contains Session and Paused items, real local persistence,
-native application-selection boundaries, the local session timer, and one
-explicit **Sync with iCloud** control on the Session screen. Session-driven
+native application-selection boundaries, the local session timer, one
+explicit **Sync with iCloud** control on the Session screen, and, on macOS
+only, a **This Mac** helper-setup section below it. Session-driven
 enforcement is not connected to these screens. Never show the prototype's
 demo clock, invented synchronization time, mock application names, onboarding
 success, simulated permission outcome, or inspection overlay in the real app.
@@ -387,6 +388,16 @@ in PR #44. The six steps and existing service/persistence behavior remain.
 - Summary: two disclosure rows, not every website/app. Selected items opens a
   read-only browser with category tabs, website search, and Close list.
   iOS shows opaque application counts; Mac shows actual local names.
+- This Mac (macOS only, after Sync with iCloud): reads nothing before a press.
+  **Check Mac setup** runs one status read, then the section names the real
+  helper state with one precise action: **Enable on this Mac** when the helper
+  is not enabled, **Open System Settings** plus **Check again** when background
+  approval is required, a positive "Background helper enabled" when ready, and
+  a caution notice with **Check again** when the helper could not be checked
+  (the notice says to quit and reopen Posato when checking again does not
+  help). Every known state keeps a quiet **Check again**. While a call runs the
+  caption reads "Checking Mac setup…" or "Enabling the background helper…" and
+  the actions are disabled. No time or success claim.
 
 Main navigation stays available during active sessions, and Paused items editing
 retains its existing availability. Do not add an unrelated active-session lock.

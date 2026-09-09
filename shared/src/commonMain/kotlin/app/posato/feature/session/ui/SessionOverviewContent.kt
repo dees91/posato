@@ -21,6 +21,8 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
+import app.posato.feature.onboarding.MacSetupPresentation
+import app.posato.feature.onboarding.MacSetupSection
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind
@@ -41,6 +43,10 @@ internal fun SessionOverviewContent(
     onItems: () -> Unit,
     onRetryEnforcement: () -> Unit = {},
     syncState: SyncBootstrapUiState? = null,
+    macSetup: MacSetupPresentation? = null,
+    onMacSetupCheck: () -> Unit = {},
+    onMacSetupEnable: () -> Unit = {},
+    onMacSetupOpenSettings: () -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
     val hasItems = state.displayDomains().isNotEmpty() ||
@@ -72,6 +78,9 @@ internal fun SessionOverviewContent(
         FrozenSetCaption(state)
         PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
         SyncSection(syncState)
+        macSetup?.let { presentation ->
+            MacSetupSection(presentation, layout, onMacSetupCheck, onMacSetupEnable, onMacSetupOpenSettings)
+        }
     }
 }
 

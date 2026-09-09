@@ -30,7 +30,7 @@ class OnboardingUiStateTest {
             FakeSetupStore(),
             FakeTargetPolicyStore(),
             FakeApplicationAccess(),
-            FakeMacHelper(),
+            MacHelperSetupUiState(FakeMacHelper(), this),
             this,
         )
 
@@ -61,7 +61,7 @@ class OnboardingUiStateTest {
         val policy = FakeTargetPolicyStore()
         val access = FakeApplicationAccess()
         val helper = FakeMacHelper()
-        val holder = OnboardingUiState(setup, policy, access, helper, this)
+        val holder = OnboardingUiState(setup, policy, access, MacHelperSetupUiState(helper, this), this)
 
         holder.loadCompletion()
         repeat(5) { holder.advance() }
@@ -93,7 +93,7 @@ class OnboardingUiStateTest {
 
         answers.forEach { answer ->
             val access = FakeApplicationAccess(answer)
-            val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), access, FakeMacHelper(), this)
+            val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), access, MacHelperSetupUiState(FakeMacHelper(), this), this)
 
             holder.requestAccess()
             runCurrent()
@@ -107,7 +107,7 @@ class OnboardingUiStateTest {
         val gate = CompletableDeferred<ApplicationAccessResult>()
         val access = FakeApplicationAccess(gate = gate)
         val helper = FakeMacHelper()
-        val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), access, helper, this)
+        val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), access, MacHelperSetupUiState(helper, this), this)
 
         holder.requestAccess()
         holder.requestAccess()
@@ -132,7 +132,13 @@ class OnboardingUiStateTest {
 
         answers.forEach { answer ->
             val helper = FakeMacHelper(answer)
-            val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), FakeApplicationAccess(), helper, this)
+            val holder = OnboardingUiState(
+                FakeSetupStore(),
+                FakeTargetPolicyStore(),
+                FakeApplicationAccess(),
+                MacHelperSetupUiState(helper, this),
+                this,
+            )
 
             holder.enableHelper()
             runCurrent()
@@ -145,7 +151,7 @@ class OnboardingUiStateTest {
     @Test
     fun `given a helper answer when rechecked then only status runs`() = runTest {
         val helper = FakeMacHelper(MacHelperReadiness.READY)
-        val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), FakeApplicationAccess(), helper, this)
+        val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), FakeApplicationAccess(), MacHelperSetupUiState(helper, this), this)
 
         holder.recheckHelper()
         runCurrent()
@@ -157,7 +163,7 @@ class OnboardingUiStateTest {
     @Test
     fun `given a website draft when submitted then the domain persists and the receipt confirms`() = runTest {
         val policy = FakeTargetPolicyStore()
-        val holder = OnboardingUiState(FakeSetupStore(), policy, FakeApplicationAccess(), FakeMacHelper(), this)
+        val holder = OnboardingUiState(FakeSetupStore(), policy, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
         var receipt: WebsiteBatchReceipt? = null
 
         holder.submitWebsites("example.com", 1) { receipt = it }
@@ -173,7 +179,7 @@ class OnboardingUiStateTest {
     @Test
     fun `given a duplicate website when submitted then nothing persists twice`() = runTest {
         val policy = FakeTargetPolicyStore()
-        val holder = OnboardingUiState(FakeSetupStore(), policy, FakeApplicationAccess(), FakeMacHelper(), this)
+        val holder = OnboardingUiState(FakeSetupStore(), policy, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
 
         holder.submitWebsites("example.com", 1) { }
         runCurrent()
@@ -190,7 +196,7 @@ class OnboardingUiStateTest {
             FakeSetupStore(),
             FailingTargetPolicyStore(),
             FakeApplicationAccess(),
-            FakeMacHelper(),
+            MacHelperSetupUiState(FakeMacHelper(), this),
             this,
         )
         var receipt: WebsiteBatchReceipt? = null
@@ -214,7 +220,7 @@ class OnboardingUiStateTest {
                 FakeSetupStore(stored),
                 FakeTargetPolicyStore(),
                 FakeApplicationAccess(),
-                FakeMacHelper(),
+                MacHelperSetupUiState(FakeMacHelper(), this),
                 this,
             )
 
@@ -232,7 +238,7 @@ class OnboardingUiStateTest {
             FailingSetupStore(),
             FakeTargetPolicyStore(),
             FakeApplicationAccess(),
-            FakeMacHelper(),
+            MacHelperSetupUiState(FakeMacHelper(), this),
             this,
         )
 
@@ -245,7 +251,7 @@ class OnboardingUiStateTest {
     @Test
     fun `given the summary when finished then completion persists once and the flow closes`() = runTest {
         val setup = FakeSetupStore()
-        val holder = OnboardingUiState(setup, FakeTargetPolicyStore(), FakeApplicationAccess(), FakeMacHelper(), this)
+        val holder = OnboardingUiState(setup, FakeTargetPolicyStore(), FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
         var finished = 0
 
         holder.finish { finished++ }
@@ -257,12 +263,26 @@ class OnboardingUiStateTest {
     }
 
     @Test
+    fun `given a helper enabled in onboarding when the shared setup holder is read then the readiness carries over`() = runTest {
+        val helper = FakeMacHelper(MacHelperReadiness.READY)
+        val helperSetup = MacHelperSetupUiState(helper, this)
+        val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), FakeApplicationAccess(), helperSetup, this)
+
+        holder.enableHelper()
+        runCurrent()
+
+        assertEquals(MacHelperReadiness.READY, helperSetup.readiness)
+        assertEquals(MacHelperReadiness.READY, holder.helperReadiness)
+        assertEquals(listOf("enable"), helper.calls)
+    }
+
+    @Test
     fun `given a failing completion write when finished then the flow still closes`() = runTest {
         val holder = OnboardingUiState(
             FailingSetupStore(),
             FakeTargetPolicyStore(),
             FakeApplicationAccess(),
-            FakeMacHelper(),
+            MacHelperSetupUiState(FakeMacHelper(), this),
             this,
         )
         var finished = 0
