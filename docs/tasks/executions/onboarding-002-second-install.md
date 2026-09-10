@@ -25,38 +25,18 @@
 ## High-risk plan review
 
 - **Initial verdict:** `changes-required` (independent reviewer, 2026-09-10).
-  Initial findings were addressed in `d2d7635`; the revised plan below
-  supersedes its foreground-only continuation and original button hierarchy.
-- **Critical or Required findings:** the join-only re-check was undefined
-  for a persisted candidate and would have deleted the own key item on an
-  automatic path; zone-missing, retryable, and account outcomes were
-  undefined, so a foreground could publish retryable over a true wait; the
-  binding check had no referent for a store-`None` device, leaving an
-  account switch able to join the new account's workspace without a press;
-  `AC-01` promised Mac database evidence in the direction where the waiting
-  device is the iPhone; the verification asked for rendering and label
-  tests that the quality contract forbids.
-- **Resolution:** the fresh-join continuation is scoped to store `None`,
-  retains the consented account and anchor in memory, and uses a defined
-  outcome table. Candidate/established recovery remains separate. Evidence
-  names the actual waiting device; tests target behavior, not static copy.
-- **Maintainer correction, accepted 2026-09-10:** manual Check again shares
-  the bounded continuation; no creating bootstrap hides behind that label.
-  Reads while waiting are distinguished from established persistence and
-  exchange after adoption. Continue is primary; Session keeps disclosures;
-  local saves and pending sync remain separate. Both physical device orders
-  are required, but unobserved waiting is an evidence limit. No particular
-  Apple prompt is assumed. D1–D4 were accepted before implementation.
-- **Revised-plan verdict:** `approve` (independent reviewer, 2026-09-10);
-  zero open Critical/Required and no optional findings. One Required gap in
-  the accessibility write surface was resolved by allowing narrow callback
-  wiring to the existing Mac announcement bridge.
-- **Review evidence:** brief continuation/outcomes (lines 95–151), UI/write
-  surface (152–202), acceptance/verification (215 onward), execution plan,
-  and both changed wiki topics; checked against AppleSync, coordinator,
-  anchor/item phases, store mapping, UI wiring, ADR 0007, and DESIGN.md.
-  `git diff --check` passed. No builds/runtime tests: documentation-only
-  plan review; implementation verification is recorded below.
+  Required corrections defined the store-None boundary, account/anchor
+  referent, missing/transient outcomes, actual waiting-device evidence, and
+  the exclusion of static UI tests. Candidate/established recovery stayed
+  separate. `d2d7635` records the initial resolution.
+- **Accepted refinement:** manual and foreground retry share the same bounded
+  continuation; Continue is primary; local-save/sync facts stay separate;
+  physical immediate joining and observed waiting remain distinct. Narrow
+  wiring to the existing Mac announcement bridge was added to the surface.
+- **Revised verdict:** `approve`, zero open Critical/Required. The reviewer
+  checked brief outcomes/UI/acceptance, execution plan, wiki topics, and the
+  coordinator, anchor/item phases, store mapping, ADR 0007, and DESIGN.md.
+  `git diff --check` passed; this documentation-only plan review ran no tests.
 
 ## Result
 
@@ -74,14 +54,30 @@
 
 ## Completed-change review
 
-- **Verdict:** `approve` (independent reviewer, 2026-09-10); zero open
-  Critical/Required, no additional findings.
-- **Required finding:** missing regression evidence for persistence followed
-  by cancellation and the subsequent UI retry route.
-- **Resolution:** tests now cover persisted adoption/cancellation, exact and
-  conflicting row reconciliation, one commit/exchange, and bounded retry
-  after a storage error despite retryable presentation. Focused tests pass;
-  reviewer confirmed closure. No production-code defect was found.
+- **Verdict:** `approve`; refreshed independent review on 2026-09-10 covers
+  the original implementation and PR corrections; zero open Critical/Required.
+- **Reviewer:** Codex agent `/root/review_onboarding002_implementation`,
+  distinct from implementing agent `/root`.
+- **Required resolution:** persisted adoption followed by cancellation now
+  has regression coverage for exact/conflicting row reconciliation, one
+  commit/exchange, and bounded UI retry after storage failure.
+- **Review evidence:** under `shared/src/commonMain/kotlin/app/posato/feature/`,
+  reviewed `sync/bootstrap/BootstrapJoinPhase.kt:8–165`, `AppleSync.kt:33–232`,
+  `BootstrapCoordinator.kt:25–249`; `sync/ui/SyncBootstrapUiState.kt:17–69`,
+  `SyncAnnouncements.kt:16–38`, `SyncBootstrapSection.kt:59–169`;
+  `onboarding/OnboardingSteps.kt:124–186,225–286` and `OnboardingScreen.kt:60–146`.
+  Also checked `PosatoApplication.kt:65–122` and resource strings `201–204`.
+  Under commonTest's corresponding sync paths, checked `AppleSyncJoinTest:18–226`,
+  `BootstrapJoinTest:16–233`, `AppleSyncTestHarness:24–81`,
+  `FakeBootstrapPorts:168–218`, and `SyncBootstrapUiStateTest:11–62`;
+  the brief `1–7,88–200` and changed sync-recipe instructions.
+- **Reviewer-run checks:** `:shared:jvmTest` filtered to
+  `app.posato.feature.sync.*` and `app.posato.feature.onboarding.*`:
+  294 tests in 33 suites passed, no failures/errors/skips.
+  `:shared:detekt`, `:shared:ktlintCheck`, and `git diff --check` passed.
+- **PR corrections:** Session status gains polite live-region semantics
+  without visual restyling; summary override applies only to a pending join;
+  brief status points to this record and recipe prose wrapping is restored.
 
 ## Verification
 
@@ -90,9 +86,10 @@
 | `BootstrapJoinTest` bounded checks and outcomes | passed | JVM regressions |
 | Manual/foreground, stale context, no consent, cancellation | passed | `AppleSyncJoinTest`, `AppleSyncTest` |
 | Holder routing / native waiting presentation | tests passed / physical wait not observed | Delayed-key tests; no spoken-delivery claim |
-| `./gradlew quality` | passed after final test correction | JVM/iOS tests, lint, packaging |
+| `./gradlew quality` | passed after PR corrections | JVM/iOS tests, lint, packaging |
 | Simulator full / skip first-install fixtures | passed | UI captures; website/bootstrap/completion counts 1/0/1 and 0/0/1 |
-| Signed Mac launch and collapsed/expanded Session | passed | Driver snapshot and screenshots |
+| Simulator degraded attempt after PR corrections | passed | Summary retains local scope; Session reports retryable; bootstrap rows 0 |
+| Signed Mac launch and collapsed/expanded Session | passed after PR corrections | Driver snapshot and screenshots |
 | iPhone build/install/launch and UI smoke | passed on retry | Initial automation-mode timeout; unlocked-device retry passed |
 | iPhone joins existing workspace from Session and relaunches | passed | Completed attempt after consent and relaunch; wait not observed |
 | Physical A: Mac establishes, fresh iPhone joins | passed | Onboarding status and summary; immediate key availability |

@@ -12,6 +12,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -114,7 +117,10 @@ private fun IcloudOptions(
     onSync: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    PosatoCaption(stringResource(if (checking) Res.string.sync_checking_key else snapshot.status.message(snapshot.linked)))
+    PosatoCaption(
+        stringResource(if (checking) Res.string.sync_checking_key else snapshot.status.message(snapshot.linked)),
+        modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+    )
     if (snapshot.status == SyncStatus.WAITING_FOR_KEY) {
         PosatoCaption(stringResource(Res.string.sync_waiting_explanation))
     }

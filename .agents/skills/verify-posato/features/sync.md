@@ -2,18 +2,21 @@
 
 Expand the **iCloud** row on Session to reach **Sync with iCloud** before
 linking, or **Sync now** and **Remove workspace** afterwards. The collapsed
-row always names the current state; opening it never starts an exchange. Launch and foreground do not touch CloudKit or synchronizable Keychain
+row always names the current state; opening it never starts an exchange.
+Launch and foreground do not touch CloudKit or synchronizable Keychain
 before consent. After an explicit fresh join finds a missing workspace key,
 foreground and **Check again** may continue that same account/workspace in
 process memory. Missing keys cause reads only; verified adoption commits the
 established row and permits ordinary exchange. Restart forgets this waiting
-attempt and offers explicit **Sync with iCloud** again. A linked device offers **Sync now** and **Remove workspace**. Exchange
+attempt and offers explicit **Sync with iCloud** again. A linked device offers
+**Sync now** and **Remove workspace**. Exchange
 opportunities also follow launch, foreground, and local exact-domain commits;
 one active exchange can retain at most one queued opportunity.
 
 ## Sub-features
 
-- `sync-consent-gate`: unlinked launch remains local-only until explicit consent.
+- `sync-consent-gate`: unlinked launch remains local-only until explicit
+  consent.
 - `sync-establish` / `sync-join`: establish or adopt the same private workspace,
   including simultaneous opt-in and waiting for a synchronizable key.
 - `sync-exchange`: publish immutable pending bundles and accept remote bundles
@@ -33,7 +36,8 @@ one active exchange can retain at most one queued opportunity.
 
 Read `tools/posato-control/README.md` for commands and scenario syntax. Use a
 signed Mac package and a connected unlocked development-signed iPhone on the
-same maintainer-owned iCloud account. `doctor` must confirm the signing identity,
+same maintainer-owned iCloud account. `doctor` must confirm the signing
+identity,
 profile, companion, development team, and device. The Simulator proves only
 local behavior and truthful degradation without its own iCloud account.
 
@@ -61,7 +65,8 @@ the action label with **Sync now** or **Remove workspace** as appropriate.
    workspace key from your other device.** A pending fresh join offers
    **Check again**, and returning to the app also offers a bounded check;
    neither creates a workspace. A changed account/workspace ends that
-   attempt and restores the explicit consent action. Completion is **This device completed its latest sync
+   attempt and restores the explicit consent action. Completion is **This device
+   completed its latest sync
    attempt. Other devices may still need to sync.**
 4. Through Paused items, add a reserved synthetic domain on one device. Return
    to Session and wait for completion. Press **Sync now** on the other device.

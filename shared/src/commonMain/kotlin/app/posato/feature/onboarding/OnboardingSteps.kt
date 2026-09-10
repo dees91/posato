@@ -257,7 +257,7 @@ internal fun SummaryStep(
             PosatoPrivacyPoint(
                 headlineContent = {
                     Text(
-                        if (syncSnapshot.status != SyncStatus.LOCAL_ONLY && syncSnapshot.status != SyncStatus.COMPLETED) {
+                        if (syncSnapshot.joinPending) {
                             stringResource(syncSnapshot.status.summary(syncSnapshot.linked))
                         } else if (syncSnapshot.linked) {
                             stringResource(Res.string.onboarding_summary_sync_on)
