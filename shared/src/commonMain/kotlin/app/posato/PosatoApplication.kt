@@ -68,7 +68,8 @@ class PosatoApplication internal constructor(
     @Composable
     fun Content(
         modifier: Modifier = Modifier,
-        highContrast: Boolean? = null
+        highContrast: Boolean? = null,
+        onMacSetupAnnouncement: (String) -> Unit = {},
     ) {
         var setupDone by remember { mutableStateOf(false) }
         val syncState = rememberSyncBootstrapUiState(bootstrap)
@@ -102,6 +103,7 @@ class PosatoApplication internal constructor(
             } else {
                 DestinationsHost(
                     syncState = syncState,
+                    onMacSetupAnnouncement = onMacSetupAnnouncement,
                     macSetupState = helperSetup.takeIf { onboardingDependencies.permissionPlatform == OnboardingPermissionPlatform.MAC },
                     placement = placement,
                     modifier = modifier,
@@ -114,6 +116,7 @@ class PosatoApplication internal constructor(
     private fun DestinationsHost(
         syncState: SyncBootstrapUiState,
         macSetupState: MacHelperSetupUiState?,
+        onMacSetupAnnouncement: (String) -> Unit,
         placement: PosatoNavigationPlacement,
         modifier: Modifier = Modifier,
     ) {
@@ -152,6 +155,7 @@ class PosatoApplication internal constructor(
                         deviceLabel = deviceLabel,
                         syncState = syncState,
                         macSetupState = macSetupState,
+                        onMacSetupAnnouncement = onMacSetupAnnouncement,
                     )
                 } else {
                     TargetsScreen(

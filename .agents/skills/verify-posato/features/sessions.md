@@ -20,7 +20,7 @@ enforcement state with Retry; synchronization remains unwired.
 - `session-early-end` asks Ready to return? with End session and Keep this pause.
 - `session-expiry` persists natural expiry and does not revive after restart.
 - `session-persist` preserves the active session and its end time across relaunch.
-- `session-mac-setup` (Mac only) offers Check Mac setup below Sync with iCloud,
+- `session-mac-setup` (Mac only) offers Check Mac setup inside the This Mac row below iCloud,
   reads nothing before the press, then names the real helper state with one
   action and a quiet Check again.
 
@@ -32,7 +32,9 @@ enforcement state with Retry; synchronization remains unwired.
 - Open a summary disclosure to inspect a long list without editing it.
 - End session early opens its own confirmation surface. Paused items remains
   editable during an active session.
-- On the Mac, This Mac sits below Sync with iCloud. Check Mac setup reports the
+- Expand iCloud to reach sync and workspace-removal controls. Expanding the row
+  never starts an exchange.
+- On the Mac, expand This Mac below iCloud. Check Mac setup reports the
   helper state; Enable on this Mac registers it; Open System Settings and Check
   again cover background approval. Nothing runs until a button is pressed.
 
@@ -89,11 +91,17 @@ Preconditions:
   step with the `first-install-skip.json` steps (Not now on the permission
   step), then finish to Session. `pgrep -f PosatoMacOSHelper` is empty; switch
   to Paused items and back to Session and it stays empty. `$PC snapshot -t
-  desktop --format text` shows `Check Mac setup`; `$PC tap -t desktop --text
+  desktop --format text` shows the This Mac row. Expand it with `$PC tap -t desktop --text-contains
+  "This Mac," --role button`; `pgrep` stays empty and Check Mac setup is now
+  visible. `$PC tap -t desktop --text
   "Check Mac setup" --role button`; `$PC wait -t desktop --for exists --text
-  "Background helper enabled" --timeout-seconds 130`; screenshot and snapshot.
+  "This Mac, Background helper enabled" --role button --timeout-seconds 130`; screenshot and snapshot.
   `pgrep` is now non-empty, which is the on-demand evidence. Press the quiet
-  `Check again` once and expect the same state. Restore the database afterwards.
+  `Check again` once and expect the same state. Capture the secondary setup
+  action and scroll to include Check again in the result screenshot. With
+  VoiceOver enabled, check that progress and the returned result are announced
+  on both presses, including the unchanged enabled result. An accessibility
+  snapshot alone does not prove spoken delivery. Restore the database afterwards.
 - **Restore:** End any session this run started and remove example.com if the
   expiry fixture did not already remove it. Preserve the user's other rows.
 

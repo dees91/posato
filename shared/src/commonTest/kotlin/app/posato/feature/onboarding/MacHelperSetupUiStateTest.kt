@@ -5,10 +5,27 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MacHelperSetupUiStateTest {
+    @Test
+    fun `given an unchanged helper answer when checked again then completion remains observable`() = runTest {
+        listOf(MacHelperReadiness.READY, MacHelperReadiness.UNAVAILABLE).forEach { answer ->
+            val holder = MacHelperSetupUiState(RecordingMacHelper(answer), this)
+            holder.check()
+            runCurrent()
+            val first = holder.presentation()
+
+            holder.check()
+            runCurrent()
+
+            assertEquals(answer, holder.presentation().readiness)
+            assertNotEquals(first, holder.presentation())
+        }
+    }
+
     @Test
     fun `given a fresh holder when nothing is pressed then the port is never called and readiness stays unknown`() = runTest {
         val helper = RecordingMacHelper()
@@ -30,7 +47,7 @@ class MacHelperSetupUiStateTest {
             runCurrent()
 
             assertEquals(listOf("recheck"), helper.calls, "answer $answer")
-            assertEquals(MacSetupPresentation(readiness = answer), holder.presentation())
+            assertEquals(MacSetupPresentation(readiness = answer, completedOperations = 1), holder.presentation())
         }
     }
 

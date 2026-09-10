@@ -83,6 +83,25 @@ that case; the unavailable notice says to quit and reopen Posato. The
 approval-required and not-enabled branches have unit evidence only on a Mac
 whose helper is already approved.
 
+`observed` (2026-09-10): Compose Desktop 1.10.3 does not handle `LiveRegion`
+in its accessibility change dispatcher. The Session setup route therefore
+sends progress and result announcements through the existing AppKit window
+bridge using `NSAccessibilityAnnouncementRequestedNotification`. A completed
+operation remains observable even when readiness is unchanged; the native
+host receives the localized result again. Secondary setup buttons preserve
+the Session primary-action hierarchy.
+
+`user-confirmed` (2026-09-10): the maintainer heard the VoiceOver announcements
+in the attended Mac check. This confirms the exercised route, not a complete
+assistive-technology audit.
+
+`observed` (2026-09-10): after feedback that the Session footer showed too many
+buttons, iCloud and This Mac use collapsed rows with short current-state
+summaries. Their controls appear only after expansion; opening a row never
+starts a helper check or exchange. Mac operation announcements stay mounted
+while its options are collapsed. Workspace removal still requires its existing
+confirmation.
+
 ## Accepted brand foundation
 
 ### Positioning

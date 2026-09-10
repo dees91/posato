@@ -1470,4 +1470,7 @@ not-enabled readiness, and both enable and status reads verify the helper
 signature before touching the client. A lost helper connection cannot be
 rechecked in-process, so the unavailable notice says to quit and reopen
 Posato. Nothing reads the helper at launch, foreground, or navigation; the
-first-install pgrep evidence keeps holding.
+first-install pgrep evidence keeps holding. Secondary setup actions preserve
+the main Session action. Collapsed iCloud and This Mac rows keep controls out
+of the overview until requested, and the Mac host forwards progress and
+repeated results to AppKit accessibility announcements.

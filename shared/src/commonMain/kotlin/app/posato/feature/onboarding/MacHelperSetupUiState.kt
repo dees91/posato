@@ -3,6 +3,7 @@ package app.posato.feature.onboarding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -18,6 +19,7 @@ internal enum class MacSetupActivity {
 internal data class MacSetupPresentation(
     val readiness: MacHelperReadiness? = null,
     val activity: MacSetupActivity? = null,
+    val completedOperations: Long = 0,
 )
 
 @Stable
@@ -29,9 +31,10 @@ internal class MacHelperSetupUiState(
         private set
     var activity by mutableStateOf<MacSetupActivity?>(null)
         private set
+    private var completedOperations by mutableLongStateOf(0)
 
     fun presentation(): MacSetupPresentation {
-        return MacSetupPresentation(readiness = readiness, activity = activity)
+        return MacSetupPresentation(readiness = readiness, activity = activity, completedOperations = completedOperations)
     }
 
     fun check() {
@@ -57,6 +60,7 @@ internal class MacHelperSetupUiState(
         scope.launch {
             try {
                 readiness = action()
+                completedOperations += 1
             } finally {
                 activity = null
             }

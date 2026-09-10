@@ -50,5 +50,7 @@ internal object MacWindow {
         fullscreen: Boolean
     )
 
+    external fun announce(message: String)
+
     external fun highContrast(): Boolean
 }
