@@ -56,9 +56,17 @@ exchange. A changed account or workspace cannot silently start a new setup.
 Waiting is not persisted in this iteration; restart returns to explicit
 consent, an accepted UX limitation rather than a completed recovery design.
 The [task brief](../../tasks/specifications/onboarding-002-second-install.md)
-defines the accepted scope; its first implementation step amends ADR 0007.
-This behavior is planned, not observed implementation. Physical immediate
-joining and physically observed waiting must be reported separately.
+defines the accepted scope; ADR 0007 records the dated consent amendment.
+`observed` in the ONBOARDING-002 implementation: the coordinator retains the
+fresh-join context, both retry routes use exact reads, and unit tests cover
+adoption, context loss, transient failures, and overlapping opportunities.
+Physical immediate joining and physically observed waiting must be reported
+separately; runtime results belong to the execution record.
+
+`source-claim`: the read-only PoC `WorkspaceBootstrap` and Apple sync report
+provide explicit-consent and exact-item lifecycle evidence, but use a different
+workspace/identity model. ONBOARDING-002 keeps the production ADR 0007 phases;
+no PoC source or machine-specific evidence is imported.
 
 ## Bounded PoC result
 

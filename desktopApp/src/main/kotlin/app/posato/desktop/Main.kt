@@ -61,7 +61,7 @@ fun main() {
                         window.minimumSize = Dimension(MINIMUM_WINDOW_WIDTH, 0)
                     }
                     WindowChrome(window, state.placement == WindowPlacement.Fullscreen, onContrastChange = { highContrast = it })
-                    applicationGraph.application.Content(highContrast = highContrast, onMacSetupAnnouncement = MacWindow::announce)
+                    applicationGraph.application.Content(highContrast = highContrast, onAnnouncement = MacWindow::announce)
                 }
             }
         }

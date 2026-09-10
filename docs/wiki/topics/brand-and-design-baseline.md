@@ -44,8 +44,8 @@ Apple-prerequisite explanation, and permission to continue local setup.
 Session retains PR #45's collapsed iCloud row with its action inside; the
 summary reports local saves and pending synchronization separately. Existing
 local permission and picker routes remain; shared-item visibility depends on
-SYNC-011. This is an accepted implementation direction, not a shipped flow;
-the [brief](../../tasks/specifications/onboarding-002-second-install.md)
+SYNC-011. The implementation follows this direction; runtime verification remains in
+the execution record. The [brief](../../tasks/specifications/onboarding-002-second-install.md)
 requires updating DESIGN.md with the implementation.
 
 ## Accepted first-install presentation
@@ -370,12 +370,14 @@ flowchart TD
   D -->|No workspace| E[Create Apple workspace]
   D -->|Workspace and key ready| F[Join existing workspace]
   D -->|Workspace found; key delayed| G[Wait for iCloud Keychain]
-  G --> D
-  E --> H[Explain and request platform permissions]
+  G -->|Check again or foreground; same consented join| F
+  G -->|Continue local setup| H[Explain and request platform permissions]
+  E --> H
   F --> H
-  H --> I[Add shared domains]
-  I --> J[Choose local apps on this device]
-  J --> K[Ready — no session active]
+  H --> I[Add a local website or defer]
+  I --> J[Summary: local choices and actual sync status]
+  J --> K[Session — no session active]
+  K --> L[Paused items: choose local apps when wanted]
 ```
 
 ### Block-list management

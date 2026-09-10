@@ -259,6 +259,30 @@ This conditional fixed-record creation is the sole concurrent-first-run
 arbiter. CloudKit does not merge policy or choose operation winners; after
 bootstrap it remains the ADR 0006 opaque mailbox.
 
+### Amendment: consented second-install continuation (2026-09-10)
+
+`user-confirmed`: after an explicit Sync with iCloud attempt finds an existing
+anchor but its key item is missing and the local store remains empty, the
+process may retain that account binding and anchor context in memory. Manual
+Check again and foreground may continue that same join. Both recheck the local
+store and expected account before exact zone, anchor, and key reads; neither
+may create a zone, candidate, anchor, or key item, or delete any resource.
+A different account or anchor ends the attempt. Definitive absence returns to
+an explicit Sync with iCloud action before any new setup.
+
+While waiting, only reads occur. A valid item matching the retained context
+permits the established-row commit from step 10, followed by normal exchange.
+Storage failures and cancellation require local-state reconciliation before
+another adoption. Overlapping opportunities must not duplicate adoption or
+resume a stale attempt. Existing candidate recovery and established exchange
+retain their separate protocols.
+
+The continuation is not persisted, scheduled, or polled. Relaunch returns to
+local-only and explicit consent; preserving waiting across restart is deferred.
+Construction, launch, and foreground without prior consent remain free of
+workspace-provider access. This amendment extends the opportunities to finish
+a consented join; it does not authorize automatic bootstrap creation.
+
 ### Failure, account, and cleanup semantics
 
 Provider edges distinguish at least `found`, `missing`, `created`, `identical`,

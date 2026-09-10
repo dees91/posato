@@ -1,9 +1,9 @@
 # `ONBOARDING-002`: Join the existing Apple workspace, wait safely for a delayed key, and finish local mappings
 
-- **Status:** Ready for implementation; independent revised-plan review
-  approved on 2026-09-10 (see the execution record).
+- **Status:** Implemented; independent completed-change review approved on
+  2026-09-10; physical verification pending (see the execution record).
 - **Decisions:** `D1`–`D4` are `user-confirmed` (2026-09-10), including the
-  corrections below. Application behavior is not yet implemented.
+  corrections below. Verification results belong to the execution record.
 - **Review tier:** `high-risk`
 - **Tier reason:** The join is the product's only crossing of the accepted
   membership boundary (Apple Account and iCloud Keychain trust, `TB-07`), and
@@ -87,7 +87,7 @@ Mac joining and iPhone joining, are proven physically.
   one bootstrap attempt (zone fetch, anchor read, exact Keychain item read
   under the same binding), adoption commits the established row, and nothing
   reaches iCloud or the synchronizable Keychain before the press
-  (`ONBOARDING-001` `AC-02` keeps holding). `observed`: today a found anchor
+  (`ONBOARDING-001` `AC-02` keeps holding). `observed` before this change: a found anchor
   with a missing item returns `WaitingForWorkspaceKey`, the store stays
   `None`, `linked` stays false, foreground reads only the local store for an
   unlinked device, a relaunch reads local-only, and only another press

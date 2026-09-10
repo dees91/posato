@@ -1,44 +1,26 @@
 # Execution: `ONBOARDING-002`
 
 - **Brief:** [Second install joins and waits](../specifications/onboarding-002-second-install.md)
-- **Status:** `planned`; implementation pending
+- **Status:** `active`; implementation reviewed, physical verification pending
 - **Review tier:** `high-risk`
-- **Implementer:** pending handoff to an implementing agent
-- **Reviewer:** independent revised-plan review approved; completed-change
-  reviewer assigned after implementation
+- **Implementer:** Codex
+- **Reviewer:** independent revised-plan and completed-change reviews approved
 - **Branch:** `feature/onboarding-002-second-install`
 - **Updated:** 2026-09-10
 
 ## Plan
 
-1. Apply the accepted D1 amendment to ADR 0007 before changing behavior;
-   update DESIGN.md for D2. Confirm the fresh-join, candidate, and established
-   waiting paths against the code. Retain the existing consent/bootstrap
-   protocol and the state-specific recovery routes outside the fresh join.
-2. Add a bounded fresh-join continuation with process-memory account binding
-   and anchor context from the consented attempt. Recheck local state and
-   account under serialization; use the brief's outcome table. While waiting,
-   read only. On a valid item, commit the established row before requesting
-   normal exchange. Cover both forbidden effects and successful adoption.
-3. Route manual Check again and foreground through that continuation,
-   coalescing overlapping opportunities and rejecting stale continuations.
-   Keep no-consent foreground and linked exchange behavior intact. Test
-   account/workspace changes, loss, delayed delivery, store failures,
-   cancellation, candidate/linked recovery, and one adoption/exchange.
-4. Apply D2: Continue primary, Check again secondary for the fresh join;
-   short waiting status and separate explanation; distinct local-save and
-   sync facts in the summary; collapsed Session iCloud row. Verify manual
-   progress/completion through the existing Mac announcement bridge, with
-   narrowly scoped application/Session callback wiring; avoid repeated
-   automatic wait announcements.
-5. Update the verification recipes and wiki synthesis with the implemented
-   behavior and D3's SYNC-011 limit. Run focused checks, full quality,
-   unchanged first-install Simulator fixtures, and attended physical joins
-   in both directions. Record unobserved waiting separately from successful
-   immediate joining and get agreement for optional settings changes.
-6. Obtain the independent completed-change review, resolve Required findings,
-   rerun affected checks, and complete this record. Append one wiki-log entry
-   at PR closeout; no per-correction logs or new execution records.
+1. Amend ADR 0007 and DESIGN.md using accepted D1/D2 before behavior changes.
+2. Add the process-local fresh-join continuation and bounded outcome table;
+   preserve candidate/established recovery and test forbidden effects.
+3. Share continuation routing between manual and foreground checks, coalesce
+   overlaps, and test adoption, changed context, failures, and cancellation.
+4. Apply the waiting UI hierarchy and existing native announcement bridge;
+   preserve separate local-save/sync facts and collapsed Session controls.
+5. Update recipes/wiki; run focused checks, full quality, Simulator fixtures,
+   and attended physical joins in both orders with agreed cleanup.
+6. Resolve independent review findings, rerun affected checks, and close out
+   the record with one wiki-log entry when verification is complete.
 
 ## High-risk plan review
 
@@ -78,32 +60,48 @@
 
 ## Result
 
-- Pending implementation.
+- Implemented a process-local fresh-join continuation shared by manual retry
+  and foreground. It retains consented binding/anchor context, reads only
+  until verified adoption, and reconciles interrupted persistence before retry.
+- Continue remains primary while waiting; Check again is secondary. Session
+  keeps its collapsed status row, and the summary separates local saves from
+  sync state. Manual checks use the existing Mac announcement bridge.
+- Updated ADR 0007, DESIGN.md, verification recipes, and wiki synthesis.
+  PoC bootstrap/evidence informed the checks; no experiment code was imported.
+- Threat-model review: no new store, key format, transport, or membership
+  boundary. TB-07/T-04/R-04 still apply; accepted consent timing is explicit
+  in ADR 0007. Physical delivery evidence remains pending.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `approve` (independent reviewer, 2026-09-10); zero open
+  Critical/Required, no additional findings.
+- **Required finding:** missing regression evidence for persistence followed
+  by cancellation and the subsequent UI retry route.
+- **Resolution:** tests now cover persisted adoption/cancellation, exact and
+  conflicting row reconciliation, one commit/exchange, and bounded retry
+  after a storage error despite retryable presentation. Focused tests pass;
+  reviewer confirmed closure. No production-code defect was found.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `BootstrapCoordinatorTest` join-only re-check cases | pending | |
-| Manual/foreground continuation, stale context, and no-consent tests | pending | |
-| Holder routing and native waiting presentation/accessibility | pending | |
-| `./gradlew quality` | pending | |
-| Simulator `first-install.json` and `first-install-skip.json` | pending | |
+| `BootstrapJoinTest` bounded checks and outcomes | passed | JVM regressions |
+| Manual/foreground, stale context, no consent, cancellation | passed | `AppleSyncJoinTest`, `AppleSyncTest` |
+| Holder routing / native waiting presentation | tests passed / physical pending | JVM holder tests |
+| `./gradlew quality` | passed after final test correction | JVM/iOS tests, lint, packaging |
+| Simulator full / skip first-install fixtures | passed | UI captures; website/bootstrap/completion counts 1/0/1 and 0/0/1 |
+| Signed Mac launch and collapsed/expanded Session | passed | Driver snapshot and screenshots |
 | Physical direction A: Mac establishes, iPhone joins fresh | pending | |
 | Physical direction B: iPhone establishes, Mac joins fresh | pending | |
 | Post-join permission and local selection, Mac counts unchanged | pending | |
-| Threat-model closeout statement | pending | |
+| Threat-model closeout statement | reviewed | Existing TB-07/T-04/R-04; ADR 0007 amendment |
 
 ## Blockers and accepted risks
 
-- D1–D4 and the revised plan are accepted; no preparation blocker remains.
-  The ADR amendment is the first implementation step.
+- Physical joins require attended agreement on concrete workspace cleanup;
+  no workspace has been removed during implementation verification.
 - Automatic checks do not repeat unchanged waiting announcements. Manual
   progress/completion must remain observable even with the same outcome.
 - Waiting is not persisted; relaunch requires explicit consent again. This

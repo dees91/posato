@@ -21,9 +21,11 @@ import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.sync.bootstrap.AppleSyncState
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.sync.ui.message
+import app.posato.feature.sync.ui.summary
 import app.posato.feature.targets.ui.TargetsBrowserState
 import app.posato.feature.targets.ui.WebsiteEntry
 import app.posato.generated.resources.Res
+import app.posato.generated.resources.action_check_again
 import app.posato.generated.resources.action_sync_now
 import app.posato.generated.resources.action_sync_with_icloud
 import app.posato.generated.resources.onboarding_action_begin
@@ -55,8 +57,11 @@ import app.posato.generated.resources.onboarding_summary_scope
 import app.posato.generated.resources.onboarding_summary_sync_on
 import app.posato.generated.resources.onboarding_summary_title
 import app.posato.generated.resources.onboarding_summary_websites
+import app.posato.generated.resources.onboarding_waiting_continue
 import app.posato.generated.resources.onboarding_website_body
 import app.posato.generated.resources.onboarding_website_title
+import app.posato.generated.resources.sync_checking_key
+import app.posato.generated.resources.sync_waiting_explanation
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -124,11 +129,16 @@ internal fun IcloudStep(
     onDefer: () -> Unit,
     layout: PosatoLayout,
 ) {
-    val running = syncRunning || syncSnapshot.status == SyncStatus.SYNCING
+    val running = syncRunning || syncSnapshot.checkingJoin || syncSnapshot.status == SyncStatus.SYNCING
     OnboardingPage(
         layout = layout,
         actions = {
-            if (syncSnapshot.linked) {
+            if (syncSnapshot.joinPending) {
+                OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer)
+                PosatoButton(onClick = onSync, style = PosatoButtonStyle.Secondary, enabled = !running) {
+                    Text(stringResource(Res.string.action_check_again))
+                }
+            } else if (syncSnapshot.linked) {
                 OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer, enabled = !running)
                 PosatoButton(onClick = onSync, style = PosatoButtonStyle.Quiet, enabled = !running) {
                     Text(stringResource(Res.string.action_sync_now))
@@ -155,7 +165,9 @@ internal fun IcloudStep(
             PosatoNotice(announceChanges = true) {
                 Text(
                     stringResource(
-                        if (syncSnapshot.status == SyncStatus.LOCAL_ONLY) {
+                        if (syncRunning && syncSnapshot.joinPending) {
+                            Res.string.sync_checking_key
+                        } else if (syncSnapshot.status == SyncStatus.LOCAL_ONLY) {
                             Res.string.onboarding_summary_sync_on
                         } else {
                             syncSnapshot.status.message(syncSnapshot.linked)
@@ -164,7 +176,12 @@ internal fun IcloudStep(
                 )
             }
         }
-        PosatoCaption(stringResource(Res.string.onboarding_icloud_optional))
+        if (syncSnapshot.status == SyncStatus.WAITING_FOR_KEY) {
+            PosatoCaption(stringResource(Res.string.sync_waiting_explanation))
+        }
+        PosatoCaption(
+            stringResource(if (syncSnapshot.joinPending) Res.string.onboarding_waiting_continue else Res.string.onboarding_icloud_optional),
+        )
     }
 }
 
@@ -210,7 +227,7 @@ internal fun SummaryStep(
     state: OnboardingViewState,
     permissionPlatform: OnboardingPermissionPlatform,
     deviceNoun: String,
-    syncLinked: Boolean,
+    syncSnapshot: AppleSyncState,
     onFinish: () -> Unit,
     layout: PosatoLayout,
 ) {
@@ -240,14 +257,16 @@ internal fun SummaryStep(
             PosatoPrivacyPoint(
                 headlineContent = {
                     Text(
-                        if (syncLinked) {
+                        if (syncSnapshot.status != SyncStatus.LOCAL_ONLY && syncSnapshot.status != SyncStatus.COMPLETED) {
+                            stringResource(syncSnapshot.status.summary(syncSnapshot.linked))
+                        } else if (syncSnapshot.linked) {
                             stringResource(Res.string.onboarding_summary_sync_on)
                         } else {
                             stringResource(Res.string.onboarding_summary_local_only, deviceNoun)
                         },
                     )
                 },
-                leadingContent = { PosatoIcon(if (syncLinked) PosatoIcons.Cloud else PosatoIcons.Items, null) },
+                leadingContent = { PosatoIcon(if (syncSnapshot.linked || syncSnapshot.joinPending) PosatoIcons.Cloud else PosatoIcons.Items, null) },
             )
         }
         if (!state.hasDeviceAccess(permissionPlatform) && state.accessResult != ApplicationAccessResult.Unavailable) {

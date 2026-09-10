@@ -3,6 +3,7 @@ package app.posato.feature.sync.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -22,13 +23,21 @@ internal class SyncBootstrapUiState(
     var running by mutableStateOf(false)
         private set
 
+    var checking by mutableStateOf(false)
+        private set
+    var completedChecks by mutableLongStateOf(0)
+        private set
+
     fun sync() {
-        if (running) return
+        if (running || syncState.value.checkingJoin) return
         running = true
+        checking = syncState.value.joinPending
         scope.launch {
             try {
                 if (syncState.value.linked) sync.syncNow() else sync.syncWithIcloud()
+                if (checking) completedChecks += 1
             } finally {
+                checking = false
                 running = false
             }
         }

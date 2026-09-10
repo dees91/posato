@@ -103,7 +103,9 @@ cannot be skipped; every service step offers a defer action that leaves the
 device local-only or unpermitted. Completion is one local row that an upgrade
 migration seeds for databases that already hold product state. Nothing
 reaches iCloud, the synchronizable Keychain, a system prompt, or the helper
-before the person's explicit step action, and no sentence promises that
+before the person's explicit step action. A consented fresh join may then
+continue through bounded foreground checks until adoption or a definitive
+failure; no waiting record survives relaunch. No sentence promises that
 websites, applications, or sessions appear on another device.
 
 The UI says that data is saved on this device. A running timer is not evidence
@@ -352,6 +354,13 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   **Not now**. A linked device offers **Continue** and secondary **Sync now**;
   “Connected to iCloud” describes linking, never delivery to other devices.
   Waiting, retryable, syncing, and action-required states keep their real meaning.
+  A consented fresh join waiting for its workspace key offers primary
+  **Continue** and secondary **Check again**. Show a short waiting status,
+  separate Apple-prerequisite explanation, and “You can continue setup while
+  you wait.” Locally saved choices and pending sync remain separate facts
+  in the summary. Manual recheck and foreground continue the same consented
+  account/workspace; neither creates a new workspace. Waiting is process-local:
+  relaunch returns to explicit Sync with iCloud. Apple owns any device approval.
 - Permission rationale names websites and apps on both platforms. No item is
   paused until a session starts. **Continue** replaces the request action only
   after the returned access/helper state is ready. **Not now** defers setup;
@@ -391,6 +400,7 @@ in PR #44. The six steps and existing service/persistence behavior remain.
 - Device setup uses collapsed **iCloud** and **This Mac** rows with short,
   real-state summaries. This Mac is macOS-only. Expanding a row reveals its
   explanation and controls; it never starts a helper check or sync attempt.
+  A pending fresh join shows **Check again** inside iCloud options.
   Sync now and Remove workspace live inside iCloud options, with the existing
   removal confirmation. Setup controls are secondary to the Session action.
 - This Mac (macOS only, after iCloud): reads nothing before a press on
