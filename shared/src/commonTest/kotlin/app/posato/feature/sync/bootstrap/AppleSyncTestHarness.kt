@@ -16,6 +16,7 @@ import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.ZoneDeleteResult
 import app.posato.feature.sync.testContext
 import app.posato.feature.targets.data.LocalPolicyResult
+import app.posato.feature.targets.data.LocalPolicyTestDatabase
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
@@ -33,8 +34,8 @@ internal class AppleSyncTestHarness(
     mailboxPort: MailboxPort? = null,
     wallClock: SyncWallClock = SyncWallClock { 100 },
     cryptoProvider: FakeSyncCryptoProvider? = null,
+    private val testDatabase: LocalPolicyTestDatabase = createLocalPolicyTestDatabase(name),
 ) {
-    private val testDatabase = createLocalPolicyTestDatabase(name)
     val driver = testDatabase.openDriver()
     val database = PosatoDatabase(driver)
     val store = bootstrapStore ?: SqlBootstrapStore(database, dispatcher)
@@ -95,9 +96,13 @@ internal class AppleSyncTestHarness(
     }
 
     suspend fun close() {
+        closeKeepingDatabase()
+        testDatabase.delete()
+    }
+
+    suspend fun closeKeepingDatabase() {
         sync.close()
         driver.close()
-        testDatabase.delete()
     }
 }
 

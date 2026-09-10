@@ -5,9 +5,21 @@ import app.posato.feature.session.data.SqlLocalSessionStore
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.sync.FakeSyncCryptoProvider
+import app.posato.feature.sync.data.EncryptedBundleCodec
+import app.posato.feature.sync.data.PrepareBundleResult
+import app.posato.feature.sync.data.SyncOperationCodec
+import app.posato.feature.sync.data.useAndClear
+import app.posato.feature.sync.domain.AuthorId
+import app.posato.feature.sync.domain.BundleId
+import app.posato.feature.sync.domain.HybridLogicalClock
 import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.sync.domain.SyncFormatLimits
+import app.posato.feature.sync.domain.SyncIdentifier
+import app.posato.feature.sync.domain.SyncOperation
+import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.domain.SyncWallClock
+import app.posato.feature.sync.domain.TransportKey
 import app.posato.feature.sync.mailbox.BundleSaveResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
@@ -15,11 +27,14 @@ import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
+import app.posato.feature.sync.testPublicKey
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ApplicationPolicyNameResult
+import app.posato.feature.targets.domain.ExactDomain
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
@@ -30,6 +45,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class AppleSyncConvergenceTest {
@@ -301,6 +317,125 @@ class AppleSyncConvergenceTest {
         }
     }
 
+    @Test
+    fun `given a local-cap refusal when the next pass halts on a missing zone then the reason is cleared`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val harness = AppleSyncTestHarness(dispatcher, "sync-reason-clear.db")
+        try {
+            harness.establish()
+            fabricateFullProjection(harness)
+            harness.sync.onForeground()
+            advanceUntilIdle()
+            assertEquals(SyncStatus.ACTION_REQUIRED, harness.sync.state.value.status)
+            assertEquals(SyncAttentionReason.LOCAL_CAPACITY, harness.sync.state.value.reason)
+
+            harness.cloud.zoneExists = false
+            harness.sync.syncNow()
+            advanceUntilIdle()
+            assertEquals(SyncStatus.ACTION_REQUIRED, harness.sync.state.value.status)
+            assertNull(harness.sync.state.value.reason)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given an established local addition losing remote total order then visible policies match reduced winner`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = AppleSyncTestHarness(dispatcher, "review-losing-first.db", mailboxPort = mailbox, wallClock = SyncWallClock { 100 })
+        val second = AppleSyncTestHarness(
+            dispatcher,
+            "review-losing-second.db",
+            mailboxPort = mailbox,
+            wallClock = SyncWallClock { 1000 },
+            cryptoProvider = FakeSyncCryptoProvider(streamSeed = 0x5A),
+        )
+        try {
+            first.establish()
+            second.establish()
+            first.sync.onForeground()
+            second.sync.onForeground()
+            advanceUntilIdle()
+
+            second.recordDomainChanges(testPolicy(), testPolicy("losing.example"))
+            advanceUntilIdle()
+            second.recordDomainChanges(testPolicy("losing.example"), testPolicy())
+            advanceUntilIdle()
+
+            first.recordDomainChanges(testPolicy(), testPolicy("losing.example"))
+            advanceUntilIdle()
+            second.sync.syncNow()
+            advanceUntilIdle()
+            first.sync.syncNow()
+            advanceUntilIdle()
+
+            val projection = SyncReducer.reduce(first.snapshot().acceptedBundles.values.map { it.operation })
+            assertEquals(emptyList(), projection.domains)
+            assertEquals(0, intentRowCount(first))
+            assertEquals(SyncStatus.COMPLETED, first.sync.state.value.status)
+            assertEquals(localPolicy(second), localPolicy(first))
+            assertEquals(emptyList(), localDomains(first))
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
+    fun `given an established local removal losing remote total order then visible policies match reduced winner`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = AppleSyncTestHarness(dispatcher, "review-losing-removal-first.db", mailboxPort = mailbox, wallClock = SyncWallClock { 100 })
+        val second = AppleSyncTestHarness(
+            dispatcher,
+            "review-losing-removal-second.db",
+            mailboxPort = mailbox,
+            wallClock = SyncWallClock { 1000 },
+            cryptoProvider = FakeSyncCryptoProvider(streamSeed = 0x5A),
+        )
+        try {
+            first.establish()
+            second.establish()
+            first.sync.onForeground()
+            second.sync.onForeground()
+            advanceUntilIdle()
+
+            first.recordDomainChanges(testPolicy(), testPolicy("contested.example"))
+            advanceUntilIdle()
+            second.sync.syncNow()
+            advanceUntilIdle()
+            first.sync.syncNow()
+            advanceUntilIdle()
+            assertEquals(listOf("contested.example"), localDomains(first))
+            assertEquals(listOf("contested.example"), localDomains(second))
+
+            second.recordDomainChanges(testPolicy("contested.example"), testPolicy())
+            advanceUntilIdle()
+            second.recordDomainChanges(testPolicy(), testPolicy("contested.example"))
+            advanceUntilIdle()
+            first.recordDomainChanges(testPolicy("contested.example"), testPolicy())
+            advanceUntilIdle()
+            first.sync.syncNow()
+            second.sync.syncNow()
+            advanceUntilIdle()
+            first.sync.syncNow()
+            second.sync.syncNow()
+            advanceUntilIdle()
+
+            val projection = SyncReducer.reduce(first.snapshot().acceptedBundles.values.map { it.operation })
+            assertEquals(listOf("contested.example"), projection.domains.map { it.canonicalValue })
+            assertEquals(0, intentRowCount(first))
+            assertEquals(SyncStatus.COMPLETED, first.sync.state.value.status)
+            assertEquals(SyncStatus.COMPLETED, second.sync.state.value.status)
+            assertEquals(localPolicy(second), localPolicy(first))
+            assertEquals(listOf("contested.example"), localDomains(first))
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
     private suspend fun localPolicy(harness: AppleSyncTestHarness): TargetPolicy {
         return assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(harness.sqlPolicy.read()).value.policy
     }
@@ -376,6 +511,76 @@ internal class SharedFakeMailboxPort : MailboxPort {
         val bytes = cursor.copyBytes()
         return if (bytes.isEmpty()) 0 else bytes[0].toInt()
     }
+}
+
+private const val FABRICATED_PRESENT_COUNT = 1025
+private const val FABRICATED_CLOCK_BASE = 1000L
+
+private suspend fun fabricateFullProjection(harness: AppleSyncTestHarness) {
+    val crypto = FakeSyncCryptoProvider()
+    val signingKey = crypto.createSigningKey()
+    val transportKey = checkNotNull(readWorkspaceTransportKey(harness))
+    val authorId = AuthorId(fabricatedIdentifier(0))
+    val operations = (1..FABRICATED_PRESENT_COUNT + 1).map { sequence ->
+        SyncOperation(
+            operationId = BundleId(fabricatedIdentifier(sequence)),
+            context = testContext,
+            authorId = authorId,
+            publicSigningKey = testPublicKey,
+            authorSequence = sequence.toLong(),
+            clock = HybridLogicalClock(FABRICATED_CLOCK_BASE + sequence, 0),
+            payload = if (sequence == 1) {
+                SyncOperationPayload.AuthorRegister
+            } else {
+                SyncOperationPayload.DomainPresent(checkNotNull(ExactDomain.restore("site$sequence.example")))
+            },
+        )
+    }
+    harness.database.transactionWithResult {
+        harness.database.syncReplicaQueries.insertSyncReplicaState(
+            workspace_id = testContext.workspaceId.value.copyBytes(),
+            transport_epoch_id = testContext.transportEpochId.value.copyBytes(),
+            key_epoch_id = testContext.keyEpochId.value.copyBytes(),
+        )
+        operations.forEachIndexed { index, operation ->
+            val operationBytes = checkNotNull(SyncOperationCodec.encode(operation)).useAndClear { it.copyOf() }
+            val salt = ByteArray(SyncFormatLimits.BUNDLE_SALT_BYTES) { saltIndex -> (index + saltIndex).toByte() }
+            val prepared = assertIs<PrepareBundleResult.Success>(
+                EncryptedBundleCodec(crypto).prepare(operation, transportKey, signingKey, salt),
+            )
+            harness.database.syncReplicaQueries.insertAcceptedBundle(
+                bundle_id = operation.operationId.value.copyBytes(),
+                bundle_bytes = prepared.bundle.copyBytes(),
+                operation_bytes = operationBytes,
+                author_id = operation.authorId.value.copyBytes(),
+                author_sequence = operation.authorSequence,
+                public_key = operation.publicSigningKey.copyBytes(),
+                hlc_physical = operation.clock.physicalMillis,
+                hlc_logical = operation.clock.logicalCounter.toLong(),
+            )
+        }
+    }
+    val maxPhysical = FABRICATED_CLOCK_BASE + FABRICATED_PRESENT_COUNT + 1
+    harness.driver.execute(
+        null,
+        "UPDATE sync_replica_state SET hlc_physical = $maxPhysical, hlc_logical = 0, hlc_exhausted = 0",
+        0,
+    )
+}
+
+private fun fabricatedIdentifier(counter: Int): SyncIdentifier {
+    val bytes = ByteArray(SyncFormatLimits.IDENTIFIER_BYTES) { index -> ((counter ushr (index * 8)) and 0xFF).toByte() }
+    bytes[6] = (bytes[6].toInt() and 0x0F or 0x40).toByte()
+    bytes[8] = (bytes[8].toInt() and 0x3F or 0x80).toByte()
+    return checkNotNull(SyncIdentifier.fromUuidV4Bytes(bytes))
+}
+
+private fun readWorkspaceTransportKey(harness: AppleSyncTestHarness): TransportKey? {
+    val account = BootstrapEncoding.identifierToAccountText(testContext.workspaceId.value)
+    val itemBytes = harness.keys.items[account] ?: return null
+    val item = WorkspaceKeyItem.fromBytes(itemBytes) ?: return null
+    val decoded = BootstrapEncoding.decodeKeyItem(item) ?: return null
+    return TransportKey.fromBytes(decoded.workspaceKey).also { decoded.clear() }
 }
 
 private fun testNamedPolicy(name: String): TargetPolicy {

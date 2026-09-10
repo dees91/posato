@@ -106,20 +106,30 @@ reaches iCloud, the synchronizable Keychain, a system prompt, or the helper
 before the person's explicit step action. A consented fresh join may then
 continue through bounded foreground checks until adoption or a definitive
 failure; no waiting record survives relaunch. No sentence promises that
-websites, applications, or sessions appear on another device.
+sessions appear on another device, or when a website change arrives there;
+what linking combines is stated next to the link action.
 
 The UI says that data is saved on this device. A running timer is not evidence
 that a restriction is active. Future flows below are requirements, not current
 controls.
 
 The **Sync with iCloud** control requests consent to link this device to the
-private iCloud workspace. Once linked, **Sync now** requests an exchange;
+private iCloud workspace. Next to it, one sentence states the consequence:
+"Linking combines the websites saved on your devices. App choices stay on
+each device." Linking adds this device's websites to the workspace and
+removes nothing local; a website a peer removed before this device linked
+comes back for both. Once linked, **Sync now** requests an exchange;
 launch, foreground, and exact-domain commits also offer an exchange. Status
 reports local-only, pending, syncing, completed local attempt, retryable,
 waiting for the key, or action required. A completed attempt makes no claim
-about receipt on another device. There is no synchronization time or device
-list. Incoming operations remain in the replica until the later convergence
-slices connect them to visible policies and sessions.
+about receipt on another device, and no sentence promises delivery timing,
+latency, or waking the other device. There is no synchronization time or
+device list. A completed exchange converges exact domains and the
+application group name into the visible policies; application selections
+stay on the device that made them, and sessions stay local. When the merged
+websites would exceed the 1,024-device limit, or the shared set reaches its
+2,048 capacity, the status reports action required with a reason naming the
+limit; recovery is removing websites on any device and choosing Sync now.
 
 A linked device also offers **Remove workspace** with destructive confirmation:
 it deletes the iCloud workspace and undelivered device changes, preserves local
@@ -351,7 +361,8 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   browsing-history exclusion, encryption before optional iCloud upload, and
   device-local app choices. Supporting copy is subordinate to each row title.
 - iCloud remains optional. An unlinked device offers **Sync with iCloud** and
-  **Not now**. A linked device offers **Continue** and secondary **Sync now**;
+  **Not now**, with the websites clause of the linking sentence woven into
+  the existing content. A linked device offers **Continue** and secondary **Sync now**;
   “Connected to iCloud” describes linking, never delivery to other devices.
   Waiting, retryable, syncing, and action-required states keep their real meaning.
   A consented fresh join waiting for its workspace key offers primary
@@ -402,7 +413,9 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   explanation and controls; it never starts a helper check or sync attempt.
   A pending fresh join shows **Check again** inside iCloud options.
   Sync now and Remove workspace live inside iCloud options, with the existing
-  removal confirmation. Setup controls are secondary to the Session action.
+  removal confirmation. When unlinked, the expanded iCloud options carry the
+  full linking sentence as a caption next to the action. Setup controls are
+  secondary to the Session action.
 - This Mac (macOS only, after iCloud): reads nothing before a press on
   **Check Mac setup** inside its expanded options. This runs one status read,
   then the section names the real

@@ -462,6 +462,11 @@ not claim that every other device has received the update.
   unauthored diff while retaining local policy. Pre-link edits and failed
   authoring are not backfilled, and remote operations
   do not yet change visible policies or sessions (`SYNC-011` / `SYNC-012`).
+- `observed` (2026-09-10 correction): `SYNC-011` replaces the volatile queue
+  with durable intent rows recorded in the save transaction, and connects
+  remote operations to the visible exact-domain policy and application group
+  name while application selections stay local; sessions still do not
+  converge (`SYNC-012`).
 - `observed` (2026-09-09 correction): controlled common tests prove local saves
   complete while established checks or fetches are suspended. Signed Mac/iPhone
   edits, persistence after relaunch, removal of the test domains, and exchange

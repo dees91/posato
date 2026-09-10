@@ -450,22 +450,22 @@ instead of the empty state.
   devices. App choices stay on each device.", shown in the onboarding iCloud
   step and the unlinked Session iCloud row; no confirmation. Alternative:
   the `DESIGN.md` rule only, which the person never reads.
-- `D9` decided (`user-confirmed`, 2026-09-10, maintainer review):
+- `D9` decided (`inferred`, 2026-09-10, proposed by the implementer, pending maintainer acceptance):
   step-entry and post-save policy reads feed the onboarding count; the
   focus effect keys on `browser.lastReceipt`; no onboarding sync
   subscription.
   Alternative: a live subscription to the `D3` signal, which risks keyboard
   dismissal mid-typing for no required gain.
-- `D10` decided (`user-confirmed`, 2026-09-10, maintainer review):
+- `D10` decided (`inferred`, 2026-09-10, proposed by the implementer, pending maintainer acceptance):
   pending-intent overlay during apply as above; the base advances to the
   applied projection. Alternative: deferring the apply, rejected above.
-- `D5` corrected (`user-confirmed`, 2026-09-10, maintainer review):
+- `D5` corrected (`inferred`, 2026-09-10, proposed by the implementer, pending maintainer acceptance):
   reducer-capacity reason iff `DOMAIN_CAPACITY` outcomes persist while the
   synchronized set is at 2,048; clears below the cap; copy promises only
   remove, Sync now, re-add-missing. Alternative: persistent
   action-required for any historical outcome, which has no terminating
   recovery inside format-1.
-- `D11` decided (`user-confirmed`, 2026-09-10, maintainer review): the
+- `D11` decided (`inferred`, 2026-09-10, proposed by the implementer, pending maintainer acceptance): the
   no-base pass authors domain intents after consume and publishes via the
   second leg. Alternative: pre-consume authoring plus post-consume
   re-authoring, rejected as two operations per extra.

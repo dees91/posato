@@ -20,8 +20,10 @@ one active exchange can retain at most one queued opportunity.
 - `sync-establish` / `sync-join`: establish or adopt the same private workspace,
   including simultaneous opt-in and waiting for a synchronizable key.
 - `sync-exchange`: publish immutable pending bundles and accept remote bundles
-  into the replica in both directions. Incoming operations do not yet change
-  local websites, applications, or sessions (`SYNC-011` / `SYNC-012`).
+  into the replica in both directions. A completed exchange converges exact
+  domains and the application group name into the visible policies while
+  application selections stay local; sessions still do not converge
+  (`SYNC-012`).
 - `sync-retry`: offline or uncertain outcomes preserve pending bytes; retry on
   **Sync now** or a later foreground. No timer or delivery guarantee exists.
 - `sync-account-gate`: sign-out before an attempt stops both exchange legs;

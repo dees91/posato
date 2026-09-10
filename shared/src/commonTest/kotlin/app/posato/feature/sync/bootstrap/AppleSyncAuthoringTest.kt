@@ -113,9 +113,11 @@ class AppleSyncAuthoringTest {
             runCurrent()
             assertTrue(saved.isCompleted)
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(saved.await())
+            assertEquals(1, intentRowCount(harness))
             gate.complete(Unit)
             advanceUntilIdle()
             assertEquals(2, harness.snapshot().acceptedBundles.size)
+            assertEquals(0, intentRowCount(harness))
         } finally {
             gate.complete(Unit)
             advanceUntilIdle()

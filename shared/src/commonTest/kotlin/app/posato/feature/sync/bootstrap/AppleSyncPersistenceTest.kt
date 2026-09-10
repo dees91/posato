@@ -1,5 +1,8 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.sync.FakeSyncCryptoProvider
+import app.posato.feature.sync.domain.SyncOperationPayload
+import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.mailbox.BundleSaveResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
@@ -7,6 +10,7 @@ import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
+import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import app.posato.feature.targets.domain.PolicySyncBase
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -81,6 +85,58 @@ class AppleSyncPersistenceTest {
         } finally {
             source.close()
             destination.close()
+        }
+    }
+
+    @Test
+    fun `given a removal saved after a failed publish when reopening over the same database then the removal authors and never re-adds`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val database = createLocalPolicyTestDatabase("sync-lost-removal.db")
+        val first = AppleSyncTestHarness(dispatcher, testDatabase = database)
+        try {
+            first.establish()
+            first.sync.onForeground()
+            advanceUntilIdle()
+            first.mailbox.saveResult = BundleSaveResult.Retryable
+            first.recordDomainChanges(testPolicy(), testPolicy("lost-removal.example"))
+            advanceUntilIdle()
+            val baseBeforeClose = assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(first.sqlPolicy.readBase()).value
+            assertEquals(emptyList(), checkNotNull(baseBeforeClose).policy.domains)
+            first.recordDomainChanges(testPolicy("lost-removal.example"), testPolicy())
+            assertEquals(1, intentRowCount(first))
+            first.closeKeepingDatabase()
+
+            val second = AppleSyncTestHarness(
+                dispatcher,
+                mailboxPort = first.mailbox,
+                cryptoProvider = FakeSyncCryptoProvider(streamSeed = 0x5A),
+                testDatabase = database,
+            )
+            try {
+                first.mailbox.saveResult = BundleSaveResult.Saved
+                second.cloud.zoneExists = true
+                second.cloud.storedAnchor = first.cloud.storedAnchor
+                second.keys.items.putAll(first.keys.items)
+                second.sync.syncNow()
+                advanceUntilIdle()
+                assertEquals(SyncStatus.COMPLETED, second.sync.state.value.status)
+                val local = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(second.sqlPolicy.read()).value.policy
+                assertEquals(emptyList(), local.domains)
+                val operations = second.snapshot().acceptedBundles.values.map { it.operation }
+                assertEquals(emptyList(), SyncReducer.reduce(operations).domains)
+                assertEquals(
+                    1,
+                    operations.count { operation ->
+                        (operation.payload as? SyncOperationPayload.DomainPresent)?.domain?.canonicalValue ==
+                            "lost-removal.example"
+                    },
+                )
+                assertEquals(0, intentRowCount(second))
+            } finally {
+                second.close()
+            }
+        } finally {
+            database.delete()
         }
     }
 

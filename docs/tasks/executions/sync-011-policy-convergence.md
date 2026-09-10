@@ -154,9 +154,9 @@
   `runPolicyPhase` seeds and drains post-consume on no-base passes, decides
   the group name, runs the second publish leg, and applies last. Outcomes
   map to status plus the new `SyncAttentionReason` (`LOCAL_CAPACITY`,
-  `SHARED_CAPACITY`); corruption keeps the previous reason, conflict and
-  storage failure report retryable, removal clears the reason. Leg helpers
-  are top-level to respect the 11-function and 3-return gates.
+  `SHARED_CAPACITY`); corruption, conflict, and storage failure clear the
+  reason and report action required or retryable, removal clears the reason.
+  Leg helpers are top-level to respect the 11-function and 3-return gates.
 - First no-base passes record the base and advance the revision even with no
   visible change (brief: the base is written only in the replace
   transaction); savers must use the latest snapshot revision, and the `D3`
@@ -199,6 +199,20 @@
   websites synchronize across linked devices.
 - Threat-model owner rows `A-04` (policy base and intents) and `T-03`
   (base-kept converged apply) extended with `SYNC-011` in the same change.
+- Review-fix round (7 P1 implemented, P1-5 merge gate pending the maintainer's physical runs, P2 triaged): `publish`
+  clears the stale capacity reason with a sub-second refusal-then-zone-missing
+  test over a fabricated full projection (one transaction, no engine authoring);
+  capacity classifies before the bounded-model conversion over a new
+  unbounded merge representation (`AppliedWorkspaceFull` renamed to
+  `RefusedWorkspaceFull`, first-attempt/retry share one merge path) with 4
+  direct tests; the established merge applies the reduced winner for
+  already-authored losing edits with 2 convergence tests; first-link seeding
+  holds the write gate and skips removal-pending domains with a deterministic
+  interleaving regression; the lost-removal case runs end to end across a
+  same-database reopen plus a during-fetch intent-row extension; `D9`/`D10`/
+  `D11` and the `D5` correction relabelled `inferred`; `DESIGN.md`, the wiki
+  topic, and the sync/application-group skill recipes updated with no second
+  wiki-log entry.
 
 ## Completed-change review
 
@@ -210,8 +224,8 @@
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Reconciler merge cases over fakes | pass | `:shared:jvmTest`, 501 tests, 0 failures |
-| Two-harness convergence and inverted persistence case | pass | `AppleSyncConvergenceTest`, 7/7 green |
+| Reconciler merge cases over fakes | pass | `:shared:jvmTest`, 510 tests, 0 failures; `iosSimulatorArm64Test`, 508 tests, 0 failures |
+| Two-harness convergence and inverted persistence case | pass | `AppleSyncConvergenceTest`, 10/10 green (incl. refusal reason-clearing in 0.75 s JVM / 1.0 s iOS, 2 losing-edit cases) |
 | `7.sqm` migration verification | pass | `verifySqlDelightMigration` inside `./gradlew quality` |
 | `./gradlew quality` | pass | `BUILD SUCCESSFUL`, no new suppression |
 | Simulator website and first-install fixtures | pass | `posato-control` sim runs under `build/verification/runs/`: `first-install-skip`, `add-website`, `website-edit`, `remove-website`, `first-install` all `ok:true`, scenarios unchanged |

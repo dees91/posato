@@ -227,7 +227,7 @@ internal class AppleSync(
     }
 
     private fun publish(status: SyncStatus) {
-        mutableState.update { it.copy(status = status) }
+        mutableState.update { it.copy(status = status, reason = null) }
     }
 
     private suspend fun guarded(action: suspend () -> Unit) {
@@ -315,7 +315,7 @@ private fun MutableStateFlow<AppleSyncState>.publishOutcome(outcome: ReconcileOu
             update { it.copy(status = SyncStatus.COMPLETED, reason = null) }
         }
 
-        ReconcileOutcome.AppliedWorkspaceFull -> {
+        ReconcileOutcome.RefusedWorkspaceFull -> {
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.SHARED_CAPACITY) }
         }
 
@@ -324,11 +324,11 @@ private fun MutableStateFlow<AppleSyncState>.publishOutcome(outcome: ReconcileOu
         }
 
         ReconcileOutcome.Corrupt -> {
-            update { it.copy(status = SyncStatus.ACTION_REQUIRED) }
+            update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = null) }
         }
 
         ReconcileOutcome.Conflict, ReconcileOutcome.StorageFailure -> {
-            update { it.copy(status = SyncStatus.RETRYABLE) }
+            update { it.copy(status = SyncStatus.RETRYABLE, reason = null) }
         }
     }
 }
