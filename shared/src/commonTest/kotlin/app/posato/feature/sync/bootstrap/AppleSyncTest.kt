@@ -19,6 +19,25 @@ import kotlin.test.assertTrue
 
 class AppleSyncTest {
     @Test
+    fun `given a delayed join key when foreground returns then the existing workspace is adopted`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.waitForKey()
+            assertEquals(SyncStatus.WAITING_FOR_KEY, harness.sync.state.value.status)
+            harness.deliverJoinKey()
+            harness.sync.onForeground()
+            advanceUntilIdle()
+            assertTrue(harness.sync.state.value.linked)
+            assertEquals(SyncStatus.COMPLETED, harness.sync.state.value.status)
+            assertEquals(0, harness.cloud.zoneSaveCalls)
+            assertEquals(0, harness.cloud.anchorCreateCalls)
+            assertEquals(0, harness.keys.createCalls)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
     fun `given no consent when foreground arrives then no provider is called`() = runTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {

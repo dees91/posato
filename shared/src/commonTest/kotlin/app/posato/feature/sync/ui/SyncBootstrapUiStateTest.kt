@@ -10,6 +10,26 @@ import kotlin.test.assertEquals
 
 class SyncBootstrapUiStateTest {
     @Test
+    fun `given a waiting join when checked repeatedly then completion remains observable without creating a workspace`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.waitForKey()
+            val holder = SyncBootstrapUiState(harness.sync, this)
+            repeat(2) {
+                holder.sync()
+                advanceUntilIdle()
+            }
+            assertEquals(2L, holder.completedChecks)
+            assertEquals(false, holder.checking)
+            assertEquals(SyncStatus.WAITING_FOR_KEY, holder.syncState.value.status)
+            assertEquals(0, harness.cloud.anchorCreateCalls)
+            assertEquals(0, harness.keys.createCalls)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
     fun `given a fresh holder when sync runs twice rapidly then only one workspace is created`() = runTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {

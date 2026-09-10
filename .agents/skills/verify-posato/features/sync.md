@@ -2,15 +2,21 @@
 
 Expand the **iCloud** row on Session to reach **Sync with iCloud** before
 linking, or **Sync now** and **Remove workspace** afterwards. The collapsed
-row always names the current state; opening it never starts an exchange. Launch and
-foreground do not touch CloudKit or synchronizable Keychain on an unlinked
-device. A linked device offers **Sync now** and **Remove workspace**. Exchange
+row always names the current state; opening it never starts an exchange.
+Launch and foreground do not touch CloudKit or synchronizable Keychain
+before consent. After an explicit fresh join finds a missing workspace key,
+foreground and **Check again** may continue that same account/workspace in
+process memory. Missing keys cause reads only; verified adoption commits the
+established row and permits ordinary exchange. Restart forgets this waiting
+attempt and offers explicit **Sync with iCloud** again. A linked device offers
+**Sync now** and **Remove workspace**. Exchange
 opportunities also follow launch, foreground, and local exact-domain commits;
 one active exchange can retain at most one queued opportunity.
 
 ## Sub-features
 
-- `sync-consent-gate`: unlinked launch remains local-only until explicit consent.
+- `sync-consent-gate`: unlinked launch remains local-only until explicit
+  consent.
 - `sync-establish` / `sync-join`: establish or adopt the same private workspace,
   including simultaneous opt-in and waiting for a synchronizable key.
 - `sync-exchange`: publish immutable pending bundles and accept remote bundles
@@ -30,7 +36,8 @@ one active exchange can retain at most one queued opportunity.
 
 Read `tools/posato-control/README.md` for commands and scenario syntax. Use a
 signed Mac package and a connected unlocked development-signed iPhone on the
-same maintainer-owned iCloud account. `doctor` must confirm the signing identity,
+same maintainer-owned iCloud account. `doctor` must confirm the signing
+identity,
 profile, companion, development team, and device. The Simulator proves only
 local behavior and truthful degradation without its own iCloud account.
 
@@ -55,8 +62,11 @@ the action label with **Sync now** or **Remove workspace** as appropriate.
    unlinked device expect **Sync with iCloud** and a local-only description;
    `select count(*) from sync_bootstrap_state` is zero on desktop.
 3. Press **Sync with iCloud** once. Expect completion or **Waiting for the
-   workspace key from your other device.** Retry consent on the waiting side
-   after delivery. Completion is **This device completed its latest sync
+   workspace key from your other device.** A pending fresh join offers
+   **Check again**, and returning to the app also offers a bounded check;
+   neither creates a workspace. A changed account/workspace ends that
+   attempt and restores the explicit consent action. Completion is **This device
+   completed its latest sync
    attempt. Other devices may still need to sync.**
 4. Through Paused items, add a reserved synthetic domain on one device. Return
    to Session and wait for completion. Press **Sync now** on the other device.
@@ -85,6 +95,48 @@ the action label with **Sync now** or **Remove workspace** as appropriate.
    exchange after relaunch proves that its adopted key opens the writer.
    XCTest log output may be buffered: calibrate startup before scheduling the
    presses, then verify their overlap from the recorded timestamps afterward.
+
+## Second-install join and delayed key
+
+Run attended on the signed Mac and connected iPhone under the same account,
+with no active session. Agree on exact workspace cleanup before the run.
+Opening the iCloud row is never consent. Use `tap --text "Check again"
+--role button` only after inspecting the row; other setup sections can offer
+that label too, so scope the selector to the iCloud content when necessary.
+
+- Direction A: remove the iPhone's old workspace first if linked; reset and
+  reinstall its app. Remove the Mac's old workspace, then explicitly link
+  the Mac. Immediately press Sync with iCloud in the iPhone's fresh flow.
+- Direction B: remove the Mac's old workspace, then the iPhone's old workspace;
+  link the iPhone fresh. Back up/reset the Mac through the driver and perform
+  its fresh-install join. Never restore an old bootstrap row as proof of a join.
+- Record immediate linking or an observed wait. While actually waiting,
+  inspect Continue primary, Check again secondary, the summary's separate
+  saved-choice/sync facts, and the collapsed Session iCloud status. Continue
+  can advance setup while a key check runs. Inspect manual progress/completion,
+  including a repeated wait; automatic unchanged waits must not chatter.
+- Use manual Check again and a real leave/return foreground opportunity when
+  a wait window permits them. On Mac, verify whether actual focus changes
+  deliver the existing resume signal; otherwise record manual checking as
+  the verified route. Capture screenshots and accessibility snapshots.
+- On the joining Mac, `select count(*) from sync_bootstrap_state` is zero
+  while waiting and one after adoption. Device DB access is unavailable:
+  iPhone status and Mac receipt are the physical evidence there. Check that
+  account/anchor loss, candidate recovery, and storage/cancellation outcomes
+  are covered by unit tests; do not manufacture them in a live database.
+- Complete permissions through their existing routes and select local apps
+  in Paused items. After exchange settles, compare Mac pending/accepted counts
+  before and after selection, with no domain edit. Synced items remain
+  invisible until SYNC-011; picker selections remain local.
+- If delivery is immediate, label physical waiting **not observed**. Unit
+  tests prove the new delayed-key path; earlier PoC runs do not substitute
+  for its physical evidence. Keychain off/on on the joining iPhone is optional
+  and requires attended agreement. It does not guarantee a missing app key
+  or approval prompt. Record actual messages; do not sign out, reset encrypted
+  data, or delete passwords for this recipe.
+- Restore backed-up Mac local data afterwards. An old backup can reference a
+  removed workspace: restore usability through explicit Remove workspace and
+  fresh consent, coordinating the peer's old-workspace removal first.
 
 Useful Mac queries (`db query -t desktop --sql "…"`):
 

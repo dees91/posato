@@ -1474,3 +1474,12 @@ first-install pgrep evidence keeps holding. Secondary setup actions preserve
 the main Session action. Collapsed iCloud and This Mac rows keep controls out
 of the overview until requested, and the Mac host forwards progress and
 repeated results to AppKit accessibility announcements.
+
+## [2026-09-10] implementation | Bounded second-install workspace joining
+
+Implemented ONBOARDING-002 with process-local, consent-bound manual and
+foreground continuation, truthful waiting actions, and existing local setup
+routes. Both physical device orders joined successfully and retained local
+application selections; key waiting was not physically observed. ADR 0007 and
+DESIGN.md record the accepted behavior; the execution record separates unit
+coverage, physical results, and remaining evidence limits.
