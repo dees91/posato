@@ -14,22 +14,23 @@
    projection, the outbox diffs exact domains only, the two view models
    re-read only on their refresh requests, and `AppleSyncPersistenceTest`
    asserts that only the replica changes.
-2. Add the applied-base store (`SyncAppliedPolicy.sq`, `7.sqm`, one
-   singleton row validated with `TargetPolicy.fromStoredValues`, corruption
-   fail-closed); write it only in the transaction that replaces the merged
-   policy; clear it in the transaction that clears the replica.
-3. Add the reconciler per `D1` and `D2`: `AppleMailboxExchange` returns the
-   projection; the authoring half runs after `writers.open()` and before the
-   publish leg, the apply half after consume; the raw store is injected into
-   `AppleSync` and shares one write gate with `SyncTargetPolicyStore`, held
-   only for read, merge, and apply (user saves never take the flight mutex,
-   so ordering is latency only); compare-and-set with one re-read retry;
-   capacity refusal per `D5` with the reason on the sync state; no replica
-   writes. Cover every merge and skip case in `commonTest`.
-4. Extend the outbox diff to the group name per `D4` (projection wins on a
-   both-changed name; no default authored over an existing projected name);
-   leave the queue drop in place per `D7` and test recovery at the next
-   pass.
+2. Add `SyncLocalPolicy.sq` and `7.sqm`: ordered intent rows and the base
+   singleton, validated with `TargetPolicy.fromStoredValues`, corruption
+   fail-closed; the decorator records intents inside the store's save
+   transaction while linked; the base is written only in the transaction
+   that replaces the merged policy; both clear with the replica.
+3. Replace `AppleSyncAuthoring`'s channel with the intent drainer and add
+   the reconciler per `D1`, `D2`, and `D7`: domain intents authored after
+   `writers.open()` and before publish, consume, the name decided after
+   consume (`D4`) and published by a second leg, apply last; the raw store
+   injected into `AppleSync` shares one write gate with the decorator, held
+   only for read, merge, and apply (user saves never take the flight mutex);
+   compare-and-set with one re-read retry; capacity reasons per `D5`; no
+   replica writes.
+4. Cover in `commonTest` the lost-removal case, a save during an in-flight
+   exchange, the fresh-replica default name against a custom workspace
+   name, every merge and skip case, both capacity reasons with their exits,
+   and corruption.
 5. Add the defaulted change signal on `LocalTargetPolicyStore`, forward it
    in the decorator, emit it from reconciler applies only, and subscribe the
    two view models; keep the existing fakes compiling; verify the
@@ -48,33 +49,35 @@
 
 - **Verdict:** `changes-required` (independent reviewer, 2026-09-10),
   resolved in the brief before handoff.
-- **Critical or Required findings:** the base's write and advance rules were
-  unspecified, and two natural implementations (base written before the
-  apply, or advanced on a refused apply) would author removals for the
-  peer's websites; `AC-02` and two physical rows required a group removal
-  control the product does not expose; a backfill authored after the publish
-  leg would not leave in the same pass; the offline row expected one
-  acceptance although a fresh author registers first; the outcome promised
-  the Session summary during an active session; cleanup could not restore
-  per-device originals after the union on link; the generic action-required
-  copy is untruthful for a capacity refusal; the threat-model closeout missed
-  the `A-04` and `T-14` owner rows; `D7`'s head retention had no terminal
-  rule and could wedge the outbox; the write surface missed the websites
-  recipe sentence, the second-install line, and the decorator forwarding of
-  the change signal.
+- **Critical or Required findings:** unspecified base write and advance
+  rules (a base written before the apply, or advanced on a refused apply,
+  authors removals for the peer's websites); `AC-02` needed a group removal
+  control that does not exist; a backfill authored after publish would not
+  leave in the same pass; the offline row ignored author registration; the
+  summary claim ignored an active session; cleanup could not restore
+  per-device originals; untruthful capacity copy; missing `A-04`/`T-14`
+  owner rows; `D7` head retention could wedge the outbox; write-surface
+  gaps (websites recipe, second-install line, decorator signal).
 - **Resolution:** base advances only inside the policy transaction and never
-  on a refused or failed apply, with skip rules for what the projection
-  already holds or lacks and fail-closed corruption; `AC-02` limits the
-  physical claim to presence, absence stays fake-only; the reconciler has an
-  authoring half before publish and an apply half after consume; the offline
-  row counts authored bundles; the summary claim excludes an active session;
-  cleanup removes fixture domains only and the union is accepted before the
-  run; `D5` proposes a reason-specific message; `A-04` and `T-14` added;
-  `D7` makes the reconciler the authoritative recovery and keeps the queue
-  drop; the write surface is complete. Advisory items folded: signal emitted
-  by reconciler applies only, projection wins on a both-changed name, base
-  validated like the policy tables, the re-add-on-link consequence recorded
-  in `DESIGN.md`, iOS reapply timing noted, the FIFO is an optimization.
+  on a refused or failed apply, skip rules, fail-closed corruption; `AC-02`
+  physical claim limited to presence; the offline row counts authored
+  bundles; the summary claim excludes an active session; cleanup removes
+  fixture domains only; `D5` reason-specific copy; `A-04` and `T-14` added;
+  write surface completed. Advisory items folded: signal from reconciler
+  applies only, base validated like the policy tables, re-add-on-link
+  consequence in `DESIGN.md`, iOS reapply timing noted.
+- **Maintainer review (2026-09-10):** two gaps reopened `D1`/`D7` and
+  `D2`/`D4`. A base-only merge cannot recover a lost removal (website added
+  and authored, exchange fails, website removed, process closes: the
+  projection still holds it and the merge re-adds it), so local intent is
+  now durable, written in the save transaction, replacing the volatile
+  queue accepted by `SYNC-010` `D1`. A fresh replica authoring its default
+  group name before consume could override an existing custom name by the
+  greatest-key rule, so the name is decided after consume and a default is
+  never authored over a projected name. Also: `D5` tests the exit from
+  overflow and separates the local cap from reducer capacity; `D6` promises
+  no immediate restriction change; `AC-05` allows synthetic fixture domains
+  in ignored evidence; `D8` adds one pre-link sentence.
 
 ## Result
 
@@ -103,16 +106,13 @@
 
 ## Blockers and accepted risks
 
-- Maintainer decisions `D1` to `D7` in the brief precede implementation.
-- On iOS a converged change is reapplied inside a session only on poll
-  loss, retry, or relaunch; no reapply schedule is guaranteed.
-- Linking converges both devices to the union of their websites, and a
-  website a peer removed before this device linked comes back for both.
+- Maintainer decisions `D1` to `D8` in the brief precede implementation.
+- iOS reapplies a converged change inside a session only on poll loss,
+  retry, or relaunch; linking converges both devices to the union of their
+  websites and re-adds a website a peer removed before this device linked.
 - A rejected bundle still pins the cursor and now delays visible
-  convergence; exact refetch stays out of scope.
-- Websites that originated remotely stay local after **Remove workspace**
-  without provenance; the removal copy already says local websites stay.
-- Session start, early end, and expiry convergence remain `SYNC-012`.
+  convergence; remotely originated websites stay local after **Remove
+  workspace** without provenance, as the removal copy already says.
 
 ## Final
 
