@@ -44,9 +44,11 @@ Apple-prerequisite explanation, and permission to continue local setup.
 Session retains PR #45's collapsed iCloud row with its action inside; the
 summary reports local saves and pending synchronization separately. Existing
 local permission and picker routes remain; shared-item visibility depends on
-SYNC-011. The implementation follows this direction; runtime verification remains in
-the execution record. The [brief](../../tasks/specifications/onboarding-002-second-install.md)
-requires updating DESIGN.md with the implementation.
+SYNC-011. DESIGN.md records the implemented direction. Physical joins on both
+hosts verified the linked step, local setup, and summary; keys were immediately
+available, so the waiting layout and spoken delivery were not observed on a
+physical device. The [execution record](../../tasks/executions/onboarding-002-second-install.md)
+keeps that limit separate from unit-tested continuation behavior.
 
 ## Accepted first-install presentation
 

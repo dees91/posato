@@ -48,7 +48,7 @@ a sleeping, offline, misconfigured, or permanently unavailable device.
 
 ## Accepted second-install continuation
 
-`user-confirmed` (2026-09-10): ONBOARDING-002 will continue a consented fresh
+`user-confirmed` (2026-09-10): ONBOARDING-002 continues a consented fresh
 join through manual Check again and bounded foreground checks, retaining the
 account and workspace context in process memory. Missing keys permit reads
 only; verified adoption permits established-row persistence and normal
@@ -60,8 +60,13 @@ defines the accepted scope; ADR 0007 records the dated consent amendment.
 `observed` in the ONBOARDING-002 implementation: the coordinator retains the
 fresh-join context, both retry routes use exact reads, and unit tests cover
 adoption, context loss, transient failures, and overlapping opportunities.
-Physical immediate joining and physically observed waiting must be reported
-separately; runtime results belong to the execution record.
+`observed` (2026-09-10): fresh iPhone joining a Mac-created workspace and
+fresh Mac joining an iPhone-created workspace both completed through the
+onboarding UI. Each device retained its own application selection after
+relaunch; Mac pending/accepted counts stayed unchanged by selection. Keys were
+available immediately in both runs. Delayed-key retry and its announcement
+behavior retain unit/code evidence only; no physical waiting or spoken-delivery
+claim follows from these runs. The execution record holds categorical results.
 
 `source-claim`: the read-only PoC `WorkspaceBootstrap` and Apple sync report
 provide explicit-consent and exact-item lifecycle evidence, but use a different

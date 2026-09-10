@@ -1,7 +1,7 @@
 # Execution: `ONBOARDING-002`
 
 - **Brief:** [Second install joins and waits](../specifications/onboarding-002-second-install.md)
-- **Status:** `active`; both physical joins passed, local iPhone selection pending
+- **Status:** `complete`; implementation and applicable verification passed
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
 - **Reviewer:** independent revised-plan and completed-change reviews approved
@@ -46,7 +46,7 @@
   exchange after adoption. Continue is primary; Session keeps disclosures;
   local saves and pending sync remain separate. Both physical device orders
   are required, but unobserved waiting is an evidence limit. No particular
-  Apple prompt is assumed. D1–D4 are accepted; implementation is pending.
+  Apple prompt is assumed. D1–D4 were accepted before implementation.
 - **Revised-plan verdict:** `approve` (independent reviewer, 2026-09-10);
   zero open Critical/Required and no optional findings. One Required gap in
   the accessibility write surface was resolved by allowing narrow callback
@@ -56,7 +56,7 @@
   and both changed wiki topics; checked against AppleSync, coordinator,
   anchor/item phases, store mapping, UI wiring, ADR 0007, and DESIGN.md.
   `git diff --check` passed. No builds/runtime tests: documentation-only
-  plan review; implementation verification remains pending below.
+  plan review; implementation verification is recorded below.
 
 ## Result
 
@@ -70,7 +70,7 @@
   PoC bootstrap/evidence informed the checks; no experiment code was imported.
 - Threat-model review: no new store, key format, transport, or membership
   boundary. TB-07/T-04/R-04 still apply; accepted consent timing is explicit
-  in ADR 0007. Physical delivery evidence remains pending.
+  in ADR 0007. Both physical device orders joined with immediate key access.
 
 ## Completed-change review
 
@@ -89,7 +89,7 @@
 | --- | --- | --- |
 | `BootstrapJoinTest` bounded checks and outcomes | passed | JVM regressions |
 | Manual/foreground, stale context, no consent, cancellation | passed | `AppleSyncJoinTest`, `AppleSyncTest` |
-| Holder routing / native waiting presentation | tests passed / physical pending | JVM holder tests |
+| Holder routing / native waiting presentation | tests passed / physical wait not observed | Delayed-key tests; no spoken-delivery claim |
 | `./gradlew quality` | passed after final test correction | JVM/iOS tests, lint, packaging |
 | Simulator full / skip first-install fixtures | passed | UI captures; website/bootstrap/completion counts 1/0/1 and 0/0/1 |
 | Signed Mac launch and collapsed/expanded Session | passed | Driver snapshot and screenshots |
@@ -97,13 +97,13 @@
 | iPhone joins existing workspace from Session and relaunches | passed | Completed attempt after consent and relaunch; wait not observed |
 | Physical A: Mac establishes, fresh iPhone joins | passed | Onboarding status and summary; immediate key availability |
 | Physical B: iPhone establishes, fresh Mac joins | passed | Onboarding status/summary; bootstrap rows 0 → 1 |
-| Post-join permission and local selection | Mac passed; iPhone attended step pending | Safari saved; pending/accepted counts remain 0/0 |
+| Post-join permission and local selection | passed on both devices, including relaunch | One local selection each; Mac pending/accepted remain 0/0 |
 | Threat-model closeout statement | reviewed | Existing TB-07/T-04/R-04; ADR 0007 amendment |
 
 ## Blockers and accepted risks
 
 - Maintainer approved clearing disposable dev data without restoration. Both
-  devices are linked again. iPhone Screen Time/selection needs manual input.
+  devices remain linked with one local app selection each; no session is active.
 - Automatic checks do not repeat unchanged waiting announcements. Manual
   progress/completion must remain observable even with the same outcome.
 - Waiting is not persisted; relaunch requires explicit consent again. This
@@ -115,5 +115,5 @@
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** complete; ready for PR review
+- **Outcome:** both fresh joins and local setup passed; waiting remains an explicit physical evidence limit.

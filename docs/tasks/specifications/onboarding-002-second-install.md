@@ -1,7 +1,7 @@
 # `ONBOARDING-002`: Join the existing Apple workspace, wait safely for a delayed key, and finish local mappings
 
 - **Status:** Implemented; independent completed-change review approved on
-  2026-09-10; physical verification pending (see the execution record).
+  2026-09-10; both physical joins verified (see the execution record).
 - **Decisions:** `D1`–`D4` are `user-confirmed` (2026-09-10), including the
   corrections below. Verification results belong to the execution record.
 - **Review tier:** `high-risk`
@@ -360,8 +360,9 @@ original alternatives; no repeat D1–D4 approval is needed.
   observed waiting separately. Optional Keychain toggling is not a mandatory
   gate; declining it leaves an explicit evidence limit.
 - Preparation is complete when the independent plan re-review has no open
-  Critical/Required finding. Production implementation and all runtime
-  evidence remain pending. The implementing agent owns authority updates,
+  Critical/Required finding. Implementation and applicable runtime checks
+  are complete; the execution record retains the physical waiting limit.
+  The implementing agent owns authority updates,
   checks, and the completed-change review in the execution record.
 - Physical runs require the maintainer's available Mac and iPhone on the
   same account. Agree on destructive workspace cleanup and any optional
