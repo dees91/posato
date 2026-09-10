@@ -46,6 +46,20 @@ The earlier direction's use of "eventual" describes the convergence model when
 delivery succeeds; it is not a promise that every change will eventually reach
 a sleeping, offline, misconfigured, or permanently unavailable device.
 
+## Accepted second-install continuation
+
+`user-confirmed` (2026-09-10): ONBOARDING-002 will continue a consented fresh
+join through manual Check again and bounded foreground checks, retaining the
+account and workspace context in process memory. Missing keys permit reads
+only; verified adoption permits established-row persistence and normal
+exchange. A changed account or workspace cannot silently start a new setup.
+Waiting is not persisted in this iteration; restart returns to explicit
+consent, an accepted UX limitation rather than a completed recovery design.
+The [task brief](../../tasks/specifications/onboarding-002-second-install.md)
+defines the accepted scope; its first implementation step amends ADR 0007.
+This behavior is planned, not observed implementation. Physical immediate
+joining and physically observed waiting must be reported separately.
+
 ## Bounded PoC result
 
 `observed`: a KMP/Compose application synchronized a complete local-first state

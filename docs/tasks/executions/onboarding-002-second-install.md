@@ -1,46 +1,50 @@
 # Execution: `ONBOARDING-002`
 
 - **Brief:** [Second install joins and waits](../specifications/onboarding-002-second-install.md)
-- **Status:** `active`
+- **Status:** `planned`; implementation pending
 - **Review tier:** `high-risk`
 - **Implementer:** pending handoff to an implementing agent
-- **Reviewer:** plan reviewer and completed-change reviewer pending
+- **Reviewer:** independent revised-plan review approved; completed-change
+  reviewer assigned after implementation
 - **Branch:** `feature/onboarding-002-second-install`
 - **Updated:** 2026-09-10
 
 ## Plan
 
-1. Confirm the `observed` facts in the brief against the current sources:
-   a found anchor with a missing item returns waiting without persisting,
-   foreground does nothing for an unlinked device, and the Session row and
-   iCloud step render waiting from the shared status.
-2. Add the bounded join-only re-check per `D1` as its own coordinator entry
-   point with its own sealed result: store `None` only, current binding
-   equal to the retained attempt binding, exact reads, no save, delete, or
-   persist, the outcome table of the brief. Cover every row in
-   `BootstrapCoordinatorTest` with the fake counters; the press cases stay
-   untouched.
-3. Add the `D1` foreground opportunity in `AppleSync` behind its own
-   flight-exclusive wrapper (not `syncNow()`, not `guarded`), retaining the
-   attempt binding with `WAITING_FOR_KEY` in memory, publishing only a
-   changed definitive outcome so the announcing notice speaks once; keep the
-   linked and no-consent branches unchanged; cover it in `AppleSyncTest`.
-4. Apply `D2`: the waiting notice, the **Check again** and **Continue**
-   labels in the iCloud step, the summary's waiting line, and the Session
-   row's expanded label; update previews and the onboarding holder tests.
-5. Record `D3` in the summary and skill copy without new controls; state the
-   `SYNC-011` limit in this record.
-6. Update `DESIGN.md`, the ADR 0007 clarifying sentence, the `verify-posato`
-   sync and onboarding recipes (join rows, fresh-database cost, fallback),
-   the two wiki topics, and the wiki log at closeout.
-7. Run focused tests, `./gradlew quality`, the Simulator fixtures, and the
-   physical directions A and B under `D4`; write the threat-model closeout
-   statement; obtain the independent completed-change review.
+1. Apply the accepted D1 amendment to ADR 0007 before changing behavior;
+   update DESIGN.md for D2. Confirm the fresh-join, candidate, and established
+   waiting paths against the code. Retain the existing consent/bootstrap
+   protocol and the state-specific recovery routes outside the fresh join.
+2. Add a bounded fresh-join continuation with process-memory account binding
+   and anchor context from the consented attempt. Recheck local state and
+   account under serialization; use the brief's outcome table. While waiting,
+   read only. On a valid item, commit the established row before requesting
+   normal exchange. Cover both forbidden effects and successful adoption.
+3. Route manual Check again and foreground through that continuation,
+   coalescing overlapping opportunities and rejecting stale continuations.
+   Keep no-consent foreground and linked exchange behavior intact. Test
+   account/workspace changes, loss, delayed delivery, store failures,
+   cancellation, candidate/linked recovery, and one adoption/exchange.
+4. Apply D2: Continue primary, Check again secondary for the fresh join;
+   short waiting status and separate explanation; distinct local-save and
+   sync facts in the summary; collapsed Session iCloud row. Verify manual
+   progress/completion through the existing Mac announcement bridge, with
+   narrowly scoped application/Session callback wiring; avoid repeated
+   automatic wait announcements.
+5. Update the verification recipes and wiki synthesis with the implemented
+   behavior and D3's SYNC-011 limit. Run focused checks, full quality,
+   unchanged first-install Simulator fixtures, and attended physical joins
+   in both directions. Record unobserved waiting separately from successful
+   immediate joining and get agreement for optional settings changes.
+6. Obtain the independent completed-change review, resolve Required findings,
+   rerun affected checks, and complete this record. Append one wiki-log entry
+   at PR closeout; no per-correction logs or new execution records.
 
 ## High-risk plan review
 
-- **Verdict:** `changes-required` (independent reviewer, 2026-09-10),
-  resolved in the brief before handoff.
+- **Initial verdict:** `changes-required` (independent reviewer, 2026-09-10).
+  Initial findings were addressed in `d2d7635`; the revised plan below
+  supersedes its foreground-only continuation and original button hierarchy.
 - **Critical or Required findings:** the join-only re-check was undefined
   for a persisted candidate and would have deleted the own key item on an
   automatic path; zone-missing, retryable, and account outcomes were
@@ -50,19 +54,27 @@
   `AC-01` promised Mac database evidence in the direction where the waiting
   device is the iPhone; the verification asked for rendering and label
   tests that the quality contract forbids.
-- **Resolution:** the re-check is scoped to store `None`, keeps the attempt
-  binding in process memory and requires equality, has a full outcome
-  table, publishes only changed definitive outcomes, and uses its own
-  wrapper and sealed result; `AC-01` names the evidence per direction;
-  tests target holders and state mapping. Advisory items folded: the ADR
-  0007 amendment is conditional on `D1` being `user-confirmed` and uses the
-  dated amendment convention; the waiting sentence no longer states where
-  Apple asks; a shared `action_check_again` string; the summary receives
-  the status; `D3` anchored as `observed`; the `D4` costs (removal order,
-  Mac backup consequence, keep-passwords prompt, no guaranteed Apple
-  prompt) and the `D1`-shaped threat-model closeout are recorded. The
-  reviewer confirmed the chain stays linear and that the `SYNC-010`
-  follow-up shares this write surface, so it is serialised after.
+- **Resolution:** the fresh-join continuation is scoped to store `None`,
+  retains the consented account and anchor in memory, and uses a defined
+  outcome table. Candidate/established recovery remains separate. Evidence
+  names the actual waiting device; tests target behavior, not static copy.
+- **Maintainer correction, accepted 2026-09-10:** manual Check again shares
+  the bounded continuation; no creating bootstrap hides behind that label.
+  Reads while waiting are distinguished from established persistence and
+  exchange after adoption. Continue is primary; Session keeps disclosures;
+  local saves and pending sync remain separate. Both physical device orders
+  are required, but unobserved waiting is an evidence limit. No particular
+  Apple prompt is assumed. D1–D4 are accepted; implementation is pending.
+- **Revised-plan verdict:** `approve` (independent reviewer, 2026-09-10);
+  zero open Critical/Required and no optional findings. One Required gap in
+  the accessibility write surface was resolved by allowing narrow callback
+  wiring to the existing Mac announcement bridge.
+- **Review evidence:** brief continuation/outcomes (lines 95–151), UI/write
+  surface (152–202), acceptance/verification (215 onward), execution plan,
+  and both changed wiki topics; checked against AppleSync, coordinator,
+  anchor/item phases, store mapping, UI wiring, ADR 0007, and DESIGN.md.
+  `git diff --check` passed. No builds/runtime tests: documentation-only
+  plan review; implementation verification remains pending below.
 
 ## Result
 
@@ -79,8 +91,8 @@
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | `BootstrapCoordinatorTest` join-only re-check cases | pending | |
-| `AppleSyncTest` waiting-device foreground and no-consent cases | pending | |
-| Onboarding holder, summary, and Session row waiting rendering | pending | |
+| Manual/foreground continuation, stale context, and no-consent tests | pending | |
+| Holder routing and native waiting presentation/accessibility | pending | |
 | `./gradlew quality` | pending | |
 | Simulator `first-install.json` and `first-install-skip.json` | pending | |
 | Physical direction A: Mac establishes, iPhone joins fresh | pending | |
@@ -90,9 +102,12 @@
 
 ## Blockers and accepted risks
 
-- Maintainer decisions `D1` to `D4` in the brief precede implementation.
-- Implementation note: the iCloud step's waiting notice announces changes,
-  so the re-check must not republish an unchanged status.
+- D1–D4 and the revised plan are accepted; no preparation blocker remains.
+  The ADR amendment is the first implementation step.
+- Automatic checks do not repeat unchanged waiting announcements. Manual
+  progress/completion must remain observable even with the same outcome.
+- Waiting is not persisted; relaunch requires explicit consent again. This
+  iteration accepts that weaker UX without dismissing durable continuation.
 - The waiting window depends on Apple-timed iCloud Keychain propagation; the
   brief names the attended fallback and the recorded limit if it is declined.
 - Synced domains, policies, and applications stay invisible on the joining

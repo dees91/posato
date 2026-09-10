@@ -1,11 +1,15 @@
 # `ONBOARDING-002`: Join the existing Apple workspace, wait safely for a delayed key, and finish local mappings
 
+- **Status:** Ready for implementation; independent revised-plan review
+  approved on 2026-09-10 (see the execution record).
+- **Decisions:** `D1`–`D4` are `user-confirmed` (2026-09-10), including the
+  corrections below. Application behavior is not yet implemented.
 - **Review tier:** `high-risk`
 - **Tier reason:** The join is the product's only crossing of the accepted
   membership boundary (Apple Account and iCloud Keychain trust, `TB-07`), and
   the waiting state is a public security claim: it must never read the
   remote workspace as empty, generate a replacement key, or create a
-  parallel workspace (`T-04`, `R-04`). The recommended reading of `D1` lets
+  parallel workspace (`T-04`, `R-04`). The accepted `D1` lets
   a consented device re-read the anchor and key item without a new press,
   which extends when the bootstrap coordinator runs and amends a
   `user-confirmed` ADR. The physical proof needs two devices, workspace
@@ -39,7 +43,7 @@
   the anchor, interprets the workspace as empty, or creates another
   workspace"; step 9 the losing candidate deletes exactly its own item;
   "Bootstrap runs only after the explicit **Sync with iCloud** action",
-  amended under `D1` only when `D1` is `user-confirmed`);
+  the dated amendment required by accepted `D1` precedes behavioral changes);
   [ADR 0006](../../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md)
   (Apple trust is the complete membership boundary; `R-01`);
   [`DESIGN.md`](../../../DESIGN.md) (the seven statuses keep their real
@@ -58,7 +62,12 @@
   the prototype key-wait surface in `prototypes/mvp-interaction-flow`
   (`source-claim` design precedent: "Check whether Apple is asking you to
   approve this device in Settings. Your existing workspace stays unchanged."
-  with **Check again**)
+  with **Check again**); and [Apple Support 109016](https://support.apple.com/en-gb/109016)
+  (`source-claim`, checked 2026-09-10: a device may need
+  approval from another device or a device passcode before Keychain data
+  becomes available; turning iCloud Keychain off keeps its data on the
+  device, and the keep-or-delete passwords question belongs to signing out
+  of iCloud)
 
 ## Outcome
 
@@ -83,39 +92,75 @@ Mac joining and iPhone joining, are proven physically.
   `None`, `linked` stays false, foreground reads only the local store for an
   unlinked device, a relaunch reads local-only, and only another press
   re-reads the item.
-- Waiting is a truthful state, not a background service. `D1` decides
-  whether a join-only re-check exists beyond the press. When it does, it is
-  bounded as follows. It runs only while the running process holds
-  `WAITING_FOR_KEY` from a press and the store reads `None`; for a persisted
-  candidate or an established workspace it makes zero provider calls and
-  leaves the status unchanged, so ADR 0007 step 9's single exact delete
-  stays with the explicit press. It keeps the binding resolved by the
-  waiting press in process memory only, resolves the current binding first,
-  and on a mismatch returns the device to local-only with zero provider
-  calls. It reads zone, anchor, and item under that binding and never saves
-  a zone, candidate, anchor, or key item, never deletes, and never persists.
-  Outcomes: zone missing or anchor missing publishes local-only and leaves
-  creation to the press; item missing stays waiting; item valid and matching
-  commits the established row and runs one exchange; item mismatch,
-  integrity failure, account changed, unavailable, or restricted publishes
-  action required exactly as the press would; retryable, unknown outcome, or
-  an undetermined account leaves the status unchanged because nothing new
-  was learned. It never publishes syncing and publishes only a changed
-  definitive outcome. `observed`: it must not reuse `syncNow()`, whose
-  established check publishes local-only over a waiting status on an
-  unestablished device, and `onForeground` sits outside `guarded`, whose
-  exception mapping to retryable is wrong here; the re-check needs its own
-  flight-exclusive wrapper and its own sealed result so the press protocol
-  and `BootstrapResult` stay untouched. No timer, backoff, background
-  delivery, push, or Keychain notification exists or is added.
+- `D1` applies to a fresh join: an explicit **Sync with iCloud** attempt
+  found an existing anchor, its exact key item was missing, and the local
+  bootstrap store remained `None`. Retain that attempt's account binding
+  and anchor context in process memory only. This continuation is distinct
+  from the general `WAITING_FOR_KEY` status, which can also occur with a
+  persisted candidate or an established workspace. Those existing paths
+  retain their explicit bootstrap or linked-exchange behavior and do not
+  acquire an automatic candidate-cleanup path or a no-op retry button.
+- While this continuation exists, **Check again** and foreground both use
+  the same bounded join-only operation; neither calls the creating
+  bootstrap. Under the existing serialization boundary, re-read the local
+  store and require `None`, then resolve the current account binding and
+  compare it with the consented binding before workspace/key access. Read
+  only the exact zone, anchor, and item under the expected binding, with
+  existing native preflight/postflight checks. Require the anchor context
+  to match the original waiting attempt; a replacement workspace under the
+  same account also ends that attempt. Never create a zone, candidate,
+  anchor, or key item, and never delete on this route.
+- While the key is missing, no bootstrap row is written. A valid matching
+  item permits the normal established-row commit; only after that commit
+  succeeds does normal synchronization run. The check itself is read-only
+  until adoption; the ensuing exchange has its existing persistence and
+  mailbox effects. The outcome table below applies to both entry points.
+  It does not prohibit ordinary `SYNCING`/completed/error statuses after
+  establishment. Tests separate the check's effects from the exchange's.
+
+  | Check outcome | State and next action |
+  | --- | --- |
+  | No continuation | No join-only provider calls; preserve the existing route for the actual local state |
+  | Local candidate or established row | No join-only account/cloud/key calls; discard the stale continuation and reconcile through the existing state-specific route |
+  | Local-store corruption | Clear continuation; action required; no provider calls or adoption |
+  | Local-store storage failure | Retain continuation; retryable; no provider calls or adoption |
+  | Current account binding differs | Clear continuation; action required; zero workspace/key calls; a later **Sync with iCloud** press is new consent |
+  | Account unavailable/restricted, provider account changed, malformed or mismatched item, changed anchor context | Clear continuation; action required; no adoption, creation, or deletion |
+  | Exact zone or anchor definitively absent | Clear continuation; local-only; offer **Sync with iCloud** for an explicit new setup |
+  | Exact key item absent | Keep continuation and waiting; no writes |
+  | Retryable/unknown provider result or undetermined account | Keep continuation and last waiting state; no adoption |
+  | Valid item matching the retained anchor and binding | Commit established once, clear continuation, then request one normal exchange |
+  | Established-row commit fails | No exchange or linked success; corruption ends the continuation with action required; storage failure retains it with retryable status; re-read local state before retrying |
+
+- Retry routing follows the retained continuation, not only the displayed
+  `WAITING_FOR_KEY` status. A retryable storage failure still uses bounded
+  **Check again**, never a creating bootstrap. After cancellation or an
+  uncertain commit, re-read the store under serialization: an exact matching
+  established row resumes the existing linked route without another commit;
+  `None` may resume the same bounded check; corruption or a conflicting
+  workspace stops with action required. Never overwrite a different local
+  workspace while reconciling a stale continuation.
+- Keep the continuation and the local-state recheck within the serialized
+  operation, so a queued foreground event cannot use a stale attempt after
+  consent, adoption, or removal. Coalesce overlapping foreground checks;
+  do not queue a check per window-focus event. A manual check while one is
+  running does not start a duplicate. Preserve cancellation and the existing
+  account-boundary checks. No timer, background delivery, push, Keychain
+  notification, new persistent waiting record, or schema migration is added.
+  Restart forgets the continuation and shows local-only with explicit
+  **Sync with iCloud**; this is an accepted UX limitation of this iteration.
 - Copy and actions (`D2`) follow state, consequence, action. The waiting
-  notice keeps the existing first sentence, says the existing workspace
-  stays unchanged, and names the Apple-owned prerequisite without a settings
-  deep link, a time, a device name, a location where Apple asks, or a
-  success claim. A waiting device is consented, so its actions never read as
-  a new consent or a decline. The summary step shows waiting instead of
-  "Saved on this device", and the Session row's expanded action uses the
-  same label as the step.
+  state shows a short status (the existing waiting sentence) and a separate
+  explanation that says the existing workspace stays unchanged, names the
+  Apple-owned prerequisite without a settings deep link, a time, a device
+  name, a location where Apple asks, or a success claim, and in the step
+  adds that setup can continue while waiting. The person has done their
+  part, so **Continue** stays the primary action and **Check again** is
+  secondary; neither reads as a new consent or a decline. The summary
+  reports the locally saved choices and the pending synchronization as two
+  separate facts. The Session screen keeps the PR #45 layout: the collapsed
+  iCloud row carries the waiting summary and **Check again** appears only
+  after expanding.
 - Apple-managed Keychain approval remains external: the app names the
   prerequisite and never detects, opens, requests, or simulates it. There is
   no public API for iCloud Keychain availability, so no "iCloud Keychain is
@@ -128,18 +173,26 @@ Mac joining and iPhone joining, are proven physically.
   names the remaining setup. `observed`: authoring diffs exact domains only
   and the only production caller is the domain store's replace, so neither
   a picker selection nor the application group name reaches the outbox.
+  This is an implementation stage: the person's outcome "my choices appeared
+  on the other device" still depends on `SYNC-011`, and nothing here claims
+  it.
 - Accessibility rules bind the changed surfaces: labels and roles, non-color
   state cues, wrapped action rows at large text, announced state changes.
 - Write surface: `shared/src/commonMain/**/feature/sync/bootstrap/**`
   (`AppleSync`, `BootstrapCoordinator`, a new join-only phase or result as
   `D1` needs), `feature/sync/ui/**`, `feature/onboarding/**`
   (`OnboardingSteps`, `OnboardingScreen`, previews),
+  `PosatoApplication`, `SessionScreen`, and `SessionOverviewContent` for
+  narrow accessibility callback wiring to the existing Mac announcement
+  bridge, plus desktop `Main.kt` if the callback is renamed or shared;
+  no new native announcement mechanism or helper behavior is needed.
   `SessionScreenPreviewDataProvider`, `strings.xml` (a shared
   `action_check_again`, the waiting notice), their tests and the
   `AppleSyncTestHarness`, `DESIGN.md` (the implementation-boundary sentence
   on launch and foreground, the first-install iCloud bullet, the Session
   iCloud bullet), ADR 0007 (a dated `user-confirmed` amendment section in
-  the ADR 0002 convention, only under the recommended `D1`), the
+  the ADR 0002 convention, required by accepted `D1` before behavioral
+  changes), the
   `verify-posato` skill (`features/sync.md` join rows and its "launch and
   foreground do not touch CloudKit" sentence, `features/onboarding.md`
   second-install sub-feature and its "exactly one bootstrap attempt"
@@ -152,7 +205,8 @@ Mac joining and iPhone joining, are proven physically.
   edits made before linking; total-key-loss recovery; QR, invitation, or
   cross-device approval; a settings deep link or an in-app iCloud Keychain
   check; changes to the zone, anchor, candidate, or key-item protocol beyond
-  the bounded join-only read; helper, picker, or Screen Time changes; the
+  the bounded join-only check and normal adoption; helper, picker, or Screen
+  Time changes; the
   `SYNC-010` retryable-key-read follow-up (same files, serialised after this
   pull request); the accessibility captures waived for `ONBOARDING-001`
   (they stay with `RELEASE-001`); evidence of a real Apple approval prompt
@@ -167,26 +221,32 @@ Mac joining and iPhone joining, are proven physically.
   `select count(*) from sync_bootstrap_state` at zero on the Mac in
   direction B, and by the iPhone's status text plus the unit rows in
   direction A; in both directions the established device keeps its linked
-  state and its accepted count.
-- `AC-02` — Once the key item is readable, the next opportunity selected
-  under `D1` turns waiting into linked plus one exchange, without a second
-  consent control and without re-entering the flow. A relaunch while
-  waiting reads local-only with **Sync with iCloud** available, never
-  success and never a second workspace.
+  workspace and existing accepted data.
+- `AC-02` — Once the key item is readable, the next check, foreground under
+  `D1` or **Check again**, turns waiting into linked plus one exchange,
+  without a second consent control and without re-entering the flow. While
+  waiting, neither route can create a workspace: with the anchor gone or
+  the account changed, the check stops the join, shows local-only or action
+  required, and a new setup needs an explicit **Sync with iCloud** press. A
+  relaunch while waiting reads local-only with **Sync with iCloud**
+  available, never success and never a second workspace.
 - `AC-03` — Over the fakes with call counts, the join-only re-check proves
-  every row of the outcome table above: zero zone saves, anchor creates, key
-  creates, key deletes, and store writes in every row except the valid
-  matching item, which commits exactly one established row; a persisted
-  candidate and an established workspace produce zero provider calls; a
-  binding mismatch produces zero provider calls and local-only. The explicit
-  press keeps the accepted protocol, proven by the unchanged
-  `BootstrapCoordinatorTest` cases.
+  every outcome above through both manual and foreground entry points.
+  No check creates or deletes workspace resources; a missing key writes no
+  bootstrap row; verified adoption commits once before requesting exchange.
+  Binding or anchor changes cannot switch the waiting attempt to another
+  workspace. Candidate and established paths retain their existing retry
+  behavior. Concurrent opportunities cannot duplicate adoption/exchange or
+  revive a cleared continuation. Existing explicit-bootstrap protocol tests
+  remain green; test the actual state and provider effects, not UI labels.
 - `AC-04` — The iCloud step, the summary, and the Session row show waiting
-  as waiting; the waiting sentences name the Apple-owned prerequisite with
-  no deep link, time, device list, location, or success claim; every changed
-  sentence maps to an authority listed above and the independent review
-  checks that mapping; a waiting device's actions never read as a new
-  consent or a decline.
+  as waiting, as a short status plus a separate explanation; the sentences
+  name the Apple-owned prerequisite with no deep link, time, device list,
+  location, or success claim; **Continue** is primary and **Check again**
+  secondary in the step, and the Session row shows **Check again** only
+  when expanded; the summary states the local save and the pending sync
+  separately; every changed sentence maps to an authority listed above and
+  the independent review checks that mapping.
 - `AC-05` — After joining, the device completes its permission step and a
   local application selection through the existing routes; with no website
   added in that window, the Mac's pending and accepted counts stay
@@ -199,19 +259,17 @@ Mac joining and iPhone joining, are proven physically.
 
 ## Verification
 
-- `commonTest`: `BootstrapCoordinatorTest` for the join-only re-check
-  through its new entry point, one case per outcome row, with the shared
-  `FakeBootstrapKeyPort` item map as the "key arrives later" seam and the
-  existing fake counters as the proof; the existing press cases stay
-  unchanged. `AppleSyncTest` for the `D1` opportunity (waiting device
-  re-reads with one zone fetch, one anchor read, one item read, and zero
-  saves, creates, deletes, or persists; links and runs one exchange after
-  the key arrives; the waiting status is never replaced by local-only while
-  the anchor stands; "no consent when foreground arrives then no provider
-  is called" stays green; an established device is unchanged).
-  `SyncBootstrapUiStateTest` and the onboarding holder tests for the waiting
-  status mapping; rendering and copy are proven by the platform builds and
-  manual inspection, not by Compose UI tests.
+- `commonTest`: coordinator tests cover the outcome table using delayed-item
+  fakes, retained account/anchor context, store failures, and counters for
+  reads, forbidden creation/deletion, and the established commit. Integration
+  tests exercise **both** manual recheck and foreground after account change,
+  anchor replacement/removal, and later key delivery. Verify no-consent
+  foreground still touches no provider; repeated or overlapping opportunities
+  produce one adoption/exchange; cancellation and cleared continuations do
+  not resume stale work; candidate and established waits still recover
+  through their existing routes. Holder tests cover command routing,
+  busy/completion state, and summary status; static copy/rendering uses
+  previews and native inspection, not Compose UI tests.
 - `jvmTest` and `iosTest` over the real graphs: construction touches no
   provider; Session-first routing unchanged.
 - Simulator, unattended: `first-install.json` and `first-install-skip.json`
@@ -220,12 +278,16 @@ Mac joining and iPhone joining, are proven physically.
   **Remove workspace** first if linked, then `reset -t device` (uninstall)
   and `install`; Mac **Remove workspace**, then **Sync with iCloud** until
   linked; immediately afterwards the iPhone flow presses **Sync with
-  iCloud**; expect waiting and record the observed outcome when the key was
-  already readable (the likely result on trusted hardware, as `SYNC-009` saw
-  the winner's item readable within seconds); continue the flow, summary and
-  Session row show waiting; the `D1` opportunity or the press completes the
-  join; then the Screen Time step and a picker selection with Mac counts
-  unchanged. Direction B (iPhone establishes, Mac joins): Mac **Remove
+  iCloud**; record either immediate linking or an observed wait. If waiting
+  is visible,
+  inspect the step, use Continue through the local permission/website steps,
+  and inspect the summary and Session while it remains observable; never
+  require the user to re-enter completed onboarding. Exercise manual recheck
+  and foreground when an actual wait window permits them. Complete local
+  permissions during onboarding or through their existing later routes,
+  then select apps in Paused items after the join. Compare quiescent Mac
+  counts before and after that selection, with no domain edit in between.
+- Physical direction B (iPhone establishes, Mac joins): Mac **Remove
   workspace** while the iPhone is still linked leaves the iPhone
   action-required, so remove on the iPhone first and link it fresh; `reset
   -t desktop` with backup; the same rows with the count query at zero while
@@ -234,76 +296,71 @@ Mac joining and iPhone joining, are proven physically.
   then needs **Remove workspace** and a fresh link. iPhone evidence is
   status text plus the Mac's receipt, because the device database is not
   readable.
-- Wait-window fallback (`D4`): when neither direction shows waiting
-  naturally, the maintainer may turn iCloud Keychain off on the joining
-  iPhone before the press and on afterwards, choosing to keep saved
-  passwords at the system prompt; this is the least destructive route on
-  already-trusted hardware and is not guaranteed to show Apple's approval
-  prompt. Otherwise the unit rows and the `SYNC-009` race evidence carry the
-  waiting claim and the record says so.
+- Wait-window fallback (`D4`): immediate key availability proves immediate
+  joining, not waiting. If waiting cannot be observed, mark its physical
+  row not observed and cite unit coverage; do not claim that earlier
+  `SYNC-009` evidence verifies the new retry implementation. An iCloud
+  Keychain off/on cycle on the joining iPhone is optional, attended, and
+  needs agreement at the time of the run. It does not guarantee a missing
+  app key or an Apple approval prompt. Apple documents local retention when
+  Keychain is turned off and a keep/delete choice when signing out; record
+  the actual system messages without predicting a particular prompt.
+  Do not sign out, reset encrypted data, or delete passwords for this recipe.
+- Accessibility: inspect changed status and actions on both native hosts.
+  Automatic checks must not repeatedly announce an unchanged waiting state.
+  Manual checks must expose progress and completion even when the key is
+  still absent; do not replace the truthful wait with a fabricated error.
+  Confirm spoken delivery in an attended VoiceOver run where reachable;
+  snapshots or PR #45's Mac-helper check are not evidence for iCloud speech.
 - Closeout statement for the threat model, shaped by `D1`: under the press
   or the bounded re-check, the task remains within the model, naming `T-04`
-  and `TB-06` for the binding-checked exact reads with no create and no
-  store, and `R-04` and `TB-07` for the copy; a persisted waiting record
+  and `TB-06` for binding-checked exact reads, no resource creation/deletion,
+  and established-row persistence only after verified adoption; `R-04` and
+  `TB-07` cover the copy. A persisted waiting record
   would instead require a model edit under the persistent-store rule.
 - `./gradlew quality`, `git diff --check`, and the scoped secret and path
   scan.
 
-## Decisions or blockers
+## Accepted decisions and implementation readiness
 
-- `D1` waiting re-check opportunities and persistence. Recommended:
-  the explicit press plus the bounded join-only re-check on foreground while
-  the running process holds `WAITING_FOR_KEY`; nothing is persisted, so a
-  relaunch reads local-only with **Sync with iCloud** available, and the
-  press joins. Reason: on the iPhone, Apple's approval happens in Settings,
-  so the person leaves and returns, and the return is exactly when the item
-  may be readable. This reads ADR 0007's "Bootstrap runs only after the
-  explicit **Sync with iCloud** action" as governing creation and the first
-  read; `SYNC-010` `D5` already runs the zone and anchor check on foreground
-  for a linked device. The ADR receives a dated `user-confirmed` amendment
-  section only when this decision is confirmed. Cost: the bounded mode in
-  the coordinator, one branch in `AppleSync`, three documentation sentences,
-  and on the Mac one companion launch per window focus while waiting (the
-  cost `D5` already accepted for linked Macs). `open`: the foreground signal
-  is the existing `ON_RESUME` lifecycle effect, which on the Mac follows
-  window focus; the implementer proves it with the driver (focus away and
-  back) or records the press as the Mac route. Alternatives: explicit press
-  only (no coordinator change, no ADR edit, the person must return to the
-  row and press again after every delivery; the acceptable fallback when no
-  ADR amendment is wanted in this pull request); or a persisted waiting
-  record (anchor and binding) in `sync_bootstrap_state` through a new
-  migration so launch re-checks too, which every state branch of the
-  coordinator, removal, and the established check must then handle, and
-  which requires a threat-model edit while gaining little over the press
-  that is available on relaunch anyway.
-- `D2` waiting copy and actions. Recommended: the notice reads "Waiting for
-  the workspace key from your other device. Your existing workspace stays
-  unchanged. Apple may first ask you to approve iCloud Keychain for this
-  device."; while waiting, the step's primary action reads **Check again**
-  and its quiet action **Continue** (instead of **Sync with iCloud** and
-  **Not now**), the Session row's expanded action reads **Check again**,
-  both run the same attempt through one shared `action_check_again` string,
-  and the summary line reuses "Waiting for the workspace key" from the
-  Session row (the summary step receives the status, not only the linked
-  flag). The `DESIGN.md` first-install and Session bullets name the waiting
-  labels. This keeps one consent control because a waiting device is
-  consented. Alternative: keep the current labels, which the sync recipe
-  already documents as "retry consent on the waiting side", at the cost of a
-  consented device being asked to consent again.
-- `D3` the reading of "finish local mappings". Recommended: the joining
-  device completes only the device-local part through the existing
-  permission step, **This Mac** row, and Paused items picker, with no new
-  copy and no mapping prompt, and the record states that synced items stay
-  invisible until `SYNC-011`. Alternative: a "map the shared apps on this
-  device" prompt, which cannot exist before `SYNC-011` projects the replica.
-- `D4` physical evidence. Recommended: both device orders as listed, the
-  wait window produced by pressing on the joining device right after the
-  other device links, and the iCloud Keychain toggle on the iPhone only as
-  the attended fallback the maintainer may decline; a declined fallback is
-  recorded as a limit, not a failure. Alternative: one direction only, with
-  the other carried by `SYNC-009` evidence.
-- Physical gate: the maintainer's iPhone and Mac under one iCloud account.
-  Every from-empty row costs **Remove workspace** on each linked device and
-  a fresh local database on the joining device; iCloud Keychain propagation
-  is Apple-timed; the Screen Time prompt, any iCloud Keychain approval, and
-  any settings toggle are attended steps.
+`user-confirmed` (2026-09-10): the maintainer accepted the reviewed direction
+and requested a brief ready for implementation. These decisions supersede the
+original alternatives; no repeat D1–D4 approval is needed.
+
+- `D1`: manual recheck and foreground resume the same consented fresh join,
+  with the account/anchor and side-effect boundaries above. Persist only the
+  successful adoption, not waiting. The weaker restart UX is accepted for
+  this iteration; durable waiting is deferred, not dismissed. The first
+  implementation step adds a dated ADR 0007 amendment describing the
+  permitted continuation and adoption before changing application behavior.
+  Foreground is an opportunity after returning from system setup, not a
+  claim about where Apple presents approval. Prove the existing `ON_RESUME`
+  signal on each host; if Mac focus does not deliver it, document manual
+  recheck as the verified Mac route rather than inventing a lifecycle hook.
+- `D2`: waiting status: "Waiting for the workspace key from your other
+  device." Supporting explanation: "Your existing workspace stays unchanged.
+  Apple may first ask you to approve iCloud Keychain for this device."
+  Onboarding also says "You can continue setup while you wait." **Continue**
+  is primary and **Check again** secondary for the pending fresh join.
+  Session retains the collapsed iCloud status row; its recheck appears only
+  when expanded. Expansion starts no request. The summary presents locally
+  saved choices and the waiting sync state separately. Exiting a failed
+  continuation restores an explicit consent action, never a creating
+  bootstrap behind **Check again**. Existing candidate/linked waits retain
+  their state-specific recovery behavior; do not route them into a fresh-join
+  operation that cannot act on their state.
+- `D3`: finish only the device-local permission and application selection
+  through existing routes. No mapping prompt or shared-item visibility is
+  introduced; the complete cross-device user outcome still needs `SYNC-011`.
+- `D4`: verify joining in both device orders. Record immediate joining and
+  observed waiting separately. Optional Keychain toggling is not a mandatory
+  gate; declining it leaves an explicit evidence limit.
+- Preparation is complete when the independent plan re-review has no open
+  Critical/Required finding. Production implementation and all runtime
+  evidence remain pending. The implementing agent owns authority updates,
+  checks, and the completed-change review in the execution record.
+- Physical runs require the maintainer's available Mac and iPhone on the
+  same account. Agree on destructive workspace cleanup and any optional
+  settings change for the concrete run; plan acceptance does not perform
+  those actions. The overlapping `SYNC-010` follow-up stays serialized after
+  this task. Add the single wiki-log entry only at PR closeout.

@@ -36,6 +36,18 @@ That evidence-only status for concrete presentation choices was superseded by
 the explicit adoption on 2026-09-07. Mock services and unimplemented product
 flows remain evidence only.
 
+## Accepted second-install waiting direction
+
+`user-confirmed` (2026-09-10): the ONBOARDING-002 fresh-join wait keeps
+Continue primary and Check again secondary, with a short status, separate
+Apple-prerequisite explanation, and permission to continue local setup.
+Session retains PR #45's collapsed iCloud row with its action inside; the
+summary reports local saves and pending synchronization separately. Existing
+local permission and picker routes remain; shared-item visibility depends on
+SYNC-011. This is an accepted implementation direction, not a shipped flow;
+the [brief](../../tasks/specifications/onboarding-002-second-install.md)
+requires updating DESIGN.md with the implementation.
+
 ## Accepted first-install presentation
 
 `user-confirmed` (2026-09-09): the maintainer accepted the isolated PR #44
