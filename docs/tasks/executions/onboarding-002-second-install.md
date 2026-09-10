@@ -93,7 +93,8 @@
 | `./gradlew quality` | passed after final test correction | JVM/iOS tests, lint, packaging |
 | Simulator full / skip first-install fixtures | passed | UI captures; website/bootstrap/completion counts 1/0/1 and 0/0/1 |
 | Signed Mac launch and collapsed/expanded Session | passed | Driver snapshot and screenshots |
-| iPhone build/install/launch / driver UI smoke | passed / blocked | XCTest automation-mode initialization timed out before scenario |
+| iPhone build/install/launch and UI smoke | passed on retry | Initial automation-mode timeout; unlocked-device retry passed |
+| iPhone joins existing workspace from Session and relaunches | passed | Completed attempt after consent and relaunch; wait not observed |
 | Physical direction A: Mac establishes, iPhone joins fresh | pending | |
 | Physical direction B: iPhone establishes, Mac joins fresh | pending | |
 | Post-join permission and local selection, Mac counts unchanged | pending | |
@@ -101,9 +102,8 @@
 
 ## Blockers and accepted risks
 
-- Physical joins require attended agreement on concrete workspace cleanup;
-  none has been removed. iPhone UI driving also needs the automation-mode
-  initialization timeout resolved with the maintainer present.
+- Fresh-install physical joins require attended agreement on concrete
+  workspace cleanup; none has been removed. iPhone driving now works.
 - Automatic checks do not repeat unchanged waiting announcements. Manual
   progress/completion must remain observable even with the same outcome.
 - Waiting is not persisted; relaunch requires explicit consent again. This
