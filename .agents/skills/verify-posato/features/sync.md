@@ -1,6 +1,8 @@
 # Sync with iCloud
 
-Before linking, the Session screen offers **Sync with iCloud**. Launch and
+Expand the **iCloud** row on Session to reach **Sync with iCloud** before
+linking, or **Sync now** and **Remove workspace** afterwards. The collapsed
+row always names the current state; opening it never starts an exchange. Launch and
 foreground do not touch CloudKit or synchronizable Keychain on an unlinked
 device. A linked device offers **Sync now** and **Remove workspace**. Exchange
 opportunities also follow launch, foreground, and local exact-domain commits;
@@ -35,7 +37,8 @@ local behavior and truthful degradation without its own iCloud account.
 1. Build both applications; use `build -t device --driver`, then `install`.
    `quality` restages an ad-hoc Mac package, so run `build -t desktop` after it.
    Launch preserving existing state, never with `--fresh`.
-2. Capture `snapshot --format text` and a screenshot of Session. For an
+2. Capture `snapshot --format text` and a screenshot of Session. Expand the
+   iCloud row with `tap --text-contains "iCloud," --role button`. For an
    unlinked device expect **Sync with iCloud** and a local-only description;
    `select count(*) from sync_bootstrap_state` is zero on desktop.
 3. Press **Sync with iCloud** once. Expect completion or **Waiting for the

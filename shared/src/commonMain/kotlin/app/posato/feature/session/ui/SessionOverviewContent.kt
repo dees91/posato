@@ -47,6 +47,7 @@ internal fun SessionOverviewContent(
     onMacSetupCheck: () -> Unit = {},
     onMacSetupEnable: () -> Unit = {},
     onMacSetupOpenSettings: () -> Unit = {},
+    onMacSetupAnnouncement: (String) -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
     val hasItems = state.displayDomains().isNotEmpty() ||
@@ -79,7 +80,13 @@ internal fun SessionOverviewContent(
         PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
         SyncSection(syncState)
         macSetup?.let { presentation ->
-            MacSetupSection(presentation, onMacSetupCheck, onMacSetupEnable, onMacSetupOpenSettings)
+            MacSetupSection(
+                presentation,
+                onMacSetupCheck,
+                onMacSetupEnable,
+                onMacSetupOpenSettings,
+                onAnnouncement = onMacSetupAnnouncement,
+            )
         }
     }
 }
