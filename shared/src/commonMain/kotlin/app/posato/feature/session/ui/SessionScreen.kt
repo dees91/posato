@@ -26,6 +26,8 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.enforcement.EnforcementPort
+import app.posato.feature.onboarding.MacHelperSetupUiState
+import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
@@ -49,6 +51,8 @@ internal fun SessionScreen(
     layout: PosatoLayout = PosatoLayout.Compact,
     deviceLabel: String = "On this device",
     syncState: SyncBootstrapUiState? = null,
+    macSetupState: MacHelperSetupUiState? = null,
+    onMacSetupAnnouncement: (String) -> Unit = {},
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(sessionStore, policyStore, applicationMappings, sessionIds, clock, timeFormat, enforcement)
     },
@@ -73,6 +77,11 @@ internal fun SessionScreen(
         layout = layout,
         deviceLabel = deviceLabel,
         syncState = syncState,
+        macSetup = macSetupState?.presentation(),
+        onMacSetupCheck = { macSetupState?.check() },
+        onMacSetupEnable = { macSetupState?.enable() },
+        onMacSetupOpenSettings = { macSetupState?.openSettings() },
+        onMacSetupAnnouncement = onMacSetupAnnouncement,
     )
 }
 
@@ -95,6 +104,11 @@ internal fun SessionScreen(
     onRetryEnforcement: () -> Unit = {},
     onOpenPausedItems: () -> Unit = {},
     syncState: SyncBootstrapUiState? = null,
+    macSetup: MacSetupPresentation? = null,
+    onMacSetupCheck: () -> Unit = {},
+    onMacSetupEnable: () -> Unit = {},
+    onMacSetupOpenSettings: () -> Unit = {},
+    onMacSetupAnnouncement: (String) -> Unit = {},
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
         val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
@@ -148,6 +162,11 @@ internal fun SessionScreen(
                         onOpenPausedItems,
                         onRetryEnforcement,
                         syncState,
+                        macSetup,
+                        onMacSetupCheck,
+                        onMacSetupEnable,
+                        onMacSetupOpenSettings,
+                        onMacSetupAnnouncement,
                     )
                 }
             }
@@ -160,7 +179,7 @@ internal fun SessionScreen(
 private fun SessionPhonePreview(
     @PreviewParameter(SessionScreenPreviewDataProvider::class) previewState: SessionScreenPreviewDataProvider.SessionPreviewState,
 ) {
-    PosatoTheme { SessionScreen(previewState.state) }
+    PosatoTheme { SessionScreen(previewState.state, macSetup = previewState.macSetup) }
 }
 
 @Preview(name = "Desktop", widthDp = 1060, heightDp = 780)
@@ -168,5 +187,5 @@ private fun SessionPhonePreview(
 private fun SessionDesktopPreview(
     @PreviewParameter(SessionScreenPreviewDataProvider::class) previewState: SessionScreenPreviewDataProvider.SessionPreviewState,
 ) {
-    PosatoTheme { SessionScreen(previewState.state, layout = PosatoLayout.Expanded) }
+    PosatoTheme { SessionScreen(previewState.state, layout = PosatoLayout.Expanded, macSetup = previewState.macSetup) }
 }

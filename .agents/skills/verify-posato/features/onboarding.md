@@ -29,7 +29,9 @@ that seeds completion opens on Session without the flow.
 - On iPhone the permission step asks for Screen Time access through the real
   system request and shows the read-back answer. On Mac Enable on this Mac
   enables the helper; approval required opens System Settings with Check
-  again. Removing a workspace never returns to the flow.
+  again. After Not now, expand the Session screen's This Mac row to reach the
+  same route later (see [Sessions](./sessions.md)). Removing a workspace never
+  returns to the flow.
 
 ## Driving it with posato-control
 

@@ -16,31 +16,14 @@ internal class DesktopMacHelperState(
     private val openSettings: (URI) -> Unit,
 ) : MacHelperPort {
     override suspend fun enable(): MacHelperReadiness {
-        return withContext(ioDispatcher) {
-            if (runCatching { verifyHelper() }.isFailure) {
-                return@withContext MacHelperReadiness.UNAVAILABLE
-            }
-            try {
-                commands.enable()
-                commands.status().toReadiness()
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (_: Exception) {
-                MacHelperReadiness.UNAVAILABLE
-            }
+        return readiness {
+            commands.enable()
+            commands.status()
         }
     }
 
     override suspend fun recheck(): MacHelperReadiness {
-        return withContext(ioDispatcher) {
-            try {
-                commands.status().toReadiness()
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (_: Exception) {
-                MacHelperReadiness.UNAVAILABLE
-            }
-        }
+        return readiness { commands.status() }
     }
 
     override fun openApprovalSettings() {
@@ -48,6 +31,21 @@ internal class DesktopMacHelperState(
             openSettings(URI(LOGIN_ITEMS_SETTINGS))
         } catch (_: IOException) {
             return
+        }
+    }
+
+    private suspend fun readiness(operation: () -> HelperResult): MacHelperReadiness {
+        return withContext(ioDispatcher) {
+            if (runCatching { verifyHelper() }.isFailure) {
+                return@withContext MacHelperReadiness.UNAVAILABLE
+            }
+            try {
+                operation().toReadiness()
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                MacHelperReadiness.UNAVAILABLE
+            }
         }
     }
 
@@ -60,6 +58,10 @@ internal class DesktopMacHelperState(
             serviceState == HelperResult.State.ApprovalRequired ||
                 requiredAction == HelperResult.RequiredAction.BackgroundApproval -> {
                 MacHelperReadiness.APPROVAL_REQUIRED
+            }
+
+            serviceState == HelperResult.State.NotRegistered -> {
+                MacHelperReadiness.NOT_ENABLED
             }
 
             else -> {

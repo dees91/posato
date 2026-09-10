@@ -41,11 +41,11 @@ internal fun rememberOnboardingUiState(
     setupStore: LocalSetupStore,
     policyStore: LocalTargetPolicyStore,
     applicationAccess: ApplicationAccessPort,
-    macHelper: MacHelperPort,
+    helperSetup: MacHelperSetupUiState,
 ): OnboardingUiState {
     val scope = rememberCoroutineScope()
-    return remember(setupStore, policyStore, applicationAccess, macHelper) {
-        OnboardingUiState(setupStore, policyStore, applicationAccess, macHelper, scope)
+    return remember(setupStore, policyStore, applicationAccess, helperSetup) {
+        OnboardingUiState(setupStore, policyStore, applicationAccess, helperSetup, scope)
     }
 }
 
