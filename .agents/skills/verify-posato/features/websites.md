@@ -3,7 +3,8 @@
 Websites stores canonical exact domains. A person can add one domain or paste
 a batch of domains and HTTP(S) URLs, search the saved list, edit or remove rows,
 and leave an unfinished draft while visiting Session. Session-driven blocking
-and synchronization are not connected yet.
+is covered by the session recipes; saved websites synchronize across linked
+devices joined to one workspace (see Sync with iCloud).
 
 ## Sub-features
 

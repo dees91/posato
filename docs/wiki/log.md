@@ -1483,3 +1483,21 @@ routes. Both physical device orders joined successfully and retained local
 application selections; key waiting was not physically observed. ADR 0007 and
 DESIGN.md record the accepted behavior; the execution record separates unit
 coverage, physical results, and remaining evidence limits.
+
+## [2026-09-10] task | SYNC-011 policy convergence (single PR entry, updated in place)
+
+Shared write gate per the brief (`LocalTargetPolicyStore.withWriteGate`, one
+`Mutex` in the SQL store, decorator saves and reconciler applies); latent
+outcome receiver fixed (`SyncProjection`); three Detekt `TooManyFunctions`
+findings resolved without suppressions. `D3` change signal: defaulted empty
+on the interface, emitted only by reconciler applies, forwarded by the
+decorator, silent re-reads in both view models. `D9` onboarding counts from
+the real policy with receipt-keyed focus. Two-harness convergence fixed:
+shared deterministic crypto minted colliding identifiers with divergent
+contents, correctly reported as `REPLAY_CONFLICT`; fixtures now use
+independent streams (`streamSeed`), no product change. `D4` base lag fixed
+by re-reading the projection after the group-name republish. `./gradlew
+quality` green (501 JVM tests, migration verification, `iosSwiftTest`);
+five simulator fixtures green; verify-posato recipes assert convergence;
+threat-model rows `A-04`/`T-03` extended. Details in the SYNC-011 execution
+record.

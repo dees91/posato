@@ -4,6 +4,7 @@ import app.posato.feature.onboarding.data.LocalSetupFailure
 import app.posato.feature.onboarding.data.LocalSetupResult
 import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.onboarding.data.SetupCompletion
+import app.posato.feature.sync.bootstrap.SyncAttentionReason
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.sync.ui.message
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
@@ -11,6 +12,7 @@ import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import app.posato.feature.targets.ui.WebsiteBatchReceipt
@@ -80,6 +82,17 @@ class OnboardingUiStateTest {
         val messages = SyncStatus.entries.map { status -> status.message(false) }
 
         assertEquals(SyncStatus.entries.size, messages.toSet().size)
+    }
+
+    @Test
+    fun `given action required when messaged with reasons then each reason maps to a distinct string`() {
+        val messages = listOf(
+            SyncStatus.ACTION_REQUIRED.message(true),
+            SyncStatus.ACTION_REQUIRED.message(true, SyncAttentionReason.LOCAL_CAPACITY),
+            SyncStatus.ACTION_REQUIRED.message(true, SyncAttentionReason.SHARED_CAPACITY),
+        )
+
+        assertEquals(3, messages.toSet().size)
     }
 
     @Test
@@ -188,6 +201,26 @@ class OnboardingUiStateTest {
 
         assertEquals(1, policy.replaced.size)
         assertEquals(1, holder.savedWebsites)
+    }
+
+    @Test
+    fun `given synced websites when entering steps without manual adds then the summary counts the real policy`() = runTest {
+        val policy = FakeTargetPolicyStore()
+        val synced = TargetPolicy.fromStoredValues(listOf("one.example", "two.example"), null)
+        policy.replace(0, (synced as TargetPolicyValidationResult.Success).policy, null)
+        val holder = OnboardingUiState(FakeSetupStore(), policy, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
+
+        repeat(4) { holder.advance() }
+        holder.refreshSavedWebsites()
+        runCurrent()
+        assertEquals(OnboardingStep.WEBSITE, holder.step)
+        assertEquals(2, holder.savedWebsites)
+
+        holder.advance()
+        holder.refreshSavedWebsites()
+        runCurrent()
+        assertEquals(OnboardingStep.SUMMARY, holder.step)
+        assertEquals(2, holder.snapshot().savedWebsites)
     }
 
     @Test
@@ -339,6 +372,10 @@ private class FailingSetupStore : LocalSetupStore {
 }
 
 private class FakeTargetPolicyStore : LocalTargetPolicyStore {
+    override suspend fun <T> withWriteGate(block: suspend () -> T): T {
+        return block()
+    }
+
     var reads = 0
     val replaced = mutableListOf<TargetPolicy>()
     private var revision = 0L
@@ -352,6 +389,7 @@ private class FakeTargetPolicyStore : LocalTargetPolicyStore {
     override suspend fun replace(
         expectedRevision: Long,
         policy: TargetPolicy,
+        syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         replaced.add(policy)
         revision = expectedRevision + 1
@@ -361,6 +399,10 @@ private class FakeTargetPolicyStore : LocalTargetPolicyStore {
 }
 
 private class FailingTargetPolicyStore : LocalTargetPolicyStore {
+    override suspend fun <T> withWriteGate(block: suspend () -> T): T {
+        return block()
+    }
+
     override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
         return LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
     }
@@ -368,6 +410,7 @@ private class FailingTargetPolicyStore : LocalTargetPolicyStore {
     override suspend fun replace(
         expectedRevision: Long,
         policy: TargetPolicy,
+        syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         return LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
     }

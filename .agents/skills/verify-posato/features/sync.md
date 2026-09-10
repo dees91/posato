@@ -70,7 +70,9 @@ the action label with **Sync now** or **Remove workspace** as appropriate.
    attempt. Other devices may still need to sync.**
 4. Through Paused items, add a reserved synthetic domain on one device. Return
    to Session and wait for completion. Press **Sync now** on the other device.
-   Repeat in the reverse direction. Local websites must remain device-local.
+   Repeat in the reverse direction. Both devices must converge to the union
+   of their websites: after each **Sync now**, the peer shows the new domain
+   in Paused items and the read-only queries below agree on both devices.
    On Mac, compare counts before and after each step using the read-only
    queries below; registrations are also bundles, so establish the baseline
    before adding the domain. A repeat exchange must not add accepted entries.

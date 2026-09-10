@@ -85,6 +85,10 @@ internal class SqlBootstrapStore(
             database.syncReplicaQueries.clearTerminalExpiry()
             database.syncReplicaQueries.clearAcceptedBundles()
             database.syncReplicaQueries.clearReplicaState()
+            database.syncLocalPolicyQueries.deleteIntents()
+            database.syncLocalPolicyQueries.deleteBaseMarker()
+            database.syncLocalPolicyQueries.deleteBaseDomains()
+            database.syncLocalPolicyQueries.deleteBaseApplication()
             database.syncBootstrapQueries.clearEstablishedWorkspace()
         }
     }

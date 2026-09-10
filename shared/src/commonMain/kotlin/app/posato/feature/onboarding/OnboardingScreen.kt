@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -60,6 +61,11 @@ internal fun OnboardingScreen(
     layout: PosatoLayout = PosatoLayout.Compact,
 ) {
     val browser = remember { TargetsBrowserState() }
+    LaunchedEffect(holder.step) {
+        if (holder.step == OnboardingStep.WEBSITE || holder.step == OnboardingStep.SUMMARY) {
+            holder.refreshSavedWebsites()
+        }
+    }
     val syncSnapshot by syncState.syncState.collectAsState()
     OnboardingScreen(
         state = holder.snapshot(),

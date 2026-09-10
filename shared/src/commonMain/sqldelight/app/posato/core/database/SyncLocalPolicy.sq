@@ -1,0 +1,101 @@
+CREATE TABLE sync_policy_intent (
+  sequence INTEGER NOT NULL PRIMARY KEY,
+  workspace_id BLOB NOT NULL CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16),
+  kind TEXT NOT NULL CHECK (
+    typeof(kind) = 'text' AND kind IN ('domain_present', 'domain_absent', 'application_present')
+  ),
+  canonical_domain TEXT CHECK (
+    canonical_domain IS NULL OR (
+      typeof(canonical_domain) = 'text' AND
+      length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
+    )
+  ),
+  canonical_name TEXT CHECK (
+    canonical_name IS NULL OR (
+      typeof(canonical_name) = 'text' AND
+      length(CAST(canonical_name AS BLOB)) BETWEEN 1 AND 80
+    )
+  ),
+  CHECK (
+    (
+      kind IN ('domain_present', 'domain_absent') AND
+      canonical_domain IS NOT NULL AND
+      canonical_name IS NULL
+    ) OR (
+      kind = 'application_present' AND
+      canonical_name IS NOT NULL AND
+      canonical_domain IS NULL
+    )
+  )
+);
+
+CREATE TABLE sync_policy_base (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
+);
+
+CREATE TABLE sync_policy_base_domain (
+  canonical_domain TEXT NOT NULL PRIMARY KEY CHECK (
+    typeof(canonical_domain) = 'text' AND
+    length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
+  )
+);
+
+CREATE TABLE sync_policy_base_application (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  canonical_name TEXT NOT NULL CHECK (
+    typeof(canonical_name) = 'text' AND
+    length(CAST(canonical_name AS BLOB)) BETWEEN 1 AND 80
+  )
+);
+
+selectIntents:
+SELECT sequence, workspace_id, kind, canonical_domain, canonical_name
+FROM sync_policy_intent
+ORDER BY sequence;
+
+insertIntent:
+INSERT INTO sync_policy_intent(workspace_id, kind, canonical_domain, canonical_name)
+VALUES (:workspaceId, :kind, :canonicalDomain, :canonicalName);
+
+deleteIntent:
+DELETE FROM sync_policy_intent
+WHERE sequence = :sequence;
+
+deleteIntents:
+DELETE FROM sync_policy_intent;
+
+selectBaseMarker:
+SELECT singleton
+FROM sync_policy_base
+WHERE singleton = 1;
+
+insertBaseMarker:
+INSERT INTO sync_policy_base(singleton)
+VALUES (1);
+
+deleteBaseMarker:
+DELETE FROM sync_policy_base;
+
+selectBaseDomains:
+SELECT canonical_domain
+FROM sync_policy_base_domain
+ORDER BY canonical_domain;
+
+insertBaseDomain:
+INSERT INTO sync_policy_base_domain(canonical_domain)
+VALUES (:canonicalDomain);
+
+deleteBaseDomains:
+DELETE FROM sync_policy_base_domain;
+
+selectBaseApplicationName:
+SELECT canonical_name
+FROM sync_policy_base_application
+WHERE singleton = 1;
+
+insertBaseApplication:
+INSERT INTO sync_policy_base_application(singleton, canonical_name)
+VALUES (1, :canonicalName);
+
+deleteBaseApplication:
+DELETE FROM sync_policy_base_application;

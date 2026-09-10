@@ -1,6 +1,11 @@
 package app.posato.feature.targets.data
 
+import app.posato.feature.targets.domain.PolicySyncBase
+import app.posato.feature.targets.domain.PolicySyncWrite
+import app.posato.feature.targets.domain.SequencedPolicyIntent
 import app.posato.feature.targets.domain.TargetPolicy
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 internal enum class LocalPolicyFailure {
     INVALID_REVISION,
@@ -44,10 +49,34 @@ internal class LocalTargetPolicyState(
 }
 
 internal interface LocalTargetPolicyStore {
+    suspend fun <T> withWriteGate(block: suspend () -> T): T
+
+    val policyChanges: Flow<Unit>
+        get() = emptyFlow()
+
     suspend fun read(): LocalPolicyResult<LocalTargetPolicyState>
 
     suspend fun replace(
         expectedRevision: Long,
         policy: TargetPolicy,
+        syncWrite: PolicySyncWrite? = null,
+    ): LocalPolicyResult<LocalTargetPolicyState>
+}
+
+internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
+    suspend fun recordIntents(write: PolicySyncWrite): LocalPolicyResult<Unit>
+
+    suspend fun readIntents(): LocalPolicyResult<List<SequencedPolicyIntent>>
+
+    suspend fun deleteIntent(sequence: Long): LocalPolicyResult<Unit>
+
+    suspend fun clearIntents(): LocalPolicyResult<Unit>
+
+    suspend fun readBase(): LocalPolicyResult<PolicySyncBase?>
+
+    suspend fun replaceWithBase(
+        expectedRevision: Long,
+        policy: TargetPolicy,
+        base: TargetPolicy,
     ): LocalPolicyResult<LocalTargetPolicyState>
 }

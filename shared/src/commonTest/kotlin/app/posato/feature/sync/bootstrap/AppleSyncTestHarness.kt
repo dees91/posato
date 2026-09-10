@@ -15,16 +15,24 @@ import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.ZoneDeleteResult
 import app.posato.feature.sync.testContext
+import app.posato.feature.targets.data.LocalPolicyResult
+import app.posato.feature.targets.data.LocalTargetPolicyState
+import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
+import app.posato.feature.targets.data.SyncTargetPolicyStore
 import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 internal class AppleSyncTestHarness(
     dispatcher: CoroutineDispatcher,
     name: String = "apple-sync-test.db",
     bootstrapStore: BootstrapStore? = null,
+    mailboxPort: MailboxPort? = null,
+    wallClock: SyncWallClock = SyncWallClock { 100 },
+    cryptoProvider: FakeSyncCryptoProvider? = null,
 ) {
     private val testDatabase = createLocalPolicyTestDatabase(name)
     val driver = testDatabase.openDriver()
@@ -35,16 +43,19 @@ internal class AppleSyncTestHarness(
     val cloud = FakeBootstrapCloudPort()
     val keys = FakeBootstrapKeyPort()
     val mailbox = FakeMailboxPort()
-    val crypto = FakeSyncCryptoProvider()
+    val crypto = cryptoProvider ?: FakeSyncCryptoProvider()
+    val sqlPolicy = SqlLocalTargetPolicyStore(database, dispatcher)
     val sync = AppleSync(
         BootstrapCoordinator(account, cloud, keys, store, crypto),
-        SyncOperationCore(replica, crypto, SyncWallClock { 100 }),
-        mailbox,
+        SyncOperationCore(replica, crypto, wallClock),
+        mailboxPort ?: mailbox,
         keys,
         store,
+        sqlPolicy,
         crypto,
         dispatcher,
     )
+    val syncPolicy = SyncTargetPolicyStore(sqlPolicy, sync)
 
     suspend fun waitForKey() {
         cloud.zoneExists = true
@@ -74,7 +85,9 @@ internal class AppleSyncTestHarness(
         before: TargetPolicy,
         after: TargetPolicy
     ) {
-        sync.enqueueDomainChanges(sync.captureWorkspace(), before, after)
+        val current = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(sqlPolicy.read()).value
+        assertEquals(before, current.policy)
+        assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(syncPolicy.replace(current.revision, after))
     }
 
     suspend fun snapshot(): SyncReplicaSnapshot {
@@ -119,6 +132,10 @@ internal class FakeMailboxPort : MailboxPort {
         deleteCalls += 1
         return deleteResult
     }
+}
+
+internal suspend fun intentRowCount(harness: AppleSyncTestHarness): Int {
+    return harness.database.syncLocalPolicyQueries.selectIntents().executeAsList().size
 }
 
 internal fun testCursor(value: Int): MailboxCursor {

@@ -1,11 +1,14 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.sync.data.SyncReplicaSnapshot
+import app.posato.feature.sync.data.SyncStoreResult
 import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
+import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
@@ -27,7 +30,7 @@ class AppleSyncQueueTest {
         val gate = CompletableDeferred<Unit>()
         try {
             harness.establish()
-            val raw = GatedPolicyStore(SqlLocalTargetPolicyStore(harness.database, dispatcher), afterReplace = { gate.await() })
+            val raw = GatedPolicyStore(harness.sqlPolicy, afterReplace = { gate.await() })
             val local = SyncTargetPolicyStore(raw, harness.sync)
             val adding = async { local.replace(0, testPolicy("ordered.example")) }
             runCurrent()
@@ -56,7 +59,7 @@ class AppleSyncQueueTest {
         val gate = CompletableDeferred<Unit>()
         try {
             harness.establish()
-            val raw = GatedPolicyStore(SqlLocalTargetPolicyStore(harness.database, dispatcher), afterReplace = { gate.await() })
+            val raw = GatedPolicyStore(harness.sqlPolicy, afterReplace = { gate.await() })
             val local = SyncTargetPolicyStore(raw, harness.sync)
             val saving = async { local.replace(0, testPolicy("cancelled.example")) }
             runCurrent()
@@ -76,12 +79,12 @@ class AppleSyncQueueTest {
     }
 
     @Test
-    fun `given an unlinked edit when consent finishes before its local commit then the edit is not backfilled`() = runTest {
+    fun `given an unlinked edit when linking then the first exchange authors the edit`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val harness = AppleSyncTestHarness(dispatcher)
         val gate = CompletableDeferred<Unit>()
         try {
-            val raw = GatedPolicyStore(SqlLocalTargetPolicyStore(harness.database, dispatcher), beforeReplace = { gate.await() })
+            val raw = GatedPolicyStore(harness.sqlPolicy, beforeReplace = { gate.await() })
             val local = SyncTargetPolicyStore(raw, harness.sync)
             val saving = async { local.replace(0, testPolicy("pre-link.example")) }
             runCurrent()
@@ -93,7 +96,11 @@ class AppleSyncQueueTest {
             assertEquals(0, harness.account.calls)
             harness.sync.onForeground()
             advanceUntilIdle()
-            assertTrue(harness.snapshot().acceptedBundles.isEmpty())
+            val operations = harness.snapshot().acceptedBundles.values.map { it.operation }.sortedBy { it.authorSequence }
+            assertEquals(2, operations.size)
+            assertIs<SyncOperationPayload.DomainPresent>(operations.last().payload)
+            assertEquals(0, intentRowCount(harness))
+            assertEquals(SyncStatus.COMPLETED, harness.sync.state.value.status)
         } finally {
             gate.complete(Unit)
             advanceUntilIdle()
@@ -102,14 +109,14 @@ class AppleSyncQueueTest {
     }
 
     @Test
-    fun `given a captured old workspace when removal and relinking precede handoff then the new workspace receives no old edit`() = runTest {
+    fun `given a save committed before removal when relinking then the still-local website is authored to the new workspace`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val harness = AppleSyncTestHarness(dispatcher)
         val gate = CompletableDeferred<Unit>()
         try {
             harness.establish()
             val oldWorkspace = harness.sync.captureWorkspace()
-            val raw = GatedPolicyStore(SqlLocalTargetPolicyStore(harness.database, dispatcher), afterReplace = { gate.await() })
+            val raw = GatedPolicyStore(harness.sqlPolicy, afterReplace = { gate.await() })
             val local = SyncTargetPolicyStore(raw, harness.sync)
             val saving = async { local.replace(0, testPolicy("old-workspace.example")) }
             runCurrent()
@@ -122,8 +129,15 @@ class AppleSyncQueueTest {
             gate.complete(Unit)
             advanceUntilIdle()
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(saving.await())
-            assertTrue(harness.database.syncReplicaQueries.selectAcceptedBundles().executeAsList().isEmpty())
-            assertTrue(harness.mailbox.saved.isEmpty())
+            val workspace = assertIs<BootstrapStoreResult.Success<EstablishedWorkspace?>>(harness.sync.captureWorkspace()).value
+            val snapshot = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
+                harness.replica.read(checkNotNull(workspace).context),
+            ).value
+            val operations = snapshot.acceptedBundles.values.map { it.operation }.sortedBy { it.authorSequence }
+            assertEquals(2, operations.size)
+            assertIs<SyncOperationPayload.DomainPresent>(operations.last().payload)
+            assertEquals(0, intentRowCount(harness))
+            assertTrue(harness.mailbox.saved.isNotEmpty())
             assertEquals(SyncStatus.COMPLETED, harness.sync.state.value.status)
         } finally {
             gate.complete(Unit)
@@ -143,11 +157,12 @@ private class GatedPolicyStore(
 
     override suspend fun replace(
         expectedRevision: Long,
-        policy: TargetPolicy
+        policy: TargetPolicy,
+        syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         replacements += 1
         beforeReplace()
-        val result = local.replace(expectedRevision, policy)
+        val result = local.replace(expectedRevision, policy, syncWrite)
         afterReplace()
         return result
     }

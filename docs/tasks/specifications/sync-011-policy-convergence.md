@@ -77,7 +77,10 @@ a remote change never removes a website that only this device holds; the
 person reads, next to the existing action, that linking combines the websites
 saved on their devices while app choices stay on each device; the seven
 statuses keep their meaning and no sentence claims receipt; and the local
-databases hold only what the accepted format already carries.
+databases hold only what the accepted format already carries. On a second
+device, the website step and the summary reflect fetched websites: joining,
+fetching, and skipping manual entry shows the true saved-website count
+instead of the empty state.
 
 ## Boundaries
 
@@ -182,6 +185,53 @@ databases hold only what the accepted format already carries.
   and in the Session iCloud row when unlinked, "Linking combines the websites
   saved on your devices. App choices stay on each device." No extra
   confirmation, no time or delivery claim.
+- Onboarding counts derive from the real policy (`D9`). The website step
+  and the summary read the policy store on UI-triggered step entry and after
+  own saves (`advance()` stays pure, the zero-reads test stands); the
+  focus-clearing effect is keyed to `browser.lastReceipt`, which `accept`
+  advances only for the matching pending submission id, never to the count,
+  so a remote arrival never dismisses the keyboard; onboarding takes
+  no live sync subscription. The Continue/Not-now switch and the summary
+  body and count copy consume the derived count unchanged.
+- The merge overlays unauthored intent (`D10`). Inside the merge
+  transaction the reconciler re-reads the intent rows under the gate: a
+  pending `PresentDomain` forces inclusion and a pending `RemoveDomain`
+  forces exclusion of the projection-derived set, so a save recorded
+  between authoring and apply is never transiently reverted. The base still
+  advances to the applied projection. Deferring the apply while intents pend
+  is rejected: it would delay all convergence for the same race.
+- Reducer capacity is action-required only at the cap (`D5` correction).
+  The reason is set iff the projection carries `DOMAIN_CAPACITY` outcomes
+  and the synchronized set holds 2,048 domains; below the cap the reason
+  clears, because a distinct still-later presence can use the freed capacity
+  and nothing is blocked. Historical outcomes below the cap are not
+  surfaced. The local 1,024 refusal and its tested exit are unchanged.
+  `AppleSyncState` carries the reason; `SyncStatus.message()` becomes
+  reason-aware: the reason, then the instruction (remove websites on any
+  device, choose Sync now, compare Paused items on both devices and add
+  anything missing again) while `summary()` stays short; the onboarding
+  notice and the accessible announcements inherit it through the same
+  `message()` path. A domain missing from a below-cap set because of a
+  historical capacity outcome surfaces no reason; that rare state is an
+  accepted limit.
+- The no-base pass authors domain intents after consume (`D11`). On the
+  first-link and post-removal pass the pass learns the remote order first,
+  then authors local extras with a durable clock already past every accepted
+  remote HLC, so extras sort last with the greatest total-order key and win
+  regardless of skew; the existing
+  second leg publishes them in the same pass. Seeding skips domains already
+  pending as intents, so a retried no-base pass authors no duplicate
+  presence. Later passes keep pre-consume
+  authoring: concurrent ordering there is genuine last-writer-wins with no
+  union promise.
+- Presentation: `D8` in Session is a caption inside the expanded iCloud
+  options when unlinked, next to the existing action, with the full
+  sentence; in onboarding the websites clause is woven into the existing
+  iCloud content with no new panel and no repeat of the local-app-choices
+  point. Signal re-reads compare policy content (domains plus group name,
+  not the revision): equal content emits nothing and the reconciler skips
+  the store write and the signal, a different result updates the snapshot
+  without an `isLoading` flash; editor reconcile rules are unchanged.
 - Write surface: `shared/src/commonMain/**/feature/sync/bootstrap/**` (the
   exchange returning the projection, the reconciler, the intent drainer
   replacing `AppleSyncAuthoring`'s channel, removal clearing intents and
@@ -202,7 +252,10 @@ databases hold only what the accepted format already carries.
   `features/application-group.md`), `docs/security/apple-mvp-threat-model.md`
   (`SYNC-011` added to the `A-04`, `T-02`, `T-03`, and `T-14` owner rows;
   `A-03` and `T-10` unchanged), the cross-device synchronization wiki
-  topic, and the wiki log.
+  topic, and the wiki log. It also covers `feature/onboarding/OnboardingUiState.kt`
+  and its preview provider (derived count, receipt-keyed focus), the
+  reason-aware status path (`AppleSyncState`, the `SyncBootstrapSection.kt`
+  message/summary wiring), and rare-state preview samples.
 - Non-goal: session start, early end, and expiry convergence (`SYNC-012`);
   exact refetch of a rejected bundle; raising the local domain cap; a group
   removal control; a per-domain capacity surface beyond the status;
@@ -241,7 +294,8 @@ databases hold only what the accepted format already carries.
   custom name on both devices; applies nothing, keeps the last valid policy
   and base, and reports action required with the right reason when the
   merged set would exceed 1,024, when the projection carries reducer
-  capacity outcomes, or when a base or intent row is corrupt, and applies
+  capacity outcomes while the synchronized set holds 2,048 domains,
+  or when a base or intent row is corrupt, and applies
   again once the set is back under the limit; keeps the base unchanged on
   any refused or failed apply; retries once on a revision conflict; yields
   the existing conflict outcome to a user save that loses the race without
@@ -261,6 +315,19 @@ databases hold only what the accepted format already carries.
   assert convergence instead of their current "remain device-local" and
   "not connected yet" sentences; the threat-model owner rows are updated in
   the same pull request.
+
+- `AC-07` — With the policy store pre-populated by a fetch, entering the
+  website step shows the fetched count, skipping manual entry keeps it, and
+  the summary shows the matching saved-website count with the non-empty
+  body; a store change without an own save never changes
+  `browser.lastReceipt`. The test drives the holder plus the browser,
+  mutates the fake store without submitting, and asserts `lastReceipt`
+  unchanged; the `LaunchedEffect` keys on it. The amendments also extend `AC-04` (overlay no-flicker cases
+  between passes, the skewed-clock first link, the `D5` at-cap
+  set/cleared transitions, historical-outcomes-below-cap silence), `AC-05`
+  (the reason in expanded options, the onboarding notice, and
+  announcements; refresh preservation), and `AC-06` (rare-state previews
+  labeled design-review-only; the physical screenshot list).
 
 ## Verification
 
@@ -335,7 +402,7 @@ databases hold only what the accepted format already carries.
   operation arriving late yields a local state different from the
   projection, which ADR 0006 forbids).
 - `D2` decided (`user-confirmed`, 2026-09-10): domains authored before
-  publish, consume, the group name decided after consume and published by a
+  publish (except no-base passes, `D11`), consume, the group name decided after consume and published by a
   second leg, apply last; raw store behind the shared write gate held
   briefly; no replica writes. Alternative: apply inside the writer's
   acceptance transaction, which couples `feature/sync/domain` to the targets
@@ -383,6 +450,25 @@ databases hold only what the accepted format already carries.
   devices. App choices stay on each device.", shown in the onboarding iCloud
   step and the unlinked Session iCloud row; no confirmation. Alternative:
   the `DESIGN.md` rule only, which the person never reads.
+- `D9` decided (`user-confirmed`, 2026-09-10, maintainer review):
+  step-entry and post-save policy reads feed the onboarding count; the
+  focus effect keys on `browser.lastReceipt`; no onboarding sync
+  subscription.
+  Alternative: a live subscription to the `D3` signal, which risks keyboard
+  dismissal mid-typing for no required gain.
+- `D10` decided (`user-confirmed`, 2026-09-10, maintainer review):
+  pending-intent overlay during apply as above; the base advances to the
+  applied projection. Alternative: deferring the apply, rejected above.
+- `D5` corrected (`user-confirmed`, 2026-09-10, maintainer review):
+  reducer-capacity reason iff `DOMAIN_CAPACITY` outcomes persist while the
+  synchronized set is at 2,048; clears below the cap; copy promises only
+  remove, Sync now, re-add-missing. Alternative: persistent
+  action-required for any historical outcome, which has no terminating
+  recovery inside format-1.
+- `D11` decided (`user-confirmed`, 2026-09-10, maintainer review): the
+  no-base pass authors domain intents after consume and publishes via the
+  second leg. Alternative: pre-consume authoring plus post-consume
+  re-authoring, rejected as two operations per extra.
 - Physical gate: the maintainer's Mac and iPhone on one account, both linked
   at the start; workspace removal, airplane mode, and any picker selection
   are attended steps agreed for the concrete run; reserved synthetic domains

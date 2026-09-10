@@ -149,6 +149,15 @@ internal class OnboardingUiState(
         }
     }
 
+    fun refreshSavedWebsites() {
+        scope.launch {
+            when (val read = policyStore.read()) {
+                is LocalPolicyResult.Success -> savedWebsites = read.value.policy.domains.size
+                is LocalPolicyResult.Failure -> Unit
+            }
+        }
+    }
+
     fun finish(onFinished: () -> Unit) {
         if (finishing) {
             return
@@ -177,6 +186,7 @@ internal class OnboardingUiState(
         }
         val ready = submission as WebsiteBatchSubmission.Ready
         if (ready.addedCount == 0) {
+            savedWebsites = snapshot.policy.domains.size
             return ready.toReceipt(submissionId, saved = true)
         }
         val policy = when (
@@ -188,9 +198,9 @@ internal class OnboardingUiState(
             is TargetPolicyValidationResult.Success -> validated.policy
             is TargetPolicyValidationResult.Failure -> return WebsiteBatchReceipt(submissionId, saved = false)
         }
-        return when (policyStore.replace(snapshot.revision, policy)) {
+        return when (val replaced = policyStore.replace(snapshot.revision, policy)) {
             is LocalPolicyResult.Success -> {
-                savedWebsites += ready.addedCount
+                savedWebsites = replaced.value.policy.domains.size
                 ready.toReceipt(submissionId, saved = true)
             }
 

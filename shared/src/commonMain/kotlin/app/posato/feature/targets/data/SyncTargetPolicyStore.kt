@@ -1,19 +1,27 @@
 package app.posato.feature.targets.data
 
 import app.posato.feature.sync.bootstrap.AppleSync
+import app.posato.feature.sync.bootstrap.BootstrapStoreResult
+import app.posato.feature.sync.bootstrap.EstablishedWorkspace
+import app.posato.feature.targets.domain.PolicySyncWrite
+import app.posato.feature.targets.domain.StoredPolicyIntent
 import app.posato.feature.targets.domain.TargetPolicy
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 internal class SyncTargetPolicyStore(
     private val local: LocalTargetPolicyStore,
     private val sync: AppleSync,
 ) : LocalTargetPolicyStore {
-    private val saves = Mutex()
+    override suspend fun <T> withWriteGate(block: suspend () -> T): T {
+        return local.withWriteGate(block)
+    }
+
+    override val policyChanges: Flow<Unit>
+        get() = local.policyChanges
 
     override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
         return local.read()
@@ -21,22 +29,56 @@ internal class SyncTargetPolicyStore(
 
     override suspend fun replace(
         expectedRevision: Long,
-        policy: TargetPolicy
+        policy: TargetPolicy,
+        syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
-        return saves.withLock {
+        // The decorator always derives its own write from the before/after diff; a caller
+        // write targets the raw store and never reaches this decorator.
+        return local.withWriteGate {
             val before = when (val read = local.read()) {
                 is LocalPolicyResult.Success -> read.value
-                is LocalPolicyResult.Failure -> return@withLock read
+                is LocalPolicyResult.Failure -> return@withWriteGate read
             }
             val workspace = sync.captureWorkspace()
             currentCoroutineContext().ensureActive()
             withContext(NonCancellable) {
-                val result = local.replace(expectedRevision, policy)
-                if (result is LocalPolicyResult.Success) {
-                    sync.enqueueDomainChanges(workspace, before.policy, result.value.policy)
+                val write = recordedWrite(workspace, before.policy, policy)
+                val result = local.replace(expectedRevision, policy, write)
+                if (result is LocalPolicyResult.Success && (write != null || workspace is BootstrapStoreResult.Failure)) {
+                    sync.syncNow()
                 }
                 result
             }
         }
+    }
+
+    private fun recordedWrite(
+        workspace: BootstrapStoreResult<EstablishedWorkspace?>,
+        before: TargetPolicy,
+        after: TargetPolicy,
+    ): PolicySyncWrite? {
+        val established = when (workspace) {
+            is BootstrapStoreResult.Success -> workspace.value ?: return null
+            is BootstrapStoreResult.Failure -> return null
+        }
+        val intents = diffIntents(before, after)
+        if (intents.isEmpty()) {
+            return null
+        }
+        return PolicySyncWrite(established.context.workspaceId.value.copyBytes(), intents)
+    }
+
+    private fun diffIntents(
+        before: TargetPolicy,
+        after: TargetPolicy,
+    ): List<StoredPolicyIntent> {
+        val removed = before.domains - after.domains.toSet()
+        val added = after.domains - before.domains.toSet()
+        val renamed = after.applicationPolicyName
+            ?.takeIf { name -> name != before.applicationPolicyName }
+            ?.let { name -> StoredPolicyIntent.PresentApplicationPolicy(name) }
+        return removed.map(StoredPolicyIntent::RemoveDomain) +
+            added.map(StoredPolicyIntent::PresentDomain) +
+            listOfNotNull(renamed)
     }
 }

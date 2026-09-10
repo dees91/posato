@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.transform
@@ -71,7 +72,10 @@ internal class SessionViewModel(
             }
         }
     }
-    private val targetsReadLifecycle: Flow<Unit> = targetsRefreshRequests.onStart { emit(Unit) }.transform {
+    private val targetsReadLifecycle: Flow<Unit> = merge(
+        targetsRefreshRequests.onStart { emit(Unit) },
+        policyStore.policyChanges,
+    ).transform {
         emit(Unit)
         targetsState.update { loadSessionTargets(policyStore, applicationMappings) }
     }

@@ -7,6 +7,7 @@ import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
+import app.posato.feature.targets.domain.PolicySyncBase
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancelAndJoin
@@ -52,7 +53,7 @@ class AppleSyncPersistenceTest {
     }
 
     @Test
-    fun `given reordered and duplicate remote bundles when fetched then only the replica changes`() = runTest {
+    fun `given reordered and duplicate remote bundles when fetched then the replica and the local policy both change`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val source = AppleSyncTestHarness(dispatcher, "sync-source.db")
         val destination = AppleSyncTestHarness(dispatcher, "sync-destination.db")
@@ -72,8 +73,11 @@ class AppleSyncPersistenceTest {
             assertEquals(source.snapshot().acceptedBundles, destination.snapshot().acceptedBundles)
             assertEquals(0, destination.snapshot().stagedBundles.size)
             assertContentEquals(byteArrayOf(4), destination.snapshot().transportProgress?.copyBytes())
-            val local = SqlLocalTargetPolicyStore(destination.database, dispatcher).read()
-            assertTrue(assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local).value.policy.domains.isEmpty())
+            val applied = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(destination.sqlPolicy.read()).value
+            assertEquals(listOf("one.example"), applied.policy.domains.map { it.canonicalValue })
+            val base = assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(destination.sqlPolicy.readBase()).value
+            assertEquals(listOf("one.example"), checkNotNull(base).policy.domains.map { it.canonicalValue })
+            assertEquals(SyncStatus.COMPLETED, destination.sync.state.value.status)
         } finally {
             source.close()
             destination.close()
@@ -88,12 +92,11 @@ class AppleSyncPersistenceTest {
             harness.establish()
             harness.sync.onForeground()
             advanceUntilIdle()
-            val local = SqlLocalTargetPolicyStore(harness.database, dispatcher)
+            val local = harness.sqlPolicy
             val before = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.read()).value
             val policy = testPolicy("kept.example")
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.replace(before.revision, policy))
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(harness.syncPolicy.replace(before.revision, policy))
             harness.mailbox.saveResult = BundleSaveResult.Retryable
-            harness.recordDomainChanges(testPolicy(), policy)
             advanceUntilIdle()
             val replicaBefore = harness.snapshot()
             harness.keys.scriptDelete(KeyItemDeleteResult.UnknownOutcome)
@@ -120,7 +123,7 @@ class AppleSyncPersistenceTest {
         try {
             harness.establish()
             harness.keys.scriptRead(KeyItemReadResult.IntegrityFailure)
-            val local = SyncTargetPolicyStore(SqlLocalTargetPolicyStore(harness.database, dispatcher), harness.sync)
+            val local = harness.syncPolicy
             val initial = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.read()).value
             val saved = local.replace(initial.revision, testPolicy("kept.example"))
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(saved)

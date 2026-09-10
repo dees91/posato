@@ -6,15 +6,19 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -23,7 +27,9 @@ import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoSpace
+import app.posato.core.designsystem.PosatoTheme
 import app.posato.feature.sync.bootstrap.AppleSyncState
+import app.posato.feature.sync.bootstrap.SyncAttentionReason
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.action_check_again
@@ -32,6 +38,7 @@ import app.posato.generated.resources.action_sync_with_icloud
 import app.posato.generated.resources.onboarding_summary_sync_on
 import app.posato.generated.resources.session_icloud_attention
 import app.posato.generated.resources.session_icloud_completed
+import app.posato.generated.resources.session_icloud_linking
 import app.posato.generated.resources.session_icloud_local
 import app.posato.generated.resources.session_icloud_pending
 import app.posato.generated.resources.session_icloud_retryable
@@ -41,6 +48,8 @@ import app.posato.generated.resources.session_icloud_waiting
 import app.posato.generated.resources.setup_hide_options
 import app.posato.generated.resources.setup_show_options
 import app.posato.generated.resources.sync_action_required
+import app.posato.generated.resources.sync_action_required_local_capacity
+import app.posato.generated.resources.sync_action_required_shared_capacity
 import app.posato.generated.resources.sync_cancel_removal
 import app.posato.generated.resources.sync_checking_key
 import app.posato.generated.resources.sync_completed
@@ -118,11 +127,16 @@ private fun IcloudOptions(
     onRemove: () -> Unit,
 ) {
     PosatoCaption(
-        stringResource(if (checking) Res.string.sync_checking_key else snapshot.status.message(snapshot.linked)),
+        stringResource(
+            if (checking) Res.string.sync_checking_key else snapshot.status.message(snapshot.linked, snapshot.reason),
+        ),
         modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
     )
     if (snapshot.status == SyncStatus.WAITING_FOR_KEY) {
         PosatoCaption(stringResource(Res.string.sync_waiting_explanation))
+    }
+    if (!snapshot.linked) {
+        PosatoCaption(stringResource(Res.string.session_icloud_linking))
     }
     PosatoActionRow {
         PosatoButton(onClick = onSync, style = PosatoButtonStyle.Secondary, enabled = !running) {
@@ -144,15 +158,42 @@ private fun IcloudOptions(
     }
 }
 
-internal fun SyncStatus.message(linked: Boolean): StringResource {
+internal fun SyncStatus.message(
+    linked: Boolean,
+    reason: SyncAttentionReason? = null,
+): StringResource {
     return when (this) {
-        SyncStatus.LOCAL_ONLY -> Res.string.sync_icloud_description
-        SyncStatus.PENDING -> Res.string.sync_pending
-        SyncStatus.SYNCING -> Res.string.sync_icloud_running
-        SyncStatus.COMPLETED -> Res.string.sync_completed
-        SyncStatus.RETRYABLE -> if (linked) Res.string.sync_retryable else Res.string.sync_icloud_retryable
-        SyncStatus.WAITING_FOR_KEY -> Res.string.sync_icloud_waiting_for_key
-        SyncStatus.ACTION_REQUIRED -> Res.string.sync_action_required
+        SyncStatus.LOCAL_ONLY -> {
+            Res.string.sync_icloud_description
+        }
+
+        SyncStatus.PENDING -> {
+            Res.string.sync_pending
+        }
+
+        SyncStatus.SYNCING -> {
+            Res.string.sync_icloud_running
+        }
+
+        SyncStatus.COMPLETED -> {
+            Res.string.sync_completed
+        }
+
+        SyncStatus.RETRYABLE -> {
+            if (linked) Res.string.sync_retryable else Res.string.sync_icloud_retryable
+        }
+
+        SyncStatus.WAITING_FOR_KEY -> {
+            Res.string.sync_icloud_waiting_for_key
+        }
+
+        SyncStatus.ACTION_REQUIRED -> {
+            when (reason) {
+                SyncAttentionReason.LOCAL_CAPACITY -> Res.string.sync_action_required_local_capacity
+                SyncAttentionReason.SHARED_CAPACITY -> Res.string.sync_action_required_shared_capacity
+                null -> Res.string.sync_action_required
+            }
+        }
     }
 }
 
@@ -166,4 +207,27 @@ internal fun SyncStatus.summary(linked: Boolean): StringResource {
         SyncStatus.WAITING_FOR_KEY -> Res.string.session_icloud_waiting
         SyncStatus.ACTION_REQUIRED -> Res.string.session_icloud_attention
     }
+}
+
+@Preview(name = "Design review only: capacity reasons", widthDp = 390, heightDp = 844)
+@Composable
+private fun CapacityReasonsDesignReviewPreview() {
+    PosatoTheme {
+        Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+            PosatoCaption("Normal text")
+            CapacityReasonSamples()
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 1.5f)) {
+                PosatoCaption("Large text")
+                CapacityReasonSamples()
+            }
+        }
+    }
+}
+
+@Composable
+private fun CapacityReasonSamples() {
+    PosatoCaption(stringResource(SyncStatus.ACTION_REQUIRED.message(true, SyncAttentionReason.LOCAL_CAPACITY)))
+    PosatoCaption(stringResource(SyncStatus.ACTION_REQUIRED.message(true, SyncAttentionReason.SHARED_CAPACITY)))
+    PosatoCaption(stringResource(Res.string.session_icloud_linking))
 }

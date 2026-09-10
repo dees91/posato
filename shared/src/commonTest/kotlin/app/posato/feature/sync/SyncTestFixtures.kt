@@ -60,13 +60,14 @@ internal fun testOperation(
 
 internal class FakeSyncCryptoProvider(
     private val signingPublicKey: PublicSigningKey = testPublicKey,
+    private val streamSeed: Int = 0,
 ) : SyncCryptoProvider {
     private var nextByte = 1
     internal var signingKeyCloseCount = 0
         private set
 
     override fun randomBytes(count: Int): ByteArray {
-        return ByteArray(count) { nextByte++.toByte() }
+        return ByteArray(count) { (nextByte++.xor(streamSeed) and 0xFF).toByte() }
     }
 
     override fun sha256(message: ByteArray): ByteArray {

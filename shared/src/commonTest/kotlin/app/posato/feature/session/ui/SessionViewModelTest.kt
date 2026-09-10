@@ -350,6 +350,34 @@ class SessionViewModelTest {
         assertEquals(FrozenStartSet(persistentListOf("stable.example"), null), store.frozenStartSet)
     }
 
+    @Test
+    fun `given a policy signal during setup when observed then targets refresh and the draft survives`() = runTest(dispatcher) {
+        val policy = policyStoreOf(listOf("old.example"))
+        val viewModel = SessionViewModel(
+            FakeLocalSessionStore(),
+            policy,
+            FakeSessionMappings(),
+            FakeSessionIdGenerator(),
+            FakeSessionClock(NOW),
+            FakeSessionTimeFormat(),
+            FakeEnforcementPort(),
+        )
+        backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
+        scheduler.runCurrent()
+        viewModel.setSetupVisible(true)
+        scheduler.runCurrent()
+
+        val refreshed = TargetPolicy.fromStoredValues(listOf("old.example", "new.example"), null)
+        policy.result = LocalPolicyResult.Success(
+            LocalTargetPolicyState(1, (refreshed as TargetPolicyValidationResult.Success).policy),
+        )
+        policy.changes.tryEmit(Unit)
+        scheduler.runCurrent()
+
+        assertTrue(viewModel.uiState.value.isSettingUp)
+        assertEquals(listOf("new.example", "old.example"), viewModel.uiState.value.displayDomains())
+    }
+
     private fun TestScope.collectedViewModel(
         store: FakeLocalSessionStore = FakeLocalSessionStore(),
         clock: FakeSessionClock = FakeSessionClock(NOW),

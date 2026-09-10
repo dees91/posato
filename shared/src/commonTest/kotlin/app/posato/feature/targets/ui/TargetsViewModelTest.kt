@@ -16,12 +16,15 @@ import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.ExactDomainPolicyLimits
+import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -268,6 +271,23 @@ class TargetsViewModelTest {
         scheduler.runCurrent()
 
         assertEquals(2, store.readCalls)
+    }
+
+    @Test
+    fun `given a policy signal when observed then the snapshot re-reads without loading`() = runTest(dispatcher) {
+        val store = FakeTargetPolicyStore(stateOf(0, domains = listOf("old.example")))
+        val viewModel = TargetsViewModel(store)
+        observe(viewModel)
+        scheduler.runCurrent()
+        assertEquals(1, store.readCalls)
+
+        store.replaceExternally(domains = listOf("old.example", "new.example"))
+        store.changes.tryEmit(Unit)
+        scheduler.runCurrent()
+
+        assertEquals(2, store.readCalls)
+        assertEquals(listOf("new.example", "old.example"), viewModel.uiState.value.domains)
+        assertFalse(viewModel.uiState.value.isLoading)
     }
 
     @Test
@@ -799,6 +819,13 @@ private fun TestScope.observe(viewModel: TargetsViewModel): Job {
 private class FakeTargetPolicyStore(
     private var state: LocalTargetPolicyState,
 ) : LocalTargetPolicyStore {
+    override suspend fun <T> withWriteGate(block: suspend () -> T): T {
+        return block()
+    }
+
+    val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    override val policyChanges: Flow<Unit>
+        get() = changes
     var readCalls: Int = 0
     var replaceCalls: Int = 0
     var nextReadFailure: LocalPolicyFailure? = null
@@ -833,6 +860,7 @@ private class FakeTargetPolicyStore(
     override suspend fun replace(
         expectedRevision: Long,
         policy: TargetPolicy,
+        syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         replaceCalls++
         if (cancelNextReplace) {
