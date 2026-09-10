@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
@@ -32,6 +33,8 @@ internal enum class SyncStatus {
 internal data class AppleSyncState(
     val status: SyncStatus = SyncStatus.LOCAL_ONLY,
     val linked: Boolean = false,
+    val joinPending: Boolean = false,
+    val checkingJoin: Boolean = false,
 )
 
 internal class AppleSync(
@@ -51,10 +54,11 @@ internal class AppleSync(
     private val exchange = AppleMailboxExchange(mailbox, crypto)
     private val removal = AppleWorkspaceRemoval(mailbox, keys, store)
     private val mutableState = MutableStateFlow(AppleSyncState())
+    private val joinFlight = Mutex()
     private val worker = scope.launch(start = CoroutineStart.LAZY) {
         for (ignored in opportunities) {
             guarded {
-                refreshLinked()
+                mutableState.refreshLinked(coordinator)
                 if (authoring.drain()) runExchange()
             }
         }
@@ -63,20 +67,79 @@ internal class AppleSync(
 
     suspend fun syncWithIcloud() {
         scope.async {
-            guarded {
-                val result = coordinator.bootstrap()
-                publish(result.toSyncStatus())
-                refreshLinked()
-                if (result is BootstrapResult.Ready) syncNow()
+            if (!joinFlight.tryLock()) return@async
+            try {
+                guarded {
+                    if (coordinator.joins.hasPending()) {
+                        continueJoin()
+                    } else {
+                        val result = coordinator.bootstrap()
+                        publish(result.toSyncStatus())
+                        mutableState.refreshLinked(coordinator)
+                        if (result is BootstrapResult.Ready) syncNow()
+                    }
+                }
+            } finally {
+                joinFlight.unlock()
             }
         }.await()
     }
 
     suspend fun onForeground() {
         withContext(backgroundDispatcher) {
-            val linked = coordinator.establishedContext() != null
-            mutableState.update { it.copy(linked = linked) }
-            if (linked) syncNow()
+            if (!joinFlight.tryLock()) return@withContext
+            try {
+                AppleBootstrap.flight.withLock {
+                    if (coordinator.joins.hasPending()) {
+                        continueJoin()
+                    } else {
+                        mutableState.refreshLinked(coordinator)
+                        if (state.value.linked) syncNow()
+                    }
+                }
+            } finally {
+                joinFlight.unlock()
+            }
+        }
+    }
+
+    private suspend fun continueJoin() {
+        mutableState.update { it.copy(checkingJoin = true) }
+        try {
+            val result = coordinator.joins.recheck()
+            mutableState.refreshLinked(coordinator)
+            when (result) {
+                JoinCheckResult.UNCHANGED -> {
+                    return
+                }
+
+                JoinCheckResult.WAITING -> {
+                    publish(SyncStatus.WAITING_FOR_KEY)
+                }
+
+                JoinCheckResult.READY -> {
+                    publish(SyncStatus.SYNCING)
+                    syncNow()
+                }
+
+                JoinCheckResult.LOCAL_ONLY -> {
+                    publish(SyncStatus.LOCAL_ONLY)
+                }
+
+                JoinCheckResult.ACTION_REQUIRED -> {
+                    publish(SyncStatus.ACTION_REQUIRED)
+                }
+
+                JoinCheckResult.RETRYABLE -> {
+                    publish(SyncStatus.RETRYABLE)
+                }
+
+                JoinCheckResult.STATE_CHANGED -> {
+                    if (state.value.linked) syncNow()
+                }
+            }
+        } finally {
+            mutableState.update { it.copy(checkingJoin = false) }
         }
     }
 
@@ -90,7 +153,7 @@ internal class AppleSync(
             guarded {
                 publish(SyncStatus.SYNCING)
                 val result = removal.remove(coordinator.checkEstablished(), writers::close)
-                refreshLinked()
+                mutableState.refreshLinked(coordinator)
                 publish(result)
             }
         }.await()
@@ -127,11 +190,6 @@ internal class AppleSync(
         publish(exchange.exchange(checkNotNull(check.workspace), active))
     }
 
-    private suspend fun refreshLinked() {
-        val linked = coordinator.establishedContext() != null
-        mutableState.update { it.copy(linked = linked) }
-    }
-
     private fun publish(status: SyncStatus) {
         mutableState.update { it.copy(status = status) }
     }
@@ -165,4 +223,10 @@ private fun BootstrapResult.toSyncStatus(): SyncStatus {
         BootstrapResult.Retryable -> SyncStatus.RETRYABLE
         BootstrapResult.ActionRequired -> SyncStatus.ACTION_REQUIRED
     }
+}
+
+private suspend fun MutableStateFlow<AppleSyncState>.refreshLinked(coordinator: BootstrapCoordinator) {
+    val linked = coordinator.establishedContext() != null
+    val joinPending = coordinator.joins.hasPending()
+    update { it.copy(linked = linked, joinPending = joinPending) }
 }

@@ -35,11 +35,15 @@ internal class BootstrapCoordinator(
     private val anchors = BootstrapAnchorPhase(cloud, keys, items, store)
     private val candidates = BootstrapCandidatePhase(keys, crypto, items)
     private val keyReads = BootstrapKeyReadPhase(items, store)
+    val joins = BootstrapJoinPhase(account, cloud, items, store, mutex)
 
-    suspend fun bootstrap(): BootstrapResult = mutex.withLock {
-        when (val gate = resolveUsableBinding()) {
-            is BindingGate.Stop -> gate.result
-            is BindingGate.Use -> bootstrapWithBinding(gate.binding)
+    suspend fun bootstrap(): BootstrapResult {
+        return mutex.withLock {
+            joins.clear()
+            when (val gate = resolveUsableBinding()) {
+                is BindingGate.Stop -> gate.result
+                is BindingGate.Use -> bootstrapWithBinding(gate.binding)
+            }
         }
     }
 
@@ -158,20 +162,34 @@ internal class BootstrapCoordinator(
             return zone.result
         }
         return when (val anchor = cloud.readAnchor(binding)) {
-            is AnchorReadResult.Found -> anchors.adoptAnchorItem(binding, anchor.anchor)
-
-            is AnchorReadResult.Missing -> when (val confirmed = candidates.createConfirmed(binding)) {
-                is CandidateCreation.Confirmed -> persistCandidateAndAnchor(binding, confirmed.candidate)
-                is CandidateCreation.Stop -> confirmed.result
+            is AnchorReadResult.Found -> {
+                val result = anchors.adoptAnchorItem(binding, anchor.anchor)
+                if (result == BootstrapResult.WaitingForWorkspaceKey) joins.remember(binding, anchor.anchor)
+                result
             }
 
-            is AnchorReadResult.Retryable -> BootstrapResult.Retryable
+            is AnchorReadResult.Missing -> {
+                when (val confirmed = candidates.createConfirmed(binding)) {
+                    is CandidateCreation.Confirmed -> persistCandidateAndAnchor(binding, confirmed.candidate)
+                    is CandidateCreation.Stop -> confirmed.result
+                }
+            }
 
-            is AnchorReadResult.UnknownOutcome -> BootstrapResult.Retryable
+            is AnchorReadResult.Retryable -> {
+                BootstrapResult.Retryable
+            }
 
-            is AnchorReadResult.IntegrityFailure -> BootstrapResult.ActionRequired
+            is AnchorReadResult.UnknownOutcome -> {
+                BootstrapResult.Retryable
+            }
 
-            is AnchorReadResult.AccountChanged -> BootstrapResult.ActionRequired
+            is AnchorReadResult.IntegrityFailure -> {
+                BootstrapResult.ActionRequired
+            }
+
+            is AnchorReadResult.AccountChanged -> {
+                BootstrapResult.ActionRequired
+            }
         }
     }
 

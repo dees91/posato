@@ -26,7 +26,7 @@ internal class OnboardingPreviewDataProvider : PreviewParameterProvider<Onboardi
         OnboardingPreviewState(
             "Waiting for key",
             initial.copy(step = OnboardingStep.ICLOUD),
-            sync = AppleSyncState(status = SyncStatus.WAITING_FOR_KEY),
+            sync = AppleSyncState(status = SyncStatus.WAITING_FOR_KEY, joinPending = true),
         ),
         OnboardingPreviewState(
             "Syncing",
@@ -84,6 +84,11 @@ internal class OnboardingPreviewDataProvider : PreviewParameterProvider<Onboardi
         ),
         OnboardingPreviewState("First website", initial.copy(step = OnboardingStep.WEBSITE)),
         OnboardingPreviewState("Website saved", initial.copy(step = OnboardingStep.WEBSITE, savedWebsites = 1)),
+        OnboardingPreviewState(
+            "Summary waiting for key",
+            initial.copy(step = OnboardingStep.SUMMARY, savedWebsites = 1),
+            sync = AppleSyncState(status = SyncStatus.WAITING_FOR_KEY, joinPending = true),
+        ),
         OnboardingPreviewState("Summary empty", initial.copy(step = OnboardingStep.SUMMARY)),
         OnboardingPreviewState("Summary needs access", initial.copy(step = OnboardingStep.SUMMARY, savedWebsites = 1)),
         OnboardingPreviewState(

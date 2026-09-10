@@ -46,6 +46,33 @@ The earlier direction's use of "eventual" describes the convergence model when
 delivery succeeds; it is not a promise that every change will eventually reach
 a sleeping, offline, misconfigured, or permanently unavailable device.
 
+## Accepted second-install continuation
+
+`user-confirmed` (2026-09-10): ONBOARDING-002 continues a consented fresh
+join through manual Check again and bounded foreground checks, retaining the
+account and workspace context in process memory. Missing keys permit reads
+only; verified adoption permits established-row persistence and normal
+exchange. A changed account or workspace cannot silently start a new setup.
+Waiting is not persisted in this iteration; restart returns to explicit
+consent, an accepted UX limitation rather than a completed recovery design.
+The [task brief](../../tasks/specifications/onboarding-002-second-install.md)
+defines the accepted scope; ADR 0007 records the dated consent amendment.
+`observed` in the ONBOARDING-002 implementation: the coordinator retains the
+fresh-join context, both retry routes use exact reads, and unit tests cover
+adoption, context loss, transient failures, and overlapping opportunities.
+`observed` (2026-09-10): fresh iPhone joining a Mac-created workspace and
+fresh Mac joining an iPhone-created workspace both completed through the
+onboarding UI. Each device retained its own application selection after
+relaunch; Mac pending/accepted counts stayed unchanged by selection. Keys were
+available immediately in both runs. Delayed-key retry and its announcement
+behavior retain unit/code evidence only; no physical waiting or spoken-delivery
+claim follows from these runs. The execution record holds categorical results.
+
+`source-claim`: the read-only PoC `WorkspaceBootstrap` and Apple sync report
+provide explicit-consent and exact-item lifecycle evidence, but use a different
+workspace/identity model. ONBOARDING-002 keeps the production ADR 0007 phases;
+no PoC source or machine-specific evidence is imported.
+
 ## Bounded PoC result
 
 `observed`: a KMP/Compose application synchronized a complete local-first state

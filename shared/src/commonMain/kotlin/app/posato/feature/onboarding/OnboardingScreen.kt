@@ -140,7 +140,7 @@ internal fun OnboardingScreen(
                 }
 
                 OnboardingStep.SUMMARY -> {
-                    SummaryStep(state, permissionPlatform, deviceNoun, syncSnapshot.linked, onFinish, layout)
+                    SummaryStep(state, permissionPlatform, deviceNoun, syncSnapshot, onFinish, layout)
                 }
             }
         }

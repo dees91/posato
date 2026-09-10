@@ -19,6 +19,11 @@ that seeds completion opens on Session without the flow.
 - `first-install-degraded` reports a retryable or action-required iCloud
   outcome without writing a bootstrap row.
 
+- `second-install-join` joins an existing workspace in both device orders;
+  delayed keys expose Continue primary and Check again secondary. See the
+  [sync recipe](./sync.md#second-install-join-and-delayed-key) for setup,
+  cleanup, foreground opportunities, and evidence limits.
+
 ## How to get to it (user POV)
 
 - Fresh install, reinstall, `launch --fresh`, or `reset` shows the flow; the
@@ -73,9 +78,11 @@ Preconditions:
 
 - The flow has no navigation chrome; do not wait for `Paused items` until
   Go to Session is pressed.
-- The iCloud press runs exactly one bootstrap attempt. Do not press Sync with
-  iCloud on a maintainer account without emptying the workspace first with
-  Remove workspace.
+- The first Sync with iCloud press gives consent for one setup attempt.
+  A fresh join waiting for a key may then continue on Check again or foreground
+  without creating resources. Restart forgets waiting and requires consent
+  again. For second-install verification, deliberately retain the established
+  peer's workspace; only creator/from-empty recipes clear it first.
 - Typing the website needs the desktop window frontmost; keep the Mac
   unlocked and avoid competing foreground automation during input.
 - The desktop shares the developer's real databases; restore them from the

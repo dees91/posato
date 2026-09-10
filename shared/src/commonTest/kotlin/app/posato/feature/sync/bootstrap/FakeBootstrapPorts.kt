@@ -174,6 +174,7 @@ internal class FakeBootstrapStore(
         private set
     var commitCalls = 0
         private set
+    var afterCommit: suspend () -> Unit = {}
 
     override suspend fun clearEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit> {
         val failure = writeFailure
@@ -208,6 +209,7 @@ internal class FakeBootstrapStore(
         val failure = writeFailure
         return if (failure == null) {
             state = BootstrapState.Established(workspace)
+            afterCommit()
             BootstrapStoreResult.Success(Unit)
         } else {
             BootstrapStoreResult.Failure(failure)

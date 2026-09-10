@@ -23,12 +23,13 @@ import kotlin.test.assertIs
 
 internal class AppleSyncTestHarness(
     dispatcher: CoroutineDispatcher,
-    name: String = "apple-sync-test.db"
+    name: String = "apple-sync-test.db",
+    bootstrapStore: BootstrapStore? = null,
 ) {
     private val testDatabase = createLocalPolicyTestDatabase(name)
     val driver = testDatabase.openDriver()
     val database = PosatoDatabase(driver)
-    val store = SqlBootstrapStore(database, dispatcher)
+    val store = bootstrapStore ?: SqlBootstrapStore(database, dispatcher)
     val replica = SqlSyncReplicaStore(database, dispatcher)
     val account = FakeBootstrapAccountPort()
     val cloud = FakeBootstrapCloudPort()
@@ -44,6 +45,19 @@ internal class AppleSyncTestHarness(
         crypto,
         dispatcher,
     )
+
+    suspend fun waitForKey() {
+        cloud.zoneExists = true
+        cloud.storedAnchor = WorkspaceAnchor(testContext.workspaceId, testContext.transportEpochId, testContext.keyEpochId)
+        sync.syncWithIcloud()
+    }
+
+    fun deliverJoinKey() {
+        val context = testContext
+        keys.items[BootstrapEncoding.identifierToAccountText(context.workspaceId.value)] = checkNotNull(
+            BootstrapEncoding.encodeKeyItem(context.workspaceId, context.transportEpochId, context.keyEpochId, ByteArray(32) { 7 }),
+        ).copyBytes()
+    }
 
     suspend fun establish() {
         val context = testContext

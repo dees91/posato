@@ -45,6 +45,7 @@ import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.session.ui.SessionScreen
 import app.posato.feature.sync.bootstrap.AppleSync
+import app.posato.feature.sync.ui.SyncAnnouncements
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
@@ -69,7 +70,7 @@ class PosatoApplication internal constructor(
     fun Content(
         modifier: Modifier = Modifier,
         highContrast: Boolean? = null,
-        onMacSetupAnnouncement: (String) -> Unit = {},
+        onAnnouncement: (String) -> Unit = {},
     ) {
         var setupDone by remember { mutableStateOf(false) }
         val syncState = rememberSyncBootstrapUiState(bootstrap)
@@ -84,6 +85,7 @@ class PosatoApplication internal constructor(
         val placement = platformNavigationPlacement()
         val deviceNoun = if (placement == PosatoNavigationPlacement.Sidebar) "Mac" else "iPhone"
         PosatoTheme(highContrast = highContrast) {
+            SyncAnnouncements(syncState, onAnnouncement)
             val completion = onboarding.completion
             if (completion == null) {
                 Box(
@@ -103,7 +105,7 @@ class PosatoApplication internal constructor(
             } else {
                 DestinationsHost(
                     syncState = syncState,
-                    onMacSetupAnnouncement = onMacSetupAnnouncement,
+                    onMacSetupAnnouncement = onAnnouncement,
                     macSetupState = helperSetup.takeIf { onboardingDependencies.permissionPlatform == OnboardingPermissionPlatform.MAC },
                     placement = placement,
                     modifier = modifier,
