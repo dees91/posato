@@ -47,7 +47,7 @@ internal class OnboardingUiState(
     private val setupStore: LocalSetupStore,
     private val policyStore: LocalTargetPolicyStore,
     private val applicationAccess: ApplicationAccessPort,
-    private val macHelper: MacHelperPort,
+    private val helperSetup: MacHelperSetupUiState,
     private val scope: CoroutineScope,
 ) {
     var step by mutableStateOf(OnboardingStep.PURPOSE)
@@ -62,8 +62,10 @@ internal class OnboardingUiState(
         private set
     var accessResult by mutableStateOf<ApplicationAccessResult?>(null)
         private set
-    var helperReadiness by mutableStateOf<MacHelperReadiness?>(null)
-        private set
+    val helperReadiness: MacHelperReadiness?
+        get() {
+            return helperSetup.readiness
+        }
     var savedWebsites by mutableIntStateOf(0)
         private set
 
@@ -73,7 +75,7 @@ internal class OnboardingUiState(
             accessResult = accessResult,
             helperReadiness = helperReadiness,
             savedWebsites = savedWebsites,
-            permissionRunning = permissionRunning,
+            permissionRunning = permissionRunning || helperSetup.activity != null,
             websiteSaving = websiteSaving,
         )
     }
@@ -115,32 +117,18 @@ internal class OnboardingUiState(
         if (permissionRunning) {
             return
         }
-        permissionRunning = true
-        scope.launch {
-            try {
-                helperReadiness = macHelper.enable()
-            } finally {
-                permissionRunning = false
-            }
-        }
+        helperSetup.enable()
     }
 
     fun recheckHelper() {
         if (permissionRunning) {
             return
         }
-        permissionRunning = true
-        scope.launch {
-            try {
-                helperReadiness = macHelper.recheck()
-            } finally {
-                permissionRunning = false
-            }
-        }
+        helperSetup.check()
     }
 
     fun openHelperSettings() {
-        macHelper.openApprovalSettings()
+        helperSetup.openSettings()
     }
 
     fun submitWebsites(

@@ -63,6 +63,11 @@ internal class OnboardingPreviewDataProvider : PreviewParameterProvider<Onboardi
             platform = OnboardingPermissionPlatform.MAC,
         ),
         OnboardingPreviewState(
+            "Mac not enabled",
+            initial.copy(step = OnboardingStep.PERMISSION, helperReadiness = MacHelperReadiness.NOT_ENABLED),
+            platform = OnboardingPermissionPlatform.MAC,
+        ),
+        OnboardingPreviewState(
             "Mac approval required",
             initial.copy(step = OnboardingStep.PERMISSION, helperReadiness = MacHelperReadiness.APPROVAL_REQUIRED),
             platform = OnboardingPermissionPlatform.MAC,

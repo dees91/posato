@@ -62,9 +62,45 @@ never invokes helper registration. The existing registration action is
 not promise a Session setup control. Administrator approval applies to website
 pauses, not every apps-only session.
 
-`open`: provide a reachable helper-setup action after onboarding is completed
-or deferred. The current summary reports the limitation without inventing a
-recovery route; the entry point remains a product-design follow-up.
+`user-confirmed` (2026-09-09): the Session screen gains a macOS-only
+**This Mac** section below Sync with iCloud, reachable after onboarding is
+completed or deferred. It reads nothing before a press: **Check Mac setup**
+runs one status read, then the section names the real state with one precise
+action (Enable on this Mac, Open System Settings plus Check again, or a
+positive enabled notice) and keeps a quiet Check again for every known state,
+because the person can disable the background item in System Settings at any
+time. A status read spawns the helper process, verifies its signature, and
+wakes the root daemon when the service is enabled, so the app never reads it
+at launch, foreground, or navigation; the first-install `pgrep` evidence keeps
+holding.
+
+`observed` (2026-09-09): `HelperResult.State.NotRegistered` now maps to the
+distinct `NOT_ENABLED` readiness instead of unavailable, and both `enable()`
+and `recheck()` verify the helper signature before touching the client. A
+transport failure leaves the shared helper client with a pending unknown
+request that rejects every later plain request, so Check again cannot recover
+that case; the unavailable notice says to quit and reopen Posato. The
+approval-required and not-enabled branches have unit evidence only on a Mac
+whose helper is already approved.
+
+`observed` (2026-09-10): Compose Desktop 1.10.3 does not handle `LiveRegion`
+in its accessibility change dispatcher. The Session setup route therefore
+sends progress and result announcements through the existing AppKit window
+bridge using `NSAccessibilityAnnouncementRequestedNotification`. A completed
+operation remains observable even when readiness is unchanged; the native
+host receives the localized result again. Secondary setup buttons preserve
+the Session primary-action hierarchy.
+
+`user-confirmed` (2026-09-10): the maintainer heard the VoiceOver announcements
+in the attended Mac check. This confirms the exercised route, not a complete
+assistive-technology audit.
+
+`observed` (2026-09-10): after feedback that the Session footer showed too many
+buttons, iCloud and This Mac use collapsed rows with short current-state
+summaries. Their controls appear only after expansion; opening a row never
+starts a helper check or exchange. Mac operation announcements stay mounted
+while its options are collapsed. Workspace removal still requires its existing
+confirmation.
 
 ## Accepted brand foundation
 

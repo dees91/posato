@@ -1456,3 +1456,21 @@ path. The Mac approval-required branch retains unit-only evidence on hardware
 where the helper is already approved.
 Review also identified the missing post-onboarding Mac helper-setup entry point;
 the brand topic records it as open, and UI copy no longer promises that route.
+
+## [2026-09-09] implementation | Session This Mac helper-setup route
+
+The Session screen gains a macOS-only This Mac section below Sync with iCloud
+that closes the deferred Mac setup route from the PR #44 review: Check Mac
+setup reads the helper state only on an explicit press, then the section names
+the real state with one action (Enable on this Mac, Open System Settings plus
+Check again, or the enabled notice) and keeps a quiet Check again for every
+known state. One helper readiness holder is shared by the first-install
+permission step and Session, a never-registered service maps to a distinct
+not-enabled readiness, and both enable and status reads verify the helper
+signature before touching the client. A lost helper connection cannot be
+rechecked in-process, so the unavailable notice says to quit and reopen
+Posato. Nothing reads the helper at launch, foreground, or navigation; the
+first-install pgrep evidence keeps holding. Secondary setup actions preserve
+the main Session action. Collapsed iCloud and This Mac rows keep controls out
+of the overview until requested, and the Mac host forwards progress and
+repeated results to AppKit accessibility announcements.

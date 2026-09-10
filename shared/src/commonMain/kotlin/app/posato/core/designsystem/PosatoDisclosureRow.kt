@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,11 +25,15 @@ internal fun PosatoDisclosureRow(
     modifier: Modifier = Modifier,
     supportingContent: (@Composable () -> Unit)? = null,
     leadingContent: (@Composable () -> Unit)? = null,
-    trailingContent: @Composable () -> Unit = { PosatoIcon(PosatoIcons.Chevron, null) }
+    trailingContent: @Composable () -> Unit = { PosatoIcon(PosatoIcons.Chevron, null) },
+    onClickLabel: String? = null,
 ) {
     Column(modifier = modifier) {
         Surface(
-            modifier = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control).semantics { role = Role.Button },
+            modifier = Modifier.fillMaxWidth().heightIn(min = PosatoSize.Control).semantics {
+                role = Role.Button
+                onClick(label = onClickLabel, action = null)
+            },
             onClick = onClick,
             color = MaterialTheme.colorScheme.surface,
             shape = MaterialTheme.shapes.small,

@@ -2,6 +2,7 @@ package app.posato.feature.onboarding
 
 public enum class MacHelperReadiness {
     UNAVAILABLE,
+    NOT_ENABLED,
     APPROVAL_REQUIRED,
     READY
 }
