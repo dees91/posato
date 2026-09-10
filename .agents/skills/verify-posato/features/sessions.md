@@ -122,6 +122,10 @@ Preconditions:
 - Restart returns to Session, so re-enter Paused items before website cleanup.
   A fresh database shows the first-install flow instead; run
   `first-install-skip.json` first (see [First install](./onboarding.md)).
+- iCloud and This Mac start collapsed whenever Session is recreated. Expand
+  the relevant row after returning from Paused items or relaunching. If an
+  expanded action is offscreen, use scenario `scrollTo` before tapping it;
+  `find` and `wait` do not scroll.
 - Only the enabled branch of This Mac is reachable on a Mac whose helper is
   already approved; not enabled, approval required, unavailable, and the
   lost-connection case stay unit-only. Each helper request has a 120-second

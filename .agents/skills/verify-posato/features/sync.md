@@ -34,6 +34,19 @@ same maintainer-owned iCloud account. `doctor` must confirm the signing identity
 profile, companion, development team, and device. The Simulator proves only
 local behavior and truthful degradation without its own iCloud account.
 
+The rows start collapsed when Session is recreated, including after a relaunch
+or a return from Paused items. Expand iCloud again before addressing its
+buttons. On smaller viewports, expansion can place the action below the visible
+area: use a scenario `scrollTo` before tapping; `waitFor` does not scroll.
+For the inactive Session on iOS, the verified scope is:
+
+```json
+{"action":"scrollTo","query":{"text":"Sync with iCloud","role":"button","within":{"text":"Room for what matters.","role":"group"}}}
+```
+
+Use the currently visible Session heading when its state differs, and replace
+the action label with **Sync now** or **Remove workspace** as appropriate.
+
 1. Build both applications; use `build -t device --driver`, then `install`.
    `quality` restages an ad-hoc Mac package, so run `build -t desktop` after it.
    Launch preserving existing state, never with `--fresh`.
