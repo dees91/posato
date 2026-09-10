@@ -106,7 +106,7 @@
 
 ## Blockers and accepted risks
 
-- Maintainer decisions `D1` to `D8` in the brief precede implementation.
+- `D1` to `D8` accepted by the maintainer on 2026-09-10; start at step 2.
 - iOS reapplies a converged change inside a session only on poll loss,
   retry, or relaunch; linking converges both devices to the union of their
   websites and re-adds a website a peer removed before this device linked.

@@ -322,8 +322,8 @@ databases hold only what the accepted format already carries.
 
 ## Decisions or blockers
 
-- `D1` reconciliation model, revised 2026-09-10 after the maintainer's
-  review: durable local intent rows plus the applied base, with the
+- `D1` decided (`user-confirmed`, 2026-09-10, after the maintainer's
+  review): durable local intent rows plus the applied base, with the
   first-link rule "linking adds this device's websites to the workspace and
   removes nothing local". The base alone cannot recover a lost removal
   (base empty, website added and authored, exchange fails, website removed,
@@ -334,7 +334,7 @@ databases hold only what the accepted format already carries.
   each accepted remote operation incrementally (an earlier-total-order
   operation arriving late yields a local state different from the
   projection, which ADR 0006 forbids).
-- `D2` placement and order, revised 2026-09-10: domains authored before
+- `D2` decided (`user-confirmed`, 2026-09-10): domains authored before
   publish, consume, the group name decided after consume and published by a
   second leg, apply last; raw store behind the shared write gate held
   briefly; no replica writes. Alternative: apply inside the writer's
@@ -342,11 +342,11 @@ databases hold only what the accepted format already carries.
   store and moves a `MODEL-001` compare-and-set into the sync core; ADR 0006
   step 10 does not require it, because "project visible state" there is the
   replica projection and the policy store keeps its own atomic apply.
-- `D3` screen refresh. Recommended: a change signal on the local policy
-  store, emitted by reconciler applies only, consumed by the two view
+- `D3` decided (`user-confirmed`, 2026-09-10): a change signal on the local
+  policy store, emitted by reconciler applies only, consumed by the two view
   models, no new copy. Alternative: no signal; the converged website appears
   only after navigation or a manual retry.
-- `D4` application group, revised 2026-09-10: learn the workspace's name
+- `D4` decided (`user-confirmed`, 2026-09-10): learn the workspace's name
   before deciding about the local one; a local default never overrides a
   name the projection holds; a local name is authored only when the
   projection holds none; a remote absence is applied while selections stay;
@@ -354,7 +354,7 @@ databases hold only what the accepted format already carries.
   Alternative: author the local name before consume, which lets a fresh
   device's "Applications" win over an existing custom name by the format's
   greatest-key rule.
-- `D5` capacity, accepted direction 2026-09-10: refuse without truncation,
+- `D5` decided (`user-confirmed`, 2026-09-10): refuse without truncation,
   keep the base, report action required with a reason-specific message
   under the existing category, "Sync needs attention. Your devices together
   hold more than 1,024 websites. Remove websites on either device, then
@@ -364,11 +364,12 @@ databases hold only what the accepted format already carries.
   Sync now."), both with a tested exit once the set is under the limit.
   Alternative: the generic "Check your iCloud account and workspace" copy,
   which is not truthful for this cause.
-- `D6` active session. Recommended: no deferral, current-set reapply as
-  `SESSION-003` accepted, with the record noting that iOS reapplies only on
+- `D6` decided (`user-confirmed`, 2026-09-10): no deferral, current-set
+  reapply as `SESSION-003` accepted, with the record noting that iOS
+  reapplies only on
   poll loss, retry, or relaunch. Alternative: hold converged changes while a
   session is active, adding state and a Mac prompt for no enforcement gain.
-- `D7` durable intent, revised 2026-09-10: intent rows written in the same
+- `D7` decided (`user-confirmed`, 2026-09-10): intent rows written in the same
   transaction as every linked save replace the volatile queue and its drop;
   the authoring half drains them in order, deletes them after acceptance,
   and leaves them in place on any failure. This supersedes the `SYNC-010`
@@ -376,7 +377,8 @@ databases hold only what the accepted format already carries.
   construction. Alternative: keep the queue and recover from the
   local-minus-base difference, which cannot tell a lost removal from a
   remote addition (the `D1` scenario).
-- `D8` pre-link explanation, from the maintainer's review: one sentence next
+- `D8` decided (`user-confirmed`, 2026-09-10, from the maintainer's
+  review): one sentence next
   to the existing action, "Linking combines the websites saved on your
   devices. App choices stay on each device.", shown in the onboarding iCloud
   step and the unlinked Session iCloud row; no confirmation. Alternative:
