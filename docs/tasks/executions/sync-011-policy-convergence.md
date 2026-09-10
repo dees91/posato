@@ -1,7 +1,7 @@
 # Execution: `SYNC-011`
 
 - **Brief:** [Policy convergence](../specifications/sync-011-policy-convergence.md)
-- **Status:** `active`; implementation and correction review complete, physical gate pending
+- **Status:** `done`; implementation, correction review, and the attended physical gate complete 2026-09-10; merge pending maintainer decision
 - **Review tier:** `high-risk`; PR correction: `Standard`
 - **Implementer:** implementing agent; PR correction by reviewing agent
 - **Reviewer:** independent plan and completed-change agents; PR #47 reviewers
@@ -89,10 +89,10 @@
 | Final aggregate quality and migration | Pass: 515 JVM / 513 shared iOS tests, Swift tests (110, six skipped), migration, host builds; `build/verification/pr47-rereview/quality-correction.log` |
 | Prior Simulator website/first-install fixtures | Pass: skip, add, edit, remove, full flow; fixtures unchanged |
 | Corrected native onboarding | Pass: `build/verification/runs/pr47-correction-mac-onboarding/` and `build/verification/runs/pr47-correction-sim-onboarding/`; saved row read back, screenshots inspected; Mac databases restored byte-identical |
-| Physical bidirectional website convergence | Pending: attended Mac + iPhone |
-| Physical group convergence, selections local | Pending: attended Mac + iPhone |
-| Physical pre-link backfill after removal/re-link | Pending: attended Mac + iPhone |
-| Physical offline retry | Pending: attended Mac + iPhone |
+| Physical bidirectional website convergence | Pass: `-11` Mac→iPhone (`find` plus shot `build/verification/runs/20260910-211738-1bdf/`), `-12` iPhone→Mac (canonical read-back of both), Session summary showed 2 with no active session (`build/verification/runs/20260910-211855-8020/`), removals converged both ways, accepted 5→7 then stable across 3 repeat exchanges |
+| Physical group convergence, selections local | Pass mirrored (both devices already held the default group, so the brief order was adapted with maintainer agreement): the fresh Mac join received `Applications` with no selections and its review showed `0 applications, On this Mac only`; the iPhone `1 application, On this iPhone only` was unchanged by every exchange; Mac `application_policy` stayed 1 |
+| Physical pre-link backfill after removal/re-link | Pass after one recovery cycle: the first re-link joined a stale zone silently (no `-13` after 3 syncs plus relaunch; a later zone-gone attention state confirmed the divergence); after both-local-only plus ~8 min settle, the Mac established newest, the iPhone joined, `-13` arrived (`build/verification/runs/20260910-220323-f8c3/`), and both kept their websites |
+| Physical offline retry | Pass: the airplane-mode add of `-14` stayed local with `Sync didn't finish. Choose Sync now to try again.` (`build/verification/runs/20260910-220831-013d/`); reconnect auto-completed the retry; Mac accepted rose 3→5 (fresh author registration plus `-14`), `-14` arrived exactly once canonically, repeats stayed stable; cleanup converged to empty on both sides and the Mac databases were restored byte-identical |
 
 ## Closeout and remaining limits
 
@@ -106,5 +106,14 @@
 - iOS reapply during a session remains limited to poll loss, retry, or relaunch.
   Workspace removal keeps local choices without tracking their remote origin.
 - Native onboarding used local-only fixtures; late remote arrival is covered by
-  gated common tests, not by those captures. Merge remains gated on the four
-  attended physical rows above.
+  gated common tests, not by those captures. The four attended physical rows
+  passed 2026-09-10; merge is the maintainer's decision.
+- Re-linking within minutes of removal plus establish can adopt a stale key
+  and report completed inside a ghost zone (observed once: no `-13` after 3
+  syncs plus relaunch; a zone-gone attention state after the peer's removal
+  confirmed the divergence). Settling (~8 min here) before re-linking healed
+  it. Proposed follow-up: a recipe settle rule and a diagnostics comparison
+  of the two workspaces.
+- The iPhone 13 mini was left linked to the newest workspace, empty, its
+  selection intact; the Mac databases were restored byte-identical after the
+  run (hashes verified against the pre-run backup).

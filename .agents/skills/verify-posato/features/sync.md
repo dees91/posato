@@ -47,6 +47,11 @@ The rows start collapsed when Session is recreated, including after a relaunch
 or a return from Paused items. Expand iCloud again before addressing its
 buttons. On smaller viewports, expansion can place the action below the visible
 area: use a scenario `scrollTo` before tapping; `waitFor` does not scroll.
+Expanded actions below the fold may be missing from the snapshot tree entirely
+until scrolled into view, so scroll to the action label with an unscoped
+`scrollTo` (a `within` scope can pin the wrong container) and snapshot-verify
+the expansion first, because tapping an already-expanded header collapses it
+again.
 For the inactive Session on iOS, the verified scope is:
 
 ```json

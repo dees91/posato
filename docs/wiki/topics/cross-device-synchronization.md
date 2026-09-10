@@ -479,6 +479,15 @@ not claim that every other device has received the update.
   edits, persistence after relaunch, removal of the test domains, and exchange
   pass; repeated fetch adds no accepted bundles. These physical runs do not
   inject network delays or replace the existing account-gate evidence.
+- `observed` (2026-09-10 physical gate, signed Mac plus iPhone 13 mini on one
+  account): exact domains converge in both directions including removals, the
+  accepted count stays stable across repeat exchanges, a fresh join receives
+  the group name while selections stay local, a pre-link website backfills at
+  the first exchange after linking, and an offline save reports retryable and
+  then completes on reconnect. Re-linking within minutes of removal plus
+  establish can adopt a stale key and report completed inside a ghost zone;
+  settling (~8 min here) before re-linking healed it. See the [execution
+  record](../../tasks/executions/sync-011-policy-convergence.md).
 
 ## Open production questions
 
