@@ -186,17 +186,21 @@ instead of the empty state.
   saved on your devices. App choices stay on each device." No extra
   confirmation, no time or delivery claim.
 - Onboarding counts derive from the real policy (`D9`). The website step
-  and the summary read the policy store on UI-triggered step entry and after
-  own saves (`advance()` stays pure, the zero-reads test stands); the
+  reads the policy store on UI-triggered entry and after own saves
+  (`advance()` stays pure, the zero-reads test stands). While visible, the
+  summary observes `policyChanges`: subscribe before the initial read, then
+  serialize refreshes in its step-owned coroutine and cancel on exit. Failed
+  reads retain the last valid count. The
   focus-clearing effect is keyed to `browser.lastReceipt`, which `accept`
   advances only for the matching pending submission id, never to the count,
-  so a remote arrival never dismisses the keyboard; onboarding takes
-  no live sync subscription. The Continue/Not-now switch and the summary
+  so a remote arrival never dismisses the keyboard. The website entry step
+  has no live subscription. The Continue/Not-now switch and the summary
   body and count copy consume the derived count unchanged.
 - The merge overlays unauthored intent (`D10`). Inside the merge
   transaction the reconciler re-reads the intent rows under the gate: a
   pending `PresentDomain` forces inclusion and a pending `RemoveDomain`
-  forces exclusion of the projection-derived set, so a save recorded
+  forces exclusion of the projection-derived set. Apply them in persisted
+  order, so the last intent for each domain wins and a save recorded
   between authoring and apply is never transiently reverted. The base still
   advances to the applied projection. Deferring the apply while intents pend
   is rejected: it would delay all convergence for the same race.
@@ -322,7 +326,10 @@ instead of the empty state.
   body; a store change without an own save never changes
   `browser.lastReceipt`. The test drives the holder plus the browser,
   mutates the fake store without submitting, and asserts `lastReceipt`
-  unchanged; the `LaunchedEffect` keys on it. The amendments also extend `AC-04` (overlay no-flicker cases
+  unchanged; the `LaunchedEffect` keys on it. While summary is visible, later
+  additions and removals refresh the count without advancing the step. Cover
+  a change during the initial read, read failure, and cancellation on exit.
+  The amendments also extend `AC-04` (overlay no-flicker cases
   between passes, the skewed-clock first link, the `D5` at-cap
   set/cleared transitions, historical-outcomes-below-cap silence), `AC-05`
   (the reason in expanded options, the onboarding notice, and
@@ -450,22 +457,22 @@ instead of the empty state.
   devices. App choices stay on each device.", shown in the onboarding iCloud
   step and the unlinked Session iCloud row; no confirmation. Alternative:
   the `DESIGN.md` rule only, which the person never reads.
-- `D9` decided (`inferred`, 2026-09-10, proposed by the implementer, pending maintainer acceptance):
-  step-entry and post-save policy reads feed the onboarding count; the
-  focus effect keys on `browser.lastReceipt`; no onboarding sync
-  subscription.
-  Alternative: a live subscription to the `D3` signal, which risks keyboard
-  dismissal mid-typing for no required gain.
-- `D10` decided (`inferred`, 2026-09-10, proposed by the implementer, pending maintainer acceptance):
+- `D9` decided (`user-confirmed`, 2026-09-10, maintainer acceptance of
+  the correction plan): website-entry and post-save reads feed its count;
+  the visible summary observes the existing `D3` signal with an initial read
+  and serialized refreshes, cancelled on exit. Failed reads keep the last
+  valid count. Focus stays keyed to `browser.lastReceipt`, with no new UI.
+  Alternative: entry-only summary reads, which miss a later completed fetch.
+- `D10` decided (`user-confirmed`, 2026-09-10, maintainer acceptance of the correction plan):
   pending-intent overlay during apply as above; the base advances to the
   applied projection. Alternative: deferring the apply, rejected above.
-- `D5` corrected (`inferred`, 2026-09-10, proposed by the implementer, pending maintainer acceptance):
+- `D5` corrected (`user-confirmed`, 2026-09-10, maintainer acceptance of the correction plan):
   reducer-capacity reason iff `DOMAIN_CAPACITY` outcomes persist while the
   synchronized set is at 2,048; clears below the cap; copy promises only
   remove, Sync now, re-add-missing. Alternative: persistent
   action-required for any historical outcome, which has no terminating
   recovery inside format-1.
-- `D11` decided (`inferred`, 2026-09-10, proposed by the implementer, pending maintainer acceptance): the
+- `D11` decided (`user-confirmed`, 2026-09-10, maintainer acceptance of the correction plan): the
   no-base pass authors domain intents after consume and publishes via the
   second leg. Alternative: pre-consume authoring plus post-consume
   re-authoring, rejected as two operations per extra.

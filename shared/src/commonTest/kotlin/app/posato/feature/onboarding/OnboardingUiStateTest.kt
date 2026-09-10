@@ -17,6 +17,8 @@ import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import app.posato.feature.targets.ui.WebsiteBatchReceipt
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -26,6 +28,79 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class OnboardingUiStateTest {
+    @Test
+    fun `given a summary read in flight when policy changes then the new count is read after the initial snapshot`() = runTest {
+        val store = FakeTargetPolicyStore()
+        val initialRead = CompletableDeferred<Unit>()
+        store.readGate = initialRead
+        val holder = OnboardingUiState(FakeSetupStore(), store, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
+        val observer = backgroundScope.launch { holder.refreshSavedWebsites(observeChanges = true) }
+        runCurrent()
+        assertEquals(1, store.reads)
+
+        val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(listOf("summary.example"), null)).policy
+        store.replace(0, policy)
+        store.policyChanges.emit(Unit)
+        runCurrent()
+        store.readGate = null
+        initialRead.complete(Unit)
+        runCurrent()
+
+        assertEquals(1, holder.savedWebsites)
+        assertEquals(2, store.reads)
+        observer.cancel()
+    }
+
+    @Test
+    fun `given an open summary when policy changes then additions and removals update the count without advancing`() = runTest {
+        val store = FakeTargetPolicyStore()
+        val holder = OnboardingUiState(FakeSetupStore(), store, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
+        repeat(5) { holder.advance() }
+        val observer = backgroundScope.launch { holder.refreshSavedWebsites(observeChanges = true) }
+        runCurrent()
+        assertEquals(0, holder.savedWebsites)
+
+        val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(listOf("summary.example"), null)).policy
+        store.replace(0, policy)
+        store.policyChanges.emit(Unit)
+        runCurrent()
+        assertEquals(1, holder.savedWebsites)
+        assertEquals(OnboardingStep.SUMMARY, holder.step)
+
+        store.replace(1, TargetPolicy.empty())
+        store.policyChanges.emit(Unit)
+        runCurrent()
+        assertEquals(0, holder.savedWebsites)
+        assertEquals(OnboardingStep.SUMMARY, holder.step)
+        observer.cancel()
+    }
+
+    @Test
+    fun `given a summary count when a read fails or observation stops then the last valid count stays`() = runTest {
+        val store = FakeTargetPolicyStore()
+        val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(listOf("summary.example"), null)).policy
+        store.replace(0, policy)
+        val holder = OnboardingUiState(FakeSetupStore(), store, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
+        val observer = backgroundScope.launch { holder.refreshSavedWebsites(observeChanges = true) }
+        runCurrent()
+        assertEquals(1, holder.savedWebsites)
+
+        store.readFailure = true
+        store.policyChanges.emit(Unit)
+        runCurrent()
+        assertEquals(1, holder.savedWebsites)
+
+        observer.cancel()
+        observer.join()
+        val readsAfterStop = store.reads
+        store.readFailure = false
+        store.replace(1, TargetPolicy.empty())
+        store.policyChanges.emit(Unit)
+        runCurrent()
+        assertEquals(readsAfterStop, store.reads)
+        assertEquals(1, holder.savedWebsites)
+    }
+
     @Test
     fun `given a fresh holder when advancing then the six steps run in order and stop at summary`() = runTest {
         val holder = OnboardingUiState(
@@ -372,6 +447,10 @@ private class FailingSetupStore : LocalSetupStore {
 }
 
 private class FakeTargetPolicyStore : LocalTargetPolicyStore {
+    override val policyChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    var readFailure = false
+    var readGate: CompletableDeferred<Unit>? = null
+
     override suspend fun <T> withWriteGate(block: suspend () -> T): T {
         return block()
     }
@@ -383,7 +462,13 @@ private class FakeTargetPolicyStore : LocalTargetPolicyStore {
 
     override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
         reads++
-        return LocalPolicyResult.Success(LocalTargetPolicyState(revision, policy))
+        val result = if (readFailure) {
+            LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
+        } else {
+            LocalPolicyResult.Success(LocalTargetPolicyState(revision, policy))
+        }
+        readGate?.await()
+        return result
     }
 
     override suspend fun replace(

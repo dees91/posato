@@ -462,6 +462,13 @@ not claim that every other device has received the update.
   unauthored diff while retaining local policy. Pre-link edits and failed
   authoring are not backfilled, and remote operations
   do not yet change visible policies or sessions (`SYNC-011` / `SYNC-012`).
+- `user-confirmed` (2026-09-10 correction): pending domain intent overlays
+  the projection in persisted order, so the last saved choice survives an
+  in-flight exchange. The onboarding summary follows policy changes while
+  visible, subscribing before its initial read and retaining its last valid
+  count on failure; website-entry focus remains tied to local submissions.
+  D10/D11 and the at-cap D5 recovery limit are accepted in the
+  [SYNC-011 brief](../../tasks/specifications/sync-011-policy-convergence.md).
 - `observed` (2026-09-10 correction): `SYNC-011` replaces the volatile queue
   with durable intent rows recorded in the save transaction, and connects
   remote operations to the visible exact-domain policy and application group

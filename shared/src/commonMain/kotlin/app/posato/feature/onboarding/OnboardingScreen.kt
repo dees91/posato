@@ -62,8 +62,10 @@ internal fun OnboardingScreen(
 ) {
     val browser = remember { TargetsBrowserState() }
     LaunchedEffect(holder.step) {
-        if (holder.step == OnboardingStep.WEBSITE || holder.step == OnboardingStep.SUMMARY) {
-            holder.refreshSavedWebsites()
+        when (holder.step) {
+            OnboardingStep.WEBSITE -> holder.refreshSavedWebsites()
+            OnboardingStep.SUMMARY -> holder.refreshSavedWebsites(observeChanges = true)
+            else -> Unit
         }
     }
     val syncSnapshot by syncState.syncState.collectAsState()

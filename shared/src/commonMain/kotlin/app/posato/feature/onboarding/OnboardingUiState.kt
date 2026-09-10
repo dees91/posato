@@ -17,6 +17,9 @@ import app.posato.feature.targets.ui.WebsiteBatchSubmission
 import app.posato.feature.targets.ui.createWebsiteBatchSubmission
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.launch
 
 internal enum class OnboardingStep {
@@ -149,8 +152,15 @@ internal class OnboardingUiState(
         }
     }
 
-    fun refreshSavedWebsites() {
-        scope.launch {
+    suspend fun refreshSavedWebsites(observeChanges: Boolean = false) {
+        channelFlow {
+            if (observeChanges) {
+                launch(start = CoroutineStart.UNDISPATCHED) {
+                    policyStore.policyChanges.collect { send(Unit) }
+                }
+            }
+            send(Unit)
+        }.conflate().collect {
             when (val read = policyStore.read()) {
                 is LocalPolicyResult.Success -> savedWebsites = read.value.policy.domains.size
                 is LocalPolicyResult.Failure -> Unit

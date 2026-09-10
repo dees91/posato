@@ -380,6 +380,9 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   validation, and **Continue** after a saved addition. Before an addition,
   **Not now** keeps an empty setup possible.
 - Summary leads with saved choices, device access, and local/iCloud scope.
+  Its saved-website count follows policy changes while the step is visible;
+  a failed read keeps the last valid count. Website-entry focus responds only
+  to the person's successful submission, never to a remote count change.
   When applicable, a notice names the remaining setup and its existing route.
   **Go to Session** opens Session; it does not start a pause.
 - Compact pages keep actions beneath independently scrolling content, with a

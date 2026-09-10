@@ -289,8 +289,13 @@ private fun mergePolicy(
     } else {
         mergeEstablished(local.domains.toSet(), base.domains.toSet(), projected.domains, presents, removals)
     }
-    domains += presents
-    domains -= removals
+    pending.forEach { intent ->
+        when (intent) {
+            is StoredPolicyIntent.PresentDomain -> domains.add(intent.domain)
+            is StoredPolicyIntent.RemoveDomain -> domains.remove(intent.domain)
+            is StoredPolicyIntent.PresentApplicationPolicy -> Unit
+        }
+    }
     val remoteName = if (base == null) {
         projected.name ?: local.applicationPolicyName
     } else if (projected.name == base.applicationPolicyName) {
