@@ -1,7 +1,7 @@
 # Execution: `ONBOARDING-002`
 
 - **Brief:** [Second install joins and waits](../specifications/onboarding-002-second-install.md)
-- **Status:** `active`; implementation reviewed, physical verification pending
+- **Status:** `active`; both physical joins passed, local iPhone selection pending
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
 - **Reviewer:** independent revised-plan and completed-change reviews approved
@@ -95,21 +95,21 @@
 | Signed Mac launch and collapsed/expanded Session | passed | Driver snapshot and screenshots |
 | iPhone build/install/launch and UI smoke | passed on retry | Initial automation-mode timeout; unlocked-device retry passed |
 | iPhone joins existing workspace from Session and relaunches | passed | Completed attempt after consent and relaunch; wait not observed |
-| Physical direction A: Mac establishes, iPhone joins fresh | pending | |
-| Physical direction B: iPhone establishes, Mac joins fresh | pending | |
-| Post-join permission and local selection, Mac counts unchanged | pending | |
+| Physical A: Mac establishes, fresh iPhone joins | passed | Onboarding status and summary; immediate key availability |
+| Physical B: iPhone establishes, fresh Mac joins | passed | Onboarding status/summary; bootstrap rows 0 → 1 |
+| Post-join permission and local selection | Mac passed; iPhone attended step pending | Safari saved; pending/accepted counts remain 0/0 |
 | Threat-model closeout statement | reviewed | Existing TB-07/T-04/R-04; ADR 0007 amendment |
 
 ## Blockers and accepted risks
 
-- Fresh-install physical joins require attended agreement on concrete
-  workspace cleanup; none has been removed. iPhone driving now works.
+- Maintainer approved clearing disposable dev data without restoration. Both
+  devices are linked again. iPhone Screen Time/selection needs manual input.
 - Automatic checks do not repeat unchanged waiting announcements. Manual
   progress/completion must remain observable even with the same outcome.
 - Waiting is not persisted; relaunch requires explicit consent again. This
   iteration accepts that weaker UX without dismissing durable continuation.
-- The waiting window depends on Apple-timed iCloud Keychain propagation; the
-  brief names the attended fallback and the recorded limit if it is declined.
+- Waiting was not observed in either physical direction; delayed-key behavior
+  and speech remain unit/code evidence only. No Keychain settings were changed.
 - Synced domains, policies, and applications stay invisible on the joining
   device until `SYNC-011`; this task claims nothing about them.
 

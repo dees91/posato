@@ -296,6 +296,10 @@ Mac joining and iPhone joining, are proven physically.
   then needs **Remove workspace** and a fresh link. iPhone evidence is
   status text plus the Mac's receipt, because the device database is not
   readable.
+- `user-confirmed` run correction (2026-09-10): current Mac/iPhone data is
+  disposable development state. Workspace removal, resets, and reinstall are
+  approved without restoring a backup. Leave both devices linked afterwards;
+  this overrides the backup/restore steps above for this verification run.
 - Wait-window fallback (`D4`): immediate key availability proves immediate
   joining, not waiting. If waiting cannot be observed, mark its physical
   row not observed and cite unit coverage; do not claim that earlier
