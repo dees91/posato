@@ -56,8 +56,7 @@
 
 - **Verdict:** `approve`; refreshed independent review on 2026-09-10 covers
   the original implementation and PR corrections; zero open Critical/Required.
-- **Reviewer:** Codex agent `/root/review_onboarding002_implementation`,
-  distinct from implementing agent `/root`.
+- **Reviewer:** a second Codex agent, distinct from the implementing agent.
 - **Required resolution:** persisted adoption followed by cancellation now
   has regression coverage for exact/conflicting row reconciliation, one
   commit/exchange, and bounded UI retry after storage failure.
