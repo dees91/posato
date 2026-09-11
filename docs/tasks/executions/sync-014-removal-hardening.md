@@ -78,7 +78,7 @@
 
 ## Blockers and accepted risks
 
-- Maintainer decisions `D1` to `D4` in the brief precede implementation.
+- `D1` to `D4` accepted by the maintainer on 2026-09-11; start at step 2.
 - The mechanism is a hypothesis until the timed reproduction (purge
   re-attached by the same-identifier zone save, the old key item returning
   through iCloud Keychain, or a stale by-identifier read); the guard is

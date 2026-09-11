@@ -165,36 +165,36 @@ settle rule and the ghost symptom; and the seven statuses keep their meaning.
 
 ## Decisions or blockers
 
-- `D1` guard shape. Recommended: the device-local tombstone at the two choke
-  points, because it is deterministic, needs no clock or Apple behavior
-  claim, and closes the observed case on every device that performed the
-  removal. Alternatives: a docs-only settle rule (no product guard); the
-  anchor creation-date comparison (covers fresh installs but rests on a
-  provider field after a purge; kept as a later option); unique zone or
-  anchor identifiers per establish (closes the class but changes the accepted
-  arbiter and the fixed-zone removal, a separate ADR decision).
-- `D2` refusal status. Recommended: retryable with the existing unlinked
-  copy and no new string, because the attempt truly did not finish and the
-  same action retries; a retry hint in that copy would be a `DESIGN.md` copy
-  decision, not a status change. Alternative: an action-required reason
-  naming the pending removal, which needs copy that avoids a time claim the
-  app cannot measure.
-- `D3` tombstone scope. Recommended: per device, keyed by workspace
-  identifier, written for every clearing removal outcome, bounded to the
-  last 32 with the oldest evicted in the same transaction, never expiring,
-  not cleared on account change, cleared only with the database, never
-  synchronized. Alternative: a time-to-live, which needs a wall-clock claim
-  the protocol avoids.
+- `D1` decided (`user-confirmed`, 2026-09-11): the device-local tombstone at the
+  two choke points, because it is deterministic, needs no clock or Apple
+  behavior claim, and closes the observed case on every device that performed
+  the removal. Alternatives: a docs-only settle rule (no product guard); the
+  anchor creation-date comparison (covers fresh installs but rests on a provider
+  field after a purge; kept as a later option); unique zone or anchor
+  identifiers per establish (closes the class but changes the accepted arbiter
+  and the fixed-zone removal, a separate ADR decision).
+- `D2` decided (`user-confirmed`, 2026-09-11): retryable with the existing
+  unlinked copy and no new string, because the attempt truly did not finish and
+  the same action retries; a retry hint in that copy would be a `DESIGN.md` copy
+  decision, not a status change. Alternative: an action-required reason naming
+  the pending removal, which needs copy that avoids a time claim the app cannot
+  measure.
+- `D3` decided (`user-confirmed`, 2026-09-11): per device, keyed by workspace
+  identifier, written for every clearing removal outcome, bounded to the last 32
+  with the oldest evicted in the same transaction, never expiring, not cleared
+  on account change, cleared only with the database, never synchronized.
+  Alternative: a time-to-live, which needs a wall-clock claim the protocol
+  avoids.
 - `D4` evidence and mechanism. The mechanism is a hypothesis with three
   candidates the runs must separate: a server-side purge re-attached by the
-  same-identifier zone save (predicts a conflicting anchor create), the old
-  key item returning through iCloud Keychain from the still-linked peer
-  before the deletion propagates, or a stale by-identifier read (the only
-  model under which the peer could delete a fresh zone). Recommended: the two
-  timed runs above with bounded presses, the guard merged on the fake-port
-  cases plus the recorded observation when the purge does not reproduce, and
-  the settle rule in the recipe either way. Alternative: block the merge on a
-  physical reproduction, which depends on Apple-side timing.
+  same-identifier zone save (predicts a conflicting anchor create), the old key
+  item returning through iCloud Keychain from the still-linked peer before the
+  deletion propagates, or a stale by-identifier read (the only model under which
+  the peer could delete a fresh zone). Decided (`user-confirmed`, 2026-09-11):
+  the two timed runs above with bounded presses, the guard merged on the
+  fake-port cases plus the recorded observation when the purge does not
+  reproduce, and the settle rule in the recipe either way. Alternative: block
+  the merge on a physical reproduction, which depends on Apple-side timing.
 - Physical gate: the maintainer's Mac and iPhone on one account; removal and
   re-link are attended and destructive for the linked workspace; reserved
   synthetic domain only.
