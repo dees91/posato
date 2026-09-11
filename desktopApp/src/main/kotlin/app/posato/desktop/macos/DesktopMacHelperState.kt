@@ -84,9 +84,7 @@ internal class DesktopMacHelperState(
                 MacHelperReadiness.NOT_ENABLED
             }
 
-            serviceState == HelperResult.State.RecoveryRequired ||
-                requiredAction == HelperResult.RequiredAction.ManualRecovery ||
-                requiredAction == HelperResult.RequiredAction.ProxyRecovery -> {
+            isUnlaunchableRegistration() -> {
                 MacHelperReadiness.RECOVERY_REQUIRED
             }
 
@@ -94,6 +92,14 @@ internal class DesktopMacHelperState(
                 MacHelperReadiness.UNAVAILABLE
             }
         }
+    }
+
+    private fun HelperResult.isUnlaunchableRegistration(): Boolean {
+        return outcome == HelperResult.Outcome.ActionRequired &&
+            serviceState == HelperResult.State.RecoveryRequired &&
+            ownershipPhase == HelperResult.Phase.RecoveryRequired &&
+            requiredAction == HelperResult.RequiredAction.ManualRecovery &&
+            failure == HelperResult.Failure.Lifecycle
     }
 
     private companion object {

@@ -262,6 +262,7 @@ internal class MacOsHelperClient(
         if (shouldReconcileUnknownRequest(pendingUnknownRequest != null, operation)) {
             return reconcileUnknown()
         }
+        check(pendingUnknownRequest == null || operation == HelperOperation.Reconcile)
         ensureStarted()
         check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
         val message = HelperMessage(
@@ -429,7 +430,8 @@ internal fun shouldReconcileUnknownRequest(
     pendingUnknown: Boolean,
     operation: HelperOperation,
 ): Boolean {
-    return pendingUnknown && operation != HelperOperation.Reconcile
+    return pendingUnknown &&
+        (operation == HelperOperation.Enable || operation == HelperOperation.Status)
 }
 
 internal fun HelperResult.concludesReconciliation(): Boolean {

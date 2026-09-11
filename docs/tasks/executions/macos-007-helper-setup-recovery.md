@@ -1,10 +1,10 @@
 # Execution: `MACOS-007`
 
 - **Brief:** [Helper setup recovery](../specifications/macos-007-helper-setup-recovery.md)
-- **Status:** `active`; implementation complete, completed-change review pending
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Grok 4.6
-- **Reviewer:** independent plan reviewer (2026-09-11); completed-change reviewer assigned after this closeout draft
+- **Reviewer:** independent plan reviewer (2026-09-11); completed-change review 2026-09-11
 - **Branch:** `docs/mac-helper-startup-diagnosis`
 - **Updated:** 2026-09-11
 - **Baseline:** rebased onto `origin/main` (`e9467a0`, SYNC-014)
@@ -90,7 +90,10 @@
 
 ## Completed-change review
 
-- **Verdict:** pending independent review of the implementation diff
+- **Verdict:** approved after Required fix
+- **Critical or Required findings:** one Required: `RECOVERY_REQUIRED` mapping was too broad (proxy leftover, rule repair, and not-found ManualRecovery received Login Items copy)
+- **Resolution:** map Login Items recovery only to the unlaunchable tuple (`ActionRequired` + `RecoveryRequired` service and phase + `ManualRecovery` + `Lifecycle`). Proxy leftover and rule repair stay `UNAVAILABLE`. Client auto-reconcile limited to Enable/Status; Apply/Restore still refuse while a request is unknown.
+- **Advisory findings:** declined the broader “never auto-reconcile on the client” preference; setup Enable still reconciles a pending unknown via the adapter.
 
 ## Verification
 

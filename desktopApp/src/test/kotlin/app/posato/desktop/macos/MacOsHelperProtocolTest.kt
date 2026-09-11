@@ -156,7 +156,8 @@ class MacOsHelperProtocolTest {
     fun `given a pending unknown request when another lifecycle operation is chosen then reconcile is required`() {
         assertEquals(true, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Enable))
         assertEquals(true, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Status))
-        assertEquals(true, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Apply))
+        assertEquals(false, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Apply))
+        assertEquals(false, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Restore))
         assertEquals(false, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Reconcile))
         assertEquals(false, shouldReconcileUnknownRequest(pendingUnknown = false, HelperOperation.Enable))
         assertEquals(false, shouldReconcileUnknownRequest(pendingUnknown = false, HelperOperation.Status))

@@ -259,6 +259,55 @@ class DesktopMacHelperStateTest {
     }
 
     @Test
+    fun `given leftover proxy recovery when checked then login items recovery is not offered`() = runTest {
+        val commands = FakeHelperCommands(
+            { readyResult() },
+            {
+                HelperResult(
+                    outcome = HelperResult.Outcome.Conflict,
+                    serviceState = HelperResult.State.RecoveryRequired,
+                    ownershipPhase = HelperResult.Phase.Applied,
+                    requiredAction = HelperResult.RequiredAction.ProxyRecovery,
+                    failure = HelperResult.Failure.None,
+                )
+            },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNAVAILABLE, state.recheck())
+        assertEquals(listOf("status"), commands.calls.map { it.operation })
+    }
+
+    @Test
+    fun `given a rule repair requirement when checked then login items recovery is not offered`() = runTest {
+        val commands = FakeHelperCommands(
+            { readyResult() },
+            {
+                HelperResult(
+                    outcome = HelperResult.Outcome.ActionRequired,
+                    serviceState = HelperResult.State.RecoveryRequired,
+                    ownershipPhase = HelperResult.Phase.Idle,
+                    requiredAction = HelperResult.RequiredAction.RuleRepair,
+                    failure = HelperResult.Failure.None,
+                )
+            },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNAVAILABLE, state.recheck())
+    }
+
+    @Test
     fun `given incompatible signing when checked then unavailable is reported and status is unchanged`() = runTest {
         val commands = FakeHelperCommands(
             { readyResult() },
