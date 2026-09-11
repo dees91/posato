@@ -346,9 +346,12 @@ final class ScenarioExecutor {
       && viewport.height >= window.height * screenSwipeCoverage
   }
 
+  /// Reached means the element's centre is on screen, so a following tap
+  /// lands on the element rather than on a bar that clips its edge.
   private static func isVisible(_ element: XCUIElement, in window: CGRect) -> Bool {
-    let visible = window.intersection(element.frame)
-    return visible.width > 8 && visible.height > 8
+    let frame = element.frame
+    let centre = CGPoint(x: frame.midX, y: frame.midY)
+    return window.contains(centre)
   }
 
   private func pan(in container: XCUIElement, forward: Bool, screenSwipe: Bool) {

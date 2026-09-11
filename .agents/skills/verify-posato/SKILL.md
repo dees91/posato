@@ -197,7 +197,8 @@ Platform traps that invalidate a run:
   Compose's outer iOS scroll wrapper can span the whole screen, so the named
   list provides the actual gesture viewport. Compact Session (iPhone 13 mini)
   has no named list: after expanding iCloud, unscoped `scrollTo` for the
-  action; the iOS driver swipes the screen when that wrapper fills the window.
+  action; the iOS driver swipes the screen when that wrapper fills the window
+  and reports reached only when the element's centre is on screen.
   Static row text need not be tappable to be visibly reached. No fixed
   coordinates, Tab-count workaround, or product test hook is needed.
 - Time setup has presets `25 min`, `45 min`, `60 min` and two wheels.

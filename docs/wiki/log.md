@@ -1511,6 +1511,9 @@ Retryable uses the existing unlinked copy. ADR 0007 records the dated
 amendment; the threat model adds `SYNC-014` to `A-04`, `T-04`, and `T-14`
 and the fresh-install residual; the sync recipe states the settle rule and
 ghost recovery. A fresh install without a tombstone can still join a ghost
-during the provider purge window. Physical AC-04 recorded two direct
-establishes without a reproduced ghost; iOS `scrollTo` screen-swipes on
-compact Session so expanded iCloud actions are reachable.
+during the provider purge window. Physical AC-04: the both-removed run
+converged; the peer-still-linked run established a fresh identifier and then
+lost it to the provider purge, a variant the tombstone does not cover,
+recorded as an accepted limit with the settle rule and an open fix decision.
+iOS `scrollTo` screen-swipes on compact Session and reports reached only
+when the element's centre is on screen; the Simulator fixtures were rerun.

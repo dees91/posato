@@ -289,6 +289,8 @@ unscoped `scrollTo` for the offscreen action. The
 compact-iPhone sequence; the
 [Session recipe](../../.agents/skills/verify-posato/features/sessions.md)
 covers explicit helper checks.
+`scrollTo` reports reached only when the element's centre is on screen, so
+a following tap lands on the element and not on a bar clipping its edge.
 Visibility does not require static row text to be individually tappable.
 The 50-row fixture allows 60 seconds per step; cleanup allows 90 seconds for
 finding the first row from an arbitrary retained scroll position. Desktop pointer and wheel

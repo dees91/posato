@@ -98,8 +98,13 @@ Replace the action label with **Sync with iCloud**, **Sync now**, or
 7. Press **Remove workspace**, inspect the destructive confirmation, and
    confirm. Expect local-only with local websites retained. The peer's next
    attempt must require action. CloudKit may keep surfacing the old zone and
-   `workspace` record for several minutes; there is no product-controlled
-   settle time. If **Sync with iCloud** is pressed while that old anchor is
+   `workspace` record for several minutes, and a fresh establish made within
+   that window can be lost when the provider purges the same-name zone
+   (observed once: completed, then the website never reached the peer and
+   the establishing device later reported action required). Wait at least
+   ten minutes after **Remove workspace** before re-establishing on the same
+   account; the app cannot detect the purge. If **Sync with iCloud** is
+   pressed while that old anchor is
    still visible, this device must not report completed and must not gain an
    established row (`sync_bootstrap_state` stays zero; `sync_removed_workspace`
    is at least one and does not increase during the refused presses). Retry the
@@ -119,10 +124,12 @@ Replace the action label with **Sync with iCloud**, **Sync now**, or
    When it establishes, remove on the iPhone and sync; confirm the join and
    the website; wait at least ten minutes; **Sync now** on both and confirm
    completed with one established row on the Mac. Repeat with the iPhone
-   removed before the Mac's re-link. Two direct establishes without a
-   refusal are an accepted fallback; the refusal is covered by the fake-port
-   cases. Cleanup removes only the fixture domain; both devices end linked
-   to the newest workspace.
+   removed before the Mac's re-link. Two direct establishes that keep the
+   website and the established row through the wait are the accepted
+   fallback; a direct establish followed by a lost website or a later action
+   required is the ghost outcome and is recorded as such. The refusal itself
+   is covered by the fake-port cases. Cleanup removes only the fixture
+   domain; both devices end linked to the newest workspace.
 9. Exercise simultaneous opt-in from a state cleared through the removal UI.
    Coordinate presses against one absolute wall-clock time, allowing for iOS
    driver startup. Retry the losing side after key delivery; a completed
