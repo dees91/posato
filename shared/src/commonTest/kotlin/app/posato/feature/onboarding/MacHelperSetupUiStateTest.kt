@@ -27,6 +27,60 @@ class MacHelperSetupUiStateTest {
     }
 
     @Test
+    fun `given the same unresolved answer twice when checked again then the repeat is reported`() = runTest {
+        val holder = MacHelperSetupUiState(RecordingMacHelper(MacHelperReadiness.RECOVERY_REQUIRED), this)
+
+        holder.check()
+        runCurrent()
+        assertEquals(false, holder.presentation().repeatedResult)
+
+        holder.check()
+        runCurrent()
+
+        assertEquals(true, holder.presentation().repeatedResult)
+    }
+
+    @Test
+    fun `given a failing enable and a check reporting not enabled then the returning answer is a repeat`() = runTest {
+        val helper = RecordingMacHelper(MacHelperReadiness.UNAVAILABLE)
+        val holder = MacHelperSetupUiState(helper, this)
+
+        holder.enable()
+        runCurrent()
+        helper.answer = MacHelperReadiness.NOT_ENABLED
+        holder.check()
+        runCurrent()
+        assertEquals(false, holder.presentation().repeatedResult)
+
+        helper.answer = MacHelperReadiness.UNAVAILABLE
+        holder.enable()
+        runCurrent()
+
+        assertEquals(true, holder.presentation().repeatedResult)
+    }
+
+    @Test
+    fun `given a ready answer after repeated failures then the repeat memory is cleared`() = runTest {
+        val helper = RecordingMacHelper(MacHelperReadiness.RECOVERY_REQUIRED)
+        val holder = MacHelperSetupUiState(helper, this)
+
+        holder.check()
+        runCurrent()
+        holder.check()
+        runCurrent()
+        helper.answer = MacHelperReadiness.READY
+        holder.check()
+        runCurrent()
+        assertEquals(false, holder.presentation().repeatedResult)
+
+        helper.answer = MacHelperReadiness.RECOVERY_REQUIRED
+        holder.check()
+        runCurrent()
+
+        assertEquals(false, holder.presentation().repeatedResult)
+    }
+
+    @Test
     fun `given a fresh holder when nothing is pressed then the port is never called and readiness stays unknown`() = runTest {
         val helper = RecordingMacHelper()
         val holder = MacHelperSetupUiState(helper, this)

@@ -250,20 +250,23 @@ do {
           )
         )
       case .enable:
+        var registrationFailed = false
         if service.status != .enabled {
           do {
             try service.register()
           } catch {
             // SMAppService throws when approval is now required or the item
-            // already exists; the status check below is the setup outcome.
+            // already exists; the status read below is the setup outcome. A
+            // status that did not move keeps this as a registration failure.
+            registrationFailed = true
           }
         }
         if service.status != .enabled {
-          let state = serviceState(service.status)
           response = try localResponse(
             request: request,
-            payload: WireLifecyclePolicy.unreconciledServiceResponse(
-              serviceState: state
+            payload: enableOutcomePayload(
+              serviceState: serviceState(service.status),
+              registrationFailed: registrationFailed
             )
           )
           break

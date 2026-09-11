@@ -575,6 +575,23 @@ disabled; iCloud and local websites were unchanged. The helper BTM parent
 item can remain `disabled` while the nested daemon is `enabled, allowed` and
 launchd still starts it.
 
+`observed` (2026-09-11, MACOS-007 setup dead ends): three dead ends shared one
+shape, an action that cannot change its own answer. A reconcile reporting
+not-registered used to retain the request so Enable could never register; a
+`register()` that threw was indistinguishable from a service that had never
+been asked, so Enable silently did nothing; and a registered-but-unlaunchable
+helper offered only a Check again that returns the identical reply. The client
+now releases a reconciled request on every conclusive answer, the helper
+reports a failed registration as a failure rather than as not-registered, and
+the options add one sentence offering a Mac restart the second time the same
+answer comes back in a state whose action cannot change it, which excludes an
+unfinished request because its retry does reconcile the original one. Restarting Posato is still not a registration
+repair. `user-confirmed` (2026-09-11): not enabled shows Enable alone, because
+Enable already registers and re-reads the status, and a helper state other than
+ready is named once above the session action while This Mac is collapsed, so a
+Mac that can enforce nothing is visible before a session starts. Nothing is
+named before an explicit read.
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the

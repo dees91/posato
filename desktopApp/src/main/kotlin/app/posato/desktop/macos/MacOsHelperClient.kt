@@ -161,11 +161,6 @@ internal class MacOsHelperClient(
         return result
     }
 
-    @Synchronized
-    override fun hasUnknownRequest(): Boolean {
-        return pendingUnknownRequest != null
-    }
-
     /**
      * Test-only crash simulation: kills the spawned helper without touching the launcher process.
      * A `pkill -f` pattern is unsafe here because the harness launcher command line itself embeds

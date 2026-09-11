@@ -4,8 +4,4 @@ internal interface MacHelperCommands {
     fun enable(): HelperResult
 
     fun status(): HelperResult
-
-    fun reconcileUnknown(): HelperResult
-
-    fun hasUnknownRequest(): Boolean
 }

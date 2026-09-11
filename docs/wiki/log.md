@@ -1531,5 +1531,9 @@ shows progress and keeps Not now usable on Mac. After leftover copies were
 removed and Background Items reset, `SMAppService.notFound` no longer maps to
 the unavailable Check-again-only dead end; Check offers Enable. Physical
 Ready/Idle on the current development package survived relaunch; HTTP(S)
-proxy stayed off. Details in the MACOS-007 execution record and
+proxy stayed off. A registration attempt that fails and leaves the service
+unregistered reports that setup could not be completed, each unresolved state
+carries its own collapsed summary, a repeated unresolved result offers a Mac
+restart, and a non-ready helper is named once above the session action.
+Details in the MACOS-007 execution record and
 [macOS enforcement](topics/macos-enforcement.md).

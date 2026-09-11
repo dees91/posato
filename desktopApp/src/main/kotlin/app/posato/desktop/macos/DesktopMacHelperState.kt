@@ -17,29 +17,19 @@ internal class DesktopMacHelperState(
 ) : MacHelperPort {
     override suspend fun enable(): MacHelperReadiness {
         return readiness {
-            if (commands.hasUnknownRequest()) {
-                commands.reconcileUnknown()
+            val enabled = commands.enable()
+            if (enabled.outcome == HelperResult.Outcome.Success &&
+                enabled.serviceState == HelperResult.State.Ready
+            ) {
+                commands.status()
             } else {
-                val enabled = commands.enable()
-                if (enabled.outcome == HelperResult.Outcome.Success &&
-                    enabled.serviceState == HelperResult.State.Ready
-                ) {
-                    commands.status()
-                } else {
-                    enabled
-                }
+                enabled
             }
         }
     }
 
     override suspend fun recheck(): MacHelperReadiness {
-        return readiness {
-            if (commands.hasUnknownRequest()) {
-                commands.reconcileUnknown()
-            } else {
-                commands.status()
-            }
-        }
+        return readiness { commands.status() }
     }
 
     override fun openApprovalSettings() {
@@ -78,6 +68,10 @@ internal class DesktopMacHelperState(
             serviceState == HelperResult.State.ApprovalRequired ||
                 requiredAction == HelperResult.RequiredAction.BackgroundApproval -> {
                 MacHelperReadiness.APPROVAL_REQUIRED
+            }
+
+            outcome == HelperResult.Outcome.Failure && serviceState == HelperResult.State.NotRegistered -> {
+                MacHelperReadiness.UNAVAILABLE
             }
 
             serviceState == HelperResult.State.NotRegistered -> {

@@ -232,11 +232,12 @@ internal fun MacHelperReadinessNotice(
     readiness: MacHelperReadiness,
     unavailable: StringResource,
     modifier: Modifier = Modifier,
+    announceChanges: Boolean = true,
 ) {
     PosatoNotice(
         modifier = modifier,
         tone = if (readiness == MacHelperReadiness.READY) PosatoTone.Positive else PosatoTone.Caution,
-        announceChanges = true,
+        announceChanges = announceChanges,
     ) { Text(readiness.message(unavailable)) }
 }
 

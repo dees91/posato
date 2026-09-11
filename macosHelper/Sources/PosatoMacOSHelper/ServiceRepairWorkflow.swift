@@ -43,6 +43,19 @@ func recoveredSetupPayload(
   )
 }
 
+/// Enable answers with the re-read status. A registration that threw and did not move the status
+/// off not-registered cannot be repeated into a different outcome, so it is reported as a failure
+/// instead of an Enable button that silently does nothing.
+func enableOutcomePayload(
+  serviceState state: ServiceState,
+  registrationFailed: Bool
+) -> WireResponsePayload {
+  guard registrationFailed, state == .notRegistered else {
+    return WireLifecyclePolicy.unreconciledServiceResponse(serviceState: state)
+  }
+  return WireLifecyclePolicy.failedEnableResponse(serviceState: state)
+}
+
 func performDaemonLifecycleRequest(
   request: WireMessage,
   receivedAt: DispatchTime,

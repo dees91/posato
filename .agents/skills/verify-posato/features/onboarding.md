@@ -84,7 +84,9 @@ Preconditions:
   Enable reply shows that the request did not finish; Check again reconciles
   it. Registered but unlaunchable is not treated as enabled and does not
   offer Login Items removal from the app. After a Background Items database
-  reset, Enable on this Mac is the Check result, not unavailable.
+  reset, Enable on this Mac is the Check result, not unavailable. An Enable that
+  attempts registration and leaves the service unregistered reports that setup
+  could not be completed instead of offering the same Enable again.
 - **Accessibility:** capture large-text, keyboard, and VoiceOver passes for
   at least one step on each platform with a screenshot and a snapshot.
 
