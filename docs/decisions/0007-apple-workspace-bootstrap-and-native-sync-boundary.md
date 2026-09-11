@@ -283,6 +283,33 @@ Construction, launch, and foreground without prior consent remain free of
 workspace-provider access. This amendment extends the opportunities to finish
 a consented join; it does not authorize automatic bootstrap creation.
 
+### Amendment: refuse a removed workspace (2026-09-11)
+
+`user-confirmed`: after an explicit **Remove workspace** that clears the
+established row, the device records that workspace identifier in a
+device-local tombstone. The row holds only the identifier, never
+synchronizes, diagnoses, or displays it, keeps the most recent 32, never
+expires on time, and is not cleared on an account change. It is written in
+the same transaction that clears the established row for every clearing
+outcome (ready, zone missing, different anchor).
+
+A later **Sync with iCloud** consults that tombstone after the fixed-zone
+step of a fresh attempt and at the start of losing-candidate adoption,
+before any key-item read or deletion. A found tombstoned anchor is
+retryable: no candidate, anchor, or key is created, and a persisted
+candidate is not deleted. The fixed zone save that step 2 may already have
+performed is not a violation. Own-anchor confirmation, the established
+check, and the established key read stay unguarded. The join-only
+continuation refuses a tombstoned retained anchor as defense in depth.
+
+No legitimate re-join of a tombstoned workspace exists: every tombstoning
+outcome saw the anchor gone or replaced, and every establish mints fresh
+identifiers. A fresh install without a tombstone can still join a ghost
+anchor during CloudKit's purge window; that residual is recorded in the
+threat model and is not closed by this amendment. Unique zone or anchor
+identities per establish, and an anchor creation-date comparison, remain
+separate decisions.
+
 ### Failure, account, and cleanup semantics
 
 Provider edges distinguish at least `found`, `missing`, `created`, `identical`,

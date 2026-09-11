@@ -163,9 +163,16 @@ internal class BootstrapCoordinator(
         }
         return when (val anchor = cloud.readAnchor(binding)) {
             is AnchorReadResult.Found -> {
-                val result = anchors.adoptAnchorItem(binding, anchor.anchor)
-                if (result == BootstrapResult.WaitingForWorkspaceKey) joins.remember(binding, anchor.anchor)
-                result
+                val refused = refuseIfRemoved(store, anchor.anchor.workspaceId)
+                if (refused != null) {
+                    refused
+                } else {
+                    val result = anchors.adoptAnchorItem(binding, anchor.anchor)
+                    if (result == BootstrapResult.WaitingForWorkspaceKey) {
+                        joins.remember(binding, anchor.anchor)
+                    }
+                    result
+                }
             }
 
             is AnchorReadResult.Missing -> {

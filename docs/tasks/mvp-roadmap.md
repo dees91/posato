@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 12
+- **Revision:** 13
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-08
+- **Last amended:** 2026-09-11
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -54,6 +54,14 @@ Revision 12 adds the maintainer-accepted `QUALITY-005` follow-up after
 empty while the application rendered, which left a committed unattended
 fixture unproven and blocks unattended desktop evidence for later rows. It
 changes no other task, dependency, wave, or integration group.
+
+Revision 13 adds the maintainer-accepted `SYNC-014` removal-hardening
+follow-up after the `SYNC-011` physical gate observed one re-link, minutes
+after **Remove workspace** and a fresh establish, adopt a stale key and report
+completed inside a zone that later vanished; it settled only after about
+eight minutes. The row precedes `MVP-001` so the acceptance run does not
+depend on waiting. It changes no other task, dependency, wave, or integration
+group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -140,6 +148,7 @@ wave barriers add the phase ordering stated above.
 | `ONBOARDING-001` | Complete first-install privacy, Apple workspace, authorization, and target setup without a product account. | Apple synchronization | P4/W4.1 | `SYNC-010`, `TARGETS-001`, `TARGETS-003`, `TARGETS-004` | PR-FIRST-INSTALL |
 | `ONBOARDING-002` | Join the existing Apple workspace, wait for delayed key delivery, and finish local mappings. | Apple synchronization | P4/W4.2 | `ONBOARDING-001` | PR-SECOND-INSTALL |
 | `SYNC-011` | Converge exact domains and semantic policies while opaque selections stay local. | Apple synchronization | P4/W4.3 | `ONBOARDING-002`, `SYNC-010`, `TARGETS-001`, `TARGETS-002` | PR-POLICY-SYNC |
+| `SYNC-014` | Refuse to re-adopt a workspace this device removed, so a re-link soon after removal cannot land in a zone under deletion. | Apple synchronization | P4/W4.3b | `SYNC-009`, `SYNC-010`, `SYNC-011` | PR-REMOVAL-HARDENING |
 | `SYNC-012` | Converge session start, early termination, and expiry without unsafe delivery promises. | Apple synchronization | P4/W4.4 | `SYNC-011`, `SESSION-002` | PR-SESSION-SYNC |
 | `MVP-001` | Pass the accepted MVP flow on one supported Mac and iPhone without manual repair. | Completion | P5/W5.1 | `SYNC-012` | PR-MVP-ACCEPTANCE |
 | `RELEASE-001` | Pass or explicitly block every first-release readiness obligation. | Release readiness | Release/R1 | `MVP-001` | PR-RELEASE-READINESS |
@@ -162,6 +171,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Common encrypted operations and one Apple workspace | `SYNC-001`–`SYNC-010` | Security decisions, vectors, tamper/replay rejection, physical Keychain/CloudKit delay and account isolation |
 | First and second installation | `ONBOARDING-001`, `ONBOARDING-002` | Physical flows without a product account or parallel workspace |
 | Policy and session convergence | `SYNC-011`, `SYNC-012` | Bidirectional physical convergence, offline/retry, early end, and expiry |
+| Removal and re-link hardening | `SYNC-014` | Fake-port resurrection cases and physical removal, quick re-link, and settle evidence |
 | Complete measurable MVP outcome | `MVP-001` | One controlled Mac-and-iPhone pass without manual repair |
 | Public-release obligations | `RELEASE-001` | Separate pass or blocked readiness verdict |
 

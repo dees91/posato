@@ -1501,3 +1501,19 @@ quality` green (501 JVM tests, migration verification, `iosSwiftTest`);
 five simulator fixtures green; verify-posato recipes assert convergence;
 threat-model rows `A-04`/`T-03` extended. Details in the SYNC-011 execution
 record.
+
+## [2026-09-11] task | SYNC-014 removal hardening
+
+Device-local tombstone of removed workspace identifiers refuses re-adoption
+on the device that performed **Remove workspace**, at the fresh-attempt and
+losing-candidate choke points, with join continuation as defense in depth.
+Retryable uses the existing unlinked copy. ADR 0007 records the dated
+amendment; the threat model adds `SYNC-014` to `A-04`, `T-04`, and `T-14`
+and the fresh-install residual; the sync recipe states the settle rule and
+ghost recovery. A fresh install without a tombstone can still join a ghost
+during the provider purge window. Physical AC-04: the both-removed run
+converged; the peer-still-linked run established a fresh identifier and then
+lost it to the provider purge, a variant the tombstone does not cover,
+recorded as an accepted limit with the settle rule and an open fix decision.
+iOS `scrollTo` screen-swipes on compact Session and reports reached only
+when the element's centre is on screen; the Simulator fixtures were rerun.

@@ -31,6 +31,10 @@ one active exchange can retain at most one queued opportunity.
 - `sync-remove`: confirmation deletes the workspace and undelivered changes,
   retains local websites, and permits a new consent without a console reset.
   Other devices must remove their old workspace before joining the new one.
+  A device that removed a workspace refuses to re-adopt that same identifier
+  while CloudKit still surfaces it; **Sync with iCloud** reports retryable
+  through the existing unlinked copy until the old anchor is gone or a
+  different workspace is visible.
 - `sync-adopt-relaunch`: a linked relaunch attempts exchange using the adopted
   key; completion therefore exercises the key read and writer open.
 
@@ -45,21 +49,20 @@ local behavior and truthful degradation without its own iCloud account.
 
 The rows start collapsed when Session is recreated, including after a relaunch
 or a return from Paused items. Expand iCloud again before addressing its
-buttons. On smaller viewports, expansion can place the action below the visible
-area: use a scenario `scrollTo` before tapping; `waitFor` does not scroll.
-Expanded actions below the fold may be missing from the snapshot tree entirely
-until scrolled into view, so scroll to the action label with an unscoped
-`scrollTo` (a `within` scope can pin the wrong container) and snapshot-verify
-the expansion first, because tapping an already-expanded header collapses it
-again.
-For the inactive Session on iOS, the verified scope is:
+buttons. Snapshot-verify the expansion first: tapping an already-expanded
+header collapses it again. On a compact iPhone (13 mini and similar), the
+expanded actions sit below the tab bar. `waitFor` does not scroll. After
+expanding, run an unscoped `scrollTo` for the action label, then tap. Compose
+drops labels of clipped controls until they are on screen; the iOS driver
+swipes the screen when the only scroll view is the full-window wrapper, so
+do not pin `within` to the Session heading.
 
 ```json
-{"action":"scrollTo","query":{"text":"Sync with iCloud","role":"button","within":{"text":"Room for what matters.","role":"group"}}}
+{"action":"scrollTo","query":{"text":"Remove workspace","role":"button"},"timeoutSeconds":20}
 ```
 
-Use the currently visible Session heading when its state differs, and replace
-the action label with **Sync now** or **Remove workspace** as appropriate.
+Replace the action label with **Sync with iCloud**, **Sync now**, or
+**Check again** as appropriate.
 
 1. Build both applications; use `build -t device --driver`, then `install`.
    `quality` restages an ad-hoc Mac package, so run `build -t desktop` after it.
@@ -94,11 +97,40 @@ the action label with **Sync now** or **Remove workspace** as appropriate.
    access is unavailable; Mac reception and device status are the evidence.
 7. Press **Remove workspace**, inspect the destructive confirmation, and
    confirm. Expect local-only with local websites retained. The peer's next
-   attempt must require action. Establish a new workspace on the removing
-   device, then remove the old workspace on the peer and link again. The
-   peer's old anchor must never delete the newly established zone. Repeat with
-   the devices reversed. Remove only the synthetic website fixtures afterward.
-8. Exercise simultaneous opt-in from a state cleared through the removal UI.
+   attempt must require action. CloudKit may keep surfacing the old zone and
+   `workspace` record for several minutes, and a fresh establish made within
+   that window can be lost when the provider purges the same-name zone
+   (observed once: completed, then the website never reached the peer and
+   the establishing device later reported action required). Wait at least
+   ten minutes after **Remove workspace** before re-establishing on the same
+   account; the app cannot detect the purge. If **Sync with iCloud** is
+   pressed while that old anchor is
+   still visible, this device must not report completed and must not gain an
+   established row (`sync_bootstrap_state` stays zero; `sync_removed_workspace`
+   is at least one and does not increase during the refused presses). Retry the
+   same action until the old anchor is gone, then a fresh
+   establish succeeds and survives a further wait. A peer still linked to the
+   old workspace must remove it before joining the new one; its old key
+   deletion must never delete the newly established zone. If a ghost zone
+   never purges, press **Remove workspace** again on any device that still
+   reads ready on it. Repeat with the devices reversed. Remove only the
+   synthetic website fixtures afterward.
+8. For a timed re-link after removal, start with both devices linked. On the
+   Mac, remove the workspace, add `design-proof-15.example` while unlinked,
+   then press **Sync with iCloud** within one minute and at most four more
+   times one minute apart. Per press record wall-clock time, device, status,
+   whether the peer was still linked, press count, and the Mac counts
+   (`sync_bootstrap_state`, `sync_removed_workspace`, `sync_accepted_bundle`).
+   When it establishes, remove on the iPhone and sync; confirm the join and
+   the website; wait at least ten minutes; **Sync now** on both and confirm
+   completed with one established row on the Mac. Repeat with the iPhone
+   removed before the Mac's re-link. Two direct establishes that keep the
+   website and the established row through the wait are the accepted
+   fallback; a direct establish followed by a lost website or a later action
+   required is the ghost outcome and is recorded as such. The refusal itself
+   is covered by the fake-port cases. Cleanup removes only the fixture
+   domain; both devices end linked to the newest workspace.
+9. Exercise simultaneous opt-in from a state cleared through the removal UI.
    Coordinate presses against one absolute wall-clock time, allowing for iOS
    driver startup. Retry the losing side after key delivery; a completed
    exchange after relaunch proves that its adopted key opens the writer.
@@ -153,6 +185,7 @@ Useful Mac queries (`db query -t desktop --sql "…"`):
 select count(*) from sync_bootstrap_state;
 select candidate_workspace_id is null, established_workspace_id is null
 from sync_bootstrap_state;
+select count(*) from sync_removed_workspace;
 select count(*) from sync_pending_bundle;
 select count(*) from sync_accepted_bundle;
 select count(*) from sync_staged_bundle;

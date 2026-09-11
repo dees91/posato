@@ -1,5 +1,7 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.sync.domain.WorkspaceId
+
 internal sealed interface BindingGate {
     data class Use(
         val binding: AccountBinding
@@ -34,5 +36,20 @@ internal fun mapStoreFailure(reason: BootstrapStoreFailure): BootstrapResult {
     return when (reason) {
         BootstrapStoreFailure.CORRUPTION -> BootstrapResult.ActionRequired
         BootstrapStoreFailure.STORAGE_FAILURE -> BootstrapResult.Retryable
+    }
+}
+
+internal suspend fun refuseIfRemoved(
+    store: BootstrapStore,
+    workspaceId: WorkspaceId
+): BootstrapResult? {
+    return when (val removed = store.containsRemoved(workspaceId)) {
+        is BootstrapStoreResult.Failure -> mapStoreFailure(removed.reason)
+
+        is BootstrapStoreResult.Success -> if (removed.value) {
+            BootstrapResult.Retryable
+        } else {
+            null
+        }
     }
 }
