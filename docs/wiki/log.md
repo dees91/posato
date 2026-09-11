@@ -1517,3 +1517,10 @@ lost it to the provider purge, a variant the tombstone does not cover,
 recorded as an accepted limit with the settle rule and an open fix decision.
 iOS `scrollTo` screen-swipes on compact Session and reports reached only
 when the element's centre is on screen; the Simulator fixtures were rerun.
+
+## [2026-09-11] diagnosis | Registered Mac helper cannot launch
+
+Observed a registered, allowed daemon failing launchd bundle resolution and a
+post-timeout setup retry blocked by the client's pending unknown request.
+Recorded the older-installation hypothesis, UI symptoms, and unverified
+recovery boundary in [macOS enforcement](topics/macos-enforcement.md).

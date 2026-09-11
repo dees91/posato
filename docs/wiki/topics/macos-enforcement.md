@@ -509,6 +509,41 @@ addressable window as named failure `DESKTOP_WINDOW_UNAVAILABLE` instead of an
 empty success, and the previously unproven unattended
 `session-start-action-required-desktop.json` fixture passes end to end.
 
+## Registered service failing to launch
+
+`observed` (2026-09-11, current development package on one Mac): enabling
+helper access stalled until the 120-second client deadline, then reported
+unavailable. The system service was registered and allowed, but launchd
+repeatedly failed to initialize it with `EX_CONFIG` and
+`copy_bundle_path ... Invalid or missing Program/ProgramArguments`. Background
+Task Management also reported no container item for that service. Its parent
+helper entry referenced an older installed verification bundle, while the
+running app used the current development package. Both embedded daemon files
+existed and their launchd plists had the same relative `BundleProgram`.
+
+`inferred`: stale or inconsistent Service Management bundle registration is
+preventing daemon startup; competing installations with the same helper
+identifier are a candidate trigger. The exact trigger and recovery remain
+unproven until a controlled registration repair succeeds. This evidence does
+not establish that the daemon executable is missing or that administrator
+approval was denied. A local app-data reset does not reset service registration.
+
+`observed` in code: after a parent-side request timeout, `MacOsHelperClient`
+retains `pendingUnknownRequest` and rejects every operation except Reconcile.
+`DesktopMacHelperState.recheck()` calls Status directly, and enabling calls
+Enable followed by Status. Neither setup route reconciles the pending request;
+its exception maps back to unavailable. In this run, Check again returned to
+the same failure without leaving a helper process running. Restart clears the
+in-memory client state but does not repair the system registration.
+
+`observed` in the native onboarding UI: the pending operation disabled both
+Enable and Not now without an activity message. Session later offered Check
+again and a restart suggestion. `open`: provide truthful, recoverable setup
+behavior for an uncertain request and a registered-but-unlaunchable daemon;
+keep this separate from normal background-approval handling. No service
+registration, system approval, proxy setting, or product source was changed
+during diagnosis. Raw evidence remains in ignored local verification output.
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the
