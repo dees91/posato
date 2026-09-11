@@ -279,13 +279,18 @@ toward the end, reverses when visible content stops changing, and stops at the
 timeout or attempt bound. A matching row must be inside the viewport. Use
 `query.within: {"text":"Saved websites","role":"group"}` for website rows,
 including on iOS where the outer Compose scroll wrapper spans the whole screen.
-Session's iCloud and Mac-only This Mac rows are initially collapsed. Tap the
-row by `textContains` (`"iCloud,"` or `"This Mac,"`) with `role: "button"`
-before addressing its actions, then use `scrollTo` if an action is offscreen.
-The [sync recipe](../../.agents/skills/verify-posato/features/sync.md) includes
-the verified iOS Session scroll scope; the
+On compact Session (iPhone 13 mini), that wrapper fills the window and does
+not move the inner vertical scroll; `scrollTo` then swipes the screen instead
+of dragging the wrapper. Session's iCloud and Mac-only This Mac rows are
+initially collapsed. Tap the row by `textContains` (`"iCloud,"` or
+`"This Mac,"`) with `role: "button"` before addressing its actions, then
+unscoped `scrollTo` for the offscreen action. The
+[sync recipe](../../.agents/skills/verify-posato/features/sync.md) has the
+compact-iPhone sequence; the
 [Session recipe](../../.agents/skills/verify-posato/features/sessions.md)
 covers explicit helper checks.
+`scrollTo` reports reached only when the element's centre is on screen, so
+a following tap lands on the element and not on a bar clipping its edge.
 Visibility does not require static row text to be individually tappable.
 The 50-row fixture allows 60 seconds per step; cleanup allows 90 seconds for
 finding the first row from an arbitrary retained scroll position. Desktop pointer and wheel

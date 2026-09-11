@@ -106,7 +106,15 @@ internal class BootstrapJoinPhase(
     private suspend fun checkAnchor(attempt: PendingWorkspaceJoin): JoinCheckResult {
         return when (val anchor = cloud.readAnchor(attempt.binding)) {
             is AnchorReadResult.Found -> if (anchor.anchor == attempt.anchor) {
-                checkItem(attempt)
+                when (val removed = store.containsRemoved(anchor.anchor.workspaceId)) {
+                    is BootstrapStoreResult.Failure -> removed.reason.toJoinResult()
+
+                    is BootstrapStoreResult.Success -> if (removed.value) {
+                        JoinCheckResult.UNCHANGED
+                    } else {
+                        checkItem(attempt)
+                    }
+                }
             } else {
                 JoinCheckResult.ACTION_REQUIRED
             }

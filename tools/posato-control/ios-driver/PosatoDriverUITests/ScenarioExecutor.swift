@@ -13,11 +13,13 @@ final class ScenarioExecutor {
   private static let pollInterval: TimeInterval = 0.25
   private static let settleInterval: TimeInterval = 0.5
   private static let scrollAttempts = 80
-  private static let revealAttempts = 3
+  private static let revealAttempts = 8
   private static let keyboardSettle: TimeInterval = 0.3
   private static let extraDeletes = 3
   private static let rowWeight: CGFloat = 3
   private static let scrollSettle: TimeInterval = 0.5
+  private static let minDragViewportHeight: CGFloat = 80
+  private static let screenSwipeCoverage: CGFloat = 0.9
 
   private let scenario: Scenario
   private let app: XCUIApplication
@@ -299,26 +301,24 @@ final class ScenarioExecutor {
     let containers =
       step.query?.within != nil || scope.elementType == .scrollView
       ? [scope] : scope.scrollViews.allElementsBoundByIndex
-    guard
-      let container = containers.filter({
+    let container =
+      containers.filter({
         $0.exists && !$0.frame.isEmpty && $0.frame.intersects(app.frame)
       })
-      .max(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height })
-    else {
-      throw DriverError(.elementNotFound, "No visible scroll area matches the requested scope")
-    }
+      .max(by: { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height }) ?? app
+    let screenSwipe = Self.usesScreenSwipe(container: container, window: app.frame)
+    let labelRoot = screenSwipe ? app : container
     let deadline = Date().addingTimeInterval(timeout)
     var previous: [String]?
     var forward = true
     var unchanged = 0
     for _ in 0..<Self.scrollAttempts {
       if let element = resolve(step.query, action: step.action), element.exists,
-        !element.frame.isEmpty,
-        container.frame.intersection(app.frame).contains(element.frame)
+        !element.frame.isEmpty, Self.isVisible(element, in: app.frame)
       {
         return
       }
-      let current = Self.scrollLabels(SnapshotSerializer.node(from: try container.snapshot()))
+      let current = Self.scrollLabels(SnapshotSerializer.node(from: try labelRoot.snapshot()))
       unchanged = current == previous ? unchanged + 1 : 0
       if Date() >= deadline || (!forward && unchanged >= 2) { break }
       if unchanged >= 2 {
@@ -326,17 +326,49 @@ final class ScenarioExecutor {
         unchanged = 0
       }
       previous = current
-      let start = container.coordinate(
-        withNormalizedOffset: CGVector(dx: 0.5, dy: forward ? 0.85 : 0.15))
-      let end = container.coordinate(
-        withNormalizedOffset: CGVector(dx: 0.5, dy: forward ? 0.15 : 0.85))
-      start.press(forDuration: 0.05, thenDragTo: end)
-      Thread.sleep(forTimeInterval: Self.scrollSettle)
+      pan(in: container, forward: forward, screenSwipe: screenSwipe)
     }
     throw DriverError(
       .elementNotFound,
       "element not reached within the scrolling limit: \(describe(step.query))"
     )
+  }
+
+  /// Compose's outer iOS scroll wrapper often fills the window and does not
+  /// move Session's inner vertical scroll. A heading `within` scope can also
+  /// be too small to drag. A screen swipe is then the gesture that pans.
+  private static func usesScreenSwipe(container: XCUIElement, window: CGRect) -> Bool {
+    let viewport = container.frame.intersection(window)
+    if viewport.height < minDragViewportHeight {
+      return true
+    }
+    return viewport.width >= window.width * screenSwipeCoverage
+      && viewport.height >= window.height * screenSwipeCoverage
+  }
+
+  /// Reached means the element's centre is on screen, so a following tap
+  /// lands on the element rather than on a bar that clips its edge.
+  private static func isVisible(_ element: XCUIElement, in window: CGRect) -> Bool {
+    let frame = element.frame
+    let centre = CGPoint(x: frame.midX, y: frame.midY)
+    return window.contains(centre)
+  }
+
+  private func pan(in container: XCUIElement, forward: Bool, screenSwipe: Bool) {
+    if screenSwipe {
+      if forward {
+        app.swipeUp()
+      } else {
+        app.swipeDown()
+      }
+    } else {
+      let start = container.coordinate(
+        withNormalizedOffset: CGVector(dx: 0.5, dy: forward ? 0.85 : 0.15))
+      let end = container.coordinate(
+        withNormalizedOffset: CGVector(dx: 0.5, dy: forward ? 0.15 : 0.85))
+      start.press(forDuration: 0.05, thenDragTo: end)
+    }
+    Thread.sleep(forTimeInterval: Self.scrollSettle)
   }
 
   private static func scrollLabels(_ node: SnapshotNode) -> [String] {

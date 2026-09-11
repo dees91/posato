@@ -59,8 +59,12 @@ internal enum class BootstrapStoreFailure {
     STORAGE_FAILURE
 }
 
+internal const val REMOVED_WORKSPACE_LIMIT: Int = 32
+
 internal interface BootstrapStore {
     suspend fun clearEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit>
+
+    suspend fun containsRemoved(workspaceId: WorkspaceId): BootstrapStoreResult<Boolean>
 
     suspend fun read(): BootstrapStoreResult<BootstrapState>
 
@@ -89,7 +93,21 @@ internal class SqlBootstrapStore(
             database.syncLocalPolicyQueries.deleteBaseMarker()
             database.syncLocalPolicyQueries.deleteBaseDomains()
             database.syncLocalPolicyQueries.deleteBaseApplication()
+            database.syncBootstrapQueries.insertRemovedWorkspace(
+                workspace_id = workspace.context.workspaceId.value.copyBytes(),
+            )
+            database.syncBootstrapQueries.evictRemovedWorkspacesBeyond(
+                keep_count = REMOVED_WORKSPACE_LIMIT.toLong(),
+            )
             database.syncBootstrapQueries.clearEstablishedWorkspace()
+        }
+    }
+
+    override suspend fun containsRemoved(workspaceId: WorkspaceId): BootstrapStoreResult<Boolean> {
+        return databaseCall {
+            database.syncBootstrapQueries.selectRemovedWorkspace(workspaceId.value.copyBytes())
+                .awaitAsList()
+                .isNotEmpty()
         }
     }
 

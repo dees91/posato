@@ -485,9 +485,28 @@ not claim that every other device has received the update.
   the group name while selections stay local, a pre-link website backfills at
   the first exchange after linking, and an offline save reports retryable and
   then completes on reconnect. Re-linking within minutes of removal plus
-  establish can adopt a stale key and report completed inside a ghost zone;
+  establish adopted a stale key and reported completed inside a ghost zone;
   settling (~8 min here) before re-linking healed it. See the [execution
   record](../../tasks/executions/sync-011-policy-convergence.md).
+- `user-confirmed` (2026-09-11): `SYNC-014` records a device-local tombstone
+  of removed workspace identifiers and refuses to adopt that workspace again
+  on the device that performed the removal. Retryable uses the existing
+  unlinked copy; the recipe states the settle rule and the ghost recovery
+  (press **Remove workspace** again). A fresh install without a tombstone can
+  still join a ghost during the provider purge window. See the [task
+  brief](../../tasks/specifications/sync-014-removal-hardening.md).
+- `observed` (2026-09-11 physical gate): re-linking the Mac about two and a
+  half minutes after removal, with the iPhone still linked, established a
+  fresh identifier that reported completed, yet the website added while
+  unlinked never reached the iPhone and the Mac later reported action
+  required while keeping its established row. `inferred`: the tombstone
+  never fired, because a completed establish cannot have matched a
+  tombstoned anchor; the purge-window variant is outside `SYNC-014`. The
+  second run (both
+  devices removed, about one minute) converged normally. The fix direction
+  (unique zone identity per establish, a removal that deletes records and
+  keeps the zone, or the settle rule as the MVP limit) is `open` for a later
+  roadmap revision; until then the recipe's settle rule applies.
 
 ## Open production questions
 

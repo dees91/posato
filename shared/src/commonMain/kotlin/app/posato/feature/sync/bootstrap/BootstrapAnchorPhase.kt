@@ -151,6 +151,10 @@ internal class BootstrapAnchorPhase(
         winner: WorkspaceAnchor,
         ownAccount: KeyAccount
     ): BootstrapResult {
+        val refused = refuseIfRemoved(store, winner.workspaceId)
+        if (refused != null) {
+            return refused
+        }
         val cleanup = mapDelete(keys.deleteItemAndVerifyAbsent(binding, ownAccount))
         if (cleanup != null) {
             return cleanup

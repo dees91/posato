@@ -1,5 +1,7 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.sync.domain.WorkspaceId
+
 internal val bindingA = checkNotNull(AccountBinding.fromBytes(ByteArray(ACCOUNT_BINDING_BYTES) { 1 }))
 internal val bindingB = checkNotNull(AccountBinding.fromBytes(ByteArray(ACCOUNT_BINDING_BYTES) { 2 }))
 
@@ -168,20 +170,33 @@ internal class FakeBootstrapKeyPort(
 internal class FakeBootstrapStore(
     var state: BootstrapState = BootstrapState.None,
     var readFailure: BootstrapStoreFailure? = null,
-    var writeFailure: BootstrapStoreFailure? = null
+    var writeFailure: BootstrapStoreFailure? = null,
+    var containsFailure: BootstrapStoreFailure? = null
 ) : BootstrapStore {
     var persistCalls = 0
         private set
     var commitCalls = 0
         private set
+    val removed = mutableSetOf<WorkspaceId>()
     var afterCommit: suspend () -> Unit = {}
+
+    fun recordRemoved(workspaceId: WorkspaceId) {
+        removed += workspaceId
+    }
 
     override suspend fun clearEstablished(workspace: EstablishedWorkspace): BootstrapStoreResult<Unit> {
         val failure = writeFailure
         if (failure != null) return BootstrapStoreResult.Failure(failure)
         if (state != BootstrapState.Established(workspace)) return BootstrapStoreResult.Failure(BootstrapStoreFailure.CORRUPTION)
+        removed += workspace.context.workspaceId
         state = BootstrapState.None
         return BootstrapStoreResult.Success(Unit)
+    }
+
+    override suspend fun containsRemoved(workspaceId: WorkspaceId): BootstrapStoreResult<Boolean> {
+        val failure = containsFailure
+        if (failure != null) return BootstrapStoreResult.Failure(failure)
+        return BootstrapStoreResult.Success(removed.contains(workspaceId))
     }
 
     override suspend fun read(): BootstrapStoreResult<BootstrapState> {

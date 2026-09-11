@@ -104,6 +104,39 @@ class AppleSyncTest {
     }
 
     @Test
+    fun `given a removed workspace when the old anchor returns then relink is refused`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            val removed = checkNotNull(harness.cloud.storedAnchor)
+            harness.sync.removeWorkspace()
+            assertEquals(BootstrapStoreResult.Success(BootstrapState.None), harness.store.read())
+            assertEquals(BootstrapStoreResult.Success(true), harness.store.containsRemoved(removed.workspaceId))
+            harness.cloud.zoneExists = true
+            harness.cloud.storedAnchor = removed
+            val item = checkNotNull(
+                BootstrapEncoding.encodeKeyItem(
+                    removed.workspaceId,
+                    removed.transportEpochId,
+                    removed.keyEpochId,
+                    ByteArray(32) { 7 },
+                ),
+            )
+            val account = checkNotNull(BootstrapEncoding.identifierToAccountText(removed.workspaceId.value))
+            harness.keys.items[account] = item.copyBytes()
+            harness.sync.syncWithIcloud()
+            assertEquals(SyncStatus.RETRYABLE, harness.sync.state.value.status)
+            assertEquals(false, harness.sync.state.value.linked)
+            assertEquals(BootstrapStoreResult.Success(BootstrapState.None), harness.store.read())
+            assertEquals(0, harness.cloud.anchorCreateCalls)
+            assertEquals(0, harness.keys.createCalls)
+            assertTrue(harness.database.syncReplicaQueries.selectAcceptedBundles().executeAsList().isEmpty())
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
     fun `given a different anchor when exchanging and removing then the foreign zone is untouched`() = runTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {

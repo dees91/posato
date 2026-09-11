@@ -1,3 +1,12 @@
+CREATE TABLE sync_removed_workspace (
+  workspace_id BLOB NOT NULL PRIMARY KEY CHECK (
+    typeof(workspace_id) = 'blob' AND length(workspace_id) = 16
+  ),
+  recorded_order INTEGER NOT NULL UNIQUE CHECK (
+    typeof(recorded_order) = 'integer' AND recorded_order > 0
+  )
+);
+
 CREATE TABLE sync_bootstrap_state (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
   candidate_workspace_id BLOB CHECK (
@@ -86,3 +95,27 @@ INSERT OR REPLACE INTO sync_bootstrap_state(
 
 clearEstablishedWorkspace:
 DELETE FROM sync_bootstrap_state;
+
+insertRemovedWorkspace:
+INSERT OR REPLACE INTO sync_removed_workspace(
+  workspace_id,
+  recorded_order
+) VALUES (
+  :workspace_id,
+  COALESCE((SELECT MAX(recorded_order) FROM sync_removed_workspace), 0) + 1
+);
+
+evictRemovedWorkspacesBeyond:
+DELETE FROM sync_removed_workspace
+WHERE recorded_order <= (
+  SELECT MAX(recorded_order) FROM sync_removed_workspace
+) - :keep_count;
+
+selectRemovedWorkspace:
+SELECT workspace_id
+FROM sync_removed_workspace
+WHERE workspace_id = :workspace_id;
+
+countRemovedWorkspaces:
+SELECT count(*)
+FROM sync_removed_workspace;
