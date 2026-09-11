@@ -115,6 +115,10 @@ class SqlLocalSetupMigrationTest {
         val driver = testDatabase.openDriver()
         driver.executeSql(seed)
         driver.executeSql("DROP TABLE local_setup_state")
+        driver.executeSql("DROP TABLE sync_policy_intent")
+        driver.executeSql("DROP TABLE sync_policy_base")
+        driver.executeSql("DROP TABLE sync_policy_base_domain")
+        driver.executeSql("DROP TABLE sync_policy_base_application")
         driver.executeSql("PRAGMA user_version = $PREVIOUS_VERSION")
         driver.close()
     }

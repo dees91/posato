@@ -20,8 +20,10 @@ one active exchange can retain at most one queued opportunity.
 - `sync-establish` / `sync-join`: establish or adopt the same private workspace,
   including simultaneous opt-in and waiting for a synchronizable key.
 - `sync-exchange`: publish immutable pending bundles and accept remote bundles
-  into the replica in both directions. Incoming operations do not yet change
-  local websites, applications, or sessions (`SYNC-011` / `SYNC-012`).
+  into the replica in both directions. A completed exchange converges exact
+  domains and the application group name into the visible policies while
+  application selections stay local; sessions still do not converge
+  (`SYNC-012`).
 - `sync-retry`: offline or uncertain outcomes preserve pending bytes; retry on
   **Sync now** or a later foreground. No timer or delivery guarantee exists.
 - `sync-account-gate`: sign-out before an attempt stops both exchange legs;
@@ -45,6 +47,11 @@ The rows start collapsed when Session is recreated, including after a relaunch
 or a return from Paused items. Expand iCloud again before addressing its
 buttons. On smaller viewports, expansion can place the action below the visible
 area: use a scenario `scrollTo` before tapping; `waitFor` does not scroll.
+Expanded actions below the fold may be missing from the snapshot tree entirely
+until scrolled into view, so scroll to the action label with an unscoped
+`scrollTo` (a `within` scope can pin the wrong container) and snapshot-verify
+the expansion first, because tapping an already-expanded header collapses it
+again.
 For the inactive Session on iOS, the verified scope is:
 
 ```json
@@ -70,7 +77,9 @@ the action label with **Sync now** or **Remove workspace** as appropriate.
    attempt. Other devices may still need to sync.**
 4. Through Paused items, add a reserved synthetic domain on one device. Return
    to Session and wait for completion. Press **Sync now** on the other device.
-   Repeat in the reverse direction. Local websites must remain device-local.
+   Repeat in the reverse direction. Both devices must converge to the union
+   of their websites: after each **Sync now**, the peer shows the new domain
+   in Paused items and the read-only queries below agree on both devices.
    On Mac, compare counts before and after each step using the read-only
    queries below; registrations are also bundles, so establish the baseline
    before adding the domain. A repeat exchange must not add accepted entries.

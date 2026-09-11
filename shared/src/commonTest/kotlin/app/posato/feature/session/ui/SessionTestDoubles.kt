@@ -16,7 +16,10 @@ import app.posato.feature.targets.data.LocalApplicationSelectionResult
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 
 internal class FakeSessionIdGenerator : SessionIdGenerator {
     private var next: Int = 1
@@ -38,6 +41,14 @@ internal class FakeSessionTimeFormat : SessionTimeFormat {
 internal class FakeSessionPolicyStore(
     var result: LocalPolicyResult<LocalTargetPolicyState>,
 ) : LocalTargetPolicyStore {
+    override suspend fun <T> withWriteGate(block: suspend () -> T): T {
+        return block()
+    }
+
+    val changes = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
+    override val policyChanges: Flow<Unit>
+        get() = changes
+
     override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
         return result
     }
@@ -45,6 +56,7 @@ internal class FakeSessionPolicyStore(
     override suspend fun replace(
         expectedRevision: Long,
         policy: TargetPolicy,
+        syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         throw UnsupportedOperationException()
     }

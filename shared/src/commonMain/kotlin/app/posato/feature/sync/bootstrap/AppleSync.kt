@@ -2,8 +2,11 @@ package app.posato.feature.sync.bootstrap
 
 import app.posato.feature.sync.data.SyncCryptoProvider
 import app.posato.feature.sync.domain.SyncOperationCore
+import app.posato.feature.sync.domain.SyncWriter
 import app.posato.feature.sync.mailbox.MailboxPort
-import app.posato.feature.targets.domain.TargetPolicy
+import app.posato.feature.targets.data.LocalPolicyResult
+import app.posato.feature.targets.data.LocalPolicySyncStore
+import app.posato.feature.targets.domain.PolicySyncBase
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -30,11 +33,17 @@ internal enum class SyncStatus {
     ACTION_REQUIRED,
 }
 
+internal enum class SyncAttentionReason {
+    LOCAL_CAPACITY,
+    SHARED_CAPACITY,
+}
+
 internal data class AppleSyncState(
     val status: SyncStatus = SyncStatus.LOCAL_ONLY,
     val linked: Boolean = false,
     val joinPending: Boolean = false,
     val checkingJoin: Boolean = false,
+    val reason: SyncAttentionReason? = null,
 )
 
 internal class AppleSync(
@@ -43,14 +52,16 @@ internal class AppleSync(
     mailbox: MailboxPort,
     keys: BootstrapKeyPort,
     store: BootstrapStore,
+    private val policySync: LocalPolicySyncStore,
     crypto: SyncCryptoProvider,
     internal val backgroundDispatcher: CoroutineDispatcher,
 ) {
     internal val bootstrap = AppleBootstrap(coordinator, backgroundDispatcher)
+    private val reconciler = PolicyReconciler(policySync)
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
     private val opportunities = Channel<Unit>(Channel.CONFLATED)
     private val writers = AppleSyncWriter(coordinator, core, ::publish)
-    private val authoring = AppleSyncAuthoring(store, writers, ::publish)
+    private val authoring = AppleSyncAuthoring(store, policySync, ::publish)
     private val exchange = AppleMailboxExchange(mailbox, crypto)
     private val removal = AppleWorkspaceRemoval(mailbox, keys, store)
     private val mutableState = MutableStateFlow(AppleSyncState())
@@ -59,7 +70,8 @@ internal class AppleSync(
         for (ignored in opportunities) {
             guarded {
                 mutableState.refreshLinked(coordinator)
-                if (authoring.drain()) runExchange()
+                val writer = writers.open()
+                if (writer != null) runExchange()
             }
         }
     }
@@ -154,6 +166,7 @@ internal class AppleSync(
                 publish(SyncStatus.SYNCING)
                 val result = removal.remove(coordinator.checkEstablished(), writers::close)
                 mutableState.refreshLinked(coordinator)
+                mutableState.update { it.copy(reason = null) }
                 publish(result)
             }
         }.await()
@@ -163,16 +176,7 @@ internal class AppleSync(
         return authoring.captureWorkspace()
     }
 
-    fun enqueueDomainChanges(
-        workspace: BootstrapStoreResult<EstablishedWorkspace?>,
-        before: TargetPolicy,
-        after: TargetPolicy
-    ) {
-        if (authoring.enqueue(workspace, before, after)) syncNow()
-    }
-
     suspend fun close() {
-        authoring.close()
         opportunities.cancel()
         scope.cancel()
         worker.join()
@@ -187,11 +191,43 @@ internal class AppleSync(
         }
         publish(SyncStatus.SYNCING)
         val active = writers.open() ?: return
-        publish(exchange.exchange(checkNotNull(check.workspace), active))
+        val workspace = checkNotNull(check.workspace)
+        val base = when (val read = readBaseOrHalt(policySync, ::publish)) {
+            is BaseRead.Halted -> return
+            is BaseRead.Ready -> read.base
+        }
+        if (!exchangeLegsOrHalt(base, authoring, exchange, workspace, active, ::publish)) {
+            return
+        }
+        runPolicyPhase(workspace, active, base)
+    }
+
+    private suspend fun runPolicyPhase(
+        workspace: EstablishedWorkspace,
+        writer: SyncWriter,
+        base: PolicySyncBase?,
+    ) {
+        if (!seedAndDrainOrHalt(base, reconciler, authoring, workspace, writer, ::publish)) {
+            return
+        }
+        val group = reconciler.decideGroup(writer, writer.projection())
+        if (group is GroupOutcome.Failed) {
+            publish(group.status)
+            return
+        }
+        val republished = exchange.publishPending(workspace, writer)
+        if (republished != null) {
+            publish(republished)
+            return
+        }
+        // A name authored by decideGroup is published above, so apply reads a
+        // fresh projection; otherwise the base would lag the authored name and
+        // a later local rename would be clobbered as a remote change (D4).
+        mutableState.publishOutcome(reconciler.apply(writer.projection(), base))
     }
 
     private fun publish(status: SyncStatus) {
-        mutableState.update { it.copy(status = status) }
+        mutableState.update { it.copy(status = status, reason = null) }
     }
 
     private suspend fun guarded(action: suspend () -> Unit) {
@@ -203,6 +239,96 @@ internal class AppleSync(
             } catch (_: Exception) {
                 publish(SyncStatus.RETRYABLE)
             }
+        }
+    }
+}
+
+private sealed interface BaseRead {
+    data class Ready(
+        val base: PolicySyncBase?,
+    ) : BaseRead
+
+    data object Halted : BaseRead
+}
+
+private suspend fun readBaseOrHalt(
+    policies: LocalPolicySyncStore,
+    publish: (SyncStatus) -> Unit,
+): BaseRead {
+    return when (val read = policies.readBase()) {
+        is LocalPolicyResult.Success -> {
+            BaseRead.Ready(read.value)
+        }
+
+        is LocalPolicyResult.Failure -> {
+            publish(read.reason.toSyncStatus())
+            BaseRead.Halted
+        }
+    }
+}
+
+private suspend fun exchangeLegsOrHalt(
+    base: PolicySyncBase?,
+    authoring: AppleSyncAuthoring,
+    exchange: AppleMailboxExchange,
+    workspace: EstablishedWorkspace,
+    writer: SyncWriter,
+    publish: (SyncStatus) -> Unit,
+): Boolean {
+    if (base != null && !authoring.drain(writer)) {
+        return false
+    }
+    val published = exchange.publishPending(workspace, writer)
+    if (published != null) {
+        publish(published)
+        return false
+    }
+    val consumed = exchange.consume(workspace, writer)
+    if (consumed != SyncStatus.COMPLETED) {
+        publish(consumed)
+    }
+    return consumed == SyncStatus.COMPLETED
+}
+
+private suspend fun seedAndDrainOrHalt(
+    base: PolicySyncBase?,
+    reconciler: PolicyReconciler,
+    authoring: AppleSyncAuthoring,
+    workspace: EstablishedWorkspace,
+    writer: SyncWriter,
+    publish: (SyncStatus) -> Unit,
+): Boolean {
+    if (base != null) {
+        return true
+    }
+    val seeded = reconciler.seedLocalExtras(workspace.context.workspaceId.value.copyBytes())
+    if (seeded is LocalPolicyResult.Failure) {
+        publish(seeded.reason.toSyncStatus())
+        return false
+    }
+    return authoring.drain(writer)
+}
+
+private fun MutableStateFlow<AppleSyncState>.publishOutcome(outcome: ReconcileOutcome) {
+    when (outcome) {
+        ReconcileOutcome.AppliedClean -> {
+            update { it.copy(status = SyncStatus.COMPLETED, reason = null) }
+        }
+
+        ReconcileOutcome.RefusedWorkspaceFull -> {
+            update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.SHARED_CAPACITY) }
+        }
+
+        ReconcileOutcome.RefusedLocalCap -> {
+            update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.LOCAL_CAPACITY) }
+        }
+
+        ReconcileOutcome.Corrupt -> {
+            update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = null) }
+        }
+
+        ReconcileOutcome.Conflict, ReconcileOutcome.StorageFailure -> {
+            update { it.copy(status = SyncStatus.RETRYABLE, reason = null) }
         }
     }
 }

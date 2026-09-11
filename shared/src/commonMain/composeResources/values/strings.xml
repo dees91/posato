@@ -115,6 +115,10 @@
     <string name="sync_completed">This device completed its latest sync attempt. Other devices may still need to sync.</string>
     <string name="sync_retryable">Sync didn’t finish. Choose Sync now to try again.</string>
     <string name="sync_action_required">Sync needs attention. Check your iCloud account and workspace before trying again.</string>
+    <string name="sync_action_required_local_capacity">Sync needs attention. Your devices together hold more than 1,024 websites. Remove websites on either device, then choose Sync now.</string>
+    <string name="sync_action_required_shared_capacity">Sync needs attention. The shared workspace holds more websites than it can keep. Remove websites on any device, then choose Sync now. Compare Paused items on both devices and add anything missing again.</string>
+    <string name="session_icloud_linking">Linking combines the websites saved on your devices. App choices stay on each device.</string>
+    <string name="onboarding_icloud_linking_websites">Linking combines the websites saved on your devices.</string>
     <string name="sync_remove_workspace">Remove workspace</string>
     <string name="sync_cancel_removal">Keep workspace</string>
     <string name="sync_remove_confirmation">This deletes the shared workspace from iCloud. Changes not yet delivered from this device are discarded. Websites saved on this device stay. Every other device must remove the old workspace and link again. Afterwards, choose Sync with iCloud to link this device again.</string>

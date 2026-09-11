@@ -56,6 +56,13 @@ Preconditions:
   and a snapshot, and lands on Session. Confirm the side effects with
   `$PC db query -t sim --sql "select canonical_domain from exact_domain_policy"`
   (one row) and zero `sync_bootstrap_state` rows.
+- **Late summary refresh:** during an attended second-install join, leave
+  the joining device on Summary while the peer adds or removes a reserved
+  fixture website. After a completed exchange, capture the updated saved
+  count without navigating away. Repeat for removal. This needs two linked
+  devices; the local-only full fixture does not prove remote arrival.
+  Gated common tests cover an apply during the initial read, a failed read
+  retaining the prior count, and cancellation when Summary closes.
 - **Skip prelude:** `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/first-install-skip.json`
   after a fresh launch or reset. It writes nothing except the completion row;
   confirm with one `local_setup_state` row and an immediate Session landing

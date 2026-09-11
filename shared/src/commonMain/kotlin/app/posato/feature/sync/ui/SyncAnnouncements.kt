@@ -21,8 +21,10 @@ internal fun SyncAnnouncements(
     val snapshot by state.syncState.collectAsState()
     val announce by rememberUpdatedState(onAnnouncement)
     var trackingJoin by remember { mutableStateOf(false) }
-    val message = stringResource(if (state.checking) Res.string.sync_checking_key else snapshot.status.message(snapshot.linked))
-    LaunchedEffect(snapshot.status, state.checking, state.completedChecks) {
+    val message = stringResource(
+        if (state.checking) Res.string.sync_checking_key else snapshot.status.message(snapshot.linked, snapshot.reason),
+    )
+    LaunchedEffect(snapshot.status, snapshot.reason, state.checking, state.completedChecks) {
         if (snapshot.joinPending || state.checking) trackingJoin = true
         if (trackingJoin) {
             announce(message)

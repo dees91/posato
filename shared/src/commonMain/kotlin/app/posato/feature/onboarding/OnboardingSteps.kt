@@ -33,6 +33,7 @@ import app.posato.generated.resources.onboarding_action_continue
 import app.posato.generated.resources.onboarding_action_not_now
 import app.posato.generated.resources.onboarding_action_open_session
 import app.posato.generated.resources.onboarding_icloud_body
+import app.posato.generated.resources.onboarding_icloud_linking_websites
 import app.posato.generated.resources.onboarding_icloud_optional
 import app.posato.generated.resources.onboarding_icloud_title
 import app.posato.generated.resources.onboarding_permission_control
@@ -170,11 +171,14 @@ internal fun IcloudStep(
                         } else if (syncSnapshot.status == SyncStatus.LOCAL_ONLY) {
                             Res.string.onboarding_summary_sync_on
                         } else {
-                            syncSnapshot.status.message(syncSnapshot.linked)
+                            syncSnapshot.status.message(syncSnapshot.linked, syncSnapshot.reason)
                         },
                     ),
                 )
             }
+        }
+        if (!syncSnapshot.linked) {
+            PosatoCaption(stringResource(Res.string.onboarding_icloud_linking_websites))
         }
         if (syncSnapshot.status == SyncStatus.WAITING_FOR_KEY) {
             PosatoCaption(stringResource(Res.string.sync_waiting_explanation))
@@ -195,8 +199,8 @@ internal fun WebsiteStep(
     layout: PosatoLayout,
 ) {
     val focus = LocalFocusManager.current
-    LaunchedEffect(state.savedWebsites) {
-        if (state.savedWebsites > 0) {
+    LaunchedEffect(browser.lastReceipt) {
+        if ((browser.lastReceipt?.addedCount ?: 0) > 0) {
             focus.clearFocus()
         }
     }
