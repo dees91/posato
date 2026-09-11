@@ -213,36 +213,38 @@ and the recipe's settle rule is retired once the timed proof passes.
 
 ## Decisions or blockers
 
-- `D1` removal shape. Recommended: delete records, keep the zone, enumerate
-  and verify through the looped changes traversal, idempotent batches.
-  Alternatives:
-  keep deleting the zone and rely on the settle rule (the observed loss
-  stays reachable); a new zone identity per establish (closes the class too
-  but changes the arbiter, the schema, both adapters, and every recipe
-  query; kept as the fallback if `AC-04` fails).
-- `D2` peer status. Recommended: a distinct `ANCHOR_MISSING` established
-  status with the existing action-required copy, treated like zone-missing
-  by removal so the peer never needs manual repair. Alternative: keep
-  mapping anchor absence to the generic action required, which today makes
-  the peer's removal stop before clearing its state.
-- `D3` deletion entries. Recommended: replace the integrity-failure guard
-  with progress-only pages on both platforms. Alternative: keep rejecting
-  them, which breaks the remover's own absence check and pins the cursor of
-  every workspace established after a removal.
-- `D4` tombstone and settle rule. Recommended: keep the tombstone; retire
-  the ten-minute settle rule to a historical note only after `AC-04` passes
-  in both shapes and directions. Alternative: retire it on the design
-  argument alone.
-- `D5` foreign leftovers. Recommended: both rules, the consume-loop skip of
-  foreign-context bundles (closes the late-publish window completely) and
-  the fresh-attempt sweep while no anchor exists (keeps the zone clean),
-  with the ADR 0007 amendment naming the sweep's bounded destructive
-  authority. Alternatives: the sweep alone, which leaves a window between
-  the sweep and the anchor create; the skip alone, which leaves leftovers
-  in the zone forever; a peer-side sweep at its own removal, which the peer
-  cannot do safely because it no longer holds a live anchor to prove
-  ownership.
-- Physical gate: the maintainer's Mac and iPhone on one account; removal
-  and re-link are attended and destructive for the linked workspace;
-  reserved synthetic domain only; the gate runs after or before the
-  `SYNC-012` gate, never at the same time.
+- `D1` removal shape, decided (`user-confirmed`, 2026-09-11) as recommended:
+  delete records, keep the zone, enumerate and verify through the looped
+  changes traversal, idempotent batches. Alternatives: keep deleting the zone
+  and rely on the settle rule (the observed loss stays reachable); a new zone
+  identity per establish (closes the class too but changes the arbiter, the
+  schema, both adapters, and every recipe query; kept as the fallback if
+  `AC-04` fails).
+- `D2` peer status, decided (`user-confirmed`, 2026-09-11) as recommended: a
+  distinct `ANCHOR_MISSING` established status with the existing
+  action-required copy, treated like zone-missing by removal so the peer never
+  needs manual repair. Alternative: keep mapping anchor absence to the generic
+  action required, which today makes the peer's removal stop before clearing
+  its state.
+- `D3` deletion entries, decided (`user-confirmed`, 2026-09-11) as
+  recommended: replace the integrity-failure guard with progress-only pages on
+  both platforms. Alternative: keep rejecting them, which breaks the remover's
+  own absence check and pins the cursor of every workspace established after a
+  removal.
+- `D4` tombstone and settle rule, decided (`user-confirmed`, 2026-09-11) as
+  recommended: keep the tombstone; retire the ten-minute settle rule to a
+  historical note only after `AC-04` passes in both shapes and directions.
+  Alternative: retire it on the design argument alone.
+- `D5` foreign leftovers, decided (`user-confirmed`, 2026-09-11) as
+  recommended: both rules, the consume-loop skip of foreign-context bundles
+  (closes the late-publish window completely) and the fresh-attempt sweep
+  while no anchor exists (keeps the zone clean), with the ADR 0007 amendment
+  naming the sweep's bounded destructive authority. Alternatives: the sweep
+  alone, which leaves a window between the sweep and the anchor create; the
+  skip alone, which leaves leftovers in the zone forever; a peer-side sweep at
+  its own removal, which the peer cannot do safely because it no longer holds
+  a live anchor to prove ownership.
+- Physical gate: the maintainer's Mac and iPhone on one account; removal and
+  re-link are attended and destructive for the linked workspace; reserved
+  synthetic domain only; the gate runs after or before the `SYNC-012` gate,
+  never at the same time.

@@ -76,7 +76,8 @@
 
 ## Blockers and accepted risks
 
-- Maintainer decisions `D1` to `D5` in the brief precede implementation.
+- Maintainer decisions `D1` to `D5` accepted as recommended
+  (`user-confirmed`, 2026-09-11); implementation may start.
 - The purge-window mechanism remains a hypothesis; the design removes zone
   deletion regardless, and `AC-04` is the proof.
 - If `AC-04` fails, the fallback is a new zone identity per establish, a
