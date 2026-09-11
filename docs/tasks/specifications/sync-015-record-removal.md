@@ -50,10 +50,14 @@ and the recipe's settle rule is retired once the timed proof passes.
 - Removal (`D1`): after the established check says ready, the mailbox port
   deletes the exact anchor record and every bundle record of the exact zone
   under the established binding, in bounded batches, idempotently (a record
-  already gone is success), then verifies absence independently: the anchor
-  read says missing and a changes fetch from the first page yields no bundle.
-  Only then the workspace key is deleted and the local state cleared as
-  today, including the tombstone. An account failure, a retryable or
+  already gone is success). Bundle records are enumerated by the existing
+  changes traversal from an empty token, never by a query, because ADR 0007
+  keeps the schema free of a queryable index and queries are eventually
+  consistent. Absence is then verified independently: the anchor read says
+  missing, and a changes traversal from an empty token, looped until the
+  provider reports no more changes, yields deletion entries only and no
+  bundle. Only then the workspace key is deleted and the local state
+  cleared as today, including the tombstone. An account failure, a retryable or
   unknown provider result, or a remaining record stops the destructive
   steps with the existing retryable or action-required outcomes and keeps
   the established row, so the person can retry. The zone `PosatoSyncV1` is
@@ -61,31 +65,54 @@ and the recipe's settle rule is retired once the timed proof passes.
 - Peer semantics (`D2`): a linked device whose established check finds the
   zone but no anchor reports a new `ANCHOR_MISSING` established status,
   shown as the existing action-required copy; removal on that device treats
-  it like `ZONE_MISSING`: it skips the record deletion (nothing of its own
-  remains), deletes its own key item, clears local state, and tombstones the
-  workspace. A different anchor keeps today's `DIFFERENT_ANCHOR` behavior.
+  it like `ZONE_MISSING`: it skips the record deletion, deletes its own key
+  item, clears local state, tombstones the workspace, and ends local-only
+  (action required stays reserved for a different anchor). A different
+  anchor keeps today's `DIFFERENT_ANCHOR` behavior.
   Exchange, publish, and the join-only continuation treat `ANCHOR_MISSING`
   exactly as anchor absence today: they stop without deleting or merging
   pending work.
 - Deleted-record entries in the changes feed (`D3`): both native backends
-  already collect deletions; the adapters map a deletion entry to a
-  progress-only page (no bundle, cursor advances), which the consume loop
-  already accepts. A freshly established workspace that reads a zone with
-  deletion tombstones in its changes feed therefore completes without
-  accepting anything.
+  collect deletions but today reject any page that carries one as an
+  integrity failure (`CloudStore.swift` and `CloudKitMailboxProvider.swift`
+  guard on `deletedNames`, with a Swift test on each side asserting that
+  outcome). That guard is replaced: a deletion entry becomes a progress-only
+  page (no bundle, cursor advances), which the consume loop already accepts,
+  and the Swift tests assert the new outcome. This change precedes `D1`,
+  because the remover's own absence check reads those entries, and a
+  freshly established workspace reads the same entries on its first fetch
+  and completes without accepting anything.
 - Re-establish (`D4`): after removal the zone is found, the anchor is
-  missing, and the existing fresh-attempt path mints a new workspace and
-  creates the anchor in the existing zone; no zone save happens. The
-  `SYNC-014` tombstone stays as written; a resurrected old anchor can no
-  longer appear, but the guard costs nothing and covers provider anomalies.
-- Copy (`D5`): the removal confirmation and the seven statuses stay as
+  missing, the `D5` sweep runs, and the existing fresh-attempt path mints a
+  new workspace and creates the anchor in the existing zone; no zone save
+  happens. The `SYNC-014` tombstone stays as written; a resurrected old
+  anchor can no longer appear, but the guard costs nothing and covers
+  provider anomalies.
+- Foreign leftovers (`D5`): a still-linked peer whose check passed just
+  before the remover deleted the records can publish one more bundle into
+  the kept zone; that bundle carries the removed workspace's context and
+  would pin the next workspace's cursor as a wrong-context rejection. Two
+  rules close that window. The consume loop treats a bundle whose header
+  context is not the established workspace as a progress-only page: never
+  accepted, never decrypted, cursor advances, because with a kept zone such
+  a bundle is a leftover by construction. In addition, a fresh attempt that
+  finds the zone with no anchor sweeps every remaining bundle record before
+  minting, with the `D1` primitive; ADR 0007's destructive authority is
+  amended to cover exactly that sweep (bundle records of the exact zone,
+  only while no anchor exists). Wrong-context rejection stays for a bundle
+  that reaches the writer, so the `T-02` signal is unchanged.
+- Copy (`D6`): the removal confirmation and the seven statuses stay as
   written; "deletes the shared workspace from iCloud" remains true because
   every record of the workspace is deleted. No new string.
 - Write surface: `shared/src/commonMain/**/feature/sync/mailbox/MailboxPort.kt`
   and `MailboxTypes.kt` (the record-deletion operation replacing
   `deleteZoneAndVerifyAbsent`, its result type), `feature/sync/bootstrap/`
-  (`AppleWorkspaceRemoval`, `EstablishedWorkspaceCheck`, `AppleSync` status
-  mapping, `BootstrapCoordinator` where `EstablishedStatus` is matched),
+  (`AppleWorkspaceRemoval`, `EstablishedWorkspaceCheck`, the
+  `EstablishedStatus.toSyncStatus` mapping in `AppleSync`,
+  `BootstrapCoordinator` where `EstablishedStatus` is matched and the
+  fresh-attempt sweep, `AppleMailboxExchange.acceptPage` for the
+  foreign-context skip, `feature/sync/domain/RemoteBundleHandling` only if
+  the classifier must expose the context mismatch before decoding),
   `shared/src/jvmMain/**/feature/sync/macos/MacOsMailboxAdapter.kt` and the
   companion protocol (`macosSyncCompanion/Sources/PosatoMacOSSync/`:
   `Protocol.swift` request code, `MailboxRequestHandler.swift`,
@@ -94,7 +121,10 @@ and the recipe's settle rule is retired once the timed proof passes.
   and `iosApp/iosApp/CloudKitMailboxProvider.swift` plus its live backend,
   the fakes and tests (`FakeMailboxPort`, `SharedFakeMailboxPort`, the
   harness removal cases in `AppleSyncPersistenceTest` and `AppleSyncTest`,
-  adapter tests on both targets, Swift tests where the companion has them),
+  adapter tests on both targets,
+  `macosSyncCompanion/Tests/PosatoMacOSSyncTests/CloudStoreTests.swift` and
+  `iosApp/iosAppTests/CloudKitMailboxProviderTests.swift`, whose deletion
+  cases flip from integrity failure to progress-only),
   ADR 0007 (dated `user-confirmed` amendment), the threat model (`T-14`
   control and residual columns, `A-06`), the sync recipe (steps 7 and 8 and
   the ghost gotcha), the cross-device wiki topic, and the wiki log.
@@ -102,28 +132,38 @@ and the recipe's settle rule is retired once the timed proof passes.
   timed proof fails); deleting the zone in any path; changing the
   concurrent-first-run arbiter, the anchor record, the bundle format, or the
   key-item protocol; the `SYNC-014` tombstone; removing the zone when it is
-  empty; the `SYNC-012` scope, which may run in parallel because its write
-  surface (exchange pass, session stores, `feature/session`) is disjoint;
-  the shared harness, recipe, threat-model, and wiki files are merged by
-  whichever task lands second.
+  empty; the `SYNC-012` scope. Parallel work with `SYNC-012` is allowed
+  only under this freeze: `SYNC-015` owns `AppleWorkspaceRemoval`,
+  `EstablishedWorkspaceCheck`, `EstablishedStatus.toSyncStatus`,
+  `AppleMailboxExchange.acceptPage` and `consumePage`, the mailbox port and
+  types, both adapters and native backends, and the fresh-attempt sweep in
+  `BootstrapCoordinator`; `SYNC-012` owns `runExchange`, the policy phase,
+  the session stores, and `feature/session`; the harness, recipe,
+  threat-model, and wiki files are merged by whichever task lands second;
+  the physical gates never run at the same time.
 
 ## Acceptance
 
-- `AC-01` — Over the fakes, removal on a ready workspace deletes the anchor
-  and every bundle record, verifies absence, deletes the key item, and
-  clears local state with the tombstone written; a remaining record, a
+- `AC-01` — Over the fakes, removal on a ready workspace enumerates the
+  bundle records through the changes traversal, deletes the anchor and
+  every bundle record, verifies absence by looping the traversal until no
+  more changes remain, deletes the key item, and clears local state with
+  the tombstone written; a remaining record, a
   retryable or unknown delete result, or an account failure stops before the
   key deletion and keeps the established row; a second removal after a
   partial one completes idempotently; no zone delete call exists anywhere.
 - `AC-02` — Over the fakes, a linked peer whose check finds the zone and no
   anchor reports `ANCHOR_MISSING` as action required, publishes and accepts
   nothing, and its removal deletes only its own key item, clears local
-  state, and tombstones the workspace; a different anchor keeps today's
-  behavior.
+  state, tombstones the workspace, and ends local-only; a different anchor
+  keeps today's behavior.
 - `AC-03` — Over the fakes, a changes page carrying only a deletion entry
-  advances the cursor and accepts nothing; a fresh establish after removal
-  saves no zone, creates the anchor in the found zone, and its first
-  exchange completes.
+  advances the cursor and accepts nothing; a bundle with a foreign context
+  in the established workspace's zone advances the cursor and is never
+  accepted or decrypted; a fresh establish after removal saves no zone,
+  sweeps a leftover bundle before minting, creates the anchor in the found
+  zone, and its first exchange completes; wrong-context rejection is
+  unchanged for a bundle that reaches the writer.
 - `AC-04` — Physical, both directions, signed Mac and iPhone on one
   account, both linked at the start, with the `SYNC-014` per-press capture:
   Run 1 shape (Mac **Remove workspace**, add `design-proof-16.example` while
@@ -134,12 +174,13 @@ and the recipe's settle rule is retired once the timed proof passes.
   with the Mac holding one established row; the Mac's accepted count stays
   stable across repeat exchanges; then the devices reversed. A run that
   loses the website or the row is a failure, not a fallback.
-- `AC-05` — Adapter tests on both targets prove the batch deletion, the
-  absence verification, and the deletion-entry mapping against the native
-  fakes; `./gradlew quality` passes with no new suppression; the recipe's
-  settle rule is retired to a note once `AC-04` passes; the threat-model
-  `T-14` control names record deletion and the purge-window residual is
-  closed there.
+- `AC-05` — Adapter and Swift tests on both targets prove the batch
+  deletion, the looped absence verification, and the deletion-entry mapping
+  (the integrity-failure deletion cases are replaced, not left); `./gradlew
+  quality` passes with no new suppression; the recipe's settle rule is
+  retired to a note once `AC-04` passes; the threat-model `T-14` control
+  names record deletion and the sweep, the purge-window residual is closed
+  there, and the late-publish window is recorded as closed by the skip.
 
 ## Verification
 
@@ -149,25 +190,32 @@ and the recipe's settle rule is retired once the timed proof passes.
   `AppleSync` harness removal-then-relink with the peer's view (anchor gone,
   action required, peer removal, fresh establish in the found zone, first
   exchange completes); the existing removal, different-anchor, and tombstone
-  cases unchanged; deletion-entry page in `AppleMailboxExchange`.
-- `jvmTest` and `iosTest` adapter cases: the companion request and the iOS
-  provider delete records in batches, report a remaining record, and map
-  deletion entries; construction touches no provider.
+  cases unchanged; deletion-entry page and foreign-context skip in
+  `AppleMailboxExchange`; the fresh-attempt sweep in
+  `BootstrapCoordinatorTest` with a scripted leftover bundle.
+- `jvmTest` and `iosTest` adapter cases plus the two Swift test targets:
+  the companion request and the iOS provider enumerate through the changes
+  traversal, delete records in batches, report a remaining record, loop the
+  absence check, and map deletion entries; construction touches no
+  provider.
 - Physical, attended, per `AC-04`, recorded per press with the Mac counts
   (`sync_bootstrap_state`, `sync_removed_workspace`, `sync_accepted_bundle`)
   and the run directories; an attended CloudKit Console look at the zone
   after removal (records gone, zone present) is optional evidence.
-- Closeout statement for the threat model: removal deletes only records of
-  the exact Posato zone under the established binding and verifies absence;
-  no zone purge exists, so the purge-window residual closes; the fresh
-  install residual narrows to provider anomalies.
+- Closeout statement for the threat model: removal and the fresh-attempt
+  sweep delete only anchor and bundle records of the exact Posato zone
+  under the established binding and verify absence; no zone purge exists,
+  so the purge-window residual closes; the late-publish window closes
+  through the foreign-context skip; the fresh install residual narrows to
+  provider anomalies.
 - `./gradlew quality`, `git diff --check`, and the scoped secret and path
   scan.
 
 ## Decisions or blockers
 
-- `D1` removal shape. Recommended: delete records, keep the zone, verify by
-  anchor read and first-page changes fetch, idempotent batches. Alternatives:
+- `D1` removal shape. Recommended: delete records, keep the zone, enumerate
+  and verify through the looped changes traversal, idempotent batches.
+  Alternatives:
   keep deleting the zone and rely on the settle rule (the observed loss
   stays reachable); a new zone identity per establish (closes the class too
   but changes the arbiter, the schema, both adapters, and every recipe
@@ -177,13 +225,23 @@ and the recipe's settle rule is retired once the timed proof passes.
   by removal so the peer never needs manual repair. Alternative: keep
   mapping anchor absence to the generic action required, which today makes
   the peer's removal stop before clearing its state.
-- `D3` deletion entries. Recommended: progress-only pages. Alternative:
-  reject them, which pins the cursor of every workspace established after a
-  removal.
+- `D3` deletion entries. Recommended: replace the integrity-failure guard
+  with progress-only pages on both platforms. Alternative: keep rejecting
+  them, which breaks the remover's own absence check and pins the cursor of
+  every workspace established after a removal.
 - `D4` tombstone and settle rule. Recommended: keep the tombstone; retire
   the ten-minute settle rule to a historical note only after `AC-04` passes
   in both shapes and directions. Alternative: retire it on the design
   argument alone.
+- `D5` foreign leftovers. Recommended: both rules, the consume-loop skip of
+  foreign-context bundles (closes the late-publish window completely) and
+  the fresh-attempt sweep while no anchor exists (keeps the zone clean),
+  with the ADR 0007 amendment naming the sweep's bounded destructive
+  authority. Alternatives: the sweep alone, which leaves a window between
+  the sweep and the anchor create; the skip alone, which leaves leftovers
+  in the zone forever; a peer-side sweep at its own removal, which the peer
+  cannot do safely because it no longer holds a live anchor to prove
+  ownership.
 - Physical gate: the maintainer's Mac and iPhone on one account; removal
   and re-link are attended and destructive for the linked workspace;
   reserved synthetic domain only; the gate runs after or before the
