@@ -4,7 +4,7 @@
 - **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** implementing agent
-- **Reviewer:** independent completed-change reviewer, 2026-09-11
+- **Reviewer:** a second agent, distinct from the implementing agent, 2026-09-11
 - **Branch:** `feature/sync-014-removal-hardening`
 - **Updated:** 2026-09-11
 
@@ -76,6 +76,23 @@
 - **Resolution:** none required
 - **Advisory findings:** recipe `sync_removed_workspace` count of exactly
   one fails after a second removal; accepted and corrected in the recipe.
+- **Review evidence:** under `shared/src/commonMain/`, examined
+  `kotlin/app/posato/feature/sync/bootstrap/SqlBootstrapStore.kt:47–109`,
+  `BootstrapGates.kt:33–54`, `BootstrapCoordinator.kt:159–176`,
+  `BootstrapAnchorPhase.kt:149–163`, `BootstrapJoinPhase.kt:107–127`,
+  `sqldelight/app/posato/core/database/SyncBootstrap.sq:1–121`, and
+  `sqldelight/migrations/8.sqm:1–8`. Under commonTest, examined
+  `SqlBootstrapStoreTest.kt:157–274`, `BootstrapCoordinatorTest.kt:709–871`,
+  `BootstrapJoinTest.kt:38–50`, `AppleSyncTest.kt:106–137`,
+  `FakeBootstrapPorts.kt:168–218`, `SqlRemovedWorkspaceMigrationTest.kt:1–79`,
+  and the four downgrade helpers. Also the brief, ADR 0007 amendment, threat-
+  model `A-04`/`T-04`/`T-14`, the sync recipe, wiki topic, and this record.
+- **Reviewer-run checks:** focused `:shared:jvmTest` for the tombstone,
+  coordinator, join, harness, and migration suites plus existing removal and
+  join harnesses, all passed. The later PR review independently re-ran
+  `:shared:jvmTest` for `app.posato.feature.sync.*` (300 tests in 35 suites),
+  the `targets`, `onboarding`, and `session` data suites, `:shared:detekt`,
+  and `:shared:verifySqlDelightMigration`; `git diff --check` clean.
 
 ## Verification
 
