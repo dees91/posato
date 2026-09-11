@@ -543,6 +543,7 @@ behavior for an uncertain request and a registered-but-unlaunchable daemon;
 keep this separate from normal background-approval handling. No service
 registration, system approval, proxy setting, or product source was changed
 during diagnosis. Raw evidence remains in ignored local verification output.
+The recovery task is [MACOS-007](../../tasks/specifications/macos-007-helper-setup-recovery.md).
 
 ## Open questions
 
