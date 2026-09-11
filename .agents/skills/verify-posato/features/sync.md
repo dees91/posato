@@ -31,6 +31,10 @@ one active exchange can retain at most one queued opportunity.
 - `sync-remove`: confirmation deletes the workspace and undelivered changes,
   retains local websites, and permits a new consent without a console reset.
   Other devices must remove their old workspace before joining the new one.
+  A device that removed a workspace refuses to re-adopt that same identifier
+  while CloudKit still surfaces it; **Sync with iCloud** reports retryable
+  through the existing unlinked copy until the old anchor is gone or a
+  different workspace is visible.
 - `sync-adopt-relaunch`: a linked relaunch attempts exchange using the adopted
   key; completion therefore exercises the key read and writer open.
 
@@ -94,11 +98,33 @@ the action label with **Sync now** or **Remove workspace** as appropriate.
    access is unavailable; Mac reception and device status are the evidence.
 7. Press **Remove workspace**, inspect the destructive confirmation, and
    confirm. Expect local-only with local websites retained. The peer's next
-   attempt must require action. Establish a new workspace on the removing
-   device, then remove the old workspace on the peer and link again. The
-   peer's old anchor must never delete the newly established zone. Repeat with
-   the devices reversed. Remove only the synthetic website fixtures afterward.
-8. Exercise simultaneous opt-in from a state cleared through the removal UI.
+   attempt must require action. CloudKit may keep surfacing the old zone and
+   `workspace` record for several minutes; there is no product-controlled
+   settle time. If **Sync with iCloud** is pressed while that old anchor is
+   still visible, this device must not report completed and must not gain an
+   established row (`sync_bootstrap_state` stays zero; `sync_removed_workspace`
+   is at least one and does not increase during the refused presses). Retry the
+   same action until the old anchor is gone, then a fresh
+   establish succeeds and survives a further wait. A peer still linked to the
+   old workspace must remove it before joining the new one; its old key
+   deletion must never delete the newly established zone. If a ghost zone
+   never purges, press **Remove workspace** again on any device that still
+   reads ready on it. Repeat with the devices reversed. Remove only the
+   synthetic website fixtures afterward.
+8. For a timed re-link after removal, start with both devices linked. On the
+   Mac, remove the workspace, add `design-proof-15.example` while unlinked,
+   then press **Sync with iCloud** within one minute and at most four more
+   times one minute apart. Per press record wall-clock time, device, status,
+   whether the peer was still linked, press count, and the Mac counts
+   (`sync_bootstrap_state`, `sync_removed_workspace`, `sync_accepted_bundle`).
+   When it establishes, remove on the iPhone and sync; confirm the join and
+   the website; wait at least ten minutes; **Sync now** on both and confirm
+   completed with one established row on the Mac. Repeat with the iPhone
+   removed before the Mac's re-link. Two direct establishes without a
+   refusal are an accepted fallback; the refusal is covered by the fake-port
+   cases. Cleanup removes only the fixture domain; both devices end linked
+   to the newest workspace.
+9. Exercise simultaneous opt-in from a state cleared through the removal UI.
    Coordinate presses against one absolute wall-clock time, allowing for iOS
    driver startup. Retry the losing side after key delivery; a completed
    exchange after relaunch proves that its adopted key opens the writer.
@@ -153,6 +179,7 @@ Useful Mac queries (`db query -t desktop --sql "…"`):
 select count(*) from sync_bootstrap_state;
 select candidate_workspace_id is null, established_workspace_id is null
 from sync_bootstrap_state;
+select count(*) from sync_removed_workspace;
 select count(*) from sync_pending_bundle;
 select count(*) from sync_accepted_bundle;
 select count(*) from sync_staged_bundle;

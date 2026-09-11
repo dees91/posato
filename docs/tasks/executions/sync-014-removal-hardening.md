@@ -3,8 +3,8 @@
 - **Brief:** [Removal hardening](../specifications/sync-014-removal-hardening.md)
 - **Status:** `active`
 - **Review tier:** `high-risk`
-- **Implementer:** pending handoff to an implementing agent
-- **Reviewer:** plan reviewer and completed-change reviewer pending
+- **Implementer:** implementing agent
+- **Reviewer:** independent completed-change reviewer, 2026-09-11
 - **Branch:** `feature/sync-014-removal-hardening`
 - **Updated:** 2026-09-11
 
@@ -57,24 +57,36 @@
 
 ## Result
 
-- Pending implementation.
+- `clearEstablished` writes the removed workspace identifier into
+  `sync_removed_workspace` in the same transaction, evicts beyond 32, and
+  `containsRemoved` is consulted after the fresh-attempt zone step and at
+  `adoptWinner` before any key delete. The join continuation returns
+  `UNCHANGED`. Refusal is retryable with the existing unlinked copy.
+- `8.sqm` adds the table. Existing downgrade helpers drop it before reopen.
+- Pre-existing `confirmOwnAnchor` after a ghost read is unchanged:
+  `Missing` is retryable; a different `Found` is action-required.
+- Recommended recipe fix from completed-change review: tombstone count is
+  at least one and must not increase during refused presses, not exactly one.
+- Physical AC-04 is still pending maintainer-attended Mac and iPhone.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `approved` (independent reviewer, 2026-09-11)
+- **Critical or Required findings:** none
+- **Resolution:** none required
+- **Advisory findings:** recipe `sync_removed_workspace` count of exactly
+  one fails after a second removal; accepted and corrected in the recipe.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Tombstone store and `8.sqm` migration tests | pending | |
-| Coordinator, candidate, and continuation refusal cases over fakes | pending | |
-| Harness removal-then-relink case | pending | |
-| `./gradlew quality` | pending | |
-| Physical timed removal and re-link, both devices | pending | |
-| Threat-model closeout statement and owner rows | pending | |
+| Tombstone store and `8.sqm` migration tests | pass | `SqlBootstrapStoreTest`, `SqlRemovedWorkspaceMigrationTest` |
+| Coordinator, candidate, and continuation refusal cases over fakes | pass | `BootstrapCoordinatorTest`, `BootstrapJoinTest` |
+| Harness removal-then-relink case | pass | `AppleSyncTest` |
+| `./gradlew quality` | pass | 2026-09-11, no new suppression |
+| Physical timed removal and re-link, both devices | pending | maintainer-attended AC-04 |
+| Threat-model closeout statement and owner rows | pass | `A-04`, `T-04`, `T-14`, closeout paragraph |
 
 ## Blockers and accepted risks
 
@@ -89,5 +101,6 @@
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** `active`; implementation, quality, and completed-change review
+  complete; physical AC-04 pending
+- **Outcome:** pending the attended timed removal and re-link

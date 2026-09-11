@@ -485,9 +485,16 @@ not claim that every other device has received the update.
   the group name while selections stay local, a pre-link website backfills at
   the first exchange after linking, and an offline save reports retryable and
   then completes on reconnect. Re-linking within minutes of removal plus
-  establish can adopt a stale key and report completed inside a ghost zone;
+  establish adopted a stale key and reported completed inside a ghost zone;
   settling (~8 min here) before re-linking healed it. See the [execution
   record](../../tasks/executions/sync-011-policy-convergence.md).
+- `user-confirmed` (2026-09-11): `SYNC-014` records a device-local tombstone
+  of removed workspace identifiers and refuses to adopt that workspace again
+  on the device that performed the removal. Retryable uses the existing
+  unlinked copy; the recipe states the settle rule and the ghost recovery
+  (press **Remove workspace** again). A fresh install without a tombstone can
+  still join a ghost during the provider purge window. See the [task
+  brief](../../tasks/specifications/sync-014-removal-hardening.md).
 
 ## Open production questions
 

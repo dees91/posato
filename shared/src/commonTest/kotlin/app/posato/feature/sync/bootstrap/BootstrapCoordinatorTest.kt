@@ -713,6 +713,149 @@ class BootstrapCoordinatorTest {
         assertNull(harness.coordinator.establishedContext())
     }
 
+    @Test
+    fun `given a removed workspace when the zone is missing then the resurrected anchor is refused after one zone save`() = runTest {
+        for (itemPresent in listOf(false, true)) {
+            val harness = BootstrapHarness()
+            val removed = knownAnchor(11, 12, 13)
+            harness.store.recordRemoved(removed.workspaceId)
+            harness.cloud.storedAnchor = removed
+            if (itemPresent) {
+                seedValidItem(harness.keys, removed)
+            }
+
+            val result = harness.coordinator.bootstrap()
+
+            assertEquals(BootstrapResult.Retryable, result)
+            assertEquals(1, harness.cloud.zoneSaveCalls)
+            assertEquals(0, harness.store.persistCalls)
+            assertEquals(0, harness.cloud.anchorCreateCalls)
+            assertEquals(0, harness.keys.createCalls)
+            assertEquals(0, harness.keys.deleteCalls)
+            assertEquals(0, harness.store.commitCalls)
+            assertIs<BootstrapState.None>(harness.store.state)
+        }
+    }
+
+    @Test
+    fun `given a removed workspace when the zone is found then the resurrected anchor is refused without a zone save`() = runTest {
+        val harness = BootstrapHarness()
+        val removed = knownAnchor(11, 12, 13)
+        harness.cloud.zoneExists = true
+        harness.store.recordRemoved(removed.workspaceId)
+        harness.cloud.storedAnchor = removed
+        seedValidItem(harness.keys, removed)
+
+        val result = harness.coordinator.bootstrap()
+
+        assertEquals(BootstrapResult.Retryable, result)
+        assertEquals(0, harness.cloud.zoneSaveCalls)
+        assertEquals(0, harness.store.persistCalls)
+        assertEquals(0, harness.cloud.anchorCreateCalls)
+        assertEquals(0, harness.keys.createCalls)
+        assertEquals(0, harness.keys.deleteCalls)
+        assertIs<BootstrapState.None>(harness.store.state)
+    }
+
+    @Test
+    fun `given a refused resurrection when the anchor is later missing then a fresh workspace is established`() = runTest {
+        val harness = BootstrapHarness()
+        val removed = knownAnchor(11, 12, 13)
+        harness.cloud.zoneExists = true
+        harness.store.recordRemoved(removed.workspaceId)
+        harness.cloud.storedAnchor = removed
+
+        assertEquals(BootstrapResult.Retryable, harness.coordinator.bootstrap())
+        harness.cloud.storedAnchor = null
+
+        val ready = assertIs<BootstrapResult.Ready>(harness.coordinator.bootstrap())
+        assertTrue(ready.context.workspaceId != removed.workspaceId)
+        assertEquals(0, harness.cloud.zoneSaveCalls)
+        val established = assertIs<BootstrapState.Established>(harness.store.state)
+        assertEquals(ready.context, established.workspace.context)
+    }
+
+    @Test
+    fun `given a refused resurrection when a new anchor is found then that workspace is joined`() = runTest {
+        val harness = BootstrapHarness()
+        val removed = knownAnchor(11, 12, 13)
+        val winner = knownAnchor(21, 22, 23)
+        harness.cloud.zoneExists = true
+        harness.store.recordRemoved(removed.workspaceId)
+        harness.cloud.storedAnchor = removed
+
+        assertEquals(BootstrapResult.Retryable, harness.coordinator.bootstrap())
+        harness.cloud.storedAnchor = winner
+        seedValidItem(harness.keys, winner)
+
+        val ready = assertIs<BootstrapResult.Ready>(harness.coordinator.bootstrap())
+        assertEquals(winner.workspaceId, ready.context.workspaceId)
+        assertEquals(0, harness.cloud.anchorCreateCalls)
+        assertEquals(0, harness.keys.deleteCalls)
+    }
+
+    @Test
+    fun `given a persisted candidate when the winner is tombstoned then cleanup is skipped`() = runTest {
+        val harness = BootstrapHarness()
+        val own = knownAnchor(31, 32, 33)
+        val winner = knownAnchor(41, 42, 43)
+        harness.cloud.zoneExists = true
+        harness.store.state = BootstrapState.Candidate(candidateOf(31, 32, 33))
+        seedValidItem(harness.keys, own)
+        seedValidItem(harness.keys, winner, keyByte = 9)
+        harness.cloud.storedAnchor = winner
+        harness.store.recordRemoved(winner.workspaceId)
+
+        val result = harness.coordinator.bootstrap()
+
+        assertEquals(BootstrapResult.Retryable, result)
+        assertEquals(0, harness.keys.deleteCalls)
+        assertTrue(harness.keys.items.containsKey(accountTextOf(own)))
+        val candidate = assertIs<BootstrapState.Candidate>(harness.store.state).candidate
+        assertEquals(own.workspaceId, candidate.workspaceId)
+    }
+
+    @Test
+    fun `given a mint that conflicts with a tombstoned anchor then the candidate and item stay`() = runTest {
+        val harness = BootstrapHarness()
+        val resurrected = knownAnchor(41, 42, 43)
+        harness.cloud.zoneExists = true
+        harness.cloud.storedAnchor = resurrected
+        harness.store.recordRemoved(resurrected.workspaceId)
+        harness.cloud.scriptAnchorRead(AnchorReadResult.Missing)
+        harness.cloud.scriptAnchorCreate(AnchorCreateResult.Conflict)
+
+        val result = harness.coordinator.bootstrap()
+
+        assertEquals(BootstrapResult.Retryable, result)
+        val candidate = assertIs<BootstrapState.Candidate>(harness.store.state).candidate
+        assertEquals(1, harness.store.persistCalls)
+        assertEquals(0, harness.keys.deleteCalls)
+        assertEquals(0, harness.store.commitCalls)
+        val account = checkNotNull(BootstrapEncoding.identifierToAccountText(candidate.workspaceId.value))
+        assertTrue(harness.keys.items.containsKey(account))
+        assertTrue(candidate.workspaceId != resurrected.workspaceId)
+    }
+
+    @Test
+    fun `given a tombstone lookup failure when bootstrapping then the attempt fails closed`() = runTest {
+        val removed = knownAnchor(11, 12, 13)
+        for (failure in BootstrapStoreFailure.entries) {
+            val harness = BootstrapHarness()
+            harness.cloud.zoneExists = true
+            harness.cloud.storedAnchor = removed
+            seedValidItem(harness.keys, removed)
+            harness.store.containsFailure = failure
+
+            val result = harness.coordinator.bootstrap()
+
+            assertEquals(mapStoreFailure(failure), result)
+            assertEquals(0, harness.store.persistCalls)
+            assertEquals(0, harness.store.commitCalls)
+            assertIs<BootstrapState.None>(harness.store.state)
+        }
+    }
+
     private fun knownAnchorOf(context: SyncContext): WorkspaceAnchor {
         return WorkspaceAnchor(context.workspaceId, context.transportEpochId, context.keyEpochId)
     }

@@ -10,14 +10,14 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class SqlSyncLocalPolicyMigrationTest {
+class SqlRemovedWorkspaceMigrationTest {
     @Test
-    fun `given an empty version seven database when migrated then policy sync tables exist empty`() = runTest {
-        val testDatabase = createLocalPolicyTestDatabase("sync-local-policy-migration-empty.db")
+    fun `given an empty version eight database when migrated then the tombstone table exists empty`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("removed-workspace-migration-empty.db")
         downgrade(testDatabase, "UPDATE local_policy_metadata SET revision = 0 WHERE singleton = 1")
         val driver = testDatabase.openDriver()
         try {
-            assertPolicySyncTablesEmpty(PosatoDatabase(driver))
+            assertEquals(0L, PosatoDatabase(driver).syncBootstrapQueries.countRemovedWorkspaces().awaitAsList().single())
         } finally {
             driver.close()
             testDatabase.delete()
@@ -25,38 +25,30 @@ class SqlSyncLocalPolicyMigrationTest {
     }
 
     @Test
-    fun `given domains and policies when migrated then rows survive and policy sync tables exist empty`() = runTest {
-        val testDatabase = createLocalPolicyTestDatabase("sync-local-policy-migration-seeded.db")
+    fun `given bootstrap and policy rows when migrated then they survive and the tombstone table is empty`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("removed-workspace-migration-seeded.db")
         downgrade(
             testDatabase,
             "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('example.com')",
-            "INSERT INTO application_policy(singleton, canonical_name) VALUES (1, 'Example group')",
+            "INSERT INTO sync_bootstrap_state(" +
+                "singleton, candidate_workspace_id, candidate_transport_epoch_id, " +
+                "candidate_key_epoch_id, binding) VALUES " +
+                "(1, X'$IDENTIFIER_HEX', X'$IDENTIFIER_HEX', X'$IDENTIFIER_HEX', X'$BINDING_HEX')",
         )
         val driver = testDatabase.openDriver()
         try {
             val database = PosatoDatabase(driver)
+            assertEquals(1, database.syncBootstrapQueries.selectBootstrapState().awaitAsList().size)
             assertEquals(
                 listOf("example.com"),
                 database.localExactDomainPolicyQueries.selectDomains(MAXIMUM_ROWS).awaitAsList(),
             )
-            assertEquals(
-                listOf("Example group"),
-                database.localExactDomainPolicyQueries.selectApplicationPolicyNameBytes().awaitAsList()
-                    .map { bytes -> bytes.decodeToString() },
-            )
-            assertPolicySyncTablesEmpty(database)
+            assertEquals(0L, database.syncBootstrapQueries.countRemovedWorkspaces().awaitAsList().single())
+            assertTrue(database.syncLocalPolicyQueries.selectIntents().awaitAsList().isEmpty())
         } finally {
             driver.close()
             testDatabase.delete()
         }
-    }
-
-    private suspend fun assertPolicySyncTablesEmpty(database: PosatoDatabase) {
-        val queries = database.syncLocalPolicyQueries
-        assertTrue(queries.selectIntents().awaitAsList().isEmpty())
-        assertTrue(queries.selectBaseMarker().awaitAsList().isEmpty())
-        assertTrue(queries.selectBaseDomains().awaitAsList().isEmpty())
-        assertTrue(queries.selectBaseApplicationName().awaitAsList().isEmpty())
     }
 
     private fun downgrade(
@@ -65,18 +57,16 @@ class SqlSyncLocalPolicyMigrationTest {
     ) {
         val driver = testDatabase.openDriver()
         seeds.forEach { seed -> driver.executeSql(seed) }
-        driver.executeSql("DROP TABLE sync_policy_intent")
-        driver.executeSql("DROP TABLE sync_policy_base")
-        driver.executeSql("DROP TABLE sync_policy_base_domain")
-        driver.executeSql("DROP TABLE sync_policy_base_application")
         driver.executeSql("DROP TABLE sync_removed_workspace")
         driver.executeSql("PRAGMA user_version = $PREVIOUS_VERSION")
         driver.close()
     }
 
     private companion object {
-        const val PREVIOUS_VERSION: Int = 7
+        const val PREVIOUS_VERSION: Int = 8
         const val MAXIMUM_ROWS: Long = 100L
+        const val IDENTIFIER_HEX: String = "000102030405060708090A0B0C0D0E0F"
+        const val BINDING_HEX: String = "000102030405060708090A0B0C0D0E0F000102030405060708090A0B0C0D0E0F"
     }
 }
 

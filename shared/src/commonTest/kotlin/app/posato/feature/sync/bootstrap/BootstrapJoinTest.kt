@@ -36,6 +36,19 @@ class BootstrapJoinTest {
     }
 
     @Test
+    fun `given a tombstoned retained anchor when rechecked then the continuation stays unchanged`() = runTest {
+        val harness = JoinHarness()
+        harness.waitForKey()
+        val keyReads = harness.keys.readCalls
+        harness.store.recordRemoved(testContext.workspaceId)
+        assertEquals(JoinCheckResult.UNCHANGED, harness.coordinator.joins.recheck())
+        assertTrue(harness.coordinator.joins.hasPending())
+        assertEquals(keyReads, harness.keys.readCalls)
+        harness.assertNoWrites()
+        assertIs<BootstrapState.None>(harness.store.state)
+    }
+
+    @Test
     fun `given an absent key when rechecked then waiting remains read only`() = runTest {
         val harness = JoinHarness()
         harness.waitForKey()

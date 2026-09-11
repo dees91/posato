@@ -1,0 +1,8 @@
+CREATE TABLE sync_removed_workspace (
+  workspace_id BLOB NOT NULL PRIMARY KEY CHECK (
+    typeof(workspace_id) = 'blob' AND length(workspace_id) = 16
+  ),
+  recorded_order INTEGER NOT NULL UNIQUE CHECK (
+    typeof(recorded_order) = 'integer' AND recorded_order > 0
+  )
+);
