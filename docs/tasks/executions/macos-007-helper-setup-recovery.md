@@ -1,7 +1,7 @@
 # Execution: `MACOS-007`
 
 - **Brief:** [Helper setup recovery](../specifications/macos-007-helper-setup-recovery.md)
-- **Status:** `blocked`; retry and truthful setup UI landed, AC-01 registration repair waits on maintainer-approved out-of-band cleanup
+- **Status:** `blocked`; maintainer approved leftover-app and proxy-settings Login Item cleanup; launchd still `EX_CONFIG` because the parent helper BTM item stays disabled
 - **Review tier:** `high-risk`
 - **Implementer:** Grok 4.6
 - **Reviewer:** independent plan reviewer (2026-09-11); completed-change review 2026-09-11
@@ -82,12 +82,15 @@
   again started immediately instead of the previous dead-end. Relaunch and
   Session navigation started no helper. iCloud and local websites were
   unchanged.
-- AC-01 remaining: BTM parent is still
-  `/Applications/Posato-MACOS-004.app/Contents/Helpers/PosatoMacOSHelper.app`.
-  launchd stays `EX_CONFIG`. In-app Enable cannot re-point that registration
-  without unregister, which ADR 0004 forbids until Idle cleanup is confirmed.
-  Maintainer approval is required before removing only that leftover app or
-  its Login Item.
+- AC-01 remaining: after maintainer approval, the leftover
+  `/Applications/Posato-MACOS-004.app` was moved aside, then replaced with the
+  current signed package so the stale BTM URL can resolve; `SMAppService`
+  unregistered `app.posato.macos.proxy-settings` (status went
+  enabled→notRegistered) and in-app Enable registered it again. HTTP(S) proxy
+  stayed disabled. launchd still `EX_CONFIG`: the parent helper BTM item
+  `2.app.posato.macos.helper` is `disabled`. This agent cannot click System
+  Settings (Apple Events denied). Remaining human step: allow Posato under
+  Login Items → Allow in the Background, then Check again.
 
 ## Completed-change review
 

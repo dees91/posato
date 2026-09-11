@@ -1527,6 +1527,9 @@ endpoint on Status/Enable becomes RecoveryRequired. In-app copy does not tell
 the person to unregister from Login Items without Idle cleanup. Onboarding
 shows progress and keeps Not now usable on Mac. Physical Check reached
 registered-but-unlaunchable, then uncertainty on a later lost reply; relaunch
-starts no helper. AC-01 remains blocked: BTM still names `Posato-MACOS-004.app`
-and in-app Enable cannot re-point it. Details in the MACOS-007 execution
-record and [macOS enforcement](topics/macos-enforcement.md).
+starts no helper. After maintainer approval the leftover app was replaced with
+the current package and the proxy-settings Login Item was unregistered then
+re-registered; HTTP(S) proxy stayed off. AC-01 still blocked: parent helper
+BTM item is disabled, so launchd remains `EX_CONFIG` until Posato is allowed
+in Login Items background items. Details in the MACOS-007 execution record
+and [macOS enforcement](topics/macos-enforcement.md).

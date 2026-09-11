@@ -556,9 +556,19 @@ reconciles instead of issuing a blocked Status. Construction and Session
 navigation still start no helper. Protocol or integrity failures on Status or
 Enable stay failures; they are not mapped to daemon-loss recovery. ADR 0004
 still forbids unregister without confirmed Idle cleanup, so the current
-package cannot re-point launchd while that stale BTM parent remains. Removing
-only the Posato helper Login Item / the leftover `Posato-MACOS-004.app` copy
-needs maintainer approval before it is attempted.
+package cannot re-point launchd while that stale BTM parent remains. The
+leftover copy and proxy-settings Login Item cleanup were maintainer-approved
+and attempted; see the following observation.
+
+`observed` (2026-09-11, MACOS-007 AC-01 attempt): HTTP(S) proxy was disabled
+before cleanup. The leftover `/Applications/Posato-MACOS-004.app` was moved to
+Trash, then the current signed package was placed at that path and at
+`/Applications/Posato.app` so the stale BTM URL has current binaries.
+`SMAppService.unregister()` for `app.posato.macos.proxy-settings` from the
+current helper bundle returned notRegistered; in-app Enable registered it
+again. launchd still fails `EX_CONFIG`. The parent helper BTM item remains
+`disabled`. Allowing Posato in Login Items background items is still required
+before Ready/Idle can be shown.
 
 ## Open questions
 
