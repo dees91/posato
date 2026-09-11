@@ -1,7 +1,7 @@
 # Execution: `SYNC-014`
 
 - **Brief:** [Removal hardening](../specifications/sync-014-removal-hardening.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** implementing agent
 - **Reviewer:** a second agent, distinct from the implementing agent, 2026-09-11
@@ -67,7 +67,11 @@
   `Missing` is retryable; a different `Found` is action-required.
 - Recommended recipe fix from completed-change review: tombstone count is
   at least one and must not increase during refused presses, not exactly one.
-- Physical AC-04 is still pending maintainer-attended Mac and iPhone.
+- Physical AC-04: two timed re-link sequences on the signed Mac and iPhone
+  13 mini. Both first presses established directly (accepted fallback). The
+  ghost was not reproduced; refusal remains the fake-port cases. iOS
+  `scrollTo` now screen-swipes when Compose's wrapper fills the window, which
+  was required to reach compact-Session iCloud actions.
 
 ## Completed-change review
 
@@ -102,7 +106,7 @@
 | Coordinator, candidate, and continuation refusal cases over fakes | pass | `BootstrapCoordinatorTest`, `BootstrapJoinTest` |
 | Harness removal-then-relink case | pass | `AppleSyncTest` |
 | `./gradlew quality` | pass | 2026-09-11, no new suppression |
-| Physical timed removal and re-link, both devices | pending | maintainer-attended AC-04 |
+| Physical timed removal and re-link, both devices | pass (fallback) | two direct establishes; ghost not reproduced |
 | Threat-model closeout statement and owner rows | pass | `A-04`, `T-04`, `T-14`, closeout paragraph |
 
 ## Blockers and accepted risks
@@ -118,6 +122,22 @@
 
 ## Final
 
-- **Status:** `active`; implementation, quality, and completed-change review
-  complete; physical AC-04 pending
-- **Outcome:** pending the attended timed removal and re-link
+- **Status:** `done`
+- **Outcome:** met. Fake-port cases prove refusal. Physical runs recorded two
+  direct establishes (peer still linked, then both removed) without a
+  reproduced ghost; `D4` accepts that fallback. Both devices ended linked to
+  the newest workspace; the synthetic fixture domain was removed.
+
+Physical notes (categorical; no identifiers):
+
+- Run 1, 2026-09-11: Mac **Remove workspace** 08:38:56Z (`sync_bootstrap_state`
+  0, `sync_removed_workspace` 1). First **Sync with iCloud** 08:41:23Z while
+  the iPhone was still linked: completed, bootstrap 1, tombstone 1, accepted 4.
+  iPhone later joined that workspace (completed). The unlinked Mac fixture
+  domain did not appear on the iPhone. After a further wait Mac reported
+  action required with bootstrap still 1; iPhone stayed completed.
+- Run 2, same day: Mac remove 09:42:07Z (bootstrap 0, tombstones 2); iPhone
+  remove 09:42:23Z (unlinked). Mac press 1 at 09:43:10Z with the peer unlinked:
+  bootstrap 1, pending then completed, tombstones 2. iPhone joined completed;
+  Mac remained one established row and completed. Fixture domain removed on
+  Mac; `wp.pl` and `x.com` retained.
