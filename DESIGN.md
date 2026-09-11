@@ -376,6 +376,12 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   paused until a session starts. **Continue** replaces the request action only
   after the returned access/helper state is ready. **Not now** defers setup;
   unavailable versions never suggest a settings change can enable them.
+  On Mac, the permission step shows “Checking Mac setup…” or “Enabling the
+  background helper…” as soon as that call starts. **Not now** stays usable
+  during the Mac helper call and does not cancel it; a late result updates
+  Summary and Session without advancing or starting enforcement. Duplicate
+  Enable and Check again stay disabled while the call runs. iPhone Screen Time
+  request still disables **Not now** until the system sheet returns.
 - Website entry uses “What pulls you away?”, the existing domain form and
   validation, and **Continue** after a saved addition. Before an addition,
   **Not now** keeps an empty setup possible.
@@ -420,19 +426,46 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   full linking sentence as a caption next to the action. Setup controls are
   secondary to the Session action.
 - This Mac (macOS only, after iCloud): reads nothing before a press on
-  **Check Mac setup** inside its expanded options. This runs one status read,
-  then the section names the real
-  helper state with one precise action: **Enable on this Mac** when the helper
-  is not enabled, **Open System Settings** plus **Check again** when background
-  approval is required, "Background helper enabled" when ready, and
-  a caution notice with **Check again** when the helper could not be checked
-  or enabled (the notice says to quit and reopen Posato when checking again
-  does not help). Every known state keeps a quiet **Check again** inside its
-  options. While a call runs the row reads "Checking Mac setup…" or
-  "Enabling the background helper…" and the actions are disabled.
+  **Check Mac setup** inside its expanded options. This runs one status read
+  when no helper request is outstanding; after a lost reply, **Check again**
+  finishes that original request instead of starting a new one. The section
+  then names the real helper state with one precise action: **Enable on this
+  Mac** when the helper is not enabled, including when Service Management
+  reports the daemon as not found after a background-item database reset;
+  **Open System Settings** plus **Check again** when background approval is
+  required; "Background helper enabled" when ready; and **Check again** when
+  the last request did not finish, the helper could not be checked, or it is
+  registered but could not start. An Enable whose registration attempt fails
+  and leaves the service unregistered reports that setup could not be
+  completed instead of repeating not enabled. Each state carries its own short
+  collapsed summary; an unfinished request and a helper that is registered but
+  cannot start are not merged into one attention summary.
+  In-app copy does not tell the person to remove the helper from Login Items:
+  that would unregister it without confirmed Idle cleanup. Restarting Posato
+  does not repair a broken service registration.
+  `user-confirmed` (2026-09-11): every known state except not enabled keeps a
+  quiet **Check again** inside its options; **Enable on this Mac** already
+  registers and re-reads the status, so that state shows only that action. When
+  the same result comes back again in a state whose action cannot change it —
+  the helper could not be checked or enabled, or it is registered but cannot
+  start — the options add one sentence naming the repeat and offering a restart
+  of this Mac as the next step, without claiming it repairs the registration.
+  An unfinished request does not carry that sentence, because its retry really
+  does reconcile the original request.
+  While a call runs the row reads "Checking Mac setup…" or
+  "Enabling the background helper…" and the duplicate actions are disabled.
   The Mac host sends native
   accessibility announcements for progress and the returned result, including
-  an unchanged result after rechecking. No time or success claim.
+  an unchanged result after rechecking and the repeated-result sentence when
+  it is shown. No time or success claim.
+- `user-confirmed` (2026-09-11): when a helper read has returned a state other
+  than ready and no helper call is running, Session names that state once as a
+  notice beside the enforcement notice, above the session action. Expanding
+  This Mac moves the sentence into the row, the notice stays silent because
+  the row already announces, and it never blocks starting a session. Before
+  the first explicit read there is no state to name, so no notice appears, and
+  an active session that is enforcing keeps its own notice rather than showing
+  an older helper read beside it.
 
 Main navigation stays available during active sessions, and Paused items editing
 retains its existing availability. Do not add an unrelated active-session lock.

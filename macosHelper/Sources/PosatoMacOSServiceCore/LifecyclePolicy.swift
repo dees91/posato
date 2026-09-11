@@ -112,6 +112,20 @@ public enum WireLifecyclePolicy {
     )
   }
 
+  /// A `register()` that threw and left the service unregistered is a conclusive setup failure, not
+  /// a service that has simply never been asked to register.
+  public static func failedEnableResponse(
+    serviceState: ServiceState
+  ) -> WireResponsePayload {
+    return WireResponsePayload(
+      outcome: .failure,
+      serviceState: serviceState,
+      ownershipPhase: .recoveryRequired,
+      actionRequired: .manualRecovery,
+      failure: .lifecycle
+    )
+  }
+
   public static func reconcilesExistingOwnership(
     requestOperation: WireOperation,
     reconcilePayload: WireReconcilePayload?

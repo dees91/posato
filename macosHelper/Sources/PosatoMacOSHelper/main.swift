@@ -250,57 +250,36 @@ do {
           )
         )
       case .enable:
+        var registrationFailed = false
         if service.status != .enabled {
-          try service.register()
+          do {
+            try service.register()
+          } catch {
+            // SMAppService throws when approval is now required or the item
+            // already exists; the status read below is the setup outcome. A
+            // status that did not move keeps this as a registration failure.
+            registrationFailed = true
+          }
         }
         if service.status != .enabled {
-          let state = serviceState(service.status)
           response = try localResponse(
             request: request,
-            payload: WireLifecyclePolicy.unreconciledServiceResponse(
-              serviceState: state
+            payload: enableOutcomePayload(
+              serviceState: serviceState(service.status),
+              registrationFailed: registrationFailed
             )
           )
           break
         }
         fallthrough
       default:
-        if daemon == nil {
-          daemon = try DaemonConnection(requirement: daemonRequirement)
-        }
-        var forwardedPayload = request.payload
-        var authorizationGrant: ApplyAuthorizationGrant?
-        defer {
-          forwardedPayload.resetBytes(
-            in: forwardedPayload.startIndex..<forwardedPayload.endIndex
-          )
-        }
-        if request.operation == .apply {
-          let grant = try AuthorizationPolicy.acquireApplyGrant()
-          authorizationGrant = grant
-          forwardedPayload.append(grant.externalForm)
-        }
-        var forwarded = try WireMessage(
-          kind: request.kind,
-          operation: request.operation,
-          sequence: request.sequence,
-          deadlineMilliseconds: try remainingDeadline(
-            receivedAt: receivedAt,
-            budgetMilliseconds: request.deadlineMilliseconds
-          ),
-          connectionIdentifier: request.connectionIdentifier,
-          sessionIdentifier: request.sessionIdentifier,
-          requestIdentifier: request.requestIdentifier,
-          payload: forwardedPayload
+        response = try performDaemonLifecycleRequest(
+          request: request,
+          receivedAt: receivedAt,
+          daemonRequirement: daemonRequirement,
+          reconcilePayload: reconcilePayload,
+          daemon: &daemon
         )
-        defer {
-          forwarded.payload.resetBytes(
-            in: forwarded.payload.startIndex..<forwarded.payload.endIndex
-          )
-        }
-        response = try withExtendedLifetime(authorizationGrant) {
-          try daemon!.perform(forwarded)
-        }
       }
     }
     var responsePayload = try WireResponsePayload.decode(response.payload)

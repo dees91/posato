@@ -1517,3 +1517,23 @@ lost it to the provider purge, a variant the tombstone does not cover,
 recorded as an accepted limit with the settle rule and an open fix decision.
 iOS `scrollTo` screen-swipes on compact Session and reports reached only
 when the element's centre is on screen; the Simulator fixtures were rerun.
+
+## [2026-09-11] task | MACOS-007 helper setup recovery
+
+Diagnosed a registered, allowed daemon that launchd cannot resolve, plus a
+post-timeout Check again that issued Status into a pending unknown request.
+Setup retry now reconciles that original request until a conclusive answer
+releases it; only an XPC endpoint that never accepted a Status or Enable
+becomes RecoveryRequired, while a deadline that expires after dispatch stays
+unknown. In-app copy does not tell
+the person to unregister from Login Items without Idle cleanup. Onboarding
+shows progress and keeps Not now usable on Mac. After leftover copies were
+removed and Background Items reset, `SMAppService.notFound` no longer maps to
+the unavailable Check-again-only dead end; Check offers Enable. Physical
+Ready/Idle on the current development package survived relaunch; HTTP(S)
+proxy stayed off. A registration attempt that fails and leaves the service
+unregistered reports that setup could not be completed, each unresolved state
+carries its own collapsed summary, a repeated unresolved result offers a Mac
+restart, and a non-ready helper is named once above the session action.
+Details in the MACOS-007 execution record and
+[macOS enforcement](topics/macos-enforcement.md).

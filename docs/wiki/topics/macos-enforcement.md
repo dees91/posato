@@ -509,6 +509,89 @@ addressable window as named failure `DESKTOP_WINDOW_UNAVAILABLE` instead of an
 empty success, and the previously unproven unattended
 `session-start-action-required-desktop.json` fixture passes end to end.
 
+## Registered service failing to launch
+
+`observed` (2026-09-11, current development package on one Mac): enabling
+helper access stalled until the 120-second client deadline, then reported
+unavailable. The system service was registered and allowed, but launchd
+repeatedly failed to initialize it with `EX_CONFIG` and
+`copy_bundle_path ... Invalid or missing Program/ProgramArguments`. Background
+Task Management also reported no container item for that service. Its parent
+helper entry referenced an older installed verification bundle, while the
+running app used the current development package. Both embedded daemon files
+existed and their launchd plists had the same relative `BundleProgram`.
+
+`inferred`: stale or inconsistent Service Management bundle registration is
+preventing daemon startup; competing installations with the same helper
+identifier are a candidate trigger. The exact trigger and recovery remain
+unproven until a controlled registration repair succeeds. This evidence does
+not establish that the daemon executable is missing or that administrator
+approval was denied. A local app-data reset does not reset service registration.
+
+`superseded` in code (MACOS-007): after a parent-side request timeout,
+`MacOsHelperClient` still retains `pendingUnknownRequest`, but Check and
+Enable now reconcile that original identity instead of issuing Status or a
+new Enable. Only a reply that still says nothing about the original request
+keeps it: a lost reply and the registered-but-unlaunchable tuple. Every
+conclusive answer, including not-registered and a daemon recovery response
+for an apply or restore, releases it, so a later Enable can register and
+Apply and Restore are not refused for the rest of the process. A helper XPC
+endpoint that never accepted the request on Status or Enable returns
+structured RecoveryRequired rather than crashing the helper into a
+parent-only unknown; a deadline that expires after the request reached the
+daemon stays unknown and keeps the request identity.
+
+`superseded` in the native UI (MACOS-007): onboarding shows Checking/Enabling
+immediately and keeps Not now usable on Mac; Session distinguishes
+uncertainty from registered-but-unlaunchable and no longer tells the person
+that restarting repairs registration. Raw evidence remains in ignored local
+verification output. The recovery task is
+[MACOS-007](../../tasks/specifications/macos-007-helper-setup-recovery.md).
+
+`superseded` (2026-09-11, MACOS-007 stale BTM parent): BTM still names the parent helper as
+`/Applications/Posato-MACOS-004.app/Contents/Helpers/PosatoMacOSHelper.app`
+while the running development package is a different bundle. The daemon
+remains enabled/allowed with launchd `EX_CONFIG`. In-app Check now shows
+progress immediately, does not claim Ready, and after a daemon transport loss
+reports registered-but-unlaunchable with Check again. In-app copy does not
+tell the person to remove Login Items, because that would unregister without
+confirmed Idle cleanup. A later lost reply shows uncertainty and Check again
+reconciles instead of issuing a blocked Status. Construction and Session
+navigation still start no helper. Protocol or integrity failures on Status or
+Enable stay failures; they are not mapped to daemon-loss recovery. ADR 0004
+still forbids unregister without confirmed Idle cleanup, so the current
+package cannot re-point launchd while that stale BTM parent remains. The
+leftover copy and proxy-settings Login Item cleanup were maintainer-approved
+and attempted; see the following observation.
+
+`observed` (2026-09-11, MACOS-007 AC-01): leftover development copies and a
+Background Items reset were maintainer-approved. Empty BTM made
+`SMAppService.status` `notFound` even with the plist in-bundle; Check now maps
+that to not-enabled so Enable is offered. After a fresh register and Login
+Items allow, launchd submitted `system/app.posato.macos.proxy-settings` for
+the current development-package helper URL. This Mac showed Background helper
+enabled and the same Ready state survived relaunch. HTTP(S) proxy stayed
+disabled; iCloud and local websites were unchanged. The helper BTM parent
+item can remain `disabled` while the nested daemon is `enabled, allowed` and
+launchd still starts it.
+
+`observed` (2026-09-11, MACOS-007 setup dead ends): three dead ends shared one
+shape, an action that cannot change its own answer. A reconcile reporting
+not-registered used to retain the request so Enable could never register; a
+`register()` that threw was indistinguishable from a service that had never
+been asked, so Enable silently did nothing; and a registered-but-unlaunchable
+helper offered only a Check again that returns the identical reply. The client
+now releases a reconciled request on every conclusive answer, the helper
+reports a failed registration as a failure rather than as not-registered, and
+the options add one sentence offering a Mac restart the second time the same
+answer comes back in a state whose action cannot change it, which excludes an
+unfinished request because its retry does reconcile the original one. Restarting Posato is still not a registration
+repair. `user-confirmed` (2026-09-11): not enabled shows Enable alone, because
+Enable already registers and re-reads the status, and a helper state other than
+ready is named once above the session action while This Mac is collapsed, so a
+Mac that can enforce nothing is visible before a session starts. Nothing is
+named before an explicit read.
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the

@@ -6,10 +6,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -28,12 +26,13 @@ import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_setup_approval_needed
 import app.posato.generated.resources.mac_setup_attention
 import app.posato.generated.resources.mac_setup_check
-import app.posato.generated.resources.mac_setup_checking
 import app.posato.generated.resources.mac_setup_description
-import app.posato.generated.resources.mac_setup_enabling
 import app.posato.generated.resources.mac_setup_needed
+import app.posato.generated.resources.mac_setup_recovery_summary
 import app.posato.generated.resources.mac_setup_title
 import app.posato.generated.resources.mac_setup_unavailable
+import app.posato.generated.resources.mac_setup_uncertain_summary
+import app.posato.generated.resources.mac_setup_unchanged
 import app.posato.generated.resources.mac_setup_unchecked
 import app.posato.generated.resources.onboarding_permission_mac_action
 import app.posato.generated.resources.onboarding_permission_mac_check_again
@@ -47,28 +46,16 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 internal fun MacSetupSection(
     presentation: MacSetupPresentation,
-    onCheck: () -> Unit,
-    onEnable: () -> Unit,
-    onOpenSettings: () -> Unit,
-    modifier: Modifier = Modifier,
-    onAnnouncement: (String) -> Unit = {},
-) {
-    var expanded by remember { mutableStateOf(false) }
-    MacSetupAnnouncements(presentation, onAnnouncement)
-    MacSetupSection(presentation, expanded, { expanded = !expanded }, onCheck, onEnable, onOpenSettings, modifier)
-}
-
-@Composable
-internal fun MacSetupSection(
-    presentation: MacSetupPresentation,
     expanded: Boolean,
     onToggle: () -> Unit,
     onCheck: () -> Unit,
     onEnable: () -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
+    onAnnouncement: (String) -> Unit = {},
 ) {
     val running = presentation.activity != null
+    MacSetupAnnouncements(presentation, onAnnouncement)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         PosatoDisclosureRow(
             onClick = onToggle,
@@ -90,6 +77,9 @@ internal fun MacSetupSection(
                     MacHelperReadinessNotice(readiness, Res.string.mac_setup_unavailable)
                 }
             }
+            if (!running && presentation.repeatedResult && presentation.readiness.escalatesRepeat()) {
+                PosatoCaption(stringResource(Res.string.mac_setup_unchanged))
+            }
             MacSetupActions(presentation.readiness, running, onCheck, onEnable, onOpenSettings)
         }
     }
@@ -101,8 +91,18 @@ private fun MacHelperReadiness?.summary(): StringResource {
         MacHelperReadiness.READY -> Res.string.onboarding_summary_helper_on
         MacHelperReadiness.NOT_ENABLED -> Res.string.mac_setup_needed
         MacHelperReadiness.APPROVAL_REQUIRED -> Res.string.mac_setup_approval_needed
+        MacHelperReadiness.UNCERTAIN -> Res.string.mac_setup_uncertain_summary
+        MacHelperReadiness.RECOVERY_REQUIRED -> Res.string.mac_setup_recovery_summary
         MacHelperReadiness.UNAVAILABLE -> Res.string.mac_setup_attention
     }
+}
+
+/**
+ * States whose action cannot change the answer. An unfinished request is excluded: its retry really
+ * does reconcile the original request, and approval and not-enabled both still have a real action.
+ */
+private fun MacHelperReadiness?.escalatesRepeat(): Boolean {
+    return this == MacHelperReadiness.RECOVERY_REQUIRED || this == MacHelperReadiness.UNAVAILABLE
 }
 
 @Composable
@@ -125,11 +125,8 @@ private fun MacSetupActions(
         }
 
         MacHelperReadiness.NOT_ENABLED -> {
-            PosatoActionRow {
-                PosatoButton(onClick = onEnable, style = PosatoButtonStyle.Secondary, enabled = !running) {
-                    Text(stringResource(Res.string.onboarding_permission_mac_action))
-                }
-                CheckAgainButton(running, onCheck)
+            PosatoButton(onClick = onEnable, style = PosatoButtonStyle.Secondary, enabled = !running) {
+                Text(stringResource(Res.string.onboarding_permission_mac_action))
             }
         }
 
@@ -142,7 +139,9 @@ private fun MacSetupActions(
             }
         }
 
-        MacHelperReadiness.UNAVAILABLE -> {
+        MacHelperReadiness.UNAVAILABLE,
+        MacHelperReadiness.UNCERTAIN,
+        MacHelperReadiness.RECOVERY_REQUIRED -> {
             CheckAgainButton(running, onCheck)
         }
     }
@@ -156,7 +155,13 @@ private fun MacSetupAnnouncements(
     val initialCompletion = remember { presentation.completedOperations }
     val announce by rememberUpdatedState(onAnnouncement)
     val message = presentation.activity?.let { stringResource(it.label()) }
-        ?: presentation.readiness?.message(Res.string.mac_setup_unavailable)
+        ?: presentation.readiness?.message(Res.string.mac_setup_unavailable)?.let { state ->
+            if (presentation.repeatedResult && presentation.readiness.escalatesRepeat()) {
+                "$state ${stringResource(Res.string.mac_setup_unchanged)}"
+            } else {
+                state
+            }
+        }
     LaunchedEffect(presentation.activity, presentation.completedOperations) {
         if (message != null && (presentation.activity != null || presentation.completedOperations != initialCompletion)) {
             announce(message)
@@ -174,13 +179,6 @@ private fun CheckAgainButton(
     }
 }
 
-private fun MacSetupActivity.label(): StringResource {
-    return when (this) {
-        MacSetupActivity.CHECKING -> Res.string.mac_setup_checking
-        MacSetupActivity.ENABLING -> Res.string.mac_setup_enabling
-    }
-}
-
 @Preview
 @Composable
 private fun MacSetupSectionPreview() {
@@ -192,6 +190,9 @@ private fun MacSetupSectionPreview() {
             MacSetupPresentation(readiness = MacHelperReadiness.NOT_ENABLED),
             MacSetupPresentation(readiness = MacHelperReadiness.APPROVAL_REQUIRED),
             MacSetupPresentation(readiness = MacHelperReadiness.UNAVAILABLE),
+            MacSetupPresentation(readiness = MacHelperReadiness.UNCERTAIN),
+            MacSetupPresentation(readiness = MacHelperReadiness.RECOVERY_REQUIRED),
+            MacSetupPresentation(readiness = MacHelperReadiness.RECOVERY_REQUIRED, repeatedResult = true),
         ).forEach { presentation ->
             MacSetupSection(presentation, expanded = true, onToggle = {}, onCheck = {}, onEnable = {}, onOpenSettings = {})
         }

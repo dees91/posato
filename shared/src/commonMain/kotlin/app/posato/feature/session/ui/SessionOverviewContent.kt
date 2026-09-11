@@ -6,6 +6,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
@@ -21,6 +25,8 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
+import app.posato.feature.onboarding.MacHelperReadiness
+import app.posato.feature.onboarding.MacHelperReadinessNotice
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.MacSetupSection
 import app.posato.feature.session.domain.LocalSessionStatus
@@ -29,6 +35,7 @@ import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.sync.ui.SyncBootstrapSection
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.generated.resources.Res
+import app.posato.generated.resources.mac_setup_unavailable
 import app.posato.generated.resources.session_ended_early
 import app.posato.generated.resources.session_ended_expired
 import org.jetbrains.compose.resources.stringResource
@@ -52,6 +59,7 @@ internal fun SessionOverviewContent(
     val active = state.status is LocalSessionStatus.Active
     val hasItems = state.displayDomains().isNotEmpty() ||
         (state.review.applicationGroupName != null && (state.displayApplicationCount() ?: 0) > 0)
+    var macSetupExpanded by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHero(layout = layout, artworkContent = { PosatoIntervalArtwork() }, headingContent = {
             PosatoHeading(
@@ -66,6 +74,7 @@ internal fun SessionOverviewContent(
             )
         })
         EnforcementNotice(state, onRetryEnforcement)
+        MacSetupNotice(macSetup, macSetupExpanded, state.enforcement)
         if (active) {
             PosatoEndTime("Until ${state.formattedActiveEnd.orEmpty()}", supportingText = state.remainingMillis?.let { remainingText(it) })
             PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, enabled = state.canRequestEarlyEnd()) { Text("End session early") }
@@ -82,13 +91,38 @@ internal fun SessionOverviewContent(
         macSetup?.let { presentation ->
             MacSetupSection(
                 presentation,
-                onMacSetupCheck,
-                onMacSetupEnable,
-                onMacSetupOpenSettings,
+                expanded = macSetupExpanded,
+                onToggle = { macSetupExpanded = !macSetupExpanded },
+                onCheck = onMacSetupCheck,
+                onEnable = onMacSetupEnable,
+                onOpenSettings = onMacSetupOpenSettings,
                 onAnnouncement = onMacSetupAnnouncement,
             )
         }
     }
+}
+
+/**
+ * A Mac whose helper is not ready enforces nothing, so the state it last reported is named above the
+ * session action instead of only inside a collapsed row. Expanding the row shows the same sentence
+ * there, and the row itself keeps the announcement, so this notice stays silent. A session that is
+ * actively enforcing contradicts an older read, and nothing may re-read it without a press, so the
+ * enforcement notice speaks alone then.
+ */
+@Composable
+private fun MacSetupNotice(
+    macSetup: MacSetupPresentation?,
+    expanded: Boolean,
+    enforcement: EnforcementState,
+) {
+    val readiness = macSetup?.readiness ?: return
+    if (expanded || macSetup.activity != null || readiness == MacHelperReadiness.READY) {
+        return
+    }
+    if (enforcement is EnforcementState.Active) {
+        return
+    }
+    MacHelperReadinessNotice(readiness, Res.string.mac_setup_unavailable, announceChanges = false)
 }
 
 @Composable

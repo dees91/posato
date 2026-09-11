@@ -22,7 +22,9 @@ enforcement state with Retry; synchronization remains unwired.
 - `session-persist` preserves the active session and its end time across relaunch.
 - `session-mac-setup` (Mac only) offers Check Mac setup inside the This Mac row below iCloud,
   reads nothing before the press, then names the real helper state with one
-  action and a quiet Check again.
+  action and a quiet Check again, except not enabled, which shows Enable on
+  this Mac alone. A state other than ready is also named once as a notice above
+  the session action while the row is collapsed.
 
 ## How to get to it (user POV)
 
@@ -36,7 +38,9 @@ enforcement state with Retry; synchronization remains unwired.
   never starts an exchange.
 - On the Mac, expand This Mac below iCloud. Check Mac setup reports the
   helper state; Enable on this Mac registers it; Open System Settings and Check
-  again cover background approval. Nothing runs until a button is pressed.
+  again cover background approval. Nothing runs until a button is pressed. Once
+  a read has returned a state other than ready, Session names it above the
+  session action until the row is expanded.
 
 ## Driving it with posato-control
 
@@ -96,7 +100,9 @@ Preconditions:
   visible. `$PC tap -t desktop --text
   "Check Mac setup" --role button`; `$PC wait -t desktop --for exists --text
   "This Mac, Background helper enabled" --role button --timeout-seconds 130`; screenshot and snapshot.
-  `pgrep` is now non-empty, which is the on-demand evidence. Press the quiet
+  `pgrep` is now non-empty, which is the on-demand evidence. No readiness notice
+  appears above the session action while the helper is ready, and the row starts
+  collapsed after every relaunch. Press the quiet
   `Check again` once and expect the same state. Capture the secondary setup
   action and scroll to include Check again in the result screenshot. With
   VoiceOver enabled, check that progress and the returned result are announced
@@ -126,8 +132,29 @@ Preconditions:
   the relevant row after returning from Paused items or relaunching. If an
   expanded action is offscreen, use scenario `scrollTo` before tapping it;
   `find` and `wait` do not scroll.
+- An ad-hoc restaged package (what `./gradlew quality` leaves behind) cannot
+  reach the signed daemon, so Check reports the unavailable state on it. That is
+  the one non-ready branch reproducible without touching system registration,
+  and it also shows the repeated-result sentence and the collapsed-row notice.
+  Rebuild with `$PC build -t desktop` before claiming anything about the ready
+  path.
 - Only the enabled branch of This Mac is reachable on a Mac whose helper is
-  already approved; not enabled, approval required, unavailable, and the
-  lost-connection case stay unit-only. Each helper request has a 120-second
-  deadline; the caption reads Checking Mac setup… meanwhile. After a lost
-  helper connection Check again cannot recover; quit and reopen Posato.
+  already approved; not enabled, approval required, unavailable, uncertain,
+  recovery required, and the lost-connection retry stay unit-only unless they
+  occur naturally. Each helper request has a 120-second deadline; the caption
+  reads Checking Mac setup… meanwhile. After a lost helper reply, Check again
+  reconciles that original request instead of issuing Status. Registered but
+  unlaunchable is recovery required, not Ready. In-app Check again does not
+  unregister it. After a Background Items database reset, Check reports not
+  enabled and offers Enable on this Mac alone; it is not the unavailable
+  Check-again-only path. An Enable whose registration attempt fails and leaves
+  the service unregistered reports that setup could not be completed, not not
+  enabled. The second time the same result comes back in a state whose action
+  cannot change it — could not be checked or enabled, or registered but cannot
+  start — the options add one sentence offering a restart of the Mac; an
+  unfinished request does not get that sentence, and restarting Posato is still
+  not the recovery path. The notice above the session action appears only after a
+  real read, and disappears while the row is expanded, a call is running, or a
+  session is actively enforcing.
+  Login Items or leftover-bundle removal needs maintainer approval before any
+  out-of-band change.
