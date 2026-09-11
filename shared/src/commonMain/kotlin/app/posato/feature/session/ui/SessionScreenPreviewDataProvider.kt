@@ -56,6 +56,16 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
             macSetup = MacSetupPresentation(readiness = MacHelperReadiness.APPROVAL_REQUIRED),
         ),
         SessionPreviewState(
+            "Inactive Mac setup uncertain",
+            inactiveWithItems(),
+            macSetup = MacSetupPresentation(readiness = MacHelperReadiness.UNCERTAIN),
+        ),
+        SessionPreviewState(
+            "Inactive Mac setup recovery required",
+            inactiveWithItems(),
+            macSetup = MacSetupPresentation(readiness = MacHelperReadiness.RECOVERY_REQUIRED),
+        ),
+        SessionPreviewState(
             "Setup",
             SessionUiState(
                 status = Inactive,

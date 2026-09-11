@@ -155,10 +155,15 @@ internal class MacOsHelperClient(
                 MacOsHelperProtocol.canonicalInputDigest(pending.operation, pending.payload),
             requestIdentifier = pending.requestIdentifier,
         )
-        if (result.outcome != HelperResult.Outcome.UnknownOutcome) {
+        if (result.concludesReconciliation()) {
             pendingUnknownRequest = null
         }
         return result
+    }
+
+    @Synchronized
+    override fun hasUnknownRequest(): Boolean {
+        return pendingUnknownRequest != null
     }
 
     /**
@@ -254,7 +259,9 @@ internal class MacOsHelperClient(
         payload: ByteArray = byteArrayOf(),
         requestIdentifier: ByteArray = randomIdentifier(),
     ): HelperResult {
-        check(pendingUnknownRequest == null || operation == HelperOperation.Reconcile)
+        if (shouldReconcileUnknownRequest(pendingUnknownRequest != null, operation)) {
+            return reconcileUnknown()
+        }
         ensureStarted()
         check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
         val message = HelperMessage(
@@ -417,6 +424,21 @@ internal fun retainPendingUnknownRequest(
     pending: HelperMessage?,
     failed: HelperMessage,
 ): HelperMessage = pending ?: failed
+
+internal fun shouldReconcileUnknownRequest(
+    pendingUnknown: Boolean,
+    operation: HelperOperation,
+): Boolean {
+    return pendingUnknown && operation != HelperOperation.Reconcile
+}
+
+internal fun HelperResult.concludesReconciliation(): Boolean {
+    return when (outcome) {
+        HelperResult.Outcome.UnknownOutcome -> false
+        HelperResult.Outcome.ActionRequired -> requiredAction != HelperResult.RequiredAction.ManualRecovery
+        HelperResult.Outcome.Success, HelperResult.Outcome.Conflict, HelperResult.Outcome.Failure -> true
+    }
+}
 
 internal data class HelperResult(
     val outcome: Outcome,

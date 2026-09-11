@@ -1,13 +1,13 @@
 # Execution: `MACOS-007`
 
 - **Brief:** [Helper setup recovery](../specifications/macos-007-helper-setup-recovery.md)
-- **Status:** `active`; brief preparation, implementation not started
+- **Status:** `active`; implementation complete, completed-change review pending
 - **Review tier:** `high-risk`
-- **Implementer:** pending handoff
-- **Reviewer:** independent plan reviewer; completed-change reviewer assigned at implementation
+- **Implementer:** Grok 4.6
+- **Reviewer:** independent plan reviewer (2026-09-11); completed-change reviewer assigned after this closeout draft
 - **Branch:** `docs/mac-helper-startup-diagnosis`
 - **Updated:** 2026-09-11
-- **Baseline:** `54343f7` (diagnosis) on `75ece32` (merged SYNC-011)
+- **Baseline:** rebased onto `origin/main` (`e9467a0`, SYNC-014)
 
 ## Plan
 
@@ -68,34 +68,51 @@
 
 ## Result
 
-- Diagnosis is committed as `54343f7`; no product source or system registration
-  changed during planning. Branch name may stay as-is during implementation.
-- Observed: service registered/allowed but launchd cannot resolve its bundle;
-  older helper reference exists, both daemon executables exist. Exact trigger
-  remains inferred. Parent-side timeout followed by Status is a dead-end retry.
-- Record path is recorded-task, tier high-risk; repo brief/record templates
-  take precedence over the planning skill's scratch-plan format.
+- Client/adapter retry reconciles a pending unknown request. Enable no longer
+  follows a lost Enable with Status. Unreconciled ManualRecovery keeps the
+  original request.
+- Native Status/Enable daemon loss returns RecoveryRequired instead of exiting
+  the helper. Repair still does not unregister when cleanup is unconfirmed.
+- UI adds `UNCERTAIN` and `RECOVERY_REQUIRED`. Onboarding shows progress and
+  keeps Mac Not now usable. Restart is no longer described as registration
+  repair.
+- Physical Check on the current development package reached
+  registered-but-unlaunchable, then uncertainty on a later lost reply. Check
+  again started immediately instead of the previous dead-end. Relaunch and
+  Session navigation started no helper. iCloud and local websites were
+  unchanged.
+- AC-01 remaining: BTM parent is still
+  `/Applications/Posato-MACOS-004.app/Contents/Helpers/PosatoMacOSHelper.app`.
+  launchd stays `EX_CONFIG`. In-app Enable cannot re-point that registration
+  without unregister, which ADR 0004 forbids until Idle cleanup is confirmed.
+  Maintainer approval is required before removing only that leftover app or
+  its Login Item.
 
 ## Completed-change review
 
-- **Verdict:** pending implementation
+- **Verdict:** pending independent review of the implementation diff
 
 ## Verification
 
 | Check | Result / evidence |
 | --- | --- |
 | Diagnosis review | Independent read-only review approved code/evidence distinction at `54343f7`; no tests run |
-| Native diagnosis | `build/verification/runs/20260911-mac-helper-diagnosis/`, copied from main at `75ece32`; logs, service state, UI, and one explicit recheck |
-| Provisioning | Pass: complete local configuration copied; `:posato-control:installDist` built; `build/verification/macos-007-plan/provision.log` |
-| Baseline tests | Pass: 10 `DesktopMacHelperStateTest`, 7 `MacHelperSetupUiStateTest`; `build/verification/macos-007-plan/baseline.log` |
-| Repair and changed UI | Not implemented or verified |
+| Native diagnosis | `build/verification/runs/20260911-mac-helper-diagnosis/` |
+| Focused JVM/Swift tests | Pass: desktop helper retry tests, onboarding holder tests, `ServiceRepairWorkflowTests` |
+| `./gradlew quality` | Pass |
+| Signed desktop package | Pass: `posato-control build -t desktop`, signingMode development |
+| Native Session This Mac | Pass: runs `20260911-135440-2c16` (progress), `20260911-135736-6bdb` (recovery copy), `20260911-140000-05b6` (uncertain retry), `20260911-140223-fd20` (relaunch, no helper) |
+| Simulator first-install | Pass: `20260911-140336-0038` |
+| Approval-required UI | Fake-covered; did not occur naturally |
+| Attended Apply session | Not run; daemon forward path extracted, Apply timeout still unknown |
 
 ## Blockers and accepted risks
 
-- System registration is shared across development bundles; the older-copy
-  hypothesis is not permission to delete it or reset all background items.
-- The paired Mac/iPhone now contain the maintainer's fresh setup; preserve it.
-  Implementation does not require iCloud workspace removal or iPhone reinstall.
-- If no ADR-compliant recovery exists for an unlaunchable registered daemon,
-  present the exact blocker and needed decision; neither a green UI nor a
-  one-off machine reset closes AC-01 by itself.
+- System registration is shared across development bundles. Do not delete
+  `/Applications/Posato-MACOS-004.app` or reset all background items without
+  an explicit maintainer decision. Exact Posato-only target: that leftover
+  helper bundle and the `app.posato.macos.proxy-settings` Login Item.
+- The paired Mac/iPhone setup, iCloud workspace, and local websites were
+  preserved. Desktop onboarding deferral during Enable was unit-tested only.
+- Threat-model `T-07`/`T-08` reviewed; no control amendment. MACOS-007 uses
+  the existing bounded IPC and no-unregister-on-uncertain-cleanup rules.

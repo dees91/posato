@@ -104,13 +104,7 @@ class MacOsHelperProtocolTest {
     @Test
     fun `unknown repair is reconciled once`() {
         var reconciliations = 0
-        val success = HelperResult(
-            outcome = HelperResult.Outcome.Success,
-            serviceState = HelperResult.State.Ready,
-            ownershipPhase = HelperResult.Phase.Idle,
-            requiredAction = HelperResult.RequiredAction.None,
-            failure = HelperResult.Failure.None,
-        )
+        val success = readyResult()
 
         val result = completeRepair(HelperResult.unknownOutcome()) {
             reconciliations += 1
@@ -119,6 +113,53 @@ class MacOsHelperProtocolTest {
 
         assertEquals(success, result)
         assertEquals(1, reconciliations)
+    }
+
+    @Test
+    fun `given each helper outcome when reconciliation is classified then only conclusive results release the request`() {
+        assertEquals(false, HelperResult.unknownOutcome().concludesReconciliation())
+        assertEquals(false, unreconciledResult().concludesReconciliation())
+        assertEquals(true, readyResult().concludesReconciliation())
+        assertEquals(
+            true,
+            HelperResult(
+                outcome = HelperResult.Outcome.ActionRequired,
+                serviceState = HelperResult.State.ApprovalRequired,
+                ownershipPhase = HelperResult.Phase.Prepared,
+                requiredAction = HelperResult.RequiredAction.BackgroundApproval,
+                failure = HelperResult.Failure.None,
+            ).concludesReconciliation(),
+        )
+        assertEquals(
+            true,
+            HelperResult(
+                outcome = HelperResult.Outcome.Failure,
+                serviceState = HelperResult.State.UnavailableOrIncompatible,
+                ownershipPhase = HelperResult.Phase.Idle,
+                requiredAction = HelperResult.RequiredAction.Incompatible,
+                failure = HelperResult.Failure.Integrity,
+            ).concludesReconciliation(),
+        )
+        assertEquals(
+            true,
+            HelperResult(
+                outcome = HelperResult.Outcome.Conflict,
+                serviceState = HelperResult.State.Ready,
+                ownershipPhase = HelperResult.Phase.Applied,
+                requiredAction = HelperResult.RequiredAction.None,
+                failure = HelperResult.Failure.None,
+            ).concludesReconciliation(),
+        )
+    }
+
+    @Test
+    fun `given a pending unknown request when another lifecycle operation is chosen then reconcile is required`() {
+        assertEquals(true, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Enable))
+        assertEquals(true, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Status))
+        assertEquals(true, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Apply))
+        assertEquals(false, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Reconcile))
+        assertEquals(false, shouldReconcileUnknownRequest(pendingUnknown = false, HelperOperation.Enable))
+        assertEquals(false, shouldReconcileUnknownRequest(pendingUnknown = false, HelperOperation.Status))
     }
 
     private fun message(
@@ -137,5 +178,25 @@ class MacOsHelperProtocolTest {
 
     private fun ByteArray.toHex(): String = joinToString(separator = "") { byte ->
         byte.toUByte().toString(radix = 16).padStart(length = 2, padChar = '0')
+    }
+
+    private fun readyResult(): HelperResult {
+        return HelperResult(
+            outcome = HelperResult.Outcome.Success,
+            serviceState = HelperResult.State.Ready,
+            ownershipPhase = HelperResult.Phase.Idle,
+            requiredAction = HelperResult.RequiredAction.None,
+            failure = HelperResult.Failure.None,
+        )
+    }
+
+    private fun unreconciledResult(): HelperResult {
+        return HelperResult(
+            outcome = HelperResult.Outcome.ActionRequired,
+            serviceState = HelperResult.State.RecoveryRequired,
+            ownershipPhase = HelperResult.Phase.RecoveryRequired,
+            requiredAction = HelperResult.RequiredAction.ManualRecovery,
+            failure = HelperResult.Failure.Lifecycle,
+        )
     }
 }

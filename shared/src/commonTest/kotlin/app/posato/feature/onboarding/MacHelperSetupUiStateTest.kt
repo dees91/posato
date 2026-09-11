@@ -84,6 +84,24 @@ class MacHelperSetupUiStateTest {
     }
 
     @Test
+    fun `given a running enable when the call completes later then the readiness is stored`() = runTest {
+        val gate = CompletableDeferred<MacHelperReadiness>()
+        val helper = RecordingMacHelper(gate = gate)
+        val holder = MacHelperSetupUiState(helper, this)
+
+        holder.enable()
+        runCurrent()
+        assertEquals(MacSetupActivity.ENABLING, holder.activity)
+
+        gate.complete(MacHelperReadiness.RECOVERY_REQUIRED)
+        runCurrent()
+
+        assertEquals(null, holder.activity)
+        assertEquals(MacHelperReadiness.RECOVERY_REQUIRED, holder.readiness)
+        assertEquals(1, holder.presentation().completedOperations)
+    }
+
+    @Test
     fun `given a running check when enable is pressed then the second action is ignored and the activity names the check`() = runTest {
         val gate = CompletableDeferred<MacHelperReadiness>()
         val helper = RecordingMacHelper(gate = gate)

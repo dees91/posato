@@ -528,22 +528,34 @@ unproven until a controlled registration repair succeeds. This evidence does
 not establish that the daemon executable is missing or that administrator
 approval was denied. A local app-data reset does not reset service registration.
 
-`observed` in code: after a parent-side request timeout, `MacOsHelperClient`
-retains `pendingUnknownRequest` and rejects every operation except Reconcile.
-`DesktopMacHelperState.recheck()` calls Status directly, and enabling calls
-Enable followed by Status. Neither setup route reconciles the pending request;
-its exception maps back to unavailable. In this run, Check again returned to
-the same failure without leaving a helper process running. Restart clears the
-in-memory client state but does not repair the system registration.
+`superseded` in code (MACOS-007): after a parent-side request timeout,
+`MacOsHelperClient` still retains `pendingUnknownRequest`, but Check and
+Enable now reconcile that original identity instead of issuing Status or a
+new Enable. Unreconciled ActionRequired/ManualRecovery keeps the request.
+A helper XPC loss on Status/Enable returns structured RecoveryRequired
+rather than crashing the helper into a parent-only unknown.
 
-`observed` in the native onboarding UI: the pending operation disabled both
-Enable and Not now without an activity message. Session later offered Check
-again and a restart suggestion. `open`: provide truthful, recoverable setup
-behavior for an uncertain request and a registered-but-unlaunchable daemon;
-keep this separate from normal background-approval handling. No service
-registration, system approval, proxy setting, or product source was changed
-during diagnosis. Raw evidence remains in ignored local verification output.
-The recovery task is [MACOS-007](../../tasks/specifications/macos-007-helper-setup-recovery.md).
+`superseded` in the native UI (MACOS-007): onboarding shows Checking/Enabling
+immediately and keeps Not now usable on Mac; Session distinguishes
+uncertainty from registered-but-unlaunchable and no longer tells the person
+that restarting repairs registration. `open`: in-app setup still cannot
+re-point a stale BTM parent without unregister, which ADR 0004 forbids until
+Idle cleanup is confirmed. Raw evidence remains in ignored local verification
+output. The recovery task is
+[MACOS-007](../../tasks/specifications/macos-007-helper-setup-recovery.md).
+
+`observed` (2026-09-11, MACOS-007): BTM still names the parent helper as
+`/Applications/Posato-MACOS-004.app/Contents/Helpers/PosatoMacOSHelper.app`
+while the running development package is a different bundle. The daemon
+remains enabled/allowed with launchd `EX_CONFIG`. In-app Check now shows
+progress immediately, does not claim Ready, and after a daemon round-trip
+failure reports registered-but-unlaunchable with Login Items recovery copy.
+A later lost reply shows uncertainty and Check again reconciles instead of
+issuing a blocked Status. Construction and Session navigation still start no
+helper. ADR 0004 still forbids unregister without confirmed Idle cleanup, so
+the current package cannot re-point launchd while that stale BTM parent
+remains. Removing only the Posato helper Login Item / the leftover
+`Posato-MACOS-004.app` copy needs maintainer approval before it is attempted.
 
 ## Open questions
 

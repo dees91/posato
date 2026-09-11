@@ -101,6 +101,25 @@ internal class OnboardingPreviewDataProvider : PreviewParameterProvider<Onboardi
             initial.copy(step = OnboardingStep.PERMISSION, helperReadiness = MacHelperReadiness.UNAVAILABLE),
             platform = OnboardingPermissionPlatform.MAC,
         ),
+        OnboardingPreviewState(
+            "Mac enabling",
+            initial.copy(
+                step = OnboardingStep.PERMISSION,
+                permissionRunning = true,
+                helperActivity = MacSetupActivity.ENABLING,
+            ),
+            platform = OnboardingPermissionPlatform.MAC,
+        ),
+        OnboardingPreviewState(
+            "Mac uncertain",
+            initial.copy(step = OnboardingStep.PERMISSION, helperReadiness = MacHelperReadiness.UNCERTAIN),
+            platform = OnboardingPermissionPlatform.MAC,
+        ),
+        OnboardingPreviewState(
+            "Mac recovery required",
+            initial.copy(step = OnboardingStep.PERMISSION, helperReadiness = MacHelperReadiness.RECOVERY_REQUIRED),
+            platform = OnboardingPermissionPlatform.MAC,
+        ),
         OnboardingPreviewState("First website", initial.copy(step = OnboardingStep.WEBSITE)),
         OnboardingPreviewState("Website saved", initial.copy(step = OnboardingStep.WEBSITE, savedWebsites = 1)),
         OnboardingPreviewState(

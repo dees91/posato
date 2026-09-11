@@ -1,3 +1,4 @@
+import Foundation
 import PosatoMacOSServiceCore
 
 struct ServiceRecoveryOperations {
@@ -7,6 +8,99 @@ struct ServiceRecoveryOperations {
   let register: () throws -> Void
   let connectDaemon: () throws -> Void
   let performOriginalRequest: (UInt32) throws -> WireResponsePayload
+}
+
+func setupDaemonUnavailableResponse(
+  requestOperation: WireOperation,
+  reconcilePayload: WireReconcilePayload?
+) -> WireResponsePayload? {
+  switch WireLifecyclePolicy.effectiveOperation(
+    requestOperation: requestOperation,
+    reconcilePayload: reconcilePayload
+  ) {
+  case .status, .enable:
+    return WireLifecyclePolicy.unreconciledServiceResponse(
+      serviceState: .recoveryRequired
+    )
+  default:
+    return nil
+  }
+}
+
+func performDaemonLifecycleRequest(
+  request: WireMessage,
+  receivedAt: DispatchTime,
+  daemonRequirement: String,
+  reconcilePayload: WireReconcilePayload?,
+  daemon: inout DaemonConnection?
+) throws -> WireMessage {
+  do {
+    return try forwardDaemonLifecycleRequest(
+      request: request,
+      receivedAt: receivedAt,
+      daemonRequirement: daemonRequirement,
+      daemon: &daemon
+    )
+  } catch {
+    guard
+      let payload = setupDaemonUnavailableResponse(
+        requestOperation: request.operation,
+        reconcilePayload: reconcilePayload
+      )
+    else {
+      throw error
+    }
+    daemon?.invalidate()
+    daemon = nil
+    return try localResponse(request: request, payload: payload)
+  }
+}
+
+func forwardDaemonLifecycleRequest(
+  request: WireMessage,
+  receivedAt: DispatchTime,
+  daemonRequirement: String,
+  daemon: inout DaemonConnection?
+) throws -> WireMessage {
+  if daemon == nil {
+    daemon = try DaemonConnection(requirement: daemonRequirement)
+  }
+  guard let connection = daemon else {
+    throw PipeFailure.unavailable
+  }
+  var forwardedPayload = request.payload
+  var authorizationGrant: ApplyAuthorizationGrant?
+  defer {
+    forwardedPayload.resetBytes(
+      in: forwardedPayload.startIndex..<forwardedPayload.endIndex
+    )
+  }
+  if request.operation == .apply {
+    let grant = try AuthorizationPolicy.acquireApplyGrant()
+    authorizationGrant = grant
+    forwardedPayload.append(grant.externalForm)
+  }
+  var forwarded = try WireMessage(
+    kind: request.kind,
+    operation: request.operation,
+    sequence: request.sequence,
+    deadlineMilliseconds: try remainingDeadline(
+      receivedAt: receivedAt,
+      budgetMilliseconds: request.deadlineMilliseconds
+    ),
+    connectionIdentifier: request.connectionIdentifier,
+    sessionIdentifier: request.sessionIdentifier,
+    requestIdentifier: request.requestIdentifier,
+    payload: forwardedPayload
+  )
+  defer {
+    forwarded.payload.resetBytes(
+      in: forwarded.payload.startIndex..<forwarded.payload.endIndex
+    )
+  }
+  return try withExtendedLifetime(authorizationGrant) {
+    try connection.perform(forwarded)
+  }
 }
 
 func serviceRecoveryOperation(

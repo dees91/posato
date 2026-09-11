@@ -43,6 +43,7 @@ internal data class OnboardingViewState(
     val savedWebsites: Int,
     val permissionRunning: Boolean,
     val websiteSaving: Boolean,
+    val helperActivity: MacSetupActivity? = null,
 )
 
 @Stable
@@ -80,6 +81,7 @@ internal class OnboardingUiState(
             savedWebsites = savedWebsites,
             permissionRunning = permissionRunning || helperSetup.activity != null,
             websiteSaving = websiteSaving,
+            helperActivity = helperSetup.activity,
         )
     }
 

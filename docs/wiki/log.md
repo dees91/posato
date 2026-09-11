@@ -1524,3 +1524,14 @@ Observed a registered, allowed daemon failing launchd bundle resolution and a
 post-timeout setup retry blocked by the client's pending unknown request.
 Recorded the older-installation hypothesis, UI symptoms, and unverified
 recovery boundary in [macOS enforcement](topics/macos-enforcement.md).
+
+## [2026-09-11] task | MACOS-007 helper setup recovery
+
+Setup retry now reconciles a lost helper request instead of issuing Status or a
+new Enable. Status/Enable daemon loss returns RecoveryRequired rather than
+crashing the helper. Onboarding shows progress immediately and keeps Not now
+usable on Mac. Physical Check on this Mac reported registered-but-unlaunchable
+with Login Items copy, then uncertainty on a later lost reply; relaunch still
+starts no helper. launchd remains `EX_CONFIG` because BTM still names
+`Posato-MACOS-004.app`; unregister without confirmed Idle cleanup stays
+forbidden. Details in the MACOS-007 execution record.

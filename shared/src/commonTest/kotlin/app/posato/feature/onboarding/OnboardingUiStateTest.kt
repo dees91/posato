@@ -216,6 +216,8 @@ class OnboardingUiStateTest {
             MacHelperReadiness.READY,
             MacHelperReadiness.APPROVAL_REQUIRED,
             MacHelperReadiness.UNAVAILABLE,
+            MacHelperReadiness.UNCERTAIN,
+            MacHelperReadiness.RECOVERY_REQUIRED,
         )
 
         answers.forEach { answer ->
@@ -382,6 +384,51 @@ class OnboardingUiStateTest {
         assertEquals(MacHelperReadiness.READY, helperSetup.readiness)
         assertEquals(MacHelperReadiness.READY, holder.helperReadiness)
         assertEquals(listOf("enable"), helper.calls)
+    }
+
+    @Test
+    fun `given a running Mac helper call when setup is deferred then the late result is kept`() = runTest {
+        val gate = CompletableDeferred<MacHelperReadiness>()
+        val helper = FakeMacHelper(gate = gate)
+        val helperSetup = MacHelperSetupUiState(helper, this)
+        val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), FakeApplicationAccess(), helperSetup, this)
+
+        holder.enableHelper()
+        runCurrent()
+        val busy = holder.snapshot()
+        assertEquals(MacSetupActivity.ENABLING, busy.helperActivity)
+        assertEquals(true, busy.canDeferPermission(OnboardingPermissionPlatform.MAC))
+        assertEquals(false, busy.canDeferPermission(OnboardingPermissionPlatform.IOS))
+
+        holder.advance()
+        gate.complete(MacHelperReadiness.READY)
+        runCurrent()
+
+        assertEquals(OnboardingStep.PRIVACY, holder.step)
+        assertEquals(MacHelperReadiness.READY, holder.helperReadiness)
+        assertEquals(MacHelperReadiness.READY, helperSetup.readiness)
+        assertEquals(false, holder.snapshot().permissionRunning)
+        assertEquals(listOf("enable"), helper.calls)
+    }
+
+    @Test
+    fun `given a running iOS access request when permission is busy then deferral is blocked`() = runTest {
+        val gate = CompletableDeferred<ApplicationAccessResult>()
+        val holder = OnboardingUiState(
+            FakeSetupStore(),
+            FakeTargetPolicyStore(),
+            FakeApplicationAccess(gate = gate),
+            MacHelperSetupUiState(FakeMacHelper(), this),
+            this,
+        )
+
+        holder.requestAccess()
+        runCurrent()
+
+        assertEquals(false, holder.snapshot().canDeferPermission(OnboardingPermissionPlatform.IOS))
+        gate.complete(ApplicationAccessResult.Unavailable)
+        runCurrent()
+        assertEquals(true, holder.snapshot().canDeferPermission(OnboardingPermissionPlatform.IOS))
     }
 
     @Test

@@ -164,13 +164,112 @@ class DesktopMacHelperStateTest {
     }
 
     @Test
-    fun `given a lost helper connection when checked again then unavailable is reported both times`() = runTest {
-        var statusCalls = 0
+    fun `given a lost helper connection when checked again then the original request is reconciled`() = runTest {
+        val commands = FakeHelperCommands(
+            enableBehavior = { readyResult() },
+            statusBehavior = { HelperResult.unknownOutcome() },
+            reconcileBehavior = { readyResult() },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNCERTAIN, state.recheck())
+        assertEquals(MacHelperReadiness.READY, state.recheck())
+        assertEquals(listOf("status", "reconcile"), commands.calls.map { it.operation })
+    }
+
+    @Test
+    fun `given a lost enable when enabled then status is not issued`() = runTest {
+        val commands = FakeHelperCommands(
+            enableBehavior = { HelperResult.unknownOutcome() },
+            statusBehavior = { throw AssertionError("status must not follow a lost enable") },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNCERTAIN, state.enable())
+        assertEquals(listOf("enable"), commands.calls.map { it.operation })
+    }
+
+    @Test
+    fun `given a lost enable when enabled again then the original request is reconciled`() = runTest {
+        val commands = FakeHelperCommands(
+            enableBehavior = { HelperResult.unknownOutcome() },
+            statusBehavior = { throw AssertionError("status must not replace reconcile") },
+            reconcileBehavior = { readyResult() },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNCERTAIN, state.enable())
+        assertEquals(MacHelperReadiness.READY, state.enable())
+        assertEquals(listOf("enable", "reconcile"), commands.calls.map { it.operation })
+    }
+
+    @Test
+    fun `given an unreconciled recovery required when retried then the original request is retained`() = runTest {
+        val commands = FakeHelperCommands(
+            enableBehavior = { HelperResult.unknownOutcome() },
+            statusBehavior = { throw AssertionError("status must not replace reconcile") },
+            reconcileBehavior = { unreconciledResult() },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNCERTAIN, state.enable())
+        assertEquals(MacHelperReadiness.RECOVERY_REQUIRED, state.recheck())
+        assertEquals(MacHelperReadiness.RECOVERY_REQUIRED, state.enable())
+        assertEquals(listOf("enable", "reconcile", "reconcile"), commands.calls.map { it.operation })
+        assertEquals(true, commands.hasUnknownRequest())
+    }
+
+    @Test
+    fun `given a pending apply when enabled then enable is not issued`() = runTest {
+        val commands = FakeHelperCommands(
+            enableBehavior = { throw AssertionError("enable must not supersede a pending apply") },
+            statusBehavior = { throw AssertionError("status must not supersede a pending apply") },
+            reconcileBehavior = { unreconciledResult() },
+            pendingUnknown = true,
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.RECOVERY_REQUIRED, state.enable())
+        assertEquals(listOf("reconcile"), commands.calls.map { it.operation })
+    }
+
+    @Test
+    fun `given incompatible signing when checked then unavailable is reported and status is unchanged`() = runTest {
         val commands = FakeHelperCommands(
             { readyResult() },
             {
-                statusCalls += 1
-                if (statusCalls == 1) HelperResult.unknownOutcome() else throw IllegalStateException("pending unknown request")
+                HelperResult(
+                    outcome = HelperResult.Outcome.Failure,
+                    serviceState = HelperResult.State.UnavailableOrIncompatible,
+                    ownershipPhase = HelperResult.Phase.Idle,
+                    requiredAction = HelperResult.RequiredAction.Incompatible,
+                    failure = HelperResult.Failure.Integrity,
+                )
             },
         )
         val state = DesktopMacHelperState(
@@ -214,6 +313,16 @@ class DesktopMacHelperStateTest {
             failure = HelperResult.Failure.Lifecycle,
         )
     }
+
+    private fun unreconciledResult(): HelperResult {
+        return HelperResult(
+            outcome = HelperResult.Outcome.ActionRequired,
+            serviceState = HelperResult.State.RecoveryRequired,
+            ownershipPhase = HelperResult.Phase.RecoveryRequired,
+            requiredAction = HelperResult.RequiredAction.ManualRecovery,
+            failure = HelperResult.Failure.Lifecycle,
+        )
+    }
 }
 
 private data class HelperCall(
@@ -223,16 +332,41 @@ private data class HelperCall(
 private class FakeHelperCommands(
     private val enableBehavior: () -> HelperResult,
     private val statusBehavior: () -> HelperResult,
+    private val reconcileBehavior: (() -> HelperResult)? = null,
+    pendingUnknown: Boolean = false,
 ) : MacHelperCommands {
     val calls = mutableListOf<HelperCall>()
+    private var pendingUnknown = pendingUnknown
 
     override fun enable(): HelperResult {
+        check(!pendingUnknown)
         calls.add(HelperCall("enable"))
-        return enableBehavior()
+        return rememberUnknown(enableBehavior())
     }
 
     override fun status(): HelperResult {
+        check(!pendingUnknown)
         calls.add(HelperCall("status"))
-        return statusBehavior()
+        return rememberUnknown(statusBehavior())
+    }
+
+    override fun reconcileUnknown(): HelperResult {
+        calls.add(HelperCall("reconcile"))
+        val result = (reconcileBehavior ?: statusBehavior)()
+        if (result.concludesReconciliation()) {
+            pendingUnknown = false
+        }
+        return result
+    }
+
+    override fun hasUnknownRequest(): Boolean {
+        return pendingUnknown
+    }
+
+    private fun rememberUnknown(result: HelperResult): HelperResult {
+        if (result.outcome == HelperResult.Outcome.UnknownOutcome) {
+            pendingUnknown = true
+        }
+        return result
     }
 }

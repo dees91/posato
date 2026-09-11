@@ -376,6 +376,12 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   paused until a session starts. **Continue** replaces the request action only
   after the returned access/helper state is ready. **Not now** defers setup;
   unavailable versions never suggest a settings change can enable them.
+  On Mac, the permission step shows “Checking Mac setup…” or “Enabling the
+  background helper…” as soon as that call starts. **Not now** stays usable
+  during the Mac helper call and does not cancel it; a late result updates
+  Summary and Session without advancing or starting enforcement. Duplicate
+  Enable and Check again stay disabled while the call runs. iPhone Screen Time
+  request still disables **Not now** until the system sheet returns.
 - Website entry uses “What pulls you away?”, the existing domain form and
   validation, and **Continue** after a saved addition. Before an addition,
   **Not now** keeps an empty setup possible.
@@ -420,16 +426,20 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   full linking sentence as a caption next to the action. Setup controls are
   secondary to the Session action.
 - This Mac (macOS only, after iCloud): reads nothing before a press on
-  **Check Mac setup** inside its expanded options. This runs one status read,
-  then the section names the real
-  helper state with one precise action: **Enable on this Mac** when the helper
-  is not enabled, **Open System Settings** plus **Check again** when background
-  approval is required, "Background helper enabled" when ready, and
-  a caution notice with **Check again** when the helper could not be checked
-  or enabled (the notice says to quit and reopen Posato when checking again
-  does not help). Every known state keeps a quiet **Check again** inside its
+  **Check Mac setup** inside its expanded options. This runs one status read
+  when no helper request is outstanding; after a lost reply, **Check again**
+  finishes that original request instead of starting a new one. The section
+  then names the real helper state with one precise action: **Enable on this
+  Mac** when the helper is not enabled, **Open System Settings** plus **Check
+  again** when background approval is required, "Background helper enabled"
+  when ready, **Check again** when the last request did not finish or the
+  helper could not be checked, and **Open System Settings** plus **Enable on
+  this Mac** when the helper is registered but could not start (remove only
+  the Posato helper from Login Items if it is listed, then enable it from the
+  current app; restarting Posato does not repair a broken service
+  registration). Every known state keeps a quiet **Check again** inside its
   options. While a call runs the row reads "Checking Mac setup…" or
-  "Enabling the background helper…" and the actions are disabled.
+  "Enabling the background helper…" and the duplicate actions are disabled.
   The Mac host sends native
   accessibility announcements for progress and the returned result, including
   an unchanged result after rechecking. No time or success claim.

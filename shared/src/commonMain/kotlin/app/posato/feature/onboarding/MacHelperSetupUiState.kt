@@ -8,12 +8,23 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.mac_setup_checking
+import app.posato.generated.resources.mac_setup_enabling
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
 
 internal enum class MacSetupActivity {
     CHECKING,
-    ENABLING
+    ENABLING,
+}
+
+internal fun MacSetupActivity.label(): StringResource {
+    return when (this) {
+        MacSetupActivity.CHECKING -> Res.string.mac_setup_checking
+        MacSetupActivity.ENABLING -> Res.string.mac_setup_enabling
+    }
 }
 
 internal data class MacSetupPresentation(

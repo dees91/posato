@@ -28,9 +28,7 @@ import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_setup_approval_needed
 import app.posato.generated.resources.mac_setup_attention
 import app.posato.generated.resources.mac_setup_check
-import app.posato.generated.resources.mac_setup_checking
 import app.posato.generated.resources.mac_setup_description
-import app.posato.generated.resources.mac_setup_enabling
 import app.posato.generated.resources.mac_setup_needed
 import app.posato.generated.resources.mac_setup_title
 import app.posato.generated.resources.mac_setup_unavailable
@@ -98,10 +96,16 @@ internal fun MacSetupSection(
 private fun MacHelperReadiness?.summary(): StringResource {
     return when (this) {
         null -> Res.string.mac_setup_unchecked
+
         MacHelperReadiness.READY -> Res.string.onboarding_summary_helper_on
+
         MacHelperReadiness.NOT_ENABLED -> Res.string.mac_setup_needed
+
         MacHelperReadiness.APPROVAL_REQUIRED -> Res.string.mac_setup_approval_needed
-        MacHelperReadiness.UNAVAILABLE -> Res.string.mac_setup_attention
+
+        MacHelperReadiness.UNAVAILABLE,
+        MacHelperReadiness.UNCERTAIN,
+        MacHelperReadiness.RECOVERY_REQUIRED -> Res.string.mac_setup_attention
     }
 }
 
@@ -142,7 +146,19 @@ private fun MacSetupActions(
             }
         }
 
-        MacHelperReadiness.UNAVAILABLE -> {
+        MacHelperReadiness.UNAVAILABLE, MacHelperReadiness.UNCERTAIN -> {
+            CheckAgainButton(running, onCheck)
+        }
+
+        MacHelperReadiness.RECOVERY_REQUIRED -> {
+            PosatoActionRow {
+                PosatoButton(onClick = onOpenSettings, style = PosatoButtonStyle.Secondary, enabled = !running) {
+                    Text(stringResource(Res.string.onboarding_permission_mac_open_settings))
+                }
+                PosatoButton(onClick = onEnable, style = PosatoButtonStyle.Secondary, enabled = !running) {
+                    Text(stringResource(Res.string.onboarding_permission_mac_action))
+                }
+            }
             CheckAgainButton(running, onCheck)
         }
     }
@@ -174,13 +190,6 @@ private fun CheckAgainButton(
     }
 }
 
-private fun MacSetupActivity.label(): StringResource {
-    return when (this) {
-        MacSetupActivity.CHECKING -> Res.string.mac_setup_checking
-        MacSetupActivity.ENABLING -> Res.string.mac_setup_enabling
-    }
-}
-
 @Preview
 @Composable
 private fun MacSetupSectionPreview() {
@@ -192,6 +201,8 @@ private fun MacSetupSectionPreview() {
             MacSetupPresentation(readiness = MacHelperReadiness.NOT_ENABLED),
             MacSetupPresentation(readiness = MacHelperReadiness.APPROVAL_REQUIRED),
             MacSetupPresentation(readiness = MacHelperReadiness.UNAVAILABLE),
+            MacSetupPresentation(readiness = MacHelperReadiness.UNCERTAIN),
+            MacSetupPresentation(readiness = MacHelperReadiness.RECOVERY_REQUIRED),
         ).forEach { presentation ->
             MacSetupSection(presentation, expanded = true, onToggle = {}, onCheck = {}, onEnable = {}, onOpenSettings = {})
         }

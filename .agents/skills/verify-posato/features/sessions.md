@@ -127,7 +127,11 @@ Preconditions:
   expanded action is offscreen, use scenario `scrollTo` before tapping it;
   `find` and `wait` do not scroll.
 - Only the enabled branch of This Mac is reachable on a Mac whose helper is
-  already approved; not enabled, approval required, unavailable, and the
-  lost-connection case stay unit-only. Each helper request has a 120-second
-  deadline; the caption reads Checking Mac setup… meanwhile. After a lost
-  helper connection Check again cannot recover; quit and reopen Posato.
+  already approved; not enabled, approval required, unavailable, uncertain,
+  recovery required, and the lost-connection retry stay unit-only unless they
+  occur naturally. Each helper request has a 120-second deadline; the caption
+  reads Checking Mac setup… meanwhile. After a lost helper reply, Check again
+  reconciles that original request instead of issuing Status. Registered but
+  unlaunchable is recovery required, not Ready; Login Items recovery for the
+  Posato helper only needs maintainer approval before any out-of-band change.
+  Restarting Posato is not the recovery path.

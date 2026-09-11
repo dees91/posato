@@ -17,13 +17,29 @@ internal class DesktopMacHelperState(
 ) : MacHelperPort {
     override suspend fun enable(): MacHelperReadiness {
         return readiness {
-            commands.enable()
-            commands.status()
+            if (commands.hasUnknownRequest()) {
+                commands.reconcileUnknown()
+            } else {
+                val enabled = commands.enable()
+                if (enabled.outcome == HelperResult.Outcome.Success &&
+                    enabled.serviceState == HelperResult.State.Ready
+                ) {
+                    commands.status()
+                } else {
+                    enabled
+                }
+            }
         }
     }
 
     override suspend fun recheck(): MacHelperReadiness {
-        return readiness { commands.status() }
+        return readiness {
+            if (commands.hasUnknownRequest()) {
+                commands.reconcileUnknown()
+            } else {
+                commands.status()
+            }
+        }
     }
 
     override fun openApprovalSettings() {
@@ -51,6 +67,10 @@ internal class DesktopMacHelperState(
 
     private fun HelperResult.toReadiness(): MacHelperReadiness {
         return when {
+            outcome == HelperResult.Outcome.UnknownOutcome -> {
+                MacHelperReadiness.UNCERTAIN
+            }
+
             outcome == HelperResult.Outcome.Success && serviceState == HelperResult.State.Ready -> {
                 MacHelperReadiness.READY
             }
@@ -62,6 +82,12 @@ internal class DesktopMacHelperState(
 
             serviceState == HelperResult.State.NotRegistered -> {
                 MacHelperReadiness.NOT_ENABLED
+            }
+
+            serviceState == HelperResult.State.RecoveryRequired ||
+                requiredAction == HelperResult.RequiredAction.ManualRecovery ||
+                requiredAction == HelperResult.RequiredAction.ProxyRecovery -> {
+                MacHelperReadiness.RECOVERY_REQUIRED
             }
 
             else -> {

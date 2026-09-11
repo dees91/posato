@@ -214,6 +214,55 @@ private final class RecoveryHarness {
   #expect(response.ownershipPhase == .recoveryRequired)
 }
 
+@Test func givenDaemonLossWhenSetupIsReconciledThenRecoveryIsRequiredWithoutUnknown() throws {
+  for operation in [WireOperation.status, .enable] {
+    let reconcile = try WireReconcilePayload(
+      originalOperation: operation,
+      canonicalInputDigest: WireCodec.canonicalInputDigest(
+        operation: operation,
+        payload: Data()
+      )
+    )
+
+    let direct = setupDaemonUnavailableResponse(
+      requestOperation: operation,
+      reconcilePayload: nil
+    )
+    let reconciled = setupDaemonUnavailableResponse(
+      requestOperation: .reconcile,
+      reconcilePayload: reconcile
+    )
+
+    #expect(direct?.outcome == .actionRequired)
+    #expect(direct?.serviceState == .recoveryRequired)
+    #expect(direct?.actionRequired == .manualRecovery)
+    #expect(reconciled?.serviceState == .recoveryRequired)
+  }
+}
+
+@Test func givenDaemonLossWhenApplyIsReconciledThenSetupDoesNotClaimRecovery() throws {
+  let reconcile = try WireReconcilePayload(
+    originalOperation: .apply,
+    canonicalInputDigest: WireCodec.canonicalInputDigest(
+      operation: .apply,
+      payload: Data([0, 1])
+    )
+  )
+
+  #expect(
+    setupDaemonUnavailableResponse(
+      requestOperation: .apply,
+      reconcilePayload: nil
+    ) == nil
+  )
+  #expect(
+    setupDaemonUnavailableResponse(
+      requestOperation: .reconcile,
+      reconcilePayload: reconcile
+    ) == nil
+  )
+}
+
 @Test func givenServiceRecoveryWhenClassifiedThenOnlySupportedOperationsUseWorkflow() throws {
   for operation in [WireOperation.repair, .disable, .remove] {
     let reconcile = try WireReconcilePayload(
