@@ -56,7 +56,12 @@ and the recipe's settle rule is retired once the timed proof passes.
   consistent. Absence is then verified independently: the anchor read says
   missing, and a changes traversal from an empty token, looped until the
   provider reports no more changes, yields deletion entries only and no
-  bundle. Only then the workspace key is deleted and the local state
+  bundle. Bundle records go first and the anchor last, so a partial
+  removal leaves the anchor in place and the retry repeats the whole
+  deletion from ready instead of taking the `D2` path. Enumeration and
+  verification count records by type and name natively, without payload
+  validation, so a malformed or foreign bundle never blocks its own
+  removal. Only then the workspace key is deleted and the local state
   cleared as today, including the tombstone. An account failure, a retryable or
   unknown provider result, or a remaining record stops the destructive
   steps with the existing retryable or action-required outcomes and keeps
@@ -88,19 +93,23 @@ and the recipe's settle rule is retired once the timed proof passes.
   happens. The `SYNC-014` tombstone stays as written; a resurrected old
   anchor can no longer appear, but the guard costs nothing and covers
   provider anomalies.
-- Foreign leftovers (`D5`): a still-linked peer whose check passed just
-  before the remover deleted the records can publish one more bundle into
-  the kept zone; that bundle carries the removed workspace's context and
-  would pin the next workspace's cursor as a wrong-context rejection. Two
-  rules close that window. The consume loop treats a bundle whose header
-  context is not the established workspace as a progress-only page: never
-  accepted, never decrypted, cursor advances, because with a kept zone such
-  a bundle is a leftover by construction. In addition, a fresh attempt that
-  finds the zone with no anchor sweeps every remaining bundle record before
-  minting, with the `D1` primitive; ADR 0007's destructive authority is
-  amended to cover exactly that sweep (bundle records of the exact zone,
-  only while no anchor exists). Wrong-context rejection stays for a bundle
-  that reaches the writer, so the `T-02` signal is unchanged.
+- Foreign leftovers (`D5`): a still-linked peer whose check passed just before
+  the remover deleted the records can publish one more bundle into the kept
+  zone; that bundle carries the removed workspace's context and would pin the
+  next workspace's cursor as a wrong-context rejection. Two rules close that
+  window. The consume loop treats a bundle whose header context is not the
+  established workspace as a progress-only page: never accepted, never
+  decrypted, cursor advances, because with a kept zone such a bundle is a
+  leftover by construction. In addition, a fresh attempt that finds the zone
+  with no anchor sweeps every remaining bundle record before minting, with the
+  `D1` primitive: it enumerates, re-reads the anchor, and deletes the
+  enumerated set only if the anchor is still missing; if an anchor appeared,
+  it deletes nothing and takes the found-anchor path, because a concurrent
+  fresh attempt on the peer may have won and published under the new anchor.
+  ADR 0007's destructive authority is amended to cover exactly that sweep
+  (bundle records of the exact zone, only while no anchor exists, checked
+  after enumeration). Wrong-context rejection stays for a bundle that reaches
+  the writer, so the `T-02` signal is unchanged.
 - Copy (`D6`): the removal confirmation and the seven statuses stay as
   written; "deletes the shared workspace from iCloud" remains true because
   every record of the workspace is deleted. No new string.
@@ -151,7 +160,8 @@ and the recipe's settle rule is retired once the timed proof passes.
   the tombstone written; a remaining record, a
   retryable or unknown delete result, or an account failure stops before the
   key deletion and keeps the established row; a second removal after a
-  partial one completes idempotently; no zone delete call exists anywhere.
+  partial one completes idempotently and leaves the zone empty; no zone
+  delete call exists anywhere.
 - `AC-02` — Over the fakes, a linked peer whose check finds the zone and no
   anchor reports `ANCHOR_MISSING` as action required, publishes and accepts
   nothing, and its removal deletes only its own key item, clears local
@@ -162,8 +172,10 @@ and the recipe's settle rule is retired once the timed proof passes.
   in the established workspace's zone advances the cursor and is never
   accepted or decrypted; a fresh establish after removal saves no zone,
   sweeps a leftover bundle before minting, creates the anchor in the found
-  zone, and its first exchange completes; wrong-context rejection is
-  unchanged for a bundle that reaches the writer.
+  zone, and its first exchange completes; an anchor that appears between
+  the sweep's enumeration and its deletes stops the sweep with nothing
+  deleted and the attempt adopts it; wrong-context rejection is unchanged
+  for a bundle that reaches the writer.
 - `AC-04` — Physical, both directions, signed Mac and iPhone on one
   account, both linked at the start, with the `SYNC-014` per-press capture:
   Run 1 shape (Mac **Remove workspace**, add `design-proof-16.example` while
