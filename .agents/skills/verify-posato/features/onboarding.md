@@ -82,7 +82,8 @@ Preconditions:
   starting enforcement. The approval-required branch is unit-tested; only
   drive it attended, then use Check again after allowing Posato. A lost
   Enable reply shows that the request did not finish; Check again reconciles
-  it. Registered but unlaunchable is not treated as enabled.
+  it. Registered but unlaunchable is not treated as enabled and does not
+  offer Login Items removal from the app.
 - **Accessibility:** capture large-text, keyboard, and VoiceOver passes for
   at least one step on each platform with a screenshot and a snapshot.
 

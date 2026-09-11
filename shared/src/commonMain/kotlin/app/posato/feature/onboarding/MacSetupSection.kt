@@ -146,19 +146,9 @@ private fun MacSetupActions(
             }
         }
 
-        MacHelperReadiness.UNAVAILABLE, MacHelperReadiness.UNCERTAIN -> {
-            CheckAgainButton(running, onCheck)
-        }
-
+        MacHelperReadiness.UNAVAILABLE,
+        MacHelperReadiness.UNCERTAIN,
         MacHelperReadiness.RECOVERY_REQUIRED -> {
-            PosatoActionRow {
-                PosatoButton(onClick = onOpenSettings, style = PosatoButtonStyle.Secondary, enabled = !running) {
-                    Text(stringResource(Res.string.onboarding_permission_mac_open_settings))
-                }
-                PosatoButton(onClick = onEnable, style = PosatoButtonStyle.Secondary, enabled = !running) {
-                    Text(stringResource(Res.string.onboarding_permission_mac_action))
-                }
-            }
             CheckAgainButton(running, onCheck)
         }
     }

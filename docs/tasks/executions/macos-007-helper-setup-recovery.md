@@ -1,7 +1,7 @@
 # Execution: `MACOS-007`
 
 - **Brief:** [Helper setup recovery](../specifications/macos-007-helper-setup-recovery.md)
-- **Status:** `done`
+- **Status:** `blocked`; retry and truthful setup UI landed, AC-01 registration repair waits on maintainer-approved out-of-band cleanup
 - **Review tier:** `high-risk`
 - **Implementer:** Grok 4.6
 - **Reviewer:** independent plan reviewer (2026-09-11); completed-change review 2026-09-11
@@ -75,7 +75,8 @@
   the helper. Repair still does not unregister when cleanup is unconfirmed.
 - UI adds `UNCERTAIN` and `RECOVERY_REQUIRED`. Onboarding shows progress and
   keeps Mac Not now usable. Restart is no longer described as registration
-  repair.
+  repair. Registered-but-unlaunchable uses Check again; it does not tell the
+  person to remove Login Items, because that would unregister without Idle.
 - Physical Check on the current development package reached
   registered-but-unlaunchable, then uncertainty on a later lost reply. Check
   again started immediately instead of the previous dead-end. Relaunch and
@@ -92,8 +93,19 @@
 
 - **Verdict:** approved after Required fix
 - **Critical or Required findings:** one Required: `RECOVERY_REQUIRED` mapping was too broad (proxy leftover, rule repair, and not-found ManualRecovery received Login Items copy)
-- **Resolution:** map Login Items recovery only to the unlaunchable tuple (`ActionRequired` + `RecoveryRequired` service and phase + `ManualRecovery` + `Lifecycle`). Proxy leftover and rule repair stay `UNAVAILABLE`. Client auto-reconcile limited to Enable/Status; Apply/Restore still refuse while a request is unknown.
+- **Resolution:** keep the unlaunchable tuple distinct in copy, but Check again only; do not recommend Login Items from the app. Proxy leftover and rule repair stay `UNAVAILABLE`. Client auto-reconcile limited to Enable/Status; Apply/Restore still refuse while a request is unknown.
 - **Advisory findings:** declined the broader “never auto-reconcile on the client” preference; setup Enable still reconciles a pending unknown via the adapter.
+
+## Hosted review (PR #49, `3542750`)
+
+| Finding | Class | Decision | Rule | Cost |
+| --- | --- | --- | --- | --- |
+| Login Items copy after daemon-unavailable Status/Enable without Idle | Required | accept | ADR 0004 confirmed cleanup before unregister; AC-04 | small: Check again only, copy does not unregister |
+| Task record marked `done` while AC-01 unmet | Required | accept | AC-01 stop with a blocker rather than report completion | small: status `blocked` |
+| Two wiki-log entries in one PR | Required | accept | at most one wiki-log entry per PR | small: collapse to one closeout entry |
+| Broad catch maps protocol/integrity failures to daemon-loss recovery | Required | accept | T-07 structured IPC outcomes | small: catch only `PipeFailure.unavailable` |
+
+- **Recommendation after this correction:** one more hosted pass.
 
 ## Verification
 

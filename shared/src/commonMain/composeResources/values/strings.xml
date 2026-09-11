@@ -203,7 +203,7 @@ For what matters.</string>
     <string name="mac_setup_not_enabled">The background helper is not enabled on this Mac.</string>
     <string name="mac_setup_unavailable">The background helper could not be checked or enabled. Check again.</string>
     <string name="mac_setup_uncertain">The last helper request did not finish. Try again to finish that request.</string>
-    <string name="mac_setup_recovery">The background helper is registered but could not start. Open System Settings, remove only the Posato helper from Login Items if it is listed, then enable it on this Mac.</string>
+    <string name="mac_setup_recovery">The background helper is registered but could not start. Check again. Do not remove it from Login Items while cleanup cannot be confirmed.</string>
     <string name="action_check_again">Check again</string>
     <string name="sync_checking_key">Checking for the workspace key…</string>
     <string name="sync_waiting_explanation">Your existing workspace stays unchanged. Apple may first ask you to approve iCloud Keychain for this device.</string>

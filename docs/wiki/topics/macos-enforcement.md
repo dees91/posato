@@ -548,14 +548,17 @@ output. The recovery task is
 `/Applications/Posato-MACOS-004.app/Contents/Helpers/PosatoMacOSHelper.app`
 while the running development package is a different bundle. The daemon
 remains enabled/allowed with launchd `EX_CONFIG`. In-app Check now shows
-progress immediately, does not claim Ready, and after a daemon round-trip
-failure reports registered-but-unlaunchable with Login Items recovery copy.
-A later lost reply shows uncertainty and Check again reconciles instead of
-issuing a blocked Status. Construction and Session navigation still start no
-helper. ADR 0004 still forbids unregister without confirmed Idle cleanup, so
-the current package cannot re-point launchd while that stale BTM parent
-remains. Removing only the Posato helper Login Item / the leftover
-`Posato-MACOS-004.app` copy needs maintainer approval before it is attempted.
+progress immediately, does not claim Ready, and after a daemon transport loss
+reports registered-but-unlaunchable with Check again. In-app copy does not
+tell the person to remove Login Items, because that would unregister without
+confirmed Idle cleanup. A later lost reply shows uncertainty and Check again
+reconciles instead of issuing a blocked Status. Construction and Session
+navigation still start no helper. Protocol or integrity failures on Status or
+Enable stay failures; they are not mapped to daemon-loss recovery. ADR 0004
+still forbids unregister without confirmed Idle cleanup, so the current
+package cannot re-point launchd while that stale BTM parent remains. Removing
+only the Posato helper Login Item / the leftover `Posato-MACOS-004.app` copy
+needs maintainer approval before it is attempted.
 
 ## Open questions
 

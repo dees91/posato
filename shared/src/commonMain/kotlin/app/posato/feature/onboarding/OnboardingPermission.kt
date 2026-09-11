@@ -292,25 +292,8 @@ private fun MacPermissionActions(
             MacHelperApprovalActions(layout, state.permissionRunning, onOpenHelperSettings, onRecheckHelper)
         }
 
-        MacHelperReadiness.UNCERTAIN -> {
-            OnboardingPrimaryAction(
-                stringResource(Res.string.onboarding_permission_mac_check_again),
-                layout,
-                onRecheckHelper,
-                enabled = !state.permissionRunning,
-            )
-        }
-
-        MacHelperReadiness.RECOVERY_REQUIRED -> {
-            MacHelperApprovalActions(layout, state.permissionRunning, onOpenHelperSettings, onRecheckHelper)
-            OnboardingPrimaryAction(
-                stringResource(Res.string.onboarding_permission_mac_action),
-                layout,
-                onEnableHelper,
-                enabled = !state.permissionRunning,
-            )
-        }
-
+        MacHelperReadiness.UNCERTAIN,
+        MacHelperReadiness.RECOVERY_REQUIRED,
         MacHelperReadiness.UNAVAILABLE -> {
             OnboardingPrimaryAction(
                 stringResource(Res.string.onboarding_permission_mac_check_again),

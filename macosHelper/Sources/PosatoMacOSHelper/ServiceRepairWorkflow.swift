@@ -27,6 +27,20 @@ func setupDaemonUnavailableResponse(
   }
 }
 
+func recoveredSetupPayload(
+  requestOperation: WireOperation,
+  reconcilePayload: WireReconcilePayload?,
+  error: Error
+) -> WireResponsePayload? {
+  guard case PipeFailure.unavailable = error else {
+    return nil
+  }
+  return setupDaemonUnavailableResponse(
+    requestOperation: requestOperation,
+    reconcilePayload: reconcilePayload
+  )
+}
+
 func performDaemonLifecycleRequest(
   request: WireMessage,
   receivedAt: DispatchTime,
@@ -43,9 +57,10 @@ func performDaemonLifecycleRequest(
     )
   } catch {
     guard
-      let payload = setupDaemonUnavailableResponse(
+      let payload = recoveredSetupPayload(
         requestOperation: request.operation,
-        reconcilePayload: reconcilePayload
+        reconcilePayload: reconcilePayload,
+        error: error
       )
     else {
       throw error

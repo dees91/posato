@@ -432,12 +432,12 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   then names the real helper state with one precise action: **Enable on this
   Mac** when the helper is not enabled, **Open System Settings** plus **Check
   again** when background approval is required, "Background helper enabled"
-  when ready, **Check again** when the last request did not finish or the
-  helper could not be checked, and **Open System Settings** plus **Enable on
-  this Mac** when the helper is registered but could not start (remove only
-  the Posato helper from Login Items if it is listed, then enable it from the
-  current app; restarting Posato does not repair a broken service
-  registration). Every known state keeps a quiet **Check again** inside its
+  when ready, and **Check again** when the last request did not finish, the
+  helper could not be checked, or it is registered but could not start.
+  In-app copy does not tell the person to remove the helper from Login Items:
+  that would unregister it without confirmed Idle cleanup. Restarting Posato
+  does not repair a broken service registration. Every known state keeps a
+  quiet **Check again** inside its
   options. While a call runs the row reads "Checking Mac setup…" or
   "Enabling the background helper…" and the duplicate actions are disabled.
   The Mac host sends native

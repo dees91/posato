@@ -1518,20 +1518,15 @@ recorded as an accepted limit with the settle rule and an open fix decision.
 iOS `scrollTo` screen-swipes on compact Session and reports reached only
 when the element's centre is on screen; the Simulator fixtures were rerun.
 
-## [2026-09-11] diagnosis | Registered Mac helper cannot launch
-
-Observed a registered, allowed daemon failing launchd bundle resolution and a
-post-timeout setup retry blocked by the client's pending unknown request.
-Recorded the older-installation hypothesis, UI symptoms, and unverified
-recovery boundary in [macOS enforcement](topics/macos-enforcement.md).
-
 ## [2026-09-11] task | MACOS-007 helper setup recovery
 
-Setup retry now reconciles a lost helper request instead of issuing Status or a
-new Enable. Status/Enable daemon loss returns RecoveryRequired rather than
-crashing the helper. Onboarding shows progress immediately and keeps Not now
-usable on Mac. Physical Check on this Mac reported registered-but-unlaunchable
-with Login Items copy, then uncertainty on a later lost reply; relaunch still
-starts no helper. launchd remains `EX_CONFIG` because BTM still names
-`Posato-MACOS-004.app`; unregister without confirmed Idle cleanup stays
-forbidden. Details in the MACOS-007 execution record.
+Diagnosed a registered, allowed daemon that launchd cannot resolve, plus a
+post-timeout Check again that issued Status into a pending unknown request.
+Setup retry now reconciles that original request; only an unavailable XPC
+endpoint on Status/Enable becomes RecoveryRequired. In-app copy does not tell
+the person to unregister from Login Items without Idle cleanup. Onboarding
+shows progress and keeps Not now usable on Mac. Physical Check reached
+registered-but-unlaunchable, then uncertainty on a later lost reply; relaunch
+starts no helper. AC-01 remains blocked: BTM still names `Posato-MACOS-004.app`
+and in-app Enable cannot re-point it. Details in the MACOS-007 execution
+record and [macOS enforcement](topics/macos-enforcement.md).

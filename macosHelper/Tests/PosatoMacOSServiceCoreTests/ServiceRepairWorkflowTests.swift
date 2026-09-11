@@ -240,6 +240,30 @@ private final class RecoveryHarness {
   }
 }
 
+@Test func givenInvalidFrameWhenSetupFailsThenRecoveryIsNotClaimed() throws {
+  for operation in [WireOperation.status, .enable] {
+    #expect(
+      recoveredSetupPayload(
+        requestOperation: operation,
+        reconcilePayload: nil,
+        error: PipeFailure.invalidFrame
+      ) == nil
+    )
+  }
+}
+
+@Test func givenUnavailableWhenSetupFailsThenRecoveryIsRequired() throws {
+  let payload = recoveredSetupPayload(
+    requestOperation: .status,
+    reconcilePayload: nil,
+    error: PipeFailure.unavailable
+  )
+
+  #expect(payload?.outcome == .actionRequired)
+  #expect(payload?.serviceState == .recoveryRequired)
+  #expect(payload?.actionRequired == .manualRecovery)
+}
+
 @Test func givenDaemonLossWhenApplyIsReconciledThenSetupDoesNotClaimRecovery() throws {
   let reconcile = try WireReconcilePayload(
     originalOperation: .apply,

@@ -132,6 +132,7 @@ Preconditions:
   occur naturally. Each helper request has a 120-second deadline; the caption
   reads Checking Mac setup… meanwhile. After a lost helper reply, Check again
   reconciles that original request instead of issuing Status. Registered but
-  unlaunchable is recovery required, not Ready; Login Items recovery for the
-  Posato helper only needs maintainer approval before any out-of-band change.
-  Restarting Posato is not the recovery path.
+  unlaunchable is recovery required, not Ready. In-app Check again does not
+  unregister it. Login Items or leftover-bundle removal needs maintainer
+  approval before any out-of-band change. Restarting Posato is not the
+  recovery path.
