@@ -252,6 +252,32 @@ private final class RecoveryHarness {
   }
 }
 
+@Test func givenUnknownOutcomeWhenSetupFailsThenRecoveryIsNotClaimed() throws {
+  for operation in [WireOperation.status, .enable] {
+    #expect(
+      recoveredSetupPayload(
+        requestOperation: operation,
+        reconcilePayload: nil,
+        error: PipeFailure.unknownOutcome
+      ) == nil
+    )
+  }
+}
+
+@Test func givenDaemonDeliveryErrorsWhenClassifiedThenOnlyInvalidConnectionsAreConclusive() throws {
+  #expect(
+    daemonDeliveryFailure(
+      NSError(domain: NSCocoaErrorDomain, code: NSXPCConnectionInvalid)
+    ) == .unavailable
+  )
+  #expect(
+    daemonDeliveryFailure(
+      NSError(domain: NSCocoaErrorDomain, code: NSXPCConnectionInterrupted)
+    ) == .unknownOutcome
+  )
+  #expect(daemonDeliveryFailure(nil) == .unknownOutcome)
+}
+
 @Test func givenUnavailableWhenSetupFailsThenRecoveryIsRequired() throws {
   let payload = recoveredSetupPayload(
     requestOperation: .status,

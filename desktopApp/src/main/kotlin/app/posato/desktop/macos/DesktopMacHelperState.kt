@@ -94,14 +94,6 @@ internal class DesktopMacHelperState(
         }
     }
 
-    private fun HelperResult.isUnlaunchableRegistration(): Boolean {
-        return outcome == HelperResult.Outcome.ActionRequired &&
-            serviceState == HelperResult.State.RecoveryRequired &&
-            ownershipPhase == HelperResult.Phase.RecoveryRequired &&
-            requiredAction == HelperResult.RequiredAction.ManualRecovery &&
-            failure == HelperResult.Failure.Lifecycle
-    }
-
     private companion object {
         const val LOGIN_ITEMS_SETTINGS: String = "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
     }

@@ -240,6 +240,28 @@ class DesktopMacHelperStateTest {
     }
 
     @Test
+    fun `given a reconcile reporting no registration when enabled again then registration is attempted`() = runTest {
+        val enableResults = ArrayDeque(listOf(HelperResult.unknownOutcome(), readyResult()))
+        val commands = FakeHelperCommands(
+            enableBehavior = { enableResults.removeFirst() },
+            statusBehavior = { readyResult() },
+            reconcileBehavior = { notRegisteredResult() },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.UNCERTAIN, state.enable())
+        assertEquals(MacHelperReadiness.NOT_ENABLED, state.enable())
+        assertEquals(MacHelperReadiness.READY, state.enable())
+        assertEquals(listOf("enable", "reconcile", "enable", "status"), commands.calls.map { it.operation })
+        assertEquals(false, commands.hasUnknownRequest())
+    }
+
+    @Test
     fun `given a pending apply when enabled then enable is not issued`() = runTest {
         val commands = FakeHelperCommands(
             enableBehavior = { throw AssertionError("enable must not supersede a pending apply") },

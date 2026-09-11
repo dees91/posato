@@ -32,6 +32,8 @@ func recoveredSetupPayload(
   reconcilePayload: WireReconcilePayload?,
   error: Error
 ) -> WireResponsePayload? {
+  // Only a daemon that never received the request can be answered locally. A request whose outcome
+  // is unknown stays unknown so the client reconciles the original identity instead of replacing it.
   guard case PipeFailure.unavailable = error else {
     return nil
   }

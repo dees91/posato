@@ -69,10 +69,13 @@
 ## Result
 
 - Client/adapter retry reconciles a pending unknown request. Enable no longer
-  follows a lost Enable with Status. Unreconciled ManualRecovery keeps the
-  original request.
-- Native Status/Enable daemon loss returns RecoveryRequired instead of exiting
-  the helper. Repair still does not unregister when cleanup is unconfirmed.
+  follows a lost Enable with Status. Only a lost reply and the
+  registered-but-unlaunchable tuple keep the original request; every
+  conclusive answer releases it.
+- Native Status/Enable loss of a daemon endpoint that never accepted the
+  request returns RecoveryRequired instead of exiting the helper. A deadline
+  that expires after the request reached the daemon stays an unknown outcome.
+  Repair still does not unregister when cleanup is unconfirmed.
 - UI adds `UNCERTAIN` and `RECOVERY_REQUIRED`. Onboarding shows progress and
   keeps Mac Not now usable. Restart is no longer described as registration
   repair. Registered-but-unlaunchable uses Check again; it does not tell the
@@ -114,13 +117,49 @@
 
 - **Recommendation after this correction:** one more hosted pass.
 
+## Hosted review (PR #49, `e8943ad`)
+
+| Finding | Class | Decision | Rule | Cost |
+| --- | --- | --- | --- | --- |
+| `PipeFailure.unavailable` still covers a deadline that expires after XPC dispatch, so an unknown outcome became a local RecoveryRequired answer and the request identity was dropped | Required | accept | ADR 0004 unknown-outcome reconciliation; T-07 structured IPC outcomes | small: separate `unknownOutcome` from `unavailable` in the daemon transport |
+
+- **Recommendation after this correction:** merge. Both hosted passes for this
+  pull request are used; a third needs a recorded maintainer decision.
+
+## Completed-change review (PR #49, `47caf0d`)
+
+| Finding | Class | Decision | Rule | Cost |
+| --- | --- | --- | --- | --- |
+| A reconcile reporting `NotRegistered` never released the request and a reconcile never registers, so Enable became permanently inert | Required | accept | AC-02 no dead-end retry | small: only the unlaunchable tuple keeps the request |
+| The retained request made `apply`, `restore` and `configure*` throw `IllegalStateException` out of the enforcement path | Required | accept | AC-02; session start must return a result | covered by the same correction |
+| Empty `catch` discards the `register()` error, so a persistent registration failure reads as not enabled | Advisory | decline for now | advisory findings do not expand scope | medium: new failure payload and adapter mapping |
+| The reconcile-diversion policy lives in the client and the adapter, and the fake models the adapter | Advisory | decline for now | advisory findings do not expand scope | medium: move the policy to the client, rewrite the fake |
+| `UNCERTAIN` and `RECOVERY_REQUIRED` collapse to `mac_setup_attention` in the collapsed summary | Advisory | decline for now | advisory findings do not expand scope | small: two summary strings |
+| `RECOVERY_REQUIRED` offers only Check again, which returns the same answer | Advisory | decline for now | advisory findings do not expand scope | medium: repeat detection and escalation copy |
+| `NOT_ENABLED` offers Enable and Check again side by side | Advisory | decline | outside this diff | small |
+| A Mac with no enforcement can still start a session with only a collapsed row as the signal | Advisory | decline | outside this diff; product decision | medium to large |
+
+- **Resolution:** both Required findings share one cause in
+  `concludesReconciliation()`; the correction narrows retention to the
+  unreconciled setup tuple, shares that tuple with the adapter mapping, and
+  adds classification and re-enable regressions. The remaining
+  retain-on-unknown path for a pending Apply predates this change.
+- **Recommendation:** the advisory findings are a maintainer scope decision;
+  none of them blocks merge.
+- **Independent review of the correction:** approved, 2026-09-11, no Critical
+  or Required findings. One advisory: `NSXPCConnectionInvalid` can also reach
+  an established connection invalidated in flight, so the comment now states
+  that accepted bounded risk instead of claiming the connection was never
+  established. Reviewer reran the focused desktop and `ServiceRepairWorkflow`
+  tests.
+
 ## Verification
 
 | Check | Result / evidence |
 | --- | --- |
 | Diagnosis review | Independent read-only review approved code/evidence distinction at `54343f7`; no tests run |
 | Native diagnosis | `build/verification/runs/20260911-mac-helper-diagnosis/` |
-| Focused JVM/Swift tests | Pass: desktop helper retry tests, onboarding holder tests, `ServiceRepairWorkflowTests` |
+| Focused JVM/Swift tests | Pass: desktop helper retry tests, onboarding holder tests, `ServiceRepairWorkflowTests`, reconciliation-classification and delivery-failure regressions |
 | `./gradlew quality` | Pass |
 | Signed desktop package | Pass: `posato-control build -t desktop`, signingMode development |
 | Native Session This Mac | Pass: runs `20260911-135440-2c16` (progress), `20260911-135736-6bdb` (recovery copy), `20260911-140000-05b6` (uncertain retry), `20260911-140223-fd20` (relaunch, no helper), `20260911-161739-e44b` and `20260911-161812-45c5` (Ready after reset, relaunch) |

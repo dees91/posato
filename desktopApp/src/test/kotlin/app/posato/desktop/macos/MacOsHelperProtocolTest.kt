@@ -153,6 +153,34 @@ class MacOsHelperProtocolTest {
     }
 
     @Test
+    fun `given a reconcile reporting no registration when classified then the request is released`() {
+        assertEquals(
+            true,
+            HelperResult(
+                outcome = HelperResult.Outcome.ActionRequired,
+                serviceState = HelperResult.State.NotRegistered,
+                ownershipPhase = HelperResult.Phase.RecoveryRequired,
+                requiredAction = HelperResult.RequiredAction.ManualRecovery,
+                failure = HelperResult.Failure.Lifecycle,
+            ).concludesReconciliation(),
+        )
+    }
+
+    @Test
+    fun `given a daemon recovery reply when classified then the request is released`() {
+        assertEquals(
+            true,
+            HelperResult(
+                outcome = HelperResult.Outcome.ActionRequired,
+                serviceState = HelperResult.State.RecoveryRequired,
+                ownershipPhase = HelperResult.Phase.Applied,
+                requiredAction = HelperResult.RequiredAction.ManualRecovery,
+                failure = HelperResult.Failure.Storage,
+            ).concludesReconciliation(),
+        )
+    }
+
+    @Test
     fun `given a pending unknown request when another lifecycle operation is chosen then reconcile is required`() {
         assertEquals(true, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Enable))
         assertEquals(true, shouldReconcileUnknownRequest(pendingUnknown = true, HelperOperation.Status))

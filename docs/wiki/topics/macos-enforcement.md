@@ -531,9 +531,15 @@ approval was denied. A local app-data reset does not reset service registration.
 `superseded` in code (MACOS-007): after a parent-side request timeout,
 `MacOsHelperClient` still retains `pendingUnknownRequest`, but Check and
 Enable now reconcile that original identity instead of issuing Status or a
-new Enable. Unreconciled ActionRequired/ManualRecovery keeps the request.
-A helper XPC loss on Status/Enable returns structured RecoveryRequired
-rather than crashing the helper into a parent-only unknown.
+new Enable. Only a reply that still says nothing about the original request
+keeps it: a lost reply and the registered-but-unlaunchable tuple. Every
+conclusive answer, including not-registered and a daemon recovery response
+for an apply or restore, releases it, so a later Enable can register and
+Apply and Restore are not refused for the rest of the process. A helper XPC
+endpoint that never accepted the request on Status or Enable returns
+structured RecoveryRequired rather than crashing the helper into a
+parent-only unknown; a deadline that expires after the request reached the
+daemon stays unknown and keeps the request identity.
 
 `superseded` in the native UI (MACOS-007): onboarding shows Checking/Enabling
 immediately and keeps Not now usable on Mac; Session distinguishes

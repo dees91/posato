@@ -1522,8 +1522,10 @@ when the element's centre is on screen; the Simulator fixtures were rerun.
 
 Diagnosed a registered, allowed daemon that launchd cannot resolve, plus a
 post-timeout Check again that issued Status into a pending unknown request.
-Setup retry now reconciles that original request; only an unavailable XPC
-endpoint on Status/Enable becomes RecoveryRequired. In-app copy does not tell
+Setup retry now reconciles that original request until a conclusive answer
+releases it; only an XPC endpoint that never accepted a Status or Enable
+becomes RecoveryRequired, while a deadline that expires after dispatch stays
+unknown. In-app copy does not tell
 the person to unregister from Login Items without Idle cleanup. Onboarding
 shows progress and keeps Not now usable on Mac. After leftover copies were
 removed and Background Items reset, `SMAppService.notFound` no longer maps to

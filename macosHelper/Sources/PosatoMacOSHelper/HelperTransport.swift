@@ -6,6 +6,23 @@ import ServiceManagement
 enum PipeFailure: Error {
   case invalidFrame
   case unavailable
+  case unknownOutcome
+}
+
+/// An invalid connection is the signal for a daemon endpoint that never launched, so it is treated
+/// as conclusive: nothing was delivered. An established connection invalidated while a request is in
+/// flight is indistinguishable from that, and is an accepted bounded risk because the daemon side of
+/// Status and Enable converges on a later attempt. Every other interruption, including a deadline
+/// that expires after dispatch, keeps the outcome unknown.
+func daemonDeliveryFailure(_ error: Error?) -> PipeFailure {
+  guard let error else {
+    return .unknownOutcome
+  }
+  let failure = error as NSError
+  guard failure.domain == NSCocoaErrorDomain, failure.code == NSXPCConnectionInvalid else {
+    return .unknownOutcome
+  }
+  return .unavailable
 }
 
 struct DaemonRequestSequence {
@@ -89,7 +106,11 @@ final class DaemonConnection: @unchecked Sendable {
     let semaphore = DispatchSemaphore(value: 0)
     let lock = NSLock()
     var result: Data?
-    let proxy = connection.remoteObjectProxyWithErrorHandler { _ in
+    var deliveryFailure: Error?
+    let proxy = connection.remoteObjectProxyWithErrorHandler { error in
+      lock.withLock {
+        deliveryFailure = error
+      }
       semaphore.signal()
     }
     guard let service = proxy as? ProxySettingsService else {
@@ -102,10 +123,11 @@ final class DaemonConnection: @unchecked Sendable {
       semaphore.signal()
     }
     let timeout = DispatchTime.now() + .milliseconds(Int(deadlineMilliseconds))
-    guard semaphore.wait(timeout: timeout) == .success,
-      let response = lock.withLock({ result })
-    else {
-      throw PipeFailure.unavailable
+    guard semaphore.wait(timeout: timeout) == .success else {
+      throw PipeFailure.unknownOutcome
+    }
+    guard let response = lock.withLock({ result }) else {
+      throw daemonDeliveryFailure(lock.withLock { deliveryFailure })
     }
     return response
   }

@@ -434,12 +434,25 @@ internal fun shouldReconcileUnknownRequest(
         (operation == HelperOperation.Enable || operation == HelperOperation.Status)
 }
 
+/**
+ * Only a reply that still says nothing about the original request keeps it pending: a lost reply and
+ * the registered-but-unlaunchable setup tuple. Every other answer, including a daemon recovery
+ * response for an apply or restore, is conclusive and releases the request.
+ */
 internal fun HelperResult.concludesReconciliation(): Boolean {
     return when (outcome) {
         HelperResult.Outcome.UnknownOutcome -> false
-        HelperResult.Outcome.ActionRequired -> requiredAction != HelperResult.RequiredAction.ManualRecovery
+        HelperResult.Outcome.ActionRequired -> !isUnlaunchableRegistration()
         HelperResult.Outcome.Success, HelperResult.Outcome.Conflict, HelperResult.Outcome.Failure -> true
     }
+}
+
+internal fun HelperResult.isUnlaunchableRegistration(): Boolean {
+    return outcome == HelperResult.Outcome.ActionRequired &&
+        serviceState == HelperResult.State.RecoveryRequired &&
+        ownershipPhase == HelperResult.Phase.RecoveryRequired &&
+        requiredAction == HelperResult.RequiredAction.ManualRecovery &&
+        failure == HelperResult.Failure.Lifecycle
 }
 
 internal data class HelperResult(
