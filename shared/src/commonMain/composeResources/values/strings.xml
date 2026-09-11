@@ -146,7 +146,7 @@ For what matters.</string>
     <string name="onboarding_permission_check_failed">Access could not be checked. You can allow it later from Paused items.</string>
     <string name="onboarding_permission_mac_body">Posato needs a background helper to pause websites and apps on this Mac. macOS may ask you to allow it in System Settings.</string>
     <string name="onboarding_permission_mac_action">Enable on this Mac</string>
-    <string name="onboarding_permission_mac_unavailable">The helper could not be enabled. Choose Enable on this Mac to try again.</string>
+    <string name="onboarding_permission_mac_unavailable">The helper could not be checked or enabled. Check again.</string>
     <string name="onboarding_permission_mac_approval">The helper needs background approval. Open System Settings, allow Posato, then check again.</string>
     <string name="onboarding_permission_mac_open_settings">Open System Settings</string>
     <string name="onboarding_permission_mac_check_again">Check again</string>
@@ -186,6 +186,8 @@ For what matters.</string>
     <string name="mac_setup_needed">Website pauses need setup</string>
     <string name="mac_setup_approval_needed">Background approval needed</string>
     <string name="mac_setup_attention">Mac setup needs attention</string>
+    <string name="mac_setup_uncertain_summary">Last Mac setup request did not finish</string>
+    <string name="mac_setup_recovery_summary">Background helper could not start</string>
     <string name="session_icloud_title">iCloud</string>
     <string name="session_icloud_local">Not connected · optional</string>
     <string name="session_icloud_pending">Changes waiting to sync</string>
@@ -201,7 +203,10 @@ For what matters.</string>
     <string name="mac_setup_checking">Checking Mac setup…</string>
     <string name="mac_setup_enabling">Enabling the background helper…</string>
     <string name="mac_setup_not_enabled">The background helper is not enabled on this Mac.</string>
-    <string name="mac_setup_unavailable">The background helper could not be checked or enabled. Check again; if that does not help, quit and reopen Posato.</string>
+    <string name="mac_setup_unavailable">The background helper could not be checked or enabled. Check again.</string>
+    <string name="mac_setup_uncertain">The last helper request did not finish. Try again to finish that request.</string>
+    <string name="mac_setup_recovery">The background helper is registered but could not start. Check again. Do not remove it from Login Items while cleanup cannot be confirmed.</string>
+    <string name="mac_setup_unchanged">This result has come back again. Restarting this Mac is the next supported step; it does not repair the registration by itself.</string>
     <string name="action_check_again">Check again</string>
     <string name="sync_checking_key">Checking for the workspace key…</string>
     <string name="sync_waiting_explanation">Your existing workspace stays unchanged. Apple may first ask you to approve iCloud Keychain for this device.</string>

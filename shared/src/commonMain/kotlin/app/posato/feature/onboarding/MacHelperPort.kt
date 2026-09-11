@@ -4,7 +4,9 @@ public enum class MacHelperReadiness {
     UNAVAILABLE,
     NOT_ENABLED,
     APPROVAL_REQUIRED,
-    READY
+    READY,
+    UNCERTAIN,
+    RECOVERY_REQUIRED,
 }
 
 public interface MacHelperPort {

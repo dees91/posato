@@ -17,8 +17,14 @@ internal class DesktopMacHelperState(
 ) : MacHelperPort {
     override suspend fun enable(): MacHelperReadiness {
         return readiness {
-            commands.enable()
-            commands.status()
+            val enabled = commands.enable()
+            if (enabled.outcome == HelperResult.Outcome.Success &&
+                enabled.serviceState == HelperResult.State.Ready
+            ) {
+                commands.status()
+            } else {
+                enabled
+            }
         }
     }
 
@@ -51,6 +57,10 @@ internal class DesktopMacHelperState(
 
     private fun HelperResult.toReadiness(): MacHelperReadiness {
         return when {
+            outcome == HelperResult.Outcome.UnknownOutcome -> {
+                MacHelperReadiness.UNCERTAIN
+            }
+
             outcome == HelperResult.Outcome.Success && serviceState == HelperResult.State.Ready -> {
                 MacHelperReadiness.READY
             }
@@ -60,8 +70,16 @@ internal class DesktopMacHelperState(
                 MacHelperReadiness.APPROVAL_REQUIRED
             }
 
+            outcome == HelperResult.Outcome.Failure && serviceState == HelperResult.State.NotRegistered -> {
+                MacHelperReadiness.UNAVAILABLE
+            }
+
             serviceState == HelperResult.State.NotRegistered -> {
                 MacHelperReadiness.NOT_ENABLED
+            }
+
+            isUnlaunchableRegistration() -> {
+                MacHelperReadiness.RECOVERY_REQUIRED
             }
 
             else -> {

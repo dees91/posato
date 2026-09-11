@@ -76,8 +76,17 @@ Preconditions:
   action-required status, never success, and still zero bootstrap rows.
 - **Mac permission:** during the flow before Enable on this Mac, `pgrep -f
   PosatoMacOSHelper` is empty. Press Enable on this Mac on an approved Mac
-  and expect the enabled state. The approval-required branch is unit-tested;
-  only drive it attended, then use Check again after allowing Posato.
+  and expect the enabling caption immediately, then the enabled state. **Not
+  now** stays usable while that call runs and does not cancel it; finish to
+  Session and expect the shared This Mac row to show the late result without
+  starting enforcement. The approval-required branch is unit-tested; only
+  drive it attended, then use Check again after allowing Posato. A lost
+  Enable reply shows that the request did not finish; Check again reconciles
+  it. Registered but unlaunchable is not treated as enabled and does not
+  offer Login Items removal from the app. After a Background Items database
+  reset, Enable on this Mac is the Check result, not unavailable. An Enable that
+  attempts registration and leaves the service unregistered reports that setup
+  could not be completed instead of offering the same Enable again.
 - **Accessibility:** capture large-text, keyboard, and VoiceOver passes for
   at least one step on each platform with a screenshot and a snapshot.
 
