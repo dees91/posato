@@ -538,13 +538,11 @@ rather than crashing the helper into a parent-only unknown.
 `superseded` in the native UI (MACOS-007): onboarding shows Checking/Enabling
 immediately and keeps Not now usable on Mac; Session distinguishes
 uncertainty from registered-but-unlaunchable and no longer tells the person
-that restarting repairs registration. `open`: in-app setup still cannot
-re-point a stale BTM parent without unregister, which ADR 0004 forbids until
-Idle cleanup is confirmed. Raw evidence remains in ignored local verification
-output. The recovery task is
+that restarting repairs registration. Raw evidence remains in ignored local
+verification output. The recovery task is
 [MACOS-007](../../tasks/specifications/macos-007-helper-setup-recovery.md).
 
-`observed` (2026-09-11, MACOS-007): BTM still names the parent helper as
+`superseded` (2026-09-11, MACOS-007 stale BTM parent): BTM still names the parent helper as
 `/Applications/Posato-MACOS-004.app/Contents/Helpers/PosatoMacOSHelper.app`
 while the running development package is a different bundle. The daemon
 remains enabled/allowed with launchd `EX_CONFIG`. In-app Check now shows
@@ -560,15 +558,16 @@ package cannot re-point launchd while that stale BTM parent remains. The
 leftover copy and proxy-settings Login Item cleanup were maintainer-approved
 and attempted; see the following observation.
 
-`observed` (2026-09-11, MACOS-007 AC-01 attempt): HTTP(S) proxy was disabled
-before cleanup. The leftover `/Applications/Posato-MACOS-004.app` was moved to
-Trash, then the current signed package was placed at that path and at
-`/Applications/Posato.app` so the stale BTM URL has current binaries.
-`SMAppService.unregister()` for `app.posato.macos.proxy-settings` from the
-current helper bundle returned notRegistered; in-app Enable registered it
-again. launchd still fails `EX_CONFIG`. The parent helper BTM item remains
-`disabled`. Allowing Posato in Login Items background items is still required
-before Ready/Idle can be shown.
+`observed` (2026-09-11, MACOS-007 AC-01): leftover development copies and a
+Background Items reset were maintainer-approved. Empty BTM made
+`SMAppService.status` `notFound` even with the plist in-bundle; Check now maps
+that to not-enabled so Enable is offered. After a fresh register and Login
+Items allow, launchd submitted `system/app.posato.macos.proxy-settings` for
+the current development-package helper URL. This Mac showed Background helper
+enabled and the same Ready state survived relaunch. HTTP(S) proxy stayed
+disabled; iCloud and local websites were unchanged. The helper BTM parent
+item can remain `disabled` while the nested daemon is `enabled, allowed` and
+launchd still starts it.
 
 ## Open questions
 

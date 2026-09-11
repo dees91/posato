@@ -251,7 +251,12 @@ do {
         )
       case .enable:
         if service.status != .enabled {
-          try service.register()
+          do {
+            try service.register()
+          } catch {
+            // SMAppService throws when approval is now required or the item
+            // already exists; the status check below is the setup outcome.
+          }
         }
         if service.status != .enabled {
           let state = serviceState(service.status)

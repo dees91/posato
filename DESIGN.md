@@ -430,10 +430,12 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   when no helper request is outstanding; after a lost reply, **Check again**
   finishes that original request instead of starting a new one. The section
   then names the real helper state with one precise action: **Enable on this
-  Mac** when the helper is not enabled, **Open System Settings** plus **Check
-  again** when background approval is required, "Background helper enabled"
-  when ready, and **Check again** when the last request did not finish, the
-  helper could not be checked, or it is registered but could not start.
+  Mac** when the helper is not enabled, including when Service Management
+  reports the daemon as not found after a background-item database reset;
+  **Open System Settings** plus **Check again** when background approval is
+  required; "Background helper enabled" when ready; and **Check again** when
+  the last request did not finish, the helper could not be checked, or it is
+  registered but could not start.
   In-app copy does not tell the person to remove the helper from Login Items:
   that would unregister it without confirmed Idle cleanup. Restarting Posato
   does not repair a broken service registration. Every known state keeps a

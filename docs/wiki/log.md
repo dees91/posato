@@ -1525,11 +1525,9 @@ post-timeout Check again that issued Status into a pending unknown request.
 Setup retry now reconciles that original request; only an unavailable XPC
 endpoint on Status/Enable becomes RecoveryRequired. In-app copy does not tell
 the person to unregister from Login Items without Idle cleanup. Onboarding
-shows progress and keeps Not now usable on Mac. Physical Check reached
-registered-but-unlaunchable, then uncertainty on a later lost reply; relaunch
-starts no helper. After maintainer approval the leftover app was replaced with
-the current package and the proxy-settings Login Item was unregistered then
-re-registered; HTTP(S) proxy stayed off. AC-01 still blocked: parent helper
-BTM item is disabled, so launchd remains `EX_CONFIG` until Posato is allowed
-in Login Items background items. Details in the MACOS-007 execution record
-and [macOS enforcement](topics/macos-enforcement.md).
+shows progress and keeps Not now usable on Mac. After leftover copies were
+removed and Background Items reset, `SMAppService.notFound` no longer maps to
+the unavailable Check-again-only dead end; Check offers Enable. Physical
+Ready/Idle on the current development package survived relaunch; HTTP(S)
+proxy stayed off. Details in the MACOS-007 execution record and
+[macOS enforcement](topics/macos-enforcement.md).

@@ -133,6 +133,8 @@ Preconditions:
   reads Checking Mac setup… meanwhile. After a lost helper reply, Check again
   reconciles that original request instead of issuing Status. Registered but
   unlaunchable is recovery required, not Ready. In-app Check again does not
-  unregister it. Login Items or leftover-bundle removal needs maintainer
+  unregister it. After a Background Items database reset, Check reports not
+  enabled and offers Enable on this Mac; it is not the unavailable
+  Check-again-only path. Login Items or leftover-bundle removal needs maintainer
   approval before any out-of-band change. Restarting Posato is not the
   recovery path.

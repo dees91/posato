@@ -83,7 +83,8 @@ Preconditions:
   drive it attended, then use Check again after allowing Posato. A lost
   Enable reply shows that the request did not finish; Check again reconciles
   it. Registered but unlaunchable is not treated as enabled and does not
-  offer Login Items removal from the app.
+  offer Login Items removal from the app. After a Background Items database
+  reset, Enable on this Mac is the Check result, not unavailable.
 - **Accessibility:** capture large-text, keyboard, and VoiceOver passes for
   at least one step on each platform with a screenshot and a snapshot.
 

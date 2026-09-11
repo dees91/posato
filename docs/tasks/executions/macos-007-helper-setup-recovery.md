@@ -1,7 +1,7 @@
 # Execution: `MACOS-007`
 
 - **Brief:** [Helper setup recovery](../specifications/macos-007-helper-setup-recovery.md)
-- **Status:** `blocked`; maintainer approved leftover-app and proxy-settings Login Item cleanup; launchd still `EX_CONFIG` because the parent helper BTM item stays disabled
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Grok 4.6
 - **Reviewer:** independent plan reviewer (2026-09-11); completed-change review 2026-09-11
@@ -82,15 +82,19 @@
   again started immediately instead of the previous dead-end. Relaunch and
   Session navigation started no helper. iCloud and local websites were
   unchanged.
-- AC-01 remaining: after maintainer approval, the leftover
-  `/Applications/Posato-MACOS-004.app` was moved aside, then replaced with the
-  current signed package so the stale BTM URL can resolve; `SMAppService`
-  unregistered `app.posato.macos.proxy-settings` (status went
-  enabled→notRegistered) and in-app Enable registered it again. HTTP(S) proxy
-  stayed disabled. launchd still `EX_CONFIG`: the parent helper BTM item
-  `2.app.posato.macos.helper` is `disabled`. This agent cannot click System
-  Settings (Apple Events denied). Remaining human step: allow Posato under
-  Login Items → Allow in the Background, then Check again.
+- AC-01: leftover copies were removed and Background Items reset. Empty BTM
+  reported `SMAppService.notFound`; Check now maps that to not-enabled so
+  Enable is offered. After a fresh register and Login Items allow, launchd
+  submitted `system/app.posato.macos.proxy-settings` for the current
+  development-package helper. This Mac showed Background helper enabled
+  (`20260911-161739-e44b`) and again after relaunch (`20260911-161812-45c5`).
+  HTTP(S) proxy stayed disabled.
+
+## Completed-change review (notFound → Enable)
+
+- **Verdict:** approved, independent reviewer, 2026-09-11
+- **Critical or Required findings:** none
+- **Resolution:** `SMAppService.notFound` maps to not-enabled so Check offers Enable; Enable swallows `register()` throws and reads status.
 
 ## Completed-change review
 
@@ -119,17 +123,17 @@
 | Focused JVM/Swift tests | Pass: desktop helper retry tests, onboarding holder tests, `ServiceRepairWorkflowTests` |
 | `./gradlew quality` | Pass |
 | Signed desktop package | Pass: `posato-control build -t desktop`, signingMode development |
-| Native Session This Mac | Pass: runs `20260911-135440-2c16` (progress), `20260911-135736-6bdb` (recovery copy), `20260911-140000-05b6` (uncertain retry), `20260911-140223-fd20` (relaunch, no helper) |
+| Native Session This Mac | Pass: runs `20260911-135440-2c16` (progress), `20260911-135736-6bdb` (recovery copy), `20260911-140000-05b6` (uncertain retry), `20260911-140223-fd20` (relaunch, no helper), `20260911-161739-e44b` and `20260911-161812-45c5` (Ready after reset, relaunch) |
 | Simulator first-install | Pass: `20260911-140336-0038` |
 | Approval-required UI | Fake-covered; did not occur naturally |
 | Attended Apply session | Not run; daemon forward path extracted, Apply timeout still unknown |
 
 ## Blockers and accepted risks
 
-- System registration is shared across development bundles. Do not delete
-  `/Applications/Posato-MACOS-004.app` or reset all background items without
-  an explicit maintainer decision. Exact Posato-only target: that leftover
-  helper bundle and the `app.posato.macos.proxy-settings` Login Item.
+- System registration is shared across development bundles. Leftover copies
+  and a Background Items reset were maintainer-approved for AC-01; other
+  background items had to be re-allowed. Do not repeat `resetbtm` without a
+  new decision.
 - The paired Mac/iPhone setup, iCloud workspace, and local websites were
   preserved. Desktop onboarding deferral during Enable was unit-tested only.
 - Threat-model `T-07`/`T-08` reviewed; no control amendment. MACOS-007 uses

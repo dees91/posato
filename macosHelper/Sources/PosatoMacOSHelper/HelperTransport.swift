@@ -339,7 +339,9 @@ func serviceState(_ status: SMAppService.Status) -> ServiceState {
   case .requiresApproval:
     return .approvalRequired
   case .notFound:
-    return .unavailableOrIncompatible
+    // Empty BTM after reset reports notFound even when the plist is in-bundle.
+    // Check must offer Enable, not the unavailable Check-again-only dead end.
+    return .notRegistered
   @unknown default:
     return .unavailableOrIncompatible
   }
