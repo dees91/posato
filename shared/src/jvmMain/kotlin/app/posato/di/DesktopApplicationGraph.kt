@@ -30,6 +30,7 @@ import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
 import app.posato.feature.sync.macos.MacOsMailboxAdapter
 import app.posato.feature.sync.macos.defaultSyncCompanionTransport
 import app.posato.feature.targets.data.LocalApplicationMappings
+import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
@@ -85,10 +86,18 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
     @SingleIn(AppScope::class)
     fun providePolicyStore(
         sync: AppleSync,
+        policySync: LocalPolicySyncStore,
+    ): LocalTargetPolicyStore {
+        return SyncTargetPolicyStore(policySync, sync)
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun providePolicySyncStore(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): LocalTargetPolicyStore {
-        return SyncTargetPolicyStore(SqlLocalTargetPolicyStore(database, databaseDispatcher), sync)
+    ): LocalPolicySyncStore {
+        return SqlLocalTargetPolicyStore(database, databaseDispatcher)
     }
 
     @Provides
@@ -141,6 +150,7 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
     fun provideAppleSync(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
+        policySync: LocalPolicySyncStore,
     ): AppleSync {
         val transport = defaultSyncCompanionTransport()
         val keys = MacOsBootstrapKeychainAdapter(transport)
@@ -148,7 +158,7 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
         val store = SqlBootstrapStore(database, databaseDispatcher)
         val coordinator = BootstrapCoordinator(keys, MacOsBootstrapCloudAdapter(transport), keys, store, crypto)
         val core = SyncOperationCore(SqlSyncReplicaStore(database, databaseDispatcher), crypto, SyncWallClock { System.currentTimeMillis() })
-        return AppleSync(coordinator, core, MacOsMailboxAdapter(transport), keys, store, crypto, Dispatchers.IO)
+        return AppleSync(coordinator, core, MacOsMailboxAdapter(transport), keys, store, policySync, crypto, Dispatchers.IO)
     }
 }
 

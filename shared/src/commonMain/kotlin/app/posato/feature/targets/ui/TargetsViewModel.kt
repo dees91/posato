@@ -53,6 +53,22 @@ internal class TargetsViewModel(
             }
         }
     }
+    private val policySignalLifecycle: Flow<Unit> = store.policyChanges.transform {
+        when (val result = store.read()) {
+            is LocalPolicyResult.Success -> {
+                domainEditorState.reconcileDomainEditorWith(result.value)
+                applicationEditorState.reconcileApplicationEditorWith(result.value)
+                policyState.update { TargetsPolicyState(snapshot = result.value) }
+            }
+
+            is LocalPolicyResult.Failure -> {
+                policyState.update { state ->
+                    TargetsPolicyState(snapshot = state.snapshot, failure = result.reason.toLoadFailure())
+                }
+            }
+        }
+        emit(Unit)
+    }.onStart { emit(Unit) }
     private val applicationMappingsReadLifecycle = observeApplicationMappingReads()
     private val policyPresentationState = combine(
         policyState,
@@ -81,7 +97,8 @@ internal class TargetsViewModel(
         applicationMappingsState,
         policyReadLifecycle,
         applicationMappingsReadLifecycle,
-    ) { presentation, currentApplicationMappingsState, _, _ ->
+        policySignalLifecycle,
+    ) { presentation, currentApplicationMappingsState, _, _, _ ->
         createUiState(
             presentation.policyState,
             presentation.domainEditorState,

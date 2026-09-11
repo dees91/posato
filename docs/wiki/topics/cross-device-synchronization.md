@@ -462,11 +462,32 @@ not claim that every other device has received the update.
   unauthored diff while retaining local policy. Pre-link edits and failed
   authoring are not backfilled, and remote operations
   do not yet change visible policies or sessions (`SYNC-011` / `SYNC-012`).
+- `user-confirmed` (2026-09-10 correction): pending domain intent overlays
+  the projection in persisted order, so the last saved choice survives an
+  in-flight exchange. The onboarding summary follows policy changes while
+  visible, subscribing before its initial read and retaining its last valid
+  count on failure; website-entry focus remains tied to local submissions.
+  D10/D11 and the at-cap D5 recovery limit are accepted in the
+  [SYNC-011 brief](../../tasks/specifications/sync-011-policy-convergence.md).
+- `observed` (2026-09-10 correction): `SYNC-011` replaces the volatile queue
+  with durable intent rows recorded in the save transaction, and connects
+  remote operations to the visible exact-domain policy and application group
+  name while application selections stay local; sessions still do not
+  converge (`SYNC-012`).
 - `observed` (2026-09-09 correction): controlled common tests prove local saves
   complete while established checks or fetches are suspended. Signed Mac/iPhone
   edits, persistence after relaunch, removal of the test domains, and exchange
   pass; repeated fetch adds no accepted bundles. These physical runs do not
   inject network delays or replace the existing account-gate evidence.
+- `observed` (2026-09-10 physical gate, signed Mac plus iPhone 13 mini on one
+  account): exact domains converge in both directions including removals, the
+  accepted count stays stable across repeat exchanges, a fresh join receives
+  the group name while selections stay local, a pre-link website backfills at
+  the first exchange after linking, and an offline save reports retryable and
+  then completes on reconnect. Re-linking within minutes of removal plus
+  establish can adopt a stale key and report completed inside a ghost zone;
+  settling (~8 min here) before re-linking healed it. See the [execution
+  record](../../tasks/executions/sync-011-policy-convergence.md).
 
 ## Open production questions
 

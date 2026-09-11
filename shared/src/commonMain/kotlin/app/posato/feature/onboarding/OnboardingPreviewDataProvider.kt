@@ -2,6 +2,7 @@ package app.posato.feature.onboarding
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import app.posato.feature.sync.bootstrap.AppleSyncState
+import app.posato.feature.sync.bootstrap.SyncAttentionReason
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 
@@ -37,6 +38,24 @@ internal class OnboardingPreviewDataProvider : PreviewParameterProvider<Onboardi
             "Retry sync",
             initial.copy(step = OnboardingStep.ICLOUD),
             sync = AppleSyncState(status = SyncStatus.RETRYABLE),
+        ),
+        OnboardingPreviewState(
+            "Design review only: local capacity",
+            initial.copy(step = OnboardingStep.ICLOUD),
+            sync = AppleSyncState(
+                status = SyncStatus.ACTION_REQUIRED,
+                linked = true,
+                reason = SyncAttentionReason.LOCAL_CAPACITY,
+            ),
+        ),
+        OnboardingPreviewState(
+            "Design review only: shared capacity",
+            initial.copy(step = OnboardingStep.ICLOUD),
+            sync = AppleSyncState(
+                status = SyncStatus.ACTION_REQUIRED,
+                linked = true,
+                reason = SyncAttentionReason.SHARED_CAPACITY,
+            ),
         ),
         OnboardingPreviewState("Screen Time", initial.copy(step = OnboardingStep.PERMISSION)),
         OnboardingPreviewState(

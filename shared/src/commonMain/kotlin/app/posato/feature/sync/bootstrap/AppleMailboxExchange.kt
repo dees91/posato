@@ -20,10 +20,10 @@ internal class AppleMailboxExchange(
 ) {
     private val codec = EncryptedBundleCodec(crypto)
 
-    suspend fun exchange(
+    suspend fun publishPending(
         workspace: EstablishedWorkspace,
-        writer: SyncWriter
-    ): SyncStatus {
+        writer: SyncWriter,
+    ): SyncStatus? {
         for (bundle in writer.pendingBundles) {
             val header = codec.inspectHeader(bundle) as? InspectBundleHeaderResult.Success ?: return SyncStatus.ACTION_REQUIRED
             when (mailbox.saveBundle(workspace.binding, header.header.bundleId.value.copyBytes(), bundle.copyBytes())) {
@@ -40,10 +40,10 @@ internal class AppleMailboxExchange(
                 }
             }
         }
-        return consume(workspace, writer)
+        return null
     }
 
-    private suspend fun consume(
+    suspend fun consume(
         workspace: EstablishedWorkspace,
         writer: SyncWriter
     ): SyncStatus {

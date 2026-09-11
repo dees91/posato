@@ -12,6 +12,9 @@ The UI focuses on choosing applications, not naming or managing group metadata.
 - `group-partial-failure` retains saved device choices if metadata saving fails.
 - `group-recovery` offers Enable selected apps without reopening the picker.
 - `group-persist` retains metadata across a normal relaunch.
+- `group-converge` carries the group name to a linked peer at its next
+  completed exchange; application selections stay on the device that made
+  them.
 
 ## How to get to it (user POV)
 
@@ -44,6 +47,10 @@ Preconditions:
 - **Persist:** Relaunch normally, open Apps, and confirm the same selected count
   and available controls. On iPhone this proves the visible result only; tests
   and Mac read-back cover the metadata name.
+- **Converge:** with no Mac group, make a selection on the iPhone, then
+  **Sync now** on the Mac. `select count(*) from application_policy` on the
+  Mac reads 1 and the Mac review names its selection state; the iPhone
+  selection count is unchanged after every exchange.
 - **Restore:** Remove only applications selected for this run through their
   menu or Clear selection. Clearing choices does not delete group metadata.
 

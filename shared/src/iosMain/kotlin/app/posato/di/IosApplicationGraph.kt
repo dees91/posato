@@ -1,6 +1,5 @@
 package app.posato.di
 
-import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createIosDatabaseDriver
 import app.posato.feature.enforcement.EnforcementPort
@@ -40,6 +39,7 @@ import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
 import app.posato.feature.targets.data.IosLocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
+import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
@@ -101,24 +101,26 @@ internal interface IosApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideDatabaseDriver(): SqlDriver {
-        return createIosDatabaseDriver()
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideDatabase(driver: SqlDriver): PosatoDatabase {
-        return PosatoDatabase(driver)
+    fun provideDatabase(): PosatoDatabase {
+        return PosatoDatabase(createIosDatabaseDriver())
     }
 
     @Provides
     @SingleIn(AppScope::class)
     fun providePolicyStore(
         sync: AppleSync,
+        policySync: LocalPolicySyncStore,
+    ): LocalTargetPolicyStore {
+        return SyncTargetPolicyStore(policySync, sync)
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun providePolicySyncStore(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): LocalTargetPolicyStore {
-        return SyncTargetPolicyStore(SqlLocalTargetPolicyStore(database, databaseDispatcher), sync)
+    ): LocalPolicySyncStore {
+        return SqlLocalTargetPolicyStore(database, databaseDispatcher)
     }
 
     @Provides
@@ -169,13 +171,14 @@ internal interface IosApplicationGraph : ApplicationGraph {
         database: PosatoDatabase,
         replica: SyncReplicaStore,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
+        policySync: LocalPolicySyncStore,
     ): AppleSync {
         val keys = IosBootstrapKeychainAdapter(keychainProvider)
         val crypto = IosSyncCryptoProvider(cryptoProvider)
         val store = SqlBootstrapStore(database, databaseDispatcher)
         val coordinator = BootstrapCoordinator(keys, IosBootstrapCloudAdapter(mailboxProvider), keys, store, crypto)
         val core = SyncOperationCore(replica, crypto, SyncWallClock { time(null) * MILLIS_PER_SECOND })
-        return AppleSync(coordinator, core, IosMailboxAdapter(mailboxProvider), keys, store, crypto, Dispatchers.IO)
+        return AppleSync(coordinator, core, IosMailboxAdapter(mailboxProvider), keys, store, policySync, crypto, Dispatchers.IO)
     }
 }
 

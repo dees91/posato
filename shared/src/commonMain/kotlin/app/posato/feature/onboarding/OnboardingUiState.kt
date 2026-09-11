@@ -17,6 +17,9 @@ import app.posato.feature.targets.ui.WebsiteBatchSubmission
 import app.posato.feature.targets.ui.createWebsiteBatchSubmission
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.launch
 
 internal enum class OnboardingStep {
@@ -149,6 +152,22 @@ internal class OnboardingUiState(
         }
     }
 
+    suspend fun refreshSavedWebsites(observeChanges: Boolean = false) {
+        channelFlow {
+            if (observeChanges) {
+                launch(start = CoroutineStart.UNDISPATCHED) {
+                    policyStore.policyChanges.collect { send(Unit) }
+                }
+            }
+            send(Unit)
+        }.conflate().collect {
+            when (val read = policyStore.read()) {
+                is LocalPolicyResult.Success -> savedWebsites = read.value.policy.domains.size
+                is LocalPolicyResult.Failure -> Unit
+            }
+        }
+    }
+
     fun finish(onFinished: () -> Unit) {
         if (finishing) {
             return
@@ -177,6 +196,7 @@ internal class OnboardingUiState(
         }
         val ready = submission as WebsiteBatchSubmission.Ready
         if (ready.addedCount == 0) {
+            savedWebsites = snapshot.policy.domains.size
             return ready.toReceipt(submissionId, saved = true)
         }
         val policy = when (
@@ -188,9 +208,9 @@ internal class OnboardingUiState(
             is TargetPolicyValidationResult.Success -> validated.policy
             is TargetPolicyValidationResult.Failure -> return WebsiteBatchReceipt(submissionId, saved = false)
         }
-        return when (policyStore.replace(snapshot.revision, policy)) {
+        return when (val replaced = policyStore.replace(snapshot.revision, policy)) {
             is LocalPolicyResult.Success -> {
-                savedWebsites += ready.addedCount
+                savedWebsites = replaced.value.policy.domains.size
                 ready.toReceipt(submissionId, saved = true)
             }
 

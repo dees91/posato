@@ -5,6 +5,10 @@ import app.posato.feature.sync.domain.TransportEpochId
 import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
+import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.PolicySyncWrite
+import app.posato.feature.targets.domain.SequencedPolicyIntent
+import app.posato.feature.targets.domain.StoredPolicyIntent
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -44,7 +48,11 @@ class BootstrapRedactionTest {
 
         assertEquals("PersistedCandidate(redacted)", candidate.toString())
         assertEquals("EstablishedWorkspace(redacted)", established.toString())
-        assertEquals("QueuedDomainChanges(redacted)", QueuedDomainChanges(BootstrapStoreResult.Success(established), emptyList()).toString())
+        val domain = assertNotNull(ExactDomain.restore("example.com"))
+        val write = PolicySyncWrite(ByteArray(16) { 4 }, listOf(StoredPolicyIntent.PresentDomain(domain)))
+        assertEquals("PolicySyncWrite(redacted)", write.toString())
+        val sequenced = SequencedPolicyIntent(1, ByteArray(16) { 4 }, StoredPolicyIntent.RemoveDomain(domain))
+        assertEquals("SequencedPolicyIntent(redacted)", sequenced.toString())
         assertEquals("EstablishedCheck(redacted)", EstablishedCheck(EstablishedStatus.READY, established).toString())
         assertEquals("DecodedKeyItem(redacted)", decodedItem().toString())
     }
