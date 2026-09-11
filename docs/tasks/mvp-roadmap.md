@@ -58,7 +58,7 @@ changes no other task, dependency, wave, or integration group.
 Revision 13 adds the maintainer-accepted `SYNC-014` removal-hardening
 follow-up after the `SYNC-011` physical gate observed one re-link, minutes
 after **Remove workspace** and a fresh establish, adopt a stale key and report
-completed inside a zone still being deleted; it settled only after about
+completed inside a zone that later vanished; it settled only after about
 eight minutes. The row precedes `MVP-001` so the acceptance run does not
 depend on waiting. It changes no other task, dependency, wave, or integration
 group.
