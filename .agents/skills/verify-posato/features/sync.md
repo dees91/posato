@@ -49,21 +49,20 @@ local behavior and truthful degradation without its own iCloud account.
 
 The rows start collapsed when Session is recreated, including after a relaunch
 or a return from Paused items. Expand iCloud again before addressing its
-buttons. On smaller viewports, expansion can place the action below the visible
-area: use a scenario `scrollTo` before tapping; `waitFor` does not scroll.
-Expanded actions below the fold may be missing from the snapshot tree entirely
-until scrolled into view, so scroll to the action label with an unscoped
-`scrollTo` (a `within` scope can pin the wrong container) and snapshot-verify
-the expansion first, because tapping an already-expanded header collapses it
-again.
-For the inactive Session on iOS, the verified scope is:
+buttons. Snapshot-verify the expansion first: tapping an already-expanded
+header collapses it again. On a compact iPhone (13 mini and similar), the
+expanded actions sit below the tab bar. `waitFor` does not scroll. After
+expanding, run an unscoped `scrollTo` for the action label, then tap. Compose
+drops labels of clipped controls until they are on screen; the iOS driver
+swipes the screen when the only scroll view is the full-window wrapper, so
+do not pin `within` to the Session heading.
 
 ```json
-{"action":"scrollTo","query":{"text":"Sync with iCloud","role":"button","within":{"text":"Room for what matters.","role":"group"}}}
+{"action":"scrollTo","query":{"text":"Remove workspace","role":"button"},"timeoutSeconds":20}
 ```
 
-Use the currently visible Session heading when its state differs, and replace
-the action label with **Sync now** or **Remove workspace** as appropriate.
+Replace the action label with **Sync with iCloud**, **Sync now**, or
+**Check again** as appropriate.
 
 1. Build both applications; use `build -t device --driver`, then `install`.
    `quality` restages an ad-hoc Mac package, so run `build -t desktop` after it.
