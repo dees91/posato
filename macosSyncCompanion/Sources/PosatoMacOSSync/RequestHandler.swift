@@ -36,7 +36,8 @@ enum RequestHandler {
       .createAnchor,
       .saveBundle,
       .fetchChanges,
-      .deleteZoneAndVerifyAbsent:
+      .deleteWorkspaceRecords,
+      .sweepBundlesIfAnchorMissing:
       return handleCloud(request, started: started, dependencies: dependencies)
     }
   }
@@ -77,7 +78,8 @@ enum RequestHandler {
       .createAnchor,
       .saveBundle,
       .fetchChanges,
-      .deleteZoneAndVerifyAbsent:
+      .deleteWorkspaceRecords,
+      .sweepBundlesIfAnchorMissing:
       return request.respond(outcome: .unknownOutcome)
     }
   }

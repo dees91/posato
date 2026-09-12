@@ -18,7 +18,7 @@ class BootstrapJoinTest {
     fun `given a waiting join when the coordinator is recreated then consent is required again`() = runTest {
         val harness = JoinHarness()
         harness.waitForKey()
-        val recreated = BootstrapCoordinator(harness.account, harness.cloud, harness.keys, harness.store, FakeSyncCryptoProvider())
+        val recreated = BootstrapCoordinator(harness.account, harness.cloud, harness.keys, harness.store, FakeSyncCryptoProvider(), harness.mailbox)
         val reads = harness.account.calls
         assertFalse(recreated.joins.hasPending())
         assertEquals(JoinCheckResult.STATE_CHANGED, recreated.joins.recheck())
@@ -219,7 +219,8 @@ private class JoinHarness {
     val cloud = FakeBootstrapCloudPort(zoneExists = true, storedAnchor = anchor)
     val keys = FakeBootstrapKeyPort()
     val store = FakeBootstrapStore()
-    val coordinator = BootstrapCoordinator(account, cloud, keys, store, FakeSyncCryptoProvider())
+    val mailbox = FakeMailboxPort()
+    val coordinator = BootstrapCoordinator(account, cloud, keys, store, FakeSyncCryptoProvider(), mailbox)
 
     suspend fun waitForKey() {
         assertEquals(BootstrapResult.WaitingForWorkspaceKey, coordinator.bootstrap())

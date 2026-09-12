@@ -74,7 +74,7 @@ class MacOsSyncCompanionProtocolTest {
 
     @Test
     fun `given a reserved operation when decoded then decoding fails`() {
-        val codes = listOf<Byte>(12, 13, 14, 15)
+        val codes = listOf<Byte>(13, 14, 15)
 
         codes.forEach { code ->
             val encoded = MacOsSyncCompanionProtocol.encode(
@@ -120,7 +120,8 @@ class MacOsSyncCompanionProtocolTest {
             SyncCompanionOperation.CreateAnchor,
             SyncCompanionOperation.SaveBundle,
             SyncCompanionOperation.FetchChanges,
-            SyncCompanionOperation.DeleteZoneAndVerifyAbsent,
+            SyncCompanionOperation.DeleteWorkspaceRecords,
+            SyncCompanionOperation.SweepBundlesIfAnchorMissing,
         )
 
         operations.forEach { operation ->
@@ -142,7 +143,11 @@ class MacOsSyncCompanionProtocolTest {
 
     @Test
     fun `given new outcomes when encoded then the codec round trips`() {
-        val outcomes = listOf(SyncCompanionOutcome.AlreadyExists, SyncCompanionOutcome.Conflict)
+        val outcomes = listOf(
+            SyncCompanionOutcome.AlreadyExists,
+            SyncCompanionOutcome.Conflict,
+            SyncCompanionOutcome.Incomplete,
+        )
 
         outcomes.forEach { outcome ->
             val message = SyncCompanionMessage(
@@ -171,6 +176,10 @@ class MacOsSyncCompanionProtocolTest {
             MacOsSyncCompanionProtocol.bundlePayload(binding, ByteArray(16), byteArrayOf(1)).size,
         )
         assertEquals(32, MacOsSyncCompanionProtocol.cursorPayload(binding, ByteArray(0)).size)
+        assertEquals(
+            33,
+            MacOsSyncCompanionProtocol.deleteResumePayload(binding, byteArrayOf(0)).size,
+        )
     }
 
     @Test
@@ -188,6 +197,12 @@ class MacOsSyncCompanionProtocolTest {
             MacOsSyncCompanionProtocol.cursorPayload(
                 binding,
                 ByteArray(MacOsSyncCompanionProtocol.CURSOR_BYTES + 1),
+            )
+        }
+        assertFails {
+            MacOsSyncCompanionProtocol.deleteResumePayload(
+                binding,
+                ByteArray(MacOsSyncCompanionProtocol.DELETE_RESUME_TOKEN_BYTES + 1),
             )
         }
     }

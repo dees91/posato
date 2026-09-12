@@ -2,6 +2,7 @@ package app.posato.feature.sync.bootstrap
 
 import app.posato.feature.sync.data.SyncCryptoProvider
 import app.posato.feature.sync.domain.SyncContext
+import app.posato.feature.sync.mailbox.MailboxPort
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -27,7 +28,8 @@ internal class BootstrapCoordinator(
     private val cloud: BootstrapCloudPort,
     keys: BootstrapKeyPort,
     private val store: BootstrapStore,
-    crypto: SyncCryptoProvider
+    crypto: SyncCryptoProvider,
+    private val mailbox: MailboxPort
 ) {
     private val mutex = Mutex()
     private val zones = BootstrapZonePhase(cloud)
@@ -36,6 +38,7 @@ internal class BootstrapCoordinator(
     private val candidates = BootstrapCandidatePhase(keys, crypto, items)
     private val keyReads = BootstrapKeyReadPhase(items, store)
     val joins = BootstrapJoinPhase(account, cloud, items, store, mutex)
+    private val missing = BootstrapMissingAnchorPhase(cloud, mailbox, candidates, anchors, joins, store)
 
     suspend fun bootstrap(): BootstrapResult {
         return mutex.withLock {
@@ -120,7 +123,8 @@ internal class BootstrapCoordinator(
             EstablishedStatus.RETRYABLE -> BootstrapResult.Retryable
 
             EstablishedStatus.LOCAL_ONLY, EstablishedStatus.ZONE_MISSING,
-            EstablishedStatus.DIFFERENT_ANCHOR, EstablishedStatus.ACTION_REQUIRED -> BootstrapResult.ActionRequired
+            EstablishedStatus.ANCHOR_MISSING, EstablishedStatus.DIFFERENT_ANCHOR,
+            EstablishedStatus.ACTION_REQUIRED -> BootstrapResult.ActionRequired
         }
     }
 
@@ -163,23 +167,11 @@ internal class BootstrapCoordinator(
         }
         return when (val anchor = cloud.readAnchor(binding)) {
             is AnchorReadResult.Found -> {
-                val refused = refuseIfRemoved(store, anchor.anchor.workspaceId)
-                if (refused != null) {
-                    refused
-                } else {
-                    val result = anchors.adoptAnchorItem(binding, anchor.anchor)
-                    if (result == BootstrapResult.WaitingForWorkspaceKey) {
-                        joins.remember(binding, anchor.anchor)
-                    }
-                    result
-                }
+                adoptJoinableAnchor(store, anchors, joins, binding, anchor.anchor)
             }
 
             is AnchorReadResult.Missing -> {
-                when (val confirmed = candidates.createConfirmed(binding)) {
-                    is CandidateCreation.Confirmed -> persistCandidateAndAnchor(binding, confirmed.candidate)
-                    is CandidateCreation.Stop -> confirmed.result
-                }
+                missing.resolve(binding)
             }
 
             is AnchorReadResult.Retryable -> {
@@ -230,27 +222,5 @@ internal class BootstrapCoordinator(
 
             is AnchorReadResult.AccountChanged -> BootstrapResult.ActionRequired
         }
-    }
-
-    private suspend fun persistCandidateAndAnchor(
-        binding: AccountBinding,
-        confirmed: ConfirmedCandidate
-    ): BootstrapResult {
-        val candidate = PersistedCandidate(
-            confirmed.anchor.workspaceId,
-            confirmed.anchor.transportEpochId,
-            confirmed.anchor.keyEpochId,
-            binding,
-        )
-        val persist = store.persistCandidate(candidate)
-        if (persist is BootstrapStoreResult.Failure) {
-            return mapStoreFailure(persist.reason)
-        }
-        return anchors.createAnchorFlow(
-            binding,
-            confirmed.anchor,
-            confirmed.account,
-            BootstrapResult.Retryable,
-        )
     }
 }

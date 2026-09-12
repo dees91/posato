@@ -330,8 +330,12 @@ enum CloudRequestCodec {
   }
 
   static func cursorRequest(_ payload: Data) -> (binding: Data, cursor: Data)? {
+    // The extra byte admits the delete-path phase prefix; fetch cursors
+    // are still strictly validated downstream by unarchiveToken, and sweep
+    // cursors by their handler, so all three keep their exact outcomes.
     guard payload.count >= SyncLimits.bindingBytes,
       payload.count <= SyncLimits.bindingBytes + SyncLimits.cursorBytes
+        + SyncLimits.deleteResumePhaseBytes
     else {
       return nil
     }

@@ -145,6 +145,9 @@ internal class MacOsBootstrapKeychainAdapter(
             SyncCompanionOutcome.AlreadyExists,
             SyncCompanionOutcome.Conflict,
             SyncCompanionOutcome.TokenExpired,
+            SyncCompanionOutcome.Swept,
+            SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 BindingResolution.Undetermined
             }
@@ -194,6 +197,9 @@ internal class MacOsBootstrapKeychainAdapter(
             SyncCompanionOutcome.AlreadyExists,
             SyncCompanionOutcome.Conflict,
             SyncCompanionOutcome.TokenExpired,
+            SyncCompanionOutcome.Swept,
+            SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 KeyItemReadResult.UnknownOutcome
             }
@@ -238,6 +244,9 @@ internal class MacOsBootstrapKeychainAdapter(
             SyncCompanionOutcome.AlreadyExists,
             SyncCompanionOutcome.Conflict,
             SyncCompanionOutcome.TokenExpired,
+            SyncCompanionOutcome.Swept,
+            SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 KeyItemCreateResult.UnknownOutcome
             }
@@ -279,6 +288,9 @@ internal class MacOsBootstrapKeychainAdapter(
             SyncCompanionOutcome.AlreadyExists,
             SyncCompanionOutcome.Conflict,
             SyncCompanionOutcome.TokenExpired,
+            SyncCompanionOutcome.Swept,
+            SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 KeyItemDeleteResult.UnknownOutcome
             }

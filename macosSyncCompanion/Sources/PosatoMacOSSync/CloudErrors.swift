@@ -71,6 +71,35 @@ enum CloudErrorMapper {
       && CKError.Code(rawValue: error.code) == .unknownItem
   }
 
+  static func recordDelete(from error: NSError) -> BackendDelete {
+    if isZoneAbsent(error) {
+      return .deleted
+    }
+    var sawRetryable = false
+    for item in partialErrors(error) {
+      if isUnknownItem(item) || isZoneAbsent(item) {
+        continue
+      }
+      if isRetryable(item) {
+        sawRetryable = true
+      } else {
+        return .failed(.unknown)
+      }
+    }
+    return sawRetryable ? .failed(.retryable) : .deleted
+  }
+
+  private static func partialErrors(_ error: NSError) -> [NSError] {
+    guard error.domain == CKError.errorDomain,
+      error.code == CKError.partialFailure.rawValue,
+      let partial = error.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Any]
+    else {
+      return [error]
+    }
+    let items = partial.values.compactMap { $0 as? NSError }
+    return items.isEmpty ? [error] : items
+  }
+
   private static func unwrapSinglePartial(_ error: NSError) -> NSError {
     guard error.domain == CKError.errorDomain,
       error.code == CKError.partialFailure.rawValue,

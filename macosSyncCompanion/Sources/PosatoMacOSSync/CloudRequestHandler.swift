@@ -20,8 +20,10 @@ extension RequestHandler {
       return saveBundle(request, started: started, dependencies: dependencies)
     case .fetchChanges:
       return fetchChanges(request, started: started, dependencies: dependencies)
-    case .deleteZoneAndVerifyAbsent:
-      return deleteZone(request, started: started, dependencies: dependencies)
+    case .deleteWorkspaceRecords:
+      return deleteRecords(request, started: started, dependencies: dependencies)
+    case .sweepBundlesIfAnchorMissing:
+      return sweepBundles(request, started: started, dependencies: dependencies)
     case .resolveBinding, .readItem, .createItem, .deleteItemAndVerifyAbsent:
       return request.respond(outcome: .unknownOutcome)
     }
@@ -41,7 +43,8 @@ extension RequestHandler {
       .createAnchor,
       .saveBundle,
       .fetchChanges,
-      .deleteZoneAndVerifyAbsent:
+      .deleteWorkspaceRecords,
+      .sweepBundlesIfAnchorMissing:
       return request.capabilities & SyncLimits.cloudkitCapability
         == SyncLimits.cloudkitCapability
     }

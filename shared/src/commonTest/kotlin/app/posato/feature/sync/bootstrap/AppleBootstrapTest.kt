@@ -88,6 +88,7 @@ class AppleBootstrapTest {
                 FakeBootstrapKeyPort(),
                 FakeBootstrapStore(),
                 FakeSyncCryptoProvider(),
+                FakeMailboxPort(),
             ),
             StandardTestDispatcher(testScheduler),
         )
@@ -120,6 +121,7 @@ private fun secondRuntime(
             FakeBootstrapKeyPort(),
             store,
             FakeSyncCryptoProvider(),
+            FakeMailboxPort(),
         ),
         Dispatchers.Default,
     )
@@ -133,7 +135,7 @@ private class AppleBootstrapHarness(
     background: CoroutineDispatcher = Dispatchers.Default,
 ) {
     val bootstrap = AppleBootstrap(
-        BootstrapCoordinator(account, cloud, keys, store, FakeSyncCryptoProvider()),
+        BootstrapCoordinator(account, cloud, keys, store, FakeSyncCryptoProvider(), FakeMailboxPort()),
         background,
     )
 }

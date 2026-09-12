@@ -25,6 +25,7 @@ internal object MacOsSyncCompanionProtocol {
     const val BUNDLE_IDENTIFIER_BYTES: Int = MAILBOX_BUNDLE_IDENTIFIER_BYTES
     const val BUNDLE_BYTES: Int = MAILBOX_BUNDLE_BYTES
     const val CURSOR_BYTES: Int = MAILBOX_CURSOR_BYTES
+    const val DELETE_RESUME_TOKEN_BYTES: Int = MAILBOX_CURSOR_BYTES + 1
     const val COMPANION_IDENTIFIER: String = "app.posato.macos.sync"
     const val APPLICATION_IDENTIFIER: String = "app.posato.macos"
     const val COMPANION_EXECUTABLE: String = "PosatoMacOSSync"
@@ -39,7 +40,8 @@ internal object MacOsSyncCompanionProtocol {
     const val OPERATION_CREATE_ANCHOR: Byte = 8
     const val OPERATION_SAVE_BUNDLE: Byte = 9
     const val OPERATION_FETCH_CHANGES: Byte = 10
-    const val OPERATION_DELETE_ZONE: Byte = 11
+    const val OPERATION_DELETE_RECORDS: Byte = 11
+    const val OPERATION_SWEEP_BUNDLES: Byte = 12
     const val OUTCOME_FOUND: Byte = 1
     const val OUTCOME_MISSING: Byte = 2
     const val OUTCOME_CREATED: Byte = 3
@@ -55,6 +57,9 @@ internal object MacOsSyncCompanionProtocol {
     const val OUTCOME_ALREADY_EXISTS: Byte = 13
     const val OUTCOME_CONFLICT: Byte = 14
     const val OUTCOME_TOKEN_EXPIRED: Byte = 15
+    const val OUTCOME_SWEPT: Byte = 16
+    const val OUTCOME_ANCHOR_PRESENT: Byte = 17
+    const val OUTCOME_INCOMPLETE: Byte = 18
 
     fun encode(message: SyncCompanionMessage): ByteArray {
         require(message.requestIdentifier.size == IDENTIFIER_BYTES)
@@ -156,6 +161,20 @@ internal object MacOsSyncCompanionProtocol {
         require(cursor.size in 0..CURSOR_BYTES)
         return binding + cursor
     }
+
+    /**
+     * Delete-path resume payload. Resume tokens are opaque to this adapter
+     * but carry one phase byte ahead of the server token on the wire, hence
+     * the wider bound. Sweep and fetch cursors stay on [cursorPayload].
+     */
+    fun deleteResumePayload(
+        binding: ByteArray,
+        token: ByteArray,
+    ): ByteArray {
+        require(binding.size == BINDING_BYTES)
+        require(token.size in 0..DELETE_RESUME_TOKEN_BYTES)
+        return binding + token
+    }
 }
 
 internal enum class SyncCompanionOperation(
@@ -171,7 +190,8 @@ internal enum class SyncCompanionOperation(
     CreateAnchor(MacOsSyncCompanionProtocol.OPERATION_CREATE_ANCHOR),
     SaveBundle(MacOsSyncCompanionProtocol.OPERATION_SAVE_BUNDLE),
     FetchChanges(MacOsSyncCompanionProtocol.OPERATION_FETCH_CHANGES),
-    DeleteZoneAndVerifyAbsent(MacOsSyncCompanionProtocol.OPERATION_DELETE_ZONE),
+    DeleteWorkspaceRecords(MacOsSyncCompanionProtocol.OPERATION_DELETE_RECORDS),
+    SweepBundlesIfAnchorMissing(MacOsSyncCompanionProtocol.OPERATION_SWEEP_BUNDLES),
     ;
 
     companion object {
@@ -199,6 +219,9 @@ internal enum class SyncCompanionOutcome(
     AlreadyExists(MacOsSyncCompanionProtocol.OUTCOME_ALREADY_EXISTS),
     Conflict(MacOsSyncCompanionProtocol.OUTCOME_CONFLICT),
     TokenExpired(MacOsSyncCompanionProtocol.OUTCOME_TOKEN_EXPIRED),
+    Swept(MacOsSyncCompanionProtocol.OUTCOME_SWEPT),
+    AnchorPresent(MacOsSyncCompanionProtocol.OUTCOME_ANCHOR_PRESENT),
+    Incomplete(MacOsSyncCompanionProtocol.OUTCOME_INCOMPLETE),
     ;
 
     companion object {
