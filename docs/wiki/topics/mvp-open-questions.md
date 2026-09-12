@@ -593,6 +593,31 @@ applicable consumer, and the separate pre-release audit to `RELEASE-001`.
 - Repository license, contribution policy, security contact, and public support
   boundary.
 
+## Post-MVP session usability proposals
+
+`user-confirmed` (2026-09-12): retain these two improvements for planning in
+the next iteration after the MVP. They do not expand MVP scope or authorize
+implementation. The solution and any changes to accepted contracts remain
+`open`.
+
+- **Make website coverage easier to understand and configure.** Exact-host
+  matching treats `example.com` and `www.example.com` as separate entries;
+  redirects can therefore lead to a host outside the selected set. Evaluate
+  clearer entry-time guidance and an explicit way to include the `www`
+  variant. Decide separately whether broader subdomain coverage is desirable.
+  Automatic inclusion is not accepted by this note; the current
+  [ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md)
+  exact-domain contract remains in force.
+- **Reduce repeated macOS authorization prompts at session start.** Evaluate
+  a one-time administrator opt-in for subsequent session starts, with an
+  explicit revocation path and authenticated, narrowly scoped helper requests.
+  Background-helper approval and permission to apply proxy settings are
+  separate today. Replacing fresh one-use Apply authorization requires an
+  explicit revision of
+  [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
+  and review of the security implications; this note does not grant persistent
+  authorization or choose its implementation.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do
