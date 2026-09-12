@@ -52,6 +52,14 @@ internal interface LocalSessionStore {
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
     ): LocalSessionResult<LocalSessionStatus>
+
+    /**
+     * Records the terminal expiry of the current row for [sessionId] without
+     * consulting the wall clock: the native extension already proved the end.
+     * A row with another identity, or no row at all, reports
+     * SESSION_NOT_ACTIVE instead of inventing a terminal fact.
+     */
+    suspend fun markExpired(sessionId: SessionId): LocalSessionResult<LocalSessionStatus>
 }
 
 internal interface LocalSessionSyncStore : LocalSessionStore {

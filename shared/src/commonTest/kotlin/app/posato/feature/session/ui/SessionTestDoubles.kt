@@ -96,12 +96,23 @@ internal class FakeEnforcementPort(
         return next ?: statusOutcome
     }
 
-    override suspend fun pollSuspendedExpiry(sessionId: String): Boolean {
-        calls += "poll"
+    override suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
+        calls += "peek"
+        return sessionId in expiredSessionIds
+    }
+
+    var acknowledgeError: Exception? = null
+
+    override suspend fun acknowledgeSuspendedExpiry(sessionId: String): Boolean {
+        calls += "acknowledge"
+        acknowledgeError?.let { throw it }
+        acknowledgedSessionIds += sessionId
         val expired = sessionId in expiredSessionIds
         expiredSessionIds -= sessionId
         return expired
     }
+
+    val acknowledgedSessionIds = mutableListOf<String>()
 }
 
 internal class FakeSessionSyncTriggers(

@@ -194,7 +194,7 @@ class SessionEnforcementTest {
         val state = viewModel.uiState.value
 
         assertIs<LocalSessionStatus.Active>(state.status)
-        assertEquals(listOf("poll", "status", "clear", "apply"), enforcement.calls)
+        assertEquals(listOf("peek", "status", "clear", "apply"), enforcement.calls)
         assertEquals(EnforcementState.Active(false), state.enforcement)
     }
 

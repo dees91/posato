@@ -109,8 +109,10 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
 
     func readReconciliation(sessionId: String, handler: @escaping (IosExpiryReconciliation) -> Void) {
         // Fail closed: only a cleared record for this exact session reads as
-        // its expiry. Anything else is unknown, never active. Reporting
-        // consumes the record so a later session cannot inherit it.
+        // its expiry. Anything else is unknown, never active. Reporting never
+        // consumes the record: the Kotlin side banks the terminal fact first
+        // and acknowledges afterwards, so a restart between the two still
+        // observes the expiry instead of losing it.
         guard SuspendedExpiryRecordStore.isValidSessionId(sessionId),
               let store = records(),
               let cleared = store.readCleared(),
@@ -119,7 +121,23 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
             handler(.unknown)
             return
         }
-        store.removeCleared()
         handler(.expired)
+    }
+
+    func acknowledgeReconciliation(sessionId: String, handler: @escaping (KotlinBoolean) -> Void) {
+        // Consumes the cleared record, but only when it still belongs to this
+        // exact session: another session's record is never removed here. A new
+        // schedule also clears stale records, so a false result only means
+        // there was nothing left to consume.
+        guard SuspendedExpiryRecordStore.isValidSessionId(sessionId),
+              let store = records(),
+              let cleared = store.readCleared(),
+              cleared.sessionId == sessionId
+        else {
+            handler(KotlinBoolean(bool: false))
+            return
+        }
+        store.removeCleared()
+        handler(KotlinBoolean(bool: true))
     }
 }

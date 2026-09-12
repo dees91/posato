@@ -420,6 +420,86 @@ class AppleSyncSessionConvergenceTest {
         }
     }
 
+    @Test
+    fun `given an ended row when a newer session converges then it supersedes without fallback`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-supersede-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-supersede-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        try {
+            first.establish()
+            second.establish()
+            advanceUntilIdle()
+
+            val old = SessionId(testIdentifier(80))
+            start(first, old)
+            exchange(first, second)
+            assertIs<LocalSessionStatus.Active>(second.read())
+
+            end(first, old)
+            end(second, old)
+            val fresh = SessionId(testIdentifier(81))
+            start(second, fresh)
+            exchange(first, second)
+            exchange(first, second)
+
+            val adopted = assertIs<LocalSessionStatus.Active>(first.read())
+            assertEquals(fresh, adopted.record.sessionId)
+            val current = assertIs<LocalSessionStatus.Active>(second.read())
+            assertEquals(fresh, current.record.sessionId)
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
+    fun `given a fresh peer when an expired session converges then it banks without activating`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-expired-bank-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-expired-bank-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val third = sessionPeer(dispatcher, "session-expired-bank-third.db", mailbox, SyncWallClock { 300 }, FROZEN_THIRD)
+        try {
+            first.establish()
+            second.establish()
+            third.establish()
+            advanceUntilIdle()
+
+            val session = SessionId(testIdentifier(82))
+            start(first, session)
+            exchange(first, second)
+            assertIs<LocalSessionStatus.Active>(second.read())
+
+            // All clocks move past the end before the fresh peer ever syncs:
+            // it observes only the expired candidate.
+            first.clock.nowEpochMillis = NOW + DURATION + 1
+            second.clock.nowEpochMillis = NOW + DURATION + 1
+            third.clock.nowEpochMillis = NOW + DURATION + 1
+            first.harness.sync.syncNow()
+            advanceUntilIdle()
+            second.harness.sync.syncNow()
+            advanceUntilIdle()
+            third.harness.sync.syncNow()
+            advanceUntilIdle()
+
+            assertIs<LocalSessionStatus.Inactive>(third.read())
+            assertTrue(session in third.harness.snapshot().terminalExpiryFacts)
+
+            // A rolled-back clock cannot revive the never-activated session.
+            third.clock.nowEpochMillis = NOW
+            third.harness.sync.syncNow()
+            advanceUntilIdle()
+
+            assertIs<LocalSessionStatus.Inactive>(third.read())
+            assertTrue(session in third.harness.snapshot().terminalExpiryFacts)
+        } finally {
+            first.close()
+            second.close()
+            third.close()
+        }
+    }
+
     private fun sessionPeer(
         dispatcher: CoroutineDispatcher,
         databaseName: String,
@@ -565,5 +645,6 @@ class AppleSyncSessionConvergenceTest {
         const val MIN_DURATION: Long = SessionLimits.MIN_DURATION_MILLIS
         val FROZEN_FIRST: FrozenStartSet = FrozenStartSet(persistentListOf("first.example"), null)
         val FROZEN_SECOND: FrozenStartSet = FrozenStartSet(persistentListOf("second.example"), null)
+        val FROZEN_THIRD: FrozenStartSet = FrozenStartSet(persistentListOf("third.example"), null)
     }
 }

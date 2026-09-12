@@ -39,6 +39,14 @@ class IosSuspendedExpiryTest {
     }
 
     @Test
+    fun `given an acknowledgement when completed then the session is forwarded`() = runTest {
+        val provider = FakeIosSuspendedExpiryProvider()
+
+        assertTrue(IosSuspendedExpiry(provider).acknowledgeReconciliation("session"))
+        assertEquals(listOf("session"), provider.acknowledgedSessionIds)
+    }
+
+    @Test
     fun `given the new expiry carrier when described then values stay redacted`() {
         assertEquals(
             "IosSuspendedExpiryRequest(redacted)",
@@ -82,4 +90,14 @@ private class FakeIosSuspendedExpiryProvider(
         seenSessionId = sessionId
         handler(reconciliation)
     }
+
+    override fun acknowledgeReconciliation(
+        sessionId: String,
+        handler: (Boolean) -> Unit,
+    ) {
+        acknowledgedSessionIds += sessionId
+        handler(true)
+    }
+
+    val acknowledgedSessionIds = mutableListOf<String>()
 }

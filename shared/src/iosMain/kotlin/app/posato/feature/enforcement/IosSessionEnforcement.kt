@@ -50,8 +50,12 @@ public class IosSessionEnforcement(
         }
     }
 
-    override suspend fun pollSuspendedExpiry(sessionId: String): Boolean {
+    override suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
         return expiry.readReconciliation(sessionId) == IosExpiryReconciliation.EXPIRED
+    }
+
+    override suspend fun acknowledgeSuspendedExpiry(sessionId: String): Boolean {
+        return expiry.acknowledgeReconciliation(sessionId)
     }
 
     private suspend fun applyBoth(request: EnforcementRequest): EnforcementApplyReport {

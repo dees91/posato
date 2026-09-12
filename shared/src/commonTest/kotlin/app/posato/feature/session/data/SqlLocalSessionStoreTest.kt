@@ -530,6 +530,81 @@ class SqlLocalSessionStoreTest {
     }
 
     @Test
+    fun `given a live row when marked expired then the terminal fact ignores the clock`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("session-mark-expired.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlLocalSessionStore(database, Dispatchers.Default)
+            val id = SessionId(testIdentifier(120))
+            assertIs<LocalSessionResult.Success<LocalSessionStatus>>(
+                store.start(id, NOW, NOW + MINIMUM, NOW, START_SET),
+            )
+
+            val marked = store.markExpired(id)
+
+            val ended = assertIs<LocalSessionStatus.Ended>(
+                assertIs<LocalSessionResult.Success<LocalSessionStatus>>(marked).value,
+            )
+            assertEquals(SessionEndKind.EXPIRED, ended.kind)
+            // A rolled-back read still shows the terminal fact.
+            val reread = assertIs<LocalSessionStatus.Ended>(
+                assertIs<LocalSessionResult.Success<LocalSessionStatus>>(store.read(NOW)).value,
+            )
+            assertEquals(SessionEndKind.EXPIRED, reread.kind)
+            // Banking twice stays terminal.
+            val again = assertIs<LocalSessionStatus.Ended>(
+                assertIs<LocalSessionResult.Success<LocalSessionStatus>>(store.markExpired(id)).value,
+            )
+            assertEquals(SessionEndKind.EXPIRED, again.kind)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given another row when marked expired then nothing is invented`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("session-mark-expired-foreign.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlLocalSessionStore(database, Dispatchers.Default)
+            assertIs<LocalSessionResult.Success<LocalSessionStatus>>(
+                store.start(SessionId(testIdentifier(121)), NOW, NOW + MINIMUM, NOW, START_SET),
+            )
+
+            val result = store.markExpired(SessionId(testIdentifier(122)))
+
+            val failure = assertIs<LocalSessionResult.Failure>(result)
+            assertEquals(LocalSessionFailure.SESSION_NOT_ACTIVE, failure.reason)
+            assertIs<LocalSessionStatus.Active>(
+                assertIs<LocalSessionResult.Success<LocalSessionStatus>>(store.read(NOW)).value,
+            )
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given no row when marked expired then nothing is invented`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("session-mark-expired-empty.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val store = SqlLocalSessionStore(PosatoDatabase(driver), Dispatchers.Default)
+
+            val result = store.markExpired(SessionId(testIdentifier(123)))
+
+            val failure = assertIs<LocalSessionResult.Failure>(result)
+            assertEquals(LocalSessionFailure.SESSION_NOT_ACTIVE, failure.reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
     fun `given recorded intents when deleted then the queue drains in order`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("session-intent-queue.db")
         val driver = testDatabase.openDriver()

@@ -113,7 +113,9 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
             is SessionEvaluation.ShowActive -> {
                 endedEarly = true
                 frozenStartSet = null
-                if (workspaceId != null && origin == SessionOrigin.LOCAL) {
+                // A deliberate early end converges whether the row started here
+                // or was adopted (SYNC-012 AC-05); mirrors SqlLocalSessionStore.
+                if (workspaceId != null) {
                     intents += SequencedSessionIntent(
                         nextSequence++,
                         workspaceId.copyOf(),
@@ -139,6 +141,34 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
                 LocalSessionResult.Success(
                     LocalSessionStatus.Ended(evaluation.record, SessionEndKind.EXPIRED, origin),
                 )
+            }
+        }
+    }
+
+    var markExpiredFailure: LocalSessionFailure? = null
+    var markExpiredCalls: Int = 0
+
+    override suspend fun markExpired(sessionId: SessionId): LocalSessionResult<LocalSessionStatus> {
+        markExpiredCalls += 1
+        val injected = markExpiredFailure
+        val current = record
+        return when {
+            injected != null -> {
+                LocalSessionResult.Failure(injected)
+            }
+
+            current == null || current.sessionId != sessionId -> {
+                LocalSessionResult.Failure(LocalSessionFailure.SESSION_NOT_ACTIVE)
+            }
+
+            endedEarly -> {
+                LocalSessionResult.Success(LocalSessionStatus.Ended(current, SessionEndKind.ENDED_EARLY, origin))
+            }
+
+            else -> {
+                expiryMarked = true
+                frozenStartSet = null
+                LocalSessionResult.Success(LocalSessionStatus.Ended(current, SessionEndKind.EXPIRED, origin))
             }
         }
     }

@@ -315,7 +315,7 @@ final class SuspendedExpiryTests: XCTestCase {
         XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
     }
 
-    func testReconciliationIgnoresAnotherSessionsClearAndConsumesItsOwn() throws {
+    func testReconciliationIgnoresAnotherSessionsClearAndKeepsItsOwn() throws {
         let monitoring = FakeExpiryMonitoring()
         let records = try isolatedRecordStore()
         let scheduler = capableScheduler(monitoring: monitoring, records: { records })
@@ -326,8 +326,26 @@ final class SuspendedExpiryTests: XCTestCase {
 
         try records.writeCleared(sessionId: "session", clearedAt: 1_700_003_600)
         XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .expired)
+        XCTAssertNotNil(records.readCleared())
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .expired)
+    }
+
+    func testAcknowledgeConsumesOnlyTheMatchingClear() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+
+        XCTAssertFalse(try acknowledge(sessionId: "session", scheduler: scheduler))
+
+        try records.writeCleared(sessionId: "other-session", clearedAt: 1_700_003_600)
+        XCTAssertFalse(try acknowledge(sessionId: "session", scheduler: scheduler))
+        XCTAssertNotNil(records.readCleared())
+
+        try records.writeCleared(sessionId: "session", clearedAt: 1_700_003_600)
+        XCTAssertTrue(try acknowledge(sessionId: "session", scheduler: scheduler))
         XCTAssertNil(records.readCleared())
         XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
+        XCTAssertFalse(try acknowledge(sessionId: "session", scheduler: scheduler))
     }
 
     func testScheduleRemovesAStaleClearedRecord() throws {
@@ -385,6 +403,12 @@ final class SuspendedExpiryTests: XCTestCase {
         var result: IosExpiryReconciliation?
         scheduler.readReconciliation(sessionId: sessionId) { result = $0 }
         return try XCTUnwrap(result)
+    }
+
+    private func acknowledge(sessionId: String, scheduler: SuspendedExpiryScheduler) throws -> Bool {
+        var result: KotlinBoolean?
+        scheduler.acknowledgeReconciliation(sessionId: sessionId) { result = $0 }
+        return try XCTUnwrap(result).boolValue
     }
 
     private func isolatedRecordStore() throws -> SuspendedExpiryRecordStore {

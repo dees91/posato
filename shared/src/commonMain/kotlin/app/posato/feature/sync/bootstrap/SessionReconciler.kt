@@ -10,9 +10,11 @@ import app.posato.feature.session.domain.SessionOrigin
 import app.posato.feature.session.domain.SessionSyncWrite
 import app.posato.feature.session.domain.StoredSessionIntent
 import app.posato.feature.sync.domain.SessionCandidate
+import app.posato.feature.sync.domain.SessionConclusionKind
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncProjection
 import app.posato.feature.sync.domain.SyncWriter
+import app.posato.feature.sync.domain.SynchronizedSessionStart
 
 internal sealed interface SessionReconcileResult {
     data class Completed(
@@ -159,22 +161,35 @@ internal class SessionReconciler(
             }
 
             is LocalSessionStatus.Ended -> {
-                bankIfExpired(writer, projection, status)
+                adoptSuperseding(writer, projection, candidate, pendingIds, status, nowEpochMillis, captureFrozen)
             }
 
             is LocalSessionStatus.Inactive -> {
-                adoptIfCurrent(candidate, pendingIds, status, nowEpochMillis, captureFrozen)
+                applyInactive(writer, candidate, pendingIds, status, nowEpochMillis, captureFrozen)
             }
         }
     }
 
-    private suspend fun adoptIfCurrent(
+    private suspend fun applyInactive(
+        writer: SyncWriter,
         candidate: SessionCandidate,
         pendingIds: Set<SessionId>,
         status: LocalSessionStatus.Inactive,
         nowEpochMillis: Long,
         captureFrozen: suspend () -> FrozenStartSet,
     ): SessionReconcileResult {
+        val concluded = candidate as? SessionCandidate.Concluded
+        if (concluded != null && concluded.kind == SessionConclusionKind.EXPIRED) {
+            // No local row ever activated, but the workspace converged
+            // this expiry: bank the terminal fact so a rollback cannot
+            // revive a session that never enforced here. An ended
+            // candidate needs no bank and never activates (see below).
+            return if (writer.markTerminalExpiry(concluded.sessionId)) {
+                SessionReconcileResult.Completed(status)
+            } else {
+                SessionReconcileResult.Halted(SyncStatus.ACTION_REQUIRED)
+            }
+        }
         // An inactive row never falls back to an ended, expired, or future
         // session: only a currently eligible start activates the device.
         val current = candidate as? SessionCandidate.Current
@@ -184,13 +199,54 @@ internal class SessionReconciler(
             // the next pass instead of being transiently adopted here.
             return SessionReconcileResult.Completed(status)
         }
+        return adoptCandidate(current.start, nowEpochMillis, captureFrozen)
+    }
+
+    private suspend fun adoptSuperseding(
+        writer: SyncWriter,
+        projection: SyncProjection,
+        candidate: SessionCandidate,
+        pendingIds: Set<SessionId>,
+        status: LocalSessionStatus.Ended,
+        nowEpochMillis: Long,
+        captureFrozen: suspend () -> FrozenStartSet,
+    ): SessionReconcileResult {
+        val banked = bankIfExpired(writer, projection, status)
+        val current = candidate as? SessionCandidate.Current
+        // A newer session supersedes the ended row; an older or concluded
+        // candidate never falls back to it.
+        if (current != null &&
+            banked is SessionReconcileResult.Completed &&
+            supersedes(status, current.start, pendingIds, projection)
+        ) {
+            return adoptCandidate(current.start, nowEpochMillis, captureFrozen)
+        }
+        return banked
+    }
+
+    private fun supersedes(
+        status: LocalSessionStatus.Ended,
+        start: SynchronizedSessionStart,
+        pendingIds: Set<SessionId>,
+        projection: SyncProjection,
+    ): Boolean {
+        return start.sessionId != status.record.sessionId &&
+            start.sessionId !in pendingIds &&
+            start.sessionId !in projection.conflictedSessionIds
+    }
+
+    private suspend fun adoptCandidate(
+        start: SynchronizedSessionStart,
+        nowEpochMillis: Long,
+        captureFrozen: suspend () -> FrozenStartSet,
+    ): SessionReconcileResult {
         // The receiving device captures its own local frozen summary once, at
         // adoption; repeated delivery keeps the stored set instead.
         return when (
             val adopted = sessions.adopt(
-                current.start.sessionId,
-                current.start.startEpochMillis,
-                current.start.mandatoryEndEpochMillis,
+                start.sessionId,
+                start.startEpochMillis,
+                start.mandatoryEndEpochMillis,
                 nowEpochMillis,
                 captureFrozen(),
             )
@@ -213,18 +269,7 @@ internal class SessionReconciler(
                 if (candidate.start.sessionId == status.record.sessionId) {
                     bankIfExpired(writer, projection, status)
                 } else {
-                    when (
-                        val adopted = sessions.adopt(
-                            candidate.start.sessionId,
-                            candidate.start.startEpochMillis,
-                            candidate.start.mandatoryEndEpochMillis,
-                            nowEpochMillis,
-                            captureFrozen(),
-                        )
-                    ) {
-                        is LocalSessionResult.Failure -> SessionReconcileResult.Halted(adopted.reason.toSyncStatus())
-                        is LocalSessionResult.Success -> SessionReconcileResult.Completed(adopted.value)
-                    }
+                    adoptCandidate(candidate.start, nowEpochMillis, captureFrozen)
                 }
             }
 

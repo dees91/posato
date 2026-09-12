@@ -1,12 +1,15 @@
 package app.posato.feature.session.ui
 
 import app.posato.feature.session.data.LocalSessionFailure
+import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.domain.FakeSessionClock
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.session.domain.SessionSetupFailure
+import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
@@ -311,6 +314,44 @@ class SessionViewModelTest {
         val ended = assertIs<LocalSessionStatus.Ended>(state.status)
         assertEquals(SessionEndKind.ENDED_EARLY, ended.kind)
         assertFalse(state.confirmingEarlyEnd)
+    }
+
+    @Test
+    fun `given a replaced session when confirming then the wrong session never ends`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val viewModel = collectedViewModel(store = store, domains = listOf("stable.example"))
+        startThroughUi(viewModel)
+        val shown = assertIs<LocalSessionStatus.Active>(viewModel.uiState.value.status).record.sessionId
+        viewModel.setEarlyEndConfirmation(true)
+        scheduler.runCurrent()
+
+        // The row is replaced while the dialog stays open.
+        val replacement = SessionId(testIdentifier(21))
+        assertIs<LocalSessionResult.Success<LocalSessionStatus>>(
+            store.adopt(
+                replacement,
+                NOW,
+                NOW + 30 * 60_000L,
+                NOW,
+                FrozenStartSet(persistentListOf("stable.example"), null),
+            ),
+        )
+        viewModel.retry()
+        scheduler.runCurrent()
+        assertEquals(
+            replacement,
+            assertIs<LocalSessionStatus.Active>(viewModel.uiState.value.status).record.sessionId,
+        )
+        assertTrue(shown != replacement)
+
+        viewModel.confirmEarlyEnd()
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertFalse(state.confirmingEarlyEnd)
+        assertEquals(0, store.endEarlyCalls)
+        val current = assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(replacement, current.record.sessionId)
     }
 
     @Test

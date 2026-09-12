@@ -29,7 +29,7 @@ internal class SqlLocalSessionStore(
     override suspend fun read(nowEpochMillis: Long): LocalSessionResult<LocalSessionStatus> {
         return withContext(databaseDispatcher) {
             database.localSessionTransact {
-                val evaluated = evaluateStored(nowEpochMillis)
+                val evaluated = database.evaluateStoredLocalSession(nowEpochMillis)
                 when (val evaluation = evaluated.evaluation) {
                     is SessionEvaluation.NoSession -> {
                         LocalSessionResult.Success(LocalSessionStatus.Inactive)
@@ -70,7 +70,7 @@ internal class SqlLocalSessionStore(
     ): LocalSessionResult<LocalSessionStatus> {
         return withContext(databaseDispatcher) {
             database.localSessionTransact {
-                val evaluated = evaluateStored(nowEpochMillis)
+                val evaluated = database.evaluateStoredLocalSession(nowEpochMillis)
                 when (val evaluation = evaluated.evaluation) {
                     is SessionEvaluation.ShowActive -> {
                         LocalSessionResult.Failure(LocalSessionFailure.ALREADY_ACTIVE)
@@ -93,7 +93,7 @@ internal class SqlLocalSessionStore(
     ): LocalSessionResult<LocalSessionStatus> {
         return withContext(databaseDispatcher) {
             database.localSessionTransact {
-                val evaluated = evaluateStored(nowEpochMillis)
+                val evaluated = database.evaluateStoredLocalSession(nowEpochMillis)
                 when (val evaluation = evaluated.evaluation) {
                     is SessionEvaluation.ShowActive -> {
                         database.localSessionQueries.markEndedEarly()
@@ -186,29 +186,6 @@ internal class SqlLocalSessionStore(
         return intents.clearIntents()
     }
 
-    private suspend fun evaluateStored(nowEpochMillis: Long): EvaluatedStored {
-        val stored = database.readStoredLocalSession()
-        if (stored == null) {
-            return EvaluatedStored(SessionEvaluation.NoSession, null)
-        }
-        val frozenStartSet = try {
-            FrozenStartSet.parseStored(stored.frozenDomains, stored.frozenApplicationCount)
-        } catch (_: IllegalArgumentException) {
-            fail(LocalSessionFailure.CORRUPTION)
-        }
-
-        val evaluation = when (val evaluation = SessionState.evaluate(stored.record, stored.endedEarly, stored.expiryMarked, nowEpochMillis)) {
-            is SessionEvaluation.ShowActive -> {
-                evaluation.copy(frozenStartSet = frozenStartSet)
-            }
-
-            else -> {
-                evaluation
-            }
-        }
-        return EvaluatedStored(evaluation, stored.origin)
-    }
-
     private suspend fun startWhenInactive(
         sessionId: SessionId,
         startEpochMillis: Long,
@@ -255,6 +232,29 @@ internal class SqlLocalSessionStore(
         }
     }
 
+    override suspend fun markExpired(sessionId: SessionId): LocalSessionResult<LocalSessionStatus> {
+        return withContext(databaseDispatcher) {
+            database.localSessionTransact {
+                val stored = database.readStoredLocalSession()
+                    ?: return@localSessionTransact LocalSessionResult.Failure(LocalSessionFailure.SESSION_NOT_ACTIVE)
+                if (stored.record.sessionId != sessionId) {
+                    return@localSessionTransact LocalSessionResult.Failure(LocalSessionFailure.SESSION_NOT_ACTIVE)
+                }
+                if (stored.endedEarly) {
+                    return@localSessionTransact LocalSessionResult.Success(
+                        LocalSessionStatus.Ended(stored.record, SessionEndKind.ENDED_EARLY, stored.origin),
+                    )
+                }
+                if (stored.expiryMarked) {
+                    return@localSessionTransact LocalSessionResult.Success(
+                        LocalSessionStatus.Ended(stored.record, SessionEndKind.EXPIRED, stored.origin),
+                    )
+                }
+                commitExpiry(stored.record, stored.origin)
+            }
+        }
+    }
+
     private suspend fun commitExpiry(
         record: SessionRecord,
         origin: SessionOrigin,
@@ -264,6 +264,29 @@ internal class SqlLocalSessionStore(
 
         return LocalSessionResult.Success(LocalSessionStatus.Ended(record, SessionEndKind.EXPIRED, origin))
     }
+}
+
+private suspend fun PosatoDatabase.evaluateStoredLocalSession(nowEpochMillis: Long): EvaluatedStored {
+    val stored = readStoredLocalSession()
+    if (stored == null) {
+        return EvaluatedStored(SessionEvaluation.NoSession, null)
+    }
+    val frozenStartSet = try {
+        FrozenStartSet.parseStored(stored.frozenDomains, stored.frozenApplicationCount)
+    } catch (_: IllegalArgumentException) {
+        fail(LocalSessionFailure.CORRUPTION)
+    }
+
+    val evaluation = when (val evaluation = SessionState.evaluate(stored.record, stored.endedEarly, stored.expiryMarked, nowEpochMillis)) {
+        is SessionEvaluation.ShowActive -> {
+            evaluation.copy(frozenStartSet = frozenStartSet)
+        }
+
+        else -> {
+            evaluation
+        }
+    }
+    return EvaluatedStored(evaluation, stored.origin)
 }
 
 private suspend fun PosatoDatabase.readStoredLocalSession(): StoredLocalSession? {

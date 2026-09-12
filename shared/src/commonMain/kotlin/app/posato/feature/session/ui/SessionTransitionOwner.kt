@@ -8,6 +8,7 @@ import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.enforcement.reconciliationId
+import app.posato.feature.session.data.LocalSessionFailure
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SessionExchangeObserver
@@ -71,6 +72,7 @@ internal class SessionTransitionOwner(
     private var lastSettledTag: SessionTag? = null
     private var lastSettledActive: Boolean = false
     private var hasSettled = false
+    private var pendingNativeExpiry: SessionTag? = null
 
     val view: StateFlow<EnforcementViewState> = mutableView.asStateFlow()
     val status: StateFlow<LocalSessionStatus?> = mutableStatus.asStateFlow()
@@ -156,8 +158,12 @@ internal class SessionTransitionOwner(
     ): LocalSessionResult<LocalSessionStatus> {
         val capture = stateMutex.withLock { triggers.captureWorkspace() }
         val workspaceId = (capture as? SessionWorkspaceCapture.Linked)?.workspaceId?.copyOf()
+        // The command time validates the session: resampling the clock here would
+        // reject a start whose setup (validation, target load) straddled a clock
+        // boundary. The end stays fixed, so elapsed command time only shortens
+        // the effective session instead of extending its deadline.
         val committed = stateMutex.withLock {
-            store.start(sessionId, startEpochMillis, endEpochMillis, clock.currentEpochMillis(), frozen, workspaceId)
+            store.start(sessionId, startEpochMillis, endEpochMillis, startEpochMillis, frozen, workspaceId)
         }
         // A failed commit changes nothing and settles nothing: the caller
         // reports the failure truthfully instead of a stale fresh read.
@@ -168,7 +174,14 @@ internal class SessionTransitionOwner(
         if (active != null && (workspaceId != null || capture is SessionWorkspaceCapture.Unknown)) {
             triggers.requestSync()
         }
-        if (active != null) {
+        // Liveness boundary: a session already over at commit time is recorded
+        // terminal without ever applying; its deadline never moves. A failed
+        // terminal write keeps the committed row and converges on the next tick.
+        val overByCommit = active != null && clock.currentEpochMillis() >= active.record.endEpochMillis
+        if (overByCommit) {
+            stateMutex.withLock { store.markExpired(sessionId) }
+        }
+        if (active != null && !overByCommit) {
             applyAfterStart(active.record, SessionTag(active.record))
         }
         return stateMutex.withLock {
@@ -237,7 +250,11 @@ internal class SessionTransitionOwner(
                     }
                 }
                 val active = fresh as? LocalSessionStatus.Active
-                if (active != null) {
+                if (active != null && pendingNativeExpiry == SessionTag(active.record)) {
+                    // A parked native expiry converges through the bank flow,
+                    // never through a re-apply of an expired session.
+                    reconcile(SessionTag(active.record), active.record, frozenStartSet)
+                } else if (active != null) {
                     reapplyCurrent(active.record, SessionTag(active.record), frozenStartSet)
                 } else {
                     clearAfterEnd(fresh?.let(::tagOf))
@@ -249,6 +266,75 @@ internal class SessionTransitionOwner(
             } finally {
                 mutableView.update { view -> view.copy(busy = false) }
             }
+        }
+    }
+
+    private suspend fun bankObservedExpiry(
+        tag: SessionTag,
+        record: SessionRecord,
+        sessionId: String,
+    ) {
+        // Durable handoff: the peek never consumes, so a restart before the
+        // bank observes the expiry again. The terminal fact is committed
+        // before acting on the signal, and the native record is
+        // acknowledged only afterwards: a restart between the two re-banks
+        // idempotently instead of losing the expiry.
+        val banked = stateMutex.withLock { store.markExpired(record.sessionId) }
+        when (banked) {
+            is LocalSessionResult.Success -> {
+                pendingNativeExpiry = null
+                acknowledgeExpired(sessionId)
+                // The extension already cleared at expiry, so this clear runs even
+                // when the view never observed an apply: it converges the device to
+                // the expired row instead of leaving restrictions behind.
+                val cleared = try {
+                    portMutex.withLock { enforcement.clear() }
+                } catch (expectedCancellation: CancellationException) {
+                    throw expectedCancellation
+                } catch (_: Exception) {
+                    null
+                }
+                if (cleared == EnforcementOutcome.CLEARED) {
+                    enforcedIdentity = null
+                    mutableView.update { EnforcementViewState() }
+                } else {
+                    mutableView.update { view ->
+                        view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
+                    }
+                }
+                settle(banked.value)
+            }
+
+            is LocalSessionResult.Failure if banked.reason == LocalSessionFailure.SESSION_NOT_ACTIVE -> {
+                // Nothing to bank for this identity; tidy the native record
+                // and drain whatever transition is current instead.
+                pendingNativeExpiry = null
+                acknowledgeExpired(sessionId)
+                settleForTag()
+            }
+
+            is LocalSessionResult.Failure -> {
+                // A failed durable write is never reported as success and
+                // never clears restrictions first: park the observation for the
+                // next settle instead of settling Active as success.
+                pendingNativeExpiry = tag
+                mutableView.update { view ->
+                    view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt))
+                }
+            }
+        }
+    }
+
+    private suspend fun acknowledgeExpired(sessionId: String): Boolean {
+        // Best effort: a failed acknowledgement only repeats an idempotent
+        // bank on the next observation; the row is already terminal, and a
+        // future schedule clears a leftover native record.
+        return try {
+            enforcement.acknowledgeSuspendedExpiry(sessionId)
+        } catch (expectedCancellation: CancellationException) {
+            throw expectedCancellation
+        } catch (_: Exception) {
+            false
         }
     }
 
@@ -348,12 +434,24 @@ internal class SessionTransitionOwner(
                 portMutex.withLock {
                     enforcement.clear()
                 }
-                val current = stateMutex.withLock { tagOf(store.read(clock.currentEpochMillis())) }
-                if (current != tag) {
-                    settleForTag()
-                    return@launch
+                // A tag alone cannot tell a replaced session apart: the desired
+                // state is the identity plus its deadline, and only an active
+                // row with both still matching is re-applied here.
+                val current = stateMutex.withLock {
+                    when (val read = store.read(clock.currentEpochMillis())) {
+                        is LocalSessionResult.Failure -> null
+                        is LocalSessionResult.Success -> read.value as? LocalSessionStatus.Active
+                    }
                 }
-                reapplyCurrent(record, tag, frozen)
+                if (current != null &&
+                    current.record.sessionId == record.sessionId &&
+                    current.record.endEpochMillis == record.endEpochMillis
+                ) {
+                    reapplyCurrent(record, tag, frozen)
+                }
+                // Drain whatever is current after the in-flight transition:
+                // a row that moved on reconciles instead of being lost.
+                convergeAfterPort(tag)
             } catch (expectedCancellation: CancellationException) {
                 throw expectedCancellation
             } catch (_: Exception) {
@@ -461,14 +559,20 @@ internal class SessionTransitionOwner(
         }
     }
 
-    private suspend fun convergeAfterPort(expected: SessionTag?) {
+    private suspend fun convergeAfterPort(cleared: SessionTag?) {
         val fresh = stateMutex.withLock {
             when (val read = store.read(clock.currentEpochMillis())) {
                 is LocalSessionResult.Failure -> null
                 is LocalSessionResult.Success -> read.value
             }
         } ?: return
-        if (tagOf(fresh) != expected) {
+        val active = fresh as? LocalSessionStatus.Active
+        if (active != null && SessionTag(active.record) != cleared) {
+            // The clear removed a newer enforcement than intended: reconcile
+            // the current desired state directly, so the latest transition
+            // drains before this in-flight transition completes.
+            reconcile(SessionTag(active.record), active.record, active.frozenStartSet)
+        } else if (tagOf(fresh) != cleared) {
             settle(fresh)
         }
     }
@@ -479,41 +583,20 @@ internal class SessionTransitionOwner(
         frozen: FrozenStartSet?,
     ) {
         val sessionId = record.sessionId.reconciliationId()
-        if (enforcement.pollSuspendedExpiry(sessionId)) {
-            // The native record is consumed by the read, so the terminal fact is
-            // committed before acting on the signal: a failed durable write is
-            // never reported as success and never clears restrictions first.
-            val commit = stateMutex.withLock {
-                when (val read = store.read(clock.currentEpochMillis())) {
-                    is LocalSessionResult.Failure -> null
-                    is LocalSessionResult.Success -> read.value
-                }
-            }
-            if (commit == null) {
-                mutableView.update { view ->
-                    view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt))
-                }
-            } else {
-                // The extension already cleared at expiry, so this clear runs even
-                // when the view never observed an apply: it converges the device to
-                // the expired row instead of leaving restrictions behind.
-                val cleared = try {
-                    portMutex.withLock { enforcement.clear() }
-                } catch (expectedCancellation: CancellationException) {
-                    throw expectedCancellation
-                } catch (_: Exception) {
-                    null
-                }
-                if (cleared == EnforcementOutcome.CLEARED) {
-                    enforcedIdentity = null
-                    mutableView.update { EnforcementViewState() }
-                } else {
-                    mutableView.update { view ->
-                        view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
-                    }
-                }
-                settle(commit)
-            }
+        if (pendingNativeExpiry != null && pendingNativeExpiry != tag) {
+            // The row moved on; the stale pending observation is moot. A future
+            // schedule clears the leftover native record.
+            pendingNativeExpiry = null
+        }
+        val observed = try {
+            enforcement.peekSuspendedExpiry(sessionId)
+        } catch (expectedCancellation: CancellationException) {
+            throw expectedCancellation
+        } catch (_: Exception) {
+            false
+        } || pendingNativeExpiry == tag
+        if (observed) {
+            bankObservedExpiry(tag, record, sessionId)
         } else if (enforcement.status() == EnforcementOutcome.APPLIED) {
             enforcedIdentity = tag
             mutableView.update { view ->

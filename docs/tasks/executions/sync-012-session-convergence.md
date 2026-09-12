@@ -6,6 +6,7 @@
 - **Implementer:** Muse Code implementation agent (plan approved by maintainer 2026-09-12).
 - **Reviewer:** independent Codex agent `sync012_plan_review` (plan); completed-change reviewer assigned at implementation.
 - **Branch:** `feature/sync-012-session-convergence` (implementation; branched from `docs/sync-012-plan`).
+- **PR:** #51 (open, review via PR; physical Mac/iPhone matrix tracked as handoff).
 - **Updated:** `2026-09-12`
 
 ## Observed starting point

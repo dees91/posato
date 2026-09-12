@@ -13,6 +13,7 @@ import app.posato.feature.session.domain.SessionSetup
 import app.posato.feature.session.domain.SessionSetupFailure
 import app.posato.feature.session.domain.SessionSetupResult
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
@@ -49,6 +50,7 @@ internal class SessionViewModel(
     private val targetsState = MutableStateFlow(SessionTargetsState())
     private val command = MutableStateFlow<SessionCommand?>(null)
     private val confirmingEarlyEnd = MutableStateFlow(false)
+    private val confirmingSession = MutableStateFlow<SessionId?>(null)
     private val ownerStatuses: Flow<Unit> = owner.status.transform { status ->
         sessionLoad.update { SessionLoadState(status = status) }
         emit(Unit)
@@ -245,10 +247,14 @@ internal class SessionViewModel(
                 owner.view.value,
             )
             if (current.canRequestEarlyEnd()) {
+                // The confirmation belongs to the session on screen now, not to
+                // whichever session later occupies the row.
+                confirmingSession.update { (sessionLoad.value.status as? Active)?.record?.sessionId }
                 confirmingEarlyEnd.update { true }
             }
         } else {
             confirmingEarlyEnd.update { false }
+            confirmingSession.update { null }
         }
     }
 
@@ -257,10 +263,17 @@ internal class SessionViewModel(
         if (status !is Active || command.value != null) {
             return
         }
-        // The confirmation ends the identifier shown to the person, not whichever
-        // session later occupies the row: the owner refuses a stale identifier.
-        val confirmed = status.record.sessionId
+        val confirmed = confirmingSession.value
+        if (confirmed == null || confirmed != status.record.sessionId) {
+            // The row moved on (or nothing was captured) while the dialog was
+            // open: never end the wrong session; close and re-derive instead.
+            confirmingEarlyEnd.update { false }
+            confirmingSession.update { null }
+            viewModelScope.refreshSession(owner, sessionLoad)
+            return
+        }
         confirmingEarlyEnd.update { false }
+        confirmingSession.update { null }
         command.update { SessionCommand.ENDING }
         viewModelScope.launch {
             try {

@@ -184,6 +184,13 @@ private class InertSuspendedExpiryProvider : IosSuspendedExpiryProvider {
     ) {
         throw UnsupportedOperationException()
     }
+
+    override fun acknowledgeReconciliation(
+        sessionId: String,
+        handler: (Boolean) -> Unit,
+    ) {
+        throw UnsupportedOperationException()
+    }
 }
 
 private class InertKeychainProvider : IosKeychainProvider {

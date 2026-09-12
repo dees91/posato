@@ -74,7 +74,11 @@ public interface EnforcementPort {
 
     public suspend fun status(): EnforcementOutcome
 
-    public suspend fun pollSuspendedExpiry(sessionId: String): Boolean {
+    public suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
         return false
+    }
+
+    public suspend fun acknowledgeSuspendedExpiry(sessionId: String): Boolean {
+        return true
     }
 }

@@ -118,12 +118,22 @@ class IosSessionEnforcementTest {
     }
 
     @Test
-    fun `given a cleared record when polling then expiry reads through for the exact session`() = runTest {
+    fun `given a cleared record when peeking then expiry reads through for the exact session`() = runTest {
         val providers = recordingProviders(reconciliation = IosExpiryReconciliation.EXPIRED)
         val enforcement = IosSessionEnforcement(providers.enforcement, providers.expiry)
 
-        assertTrue(enforcement.pollSuspendedExpiry("session"))
+        assertTrue(enforcement.peekSuspendedExpiry("session"))
         assertEquals("session", providers.scheduling.seenSessionId)
+    }
+
+    @Test
+    fun `given an acknowledged record when peeking then only the matching session consumes it`() = runTest {
+        val providers = recordingProviders(reconciliation = IosExpiryReconciliation.EXPIRED)
+        val enforcement = IosSessionEnforcement(providers.enforcement, providers.expiry)
+
+        assertFalse(enforcement.acknowledgeSuspendedExpiry("other"))
+        assertTrue(enforcement.acknowledgeSuspendedExpiry("session"))
+        assertEquals(listOf("other", "session"), providers.scheduling.acknowledgedSessionIds.sorted())
     }
 
     private fun request(
@@ -181,6 +191,8 @@ class IosSessionEnforcementTest {
             private set
         var seenSessionId: String? = null
             private set
+        val acknowledgedSessionIds = mutableListOf<String>()
+        var reconciledSessionIds: Set<String> = setOf("session")
 
         override fun schedule(
             request: IosSuspendedExpiryRequest,
@@ -202,6 +214,15 @@ class IosSessionEnforcementTest {
         ) {
             seenSessionId = sessionId
             handler(reconciliation)
+        }
+
+        override fun acknowledgeReconciliation(
+            sessionId: String,
+            handler: (Boolean) -> Unit,
+        ) {
+            calls.addLast("acknowledge")
+            acknowledgedSessionIds += sessionId
+            handler(sessionId in reconciledSessionIds)
         }
     }
 }
