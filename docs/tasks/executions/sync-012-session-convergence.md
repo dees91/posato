@@ -1,11 +1,11 @@
 # Execution: `SYNC-012`
 
 - **Brief:** [Session convergence](../specifications/sync-012-session-convergence.md)
-- **Status:** `active` (planning only)
+- **Status:** `active` (implementation; D1–D3 accepted 2026-09-12)
 - **Review tier:** `high-risk`
-- **Implementer:** unassigned; this change prepares the task only.
+- **Implementer:** Muse Code implementation agent (plan approved by maintainer 2026-09-12).
 - **Reviewer:** independent Codex agent `sync012_plan_review` (plan); completed-change reviewer assigned at implementation.
-- **Branch:** `docs/sync-012-plan` (planning); implementation branch chosen when activated.
+- **Branch:** `feature/sync-012-session-convergence` (implementation; branched from `docs/sync-012-plan`).
 - **Updated:** `2026-09-12`
 
 ## Observed starting point
@@ -38,7 +38,7 @@
 - **Critical or Required findings:** none.
 - **Evidence:** reviewer inspected both planning documents in full, reducer/writer behavior and tests, session store/coordinator, AppleSync, enforcement ports, native iOS expiry handoff, and the referenced task/design/session authorities; `git diff --check` passed. No application tests were run for this planning-only change.
 - **Advisory:** P2 highlighted the native iOS expiry handoff. The AC-03 fault matrix now names that boundary explicitly; this adds no separate tooling task or unconditional native redesign.
-- **Resolution:** independent plan review is complete; D1–D3 remain unaccepted proposals.
+- **Resolution:** independent plan review is complete; maintainer approved the plan and accepted D1–D3 on 2026-09-12. The plan-review condition is satisfied; implementation authorized.
 
 ## Planned validation
 
@@ -65,12 +65,17 @@ Mac administrator confirmation is a maintainer-attended step. The driver cannot 
 
 ## Result and checks so far
 
-- Planning documents only; application implementation and runtime validation have not started.
+- Planning phase complete (brief, independent plan review with no Required findings, D1–D3 accepted 2026-09-12); implementation in progress on this branch.
 - Source inspection covers the reducer/writer, Apple sync orchestration, session store/schema, ViewModel/coordinator, accepted authorities, and verification recipes listed above.
-- Documentation self-check passed: local link targets exist and diff whitespace is clean. Independent plan review approved the technical plan with no Required findings; planned application tests above have not run.
+- Documentation self-check passed: local link targets exist and diff whitespace is clean. The planned application tests have since run; see the passes below.
+- Implementation debug pass 2026-09-12 (`observed`): the `Inactive` reconciler branch never adopted a remote `Current` candidate, so no peer adoption converged; fixed by adopting only currently eligible starts (never ended/expired/future, never over a mid-flight local command). The owner tick dedup keyed on identity/deadline only, so an Active to Ended transition on one row never settled; fixed by tracking the active kind alongside the tag. A deliberate early end from an adopted row recorded no intent, so the receiving peer's end never converged; fixed in the store and the reconciler seed gate per AC-05 (`end from the receiving peer`), with no-ended-backfill scoping kept in the seed gate (the workspace must already hold the un-ended start). The owner also returned a stale fresh read instead of a failed commit (START_FAILED/END_FAILED unreachable) and cleared an end twice (synchronously plus via settle); both fixed so settle owns the transition exactly once. All temporary debug prints and the temporary probe test are removed.
+- Test corrections 2026-09-12 (`inferred`, same pass): the adopted-end store test now expects the propagated end intent per AC-05; the expiry test clears setup enforcement history before the restart phase (same pattern as the replacement test) so the revival check starts clean; the removal test performs the explicit re-link its comments describe (SYNC-015 resets the replica continuation, so the replica is only readable after the fresh link refetches it), asserts exactly the original start is accepted back with no replay, then ends the preserved session before starting fresh (the store refuses start-over-active with ALREADY_ACTIVE) with a double exchange for the round trip. The superseded writer-level `evaluateSession` was removed after migrating its one cancellation-safety test to `sessionCandidate`.
+- Deterministic evidence 2026-09-12 (`observed`): full `:shared:jvmTest` green, `:shared:iosSimulatorArm64Test` green. detekt initially reported 16 branch findings; 15 were fixed by refactoring (unused parameters, return counts, seed complexity, intent-log split, dead API removal, DI inlining, `sessionTriggers` fun-to-val, ViewModel helper extraction).
+- Suppression decision (`user-confirmed`, 2026-09-12): one class-scoped `@Suppress("TooManyFunctions")` on `SessionTransitionOwner` (24 functions, limit 11) approved by the maintainer after the written justification (single serialized owner per the accepted plan; no sub-11 partition; split-brain hazard). The annotation is applied and its exact-match entry recorded in the `verifyApprovedQualityExceptions` allowlist in `build.gradle.kts`; no other suppression was added.
+- `./gradlew quality` green in full on 2026-09-12 (`observed`): ktlint (after autocorrect of branch formatting plus a `-Werror` unused-expression fix in `runExchange`), detekt, the suppression-allowlist gate, iOS Swift tests, host builds, desktop packaging, and all compiled targets/tests.
 
 ## Blockers and decisions
 
-- D1–D3 remain proposed product/lifecycle behavior, requiring maintainer acceptance before dependent implementation.
+- D1–D3 decided (`user-confirmed`, 2026-09-12): D1 link-once-active-only with consent copy, D2 removal preserves the local session while discarding old-workspace intent, D3 remote start via existing port / Mac Resume flow.
 - Physical completion requires the provisioned linked Mac/iPhone and attended Mac authorization. Missing hardware or permission is a named blocker, not substitute Simulator evidence.
 - Best-effort delivery, local authorization, current-policy reapply, and platform expiry limits remain unchanged. This task does not close MVP-001 or public-release readiness.

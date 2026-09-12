@@ -144,6 +144,103 @@ class SyncReducerTest {
     }
 
     @Test
+    fun `given an active start when described then the current candidate carries the start`() {
+        val sessionId = SessionId(testIdentifier(90))
+        val projection = SyncReducer.reduce(
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+            ),
+        )
+
+        val candidate = assertIs<SessionCandidate.Current>(SyncReducer.describeSession(projection, 150, emptySet()))
+
+        assertEquals(sessionId, candidate.start.sessionId)
+        assertEquals(100, candidate.start.startEpochMillis)
+        assertEquals(200, candidate.start.mandatoryEndEpochMillis)
+        assertIs<EffectiveSession.Active>(SyncReducer.evaluateSession(projection, 150, emptySet()))
+    }
+
+    @Test
+    fun `given a matching end when described then the conclusion is ended`() {
+        val sessionId = SessionId(testIdentifier(91))
+        val projection = SyncReducer.reduce(
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+                testOperation(3, 3, SyncOperationPayload.SessionEnd(sessionId)),
+            ),
+        )
+
+        val candidate = assertIs<SessionCandidate.Concluded>(SyncReducer.describeSession(projection, 150, emptySet()))
+
+        assertEquals(sessionId, candidate.sessionId)
+        assertEquals(SessionConclusionKind.ENDED, candidate.kind)
+        assertIs<EffectiveSession.Inactive>(SyncReducer.evaluateSession(projection, 150, emptySet()))
+    }
+
+    @Test
+    fun `given a passed mandatory end when described then the conclusion is expired`() {
+        val sessionId = SessionId(testIdentifier(92))
+        val projection = SyncReducer.reduce(
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+            ),
+        )
+
+        val candidate = assertIs<SessionCandidate.Concluded>(SyncReducer.describeSession(projection, 250, emptySet()))
+
+        assertEquals(sessionId, candidate.sessionId)
+        assertEquals(SessionConclusionKind.EXPIRED, candidate.kind)
+        assertIs<EffectiveSession.Inactive>(SyncReducer.evaluateSession(projection, 250, emptySet()))
+    }
+
+    @Test
+    fun `given a banked expiry fact when described before the end then the conclusion stays expired`() {
+        val sessionId = SessionId(testIdentifier(93))
+        val projection = SyncReducer.reduce(
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(2, 2, SyncOperationPayload.SessionStart(sessionId, 100, 200)),
+            ),
+        )
+
+        val candidate = assertIs<SessionCandidate.Concluded>(SyncReducer.describeSession(projection, 150, setOf(sessionId)))
+
+        assertEquals(sessionId, candidate.sessionId)
+        assertEquals(SessionConclusionKind.EXPIRED, candidate.kind)
+        assertIs<EffectiveSession.Inactive>(SyncReducer.evaluateSession(projection, 150, setOf(sessionId)))
+    }
+
+    @Test
+    fun `given only a future start when described then the future candidate is reported`() {
+        val sessionId = SessionId(testIdentifier(94))
+        val projection = SyncReducer.reduce(
+            listOf(
+                testOperation(1, 1, SyncOperationPayload.AuthorRegister),
+                testOperation(2, 2, SyncOperationPayload.SessionStart(sessionId, 300, 400)),
+            ),
+        )
+
+        val candidate = assertIs<SessionCandidate.Future>(SyncReducer.describeSession(projection, 150, emptySet()))
+
+        assertEquals(sessionId, candidate.start.sessionId)
+        assertIs<EffectiveSession.Inactive>(SyncReducer.evaluateSession(projection, 150, emptySet()))
+        assertIs<SessionCandidate.Current>(SyncReducer.describeSession(projection, 350, emptySet()))
+    }
+
+    @Test
+    fun `given no session operations when described then there is no candidate`() {
+        val projection = SyncReducer.reduce(
+            listOf(testOperation(1, 1, SyncOperationPayload.AuthorRegister)),
+        )
+
+        assertIs<SessionCandidate.None>(SyncReducer.describeSession(projection, 150, emptySet()))
+        assertIs<EffectiveSession.Inactive>(SyncReducer.evaluateSession(projection, 150, emptySet()))
+    }
+
+    @Test
     fun `given seeded delivery permutations and duplicates when reduced then projection and digest always converge`() {
         val first = checkNotNull(ExactDomain.restore("first.example"))
         val second = checkNotNull(ExactDomain.restore("second.example"))

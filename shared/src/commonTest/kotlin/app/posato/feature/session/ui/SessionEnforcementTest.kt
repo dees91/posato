@@ -354,16 +354,19 @@ class SessionEnforcementTest {
         domains: List<String> = emptyList(),
         enforcement: FakeEnforcementPort = FakeEnforcementPort(),
     ): SessionViewModel {
+        val policyStore = policyStoreOf(domains)
+        val mappings = FakeSessionMappings()
+        val owner = sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher)
         val viewModel = SessionViewModel(
-            store,
-            policyStoreOf(domains),
-            FakeSessionMappings(),
+            policyStore,
+            mappings,
             FakeSessionIdGenerator(),
             clock,
             FakeSessionTimeFormat(),
-            enforcement,
+            owner,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
+        viewModel.onScreenEntered()
         scheduler.runCurrent()
 
         return viewModel

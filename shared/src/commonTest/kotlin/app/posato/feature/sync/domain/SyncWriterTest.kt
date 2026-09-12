@@ -356,7 +356,10 @@ class SyncWriterCancellationTest {
         expiryJob.join()
 
         assertTrue(expiryJob.isCancelled)
-        assertIs<EffectiveSession.Inactive>(writer.evaluateSession(150))
+        // sessionCandidate supersedes the writer-level evaluateSession: a banked
+        // terminal fact concludes the session instead of reviving it.
+        val candidate = assertIs<SessionCandidate.Concluded>(writer.sessionCandidate(150))
+        assertEquals(sessionId, candidate.sessionId)
     }
 }
 

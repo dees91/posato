@@ -29,6 +29,7 @@ internal sealed interface LocalSessionStatus {
         val record: SessionRecord,
         val remainingMillis: Long,
         val frozenStartSet: FrozenStartSet? = null,
+        val origin: SessionOrigin,
     ) : LocalSessionStatus {
         override fun toString(): String {
             return "LocalSessionStatus.Active(redacted)"
@@ -38,6 +39,7 @@ internal sealed interface LocalSessionStatus {
     data class Ended(
         val record: SessionRecord,
         val kind: SessionEndKind,
+        val origin: SessionOrigin,
     ) : LocalSessionStatus {
         override fun toString(): String {
             return "LocalSessionStatus.Ended(redacted)"

@@ -125,6 +125,9 @@ val verifyApprovedQualityExceptions by tasks.registering(VerifyApprovedQualityEx
             "shared/src/iosMain/kotlin/app/posato/feature/targets/domain/ApplicationPolicyName.ios.kt:" +
                 annotationMarker + "file:$exceptionName(\"CAST_NEVER_SUCCEEDS\")" +
                 "\n\npackage app.posato.feature.targets.domain",
+            "shared/src/commonMain/kotlin/app/posato/feature/session/ui/SessionTransitionOwner.kt:" +
+                annotationMarker + exceptionName + "(\"TooManyFunctions\")" +
+                "\ninternal class SessionTransitionOwner(",
         ),
     )
 }

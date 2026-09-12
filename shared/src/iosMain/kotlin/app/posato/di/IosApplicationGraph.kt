@@ -15,12 +15,14 @@ import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.UnavailableMacHelper
 import app.posato.feature.onboarding.data.SqlLocalSetupStore
 import app.posato.feature.session.IosSessionTimeFormat
-import app.posato.feature.session.data.LocalSessionStore
+import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SqlLocalSessionStore
 import app.posato.feature.session.domain.RandomSessionIdGenerator
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.session.ui.SessionTransitionOwner
+import app.posato.feature.session.ui.loadSessionTargets
 import app.posato.feature.sync.bootstrap.AppleBootstrap
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.BootstrapCoordinator
@@ -58,7 +60,6 @@ import platform.posix.time
 @DependencyGraph(AppScope::class)
 internal interface IosApplicationGraph : ApplicationGraph {
     val localTargetPolicyStore: LocalTargetPolicyStore
-    val syncReplicaStore: SyncReplicaStore
     val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
         get() {
@@ -125,23 +126,37 @@ internal interface IosApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideSyncReplicaStore(
-        database: PosatoDatabase,
-        @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): SyncReplicaStore {
-        return SqlSyncReplicaStore(database, databaseDispatcher)
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
     fun provideSessionStore(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): LocalSessionStore {
+    ): LocalSessionSyncStore {
         return SqlLocalSessionStore(
             database = database,
             databaseDispatcher = databaseDispatcher,
         )
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionOwner(
+        sync: AppleSync,
+        sessions: LocalSessionSyncStore,
+        enforcement: EnforcementPort,
+        clock: SessionClock,
+        policyStore: LocalTargetPolicyStore,
+        applicationMappings: LocalApplicationMappings,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+    ): SessionTransitionOwner {
+        val owner = SessionTransitionOwner(
+            backgroundDispatcher = databaseDispatcher,
+            store = sessions,
+            clock = clock,
+            enforcement = enforcement,
+            loadTargets = { loadSessionTargets(policyStore, applicationMappings) },
+            triggers = sync.sessionTriggers,
+        )
+        sync.sessionObserver = owner
+        return owner
     }
 
     @Provides
@@ -169,7 +184,6 @@ internal interface IosApplicationGraph : ApplicationGraph {
         mailboxProvider: IosCloudKitMailboxProvider,
         cryptoProvider: IosCryptoProvider,
         database: PosatoDatabase,
-        replica: SyncReplicaStore,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         policySync: LocalPolicySyncStore,
     ): AppleSync {
@@ -178,6 +192,7 @@ internal interface IosApplicationGraph : ApplicationGraph {
         val store = SqlBootstrapStore(database, databaseDispatcher)
         val mailbox = IosMailboxAdapter(mailboxProvider)
         val coordinator = BootstrapCoordinator(keys, IosBootstrapCloudAdapter(mailboxProvider), keys, store, crypto, mailbox)
+        val replica = SqlSyncReplicaStore(database, databaseDispatcher)
         val core = SyncOperationCore(replica, crypto, SyncWallClock { time(null) * MILLIS_PER_SECOND })
         return AppleSync(coordinator, core, IosMailboxAdapter(mailboxProvider), keys, store, policySync, crypto, Dispatchers.IO)
     }

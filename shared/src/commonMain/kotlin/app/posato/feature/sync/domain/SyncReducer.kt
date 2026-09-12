@@ -55,6 +55,36 @@ internal sealed interface EffectiveSession {
     }
 }
 
+internal enum class SessionConclusionKind {
+    ENDED,
+    EXPIRED,
+}
+
+internal sealed interface SessionCandidate {
+    data object None : SessionCandidate
+
+    data class Current(
+        val start: SynchronizedSessionStart,
+    ) : SessionCandidate {
+        override fun toString(): String {
+            return "SessionCandidate.Current(redacted)"
+        }
+    }
+
+    data class Future(
+        val start: SynchronizedSessionStart,
+    ) : SessionCandidate {
+        override fun toString(): String {
+            return "SessionCandidate.Future(redacted)"
+        }
+    }
+
+    data class Concluded(
+        val sessionId: SessionId,
+        val kind: SessionConclusionKind,
+    ) : SessionCandidate
+}
+
 internal object SyncReducer {
     fun reduce(operations: Collection<SyncOperation>): SyncProjection {
         val uniqueOperations = operations.distinctBy(SyncOperation::operationId)
@@ -73,20 +103,38 @@ internal object SyncReducer {
         evaluationEpochMillis: Long,
         terminalExpiryFacts: Set<SessionId>,
     ): EffectiveSession {
-        val candidate = projection.eligibleSessionStarts
+        return when (val candidate = describeSession(projection, evaluationEpochMillis, terminalExpiryFacts)) {
+            is SessionCandidate.Current -> {
+                EffectiveSession.Active(candidate.start.sessionId, candidate.start.mandatoryEndEpochMillis)
+            }
+
+            else -> {
+                EffectiveSession.Inactive
+            }
+        }
+    }
+
+    fun describeSession(
+        projection: SyncProjection,
+        evaluationEpochMillis: Long,
+        terminalExpiryFacts: Set<SessionId>,
+    ): SessionCandidate {
+        val current = projection.eligibleSessionStarts
             .asSequence()
             .filter { start -> start.startEpochMillis <= evaluationEpochMillis }
             .maxByOrNull(SynchronizedSessionStart::order)
-            ?: return EffectiveSession.Inactive
-        val isActive = !candidate.isEnded &&
-            candidate.sessionId !in terminalExpiryFacts &&
-            evaluationEpochMillis < candidate.mandatoryEndEpochMillis
-
-        return if (isActive) {
-            EffectiveSession.Active(candidate.sessionId, candidate.mandatoryEndEpochMillis)
-        } else {
-            EffectiveSession.Inactive
+        if (current != null) {
+            val live = !current.isEnded &&
+                current.sessionId !in terminalExpiryFacts &&
+                evaluationEpochMillis < current.mandatoryEndEpochMillis
+            val kind = if (current.isEnded) SessionConclusionKind.ENDED else SessionConclusionKind.EXPIRED
+            return if (live) SessionCandidate.Current(current) else SessionCandidate.Concluded(current.sessionId, kind)
         }
+        val future = projection.eligibleSessionStarts
+            .asSequence()
+            .filter { start -> start.startEpochMillis > evaluationEpochMillis }
+            .maxByOrNull(SynchronizedSessionStart::order)
+        return if (future == null) SessionCandidate.None else SessionCandidate.Future(future)
     }
 
     private fun applicableOperations(operations: Collection<SyncOperation>): List<SyncOperation> {

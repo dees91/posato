@@ -2,6 +2,8 @@ package app.posato.feature.session.data
 
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
+import app.posato.feature.session.domain.SequencedSessionIntent
+import app.posato.feature.session.domain.SessionSyncWrite
 import app.posato.feature.sync.domain.SessionId
 
 internal enum class LocalSessionFailure {
@@ -35,7 +37,29 @@ internal interface LocalSessionStore {
         endEpochMillis: Long,
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
+        workspaceId: ByteArray? = null,
     ): LocalSessionResult<LocalSessionStatus>
 
-    suspend fun endEarly(nowEpochMillis: Long): LocalSessionResult<LocalSessionStatus>
+    suspend fun endEarly(
+        nowEpochMillis: Long,
+        workspaceId: ByteArray? = null,
+    ): LocalSessionResult<LocalSessionStatus>
+
+    suspend fun adopt(
+        sessionId: SessionId,
+        startEpochMillis: Long,
+        endEpochMillis: Long,
+        nowEpochMillis: Long,
+        frozenStartSet: FrozenStartSet,
+    ): LocalSessionResult<LocalSessionStatus>
+}
+
+internal interface LocalSessionSyncStore : LocalSessionStore {
+    suspend fun recordIntents(write: SessionSyncWrite): LocalSessionResult<Unit>
+
+    suspend fun readIntents(): LocalSessionResult<List<SequencedSessionIntent>>
+
+    suspend fun deleteIntent(sequence: Long): LocalSessionResult<Unit>
+
+    suspend fun clearIntents(): LocalSessionResult<Unit>
 }

@@ -25,10 +25,8 @@ import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
-import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.MacSetupPresentation
-import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
@@ -39,13 +37,12 @@ import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun SessionScreen(
-    sessionStore: LocalSessionStore,
     policyStore: LocalTargetPolicyStore,
     applicationMappings: LocalApplicationMappings,
     sessionIds: SessionIdGenerator,
     clock: SessionClock,
     timeFormat: SessionTimeFormat,
-    enforcement: EnforcementPort,
+    owner: SessionTransitionOwner,
     onOpenPausedItems: () -> Unit,
     modifier: Modifier = Modifier,
     layout: PosatoLayout = PosatoLayout.Compact,
@@ -54,7 +51,7 @@ internal fun SessionScreen(
     macSetupState: MacHelperSetupUiState? = null,
     onMacSetupAnnouncement: (String) -> Unit = {},
     viewModel: SessionViewModel = viewModel {
-        SessionViewModel(sessionStore, policyStore, applicationMappings, sessionIds, clock, timeFormat, enforcement)
+        SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
     },
 ) {
     val state by viewModel.uiState.collectAsState()

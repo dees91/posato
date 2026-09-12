@@ -5,7 +5,7 @@
 - **Dependencies:** merged `SYNC-011`, `SESSION-002`, and follow-ups `SESSION-003` and `SYNC-015`; historical physical-check limits remain explicit in the execution plan.
 - **Integration group:** `PR-SESSION-SYNC`, roadmap wave P4/W4.4.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md), [MVP scope](../../product/mvp-scope.md), [ADR 0006](../../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md), [ADR 0007](../../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md), [SESSION-003](session-003-frozen-start-set.md), [DESIGN.md](../../../DESIGN.md), and [threat model A-02/A-03](../../security/apple-mvp-threat-model.md).
-- **Planning status:** Draft for maintainer acceptance of D1–D3 below; preparing this brief does not authorize application changes.
+- **Planning status:** D1–D3 accepted by the maintainer on 2026-09-12; implementation authorized.
 
 ## Outcome
 
@@ -36,6 +36,6 @@ After a successful exchange, a linked Mac and iPhone derive the same eligible se
 
 ## Decisions for maintainer acceptance
 
-- `D1` — **Proposed:** explicit linking publishes only a still-active local session, once, with its original identifier and end; no ended-session backfill. It then competes with remote starts by ADR 0006 order. Update consent copy to disclose session sharing; linking may replace the local candidate.
-- `D2` — **Proposed:** successful workspace removal preserves the current bounded session locally, while discarding old-workspace pending sync intent and association. Local early end/expiry still works; a later explicit link follows D1. Failed removal preserves retry state.
-- `D3` — **Proposed:** a remote start on an already authorized iPhone applies through the existing port; on Mac, use the existing explicit Resume restrictions flow when application requires an administrator prompt. A received timer is never presented as proof of enforcement, and no remote operation grants permission.
+- `D1` — **Decided (`user-confirmed`, 2026-09-12):** explicit linking publishes only a still-active local session, once, with its original identifier and end; no ended-session backfill. It then competes with remote starts by ADR 0006 order. Update consent copy to disclose session sharing; linking may replace the local candidate.
+- `D2` — **Decided (`user-confirmed`, 2026-09-12):** successful workspace removal preserves the current bounded session locally, while discarding old-workspace pending sync intent and association. Local early end/expiry still works; a later explicit link follows D1. Failed removal preserves retry state.
+- `D3` — **Decided (`user-confirmed`, 2026-09-12):** a remote start on an already authorized iPhone applies through the existing port; on Mac, use the existing explicit Resume restrictions flow when application requires an administrator prompt. A received timer is never presented as proof of enforcement, and no remote operation grants permission.

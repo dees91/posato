@@ -368,9 +368,9 @@ internal class SyncWriter internal constructor(
             return checkpoint.pendingBundles.values.toList()
         }
 
-    fun evaluateSession(evaluationEpochMillis: Long): EffectiveSession {
+    fun sessionCandidate(evaluationEpochMillis: Long): SessionCandidate {
         val snapshot = checkpoint
-        return SyncReducer.evaluateSession(
+        return SyncReducer.describeSession(
             SyncReducer.reduce(snapshot.acceptedBundles.values.map { stored -> stored.operation }),
             evaluationEpochMillis,
             snapshot.terminalExpiryFacts,

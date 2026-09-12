@@ -53,14 +53,17 @@ class SessionViewModelTest {
     @Test
     fun `given uiState without a collector when ViewModel is created then storage is not read`() = runTest(dispatcher) {
         val store = FakeLocalSessionStore()
+        val policyStore = policyStoreOf()
+        val mappings = FakeSessionMappings()
+        val clock = FakeSessionClock(NOW)
+        val enforcement = FakeEnforcementPort()
         SessionViewModel(
-            store,
-            policyStoreOf(),
-            FakeSessionMappings(),
+            policyStore,
+            mappings,
             FakeSessionIdGenerator(),
-            FakeSessionClock(NOW),
+            clock,
             FakeSessionTimeFormat(),
-            FakeEnforcementPort(),
+            sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher),
         )
         scheduler.runCurrent()
 
@@ -76,14 +79,15 @@ class SessionViewModelTest {
 
     @Test
     fun `given a loading status when entering setup then setup stays closed`() = runTest(dispatcher) {
+        val policyStore = policyStoreOf()
+        val mappings = FakeSessionMappings()
         val viewModel = SessionViewModel(
-            FakeLocalSessionStore(),
-            policyStoreOf(),
-            FakeSessionMappings(),
+            policyStore,
+            mappings,
             FakeSessionIdGenerator(),
             FakeSessionClock(NOW),
             FakeSessionTimeFormat(),
-            FakeEnforcementPort(),
+            sessionOwnerOf(FakeLocalSessionStore(), FakeEnforcementPort(), FakeSessionClock(NOW), policyStore, mappings, dispatcher = dispatcher),
         )
 
         viewModel.setSetupVisible(true)
@@ -353,16 +357,18 @@ class SessionViewModelTest {
     @Test
     fun `given a policy signal during setup when observed then targets refresh and the draft survives`() = runTest(dispatcher) {
         val policy = policyStoreOf(listOf("old.example"))
+        val mappings = FakeSessionMappings()
+        val clock = FakeSessionClock(NOW)
         val viewModel = SessionViewModel(
-            FakeLocalSessionStore(),
             policy,
-            FakeSessionMappings(),
+            mappings,
             FakeSessionIdGenerator(),
-            FakeSessionClock(NOW),
+            clock,
             FakeSessionTimeFormat(),
-            FakeEnforcementPort(),
+            sessionOwnerOf(FakeLocalSessionStore(), FakeEnforcementPort(), clock, policy, mappings, dispatcher = dispatcher),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
+        viewModel.onScreenEntered()
         scheduler.runCurrent()
         viewModel.setSetupVisible(true)
         scheduler.runCurrent()
@@ -386,16 +392,18 @@ class SessionViewModelTest {
         mappings: FakeSessionMappings = FakeSessionMappings(),
         enforcement: FakeEnforcementPort = FakeEnforcementPort(),
     ): SessionViewModel {
+        val policyStore = policyStoreOf(domains, groupName)
+        val owner = sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher)
         val viewModel = SessionViewModel(
-            store,
-            policyStoreOf(domains, groupName),
+            policyStore,
             mappings,
             FakeSessionIdGenerator(),
             clock,
             FakeSessionTimeFormat(),
-            enforcement,
+            owner,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
+        viewModel.onScreenEntered()
         scheduler.runCurrent()
 
         return viewModel

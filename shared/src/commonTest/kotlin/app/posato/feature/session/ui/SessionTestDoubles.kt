@@ -4,6 +4,9 @@ import app.posato.feature.enforcement.EnforcementApplyReport
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.EnforcementRequest
+import app.posato.feature.session.data.SessionSyncTriggers
+import app.posato.feature.session.data.SessionWorkspaceCapture
+import app.posato.feature.session.domain.FakeSessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.domain.SessionId
@@ -18,6 +21,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
@@ -98,6 +102,39 @@ internal class FakeEnforcementPort(
         expiredSessionIds -= sessionId
         return expired
     }
+}
+
+internal class FakeSessionSyncTriggers(
+    var capture: SessionWorkspaceCapture = SessionWorkspaceCapture.Unlinked,
+) : SessionSyncTriggers {
+    var syncRequests: Int = 0
+
+    override suspend fun captureWorkspace(): SessionWorkspaceCapture {
+        return capture
+    }
+
+    override fun requestSync() {
+        syncRequests += 1
+    }
+}
+
+internal fun sessionOwnerOf(
+    store: FakeLocalSessionStore,
+    enforcement: FakeEnforcementPort,
+    clock: FakeSessionClock,
+    policyStore: LocalTargetPolicyStore,
+    mappings: LocalApplicationMappings,
+    triggers: FakeSessionSyncTriggers = FakeSessionSyncTriggers(),
+    dispatcher: CoroutineDispatcher,
+): SessionTransitionOwner {
+    return SessionTransitionOwner(
+        backgroundDispatcher = dispatcher,
+        store = store,
+        clock = clock,
+        enforcement = enforcement,
+        loadTargets = { loadSessionTargets(policyStore, mappings) },
+        triggers = triggers,
+    )
 }
 
 internal class FakeSessionMappings(
