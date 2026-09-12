@@ -7,67 +7,106 @@ struct RecordDeletion: Sendable {
   func deleteWorkspaceRecords(
     timeout: TimeInterval,
     resumeToken: Data? = nil,
-    pageBudget: Int = SyncLimits.recordDeletePageBudget
+    pageBudget: Int = SyncLimits.recordDeletePageBudget,
+    deadlineNanoseconds: UInt64 = .max,
+    nowNanoseconds: @Sendable @escaping () -> UInt64 = { DispatchTime.now().uptimeNanoseconds }
   ) -> RecordDeleteNative {
+    guard let (phase, server) = splitDeleteResumeToken(resumeToken) else {
+      return .integrityFailure
+    }
     var pass = DeletePass(
-      backend: backend, timeout: timeout, token: resumeToken, pagesLeft: pageBudget
+      backend: backend, timeout: timeout, deadlineNanoseconds: deadlineNanoseconds,
+      nowNanoseconds: nowNanoseconds, phase: phase, token: server, previous: server,
+      pagesLeft: pageBudget
     )
-    if let outcome = pass.drainBundles() {
-      return outcome
-    }
-    if let outcome = pass.removeAnchor() {
-      return outcome
-    }
-    return pass.verifyAbsent()
+    return pass.runDelete()
   }
 
   func sweepBundlesIfAnchorMissing(
     timeout: TimeInterval,
     resumeToken: Data? = nil,
-    pageBudget: Int = SyncLimits.recordDeletePageBudget
+    pageBudget: Int = SyncLimits.recordDeletePageBudget,
+    deadlineNanoseconds: UInt64 = .max,
+    nowNanoseconds: @Sendable @escaping () -> UInt64 = { DispatchTime.now().uptimeNanoseconds }
   ) -> BundleSweepNative {
     var pass = DeletePass(
-      backend: backend, timeout: timeout, token: resumeToken, pagesLeft: pageBudget
+      backend: backend, timeout: timeout, deadlineNanoseconds: deadlineNanoseconds,
+      nowNanoseconds: nowNanoseconds, phase: .traverse, token: resumeToken, previous: resumeToken,
+      pagesLeft: pageBudget
     )
     return pass.runSweep()
   }
 
-  private func mapFault(_ fault: BackendFault) -> RecordDeleteNative {
-    switch fault {
-    case .retryable:
-      return .retryable
-    case .unknown:
-      return .unknownOutcome
-    }
-  }
-
-  private func mapSweepFault(_ fault: BackendFault) -> BundleSweepNative {
-    switch fault {
-    case .retryable:
-      return .retryable
-    case .unknown:
-      return .unknownOutcome
-    }
-  }
 }
 
 /// One bounded traversal pass. The token advances only past pages whose
 /// bundles were deleted, so a token handed to the next request implies every
 /// earlier page is gone; a killed request resumes from the previous token.
-private struct DeletePass {
+/// The pass carries its phase in the token: traversal deletes enumerated
+/// sets with the own anchor present, while verification runs only after this
+/// pass deleted the anchor and aborts on any live bundle or present anchor.
+struct DeletePass {
   let backend: any CloudBackend
   let timeout: TimeInterval
+  let deadlineNanoseconds: UInt64
+  let nowNanoseconds: @Sendable () -> UInt64
+  var phase: DeleteResumePhase
   var token: Data?
+  var previous: Data?
   var pagesLeft: Int
   var restarted = false
-  var previous: Data?
+
+  mutating func runDelete() -> RecordDeleteNative {
+    if phase == .verify {
+      switch verifyEntryGate() {
+      case .proceed:
+        break
+      case .abort(let outcome):
+        return outcome
+      }
+      return verifyFromToken()
+    }
+    if let outcome = drainBundles() {
+      return outcome
+    }
+    if let outcome = removeAnchor() {
+      return outcome
+    }
+    phase = .verify
+    return verifyFromToken()
+  }
+
+  private enum EntryGate {
+    case proceed
+    case abort(RecordDeleteNative)
+  }
+
+  /// Verification runs only after this removal deleted the anchor, so any
+  /// present anchor belongs to a concurrently established workspace: abort
+  /// without touching or trusting anything it published.
+  private func verifyEntryGate() -> EntryGate {
+    switch backend.fetchRecord(name: CloudNames.anchorName, timeout: callTimeout()) {
+    case .missing:
+      return .proceed
+    case .found:
+      return .abort(.unknownOutcome)
+    case .zoneMissing:
+      return .abort(.deletedAndAbsent)
+    case .failed(let fault):
+      return .abort(mapFault(fault))
+    }
+  }
 
   /// Deletes bundles page by page. Returns nil once the traversal is
-  /// exhausted and the anchor phase may run.
+  /// exhausted and the anchor phase may run. The drain intentionally reads
+  /// no anchor: full removal runs with the own anchor present, and presence
+  /// alone cannot tell it apart from a concurrently established one. A
+  /// foreign anchor is caught instead by the verify entry gate and the
+  /// anchor-delete tail below.
   mutating func drainBundles() -> RecordDeleteNative? {
     while true {
-      if pagesLeft <= 0 {
-        return incomplete()
+      if pagesLeft <= 0 || timeUp() {
+        return checkpoint()
       }
       switch nextPage() {
       case .zoneMissing:
@@ -86,7 +125,15 @@ private struct DeletePass {
         if let fault = delete(names: names) {
           return mapFault(fault)
         }
+        // Bank only past deleted pages: a checkpoint implies every earlier
+        // page is gone, so a resume never skips an enumerated set whose
+        // deletes never ran. Replaying a page after a kill is safe because
+        // deletes are idempotent; skipping one would strand live records
+        // behind the resumed token and the verify scan alike.
         token = pageToken
+        if timeUp() {
+          return checkpoint()
+        }
       }
     }
   }
@@ -97,7 +144,7 @@ private struct DeletePass {
     if let fault = delete(names: [CloudNames.anchorName]) {
       return mapFault(fault)
     }
-    switch backend.fetchRecord(name: CloudNames.anchorName, timeout: timeout) {
+    switch backend.fetchRecord(name: CloudNames.anchorName, timeout: callTimeout()) {
     case .missing, .zoneMissing:
       return nil
     case .found:
@@ -107,13 +154,14 @@ private struct DeletePass {
     }
   }
 
-  /// Confirms absence from the current token. Live bundles here mean a
-  /// concurrent publish, which removal must not delete blindly, so this
-  /// phase stays terminal: it reports unknown instead of resuming.
-  mutating func verifyAbsent() -> RecordDeleteNative {
+  /// Absence scan continuing from the drain's end token: the drain already
+  /// covered every earlier page, so only newer changes can appear here.
+  /// Live bundles mean a concurrent publish, which removal must not delete
+  /// blindly, so they abort as unknown instead.
+  mutating func verifyFromToken() -> RecordDeleteNative {
     while true {
-      if pagesLeft <= 0 {
-        return .unknownOutcome
+      if pagesLeft <= 0 || timeUp() {
+        return checkpoint()
       }
       switch nextPage() {
       case .zoneMissing:
@@ -128,99 +176,55 @@ private struct DeletePass {
         if !names.isEmpty {
           return .unknownOutcome
         }
+        // Verification deletes nothing, so banking past a confirmed-empty
+        // page keeps the checkpoint honest by construction.
         token = pageToken
+        if timeUp() {
+          return checkpoint()
+        }
       }
     }
   }
 
-  /// Sweeps leftover bundles while no anchor exists. Every page is
-  /// re-checked against the anchor after enumeration and before deletion,
-  /// so a bundle published under a freshly minted anchor is never removed.
-  mutating func runSweep() -> BundleSweepNative {
-    switch backend.fetchRecord(name: CloudNames.anchorName, timeout: timeout) {
-    case .missing:
-      break
-    case .found:
-      return .anchorPresent
-    case .zoneMissing:
-      return .swept
-    case .failed(let fault):
-      return mapSweepFault(fault)
+  /// Emits the resumable checkpoint, always carrying the phase: a nil
+  /// server token with the verify phase still resumes verifying instead of
+  /// re-entering traversal. A fresh traversal with nothing banked reports
+  /// plain retryable.
+  private func checkpoint() -> RecordDeleteNative {
+    if token == nil, phase == .traverse {
+      return .retryable
     }
-    while true {
-      switch sweepStep() {
-      case .proceed(let pageToken):
-        token = pageToken
-      case .done(let outcome):
-        return outcome
-      }
-    }
+    return .incomplete(cursor: encodeDeleteResumeToken(phase: phase, server: token))
   }
 
-  private enum SweepContinuation {
-    case proceed(token: Data)
-    case done(BundleSweepNative)
+  private func remainingNanoseconds() -> UInt64 {
+    let now = nowNanoseconds()
+    guard now < deadlineNanoseconds else {
+      return 0
+    }
+    return deadlineNanoseconds - now
   }
 
-  private mutating func sweepStep() -> SweepContinuation {
-    if pagesLeft <= 0 {
-      return .done(sweepIncomplete())
+  /// Per-call budget for each backend operation, shrinking as the pass
+  /// consumes the request deadline. No fetch or delete batch may start a
+  /// wait the checkpoint could not survive.
+  func callTimeout() -> TimeInterval {
+    if deadlineNanoseconds == .max {
+      return timeout
     }
-    switch nextPage() {
-    case .zoneMissing:
-      return .done(.swept)
-    case .failed(let fault):
-      return .done(mapSweepFault(fault))
-    case .exhausted(let names, _):
-      pagesLeft -= 1
-      return .done(deleteSweepPage(names: names))
-    case .page(let names, let pageToken):
-      pagesLeft -= 1
-      let outcome = deleteSweepPage(names: names)
-      if outcome != .swept {
-        return .done(outcome)
-      }
-      return .proceed(token: pageToken)
-    }
+    return TimeInterval(remainingNanoseconds()) / 1_000_000_000
   }
 
-  private mutating func deleteSweepPage(names: [String]) -> BundleSweepNative {
-    if names.isEmpty {
-      return .swept
+  func timeUp() -> Bool {
+    guard deadlineNanoseconds != .max else {
+      return false
     }
-    switch backend.fetchRecord(name: CloudNames.anchorName, timeout: timeout) {
-    case .missing:
-      break
-    case .found:
-      return .anchorPresent
-    case .zoneMissing:
-      return .swept
-    case .failed(let fault):
-      return mapSweepFault(fault)
-    }
-    if let fault = delete(names: names) {
-      return mapSweepFault(fault)
-    }
-    return .swept
+    return remainingNanoseconds() <= SyncLimits.deleteCheckpointReserveNanoseconds
   }
 
-  private func sweepIncomplete() -> BundleSweepNative {
-    guard let cursor = token else {
-      return .unknownOutcome
-    }
-    return .incomplete(cursor: cursor)
-  }
-
-  private func incomplete() -> RecordDeleteNative {
-    guard let cursor = token else {
-      return .unknownOutcome
-    }
-    return .incomplete(cursor: cursor)
-  }
-
-  private func delete(names: [String]) -> BackendFault? {
+  func delete(names: [String]) -> BackendFault? {
     for chunk in chunked(names, size: SyncLimits.recordDeleteBatchSize) {
-      switch backend.deleteRecords(names: chunk, timeout: timeout) {
+      switch backend.deleteRecords(names: chunk, timeout: callTimeout()) {
       case .deleted:
         break
       case .failed(let fault):
@@ -230,9 +234,9 @@ private struct DeletePass {
     return nil
   }
 
-  private mutating func nextPage() -> PageStep {
+  mutating func nextPage() -> PageStep {
     while true {
-      switch backend.fetchChanges(tokenData: token, timeout: timeout) {
+      switch backend.fetchChanges(tokenData: token, timeout: callTimeout()) {
       case .tokenExpired where !restarted:
         restart()
       case .tokenExpired:
@@ -257,13 +261,18 @@ private struct DeletePass {
     else {
       return .failed(.unknown)
     }
-    guard archived != previous else {
-      return .failed(.unknown)
-    }
-    previous = archived
+    // A repeated token with more pages coming means the server made no
+    // progress: abort instead of looping. A terminal page may legitimately
+    // echo the previous token, and every exhausted branch below leaves its
+    // loop, so the guard applies only while more pages remain.
     if fetched.moreComing {
+      guard archived != previous else {
+        return .failed(.unknown)
+      }
+      previous = archived
       return .page(names: names, token: archived)
     }
+    previous = archived
     return .exhausted(names: names, token: archived)
   }
 
@@ -282,17 +291,9 @@ private struct DeletePass {
     }
   }
 
-  private func mapSweepFault(_ fault: BackendFault) -> BundleSweepNative {
-    switch fault {
-    case .retryable:
-      return .retryable
-    case .unknown:
-      return .unknownOutcome
-    }
-  }
 }
 
-private enum PageStep {
+enum PageStep {
   case page(names: [String], token: Data)
   case exhausted(names: [String], token: Data)
   case zoneMissing
@@ -303,24 +304,32 @@ extension CloudStore {
   func deleteWorkspaceRecords(
     timeout: TimeInterval,
     resumeToken: Data? = nil,
-    pageBudget: Int = SyncLimits.recordDeletePageBudget
+    pageBudget: Int = SyncLimits.recordDeletePageBudget,
+    deadlineNanoseconds: UInt64 = .max,
+    nowNanoseconds: @Sendable @escaping () -> UInt64 = { DispatchTime.now().uptimeNanoseconds }
   ) -> RecordDeleteNative {
     return RecordDeletion(backend: backend).deleteWorkspaceRecords(
       timeout: timeout,
       resumeToken: resumeToken,
-      pageBudget: pageBudget
+      pageBudget: pageBudget,
+      deadlineNanoseconds: deadlineNanoseconds,
+      nowNanoseconds: nowNanoseconds
     )
   }
 
   func sweepBundlesIfAnchorMissing(
     timeout: TimeInterval,
     resumeToken: Data? = nil,
-    pageBudget: Int = SyncLimits.recordDeletePageBudget
+    pageBudget: Int = SyncLimits.recordDeletePageBudget,
+    deadlineNanoseconds: UInt64 = .max,
+    nowNanoseconds: @Sendable @escaping () -> UInt64 = { DispatchTime.now().uptimeNanoseconds }
   ) -> BundleSweepNative {
     return RecordDeletion(backend: backend).sweepBundlesIfAnchorMissing(
       timeout: timeout,
       resumeToken: resumeToken,
-      pageBudget: pageBudget
+      pageBudget: pageBudget,
+      deadlineNanoseconds: deadlineNanoseconds,
+      nowNanoseconds: nowNanoseconds
     )
   }
 }

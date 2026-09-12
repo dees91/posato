@@ -588,16 +588,83 @@ struct MailboxStore {
         }
     }
 
+    /// Delete-path resume phases, carried as the first byte of the resume
+    /// token so a killed pass re-enters the right mode without any
+    /// caller-held state. Sweep tokens stay pure server tokens.
+    private enum DeleteResumePhase: UInt8 {
+        case traverse = 0
+        case verify = 1
+    }
+
+    private static func splitDeleteResumeToken(_ token: Data?) -> (phase: DeleteResumePhase, server: Data?)? {
+        guard let token, !token.isEmpty else {
+            return (.traverse, nil)
+        }
+        guard token.count <= MailboxCloudLimits.cursorBytes + 1,
+            let phase = DeleteResumePhase(rawValue: token[0])
+        else {
+            return nil
+        }
+        let server = token.dropFirst()
+        guard server.count <= MailboxCloudLimits.cursorBytes else {
+            return nil
+        }
+        return (phase, server.isEmpty ? nil : Data(server))
+    }
+
+    private static func encodeDeleteResumeToken(phase: DeleteResumePhase, server: Data?) -> Data {
+        var token = Data([phase.rawValue])
+        if let server {
+            token.append(server)
+        }
+        return token
+    }
+
     /// Bounded resumable deletion pass: processes at most
-    /// `deletePagesPerCall` change pages, deleting each page's bundle set
-    /// only after re-reading the anchor. A non-nil token means the page
-    /// bound was hit with work remaining and the caller must call again
-    /// from that token; a nil token means the outcome is terminal.
+    /// `deletePagesPerCall` change pages per call. The resume token carries
+    /// the phase, so verification continues where it stopped instead of
+    /// restarting: the anchor is deleted at most once no matter how many
+    /// calls the pass takes. A non-nil token means the page bound was hit
+    /// with work remaining and the caller must call again from that token;
+    /// a nil token means the outcome is terminal.
     func deleteWorkspaceRecords(timeout: TimeInterval, startingAt resumeToken: Data?) -> (MailboxRecordDelete, Data?) {
+        guard let (phase, server) = Self.splitDeleteResumeToken(resumeToken) else {
+            return (.unknownOutcome, nil)
+        }
         let anchorID = MailboxRecordCodec.anchorRecordID(zoneID: zoneID)
-        var tokenData = resumeToken
-        var anchorDeleted = false
+        // Verification runs only after this removal deleted the anchor, so
+        // a present anchor belongs to a concurrently established workspace:
+        // abort without touching anything it published. Traversal reads no
+        // anchor: full removal runs with the own anchor present, and
+        // presence alone cannot tell it apart from a foreign one.
+        if phase == .verify {
+            switch backend.fetchRecord(id: anchorID, timeout: timeout) {
+            case .missing:
+                break
+            case .found:
+                return (.unknownOutcome, nil)
+            case .zoneMissing:
+                return (.deletedAndAbsent, nil)
+            case .failed(let error):
+                return (MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome, nil)
+            }
+        }
+        var tokenData = server
+        var inVerifyPhase = phase == .verify
         var restarted = false
+        // Bound hit with work remaining: preserve the phase even when no
+        // server token is banked yet, so a nil-token expiry restart inside
+        // verification resumes verifying instead of re-entering traversal.
+        // A fresh traversal with nothing banked reports plain retryable.
+        func emitRetryable() -> (MailboxRecordDelete, Data?) {
+            if tokenData == nil, !inVerifyPhase {
+                return (.retryable, nil)
+            }
+            return (
+                .retryable,
+                Self.encodeDeleteResumeToken(phase: inVerifyPhase ? .verify : .traverse, server: tokenData)
+            )
+        }
         for _ in 0..<MailboxCloudLimits.deletePagesPerCall {
             switch backend.fetchChanges(zoneID: zoneID, tokenData: tokenData, timeout: timeout) {
             case .zoneMissing:
@@ -607,11 +674,10 @@ struct MailboxStore {
             case .failed(let error):
                 if MailboxErrorMapper.isTokenExpired(error) {
                     if restarted {
-                        return (.retryable, nil)
+                        return emitRetryable()
                     }
                     restarted = true
                     tokenData = nil
-                    anchorDeleted = false
                     continue
                 }
                 return (MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome, nil)
@@ -621,46 +687,44 @@ struct MailboxStore {
                 else {
                     return (.unknownOutcome, nil)
                 }
-                if tokenData != nil, token == tokenData {
+                // A repeated token with more pages coming means the server
+                // made no progress: abort instead of looping. A terminal
+                // page may legitimately echo the requested token.
+                if fetched.moreComing, let current = tokenData, token == current {
                     return (.unknownOutcome, nil)
                 }
                 let names = bundleNames(in: fetched.changed)
-                if anchorDeleted {
+                if inVerifyPhase {
                     // Post-anchor verification only confirms emptiness: a
-                    // remaining bundle means the deletion did not stick.
+                    // remaining bundle means the deletion did not stick or a
+                    // concurrent publish raced it.
                     if !names.isEmpty {
                         return (.unknownOutcome, nil)
                     }
                 } else if !names.isEmpty {
-                    // No anchor gate here: full removal runs with the own
-                    // anchor present (READY status), so presence cannot
-                    // distinguish a foreign workspace. A concurrently
-                    // established anchor is caught by the tail below: its
-                    // bundles fail the emptiness check or its anchor
-                    // survives the anchor delete.
                     if let error = deleteIDChunks(names: names, timeout: timeout) {
                         return (MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome, nil)
                     }
                 }
                 if !fetched.moreComing {
-                    if anchorDeleted {
+                    if inVerifyPhase {
                         return (.deletedAndAbsent, nil)
                     }
                     switch deleteAnchorAndVerifyMissing(anchorID: anchorID, timeout: timeout) {
                     case .gone:
-                        anchorDeleted = true
+                        inVerifyPhase = true
                     case .present:
                         return (.unknownOutcome, nil)
                     case .failed(let outcome):
                         return (outcome, nil)
                     }
-                    tokenData = nil
+                    tokenData = token
                     continue
                 }
                 tokenData = token
             }
         }
-        return (.retryable, tokenData)
+        return emitRetryable()
     }
 
     /// Bounded resumable sweep pass with the same per-set anchor ordering:
@@ -692,7 +756,10 @@ struct MailboxStore {
                 else {
                     return (.unknownOutcome, nil)
                 }
-                if tokenData != nil, token == tokenData {
+                // A repeated token with more pages coming means the server
+                // made no progress: abort instead of looping. A terminal
+                // page may legitimately echo the requested token.
+                if fetched.moreComing, let current = tokenData, token == current {
                     return (.unknownOutcome, nil)
                 }
                 let names = bundleNames(in: fetched.changed)

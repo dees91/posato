@@ -1,5 +1,6 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.MailboxPort
 import app.posato.feature.sync.mailbox.RecordDeleteResult
 
@@ -40,7 +41,22 @@ internal class AppleWorkspaceRemoval(
                 RecordDeleteResult.Retryable, RecordDeleteResult.UnknownOutcome -> SyncStatus.RETRYABLE
             }
 
-            EstablishedStatus.ZONE_MISSING, EstablishedStatus.ANCHOR_MISSING, EstablishedStatus.DIFFERENT_ANCHOR -> null
+            // No anchor: a resumed verification or an already-removed anchor
+            // still has to drain leftover bundles. The gated sweep is safe
+            // here where the full delete is not: every set is re-checked
+            // against the anchor before deletion, so a concurrently
+            // established workspace aborts the pass instead of being swept.
+            EstablishedStatus.ANCHOR_MISSING -> when (mailbox.sweepBundlesIfAnchorMissing(workspace.binding)) {
+                BundleSweepResult.Swept -> null
+
+                BundleSweepResult.AccountChanged -> SyncStatus.ACTION_REQUIRED
+
+                BundleSweepResult.AnchorPresent,
+                BundleSweepResult.Retryable,
+                BundleSweepResult.UnknownOutcome -> SyncStatus.RETRYABLE
+            }
+
+            EstablishedStatus.ZONE_MISSING, EstablishedStatus.DIFFERENT_ANCHOR -> null
 
             EstablishedStatus.LOCAL_ONLY, EstablishedStatus.RETRYABLE, EstablishedStatus.ACTION_REQUIRED -> status.toSyncStatus()
         }

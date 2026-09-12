@@ -25,6 +25,7 @@ internal object MacOsSyncCompanionProtocol {
     const val BUNDLE_IDENTIFIER_BYTES: Int = MAILBOX_BUNDLE_IDENTIFIER_BYTES
     const val BUNDLE_BYTES: Int = MAILBOX_BUNDLE_BYTES
     const val CURSOR_BYTES: Int = MAILBOX_CURSOR_BYTES
+    const val DELETE_RESUME_TOKEN_BYTES: Int = MAILBOX_CURSOR_BYTES + 1
     const val COMPANION_IDENTIFIER: String = "app.posato.macos.sync"
     const val APPLICATION_IDENTIFIER: String = "app.posato.macos"
     const val COMPANION_EXECUTABLE: String = "PosatoMacOSSync"
@@ -159,6 +160,20 @@ internal object MacOsSyncCompanionProtocol {
         require(binding.size == BINDING_BYTES)
         require(cursor.size in 0..CURSOR_BYTES)
         return binding + cursor
+    }
+
+    /**
+     * Delete-path resume payload. Resume tokens are opaque to this adapter
+     * but carry one phase byte ahead of the server token on the wire, hence
+     * the wider bound. Sweep and fetch cursors stay on [cursorPayload].
+     */
+    fun deleteResumePayload(
+        binding: ByteArray,
+        token: ByteArray,
+    ): ByteArray {
+        require(binding.size == BINDING_BYTES)
+        require(token.size in 0..DELETE_RESUME_TOKEN_BYTES)
+        return binding + token
     }
 }
 

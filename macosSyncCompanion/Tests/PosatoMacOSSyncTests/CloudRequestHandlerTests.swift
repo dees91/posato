@@ -260,7 +260,7 @@ import Testing
   )
 
   #expect(response.outcome == .incomplete)
-  #expect(response.payload == Data([15]))
+  #expect(response.payload == Data([SyncLimits.deletePhaseTraverse, 15]))
 }
 
 @Test func givenOversizedTokenWhenDeletingRecordsThenIntegrityFailureIsReturned() {

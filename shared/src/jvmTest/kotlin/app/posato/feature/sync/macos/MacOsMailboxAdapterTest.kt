@@ -131,19 +131,154 @@ class MacOsMailboxAdapterTest {
 
         assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(binding()))
 
-        val expected = MacOsSyncCompanionProtocol.cursorPayload(ByteArray(ACCOUNT_BINDING_BYTES) { 7 }, token)
+        val expected = MacOsSyncCompanionProtocol.deleteResumePayload(ByteArray(ACCOUNT_BINDING_BYTES) { 7 }, token)
         assertTrue(checkNotNull(transport.lastSentPayload).contentEquals(expected))
     }
 
     @Test
     fun `given malformed resume token when deleting then unknown outcome is returned`() = runTest {
         val transport = FakeTransport(
-            message(SyncCompanionOutcome.Incomplete, ByteArray(MacOsSyncCompanionProtocol.CURSOR_BYTES + 1)),
+            message(SyncCompanionOutcome.Incomplete, ByteArray(MacOsSyncCompanionProtocol.DELETE_RESUME_TOKEN_BYTES + 1)),
         )
         val adapter = MacOsMailboxAdapter(transport)
 
         assertEquals(RecordDeleteResult.UnknownOutcome, adapter.deleteWorkspaceRecords(binding()))
         assertEquals(1, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given malformed resume token when sweeping then unknown outcome is returned`() = runTest {
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, ByteArray(MacOsSyncCompanionProtocol.CURSOR_BYTES + 1)),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+
+        assertEquals(BundleSweepResult.UnknownOutcome, adapter.sweepBundlesIfAnchorMissing(binding()))
+        assertEquals(1, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given incomplete across the attempt cap when deleting then the next call resumes`() = runTest {
+        // 200 deletion-only pages at 10 attempts per call: the first call
+        // ends retryable, and the second call resumes from the tenth page's
+        // token instead of replaying the same start cursors.
+        val tokens = (0..200).map { byteArrayOf(it.toByte()) }
+        val script = tokens.dropLast(1).map { message(SyncCompanionOutcome.Incomplete, it) } +
+            outcome(SyncCompanionOutcome.DeletedAndAbsent)
+        val transport = FakeTransport(*script.toTypedArray())
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data))
+        assertEquals(10, transport.exchangeCount)
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data))
+        assertEquals(20, transport.exchangeCount)
+        val resumedPayload = MacOsSyncCompanionProtocol.deleteResumePayload(
+            ByteArray(ACCOUNT_BINDING_BYTES) { 7 },
+            tokens[9],
+        )
+        assertTrue(checkNotNull(transport.sentPayloads[10]).contentEquals(resumedPayload))
+        repeat(18) {
+            assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data))
+        }
+        assertEquals(200, transport.exchangeCount)
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(data))
+        assertEquals(201, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given incomplete across the attempt cap when sweeping then the next call resumes`() = runTest {
+        val tokens = (0..25).map { byteArrayOf(it.toByte()) }
+        val script = tokens.dropLast(1).map { message(SyncCompanionOutcome.Incomplete, it) } +
+            outcome(SyncCompanionOutcome.Swept)
+        val transport = FakeTransport(*script.toTypedArray())
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+
+        assertEquals(BundleSweepResult.Retryable, adapter.sweepBundlesIfAnchorMissing(data))
+        assertEquals(BundleSweepResult.Retryable, adapter.sweepBundlesIfAnchorMissing(data))
+        val resumedPayload = MacOsSyncCompanionProtocol.cursorPayload(
+            ByteArray(ACCOUNT_BINDING_BYTES) { 7 },
+            tokens[9],
+        )
+        assertTrue(checkNotNull(transport.sentPayloads[10]).contentEquals(resumedPayload))
+        assertEquals(BundleSweepResult.Swept, adapter.sweepBundlesIfAnchorMissing(data))
+        assertEquals(26, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given unknown outcome when deleting then the stored cursor is kept`() = runTest {
+        val token = byteArrayOf(4, 5)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, token),
+            outcome(SyncCompanionOutcome.UnknownOutcome),
+            outcome(SyncCompanionOutcome.DeletedAndAbsent),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+
+        assertEquals(RecordDeleteResult.UnknownOutcome, adapter.deleteWorkspaceRecords(data))
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(data))
+        // The second call resumes from the kept cursor instead of restarting:
+        // index 2 is the second call's first payload, while index 1 only
+        // proves the in-call resume after the first incomplete.
+        val resumedPayload = MacOsSyncCompanionProtocol.deleteResumePayload(
+            ByteArray(ACCOUNT_BINDING_BYTES) { 7 },
+            token,
+        )
+        assertTrue(checkNotNull(transport.sentPayloads[2]).contentEquals(resumedPayload))
+    }
+
+    @Test
+    fun `given unknown outcome when sweeping then the stored cursor is kept`() = runTest {
+        val token = byteArrayOf(4, 5)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, token),
+            outcome(SyncCompanionOutcome.UnknownOutcome),
+            outcome(SyncCompanionOutcome.Swept),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+
+        assertEquals(BundleSweepResult.UnknownOutcome, adapter.sweepBundlesIfAnchorMissing(data))
+        assertEquals(BundleSweepResult.Swept, adapter.sweepBundlesIfAnchorMissing(data))
+        // The second call resumes from the kept cursor instead of restarting.
+        val resumedPayload = MacOsSyncCompanionProtocol.cursorPayload(
+            ByteArray(ACCOUNT_BINDING_BYTES) { 7 },
+            token,
+        )
+        assertTrue(checkNotNull(transport.sentPayloads[2]).contentEquals(resumedPayload))
+    }
+
+    @Test
+    fun `given terminal outcome when deleting then the stored cursor is cleared`() = runTest {
+        val token = byteArrayOf(4, 5)
+        val script = List(10) { message(SyncCompanionOutcome.Incomplete, token) } +
+            outcome(SyncCompanionOutcome.DeletedAndAbsent) +
+            outcome(SyncCompanionOutcome.DeletedAndAbsent)
+        val transport = FakeTransport(*script.toTypedArray())
+        val adapter = MacOsMailboxAdapter(transport)
+        val data = binding()
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(data))
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(data))
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(data))
+        val plainPayload = MacOsSyncCompanionProtocol.cloudPayload(ByteArray(ACCOUNT_BINDING_BYTES) { 7 })
+        assertTrue(checkNotNull(transport.lastSentPayload).contentEquals(plainPayload))
+    }
+
+    @Test
+    fun `given changed binding when deleting then the stored cursor is dropped`() = runTest {
+        val token = byteArrayOf(4, 5)
+        val script = List(10) { message(SyncCompanionOutcome.Incomplete, token) } +
+            outcome(SyncCompanionOutcome.DeletedAndAbsent)
+        val transport = FakeTransport(*script.toTypedArray())
+        val adapter = MacOsMailboxAdapter(transport)
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(binding()))
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(otherBinding()))
+        val plainPayload = MacOsSyncCompanionProtocol.cloudPayload(ByteArray(ACCOUNT_BINDING_BYTES) { 8 })
+        assertTrue(checkNotNull(transport.lastSentPayload).contentEquals(plainPayload))
     }
 
     @Test
@@ -254,6 +389,10 @@ class MacOsMailboxAdapterTest {
         return checkNotNull(AccountBinding.fromBytes(ByteArray(ACCOUNT_BINDING_BYTES) { 7 }))
     }
 
+    private fun otherBinding(): AccountBinding {
+        return checkNotNull(AccountBinding.fromBytes(ByteArray(ACCOUNT_BINDING_BYTES) { 8 }))
+    }
+
     private fun identifier(): ByteArray {
         return ByteArray(MacOsSyncCompanionProtocol.BUNDLE_IDENTIFIER_BYTES) { 9 }
     }
@@ -288,6 +427,7 @@ class MacOsMailboxAdapterTest {
     ) : SyncCompanionTransport {
         var lastPayload: ByteArray? = null
         var lastSentPayload: ByteArray? = null
+        val sentPayloads = mutableListOf<ByteArray>()
         var lastOperation: SyncCompanionOperation? = null
         var lastCapabilities: Long? = null
         var exchangeCount: Int = 0
@@ -296,6 +436,7 @@ class MacOsMailboxAdapterTest {
         override suspend fun transact(message: SyncCompanionMessage): CompanionExchange {
             lastPayload = message.payload
             lastSentPayload = message.payload.copyOf()
+            sentPayloads.add(message.payload.copyOf())
             lastOperation = message.operation
             lastCapabilities = message.capabilities
             val index = minOf(exchangeCount, exchanges.size - 1)

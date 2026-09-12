@@ -161,10 +161,12 @@ extension RequestHandler {
       started: started,
       budgetMilliseconds: request.deadlineMilliseconds
     )
+    let deadlineNanoseconds = passDeadlineNanoseconds(timeout: timeout)
     let (result, changed) = RequestSupport.observingAccountChange(
       name: dependencies.accountChangeName
     ) {
-      dependencies.clouds.deleteWorkspaceRecords(timeout: timeout, resumeToken: resumeToken)
+      dependencies.clouds.deleteWorkspaceRecords(
+        timeout: timeout, resumeToken: resumeToken, deadlineNanoseconds: deadlineNanoseconds)
     }
     guard !changed,
       RequestSupport.postflight(
@@ -176,16 +178,7 @@ extension RequestHandler {
     else {
       return request.respond(outcome: .unknownOutcome)
     }
-    switch result {
-    case .deletedAndAbsent:
-      return request.respond(outcome: .deletedAndAbsent)
-    case .retryable:
-      return request.respond(outcome: .retryable)
-    case .unknownOutcome:
-      return request.respond(outcome: .unknownOutcome)
-    case .incomplete(let cursor):
-      return request.respond(outcome: .incomplete, payload: cursor)
-    }
+    return deleteResponse(request, result: result)
   }
 
   static func sweepBundles(
@@ -193,7 +186,11 @@ extension RequestHandler {
     started: DispatchTime,
     dependencies: SyncDependencies
   ) -> SyncMessage {
-    guard let parsed = CloudRequestCodec.cursorRequest(request.payload) else {
+    guard let parsed = CloudRequestCodec.cursorRequest(request.payload),
+      // Sweep tokens are pure server tokens: anything longer is wire
+      // garbage, rejected here exactly as before the delete-phase byte.
+      parsed.cursor.count <= SyncLimits.cursorBytes
+    else {
       return request.respond(outcome: .integrityFailure)
     }
     let binding = parsed.binding
@@ -213,10 +210,12 @@ extension RequestHandler {
       started: started,
       budgetMilliseconds: request.deadlineMilliseconds
     )
+    let deadlineNanoseconds = passDeadlineNanoseconds(timeout: timeout)
     let (result, changed) = RequestSupport.observingAccountChange(
       name: dependencies.accountChangeName
     ) {
-      dependencies.clouds.sweepBundlesIfAnchorMissing(timeout: timeout, resumeToken: resumeToken)
+      dependencies.clouds.sweepBundlesIfAnchorMissing(
+        timeout: timeout, resumeToken: resumeToken, deadlineNanoseconds: deadlineNanoseconds)
     }
     guard !changed,
       RequestSupport.postflight(
@@ -228,17 +227,43 @@ extension RequestHandler {
     else {
       return request.respond(outcome: .unknownOutcome)
     }
-    switch result {
-    case .swept:
-      return request.respond(outcome: .swept)
-    case .anchorPresent:
-      return request.respond(outcome: .anchorPresent)
-    case .retryable:
-      return request.respond(outcome: .retryable)
-    case .unknownOutcome:
-      return request.respond(outcome: .unknownOutcome)
-    case .incomplete(let cursor):
-      return request.respond(outcome: .incomplete, payload: cursor)
-    }
+    return sweepResponse(request, result: result)
+  }
+}
+
+/// Wall-clock deadline for one delete/sweep pass: the request's remaining
+/// budget as an absolute timestamp. The pass checkpoints against it with
+/// time reserved for the response encoding and the caller's postflight.
+private func passDeadlineNanoseconds(timeout: TimeInterval) -> UInt64 {
+  DispatchTime.now().uptimeNanoseconds &+ UInt64(timeout * 1_000_000_000)
+}
+
+private func sweepResponse(_ request: SyncMessage, result: BundleSweepNative) -> SyncMessage {
+  switch result {
+  case .swept:
+    return request.respond(outcome: .swept)
+  case .anchorPresent:
+    return request.respond(outcome: .anchorPresent)
+  case .retryable:
+    return request.respond(outcome: .retryable)
+  case .unknownOutcome:
+    return request.respond(outcome: .unknownOutcome)
+  case .incomplete(let cursor):
+    return request.respond(outcome: .incomplete, payload: cursor)
+  }
+}
+
+private func deleteResponse(_ request: SyncMessage, result: RecordDeleteNative) -> SyncMessage {
+  switch result {
+  case .deletedAndAbsent:
+    return request.respond(outcome: .deletedAndAbsent)
+  case .retryable:
+    return request.respond(outcome: .retryable)
+  case .unknownOutcome:
+    return request.respond(outcome: .unknownOutcome)
+  case .integrityFailure:
+    return request.respond(outcome: .integrityFailure)
+  case .incomplete(let cursor):
+    return request.respond(outcome: .incomplete, payload: cursor)
   }
 }

@@ -176,6 +176,10 @@ class MacOsSyncCompanionProtocolTest {
             MacOsSyncCompanionProtocol.bundlePayload(binding, ByteArray(16), byteArrayOf(1)).size,
         )
         assertEquals(32, MacOsSyncCompanionProtocol.cursorPayload(binding, ByteArray(0)).size)
+        assertEquals(
+            33,
+            MacOsSyncCompanionProtocol.deleteResumePayload(binding, byteArrayOf(0)).size,
+        )
     }
 
     @Test
@@ -193,6 +197,12 @@ class MacOsSyncCompanionProtocolTest {
             MacOsSyncCompanionProtocol.cursorPayload(
                 binding,
                 ByteArray(MacOsSyncCompanionProtocol.CURSOR_BYTES + 1),
+            )
+        }
+        assertFails {
+            MacOsSyncCompanionProtocol.deleteResumePayload(
+                binding,
+                ByteArray(MacOsSyncCompanionProtocol.DELETE_RESUME_TOKEN_BYTES + 1),
             )
         }
     }

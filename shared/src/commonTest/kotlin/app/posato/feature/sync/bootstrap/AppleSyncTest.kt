@@ -5,6 +5,7 @@ import app.posato.feature.sync.domain.SyncContext
 import app.posato.feature.sync.domain.TransportEpochId
 import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxBundle
@@ -259,7 +260,7 @@ class AppleSyncTest {
     }
 
     @Test
-    fun `given a missing anchor when removing then only the key is deleted and state ends local-only`() = runTest {
+    fun `given a missing anchor when removing then leftovers are swept and state ends local-only`() = runTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {
             harness.establish()
@@ -267,9 +268,33 @@ class AppleSyncTest {
             harness.cloud.storedAnchor = null
             harness.sync.removeWorkspace()
             assertEquals(0, harness.mailbox.deleteCalls)
+            assertEquals(1, harness.mailbox.sweepCalls)
             assertEquals(1, harness.keys.deleteCalls)
             assertEquals(BootstrapStoreResult.Success(BootstrapState.None), harness.store.read())
             assertEquals(BootstrapStoreResult.Success(true), harness.store.containsRemoved(removed.workspaceId))
+            assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a missing anchor when the sweep is pending then retryable is reported and the row is kept`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            harness.cloud.storedAnchor = null
+            harness.mailbox.sweepResult = BundleSweepResult.Retryable
+            harness.sync.removeWorkspace()
+            assertEquals(1, harness.mailbox.sweepCalls)
+            assertEquals(SyncStatus.RETRYABLE, harness.sync.state.value.status)
+            assertEquals(0, harness.keys.deleteCalls)
+            assertIs<BootstrapState.Established>(assertIs<BootstrapStoreResult.Success<BootstrapState>>(harness.store.read()).value)
+            harness.mailbox.sweepResult = BundleSweepResult.Swept
+            harness.sync.removeWorkspace()
+            assertEquals(2, harness.mailbox.sweepCalls)
+            assertEquals(1, harness.keys.deleteCalls)
+            assertEquals(BootstrapStoreResult.Success(BootstrapState.None), harness.store.read())
             assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
         } finally {
             harness.close()

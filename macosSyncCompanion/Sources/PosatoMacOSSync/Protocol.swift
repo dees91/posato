@@ -24,6 +24,15 @@ enum SyncLimits {
   static let cursorBytes = 16_384
   static let recordDeleteBatchSize = 100
   static let recordDeletePageBudget = 16
+  /// Delete-path resume tokens carry one phase byte ahead of the server
+  /// token, so a resumed request re-enters the right mode without any
+  /// caller-held state. Sweep tokens stay pure server tokens.
+  static let deleteResumePhaseBytes = 1
+  static let deletePhaseTraverse: UInt8 = 0
+  static let deletePhaseVerify: UInt8 = 1
+  /// Wall-clock reserve held back from every delete/sweep pass for the
+  /// response encoding and the caller's postflight.
+  static let deleteCheckpointReserveNanoseconds: UInt64 = 2_000_000_000
   static let containerIdentifier = "iCloud.app.posato.sync"
   static let keyService = "app.posato.sync.workspace-key.v1"
   static let accessGroupSuffix = "app.posato.sync"

@@ -124,3 +124,21 @@
   `iosSwiftTest` 126 run, 6 skipped (pre-existing), 0 failures;
   `./gradlew quality` exit 0. UI driving out of scope per `verify-posato`
   (native sync-adapter work, no user action).
+
+## Follow-up correction (2026-09-12, PR #50 comments 3996258047, 3996258371)
+
+- **Outcome:** cross-retry resume continuations (mac adapter slots, iOS
+  provider-held tokens), wall-clock checkpoints with 2 s reserve,
+  verify-phase token byte, `ANCHOR_MISSING` routed to the gated sweep.
+- **Defect found in review of the WIP:** the companion banked the fetched
+  token before running that page's deletes, so a reserve-triggered
+  checkpoint skipped live records. Fixed to delete-then-bank (iOS already
+  did); pinned by a slow-delete deadline test proven to fail on the old
+  order. Lint splits: `DeleteResumeToken.swift`, `RecordSweep.swift`,
+  `RecordDeletionDeadlineTests.swift`; no suppressions.
+- **Independent review:** Standard, verdict `fix-first` (1 Required: a
+  keep-cursor test asserted the in-call payload index). Fixed the index,
+  added the sweep-side keep test, proved both by mutation.
+- **Checks:** companion `swift test` 142/142, SwiftLint 0, `jvmTest`
+  561/561, `iosSimulatorArm64Test` 547/547, `iosSwiftTest` 128 run,
+  6 skipped (pre-existing), 0 failures, `./gradlew quality` exit 0.

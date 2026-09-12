@@ -796,6 +796,81 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [first.recordID.recordName])
     }
 
+    func testDeleteVerificationSpanningCallsDeletesAnchorOnce() {
+        // Verification alone exceeds the ten-page bound: the second call
+        // continues verifying from the carried phase instead of deleting
+        // the anchor again, and completes.
+        let backend = FakeMailboxBackend()
+        let bundle = bundleRecord(payload: Data([0x01]))
+        func page(names: [CKRecord] = [], token: UInt8, more: Bool) -> MailboxChanges {
+            MailboxChanges(changed: names, deletedNames: [], tokenData: Data([token]), moreComing: more)
+        }
+        var pages: [Data: MailboxChanges] = [Data([1]): page(token: 2, more: true)]
+        for index: UInt8 in 2...9 {
+            pages[Data([index])] = page(token: index + 1, more: true)
+        }
+        pages[Data([10])] = page(token: 11, more: false)
+        backend.changesHandler = { _, tokenData in
+            guard let tokenData else {
+                return .fetched(page(names: [bundle], token: 1, more: false))
+            }
+            return .fetched(pages[tokenData]!)
+        }
+        var anchorDeleted = false
+        backend.deleteRecordsHandler = { ids in
+            if ids.map(\.recordName) == ["workspace"] {
+                anchorDeleted = true
+            }
+            return nil
+        }
+        backend.recordHandler = { _ in anchorDeleted ? .missing : .found(self.anchorRecord()) }
+        let (provider, _, _) = makeProvider(backend: backend)
+        let data = binding()
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .retryable)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .deletedandabsent)
+        XCTAssertEqual(backend.deletedIDs.count, 2)
+        XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [bundle.recordID.recordName])
+        XCTAssertEqual(backend.deletedIDs[1].map(\.recordName), ["workspace"])
+    }
+
+    func testDeleteResumedVerificationAbortsOnPresentAnchor() {
+        // A workspace established after the anchor delete must abort the
+        // resumed verification: no further record is touched.
+        let backend = FakeMailboxBackend()
+        let bundle = bundleRecord(payload: Data([0x01]))
+        func page(names: [CKRecord] = [], token: UInt8, more: Bool) -> MailboxChanges {
+            MailboxChanges(changed: names, deletedNames: [], tokenData: Data([token]), moreComing: more)
+        }
+        var pages: [Data: MailboxChanges] = [Data([1]): page(token: 2, more: true)]
+        for index: UInt8 in 2...9 {
+            pages[Data([index])] = page(token: index + 1, more: true)
+        }
+        pages[Data([10])] = page(token: 11, more: false)
+        backend.changesHandler = { _, tokenData in
+            guard let tokenData else {
+                return .fetched(page(names: [bundle], token: 1, more: false))
+            }
+            return .fetched(pages[tokenData]!)
+        }
+        var anchorDeleted = false
+        backend.deleteRecordsHandler = { ids in
+            if ids.map(\.recordName) == ["workspace"] {
+                anchorDeleted = true
+            }
+            return nil
+        }
+        backend.recordHandler = { _ in anchorDeleted ? .missing : .found(self.anchorRecord()) }
+        let (provider, _, _) = makeProvider(backend: backend)
+        let data = binding()
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .retryable)
+        // A concurrent fresh attempt publishes a new anchor before the
+        // resumed verification runs.
+        anchorDeleted = false
+        let deletesBefore = backend.deletedIDs.count
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .unknownoutcome)
+        XCTAssertEqual(backend.deletedIDs.count, deletesBefore)
+    }
+
     func testDeleteResumesAcrossCallsAfterPageBound() {
         let backend = FakeMailboxBackend()
         var fetchTokens: [Data?] = []
@@ -824,11 +899,14 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .deletedandabsent)
         // Twelve deletion-only pages exceed the ten-page bound, so the first
         // call stops with work remaining and the second call resumes from
-        // the tenth page's token instead of restarting.
+        // the tenth page's token instead of restarting. Verification
+        // continues from the drain's end token, so the anchor is deleted
+        // exactly once across both calls.
         XCTAssertEqual(fetches, 14)
         XCTAssertNil(fetchTokens[0])
         XCTAssertEqual(fetchTokens[10], Data([10]))
-        XCTAssertNil(fetchTokens[13])
+        XCTAssertEqual(fetchTokens[12], Data([12]))
+        XCTAssertEqual(fetchTokens[13], Data([0xFF]))
         XCTAssertEqual(backend.deletedIDs.count, 1)
         XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), ["workspace"])
     }

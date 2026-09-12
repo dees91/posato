@@ -59,6 +59,7 @@ enum RecordDeleteNative: Equatable, Sendable {
   case deletedAndAbsent
   case retryable
   case unknownOutcome
+  case integrityFailure
   case incomplete(cursor: Data)
 }
 

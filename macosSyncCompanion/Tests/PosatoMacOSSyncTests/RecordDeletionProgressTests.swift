@@ -9,7 +9,8 @@ import Testing
 /// so replays observe deletions exactly like the live change feed. Each test
 /// drives several fresh `RecordDeletion` instances against one shared
 /// harness: a new instance models a killed companion process, and only
-/// server state survives across instances.
+/// server state survives across instances. Deadline tests with the virtual
+/// wall clock live in `RecordDeletionDeadlineTests.swift`.
 final class HistoryBackend: CloudBackend, @unchecked Sendable {
   enum Event {
     case upsert(RawRecord)
@@ -19,8 +20,20 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   var history: [Event] = []
   var live: [String: RawRecord] = [:]
   var zoneGone = false
+  var latency: TimeInterval = 0
+  var deleteLatency: TimeInterval?
+  var clock: ManualClock?
+  var onAnchorDelete: (() -> Void)?
   private(set) var opLog: [String] = []
   private(set) var deleted: [[String]] = []
+  private(set) var timeouts: [TimeInterval] = []
+
+  private func tick(timeout: TimeInterval, latency override: TimeInterval? = nil) {
+    timeouts.append(timeout)
+    if let clock {
+      clock.advance(override ?? latency)
+    }
+  }
 
   func seedBundles(_ names: [String]) {
     for name in names {
@@ -54,6 +67,7 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   }
 
   func fetchRecord(name: String, timeout: TimeInterval) -> BackendLookup {
+    tick(timeout: timeout)
     opLog.append("anchorRead:\(name)")
     if zoneGone {
       return .zoneMissing
@@ -70,6 +84,7 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   }
 
   func fetchChanges(tokenData: Data?, timeout: TimeInterval) -> BackendChangesResult {
+    tick(timeout: timeout)
     let index: Int
     if let tokenData {
       guard tokenData.count == 8 else {
@@ -107,8 +122,12 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   }
 
   func deleteRecords(names: [String], timeout: TimeInterval) -> BackendDelete {
+    tick(timeout: timeout, latency: deleteLatency)
     opLog.append("delete:\(names.joined(separator: ","))")
     deleted.append(names)
+    if names.contains(CloudNames.anchorName) {
+      onAnchorDelete?()
+    }
     for name in names where live.removeValue(forKey: name) != nil {
       history.append(.tombstone(name))
     }
@@ -135,7 +154,7 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   switch first.deleteWorkspaceRecords(timeout: 5, pageBudget: 4) {
   case .incomplete(let cursor):
     incomplete = cursor
-  case .deletedAndAbsent, .retryable, .unknownOutcome:
+  case .deletedAndAbsent, .retryable, .unknownOutcome, .integrityFailure:
     Issue.record("expected incomplete inside the tombstone prefix")
     return
   }
@@ -145,7 +164,7 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   switch second.deleteWorkspaceRecords(timeout: 5, resumeToken: incomplete, pageBudget: 4) {
   case .incomplete:
     break
-  case .deletedAndAbsent, .retryable, .unknownOutcome:
+  case .deletedAndAbsent, .retryable, .unknownOutcome, .integrityFailure:
     Issue.record("expected second incomplete past the remaining prefix")
     return
   }
@@ -154,12 +173,77 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   switch third.deleteWorkspaceRecords(timeout: 5, resumeToken: incomplete, pageBudget: 30) {
   case .deletedAndAbsent:
     break
-  case .incomplete, .retryable, .unknownOutcome:
+  case .incomplete, .retryable, .unknownOutcome, .integrityFailure:
     Issue.record("expected completion once the budget covers the tail")
     return
   }
   #expect(backend.live.isEmpty)
   #expect(Set(backend.deleted.flatMap { $0 }) == ["b1", "b2", CloudNames.anchorName])
+}
+
+@Test func givenVerificationBeyondBudgetWhenDeletingThenResumeCompletesWithOneAnchorDelete() {
+  let backend = HistoryBackend()
+  backend.seedBundles(["b1"])
+  backend.publishAnchor()
+  // Twelve publishes race the anchor delete, so verification alone needs
+  // several more passes after the drain and the anchor delete.
+  backend.onAnchorDelete = {
+    backend.seedTombstones((0..<12).map { "late-\($0)" })
+  }
+
+  let first = RecordDeletion(backend: backend)
+  let incomplete: Data
+  switch first.deleteWorkspaceRecords(timeout: 5, pageBudget: 4) {
+  case .incomplete(let cursor):
+    incomplete = cursor
+  case .deletedAndAbsent, .retryable, .unknownOutcome, .integrityFailure:
+    Issue.record("expected incomplete inside verification")
+    return
+  }
+  guard let split = splitDeleteResumeToken(incomplete), split.phase == .verify else {
+    Issue.record("expected a verify-phase cursor")
+    return
+  }
+
+  let second = RecordDeletion(backend: backend)
+  switch second.deleteWorkspaceRecords(timeout: 5, resumeToken: incomplete, pageBudget: 30) {
+  case .deletedAndAbsent:
+    break
+  case .incomplete, .retryable, .unknownOutcome, .integrityFailure:
+    Issue.record("expected verification to complete on resume")
+    return
+  }
+  #expect(backend.live.isEmpty)
+  #expect(backend.deleted.filter { $0 == [CloudNames.anchorName] }.count == 1)
+}
+
+@Test func givenAnchorPublishedDuringVerificationWhenResumingThenUnknownWithoutDeletes() {
+  let backend = HistoryBackend()
+  backend.seedBundles(["b1"])
+  backend.onAnchorDelete = {
+    backend.seedTombstones((0..<12).map { "late-\($0)" })
+  }
+
+  let first = RecordDeletion(backend: backend)
+  let incomplete: Data
+  switch first.deleteWorkspaceRecords(timeout: 5, pageBudget: 4) {
+  case .incomplete(let cursor):
+    incomplete = cursor
+  case .deletedAndAbsent, .retryable, .unknownOutcome, .integrityFailure:
+    Issue.record("expected incomplete inside verification")
+    return
+  }
+
+  // A concurrent fresh attempt establishes a new workspace before the
+  // resumed verification runs: the resumed pass must abort on the present
+  // anchor instead of deleting or trusting anything.
+  backend.publishAnchor()
+  let deletesBefore = backend.deleted.count
+  let second = RecordDeletion(backend: backend)
+  #expect(
+    second.deleteWorkspaceRecords(timeout: 5, resumeToken: incomplete, pageBudget: 30)
+      == .unknownOutcome)
+  #expect(backend.deleted.count == deletesBefore)
 }
 
 @Test func givenAppearingAnchorMidSweepWhenDeletingNextPageThenNothingAfterIsDeleted() {
