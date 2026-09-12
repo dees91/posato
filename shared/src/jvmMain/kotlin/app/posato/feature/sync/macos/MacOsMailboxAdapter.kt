@@ -185,6 +185,22 @@ internal class MacOsMailboxAdapter(
         }
     }
 
+    override suspend fun clearRemovalResumeState(expectedBinding: AccountBinding) {
+        val binding = expectedBinding.copyBytes()
+        try {
+            if (deleteContinuation?.binding.contentEquals(binding) == true) {
+                clearContinuation(deleteContinuation)
+                deleteContinuation = null
+            }
+            if (sweepContinuation?.binding.contentEquals(binding) == true) {
+                clearContinuation(sweepContinuation)
+                sweepContinuation = null
+            }
+        } finally {
+            binding.fill(0)
+        }
+    }
+
     private suspend fun exchange(
         operation: SyncCompanionOperation,
         payload: ByteArray,
@@ -347,57 +363,9 @@ internal class MacOsMailboxAdapter(
         }
     }
 
-    private fun parsePage(payload: ByteArray): ChangePage? {
-        return try {
-            readPage(payload)
-        } catch (_: IllegalArgumentException) {
-            null
-        } catch (_: BufferUnderflowException) {
-            null
-        }
-    }
-
-    private fun readPage(payload: ByteArray): ChangePage {
-        require(payload.size >= MINIMUM_PAGE_BYTES)
-        val buffer = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN)
-        val more = buffer.get()
-        require(more == ABSENT_FLAG || more == PRESENT_FLAG)
-        val cursorLength = buffer.int
-        require(cursorLength in 0..MacOsSyncCompanionProtocol.CURSOR_BYTES)
-        require(buffer.remaining() >= cursorLength + MINIMUM_TAIL_BYTES)
-        val cursor = ByteArray(cursorLength).also(buffer::get)
-        val present = buffer.get()
-        require(present == ABSENT_FLAG || present == PRESENT_FLAG)
-        val bundle = if (present == PRESENT_FLAG) readBundled(buffer) else null
-        if (present != PRESENT_FLAG) {
-            require(buffer.remaining() == 0)
-        }
-        val cursorValue = requireNotNull(MailboxCursor.fromBytes(cursor))
-        return ChangePage(
-            bundle = bundle,
-            moreChanges = more == PRESENT_FLAG,
-            nextCursor = cursorValue,
-        )
-    }
-
-    private fun readBundled(buffer: ByteBuffer): MailboxBundle {
-        require(buffer.remaining() >= MacOsSyncCompanionProtocol.BUNDLE_IDENTIFIER_BYTES + LENGTH_BYTES)
-        val identifier = ByteArray(MacOsSyncCompanionProtocol.BUNDLE_IDENTIFIER_BYTES).also(buffer::get)
-        val bundleLength = buffer.int
-        require(bundleLength in 1..MacOsSyncCompanionProtocol.BUNDLE_BYTES)
-        require(buffer.remaining() == bundleLength)
-        val bytes = ByteArray(bundleLength).also(buffer::get)
-        return requireNotNull(MailboxBundle.fromParts(identifier, bytes))
-    }
-
     private companion object {
         const val DEFAULT_DEADLINE_MILLISECONDS: Int = 30_000
         const val MAX_DELETE_ATTEMPTS: Int = 10
-        const val ABSENT_FLAG: Byte = 0
-        const val PRESENT_FLAG: Byte = 1
-        const val LENGTH_BYTES: Int = 4
-        const val MINIMUM_PAGE_BYTES: Int = 6
-        const val MINIMUM_TAIL_BYTES: Int = 1
     }
 }
 
@@ -454,4 +422,54 @@ private fun isSweepTerminal(outcome: SyncCompanionOutcome?): Boolean {
     return outcome == SyncCompanionOutcome.Swept ||
         outcome == SyncCompanionOutcome.AnchorPresent ||
         outcome == SyncCompanionOutcome.AccountChanged
+}
+
+// Wire page parsing: pure payload decoding shared by fetch mapping.
+private const val ABSENT_FLAG: Byte = 0
+private const val PRESENT_FLAG: Byte = 1
+private const val LENGTH_BYTES: Int = 4
+private const val MINIMUM_PAGE_BYTES: Int = 6
+private const val MINIMUM_TAIL_BYTES: Int = 1
+
+private fun parsePage(payload: ByteArray): ChangePage? {
+    return try {
+        readPage(payload)
+    } catch (_: IllegalArgumentException) {
+        null
+    } catch (_: BufferUnderflowException) {
+        null
+    }
+}
+
+private fun readPage(payload: ByteArray): ChangePage {
+    require(payload.size >= MINIMUM_PAGE_BYTES)
+    val buffer = ByteBuffer.wrap(payload).order(ByteOrder.BIG_ENDIAN)
+    val more = buffer.get()
+    require(more == ABSENT_FLAG || more == PRESENT_FLAG)
+    val cursorLength = buffer.int
+    require(cursorLength in 0..MacOsSyncCompanionProtocol.CURSOR_BYTES)
+    require(buffer.remaining() >= cursorLength + MINIMUM_TAIL_BYTES)
+    val cursor = ByteArray(cursorLength).also(buffer::get)
+    val present = buffer.get()
+    require(present == ABSENT_FLAG || present == PRESENT_FLAG)
+    val bundle = if (present == PRESENT_FLAG) readBundled(buffer) else null
+    if (present != PRESENT_FLAG) {
+        require(buffer.remaining() == 0)
+    }
+    val cursorValue = requireNotNull(MailboxCursor.fromBytes(cursor))
+    return ChangePage(
+        bundle = bundle,
+        moreChanges = more == PRESENT_FLAG,
+        nextCursor = cursorValue,
+    )
+}
+
+private fun readBundled(buffer: ByteBuffer): MailboxBundle {
+    require(buffer.remaining() >= MacOsSyncCompanionProtocol.BUNDLE_IDENTIFIER_BYTES + LENGTH_BYTES)
+    val identifier = ByteArray(MacOsSyncCompanionProtocol.BUNDLE_IDENTIFIER_BYTES).also(buffer::get)
+    val bundleLength = buffer.int
+    require(bundleLength in 1..MacOsSyncCompanionProtocol.BUNDLE_BYTES)
+    require(buffer.remaining() == bundleLength)
+    val bytes = ByteArray(bundleLength).also(buffer::get)
+    return requireNotNull(MailboxBundle.fromParts(identifier, bytes))
 }

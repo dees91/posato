@@ -263,6 +263,39 @@ import Testing
   #expect(response.payload == Data([SyncLimits.deletePhaseTraverse, 15]))
 }
 
+@Test func givenSlowFetchesWhenDeletingRecordsThenIncompleteKeepsPostflightReserve() {
+  // Seven deletion-only pages at 5 s per fetch against a 30 s request
+  // budget: the pass must checkpoint with the 2 s response/postflight
+  // reserve intact, not at exactly 30 s. The virtual clock doubles as the
+  // handler clock, so the elapsed time at the response is the modeled
+  // cost of everything before postflight; the assertion leaves the full
+  // reserve for postflight and the response encoding.
+  let clock = ManualClock()
+  let backend = HistoryBackend()
+  backend.clock = clock
+  backend.latency = 5.0
+  backend.seedTombstones((0..<7).map { "gone-\($0)" })
+  let request = cloudRequest(
+    operation: .deleteWorkspaceRecords, payload: syntheticBinding, deadline: 30_000)
+  let response = RequestHandler.deleteRecords(
+    request,
+    started: .now(),
+    dependencies: SyncDependencies(
+      entitlements: FakeEntitlements(value: provisionedEntitlements()),
+      accounts: FakeAccounts(.available(syntheticBinding)),
+      keys: WorkspaceKeyStore(backend: InMemoryKeychainBackend()),
+      clouds: CloudStore(backend: backend)),
+    nowNanoseconds: { clock.nowNanoseconds })
+
+  #expect(response.outcome == .incomplete)
+  #expect(clock.nowNanoseconds <= 30_000_000_000 - SyncLimits.deleteCheckpointReserveNanoseconds)
+  guard let split = splitDeleteResumeToken(response.payload), split.phase == .traverse else {
+    Issue.record("expected a resumable traverse-phase cursor")
+    return
+  }
+  #expect(backend.timeouts.allSatisfy { $0 < 30 })
+}
+
 @Test func givenOversizedTokenWhenDeletingRecordsThenIntegrityFailureIsReturned() {
   let response = RequestHandler.handle(
     cloudRequest(

@@ -473,6 +473,7 @@ class AppleSyncConvergenceTest {
 internal class SharedFakeMailboxPort : MailboxPort {
     val saved = mutableListOf<MailboxBundle>()
     val cursors = mutableListOf<MailboxCursor>()
+    val resumeResets = mutableListOf<ByteArray>()
     var saveResult: BundleSaveResult = BundleSaveResult.Saved
 
     override suspend fun saveBundle(
@@ -510,6 +511,10 @@ internal class SharedFakeMailboxPort : MailboxPort {
 
     override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
         return BundleSweepResult.Swept
+    }
+
+    override suspend fun clearRemovalResumeState(expectedBinding: AccountBinding) {
+        resumeResets += expectedBinding.copyBytes()
     }
 
     private fun cursorIndex(cursor: MailboxCursor): Int {

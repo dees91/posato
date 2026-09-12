@@ -62,10 +62,11 @@ final class ManualClock: @unchecked Sendable {
 }
 
 @Test func givenSlowDeleteAfterFetchWhenDeletingThenCheckpointCoversOnlyDeletedPages() {
-  // Fetches are fast but deletes are slow: after the second fetch the
-  // reserve is already exhausted, so the checkpoint must still run that
-  // page's deletes before banking it. Banking first would hand back a
-  // cursor past live bundles the resume and the verify scan never see.
+  // Fetches are fast but deletes are slow: the budget dies between the
+  // second fetch and its deletes, so the checkpoint covers only the first
+  // page and the resume replays the second. Banking the fetched page first
+  // would hand back a cursor past live bundles the resume and the verify
+  // scan never see.
   let clock = ManualClock()
   let backend = HistoryBackend()
   backend.clock = clock
@@ -90,7 +91,8 @@ final class ManualClock: @unchecked Sendable {
     Issue.record("expected a traverse-phase cursor")
     return
   }
-  #expect(backend.deleted == [["b1"], ["b2"]])
+  #expect(backend.deleted == [["b1"]])
+  #expect(clock.nowNanoseconds <= 6_000_000_000 - SyncLimits.deleteCheckpointReserveNanoseconds)
 
   let second = RecordDeletion(backend: backend)
   switch second.deleteWorkspaceRecords(timeout: 30, resumeToken: incomplete, pageBudget: 30) {
@@ -100,5 +102,49 @@ final class ManualClock: @unchecked Sendable {
     Issue.record("expected completion on resume")
     return
   }
+  #expect(Array(backend.deleted.prefix(2)) == [["b1"], ["b2"]])
   #expect(backend.live.isEmpty)
+}
+
+@Test func givenBudgetLostAfterAnchorDeleteWhenDeletingThenCheckpointIsAlreadyVerify() {
+  // The budget dies between the anchor-batch success and its confirm-read:
+  // the checkpoint must already carry the verify phase, or the resume would
+  // re-traverse and delete the anchor again.
+  let clock = ManualClock()
+  let backend = HistoryBackend()
+  backend.clock = clock
+  backend.seedBundles(["b1"])
+  backend.publishAnchor()
+  backend.onAnchorDelete = {
+    clock.advance(10)
+  }
+
+  let first = RecordDeletion(backend: backend)
+  let incomplete: Data
+  switch first.deleteWorkspaceRecords(
+    timeout: 30, pageBudget: 30,
+    deadlineNanoseconds: 6_000_000_000,
+    nowNanoseconds: { clock.nowNanoseconds }
+  ) {
+  case .incomplete(let cursor):
+    incomplete = cursor
+  case .deletedAndAbsent, .retryable, .unknownOutcome, .integrityFailure:
+    Issue.record("expected a wall-clock checkpoint past the anchor delete")
+    return
+  }
+  guard let split = splitDeleteResumeToken(incomplete), split.phase == .verify else {
+    Issue.record("expected a verify-phase cursor")
+    return
+  }
+
+  let second = RecordDeletion(backend: backend)
+  switch second.deleteWorkspaceRecords(timeout: 30, resumeToken: incomplete, pageBudget: 30) {
+  case .deletedAndAbsent:
+    break
+  case .incomplete, .retryable, .unknownOutcome, .integrityFailure:
+    Issue.record("expected verification to complete on resume")
+    return
+  }
+  #expect(backend.live.isEmpty)
+  #expect(backend.deleted.filter { $0 == [CloudNames.anchorName] }.count == 1)
 }

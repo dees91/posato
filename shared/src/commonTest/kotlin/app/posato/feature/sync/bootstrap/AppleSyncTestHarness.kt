@@ -117,6 +117,7 @@ internal class FakeMailboxPort : MailboxPort {
     var deleteCalls = 0
     var sweepResult: BundleSweepResult = BundleSweepResult.Swept
     var sweepCalls = 0
+    val resumeResets = mutableListOf<ByteArray>()
     var beforeFetch: suspend () -> Unit = {}
 
     override suspend fun saveBundle(
@@ -145,6 +146,10 @@ internal class FakeMailboxPort : MailboxPort {
     override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
         sweepCalls += 1
         return sweepResult
+    }
+
+    override suspend fun clearRemovalResumeState(expectedBinding: AccountBinding) {
+        resumeResets += expectedBinding.copyBytes()
     }
 }
 

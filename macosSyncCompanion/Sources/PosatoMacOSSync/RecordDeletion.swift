@@ -72,7 +72,6 @@ struct DeletePass {
     if let outcome = removeAnchor() {
       return outcome
     }
-    phase = .verify
     return verifyFromToken()
   }
 
@@ -85,6 +84,9 @@ struct DeletePass {
   /// present anchor belongs to a concurrently established workspace: abort
   /// without touching or trusting anything it published.
   private func verifyEntryGate() -> EntryGate {
+    if timeUp() {
+      return .abort(checkpoint())
+    }
     switch backend.fetchRecord(name: CloudNames.anchorName, timeout: callTimeout()) {
     case .missing:
       return .proceed
@@ -93,7 +95,7 @@ struct DeletePass {
     case .zoneMissing:
       return .abort(.deletedAndAbsent)
     case .failed(let fault):
-      return .abort(mapFault(fault))
+      return .abort(deleteFault(fault))
     }
   }
 
@@ -111,19 +113,21 @@ struct DeletePass {
       switch nextPage() {
       case .zoneMissing:
         return .deletedAndAbsent
+      case .budgetExhausted:
+        return checkpoint()
       case .failed(let fault):
         return mapFault(fault)
       case .exhausted(let names, let exhaustedToken):
         pagesLeft -= 1
         if let fault = delete(names: names) {
-          return mapFault(fault)
+          return deleteFault(fault)
         }
         token = exhaustedToken
         return nil
       case .page(let names, let pageToken):
         pagesLeft -= 1
         if let fault = delete(names: names) {
-          return mapFault(fault)
+          return deleteFault(fault)
         }
         // Bank only past deleted pages: a checkpoint implies every earlier
         // page is gone, so a resume never skips an enumerated set whose
@@ -139,10 +143,18 @@ struct DeletePass {
   }
 
   /// Anchor deletion stays unconditional: a missing anchor reports success
-  /// through the delete mapper, which keeps resumed passes idempotent.
-  func removeAnchor() -> RecordDeleteNative? {
+  /// through the delete mapper, which keeps resumed passes idempotent. The
+  /// phase flips to verify as soon as the anchor batch reports deleted,
+  /// before the confirm-read: any checkpoint past this point already resumes
+  /// verifying, so a budget cut between the delete and its confirmation
+  /// never re-traverses or re-deletes the anchor.
+  mutating func removeAnchor() -> RecordDeleteNative? {
     if let fault = delete(names: [CloudNames.anchorName]) {
-      return mapFault(fault)
+      return deleteFault(fault)
+    }
+    phase = .verify
+    if timeUp() {
+      return checkpoint()
     }
     switch backend.fetchRecord(name: CloudNames.anchorName, timeout: callTimeout()) {
     case .missing, .zoneMissing:
@@ -150,7 +162,7 @@ struct DeletePass {
     case .found:
       return .unknownOutcome
     case .failed(let fault):
-      return mapFault(fault)
+      return deleteFault(fault)
     }
   }
 
@@ -166,6 +178,8 @@ struct DeletePass {
       switch nextPage() {
       case .zoneMissing:
         return .deletedAndAbsent
+      case .budgetExhausted:
+        return checkpoint()
       case .failed(let fault):
         return mapFault(fault)
       case .exhausted(let names, _):
@@ -205,14 +219,20 @@ struct DeletePass {
     return deadlineNanoseconds - now
   }
 
-  /// Per-call budget for each backend operation, shrinking as the pass
-  /// consumes the request deadline. No fetch or delete batch may start a
-  /// wait the checkpoint could not survive.
+  /// Per-call budget for each backend operation: the remaining request
+  /// budget minus the response/postflight reserve, so no single call can
+  /// consume the time the checkpoint needs to get out. The budget gate at
+  /// every call site guarantees this stays positive wherever it is used.
   func callTimeout() -> TimeInterval {
     if deadlineNanoseconds == .max {
       return timeout
     }
-    return TimeInterval(remainingNanoseconds()) / 1_000_000_000
+    let remaining = remainingNanoseconds()
+    let reserve = SyncLimits.deleteCheckpointReserveNanoseconds
+    guard remaining > reserve else {
+      return 0
+    }
+    return TimeInterval(remaining - reserve) / 1_000_000_000
   }
 
   func timeUp() -> Bool {
@@ -222,8 +242,14 @@ struct DeletePass {
     return remainingNanoseconds() <= SyncLimits.deleteCheckpointReserveNanoseconds
   }
 
+  /// Deletes one enumerated set in batches. The budget gate runs before
+  /// every chunk: a chunk that cannot start returns the synthesized fault
+  /// the callers map to the last confirmed checkpoint through deleteFault.
   func delete(names: [String]) -> BackendFault? {
     for chunk in chunked(names, size: SyncLimits.recordDeleteBatchSize) {
+      if timeUp() {
+        return .retryable
+      }
       switch backend.deleteRecords(names: chunk, timeout: callTimeout()) {
       case .deleted:
         break
@@ -234,8 +260,22 @@ struct DeletePass {
     return nil
   }
 
+  /// A backend failure that arrives after the work budget is gone becomes
+  /// the last confirmed checkpoint instead of a bare fault mapping, so the
+  /// caller resumes past completed work. Failures with budget left map
+  /// exactly, keeping genuine errors terminal.
+  private func deleteFault(_ fault: BackendFault) -> RecordDeleteNative {
+    if timeUp() {
+      return checkpoint()
+    }
+    return mapFault(fault)
+  }
+
   mutating func nextPage() -> PageStep {
     while true {
+      if timeUp() {
+        return .budgetExhausted
+      }
       switch backend.fetchChanges(tokenData: token, timeout: callTimeout()) {
       case .tokenExpired where !restarted:
         restart()
@@ -244,6 +284,9 @@ struct DeletePass {
       case .zoneMissing:
         return .zoneMissing
       case .failed(let fault):
+        if timeUp() {
+          return .budgetExhausted
+        }
         return .failed(fault)
       case .fetched(let fetched):
         return ingest(fetched)
@@ -298,6 +341,11 @@ enum PageStep {
   case exhausted(names: [String], token: Data)
   case zoneMissing
   case failed(BackendFault)
+  /// The work budget ran out before or during a backend fetch. Unlike
+  /// .failed, this carries no fault to map: the caller always checkpoints.
+  /// Parse and progress-guard faults stay .failed so integrity errors keep
+  /// their exact outcomes.
+  case budgetExhausted
 }
 
 extension CloudStore {

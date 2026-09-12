@@ -335,6 +335,15 @@ class IosCloudKitMailboxAdapterTest {
     }
 
     @Test
+    fun `given removal completion when cleared then the reset reaches the provider`() = runTest {
+        val provider = FakeIosCloudKitMailboxProvider()
+
+        IosMailboxAdapter(provider).clearRemovalResumeState(testBinding())
+
+        assertEquals(1, provider.resetCalls)
+    }
+
+    @Test
     fun `given a cancelled fetch when executed then cancel reaches the provider`() = runTest {
         val provider = BlockingFakeMailboxProvider()
         val job = launch(Dispatchers.Default) {
@@ -542,6 +551,12 @@ private class FakeIosCloudKitMailboxProvider(
         return bundleSweep
     }
 
+    var resetCalls = 0
+
+    override fun resetRemovalResumeState() {
+        resetCalls += 1
+    }
+
     override fun cancelInflight() = Unit
 }
 
@@ -585,6 +600,8 @@ private class BlockingFakeMailboxProvider : IosCloudKitMailboxProvider {
     override fun deleteWorkspaceRecords(binding: NSData): IosCloudRecordDeleteStatus = unimplemented()
 
     override fun sweepBundlesIfAnchorMissing(binding: NSData): IosCloudBundleSweepStatus = unimplemented()
+
+    override fun resetRemovalResumeState() = unimplemented()
 
     override fun cancelInflight() {
         cancelRecorded = true

@@ -996,6 +996,13 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         backend.cancelInflight()
     }
 
+    /// Drops retained delete/sweep resume tokens after the workspace is gone
+    /// locally. Memory-only: performs no CloudKit operations.
+    func resetRemovalResumeState() {
+        deleteResumeToken = nil
+        sweepResumeToken = nil
+    }
+
     func fetchZone(binding: Data) -> IosCloudZoneFetchStatus {
         switch preflight(expectedBinding: binding as Data) {
         case .proceed:

@@ -25,6 +25,10 @@ internal class AppleWorkspaceRemoval(
             }
 
             is BootstrapStoreResult.Success -> {
+                // The workspace is gone locally through every branch, so any
+                // resume cursor retained for its removal is stale for the
+                // next workspace on this account and must not survive.
+                mailbox.clearRemovalResumeState(workspace.binding)
                 if (check.status == EstablishedStatus.DIFFERENT_ANCHOR) SyncStatus.ACTION_REQUIRED else SyncStatus.LOCAL_ONLY
             }
         }

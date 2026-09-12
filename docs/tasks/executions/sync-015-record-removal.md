@@ -142,3 +142,35 @@
 - **Checks:** companion `swift test` 142/142, SwiftLint 0, `jvmTest`
   561/561, `iosSimulatorArm64Test` 547/547, `iosSwiftTest` 128 run,
   6 skipped (pre-existing), 0 failures, `./gradlew quality` exit 0.
+
+## Review correction P1 threads (2026-09-12, PR #50, 3996471809 + 3996472772)
+
+- **Outcome:** deadline reserve plus continuation lifecycle; wire unchanged
+  (`INCOMPLETE=18` only, no token-format or outcome changes).
+- **Changes:** clamp `callTimeout` to remaining-minus-2 s reserve plus a
+  per-call `timeUp` gate; delete-then-bank with a `timeUp`-gated checkpoint
+  on post-budget faults; verify-phase flip in mutating `removeAnchor`
+  before the confirm-read; `MailboxPort.clearRemovalResumeState` after
+  `clearEstablished` success (Mac/iOS memory-only).
+- **Checks:** `./gradlew quality` BUILD SUCCESSFUL; companion `swift test`
+  144/144; `jvmTest` 564/564; `iosSimulatorArm64Test` 548/548;
+  `iosSwiftTest` 128 run, 6 skipped (pre-existing), 0 failures.
+- **Driver Remove proof (correction-scoped, no full AC-04 rerun):** Mac
+  Remove workspace by driver to local-only, workspace rows 1 to 0,
+  tombstone 6 to 7. iPhone Remove unreachable by driver (compact layout,
+  `ELEMENT_NOT_FOUND` on `scrollTo`); maintainer tapped manually. The
+  first tap landed on Sync now: fetch against the deleted zone surfaced
+  retryable "Sync did not finish" with both local websites preserved
+  (continuation-lifecycle path). The second tap removed: local-only with
+  2 websites retained.
+- **Restore:** ghost wait satisfied (19 min past Mac removal). Mac Sync
+  with iCloud by driver: completed, `sync_bootstrap_state` 1,
+  `sync_removed_workspace` 7, pending 0, accepted 3. iPhone removed its
+  old workspace before joining (per recipe), joined by manual tap:
+  completed. Union converged on both devices (`wp.pl`, `x.com`, verified
+  on-device by find); both still completed after settle. No fixture
+  cleanup: `design-proof-16.example` absent, the two domains are
+  maintainer data and were left untouched.
+- **Evidence (ignored):** `build/verification/runs/20260912-172608-791b`
+  (Mac relink screenshot), `20260912-172812-f384` (driver scrollTo
+  failure), `20260912-173300-9fe9` (iPhone completed screenshot).

@@ -17,4 +17,12 @@ internal interface MailboxPort {
     suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult
 
     suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult
+
+    /**
+     * Drops any retained removal resume state for [expectedBinding] after the
+     * workspace is gone locally. Memory-only and infallible: performs no
+     * provider operations and reports no outcome. Called exactly once per
+     * completed removal, never while the established row is kept.
+     */
+    suspend fun clearRemovalResumeState(expectedBinding: AccountBinding)
 }

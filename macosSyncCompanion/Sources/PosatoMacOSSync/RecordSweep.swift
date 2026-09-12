@@ -9,6 +9,9 @@ extension DeletePass {
   /// re-checked against the anchor after enumeration and before deletion,
   /// so a bundle published under a freshly minted anchor is never removed.
   mutating func runSweep() -> BundleSweepNative {
+    if timeUp() {
+      return sweepCheckpoint()
+    }
     switch backend.fetchRecord(name: CloudNames.anchorName, timeout: callTimeout()) {
     case .missing:
       break
@@ -17,7 +20,7 @@ extension DeletePass {
     case .zoneMissing:
       return .swept
     case .failed(let fault):
-      return mapSweepFault(fault)
+      return sweepDeleteFault(fault)
     }
     while true {
       switch sweepStep() {
@@ -36,6 +39,8 @@ extension DeletePass {
     switch nextPage() {
     case .zoneMissing:
       return .done(.swept)
+    case .budgetExhausted:
+      return .done(sweepCheckpoint())
     case .failed(let fault):
       return .done(mapSweepFault(fault))
     case .exhausted(let names, _):
@@ -61,6 +66,9 @@ extension DeletePass {
     if names.isEmpty {
       return .swept
     }
+    if timeUp() {
+      return sweepCheckpoint()
+    }
     switch backend.fetchRecord(name: CloudNames.anchorName, timeout: callTimeout()) {
     case .missing:
       break
@@ -69,12 +77,21 @@ extension DeletePass {
     case .zoneMissing:
       return .swept
     case .failed(let fault):
-      return mapSweepFault(fault)
+      return sweepDeleteFault(fault)
     }
     if let fault = delete(names: names) {
-      return mapSweepFault(fault)
+      return sweepDeleteFault(fault)
     }
     return .swept
+  }
+
+  /// Sweep mirror of DeletePass.deleteFault: a failure that arrives after
+  /// the work budget is gone becomes the last confirmed checkpoint.
+  private func sweepDeleteFault(_ fault: BackendFault) -> BundleSweepNative {
+    if timeUp() {
+      return sweepCheckpoint()
+    }
+    return mapSweepFault(fault)
   }
 
   private func sweepCheckpoint() -> BundleSweepNative {

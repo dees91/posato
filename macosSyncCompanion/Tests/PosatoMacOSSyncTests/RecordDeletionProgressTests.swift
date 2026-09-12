@@ -28,11 +28,17 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   private(set) var deleted: [[String]] = []
   private(set) var timeouts: [TimeInterval] = []
 
-  private func tick(timeout: TimeInterval, latency override: TimeInterval? = nil) {
+  /// Advances the virtual clock by at most the passed timeout, mirroring a
+  /// production backend that cancels the operation on expiry. Returns false
+  /// when the scripted latency overruns, in which case the caller reports
+  /// the same .failed(.unknown) the semaphore-expiry path produces.
+  private func tick(timeout: TimeInterval, latency override: TimeInterval? = nil) -> Bool {
     timeouts.append(timeout)
+    let cost = override ?? latency
     if let clock {
-      clock.advance(override ?? latency)
+      clock.advance(min(cost, max(timeout, 0)))
     }
+    return cost <= timeout
   }
 
   func seedBundles(_ names: [String]) {
@@ -67,7 +73,9 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   }
 
   func fetchRecord(name: String, timeout: TimeInterval) -> BackendLookup {
-    tick(timeout: timeout)
+    guard tick(timeout: timeout) else {
+      return .failed(.unknown)
+    }
     opLog.append("anchorRead:\(name)")
     if zoneGone {
       return .zoneMissing
@@ -84,7 +92,9 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   }
 
   func fetchChanges(tokenData: Data?, timeout: TimeInterval) -> BackendChangesResult {
-    tick(timeout: timeout)
+    guard tick(timeout: timeout) else {
+      return .failed(.unknown)
+    }
     let index: Int
     if let tokenData {
       guard tokenData.count == 8 else {
@@ -122,7 +132,9 @@ final class HistoryBackend: CloudBackend, @unchecked Sendable {
   }
 
   func deleteRecords(names: [String], timeout: TimeInterval) -> BackendDelete {
-    tick(timeout: timeout, latency: deleteLatency)
+    guard tick(timeout: timeout, latency: deleteLatency) else {
+      return .failed(.unknown)
+    }
     opLog.append("delete:\(names.joined(separator: ","))")
     deleted.append(names)
     if names.contains(CloudNames.anchorName) {

@@ -139,7 +139,10 @@ extension RequestHandler {
   static func deleteRecords(
     _ request: SyncMessage,
     started: DispatchTime,
-    dependencies: SyncDependencies
+    dependencies: SyncDependencies,
+    nowNanoseconds: @Sendable @escaping () -> UInt64 = {
+      DispatchTime.now().uptimeNanoseconds
+    }
   ) -> SyncMessage {
     guard let parsed = CloudRequestCodec.cursorRequest(request.payload) else {
       return request.respond(outcome: .integrityFailure)
@@ -161,12 +164,14 @@ extension RequestHandler {
       started: started,
       budgetMilliseconds: request.deadlineMilliseconds
     )
-    let deadlineNanoseconds = passDeadlineNanoseconds(timeout: timeout)
+    let deadlineNanoseconds = passDeadlineNanoseconds(
+      timeout: timeout, nowNanoseconds: nowNanoseconds)
     let (result, changed) = RequestSupport.observingAccountChange(
       name: dependencies.accountChangeName
     ) {
       dependencies.clouds.deleteWorkspaceRecords(
-        timeout: timeout, resumeToken: resumeToken, deadlineNanoseconds: deadlineNanoseconds)
+        timeout: timeout, resumeToken: resumeToken, deadlineNanoseconds: deadlineNanoseconds,
+        nowNanoseconds: nowNanoseconds)
     }
     guard !changed,
       RequestSupport.postflight(
@@ -184,7 +189,10 @@ extension RequestHandler {
   static func sweepBundles(
     _ request: SyncMessage,
     started: DispatchTime,
-    dependencies: SyncDependencies
+    dependencies: SyncDependencies,
+    nowNanoseconds: @Sendable @escaping () -> UInt64 = {
+      DispatchTime.now().uptimeNanoseconds
+    }
   ) -> SyncMessage {
     guard let parsed = CloudRequestCodec.cursorRequest(request.payload),
       // Sweep tokens are pure server tokens: anything longer is wire
@@ -210,12 +218,14 @@ extension RequestHandler {
       started: started,
       budgetMilliseconds: request.deadlineMilliseconds
     )
-    let deadlineNanoseconds = passDeadlineNanoseconds(timeout: timeout)
+    let deadlineNanoseconds = passDeadlineNanoseconds(
+      timeout: timeout, nowNanoseconds: nowNanoseconds)
     let (result, changed) = RequestSupport.observingAccountChange(
       name: dependencies.accountChangeName
     ) {
       dependencies.clouds.sweepBundlesIfAnchorMissing(
-        timeout: timeout, resumeToken: resumeToken, deadlineNanoseconds: deadlineNanoseconds)
+        timeout: timeout, resumeToken: resumeToken, deadlineNanoseconds: deadlineNanoseconds,
+        nowNanoseconds: nowNanoseconds)
     }
     guard !changed,
       RequestSupport.postflight(
@@ -234,8 +244,11 @@ extension RequestHandler {
 /// Wall-clock deadline for one delete/sweep pass: the request's remaining
 /// budget as an absolute timestamp. The pass checkpoints against it with
 /// time reserved for the response encoding and the caller's postflight.
-private func passDeadlineNanoseconds(timeout: TimeInterval) -> UInt64 {
-  DispatchTime.now().uptimeNanoseconds &+ UInt64(timeout * 1_000_000_000)
+private func passDeadlineNanoseconds(
+  timeout: TimeInterval,
+  nowNanoseconds: @Sendable @escaping () -> UInt64
+) -> UInt64 {
+  nowNanoseconds() &+ UInt64(timeout * 1_000_000_000)
 }
 
 private func sweepResponse(_ request: SyncMessage, result: BundleSweepNative) -> SyncMessage {

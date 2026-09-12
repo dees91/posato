@@ -257,6 +257,8 @@ private class InertMailboxProvider : IosCloudKitMailboxProvider {
         return IosCloudBundleSweepStatus.Retryable
     }
 
+    override fun resetRemovalResumeState() = Unit
+
     override fun cancelInflight() = Unit
 }
 

@@ -157,6 +157,12 @@ interface IosCloudKitMailboxProvider {
 
     fun sweepBundlesIfAnchorMissing(binding: NSData): IosCloudBundleSweepStatus
 
+    /**
+     * Drops retained delete/sweep resume tokens after the workspace is gone
+     * locally. Memory-only: performs no CloudKit operations.
+     */
+    fun resetRemovalResumeState()
+
     fun cancelInflight()
 }
 
@@ -455,6 +461,10 @@ internal class IosMailboxAdapter(
         } finally {
             binding.fill(0)
         }
+    }
+
+    override suspend fun clearRemovalResumeState(expectedBinding: AccountBinding) {
+        provider.cancellableCall { resetRemovalResumeState() }
     }
 
     private fun IosCloudChangePage.toChangeFetchResult(): ChangeFetchResult {
