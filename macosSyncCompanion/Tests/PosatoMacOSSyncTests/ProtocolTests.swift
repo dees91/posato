@@ -54,7 +54,7 @@ import Testing
 }
 
 @Test func givenReservedOperationWhenDecodedThenItIsRejected() throws {
-  for code: UInt8 in [12, 13, 14, 15] {
+  for code: UInt8 in [13, 14, 15] {
     var encoded = try SyncCodec.encode(testRequest(operation: .readItem))
     encoded[6] = code
     #expect(throws: SyncProtocolFailure.invalidOperation) {
@@ -66,7 +66,7 @@ import Testing
 @Test func givenCloudOperationsWhenRoundTrippedThenFieldsArePreserved() throws {
   for operation: SyncOperation in [
     .fetchZone, .saveZone, .readAnchor, .createAnchor, .saveBundle, .fetchChanges,
-    .deleteZoneAndVerifyAbsent,
+    .deleteWorkspaceRecords, .sweepBundlesIfAnchorMissing,
   ] {
     let decoded = try SyncCodec.decode(try SyncCodec.encode(cloudRequest(operation: operation)))
 

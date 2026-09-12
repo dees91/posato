@@ -14,7 +14,7 @@ import Testing
   #expect(backend.zoneSaveCalls == 0)
   #expect(backend.fetchRecordCalls == 0)
   #expect(backend.changesCalls == 0)
-  #expect(backend.zoneDeleteCalls == 0)
+  #expect(backend.deleteRecordCalls.isEmpty)
 }
 
 @Test func givenCloudKitBitWhenReadingKeychainItemThenItIsRejected() {
@@ -232,13 +232,79 @@ import Testing
   #expect(response.payload.isEmpty)
 }
 
-@Test func givenDeletedZoneWhenDeletingThenDeletedAndAbsentIsReturned() {
+@Test func givenEmptyZoneWhenDeletingRecordsThenDeletedAndAbsentIsReturned() {
+  let backend = FakeCloudBackend()
+  backend.changesScript = [
+    .fetched(BackendChanges(changed: [], deletedNames: [], token: Data([7]), moreComing: false)),
+    .fetched(BackendChanges(changed: [], deletedNames: [], token: Data([8]), moreComing: false)),
+  ]
   let response = RequestHandler.handle(
-    cloudRequest(operation: .deleteZoneAndVerifyAbsent, payload: syntheticBinding),
-    dependencies: cloudDependencies()
+    cloudRequest(operation: .deleteWorkspaceRecords, payload: syntheticBinding),
+    dependencies: cloudDependencies(backend: backend)
   )
 
   #expect(response.outcome == .deletedAndAbsent)
+}
+
+@Test func givenExhaustedBudgetWhenDeletingRecordsThenIncompleteCarriesCursor() {
+  let backend = FakeCloudBackend()
+  backend.changesScript = (0..<17).map { index in
+    .fetched(
+      BackendChanges(
+        changed: [], deletedNames: ["gone-\(index)"], token: Data([UInt8(index)]),
+        moreComing: true))
+  }
+  let response = RequestHandler.handle(
+    cloudRequest(operation: .deleteWorkspaceRecords, payload: syntheticBinding),
+    dependencies: cloudDependencies(backend: backend)
+  )
+
+  #expect(response.outcome == .incomplete)
+  #expect(response.payload == Data([SyncLimits.deletePhaseTraverse, 15]))
+}
+
+@Test func givenSlowFetchesWhenDeletingRecordsThenIncompleteKeepsPostflightReserve() {
+  // Seven deletion-only pages at 5 s per fetch against a 30 s request
+  // budget: the pass must checkpoint with the 2 s response/postflight
+  // reserve intact, not at exactly 30 s. The virtual clock doubles as the
+  // handler clock, so the elapsed time at the response is the modeled
+  // cost of everything before postflight; the assertion leaves the full
+  // reserve for postflight and the response encoding.
+  let clock = ManualClock()
+  let backend = HistoryBackend()
+  backend.clock = clock
+  backend.latency = 5.0
+  backend.seedTombstones((0..<7).map { "gone-\($0)" })
+  let request = cloudRequest(
+    operation: .deleteWorkspaceRecords, payload: syntheticBinding, deadline: 30_000)
+  let response = RequestHandler.deleteRecords(
+    request,
+    started: .now(),
+    dependencies: SyncDependencies(
+      entitlements: FakeEntitlements(value: provisionedEntitlements()),
+      accounts: FakeAccounts(.available(syntheticBinding)),
+      keys: WorkspaceKeyStore(backend: InMemoryKeychainBackend()),
+      clouds: CloudStore(backend: backend)),
+    nowNanoseconds: { clock.nowNanoseconds })
+
+  #expect(response.outcome == .incomplete)
+  #expect(clock.nowNanoseconds <= 30_000_000_000 - SyncLimits.deleteCheckpointReserveNanoseconds)
+  guard let split = splitDeleteResumeToken(response.payload), split.phase == .traverse else {
+    Issue.record("expected a resumable traverse-phase cursor")
+    return
+  }
+  #expect(backend.timeouts.allSatisfy { $0 < 30 })
+}
+
+@Test func givenOversizedTokenWhenDeletingRecordsThenIntegrityFailureIsReturned() {
+  let response = RequestHandler.handle(
+    cloudRequest(
+      operation: .deleteWorkspaceRecords,
+      payload: syntheticBinding + Data(repeating: 9, count: SyncLimits.cursorBytes + 1)),
+    dependencies: cloudDependencies()
+  )
+
+  #expect(response.outcome == .integrityFailure)
 }
 
 @Test func givenElapsedPreflightWhenSavingZoneThenRemainingDeadlineIsPassed() {

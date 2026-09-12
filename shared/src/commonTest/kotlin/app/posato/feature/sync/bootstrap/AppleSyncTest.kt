@@ -1,11 +1,15 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.sync.domain.KeyEpochId
+import app.posato.feature.sync.domain.SyncContext
+import app.posato.feature.sync.domain.TransportEpochId
 import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxBundle
-import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.mailbox.RecordDeleteResult
 import app.posato.feature.sync.testIdentifier
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -160,10 +164,231 @@ class AppleSyncTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {
             harness.establish()
-            harness.mailbox.deleteResult = ZoneDeleteResult.UnknownOutcome
+            harness.mailbox.deleteResult = RecordDeleteResult.UnknownOutcome
             harness.sync.removeWorkspace()
             assertEquals(0, harness.keys.deleteCalls)
             assertIs<BootstrapState.Established>(assertIs<BootstrapStoreResult.Success<BootstrapState>>(harness.store.read()).value)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a ready workspace when removing then records key and state clear with tombstone`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            val removed = checkNotNull(harness.cloud.storedAnchor)
+            harness.sync.removeWorkspace()
+            assertEquals(1, harness.mailbox.deleteCalls)
+            assertEquals(1, harness.mailbox.resumeResets.size)
+            assertEquals(1, harness.keys.deleteCalls)
+            assertEquals(BootstrapStoreResult.Success(BootstrapState.None), harness.store.read())
+            assertEquals(BootstrapStoreResult.Success(true), harness.store.containsRemoved(removed.workspaceId))
+            assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a partial removal when removing again then the second removal completes`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            harness.mailbox.deleteResults.addAll(
+                listOf(RecordDeleteResult.UnknownOutcome, RecordDeleteResult.DeletedAndAbsent),
+            )
+            harness.sync.removeWorkspace()
+            assertEquals(SyncStatus.RETRYABLE, harness.sync.state.value.status)
+            assertIs<BootstrapState.Established>(assertIs<BootstrapStoreResult.Success<BootstrapState>>(harness.store.read()).value)
+            harness.sync.removeWorkspace()
+            assertEquals(2, harness.mailbox.deleteCalls)
+            assertEquals(1, harness.keys.deleteCalls)
+            assertEquals(BootstrapStoreResult.Success(BootstrapState.None), harness.store.read())
+            assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
+            harness.sync.removeWorkspace()
+            assertEquals(2, harness.mailbox.deleteCalls)
+            assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a remaining record when removing then retryable is reported and the row is kept`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            harness.mailbox.deleteResult = RecordDeleteResult.UnknownOutcome
+            harness.sync.removeWorkspace()
+            assertEquals(SyncStatus.RETRYABLE, harness.sync.state.value.status)
+            assertEquals(0, harness.keys.deleteCalls)
+            assertIs<BootstrapState.Established>(assertIs<BootstrapStoreResult.Success<BootstrapState>>(harness.store.read()).value)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given an account change when removing then action required is reported and the row is kept`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            harness.mailbox.deleteResult = RecordDeleteResult.AccountChanged
+            harness.sync.removeWorkspace()
+            assertEquals(SyncStatus.ACTION_REQUIRED, harness.sync.state.value.status)
+            assertEquals(0, harness.keys.deleteCalls)
+            assertIs<BootstrapState.Established>(assertIs<BootstrapStoreResult.Success<BootstrapState>>(harness.store.read()).value)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a missing anchor when syncing then action required is reported without fetching`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            harness.cloud.storedAnchor = null
+            harness.sync.syncNow()
+            advanceUntilIdle()
+            assertEquals(SyncStatus.ACTION_REQUIRED, harness.sync.state.value.status)
+            assertTrue(harness.mailbox.cursors.isEmpty())
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a missing anchor when removing then leftovers are swept and state ends local-only`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            val removed = checkNotNull(harness.cloud.storedAnchor)
+            harness.cloud.storedAnchor = null
+            harness.sync.removeWorkspace()
+            assertEquals(0, harness.mailbox.deleteCalls)
+            assertEquals(1, harness.mailbox.sweepCalls)
+            assertEquals(1, harness.mailbox.resumeResets.size)
+            assertEquals(1, harness.keys.deleteCalls)
+            assertEquals(BootstrapStoreResult.Success(BootstrapState.None), harness.store.read())
+            assertEquals(BootstrapStoreResult.Success(true), harness.store.containsRemoved(removed.workspaceId))
+            assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a missing anchor when the sweep is pending then retryable is reported and the row is kept`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            harness.cloud.storedAnchor = null
+            harness.mailbox.sweepResult = BundleSweepResult.Retryable
+            harness.sync.removeWorkspace()
+            assertEquals(1, harness.mailbox.sweepCalls)
+            assertEquals(SyncStatus.RETRYABLE, harness.sync.state.value.status)
+            assertEquals(0, harness.keys.deleteCalls)
+            assertTrue(harness.mailbox.resumeResets.isEmpty())
+            assertIs<BootstrapState.Established>(assertIs<BootstrapStoreResult.Success<BootstrapState>>(harness.store.read()).value)
+            harness.mailbox.sweepResult = BundleSweepResult.Swept
+            harness.sync.removeWorkspace()
+            assertEquals(2, harness.mailbox.sweepCalls)
+            assertEquals(1, harness.mailbox.resumeResets.size)
+            assertEquals(1, harness.keys.deleteCalls)
+            assertEquals(BootstrapStoreResult.Success(BootstrapState.None), harness.store.read())
+            assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a deletion-only page when consuming then the cursor advances without accepting`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            harness.sync.onForeground()
+            advanceUntilIdle()
+            harness.mailbox.pages.add(ChangeFetchResult.Page(ChangePage(null, false, testCursor(2))))
+            harness.sync.syncNow()
+            advanceUntilIdle()
+            assertEquals(SyncStatus.COMPLETED, harness.sync.state.value.status)
+            assertTrue(harness.database.syncReplicaQueries.selectAcceptedBundles().executeAsList().isEmpty())
+            harness.sync.syncNow()
+            advanceUntilIdle()
+            assertEquals(testCursor(2), harness.mailbox.cursors.last())
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a foreign-context bundle when consuming then the cursor advances without accepting`() = runTest {
+        val shared = FakeMailboxPort()
+        val first = AppleSyncTestHarness(StandardTestDispatcher(testScheduler), name = "foreign-first.db", mailboxPort = shared)
+        val second = AppleSyncTestHarness(StandardTestDispatcher(testScheduler), name = "foreign-second.db", mailboxPort = shared)
+        try {
+            first.establish()
+            val foreignContext = SyncContext(
+                workspaceId = WorkspaceId(testIdentifier(11)),
+                transportEpochId = TransportEpochId(testIdentifier(12)),
+                keyEpochId = KeyEpochId(testIdentifier(13)),
+            )
+            second.store.commitEstablished(EstablishedWorkspace(foreignContext, bindingA))
+            second.cloud.zoneExists = true
+            second.cloud.storedAnchor = WorkspaceAnchor(foreignContext.workspaceId, foreignContext.transportEpochId, foreignContext.keyEpochId)
+            val account = checkNotNull(BootstrapEncoding.identifierToAccountText(foreignContext.workspaceId.value))
+            second.keys.items[account] = checkNotNull(
+                BootstrapEncoding.encodeKeyItem(
+                    foreignContext.workspaceId,
+                    foreignContext.transportEpochId,
+                    foreignContext.keyEpochId,
+                    ByteArray(32) { 8 },
+                ),
+            ).copyBytes()
+            first.sync.onForeground()
+            advanceUntilIdle()
+            first.recordDomainChanges(testPolicy(), testPolicy("one.example"))
+            first.sync.syncNow()
+            advanceUntilIdle()
+            assertTrue(shared.saved.isNotEmpty())
+            val foreign = shared.saved.last()
+            shared.pages.add(ChangeFetchResult.Page(ChangePage(foreign, false, testCursor(5))))
+            second.sync.syncNow()
+            advanceUntilIdle()
+            assertEquals(SyncStatus.COMPLETED, second.sync.state.value.status)
+            assertTrue(second.database.syncReplicaQueries.selectAcceptedBundles().executeAsList().isEmpty())
+            second.sync.syncNow()
+            advanceUntilIdle()
+            assertEquals(testCursor(5), shared.cursors.last())
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
+    fun `given a removal when relinking then a fresh workspace establishes in the found zone`() = runTest {
+        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
+        try {
+            harness.establish()
+            val removed = checkNotNull(harness.cloud.storedAnchor)
+            harness.sync.removeWorkspace()
+            assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
+            harness.cloud.storedAnchor = null
+            val zoneSaves = harness.cloud.zoneSaveCalls
+            harness.sync.syncWithIcloud()
+            val established = assertIs<BootstrapState.Established>(
+                assertIs<BootstrapStoreResult.Success<BootstrapState>>(harness.store.read()).value,
+            )
+            assertTrue(established.workspace.context.workspaceId != removed.workspaceId)
+            assertEquals(1, harness.mailbox.sweepCalls)
+            assertEquals(zoneSaves, harness.cloud.zoneSaveCalls)
+            assertEquals(1, harness.cloud.anchorCreateCalls)
+            assertTrue(harness.sync.state.value.linked)
         } finally {
             harness.close()
         }

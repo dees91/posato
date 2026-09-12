@@ -18,10 +18,11 @@ import app.posato.feature.sync.data.IosCloudAnchorCreateStatus
 import app.posato.feature.sync.data.IosCloudAnchorRead
 import app.posato.feature.sync.data.IosCloudAnchorReadStatus
 import app.posato.feature.sync.data.IosCloudBundleSaveStatus
+import app.posato.feature.sync.data.IosCloudBundleSweepStatus
 import app.posato.feature.sync.data.IosCloudChangeFetchStatus
 import app.posato.feature.sync.data.IosCloudChangePage
 import app.posato.feature.sync.data.IosCloudKitMailboxProvider
-import app.posato.feature.sync.data.IosCloudZoneDeleteStatus
+import app.posato.feature.sync.data.IosCloudRecordDeleteStatus
 import app.posato.feature.sync.data.IosCloudZoneFetchStatus
 import app.posato.feature.sync.data.IosCloudZoneSaveStatus
 import app.posato.feature.sync.data.IosCryptoProvider
@@ -248,9 +249,15 @@ private class InertMailboxProvider : IosCloudKitMailboxProvider {
         return IosCloudChangePage(IosCloudChangeFetchStatus.Retryable, false, null, null, null)
     }
 
-    override fun deleteZoneAndVerifyAbsent(binding: NSData): IosCloudZoneDeleteStatus {
-        return IosCloudZoneDeleteStatus.Retryable
+    override fun deleteWorkspaceRecords(binding: NSData): IosCloudRecordDeleteStatus {
+        return IosCloudRecordDeleteStatus.Retryable
     }
+
+    override fun sweepBundlesIfAnchorMissing(binding: NSData): IosCloudBundleSweepStatus {
+        return IosCloudBundleSweepStatus.Retryable
+    }
+
+    override fun resetRemovalResumeState() = Unit
 
     override fun cancelInflight() = Unit
 }

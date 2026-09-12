@@ -96,40 +96,43 @@ Replace the action label with **Sync with iCloud**, **Sync now**, or
    retry, then verify one peer acceptance. Run in both directions. Device DB
    access is unavailable; Mac reception and device status are the evidence.
 7. Press **Remove workspace**, inspect the destructive confirmation, and
-   confirm. Expect local-only with local websites retained. The peer's next
-   attempt must require action. CloudKit may keep surfacing the old zone and
-   `workspace` record for several minutes, and a fresh establish made within
-   that window can be lost when the provider purges the same-name zone
-   (observed once: completed, then the website never reached the peer and
-   the establishing device later reported action required). Wait at least
-   ten minutes after **Remove workspace** before re-establishing on the same
-   account; the app cannot detect the purge. If **Sync with iCloud** is
-   pressed while that old anchor is
-   still visible, this device must not report completed and must not gain an
-   established row (`sync_bootstrap_state` stays zero; `sync_removed_workspace`
-   is at least one and does not increase during the refused presses). Retry the
-   same action until the old anchor is gone, then a fresh
-   establish succeeds and survives a further wait. A peer still linked to the
-   old workspace must remove it before joining the new one; its old key
-   deletion must never delete the newly established zone. If a ghost zone
-   never purges, press **Remove workspace** again on any device that still
-   reads ready on it. Repeat with the devices reversed. Remove only the
-   synthetic website fixtures afterward.
+   confirm. Expect local-only with local websites retained: removal deletes
+   the anchor and every bundle record inside the exact zone and keeps the
+   zone, which the app never deletes. A peer whose next attempt finds the
+   zone but no anchor must require action; its own removal then skips record
+   deletion and clears only its key and local state. CloudKit may keep
+   surfacing the old records for several minutes. Until the timed proof
+   below passed 2026-09-12 in both shapes and directions, so the settle rule
+   is retired and re-establish timing is unconstrained: on every matrix run
+   the record purge was visible in under a minute and the press completed
+   with a fresh workspace. If **Sync with iCloud** is pressed while that old
+   anchor is still visible, this device must not report completed and must
+   not gain an established row (`sync_bootstrap_state` stays zero;
+   `sync_removed_workspace` is at least one and does not increase during
+   the refused presses). Retry the same action until the old anchor is gone,
+   then a fresh establish succeeds and survives a further wait. A peer still
+   linked to the old workspace must remove it before joining the new one.
+   Repeat with the devices reversed. Remove only the synthetic website
+   fixtures afterward.
 8. For a timed re-link after removal, start with both devices linked. On the
-   Mac, remove the workspace, add `design-proof-15.example` while unlinked,
-   then press **Sync with iCloud** within one minute and at most four more
-   times one minute apart. Per press record wall-clock time, device, status,
-   whether the peer was still linked, press count, and the Mac counts
+   Mac, remove the workspace, add `design-proof-16.example` while unlinked,
+   then press **Sync with iCloud** within three minutes while the iPhone is
+   still linked. Per press record wall-clock time, device, status, whether
+   the peer was still linked, press count, and the Mac counts
    (`sync_bootstrap_state`, `sync_removed_workspace`, `sync_accepted_bundle`).
-   When it establishes, remove on the iPhone and sync; confirm the join and
-   the website; wait at least ten minutes; **Sync now** on both and confirm
-   completed with one established row on the Mac. Repeat with the iPhone
-   removed before the Mac's re-link. Two direct establishes that keep the
-   website and the established row through the wait are the accepted
-   fallback; a direct establish followed by a lost website or a later action
-   required is the ghost outcome and is recorded as such. The refusal itself
-   is covered by the fake-port cases. Cleanup removes only the fixture
-   domain; both devices end linked to the newest workspace.
+   The iPhone must show action required; remove there, link, and confirm the
+   website arrives. Then run the both-removed shape: remove on both devices,
+   re-establish, and confirm the website arrives. In both shapes, after a
+   wait of at least ten minutes, both devices still complete an exchange
+   with the Mac holding one established row, and the Mac's accepted count
+   stays stable across repeat exchanges. Then run the whole matrix with the
+   devices reversed. A run that loses the website or the row is a failure,
+   not a fallback. Cleanup removes only the fixture domain; both devices
+   end linked to the newest workspace. Observed 2026-09-12 (workspaces B,
+   C, D): a still-linked peer either requires action on a different anchor
+   or waits for the workspace key until iCloud Keychain delivers it (up to
+   about 20 minutes on the first run); both converge through remove there,
+   link, and confirm the website arrives.
 9. Exercise simultaneous opt-in from a state cleared through the removal UI.
    Coordinate presses against one absolute wall-clock time, allowing for iOS
    driver startup. Retry the losing side after key delivery; a completed
@@ -220,7 +223,8 @@ whose authoring fails are not backfilled. Tests own these interim limits and
 the exclusion of old queued changes after removal and re-linking.
 
 Removal stops at an uncertain account, zone, key, or storage outcome. A missing
-zone permits remaining cleanup; a different anchor permits only the old known
-key and local cleanup, with action required. An absent or unreadable anchor
+zone permits remaining cleanup; a missing anchor permits only the own key
+and local cleanup ending local-only; a different anchor permits only the old
+known key and local cleanup, with action required. An unreadable anchor
 stops cleanup. Never replace this flow with database deletion, app uninstall,
 or console deletion: those bypass the behavior being verified.

@@ -156,7 +156,8 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
         val keys = MacOsBootstrapKeychainAdapter(transport)
         val crypto = JdkSyncCryptoProvider()
         val store = SqlBootstrapStore(database, databaseDispatcher)
-        val coordinator = BootstrapCoordinator(keys, MacOsBootstrapCloudAdapter(transport), keys, store, crypto)
+        val mailbox = MacOsMailboxAdapter(transport)
+        val coordinator = BootstrapCoordinator(keys, MacOsBootstrapCloudAdapter(transport), keys, store, crypto, mailbox)
         val core = SyncOperationCore(SqlSyncReplicaStore(database, databaseDispatcher), crypto, SyncWallClock { System.currentTimeMillis() })
         return AppleSync(coordinator, core, MacOsMailboxAdapter(transport), keys, store, policySync, crypto, Dispatchers.IO)
     }

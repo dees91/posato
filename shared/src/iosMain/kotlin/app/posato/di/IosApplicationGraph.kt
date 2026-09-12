@@ -176,7 +176,8 @@ internal interface IosApplicationGraph : ApplicationGraph {
         val keys = IosBootstrapKeychainAdapter(keychainProvider)
         val crypto = IosSyncCryptoProvider(cryptoProvider)
         val store = SqlBootstrapStore(database, databaseDispatcher)
-        val coordinator = BootstrapCoordinator(keys, IosBootstrapCloudAdapter(mailboxProvider), keys, store, crypto)
+        val mailbox = IosMailboxAdapter(mailboxProvider)
+        val coordinator = BootstrapCoordinator(keys, IosBootstrapCloudAdapter(mailboxProvider), keys, store, crypto, mailbox)
         val core = SyncOperationCore(replica, crypto, SyncWallClock { time(null) * MILLIS_PER_SECOND })
         return AppleSync(coordinator, core, IosMailboxAdapter(mailboxProvider), keys, store, policySync, crypto, Dispatchers.IO)
     }

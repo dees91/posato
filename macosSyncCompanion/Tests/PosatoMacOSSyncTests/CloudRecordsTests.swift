@@ -207,10 +207,21 @@ import Testing
 
   #expect(parsed.binding == syntheticBinding)
   #expect(parsed.cursor.isEmpty)
-  let oversized = CloudRequestCodec.cursorRequest(
+  // One extra byte admits the delete-path phase prefix; fetch cursors are
+  // still strictly validated downstream, so only the phase-sized frame
+  // parses here.
+  let phased = CloudRequestCodec.cursorRequest(
     cursorPayload(
       binding: syntheticBinding,
       cursor: Data(repeating: 1, count: SyncLimits.cursorBytes + 1)
+    )
+  )
+
+  #expect(phased != nil)
+  let oversized = CloudRequestCodec.cursorRequest(
+    cursorPayload(
+      binding: syntheticBinding,
+      cursor: Data(repeating: 1, count: SyncLimits.cursorBytes + 2)
     )
   )
 

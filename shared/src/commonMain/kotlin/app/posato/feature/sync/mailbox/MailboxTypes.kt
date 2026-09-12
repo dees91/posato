@@ -123,12 +123,24 @@ internal sealed interface ChangeFetchResult {
     data object IntegrityFailure : ChangeFetchResult
 }
 
-internal sealed interface ZoneDeleteResult {
-    data object DeletedAndAbsent : ZoneDeleteResult
+internal sealed interface RecordDeleteResult {
+    data object DeletedAndAbsent : RecordDeleteResult
 
-    data object Retryable : ZoneDeleteResult
+    data object Retryable : RecordDeleteResult
 
-    data object AccountChanged : ZoneDeleteResult
+    data object AccountChanged : RecordDeleteResult
 
-    data object UnknownOutcome : ZoneDeleteResult
+    data object UnknownOutcome : RecordDeleteResult
+}
+
+internal sealed interface BundleSweepResult {
+    data object Swept : BundleSweepResult
+
+    data object AnchorPresent : BundleSweepResult
+
+    data object Retryable : BundleSweepResult
+
+    data object AccountChanged : BundleSweepResult
+
+    data object UnknownOutcome : BundleSweepResult
 }

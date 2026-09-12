@@ -7,6 +7,7 @@ import app.posato.feature.sync.domain.PublicSigningKey
 import app.posato.feature.sync.domain.SyncContext
 import app.posato.feature.sync.domain.TransportEpochId
 import app.posato.feature.sync.domain.WorkspaceId
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.testIdentifier
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -117,9 +118,10 @@ private class BootstrapHarness(
     val cloud: FakeBootstrapCloudPort = FakeBootstrapCloudPort(),
     val keys: FakeBootstrapKeyPort = FakeBootstrapKeyPort(),
     val store: FakeBootstrapStore = FakeBootstrapStore(),
-    crypto: SyncCryptoProvider = app.posato.feature.sync.FakeSyncCryptoProvider()
+    crypto: SyncCryptoProvider = app.posato.feature.sync.FakeSyncCryptoProvider(),
+    val mailbox: FakeMailboxPort = FakeMailboxPort()
 ) {
-    val coordinator = BootstrapCoordinator(account, cloud, keys, store, crypto)
+    val coordinator = BootstrapCoordinator(account, cloud, keys, store, crypto, mailbox)
 }
 
 private fun knownAnchor(
@@ -197,6 +199,36 @@ class BootstrapCoordinatorTest {
 
         assertIs<BootstrapResult.Ready>(result)
         assertEquals(0, harness.cloud.zoneSaveCalls)
+    }
+
+    @Test
+    fun `given an appearing anchor when sweeping then nothing is deleted and the attempt adopts`() = runTest {
+        val harness = BootstrapHarness()
+        harness.cloud.zoneExists = true
+        harness.mailbox.sweepResult = BundleSweepResult.AnchorPresent
+        val winner = knownAnchor(21, 22, 23)
+        harness.cloud.scriptAnchorRead(AnchorReadResult.Missing, AnchorReadResult.Found(winner))
+        seedValidItem(harness.keys, winner)
+
+        val ready = assertIs<BootstrapResult.Ready>(harness.coordinator.bootstrap())
+
+        assertEquals(winner.workspaceId, ready.context.workspaceId)
+        assertEquals(1, harness.mailbox.sweepCalls)
+        assertEquals(0, harness.cloud.anchorCreateCalls)
+        assertIs<BootstrapState.Established>(harness.store.state)
+    }
+
+    @Test
+    fun `given a failing sweep when bootstrapping then retry follows without a candidate`() = runTest {
+        val harness = BootstrapHarness()
+        harness.cloud.zoneExists = true
+        harness.mailbox.sweepResult = BundleSweepResult.Retryable
+
+        assertEquals(BootstrapResult.Retryable, harness.coordinator.bootstrap())
+
+        assertEquals(1, harness.mailbox.sweepCalls)
+        assertEquals(0, harness.cloud.anchorCreateCalls)
+        assertIs<BootstrapState.None>(harness.store.state)
     }
 
     @Test
@@ -866,6 +898,6 @@ class BootstrapCoordinatorTest {
         store: FakeBootstrapStore,
         firstRandomByte: Int
     ): BootstrapCoordinator {
-        return BootstrapCoordinator(FakeBootstrapAccountPort(), cloud, keys, store, SequencedCrypto(firstRandomByte))
+        return BootstrapCoordinator(FakeBootstrapAccountPort(), cloud, keys, store, SequencedCrypto(firstRandomByte), FakeMailboxPort())
     }
 }

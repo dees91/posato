@@ -312,22 +312,28 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
         }
     }
 
-    func deleteZone(zoneID: CKRecordZone.ID, timeout: TimeInterval) -> NSError? {
-        guard timeout > 0 else {
-            return NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue)
+    /// Delete-operation factory: non-atomic so one unknown item or
+    /// per-item failure never rolls back the rest of the batch. The
+    /// whole-operation result comes from `MailboxErrorMapper.recordDelete`.
+    static func makeDeleteOperation(ids: [CKRecord.ID]) -> CKModifyRecordsOperation {
+        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: ids)
+        operation.isAtomic = false
+        return operation
+    }
+
+    func deleteRecords(ids: [CKRecord.ID], timeout: TimeInterval) -> NSError? {
+        guard timeout > 0, !ids.isEmpty else {
+            return ids.isEmpty ? nil : NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue)
         }
         let box = MailboxBox<NSError?>(NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue))
         let done = DispatchSemaphore(value: 0)
-        let operation = CKModifyRecordZonesOperation(
-            recordZonesToSave: nil,
-            recordZoneIDsToDelete: [zoneID]
-        )
-        operation.modifyRecordZonesResultBlock = { result in
+        let operation = Self.makeDeleteOperation(ids: ids)
+        operation.modifyRecordsResultBlock = { result in
             switch result {
             case .success:
                 box.set(nil)
             case .failure(let error):
-                box.set(error as NSError)
+                box.set(MailboxErrorMapper.recordDelete(from: error as NSError))
             }
             done.signal()
         }
@@ -426,8 +432,8 @@ final class DeferredCloudKitMailboxBackend: CloudKitMailboxBackend {
         return backend().fetchChanges(zoneID: zoneID, tokenData: tokenData, timeout: timeout)
     }
 
-    func deleteZone(zoneID: CKRecordZone.ID, timeout: TimeInterval) -> NSError? {
-        return backend().deleteZone(zoneID: zoneID, timeout: timeout)
+    func deleteRecords(ids: [CKRecord.ID], timeout: TimeInterval) -> NSError? {
+        return backend().deleteRecords(ids: ids, timeout: timeout)
     }
 
     func cancelInflight() {

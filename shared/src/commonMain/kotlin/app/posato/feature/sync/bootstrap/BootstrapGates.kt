@@ -39,6 +39,24 @@ internal fun mapStoreFailure(reason: BootstrapStoreFailure): BootstrapResult {
     }
 }
 
+internal suspend fun adoptJoinableAnchor(
+    store: BootstrapStore,
+    anchors: BootstrapAnchorPhase,
+    joins: BootstrapJoinPhase,
+    binding: AccountBinding,
+    anchor: WorkspaceAnchor
+): BootstrapResult {
+    val refused = refuseIfRemoved(store, anchor.workspaceId)
+    if (refused != null) {
+        return refused
+    }
+    val result = anchors.adoptAnchorItem(binding, anchor)
+    if (result == BootstrapResult.WaitingForWorkspaceKey) {
+        joins.remember(binding, anchor)
+    }
+    return result
+}
+
 internal suspend fun refuseIfRemoved(
     store: BootstrapStore,
     workspaceId: WorkspaceId

@@ -4,6 +4,7 @@ internal enum class EstablishedStatus {
     READY,
     LOCAL_ONLY,
     ZONE_MISSING,
+    ANCHOR_MISSING,
     DIFFERENT_ANCHOR,
     RETRYABLE,
     ACTION_REQUIRED,
@@ -40,7 +41,11 @@ private suspend fun BootstrapCloudPort.checkEstablishedAnchor(workspace: Establi
             EstablishedStatus.RETRYABLE
         }
 
-        AnchorReadResult.Missing, AnchorReadResult.IntegrityFailure, AnchorReadResult.AccountChanged -> {
+        AnchorReadResult.Missing -> {
+            EstablishedStatus.ANCHOR_MISSING
+        }
+
+        AnchorReadResult.IntegrityFailure, AnchorReadResult.AccountChanged -> {
             EstablishedStatus.ACTION_REQUIRED
         }
     }

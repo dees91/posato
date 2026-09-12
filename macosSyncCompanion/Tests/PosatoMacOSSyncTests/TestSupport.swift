@@ -247,13 +247,15 @@ final class FakeCloudBackend: CloudBackend, @unchecked Sendable {
   var changes: BackendChangesResult = .fetched(
     BackendChanges(changed: [], deletedNames: [], token: Data([1]), moreComing: false)
   )
+  var changesScript: [BackendChangesResult] = []
   var deleteFault: BackendFault?
   private(set) var saveCalls = 0
   private(set) var fetchRecordCalls = 0
   private(set) var changesCalls = 0
+  private(set) var requestedTokens: [Data?] = []
   private(set) var zoneFetchCalls = 0
   private(set) var zoneSaveCalls = 0
-  private(set) var zoneDeleteCalls = 0
+  private(set) var deleteRecordCalls: [[String]] = []
 
   func fetchZone(timeout: TimeInterval) -> ZoneLookup {
     zoneFetchCalls += 1
@@ -289,13 +291,20 @@ final class FakeCloudBackend: CloudBackend, @unchecked Sendable {
     return saveResult
   }
 
-  func fetchChanges(token: CKServerChangeToken?, timeout: TimeInterval) -> BackendChangesResult {
+  func fetchChanges(tokenData: Data?, timeout: TimeInterval) -> BackendChangesResult {
     changesCalls += 1
+    requestedTokens.append(tokenData)
+    if !changesScript.isEmpty {
+      return changesScript.removeFirst()
+    }
     return changes
   }
 
-  func deleteZone(timeout: TimeInterval) -> BackendFault? {
-    zoneDeleteCalls += 1
-    return deleteFault
+  func deleteRecords(names: [String], timeout: TimeInterval) -> BackendDelete {
+    deleteRecordCalls.append(names)
+    if let fault = deleteFault {
+      return .failed(fault)
+    }
+    return .deleted
   }
 }
