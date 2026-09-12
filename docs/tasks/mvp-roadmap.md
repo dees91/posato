@@ -160,7 +160,7 @@ wave barriers add the phase ordering stated above.
 | `SYNC-011` | Converge exact domains and semantic policies while opaque selections stay local. | Apple synchronization | P4/W4.3 | `ONBOARDING-002`, `SYNC-010`, `TARGETS-001`, `TARGETS-002` | PR-POLICY-SYNC |
 | `SYNC-014` | Refuse to re-adopt a workspace this device removed, so a re-link soon after removal cannot land in a zone under deletion. | Apple synchronization | P4/W4.3b | `SYNC-009`, `SYNC-010`, `SYNC-011` | PR-REMOVAL-HARDENING |
 | `SYNC-015` | Remove a workspace by deleting its records and keeping the zone, so a re-link right after removal is never lost to a late zone purge. | Apple synchronization | P4/W4.3c | `SYNC-009`, `SYNC-010`, `SYNC-014` | PR-RECORD-REMOVAL |
-| `SYNC-012` | Converge session start, early termination, and expiry without unsafe delivery promises. | Apple synchronization | P4/W4.4 | `SYNC-011`, `SESSION-002` | PR-SESSION-SYNC |
+| `SYNC-012` | Converge session start, early termination, and expiry without unsafe delivery promises. [Draft brief](specifications/sync-012-session-convergence.md). | Apple synchronization | P4/W4.4 | `SYNC-011`, `SESSION-002` | PR-SESSION-SYNC |
 | `MVP-001` | Pass the accepted MVP flow on one supported Mac and iPhone without manual repair. | Completion | P5/W5.1 | `SYNC-012` | PR-MVP-ACCEPTANCE |
 | `RELEASE-001` | Pass or explicitly block every first-release readiness obligation. | Release readiness | Release/R1 | `MVP-001` | PR-RELEASE-READINESS |
 
