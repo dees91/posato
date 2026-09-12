@@ -137,14 +137,6 @@ struct CloudStore: Sendable {
     )
   }
 
-  func deleteWorkspaceRecords(timeout: TimeInterval) -> RecordDeleteNative {
-    return RecordDeletion(backend: backend).deleteWorkspaceRecords(timeout: timeout)
-  }
-
-  func sweepBundlesIfAnchorMissing(timeout: TimeInterval) -> BundleSweepNative {
-    return RecordDeletion(backend: backend).sweepBundlesIfAnchorMissing(timeout: timeout)
-  }
-
   private enum BundleComparison {
     case found(Bool)
     case absent

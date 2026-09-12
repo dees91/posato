@@ -19,6 +19,7 @@ enum MailboxCloudLimits {
     static let cursorBytes = 16_384
     static let bindingBytes = 32
     static let recordDeleteBatchSize = 100
+    static let deletePagesPerCall = 10
 }
 
 enum MailboxZoneLookup: Equatable {
@@ -113,6 +114,11 @@ protocol CloudKitMailboxBackend {
 /// codes, a distinct server-record-changed signal, a distinct unknown-item
 /// signal, single-entry partial-failure unwrap, and unknown for the rest
 /// (including change-token expiry, unauthenticated, and permission failures).
+/// Whole-operation delete mapping returns nil only when every entry is
+/// unknown-item or zone-absent, tolerated both directly and inside a
+/// partial failure; otherwise it reports the original error, which maps to
+/// retryable only for a directly retryable error or a single-entry partial
+/// failure wrapping one.
 enum MailboxErrorMapper {
     static func isTokenExpired(_ error: NSError) -> Bool {
         let unwrapped = unwrapSinglePartial(error)
@@ -582,131 +588,196 @@ struct MailboxStore {
         }
     }
 
-    func deleteWorkspaceRecords(timeout: TimeInterval) -> MailboxRecordDelete {
-        switch traverseBundleNames(timeout: timeout) {
-        case .zoneMissing:
-            return .deletedAndAbsent
-        case .retryable:
-            return .retryable
-        case .unknownOutcome:
-            return .unknownOutcome
-        case .names(let names):
-            for chunk in names.chunked(into: MailboxCloudLimits.recordDeleteBatchSize) {
-                if let error = backend.deleteRecords(
-                    ids: chunk.map { CKRecord.ID(recordName: $0, zoneID: zoneID) },
-                    timeout: timeout
-                ) {
-                    return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+    /// Bounded resumable deletion pass: processes at most
+    /// `deletePagesPerCall` change pages, deleting each page's bundle set
+    /// only after re-reading the anchor. A non-nil token means the page
+    /// bound was hit with work remaining and the caller must call again
+    /// from that token; a nil token means the outcome is terminal.
+    func deleteWorkspaceRecords(timeout: TimeInterval, startingAt resumeToken: Data?) -> (MailboxRecordDelete, Data?) {
+        let anchorID = MailboxRecordCodec.anchorRecordID(zoneID: zoneID)
+        var tokenData = resumeToken
+        var anchorDeleted = false
+        var restarted = false
+        for _ in 0..<MailboxCloudLimits.deletePagesPerCall {
+            switch backend.fetchChanges(zoneID: zoneID, tokenData: tokenData, timeout: timeout) {
+            case .zoneMissing:
+                return (.deletedAndAbsent, nil)
+            case .invalidCursor:
+                return (.unknownOutcome, nil)
+            case .failed(let error):
+                if MailboxErrorMapper.isTokenExpired(error) {
+                    if restarted {
+                        return (.retryable, nil)
+                    }
+                    restarted = true
+                    tokenData = nil
+                    anchorDeleted = false
+                    continue
                 }
+                return (MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome, nil)
+            case .fetched(let fetched):
+                guard let token = fetched.tokenData, !token.isEmpty,
+                    token.count <= MailboxCloudLimits.cursorBytes
+                else {
+                    return (.unknownOutcome, nil)
+                }
+                if tokenData != nil, token == tokenData {
+                    return (.unknownOutcome, nil)
+                }
+                let names = bundleNames(in: fetched.changed)
+                if anchorDeleted {
+                    // Post-anchor verification only confirms emptiness: a
+                    // remaining bundle means the deletion did not stick.
+                    if !names.isEmpty {
+                        return (.unknownOutcome, nil)
+                    }
+                } else if !names.isEmpty {
+                    // No anchor gate here: full removal runs with the own
+                    // anchor present (READY status), so presence cannot
+                    // distinguish a foreign workspace. A concurrently
+                    // established anchor is caught by the tail below: its
+                    // bundles fail the emptiness check or its anchor
+                    // survives the anchor delete.
+                    if let error = deleteIDChunks(names: names, timeout: timeout) {
+                        return (MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome, nil)
+                    }
+                }
+                if !fetched.moreComing {
+                    if anchorDeleted {
+                        return (.deletedAndAbsent, nil)
+                    }
+                    switch deleteAnchorAndVerifyMissing(anchorID: anchorID, timeout: timeout) {
+                    case .gone:
+                        anchorDeleted = true
+                    case .present:
+                        return (.unknownOutcome, nil)
+                    case .failed(let outcome):
+                        return (outcome, nil)
+                    }
+                    tokenData = nil
+                    continue
+                }
+                tokenData = token
             }
         }
-        if let error = backend.deleteRecords(
-            ids: [MailboxRecordCodec.anchorRecordID(zoneID: zoneID)],
-            timeout: timeout
-        ) {
-            return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
-        }
-        switch backend.fetchRecord(id: MailboxRecordCodec.anchorRecordID(zoneID: zoneID), timeout: timeout) {
-        case .missing, .zoneMissing:
-            break
-        case .found:
-            return .unknownOutcome
-        case .failed(let error):
-            return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
-        }
-        switch traverseBundleNames(timeout: timeout) {
-        case .zoneMissing:
-            return .deletedAndAbsent
-        case .retryable:
-            return .retryable
-        case .unknownOutcome:
-            return .unknownOutcome
-        case .names(let remaining):
-            return remaining.isEmpty ? .deletedAndAbsent : .unknownOutcome
-        }
+        return (.retryable, tokenData)
     }
 
-    func sweepBundlesIfAnchorMissing(timeout: TimeInterval) -> MailboxBundleSweep {
-        let names: [String]
-        switch traverseBundleNames(timeout: timeout) {
-        case .zoneMissing:
-            return .swept
-        case .retryable:
-            return .retryable
-        case .unknownOutcome:
-            return .unknownOutcome
-        case .names(let enumerated):
-            names = enumerated
+    /// Bounded resumable sweep pass with the same per-set anchor ordering:
+    /// every deleted set was enumerated before the anchor re-read that
+    /// authorized its deletion.
+    func sweepBundlesIfAnchorMissing(timeout: TimeInterval, startingAt resumeToken: Data?) -> (MailboxBundleSweep, Data?) {
+        let anchorID = MailboxRecordCodec.anchorRecordID(zoneID: zoneID)
+        var tokenData = resumeToken
+        var restarted = false
+        for _ in 0..<MailboxCloudLimits.deletePagesPerCall {
+            switch backend.fetchChanges(zoneID: zoneID, tokenData: tokenData, timeout: timeout) {
+            case .zoneMissing:
+                return (.swept, nil)
+            case .invalidCursor:
+                return (.unknownOutcome, nil)
+            case .failed(let error):
+                if MailboxErrorMapper.isTokenExpired(error) {
+                    if restarted {
+                        return (.retryable, nil)
+                    }
+                    restarted = true
+                    tokenData = nil
+                    continue
+                }
+                return (MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome, nil)
+            case .fetched(let fetched):
+                guard let token = fetched.tokenData, !token.isEmpty,
+                    token.count <= MailboxCloudLimits.cursorBytes
+                else {
+                    return (.unknownOutcome, nil)
+                }
+                if tokenData != nil, token == tokenData {
+                    return (.unknownOutcome, nil)
+                }
+                let names = bundleNames(in: fetched.changed)
+                if !names.isEmpty || !fetched.moreComing {
+                    switch anchorGate(anchorID: anchorID, timeout: timeout) {
+                    case .proceed:
+                        break
+                    case .anchorPresent:
+                        return (.anchorPresent, nil)
+                    case .zoneAbsent:
+                        return (.swept, nil)
+                    case .failed(let error):
+                        return (MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome, nil)
+                    }
+                    if let error = deleteIDChunks(names: names, timeout: timeout) {
+                        return (MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome, nil)
+                    }
+                }
+                if !fetched.moreComing {
+                    return (.swept, nil)
+                }
+                tokenData = token
+            }
         }
-        switch backend.fetchRecord(id: MailboxRecordCodec.anchorRecordID(zoneID: zoneID), timeout: timeout) {
+        return (.retryable, tokenData)
+    }
+
+    private func bundleNames(in changed: [CKRecord]) -> [String] {
+        return changed.filter { $0.recordType == MailboxCloudLimits.bundleType }.map { $0.recordID.recordName }
+    }
+
+    private enum AnchorGate {
+        case proceed
+        case anchorPresent
+        case zoneAbsent
+        case failed(NSError)
+    }
+
+    /// Anchor re-read for one enumerated set: deletion proceeds only while
+    /// the anchor stays missing, so a workspace published after the page
+    /// fetch aborts the pass instead of being swept.
+    private func anchorGate(anchorID: CKRecord.ID, timeout: TimeInterval) -> AnchorGate {
+        switch backend.fetchRecord(id: anchorID, timeout: timeout) {
         case .missing:
-            break
+            return .proceed
         case .found:
             return .anchorPresent
         case .zoneMissing:
-            return .swept
+            return .zoneAbsent
         case .failed(let error):
-            return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+            return .failed(error)
         }
+    }
+
+    private func deleteIDChunks(names: [String], timeout: TimeInterval) -> NSError? {
         for chunk in names.chunked(into: MailboxCloudLimits.recordDeleteBatchSize) {
             if let error = backend.deleteRecords(
                 ids: chunk.map { CKRecord.ID(recordName: $0, zoneID: zoneID) },
                 timeout: timeout
             ) {
-                return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+                return error
             }
         }
-        return .swept
+        return nil
     }
 
-    private enum BundleNameTraversal {
-        case names([String])
-        case zoneMissing
-        case retryable
-        case unknownOutcome
+    private enum AnchorFate {
+        case gone
+        case present
+        case failed(MailboxRecordDelete)
     }
 
-    private func traverseBundleNames(timeout: TimeInterval) -> BundleNameTraversal {
-        var tokenData: Data?
-        var names: [String] = []
-        var restarted = false
-        var previous: Data?
-        while true {
-            switch backend.fetchChanges(zoneID: zoneID, tokenData: tokenData, timeout: timeout) {
-            case .zoneMissing:
-                return .zoneMissing
-            case .invalidCursor:
-                return .unknownOutcome
-            case .failed(let error):
-                if MailboxErrorMapper.isTokenExpired(error) {
-                    if restarted {
-                        return .retryable
-                    }
-                    restarted = true
-                    tokenData = nil
-                    names = []
-                    previous = nil
-                    continue
-                }
-                return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
-            case .fetched(let fetched):
-                for record in fetched.changed where record.recordType == MailboxCloudLimits.bundleType {
-                    names.append(record.recordID.recordName)
-                }
-                guard let token = fetched.tokenData, !token.isEmpty,
-                    token.count <= MailboxCloudLimits.cursorBytes
-                else {
-                    return .unknownOutcome
-                }
-                if !fetched.moreComing {
-                    return .names(names)
-                }
-                guard token != previous else {
-                    return .unknownOutcome
-                }
-                previous = token
-                tokenData = token
-            }
+    /// Deletes the anchor and verifies its absence. A surviving anchor
+    /// means a new workspace won the race after the last page fetch.
+    private func deleteAnchorAndVerifyMissing(anchorID: CKRecord.ID, timeout: TimeInterval) -> AnchorFate {
+        if let error = backend.deleteRecords(ids: [anchorID], timeout: timeout) {
+            return .failed(MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome)
+        }
+        switch backend.fetchRecord(id: anchorID, timeout: timeout) {
+        case .missing, .zoneMissing:
+            return .gone
+        case .found:
+            return .present
+        case .failed(let error):
+            return .failed(MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome)
         }
     }
 
@@ -835,6 +906,11 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
     private let zoneID: CKRecordZone.ID
     private let timeout: TimeInterval
     private let generation = MailboxGeneration()
+    /// Resume cursors for the bounded deletion passes. Tokens are opaque
+    /// server cursors, so a cancelled pass resumes where its last completed
+    /// page ended; any binding or account change discards them.
+    private var deleteResumeToken: Data?
+    private var sweepResumeToken: Data?
 
     init(
         accountSource: KeychainAccountSource,
@@ -1105,20 +1181,29 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         case .retryable:
             return .retryable
         case .accountChanged:
+            deleteResumeToken = nil
             return .accountchanged
         }
         let mark = generation.current()
         let (flag, observer) = observingAccountChange()
-        let result = store().deleteWorkspaceRecords(timeout: timeout)
+        let (outcome, resumeToken) = store().deleteWorkspaceRecords(timeout: timeout, startingAt: deleteResumeToken)
         NotificationCenter.default.removeObserver(observer)
         guard !flag.isMarked, generation.current() == mark else {
+            if flag.isMarked {
+                deleteResumeToken = nil
+            }
             return .unknownoutcome
         }
-        switch result {
+        deleteResumeToken = resumeToken
+        guard postflightMatches(binding as Data) else {
+            deleteResumeToken = nil
+            return .unknownoutcome
+        }
+        switch outcome {
         case .deletedAndAbsent:
-            return confirm(.deletedandabsent, expectedBinding: binding as Data, unknown: .unknownoutcome)
+            return .deletedandabsent
         case .retryable:
-            return confirm(.retryable, expectedBinding: binding as Data, unknown: .unknownoutcome)
+            return .retryable
         case .unknownOutcome:
             return .unknownoutcome
         }
@@ -1131,22 +1216,31 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         case .retryable:
             return .retryable
         case .accountChanged:
+            sweepResumeToken = nil
             return .accountchanged
         }
         let mark = generation.current()
         let (flag, observer) = observingAccountChange()
-        let result = store().sweepBundlesIfAnchorMissing(timeout: timeout)
+        let (outcome, resumeToken) = store().sweepBundlesIfAnchorMissing(timeout: timeout, startingAt: sweepResumeToken)
         NotificationCenter.default.removeObserver(observer)
         guard !flag.isMarked, generation.current() == mark else {
+            if flag.isMarked {
+                sweepResumeToken = nil
+            }
             return .unknownoutcome
         }
-        switch result {
+        sweepResumeToken = resumeToken
+        guard postflightMatches(binding as Data) else {
+            sweepResumeToken = nil
+            return .unknownoutcome
+        }
+        switch outcome {
         case .swept:
-            return confirm(.swept, expectedBinding: binding as Data, unknown: .unknownoutcome)
+            return .swept
         case .anchorPresent:
-            return confirm(.anchorpresent, expectedBinding: binding as Data, unknown: .unknownoutcome)
+            return .anchorpresent
         case .retryable:
-            return confirm(.retryable, expectedBinding: binding as Data, unknown: .unknownoutcome)
+            return .retryable
         case .unknownOutcome:
             return .unknownoutcome
         }

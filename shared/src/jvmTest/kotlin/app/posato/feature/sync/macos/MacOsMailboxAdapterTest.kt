@@ -112,10 +112,38 @@ class MacOsMailboxAdapterTest {
     }
 
     @Test
-    fun `given unknown exchange when deleting then unknown outcome is returned`() = runTest {
-        val adapter = MacOsMailboxAdapter(FakeTransport(CompanionExchange.Unknown))
+    fun `given unknown exchange when deleting then retryable is returned`() = runTest {
+        val transport = FakeTransport(CompanionExchange.Unknown)
+        val adapter = MacOsMailboxAdapter(transport)
+
+        assertEquals(RecordDeleteResult.Retryable, adapter.deleteWorkspaceRecords(binding()))
+        assertEquals(10, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given incomplete then deleted when deleting then the resume token is sent`() = runTest {
+        val token = byteArrayOf(4, 5, 6)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, token),
+            outcome(SyncCompanionOutcome.DeletedAndAbsent),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(binding()))
+
+        val expected = MacOsSyncCompanionProtocol.cursorPayload(ByteArray(ACCOUNT_BINDING_BYTES) { 7 }, token)
+        assertTrue(checkNotNull(transport.lastSentPayload).contentEquals(expected))
+    }
+
+    @Test
+    fun `given malformed resume token when deleting then unknown outcome is returned`() = runTest {
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, ByteArray(MacOsSyncCompanionProtocol.CURSOR_BYTES + 1)),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
 
         assertEquals(RecordDeleteResult.UnknownOutcome, adapter.deleteWorkspaceRecords(binding()))
+        assertEquals(1, transport.exchangeCount)
     }
 
     @Test
@@ -133,10 +161,27 @@ class MacOsMailboxAdapterTest {
     }
 
     @Test
-    fun `given unknown exchange when sweeping then unknown outcome is returned`() = runTest {
-        val adapter = MacOsMailboxAdapter(FakeTransport(CompanionExchange.Unknown))
+    fun `given unknown exchange when sweeping then retryable is returned`() = runTest {
+        val transport = FakeTransport(CompanionExchange.Unknown)
+        val adapter = MacOsMailboxAdapter(transport)
 
-        assertEquals(BundleSweepResult.UnknownOutcome, adapter.sweepBundlesIfAnchorMissing(binding()))
+        assertEquals(BundleSweepResult.Retryable, adapter.sweepBundlesIfAnchorMissing(binding()))
+        assertEquals(10, transport.exchangeCount)
+    }
+
+    @Test
+    fun `given incomplete then swept when sweeping then the resume token is sent`() = runTest {
+        val token = byteArrayOf(8, 9)
+        val transport = FakeTransport(
+            message(SyncCompanionOutcome.Incomplete, token),
+            outcome(SyncCompanionOutcome.Swept),
+        )
+        val adapter = MacOsMailboxAdapter(transport)
+
+        assertEquals(BundleSweepResult.Swept, adapter.sweepBundlesIfAnchorMissing(binding()))
+
+        val expected = MacOsSyncCompanionProtocol.cursorPayload(ByteArray(ACCOUNT_BINDING_BYTES) { 7 }, token)
+        assertTrue(checkNotNull(transport.lastSentPayload).contentEquals(expected))
     }
 
     @Test
@@ -239,17 +284,23 @@ class MacOsMailboxAdapterTest {
     }
 
     private class FakeTransport(
-        private val exchange: CompanionExchange,
+        private vararg val exchanges: CompanionExchange,
     ) : SyncCompanionTransport {
         var lastPayload: ByteArray? = null
+        var lastSentPayload: ByteArray? = null
         var lastOperation: SyncCompanionOperation? = null
         var lastCapabilities: Long? = null
+        var exchangeCount: Int = 0
+            private set
 
         override suspend fun transact(message: SyncCompanionMessage): CompanionExchange {
             lastPayload = message.payload
+            lastSentPayload = message.payload.copyOf()
             lastOperation = message.operation
             lastCapabilities = message.capabilities
-            return exchange
+            val index = minOf(exchangeCount, exchanges.size - 1)
+            exchangeCount += 1
+            return exchanges[index]
         }
 
         override fun newRequestIdentifier(): ByteArray {

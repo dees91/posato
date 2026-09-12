@@ -141,9 +141,11 @@ extension RequestHandler {
     started: DispatchTime,
     dependencies: SyncDependencies
   ) -> SyncMessage {
-    guard let binding = CloudRequestCodec.bindingOnly(request.payload) else {
+    guard let parsed = CloudRequestCodec.cursorRequest(request.payload) else {
       return request.respond(outcome: .integrityFailure)
     }
+    let binding = parsed.binding
+    let resumeToken = parsed.cursor.isEmpty ? nil : parsed.cursor
     switch RequestSupport.preflight(
       request,
       expected: binding,
@@ -162,7 +164,7 @@ extension RequestHandler {
     let (result, changed) = RequestSupport.observingAccountChange(
       name: dependencies.accountChangeName
     ) {
-      dependencies.clouds.deleteWorkspaceRecords(timeout: timeout)
+      dependencies.clouds.deleteWorkspaceRecords(timeout: timeout, resumeToken: resumeToken)
     }
     guard !changed,
       RequestSupport.postflight(
@@ -181,6 +183,8 @@ extension RequestHandler {
       return request.respond(outcome: .retryable)
     case .unknownOutcome:
       return request.respond(outcome: .unknownOutcome)
+    case .incomplete(let cursor):
+      return request.respond(outcome: .incomplete, payload: cursor)
     }
   }
 
@@ -189,9 +193,11 @@ extension RequestHandler {
     started: DispatchTime,
     dependencies: SyncDependencies
   ) -> SyncMessage {
-    guard let binding = CloudRequestCodec.bindingOnly(request.payload) else {
+    guard let parsed = CloudRequestCodec.cursorRequest(request.payload) else {
       return request.respond(outcome: .integrityFailure)
     }
+    let binding = parsed.binding
+    let resumeToken = parsed.cursor.isEmpty ? nil : parsed.cursor
     switch RequestSupport.preflight(
       request,
       expected: binding,
@@ -210,7 +216,7 @@ extension RequestHandler {
     let (result, changed) = RequestSupport.observingAccountChange(
       name: dependencies.accountChangeName
     ) {
-      dependencies.clouds.sweepBundlesIfAnchorMissing(timeout: timeout)
+      dependencies.clouds.sweepBundlesIfAnchorMissing(timeout: timeout, resumeToken: resumeToken)
     }
     guard !changed,
       RequestSupport.postflight(
@@ -231,6 +237,8 @@ extension RequestHandler {
       return request.respond(outcome: .retryable)
     case .unknownOutcome:
       return request.respond(outcome: .unknownOutcome)
+    case .incomplete(let cursor):
+      return request.respond(outcome: .incomplete, payload: cursor)
     }
   }
 }

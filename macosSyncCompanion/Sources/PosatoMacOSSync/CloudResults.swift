@@ -59,6 +59,7 @@ enum RecordDeleteNative: Equatable, Sendable {
   case deletedAndAbsent
   case retryable
   case unknownOutcome
+  case incomplete(cursor: Data)
 }
 
 enum BundleSweepNative: Equatable, Sendable {
@@ -66,4 +67,5 @@ enum BundleSweepNative: Equatable, Sendable {
   case anchorPresent
   case retryable
   case unknownOutcome
+  case incomplete(cursor: Data)
 }

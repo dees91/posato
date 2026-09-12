@@ -233,12 +233,45 @@ import Testing
 }
 
 @Test func givenEmptyZoneWhenDeletingRecordsThenDeletedAndAbsentIsReturned() {
+  let backend = FakeCloudBackend()
+  backend.changesScript = [
+    .fetched(BackendChanges(changed: [], deletedNames: [], token: Data([7]), moreComing: false)),
+    .fetched(BackendChanges(changed: [], deletedNames: [], token: Data([8]), moreComing: false)),
+  ]
   let response = RequestHandler.handle(
     cloudRequest(operation: .deleteWorkspaceRecords, payload: syntheticBinding),
-    dependencies: cloudDependencies()
+    dependencies: cloudDependencies(backend: backend)
   )
 
   #expect(response.outcome == .deletedAndAbsent)
+}
+
+@Test func givenExhaustedBudgetWhenDeletingRecordsThenIncompleteCarriesCursor() {
+  let backend = FakeCloudBackend()
+  backend.changesScript = (0..<17).map { index in
+    .fetched(
+      BackendChanges(
+        changed: [], deletedNames: ["gone-\(index)"], token: Data([UInt8(index)]),
+        moreComing: true))
+  }
+  let response = RequestHandler.handle(
+    cloudRequest(operation: .deleteWorkspaceRecords, payload: syntheticBinding),
+    dependencies: cloudDependencies(backend: backend)
+  )
+
+  #expect(response.outcome == .incomplete)
+  #expect(response.payload == Data([15]))
+}
+
+@Test func givenOversizedTokenWhenDeletingRecordsThenIntegrityFailureIsReturned() {
+  let response = RequestHandler.handle(
+    cloudRequest(
+      operation: .deleteWorkspaceRecords,
+      payload: syntheticBinding + Data(repeating: 9, count: SyncLimits.cursorBytes + 1)),
+    dependencies: cloudDependencies()
+  )
+
+  #expect(response.outcome == .integrityFailure)
 }
 
 @Test func givenElapsedPreflightWhenSavingZoneThenRemainingDeadlineIsPassed() {

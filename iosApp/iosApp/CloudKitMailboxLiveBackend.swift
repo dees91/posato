@@ -312,13 +312,22 @@ final class CloudKitMailboxLiveBackend: CloudKitMailboxBackend {
         }
     }
 
+    /// Delete-operation factory: non-atomic so one unknown item or
+    /// per-item failure never rolls back the rest of the batch. The
+    /// whole-operation result comes from `MailboxErrorMapper.recordDelete`.
+    static func makeDeleteOperation(ids: [CKRecord.ID]) -> CKModifyRecordsOperation {
+        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: ids)
+        operation.isAtomic = false
+        return operation
+    }
+
     func deleteRecords(ids: [CKRecord.ID], timeout: TimeInterval) -> NSError? {
         guard timeout > 0, !ids.isEmpty else {
             return ids.isEmpty ? nil : NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue)
         }
         let box = MailboxBox<NSError?>(NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue))
         let done = DispatchSemaphore(value: 0)
-        let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: ids)
+        let operation = Self.makeDeleteOperation(ids: ids)
         operation.modifyRecordsResultBlock = { result in
             switch result {
             case .success:

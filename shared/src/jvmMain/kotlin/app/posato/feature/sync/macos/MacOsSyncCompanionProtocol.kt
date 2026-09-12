@@ -58,6 +58,7 @@ internal object MacOsSyncCompanionProtocol {
     const val OUTCOME_TOKEN_EXPIRED: Byte = 15
     const val OUTCOME_SWEPT: Byte = 16
     const val OUTCOME_ANCHOR_PRESENT: Byte = 17
+    const val OUTCOME_INCOMPLETE: Byte = 18
 
     fun encode(message: SyncCompanionMessage): ByteArray {
         require(message.requestIdentifier.size == IDENTIFIER_BYTES)
@@ -205,6 +206,7 @@ internal enum class SyncCompanionOutcome(
     TokenExpired(MacOsSyncCompanionProtocol.OUTCOME_TOKEN_EXPIRED),
     Swept(MacOsSyncCompanionProtocol.OUTCOME_SWEPT),
     AnchorPresent(MacOsSyncCompanionProtocol.OUTCOME_ANCHOR_PRESENT),
+    Incomplete(MacOsSyncCompanionProtocol.OUTCOME_INCOMPLETE),
     ;
 
     companion object {

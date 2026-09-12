@@ -145,6 +145,7 @@ internal class MacOsBootstrapCloudAdapter(
             SyncCompanionOutcome.TokenExpired,
             SyncCompanionOutcome.Swept,
             SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 ZoneFetchResult.UnknownOutcome
             }
@@ -185,6 +186,7 @@ internal class MacOsBootstrapCloudAdapter(
             SyncCompanionOutcome.TokenExpired,
             SyncCompanionOutcome.Swept,
             SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 ZoneSaveResult.UnknownOutcome
             }
@@ -233,6 +235,7 @@ internal class MacOsBootstrapCloudAdapter(
             SyncCompanionOutcome.TokenExpired,
             SyncCompanionOutcome.Swept,
             SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 AnchorReadResult.UnknownOutcome
             }
@@ -276,6 +279,7 @@ internal class MacOsBootstrapCloudAdapter(
             SyncCompanionOutcome.TokenExpired,
             SyncCompanionOutcome.Swept,
             SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 AnchorCreateResult.UnknownOutcome
             }

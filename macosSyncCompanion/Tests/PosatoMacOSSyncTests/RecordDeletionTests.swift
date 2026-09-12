@@ -50,10 +50,10 @@ import Testing
   let store = CloudStore(backend: backend)
 
   #expect(store.deleteWorkspaceRecords(timeout: 5) == .deletedAndAbsent)
-  #expect(backend.requestedTokens == [nil, Data([7]), nil])
+  #expect(backend.requestedTokens == [nil, Data([7]), Data([8])])
   #expect(
     backend.deleteRecordCalls == [
-      [testBundleName(9), testBundleName(10)], [CloudNames.anchorName],
+      [testBundleName(9)], [testBundleName(10)], [CloudNames.anchorName],
     ]
   )
 }
@@ -126,6 +126,33 @@ import Testing
   #expect(store.deleteWorkspaceRecords(timeout: 5) == .unknownOutcome)
 }
 
+@Test func givenPresentAnchorDuringDrainWhenDeletingThenBundlesStillGoFirst() {
+  // Full removal runs with the own anchor present, so the drain deletes
+  // enumerated sets without an anchor gate; the surviving anchor aborts
+  // the outcome only at the anchor-delete tail.
+  let backend = FakeCloudBackend()
+  backend.records[CloudNames.anchorName] = testAnchorRecord()
+  backend.changesScript = [
+    .fetched(
+      BackendChanges(
+        changed: [testBundleRecord(identifier: 9)],
+        deletedNames: [],
+        token: Data([7]),
+        moreComing: false
+      )
+    ),
+    .fetched(BackendChanges(changed: [], deletedNames: [], token: Data([8]), moreComing: false)),
+  ]
+  let store = CloudStore(backend: backend)
+
+  #expect(store.deleteWorkspaceRecords(timeout: 5) == .unknownOutcome)
+  #expect(
+    backend.deleteRecordCalls == [
+      [testBundleName(9)], [CloudNames.anchorName],
+    ]
+  )
+}
+
 @Test func givenDeleteFaultWhenDeletingWorkspaceRecordsThenRetryableIsReturned() {
   let backend = FakeCloudBackend()
   backend.deleteFault = .retryable
@@ -149,9 +176,10 @@ import Testing
 @Test func givenPresentZoneWhenDeletingWorkspaceRecordsThenDeletedAndAbsentIsReturned() {
   let backend = FakeCloudBackend()
   backend.zone = .found
-  backend.changes = .fetched(
-    BackendChanges(changed: [], deletedNames: [], token: Data([7]), moreComing: false)
-  )
+  backend.changesScript = [
+    .fetched(BackendChanges(changed: [], deletedNames: [], token: Data([7]), moreComing: false)),
+    .fetched(BackendChanges(changed: [], deletedNames: [], token: Data([8]), moreComing: false)),
+  ]
   let store = CloudStore(backend: backend)
 
   #expect(store.deleteWorkspaceRecords(timeout: 5) == .deletedAndAbsent)

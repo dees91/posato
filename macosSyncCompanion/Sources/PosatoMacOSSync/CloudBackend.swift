@@ -345,15 +345,20 @@ struct CKCloudDatabase: CloudBackend, @unchecked Sendable {
     return operation
   }
 
+  static func makeDeleteOperation(ids: [CKRecord.ID]) -> CKModifyRecordsOperation {
+    let operation = CKModifyRecordsOperation(recordsToSave: nil, recordIDsToDelete: ids)
+    operation.isAtomic = false
+    return operation
+  }
+
   func deleteRecords(names: [String], timeout: TimeInterval) -> BackendDelete {
     guard timeout > 0, !names.isEmpty else {
       return names.isEmpty ? .deleted : .failed(.unknown)
     }
     let box = LockedBox<BackendDelete>(.failed(.unknown))
     let done = DispatchSemaphore(value: 0)
-    let operation = CKModifyRecordsOperation(
-      recordsToSave: nil,
-      recordIDsToDelete: names.map { CKRecord.ID(recordName: $0, zoneID: zoneID) }
+    let operation = Self.makeDeleteOperation(
+      ids: names.map { CKRecord.ID(recordName: $0, zoneID: zoneID) }
     )
     operation.modifyRecordsResultBlock = { result in
       switch result {

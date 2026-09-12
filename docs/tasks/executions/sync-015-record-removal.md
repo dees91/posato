@@ -101,3 +101,26 @@
 - **Status:** done (review reconciled, `AC-04` passed 2026-09-12)
 - **Outcome:** record-based removal proven over fakes, adapters, and the
   physical matrix; purge-window class closed by construction, settle retired
+
+## Review correction P1/P2 (2026-09-12, PR #50, no hosted review)
+
+- **Outcome:** bounded resumable deletion with progress guarantee (P1) and
+  non-atomic mixed-result delete mapping with whole-operation tests (P2).
+- **Boundaries:** one new outcome token `INCOMPLETE=18`; Kotlin adapter
+  resume loops (cap 10); iOS provider-held resume tokens; no `AC-04` rerun.
+- **Design point:** the per-set anchor re-read applies to the anchorless
+  sweep only (`D5` scope). Full removal runs on `READY` with the own anchor
+  present, so its drain deletes unconditionally and the anchor-delete tail
+  plus the emptiness re-scan decide the outcome; a presence gate in the
+  drain would abort every production removal.
+- **Independent review:** Standard-tier completed-change review, verdict
+  `one-more-pass` with 1 Critical (own-anchor abort risk in the first iOS
+  drain draft). Fixed by removing the gate from the iOS delete pass and
+  pinning the contract with `testDeleteProceedsWhileOwnAnchorPresent`
+  (iOS) and `givenPresentAnchorDuringDrainWhenDeletingThenBundlesStillGoFirst`
+  (companion). The reviewer's remaining text was truncated past item 4;
+  items 5-6 (factory use, mapper mix) self-verified against the diff.
+- **Checks:** companion `swift test` 138/138; `jvmTest` 553/553;
+  `iosSwiftTest` 126 run, 6 skipped (pre-existing), 0 failures;
+  `./gradlew quality` exit 0. UI driving out of scope per `verify-posato`
+  (native sync-adapter work, no user action).

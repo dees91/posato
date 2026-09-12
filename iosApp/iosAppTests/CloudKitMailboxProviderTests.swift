@@ -144,6 +144,19 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         return NSError(domain: CKError.errorDomain, code: code.rawValue)
     }
 
+    private func partialFailure(_ items: [(String, CKError.Code)]) -> NSError {
+        var partials = [AnyHashable: Any]()
+        for (name, code) in items {
+            let id = CKRecord.ID(recordName: name, zoneID: zoneID)
+            partials[id] = ckError(code)
+        }
+        return NSError(
+            domain: CKError.errorDomain,
+            code: CKError.partialFailure.rawValue,
+            userInfo: [CKPartialErrorsByItemIDKey: partials]
+        )
+    }
+
     // MARK: - Error table (mirrors the companion CloudErrorMapper)
 
     func testRetryableCodesMatchCompanionTable() {
@@ -170,6 +183,43 @@ final class CloudKitMailboxProviderTests: XCTestCase {
     func testUnknownItemStandsApart() {
         XCTAssertTrue(MailboxErrorMapper.isUnknownItem(ckError(.unknownItem)))
         XCTAssertFalse(MailboxErrorMapper.isRetryable(ckError(.unknownItem)))
+    }
+
+    func testRecordDeleteToleratesUnknownItemOnlyPartial() {
+        XCTAssertNil(MailboxErrorMapper.recordDelete(from: partialFailure([("gone", .unknownItem)])))
+    }
+
+    func testRecordDeleteToleratesDirectUnknownItem() {
+        XCTAssertNil(MailboxErrorMapper.recordDelete(from: ckError(.unknownItem)))
+    }
+
+    func testRecordDeleteToleratesDirectZoneAbsent() {
+        XCTAssertNil(MailboxErrorMapper.recordDelete(from: ckError(.zoneNotFound)))
+    }
+
+    func testRecordDeleteReportsRealErrorAlongsideUnknownItem() {
+        // The third batch member succeeded and is simply absent from the
+        // partial-failure dictionary; the surviving unknown item is
+        // tolerated while the real error is reported whole.
+        let error = partialFailure([("gone", .unknownItem), ("broken", .internalError)])
+        XCTAssertEqual(MailboxErrorMapper.recordDelete(from: error), error)
+    }
+
+    func testRecordDeleteReportsSingleRealPartialEntry() {
+        let error = partialFailure([("broken", .internalError)])
+        XCTAssertEqual(MailboxErrorMapper.recordDelete(from: error), error)
+    }
+
+    func testRecordDeletePreservesRetryableAlongsideUnknownItem() {
+        let error = partialFailure([("gone", .unknownItem), ("slow", .networkFailure)])
+        XCTAssertEqual(MailboxErrorMapper.recordDelete(from: error), error)
+    }
+
+    func testDeleteOperationIsNonAtomic() {
+        let id = CKRecord.ID(recordName: "workspace", zoneID: zoneID)
+        let operation = CloudKitMailboxLiveBackend.makeDeleteOperation(ids: [id])
+        XCTAssertFalse(operation.isAtomic)
+        XCTAssertEqual(operation.recordIDsToDelete, [id])
     }
 
     func testRemainingCodesMapToUnknown() {
@@ -622,6 +672,165 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         let (provider, _, _) = makeProvider(backend: backend)
         XCTAssertEqual(provider.sweepBundlesIfAnchorMissing(binding: binding() ), .anchorpresent)
         XCTAssertTrue(backend.deletedIDs.isEmpty)
+    }
+
+    func testDeleteProceedsWhileOwnAnchorPresent() {
+        // Full removal runs on READY, so the own anchor is present during
+        // the drain: bundle sets must still be deleted, and only the anchor
+        // delete plus the emptiness re-scan decide the outcome.
+        let backend = FakeMailboxBackend()
+        let bundle = bundleRecord(payload: Data([0x01]))
+        var fetches = 0
+        backend.changesHandler = { _, _ in
+            fetches += 1
+            if fetches == 1 {
+                return .fetched(
+                    MailboxChanges(
+                        changed: [bundle],
+                        deletedNames: [],
+                        tokenData: Data([0xA1]),
+                        moreComing: false
+                    )
+                )
+            }
+            return .fetched(
+                MailboxChanges(changed: [], deletedNames: [], tokenData: Data([0xA2]), moreComing: false)
+            )
+        }
+        var anchorDeleted = false
+        backend.deleteRecordsHandler = { ids in
+            if ids.map(\.recordName) == ["workspace"] {
+                anchorDeleted = true
+            }
+            return nil
+        }
+        backend.recordHandler = { _ in anchorDeleted ? .missing : .found(self.anchorRecord()) }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: binding() ), .deletedandabsent)
+        XCTAssertEqual(backend.deletedIDs.count, 2)
+        XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [bundle.recordID.recordName])
+        XCTAssertEqual(backend.deletedIDs[1].map(\.recordName), ["workspace"])
+    }
+
+    func testDeleteAbortsWhenAnchorSurvivesAnchorDelete() {
+        // An anchor that is still found after its delete means a concurrent
+        // workspace won the race: the drain still removes every enumerated
+        // set, but the outcome is unknown instead of deleted.
+        let backend = FakeMailboxBackend()
+        let first = bundleRecord(payload: Data([0x01]))
+        let secondRecord = bundleRecord(
+            identifier: Data(repeating: 0x02, count: 16),
+            payload: Data([0x02])
+        )
+        var fetches = 0
+        backend.changesHandler = { _, _ in
+            fetches += 1
+            if fetches == 1 {
+                return .fetched(
+                    MailboxChanges(
+                        changed: [first],
+                        deletedNames: [],
+                        tokenData: Data([0xA1]),
+                        moreComing: true
+                    )
+                )
+            }
+            return .fetched(
+                MailboxChanges(
+                    changed: [secondRecord],
+                    deletedNames: [],
+                    tokenData: Data([0xA2]),
+                    moreComing: false
+                )
+            )
+        }
+        backend.recordHandler = { _ in .found(self.anchorRecord()) }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: binding() ), .unknownoutcome)
+        XCTAssertEqual(backend.deletedIDs.count, 3)
+        XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [first.recordID.recordName])
+        XCTAssertEqual(backend.deletedIDs[1].map(\.recordName), [secondRecord.recordID.recordName])
+        XCTAssertEqual(backend.deletedIDs[2].map(\.recordName), ["workspace"])
+    }
+
+    func testSweepAbortsRemainingSetsWhenAnchorAppearsMidPass() {
+        let backend = FakeMailboxBackend()
+        let first = bundleRecord(payload: Data([0x01]))
+        let secondRecord = bundleRecord(
+            identifier: Data(repeating: 0x02, count: 16),
+            payload: Data([0x02])
+        )
+        var fetches = 0
+        backend.changesHandler = { _, _ in
+            fetches += 1
+            if fetches == 1 {
+                return .fetched(
+                    MailboxChanges(
+                        changed: [first],
+                        deletedNames: [],
+                        tokenData: Data([0xA1]),
+                        moreComing: true
+                    )
+                )
+            }
+            return .fetched(
+                MailboxChanges(
+                    changed: [secondRecord],
+                    deletedNames: [],
+                    tokenData: Data([0xA2]),
+                    moreComing: false
+                )
+            )
+        }
+        var anchorReads = 0
+        backend.recordHandler = { _ in
+            anchorReads += 1
+            if anchorReads == 1 {
+                return .missing
+            }
+            return .found(self.anchorRecord())
+        }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.sweepBundlesIfAnchorMissing(binding: binding() ), .anchorpresent)
+        XCTAssertEqual(backend.deletedIDs.count, 1)
+        XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [first.recordID.recordName])
+    }
+
+    func testDeleteResumesAcrossCallsAfterPageBound() {
+        let backend = FakeMailboxBackend()
+        var fetchTokens: [Data?] = []
+        var fetches = 0
+        backend.changesHandler = { _, tokenData in
+            fetchTokens.append(tokenData)
+            fetches += 1
+            if fetches <= 12 {
+                return .fetched(
+                    MailboxChanges(
+                        changed: [],
+                        deletedNames: ["tombstone-\(fetches)"],
+                        tokenData: Data([UInt8(fetches)]),
+                        moreComing: true
+                    )
+                )
+            }
+            return .fetched(
+                MailboxChanges(changed: [], deletedNames: [], tokenData: Data([0xFF]), moreComing: false)
+            )
+        }
+        backend.recordHandler = { _ in .missing }
+        let (provider, _, _) = makeProvider(backend: backend)
+        let data = binding()
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .retryable)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .deletedandabsent)
+        // Twelve deletion-only pages exceed the ten-page bound, so the first
+        // call stops with work remaining and the second call resumes from
+        // the tenth page's token instead of restarting.
+        XCTAssertEqual(fetches, 14)
+        XCTAssertNil(fetchTokens[0])
+        XCTAssertEqual(fetchTokens[10], Data([10]))
+        XCTAssertNil(fetchTokens[13])
+        XCTAssertEqual(backend.deletedIDs.count, 1)
+        XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), ["workspace"])
     }
 
     // MARK: - Binding gates

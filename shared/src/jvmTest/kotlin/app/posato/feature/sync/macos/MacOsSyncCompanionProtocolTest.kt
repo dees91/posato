@@ -143,7 +143,11 @@ class MacOsSyncCompanionProtocolTest {
 
     @Test
     fun `given new outcomes when encoded then the codec round trips`() {
-        val outcomes = listOf(SyncCompanionOutcome.AlreadyExists, SyncCompanionOutcome.Conflict)
+        val outcomes = listOf(
+            SyncCompanionOutcome.AlreadyExists,
+            SyncCompanionOutcome.Conflict,
+            SyncCompanionOutcome.Incomplete,
+        )
 
         outcomes.forEach { outcome ->
             val message = SyncCompanionMessage(

@@ -65,40 +65,79 @@ internal class MacOsMailboxAdapter(
 
     override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
         val binding = expectedBinding.copyBytes()
+        var cursor: ByteArray? = null
         return try {
-            val response = exchange(
-                operation = SyncCompanionOperation.DeleteWorkspaceRecords,
-                payload = MacOsSyncCompanionProtocol.cloudPayload(binding),
-            )
-            when (response) {
-                CompanionExchange.Unknown -> RecordDeleteResult.UnknownOutcome
-                is CompanionExchange.Message -> mapRecordDelete(response.message)
+            repeat(MAX_DELETE_ATTEMPTS) {
+                val payload = if (cursor == null) {
+                    MacOsSyncCompanionProtocol.cloudPayload(binding)
+                } else {
+                    MacOsSyncCompanionProtocol.cursorPayload(binding, checkNotNull(cursor))
+                }
+                val response = exchange(
+                    operation = SyncCompanionOperation.DeleteWorkspaceRecords,
+                    payload = payload,
+                )
+                when (response) {
+                    CompanionExchange.Unknown -> {
+                        // The companion died mid-request; resume from the last cursor.
+                    }
+
+                    is CompanionExchange.Message -> {
+                        if (response.message.outcome == SyncCompanionOutcome.Incomplete) {
+                            cursor = parseResumeCursor(response.message.payload)
+                                ?: return RecordDeleteResult.UnknownOutcome
+                        } else {
+                            return mapRecordDelete(response.message)
+                        }
+                    }
+                }
             }
+            RecordDeleteResult.Retryable
         } finally {
             binding.fill(0)
+            cursor?.fill(0)
         }
     }
 
     override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
         val binding = expectedBinding.copyBytes()
+        var cursor: ByteArray? = null
         return try {
-            val response = exchange(
-                operation = SyncCompanionOperation.SweepBundlesIfAnchorMissing,
-                payload = MacOsSyncCompanionProtocol.cloudPayload(binding),
-            )
-            when (response) {
-                CompanionExchange.Unknown -> BundleSweepResult.UnknownOutcome
+            repeat(MAX_DELETE_ATTEMPTS) {
+                val payload = if (cursor == null) {
+                    MacOsSyncCompanionProtocol.cloudPayload(binding)
+                } else {
+                    MacOsSyncCompanionProtocol.cursorPayload(binding, checkNotNull(cursor))
+                }
+                val response = exchange(
+                    operation = SyncCompanionOperation.SweepBundlesIfAnchorMissing,
+                    payload = payload,
+                )
+                when (response) {
+                    CompanionExchange.Unknown -> {
+                        // The companion died mid-request; resume from the last cursor.
+                    }
 
-                is CompanionExchange.Message -> when (response.message.outcome) {
-                    SyncCompanionOutcome.Swept -> BundleSweepResult.Swept
-                    SyncCompanionOutcome.AnchorPresent -> BundleSweepResult.AnchorPresent
-                    SyncCompanionOutcome.Retryable -> BundleSweepResult.Retryable
-                    SyncCompanionOutcome.AccountChanged -> BundleSweepResult.AccountChanged
-                    else -> BundleSweepResult.UnknownOutcome
+                    is CompanionExchange.Message -> {
+                        if (response.message.outcome == SyncCompanionOutcome.Incomplete) {
+                            cursor = parseResumeCursor(response.message.payload)
+                                ?: return BundleSweepResult.UnknownOutcome
+                        } else {
+                            return when (response.message.outcome) {
+                                SyncCompanionOutcome.Swept -> BundleSweepResult.Swept
+                                SyncCompanionOutcome.AnchorPresent -> BundleSweepResult.AnchorPresent
+                                SyncCompanionOutcome.Retryable -> BundleSweepResult.Retryable
+                                SyncCompanionOutcome.AccountChanged -> BundleSweepResult.AccountChanged
+                                else -> BundleSweepResult.UnknownOutcome
+                            }
+                        }
+                    }
                 }
             }
+            BundleSweepResult.Retryable
         } finally {
             binding.fill(0)
+            cursor?.fill(0)
         }
     }
 
@@ -167,6 +206,7 @@ internal class MacOsMailboxAdapter(
             SyncCompanionOutcome.TokenExpired,
             SyncCompanionOutcome.Swept,
             SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 BundleSaveResult.UnknownOutcome
             }
@@ -218,6 +258,7 @@ internal class MacOsMailboxAdapter(
             SyncCompanionOutcome.Conflict,
             SyncCompanionOutcome.Swept,
             SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 ChangeFetchResult.UnknownOutcome
             }
@@ -255,6 +296,7 @@ internal class MacOsMailboxAdapter(
             SyncCompanionOutcome.TokenExpired,
             SyncCompanionOutcome.Swept,
             SyncCompanionOutcome.AnchorPresent,
+            SyncCompanionOutcome.Incomplete,
             null -> {
                 RecordDeleteResult.UnknownOutcome
             }
@@ -306,10 +348,18 @@ internal class MacOsMailboxAdapter(
 
     private companion object {
         const val DEFAULT_DEADLINE_MILLISECONDS: Int = 30_000
+        const val MAX_DELETE_ATTEMPTS: Int = 10
         const val ABSENT_FLAG: Byte = 0
         const val PRESENT_FLAG: Byte = 1
         const val LENGTH_BYTES: Int = 4
         const val MINIMUM_PAGE_BYTES: Int = 6
         const val MINIMUM_TAIL_BYTES: Int = 1
     }
+}
+
+private fun parseResumeCursor(payload: ByteArray): ByteArray? {
+    if (payload.size !in 0..MacOsSyncCompanionProtocol.CURSOR_BYTES) {
+        return null
+    }
+    return payload.copyOf()
 }
