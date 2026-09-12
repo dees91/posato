@@ -272,6 +272,71 @@ class SessionTransitionOwnerTest {
     }
 
     @Test
+    fun `given a setup wait that outlasts the session when started then the end is recorded without applying`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
+        val clock = FakeSessionClock(NOW)
+        val policyStore = policyStoreOf(listOf("stable.example"))
+        // The session is still active at commit time, but target setup
+        // suspends past its end before the apply runs.
+        val owner = SessionTransitionOwner(
+            backgroundDispatcher = dispatcher,
+            store = store,
+            clock = clock,
+            enforcement = enforcement,
+            loadTargets = {
+                clock.nowEpochMillis = NOW + DURATION + 1
+                loadSessionTargets(policyStore, FakeSessionMappings())
+            },
+            triggers = FakeSessionSyncTriggers(),
+        )
+        val current = SessionId(testIdentifier(21))
+
+        val result = owner.startSession(current, NOW, NOW + DURATION, START_SET)
+        scheduler.runCurrent()
+
+        val ended = assertIs<LocalSessionStatus.Ended>(assertIs<LocalSessionResult.Success<LocalSessionStatus>>(result).value)
+        assertEquals(SessionEndKind.EXPIRED, ended.kind)
+        assertEquals(NOW + DURATION, ended.record.endEpochMillis)
+        assertTrue("apply" !in enforcement.calls)
+        assertTrue("clear" !in enforcement.calls)
+    }
+
+    @Test
+    fun `given a mid-life read failure before apply when started then no terminal fact is invented`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
+        val clock = FakeSessionClock(NOW)
+        val policyStore = policyStoreOf(listOf("stable.example"))
+        // The commit lands while the store is healthy; the store turns
+        // unreadable during setup, so the pre-apply guard proves nothing and
+        // must skip the apply without banking an expiry for a live session.
+        val owner = SessionTransitionOwner(
+            backgroundDispatcher = dispatcher,
+            store = store,
+            clock = clock,
+            enforcement = enforcement,
+            loadTargets = {
+                store.readFailure = LocalSessionFailure.STORAGE_FAILURE
+                loadSessionTargets(policyStore, FakeSessionMappings())
+            },
+            triggers = FakeSessionSyncTriggers(),
+        )
+        val current = SessionId(testIdentifier(22))
+
+        val result = owner.startSession(current, NOW, NOW + DURATION, START_SET)
+        scheduler.runCurrent()
+
+        assertIs<LocalSessionResult.Failure>(result)
+        assertEquals(0, store.markExpiredCalls)
+        assertTrue("apply" !in enforcement.calls)
+        assertTrue("clear" !in enforcement.calls)
+        store.readFailure = null
+        val live = assertIs<LocalSessionStatus.Active>(assertRead(store, NOW))
+        assertEquals(NOW + DURATION, live.record.endEpochMillis)
+    }
+
+    @Test
     fun `given an outlasted command with a failing terminal write when started then the read still converges`() = runTest(dispatcher) {
         val store = FakeLocalSessionStore()
         val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)

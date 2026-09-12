@@ -492,6 +492,13 @@ internal class SessionTransitionOwner(
             val targets = loadTargets()
             val frozen = targets.toFrozenStartSet()
             frozenStartSet = frozen
+            // Pre-apply liveness boundary: loading targets suspends, so the
+            // session may have ended while waiting. A spent session is
+            // recorded terminal without ever applying; its deadline never
+            // moves.
+            if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
+                return
+            }
             val requested = targets.toEnforcedSet()
             val report = portMutex.withLock {
                 enforcement.apply(record.toEnforcementRequest(requested, targets))
@@ -626,6 +633,11 @@ internal class SessionTransitionOwner(
         tag: SessionTag,
         frozen: FrozenStartSet?,
     ) {
+        // Same liveness boundary as the command path: a retry or poll may
+        // have waited past the end, so a spent session never re-applies.
+        if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
+            return
+        }
         val targets = loadTargets()
         val requested = targets.toEnforcedSet()
         portMutex.withLock {
@@ -714,6 +726,53 @@ internal class SessionTransitionOwner(
             mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
         }
     }
+}
+
+/**
+ * Pre-apply liveness boundary shared by the command and re-apply paths. The
+ * owner keeps single serialized responsibility for transitions; this helper
+ * only needs its mutex, store, and clock plus a converge callback so the
+ * class itself stays small. A spent or replaced session is recorded terminal
+ * without ever applying; its deadline never moves. markExpired is
+ * identity-bound and idempotent, so a replaced row or an already-banked
+ * expiry is safe here. A failed read proves nothing: the apply is skipped
+ * without inventing a terminal fact.
+ */
+internal suspend fun ensureApplicableBeforeApply(
+    stateMutex: Mutex,
+    store: LocalSessionSyncStore,
+    clock: SessionClock,
+    tag: SessionTag,
+    record: SessionRecord,
+    converge: suspend () -> Unit,
+): Boolean {
+    val now = clock.currentEpochMillis()
+    val applicable = stateMutex.withLock {
+        when (val read = store.read(now)) {
+            is LocalSessionResult.Failure -> {
+                null
+            }
+
+            is LocalSessionResult.Success -> {
+                val active = read.value as? LocalSessionStatus.Active
+                active != null && SessionTag(active.record) == tag && now < active.record.endEpochMillis
+            }
+        }
+    }
+    if (applicable == true) {
+        return true
+    }
+    if (applicable == false) {
+        // A Success read proved the session spent or replaced: record the
+        // terminal fact without ever applying; the deadline never moves.
+        // markExpired is identity-bound and idempotent, so a replaced row
+        // or an already-banked expiry is safe here.
+        stateMutex.withLock { store.markExpired(record.sessionId) }
+    }
+    // A failed read proved nothing: skip the apply without inventing a
+    // terminal fact, and converge whatever is current instead.
+    converge()
+    return false
 }
 
 private fun tagOf(result: LocalSessionResult<LocalSessionStatus>): SessionTag? {
