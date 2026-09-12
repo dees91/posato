@@ -495,6 +495,28 @@ not claim that every other device has received the update.
   (press **Remove workspace** again). A fresh install without a tombstone can
   still join a ghost during the provider purge window. See the [task
   brief](../../tasks/specifications/sync-014-removal-hardening.md).
+- `user-confirmed` (2026-09-11): `SYNC-015` replaces zone deletion with
+  record deletion (anchor and bundle records inside the exact zone, bundles
+  first and the anchor last, enumerated and absence-verified through the
+  looped changes traversal, never a query) and keeps the zone, which the app
+  never deletes, closing the purge-window class by construction. A linked
+  peer that finds the zone without the anchor reports anchor-missing
+  action-required and clears only its own key and local state on removal. A
+  consume-loop skip drops foreign-context bundles as progress, and a fresh
+  attempt with no anchor sweeps leftovers before minting (re-reading the
+  anchor first, so a concurrent winner is adopted, never swept). The
+  tombstone stays unchanged. See the [task
+  brief](../../tasks/specifications/sync-015-record-removal.md).
+- `observed` (2026-09-11, repository): the `SYNC-015` removal, peer,
+  deletion-entry, foreign-context, sweep, and adapter behaviors above pass
+  over fakes and both native targets (`jvmTest` including `commonTest`,
+  `iosTest` adapter cases, both Swift suites, `./gradlew quality` green);
+  existing removal, different-anchor, and tombstone cases are unchanged and
+  green. The timed physical matrix in both shapes and directions (`AC-04`)
+  passed 2026-09-12 (Mac-first S1/S2 and iPhone-first R1/R2, each with a
+  11–14 minute settle; fixture arrived over sync in every shape; peer
+  removals never deleted live records), so the recipe retires the settle
+  rule.
 - `observed` (2026-09-11 physical gate): re-linking the Mac about two and a
   half minutes after removal, with the iPhone still linked, established a
   fresh identifier that reported completed, yet the website added while

@@ -136,7 +136,7 @@ extension RequestHandler {
     }
   }
 
-  static func deleteZone(
+  static func deleteRecords(
     _ request: SyncMessage,
     started: DispatchTime,
     dependencies: SyncDependencies
@@ -162,7 +162,7 @@ extension RequestHandler {
     let (result, changed) = RequestSupport.observingAccountChange(
       name: dependencies.accountChangeName
     ) {
-      dependencies.clouds.deleteZoneAndVerifyAbsent(timeout: timeout)
+      dependencies.clouds.deleteWorkspaceRecords(timeout: timeout)
     }
     guard !changed,
       RequestSupport.postflight(
@@ -177,6 +177,56 @@ extension RequestHandler {
     switch result {
     case .deletedAndAbsent:
       return request.respond(outcome: .deletedAndAbsent)
+    case .retryable:
+      return request.respond(outcome: .retryable)
+    case .unknownOutcome:
+      return request.respond(outcome: .unknownOutcome)
+    }
+  }
+
+  static func sweepBundles(
+    _ request: SyncMessage,
+    started: DispatchTime,
+    dependencies: SyncDependencies
+  ) -> SyncMessage {
+    guard let binding = CloudRequestCodec.bindingOnly(request.payload) else {
+      return request.respond(outcome: .integrityFailure)
+    }
+    switch RequestSupport.preflight(
+      request,
+      expected: binding,
+      started: started,
+      accounts: dependencies.accounts
+    ) {
+    case .proceed:
+      break
+    case .respond(let message):
+      return message
+    }
+    let timeout = DeadlineBudget.remainingSeconds(
+      started: started,
+      budgetMilliseconds: request.deadlineMilliseconds
+    )
+    let (result, changed) = RequestSupport.observingAccountChange(
+      name: dependencies.accountChangeName
+    ) {
+      dependencies.clouds.sweepBundlesIfAnchorMissing(timeout: timeout)
+    }
+    guard !changed,
+      RequestSupport.postflight(
+        request,
+        expected: binding,
+        started: started,
+        accounts: dependencies.accounts
+      )
+    else {
+      return request.respond(outcome: .unknownOutcome)
+    }
+    switch result {
+    case .swept:
+      return request.respond(outcome: .swept)
+    case .anchorPresent:
+      return request.respond(outcome: .anchorPresent)
     case .retryable:
       return request.respond(outcome: .retryable)
     case .unknownOutcome:

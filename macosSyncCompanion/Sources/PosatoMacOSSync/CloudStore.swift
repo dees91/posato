@@ -100,16 +100,16 @@ struct CloudStore: Sendable {
   }
 
   func fetchChanges(cursor: Data, timeout: TimeInterval) -> ChangeFetchNative {
-    let serverToken: CKServerChangeToken?
+    let tokenData: Data?
     if cursor.isEmpty {
-      serverToken = nil
-    } else if let token = RecordCodec.unarchiveToken(cursor) {
-      serverToken = token
+      tokenData = nil
+    } else if RecordCodec.unarchiveToken(cursor) != nil {
+      tokenData = cursor
     } else {
       return .integrityFailure
     }
     let changes: BackendChanges
-    switch backend.fetchChanges(token: serverToken, timeout: timeout) {
+    switch backend.fetchChanges(tokenData: tokenData, timeout: timeout) {
     case .tokenExpired:
       return .tokenExpired
     case .zoneMissing:
@@ -118,9 +118,6 @@ struct CloudStore: Sendable {
       return mapFault(fault, retryable: ChangeFetchNative.retryable, unknown: .unknownOutcome)
     case .fetched(let fetched):
       changes = fetched
-    }
-    guard changes.deletedNames.isEmpty else {
-      return .integrityFailure
     }
     guard let page = collectPage(changes.changed) else {
       return .integrityFailure
@@ -140,16 +137,12 @@ struct CloudStore: Sendable {
     )
   }
 
-  func deleteZoneAndVerifyAbsent(timeout: TimeInterval) -> ZoneDeleteNative {
-    _ = backend.deleteZone(timeout: timeout)
-    switch backend.fetchZone(timeout: timeout) {
-    case .missing:
-      return .deletedAndAbsent
-    case .found:
-      return .unknownOutcome
-    case .failed(let fault):
-      return mapFault(fault, retryable: ZoneDeleteNative.retryable, unknown: .unknownOutcome)
-    }
+  func deleteWorkspaceRecords(timeout: TimeInterval) -> RecordDeleteNative {
+    return RecordDeletion(backend: backend).deleteWorkspaceRecords(timeout: timeout)
+  }
+
+  func sweepBundlesIfAnchorMissing(timeout: TimeInterval) -> BundleSweepNative {
+    return RecordDeletion(backend: backend).sweepBundlesIfAnchorMissing(timeout: timeout)
   }
 
   private enum BundleComparison {

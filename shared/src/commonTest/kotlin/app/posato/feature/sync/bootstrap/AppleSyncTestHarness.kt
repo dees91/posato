@@ -8,12 +8,13 @@ import app.posato.feature.sync.data.SyncStoreResult
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
-import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.mailbox.RecordDeleteResult
 import app.posato.feature.sync.testContext
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalPolicyTestDatabase
@@ -47,7 +48,7 @@ internal class AppleSyncTestHarness(
     val crypto = cryptoProvider ?: FakeSyncCryptoProvider()
     val sqlPolicy = SqlLocalTargetPolicyStore(database, dispatcher)
     val sync = AppleSync(
-        BootstrapCoordinator(account, cloud, keys, store, crypto),
+        BootstrapCoordinator(account, cloud, keys, store, crypto, mailboxPort ?: mailbox),
         SyncOperationCore(replica, crypto, wallClock),
         mailboxPort ?: mailbox,
         keys,
@@ -111,8 +112,11 @@ internal class FakeMailboxPort : MailboxPort {
     val cursors = mutableListOf<MailboxCursor>()
     val pages = ArrayDeque<ChangeFetchResult>()
     var saveResult: BundleSaveResult = BundleSaveResult.Saved
-    var deleteResult: ZoneDeleteResult = ZoneDeleteResult.DeletedAndAbsent
+    var deleteResult: RecordDeleteResult = RecordDeleteResult.DeletedAndAbsent
+    val deleteResults: ArrayDeque<RecordDeleteResult> = ArrayDeque()
     var deleteCalls = 0
+    var sweepResult: BundleSweepResult = BundleSweepResult.Swept
+    var sweepCalls = 0
     var beforeFetch: suspend () -> Unit = {}
 
     override suspend fun saveBundle(
@@ -133,9 +137,14 @@ internal class FakeMailboxPort : MailboxPort {
         return pages.removeFirstOrNull() ?: ChangeFetchResult.Page(ChangePage(null, false, testCursor(1)))
     }
 
-    override suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult {
+    override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
         deleteCalls += 1
-        return deleteResult
+        return deleteResults.removeFirstOrNull() ?: deleteResult
+    }
+
+    override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
+        sweepCalls += 1
+        return sweepResult
     }
 }
 

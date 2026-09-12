@@ -1,7 +1,7 @@
 package app.posato.feature.sync.bootstrap
 
 import app.posato.feature.sync.mailbox.MailboxPort
-import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.mailbox.RecordDeleteResult
 
 internal class AppleWorkspaceRemoval(
     private val mailbox: MailboxPort,
@@ -13,8 +13,8 @@ internal class AppleWorkspaceRemoval(
         closeWriter: suspend () -> Unit
     ): SyncStatus {
         val workspace = check.workspace ?: return check.status.toSyncStatus()
-        val zoneFailure = removeZone(check.status, workspace)
-        if (zoneFailure != null) return zoneFailure
+        val recordsFailure = removeRecords(check.status, workspace)
+        if (recordsFailure != null) return recordsFailure
         val keyFailure = removeKey(workspace)
         if (keyFailure != null) return keyFailure
         closeWriter()
@@ -29,18 +29,18 @@ internal class AppleWorkspaceRemoval(
         }
     }
 
-    private suspend fun removeZone(
+    private suspend fun removeRecords(
         status: EstablishedStatus,
         workspace: EstablishedWorkspace
     ): SyncStatus? {
         return when (status) {
-            EstablishedStatus.READY -> when (mailbox.deleteZoneAndVerifyAbsent(workspace.binding)) {
-                ZoneDeleteResult.DeletedAndAbsent -> null
-                ZoneDeleteResult.AccountChanged -> SyncStatus.ACTION_REQUIRED
-                ZoneDeleteResult.Retryable, ZoneDeleteResult.UnknownOutcome -> SyncStatus.RETRYABLE
+            EstablishedStatus.READY -> when (mailbox.deleteWorkspaceRecords(workspace.binding)) {
+                RecordDeleteResult.DeletedAndAbsent -> null
+                RecordDeleteResult.AccountChanged -> SyncStatus.ACTION_REQUIRED
+                RecordDeleteResult.Retryable, RecordDeleteResult.UnknownOutcome -> SyncStatus.RETRYABLE
             }
 
-            EstablishedStatus.ZONE_MISSING, EstablishedStatus.DIFFERENT_ANCHOR -> null
+            EstablishedStatus.ZONE_MISSING, EstablishedStatus.ANCHOR_MISSING, EstablishedStatus.DIFFERENT_ANCHOR -> null
 
             EstablishedStatus.LOCAL_ONLY, EstablishedStatus.RETRYABLE, EstablishedStatus.ACTION_REQUIRED -> status.toSyncStatus()
         }

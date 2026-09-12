@@ -39,13 +39,18 @@ enum BackendChangesResult: Equatable, Sendable {
   case failed(BackendFault)
 }
 
+enum BackendDelete: Equatable, Sendable {
+  case deleted
+  case failed(BackendFault)
+}
+
 protocol CloudBackend: Sendable {
   func fetchZone(timeout: TimeInterval) -> ZoneLookup
   func saveZone(timeout: TimeInterval) -> BackendFault?
   func fetchRecord(name: String, timeout: TimeInterval) -> BackendLookup
   func saveRecord(_ record: RawRecord, timeout: TimeInterval) -> BackendSave
-  func fetchChanges(token: CKServerChangeToken?, timeout: TimeInterval) -> BackendChangesResult
-  func deleteZone(timeout: TimeInterval) -> BackendFault?
+  func fetchChanges(tokenData: Data?, timeout: TimeInterval) -> BackendChangesResult
+  func deleteRecords(names: [String], timeout: TimeInterval) -> BackendDelete
 }
 
 final class ChangesCollector: @unchecked Sendable {
@@ -277,9 +282,18 @@ struct CKCloudDatabase: CloudBackend, @unchecked Sendable {
     return box.get()
   }
 
-  func fetchChanges(token: CKServerChangeToken?, timeout: TimeInterval) -> BackendChangesResult {
+  func fetchChanges(tokenData: Data?, timeout: TimeInterval) -> BackendChangesResult {
     guard timeout > 0 else {
       return .failed(.unknown)
+    }
+    let token: CKServerChangeToken?
+    if let tokenData {
+      guard let unarchived = RecordCodec.unarchiveToken(tokenData) else {
+        return .failed(.unknown)
+      }
+      token = unarchived
+    } else {
+      token = nil
     }
     let collector = ChangesCollector()
     let done = DispatchSemaphore(value: 0)
@@ -331,30 +345,29 @@ struct CKCloudDatabase: CloudBackend, @unchecked Sendable {
     return operation
   }
 
-  func deleteZone(timeout: TimeInterval) -> BackendFault? {
-    guard timeout > 0 else {
-      return .unknown
+  func deleteRecords(names: [String], timeout: TimeInterval) -> BackendDelete {
+    guard timeout > 0, !names.isEmpty else {
+      return names.isEmpty ? .deleted : .failed(.unknown)
     }
-    let box = LockedBox<BackendFault?>(.unknown)
+    let box = LockedBox<BackendDelete>(.failed(.unknown))
     let done = DispatchSemaphore(value: 0)
-    let operation = CKModifyRecordZonesOperation(
-      recordZonesToSave: nil,
-      recordZoneIDsToDelete: [zoneID]
+    let operation = CKModifyRecordsOperation(
+      recordsToSave: nil,
+      recordIDsToDelete: names.map { CKRecord.ID(recordName: $0, zoneID: zoneID) }
     )
-    operation.modifyRecordZonesResultBlock = { result in
+    operation.modifyRecordsResultBlock = { result in
       switch result {
       case .success:
-        box.set(nil)
+        box.set(.deleted)
       case .failure(let error):
-        let mapped = error as NSError
-        box.set(CloudErrorMapper.isRetryable(mapped) ? .retryable : .unknown)
+        box.set(CloudErrorMapper.recordDelete(from: error as NSError))
       }
       done.signal()
     }
     database.add(operation)
     if done.wait(timeout: .now() + timeout) == .timedOut {
       operation.cancel()
-      return .unknown
+      return .failed(.unknown)
     }
     return box.get()
   }

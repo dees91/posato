@@ -336,9 +336,14 @@ private fun MutableStateFlow<AppleSyncState>.publishOutcome(outcome: ReconcileOu
 internal fun EstablishedStatus.toSyncStatus(): SyncStatus {
     return when (this) {
         EstablishedStatus.READY -> SyncStatus.COMPLETED
+
         EstablishedStatus.LOCAL_ONLY -> SyncStatus.LOCAL_ONLY
+
         EstablishedStatus.RETRYABLE -> SyncStatus.RETRYABLE
-        EstablishedStatus.ZONE_MISSING, EstablishedStatus.DIFFERENT_ANCHOR, EstablishedStatus.ACTION_REQUIRED -> SyncStatus.ACTION_REQUIRED
+
+        EstablishedStatus.ZONE_MISSING, EstablishedStatus.ANCHOR_MISSING,
+        EstablishedStatus.DIFFERENT_ANCHOR,
+        EstablishedStatus.ACTION_REQUIRED -> SyncStatus.ACTION_REQUIRED
     }
 }
 

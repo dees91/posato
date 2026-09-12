@@ -14,5 +14,7 @@ internal interface MailboxPort {
         cursor: MailboxCursor
     ): ChangeFetchResult
 
-    suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult
+    suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult
+
+    suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult
 }

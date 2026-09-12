@@ -55,8 +55,15 @@ enum ChangeFetchNative: Equatable, Sendable {
   case integrityFailure
 }
 
-enum ZoneDeleteNative: Equatable, Sendable {
+enum RecordDeleteNative: Equatable, Sendable {
   case deletedAndAbsent
+  case retryable
+  case unknownOutcome
+}
+
+enum BundleSweepNative: Equatable, Sendable {
+  case swept
+  case anchorPresent
   case retryable
   case unknownOutcome
 }

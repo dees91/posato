@@ -74,7 +74,7 @@ class MacOsSyncCompanionProtocolTest {
 
     @Test
     fun `given a reserved operation when decoded then decoding fails`() {
-        val codes = listOf<Byte>(12, 13, 14, 15)
+        val codes = listOf<Byte>(13, 14, 15)
 
         codes.forEach { code ->
             val encoded = MacOsSyncCompanionProtocol.encode(
@@ -120,7 +120,8 @@ class MacOsSyncCompanionProtocolTest {
             SyncCompanionOperation.CreateAnchor,
             SyncCompanionOperation.SaveBundle,
             SyncCompanionOperation.FetchChanges,
-            SyncCompanionOperation.DeleteZoneAndVerifyAbsent,
+            SyncCompanionOperation.DeleteWorkspaceRecords,
+            SyncCompanionOperation.SweepBundlesIfAnchorMissing,
         )
 
         operations.forEach { operation ->

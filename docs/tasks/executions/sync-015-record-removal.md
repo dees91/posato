@@ -3,8 +3,8 @@
 - **Brief:** [Record-based removal](../specifications/sync-015-record-removal.md)
 - **Status:** `active`
 - **Review tier:** `high-risk`
-- **Implementer:** pending handoff to an implementing agent
-- **Reviewer:** plan reviewer and completed-change reviewer pending
+- **Implementer:** implementation complete in-session (2026-09-11)
+- **Reviewer:** plan review done; completed-change review `one-more-pass` (2026-09-11)
 - **Branch:** `feature/sync-015-record-removal`
 - **Updated:** 2026-09-11
 
@@ -54,25 +54,38 @@
 
 ## Result
 
-- Pending implementation.
+- `MailboxPort` exposes `deleteWorkspaceRecords` and
+  `sweepBundlesIfAnchorMissing`; both native stores enumerate by type and
+  name through the looped changes traversal, delete bundles before the
+  anchor in bounded idempotent batches, and no zone delete remains.
+- `ANCHOR_MISSING` maps to action required with local-only peer removal;
+  foreign-context bundles skip as progress; the fresh-attempt sweep
+  re-reads the anchor and adopts on race.
+- ADR 0007, `T-14`, the recipe, and the wiki topic carry the outcome; the
+  settle rule stays until `AC-04`.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `one-more-pass`, do not merge yet (independent reviewer, 2026-09-11)
+- **Critical:** none; **Required (1):** the wiki `observed` gate claim
+  outran the record's evidence column — reconcile with real gate output.
+- **Resolution:** re-ran every gate in-session and entered the observed
+  counts below; no code-behavior rework found.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Removal over fakes: success, partial, remaining, retryable, unknown, account, idempotent | pending | |
-| `ANCHOR_MISSING` peer cases and removal path | pending | |
-| Deletion-entry page and fresh establish in the found zone | pending | |
-| Adapter tests, both targets | pending | |
-| `./gradlew quality` | pending | |
-| Physical timed re-link, both shapes, both directions | pending | |
-| Threat-model closeout and `T-14` update | pending | |
+| Removal over fakes: success, partial, remaining, retryable, unknown, account, idempotent | done 2026-09-11 | `jvmTest` 544/544, `iosSimulatorArm64Test` 540/540, 0 failures |
+| Gates re-run after rebase onto `e40deed` | done 2026-09-12 | `quality` exit 0, companion `swift test` 131/131 pass |
+| `ANCHOR_MISSING` peer cases and removal path | done 2026-09-11 | same suites green, new cases included in totals above |
+| Deletion-entry page, foreign skip, fresh establish, sweep race | done 2026-09-11 | companion `swift test` 131/131 pass; fakes covered in `jvmTest` |
+| Adapter tests, both targets | done 2026-09-11 | `iosSwiftTest` 115 run, 6 skipped, 0 failures; `iosSimulatorArm64Test` green |
+| `./gradlew quality`, lint, diff scan | done 2026-09-11 | `quality` exit 0, `git diff --check` clean, no new suppression |
+| Physical timed re-link, both shapes, both directions | done 2026-09-12 | full matrix green: S1, S2, R1, R2 each with 11-14 min settle; Mac 1 row, accepted 4 stable, pending 0; fixture arrived over sync in every shape; cleanup left both linked to D with 2 websites |
+| AC-04 interim, Mac-first | recorded | S1: removal 08:32:42 local-only in 13 s; press +32 s completed, 1 row, accepted 4; iPhone waited for key B, then removed (B intact), linked, fixture arrived; settle 11 min green. S2: both removed, Mac re-established, iPhone linked, deleted fixture re-arrived; settle 13 min green |
+| AC-04 interim, iPhone-first | recorded | R1: iPhone removed, established C, completed; Mac attempt vs C ended action-required; Mac removed (C intact, tombstone 5), deleted fixture locally, linked, fixture re-arrived; settle 14 min green. R2: both removed (tombstone 6), iPhone established D, Mac linked, fixture re-arrived; settle 14 min green; Mac fixture deletion propagated to iPhone within a minute |
+| Threat-model closeout and `T-14` update | done 2026-09-11 | file updated |
 
 ## Blockers and accepted risks
 
@@ -85,5 +98,6 @@
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** done (review reconciled, `AC-04` passed 2026-09-12)
+- **Outcome:** record-based removal proven over fakes, adapters, and the
+  physical matrix; purge-window class closed by construction, settle retired

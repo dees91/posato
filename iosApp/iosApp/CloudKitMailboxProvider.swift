@@ -18,6 +18,7 @@ enum MailboxCloudLimits {
     static let bundleBytes = 65_536
     static let cursorBytes = 16_384
     static let bindingBytes = 32
+    static let recordDeleteBatchSize = 100
 }
 
 enum MailboxZoneLookup: Equatable {
@@ -103,7 +104,7 @@ protocol CloudKitMailboxBackend {
     func fetchRecord(id: CKRecord.ID, timeout: TimeInterval) -> MailboxRecordLookup
     func saveRecordIfAbsent(_ record: CKRecord, timeout: TimeInterval) -> MailboxRecordSave
     func fetchChanges(zoneID: CKRecordZone.ID, tokenData: Data?, timeout: TimeInterval) -> MailboxChangesResult
-    func deleteZone(zoneID: CKRecordZone.ID, timeout: TimeInterval) -> NSError?
+    func deleteRecords(ids: [CKRecord.ID], timeout: TimeInterval) -> NSError?
     func cancelInflight()
 }
 
@@ -161,6 +162,35 @@ enum MailboxErrorMapper {
     static func isUnknownItem(_ error: NSError) -> Bool {
         return error.domain == CKError.errorDomain
             && CKError.Code(rawValue: error.code) == .unknownItem
+    }
+
+    static func recordDelete(from error: NSError) -> NSError? {
+        if isZoneAbsent(error) {
+            return nil
+        }
+        var sawRetryable = false
+        for item in partialErrors(error) {
+            if isUnknownItem(item) || isZoneAbsent(item) {
+                continue
+            }
+            if isRetryable(item) {
+                sawRetryable = true
+            } else {
+                return error
+            }
+        }
+        return sawRetryable ? error : nil
+    }
+
+    private static func partialErrors(_ error: NSError) -> [NSError] {
+        guard error.domain == CKError.errorDomain,
+            error.code == CKError.partialFailure.rawValue,
+            let partial = error.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Any]
+        else {
+            return [error]
+        }
+        let items = partial.values.compactMap { $0 as? NSError }
+        return items.isEmpty ? [error] : items
     }
 
     static func unwrapSinglePartial(_ error: NSError) -> NSError {
@@ -418,8 +448,15 @@ enum MailboxChangeFetch: Equatable {
     }
 }
 
-enum MailboxZoneDelete: Equatable {
+enum MailboxRecordDelete: Equatable {
     case deletedAndAbsent
+    case retryable
+    case unknownOutcome
+}
+
+enum MailboxBundleSweep: Equatable {
+    case swept
+    case anchorPresent
     case retryable
     case unknownOutcome
 }
@@ -545,15 +582,131 @@ struct MailboxStore {
         }
     }
 
-    func deleteZoneAndVerifyAbsent(timeout: TimeInterval) -> MailboxZoneDelete {
-        _ = backend.deleteZone(zoneID: zoneID, timeout: timeout)
-        switch backend.fetchZone(zoneID: zoneID, timeout: timeout) {
+    func deleteWorkspaceRecords(timeout: TimeInterval) -> MailboxRecordDelete {
+        switch traverseBundleNames(timeout: timeout) {
+        case .zoneMissing:
+            return .deletedAndAbsent
+        case .retryable:
+            return .retryable
+        case .unknownOutcome:
+            return .unknownOutcome
+        case .names(let names):
+            for chunk in names.chunked(into: MailboxCloudLimits.recordDeleteBatchSize) {
+                if let error = backend.deleteRecords(
+                    ids: chunk.map { CKRecord.ID(recordName: $0, zoneID: zoneID) },
+                    timeout: timeout
+                ) {
+                    return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+                }
+            }
+        }
+        if let error = backend.deleteRecords(
+            ids: [MailboxRecordCodec.anchorRecordID(zoneID: zoneID)],
+            timeout: timeout
+        ) {
+            return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+        }
+        switch backend.fetchRecord(id: MailboxRecordCodec.anchorRecordID(zoneID: zoneID), timeout: timeout) {
+        case .missing, .zoneMissing:
+            break
         case .found:
             return .unknownOutcome
-        case .missing:
-            return .deletedAndAbsent
         case .failed(let error):
             return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+        }
+        switch traverseBundleNames(timeout: timeout) {
+        case .zoneMissing:
+            return .deletedAndAbsent
+        case .retryable:
+            return .retryable
+        case .unknownOutcome:
+            return .unknownOutcome
+        case .names(let remaining):
+            return remaining.isEmpty ? .deletedAndAbsent : .unknownOutcome
+        }
+    }
+
+    func sweepBundlesIfAnchorMissing(timeout: TimeInterval) -> MailboxBundleSweep {
+        let names: [String]
+        switch traverseBundleNames(timeout: timeout) {
+        case .zoneMissing:
+            return .swept
+        case .retryable:
+            return .retryable
+        case .unknownOutcome:
+            return .unknownOutcome
+        case .names(let enumerated):
+            names = enumerated
+        }
+        switch backend.fetchRecord(id: MailboxRecordCodec.anchorRecordID(zoneID: zoneID), timeout: timeout) {
+        case .missing:
+            break
+        case .found:
+            return .anchorPresent
+        case .zoneMissing:
+            return .swept
+        case .failed(let error):
+            return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+        }
+        for chunk in names.chunked(into: MailboxCloudLimits.recordDeleteBatchSize) {
+            if let error = backend.deleteRecords(
+                ids: chunk.map { CKRecord.ID(recordName: $0, zoneID: zoneID) },
+                timeout: timeout
+            ) {
+                return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+            }
+        }
+        return .swept
+    }
+
+    private enum BundleNameTraversal {
+        case names([String])
+        case zoneMissing
+        case retryable
+        case unknownOutcome
+    }
+
+    private func traverseBundleNames(timeout: TimeInterval) -> BundleNameTraversal {
+        var tokenData: Data?
+        var names: [String] = []
+        var restarted = false
+        var previous: Data?
+        while true {
+            switch backend.fetchChanges(zoneID: zoneID, tokenData: tokenData, timeout: timeout) {
+            case .zoneMissing:
+                return .zoneMissing
+            case .invalidCursor:
+                return .unknownOutcome
+            case .failed(let error):
+                if MailboxErrorMapper.isTokenExpired(error) {
+                    if restarted {
+                        return .retryable
+                    }
+                    restarted = true
+                    tokenData = nil
+                    names = []
+                    previous = nil
+                    continue
+                }
+                return MailboxErrorMapper.isRetryable(error) ? .retryable : .unknownOutcome
+            case .fetched(let fetched):
+                for record in fetched.changed where record.recordType == MailboxCloudLimits.bundleType {
+                    names.append(record.recordID.recordName)
+                }
+                guard let token = fetched.tokenData, !token.isEmpty,
+                    token.count <= MailboxCloudLimits.cursorBytes
+                else {
+                    return .unknownOutcome
+                }
+                if !fetched.moreComing {
+                    return .names(names)
+                }
+                guard token != previous else {
+                    return .unknownOutcome
+                }
+                previous = token
+                tokenData = token
+            }
         }
     }
 
@@ -610,9 +763,6 @@ struct MailboxStore {
             }
             identifier = validated.0
             bundle = validated.1
-        }
-        guard changes.deletedNames.isEmpty else {
-            return .integrityFailure
         }
         guard let token = changes.tokenData, !token.isEmpty,
             token.count <= MailboxCloudLimits.cursorBytes
@@ -948,7 +1098,7 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         }
     }
 
-    func deleteZoneAndVerifyAbsent(binding: Data) -> IosCloudZoneDeleteStatus {
+    func deleteWorkspaceRecords(binding: Data) -> IosCloudRecordDeleteStatus {
         switch preflight(expectedBinding: binding as Data) {
         case .proceed:
             break
@@ -959,7 +1109,7 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         }
         let mark = generation.current()
         let (flag, observer) = observingAccountChange()
-        let result = store().deleteZoneAndVerifyAbsent(timeout: timeout)
+        let result = store().deleteWorkspaceRecords(timeout: timeout)
         NotificationCenter.default.removeObserver(observer)
         guard !flag.isMarked, generation.current() == mark else {
             return .unknownoutcome
@@ -967,6 +1117,34 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         switch result {
         case .deletedAndAbsent:
             return confirm(.deletedandabsent, expectedBinding: binding as Data, unknown: .unknownoutcome)
+        case .retryable:
+            return confirm(.retryable, expectedBinding: binding as Data, unknown: .unknownoutcome)
+        case .unknownOutcome:
+            return .unknownoutcome
+        }
+    }
+
+    func sweepBundlesIfAnchorMissing(binding: Data) -> IosCloudBundleSweepStatus {
+        switch preflight(expectedBinding: binding as Data) {
+        case .proceed:
+            break
+        case .retryable:
+            return .retryable
+        case .accountChanged:
+            return .accountchanged
+        }
+        let mark = generation.current()
+        let (flag, observer) = observingAccountChange()
+        let result = store().sweepBundlesIfAnchorMissing(timeout: timeout)
+        NotificationCenter.default.removeObserver(observer)
+        guard !flag.isMarked, generation.current() == mark else {
+            return .unknownoutcome
+        }
+        switch result {
+        case .swept:
+            return confirm(.swept, expectedBinding: binding as Data, unknown: .unknownoutcome)
+        case .anchorPresent:
+            return confirm(.anchorpresent, expectedBinding: binding as Data, unknown: .unknownoutcome)
         case .retryable:
             return confirm(.retryable, expectedBinding: binding as Data, unknown: .unknownoutcome)
         case .unknownOutcome:
@@ -1042,6 +1220,22 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         )
     }
 
+}
+
+extension Array {
+    fileprivate func chunked(into size: Int) -> [[Element]] {
+        guard size > 0 else {
+            return isEmpty ? [] : [self]
+        }
+        var chunks: [[Element]] = []
+        var index = startIndex
+        while index < endIndex {
+            let next = self.index(index, offsetBy: size, limitedBy: endIndex) ?? endIndex
+            chunks.append(Array(self[index..<next]))
+            index = next
+        }
+        return chunks
+    }
 }
 
 private final class AccountChangeFlag: @unchecked Sendable {

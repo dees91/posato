@@ -22,6 +22,7 @@ enum SyncLimits {
   static let uuidTextBytes = 36
   static let bundleBytes = 65_536
   static let cursorBytes = 16_384
+  static let recordDeleteBatchSize = 100
   static let containerIdentifier = "iCloud.app.posato.sync"
   static let keyService = "app.posato.sync.workspace-key.v1"
   static let accessGroupSuffix = "app.posato.sync"
@@ -42,7 +43,8 @@ enum SyncOperation: UInt8, Sendable {
   case createAnchor = 8
   case saveBundle = 9
   case fetchChanges = 10
-  case deleteZoneAndVerifyAbsent = 11
+  case deleteWorkspaceRecords = 11
+  case sweepBundlesIfAnchorMissing = 12
 }
 
 enum SyncOutcome: UInt8, Sendable {
@@ -61,6 +63,8 @@ enum SyncOutcome: UInt8, Sendable {
   case alreadyExists = 13
   case conflict = 14
   case tokenExpired = 15
+  case swept = 16
+  case anchorPresent = 17
 }
 
 enum SyncProtocolFailure: Error, Equatable {

@@ -2,12 +2,13 @@ package app.posato.feature.sync.macos
 
 import app.posato.feature.sync.bootstrap.AccountBinding
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
-import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.mailbox.RecordDeleteResult
 import kotlinx.coroutines.CancellationException
 import java.nio.BufferUnderflowException
 import java.nio.ByteBuffer
@@ -62,16 +63,39 @@ internal class MacOsMailboxAdapter(
         }
     }
 
-    override suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult {
+    override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
         val binding = expectedBinding.copyBytes()
         return try {
             val response = exchange(
-                operation = SyncCompanionOperation.DeleteZoneAndVerifyAbsent,
+                operation = SyncCompanionOperation.DeleteWorkspaceRecords,
                 payload = MacOsSyncCompanionProtocol.cloudPayload(binding),
             )
             when (response) {
-                CompanionExchange.Unknown -> ZoneDeleteResult.UnknownOutcome
-                is CompanionExchange.Message -> mapZoneDelete(response.message)
+                CompanionExchange.Unknown -> RecordDeleteResult.UnknownOutcome
+                is CompanionExchange.Message -> mapRecordDelete(response.message)
+            }
+        } finally {
+            binding.fill(0)
+        }
+    }
+
+    override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
+        val binding = expectedBinding.copyBytes()
+        return try {
+            val response = exchange(
+                operation = SyncCompanionOperation.SweepBundlesIfAnchorMissing,
+                payload = MacOsSyncCompanionProtocol.cloudPayload(binding),
+            )
+            when (response) {
+                CompanionExchange.Unknown -> BundleSweepResult.UnknownOutcome
+
+                is CompanionExchange.Message -> when (response.message.outcome) {
+                    SyncCompanionOutcome.Swept -> BundleSweepResult.Swept
+                    SyncCompanionOutcome.AnchorPresent -> BundleSweepResult.AnchorPresent
+                    SyncCompanionOutcome.Retryable -> BundleSweepResult.Retryable
+                    SyncCompanionOutcome.AccountChanged -> BundleSweepResult.AccountChanged
+                    else -> BundleSweepResult.UnknownOutcome
+                }
             }
         } finally {
             binding.fill(0)
@@ -141,6 +165,8 @@ internal class MacOsMailboxAdapter(
             SyncCompanionOutcome.DeletedAndAbsent,
             SyncCompanionOutcome.AlreadyExists,
             SyncCompanionOutcome.TokenExpired,
+            SyncCompanionOutcome.Swept,
+            SyncCompanionOutcome.AnchorPresent,
             null -> {
                 BundleSaveResult.UnknownOutcome
             }
@@ -190,28 +216,30 @@ internal class MacOsMailboxAdapter(
             SyncCompanionOutcome.DeletedAndAbsent,
             SyncCompanionOutcome.AlreadyExists,
             SyncCompanionOutcome.Conflict,
+            SyncCompanionOutcome.Swept,
+            SyncCompanionOutcome.AnchorPresent,
             null -> {
                 ChangeFetchResult.UnknownOutcome
             }
         }
     }
 
-    private fun mapZoneDelete(message: SyncCompanionMessage): ZoneDeleteResult {
+    private fun mapRecordDelete(message: SyncCompanionMessage): RecordDeleteResult {
         return when (message.outcome) {
             SyncCompanionOutcome.DeletedAndAbsent -> {
-                ZoneDeleteResult.DeletedAndAbsent
+                RecordDeleteResult.DeletedAndAbsent
             }
 
             SyncCompanionOutcome.Retryable -> {
-                ZoneDeleteResult.Retryable
+                RecordDeleteResult.Retryable
             }
 
             SyncCompanionOutcome.AccountChanged -> {
-                ZoneDeleteResult.AccountChanged
+                RecordDeleteResult.AccountChanged
             }
 
             SyncCompanionOutcome.UnknownOutcome -> {
-                ZoneDeleteResult.UnknownOutcome
+                RecordDeleteResult.UnknownOutcome
             }
 
             SyncCompanionOutcome.Found,
@@ -225,8 +253,10 @@ internal class MacOsMailboxAdapter(
             SyncCompanionOutcome.AlreadyExists,
             SyncCompanionOutcome.Conflict,
             SyncCompanionOutcome.TokenExpired,
+            SyncCompanionOutcome.Swept,
+            SyncCompanionOutcome.AnchorPresent,
             null -> {
-                ZoneDeleteResult.UnknownOutcome
+                RecordDeleteResult.UnknownOutcome
             }
         }
     }

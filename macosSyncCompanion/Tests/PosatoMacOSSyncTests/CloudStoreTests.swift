@@ -258,7 +258,7 @@ import Testing
   )
 }
 
-@Test func givenDeletionWhenFetchingThenIntegrityFailureIsReturned() {
+@Test func givenDeletionWhenFetchingThenPageAdvancesWithoutBundle() {
   let backend = FakeCloudBackend()
   backend.changes = .fetched(
     BackendChanges(
@@ -270,7 +270,42 @@ import Testing
   )
   let store = CloudStore(backend: backend)
 
-  #expect(store.fetchChanges(cursor: Data(), timeout: 5) == .integrityFailure)
+  #expect(
+    store.fetchChanges(cursor: Data(), timeout: 5)
+      == .page(
+        ChangePageNative(
+          bundleIdentifier: nil,
+          bundle: nil,
+          moreComing: false,
+          cursor: Data([4])
+        )
+      )
+  )
+}
+
+@Test func givenDeletionAlongsideBundleWhenFetchingThenPageCarriesTheBundle() {
+  let backend = FakeCloudBackend()
+  backend.changes = .fetched(
+    BackendChanges(
+      changed: [testBundleRecord()],
+      deletedNames: [testBundleName()],
+      token: Data([4]),
+      moreComing: false
+    )
+  )
+  let store = CloudStore(backend: backend)
+
+  #expect(
+    store.fetchChanges(cursor: Data(), timeout: 5)
+      == .page(
+        ChangePageNative(
+          bundleIdentifier: testBundleIdentifier(),
+          bundle: Data(repeating: 11, count: 8),
+          moreComing: false,
+          cursor: Data([4])
+        )
+      )
+  )
 }
 
 @Test func givenUnknownTypeWhenFetchingThenIntegrityFailureIsReturned() {
@@ -318,20 +353,4 @@ import Testing
 
   #expect(store.fetchChanges(cursor: Data([9, 9, 9]), timeout: 5) == .integrityFailure)
   #expect(backend.changesCalls == 0)
-}
-
-@Test func givenDeletedZoneWhenVerifyingAbsenceThenDeletedAndAbsentIsReturned() {
-  let backend = FakeCloudBackend()
-  backend.zone = .missing
-  let store = CloudStore(backend: backend)
-
-  #expect(store.deleteZoneAndVerifyAbsent(timeout: 5) == .deletedAndAbsent)
-}
-
-@Test func givenRemainingZoneWhenVerifyingAbsenceThenOutcomeIsUnknown() {
-  let backend = FakeCloudBackend()
-  backend.zone = .found
-  let store = CloudStore(backend: backend)
-
-  #expect(store.deleteZoneAndVerifyAbsent(timeout: 5) == .unknownOutcome)
 }

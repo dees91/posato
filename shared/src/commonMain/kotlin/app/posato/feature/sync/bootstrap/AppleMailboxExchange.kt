@@ -54,7 +54,7 @@ internal class AppleMailboxExchange(
             when (val fetched = mailbox.fetchChanges(workspace.binding, cursor)) {
                 is ChangeFetchResult.Page -> {
                     val page = fetched.page
-                    outcome = consumePage(page, cursor, writer)
+                    outcome = consumePage(page, workspace, cursor, writer)
                     cursor = page.nextCursor
                 }
 
@@ -78,12 +78,13 @@ internal class AppleMailboxExchange(
 
     private suspend fun consumePage(
         page: ChangePage,
+        workspace: EstablishedWorkspace,
         cursor: MailboxCursor,
         writer: SyncWriter
     ): SyncStatus? {
         return when {
             page.moreChanges && page.nextCursor == cursor -> SyncStatus.ACTION_REQUIRED
-            !acceptPage(page, writer) -> SyncStatus.ACTION_REQUIRED
+            !acceptPage(page, workspace, writer) -> SyncStatus.ACTION_REQUIRED
             !page.moreChanges -> SyncStatus.COMPLETED
             else -> null
         }
@@ -91,6 +92,7 @@ internal class AppleMailboxExchange(
 
     private suspend fun acceptPage(
         page: ChangePage,
+        workspace: EstablishedWorkspace,
         writer: SyncWriter
     ): Boolean {
         val progress = OpaqueTransportProgress.fromBytes(page.nextCursor.copyBytes()) ?: return false
@@ -98,6 +100,7 @@ internal class AppleMailboxExchange(
         val bytes = mailboxBundle.copyPayload()
         val bundle = EncryptedBundle.fromBytes(bytes) ?: return false
         val header = codec.inspectHeader(bundle) as? InspectBundleHeaderResult.Success ?: return false
+        if (header.header.context != workspace.context) return writer.commitTransportProgress(progress)
         if (!header.header.bundleId.value.copyBytes().contentEquals(mailboxBundle.copyIdentifier())) return false
         return when (writer.acceptRemote(bytes, RemoteTransportReceipt(progress, exactRefetchAvailable = false))) {
             is RemoteAcceptanceResult.Accepted, is RemoteAcceptanceResult.Staged, is RemoteAcceptanceResult.Duplicate -> true

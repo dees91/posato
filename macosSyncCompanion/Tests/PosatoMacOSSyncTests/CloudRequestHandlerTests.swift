@@ -14,7 +14,7 @@ import Testing
   #expect(backend.zoneSaveCalls == 0)
   #expect(backend.fetchRecordCalls == 0)
   #expect(backend.changesCalls == 0)
-  #expect(backend.zoneDeleteCalls == 0)
+  #expect(backend.deleteRecordCalls.isEmpty)
 }
 
 @Test func givenCloudKitBitWhenReadingKeychainItemThenItIsRejected() {
@@ -232,9 +232,9 @@ import Testing
   #expect(response.payload.isEmpty)
 }
 
-@Test func givenDeletedZoneWhenDeletingThenDeletedAndAbsentIsReturned() {
+@Test func givenEmptyZoneWhenDeletingRecordsThenDeletedAndAbsentIsReturned() {
   let response = RequestHandler.handle(
-    cloudRequest(operation: .deleteZoneAndVerifyAbsent, payload: syntheticBinding),
+    cloudRequest(operation: .deleteWorkspaceRecords, payload: syntheticBinding),
     dependencies: cloudDependencies()
   )
 

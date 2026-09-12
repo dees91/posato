@@ -21,12 +21,13 @@ import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.domain.TransportKey
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
-import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.mailbox.RecordDeleteResult
 import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testPublicKey
@@ -503,8 +504,12 @@ internal class SharedFakeMailboxPort : MailboxPort {
         }
     }
 
-    override suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult {
-        return ZoneDeleteResult.DeletedAndAbsent
+    override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
+        return RecordDeleteResult.DeletedAndAbsent
+    }
+
+    override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
+        return BundleSweepResult.Swept
     }
 
     private fun cursorIndex(cursor: MailboxCursor): Int {

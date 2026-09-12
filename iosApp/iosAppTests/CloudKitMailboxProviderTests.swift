@@ -35,7 +35,8 @@ final class FakeMailboxBackend: CloudKitMailboxBackend {
     var changesHandler: (CKRecordZone.ID, Data?) -> MailboxChangesResult = { _, _ in
         .failed(NSError(domain: CKError.errorDomain, code: CKError.internalError.rawValue))
     }
-    var deleteHandler: (CKRecordZone.ID) -> NSError? = { _ in nil }
+    var deleteRecordsHandler: ([CKRecord.ID]) -> NSError? = { _ in nil }
+    private(set) var deletedIDs: [[CKRecord.ID]] = []
 
     func fetchZone(zoneID: CKRecordZone.ID, timeout: TimeInterval) -> MailboxZoneLookup {
         calls.append("fetchZone")
@@ -67,10 +68,11 @@ final class FakeMailboxBackend: CloudKitMailboxBackend {
         return changesHandler(zoneID, tokenData)
     }
 
-    func deleteZone(zoneID: CKRecordZone.ID, timeout: TimeInterval) -> NSError? {
-        calls.append("deleteZone")
+    func deleteRecords(ids: [CKRecord.ID], timeout: TimeInterval) -> NSError? {
+        calls.append("deleteRecords")
         waitGate()
-        return deleteHandler(zoneID)
+        deletedIDs.append(ids)
+        return deleteRecordsHandler(ids)
     }
 
     func cancelInflight() {
@@ -446,7 +448,7 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         XCTAssertEqual(page.bundlePayload as Data?, payload)
     }
 
-    func testFetchChangesRejectsSecondBundleAndDeletions() {
+    func testFetchChangesRejectsSecondBundleAndAdvancesPastDeletions() {
         let crowded = FakeMailboxBackend()
         crowded.changesHandler = { _, _ in
             .fetched(
@@ -469,7 +471,12 @@ final class CloudKitMailboxProviderTests: XCTestCase {
             .fetched(MailboxChanges(changed: [], deletedNames: ["gone"], tokenData: Data([0xAA]), moreComing: false))
         }
         let (second, _, _) = makeProvider(backend: deleting)
-        XCTAssertEqual(second.fetchChanges(binding: binding() , cursor: Data() ).status, .integrityfailure)
+        let deletion = second.fetchChanges(binding: binding() , cursor: Data() )
+        XCTAssertEqual(deletion.status, .page)
+        XCTAssertFalse(deletion.moreChanges)
+        XCTAssertEqual(deletion.nextCursor as Data?, Data([0xAA]))
+        XCTAssertNil(deletion.bundleIdentifier)
+        XCTAssertNil(deletion.bundlePayload)
 
         let tokenless = FakeMailboxBackend()
         tokenless.changesHandler = { _, _ in
@@ -493,18 +500,128 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         XCTAssertNil(page.bundlePayload)
     }
 
-    func testDeleteZoneVerifiesAbsence() {
+    func testDeleteWorkspaceRecordsDeletesBundlesBeforeAnchor() {
         let backend = FakeMailboxBackend()
-        var deleted = false
-        backend.deleteHandler = { _ in deleted = true; return nil }
-        backend.zoneHandler = { _ in deleted ? .missing : .found }
+        let first = bundleRecord(payload: Data([0x01]))
+        let secondRecord = bundleRecord(
+            identifier: Data(repeating: 0x02, count: 16),
+            payload: Data([0x02])
+        )
+        var fetches = 0
+        backend.changesHandler = { _, _ in
+            fetches += 1
+            if fetches == 1 {
+                return .fetched(
+                    MailboxChanges(
+                        changed: [first, secondRecord],
+                        deletedNames: [],
+                        tokenData: Data([0xAA]),
+                        moreComing: false
+                    )
+                )
+            }
+            return .fetched(
+                MailboxChanges(changed: [], deletedNames: [], tokenData: Data([0xAB]), moreComing: false)
+            )
+        }
+        backend.recordHandler = { _ in .missing }
         let (provider, _, _) = makeProvider(backend: backend)
-        XCTAssertEqual(provider.deleteZoneAndVerifyAbsent(binding: binding() ), .deletedandabsent)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: binding() ), .deletedandabsent)
+        XCTAssertEqual(backend.deletedIDs.count, 2)
+        XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [first.recordID.recordName, secondRecord.recordID.recordName])
+        XCTAssertEqual(backend.deletedIDs[1].map(\.recordName), ["workspace"])
+    }
 
-        let lingering = FakeMailboxBackend()
-        lingering.zoneHandler = { _ in .found }
-        let (second, _, _) = makeProvider(backend: lingering)
-        XCTAssertEqual(second.deleteZoneAndVerifyAbsent(binding: binding() ), .unknownoutcome)
+    func testDeleteWorkspaceRecordsSkipsForeignRecordsWithoutValidation() {
+        let backend = FakeMailboxBackend()
+        let mystery = bundleRecord(name: "mystery", type: "MysteryType")
+        let bundle = bundleRecord(payload: Data([0x01]))
+        var fetches = 0
+        backend.changesHandler = { _, _ in
+            fetches += 1
+            if fetches == 1 {
+                return .fetched(
+                    MailboxChanges(
+                        changed: [mystery, bundle],
+                        deletedNames: [],
+                        tokenData: Data([0xAA]),
+                        moreComing: false
+                    )
+                )
+            }
+            return .fetched(
+                MailboxChanges(changed: [mystery], deletedNames: [], tokenData: Data([0xAB]), moreComing: false)
+            )
+        }
+        backend.recordHandler = { _ in .missing }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: binding() ), .deletedandabsent)
+        XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [bundle.recordID.recordName])
+    }
+
+    func testDeleteWorkspaceRecordsReportsRemainingBundle() {
+        let backend = FakeMailboxBackend()
+        backend.changesHandler = { _, _ in
+            .fetched(
+                MailboxChanges(
+                    changed: [self.bundleRecord(payload: Data([0x01]))],
+                    deletedNames: [],
+                    tokenData: Data([0xAA]),
+                    moreComing: false
+                )
+            )
+        }
+        backend.recordHandler = { _ in .missing }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: binding() ), .unknownoutcome)
+    }
+
+    func testDeleteWorkspaceRecordsReportsPresentAnchor() {
+        let backend = FakeMailboxBackend()
+        backend.changesHandler = { _, _ in
+            .fetched(MailboxChanges(changed: [], deletedNames: [], tokenData: Data([0xAA]), moreComing: false))
+        }
+        backend.recordHandler = { _ in .found(self.anchorRecord()) }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: binding() ), .unknownoutcome)
+    }
+
+    func testSweepDeletesEnumeratedBundlesWhenAnchorIsMissing() {
+        let backend = FakeMailboxBackend()
+        let bundle = bundleRecord(payload: Data([0x01]))
+        backend.changesHandler = { _, _ in
+            .fetched(
+                MailboxChanges(
+                    changed: [bundle],
+                    deletedNames: [],
+                    tokenData: Data([0xAA]),
+                    moreComing: false
+                )
+            )
+        }
+        backend.recordHandler = { _ in .missing }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.sweepBundlesIfAnchorMissing(binding: binding() ), .swept)
+        XCTAssertEqual(backend.deletedIDs.count, 1)
+        XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [bundle.recordID.recordName])
+    }
+
+    func testSweepDeletesNothingWhenAnchorAppears() {
+        let backend = FakeMailboxBackend()
+        backend.changesHandler = { _, _ in
+            .fetched(
+                MailboxChanges(
+                    changed: [self.bundleRecord(payload: Data([0x01]))],
+                    deletedNames: [],
+                    tokenData: Data([0xAA]),
+                    moreComing: false
+                )
+            )
+        }
+        backend.recordHandler = { _ in .found(self.anchorRecord()) }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.sweepBundlesIfAnchorMissing(binding: binding() ), .anchorpresent)
+        XCTAssertTrue(backend.deletedIDs.isEmpty)
     }
 
     // MARK: - Binding gates
@@ -524,7 +641,7 @@ final class CloudKitMailboxProviderTests: XCTestCase {
                 .retryable
             )
             XCTAssertEqual(provider.fetchChanges(binding: data, cursor: Data() ).status, .retryable)
-            XCTAssertEqual(provider.deleteZoneAndVerifyAbsent(binding: data), .retryable)
+            XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .retryable)
             XCTAssertTrue(backend.calls.isEmpty)
         }
     }

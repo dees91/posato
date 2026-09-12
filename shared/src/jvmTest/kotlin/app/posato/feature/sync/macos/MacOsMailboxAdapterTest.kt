@@ -3,11 +3,12 @@ package app.posato.feature.sync.macos
 import app.posato.feature.sync.bootstrap.ACCOUNT_BINDING_BYTES
 import app.posato.feature.sync.bootstrap.AccountBinding
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
-import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.mailbox.RecordDeleteResult
 import kotlinx.coroutines.test.runTest
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -104,17 +105,38 @@ class MacOsMailboxAdapterTest {
     }
 
     @Test
-    fun `given deleted zone when deleting then deleted and absent is returned`() = runTest {
+    fun `given deleted records when deleting then deleted and absent is returned`() = runTest {
         val adapter = MacOsMailboxAdapter(FakeTransport(outcome(SyncCompanionOutcome.DeletedAndAbsent)))
 
-        assertEquals(ZoneDeleteResult.DeletedAndAbsent, adapter.deleteZoneAndVerifyAbsent(binding()))
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, adapter.deleteWorkspaceRecords(binding()))
     }
 
     @Test
     fun `given unknown exchange when deleting then unknown outcome is returned`() = runTest {
         val adapter = MacOsMailboxAdapter(FakeTransport(CompanionExchange.Unknown))
 
-        assertEquals(ZoneDeleteResult.UnknownOutcome, adapter.deleteZoneAndVerifyAbsent(binding()))
+        assertEquals(RecordDeleteResult.UnknownOutcome, adapter.deleteWorkspaceRecords(binding()))
+    }
+
+    @Test
+    fun `given swept outcome when sweeping then swept is returned`() = runTest {
+        val adapter = MacOsMailboxAdapter(FakeTransport(outcome(SyncCompanionOutcome.Swept)))
+
+        assertEquals(BundleSweepResult.Swept, adapter.sweepBundlesIfAnchorMissing(binding()))
+    }
+
+    @Test
+    fun `given anchor present outcome when sweeping then anchor present is returned`() = runTest {
+        val adapter = MacOsMailboxAdapter(FakeTransport(outcome(SyncCompanionOutcome.AnchorPresent)))
+
+        assertEquals(BundleSweepResult.AnchorPresent, adapter.sweepBundlesIfAnchorMissing(binding()))
+    }
+
+    @Test
+    fun `given unknown exchange when sweeping then unknown outcome is returned`() = runTest {
+        val adapter = MacOsMailboxAdapter(FakeTransport(CompanionExchange.Unknown))
+
+        assertEquals(BundleSweepResult.UnknownOutcome, adapter.sweepBundlesIfAnchorMissing(binding()))
     }
 
     @Test

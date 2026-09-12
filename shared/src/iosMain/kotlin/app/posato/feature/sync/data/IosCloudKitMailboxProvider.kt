@@ -12,6 +12,7 @@ import app.posato.feature.sync.domain.SyncIdentifier
 import app.posato.feature.sync.domain.TransportEpochId
 import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MAILBOX_BUNDLE_BYTES
@@ -20,7 +21,7 @@ import app.posato.feature.sync.mailbox.MAILBOX_CURSOR_BYTES
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
 import app.posato.feature.sync.mailbox.MailboxPort
-import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.mailbox.RecordDeleteResult
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -107,8 +108,16 @@ class IosCloudChangePage(
     }
 }
 
-enum class IosCloudZoneDeleteStatus {
+enum class IosCloudRecordDeleteStatus {
     DeletedAndAbsent,
+    Retryable,
+    AccountChanged,
+    UnknownOutcome,
+}
+
+enum class IosCloudBundleSweepStatus {
+    Swept,
+    AnchorPresent,
     Retryable,
     AccountChanged,
     UnknownOutcome,
@@ -144,7 +153,9 @@ interface IosCloudKitMailboxProvider {
         cursor: NSData,
     ): IosCloudChangePage
 
-    fun deleteZoneAndVerifyAbsent(binding: NSData): IosCloudZoneDeleteStatus
+    fun deleteWorkspaceRecords(binding: NSData): IosCloudRecordDeleteStatus
+
+    fun sweepBundlesIfAnchorMissing(binding: NSData): IosCloudBundleSweepStatus
 
     fun cancelInflight()
 }
@@ -392,24 +403,53 @@ internal class IosMailboxAdapter(
         }
     }
 
-    override suspend fun deleteZoneAndVerifyAbsent(expectedBinding: AccountBinding): ZoneDeleteResult {
+    override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
         val binding = expectedBinding.copyBytes()
         try {
-            return when (provider.cancellableCall { deleteZoneAndVerifyAbsent(binding.toNSData()) }) {
-                IosCloudZoneDeleteStatus.DeletedAndAbsent -> {
-                    ZoneDeleteResult.DeletedAndAbsent
+            return when (provider.cancellableCall { deleteWorkspaceRecords(binding.toNSData()) }) {
+                IosCloudRecordDeleteStatus.DeletedAndAbsent -> {
+                    RecordDeleteResult.DeletedAndAbsent
                 }
 
-                IosCloudZoneDeleteStatus.Retryable -> {
-                    ZoneDeleteResult.Retryable
+                IosCloudRecordDeleteStatus.Retryable -> {
+                    RecordDeleteResult.Retryable
                 }
 
-                IosCloudZoneDeleteStatus.AccountChanged -> {
-                    ZoneDeleteResult.AccountChanged
+                IosCloudRecordDeleteStatus.AccountChanged -> {
+                    RecordDeleteResult.AccountChanged
                 }
 
-                IosCloudZoneDeleteStatus.UnknownOutcome -> {
-                    ZoneDeleteResult.UnknownOutcome
+                IosCloudRecordDeleteStatus.UnknownOutcome -> {
+                    RecordDeleteResult.UnknownOutcome
+                }
+            }
+        } finally {
+            binding.fill(0)
+        }
+    }
+
+    override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
+        val binding = expectedBinding.copyBytes()
+        try {
+            return when (provider.cancellableCall { sweepBundlesIfAnchorMissing(binding.toNSData()) }) {
+                IosCloudBundleSweepStatus.Swept -> {
+                    BundleSweepResult.Swept
+                }
+
+                IosCloudBundleSweepStatus.AnchorPresent -> {
+                    BundleSweepResult.AnchorPresent
+                }
+
+                IosCloudBundleSweepStatus.Retryable -> {
+                    BundleSweepResult.Retryable
+                }
+
+                IosCloudBundleSweepStatus.AccountChanged -> {
+                    BundleSweepResult.AccountChanged
+                }
+
+                IosCloudBundleSweepStatus.UnknownOutcome -> {
+                    BundleSweepResult.UnknownOutcome
                 }
             }
         } finally {

@@ -1537,3 +1537,18 @@ carries its own collapsed summary, a repeated unresolved result offers a Mac
 restart, and a non-ready helper is named once above the session action.
 Details in the MACOS-007 execution record and
 [macOS enforcement](topics/macos-enforcement.md).
+
+## [2026-09-11] task | SYNC-015 record-based removal without zone deletion
+
+`user-confirmed` D1-D5 implemented on `feature/sync-015-record-removal`:
+removal deletes bundle records before the anchor through the looped changes
+traversal and keeps the zone, which the app never deletes; anchor-missing
+peers clear only their own key and local state; foreign-context bundles skip
+as progress; the fresh-attempt sweep re-reads the anchor and adopts on race.
+Scripted proof green (`jvmTest` incl. `commonTest`, `iosTest` adapters, both
+Swift suites, `./gradlew quality`); existing removal, different-anchor, and
+tombstone cases unchanged. ADR 0007 amended, T-14 records the closed
+purge-window and late-publish residuals, the recipe carries the AC-04 matrix.
+Physical gate passed 2026-09-12 in both shapes and directions (S1/S2/R1/R2
+with 11–14 minute settles; peer removals never deleted live records), so the
+settle rule is retired. Brief: `docs/tasks/specifications/sync-015-record-removal.md`.

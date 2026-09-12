@@ -310,6 +310,26 @@ threat model and is not closed by this amendment. Unique zone or anchor
 identities per establish, and an anchor creation-date comparison, remain
 separate decisions.
 
+### Amendment: record-based removal without zone deletion (2026-09-11)
+
+`user-confirmed`: **Remove workspace** deletes the anchor record and every
+bundle record of the exact `PosatoSyncV1` zone under the established binding
+and keeps the zone, which is never deleted by the app. Bundle records go
+first and the anchor last, so a partial removal leaves the anchor in place
+and the retry repeats the whole deletion from ready instead of taking the
+anchor-missing path. Records are deleted in bounded idempotent batches,
+enumerated and absence-verified through the looped changes traversal from an
+empty token, never a query; enumeration and verification count records by
+type and name without payload validation, so a malformed or foreign bundle
+never blocks its own removal. A fresh attempt that finds the zone with no
+anchor sweeps every remaining bundle record before minting: it enumerates,
+re-reads the anchor, and deletes the enumerated set only while the anchor is
+still missing; if an anchor appeared, it deletes nothing and takes the
+found-anchor path. A linked peer whose established check finds the zone but
+no anchor reports anchor-missing action-required; removal on that peer skips
+record deletion and clears only its own key item and local state, ending
+local-only.
+
 ### Failure, account, and cleanup semantics
 
 Provider edges distinguish at least `found`, `missing`, `created`, `identical`,
@@ -333,9 +353,9 @@ match again.
 Disabling synchronization preserves the local replica, anchor, mailbox, and
 Keychain item. Removing a workspace is a separate explicit destructive action.
 It passes the established binding to each exact CloudKit and synchronizable-
-Keychain delete, may delete only the exact Posato zone and exact known
-workspace-key items, must verify absence independently, and must preserve
-unrelated CloudKit and Keychain data. An account failure or indeterminate
+Keychain delete, may delete only anchor and bundle records of the exact Posato
+zone and exact known workspace-key items, never the zone itself, must verify
+absence independently, and must preserve unrelated CloudKit and Keychain data. An account failure or indeterminate
 provider result stops subsequent destructive steps, retains the established
 local state, and permits reconciliation only for the same exact resource after
 the original binding returns. Automatic orphan enumeration, garbage

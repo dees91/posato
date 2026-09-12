@@ -12,12 +12,13 @@ import app.posato.feature.sync.domain.SyncIdentifier
 import app.posato.feature.sync.domain.TransportEpochId
 import app.posato.feature.sync.domain.WorkspaceId
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.mailbox.BundleSweepResult
 import app.posato.feature.sync.mailbox.ChangeFetchResult
 import app.posato.feature.sync.mailbox.ChangePage
 import app.posato.feature.sync.mailbox.MAILBOX_CURSOR_BYTES
 import app.posato.feature.sync.mailbox.MailboxBundle
 import app.posato.feature.sync.mailbox.MailboxCursor
-import app.posato.feature.sync.mailbox.ZoneDeleteResult
+import app.posato.feature.sync.mailbox.RecordDeleteResult
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.CPointed
 import kotlinx.cinterop.CPointer
@@ -303,16 +304,33 @@ class IosCloudKitMailboxAdapterTest {
     @Test
     fun `given a delete outcome when deleted then the outcome matches`() = runTest {
         val cases = listOf(
-            IosCloudZoneDeleteStatus.DeletedAndAbsent to ZoneDeleteResult.DeletedAndAbsent,
-            IosCloudZoneDeleteStatus.Retryable to ZoneDeleteResult.Retryable,
-            IosCloudZoneDeleteStatus.AccountChanged to ZoneDeleteResult.AccountChanged,
-            IosCloudZoneDeleteStatus.UnknownOutcome to ZoneDeleteResult.UnknownOutcome,
+            IosCloudRecordDeleteStatus.DeletedAndAbsent to RecordDeleteResult.DeletedAndAbsent,
+            IosCloudRecordDeleteStatus.Retryable to RecordDeleteResult.Retryable,
+            IosCloudRecordDeleteStatus.AccountChanged to RecordDeleteResult.AccountChanged,
+            IosCloudRecordDeleteStatus.UnknownOutcome to RecordDeleteResult.UnknownOutcome,
         )
 
         cases.forEach { (status, expected) ->
-            val provider = FakeIosCloudKitMailboxProvider(zoneDelete = status)
+            val provider = FakeIosCloudKitMailboxProvider(recordDelete = status)
 
-            assertEquals(expected, IosMailboxAdapter(provider).deleteZoneAndVerifyAbsent(testBinding()))
+            assertEquals(expected, IosMailboxAdapter(provider).deleteWorkspaceRecords(testBinding()))
+        }
+    }
+
+    @Test
+    fun `given a sweep outcome when swept then the outcome matches`() = runTest {
+        val cases = listOf(
+            IosCloudBundleSweepStatus.Swept to BundleSweepResult.Swept,
+            IosCloudBundleSweepStatus.AnchorPresent to BundleSweepResult.AnchorPresent,
+            IosCloudBundleSweepStatus.Retryable to BundleSweepResult.Retryable,
+            IosCloudBundleSweepStatus.AccountChanged to BundleSweepResult.AccountChanged,
+            IosCloudBundleSweepStatus.UnknownOutcome to BundleSweepResult.UnknownOutcome,
+        )
+
+        cases.forEach { (status, expected) ->
+            val provider = FakeIosCloudKitMailboxProvider(bundleSweep = status)
+
+            assertEquals(expected, IosMailboxAdapter(provider).sweepBundlesIfAnchorMissing(testBinding()))
         }
     }
 
@@ -461,7 +479,8 @@ private class FakeIosCloudKitMailboxProvider(
     var anchorCreate: IosCloudAnchorCreateStatus = IosCloudAnchorCreateStatus.Retryable,
     var bundleSave: IosCloudBundleSaveStatus = IosCloudBundleSaveStatus.Retryable,
     var changePage: IosCloudChangePage = IosCloudChangePage(IosCloudChangeFetchStatus.Retryable, false, null, null, null),
-    var zoneDelete: IosCloudZoneDeleteStatus = IosCloudZoneDeleteStatus.Retryable,
+    var recordDelete: IosCloudRecordDeleteStatus = IosCloudRecordDeleteStatus.Retryable,
+    var bundleSweep: IosCloudBundleSweepStatus = IosCloudBundleSweepStatus.Retryable,
 ) : IosCloudKitMailboxProvider {
     val seenBindings = mutableListOf<ByteArray>()
     val seenAnchorFields = mutableListOf<ByteArray>()
@@ -513,9 +532,14 @@ private class FakeIosCloudKitMailboxProvider(
         return changePage
     }
 
-    override fun deleteZoneAndVerifyAbsent(binding: NSData): IosCloudZoneDeleteStatus {
+    override fun deleteWorkspaceRecords(binding: NSData): IosCloudRecordDeleteStatus {
         seenBindings += binding.copyBytes()
-        return zoneDelete
+        return recordDelete
+    }
+
+    override fun sweepBundlesIfAnchorMissing(binding: NSData): IosCloudBundleSweepStatus {
+        seenBindings += binding.copyBytes()
+        return bundleSweep
     }
 
     override fun cancelInflight() = Unit
@@ -558,7 +582,9 @@ private class BlockingFakeMailboxProvider : IosCloudKitMailboxProvider {
         return IosCloudChangePage(IosCloudChangeFetchStatus.UnknownOutcome, false, null, null, null)
     }
 
-    override fun deleteZoneAndVerifyAbsent(binding: NSData): IosCloudZoneDeleteStatus = unimplemented()
+    override fun deleteWorkspaceRecords(binding: NSData): IosCloudRecordDeleteStatus = unimplemented()
+
+    override fun sweepBundlesIfAnchorMissing(binding: NSData): IosCloudBundleSweepStatus = unimplemented()
 
     override fun cancelInflight() {
         cancelRecorded = true
