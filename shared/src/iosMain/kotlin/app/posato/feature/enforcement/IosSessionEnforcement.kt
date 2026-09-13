@@ -58,6 +58,10 @@ public class IosSessionEnforcement(
         return expiry.acknowledgeReconciliation(sessionId)
     }
 
+    override suspend fun displacedSuspendedExpiry(currentSessionId: String): String? {
+        return expiry.displacedClearedSessionId(currentSessionId)
+    }
+
     private suspend fun applyBoth(request: EnforcementRequest): EnforcementApplyReport {
         return when (enforcement.apply(IosEnforcementRequest(request.domains, request.mappingIds))) {
             IosEnforcementOutcome.APPLIED -> {

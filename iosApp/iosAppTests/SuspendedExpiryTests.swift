@@ -348,7 +348,7 @@ final class SuspendedExpiryTests: XCTestCase {
         XCTAssertFalse(try acknowledge(sessionId: "session", scheduler: scheduler))
     }
 
-    func testScheduleRemovesAStaleClearedRecord() throws {
+    func testSchedulePreservesAForeignClearedRecord() throws {
         let monitoring = FakeExpiryMonitoring()
         let records = try isolatedRecordStore()
         let scheduler = capableScheduler(monitoring: monitoring, records: { records })
@@ -358,8 +358,27 @@ final class SuspendedExpiryTests: XCTestCase {
             try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
             .scheduled
         )
-        XCTAssertNil(records.readCleared())
+        // The new schedule must never silently drop the superseded signal:
+        // only Kotlin's persist-then-acknowledge consumes it.
+        XCTAssertEqual(records.readCleared()?.sessionId, "earlier-session")
         XCTAssertEqual(records.readPending()?.sessionId, "session")
+    }
+
+    func testDisplacementSurfacesForeignClearWithoutConsuming() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+
+        XCTAssertNil(displaced(currentSessionId: "session", scheduler: scheduler))
+
+        try records.writeCleared(sessionId: "earlier-session", clearedAt: 1_699_000_000)
+        XCTAssertEqual(displaced(currentSessionId: "session", scheduler: scheduler), "earlier-session")
+        XCTAssertNotNil(records.readCleared())
+        XCTAssertNil(displaced(currentSessionId: "earlier-session", scheduler: scheduler))
+        XCTAssertNil(displaced(currentSessionId: "", scheduler: scheduler))
+
+        XCTAssertTrue(try acknowledge(sessionId: "earlier-session", scheduler: scheduler))
+        XCTAssertNil(displaced(currentSessionId: "session", scheduler: scheduler))
     }
 
     // MARK: - Helpers
@@ -409,6 +428,12 @@ final class SuspendedExpiryTests: XCTestCase {
         var result: KotlinBoolean?
         scheduler.acknowledgeReconciliation(sessionId: sessionId) { result = $0 }
         return try XCTUnwrap(result).boolValue
+    }
+
+    private func displaced(currentSessionId: String, scheduler: SuspendedExpiryScheduler) -> String? {
+        var result: String??
+        scheduler.displacedClearedSessionId(currentSessionId: currentSessionId) { result = $0 }
+        return result ?? nil
     }
 
     private func isolatedRecordStore() throws -> SuspendedExpiryRecordStore {

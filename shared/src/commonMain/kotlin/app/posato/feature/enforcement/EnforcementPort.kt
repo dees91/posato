@@ -81,4 +81,13 @@ public interface EnforcementPort {
     public suspend fun acknowledgeSuspendedExpiry(sessionId: String): Boolean {
         return true
     }
+
+    /**
+     * Returns a natively recorded expiry for an identity other than
+     * [currentSessionId] without consuming it, or null when no foreign
+     * signal is pending. The caller persists the fact before acknowledging.
+     */
+    public suspend fun displacedSuspendedExpiry(currentSessionId: String): String? {
+        return null
+    }
 }

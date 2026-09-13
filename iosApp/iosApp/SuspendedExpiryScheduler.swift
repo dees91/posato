@@ -80,9 +80,10 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
             return
         }
         do {
-            // A stale cleared record from an earlier session must never read
-            // as this session's expiry, so it goes before the new pending.
-            store.removeCleared()
+            // A cleared record for another session is never this schedule's
+            // to delete: it survives until Kotlin persists it as a retained
+            // terminal fact and acknowledges it (see
+            // displacedClearedSessionId). Only the acknowledgement consumes.
             try store.writePending(sessionId: request.sessionId)
             // Absolute one-shot components: hour/minute alone cannot tell a
             // 24-hour session's identical ends apart and wrap at midnight.
@@ -122,6 +123,24 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
             return
         }
         handler(.expired)
+    }
+
+    func displacedClearedSessionId(currentSessionId: String, handler: @escaping (String?) -> Void) {
+        // Mandatory displacement read for the replacement path: surfaces a
+        // pending foreign signal without consuming it, so Kotlin can persist
+        // the superseded fact before any schedule or acknowledgement makes
+        // the single cleared slot disappear. Same-identity and invalid ids
+        // report absent; only the acknowledgement consumes.
+        guard SuspendedExpiryRecordStore.isValidSessionId(currentSessionId),
+              let store = records(),
+              let cleared = store.readCleared(),
+              cleared.sessionId != currentSessionId,
+              SuspendedExpiryRecordStore.isValidSessionId(cleared.sessionId)
+        else {
+            handler(nil)
+            return
+        }
+        handler(cleared.sessionId)
     }
 
     func acknowledgeReconciliation(sessionId: String, handler: @escaping (KotlinBoolean) -> Void) {

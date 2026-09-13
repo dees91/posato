@@ -63,8 +63,9 @@ internal class SessionTransitionOwner(
     private val authoring = SessionSyncAuthoring(store)
     private val mutableView = MutableStateFlow(EnforcementViewState())
     private val mutableStatus = MutableStateFlow<LocalSessionStatus?>(null)
-    private var reconcileJob: Job? = null
-    private var transitionJob: Job? = null
+    private var drainJob: Job? = null
+    private var pendingWork: PendingWork? = null
+    private var actionTag: SessionTag? = null
     private var tickCounter = 0L
     private var unknownStreak = 0
     private var frozenStartSet: FrozenStartSet? = null
@@ -116,10 +117,7 @@ internal class SessionTransitionOwner(
             return
         }
         val status = stateMutex.withLock {
-            when (val read = store.read(nowEpochMillis)) {
-                is LocalSessionResult.Failure -> null
-                is LocalSessionResult.Success -> read.value
-            }
+            readCurrentLocked(nowEpochMillis)
         } ?: return
         val active = status as? LocalSessionStatus.Active
         // SessionTag covers only identity and deadline, so an Active to Ended
@@ -137,16 +135,7 @@ internal class SessionTransitionOwner(
 
     suspend fun refresh(): LocalSessionResult<LocalSessionStatus> {
         return stateMutex.withLock {
-            when (val read = store.read(clock.currentEpochMillis())) {
-                is LocalSessionResult.Failure -> {
-                    read
-                }
-
-                is LocalSessionResult.Success -> {
-                    settleLocked(read.value)
-                    read
-                }
-            }
+            readAndSettleLocked()
         }
     }
 
@@ -185,16 +174,7 @@ internal class SessionTransitionOwner(
             applyAfterStart(active.record, SessionTag(active.record))
         }
         return stateMutex.withLock {
-            when (val fresh = store.read(clock.currentEpochMillis())) {
-                is LocalSessionResult.Failure -> {
-                    fresh
-                }
-
-                is LocalSessionResult.Success -> {
-                    settleLocked(fresh.value)
-                    fresh
-                }
-            }
+            readAndSettleLocked()
         }
     }
 
@@ -221,16 +201,7 @@ internal class SessionTransitionOwner(
         // No synchronous clear here: the settle below owns the transition, so
         // an end clears exactly once instead of twice (once here, once there).
         return stateMutex.withLock {
-            when (val fresh = store.read(clock.currentEpochMillis())) {
-                is LocalSessionResult.Failure -> {
-                    fresh
-                }
-
-                is LocalSessionResult.Success -> {
-                    settleLocked(fresh.value)
-                    fresh
-                }
-            }
+            readAndSettleLocked()
         }
     }
 
@@ -244,10 +215,7 @@ internal class SessionTransitionOwner(
                 // Retry re-derives the desired state instead of repeating the last
                 // attempt: the row may have been replaced while the port was busy.
                 val fresh = stateMutex.withLock {
-                    when (val read = store.read(clock.currentEpochMillis())) {
-                        is LocalSessionResult.Failure -> null
-                        is LocalSessionResult.Success -> read.value
-                    }
+                    readCurrentLocked(clock.currentEpochMillis())
                 }
                 val active = fresh as? LocalSessionStatus.Active
                 if (active != null && pendingNativeExpiry == SessionTag(active.record)) {
@@ -283,7 +251,7 @@ internal class SessionTransitionOwner(
         when (banked) {
             is LocalSessionResult.Success -> {
                 pendingNativeExpiry = null
-                acknowledgeExpired(sessionId)
+                acknowledgeExpired(enforcement, sessionId)
                 // The extension already cleared at expiry, so this clear runs even
                 // when the view never observed an apply: it converges the device to
                 // the expired row instead of leaving restrictions behind.
@@ -296,8 +264,10 @@ internal class SessionTransitionOwner(
                 }
                 if (cleared == EnforcementOutcome.CLEARED) {
                     enforcedIdentity = null
+                    actionTag = null
                     mutableView.update { EnforcementViewState() }
                 } else {
+                    actionTag = tag
                     mutableView.update { view ->
                         view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
                     }
@@ -306,10 +276,15 @@ internal class SessionTransitionOwner(
             }
 
             is LocalSessionResult.Failure if banked.reason == LocalSessionFailure.SESSION_NOT_ACTIVE -> {
-                // Nothing to bank for this identity; tidy the native record
-                // and drain whatever transition is current instead.
+                // The row moved on, but the observed fact still needs a
+                // durable home before its native signal may disappear:
+                // record it as a retained marker first and acknowledge only
+                // afterwards. A failed record keeps the signal for the next
+                // pass instead of losing the only copy of the fact.
                 pendingNativeExpiry = null
-                acknowledgeExpired(sessionId)
+                if (store.retainExpiryMarker(tag.sessionId) is LocalSessionResult.Success) {
+                    acknowledgeExpired(enforcement, sessionId)
+                }
                 settleForTag()
             }
 
@@ -318,23 +293,11 @@ internal class SessionTransitionOwner(
                 // never clears restrictions first: park the observation for the
                 // next settle instead of settling Active as success.
                 pendingNativeExpiry = tag
+                actionTag = tag
                 mutableView.update { view ->
                     view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt))
                 }
             }
-        }
-    }
-
-    private suspend fun acknowledgeExpired(sessionId: String): Boolean {
-        // Best effort: a failed acknowledgement only repeats an idempotent
-        // bank on the next observation; the row is already terminal, and a
-        // future schedule clears a leftover native record.
-        return try {
-            enforcement.acknowledgeSuspendedExpiry(sessionId)
-        } catch (expectedCancellation: CancellationException) {
-            throw expectedCancellation
-        } catch (_: Exception) {
-            false
         }
     }
 
@@ -362,6 +325,26 @@ internal class SessionTransitionOwner(
         }
     }
 
+    private suspend fun readAndSettleLocked(): LocalSessionResult<LocalSessionStatus> {
+        return when (val fresh = store.read(clock.currentEpochMillis())) {
+            is LocalSessionResult.Failure -> {
+                fresh
+            }
+
+            is LocalSessionResult.Success -> {
+                settleLocked(fresh.value)
+                fresh
+            }
+        }
+    }
+
+    private suspend fun readCurrentLocked(nowEpochMillis: Long): LocalSessionStatus? {
+        return when (val read = store.read(nowEpochMillis)) {
+            is LocalSessionResult.Failure -> null
+            is LocalSessionResult.Success -> read.value
+        }
+    }
+
     private fun settleLocked(status: LocalSessionStatus) {
         lastSettledTag = tagOf(status)
         lastSettledActive = status is LocalSessionStatus.Active
@@ -370,110 +353,124 @@ internal class SessionTransitionOwner(
         val active = status as? LocalSessionStatus.Active
         if (active != null) {
             frozenStartSet = active.frozenStartSet
-            val tag = SessionTag(active.record)
-            if (enforcedIdentity == tag) {
-                return
-            }
-            if (enforcedIdentity == null && mutableView.value.state is EnforcementState.Inactive && !mutableView.value.busy) {
-                reconcileActiveSession(tag, active.record, active.frozenStartSet)
-            } else if (enforcedIdentity != null) {
-                replaceActiveSession(tag, active.record, active.frozenStartSet)
-            }
+        } else {
+            frozenStartSet = null
+        }
+        // Explicit termination condition: work is queued only while the
+        // desired state is not yet converged (see isTransitionConverged). A
+        // pass that finds its outcome already confirmed or rendered is a
+        // no-op instead of a new job, so the drain below always quiesces
+        // instead of self-driving — including persistent port failures.
+        if (isTransitionConverged(status, enforcedIdentity, mutableView.value.state, actionTag)) {
             return
         }
-        frozenStartSet = null
-        reconcileJob?.cancel()
-        reconcileJob = null
-        val ended = status as? LocalSessionStatus.Ended
-        if (ended != null) {
-            if (enforcedIdentity == null && mutableView.value.state is EnforcementState.Inactive && !mutableView.value.busy) {
+        val tag = tagOf(status)
+        if (active != null && tag != null) {
+            pendingWork = if (enforcedIdentity == null) {
+                PendingWork.Reconcile(tag, active.record, active.frozenStartSet)
+            } else {
+                PendingWork.Replace(tag, active.record, active.frozenStartSet)
+            }
+        } else {
+            val ended = status as? LocalSessionStatus.Ended
+            if (ended == null || tag == null) {
                 return
             }
-            clearAfterObservedEnd(SessionTag(ended.record))
+            pendingWork = PendingWork.Clear(tag)
+        }
+        ensureDrain()
+    }
+
+    private fun ensureDrain() {
+        if (drainJob?.isActive == true) {
+            return
+        }
+        drainJob = scope.launch {
+            while (true) {
+                val work = stateMutex.withLock {
+                    val queued = pendingWork
+                    pendingWork = null
+                    queued
+                } ?: break
+                executeWork(work)
+            }
         }
     }
 
-    private fun reconcileActiveSession(
+    private suspend fun executeWork(work: PendingWork) {
+        when (work) {
+            is PendingWork.Reconcile -> runReconcile(work.tag, work.record, work.frozen)
+            is PendingWork.Replace -> runReplace(work.tag, work.record, work.frozen)
+            is PendingWork.Clear -> runClear(work.expected)
+        }
+    }
+
+    private suspend fun runReconcile(
         tag: SessionTag,
         record: SessionRecord,
         frozen: FrozenStartSet?,
     ) {
-        if (reconcileJob?.isActive == true) {
-            return
-        }
-        reconcileJob = scope.launch {
-            try {
-                reconcile(tag, record, frozen)
-            } catch (expectedCancellation: CancellationException) {
-                throw expectedCancellation
-            } catch (_: Exception) {
-                mutableView.update { view ->
-                    if (view.state is EnforcementState.Inactive) {
-                        view.copy(
-                            state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt),
-                            enforced = frozen?.toEnforcedSet() ?: view.enforced,
-                        )
-                    } else {
-                        view
-                    }
+        try {
+            reconcile(tag, record, frozen)
+        } catch (expectedCancellation: CancellationException) {
+            throw expectedCancellation
+        } catch (_: Exception) {
+            actionTag = tag
+            mutableView.update { view ->
+                if (view.state is EnforcementState.Inactive) {
+                    view.copy(
+                        state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt),
+                        enforced = frozen?.toEnforcedSet() ?: view.enforced,
+                    )
+                } else {
+                    view
                 }
             }
         }
     }
 
-    private fun replaceActiveSession(
+    private suspend fun runReplace(
         tag: SessionTag,
         record: SessionRecord,
         frozen: FrozenStartSet?,
     ) {
-        if (transitionJob?.isActive == true) {
-            return
-        }
-        transitionJob = scope.launch {
-            try {
-                portMutex.withLock {
-                    enforcement.clear()
-                }
-                // A tag alone cannot tell a replaced session apart: the desired
-                // state is the identity plus its deadline, and only an active
-                // row with both still matching is re-applied here.
-                val current = stateMutex.withLock {
-                    when (val read = store.read(clock.currentEpochMillis())) {
-                        is LocalSessionResult.Failure -> null
-                        is LocalSessionResult.Success -> read.value as? LocalSessionStatus.Active
-                    }
-                }
-                if (current != null &&
-                    current.record.sessionId == record.sessionId &&
-                    current.record.endEpochMillis == record.endEpochMillis
-                ) {
-                    reapplyCurrent(record, tag, frozen)
-                }
-                // Drain whatever is current after the in-flight transition:
-                // a row that moved on reconciles instead of being lost.
-                convergeAfterPort(tag)
-            } catch (expectedCancellation: CancellationException) {
-                throw expectedCancellation
-            } catch (_: Exception) {
-                mutableView.update { view ->
-                    view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
-                }
+        try {
+            portMutex.withLock {
+                enforcement.clear()
+            }
+            // A tag alone cannot tell a replaced session apart: the desired
+            // state is the identity plus its deadline, and only an active
+            // row with both still matching is re-applied here.
+            val current = stateMutex.withLock {
+                readCurrentLocked(clock.currentEpochMillis())
+            } as? LocalSessionStatus.Active
+            if (current != null &&
+                current.record.sessionId == record.sessionId &&
+                current.record.endEpochMillis == record.endEpochMillis
+            ) {
+                reapplyCurrent(record, tag, frozen)
+            }
+            // Drain whatever is current after the in-flight transition:
+            // a row that moved on reconciles instead of being lost.
+            convergeAfterPort(stateMutex, store, clock, tag, ::settle, ::reconcile)
+        } catch (expectedCancellation: CancellationException) {
+            throw expectedCancellation
+        } catch (_: Exception) {
+            actionTag = tag
+            mutableView.update { view ->
+                view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
             }
         }
     }
 
-    private fun clearAfterObservedEnd(tag: SessionTag) {
-        if (transitionJob?.isActive == true) {
-            return
-        }
-        transitionJob = scope.launch {
-            try {
-                clearAfterEnd(tag)
-            } catch (expectedCancellation: CancellationException) {
-                throw expectedCancellation
-            } catch (_: Exception) {
-                mutableView.update { view -> view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
-            }
+    private suspend fun runClear(tag: SessionTag) {
+        try {
+            clearAfterEnd(tag)
+        } catch (expectedCancellation: CancellationException) {
+            throw expectedCancellation
+        } catch (_: Exception) {
+            actionTag = tag
+            mutableView.update { view -> view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
         }
     }
 
@@ -500,18 +497,32 @@ internal class SessionTransitionOwner(
                 return
             }
             val requested = targets.toEnforcedSet()
+            // A schedule for this session must never silently drop a pending
+            // foreign native signal: displace and persist it first.
+            persistDisplacedExpiry(enforcement, store, record.sessionId.reconciliationId())
+            // Decisive check under operation serialization: the waits above
+            // may have outlasted the end, so the row is rechecked immediately
+            // before the apply instead of trusting the earlier read.
             val report = portMutex.withLock {
-                enforcement.apply(record.toEnforcementRequest(requested, targets))
-            }
+                if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
+                    null
+                } else {
+                    enforcement.apply(record.toEnforcementRequest(requested, targets))
+                }
+            } ?: return
             mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = requested) }
             if (report.outcome == EnforcementOutcome.APPLIED) {
                 unknownStreak = 0
                 enforcedIdentity = tag
+                actionTag = null
+            } else {
+                actionTag = tag
             }
-            convergeAfterPort(tag)
+            convergeAfterPort(stateMutex, store, clock, tag, ::settle, ::reconcile)
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (_: Exception) {
+            actionTag = tag
             mutableView.update { view ->
                 view.copy(
                     state = EnforcementState.ActionRequired(
@@ -537,6 +548,7 @@ internal class SessionTransitionOwner(
             when (portMutex.withLock { enforcement.clear() }) {
                 EnforcementOutcome.CLEARED -> {
                     enforcedIdentity = null
+                    actionTag = null
                     mutableView.update { EnforcementViewState() }
                 }
 
@@ -544,8 +556,10 @@ internal class SessionTransitionOwner(
                 EnforcementOutcome.AUTHORIZATION_REQUIRED -> {
                     if (entering.isApplyFailure()) {
                         enforcedIdentity = null
+                        actionTag = null
                         mutableView.update { EnforcementViewState() }
                     } else {
+                        actionTag = expected
                         mutableView.update { view ->
                             view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
                         }
@@ -553,34 +567,18 @@ internal class SessionTransitionOwner(
                 }
 
                 else -> {
+                    actionTag = expected
                     mutableView.update { view -> view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
                 }
             }
-            convergeAfterPort(expected)
+            convergeAfterPort(stateMutex, store, clock, expected, ::settle, ::reconcile)
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (_: Exception) {
+            actionTag = expected
             mutableView.update { view -> view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
         } finally {
             mutableView.update { view -> view.copy(busy = false) }
-        }
-    }
-
-    private suspend fun convergeAfterPort(cleared: SessionTag?) {
-        val fresh = stateMutex.withLock {
-            when (val read = store.read(clock.currentEpochMillis())) {
-                is LocalSessionResult.Failure -> null
-                is LocalSessionResult.Success -> read.value
-            }
-        } ?: return
-        val active = fresh as? LocalSessionStatus.Active
-        if (active != null && SessionTag(active.record) != cleared) {
-            // The clear removed a newer enforcement than intended: reconcile
-            // the current desired state directly, so the latest transition
-            // drains before this in-flight transition completes.
-            reconcile(SessionTag(active.record), active.record, active.frozenStartSet)
-        } else if (tagOf(fresh) != cleared) {
-            settle(fresh)
         }
     }
 
@@ -606,6 +604,7 @@ internal class SessionTransitionOwner(
             bankObservedExpiry(tag, record, sessionId)
         } else if (enforcement.status() == EnforcementOutcome.APPLIED) {
             enforcedIdentity = tag
+            actionTag = null
             mutableView.update { view ->
                 if (view.state is EnforcementState.Inactive) {
                     view.copy(state = EnforcementState.Active(false), enforced = frozen?.toEnforcedSet() ?: loadTargets().toEnforcedSet())
@@ -614,6 +613,7 @@ internal class SessionTransitionOwner(
                 }
             }
         } else if (enforcement.reapplyRequiresPrompt) {
+            actionTag = tag
             mutableView.update { view ->
                 view.copy(
                     state = EnforcementState.ActionRequired(
@@ -640,19 +640,32 @@ internal class SessionTransitionOwner(
         }
         val targets = loadTargets()
         val requested = targets.toEnforcedSet()
+        // A schedule for this session must never silently drop a pending
+        // foreign native signal: displace and persist it first.
+        persistDisplacedExpiry(enforcement, store, record.sessionId.reconciliationId())
         portMutex.withLock {
             enforcement.clear()
         }
+        // Decisive check under operation serialization: the waits above may
+        // have outlasted the end, so the row is rechecked immediately before
+        // the apply instead of trusting the earlier read.
         val report = portMutex.withLock {
-            enforcement.apply(record.toEnforcementRequest(requested, targets))
-        }
+            if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
+                null
+            } else {
+                enforcement.apply(record.toEnforcementRequest(requested, targets))
+            }
+        } ?: return
         val displayed = frozen?.toEnforcedSet() ?: targets.toEnforcedSet()
         mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = displayed) }
         if (report.outcome == EnforcementOutcome.APPLIED) {
             unknownStreak = 0
             enforcedIdentity = tag
+            actionTag = null
+        } else {
+            actionTag = tag
         }
-        convergeAfterPort(tag)
+        convergeAfterPort(stateMutex, store, clock, tag, ::settle, ::reconcile)
     }
 
     private suspend fun onTickSecond(
@@ -702,10 +715,7 @@ internal class SessionTransitionOwner(
 
     private suspend fun settleForTag() {
         val fresh = stateMutex.withLock {
-            when (val read = store.read(clock.currentEpochMillis())) {
-                is LocalSessionResult.Failure -> null
-                is LocalSessionResult.Success -> read.value
-            }
+            readCurrentLocked(clock.currentEpochMillis())
         } ?: return
         settle(fresh)
     }
@@ -728,58 +738,29 @@ internal class SessionTransitionOwner(
     }
 }
 
-/**
- * Pre-apply liveness boundary shared by the command and re-apply paths. The
- * owner keeps single serialized responsibility for transitions; this helper
- * only needs its mutex, store, and clock plus a converge callback so the
- * class itself stays small. A spent or replaced session is recorded terminal
- * without ever applying; its deadline never moves. markExpired is
- * identity-bound and idempotent, so a replaced row or an already-banked
- * expiry is safe here. A failed read proves nothing: the apply is skipped
- * without inventing a terminal fact.
- */
-internal suspend fun ensureApplicableBeforeApply(
-    stateMutex: Mutex,
-    store: LocalSessionSyncStore,
-    clock: SessionClock,
-    tag: SessionTag,
-    record: SessionRecord,
-    converge: suspend () -> Unit,
-): Boolean {
-    val now = clock.currentEpochMillis()
-    val applicable = stateMutex.withLock {
-        when (val read = store.read(now)) {
-            is LocalSessionResult.Failure -> {
-                null
-            }
+internal sealed interface PendingWork {
+    data class Reconcile(
+        val tag: SessionTag,
+        val record: SessionRecord,
+        val frozen: FrozenStartSet?,
+    ) : PendingWork
 
-            is LocalSessionResult.Success -> {
-                val active = read.value as? LocalSessionStatus.Active
-                active != null && SessionTag(active.record) == tag && now < active.record.endEpochMillis
-            }
-        }
-    }
-    if (applicable == true) {
-        return true
-    }
-    if (applicable == false) {
-        // A Success read proved the session spent or replaced: record the
-        // terminal fact without ever applying; the deadline never moves.
-        // markExpired is identity-bound and idempotent, so a replaced row
-        // or an already-banked expiry is safe here.
-        stateMutex.withLock { store.markExpired(record.sessionId) }
-    }
-    // A failed read proved nothing: skip the apply without inventing a
-    // terminal fact, and converge whatever is current instead.
-    converge()
-    return false
+    data class Replace(
+        val tag: SessionTag,
+        val record: SessionRecord,
+        val frozen: FrozenStartSet?,
+    ) : PendingWork
+
+    data class Clear(
+        val expected: SessionTag,
+    ) : PendingWork
 }
 
-private fun tagOf(result: LocalSessionResult<LocalSessionStatus>): SessionTag? {
+internal fun tagOf(result: LocalSessionResult<LocalSessionStatus>): SessionTag? {
     return (result as? LocalSessionResult.Success)?.let { tagOf(it.value) }
 }
 
-private fun tagOf(status: LocalSessionStatus): SessionTag? {
+internal fun tagOf(status: LocalSessionStatus): SessionTag? {
     return when (status) {
         is LocalSessionStatus.Active -> SessionTag(status.record)
         is LocalSessionStatus.Ended -> SessionTag(status.record)

@@ -193,6 +193,7 @@ class IosSessionEnforcementTest {
             private set
         val acknowledgedSessionIds = mutableListOf<String>()
         var reconciledSessionIds: Set<String> = setOf("session")
+        var displacedSessionId: String? = null
 
         override fun schedule(
             request: IosSuspendedExpiryRequest,
@@ -223,6 +224,14 @@ class IosSessionEnforcementTest {
             calls.addLast("acknowledge")
             acknowledgedSessionIds += sessionId
             handler(sessionId in reconciledSessionIds)
+        }
+
+        override fun displacedClearedSessionId(
+            currentSessionId: String,
+            handler: (String?) -> Unit,
+        ) {
+            calls.addLast("displace")
+            handler(displacedSessionId.takeIf { displaced -> displaced != currentSessionId })
         }
     }
 }

@@ -169,6 +169,7 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         policySync: LocalPolicySyncStore,
+        sessions: LocalSessionSyncStore,
     ): AppleSync {
         val transport = defaultSyncCompanionTransport()
         val keys = MacOsBootstrapKeychainAdapter(transport)
@@ -177,7 +178,23 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
         val mailbox = MacOsMailboxAdapter(transport)
         val coordinator = BootstrapCoordinator(keys, MacOsBootstrapCloudAdapter(transport), keys, store, crypto, mailbox)
         val core = SyncOperationCore(SqlSyncReplicaStore(database, databaseDispatcher), crypto, SyncWallClock { System.currentTimeMillis() })
-        return AppleSync(coordinator, core, MacOsMailboxAdapter(transport), keys, store, policySync, crypto, Dispatchers.IO)
+        return AppleSync(
+            coordinator,
+            core,
+            MacOsMailboxAdapter(transport),
+            keys,
+            store,
+            policySync,
+            crypto,
+            Dispatchers.IO,
+            onWorkspaceRemoved = {
+                // Ownership ends with the discarded replica: drop transfer
+                // obligations while keeping the occupant's local terminality.
+                // Removal already succeeded, so a failed purge stays
+                // best-effort instead of failing the removal itself.
+                sessions.dropRetainedMarkersExceptCurrent()
+            },
+        )
     }
 }
 

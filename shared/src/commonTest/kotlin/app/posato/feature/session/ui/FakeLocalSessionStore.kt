@@ -23,6 +23,7 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
     var frozenStartSet: FrozenStartSet? = null
     var endedEarly: Boolean = false
     var expiryMarked: Boolean = false
+    val retainedMarkers = mutableSetOf<SessionId>()
     var origin: SessionOrigin = SessionOrigin.LOCAL
     var readFailure: LocalSessionFailure? = null
     var startFailure: LocalSessionFailure? = null
@@ -54,6 +55,7 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
 
             is SessionEvaluation.CommitExpiry -> {
                 expiryMarked = true
+                retainedMarkers += evaluation.record.sessionId
                 frozenStartSet = null
                 LocalSessionResult.Success(
                     LocalSessionStatus.Ended(evaluation.record, SessionEndKind.EXPIRED, origin),
@@ -137,6 +139,7 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
 
             is SessionEvaluation.CommitExpiry -> {
                 expiryMarked = true
+                retainedMarkers += evaluation.record.sessionId
                 frozenStartSet = null
                 LocalSessionResult.Success(
                     LocalSessionStatus.Ended(evaluation.record, SessionEndKind.EXPIRED, origin),
@@ -167,10 +170,37 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
 
             else -> {
                 expiryMarked = true
+                retainedMarkers += current.sessionId
                 frozenStartSet = null
                 LocalSessionResult.Success(LocalSessionStatus.Ended(current, SessionEndKind.EXPIRED, origin))
             }
         }
+    }
+
+    override suspend fun retainExpiryMarker(sessionId: SessionId): LocalSessionResult<Unit> {
+        retainedMarkers += sessionId
+        if (sessionId == record?.sessionId) {
+            expiryMarked = true
+        }
+        return LocalSessionResult.Success(Unit)
+    }
+
+    override suspend fun retainedExpiryMarkers(): LocalSessionResult<Set<SessionId>> {
+        return LocalSessionResult.Success(retainedMarkers.toSet())
+    }
+
+    override suspend fun deleteExpiryMarker(sessionId: SessionId): LocalSessionResult<Unit> {
+        retainedMarkers -= sessionId
+        if (sessionId == record?.sessionId) {
+            expiryMarked = false
+        }
+        return LocalSessionResult.Success(Unit)
+    }
+
+    override suspend fun dropRetainedMarkersExceptCurrent(): LocalSessionResult<Unit> {
+        val occupant = record?.sessionId
+        retainedMarkers.removeAll { marker -> marker != occupant }
+        return LocalSessionResult.Success(Unit)
     }
 
     override suspend fun adopt(

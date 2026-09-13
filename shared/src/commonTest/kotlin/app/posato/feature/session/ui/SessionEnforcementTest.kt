@@ -94,7 +94,7 @@ class SessionEnforcementTest {
         scheduler.runCurrent()
         val state = viewModel.uiState.value
 
-        assertEquals(listOf("apply", "clear", "apply"), enforcement.calls)
+        assertEquals(listOf("displace", "apply", "displace", "clear", "apply"), enforcement.calls)
         assertEquals(EnforcementState.Active(false), state.enforcement)
     }
 
@@ -194,7 +194,7 @@ class SessionEnforcementTest {
         val state = viewModel.uiState.value
 
         assertIs<LocalSessionStatus.Active>(state.status)
-        assertEquals(listOf("peek", "status", "clear", "apply"), enforcement.calls)
+        assertEquals(listOf("peek", "status", "displace", "clear", "apply"), enforcement.calls)
         assertEquals(EnforcementState.Active(false), state.enforcement)
     }
 
@@ -209,7 +209,7 @@ class SessionEnforcementTest {
         scheduler.runCurrent()
         val state = viewModel.uiState.value
 
-        assertEquals(listOf("apply", "status", "clear", "apply"), enforcement.calls)
+        assertEquals(listOf("displace", "apply", "status", "displace", "clear", "apply"), enforcement.calls)
         assertEquals(EnforcementState.Active(false), state.enforcement)
     }
 
@@ -265,7 +265,7 @@ class SessionEnforcementTest {
 
         assertIs<LocalSessionStatus.Active>(state.status)
         assertEquals(EnforcementState.Active(false), state.enforcement)
-        assertEquals(listOf("apply", "clear", "clear", "apply"), enforcement.calls)
+        assertEquals(listOf("displace", "apply", "clear", "clear", "displace", "apply"), enforcement.calls)
     }
 
     @Test

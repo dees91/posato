@@ -21,6 +21,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -74,6 +75,8 @@ internal class FakeEnforcementPort(
     var statusSequence: ArrayDeque<EnforcementOutcome>? = null,
     var expiredSessionIds: Set<String> = emptySet(),
     override val reapplyRequiresPrompt: Boolean = false,
+    var clearHook: (() -> Unit)? = null,
+    var clearGate: CompletableDeferred<Unit>? = null,
 ) : EnforcementPort {
     val calls = mutableListOf<String>()
     var lastRequest: EnforcementRequest? = null
@@ -86,6 +89,8 @@ internal class FakeEnforcementPort(
 
     override suspend fun clear(): EnforcementOutcome {
         calls += "clear"
+        clearHook?.invoke()
+        clearGate?.await()
         return clearOutcome
     }
 
@@ -99,6 +104,13 @@ internal class FakeEnforcementPort(
     override suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
         calls += "peek"
         return sessionId in expiredSessionIds
+    }
+
+    var displacedSessionId: String? = null
+
+    override suspend fun displacedSuspendedExpiry(currentSessionId: String): String? {
+        calls += "displace"
+        return displacedSessionId?.takeIf { displaced -> displaced != currentSessionId }
     }
 
     var acknowledgeError: Exception? = null

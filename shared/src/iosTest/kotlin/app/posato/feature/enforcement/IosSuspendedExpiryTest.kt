@@ -3,6 +3,7 @@ package app.posato.feature.enforcement
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class IosSuspendedExpiryTest {
@@ -47,6 +48,23 @@ class IosSuspendedExpiryTest {
     }
 
     @Test
+    fun `given a displacement read when completed then the foreign signal is forwarded unconsumed`() = runTest {
+        val provider = FakeIosSuspendedExpiryProvider(displacedSessionId = "earlier-session")
+
+        assertEquals("earlier-session", IosSuspendedExpiry(provider).displacedClearedSessionId("session"))
+        assertEquals("session", provider.seenDisplacedCurrentId)
+        assertTrue(provider.acknowledgedSessionIds.isEmpty())
+    }
+
+    @Test
+    fun `given no foreign signal when displacing then absent is preserved`() = runTest {
+        val provider = FakeIosSuspendedExpiryProvider(displacedSessionId = null)
+
+        assertNull(IosSuspendedExpiry(provider).displacedClearedSessionId("session"))
+        assertEquals("session", provider.seenDisplacedCurrentId)
+    }
+
+    @Test
     fun `given the new expiry carrier when described then values stay redacted`() {
         assertEquals(
             "IosSuspendedExpiryRequest(redacted)",
@@ -59,6 +77,7 @@ private class FakeIosSuspendedExpiryProvider(
     private val scheduleOutcome: IosSuspendedExpiryOutcome = IosSuspendedExpiryOutcome.SCHEDULED,
     private val cancelOutcome: IosSuspendedExpiryOutcome = IosSuspendedExpiryOutcome.CANCELLED,
     private val reconciliation: IosExpiryReconciliation = IosExpiryReconciliation.UNKNOWN,
+    private val displacedSessionId: String? = null,
 ) : IosSuspendedExpiryProvider {
     var cancelCalled = false
         private set
@@ -99,5 +118,15 @@ private class FakeIosSuspendedExpiryProvider(
         handler(true)
     }
 
+    override fun displacedClearedSessionId(
+        currentSessionId: String,
+        handler: (String?) -> Unit,
+    ) {
+        seenDisplacedCurrentId = currentSessionId
+        handler(displacedSessionId)
+    }
+
     val acknowledgedSessionIds = mutableListOf<String>()
+    var seenDisplacedCurrentId: String? = null
+        private set
 }

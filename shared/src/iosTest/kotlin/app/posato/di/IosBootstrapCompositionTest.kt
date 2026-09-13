@@ -191,6 +191,13 @@ private class InertSuspendedExpiryProvider : IosSuspendedExpiryProvider {
     ) {
         throw UnsupportedOperationException()
     }
+
+    override fun displacedClearedSessionId(
+        currentSessionId: String,
+        handler: (String?) -> Unit,
+    ) {
+        throw UnsupportedOperationException()
+    }
 }
 
 private class InertKeychainProvider : IosKeychainProvider {

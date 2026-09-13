@@ -49,14 +49,20 @@ internal class SessionReconciler(
         if (!seedIntents(projection, workspaceId, status)) {
             return SessionReconcileResult.Halted(SyncStatus.ACTION_REQUIRED)
         }
+        // Pipeline order: authoring publishes local starts first so the
+        // replica learns them; retained terminal facts transfer next;
+        // only then is the candidate evaluated fresh, so a banked session
+        // can never come back as Current from a stale evaluation.
         if (!authoring.drain(writer, workspaceId)) {
             return SessionReconcileResult.Halted(SyncStatus.ACTION_REQUIRED)
         }
-        val pending = when (val read = sessions.readIntents()) {
-            is LocalSessionResult.Failure -> return SessionReconcileResult.Halted(read.reason.toSyncStatus())
-            is LocalSessionResult.Success -> read.value
+        drainRetainedMarkers(writer, status)
+        val pendingRead = sessions.readIntents()
+        if (pendingRead is LocalSessionResult.Failure) {
+            return SessionReconcileResult.Halted(pendingRead.reason.toSyncStatus())
         }
-        val pendingIds = pending
+        check(pendingRead is LocalSessionResult.Success)
+        val pendingIds = pendingRead.value
             .filter { row -> row.workspaceId.contentEquals(workspaceId) }
             .map { row ->
                 when (val intent = row.intent) {
@@ -64,8 +70,56 @@ internal class SessionReconciler(
                     is StoredSessionIntent.EndSession -> intent.sessionId
                 }
             }.toSet()
+        val freshProjection = writer.projection()
         val candidate = writer.sessionCandidate(nowEpochMillis)
-        return applyProjection(writer, projection, candidate, pendingIds, status, nowEpochMillis, captureFrozen)
+        // Newly observed expiry banks uniformly before branching, for every
+        // local variant alike. A failed bank halts the pass without adopting:
+        // the fact is retried next exchange instead of being lost or revived.
+        val concluded = candidate as? SessionCandidate.Concluded
+        if (concluded != null && concluded.kind == SessionConclusionKind.EXPIRED) {
+            if (!writer.markTerminalExpiry(concluded.sessionId)) {
+                return SessionReconcileResult.Halted(SyncStatus.ACTION_REQUIRED)
+            }
+        }
+        return when (val retainedRead = sessions.retainedExpiryMarkers()) {
+            is LocalSessionResult.Failure -> SessionReconcileResult.Halted(retainedRead.reason.toSyncStatus())
+
+            is LocalSessionResult.Success -> applyProjection(
+                writer,
+                freshProjection,
+                candidate,
+                pendingIds,
+                retainedRead.value,
+                status,
+                nowEpochMillis,
+                captureFrozen,
+            )
+        }
+    }
+
+    private suspend fun drainRetainedMarkers(
+        writer: SyncWriter,
+        status: LocalSessionStatus,
+    ) {
+        // Best-effort transfer of every retained terminal fact, independent
+        // of the current row. An ambiguous bank result never deletes: the
+        // marker is retained and re-evaluated next exchange, while unrelated
+        // work continues. Only a completed transfer with no local consumer
+        // left retires the marker.
+        val markers = when (val read = sessions.retainedExpiryMarkers()) {
+            is LocalSessionResult.Failure -> return
+            is LocalSessionResult.Success -> read.value
+        }
+        val occupant = (status as? LocalSessionStatus.Active)?.record?.sessionId
+            ?: (status as? LocalSessionStatus.Ended)?.record?.sessionId
+        // Best effort like every other reconciler store call: an ambiguous
+        // bank keeps its marker for the next exchange, and a failed delete
+        // retries through the idempotent re-transfer.
+        markers.forEach { marker ->
+            if (writer.markTerminalExpiry(marker) && marker != occupant) {
+                sessions.deleteExpiryMarker(marker)
+            }
+        }
     }
 
     private suspend fun seedIntents(
@@ -135,6 +189,7 @@ internal class SessionReconciler(
         projection: SyncProjection,
         candidate: SessionCandidate,
         pendingIds: Set<SessionId>,
+        retained: Set<SessionId>,
         status: LocalSessionStatus,
         nowEpochMillis: Long,
         captureFrozen: suspend () -> FrozenStartSet,
@@ -157,49 +212,29 @@ internal class SessionReconciler(
         }
         return when (status) {
             is LocalSessionStatus.Active -> {
-                applyActive(writer, projection, candidate, status, nowEpochMillis, captureFrozen)
+                applyActive(writer, projection, candidate, retained, status, nowEpochMillis, captureFrozen)
             }
 
             is LocalSessionStatus.Ended -> {
-                adoptSuperseding(writer, projection, candidate, pendingIds, status, nowEpochMillis, captureFrozen)
+                adoptSuperseding(writer, projection, candidate, pendingIds, retained, status, nowEpochMillis, captureFrozen)
             }
 
             is LocalSessionStatus.Inactive -> {
-                applyInactive(writer, candidate, pendingIds, status, nowEpochMillis, captureFrozen)
+                // Concluded expiries bank uniformly before branching; an
+                // inactive row never falls back to an ended, expired, or
+                // future session: only a currently eligible start activates
+                // the device.
+                val inactiveCurrent = candidate as? SessionCandidate.Current
+                if (inactiveCurrent == null || inactiveCurrent.start.sessionId in pendingIds) {
+                    // No eligible start, or a local command for this identity
+                    // is mid-flight and converges on the next pass instead of
+                    // being transiently adopted here.
+                    SessionReconcileResult.Completed(status)
+                } else {
+                    adoptCandidate(inactiveCurrent.start, retained, nowEpochMillis, captureFrozen)
+                }
             }
         }
-    }
-
-    private suspend fun applyInactive(
-        writer: SyncWriter,
-        candidate: SessionCandidate,
-        pendingIds: Set<SessionId>,
-        status: LocalSessionStatus.Inactive,
-        nowEpochMillis: Long,
-        captureFrozen: suspend () -> FrozenStartSet,
-    ): SessionReconcileResult {
-        val concluded = candidate as? SessionCandidate.Concluded
-        if (concluded != null && concluded.kind == SessionConclusionKind.EXPIRED) {
-            // No local row ever activated, but the workspace converged
-            // this expiry: bank the terminal fact so a rollback cannot
-            // revive a session that never enforced here. An ended
-            // candidate needs no bank and never activates (see below).
-            return if (writer.markTerminalExpiry(concluded.sessionId)) {
-                SessionReconcileResult.Completed(status)
-            } else {
-                SessionReconcileResult.Halted(SyncStatus.ACTION_REQUIRED)
-            }
-        }
-        // An inactive row never falls back to an ended, expired, or future
-        // session: only a currently eligible start activates the device.
-        val current = candidate as? SessionCandidate.Current
-            ?: return SessionReconcileResult.Completed(status)
-        if (current.start.sessionId in pendingIds) {
-            // A local command for this identity is mid-flight; it converges on
-            // the next pass instead of being transiently adopted here.
-            return SessionReconcileResult.Completed(status)
-        }
-        return adoptCandidate(current.start, nowEpochMillis, captureFrozen)
     }
 
     private suspend fun adoptSuperseding(
@@ -207,6 +242,7 @@ internal class SessionReconciler(
         projection: SyncProjection,
         candidate: SessionCandidate,
         pendingIds: Set<SessionId>,
+        retained: Set<SessionId>,
         status: LocalSessionStatus.Ended,
         nowEpochMillis: Long,
         captureFrozen: suspend () -> FrozenStartSet,
@@ -219,7 +255,7 @@ internal class SessionReconciler(
             banked is SessionReconcileResult.Completed &&
             supersedes(status, current.start, pendingIds, projection)
         ) {
-            return adoptCandidate(current.start, nowEpochMillis, captureFrozen)
+            return adoptCandidate(current.start, retained, nowEpochMillis, captureFrozen)
         }
         return banked
     }
@@ -237,9 +273,17 @@ internal class SessionReconciler(
 
     private suspend fun adoptCandidate(
         start: SynchronizedSessionStart,
+        retained: Set<SessionId>,
         nowEpochMillis: Long,
         captureFrozen: suspend () -> FrozenStartSet,
     ): SessionReconcileResult {
+        if (start.sessionId in retained) {
+            // A locally retained terminal fact bars adoption of that identity
+            // until the fact itself is reconciled with the replica, no matter
+            // what the candidate evaluation claims. Retrying next exchange
+            // converges instead of reviving the expired session.
+            return SessionReconcileResult.Halted(SyncStatus.ACTION_REQUIRED)
+        }
         // The receiving device captures its own local frozen summary once, at
         // adoption; repeated delivery keeps the stored set instead.
         return when (
@@ -260,6 +304,7 @@ internal class SessionReconciler(
         writer: SyncWriter,
         projection: SyncProjection,
         candidate: SessionCandidate,
+        retained: Set<SessionId>,
         status: LocalSessionStatus.Active,
         nowEpochMillis: Long,
         captureFrozen: suspend () -> FrozenStartSet,
@@ -269,7 +314,7 @@ internal class SessionReconciler(
                 if (candidate.start.sessionId == status.record.sessionId) {
                     bankIfExpired(writer, projection, status)
                 } else {
-                    adoptCandidate(candidate.start, nowEpochMillis, captureFrozen)
+                    adoptCandidate(candidate.start, retained, nowEpochMillis, captureFrozen)
                 }
             }
 

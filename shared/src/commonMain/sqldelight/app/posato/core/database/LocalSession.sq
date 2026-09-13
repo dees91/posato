@@ -51,3 +51,14 @@ VALUES (:session_id);
 deleteStaleExpiryMarkers:
 DELETE FROM local_session_expiry
 WHERE session_id != :session_id;
+
+selectExpiryMarkers:
+SELECT session_id
+FROM local_session_expiry;
+
+deleteExpiryMarker:
+DELETE FROM local_session_expiry
+WHERE session_id = :session_id;
+
+deleteAllExpiryMarkers:
+DELETE FROM local_session_expiry;

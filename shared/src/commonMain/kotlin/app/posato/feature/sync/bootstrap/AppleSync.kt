@@ -58,6 +58,7 @@ internal class AppleSync(
     private val policySync: LocalPolicySyncStore,
     crypto: SyncCryptoProvider,
     internal val backgroundDispatcher: CoroutineDispatcher,
+    private val onWorkspaceRemoved: suspend () -> Unit = {},
 ) {
     internal val bootstrap = AppleBootstrap(coordinator, backgroundDispatcher)
     private val reconciler = PolicyReconciler(policySync)
@@ -190,7 +191,7 @@ internal class AppleSync(
         scope.async {
             guarded {
                 publish(SyncStatus.SYNCING)
-                val result = removal.remove(coordinator.checkEstablished(), writers::close)
+                val result = removal.remove(coordinator.checkEstablished(), writers::close, onWorkspaceRemoved)
                 mutableState.refreshLinked(coordinator)
                 mutableState.update { it.copy(reason = null) }
                 publish(result)

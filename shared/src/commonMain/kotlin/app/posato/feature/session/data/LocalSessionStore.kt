@@ -62,7 +62,47 @@ internal interface LocalSessionStore {
     suspend fun markExpired(sessionId: SessionId): LocalSessionResult<LocalSessionStatus>
 }
 
-internal interface LocalSessionSyncStore : LocalSessionStore {
+/**
+ * Identity-bound terminal facts that outlive the current row. A separate
+ * collaborator implements this surface (see [SqlSessionExpiryStore]) so the
+ * row store stays focused; the sync store below reunites both for callers
+ * that need the whole local session contract through one dependency.
+ */
+internal interface LocalSessionExpiryStore {
+    /**
+     * Persists an identity-bound terminal fact independently of the current
+     * row, for an expiry observed elsewhere (a superseded native signal or a
+     * converged candidate) that must survive row replacement. Idempotent:
+     * recording the same identity twice succeeds once.
+     */
+    suspend fun retainExpiryMarker(sessionId: SessionId): LocalSessionResult<Unit>
+
+    /**
+     * Lists every retained terminal fact, including identities that no longer
+     * occupy the local row, so the reconciler can transfer each to the owning
+     * replica independently of the current session.
+     */
+    suspend fun retainedExpiryMarkers(): LocalSessionResult<Set<SessionId>>
+
+    /**
+     * Drops one retained terminal fact after its replica transfer completes
+     * and no local consumer needs it. Never called on an ambiguous bank
+     * result: an undetermined marker is retained, not deleted.
+     */
+    suspend fun deleteExpiryMarker(sessionId: SessionId): LocalSessionResult<Unit>
+
+    /**
+     * Drops every retained terminal fact except the current row occupant's.
+     * Called exactly once when workspace ownership ends (removal/re-link):
+     * transfer obligations die with the discarded replica while the
+     * occupant's marker stays for local rollback terminality.
+     */
+    suspend fun dropRetainedMarkersExceptCurrent(): LocalSessionResult<Unit>
+}
+
+internal interface LocalSessionSyncStore :
+    LocalSessionStore,
+    LocalSessionExpiryStore {
     suspend fun recordIntents(write: SessionSyncWrite): LocalSessionResult<Unit>
 
     suspend fun readIntents(): LocalSessionResult<List<SequencedSessionIntent>>

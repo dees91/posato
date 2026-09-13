@@ -22,6 +22,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.collections.immutable.persistentListOf
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -377,13 +378,123 @@ class SessionTransitionOwnerTest {
         // The stale clear removes the replacement, then the converge drain
         // reconciles it back (peek, status, clear, apply).
         assertEquals(
-            listOf("apply", "apply", "clear", "peek", "status", "clear", "apply"),
+            listOf("displace", "apply", "displace", "apply", "clear", "peek", "status", "displace", "clear", "apply"),
             enforcement.calls,
         )
         assertEquals(second.reconciliationId(), enforcement.lastRequest?.sessionId)
         assertIs<EnforcementState.Active>(owner.view.value.state)
         val current = assertIs<LocalSessionStatus.Active>(assertRead(store, NOW))
         assertEquals(second, current.record.sessionId)
+    }
+
+    @Test
+    fun `given a reapply whose clear outlasts the session when retrying then the end is recorded without applying`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
+        val clock = FakeSessionClock(NOW)
+        val owner = ownerOf(store, enforcement, clock)
+        val current = SessionId(testIdentifier(23))
+        owner.startSession(current, NOW, NOW + DURATION, START_SET)
+        scheduler.runCurrent()
+        assertEquals(1, enforcement.calls.count { call -> call == "apply" })
+        // The retry's clear suspends past the mandatory end: the decisive
+        // check before apply must bank the terminal fact instead of
+        // enforcing the expired request.
+        enforcement.clearHook = { clock.nowEpochMillis = NOW + DURATION + 1 }
+
+        owner.retry()
+        scheduler.runCurrent()
+
+        assertEquals(1, enforcement.calls.count { call -> call == "apply" })
+        val ended = assertIs<LocalSessionStatus.Ended>(assertRead(store, NOW + DURATION + 1))
+        assertEquals(SessionEndKind.EXPIRED, ended.kind)
+        assertEquals(NOW + DURATION, ended.record.endEpochMillis)
+        assertIs<EnforcementState.Inactive>(owner.view.value.state)
+    }
+
+    @Test
+    fun `given a replacement clear that outlasts the replaced session when drained then the view converges without applying`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
+        val clock = FakeSessionClock(NOW)
+        val owner = ownerOf(store, enforcement, clock)
+        val first = SessionId(testIdentifier(24))
+        val second = SessionId(testIdentifier(25))
+        owner.startSession(first, NOW, NOW + DURATION, START_SET)
+        scheduler.runCurrent()
+        // The replacement cleanup suspends mid-clear; the replaced session
+        // ends before cleanup completes.
+        enforcement.clearGate = CompletableDeferred()
+        assertIs<LocalSessionResult.Success<LocalSessionStatus>>(
+            store.adopt(second, NOW, NOW + DURATION, NOW, START_SET),
+        )
+        owner.settle(assertRead(store, NOW))
+        scheduler.runCurrent()
+        owner.endEarly(second)
+        enforcement.clearGate?.complete(Unit)
+        scheduler.runCurrent()
+
+        // The stale apply never runs for the ended row, and the skipped end
+        // transition still converges the view instead of leaving it Active.
+        assertEquals(1, enforcement.calls.count { call -> call == "apply" })
+        assertEquals(first.reconciliationId(), enforcement.lastRequest?.sessionId)
+        assertIs<LocalSessionStatus.Ended>(assertRead(store, NOW))
+        assertIs<EnforcementState.Inactive>(owner.view.value.state)
+    }
+
+    @Test
+    fun `given a pending foreign native signal when starting then it is retained before the schedule lands`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
+        val clock = FakeSessionClock(NOW)
+        val owner = ownerOf(store, enforcement, clock)
+        val superseded = SessionId(testIdentifier(26))
+        enforcement.displacedSessionId = superseded.reconciliationId()
+        val current = SessionId(testIdentifier(27))
+
+        owner.startSession(current, NOW, NOW + DURATION, START_SET)
+        scheduler.runCurrent()
+
+        // The replacement path itself persists the foreign fact: no manual
+        // retain call stands between the signal and the new schedule.
+        assertTrue("displace" in enforcement.calls)
+        assertTrue(superseded in store.retainedMarkers)
+        assertTrue(superseded.reconciliationId() in enforcement.acknowledgedSessionIds)
+        val live = assertIs<LocalSessionStatus.Active>(assertRead(store, NOW))
+        assertEquals(current, live.record.sessionId)
+    }
+
+    @Test
+    fun `given a superseded observation when reconciling then the fact is recorded before acknowledgement`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.APPLIED)
+        val clock = FakeSessionClock(NOW)
+        val owner = ownerOf(store, enforcement, clock)
+        val superseded = SessionId(testIdentifier(28))
+        val current = SessionId(testIdentifier(29))
+        assertIs<LocalSessionResult.Success<LocalSessionStatus>>(
+            store.adopt(current, NOW, NOW + DURATION, NOW, START_SET),
+        )
+        // A stale settle carries the superseded identity while the row
+        // already moved on: the peek still observes its native signal, but
+        // the bank is refused by identity.
+        val stale = LocalSessionStatus.Active(
+            SessionRecord(superseded, NOW, NOW + DURATION),
+            DURATION,
+            START_SET,
+            SessionOrigin.LOCAL,
+        )
+        owner.settle(stale)
+        enforcement.expiredSessionIds += superseded.reconciliationId()
+        scheduler.runCurrent()
+
+        // The fact still lands in the marker table before its native signal
+        // is acknowledged, and the current session is never applied over.
+        assertTrue(superseded in store.retainedMarkers)
+        assertTrue(superseded.reconciliationId() in enforcement.acknowledgedSessionIds)
+        assertTrue("apply" !in enforcement.calls)
+        val live = assertIs<LocalSessionStatus.Active>(assertRead(store, NOW))
+        assertEquals(current, live.record.sessionId)
     }
 
     @Test

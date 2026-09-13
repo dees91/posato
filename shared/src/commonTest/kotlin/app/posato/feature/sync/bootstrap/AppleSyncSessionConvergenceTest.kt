@@ -500,6 +500,112 @@ class AppleSyncSessionConvergenceTest {
         }
     }
 
+    @Test
+    fun `given an ended row when an expired session converges then it banks without adopting even after rollback`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-ended-expired-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-ended-expired-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        try {
+            first.establish()
+            second.establish()
+            advanceUntilIdle()
+
+            val old = SessionId(testIdentifier(83))
+            start(first, old)
+            exchange(first, second)
+            end(first, old)
+            end(second, old)
+            exchange(first, second)
+            assertIs<LocalSessionStatus.Ended>(second.read())
+
+            // The receiver's clock is past the new session's end, so it
+            // observes only a concluded expiry for an ended local row.
+            val fresh = SessionId(testIdentifier(84))
+            second.clock.nowEpochMillis = NOW + DURATION + 1
+            start(first, fresh)
+            exchange(first, second)
+
+            assertIs<LocalSessionStatus.Ended>(second.read())
+            assertTrue(fresh in second.harness.snapshot().terminalExpiryFacts)
+
+            // Rolling back into the fresh interval must not adopt the
+            // already-expired session.
+            second.clock.nowEpochMillis = NOW
+            exchange(first, second)
+
+            val kept = assertIs<LocalSessionStatus.Ended>(second.read())
+            assertEquals(old, kept.record.sessionId)
+            assertTrue(fresh in second.harness.snapshot().terminalExpiryFacts)
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
+    fun `given a locally banked expiry when the row is replaced before exchange then the fact still transfers`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-retained-transfer-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-retained-transfer-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        try {
+            first.establish()
+            second.establish()
+            advanceUntilIdle()
+
+            val old = SessionId(testIdentifier(85))
+            start(first, old)
+            exchange(first, second)
+            assertIs<LocalSessionStatus.Active>(second.read())
+
+            // The receiver banks the expiry locally without any exchange,
+            // then replaces its row before the replica ever learns the fact.
+            second.clock.nowEpochMillis = NOW + DURATION + 1
+            assertIs<LocalSessionStatus.Ended>(second.read())
+            val fresh = SessionId(testIdentifier(86))
+            start(second, fresh, second.clock.nowEpochMillis + DURATION)
+            exchange(first, second)
+
+            val current = assertIs<LocalSessionStatus.Active>(second.read())
+            assertEquals(fresh, current.record.sessionId)
+            assertTrue(old in second.harness.snapshot().terminalExpiryFacts)
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
+    fun `given an undetermined marker when exchanging then independent adoption still converges`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-undetermined-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-undetermined-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        try {
+            first.establish()
+            second.establish()
+            advanceUntilIdle()
+
+            // A terminal fact for a session the replica never learns stays
+            // retained without blocking the exchange or the adoption.
+            val unknown = SessionId(testIdentifier(87))
+            assertIs<LocalSessionResult.Success<Unit>>(second.sessions.retainExpiryMarker(unknown))
+
+            val fresh = SessionId(testIdentifier(88))
+            start(first, fresh)
+            exchange(first, second)
+
+            val adopted = assertIs<LocalSessionStatus.Active>(second.read())
+            assertEquals(fresh, adopted.record.sessionId)
+            assertIs<LocalSessionStatus.Active>(first.read())
+            assertTrue(unknown in retainedMarkers(second))
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
     private fun sessionPeer(
         dispatcher: CoroutineDispatcher,
         databaseName: String,
@@ -567,6 +673,10 @@ class AppleSyncSessionConvergenceTest {
 
     private suspend fun SessionPeer.read(): LocalSessionStatus {
         return assertIs<LocalSessionResult.Success<LocalSessionStatus>>(sessions.read(clock.nowEpochMillis)).value
+    }
+
+    private suspend fun retainedMarkers(peer: SessionPeer): Set<SessionId> {
+        return assertIs<LocalSessionResult.Success<Set<SessionId>>>(peer.sessions.retainedExpiryMarkers()).value
     }
 
     private suspend fun SessionPeer.sessionIntents(): List<SequencedSessionIntent> {

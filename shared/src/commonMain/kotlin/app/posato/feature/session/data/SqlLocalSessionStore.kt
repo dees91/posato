@@ -23,7 +23,8 @@ import kotlinx.coroutines.withContext
 internal class SqlLocalSessionStore(
     private val database: PosatoDatabase,
     private val databaseDispatcher: CoroutineDispatcher,
-) : LocalSessionSyncStore {
+) : LocalSessionSyncStore,
+    LocalSessionExpiryStore by SqlSessionExpiryStore(database, databaseDispatcher) {
     private val intents = SqlSessionIntentLog(database, databaseDispatcher)
 
     override suspend fun read(nowEpochMillis: Long): LocalSessionResult<LocalSessionStatus> {
@@ -146,10 +147,10 @@ internal class SqlLocalSessionStore(
                 if (startEpochMillis > nowEpochMillis || nowEpochMillis >= endEpochMillis) {
                     return@localSessionTransact LocalSessionResult.Failure(LocalSessionFailure.INVALID_SESSION)
                 }
-                // An adopted session replaces the local row by identity; like a local
-                // start it retains only the new session's marker. SYNC-012 reconciles
-                // from the current row.
-                database.localSessionQueries.deleteStaleExpiryMarkers(sessionId.value.copyBytes())
+                // An adopted session replaces the local row by identity. Earlier
+                // terminal facts stay retained across the replacement until
+                // the reconciler transfers each to the owning replica; only
+                // the transfer (or workspace-ownership end) retires them.
                 database.localSessionQueries.replaceSession(
                     session_id = sessionId.value.copyBytes(),
                     start_epoch_millis = startEpochMillis,
@@ -203,8 +204,8 @@ internal class SqlLocalSessionStore(
                 if (startEpochMillis != nowEpochMillis || endEpochMillis - startEpochMillis < SessionLimits.MIN_DURATION_MILLIS) {
                     LocalSessionResult.Failure(LocalSessionFailure.INVALID_SESSION)
                 } else {
-                    // Retains only the new session's marker; SYNC-012 reconciles from the current row.
-                    database.localSessionQueries.deleteStaleExpiryMarkers(sessionId.value.copyBytes())
+                    // Earlier terminal facts stay retained across the
+                    // replacement, exactly like the adoption path above.
                     database.localSessionQueries.replaceSession(
                         session_id = sessionId.value.copyBytes(),
                         start_epoch_millis = startEpochMillis,
@@ -289,7 +290,7 @@ private suspend fun PosatoDatabase.evaluateStoredLocalSession(nowEpochMillis: Lo
     return EvaluatedStored(evaluation, stored.origin)
 }
 
-private suspend fun PosatoDatabase.readStoredLocalSession(): StoredLocalSession? {
+internal suspend fun PosatoDatabase.readStoredLocalSession(): StoredLocalSession? {
     val rows = localSessionQueries.selectSession().awaitAsList()
     if (rows.isEmpty()) {
         return null
@@ -313,7 +314,7 @@ private suspend fun PosatoDatabase.readStoredLocalSession(): StoredLocalSession?
     return StoredLocalSession(record, row.ended_early == 1L, markers.isNotEmpty(), row.frozen_domains, row.frozen_application_count, origin)
 }
 
-private class StoredLocalSession(
+internal class StoredLocalSession(
     val record: SessionRecord,
     val endedEarly: Boolean,
     val expiryMarked: Boolean,
