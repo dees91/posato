@@ -618,6 +618,35 @@ implementation. The solution and any changes to accepted contracts remain
   and review of the security implications; this note does not grant persistent
   authorization or choose its implementation.
 
+## Post-MVP feature ideas for discovery
+
+`user-confirmed` (2026-09-13): retain the following larger, loosely defined
+ideas for future iterations after the MVP. Their priority, scope, feasibility,
+platform coverage, and implementation remain `open`. This is an idea queue,
+not an accepted feature plan or an expansion of the MVP.
+
+1. **Recurring session schedules.** Explore automatic sessions on a recurring
+   timetable. Scheduling is already classified as Later in the
+   [MVP scope](../../product/mvp-scope.md); recurrence and exception behavior
+   still need discovery.
+2. **Family controls for children's websites and applications.** Explore a
+   parent/child use case. Device ownership, consent, access boundaries, and
+   privacy need a separate product decision; the current personal-use model
+   does not establish a family-control contract.
+3. **Ad blocking.** Explore whether reducing advertising belongs in Posato
+   and what coverage would be useful and feasible. No filtering mechanism or
+   effectiveness claim is selected.
+4. **Review Focusly for useful ideas.** Assess which interactions or features
+   from the maintainer-provided
+   [Focusly Chrome Web Store listing](https://chromewebstore.google.com/detail/focusly/ipkamplfnlmbpgmhbdfcbajjmcnfmghj)
+   fit Posato. This is a future comparative-research task, not approval to
+   copy the extension or adopt its advertised capabilities. The extension
+   has not been installed or independently tested for this note.
+5. **Reduce distractions within YouTube.** Explore hiding Shorts,
+   recommended videos, and similar distracting surfaces while keeping useful
+   video access. Browser versus native-app coverage and a suitable mechanism
+   remain undecided; exact-host blocking alone does not define this behavior.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do

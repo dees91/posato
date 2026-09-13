@@ -1777,9 +1777,14 @@ processed with no errors or warnings. See the
 - Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
   `docs/wiki/topics/first-release-readiness.md`.
 ## [2026-09-12] proposal | Post-MVP session usability improvements
+## [2026-09-13] proposal | Post-MVP usability and feature ideas
 
 Recorded the maintainer's request to plan clearer `www` website coverage and
 fewer repeated macOS session-start authorization prompts after the MVP in
 [the decision queue](topics/mvp-open-questions.md#post-mvp-session-usability-proposals).
 Solutions remain open; existing exact-host and one-use Apply authorization
 contracts remain unchanged.
+The [feature idea queue](topics/mvp-open-questions.md#post-mvp-feature-ideas-for-discovery)
+also retains recurring schedules, family controls, ad blocking, a Focusly
+comparison, and YouTube distraction reduction for later discovery, without
+committing to scope, feasibility, or delivery.
