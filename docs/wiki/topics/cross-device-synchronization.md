@@ -548,6 +548,9 @@ not claim that every other device has received the update.
   waits. A generic native APPLIED result cannot establish which session is
   enforced. Successful empty enforcement and confirmed cleanup are distinct
   from an unknown state after reopening; both must converge without a loop.
+  Confirmed cleanup applies only to non-active state: a subsequently adopted
+  active identity still requires its own apply or explicit Resume outcome. The
+  attended sequence exposed this distinction after an earlier session was cleared.
 - `user-confirmed`: the PR correction includes future-start reevaluation.
   Host-owned ticks use the authenticated accepted projection, existing reducer,
   pending-intent gates and local terminal markers without waiting for another
@@ -561,6 +564,11 @@ not claim that every other device has received the update.
   apply. Unreadable displacement state withholds apply and offers retry.
   This does not establish a callback-generation guarantee for the existing
   fixed Device Activity name, or a bounded wakeup/delivery time.
-- `open`: the signed Mac/physical iPhone enforcement matrix remains a separate
-  completion gate. Unit tests and a visible timer do not substitute for its
-  real restriction evidence. See the [execution record](../../tasks/executions/sync-012-session-convergence.md).
+- `observed` driver state and `user-confirmed` browser outcomes (2026-09-13):
+  the attended signed Mac/iPhone matrix covers both start/end directions,
+  iPhone expiry while Posato stays in background, Mac expiry away from Session,
+  and reconnect after a missed session has expired without observed revival.
+  The physical run exposed confirmed cleanup hiding the next Mac Resume action;
+  the corrected sequence passes with actual blocking and cleanup. Device-local
+  selections remain unchanged. Revision-specific evidence and limits are in the
+  [execution record](../../tasks/executions/sync-012-session-convergence.md).

@@ -1558,6 +1558,9 @@ settle rule is retired. Brief: `docs/tasks/specifications/sync-015-record-remova
 Connected bounded session intent to local enforcement and host-owned time
 reevaluation. PR #51 corrections retain terminal facts across replacement and
 native late writes, and reconcile effects by current identity after waits.
+Confirmed cleanup cannot hide a subsequently adopted active session.
 The [session integration synthesis](topics/cross-device-synchronization.md#session-integration-and-recoverable-terminal-facts-sync-012)
 and [execution record](../tasks/executions/sync-012-session-convergence.md)
-separate deterministic evidence from the outstanding physical enforcement gate.
+separate deterministic tests from the passed attended browser enforcement
+matrix, including background expiry and offline/reconnect, with revision and
+platform limits explicit.

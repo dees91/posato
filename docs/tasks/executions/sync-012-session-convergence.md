@@ -1,12 +1,12 @@
 # Execution: `SYNC-012`
 
 - **Brief:** [Session convergence](../specifications/sync-012-session-convergence.md)
-- **Status:** `active` (code correction complete; physical AC-05 outstanding)
+- **Status:** `done`; correction review and attended AC-05 complete, merge pending maintainer decision
 - **Review tier:** `high-risk`
 - **Implementers:** initial implementation agent; Codex PR correction (maintainer-authorized).
 - **Reviewers:** independent `sync012_plan_review` (plan); `pr51_correction_review` (Standard correction).
 - **Branch:** `feature/sync-012-session-convergence` (implementation; branched from `docs/sync-012-plan`).
-- **PR:** #51 (open, review via PR; physical Mac/iPhone matrix tracked as handoff).
+- **PR:** #51 (open, review via PR; physical Mac/iPhone matrix complete).
 - **Updated:** `2026-09-13`
 
 ## Observed starting point
@@ -69,28 +69,41 @@ Mac administrator confirmation is a maintainer-attended step. The driver cannot 
 - D1–D3 were accepted on 2026-09-12 after independent High-risk plan review. The implementation connects format-1 session intent, checkpointed authoring receipts, local/replica terminal facts, identity-bound confirmation, and local enforcement without changing the wire format or policy arbitration.
 - Initial corrections include the missing coordinator deletion, command-time start validation, adoption from retained Ended rows, row-less expiry banking, terminal-fact retention across replacement, and recoverable native read/bank/ack. Failed reads bank nothing; ambiguous writer failures never justify marker deletion. Undetermined markers retain their transfer obligation without blocking unrelated sessions.
 - Maintainer scope decision (2026-09-13): address all remaining PR threads, including P2 future-start reevaluation. The prior P2 deferral is superseded. A host-owned ticker uses a restored authenticated projection and the existing reducer, without another exchange or a Session-screen subscriber. Pending local intent and workspace gates remain authoritative; local terminal markers precede adoption/apply.
-- Final correction (`observed` in source and deterministic probes): one conflated transition drain chooses fresh desired state at execution, rechecks identity/time after waits and before native effects, and records native outcomes while holding port serialization. Generic APPLIED is not identity proof. Unknown enforcement after reopening an Ended row requires cleanup; confirmed empty application and confirmed failed cleanup quiesce. Every applying path requires a successful displacement read and durable terminal bank.
+- Final correction (`observed` in source and deterministic probes): one conflated transition drain chooses fresh desired state at execution, rechecks identity/time after waits and before native effects, and records native outcomes while holding port serialization. Generic APPLIED is not identity proof. Unknown enforcement after reopening an Ended row requires cleanup; confirmed empty application and confirmed failed cleanup quiesce. Confirmed cleanup never counts as convergence for a later active identity; the attended receive-after-clear failure was reproduced, fixed in `00ae7a8`, and rechecked through Mac Resume and real blocking. Every applying path requires a successful displacement read and durable terminal bank.
 - Native expiry records now use atomic files per identity, retaining compatibility with the legacy single record. A late already-attributed A expiry cannot be overwritten by B's later expiry. Reads prioritize the requested identity; acknowledgement removes only that identity after common persistence. This does not claim a callback-generation guarantee for the pre-existing fixed Device Activity name.
 - Regression coverage: stale status during replacement; failed/unreadable displacement; SQL restart before native acknowledgement; same-ID native expiry after clock rollback; Ended restart cleanup; successful empty application quiescence; stale cleanup queued behind a newer apply; retry target loading suspended across replacement; host ticks without Session subscribers or network progress; accepted-state restore after SQL restart; multiple future candidates; pending local commands; removal; terminal-bank failure barring retry apply; native late-write and legacy coexistence.
-- Red/green evidence: both original reviewer reproductions fail at correction baseline `56345a6`; the future-start probe fails when its second exchange is removed before local-time reconciliation is implemented. The corrected focused suites pass. Mutation checks also restore unknown-as-cleared, empty-result looping and pre-clear stale identity: exactly the three dedicated regressions fail, then the reviewed sources are restored byte-for-byte and the full gates pass.
-- Independent Standard completed-change review (`pr51_correction_review`, 2026-09-13): initial Required findings covered reopened cleanup, empty-enforcement looping and stale clears; the native late-write probe required retaining facts independently. All were corrected with regressions. Final verdict: Approve, no remaining actionable P1/P2 in the correction's scope. This is a local independent review, not a third hosted review request.
+- Red/green evidence: both original reviewer reproductions fail at correction baseline `56345a6`; the future-start probe fails when its second exchange is removed before local-time reconciliation is implemented. The corrected focused suites pass. Mutation checks also restore unknown-as-cleared, empty-result looping and pre-clear stale identity: exactly the three dedicated regressions fail, then the reviewed sources are restored byte-for-byte and the full gates pass. The later physical receive-after-clear regression also fails before its predicate correction and passes for prompt/non-prompt ports, identity and quiescence afterwards.
+- Independent Standard completed-change review (`pr51_correction_review`, 2026-09-13): initial Required findings covered reopened cleanup, empty-enforcement looping and stale clears; the native late-write probe required retaining facts independently. All were corrected with regressions. Final verdict: Approve, no remaining actionable P1/P2 in the correction's scope. The later confirmed-clear correction also received an independent Approve with no P1/P2; all gates then passed again. These are local independent reviews, not a third hosted review request.
 - Existing maintainer-approved class-scoped TooManyFunctions exception on SessionTransitionOwner remains unchanged. No new suppression, baseline or quality exception is introduced.
 
 ## Completion gates
 
 | Gate | Evidence/status |
 | --- | --- |
-| Common/JVM and iOS Kotlin | `:shared:jvmTest`: 644 passed; `:shared:iosSimulatorArm64Test`: 632 passed. |
+| Common/JVM and iOS Kotlin | `:shared:jvmTest`: 645 passed; `:shared:iosSimulatorArm64Test`: 633 passed. |
 | Swift, host builds and quality | `iosSwiftTest`: 133 tests, 6 expected skips, zero failures; full `./gradlew quality` passed after the last correction. |
-| Application driver | Both signed builds and launch/ready/snapshot/screenshot inspections passed: desktop `build/verification/runs/20260913-105420-c79f/`, iPhone after unlock `build/verification/runs/20260913-110015-64b9/`. Both display the retained early end without revival. Initial iPhone automation-init timeouts are superseded by the successful unlocked run. |
-| AC-05 physical matrix | Deferred by the maintainer on 2026-09-13, not waived. Real restrictions and cleanup on the linked signed Mac/iPhone, including attended Mac authorization, remain required. |
-| PR threads | Correction `0bf5405` was pushed; all five threads received evidence replies and are resolved (two P1 classes plus accepted P2). No open review thread remains; AC-05 stays open. |
+| Application driver | Corrected signed builds passed: desktop `build/verification/runs/20260913-154741-e78d/`, iPhone `build/verification/runs/20260913-154800-d836/`. Real user paths, screenshots, snapshots and cleanup are recorded in the matrix below. |
+| AC-05 physical matrix | Passed with the maintainer on 2026-09-13: both start/end directions, iPhone background expiry, Mac expiry away from Session, offline/reconnect without observed revival, and fixture restoration. Evidence and revision limits are listed below. |
+| PR threads | Correction `0bf5405` was pushed; all five threads received evidence replies and are resolved (two P1 classes plus accepted P2). No open review thread remains. Follow-up `00ae7a8` fixes the attended receive-after-clear finding; AC-05 is now complete. |
+
+## Attended physical evidence (2026-09-13)
+
+All paths below are under ignored `build/verification/runs/`; browser outcomes are `user-confirmed`, while driver trees, screenshots and read-only SQL are `observed`. The controlled domain is example.com, with example.org as the allowed control; original selections and workspace are preserved.
+
+| Row | Evidence and limit |
+| --- | --- |
+| Mac start → iPhone receive → iPhone early end | `20260913-152912-b2da`, `20260913-152923-6e9e`, `20260913-153340-d765`, `20260913-153636-190d`: both browsers blocked the target and allowed the control, then opened the target after end. Baseline `732024e`; Mac was reopened during receiver preparation. |
+| Corrected iPhone start → Mac Resume → Mac early end | `20260913-162251-d46d`, `20260913-162338-098b`, `20260913-162354-5e2c`, `20260913-162533-0c6f`, `20260913-162613-cd81`: `00ae7a8` receives after confirmed cleanup on the same Mac owner, offers Resume, applies after attended authorization, and both browsers confirm blocking followed by cleanup. |
+| iPhone suspended expiry and reopen | A real 25-minute session from `20260913-153806-beec`; maintainer put Posato in background and confirmed target access after the deadline before returning to Posato. `20260913-162214-c949` then shows terminal state. This measures the earlier signed build's unchanged native expiry path, not a bounded callback time. |
+| Mac expiry away from Session | `20260913-162750-4b27` starts with real blocking; SQL `20260913-162815-cbc1` proves the actual ten-minute deadline. After leaving Session (`20260913-162926-2f6a`), SQL `20260913-163818-6bd2` confirms terminal expiry, and the maintainer confirms browser access. Reopen `20260913-171335-4cd8` stays inactive. |
+| Offline/reconnect | Maintainer kept iPhone offline before the final Mac start and through its deadline. After reconnect, `20260913-171302-dfd9` completes exchange and remains inactive; the maintainer confirms browser access before fixture deletion. No revived session was observed. |
+| Fixture restoration | `20260913-171440-7e13` removes only example.com; SQL `20260913-171521-20f9` confirms three remaining domains and zero fixture rows. iPhone `20260913-171529-b488` confirms removal, three websites and inactive state. Existing application selections are unchanged; both controlled apps and log captures are stopped. |
 
 ## Limits and decisions
 
 - D1 active-only linking, D2 local session preservation on removal, and D3 existing local authorization/Resume remain unchanged.
 - Retained terminal facts have no hard offline growth bound; unknown transferability is not evidence for deletion.
-- The native mailbox reads legacy records, but the previous single-slot reader cannot consume new identity files. A rollback must preserve/drain unread terminal facts or use a forward correction; a blind revert is not a proved safe downgrade.
+- The native expiry reader reads legacy records, but the previous single-slot reader cannot consume new identity files. A rollback must preserve/drain unread terminal facts or use a forward correction; a blind revert is not a proved safe downgrade.
 - Ticks run only while the host can execute. Neither timer UI nor unit/Simulator tests prove physical enforcement, suspended delivery or wakeup timing.
-- The attempted Mac start recipe stopped before session start at fixture visibility (`build/verification/runs/20260913-110145-4fd2/`). Read-only SQL confirmed example.com was not committed; the three existing domains and ended session remain. The controlled apps were stopped when the maintainer deferred the physical matrix. No administrator prompt or session enforcement was started by that attempt.
-- Physical verification needs maintainer attendance for the Mac administrator prompt. An unattended action-required run does not substitute for AC-05. This record does not claim merge readiness, MVP completion or release readiness before that gate passes.
+- Recipe limits: the initial fixture attempt did not save its input; the attended run used an explicit Add tap. Omitted scenario launch options restarted Mac; continuing steps now explicitly reuse the instance. Repeated duration taps produced ten minutes instead of five, so expiry used the actual read-only SQL deadline. These are evidence limits and recipe corrections, not new timing guarantees.
+- Physical browser rows are maintainer-confirmed; device-local application selections were empty and unchanged. This is session-convergence evidence, not a new application-blocking platform matrix or an MVP/release-readiness claim. Mac administrator confirmation remains attended.
