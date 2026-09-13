@@ -1,0 +1,46 @@
+CREATE TABLE sync_session_intent (
+  sequence INTEGER NOT NULL PRIMARY KEY,
+  workspace_id BLOB NOT NULL CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16),
+  kind TEXT NOT NULL CHECK (
+    typeof(kind) = 'text' AND kind IN ('session_start', 'session_end')
+  ),
+  session_id BLOB NOT NULL CHECK (typeof(session_id) = 'blob' AND length(session_id) = 16),
+  start_epoch_millis INTEGER CHECK (
+    start_epoch_millis IS NULL OR (
+      typeof(start_epoch_millis) = 'integer' AND start_epoch_millis BETWEEN 0 AND 4102444800000
+    )
+  ),
+  end_epoch_millis INTEGER CHECK (
+    end_epoch_millis IS NULL OR (
+      typeof(end_epoch_millis) = 'integer' AND end_epoch_millis BETWEEN 0 AND 4102444800000
+    )
+  ),
+  CHECK (
+    (
+      kind = 'session_start' AND
+      start_epoch_millis IS NOT NULL AND
+      end_epoch_millis IS NOT NULL AND
+      end_epoch_millis > start_epoch_millis
+    ) OR (
+      kind = 'session_end' AND
+      start_epoch_millis IS NULL AND
+      end_epoch_millis IS NULL
+    )
+  )
+);
+
+selectSessionIntents:
+SELECT sequence, workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis
+FROM sync_session_intent
+ORDER BY sequence;
+
+insertSessionIntent:
+INSERT INTO sync_session_intent(workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis)
+VALUES (:workspaceId, :kind, :sessionId, :startEpochMillis, :endEpochMillis);
+
+deleteSessionIntent:
+DELETE FROM sync_session_intent
+WHERE sequence = :sequence;
+
+deleteSessionIntents:
+DELETE FROM sync_session_intent;

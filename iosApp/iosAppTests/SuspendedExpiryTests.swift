@@ -132,7 +132,7 @@ final class SuspendedExpiryTests: XCTestCase {
         try records.writeCleared(sessionId: "session", clearedAt: 1_700_000_000)
         XCTAssertNotNil(records.readCleared())
 
-        let clearedURL = records.directoryURL.appendingPathComponent("cleared-v1.json")
+        let clearedURL = try clearedRecordURL(records)
         try Data("{\"version\":999,\"sessionId\":\"session\",\"clearedAt\":1700000000}".utf8).write(to: clearedURL)
         XCTAssertNil(records.readCleared())
 
@@ -149,7 +149,9 @@ final class SuspendedExpiryTests: XCTestCase {
 
         XCTAssertTrue(records.directoryURL.lastPathComponent == "SuspendedExpiry")
         let names = try FileManager.default.contentsOfDirectory(atPath: records.directoryURL.path).sorted()
-        XCTAssertEqual(names, ["cleared-v1.json", "pending-v1.json"])
+        XCTAssertEqual(names.count, 2)
+        XCTAssertTrue(names.contains("pending-v1.json"))
+        XCTAssertEqual(names.filter { $0.hasPrefix("cleared-") && $0.hasSuffix(".json") }.count, 1)
     }
 
     // MARK: - Schedule validation
@@ -310,12 +312,12 @@ final class SuspendedExpiryTests: XCTestCase {
         try records.writeCleared(sessionId: "session", clearedAt: 1_700_003_600)
         XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .expired)
 
-        let clearedURL = records.directoryURL.appendingPathComponent("cleared-v1.json")
+        let clearedURL = try clearedRecordURL(records)
         try Data("{\"version\":999,\"sessionId\":\"session\",\"clearedAt\":1700003600}".utf8).write(to: clearedURL)
         XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
     }
 
-    func testReconciliationIgnoresAnotherSessionsClearAndConsumesItsOwn() throws {
+    func testReconciliationIgnoresAnotherSessionsClearAndKeepsItsOwn() throws {
         let monitoring = FakeExpiryMonitoring()
         let records = try isolatedRecordStore()
         let scheduler = capableScheduler(monitoring: monitoring, records: { records })
@@ -326,11 +328,30 @@ final class SuspendedExpiryTests: XCTestCase {
 
         try records.writeCleared(sessionId: "session", clearedAt: 1_700_003_600)
         XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .expired)
-        XCTAssertNil(records.readCleared())
-        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
+        XCTAssertNotNil(records.readCleared())
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .expired)
     }
 
-    func testScheduleRemovesAStaleClearedRecord() throws {
+    func testAcknowledgeConsumesOnlyTheMatchingClear() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+
+        XCTAssertFalse(try acknowledge(sessionId: "session", scheduler: scheduler))
+
+        try records.writeCleared(sessionId: "other-session", clearedAt: 1_700_003_600)
+        XCTAssertFalse(try acknowledge(sessionId: "session", scheduler: scheduler))
+        XCTAssertNotNil(records.readCleared())
+
+        try records.writeCleared(sessionId: "session", clearedAt: 1_700_003_600)
+        XCTAssertTrue(try acknowledge(sessionId: "session", scheduler: scheduler))
+        XCTAssertNotNil(records.readCleared(sessionId: "other-session"))
+        XCTAssertNil(records.readCleared(sessionId: "session"))
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
+        XCTAssertFalse(try acknowledge(sessionId: "session", scheduler: scheduler))
+    }
+
+    func testSchedulePreservesAForeignClearedRecord() throws {
         let monitoring = FakeExpiryMonitoring()
         let records = try isolatedRecordStore()
         let scheduler = capableScheduler(monitoring: monitoring, records: { records })
@@ -340,11 +361,90 @@ final class SuspendedExpiryTests: XCTestCase {
             try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
             .scheduled
         )
-        XCTAssertNil(records.readCleared())
+        // The new schedule must never silently drop the superseded signal:
+        // only Kotlin's persist-then-acknowledge consumes it.
+        XCTAssertEqual(records.readCleared()?.sessionId, "earlier-session")
         XCTAssertEqual(records.readPending()?.sessionId, "session")
     }
 
+    func testDisplacementSurfacesForeignClearWithoutConsuming() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+
+        XCTAssertNil(displaced(currentSessionId: "session", scheduler: scheduler))
+
+        try records.writeCleared(sessionId: "earlier-session", clearedAt: 1_699_000_000)
+        XCTAssertEqual(displaced(currentSessionId: "session", scheduler: scheduler), "earlier-session")
+        XCTAssertNotNil(records.readCleared())
+        XCTAssertEqual(displaced(currentSessionId: "earlier-session", scheduler: scheduler), "earlier-session")
+        XCTAssertNil(displaced(currentSessionId: "", scheduler: scheduler))
+
+        XCTAssertTrue(try acknowledge(sessionId: "earlier-session", scheduler: scheduler))
+        XCTAssertNil(displaced(currentSessionId: "session", scheduler: scheduler))
+    }
+
+    func testDisplacementDistinguishesMissingFromUnreadableRecords() throws {
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: FakeExpiryMonitoring(), records: { records })
+        XCTAssertEqual(displacementOutcome(scheduler), .absent)
+        try FileManager.default.createDirectory(at: records.directoryURL, withIntermediateDirectories: true)
+        let url = records.directoryURL.appendingPathComponent("cleared-v1.json")
+        for bytes in [Data("invalid".utf8), Data(repeating: 65, count: 4097)] {
+            try bytes.write(to: url)
+            XCTAssertEqual(displacementOutcome(scheduler), .failed)
+        }
+        try FileManager.default.removeItem(at: url)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: false)
+        XCTAssertEqual(displacementOutcome(scheduler), .failed)
+        let unavailable = capableScheduler(monitoring: FakeExpiryMonitoring(), records: { nil })
+        XCTAssertEqual(displacementOutcome(unavailable), .failed)
+    }
+
+    private func displacementOutcome(_ scheduler: SuspendedExpiryScheduler) -> ExpiryDisplacementOutcome? {
+        var result: ExpiryDisplacementOutcome?
+        scheduler.displacedClearedSessionId(currentSessionId: "session") { result = $0.outcome }
+        return result
+    }
+
+    func testLatePreviousExpiryAndReplacementExpirySurviveRestartIndependently() throws {
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: FakeExpiryMonitoring(), records: { records })
+        try records.writePending(sessionId: "earlier-session")
+        let captured = try XCTUnwrap(records.readPending())
+        XCTAssertNil(displaced(currentSessionId: "session", scheduler: scheduler))
+        XCTAssertEqual(try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler), .scheduled)
+        try records.writeCleared(sessionId: captured.sessionId, clearedAt: 1_700_000_000)
+        SuspendedExpiryClear.handleIntervalEnd(activity: SuspendedExpiryActivity.name, store: FakeExpirySettingsStore(), records: records)
+        let reopened = SuspendedExpiryRecordStore(directoryURL: records.directoryURL)
+        let recovered = capableScheduler(monitoring: FakeExpiryMonitoring(), records: { reopened })
+        XCTAssertEqual(try reconcile(sessionId: "earlier-session", scheduler: recovered), .expired)
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: recovered), .expired)
+        XCTAssertEqual(displaced(currentSessionId: "session", scheduler: recovered), "session")
+        XCTAssertTrue(try acknowledge(sessionId: "session", scheduler: recovered))
+        XCTAssertEqual(try reconcile(sessionId: "earlier-session", scheduler: recovered), .expired)
+        XCTAssertTrue(try acknowledge(sessionId: "earlier-session", scheduler: recovered))
+        XCTAssertNil(displaced(currentSessionId: "session", scheduler: recovered))
+    }
+
+    func testLegacyClearedRecordSurvivesNewExpiryAndIsIndependentlyAcknowledged() throws {
+        let records = try isolatedRecordStore()
+        try FileManager.default.createDirectory(at: records.directoryURL, withIntermediateDirectories: true)
+        let legacy = SuspendedExpiryClearedRecord(version: 1, sessionId: "legacy-session", clearedAt: 1_700_000_000)
+        try JSONEncoder().encode(legacy).write(to: records.directoryURL.appendingPathComponent("cleared-v1.json"))
+        try records.writeCleared(sessionId: "session", clearedAt: 1_700_003_600)
+        let scheduler = capableScheduler(monitoring: FakeExpiryMonitoring(), records: { records })
+        XCTAssertEqual(try reconcile(sessionId: "legacy-session", scheduler: scheduler), .expired)
+        XCTAssertTrue(try acknowledge(sessionId: "legacy-session", scheduler: scheduler))
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .expired)
+    }
+
     // MARK: - Helpers
+
+    private func clearedRecordURL(_ records: SuspendedExpiryRecordStore) throws -> URL {
+        let urls = try FileManager.default.contentsOfDirectory(at: records.directoryURL, includingPropertiesForKeys: nil)
+        return try XCTUnwrap(urls.first { $0.lastPathComponent.hasPrefix("cleared-") })
+    }
 
     private func capableScheduler(
         monitoring: FakeExpiryMonitoring,
@@ -385,6 +485,18 @@ final class SuspendedExpiryTests: XCTestCase {
         var result: IosExpiryReconciliation?
         scheduler.readReconciliation(sessionId: sessionId) { result = $0 }
         return try XCTUnwrap(result)
+    }
+
+    private func acknowledge(sessionId: String, scheduler: SuspendedExpiryScheduler) throws -> Bool {
+        var result: KotlinBoolean?
+        scheduler.acknowledgeReconciliation(sessionId: sessionId) { result = $0 }
+        return try XCTUnwrap(result).boolValue
+    }
+
+    private func displaced(currentSessionId: String, scheduler: SuspendedExpiryScheduler) -> String? {
+        var result: String??
+        scheduler.displacedClearedSessionId(currentSessionId: currentSessionId) { result = $0.sessionId }
+        return result ?? nil
     }
 
     private func isolatedRecordStore() throws -> SuspendedExpiryRecordStore {

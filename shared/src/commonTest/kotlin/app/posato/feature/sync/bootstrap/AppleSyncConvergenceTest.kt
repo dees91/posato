@@ -471,6 +471,7 @@ class AppleSyncConvergenceTest {
 }
 
 internal class SharedFakeMailboxPort : MailboxPort {
+    var beforeFetch: suspend () -> Unit = {}
     val saved = mutableListOf<MailboxBundle>()
     val cursors = mutableListOf<MailboxCursor>()
     val resumeResets = mutableListOf<ByteArray>()
@@ -496,6 +497,7 @@ internal class SharedFakeMailboxPort : MailboxPort {
         cursor: MailboxCursor,
     ): ChangeFetchResult {
         cursors.add(cursor)
+        beforeFetch()
         val index = cursorIndex(cursor)
         val bundle = saved.getOrNull(index)
         return if (bundle == null) {

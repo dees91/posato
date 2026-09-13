@@ -45,6 +45,24 @@ class MacOsRemovalLifecycleTest {
     }
 
     @Test
+    fun `given removal outcome when it completes then the cleared hook runs only on success`() = runTest {
+        val transport = ScriptTransport(
+            message(SyncCompanionOutcome.Incomplete, token),
+            outcome(SyncCompanionOutcome.UnknownOutcome),
+            outcome(SyncCompanionOutcome.Swept),
+            outcome(SyncCompanionOutcome.DeletedAndAbsent),
+        )
+        val store = FakeBootstrapStore(BootstrapState.Established(workspaceA()))
+        val removal = AppleWorkspaceRemoval(MacOsMailboxAdapter(transport), FakeBootstrapKeyPort(), store)
+        var calls = 0
+
+        assertEquals(SyncStatus.RETRYABLE, removal.remove(check(EstablishedStatus.READY, workspaceA()), {}, { calls += 1 }))
+        assertEquals(0, calls)
+        assertEquals(SyncStatus.LOCAL_ONLY, removal.remove(check(EstablishedStatus.ANCHOR_MISSING, workspaceA()), {}, { calls += 1 }))
+        assertEquals(1, calls)
+    }
+
+    @Test
     fun `given anchorless completions when removing again then the next workspace starts fresh`() = runTest {
         for (status in listOf(EstablishedStatus.DIFFERENT_ANCHOR, EstablishedStatus.ZONE_MISSING)) {
             val transport = ScriptTransport(

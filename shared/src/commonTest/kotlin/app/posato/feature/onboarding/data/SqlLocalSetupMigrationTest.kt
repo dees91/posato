@@ -90,8 +90,8 @@ class SqlLocalSetupMigrationTest {
         downgrade(
             testDatabase,
             "INSERT INTO local_session(" +
-                "singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early) " +
-                "VALUES (1, X'$IDENTIFIER_HEX', $START_MILLIS, $END_MILLIS, 0)",
+                "singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin) " +
+                "VALUES (1, X'$IDENTIFIER_HEX', $START_MILLIS, $END_MILLIS, 0, 'local')",
         )
         val driver = testDatabase.openDriver()
         try {
@@ -120,6 +120,8 @@ class SqlLocalSetupMigrationTest {
         driver.executeSql("DROP TABLE sync_policy_base_domain")
         driver.executeSql("DROP TABLE sync_policy_base_application")
         driver.executeSql("DROP TABLE sync_removed_workspace")
+        driver.executeSql("DROP TABLE sync_session_intent")
+        driver.executeSql("ALTER TABLE local_session DROP COLUMN origin")
         driver.executeSql("PRAGMA user_version = $PREVIOUS_VERSION")
         driver.close()
     }

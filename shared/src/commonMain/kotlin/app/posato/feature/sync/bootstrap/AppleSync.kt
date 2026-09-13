@@ -1,5 +1,8 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.session.data.SessionExchangeObserver
+import app.posato.feature.session.data.SessionSyncTriggers
+import app.posato.feature.session.data.SessionWorkspaceCapture
 import app.posato.feature.sync.data.SyncCryptoProvider
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWriter
@@ -55,6 +58,7 @@ internal class AppleSync(
     private val policySync: LocalPolicySyncStore,
     crypto: SyncCryptoProvider,
     internal val backgroundDispatcher: CoroutineDispatcher,
+    private val onWorkspaceRemoved: suspend () -> Unit = {},
 ) {
     internal val bootstrap = AppleBootstrap(coordinator, backgroundDispatcher)
     private val reconciler = PolicyReconciler(policySync)
@@ -65,13 +69,49 @@ internal class AppleSync(
     private val exchange = AppleMailboxExchange(mailbox, crypto)
     private val removal = AppleWorkspaceRemoval(mailbox, keys, store)
     private val mutableState = MutableStateFlow(AppleSyncState())
+    internal val sessionTriggers: SessionSyncTriggers = object : SessionSyncTriggers {
+        override suspend fun captureWorkspace(): SessionWorkspaceCapture {
+            return when (val captured = this@AppleSync.captureWorkspace()) {
+                is BootstrapStoreResult.Failure -> {
+                    SessionWorkspaceCapture.Unknown
+                }
+
+                is BootstrapStoreResult.Success -> {
+                    val workspace = captured.value
+                    if (workspace == null) {
+                        SessionWorkspaceCapture.Unlinked
+                    } else {
+                        SessionWorkspaceCapture.Linked(workspace.context.workspaceId.value.copyBytes())
+                    }
+                }
+            }
+        }
+
+        override fun restoreSessions() {
+            scope.launch {
+                guarded {
+                    if (sessionTriggers.captureWorkspace() !is SessionWorkspaceCapture.Linked) return@guarded
+                    val writer = writers.open()
+                    sessionObserver?.onReplicaSnapshot(writer?.sessionSnapshot)
+                }
+            }
+        }
+
+        override fun requestSync() {
+            syncNow()
+        }
+    }
+    internal var sessionObserver: SessionExchangeObserver? = null
     private val joinFlight = Mutex()
     private val worker = scope.launch(start = CoroutineStart.LAZY) {
         for (ignored in opportunities) {
             guarded {
                 mutableState.refreshLinked(coordinator)
                 val writer = writers.open()
-                if (writer != null) runExchange()
+                if (writer != null) {
+                    sessionObserver?.onReplicaSnapshot(writer.sessionSnapshot)
+                    runExchange()
+                }
             }
         }
     }
@@ -164,7 +204,10 @@ internal class AppleSync(
         scope.async {
             guarded {
                 publish(SyncStatus.SYNCING)
-                val result = removal.remove(coordinator.checkEstablished(), writers::close)
+                val result = removal.remove(coordinator.checkEstablished(), writers::close) {
+                    sessionObserver?.onReplicaSnapshot(null)
+                    onWorkspaceRemoved()
+                }
                 mutableState.refreshLinked(coordinator)
                 mutableState.update { it.copy(reason = null) }
                 publish(result)
@@ -190,16 +233,26 @@ internal class AppleSync(
             return
         }
         publish(SyncStatus.SYNCING)
-        val active = writers.open() ?: return
-        val workspace = checkNotNull(check.workspace)
-        val base = when (val read = readBaseOrHalt(policySync, ::publish)) {
-            is BaseRead.Halted -> return
-            is BaseRead.Ready -> read.base
-        }
-        if (!exchangeLegsOrHalt(base, authoring, exchange, workspace, active, ::publish)) {
+        val active = writers.open()
+        if (active == null) {
             return
         }
-        runPolicyPhase(workspace, active, base)
+        // The session phase reconciles converged session intent before policy work.
+        // A policy-capacity failure later in this pass must not suppress an accepted
+        // session end, which is committed and cleared inside the session phase.
+        val workspace = checkNotNull(check.workspace)
+        val read = readBaseOrHalt(policySync, ::publish)
+        if (read is BaseRead.Ready && exchangeLegsOrHalt(read.base, authoring, exchange, workspace, active, ::publish) {
+                sessionObserver?.onReplicaSnapshot(active.sessionSnapshot)
+            }
+        ) {
+            val sessionHalt = sessionObserver?.onExchange(active, workspace)
+            if (sessionHalt != null) {
+                publish(sessionHalt)
+            } else {
+                runPolicyPhase(workspace, active, read.base)
+            }
+        }
     }
 
     private suspend fun runPolicyPhase(
@@ -274,6 +327,7 @@ private suspend fun exchangeLegsOrHalt(
     workspace: EstablishedWorkspace,
     writer: SyncWriter,
     publish: (SyncStatus) -> Unit,
+    acceptedProgress: suspend () -> Unit,
 ): Boolean {
     if (base != null && !authoring.drain(writer)) {
         return false
@@ -283,7 +337,7 @@ private suspend fun exchangeLegsOrHalt(
         publish(published)
         return false
     }
-    val consumed = exchange.consume(workspace, writer)
+    val consumed = exchange.consume(workspace, writer, acceptedProgress)
     if (consumed != SyncStatus.COMPLETED) {
         publish(consumed)
     }

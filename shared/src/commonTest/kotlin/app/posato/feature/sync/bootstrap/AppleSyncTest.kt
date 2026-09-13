@@ -42,12 +42,14 @@ class AppleSyncTest {
     }
 
     @Test
-    fun `given no consent when foreground arrives then no provider is called`() = runTest {
+    fun `given no consent when the session host restores or foreground arrives then no provider is called`() = runTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {
+            harness.sync.sessionTriggers.restoreSessions()
             harness.sync.onForeground()
             advanceUntilIdle()
             assertEquals(0, harness.account.calls)
+            assertEquals(0, harness.keys.readCalls)
             assertEquals(0, harness.mailbox.cursors.size)
             assertEquals(SyncStatus.LOCAL_ONLY, harness.sync.state.value.status)
         } finally {

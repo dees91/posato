@@ -11,7 +11,8 @@ internal class AppleWorkspaceRemoval(
 ) {
     suspend fun remove(
         check: EstablishedCheck,
-        closeWriter: suspend () -> Unit
+        closeWriter: suspend () -> Unit,
+        onCleared: suspend () -> Unit = {},
     ): SyncStatus {
         val workspace = check.workspace ?: return check.status.toSyncStatus()
         val recordsFailure = removeRecords(check.status, workspace)
@@ -29,6 +30,9 @@ internal class AppleWorkspaceRemoval(
                 // resume cursor retained for its removal is stale for the
                 // next workspace on this account and must not survive.
                 mailbox.clearRemovalResumeState(workspace.binding)
+                // Ownership ends exactly here: retained session transfer
+                // obligations die with the discarded replica.
+                onCleared()
                 if (check.status == EstablishedStatus.DIFFERENT_ANCHOR) SyncStatus.ACTION_REQUIRED else SyncStatus.LOCAL_ONLY
             }
         }

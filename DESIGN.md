@@ -105,9 +105,9 @@ migration seeds for databases that already hold product state. Nothing
 reaches iCloud, the synchronizable Keychain, a system prompt, or the helper
 before the person's explicit step action. A consented fresh join may then
 continue through bounded foreground checks until adoption or a definitive
-failure; no waiting record survives relaunch. No sentence promises that
-sessions appear on another device, or when a website change arrives there;
-what linking combines is stated next to the link action.
+failure; no waiting record survives relaunch. No sentence promises when a
+session or a website change arrives on another device; what linking combines
+is stated next to the link action.
 
 The UI says that data is saved on this device. A running timer is not evidence
 that a restriction is active. Future flows below are requirements, not current
@@ -115,18 +115,23 @@ controls.
 
 The **Sync with iCloud** control requests consent to link this device to the
 private iCloud workspace. Next to it, one sentence states the consequence:
-"Linking combines the websites saved on your devices. App choices stay on
-each device." Linking adds this device's websites to the workspace and
-removes nothing local; a website a peer removed before this device linked
-comes back for both. Once linked, **Sync now** requests an exchange;
-launch, foreground, and exact-domain commits also offer an exchange. Status
-reports local-only, pending, syncing, completed local attempt, retryable,
-waiting for the key, or action required. A completed attempt makes no claim
-about receipt on another device, and no sentence promises delivery timing,
-latency, or waking the other device. There is no synchronization time or
-device list. A completed exchange converges exact domains and the
-application group name into the visible policies; application selections
-stay on the device that made them, and sessions stay local. When the merged
+"Linking combines the websites saved on your devices and shares an active
+session. App choices stay on each device." Linking adds this device's
+websites to the workspace and removes nothing local; a website a peer
+removed before this device linked comes back for both. Linking publishes a
+still-active local session once, with its original identifier and end, and
+never backfills ended sessions. Once linked, **Sync now** requests an
+exchange; launch, foreground, and exact-domain commits also offer an
+exchange. Status reports local-only, pending, syncing, completed local
+attempt, retryable, waiting for the key, or action required. A completed
+attempt makes no claim about receipt on another device, and no sentence
+promises delivery timing, latency, or waking the other device. There is no
+synchronization time or device list. A completed exchange converges exact
+domains, the application group name, and bounded sessions into the visible
+state; application selections stay on the device that made them. A received
+session is adopted by identity with the receiving device's own frozen
+summary, never carries app selections, and never grants permission. When the
+merged
 websites would exceed the 1,024-device limit, or the shared set reaches its
 2,048 capacity, the status reports action required with a reason naming the
 limit; recovery is removing websites on any device and choosing Sync now.

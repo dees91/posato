@@ -22,6 +22,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNavigationPlacement
 import app.posato.core.designsystem.PosatoNavigationScaffold
@@ -29,7 +31,6 @@ import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformNavigationPlacement
-import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
@@ -39,11 +40,11 @@ import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.onboarding.data.SetupCompletion
 import app.posato.feature.onboarding.rememberMacHelperSetupUiState
 import app.posato.feature.onboarding.rememberOnboardingUiState
-import app.posato.feature.session.data.LocalSessionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.session.ui.SessionScreen
+import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.ui.SyncAnnouncements
 import app.posato.feature.sync.ui.SyncBootstrapUiState
@@ -58,11 +59,10 @@ import dev.zacsweers.metro.Inject
 class PosatoApplication internal constructor(
     private val store: LocalTargetPolicyStore,
     private val applicationMappings: LocalApplicationMappings,
-    private val sessionStore: LocalSessionStore,
     private val sessionIds: SessionIdGenerator,
     private val clock: SessionClock,
     private val timeFormat: SessionTimeFormat,
-    private val enforcement: EnforcementPort,
+    private val sessionOwner: SessionTransitionOwner,
     private val bootstrap: AppleSync,
     private val onboardingDependencies: OnboardingDependencies,
 ) {
@@ -82,9 +82,13 @@ class PosatoApplication internal constructor(
             helperSetup,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
+        LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
         val placement = platformNavigationPlacement()
         val deviceNoun = if (placement == PosatoNavigationPlacement.Sidebar) "Mac" else "iPhone"
         PosatoTheme(highContrast = highContrast) {
+            // Session reconciliation runs on every foreground, even when the
+            // Session screen is not subscribed: subscriptions do not own the work.
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = sessionOwner::onForeground)
             SyncAnnouncements(syncState, onAnnouncement)
             val completion = onboarding.completion
             if (completion == null) {
@@ -144,13 +148,12 @@ class PosatoApplication internal constructor(
                 val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
                 if (showingSession) {
                     SessionScreen(
-                        sessionStore,
                         store,
                         applicationMappings,
                         sessionIds,
                         clock,
                         timeFormat,
-                        enforcement,
+                        sessionOwner,
                         onOpenPausedItems = { showingSession = false },
                         modifier = contentModifier,
                         layout = layout,
