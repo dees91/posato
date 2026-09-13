@@ -82,9 +82,9 @@ Mac administrator confirmation is a maintainer-attended step. The driver cannot 
 | --- | --- |
 | Common/JVM and iOS Kotlin | `:shared:jvmTest`: 644 passed; `:shared:iosSimulatorArm64Test`: 632 passed. |
 | Swift, host builds and quality | `iosSwiftTest`: 133 tests, 6 expected skips, zero failures; full `./gradlew quality` passed after the last correction. |
-| Application driver | Signed builds passed for both targets. Desktop launch/ready/snapshot/screenshot passed: `build/verification/runs/20260913-105420-c79f/`; ended state remains inactive and iCloud reports completion. Device installed/launched; UI runner timed out enabling automation in `build/verification/runs/20260913-105404-b0e6/`; the same automation-initialization timeout repeated in `build/verification/runs/20260913-105540-e9f2/`. |
-| AC-05 physical matrix | Open: real restrictions and cleanup on the linked signed Mac/iPhone, including attended Mac authorization, are required. |
-| PR threads | Five open threads cover two P1 classes and accepted P2. All correction regressions pass and the independent review approves; reply with this correction and resolve the addressed threads. AC-05 remains open. |
+| Application driver | Both signed builds and launch/ready/snapshot/screenshot inspections passed: desktop `build/verification/runs/20260913-105420-c79f/`, iPhone after unlock `build/verification/runs/20260913-110015-64b9/`. Both display the retained early end without revival. Initial iPhone automation-init timeouts are superseded by the successful unlocked run. |
+| AC-05 physical matrix | Deferred by the maintainer on 2026-09-13, not waived. Real restrictions and cleanup on the linked signed Mac/iPhone, including attended Mac authorization, remain required. |
+| PR threads | Correction `0bf5405` was pushed; all five threads received evidence replies and are resolved (two P1 classes plus accepted P2). No open review thread remains; AC-05 stays open. |
 
 ## Limits and decisions
 
@@ -92,4 +92,5 @@ Mac administrator confirmation is a maintainer-attended step. The driver cannot 
 - Retained terminal facts have no hard offline growth bound; unknown transferability is not evidence for deletion.
 - The native mailbox reads legacy records, but the previous single-slot reader cannot consume new identity files. A rollback must preserve/drain unread terminal facts or use a forward correction; a blind revert is not a proved safe downgrade.
 - Ticks run only while the host can execute. Neither timer UI nor unit/Simulator tests prove physical enforcement, suspended delivery or wakeup timing.
+- The attempted Mac start recipe stopped before session start at fixture visibility (`build/verification/runs/20260913-110145-4fd2/`). Read-only SQL confirmed example.com was not committed; the three existing domains and ended session remain. The controlled apps were stopped when the maintainer deferred the physical matrix. No administrator prompt or session enforcement was started by that attempt.
 - Physical verification needs maintainer attendance for the Mac administrator prompt. An unattended action-required run does not substitute for AC-05. This record does not claim merge readiness, MVP completion or release readiness before that gate passes.
