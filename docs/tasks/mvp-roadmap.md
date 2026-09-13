@@ -162,7 +162,7 @@ wave barriers add the phase ordering stated above.
 | `SYNC-015` | Remove a workspace by deleting its records and keeping the zone, so a re-link right after removal is never lost to a late zone purge. | Apple synchronization | P4/W4.3c | `SYNC-009`, `SYNC-010`, `SYNC-014` | PR-RECORD-REMOVAL |
 | `SYNC-012` | Converge session start, early termination, and expiry without unsafe delivery promises. [Draft brief](specifications/sync-012-session-convergence.md). | Apple synchronization | P4/W4.4 | `SYNC-011`, `SESSION-002` | PR-SESSION-SYNC |
 | [`MVP-001`](specifications/mvp-001-end-to-end-acceptance.md) | Pass the accepted MVP flow on one supported Mac and iPhone without manual repair. | Completion | P5/W5.1 | `SYNC-012` | PR-MVP-ACCEPTANCE |
-| `RELEASE-001` | Pass or explicitly block every first-release readiness obligation. | Release readiness | Release/R1 | `MVP-001` | PR-RELEASE-READINESS |
+| [`RELEASE-001`](specifications/release-001-first-release-readiness.md) | Pass or explicitly block every first-release readiness obligation. | Release readiness | Release/R1 | `MVP-001` | PR-RELEASE-READINESS |
 
 ## PR #1 shared cycle
 
