@@ -45,7 +45,8 @@ internal class AppleMailboxExchange(
 
     suspend fun consume(
         workspace: EstablishedWorkspace,
-        writer: SyncWriter
+        writer: SyncWriter,
+        acceptedProgress: suspend () -> Unit = {},
     ): SyncStatus {
         var cursor = MailboxCursor.fromBytes(writer.transportProgress?.copyBytes() ?: byteArrayOf()) ?: return SyncStatus.ACTION_REQUIRED
         var restarted = false
@@ -55,6 +56,7 @@ internal class AppleMailboxExchange(
                 is ChangeFetchResult.Page -> {
                     val page = fetched.page
                     outcome = consumePage(page, workspace, cursor, writer)
+                    acceptedProgress()
                     cursor = page.nextCursor
                 }
 

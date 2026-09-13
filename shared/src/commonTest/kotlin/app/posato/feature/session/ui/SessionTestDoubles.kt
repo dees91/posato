@@ -4,6 +4,8 @@ import app.posato.feature.enforcement.EnforcementApplyReport
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.EnforcementRequest
+import app.posato.feature.enforcement.ExpiryDisplacement
+import app.posato.feature.enforcement.ExpiryDisplacementOutcome
 import app.posato.feature.session.data.SessionSyncTriggers
 import app.posato.feature.session.data.SessionWorkspaceCapture
 import app.posato.feature.session.domain.FakeSessionClock
@@ -108,9 +110,13 @@ internal class FakeEnforcementPort(
 
     var displacedSessionId: String? = null
 
-    override suspend fun displacedSuspendedExpiry(currentSessionId: String): String? {
+    override suspend fun displacedSuspendedExpiry(currentSessionId: String): ExpiryDisplacement {
         calls += "displace"
-        return displacedSessionId?.takeIf { displaced -> displaced != currentSessionId }
+        val displaced = displacedSessionId ?: expiredSessionIds.firstOrNull()
+        return ExpiryDisplacement(
+            if (displaced == null) ExpiryDisplacementOutcome.ABSENT else ExpiryDisplacementOutcome.PRESENT,
+            displaced,
+        )
     }
 
     var acknowledgeError: Exception? = null
@@ -119,6 +125,7 @@ internal class FakeEnforcementPort(
         calls += "acknowledge"
         acknowledgeError?.let { throw it }
         acknowledgedSessionIds += sessionId
+        if (displacedSessionId == sessionId) displacedSessionId = null
         val expired = sessionId in expiredSessionIds
         expiredSessionIds -= sessionId
         return expired

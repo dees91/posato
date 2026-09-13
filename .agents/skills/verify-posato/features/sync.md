@@ -10,7 +10,7 @@ process memory. Missing keys cause reads only; verified adoption commits the
 established row and permits ordinary exchange. Restart forgets this waiting
 attempt and offers explicit **Sync with iCloud** again. A linked device offers
 **Sync now** and **Remove workspace**. Exchange
-opportunities also follow launch, foreground, and local exact-domain commits;
+opportunities also follow launch, foreground, and local policy/session commits;
 one active exchange can retain at most one queued opportunity.
 
 ## Sub-features
@@ -22,10 +22,16 @@ one active exchange can retain at most one queued opportunity.
 - `sync-exchange`: publish immutable pending bundles and accept remote bundles
   into the replica in both directions. A completed exchange converges exact
   domains and the application group name into the visible policies while
-  application selections stay local; sessions still do not converge
-  (`SYNC-012`).
+  application selections stay local. Bounded session starts and deliberate ends
+  also converge; each receiver applies its own authorized selections. A Mac
+  that needs administrator confirmation offers Resume restrictions. The timer
+  alone does not prove that restrictions were applied.
 - `sync-retry`: offline or uncertain outcomes preserve pending bytes; retry on
-  **Sync now** or a later foreground. No timer or delivery guarantee exists.
+  **Sync now** or a later foreground. No delivery-time guarantee exists.
+- `sync-session-time`: while the host can run, accepted future starts become
+  eligible without another exchange or a Session-screen subscription. Relaunch
+  restores the accepted projection locally after the existing workspace/key
+  gates. Observed expiry is terminal through restart and clock rollback.
 - `sync-account-gate`: sign-out before an attempt stops both exchange legs;
   returning to the original account allows the same pending work to retry.
 - `sync-remove`: confirmation deletes the workspace and undelivered changes,
@@ -37,6 +43,19 @@ one active exchange can retain at most one queued opportunity.
   different workspace is visible.
 - `sync-adopt-relaunch`: a linked relaunch attempts exchange using the adopted
   key; completion therefore exercises the key read and writer open.
+
+## Session convergence verification
+
+Use the [session recipe](sessions.md) on the already linked pair. Start on
+Mac, let iPhone receive through foreground or Sync now, and capture actual
+restriction evidence on the receiver. End from iPhone and exchange on Mac;
+verify both cleanup outcomes. Repeat with iPhone starting and Mac receiving,
+including the attended Resume confirmation. Repeat after relaunch and with
+one peer offline through start/end, then reconnect: an ended or expired
+session must never be applied. Test ordinary expiry independently on each
+peer; a short foreground test does not replace an iPhone suspended interval
+meeting the scheduler minimum. Keep physical run directories in the execution
+record and distinguish timer, action-required, and actual enforcement proof.
 
 ## Driving it with posato-control
 

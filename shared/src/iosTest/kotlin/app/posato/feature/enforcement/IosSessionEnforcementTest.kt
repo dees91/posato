@@ -228,10 +228,21 @@ class IosSessionEnforcementTest {
 
         override fun displacedClearedSessionId(
             currentSessionId: String,
-            handler: (String?) -> Unit,
+            handler: (ExpiryDisplacement) -> Unit,
         ) {
             calls.addLast("displace")
-            handler(displacedSessionId.takeIf { displaced -> displaced != currentSessionId })
+            handler(
+                ExpiryDisplacement(
+                    if (displacedSessionId == null ||
+                        displacedSessionId == currentSessionId
+                    ) {
+                        ExpiryDisplacementOutcome.ABSENT
+                    } else {
+                        ExpiryDisplacementOutcome.PRESENT
+                    },
+                    displacedSessionId,
+                ),
+            )
         }
     }
 }

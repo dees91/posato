@@ -24,7 +24,9 @@ import app.posato.feature.sync.bootstrap.SessionReconcileResult
 import app.posato.feature.sync.bootstrap.SessionReconciler
 import app.posato.feature.sync.bootstrap.SessionSyncAuthoring
 import app.posato.feature.sync.bootstrap.SyncStatus
+import app.posato.feature.sync.bootstrap.reconcileSessionTime
 import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.sync.domain.SessionReplicaSnapshot
 import app.posato.feature.sync.domain.SyncWriter
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
@@ -36,13 +38,19 @@ import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -63,13 +71,20 @@ internal class SessionTransitionOwner(
     private val authoring = SessionSyncAuthoring(store)
     private val mutableView = MutableStateFlow(EnforcementViewState())
     private val mutableStatus = MutableStateFlow<LocalSessionStatus?>(null)
-    private var drainJob: Job? = null
-    private var pendingWork: PendingWork? = null
+    private val transitions = Channel<Unit>(Channel.CONFLATED)
+    private val drainJob = scope.launch(start = CoroutineStart.LAZY) {
+        for (ignored in transitions) {
+            executeWork()
+        }
+    }
     private var actionTag: SessionTag? = null
+    private var tickingJob: Job? = null
+    private var replicaSnapshot: SessionReplicaSnapshot? = null
     private var tickCounter = 0L
     private var unknownStreak = 0
     private var frozenStartSet: FrozenStartSet? = null
     private var enforcedIdentity: SessionTag? = null
+    private var confirmedClear = false
     private var lastSettledTag: SessionTag? = null
     private var lastSettledActive: Boolean = false
     private var hasSettled = false
@@ -78,13 +93,40 @@ internal class SessionTransitionOwner(
     val view: StateFlow<EnforcementViewState> = mutableView.asStateFlow()
     val status: StateFlow<LocalSessionStatus?> = mutableStatus.asStateFlow()
 
+    override suspend fun onReplicaSnapshot(snapshot: SessionReplicaSnapshot?) {
+        stateMutex.withLock {
+            val previous = replicaSnapshot
+            if (snapshot != null && previous != null) {
+                if (previous.context == snapshot.context && snapshot.revision < previous.revision) return@withLock
+            }
+            replicaSnapshot = snapshot
+        }
+    }
+
+    suspend fun runWhileHosted() {
+        val running = currentCoroutineContext().job
+        check(tickingJob?.isActive != true)
+        tickingJob = running
+        try {
+            triggers.restoreSessions()
+            while (currentCoroutineContext().isActive) {
+                onTick(clock.currentEpochMillis())
+                delay(SESSION_TICK_MILLIS)
+            }
+        } finally {
+            if (tickingJob === running) tickingJob = null
+        }
+    }
+
     override suspend fun onExchange(
         writer: SyncWriter,
         workspace: EstablishedWorkspace,
     ): SyncStatus? {
         val now = clock.currentEpochMillis()
         val result = stateMutex.withLock {
-            reconciler.reconcile(writer, workspace, now, authoring, ::captureFrozen)
+            val reconciled = reconciler.reconcile(writer, workspace, now, authoring, ::captureFrozen)
+            replicaSnapshot = writer.sessionSnapshot
+            reconciled
         }
         return when (result) {
             is SessionReconcileResult.Completed -> {
@@ -106,22 +148,13 @@ internal class SessionTransitionOwner(
 
     fun onForeground() {
         scope.launch {
-            stateMutex.withLock {
-                settleLocked(readLocked())
-            }
+            onTick(clock.currentEpochMillis())
         }
     }
 
     suspend fun onTick(nowEpochMillis: Long) {
-        if (hasSettled && lastSettledTag == null) {
-            return
-        }
-        val status = stateMutex.withLock {
-            readCurrentLocked(nowEpochMillis)
-        } ?: return
+        val status = stateMutex.withLock { readDesiredLocked(nowEpochMillis) } ?: return
         val active = status as? LocalSessionStatus.Active
-        // SessionTag covers only identity and deadline, so an Active to Ended
-        // transition on the same row needs the kind check to settle and clear.
         if (!hasSettled || tagOf(status) != lastSettledTag || (active != null) != lastSettledActive) {
             settle(status)
         }
@@ -147,15 +180,9 @@ internal class SessionTransitionOwner(
     ): LocalSessionResult<LocalSessionStatus> {
         val capture = stateMutex.withLock { triggers.captureWorkspace() }
         val workspaceId = (capture as? SessionWorkspaceCapture.Linked)?.workspaceId?.copyOf()
-        // The command time validates the session: resampling the clock here would
-        // reject a start whose setup (validation, target load) straddled a clock
-        // boundary. The end stays fixed, so elapsed command time only shortens
-        // the effective session instead of extending its deadline.
         val committed = stateMutex.withLock {
             store.start(sessionId, startEpochMillis, endEpochMillis, startEpochMillis, frozen, workspaceId)
         }
-        // A failed commit changes nothing and settles nothing: the caller
-        // reports the failure truthfully instead of a stale fresh read.
         if (committed is LocalSessionResult.Failure) {
             return committed
         }
@@ -163,9 +190,6 @@ internal class SessionTransitionOwner(
         if (active != null && (workspaceId != null || capture is SessionWorkspaceCapture.Unknown)) {
             triggers.requestSync()
         }
-        // Liveness boundary: a session already over at commit time is recorded
-        // terminal without ever applying; its deadline never moves. A failed
-        // terminal write keeps the committed row and converges on the next tick.
         val overByCommit = active != null && clock.currentEpochMillis() >= active.record.endEpochMillis
         if (overByCommit) {
             stateMutex.withLock { store.markExpired(sessionId) }
@@ -189,8 +213,6 @@ internal class SessionTransitionOwner(
             }
             store.endEarly(clock.currentEpochMillis(), workspaceId)
         }
-        // A failed commit changes nothing and settles nothing: the caller
-        // reports the failure truthfully instead of a stale fresh read.
         if (committed is LocalSessionResult.Failure) {
             return committed
         }
@@ -198,8 +220,6 @@ internal class SessionTransitionOwner(
         if (ended != null && (workspaceId != null || capture is SessionWorkspaceCapture.Unknown)) {
             triggers.requestSync()
         }
-        // No synchronous clear here: the settle below owns the transition, so
-        // an end clears exactly once instead of twice (once here, once there).
         return stateMutex.withLock {
             readAndSettleLocked()
         }
@@ -212,20 +232,17 @@ internal class SessionTransitionOwner(
         mutableView.update { view -> view.copy(busy = true) }
         scope.launch {
             try {
-                // Retry re-derives the desired state instead of repeating the last
-                // attempt: the row may have been replaced while the port was busy.
                 val fresh = stateMutex.withLock {
-                    readCurrentLocked(clock.currentEpochMillis())
+                    readDesiredLocked(clock.currentEpochMillis())
                 }
+                if (fresh == null) return@launch
                 val active = fresh as? LocalSessionStatus.Active
                 if (active != null && pendingNativeExpiry == SessionTag(active.record)) {
-                    // A parked native expiry converges through the bank flow,
-                    // never through a re-apply of an expired session.
                     reconcile(SessionTag(active.record), active.record, frozenStartSet)
                 } else if (active != null) {
                     reapplyCurrent(active.record, SessionTag(active.record), frozenStartSet)
                 } else {
-                    clearAfterEnd(fresh?.let(::tagOf))
+                    clearAfterEnd(tagOf(fresh))
                 }
             } catch (expectedCancellation: CancellationException) {
                 throw expectedCancellation
@@ -242,45 +259,16 @@ internal class SessionTransitionOwner(
         record: SessionRecord,
         sessionId: String,
     ) {
-        // Durable handoff: the peek never consumes, so a restart before the
-        // bank observes the expiry again. The terminal fact is committed
-        // before acting on the signal, and the native record is
-        // acknowledged only afterwards: a restart between the two re-banks
-        // idempotently instead of losing the expiry.
         val banked = stateMutex.withLock { store.markExpired(record.sessionId) }
         when (banked) {
             is LocalSessionResult.Success -> {
                 pendingNativeExpiry = null
                 acknowledgeExpired(enforcement, sessionId)
-                // The extension already cleared at expiry, so this clear runs even
-                // when the view never observed an apply: it converges the device to
-                // the expired row instead of leaving restrictions behind.
-                val cleared = try {
-                    portMutex.withLock { enforcement.clear() }
-                } catch (expectedCancellation: CancellationException) {
-                    throw expectedCancellation
-                } catch (_: Exception) {
-                    null
-                }
-                if (cleared == EnforcementOutcome.CLEARED) {
-                    enforcedIdentity = null
-                    actionTag = null
-                    mutableView.update { EnforcementViewState() }
-                } else {
-                    actionTag = tag
-                    mutableView.update { view ->
-                        view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
-                    }
-                }
+                clearAfterEnd(tag)
                 settle(banked.value)
             }
 
             is LocalSessionResult.Failure if banked.reason == LocalSessionFailure.SESSION_NOT_ACTIVE -> {
-                // The row moved on, but the observed fact still needs a
-                // durable home before its native signal may disappear:
-                // record it as a retained marker first and acknowledge only
-                // afterwards. A failed record keeps the signal for the next
-                // pass instead of losing the only copy of the fact.
                 pendingNativeExpiry = null
                 if (store.retainExpiryMarker(tag.sessionId) is LocalSessionResult.Success) {
                     acknowledgeExpired(enforcement, sessionId)
@@ -289,9 +277,6 @@ internal class SessionTransitionOwner(
             }
 
             is LocalSessionResult.Failure -> {
-                // A failed durable write is never reported as success and
-                // never clears restrictions first: park the observation for the
-                // next settle instead of settling Active as success.
                 pendingNativeExpiry = tag
                 actionTag = tag
                 mutableView.update { view ->
@@ -315,14 +300,8 @@ internal class SessionTransitionOwner(
     }
 
     suspend fun close() {
+        tickingJob?.cancel()
         scope.cancel()
-    }
-
-    private suspend fun readLocked(): LocalSessionStatus {
-        return when (val read = store.read(clock.currentEpochMillis())) {
-            is LocalSessionResult.Failure -> mutableStatus.value ?: LocalSessionStatus.Inactive
-            is LocalSessionResult.Success -> read.value
-        }
     }
 
     private suspend fun readAndSettleLocked(): LocalSessionResult<LocalSessionStatus> {
@@ -335,6 +314,31 @@ internal class SessionTransitionOwner(
                 settleLocked(fresh.value)
                 fresh
             }
+        }
+    }
+
+    private suspend fun readDesiredLocked(nowEpochMillis: Long): LocalSessionStatus? {
+        val snapshot = replicaSnapshot
+        val capture = if (snapshot != null) triggers.captureWorkspace() else null
+        val matchesWorkspace = capture is SessionWorkspaceCapture.Linked &&
+            capture.workspaceId.contentEquals(snapshot?.context?.workspaceId?.value?.copyBytes())
+        return if (snapshot != null && matchesWorkspace) {
+            when (val result = reconcileSessionTime(store, snapshot, nowEpochMillis, ::captureFrozen)) {
+                is SessionReconcileResult.Completed -> {
+                    result.status
+                }
+
+                is SessionReconcileResult.Halted -> {
+                    val current = readCurrentLocked(nowEpochMillis)
+                    if (current is LocalSessionStatus.Active) {
+                        actionTag = SessionTag(current.record)
+                        mutableView.update { it.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+                    }
+                    current?.takeIf { it is LocalSessionStatus.Ended }
+                }
+            }
+        } else {
+            readCurrentLocked(nowEpochMillis)
         }
     }
 
@@ -356,52 +360,30 @@ internal class SessionTransitionOwner(
         } else {
             frozenStartSet = null
         }
-        // Explicit termination condition: work is queued only while the
-        // desired state is not yet converged (see isTransitionConverged). A
-        // pass that finds its outcome already confirmed or rendered is a
-        // no-op instead of a new job, so the drain below always quiesces
-        // instead of self-driving — including persistent port failures.
-        if (isTransitionConverged(status, enforcedIdentity, mutableView.value.state, actionTag)) {
+        if (isTransitionConverged(status, enforcedIdentity, mutableView.value.state, actionTag, confirmedClear)) {
             return
         }
-        val tag = tagOf(status)
-        if (active != null && tag != null) {
-            pendingWork = if (enforcedIdentity == null) {
-                PendingWork.Reconcile(tag, active.record, active.frozenStartSet)
-            } else {
-                PendingWork.Replace(tag, active.record, active.frozenStartSet)
+        drainJob.start()
+        transitions.trySend(Unit)
+    }
+
+    private suspend fun executeWork() {
+        val current = stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) } ?: return
+        if (isTransitionConverged(current, enforcedIdentity, mutableView.value.state, actionTag, confirmedClear)) {
+            return
+        }
+        when (current) {
+            is LocalSessionStatus.Active -> {
+                runReconcile(SessionTag(current.record), current.record, current.frozenStartSet)
             }
-        } else {
-            val ended = status as? LocalSessionStatus.Ended
-            if (ended == null || tag == null) {
+
+            is LocalSessionStatus.Ended -> {
+                runClear(SessionTag(current.record))
+            }
+
+            LocalSessionStatus.Inactive -> {
                 return
             }
-            pendingWork = PendingWork.Clear(tag)
-        }
-        ensureDrain()
-    }
-
-    private fun ensureDrain() {
-        if (drainJob?.isActive == true) {
-            return
-        }
-        drainJob = scope.launch {
-            while (true) {
-                val work = stateMutex.withLock {
-                    val queued = pendingWork
-                    pendingWork = null
-                    queued
-                } ?: break
-                executeWork(work)
-            }
-        }
-    }
-
-    private suspend fun executeWork(work: PendingWork) {
-        when (work) {
-            is PendingWork.Reconcile -> runReconcile(work.tag, work.record, work.frozen)
-            is PendingWork.Replace -> runReplace(work.tag, work.record, work.frozen)
-            is PendingWork.Clear -> runClear(work.expected)
         }
     }
 
@@ -429,40 +411,6 @@ internal class SessionTransitionOwner(
         }
     }
 
-    private suspend fun runReplace(
-        tag: SessionTag,
-        record: SessionRecord,
-        frozen: FrozenStartSet?,
-    ) {
-        try {
-            portMutex.withLock {
-                enforcement.clear()
-            }
-            // A tag alone cannot tell a replaced session apart: the desired
-            // state is the identity plus its deadline, and only an active
-            // row with both still matching is re-applied here.
-            val current = stateMutex.withLock {
-                readCurrentLocked(clock.currentEpochMillis())
-            } as? LocalSessionStatus.Active
-            if (current != null &&
-                current.record.sessionId == record.sessionId &&
-                current.record.endEpochMillis == record.endEpochMillis
-            ) {
-                reapplyCurrent(record, tag, frozen)
-            }
-            // Drain whatever is current after the in-flight transition:
-            // a row that moved on reconciles instead of being lost.
-            convergeAfterPort(stateMutex, store, clock, tag, ::settle, ::reconcile)
-        } catch (expectedCancellation: CancellationException) {
-            throw expectedCancellation
-        } catch (_: Exception) {
-            actionTag = tag
-            mutableView.update { view ->
-                view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
-            }
-        }
-    }
-
     private suspend fun runClear(tag: SessionTag) {
         try {
             clearAfterEnd(tag)
@@ -481,44 +429,23 @@ internal class SessionTransitionOwner(
         val entering = mutableView.value.state
         mutableView.update { view -> view.copy(busy = true) }
         try {
-            if (entering is EnforcementState.ActionRequired && entering.kind == EnforcementActionKind.CLEAR_FAILED) {
-                portMutex.withLock {
-                    enforcement.clear()
-                }
-            }
             val targets = loadTargets()
             val frozen = targets.toFrozenStartSet()
             frozenStartSet = frozen
-            // Pre-apply liveness boundary: loading targets suspends, so the
-            // session may have ended while waiting. A spent session is
-            // recorded terminal without ever applying; its deadline never
-            // moves.
             if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
                 return
             }
             val requested = targets.toEnforcedSet()
-            // A schedule for this session must never silently drop a pending
-            // foreign native signal: displace and persist it first.
-            persistDisplacedExpiry(enforcement, store, record.sessionId.reconciliationId())
-            // Decisive check under operation serialization: the waits above
-            // may have outlasted the end, so the row is rechecked immediately
-            // before the apply instead of trusting the earlier read.
-            val report = portMutex.withLock {
-                if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
+            portMutex.withLock {
+                val needsClear = entering is EnforcementState.ActionRequired && entering.kind == EnforcementActionKind.CLEAR_FAILED
+                if (!prepareApply(record, tag, needsClear)) {
                     null
                 } else {
-                    enforcement.apply(record.toEnforcementRequest(requested, targets))
+                    confirmedClear = false
+                    enforcement.apply(record.toEnforcementRequest(requested, targets)).also { recordApply(tag, it, requested) }
                 }
             } ?: return
-            mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = requested) }
-            if (report.outcome == EnforcementOutcome.APPLIED) {
-                unknownStreak = 0
-                enforcedIdentity = tag
-                actionTag = null
-            } else {
-                actionTag = tag
-            }
-            convergeAfterPort(stateMutex, store, clock, tag, ::settle, ::reconcile)
+            settleForTag()
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
         } catch (_: Exception) {
@@ -538,47 +465,21 @@ internal class SessionTransitionOwner(
     }
 
     private suspend fun clearAfterEnd(expected: SessionTag?) {
-        val entering = mutableView.value.state
-        if (entering !is EnforcementState.Active && entering !is EnforcementState.ActionRequired) {
-            return
-        }
-        frozenStartSet = null
-        mutableView.update { view -> view.copy(busy = true) }
+        mutableView.update { it.copy(busy = true) }
         try {
-            when (portMutex.withLock { enforcement.clear() }) {
-                EnforcementOutcome.CLEARED -> {
-                    enforcedIdentity = null
-                    actionTag = null
-                    mutableView.update { EnforcementViewState() }
+            portMutex.withLock {
+                val current = stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) }
+                if (current == null || current is LocalSessionStatus.Active || tagOf(current) != expected) return@withLock
+                if (confirmedClear && enforcedIdentity == null) return@withLock
+                if (mutableView.value.state is EnforcementState.Inactive && enforcement.status() == EnforcementOutcome.CLEARED) {
+                    confirmedClear = true
+                    return@withLock
                 }
-
-                EnforcementOutcome.UNAVAILABLE,
-                EnforcementOutcome.AUTHORIZATION_REQUIRED -> {
-                    if (entering.isApplyFailure()) {
-                        enforcedIdentity = null
-                        actionTag = null
-                        mutableView.update { EnforcementViewState() }
-                    } else {
-                        actionTag = expected
-                        mutableView.update { view ->
-                            view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt))
-                        }
-                    }
-                }
-
-                else -> {
-                    actionTag = expected
-                    mutableView.update { view -> view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
-                }
+                clearForReplacement(expected)
             }
-            convergeAfterPort(stateMutex, store, clock, expected, ::settle, ::reconcile)
-        } catch (expectedCancellation: CancellationException) {
-            throw expectedCancellation
-        } catch (_: Exception) {
-            actionTag = expected
-            mutableView.update { view -> view.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+            settleForTag()
         } finally {
-            mutableView.update { view -> view.copy(busy = false) }
+            mutableView.update { it.copy(busy = false) }
         }
     }
 
@@ -589,8 +490,6 @@ internal class SessionTransitionOwner(
     ) {
         val sessionId = record.sessionId.reconciliationId()
         if (pendingNativeExpiry != null && pendingNativeExpiry != tag) {
-            // The row moved on; the stale pending observation is moot. A future
-            // schedule clears the leftover native record.
             pendingNativeExpiry = null
         }
         val observed = try {
@@ -602,25 +501,23 @@ internal class SessionTransitionOwner(
         } || pendingNativeExpiry == tag
         if (observed) {
             bankObservedExpiry(tag, record, sessionId)
-        } else if (enforcement.status() == EnforcementOutcome.APPLIED) {
-            enforcedIdentity = tag
+            return
+        }
+        val outcome = portMutex.withLock { enforcement.status() }
+        val current = stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) }
+        if (current !is LocalSessionStatus.Active || SessionTag(current.record) != tag) {
+            settleForTag()
+            return
+        }
+        if (outcome == EnforcementOutcome.APPLIED && enforcedIdentity == tag) {
             actionTag = null
-            mutableView.update { view ->
-                if (view.state is EnforcementState.Inactive) {
-                    view.copy(state = EnforcementState.Active(false), enforced = frozen?.toEnforcedSet() ?: loadTargets().toEnforcedSet())
-                } else {
-                    view
-                }
-            }
+            mutableView.update { view -> view.copy(state = EnforcementState.Active(false)) }
         } else if (enforcement.reapplyRequiresPrompt) {
             actionTag = tag
             mutableView.update { view ->
                 view.copy(
-                    state = EnforcementState.ActionRequired(
-                        EnforcementActionKind.RESUME_REQUIRED,
-                        repeatsSystemPrompt = true,
-                    ),
-                    enforced = frozen?.toEnforcedSet() ?: loadTargets().toEnforcedSet(),
+                    state = EnforcementActionKind.RESUME_REQUIRED.toAction(true),
+                    enforced = frozen?.toEnforcedSet() ?: view.enforced,
                 )
             }
         } else {
@@ -633,39 +530,82 @@ internal class SessionTransitionOwner(
         tag: SessionTag,
         frozen: FrozenStartSet?,
     ) {
-        // Same liveness boundary as the command path: a retry or poll may
-        // have waited past the end, so a spent session never re-applies.
         if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
             return
         }
         val targets = loadTargets()
         val requested = targets.toEnforcedSet()
-        // A schedule for this session must never silently drop a pending
-        // foreign native signal: displace and persist it first.
-        persistDisplacedExpiry(enforcement, store, record.sessionId.reconciliationId())
         portMutex.withLock {
-            enforcement.clear()
-        }
-        // Decisive check under operation serialization: the waits above may
-        // have outlasted the end, so the row is rechecked immediately before
-        // the apply instead of trusting the earlier read.
-        val report = portMutex.withLock {
-            if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
+            if (!prepareApply(record, tag, clear = true)) {
                 null
             } else {
-                enforcement.apply(record.toEnforcementRequest(requested, targets))
+                confirmedClear = false
+                enforcement.apply(record.toEnforcementRequest(requested, targets)).also {
+                    recordApply(tag, it, frozen?.toEnforcedSet() ?: requested)
+                }
             }
         } ?: return
-        val displayed = frozen?.toEnforcedSet() ?: targets.toEnforcedSet()
-        mutableView.update { view -> view.copy(state = report.toActiveState(), enforced = displayed) }
-        if (report.outcome == EnforcementOutcome.APPLIED) {
+        settleForTag()
+    }
+
+    private fun recordApply(
+        tag: SessionTag,
+        report: EnforcementApplyReport,
+        displayed: EnforcedSet
+    ) {
+        mutableView.update { it.copy(state = report.toActiveState(), enforced = displayed) }
+        if (report.outcome == EnforcementOutcome.APPLIED || report.outcome == EnforcementOutcome.NOTHING_TO_ENFORCE) {
             unknownStreak = 0
             enforcedIdentity = tag
             actionTag = null
         } else {
+            enforcedIdentity = null
             actionTag = tag
         }
-        convergeAfterPort(stateMutex, store, clock, tag, ::settle, ::reconcile)
+    }
+
+    private suspend fun clearForReplacement(tag: SessionTag?): Boolean {
+        if (enforcement.clear() == EnforcementOutcome.CLEARED) {
+            confirmedClear = true
+            enforcedIdentity = null
+            actionTag = null
+            mutableView.update { it.copy(state = EnforcementState.Inactive) }
+            return true
+        }
+        actionTag = tag
+        mutableView.update { it.copy(state = EnforcementActionKind.CLEAR_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+        return false
+    }
+
+    private suspend fun persistDisplacement(tag: SessionTag): Boolean {
+        if (persistDisplacedExpiry(enforcement, store, tag.sessionId.reconciliationId())) {
+            return true
+        }
+        actionTag = tag
+        mutableView.update { it.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
+        return false
+    }
+
+    private suspend fun prepareApply(
+        record: SessionRecord,
+        tag: SessionTag,
+        clear: Boolean,
+    ): Boolean {
+        if (!ensureDesiredApplicable(record, tag) || !persistDisplacement(tag)) return false
+        if (clear && !clearForReplacement(tag)) return false
+        return ensureDesiredApplicable(record, tag)
+    }
+
+    private suspend fun ensureDesiredApplicable(
+        record: SessionRecord,
+        tag: SessionTag
+    ): Boolean {
+        val current = stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) }
+        if (current !is LocalSessionStatus.Active || SessionTag(current.record) != tag) {
+            if (current != null) settle(current)
+            return false
+        }
+        return ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)
     }
 
     private suspend fun onTickSecond(
@@ -687,7 +627,6 @@ internal class SessionTransitionOwner(
         if (mutableView.value.busy || mutableView.value.state !is EnforcementState.Active) {
             return
         }
-        // The status read above suspends: a replacement may have landed meanwhile.
         val current = stateMutex.withLock { tagOf(store.read(clock.currentEpochMillis())) }
         if (current != tag) {
             settleForTag()
@@ -715,7 +654,7 @@ internal class SessionTransitionOwner(
 
     private suspend fun settleForTag() {
         val fresh = stateMutex.withLock {
-            readCurrentLocked(clock.currentEpochMillis())
+            readDesiredLocked(clock.currentEpochMillis())
         } ?: return
         settle(fresh)
     }
@@ -736,24 +675,6 @@ internal class SessionTransitionOwner(
             mutableView.update { view -> view.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
         }
     }
-}
-
-internal sealed interface PendingWork {
-    data class Reconcile(
-        val tag: SessionTag,
-        val record: SessionRecord,
-        val frozen: FrozenStartSet?,
-    ) : PendingWork
-
-    data class Replace(
-        val tag: SessionTag,
-        val record: SessionRecord,
-        val frozen: FrozenStartSet?,
-    ) : PendingWork
-
-    data class Clear(
-        val expected: SessionTag,
-    ) : PendingWork
 }
 
 internal fun tagOf(result: LocalSessionResult<LocalSessionStatus>): SessionTag? {
@@ -856,3 +777,5 @@ internal fun EnforcementState.isApplyFailure(): Boolean {
 
 private const val STATUS_POLL_TICKS: Long = 15L
 private const val CONSECUTIVE_UNKNOWN_LIMIT: Int = 3
+
+private const val SESSION_TICK_MILLIS: Long = 1_000L

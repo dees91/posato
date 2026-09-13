@@ -435,6 +435,7 @@ class SessionViewModelTest {
     ): SessionViewModel {
         val policyStore = policyStoreOf(domains, groupName)
         val owner = sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher)
+        backgroundScope.launch { owner.runWhileHosted() }
         val viewModel = SessionViewModel(
             policyStore,
             mappings,

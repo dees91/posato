@@ -121,7 +121,7 @@ class SessionTransitionOwnerTest {
         owner.settle(assertRead(store, NOW))
         scheduler.runCurrent()
 
-        assertEquals(listOf("peek", "acknowledge", "clear"), enforcement.calls)
+        assertEquals(listOf("peek", "acknowledge", "status"), enforcement.calls)
         assertEquals(listOf(current.reconciliationId()), enforcement.acknowledgedSessionIds)
         val ended = assertIs<LocalSessionStatus.Ended>(assertRead(store, NOW))
         assertEquals(SessionEndKind.EXPIRED, ended.kind)
@@ -194,7 +194,7 @@ class SessionTransitionOwnerTest {
         second.settle(assertRead(store, NOW))
         scheduler.runCurrent()
 
-        assertEquals(listOf("peek", "peek", "acknowledge", "clear"), enforcement.calls)
+        assertEquals(listOf("peek", "peek", "acknowledge", "status"), enforcement.calls)
         assertIs<LocalSessionStatus.Ended>(assertRead(store, NOW))
     }
 
@@ -214,7 +214,7 @@ class SessionTransitionOwnerTest {
         owner.settle(assertRead(store, NOW))
         scheduler.runCurrent()
 
-        assertEquals(listOf("peek", "acknowledge", "clear"), enforcement.calls)
+        assertEquals(listOf("peek", "acknowledge", "status"), enforcement.calls)
         assertIs<LocalSessionStatus.Ended>(assertRead(store, NOW))
 
         // A restart finds the terminal row: nothing re-applies, and the
@@ -375,10 +375,8 @@ class SessionTransitionOwnerTest {
         owner.startSession(second, NOW, NOW + DURATION, START_SET)
         scheduler.runCurrent()
 
-        // The stale clear removes the replacement, then the converge drain
-        // reconciles it back (peek, status, clear, apply).
         assertEquals(
-            listOf("displace", "apply", "displace", "apply", "clear", "peek", "status", "displace", "clear", "apply"),
+            listOf("displace", "apply", "displace", "apply"),
             enforcement.calls,
         )
         assertEquals(second.reconciliationId(), enforcement.lastRequest?.sessionId)
@@ -488,11 +486,10 @@ class SessionTransitionOwnerTest {
         enforcement.expiredSessionIds += superseded.reconciliationId()
         scheduler.runCurrent()
 
-        // The fact still lands in the marker table before its native signal
-        // is acknowledged, and the current session is never applied over.
         assertTrue(superseded in store.retainedMarkers)
         assertTrue(superseded.reconciliationId() in enforcement.acknowledgedSessionIds)
-        assertTrue("apply" !in enforcement.calls)
+        assertEquals(current.reconciliationId(), enforcement.lastRequest?.sessionId)
+        assertTrue(enforcement.calls.indexOf("acknowledge") < enforcement.calls.indexOf("apply"))
         val live = assertIs<LocalSessionStatus.Active>(assertRead(store, NOW))
         assertEquals(current, live.record.sessionId)
     }
@@ -577,6 +574,79 @@ class SessionTransitionOwnerTest {
         assertIs<LocalSessionResult.Success<LocalSessionStatus>>(result)
         assertEquals(listOf(StoredSessionIntent.EndSession(adopted)), store.intentKinds())
         assertTrue("clear" in enforcement.calls)
+    }
+
+    @Test
+    fun `given a failed displacement bank then replacement apply is withheld`() = runTest(dispatcher) {
+        val base = FakeLocalSessionStore()
+        val store = object : app.posato.feature.session.data.LocalSessionSyncStore by base {
+            override suspend fun retainExpiryMarker(sessionId: SessionId): LocalSessionResult<Unit> =
+                LocalSessionResult.Failure(LocalSessionFailure.STORAGE_FAILURE)
+        }
+        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
+        val clock = FakeSessionClock(NOW)
+        val old = SessionId(testIdentifier(94))
+        enforcement.displacedSessionId = old.reconciliationId()
+        val owner = SessionTransitionOwner(
+            dispatcher,
+            store,
+            clock,
+            enforcement,
+            { loadSessionTargets(policyStoreOf(listOf("stable.example")), FakeSessionMappings()) },
+            FakeSessionSyncTriggers(),
+        )
+        try {
+            owner.startSession(SessionId(testIdentifier(95)), NOW, NOW + DURATION, START_SET)
+            scheduler.runCurrent()
+            assertTrue("apply" !in enforcement.calls, "Scheduled a replacement without retaining the displaced expiry: ${enforcement.calls}")
+            assertTrue(enforcement.acknowledgedSessionIds.isEmpty())
+        } finally {
+            owner.close()
+        }
+    }
+
+    @Test
+    fun `given replacement during a status read then the new identity is applied`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val clock = FakeSessionClock(NOW)
+        val delegate = FakeEnforcementPort(statusOutcome = EnforcementOutcome.APPLIED)
+        val gate = CompletableDeferred<Unit>()
+        var blockStatus = true
+        val port = object : app.posato.feature.enforcement.EnforcementPort by delegate {
+            override suspend fun status(): EnforcementOutcome {
+                if (blockStatus) gate.await()
+                return delegate.status()
+            }
+        }
+        val owner = SessionTransitionOwner(
+            dispatcher,
+            store,
+            clock,
+            port,
+            { loadSessionTargets(policyStoreOf(listOf("stable.example")), FakeSessionMappings()) },
+            FakeSessionSyncTriggers(),
+        )
+        val a = SessionId(testIdentifier(96))
+        val b = SessionId(testIdentifier(97))
+        try {
+            // On reopen the native port is still enforcing A; its generic status cannot identify B.
+            store.adopt(a, NOW, NOW + DURATION, NOW, START_SET)
+            owner.settle(assertRead(store, NOW))
+            scheduler.runCurrent()
+            store.adopt(b, NOW, NOW + DURATION, NOW, START_SET)
+            owner.settle(assertRead(store, NOW))
+            scheduler.runCurrent()
+            blockStatus = false
+            gate.complete(Unit)
+            scheduler.runCurrent()
+            assertEquals(
+                b.reconciliationId(),
+                delegate.lastRequest?.sessionId,
+                "B was declared enforced from A's generic APPLIED status without an apply: ${delegate.calls}",
+            )
+        } finally {
+            owner.close()
+        }
     }
 
     private fun ownerOf(

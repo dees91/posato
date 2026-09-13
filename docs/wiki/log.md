@@ -1552,3 +1552,12 @@ purge-window and late-publish residuals, the recipe carries the AC-04 matrix.
 Physical gate passed 2026-09-12 in both shapes and directions (S1/S2/R1/R2
 with 11–14 minute settles; peer removals never deleted live records), so the
 settle rule is retired. Brief: `docs/tasks/specifications/sync-015-record-removal.md`.
+
+## [2026-09-13] correction | Session convergence and retained expiry handoff
+
+Connected bounded session intent to local enforcement and host-owned time
+reevaluation. PR #51 corrections retain terminal facts across replacement and
+native late writes, and reconcile effects by current identity after waits.
+The [session integration synthesis](topics/cross-device-synchronization.md#session-integration-and-recoverable-terminal-facts-sync-012)
+and [execution record](../tasks/executions/sync-012-session-convergence.md)
+separate deterministic evidence from the outstanding physical enforcement gate.

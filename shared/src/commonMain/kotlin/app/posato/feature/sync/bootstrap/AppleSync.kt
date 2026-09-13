@@ -87,6 +87,16 @@ internal class AppleSync(
             }
         }
 
+        override fun restoreSessions() {
+            scope.launch {
+                guarded {
+                    if (sessionTriggers.captureWorkspace() !is SessionWorkspaceCapture.Linked) return@guarded
+                    val writer = writers.open()
+                    sessionObserver?.onReplicaSnapshot(writer?.sessionSnapshot)
+                }
+            }
+        }
+
         override fun requestSync() {
             syncNow()
         }
@@ -98,7 +108,10 @@ internal class AppleSync(
             guarded {
                 mutableState.refreshLinked(coordinator)
                 val writer = writers.open()
-                if (writer != null) runExchange()
+                if (writer != null) {
+                    sessionObserver?.onReplicaSnapshot(writer.sessionSnapshot)
+                    runExchange()
+                }
             }
         }
     }
@@ -191,7 +204,10 @@ internal class AppleSync(
         scope.async {
             guarded {
                 publish(SyncStatus.SYNCING)
-                val result = removal.remove(coordinator.checkEstablished(), writers::close, onWorkspaceRemoved)
+                val result = removal.remove(coordinator.checkEstablished(), writers::close) {
+                    sessionObserver?.onReplicaSnapshot(null)
+                    onWorkspaceRemoved()
+                }
                 mutableState.refreshLinked(coordinator)
                 mutableState.update { it.copy(reason = null) }
                 publish(result)
@@ -226,7 +242,10 @@ internal class AppleSync(
         // session end, which is committed and cleared inside the session phase.
         val workspace = checkNotNull(check.workspace)
         val read = readBaseOrHalt(policySync, ::publish)
-        if (read is BaseRead.Ready && exchangeLegsOrHalt(read.base, authoring, exchange, workspace, active, ::publish)) {
+        if (read is BaseRead.Ready && exchangeLegsOrHalt(read.base, authoring, exchange, workspace, active, ::publish) {
+                sessionObserver?.onReplicaSnapshot(active.sessionSnapshot)
+            }
+        ) {
             val sessionHalt = sessionObserver?.onExchange(active, workspace)
             if (sessionHalt != null) {
                 publish(sessionHalt)
@@ -308,6 +327,7 @@ private suspend fun exchangeLegsOrHalt(
     workspace: EstablishedWorkspace,
     writer: SyncWriter,
     publish: (SyncStatus) -> Unit,
+    acceptedProgress: suspend () -> Unit,
 ): Boolean {
     if (base != null && !authoring.drain(writer)) {
         return false
@@ -317,7 +337,7 @@ private suspend fun exchangeLegsOrHalt(
         publish(published)
         return false
     }
-    val consumed = exchange.consume(workspace, writer)
+    val consumed = exchange.consume(workspace, writer, acceptedProgress)
     if (consumed != SyncStatus.COMPLETED) {
         publish(consumed)
     }

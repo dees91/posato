@@ -99,7 +99,7 @@ class SessionEnforcementTest {
     }
 
     @Test
-    fun `given a failed apply when ending early then the end is clean`() = runTest(dispatcher) {
+    fun `given a failed apply and unavailable cleanup when ending then cleanup remains required`() = runTest(dispatcher) {
         val enforcement = FakeEnforcementPort(
             applyReport = EnforcementApplyReport(EnforcementOutcome.FAILED, false, false),
             clearOutcome = EnforcementOutcome.UNAVAILABLE,
@@ -112,7 +112,7 @@ class SessionEnforcementTest {
         val state = viewModel.uiState.value
 
         assertIs<LocalSessionStatus.Ended>(state.status)
-        assertEquals(EnforcementState.Inactive, state.enforcement)
+        assertEquals(EnforcementActionKind.CLEAR_FAILED, assertIs<EnforcementState.ActionRequired>(state.enforcement).kind)
     }
 
     @Test
@@ -264,8 +264,13 @@ class SessionEnforcementTest {
         val state = viewModel.uiState.value
 
         assertIs<LocalSessionStatus.Active>(state.status)
-        assertEquals(EnforcementState.Active(false), state.enforcement)
-        assertEquals(listOf("displace", "apply", "clear", "clear", "displace", "apply"), enforcement.calls)
+        assertEquals(EnforcementActionKind.CLEAR_FAILED, assertIs<EnforcementState.ActionRequired>(state.enforcement).kind)
+        assertEquals(listOf("displace", "apply", "clear", "displace", "clear"), enforcement.calls)
+        enforcement.clearOutcome = EnforcementOutcome.CLEARED
+        viewModel.retryEnforcement()
+        scheduler.runCurrent()
+        assertEquals(EnforcementState.Active(false), viewModel.uiState.value.enforcement)
+        assertEquals(2, enforcement.calls.count { it == "apply" })
     }
 
     @Test
@@ -357,6 +362,7 @@ class SessionEnforcementTest {
         val policyStore = policyStoreOf(domains)
         val mappings = FakeSessionMappings()
         val owner = sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher)
+        backgroundScope.launch { owner.runWhileHosted() }
         val viewModel = SessionViewModel(
             policyStore,
             mappings,

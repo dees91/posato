@@ -2,6 +2,7 @@ package app.posato.feature.session.data
 
 import app.posato.feature.sync.bootstrap.EstablishedWorkspace
 import app.posato.feature.sync.bootstrap.SyncStatus
+import app.posato.feature.sync.domain.SessionReplicaSnapshot
 import app.posato.feature.sync.domain.SyncWriter
 
 internal sealed interface SessionWorkspaceCapture {
@@ -29,10 +30,14 @@ internal sealed interface SessionWorkspaceCapture {
 internal interface SessionSyncTriggers {
     suspend fun captureWorkspace(): SessionWorkspaceCapture
 
+    fun restoreSessions() {}
+
     fun requestSync()
 }
 
 internal interface SessionExchangeObserver {
+    suspend fun onReplicaSnapshot(snapshot: SessionReplicaSnapshot?) {}
+
     suspend fun onExchange(
         writer: SyncWriter,
         workspace: EstablishedWorkspace,

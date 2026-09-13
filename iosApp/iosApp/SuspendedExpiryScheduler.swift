@@ -116,7 +116,7 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
         // observes the expiry instead of losing it.
         guard SuspendedExpiryRecordStore.isValidSessionId(sessionId),
               let store = records(),
-              let cleared = store.readCleared(),
+              let cleared = store.readCleared(sessionId: sessionId),
               cleared.sessionId == sessionId
         else {
             handler(.unknown)
@@ -125,38 +125,36 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
         handler(.expired)
     }
 
-    func displacedClearedSessionId(currentSessionId: String, handler: @escaping (String?) -> Void) {
-        // Mandatory displacement read for the replacement path: surfaces a
-        // pending foreign signal without consuming it, so Kotlin can persist
-        // the superseded fact before any schedule or acknowledgement makes
-        // the single cleared slot disappear. Same-identity and invalid ids
-        // report absent; only the acknowledgement consumes.
-        guard SuspendedExpiryRecordStore.isValidSessionId(currentSessionId),
-              let store = records(),
-              let cleared = store.readCleared(),
-              cleared.sessionId != currentSessionId,
-              SuspendedExpiryRecordStore.isValidSessionId(cleared.sessionId)
-        else {
-            handler(nil)
+    func displacedClearedSessionId(currentSessionId: String, handler: @escaping (ExpiryDisplacement) -> Void) {
+        guard SuspendedExpiryRecordStore.isValidSessionId(currentSessionId), let store = records() else {
+            handler(ExpiryDisplacement(outcome: .failed, sessionId: nil))
             return
         }
-        handler(cleared.sessionId)
+        switch store.readClearedResult(preferredSessionId: currentSessionId) {
+        case .absent:
+            handler(ExpiryDisplacement(outcome: .absent, sessionId: nil))
+        case .failed:
+            handler(ExpiryDisplacement(outcome: .failed, sessionId: nil))
+        case let .present(cleared):
+            handler(ExpiryDisplacement(
+                outcome: .present,
+                sessionId: cleared.sessionId
+            ))
+        }
     }
 
     func acknowledgeReconciliation(sessionId: String, handler: @escaping (KotlinBoolean) -> Void) {
         // Consumes the cleared record, but only when it still belongs to this
-        // exact session: another session's record is never removed here. A new
-        // schedule also clears stale records, so a false result only means
-        // there was nothing left to consume.
+        // exact session: another session's record is never removed here.
         guard SuspendedExpiryRecordStore.isValidSessionId(sessionId),
               let store = records(),
-              let cleared = store.readCleared(),
+              let cleared = store.readCleared(sessionId: sessionId),
               cleared.sessionId == sessionId
         else {
             handler(KotlinBoolean(bool: false))
             return
         }
-        store.removeCleared()
-        handler(KotlinBoolean(bool: true))
+        store.removeCleared(sessionId: sessionId)
+        handler(KotlinBoolean(bool: store.readCleared(sessionId: sessionId) == nil))
     }
 }

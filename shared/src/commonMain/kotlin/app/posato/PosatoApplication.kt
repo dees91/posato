@@ -82,6 +82,7 @@ class PosatoApplication internal constructor(
             helperSetup,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
+        LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
         val placement = platformNavigationPlacement()
         val deviceNoun = if (placement == PosatoNavigationPlacement.Sidebar) "Mac" else "iPhone"
         PosatoTheme(highContrast = highContrast) {

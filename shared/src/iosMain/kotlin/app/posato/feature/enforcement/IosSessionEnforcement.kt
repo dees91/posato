@@ -58,7 +58,7 @@ public class IosSessionEnforcement(
         return expiry.acknowledgeReconciliation(sessionId)
     }
 
-    override suspend fun displacedSuspendedExpiry(currentSessionId: String): String? {
+    override suspend fun displacedSuspendedExpiry(currentSessionId: String): ExpiryDisplacement {
         return expiry.displacedClearedSessionId(currentSessionId)
     }
 

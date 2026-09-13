@@ -1,33 +1,15 @@
 package app.posato.feature.sync.bootstrap
 
-import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.reconciliationId
 import app.posato.feature.session.data.LocalSessionResult
-import app.posato.feature.session.data.SqlLocalSessionStore
-import app.posato.feature.session.domain.FakeSessionClock
-import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
-import app.posato.feature.session.domain.SequencedSessionIntent
 import app.posato.feature.session.domain.SessionEndKind
-import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.session.domain.SessionOrigin
-import app.posato.feature.session.ui.FakeEnforcementPort
-import app.posato.feature.session.ui.SessionTargetsState
-import app.posato.feature.session.ui.SessionTransitionOwner
-import app.posato.feature.sync.FakeSyncCryptoProvider
 import app.posato.feature.sync.domain.SessionId
-import app.posato.feature.sync.domain.SyncOperationPayload
-import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.mailbox.BundleSaveResult
 import app.posato.feature.sync.testIdentifier
-import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
-import app.posato.feature.targets.domain.TargetPolicy
-import app.posato.feature.targets.domain.TargetPolicyValidationResult
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -41,8 +23,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given a local start when exchanged then the peer adopts the same session`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-adopt-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-adopt-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-adopt-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-adopt-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -55,7 +37,7 @@ class AppleSyncSessionConvergenceTest {
             val adopted = assertIs<LocalSessionStatus.Active>(second.read())
             assertEquals(sessionId, adopted.record.sessionId)
             assertEquals(SessionOrigin.ADOPTED, adopted.origin)
-            assertEquals(FROZEN_SECOND, adopted.frozenStartSet)
+            assertEquals(SESSION_FROZEN_SECOND, adopted.frozenStartSet)
             assertTrue(second.enforcement.calls.contains("apply"))
             assertEquals(sessionId.reconciliationId(), second.enforcement.lastRequest?.sessionId)
             assertEquals(SyncStatus.COMPLETED, first.status())
@@ -70,8 +52,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given an early end when exchanged then both converge to ended`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-end-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-end-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-end-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-end-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -101,8 +83,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given concurrent starts when exchanged then both converge to the greatest order start`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-race-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-race-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-race-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-race-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -130,8 +112,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given a start and end before the peer syncs then the peer never activates`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-endfirst-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-endfirst-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-endfirst-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-endfirst-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -156,15 +138,15 @@ class AppleSyncSessionConvergenceTest {
     fun `given a future start when exchanged then the peer waits until it is eligible`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-future-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-future-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-future-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-future-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
             advanceUntilIdle()
 
             // The second device evaluates behind the start: the candidate is future.
-            second.clock.nowEpochMillis = NOW - 60_000L
+            second.clock.nowEpochMillis = SESSION_NOW - 60_000L
             val sessionId = SessionId(testIdentifier(66))
             start(first, sessionId)
             exchange(first, second)
@@ -172,8 +154,8 @@ class AppleSyncSessionConvergenceTest {
             assertIs<LocalSessionStatus.Inactive>(second.read())
             assertTrue(second.enforcement.calls.none { call -> call == "apply" })
 
-            second.clock.nowEpochMillis = NOW
-            second.harness.sync.syncNow()
+            second.clock.nowEpochMillis = SESSION_NOW
+            second.owner.onTick(SESSION_NOW)
             advanceUntilIdle()
 
             val adopted = assertIs<LocalSessionStatus.Active>(second.read())
@@ -189,8 +171,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given a restart before authoring when exchanged then the exact start is published once`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-restart-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-restart-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-restart-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-restart-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -218,8 +200,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given an offline start and end when reconnecting then both operations arrive in order`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-offline-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-offline-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-offline-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-offline-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -228,7 +210,7 @@ class AppleSyncSessionConvergenceTest {
             mailbox.saveResult = BundleSaveResult.Retryable
             val sessionId = SessionId(testIdentifier(68))
             start(first, sessionId)
-            first.clock.nowEpochMillis = NOW + 60_000L
+            first.clock.nowEpochMillis = SESSION_NOW + 60_000L
             end(first, sessionId)
             first.harness.sync.syncNow()
             advanceUntilIdle()
@@ -251,20 +233,20 @@ class AppleSyncSessionConvergenceTest {
     fun `given expiry when exchanged then the terminal fact survives restart and rollback`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-expiry-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-expiry-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-expiry-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-expiry-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
             advanceUntilIdle()
 
             val sessionId = SessionId(testIdentifier(69))
-            start(first, sessionId, NOW + MIN_DURATION)
+            start(first, sessionId, SESSION_NOW + SESSION_MIN_DURATION)
             exchange(first, second)
             assertIs<LocalSessionStatus.Active>(second.read())
 
-            first.clock.nowEpochMillis = NOW + MIN_DURATION + 1
-            second.clock.nowEpochMillis = NOW + MIN_DURATION + 1
+            first.clock.nowEpochMillis = SESSION_NOW + SESSION_MIN_DURATION + 1
+            second.clock.nowEpochMillis = SESSION_NOW + SESSION_MIN_DURATION + 1
             first.owner.refresh()
             second.owner.refresh()
             runCurrent()
@@ -280,8 +262,8 @@ class AppleSyncSessionConvergenceTest {
             second.enforcement.calls.clear()
             first.reopenOwner()
             second.reopenOwner()
-            first.clock.nowEpochMillis = NOW
-            second.clock.nowEpochMillis = NOW
+            first.clock.nowEpochMillis = SESSION_NOW
+            second.clock.nowEpochMillis = SESSION_NOW
             first.owner.refresh()
             second.owner.refresh()
             runCurrent()
@@ -301,8 +283,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given an adopted session when the workspace is removed then it survives without replay`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-removal-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-removal-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-removal-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-removal-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -359,8 +341,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given a pre-link local session when linking then the first pass publishes it once`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-link-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-link-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-link-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-link-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             advanceUntilIdle()
@@ -368,7 +350,7 @@ class AppleSyncSessionConvergenceTest {
             // The second device starts while unlinked: the intent waits for the link.
             val sessionId = SessionId(testIdentifier(72))
             assertIs<LocalSessionResult.Success<LocalSessionStatus>>(
-                second.sessions.start(sessionId, NOW, NOW + DURATION, NOW, FROZEN_SECOND),
+                second.sessions.start(sessionId, SESSION_NOW, SESSION_NOW + SESSION_DURATION, SESSION_NOW, SESSION_FROZEN_SECOND),
             )
             second.establish()
             advanceUntilIdle()
@@ -389,8 +371,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given a replacement when exchanged then cleanup precedes the new application`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-replace-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-replace-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-replace-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-replace-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -409,7 +391,7 @@ class AppleSyncSessionConvergenceTest {
 
             val adopted = assertIs<LocalSessionStatus.Active>(second.read())
             assertEquals(replacement, adopted.record.sessionId)
-            assertEquals(FROZEN_SECOND, adopted.frozenStartSet)
+            assertEquals(SESSION_FROZEN_SECOND, adopted.frozenStartSet)
             val clearIndex = second.enforcement.calls.indexOf("clear")
             val applyIndex = second.enforcement.calls.indexOf("apply")
             assertTrue(clearIndex >= 0 && applyIndex > clearIndex)
@@ -424,8 +406,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given an ended row when a newer session converges then it supersedes without fallback`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-supersede-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-supersede-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-supersede-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-supersede-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -457,9 +439,9 @@ class AppleSyncSessionConvergenceTest {
     fun `given a fresh peer when an expired session converges then it banks without activating`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-expired-bank-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-expired-bank-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
-        val third = sessionPeer(dispatcher, "session-expired-bank-third.db", mailbox, SyncWallClock { 300 }, FROZEN_THIRD)
+        val first = sessionPeer(dispatcher, "session-expired-bank-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-expired-bank-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
+        val third = sessionPeer(dispatcher, "session-expired-bank-third.db", mailbox, SyncWallClock { 300 }, SESSION_FROZEN_THIRD)
         try {
             first.establish()
             second.establish()
@@ -473,9 +455,9 @@ class AppleSyncSessionConvergenceTest {
 
             // All clocks move past the end before the fresh peer ever syncs:
             // it observes only the expired candidate.
-            first.clock.nowEpochMillis = NOW + DURATION + 1
-            second.clock.nowEpochMillis = NOW + DURATION + 1
-            third.clock.nowEpochMillis = NOW + DURATION + 1
+            first.clock.nowEpochMillis = SESSION_NOW + SESSION_DURATION + 1
+            second.clock.nowEpochMillis = SESSION_NOW + SESSION_DURATION + 1
+            third.clock.nowEpochMillis = SESSION_NOW + SESSION_DURATION + 1
             first.harness.sync.syncNow()
             advanceUntilIdle()
             second.harness.sync.syncNow()
@@ -487,7 +469,7 @@ class AppleSyncSessionConvergenceTest {
             assertTrue(session in third.harness.snapshot().terminalExpiryFacts)
 
             // A rolled-back clock cannot revive the never-activated session.
-            third.clock.nowEpochMillis = NOW
+            third.clock.nowEpochMillis = SESSION_NOW
             third.harness.sync.syncNow()
             advanceUntilIdle()
 
@@ -504,8 +486,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given an ended row when an expired session converges then it banks without adopting even after rollback`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-ended-expired-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-ended-expired-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-ended-expired-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-ended-expired-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -522,7 +504,7 @@ class AppleSyncSessionConvergenceTest {
             // The receiver's clock is past the new session's end, so it
             // observes only a concluded expiry for an ended local row.
             val fresh = SessionId(testIdentifier(84))
-            second.clock.nowEpochMillis = NOW + DURATION + 1
+            second.clock.nowEpochMillis = SESSION_NOW + SESSION_DURATION + 1
             start(first, fresh)
             exchange(first, second)
 
@@ -531,7 +513,7 @@ class AppleSyncSessionConvergenceTest {
 
             // Rolling back into the fresh interval must not adopt the
             // already-expired session.
-            second.clock.nowEpochMillis = NOW
+            second.clock.nowEpochMillis = SESSION_NOW
             exchange(first, second)
 
             val kept = assertIs<LocalSessionStatus.Ended>(second.read())
@@ -547,8 +529,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given a locally banked expiry when the row is replaced before exchange then the fact still transfers`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-retained-transfer-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-retained-transfer-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-retained-transfer-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-retained-transfer-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -561,10 +543,10 @@ class AppleSyncSessionConvergenceTest {
 
             // The receiver banks the expiry locally without any exchange,
             // then replaces its row before the replica ever learns the fact.
-            second.clock.nowEpochMillis = NOW + DURATION + 1
+            second.clock.nowEpochMillis = SESSION_NOW + SESSION_DURATION + 1
             assertIs<LocalSessionStatus.Ended>(second.read())
             val fresh = SessionId(testIdentifier(86))
-            start(second, fresh, second.clock.nowEpochMillis + DURATION)
+            start(second, fresh, second.clock.nowEpochMillis + SESSION_DURATION)
             exchange(first, second)
 
             val current = assertIs<LocalSessionStatus.Active>(second.read())
@@ -580,8 +562,8 @@ class AppleSyncSessionConvergenceTest {
     fun `given an undetermined marker when exchanging then independent adoption still converges`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()
-        val first = sessionPeer(dispatcher, "session-undetermined-first.db", mailbox, SyncWallClock { 100 }, FROZEN_FIRST)
-        val second = sessionPeer(dispatcher, "session-undetermined-second.db", mailbox, SyncWallClock { 200 }, FROZEN_SECOND)
+        val first = sessionPeer(dispatcher, "session-undetermined-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-undetermined-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
         try {
             first.establish()
             second.establish()
@@ -604,157 +586,5 @@ class AppleSyncSessionConvergenceTest {
             first.close()
             second.close()
         }
-    }
-
-    private fun sessionPeer(
-        dispatcher: CoroutineDispatcher,
-        databaseName: String,
-        mailbox: SharedFakeMailboxPort,
-        wallClock: SyncWallClock,
-        frozen: FrozenStartSet,
-    ): SessionPeer {
-        val harness = AppleSyncTestHarness(
-            dispatcher,
-            databaseName,
-            mailboxPort = mailbox,
-            wallClock = wallClock,
-            cryptoProvider = FakeSyncCryptoProvider(streamSeed = databaseName.hashCode()),
-        )
-        val sessions = SqlLocalSessionStore(harness.database, dispatcher)
-        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
-        val clock = FakeSessionClock(NOW)
-        val owner = SessionTransitionOwner(
-            backgroundDispatcher = dispatcher,
-            store = sessions,
-            clock = clock,
-            enforcement = enforcement,
-            loadTargets = { targetsFor(frozen) },
-            triggers = harness.sync.sessionTriggers,
-        )
-        harness.sync.sessionObserver = owner
-        return SessionPeer(harness, sessions, enforcement, clock, owner, frozen, dispatcher)
-    }
-
-    private suspend fun TestScope.exchange(
-        first: SessionPeer,
-        second: SessionPeer,
-    ) {
-        first.harness.sync.syncNow()
-        advanceUntilIdle()
-        second.harness.sync.syncNow()
-        advanceUntilIdle()
-    }
-
-    private suspend fun SessionPeer.establish() {
-        harness.establish()
-        harness.sync.onForeground()
-    }
-
-    private suspend fun TestScope.start(
-        peer: SessionPeer,
-        sessionId: SessionId,
-        endEpochMillis: Long = NOW + DURATION,
-    ) {
-        val result = peer.owner.startSession(sessionId, peer.clock.nowEpochMillis, endEpochMillis, peer.frozen)
-        testScheduler.runCurrent()
-        advanceUntilIdle()
-        assertIs<LocalSessionResult.Success<LocalSessionStatus>>(result)
-    }
-
-    private suspend fun TestScope.end(
-        peer: SessionPeer,
-        sessionId: SessionId,
-    ) {
-        val result = peer.owner.endEarly(sessionId)
-        testScheduler.runCurrent()
-        advanceUntilIdle()
-        assertIs<LocalSessionResult.Success<LocalSessionStatus>>(result)
-    }
-
-    private suspend fun SessionPeer.read(): LocalSessionStatus {
-        return assertIs<LocalSessionResult.Success<LocalSessionStatus>>(sessions.read(clock.nowEpochMillis)).value
-    }
-
-    private suspend fun retainedMarkers(peer: SessionPeer): Set<SessionId> {
-        return assertIs<LocalSessionResult.Success<Set<SessionId>>>(peer.sessions.retainedExpiryMarkers()).value
-    }
-
-    private suspend fun SessionPeer.sessionIntents(): List<SequencedSessionIntent> {
-        return assertIs<LocalSessionResult.Success<List<SequencedSessionIntent>>>(sessions.readIntents()).value
-    }
-
-    private suspend fun sessionStartOperations(
-        peer: SessionPeer,
-        sessionId: SessionId,
-    ): Int {
-        return peer.harness.snapshot().acceptedBundles.values.count { stored ->
-            val payload = stored.operation.payload
-            payload is SyncOperationPayload.SessionStart && payload.sessionId == sessionId
-        }
-    }
-
-    private suspend fun sessionEndOperations(
-        peer: SessionPeer,
-        sessionId: SessionId,
-    ): Int {
-        return peer.harness.snapshot().acceptedBundles.values.count { stored ->
-            val payload = stored.operation.payload
-            payload is SyncOperationPayload.SessionEnd && payload.sessionId == sessionId
-        }
-    }
-
-    private suspend fun SessionPeer.conflicted(): Set<SessionId> {
-        return harness.snapshot().let { snapshot ->
-            SyncReducer.reduce(
-                snapshot.acceptedBundles.values.map { stored -> stored.operation },
-            ).conflictedSessionIds
-        }
-    }
-
-    private fun SessionPeer.status(): SyncStatus {
-        return harness.sync.state.value.status
-    }
-
-    private suspend fun SessionPeer.close() {
-        owner.close()
-        harness.close()
-    }
-
-    private suspend fun SessionPeer.reopenOwner() {
-        owner.close()
-        owner = SessionTransitionOwner(
-            backgroundDispatcher = dispatcher,
-            store = sessions,
-            clock = clock,
-            enforcement = enforcement,
-            loadTargets = { targetsFor(frozen) },
-            triggers = harness.sync.sessionTriggers,
-        )
-        harness.sync.sessionObserver = owner
-    }
-
-    private fun targetsFor(frozen: FrozenStartSet): SessionTargetsState {
-        val policy = TargetPolicy.fromStoredValues(frozen.domains, null)
-        val validated = assertIs<TargetPolicyValidationResult.Success>(policy).policy
-        return SessionTargetsState(validated, LocalApplicationMappingsLoadResult.Unavailable())
-    }
-
-    private class SessionPeer(
-        val harness: AppleSyncTestHarness,
-        val sessions: SqlLocalSessionStore,
-        val enforcement: FakeEnforcementPort,
-        val clock: FakeSessionClock,
-        var owner: SessionTransitionOwner,
-        val frozen: FrozenStartSet,
-        val dispatcher: CoroutineDispatcher,
-    )
-
-    private companion object {
-        const val NOW: Long = 1_000_000_000_000L
-        const val DURATION: Long = 30 * 60_000L
-        const val MIN_DURATION: Long = SessionLimits.MIN_DURATION_MILLIS
-        val FROZEN_FIRST: FrozenStartSet = FrozenStartSet(persistentListOf("first.example"), null)
-        val FROZEN_SECOND: FrozenStartSet = FrozenStartSet(persistentListOf("second.example"), null)
-        val FROZEN_THIRD: FrozenStartSet = FrozenStartSet(persistentListOf("third.example"), null)
     }
 }

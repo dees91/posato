@@ -1,5 +1,7 @@
 package app.posato.di
 
+import app.posato.feature.enforcement.ExpiryDisplacement
+import app.posato.feature.enforcement.ExpiryDisplacementOutcome
 import app.posato.feature.enforcement.IosEnforcement
 import app.posato.feature.enforcement.IosEnforcementOutcome
 import app.posato.feature.enforcement.IosEnforcementProvider
@@ -194,7 +196,7 @@ private class InertSuspendedExpiryProvider : IosSuspendedExpiryProvider {
 
     override fun displacedClearedSessionId(
         currentSessionId: String,
-        handler: (String?) -> Unit,
+        handler: (ExpiryDisplacement) -> Unit,
     ) {
         throw UnsupportedOperationException()
     }

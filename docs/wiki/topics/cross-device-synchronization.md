@@ -540,3 +540,27 @@ not claim that every other device has received the update.
 - How are portable enrollment, recovery, revocation, export, import, deletion,
   and transport migration presented and tested?
 - When should portable-folder provider experiments begin?
+
+### Session integration and recoverable terminal facts (`SYNC-012`)
+
+- `observed` (2026-09-13, code and deterministic tests): a single session owner
+  serializes native effects and checks the desired identity and deadline after
+  waits. A generic native APPLIED result cannot establish which session is
+  enforced. Successful empty enforcement and confirmed cleanup are distinct
+  from an unknown state after reopening; both must converge without a loop.
+- `user-confirmed`: the PR correction includes future-start reevaluation.
+  Host-owned ticks use the authenticated accepted projection, existing reducer,
+  pending-intent gates and local terminal markers without waiting for another
+  mailbox exchange or a Session-screen subscriber. Restoring this projection
+  retains the consent and workspace gates. Expiry banking failure bars applying
+  that identity even if the wall clock later moves backwards.
+- `observed`: native iOS expiry acknowledgements are per identity. Atomic
+  identity-specific files retain an already-attributed late expiry of A while
+  B is scheduled or expires; reads also accept the legacy single record.
+  Common persists each observed fact before acknowledgement or replacement
+  apply. Unreadable displacement state withholds apply and offers retry.
+  This does not establish a callback-generation guarantee for the existing
+  fixed Device Activity name, or a bounded wakeup/delivery time.
+- `open`: the signed Mac/physical iPhone enforcement matrix remains a separate
+  completion gate. Unit tests and a visible timer do not substitute for its
+  real restriction evidence. See the [execution record](../../tasks/executions/sync-012-session-convergence.md).

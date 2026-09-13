@@ -3,10 +3,10 @@ package app.posato.feature.session.ui
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.EnforcementState
+import app.posato.feature.enforcement.ExpiryDisplacementOutcome
 import app.posato.feature.enforcement.sessionIdFromReconciliationId
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.data.LocalSessionSyncStore
-import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionRecord
@@ -29,6 +29,7 @@ internal fun isTransitionConverged(
     enforcedIdentity: SessionTag?,
     viewState: EnforcementState,
     actionTag: SessionTag?,
+    confirmedClear: Boolean,
 ): Boolean {
     val tag = tagOf(status)
     if (status is LocalSessionStatus.Active && enforcedIdentity == tag) {
@@ -40,7 +41,7 @@ internal fun isTransitionConverged(
         }
         return viewState.kind == EnforcementActionKind.CLEAR_FAILED && actionTag == tag
     }
-    return status !is LocalSessionStatus.Active && enforcedIdentity == null
+    return enforcedIdentity == null && (status is LocalSessionStatus.Inactive || confirmedClear)
 }
 
 /**
@@ -61,16 +62,15 @@ internal suspend fun ensureApplicableBeforeApply(
     record: SessionRecord,
     converge: suspend () -> Unit,
 ): Boolean {
-    val now = clock.currentEpochMillis()
     val applicable = stateMutex.withLock {
-        when (val read = store.read(now)) {
+        when (val read = store.read(clock.currentEpochMillis())) {
             is LocalSessionResult.Failure -> {
                 null
             }
 
             is LocalSessionResult.Success -> {
                 val active = read.value as? LocalSessionStatus.Active
-                active != null && SessionTag(active.record) == tag && now < active.record.endEpochMillis
+                active != null && SessionTag(active.record) == tag && clock.currentEpochMillis() < active.record.endEpochMillis
             }
         }
     }
@@ -90,47 +90,13 @@ internal suspend fun ensureApplicableBeforeApply(
     return false
 }
 
-/**
- * Post-transition drain shared by every path that touches the port. Reads
- * the current row through the owner's mutex and either reconciles a newer
- * desired state directly or settles the full fresh state. A tag alone cannot
- * surface a same-identity Active to Ended change, so settling the full state
- * converges a skipped end transition instead of leaving the view Active on
- * an Ended row. Settling an already-converged state is a no-op through the
- * predicate, so this cannot self-drive.
- */
-internal suspend fun convergeAfterPort(
-    stateMutex: Mutex,
-    store: LocalSessionSyncStore,
-    clock: SessionClock,
-    cleared: SessionTag?,
-    settle: suspend (LocalSessionStatus) -> Unit,
-    reconcile: suspend (SessionTag, SessionRecord, FrozenStartSet?) -> Unit,
-) {
-    val fresh = stateMutex.withLock {
-        when (val read = store.read(clock.currentEpochMillis())) {
-            is LocalSessionResult.Failure -> null
-            is LocalSessionResult.Success -> read.value
-        }
-    } ?: return
-    val active = fresh as? LocalSessionStatus.Active
-    if (active != null && SessionTag(active.record) != cleared) {
-        // The clear removed a newer enforcement than intended: reconcile
-        // the current desired state directly, so the latest transition
-        // drains before this in-flight transition completes.
-        reconcile(SessionTag(active.record), active.record, active.frozenStartSet)
-    } else if (tagOf(fresh) != cleared || fresh !is LocalSessionStatus.Active) {
-        settle(fresh)
-    }
-}
-
 internal suspend fun acknowledgeExpired(
     enforcement: EnforcementPort,
     sessionId: String,
 ): Boolean {
     // Best effort: a failed acknowledgement only repeats an idempotent
     // bank on the next observation; the row is already terminal, and a
-    // future schedule clears a leftover native record.
+    // later observations retry acknowledgement.
     return try {
         enforcement.acknowledgeSuspendedExpiry(sessionId)
     } catch (expectedCancellation: CancellationException) {
@@ -144,22 +110,31 @@ internal suspend fun persistDisplacedExpiry(
     enforcement: EnforcementPort,
     store: LocalSessionSyncStore,
     currentSessionId: String,
-) {
-    // Mandatory displacement point before every schedule: a natively
-    // recorded expiry for a superseded identity must land in the durable
-    // marker table before the new schedule (and only then its
-    // acknowledgement) can make the signal disappear. The native side
-    // never deletes foreign records itself, so this ordering plus the
-    // record-then-ack in the superseded branch closes the loss window.
-    val displaced = try {
-        enforcement.displacedSuspendedExpiry(currentSessionId)
+): Boolean {
+    return try {
+        val displaced = enforcement.displacedSuspendedExpiry(currentSessionId)
+        when (displaced.outcome) {
+            ExpiryDisplacementOutcome.ABSENT -> {
+                true
+            }
+
+            ExpiryDisplacementOutcome.FAILED -> {
+                false
+            }
+
+            ExpiryDisplacementOutcome.PRESENT -> {
+                val displacedId = displaced.sessionId?.let(::sessionIdFromReconciliationId) ?: return false
+                if (store.retainExpiryMarker(displacedId) is LocalSessionResult.Failure) {
+                    false
+                } else {
+                    acknowledgeExpired(enforcement, checkNotNull(displaced.sessionId))
+                    true
+                }
+            }
+        }
     } catch (expectedCancellation: CancellationException) {
         throw expectedCancellation
     } catch (_: Exception) {
-        null
-    } ?: return
-    val displacedId = sessionIdFromReconciliationId(displaced) ?: return
-    if (store.retainExpiryMarker(displacedId) is LocalSessionResult.Success) {
-        acknowledgeExpired(enforcement, displaced)
+        false
     }
 }

@@ -58,7 +58,7 @@ public interface IosSuspendedExpiryProvider {
 
     public fun displacedClearedSessionId(
         currentSessionId: String,
-        handler: (String?) -> Unit,
+        handler: (ExpiryDisplacement) -> Unit,
     )
 }
 
@@ -89,7 +89,7 @@ public class IosSuspendedExpiry(
         }
     }
 
-    public suspend fun displacedClearedSessionId(currentSessionId: String): String? {
+    public suspend fun displacedClearedSessionId(currentSessionId: String): ExpiryDisplacement {
         return suspendCoroutine { continuation ->
             provider.displacedClearedSessionId(currentSessionId) { displaced -> continuation.resume(displaced) }
         }

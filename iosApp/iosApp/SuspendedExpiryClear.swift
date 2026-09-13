@@ -1,3 +1,4 @@
+import CryptoKit
 import DeviceActivity
 import Foundation
 import ManagedSettings
@@ -44,6 +45,12 @@ struct SuspendedExpiryClearedRecord: Codable, Equatable {
     let version: Int
     let sessionId: String
     let clearedAt: TimeInterval
+}
+
+enum SuspendedExpiryClearedRead {
+    case absent
+    case present(SuspendedExpiryClearedRecord)
+    case failed
 }
 
 /// File-backed App Group record store for the suspended-expiry path. It keeps
@@ -101,8 +108,11 @@ struct SuspendedExpiryRecordStore {
         try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.pendingFileName))
     }
 
-    func removeCleared() {
-        try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.clearedFileName))
+    func removeCleared(sessionId: String) {
+        try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.clearedFileName(sessionId)))
+        if case let .present(record) = readClearedFile(Self.clearedFileName), record.sessionId == sessionId {
+            try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.clearedFileName))
+        }
     }
 
     func writeCleared(sessionId: String, clearedAt: TimeInterval) throws {
@@ -111,20 +121,64 @@ struct SuspendedExpiryRecordStore {
             sessionId: sessionId,
             clearedAt: clearedAt
         )
-        try write(record, fileName: Self.clearedFileName)
+        try write(record, fileName: Self.clearedFileName(sessionId))
     }
 
-    /// Returns the cleared record only on an exact schema-version match. A
-    /// missing, corrupt, oversized, or newer-version record reads as absent so
-    /// reconciliation reports unknown, never active.
     func readCleared() -> SuspendedExpiryClearedRecord? {
-        guard let data = boundedContents(of: Self.clearedFileName),
-              let record = try? JSONDecoder().decode(SuspendedExpiryClearedRecord.self, from: data),
-              record.version == SuspendedExpiryActivity.recordSchemaVersion
-        else {
-            return nil
-        }
+        guard case let .present(record) = readClearedResult() else { return nil }
         return record
+    }
+
+    func readCleared(sessionId: String) -> SuspendedExpiryClearedRecord? {
+        for name in [Self.clearedFileName(sessionId), Self.clearedFileName] {
+            if case let .present(record) = readClearedFile(name), record.sessionId == sessionId { return record }
+        }
+        return nil
+    }
+
+    func readClearedResult(preferredSessionId: String? = nil) -> SuspendedExpiryClearedRead {
+        do {
+            if let preferredSessionId,
+               case let .present(legacy) = readClearedFile(Self.clearedFileName),
+               legacy.sessionId == preferredSessionId { return .present(legacy) }
+            let names = try fileManager.contentsOfDirectory(atPath: directoryURL.path)
+                .filter { $0.hasPrefix("cleared-") && $0.hasSuffix(".json") }.sorted()
+            let preferred = preferredSessionId.map { Self.clearedFileName($0) }
+            let ordered = preferred.map { [$0] + names.filter { $0 != preferred } } ?? names
+            for name in ordered {
+                let result = readClearedFile(name)
+                if case .absent = result { continue }
+                return result
+            }
+            return .absent
+        } catch let error as CocoaError where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile {
+            return .absent
+        } catch {
+            return .failed
+        }
+    }
+
+    private static func clearedFileName(_ sessionId: String) -> String {
+        let digest = SHA256.hash(data: Data(sessionId.utf8)).map { String(format: "%02x", $0) }.joined()
+        return "cleared-\(digest)-v1.json"
+    }
+
+    private func readClearedFile(_ name: String) -> SuspendedExpiryClearedRead {
+        let url = directoryURL.appendingPathComponent(name)
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            guard let size = attributes[.size] as? NSNumber,
+                  size.intValue <= Self.maximumFileBytes else { return .failed }
+            let data = try Data(contentsOf: url)
+            let record = try JSONDecoder().decode(SuspendedExpiryClearedRecord.self, from: data)
+            guard record.version == SuspendedExpiryActivity.recordSchemaVersion,
+                  Self.isValidSessionId(record.sessionId) else { return .failed }
+            return .present(record)
+        } catch let error as CocoaError where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile {
+            return .absent
+        } catch {
+            return .failed
+        }
     }
 
     private func write<T: Encodable>(_ record: T, fileName: String) throws {

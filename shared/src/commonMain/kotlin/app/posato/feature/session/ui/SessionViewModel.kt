@@ -56,14 +56,6 @@ internal class SessionViewModel(
         emit(Unit)
     }
     private val ticker = observeSessionTicks(clock)
-    private val ownerUpdates: Flow<Unit> = merge(
-        ownerStatuses,
-        ticker.transform { now ->
-            // Display ticks carry no work of their own: the owner evaluates time
-            // and polls enforcement, while the tick value drives the countdown.
-            owner.onTick(now)
-        },
-    )
     private val targetsReadLifecycle: Flow<Unit> = merge(
         targetsRefreshRequests.onStart { emit(Unit) },
         policyStore.policyChanges,
@@ -79,7 +71,7 @@ internal class SessionViewModel(
         combine(command, confirmingEarlyEnd, ticker) { activeCommand, confirming, nowMillis ->
             Triple(activeCommand, confirming, nowMillis)
         },
-        ownerUpdates,
+        ownerStatuses,
         targetsReadLifecycle,
         owner.view,
     ) { left, right, _, _, enforcementView ->

@@ -51,7 +51,7 @@ class IosSuspendedExpiryTest {
     fun `given a displacement read when completed then the foreign signal is forwarded unconsumed`() = runTest {
         val provider = FakeIosSuspendedExpiryProvider(displacedSessionId = "earlier-session")
 
-        assertEquals("earlier-session", IosSuspendedExpiry(provider).displacedClearedSessionId("session"))
+        assertEquals("earlier-session", IosSuspendedExpiry(provider).displacedClearedSessionId("session").sessionId)
         assertEquals("session", provider.seenDisplacedCurrentId)
         assertTrue(provider.acknowledgedSessionIds.isEmpty())
     }
@@ -60,8 +60,16 @@ class IosSuspendedExpiryTest {
     fun `given no foreign signal when displacing then absent is preserved`() = runTest {
         val provider = FakeIosSuspendedExpiryProvider(displacedSessionId = null)
 
-        assertNull(IosSuspendedExpiry(provider).displacedClearedSessionId("session"))
+        assertNull(IosSuspendedExpiry(provider).displacedClearedSessionId("session").sessionId)
         assertEquals("session", provider.seenDisplacedCurrentId)
+    }
+
+    @Test
+    fun `given a failed displacement read then failure stays distinct from absence`() = runTest {
+        val provider = FakeIosSuspendedExpiryProvider(displacementFailure = true)
+        val result = IosSuspendedExpiry(provider).displacedClearedSessionId("session")
+        assertEquals(ExpiryDisplacementOutcome.FAILED, result.outcome)
+        assertNull(result.sessionId)
     }
 
     @Test
@@ -78,6 +86,7 @@ private class FakeIosSuspendedExpiryProvider(
     private val cancelOutcome: IosSuspendedExpiryOutcome = IosSuspendedExpiryOutcome.CANCELLED,
     private val reconciliation: IosExpiryReconciliation = IosExpiryReconciliation.UNKNOWN,
     private val displacedSessionId: String? = null,
+    private val displacementFailure: Boolean = false,
 ) : IosSuspendedExpiryProvider {
     var cancelCalled = false
         private set
@@ -120,10 +129,23 @@ private class FakeIosSuspendedExpiryProvider(
 
     override fun displacedClearedSessionId(
         currentSessionId: String,
-        handler: (String?) -> Unit,
+        handler: (ExpiryDisplacement) -> Unit,
     ) {
         seenDisplacedCurrentId = currentSessionId
-        handler(displacedSessionId)
+        handler(
+            ExpiryDisplacement(
+                if (displacementFailure) {
+                    ExpiryDisplacementOutcome.FAILED
+                } else if (displacedSessionId ==
+                    null
+                ) {
+                    ExpiryDisplacementOutcome.ABSENT
+                } else {
+                    ExpiryDisplacementOutcome.PRESENT
+                },
+                displacedSessionId,
+            ),
+        )
     }
 
     val acknowledgedSessionIds = mutableListOf<String>()
