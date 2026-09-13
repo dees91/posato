@@ -1786,5 +1786,6 @@ Solutions remain open; existing exact-host and one-use Apply authorization
 contracts remain unchanged.
 The [feature idea queue](topics/mvp-open-questions.md#post-mvp-feature-ideas-for-discovery)
 also retains recurring schedules, family controls, ad blocking, a Focusly
-comparison, and YouTube distraction reduction for later discovery, without
-committing to scope, feasibility, or delivery.
+comparison, YouTube distraction reduction, and local session-start/end
+notifications on iOS and macOS for later discovery, without committing to
+scope, feasibility, or delivery.

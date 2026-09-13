@@ -646,6 +646,9 @@ not an accepted feature plan or an expansion of the MVP.
    recommended videos, and similar distracting surfaces while keeping useful
    video access. Browser versus native-app coverage and a suitable mechanism
    remain undecided; exact-host blocking alone does not define this behavior.
+6. **Local session notifications on iOS and macOS.** Explore on-device
+   notifications when a session starts or ends. Notification preferences,
+   permission flow, and delivery behavior remain for post-MVP discovery.
 
 ## Later platform questions
 
