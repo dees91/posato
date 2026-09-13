@@ -94,12 +94,12 @@ class SessionEnforcementTest {
         scheduler.runCurrent()
         val state = viewModel.uiState.value
 
-        assertEquals(listOf("apply", "clear", "apply"), enforcement.calls)
+        assertEquals(listOf("displace", "apply", "displace", "clear", "apply"), enforcement.calls)
         assertEquals(EnforcementState.Active(false), state.enforcement)
     }
 
     @Test
-    fun `given a failed apply when ending early then the end is clean`() = runTest(dispatcher) {
+    fun `given a failed apply and unavailable cleanup when ending then cleanup remains required`() = runTest(dispatcher) {
         val enforcement = FakeEnforcementPort(
             applyReport = EnforcementApplyReport(EnforcementOutcome.FAILED, false, false),
             clearOutcome = EnforcementOutcome.UNAVAILABLE,
@@ -112,7 +112,7 @@ class SessionEnforcementTest {
         val state = viewModel.uiState.value
 
         assertIs<LocalSessionStatus.Ended>(state.status)
-        assertEquals(EnforcementState.Inactive, state.enforcement)
+        assertEquals(EnforcementActionKind.CLEAR_FAILED, assertIs<EnforcementState.ActionRequired>(state.enforcement).kind)
     }
 
     @Test
@@ -194,7 +194,7 @@ class SessionEnforcementTest {
         val state = viewModel.uiState.value
 
         assertIs<LocalSessionStatus.Active>(state.status)
-        assertEquals(listOf("poll", "status", "clear", "apply"), enforcement.calls)
+        assertEquals(listOf("peek", "status", "displace", "clear", "apply"), enforcement.calls)
         assertEquals(EnforcementState.Active(false), state.enforcement)
     }
 
@@ -209,7 +209,7 @@ class SessionEnforcementTest {
         scheduler.runCurrent()
         val state = viewModel.uiState.value
 
-        assertEquals(listOf("apply", "status", "clear", "apply"), enforcement.calls)
+        assertEquals(listOf("displace", "apply", "status", "displace", "clear", "apply"), enforcement.calls)
         assertEquals(EnforcementState.Active(false), state.enforcement)
     }
 
@@ -264,8 +264,13 @@ class SessionEnforcementTest {
         val state = viewModel.uiState.value
 
         assertIs<LocalSessionStatus.Active>(state.status)
-        assertEquals(EnforcementState.Active(false), state.enforcement)
-        assertEquals(listOf("apply", "clear", "clear", "apply"), enforcement.calls)
+        assertEquals(EnforcementActionKind.CLEAR_FAILED, assertIs<EnforcementState.ActionRequired>(state.enforcement).kind)
+        assertEquals(listOf("displace", "apply", "clear", "displace", "clear"), enforcement.calls)
+        enforcement.clearOutcome = EnforcementOutcome.CLEARED
+        viewModel.retryEnforcement()
+        scheduler.runCurrent()
+        assertEquals(EnforcementState.Active(false), viewModel.uiState.value.enforcement)
+        assertEquals(2, enforcement.calls.count { it == "apply" })
     }
 
     @Test
@@ -354,16 +359,20 @@ class SessionEnforcementTest {
         domains: List<String> = emptyList(),
         enforcement: FakeEnforcementPort = FakeEnforcementPort(),
     ): SessionViewModel {
+        val policyStore = policyStoreOf(domains)
+        val mappings = FakeSessionMappings()
+        val owner = sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher)
+        backgroundScope.launch { owner.runWhileHosted() }
         val viewModel = SessionViewModel(
-            store,
-            policyStoreOf(domains),
-            FakeSessionMappings(),
+            policyStore,
+            mappings,
             FakeSessionIdGenerator(),
             clock,
             FakeSessionTimeFormat(),
-            enforcement,
+            owner,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
+        viewModel.onScreenEntered()
         scheduler.runCurrent()
 
         return viewModel

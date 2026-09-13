@@ -1,12 +1,15 @@
 package app.posato.feature.session.ui
 
 import app.posato.feature.session.data.LocalSessionFailure
+import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.domain.FakeSessionClock
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.session.domain.SessionSetupFailure
+import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
@@ -53,14 +56,17 @@ class SessionViewModelTest {
     @Test
     fun `given uiState without a collector when ViewModel is created then storage is not read`() = runTest(dispatcher) {
         val store = FakeLocalSessionStore()
+        val policyStore = policyStoreOf()
+        val mappings = FakeSessionMappings()
+        val clock = FakeSessionClock(NOW)
+        val enforcement = FakeEnforcementPort()
         SessionViewModel(
-            store,
-            policyStoreOf(),
-            FakeSessionMappings(),
+            policyStore,
+            mappings,
             FakeSessionIdGenerator(),
-            FakeSessionClock(NOW),
+            clock,
             FakeSessionTimeFormat(),
-            FakeEnforcementPort(),
+            sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher),
         )
         scheduler.runCurrent()
 
@@ -76,14 +82,15 @@ class SessionViewModelTest {
 
     @Test
     fun `given a loading status when entering setup then setup stays closed`() = runTest(dispatcher) {
+        val policyStore = policyStoreOf()
+        val mappings = FakeSessionMappings()
         val viewModel = SessionViewModel(
-            FakeLocalSessionStore(),
-            policyStoreOf(),
-            FakeSessionMappings(),
+            policyStore,
+            mappings,
             FakeSessionIdGenerator(),
             FakeSessionClock(NOW),
             FakeSessionTimeFormat(),
-            FakeEnforcementPort(),
+            sessionOwnerOf(FakeLocalSessionStore(), FakeEnforcementPort(), FakeSessionClock(NOW), policyStore, mappings, dispatcher = dispatcher),
         )
 
         viewModel.setSetupVisible(true)
@@ -310,6 +317,44 @@ class SessionViewModelTest {
     }
 
     @Test
+    fun `given a replaced session when confirming then the wrong session never ends`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val viewModel = collectedViewModel(store = store, domains = listOf("stable.example"))
+        startThroughUi(viewModel)
+        val shown = assertIs<LocalSessionStatus.Active>(viewModel.uiState.value.status).record.sessionId
+        viewModel.setEarlyEndConfirmation(true)
+        scheduler.runCurrent()
+
+        // The row is replaced while the dialog stays open.
+        val replacement = SessionId(testIdentifier(21))
+        assertIs<LocalSessionResult.Success<LocalSessionStatus>>(
+            store.adopt(
+                replacement,
+                NOW,
+                NOW + 30 * 60_000L,
+                NOW,
+                FrozenStartSet(persistentListOf("stable.example"), null),
+            ),
+        )
+        viewModel.retry()
+        scheduler.runCurrent()
+        assertEquals(
+            replacement,
+            assertIs<LocalSessionStatus.Active>(viewModel.uiState.value.status).record.sessionId,
+        )
+        assertTrue(shown != replacement)
+
+        viewModel.confirmEarlyEnd()
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertFalse(state.confirmingEarlyEnd)
+        assertEquals(0, store.endEarlyCalls)
+        val current = assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(replacement, current.record.sessionId)
+    }
+
+    @Test
     fun `given an ended session when entering setup then setup opens again`() = runTest(dispatcher) {
         val viewModel = startedViewModel()
         viewModel.setEarlyEndConfirmation(true)
@@ -353,16 +398,18 @@ class SessionViewModelTest {
     @Test
     fun `given a policy signal during setup when observed then targets refresh and the draft survives`() = runTest(dispatcher) {
         val policy = policyStoreOf(listOf("old.example"))
+        val mappings = FakeSessionMappings()
+        val clock = FakeSessionClock(NOW)
         val viewModel = SessionViewModel(
-            FakeLocalSessionStore(),
             policy,
-            FakeSessionMappings(),
+            mappings,
             FakeSessionIdGenerator(),
-            FakeSessionClock(NOW),
+            clock,
             FakeSessionTimeFormat(),
-            FakeEnforcementPort(),
+            sessionOwnerOf(FakeLocalSessionStore(), FakeEnforcementPort(), clock, policy, mappings, dispatcher = dispatcher),
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
+        viewModel.onScreenEntered()
         scheduler.runCurrent()
         viewModel.setSetupVisible(true)
         scheduler.runCurrent()
@@ -386,16 +433,19 @@ class SessionViewModelTest {
         mappings: FakeSessionMappings = FakeSessionMappings(),
         enforcement: FakeEnforcementPort = FakeEnforcementPort(),
     ): SessionViewModel {
+        val policyStore = policyStoreOf(domains, groupName)
+        val owner = sessionOwnerOf(store, enforcement, clock, policyStore, mappings, dispatcher = dispatcher)
+        backgroundScope.launch { owner.runWhileHosted() }
         val viewModel = SessionViewModel(
-            store,
-            policyStoreOf(domains, groupName),
+            policyStore,
             mappings,
             FakeSessionIdGenerator(),
             clock,
             FakeSessionTimeFormat(),
-            enforcement,
+            owner,
         )
         backgroundScope.launch(UnconfinedTestDispatcher(scheduler)) { viewModel.uiState.collect() }
+        viewModel.onScreenEntered()
         scheduler.runCurrent()
 
         return viewModel

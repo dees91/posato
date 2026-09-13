@@ -1,6 +1,5 @@
 package app.posato.di
 
-import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createDesktopDatabaseDriver
 import app.posato.core.database.defaultDesktopPolicyDatabasePath
@@ -11,12 +10,14 @@ import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.UnavailableApplicationAccess
 import app.posato.feature.onboarding.data.SqlLocalSetupStore
 import app.posato.feature.session.JvmSessionTimeFormat
-import app.posato.feature.session.data.LocalSessionStore
+import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SqlLocalSessionStore
 import app.posato.feature.session.domain.RandomSessionIdGenerator
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.session.ui.SessionTransitionOwner
+import app.posato.feature.session.ui.loadSessionTargets
 import app.posato.feature.sync.bootstrap.AppleBootstrap
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.BootstrapCoordinator
@@ -72,14 +73,8 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideDatabaseDriver(databasePath: String): SqlDriver {
-        return createDesktopDatabaseDriver(databasePath)
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideDatabase(driver: SqlDriver): PosatoDatabase {
-        return PosatoDatabase(driver)
+    fun provideDatabase(databasePath: String): PosatoDatabase {
+        return PosatoDatabase(createDesktopDatabaseDriver(databasePath))
     }
 
     @Provides
@@ -105,11 +100,34 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
     fun provideSessionStore(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
-    ): LocalSessionStore {
+    ): LocalSessionSyncStore {
         return SqlLocalSessionStore(
             database = database,
             databaseDispatcher = databaseDispatcher,
         )
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideSessionOwner(
+        sync: AppleSync,
+        sessions: LocalSessionSyncStore,
+        enforcement: EnforcementPort,
+        clock: SessionClock,
+        policyStore: LocalTargetPolicyStore,
+        applicationMappings: LocalApplicationMappings,
+        @Named("database") databaseDispatcher: CoroutineDispatcher,
+    ): SessionTransitionOwner {
+        val owner = SessionTransitionOwner(
+            backgroundDispatcher = databaseDispatcher,
+            store = sessions,
+            clock = clock,
+            enforcement = enforcement,
+            loadTargets = { loadSessionTargets(policyStore, applicationMappings) },
+            triggers = sync.sessionTriggers,
+        )
+        sync.sessionObserver = owner
+        return owner
     }
 
     @Provides
@@ -151,6 +169,7 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         policySync: LocalPolicySyncStore,
+        sessions: LocalSessionSyncStore,
     ): AppleSync {
         val transport = defaultSyncCompanionTransport()
         val keys = MacOsBootstrapKeychainAdapter(transport)
@@ -159,7 +178,23 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
         val mailbox = MacOsMailboxAdapter(transport)
         val coordinator = BootstrapCoordinator(keys, MacOsBootstrapCloudAdapter(transport), keys, store, crypto, mailbox)
         val core = SyncOperationCore(SqlSyncReplicaStore(database, databaseDispatcher), crypto, SyncWallClock { System.currentTimeMillis() })
-        return AppleSync(coordinator, core, MacOsMailboxAdapter(transport), keys, store, policySync, crypto, Dispatchers.IO)
+        return AppleSync(
+            coordinator,
+            core,
+            MacOsMailboxAdapter(transport),
+            keys,
+            store,
+            policySync,
+            crypto,
+            Dispatchers.IO,
+            onWorkspaceRemoved = {
+                // Ownership ends with the discarded replica: drop transfer
+                // obligations while keeping the occupant's local terminality.
+                // Removal already succeeded, so a failed purge stays
+                // best-effort instead of failing the removal itself.
+                sessions.dropRetainedMarkersExceptCurrent()
+            },
+        )
     }
 }
 

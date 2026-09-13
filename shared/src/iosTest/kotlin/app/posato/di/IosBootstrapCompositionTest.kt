@@ -1,5 +1,7 @@
 package app.posato.di
 
+import app.posato.feature.enforcement.ExpiryDisplacement
+import app.posato.feature.enforcement.ExpiryDisplacementOutcome
 import app.posato.feature.enforcement.IosEnforcement
 import app.posato.feature.enforcement.IosEnforcementOutcome
 import app.posato.feature.enforcement.IosEnforcementProvider
@@ -181,6 +183,20 @@ private class InertSuspendedExpiryProvider : IosSuspendedExpiryProvider {
     override fun readReconciliation(
         sessionId: String,
         handler: (IosExpiryReconciliation) -> Unit,
+    ) {
+        throw UnsupportedOperationException()
+    }
+
+    override fun acknowledgeReconciliation(
+        sessionId: String,
+        handler: (Boolean) -> Unit,
+    ) {
+        throw UnsupportedOperationException()
+    }
+
+    override fun displacedClearedSessionId(
+        currentSessionId: String,
+        handler: (ExpiryDisplacement) -> Unit,
     ) {
         throw UnsupportedOperationException()
     }

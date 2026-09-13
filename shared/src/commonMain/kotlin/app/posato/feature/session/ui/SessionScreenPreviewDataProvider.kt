@@ -12,6 +12,7 @@ import app.posato.feature.session.domain.LocalSessionStatus.Ended
 import app.posato.feature.session.domain.LocalSessionStatus.Inactive
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind
+import app.posato.feature.session.domain.SessionOrigin
 import app.posato.feature.session.domain.SessionRecord
 import app.posato.feature.session.domain.SessionReview
 import app.posato.feature.session.domain.SessionSetupFailure
@@ -122,7 +123,7 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
         SessionPreviewState(
             "Active",
             SessionUiState(
-                status = Active(record, 42 * 60_000L),
+                status = Active(record, 42 * 60_000L, origin = SessionOrigin.LOCAL),
                 review = SessionReview(
                     domains = persistentListOf("example.com"),
                     applicationGroupName = "Social feeds",
@@ -140,7 +141,7 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
         SessionPreviewState(
             "Active needs attention",
             SessionUiState(
-                status = Active(record, 42 * 60_000L),
+                status = Active(record, 42 * 60_000L, origin = SessionOrigin.LOCAL),
                 review = SessionReview(domains = persistentListOf("example.com")),
                 remainingMillis = 42 * 60_000L,
                 formattedActiveEnd = "15:12",
@@ -151,7 +152,7 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
         SessionPreviewState(
             "Active resume",
             SessionUiState(
-                status = Active(record, 42 * 60_000L),
+                status = Active(record, 42 * 60_000L, origin = SessionOrigin.LOCAL),
                 review = SessionReview(domains = persistentListOf("example.com")),
                 remainingMillis = 42 * 60_000L,
                 formattedActiveEnd = "15:12",
@@ -162,7 +163,7 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
         SessionPreviewState(
             "Confirming early end",
             SessionUiState(
-                status = Active(record, 42 * 60_000L),
+                status = Active(record, 42 * 60_000L, origin = SessionOrigin.LOCAL),
                 confirmingEarlyEnd = true,
                 remainingMillis = 42 * 60_000L,
                 formattedActiveEnd = "15:12",
@@ -171,14 +172,14 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
         SessionPreviewState(
             "Ended expired",
             SessionUiState(
-                status = Ended(record, SessionEndKind.EXPIRED),
+                status = Ended(record, SessionEndKind.EXPIRED, SessionOrigin.LOCAL),
                 formattedActiveEnd = "15:00",
             ),
         ),
         SessionPreviewState(
             "Ended early",
             SessionUiState(
-                status = Ended(record, SessionEndKind.ENDED_EARLY),
+                status = Ended(record, SessionEndKind.ENDED_EARLY, SessionOrigin.LOCAL),
                 formattedActiveEnd = "14:47",
             ),
         ),

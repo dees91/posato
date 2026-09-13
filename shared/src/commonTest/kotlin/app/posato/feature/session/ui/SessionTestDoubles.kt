@@ -4,6 +4,11 @@ import app.posato.feature.enforcement.EnforcementApplyReport
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.EnforcementRequest
+import app.posato.feature.enforcement.ExpiryDisplacement
+import app.posato.feature.enforcement.ExpiryDisplacementOutcome
+import app.posato.feature.session.data.SessionSyncTriggers
+import app.posato.feature.session.data.SessionWorkspaceCapture
+import app.posato.feature.session.domain.FakeSessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.domain.SessionId
@@ -18,6 +23,8 @@ import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 
@@ -70,6 +77,8 @@ internal class FakeEnforcementPort(
     var statusSequence: ArrayDeque<EnforcementOutcome>? = null,
     var expiredSessionIds: Set<String> = emptySet(),
     override val reapplyRequiresPrompt: Boolean = false,
+    var clearHook: (() -> Unit)? = null,
+    var clearGate: CompletableDeferred<Unit>? = null,
 ) : EnforcementPort {
     val calls = mutableListOf<String>()
     var lastRequest: EnforcementRequest? = null
@@ -82,6 +91,8 @@ internal class FakeEnforcementPort(
 
     override suspend fun clear(): EnforcementOutcome {
         calls += "clear"
+        clearHook?.invoke()
+        clearGate?.await()
         return clearOutcome
     }
 
@@ -92,12 +103,68 @@ internal class FakeEnforcementPort(
         return next ?: statusOutcome
     }
 
-    override suspend fun pollSuspendedExpiry(sessionId: String): Boolean {
-        calls += "poll"
+    override suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
+        calls += "peek"
+        return sessionId in expiredSessionIds
+    }
+
+    var displacedSessionId: String? = null
+
+    override suspend fun displacedSuspendedExpiry(currentSessionId: String): ExpiryDisplacement {
+        calls += "displace"
+        val displaced = displacedSessionId ?: expiredSessionIds.firstOrNull()
+        return ExpiryDisplacement(
+            if (displaced == null) ExpiryDisplacementOutcome.ABSENT else ExpiryDisplacementOutcome.PRESENT,
+            displaced,
+        )
+    }
+
+    var acknowledgeError: Exception? = null
+
+    override suspend fun acknowledgeSuspendedExpiry(sessionId: String): Boolean {
+        calls += "acknowledge"
+        acknowledgeError?.let { throw it }
+        acknowledgedSessionIds += sessionId
+        if (displacedSessionId == sessionId) displacedSessionId = null
         val expired = sessionId in expiredSessionIds
         expiredSessionIds -= sessionId
         return expired
     }
+
+    val acknowledgedSessionIds = mutableListOf<String>()
+}
+
+internal class FakeSessionSyncTriggers(
+    var capture: SessionWorkspaceCapture = SessionWorkspaceCapture.Unlinked,
+) : SessionSyncTriggers {
+    var syncRequests: Int = 0
+
+    override suspend fun captureWorkspace(): SessionWorkspaceCapture {
+        return capture
+    }
+
+    override fun requestSync() {
+        syncRequests += 1
+    }
+}
+
+internal fun sessionOwnerOf(
+    store: FakeLocalSessionStore,
+    enforcement: FakeEnforcementPort,
+    clock: FakeSessionClock,
+    policyStore: LocalTargetPolicyStore,
+    mappings: LocalApplicationMappings,
+    triggers: FakeSessionSyncTriggers = FakeSessionSyncTriggers(),
+    dispatcher: CoroutineDispatcher,
+): SessionTransitionOwner {
+    return SessionTransitionOwner(
+        backgroundDispatcher = dispatcher,
+        store = store,
+        clock = clock,
+        enforcement = enforcement,
+        loadTargets = { loadSessionTargets(policyStore, mappings) },
+        triggers = triggers,
+    )
 }
 
 internal class FakeSessionMappings(

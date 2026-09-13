@@ -1,10 +1,11 @@
 # Sessions
 
-Session provides a local timer from five minutes to 24 hours, backed by the
-existing session store. Setup, review, early end, expiry, and restart reflect
-real persisted state. Starting a session applies the accepted local
-enforcement for the frozen start set and the active surface reports the real
-enforcement state with Retry; synchronization remains unwired.
+Session provides a bounded timer from five minutes to 24 hours, backed by
+persisted session state. Linked Apple devices exchange session intent through
+the [sync flow](sync.md); each applies its own authorized local selections.
+The frozen summary describes the start; reapplication uses the current local
+policy. A received timer alone is not enforcement proof: Mac adoption
+can require Resume restrictions and an attended administrator confirmation.
 
 ## Sub-features
 
@@ -116,10 +117,16 @@ Preconditions:
 - Starting on the Mac raises the administrator prompt for the helper Apply. The driver
   cannot confirm it; plan attended runs with the maintainer at the Mac, otherwise expect
   the action-required state with Retry.
-- The active summary shows the frozen start set. Paused-items edits during a session apply
-  to the next pause; relaunching the Mac app during a session needs Resume restrictions.
-- There is no minutes text field. Arrow and wheel changes are immediate; Review
-  session reads the current value, not an unsubmitted string.
+- The active summary shows the frozen start set; reapplication uses the current
+  local policy. Relaunching the Mac app during a session needs Resume restrictions.
+- There is no minutes text field. Read the displayed duration and review deadline
+  before starting; repeated driver decrease taps are not proof of the final value.
+  The attended SYNC-012 run requested twenty decreases after 25 min but persisted
+  ten minutes. Use the observed deadline for expiry checks, without changing time
+  or database state.
+- Set scenario `launch.terminateExisting` explicitly to `false` when continuing a
+  session on the same host instance; omitting it selects the restart default.
+  After setup or confirmation recreates Session, expand iCloud before its actions.
 - The active/review summary stays compact with hundreds of rows. Open Selected
   items to inspect a particular domain; it is not inline on the main screen.
 - Actual load/authorization failures remain visible. A saved native selection
