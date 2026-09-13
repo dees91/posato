@@ -32,6 +32,42 @@ import kotlin.test.assertIs
 
 class SessionOwnerCompletionTest {
     @Test
+    fun `given confirmed cleanup when a remote session arrives then enforcement resumes or requests permission`() = runTest {
+        for (requiresPrompt in listOf(true, false)) {
+            val dispatcher = StandardTestDispatcher(testScheduler)
+            val store = FakeLocalSessionStore()
+            val port = FakeEnforcementPort(reapplyRequiresPrompt = requiresPrompt)
+            val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, ::targets, FakeSessionSyncTriggers())
+            try {
+                owner.startSession(OLD, NOW, END, FROZEN)
+                runCurrent()
+                owner.endEarly(OLD)
+                runCurrent()
+                assertIs<EnforcementState.Inactive>(owner.view.value.state)
+                store.adopt(CURRENT, NOW, END, NOW, FROZEN)
+                owner.refresh()
+                runCurrent()
+                if (requiresPrompt) {
+                    val action = assertIs<EnforcementState.ActionRequired>(owner.view.value.state)
+                    assertEquals(EnforcementActionKind.RESUME_REQUIRED, action.kind)
+                    assertEquals(1, port.calls.count { it == "apply" })
+                    owner.retry()
+                    runCurrent()
+                }
+                assertIs<EnforcementState.Active>(owner.view.value.state)
+                assertEquals(CURRENT.reconciliationId(), port.lastRequest?.sessionId)
+                assertEquals(2, port.calls.count { it == "apply" })
+                val calls = port.calls.toList()
+                owner.refresh()
+                runCurrent()
+                assertEquals(calls, port.calls)
+            } finally {
+                owner.close()
+            }
+        }
+    }
+
+    @Test
     fun `given a durable end before a crash then reopening clears and quiesces or offers truthful retry`() = runTest {
         for (outcome in listOf(EnforcementOutcome.CLEARED, EnforcementOutcome.FAILED)) {
             val dispatcher = StandardTestDispatcher(testScheduler)

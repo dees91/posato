@@ -41,7 +41,7 @@ internal fun isTransitionConverged(
         }
         return viewState.kind == EnforcementActionKind.CLEAR_FAILED && actionTag == tag
     }
-    return enforcedIdentity == null && (status is LocalSessionStatus.Inactive || confirmedClear)
+    return status !is LocalSessionStatus.Active && enforcedIdentity == null && (status is LocalSessionStatus.Inactive || confirmedClear)
 }
 
 /**
