@@ -27,7 +27,10 @@
 
 - Build number: latest App Store Connect build plus one, supplied at archive time, never tracked.
 - App Store name "Posato" with no fallback; stop and ask if it is unavailable.
-- The Family Controls distribution request is sent by the maintainer; approval gates phase C.
+- Encryption: `ITSAppUsesNonExemptEncryption = NO`, accepting the candidate assessment below.
+- `observed` (2026-09-14): the current request form has no bundle-identifier field; the maintainer
+  accepted its terms and Apple assigned Family Controls (Distribution) to the whole account within
+  a minute. Phase C is no longer blocked by approval.
 
 ## Plan
 
@@ -99,8 +102,7 @@ whether a year-end self-classification report applies. The maintainer decides.
 
 ## Blockers and accepted risks
 
-- **Blocker (maintainer):** Family Controls distribution for `app.posato.ios` and
-  `app.posato.ios.activitymonitor`; clears when both show **Assigned** with App Store provisioning.
+- **Cleared (2026-09-14):** Family Controls distribution, assigned at account level.
 - **Risk:** distribution builds use CloudKit Production without a schema (`SYNC-017`); no sync claim.
   Synchronizable Keychain items survive the uninstall.
 - **Risk:** a privacy-manifest rejection (`PRIVACY-001`) becomes a maintainer scope decision.
