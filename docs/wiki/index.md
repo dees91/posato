@@ -88,6 +88,9 @@ provenance rather than a parallel public brand.
   macOS process boundary.
 - [topics/mvp-open-questions.md](topics/mvp-open-questions.md) — prioritized
   decisions, accepted gate order, PR #1 boundary, and later open work.
+- [topics/first-release-readiness.md](topics/first-release-readiness.md) —
+  accepted release channels, license, reporting routes, privacy policy, the
+  blocked readiness verdict, and the roadmap owners of each blocker.
 
 ## Feasibility knowledge
 

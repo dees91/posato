@@ -17,7 +17,11 @@ To work, Posato stores on each device:
 - settings such as whether iCloud sync and the macOS helper are enabled.
 
 This data stays in Posato's private storage on the device until you change or
-remove it, or remove Posato.
+remove it. This data, except app choices on iPhone, can also be included in your
+device backups, such as iCloud Backup or Time Machine, under your backup
+settings. On
+Mac, moving Posato to the Trash does not delete this data; it remains in
+Posato's application data folder until you remove it.
 
 Posato does not collect browsing history, the pages you visit, which pages were
 blocked, how often you open apps, usage scores, or any other activity record.

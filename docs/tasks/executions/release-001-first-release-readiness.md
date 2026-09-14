@@ -1,83 +1,92 @@
 # Execution: `RELEASE-001`
 
 - **Brief:** [First-release readiness](../specifications/release-001-first-release-readiness.md)
-- **Status:** `active`; plan approved, audit starting
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code session
-- **Reviewer:** independent plan-review agent
+- **Reviewers:** independent plan-review agent; independent completed-change review agent
 - **Branch:** `docs/release-001-readiness-brief` (PR #54)
 - **Updated:** 2026-09-14
 
 ## Observed starting point
 
-- Reviewed revision base: `main` at `0d33be3` (MVP-001 accepted on `105ddda`). The repository is private; it has no license, notice, security, contributing, or privacy documents, and the README is an internal status page with stale implementation claims.
-- Preliminary read-only inventory: no committed signing files, `local.properties`, large binaries, or personal paths in local history. Six commits on `main` carry session-link trailers, and GitHub holds pull-request refs, so the audit scope is wider than local history.
-- Distribution gaps already visible: macOS signing supports only ad-hoc or Apple Development without a secure timestamp and has no notarization or versioning scheme; the Release iOS configuration omits Family Controls, so enforcement is unavailable there; Family Controls distribution, a production CloudKit schema, an App Store Connect record, an application icon, and privacy manifests do not exist.
+- Reviewed revision base: `main` at `0d33be3` (MVP-001 accepted on `105ddda`). The repository was private, had no license, notice, security, contributing, or privacy documents, and its README was an internal status page with stale implementation claims.
+- Distribution gaps were already visible: development-only signing without a secure timestamp or notarization, a Release iOS configuration without Family Controls, no production CloudKit schema, App Store Connect record, application icon, or privacy manifests.
 
 ## Decisions (`user-confirmed`, 2026-09-14)
 
-- Channels, license, reporting routes, contribution policy, external-action ownership, local verification, and privacy hosting are recorded in the brief.
-- **Session-link trailers:** rewrite history to remove them before the repository becomes public, as a separately authorized action owned by the follow-up publication row; not performed in this task.
+- Channels, license, reporting routes, contribution policy, external-action ownership, local verification, and privacy hosting are recorded in the brief. The privacy text is accepted, with `privacy@posato.app` as its contact.
+- **Published history:** session-link trailers are removed by an authorized history rewrite and the seven task-share links are removed from pull-request bodies before the repository becomes public; the maintainer's author e-mail and the nine pull-request attachments are published unchanged.
+- **Roadmap revision 15:** `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `PRIVACY-001`, the maintainer-added `DOCS-001` showcase README (screenshots and a Remotion-rendered demo, modeled on the maintainer's other project READMEs), and `RELEASE-002`, which owns the final ready verdict and the public-distribution gate.
 
 ## Plan
 
-1. **Exposure audit (AC-01).** Fetch every remote branch, tag, and `refs/pull/*` into a temporary clone. Scan contents and commit metadata (authors, committers, trailers) for credentials, private keys, private URLs, personal paths, e-mail addresses, team, key, issuer and device identifiers, and provisioning names; list issues, pull requests, comments, and workflow runs and artifacts read-only with `gh`. Record categories and counts only. Each finding gets a prepared maintainer decision; history rewrite or content deletion is a separate authorized action. Review "Blocker" and research-checkout references for public readability.
-2. **Licenses and name (AC-01).** Resolve runtime dependencies per shipped module with Gradle dependency reports and read their declared licenses; include Swift build plugins and the Gradle wrapper. Add the unmodified Apache-2.0 `LICENSE` and a `NOTICE` with the decided copyright and required attributions. Search EUIPO, USPTO, and WIPO public databases for the product name; record the date, terms, classes, and any blocked search, without clearance language.
-3. **Handover sweep (AC-05).** Grep `docs/` for obligations assigned to `RELEASE-001` (including platform matrix, network and Automation disclosures, shipped diagnostic defaults, CloudKit quota and retention, release-build permission persistence, accessibility captures, residual risks R-01 to R-06) and give each a table row or a named follow-up row.
-4. **Clean checkout (AC-02).** Clone a committed revision into a temporary directory without `local.properties` or the research checkout and run `./gradlew quality`. Record JDK, Xcode selection, Android SDK Platform 36, and Gradle user properties as documented prerequisites or blockers; document credential-free checks separately from signed-build prerequisites and record the local release verification policy.
-5. **Public documents (AC-03).** Rewrite `README.md`; add `SECURITY.md` pointing to private vulnerability reporting, `CONTRIBUTING.md` (Issues yes, pull requests not accepted), and issue templates that warn against domains, application names, device models, screenshots, logs, and crash reports and route vulnerabilities privately; add `PRIVACY.md` as the policy text for `posato.app`, not presented as hosted until it is. Reconcile every statement with the threat model, diagnostics policy, MVP scope, and MVP-001 evidence; the maintainer accepts the privacy text before merge. Follow the README build steps on the clean clone.
-6. **Channel audit (AC-04).** Read-only comparison of packaging, signing, entitlements, configurations, versioning and build numbers, bundled notices, CloudKit and Keychain environments, encryption and export-compliance declarations, the supported platform matrix, and install/update/removal paths with dated official Apple requirements. Each gap becomes a blocker with an owner.
-7. **Verdict and roadmap (AC-05).** Fill the table, give the verdict, and propose roadmap revision 15 rows (`MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `PRIVACY-001`, `RELEASE-002`) for maintainer acceptance, with `RELEASE-002` owning the final verdict on candidate artifacts, the history rewrite, and the public-distribution gate.
-8. **Close out.** Independent completed-change review, one wiki-log entry and a topic update for durable conclusions, push to PR #54. Documentation-only change, so no hosted review. Rebase before merge; union any wiki-log conflict with PR #52.
+1. **Exposure audit (AC-01).** Mirror every branch, tag, and pull-request ref; scan contents and commit metadata; list GitHub-hosted issues, pull requests, comments, runs, and artifacts read-only; record categories and prepared decisions only.
+2. **Licenses and name (AC-01).** Resolve shipped runtime dependencies and their licenses, add `LICENSE`, `NOTICE`, and third-party notices, and search public trademark databases.
+3. **Handover sweep (AC-05).** Collect every obligation earlier authorities assign to `RELEASE-001`.
+4. **Clean checkout (AC-02).** Run `./gradlew quality` on a clean clone without maintainer state and record the environment.
+5. **Public documents (AC-03).** Rewrite the README; add security, contributing, issue-template, and privacy documents reconciled with accepted authorities; verify the README build steps.
+6. **Channel audit (AC-04).** Compare current artifacts and configuration with dated official Apple requirements.
+7. **Verdict and roadmap (AC-05).** Fill the table, give the verdict, and add the accepted roadmap revision 15 rows.
+8. **Close out.** Independent completed-change review, wiki update, push to PR #54; no hosted review for documentation.
 
 ## Obligation table
 
 | Obligation | AC | Evidence | Result | Owner / next action |
 | --- | --- | --- | --- | --- |
-| Refs, metadata, and trailers free of credentials, private data, and private URLs | AC-01 | Mirror of 34 branches, 1 tag, 56 pull refs, 457 commits (2026-09-14): no tokens, private-key bodies, real team, issuer, or device identifiers, personal paths, or blobs over 1 MB; flagged key headers, secret-like strings, and identifier-shaped values are test fixtures | pass except the rows below | — |
+| Refs, metadata, and trailers free of credentials, private data, and private URLs | AC-01 | Mirror of 34 branches, 1 tag, 56 pull refs, 457 commits (2026-09-14): no tokens, private-key bodies, real team, issuer, or device identifiers, personal paths, or blobs over 1 MB; flagged key headers, secret-like strings, and identifier-shaped values are test fixtures; no feasibility-research code, traces, or runners are tracked, and the research checkout is referenced only as optional read-only provenance | pass except the rows below | — |
 | Session-link trailers removed from published history | AC-01 | six commits on `main` carry session-link trailers | blocked | `RELEASE-002`: authorized history rewrite before the visibility change |
-| Maintainer personal e-mail in commit metadata | AC-01 | two author identities; the maintainer's personal address is on most commits | accepted by the maintainer; published unchanged | — |
+| Maintainer personal e-mail in commit metadata | AC-01 | two author identities; the maintainer's personal address is on most commits | accepted by the maintainer | — |
 | GitHub-hosted issues, pull requests, comments, and workflow logs safe to publish | AC-01 | 0 issues, 54 pull requests, 36 workflow runs; logs contain only hosted-runner paths; 32 of 34 artifacts expired, 2 expire 2026-09-21; review-bot links point to public settings pages | pass except the rows below | — |
 | Private task links in pull-request bodies | AC-01 | seven login-gated task-share links in pull-request bodies | blocked | `RELEASE-002`: remove the links before the visibility change |
-| Attachments in pull requests | AC-01 | nine uploaded attachments in three pull requests | accepted by the maintainer; published unchanged | — |
-| Dependency, asset, and notice inventory; `LICENSE` and `NOTICE` | AC-01 | 171 resolved runtime artifacts across macOS JVM and iOS: Apache-2.0 except one MIT library, confirmed from published metadata; native Skia (BSD-3-Clause) and SQLite (public domain) payloads and the bundled OpenJDK runtime (GPL-2.0 with Classpath Exception, `legal` notices present) attributed in `THIRD_PARTY_NOTICES.md`; unmodified Apache-2.0 `LICENSE` and a `NOTICE` added; no tracked assets | pass for the repository | `MACOS-008` and `IOS-003`: ship full notices inside the application bundles and choose the release JDK vendor |
+| Attachments in pull requests | AC-01 | nine uploaded attachments in three pull requests | accepted by the maintainer | — |
+| Dependency, asset, and notice inventory; `LICENSE` and `NOTICE` | AC-01 | 171 resolved runtime artifacts across macOS JVM and iOS: Apache-2.0 except one MIT library, confirmed from published metadata; native Skia (BSD-3-Clause) and SQLite (public domain) payloads and the bundled OpenJDK runtime (GPL-2.0 with Classpath Exception, `legal` notices present) attributed in `THIRD_PARTY_NOTICES.md`; unmodified Apache-2.0 `LICENSE` and a `NOTICE` added; no tracked assets | pass for the repository | `MACOS-008`, `IOS-003`: full notices inside application bundles; release JDK vendor |
 | Product-name trademark search | AC-01 | 2026-09-14: official EUIPO TMview, WIPO Brand Database, and USPTO search refuse automated reads (JavaScript or CAPTCHA); web index shows no exact mark, nearest similar marks in unrelated goods | blocked for automated search | maintainer: manual search in the official databases |
-| Clean checkout passes local gates; environment and release verification policy | AC-02 | Fresh clone of `e2f701f` without `local.properties` or the research checkout: `./gradlew quality` passed in 5 min 16 s (Swift suite 135 tests, 6 skipped). Environment: Java 17 launcher with the build-provisioned JDK 21, Xcode 26.6, Android SDK through `ANDROID_HOME`, no Gradle user properties; all documented in the README and development guide. Signed variants depend on identifiers registered to the maintainer's team. Release verification stays local (CI disabled) | pass | `RELEASE-002`: local release checklist for signed and notarized candidates |
-| README accurate, links and build-from-source steps work | AC-03 | README rewritten for users and contributors: verified MVP-001 capabilities and limits, deployment targets, unavailable channels, credential-free build steps, and the signed-build dependency on team-registered identifiers; clean-clone step verification in progress | in progress | this task |
-| Security, contribution, issue-template, and privacy documents agree with the product; privacy text accepted | AC-03 | `SECURITY.md`, `CONTRIBUTING.md`, bug template without personal fields, and `PRIVACY.md` reconciled with the threat model, diagnostics policy (no capture or logging in shipped code), ADR 0005, and MVP scope; privacy text accepted by the maintainer on 2026-09-14 | pass pending independent review | this task |
+| Clean checkout passes local gates; environment and release verification policy | AC-02 | Fresh clone of `e2f701f` without `local.properties` or the research checkout: `./gradlew quality` passed in 5 min 16 s (Swift suite 135 tests, 6 skipped). Environment: Java 17 launcher with the build-provisioned JDK 21, Xcode 26.6, Android SDK through `ANDROID_HOME`, no Gradle user properties; the README documents each prerequisite, and the development guide names the SDK but not `ANDROID_HOME`. Release verification stays local (CI disabled) | pass | `RELEASE-002`: local release checklist for signed candidates |
+| README accurate, links and build-from-source steps work | AC-03 | README rewritten for users and contributors: verified MVP-001 capabilities, disclosed limits, deployment targets, unavailable channels, credential-free build steps verified on the clean clone (quality, iOS Simulator build, desktop run task present), signed builds tied to team-registered identifiers; local links resolve | pass | `DOCS-001`: showcase README |
+| Security, contribution, issue-template, and privacy documents agree with the product; privacy text accepted | AC-03 | `SECURITY.md`, `CONTRIBUTING.md`, bug and question-or-idea templates without personal fields, and `PRIVACY.md` reconciled with the threat model, diagnostics policy (no capture or logging in shipped code), ADR 0005, `MACOS-004` limits, and MVP scope; privacy text accepted on 2026-09-14; the policy discloses that local data except iPhone app choices can be included in device backups and survives moving the Mac app to the Trash | pass | — |
 | Private vulnerability reporting and Issues enabled | AC-03 | repository settings | blocked until the repository is public | maintainer |
-| Privacy policy hosted on `posato.app` with the `privacy@posato.app` contact | AC-03 | domain owned; policy text and contact decided | blocked until hosted and the mailbox exists | maintainer, through `PRIVACY-001` |
-| macOS Developer ID, notarization, versioning, bundled notices, install/update/removal | AC-04 | pending | pending | pending |
-| iOS App Store: Release configuration, Family Controls distribution, versioning, privacy manifest and label, icon | AC-04 | pending | pending | pending |
-| CloudKit production schema, quota, and retention; Keychain environment | AC-04 | pending | pending | pending |
-| Encryption and export-compliance declarations | AC-04 | pending | pending | pending |
-| Supported platform matrix (current and previous major versions) | AC-04 | pending | pending | pending |
-| `RELEASE-001` handovers from earlier authorities | AC-05 | pending | pending | pending |
-| MVP-001 evidence reconciled; residual risks R-01 to R-06 rechecked | AC-05 | pending | pending | pending |
-| Final verdict on candidate artifacts owned by a named row | AC-05 | pending | pending | pending |
+| Privacy policy hosted on `posato.app` with the `privacy@posato.app` contact | AC-03 | domain owned; text and contact decided | blocked until hosted and the mailbox exists | `PRIVACY-001` with the maintainer |
+| macOS Developer ID, notarization, versioning, bundled notices, install/update/removal | AC-04 | Apple notarization requirements checked 2026-09-14 (Developer ID certificate, hardened runtime, secure timestamp, no `get-task-allow`, signed nested code, `notarytool`, stapling). Current packaging: Apple Development or ad-hoc only, `--timestamp=none`, hardened runtime on, JIT entitlement only; version `1.0.0` hard-coded; no updater; removal follows ADR 0004, dragging to Trash is not a supported uninstall | blocked | `MACOS-008` |
+| iOS App Store: Release configuration, Family Controls distribution, versioning, privacy manifest and label, icon | AC-04 | Checked 2026-09-14: uploads since 2026-04-28 need Xcode 26 and the iOS 26 SDK; Family Controls distribution is approved per bundle identifier, including extensions; privacy manifests declare required-reason APIs. Current state: Release configuration lacks the Family Controls entitlement and compilation flag, so enforcement is unavailable; version `1.0.0` (1) hard-coded; no application icon, privacy manifest, or App Store Connect record; iOS reinstall behavior still open from `IOS-001` | blocked | `IOS-003`, `DESIGN-002`, `PRIVACY-001`; maintainer requests Family Controls distribution |
+| CloudKit production schema, quota, and retention; Keychain environment | AC-04 | Development builds use the CloudKit Development environment; no production schema is deployed and quota or retention behavior is unmeasured; Keychain group unchanged between environments (source claim, to verify with release signing) | blocked | `SYNC-017`; maintainer deploys the schema in the CloudKit Console |
+| Encryption and export-compliance declarations | AC-04 | Apple requires `ITSAppUsesNonExemptEncryption` or an equivalent App Store Connect answer; Posato implements application-layer encryption (ADR 0006), so the exemption must be assessed and may need an annual self-classification; no declaration exists | blocked | `IOS-003`, `MACOS-008`, without legal opinion |
+| Supported platform matrix (current and previous major versions) | AC-04 | Deployment targets macOS 15 on arm64 and iOS 18; physical evidence covers one Mac on macOS 26.5.2 with Safari 26.5.2 and Chrome Stable 152, and one iPhone whose iOS version was not recorded; previous major versions are unverified; README states the targets without a verified-matrix claim | blocked | `RELEASE-002`: dated matrix on macOS 26 and 15 and iOS 26 and 18 |
+| `RELEASE-001` handovers from earlier authorities | AC-05 | Swept `docs/` 2026-09-14. ADR 0004 channel compatibility: Developer ID keeps the non-sandboxed helper, pass. ADR 0005 and `MACOS-004` Automation, port, proxy, Private Relay, IP-address, and presentation disclosures: in README, `SECURITY.md`, and `PRIVACY.md`, pass. Diagnostics policy: no capture store, export, or production logging ships, platform diagnostics disclosed, pass. Transferred: `MACOS-003` signing and notarization and ADR 0004 update delivery to `MACOS-008`; `SYNC-007`, `SYNC-008`, `SYNC-010` production schema, quota, and retention to `SYNC-017`; `ONBOARDING-001` release-build permission persistence, `ONBOARDING-002` accessibility captures, and the dated browser matrix to `RELEASE-002`; `TB-08`/`T-13` signing and update review to `MACOS-008` and `RELEASE-002` | pass for disclosures; rest transferred | named rows |
+| MVP-001 evidence reconciled; residual risks R-01 to R-06 rechecked | AC-05 | MVP-001 accepted on `105ddda`; later commits change no product code (only documentation, verification recipes, and a verification fixture), so its evidence applies with its recorded limits and development signing only. Public documents disclose R-01 (Apple Account trust), R-02 (removable, not administrator-resistant), R-03 (Apple metadata, best-effort delivery), R-04 (no remote wipe or key-loss recovery), and R-06 (browser, port, proxy, content, presentation limits) and make no memory-erasure claim (R-05) | pass | — |
+| Final verdict on candidate artifacts owned by a named row | AC-05 | Roadmap revision 15 accepted: `RELEASE-002` owns the final verdict and the public-distribution gate, depends on `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `PRIVACY-001`, and `DOCS-001`; `IOS-003` owns the Family Controls distribution gate | pass | `RELEASE-002` |
 
 ## High-risk plan review
 
 - **Verdict:** `changes-required` (independent agent, 2026-09-14); no Critical.
 - **Required findings:** (R1) the exposure audit missed pull-request refs, commit metadata and trailers, private URLs, and GitHub-hosted content; (R2) obligations earlier authorities hand to `RELEASE-001` were not collected; (R3) encryption and export-compliance declarations were missing; (R4) no row owned the final ready verdict on candidate artifacts.
-- **Resolution:** R1 plan step 1 and AC-01 widened with prepared decisions; R2 handover sweep step and AC-05; R3 added to AC-04 and the table; R4 AC-05 and step 7 name `RELEASE-002`. Recommended points folded: settings-owned reporting rows, issue-template content, maintainer acceptance of the privacy text, recorded clean-clone environment, bundled notices, versioning and CloudKit quota rows, blocked trademark searches allowed.
-- **Approval:** the maintainer approved the corrected plan on 2026-09-14 (`user-confirmed`).
+- **Resolution:** all folded into the brief and plan with the recommended points; the maintainer approved the corrected plan on 2026-09-14 (`user-confirmed`).
 
 ## Result
 
-- Pending execution.
+- **Verdict: blocked** for revision `0d33be3` plus this change, Developer ID on macOS and the App Store on iOS, deployment targets macOS 15 (arm64) and iOS 18. Repository hygiene, licensing, clean-checkout build, public documents, disclosures, and residual-risk rechecks pass; distribution signing, iOS Release enforcement, production CloudKit, store assets, privacy publication, the platform matrix, history cleanup, and trademark confirmation are blocked with named owners.
+- Added `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `PRIVACY.md`, `SECURITY.md`, `CONTRIBUTING.md`, and bug-report and question-or-idea templates; rewrote the README; updated the brief and roadmap revision 15. No product code changed, and no external write action was taken against Apple or GitHub.
+- Deviation: official trademark databases refused automated searches, so that obligation stays with the maintainer.
 
 ## Completed-change review
 
-- **Verdict:** pending
+- **Verdict:** `changes-required` (independent agent, 2026-09-14); no Critical.
+- **Required findings:** (R1) the README overstated how long blocking lasts on macOS and iOS; (R2) the privacy text implied that removing Posato deletes local data; (R3) the development guide linked a README section the rewrite removed.
+- **Resolution:** README discloses that Mac blocking needs Posato running and an approved resume, that paused Mac apps are quit, and the iPhone expiry limits; the privacy text discloses device backups and data left after moving the Mac app to the Trash; the link points to the new section. Recommended points folded: question and idea template, three record wording corrections, Simulator and Java requirements.
+- **Re-review:** `changes-required` for one Required point (the backup sentence omitted settings, sync state, and Mac app choices); corrected, with the template wording and Java requirement. No Critical or Required finding remains.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Rebase onto `0d33be3`, `git diff --check` | pass | only the roadmap row link and this task's documents differ from `main` |
+| Rebase onto `0d33be3`, `git diff --check` | pass | only this task's documents and the roadmap differ from `main` |
+| History mirror and GitHub-hosted content scans | pass with recorded decisions | categories and counts only; comparisons against real identifiers matched nothing |
+| Clean clone `./gradlew quality` | pass | `e2f701f`, 5 min 16 s |
+| README iOS Simulator build and desktop run task | pass | clean clone; build succeeded |
+| Apple requirements (notarization, privacy manifests, Family Controls, upload SDK, export compliance) | checked 2026-09-14 | official pages; CloudKit schema page unreadable, recorded as a source claim |
+| Diff scans for private data; local link check | pass | no personal paths, identifiers, or private URLs |
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** blocked verdict with named owners; public documents ready for the repository; publication remains a separate maintainer action after `RELEASE-002`.

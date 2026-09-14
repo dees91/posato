@@ -37,8 +37,9 @@ themselves:
 - a device administrator, root user, debugger, or compromised operating system
   can bypass enforcement, read local data, or remove Posato;
 - ending a session early or removing Posato is intentionally possible;
-- browsers or apps other than Safari and Chrome Stable, non-standard ports, or
-  clients that ignore system proxy settings are not blocked on macOS;
+- browsers or apps other than Safari and Chrome Stable, non-standard ports,
+  clients that ignore system proxy settings, visiting a site by IP address, or
+  iCloud Private Relay are not blocked on macOS;
 - Apple can observe the metadata needed to operate iCloud;
 - an Apple Account or iCloud Keychain compromise gives access to the workspace.
 

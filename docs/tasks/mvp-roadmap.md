@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 14
+- **Revision:** 15
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-11
+- **Last amended:** 2026-09-14
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -72,6 +72,15 @@ records instead, so no zone purge exists. It may run in a separate worktree
 alongside `SYNC-012` only under the file freeze its brief states; the
 physical gates run one after the other. It changes no other task,
 dependency, wave, or integration group.
+
+Revision 15 adds the maintainer-accepted release follow-ups after the
+`RELEASE-001` readiness audit: `MACOS-008`, `IOS-003`, `SYNC-017`,
+`DESIGN-002`, `PRIVACY-001`, `DOCS-001`, and `RELEASE-002`. `RELEASE-001`
+closes with a blocked verdict. `RELEASE-002` owns the final ready verdict on
+candidate artifacts, the public-distribution gate, the authorized cleanup of
+published history and pull-request links, and the hand-off of publication to
+the maintainer. It changes no other task, dependency, wave, or integration
+group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -163,6 +172,13 @@ wave barriers add the phase ordering stated above.
 | `SYNC-012` | Converge session start, early termination, and expiry without unsafe delivery promises. [Draft brief](specifications/sync-012-session-convergence.md). | Apple synchronization | P4/W4.4 | `SYNC-011`, `SESSION-002` | PR-SESSION-SYNC |
 | [`MVP-001`](specifications/mvp-001-end-to-end-acceptance.md) | Pass the accepted MVP flow on one supported Mac and iPhone without manual repair. | Completion | P5/W5.1 | `SYNC-012` | PR-MVP-ACCEPTANCE |
 | [`RELEASE-001`](specifications/release-001-first-release-readiness.md) | Pass or explicitly block every first-release readiness obligation. | Release readiness | Release/R1 | `MVP-001` | PR-RELEASE-READINESS |
+| `MACOS-008` | Sign the macOS package with Developer ID and a secure timestamp, notarize and staple it, version it, bundle third-party notices, and choose the release JDK. | Release readiness | Release/R2 | `RELEASE-001` | PR-MAC-DISTRIBUTION |
+| `IOS-003` | Build an App Store iOS release with approved Family Controls distribution, an App Store Connect record, versioning, an encryption declaration, and bundled notices. | Release readiness | Release/R2 | `RELEASE-001` | PR-IOS-DISTRIBUTION |
+| `SYNC-017` | Deploy and verify the production CloudKit schema, quota, and retention behavior for release builds. | Apple synchronization | Release/R2 | `RELEASE-001` | PR-CLOUDKIT-PRODUCTION |
+| `DESIGN-002` | Provide the macOS and iOS application icons and store assets. | Release readiness | Release/R2 | `RELEASE-001` | PR-STORE-ASSETS |
+| `PRIVACY-001` | Add privacy manifests, prepare the App Store privacy label, and host the privacy policy and its contact on `posato.app`. | Release readiness | Release/R2 | `RELEASE-001` | PR-PRIVACY-PUBLICATION |
+| `DOCS-001` | Turn the README into a showcase with screenshots and a Remotion-rendered demo that routes details to the documentation. | Release readiness | Release/R2 | `RELEASE-001`, `DESIGN-002` | PR-SHOWCASE-README |
+| `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `PRIVACY-001`, `DOCS-001` | PR-RELEASE-CANDIDATE |
 
 ## PR #1 shared cycle
 
@@ -184,7 +200,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Policy and session convergence | `SYNC-011`, `SYNC-012` | Bidirectional physical convergence, offline/retry, early end, and expiry |
 | Removal and re-link hardening | `SYNC-014`, `SYNC-015` | Fake-port resurrection cases and physical removal, quick re-link, and settle evidence |
 | Complete measurable MVP outcome | `MVP-001` | One controlled Mac-and-iPhone pass without manual repair |
-| Public-release obligations | `RELEASE-001` | Separate pass or blocked readiness verdict |
+| Public-release obligations | `RELEASE-001`, `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `PRIVACY-001`, `DOCS-001`, `RELEASE-002` | Readiness audit with a blocked verdict, signed and notarized or App Store artifacts, production configuration, and a final pass or blocked verdict on candidates |
 
 ## Manual and physical gates
 
@@ -192,7 +208,7 @@ integrated increment, not three task cycles plus another holistic review.
 | --- | --- | --- |
 | Apple team, four App IDs, App Group, CloudKit container, Keychain suffix, and Family Controls, App Groups, and iCloud/CloudKit portal capabilities | `APPLE-001` | Apple Developer and CloudKit Console resource rows plus Xcode team visibility pass without tracked private values; Keychain target configuration, provisioning authorization, and signed-entitlement verification remain with `SYNC-005` and `SYNC-006`. |
 | macOS synchronization-companion App ID and existing CloudKit-container association | `SYNC-003` | `app.posato.macos.sync` exists with iCloud/CloudKit enabled and is associated only with `iCloud.app.posato.sync`; target entitlements, provisioning, signing, and signed-artifact verification remain with `SYNC-006` and `SYNC-008`. |
-| Family Controls distribution availability | `TARGETS-004` / `IOS-001` | Later distribution work records pass or a clearing condition. |
+| Family Controls distribution availability | `IOS-003` | The maintainer's distribution request is approved for the app and its extension, or the row stays blocked with its clearing condition. |
 | iOS suspended expiry opportunity | `IOS-002` | A physical callback clears owned restrictions without promising exact wake time. |
 | macOS helper signing and privilege path | `MACOS-003` | Physical authentication, authorization, failure, and removal/recovery evidence passes. |
 | macOS development package launch | `MACOS-006` | The unchanged Gradle-produced application passes strict nested-signature verification and launches on the supported physical Mac without manual re-signing. |
@@ -200,7 +216,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Browser support and proxy coexistence | `MACOS-002` / `MACOS-004` | Accepted support contract and physical browser matrix pass. |
 | CloudKit and Keychain environments | `SYNC-005`–`SYNC-010` | Physical account, delay, restart, error, and cleanup evidence passes. |
 | Complete product flow | `MVP-001` | The accepted Mac-and-iPhone matrix passes without manual repair. |
-| Public distribution | `RELEASE-001` | Separate readiness verdict; never inferred from MVP behavior. |
+| Public distribution | `RELEASE-002` | Final readiness verdict on candidate artifacts; never inferred from MVP behavior or the `RELEASE-001` audit. |
 
 No credential, signing identity, provisioning profile, private device ID, raw
 capture, opaque application token, real-person domain, or account-specific

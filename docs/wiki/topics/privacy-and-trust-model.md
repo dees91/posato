@@ -35,8 +35,12 @@
   remains app-private until edited or removed; replacing it with an empty set
   atomically removes every domain row. A separate reset flow, guaranteed secure
   erasure, and custom backup policy remain outside MODEL-001.
-- `open`: the public privacy notice, production cryptographic design, and
-  lifecycle rules for other non-diagnostic data are not accepted.
+- `user-confirmed` (2026-09-14): the public privacy policy text in
+  [`PRIVACY.md`](../../../PRIVACY.md) is accepted for publication on
+  `posato.app` with a `privacy@posato.app` contact; hosting and the mailbox
+  remain with `PRIVACY-001`. See
+  [first-release readiness](first-release-readiness.md).
+- `open`: lifecycle rules for other non-diagnostic data are not accepted.
 
 ## Accepted Apple MVP threat model
 
