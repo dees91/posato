@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 15
+- **Revision:** 16
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
 - **Last amended:** 2026-09-14
@@ -81,6 +81,11 @@ candidate artifacts, the public-distribution gate, the authorized cleanup of
 published history and pull-request links, and the hand-off of publication to
 the maintainer. It changes no other task, dependency, wave, or integration
 group.
+
+Revision 16 adds a licenses screen on both platforms to `DESIGN-002` after
+the maintainer decided on 2026-09-14 that the bundled license and notice files
+are also shown inside the app. It changes no other task, dependency, wave, or
+integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -175,7 +180,7 @@ wave barriers add the phase ordering stated above.
 | `MACOS-008` | Sign the macOS package with Developer ID and a secure timestamp, notarize and staple it, version it, bundle third-party notices, and choose the release JDK. | Release readiness | Release/R2 | `RELEASE-001` | PR-MAC-DISTRIBUTION |
 | `IOS-003` | Build an App Store iOS release with approved Family Controls distribution, an App Store Connect record, versioning, an encryption declaration, and bundled notices. | Release readiness | Release/R2 | `RELEASE-001` | PR-IOS-DISTRIBUTION |
 | `SYNC-017` | Deploy and verify the production CloudKit schema, quota, and retention behavior for release builds. | Apple synchronization | Release/R2 | `RELEASE-001` | PR-CLOUDKIT-PRODUCTION |
-| `DESIGN-002` | Provide the macOS and iOS application icons and store assets. | Release readiness | Release/R2 | `RELEASE-001` | PR-STORE-ASSETS |
+| [`DESIGN-002`](specifications/design-002-icons-store-assets.md) | Provide the macOS and iOS application icons, store assets, and a licenses screen showing the bundled license and notice files. | Release readiness | Release/R2 | `RELEASE-001` | PR-STORE-ASSETS |
 | `PRIVACY-001` | Add privacy manifests, prepare the App Store privacy label, and host the privacy policy and its contact on `posato.app`. | Release readiness | Release/R2 | `RELEASE-001` | PR-PRIVACY-PUBLICATION |
 | `DOCS-001` | Turn the README into a showcase with screenshots and a Remotion-rendered demo that routes details to the documentation. | Release readiness | Release/R2 | `RELEASE-001`, `DESIGN-002` | PR-SHOWCASE-README |
 | `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `PRIVACY-001`, `DOCS-001` | PR-RELEASE-CANDIDATE |
