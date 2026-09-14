@@ -1,5 +1,6 @@
 # `MVP-001`: Pass the complete Apple MVP flow without manual state repair
 
+- **Execution record:** [MVP-001 execution](../executions/mvp-001-end-to-end-acceptance.md)
 - **Review tier:** `high-risk`
 - **Tier reason:** Physical first/second-installation acceptance touches account-level workspace state and real device restrictions; fixture preparation and recovery need independent plan review before execution.
 - **Dependencies:** completed `SYNC-012`, including its merged policy, onboarding, mapping, enforcement, and workspace-lifecycle dependencies.
