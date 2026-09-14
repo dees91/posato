@@ -32,8 +32,10 @@ their roadmap owners (revision 15) are:
 | Release iOS configuration with Family Controls distribution, App Store Connect record, encryption declaration | `IOS-003` |
 | Production CloudKit schema, quota, and retention | `SYNC-017` |
 | Application icons and store assets | `DESIGN-002` |
-| Privacy manifests, App Store privacy label, hosted policy and contact | `PRIVACY-001` |
+| Styled macOS pause page (added in revision 17) | `DESIGN-003` |
+| Privacy manifests and App Store privacy label | `PRIVACY-001` |
 | Showcase README with screenshots and a rendered demo | `DOCS-001` |
+| `posato.app` site with the hosted privacy policy, its contact, and support routes (moved from `PRIVACY-001` in revision 17) | `WEB-001` |
 | Supported platform matrix, history and link cleanup, final verdict, publication hand-off | `RELEASE-002` |
 
 `open`: automated searches of official trademark databases were refused, so a
