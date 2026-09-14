@@ -672,6 +672,16 @@ not an accepted feature plan or an expansion of the MVP.
    Java runtime and native libraries per architecture, the Swift helpers,
    packaging and notarization for both architectures, macOS 14 API
    availability, and a physical test device in the release matrix.
+9. **In-app updates for macOS.** `user-confirmed` (2026-09-14): explore
+   delivering new macOS versions from inside Posato, for example with Sparkle,
+   after `MACOS-008` chose a manual download of each notarized build without
+   an updater. Discovery must cover the update feed and its hosting, signing
+   of update archives, how Posato checks for updates without weakening the
+   no-telemetry promise in [`PRIVACY.md`](../../../PRIVACY.md), and the
+   supported update path in
+   [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md),
+   which restores and verifies proxy settings and helper registration before
+   an update replaces the application.
 
 ## Later platform questions
 

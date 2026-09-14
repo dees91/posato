@@ -1777,6 +1777,7 @@ processed with no errors or warnings. See the
 - Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
   `docs/wiki/topics/first-release-readiness.md`.
 ## [2026-09-12] proposal | Post-MVP session usability improvements
+
 ## [2026-09-13] proposal | Post-MVP usability and feature ideas
 
 Recorded the maintainer's request to plan clearer `www` website coverage and
@@ -1788,6 +1789,6 @@ The [feature idea queue](topics/mvp-open-questions.md#post-mvp-feature-ideas-for
 also retains recurring schedules, family controls, ad blocking, a Focusly
 comparison, YouTube distraction reduction, local session-start/end
 notifications on iOS and macOS, a macOS menu bar presence that keeps sessions
-working without the main window, and Intel Mac support starting with a 2019
-MacBook Air for later discovery, without committing to scope, feasibility, or
-delivery.
+working without the main window, Intel Mac support starting with a 2019
+MacBook Air, and in-app macOS updates for later discovery, without committing
+to scope, feasibility, or delivery.
