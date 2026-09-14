@@ -35,4 +35,4 @@ A release build task produces a Developer ID signed, securely timestamped, notar
 ## Decisions or blockers
 
 - **Blocker (maintainer):** a Developer ID Application certificate on this Mac; creating it needs the Account Holder role if the API cannot.
-- **Open, recommendation in brackets:** package container [signed and notarized DMG]; release JDK vendor [Eclipse Temurin 21]; update delivery [manual download of a new notarized build, no updater, per ADR 0004].
+- **Accepted 2026-09-14 (maintainer):** the package container is a signed and notarized DMG; the release JDK is Eclipse Temurin 21; updates are a manual download of a new notarized build, with no updater, per ADR 0004.
