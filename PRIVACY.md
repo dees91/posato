@@ -19,9 +19,17 @@ To work, Posato stores on each device:
 This data stays in Posato's private storage on the device until you change or
 remove it. This data, except app choices on iPhone, can also be included in your
 device backups, such as iCloud Backup or Time Machine, under your backup
-settings. On
-Mac, moving Posato to the Trash does not delete this data; it remains in
-Posato's application data folder until you remove it.
+settings. On Mac, moving Posato to the Trash does not delete this data; it
+remains in Posato's application data folder until you remove it.
+
+When iCloud sync is on, Posato also keeps the history of synchronized changes
+in its private storage on each linked device: every website added or removed,
+changes to the shared app group name, and when each change was made, including
+when past sessions started, when they were scheduled to end, and whether they
+were ended early. Changing or removing a website does not erase its earlier
+entries from this history. The history stays until **Remove workspace**
+completes on that device or Posato's data is removed from it, and it can be
+included in device backups like the data above.
 
 Posato does not collect browsing history, the pages you visit, which pages were
 blocked, how often you open apps, usage scores, or any other activity record.
@@ -34,6 +42,10 @@ iCloud sync is optional and off until you choose **Sync with iCloud**.
   encrypted on your device before they are stored in the private CloudKit
   database of your own iCloud account. Posato's developer cannot read or access
   them.
+- Each change, and each device's registration, is stored as a separate
+  encrypted record, and these records
+  accumulate in your iCloud database until you choose **Remove workspace**;
+  Posato does not clean them up automatically.
 - The encryption key is shared between your devices through iCloud Keychain.
 - App choices are never synchronized; each device keeps its own.
 - Apple operates iCloud and can observe technical information needed to provide
@@ -41,12 +53,13 @@ iCloud sync is optional and off until you choose **Sync with iCloud**.
   Apple's own privacy policy.
 
 **Remove workspace** deletes Posato's synchronized records from your iCloud
-database and the workspace key from iCloud Keychain, so your other devices lose
-access to the workspace too; their own copies of your website list and sessions
-stay on those devices until you remove them there. Websites saved on the device
-where you remove the workspace stay on that device. Apple may retain backups for
-a period under its own policies. If every copy of the key is lost, synchronized
-data cannot be recovered.
+database, its history of synchronized changes on the device where you remove it,
+and the workspace key from iCloud Keychain, so your other devices lose access to
+the workspace too; their own copies of your website list, sessions, and change
+history stay on those devices until you remove the workspace there. Websites
+saved on the device where you remove the workspace stay on that device. Apple
+may retain backups for a period under its own policies. If every copy of the
+key is lost, synchronized data cannot be recovered.
 
 ## Screen Time on iPhone
 

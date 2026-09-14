@@ -106,6 +106,11 @@ policy with an empty set removes every domain row in the same atomic
 transaction. This decision does not claim secure physical erasure and does not
 add a separate reset or custom backup policy.
 
+`observed` (2026-09-14): with Apple sync established, accepted operations retain
+added and removed domains and session times locally and, encrypted, in CloudKit
+until Remove workspace; format 1 has no compaction
+([ADR 0006](../../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md)).
+
 ## Data outside the default model
 
 - browsing history and full URLs;
