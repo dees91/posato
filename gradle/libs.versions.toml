@@ -5,6 +5,7 @@ androidMinSdk = "21"
 clikt = "5.1.0"
 compose = "1.10.3"
 compose-material3 = "1.9.0"
+markdown = "0.7.13"
 compose-rules = "0.6.4"
 coroutines = "1.10.2"
 immutable-collections = "0.5.1"
@@ -24,6 +25,7 @@ clikt = { module = "com.github.ajalt.clikt:clikt", version.ref = "clikt" }
 compose-desktop-macos-arm64 = { module = "org.jetbrains.compose.desktop:desktop-jvm-macos-arm64", version.ref = "compose" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3" }
+markdown = { module = "org.jetbrains:markdown", version.ref = "markdown" }
 compose-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
 compose-rules-detekt = { module = "io.nlopez.compose.rules:detekt", version.ref = "compose-rules" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }

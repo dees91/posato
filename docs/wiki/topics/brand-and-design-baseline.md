@@ -490,8 +490,29 @@ change.
 
 ## Deferred work
 
-Final logo and app-icon production, custom typography, a complete identity
-system, and marketing design remain separate decisions. Prototype geometry and
+Custom typography, a complete identity system, and marketing design remain
+separate decisions. Application icon production is accepted under DESIGN-002
+below. Prototype geometry and
 navigation were adopted on 2026-09-07 under `DESIGN.md`. Later decisions must not silently alter
 the accepted brand foundation, language, accessibility boundary, or historical
 PR #1 shell contract.
+
+### DESIGN-002 application icon, About Posato, and licenses
+
+- `user-confirmed` (2026-09-14): the maintainer selected Forest, proposal B,
+  with a moss field and sage / warm-white offset forms. Editable vector
+  sources accompany default, dark, and tinted iOS exports and the macOS ICNS.
+- `user-confirmed` (2026-09-14): About Posato opens from beside the iPhone
+  wordmark and below On this Mac in the desktop sidebar. It shows short app
+  information, the installed version, and a Licenses disclosure. The three
+  repository legal documents are readable offline in full with scrolling and
+  return. The maintainer also requested rendered Markdown for third-party
+  notices, aligned sidebar labels, and flat button hover states.
+- `user-confirmed` (2026-09-14): the three synthetic iPhone store captures and
+  English listing were accepted, with a Clarity editing pass requested for the
+  description. The maintainer then requested Dark Mode for all three store
+  captures. Store upload remains a release task.
+- The accepted visual and navigation authority is the root `DESIGN.md`; the
+  [artwork reference](../../design/app-icon/README.md) records exports
+  and the frozen platform hand-off. Installed icon appearance remains with the
+  platform wiring tasks; runtime evidence is in the `DESIGN-002` execution record.

@@ -11,6 +11,47 @@ import kotlin.test.assertTrue
 
 class DesktopScrollerTest {
     @Test
+    fun `given a transiently missing scroll region when scrolling then the next snapshot can complete the same search`() {
+        listOf(null, Query(text = "Websites", role = "group")).forEach { scope ->
+            var snapshots = 0
+            var scrolls = 0
+            val scroller = DesktopScroller(
+                snapshot = {
+                    when (snapshots++) {
+                        0 -> tree(0, rowY = 500.0)
+                        1 -> tree(1).copy(children = emptyList())
+                        else -> tree(2)
+                    }
+                },
+                scroll = { _, _ -> scrolls++ },
+                settle = {},
+            )
+
+            scroller.scrollTo(Query(text = "target.example", within = scope), 1_000)
+
+            assertEquals(3, snapshots)
+            assertEquals(1, scrolls)
+        }
+    }
+
+    @Test
+    fun `given a missing scroll region that never returns when scrolling then the deadline still bounds waiting`() {
+        var time = 0L
+        var scrolls = 0
+        val scroller = DesktopScroller(
+            snapshot = { tree(0).copy(children = emptyList()) },
+            scroll = { _, _ -> scrolls++ },
+            nowMillis = { time },
+            settle = { time += 100 },
+        )
+
+        assertFailsWith<ControlException> { scroller.scrollTo(Query(text = "target.example"), 250) }
+
+        assertEquals(300L, time)
+        assertEquals(0, scrolls)
+    }
+
+    @Test
     fun `given an offscreen row when scrolling then scrolling continues until the whole row is visible`() {
         var position = 0
         val directions = mutableListOf<Boolean>()

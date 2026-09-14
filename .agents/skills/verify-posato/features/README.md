@@ -91,3 +91,7 @@ handles, required state, commands, and observable proof.
 - [First install](./onboarding.md) covers the six-step first-run flow, the
   skip prelude every fresh launch needs, the upgrade row, and the degraded
   iCloud outcome.
+
+- [About Posato and licenses](./licenses.md) covers the installed version,
+  three offline legal documents, full-text
+  scrolling, and return to the preceding primary destination on both hosts.

@@ -25,18 +25,21 @@ internal class DesktopScroller(
             val root = snapshot()
             val container = scrollContainer(root, query)
             val target = QueryMatcher.find(root, query)
-            if (target != null && container.frame.contains(target.frame)) {
+            if (target != null && container?.frame?.contains(target.frame) == true) {
                 return
             }
-            val visible = container.copy(children = container.children.filter { it.platformRole != "AXScrollBar" })
-            unchanged = if (visible == previous) unchanged + 1 else 0
-            if (nowMillis() >= deadline || (unchanged >= STABLE_SNAPSHOTS && !forward)) throw notFound()
-            if (unchanged >= STABLE_SNAPSHOTS) {
-                forward = false
-                unchanged = 0
+            val visible = container?.copy(children = container.children.filter { it.platformRole != "AXScrollBar" })
+            if (visible != null) unchanged = if (visible == previous) unchanged + 1 else 0
+            val reachedStart = container != null && unchanged >= STABLE_SNAPSHOTS && !forward
+            if (nowMillis() >= deadline || reachedStart) throw notFound()
+            if (container != null) {
+                if (unchanged >= STABLE_SNAPSHOTS) {
+                    forward = false
+                    unchanged = 0
+                }
+                previous = visible
+                scroll(container, forward)
             }
-            previous = visible
-            scroll(container, forward)
             settle()
         }
         throw notFound()
@@ -45,12 +48,11 @@ internal class DesktopScroller(
     private fun scrollContainer(
         root: SnapshotNode,
         query: Query
-    ): SnapshotNode {
-        val scope = query.within?.let { QueryMatcher.scope(root, it) ?: throw notFound() } ?: root
+    ): SnapshotNode? {
+        val scope = query.within?.let { QueryMatcher.scope(root, it) ?: return null } ?: root
         return scope.flatten()
             .filter { it.platformRole == "AXScrollArea" && it.frame.w > 0 && it.frame.h > 0 }
             .maxByOrNull { it.frame.w * it.frame.h }
-            ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "No visible scroll area matches the requested scope.")
     }
 
     private fun notFound(): ControlException {
