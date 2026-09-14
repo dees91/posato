@@ -20,7 +20,7 @@
 - The maintainer chose Forest from two vector proposals. Default, dark, and tinted iOS assets and the padded macOS ICNS are exported with editable sources.
 - About Posato shows the installed version and opens the three bundled documents. It preserves the preceding primary destination on return. Sidebar text aligns, and buttons retain flat hover states.
 - Legal files are copied from the root originals at build time. Third-party notices render native Markdown with a responsive component table, selectable text, and explicit accessible Read actions for local document links.
-- The maintainer accepted the three synthetic real-app store captures and English listing. The requested Clarity pass simplified the description without strengthening its product claims or removing limits.
+- The maintainer accepted the three synthetic real-app store captures and English listing, then requested Dark Mode for the captures. The requested Clarity pass simplified the description without strengthening its product claims or removing limits.
 - Runtime verification exposed a transient missing Mac accessibility region while scrolling. The driver now waits for the region within its existing timeout; regression tests cover both recovery and timeout without scrolling elsewhere. The final consolidated retry loop also passes Detekt and an independent correction review.
 
 ## Dependency review
@@ -45,7 +45,7 @@
 | Resource fidelity | 15 current generated, native-bundle, and packaged-JAR copies matched the root files byte-for-byte |
 | iOS `actool` AppIcon compilation | Passed |
 | iOS PNG and macOS ICNS inspection | Opaque 1024-square iOS sources; ten macOS size representations with transparent outer padding |
-| Store screenshot capture and cleanup | Three 1320 × 2868 RGB PNGs; only synthetic websites; all added rows removed and zero remaining confirmed |
+| Store screenshot capture and cleanup | Three Dark Mode 1320 × 2868 RGB PNGs; only synthetic websites; all added rows removed and zero remaining confirmed |
 | Listing fields and screenshot requirements | Within field limits; Apple screenshot specification checked 2026-09-14 |
 | `git diff --check` | Passed |
 

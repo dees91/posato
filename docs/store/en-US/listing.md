@@ -51,14 +51,15 @@ focus,pause,distractions,websites,apps,screen time,concentration,break,intention
 
 ## Screenshots
 
-The accepted set contains three unmodified real iPhone Simulator captures with synthetic website entries and local-only setup:
+The accepted set contains three unmodified real iPhone Simulator captures in Dark Mode, with synthetic website entries and local-only setup:
 
 - [Paused websites](screenshots/iphone-6.9/01-paused-websites.png)
 - [Session duration](screenshots/iphone-6.9/02-session-duration.png)
 - [About Posato](screenshots/iphone-6.9/03-about-posato.png)
 
 All captures are 1320 × 2868 RGB PNGs with no alpha channel. They show the
-accepted About Posato entry and were accepted by the maintainer on 2026-09-14.
+accepted About Posato entry. The maintainer accepted the three-screen set on
+2026-09-14 and requested Dark Mode for the final captures.
 
 The captures show session setup, paused websites, and About Posato without private
 account, application, or device labels. Simulator captures must not imply that Screen

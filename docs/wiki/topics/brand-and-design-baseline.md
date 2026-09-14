@@ -510,7 +510,8 @@ PR #1 shell contract.
   notices, aligned sidebar labels, and flat button hover states.
 - `user-confirmed` (2026-09-14): the three synthetic iPhone store captures and
   English listing were accepted, with a Clarity editing pass requested for the
-  description. Store upload remains a release task.
+  description. The maintainer then requested Dark Mode for all three store
+  captures. Store upload remains a release task.
 - The accepted visual and navigation authority is the root `DESIGN.md`; the
   [artwork reference](../../design/app-icon/README.md) records exports
   and the frozen platform hand-off. Installed icon appearance remains with the
