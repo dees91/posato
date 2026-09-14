@@ -1580,3 +1580,16 @@ left by Enable, and the joining website step; `first-install.json` uses the
 key its driver reads. See the
 [execution record](../tasks/executions/mvp-001-end-to-end-acceptance.md) and
 [synchronization topic](topics/cross-device-synchronization.md#mvp-acceptance-run-mvp-001).
+
+## [2026-09-14] task | RELEASE-001 first-release readiness audit
+
+Audited the repository for a public open-source release with Developer ID
+macOS and App Store iOS builds. History, hosted content, licensing, a clean
+checkout, and the residual-risk disclosures pass; the verdict is blocked on
+distribution signing, Release iOS enforcement, production CloudKit, store
+assets, privacy publication, the platform matrix, and history cleanup. Added
+`LICENSE`, `NOTICE`, third-party notices, privacy, security, and contributing
+documents, rewrote the README, and added roadmap revision 15 with owners for
+every blocker. See the
+[execution record](../tasks/executions/release-001-first-release-readiness.md)
+and [first-release readiness topic](topics/first-release-readiness.md).

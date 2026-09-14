@@ -35,8 +35,12 @@
   remains app-private until edited or removed; replacing it with an empty set
   atomically removes every domain row. A separate reset flow, guaranteed secure
   erasure, and custom backup policy remain outside MODEL-001.
-- `open`: the public privacy notice, production cryptographic design, and
-  lifecycle rules for other non-diagnostic data are not accepted.
+- `user-confirmed` (2026-09-14): the public privacy policy text in
+  [`PRIVACY.md`](../../../PRIVACY.md) is accepted for publication on
+  `posato.app` with a `privacy@posato.app` contact; hosting and the mailbox
+  remain with `PRIVACY-001`. See
+  [first-release readiness](first-release-readiness.md).
+- `open`: lifecycle rules for other non-diagnostic data are not accepted.
 
 ## Accepted Apple MVP threat model
 
@@ -101,6 +105,11 @@ app-private local replica until the person edits or removes them. Replacing the
 policy with an empty set removes every domain row in the same atomic
 transaction. This decision does not claim secure physical erasure and does not
 add a separate reset or custom backup policy.
+
+`observed` (2026-09-14): with Apple sync established, accepted operations retain
+added and removed domains and session times locally and, encrypted, in CloudKit
+until Remove workspace; format 1 has no compaction
+([ADR 0006](../../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md)).
 
 ## Data outside the default model
 
