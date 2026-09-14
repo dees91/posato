@@ -62,6 +62,7 @@ kotlin {
             implementation(libs.compose.ui)
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.kuri)
+            implementation(libs.markdown)
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.lifecycle.viewmodel.compose)
@@ -97,6 +98,19 @@ sqldelight {
     }
 }
 
+val legalResourceDirectory = layout.buildDirectory.dir("generated/legalResources")
+val generateLegalResources by tasks.registering(Sync::class) {
+    from("src/commonMain/composeResources")
+    from(rootProject.files("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md")) {
+        into("files/legal")
+    }
+    into(legalResourceDirectory)
+}
+
 compose.resources {
     packageOfResClass = "app.posato.generated.resources"
+    customDirectory(
+        sourceSetName = "commonMain",
+        directoryProvider = generateLegalResources.map { legalResourceDirectory.get() },
+    )
 }

@@ -41,6 +41,7 @@ internal fun PosatoButton(
         onClick = onClick,
         enabled = enabled,
         shape = MaterialTheme.shapes.medium,
+        elevation = null,
         border = border,
         colors = ButtonDefaults.buttonColors(
             containerColor = container,

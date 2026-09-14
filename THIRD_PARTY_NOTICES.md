@@ -22,6 +22,7 @@ whenever a runtime dependency changes.
 | SQLite JDBC (Xerial) | macOS | Apache-2.0, with portions under a BSD-style license |
 | SQLite, bundled in SQLite JDBC native libraries | macOS | Public domain |
 | Metro dependency injection runtime | macOS, iOS | Apache-2.0 |
+| Markdown parser (JetBrains) | macOS, iOS | Apache-2.0 |
 | kuri | macOS, iOS | MIT |
 | JSpecify annotations | macOS | Apache-2.0 |
 | JetBrains Runtime API | macOS | Apache-2.0 |

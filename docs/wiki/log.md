@@ -1593,3 +1593,14 @@ documents, rewrote the README, and added roadmap revision 15 with owners for
 every blocker. See the
 [execution record](../tasks/executions/release-001-first-release-readiness.md)
 and [first-release readiness topic](topics/first-release-readiness.md).
+
+## [2026-09-14] task | DESIGN-002 application identity and information screens
+
+The maintainer selected Forest and accepted the App Store listing and three
+synthetic real-app screenshots. About Posato now shows the installed version
+and opens the bundled license documents; third-party notices render Markdown
+with a responsive table. Recorded the accepted entry points, sidebar alignment,
+and flat button states in DESIGN. Icon exports are ready for the platform
+wiring tasks; installed icon appearance remains their verification dependency.
+See the [execution record](../tasks/executions/design-002-icons-store-assets.md)
+and [brand and design topic](topics/brand-and-design-baseline.md).
