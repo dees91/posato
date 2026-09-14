@@ -94,6 +94,9 @@ Preconditions:
 
 - The flow has no navigation chrome; do not wait for `Paused items` until
   Go to Session is pressed.
+- A joining device whose workspace already holds a website shows only
+  Continue at the website step, not Not now; the summary then counts the
+  synced website.
 - The first Sync with iCloud press gives consent for one setup attempt.
   A fresh join waiting for a key may then continue on Check again or foreground
   without creating resources. Restart forgets waiting and requires consent

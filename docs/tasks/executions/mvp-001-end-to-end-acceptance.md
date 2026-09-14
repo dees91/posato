@@ -1,101 +1,82 @@
 # Execution: `MVP-001`
 
 - **Brief:** [End-to-end MVP acceptance](../specifications/mvp-001-end-to-end-acceptance.md)
-- **Status:** `active`; execution plan awaiting independent High-risk plan review
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code session with the maintainer attending both devices
-- **Reviewer:** pending (different agent)
+- **Reviewers:** independent plan-review agent; independent Standard review of the correction; independent closeout review and re-review
 - **Branch:** `docs/mvp-001-acceptance-brief` (PR #53)
 - **Updated:** 2026-09-14
 
 ## Observed starting point
 
-- Tested revision: product sources at `f0d68e4` (SYNC-012 merged); this branch adds documentation only. Every result row names its revision; a correction moves only the rows it repeats.
-- Both `doctor` checks pass in the provisioned worktree; the signed desktop package and the device driver are not yet built there.
-- Inherited limits: ONBOARDING-002 observed immediate joining in both directions, never a physical key wait. SYNC-012 used an already linked pair with no selected applications and persisted ten minutes where the fixture asked for five. IOS-002 reports sessions under 15 minutes as `below-platform-minimum`, so suspended expiry needs at least 15 minutes. The macOS picker refuses a fixed set of system-critical identifiers (such as Finder, Dock, Control Center, and System Settings) and `/System/Library/CoreServices/` bundles; the chosen built-in applications are outside that set.
+- Product sources at `f0d68e4` (SYNC-012). A defect found in phase A led to correction `105ddda`; every result row below ran on signed builds of `105ddda` unless marked.
+- Inherited limits: ONBOARDING-002 never observed a physical key wait; SYNC-012 used an already linked pair without selected applications; IOS-002 needs sessions of at least 15 minutes for suspended expiry.
 
 ## Decisions (`user-confirmed`, 2026-09-14)
 
-- **D1 fixture:** start from empty without restoring prior development data. The pair ends linked to the new workspace with fixtures removed.
-- **D2 order:** Mac installs first and establishes; iPhone joins immediately afterwards. One direction.
-- **D3 applications:** one built-in application selected and one built-in control application on each device. Tracked evidence names categories only.
-- **D4 key wait:** if the join is immediate, the waiting row is `not observed` and goes to a specific maintainer acceptance decision at closeout; no extra attempts and no private-state tampering.
+- **D1 fixture:** from empty without restoring prior development data; the pair ends linked with fixtures removed.
+- **D2 order:** Mac installs first and establishes; iPhone joins immediately afterwards.
+- **D3 applications:** one built-in selected application and one built-in control application per device; tracked text names categories only.
+- **D4 key wait:** the join was immediate; the maintainer accepted physical key waiting as `not observed`.
+- **Correction:** fix the removal defect first, as a correction commit in PR #53.
+- **Closeout:** iPhone session-commit delivery becomes roadmap row `SYNC-016` (revision 15); no hosted review; recipe corrections land in this PR.
 
-## Fixtures and ownership
+## Plan and plan review
 
-| Fixture | Owner and scope |
-| --- | --- |
-| `example.com` | Target website authored on Mac |
-| `example.net` | Target website authored on iPhone |
-| `example.org` | Unselected control website, never added |
-| Selected and control applications | One pair per device, chosen through the native route (D3) |
-| Workspace and local data | Created from empty by this run (D1) |
-| `Applications` group | Created by the first selection; clearing selections keeps it, so it remains an owned leftover |
+1. Independent High-risk plan review, maintainer approval, `quality`, signed builds.
+2. Phases A–G: from-empty removal and reset; first and second install; policy; Mac-start/iPhone-end and iPhone-start/relaunch/Mac-end sessions; normal expiry; missed offline peer; cleanup.
+3. On a defect: stop, no state repair, scoped correction with regression tests, rebuild, repeat the path.
 
-Allowed destructive setup, only through product and driver paths:
-
-1. **Remove workspace** from the iPhone, then from the Mac, through the iCloud row confirmation. The Mac is expected to report action required for the missing anchor first; its removal then clears only its own key and local state. That is the documented path, not a defect to repair.
-2. `reset -t desktop --yes`; the driver keeps the deleted databases under the run's `backup/desktop/`, which is not restored (D1).
-3. `reset -t device --yes` (uninstall), then `install` of the same revision.
-
-The desktop reset also deletes the local removed-workspace tombstone, so a reset Mac no longer refuses the old anchor while CloudKit still surfaces it. Stop rule for phase B: the establishing Mac passes only with a completed status and `sync_bootstrap_state` 0→1. Waiting, retryable, or action required on the Mac stops the run for escalation and is never D4 evidence.
-
-Forbidden: database writes, injected product state, Keychain or helper surgery, CloudKit Console deletion, Login Items changes, clock changes. Known carried state: the Mac helper stays registered and approved and the root-owned proxy ownership record is untouched, so the Mac permission step can read enabled rather than exercise Enable.
-
-## Plan
-
-1. Complete independent High-risk plan review of this record; resolve Critical and Required findings; obtain maintainer approval.
-2. Run `./gradlew quality` on the tested revision, then `build -t desktop` (signed, after the ad-hoc restage) and rerun `doctor -t desktop`, then `build -t device --driver` and `install -t device`.
-3. Execute phases A–G below with the maintainer attending. Capture a driver run for each action and its resulting state.
-4. On a defect: stop the affected path, do not repair state, make a scoped correction with a regression test, rerun `./gradlew quality` and affected suites, rebuild both signed apps, and repeat that path on the new revision.
-5. Close out once: results per acceptance criterion, independent completed-change review, one wiki-log entry, and a topic update only for a durable conclusion.
-
-## Physical sequence and AC-to-evidence mapping
-
-Evidence classes: `observed` for driver trees, screenshots, and read-only Mac SQL from the sync and session recipes; `user-confirmed` for browser, application, and shield outcomes reported by the maintainer. A timer, button, or linked caption alone never proves an outcome.
-
-| Phase | Actions | Required evidence | AC |
-| --- | --- | --- | --- |
-| A. From empty | Record categorical pre-state and no active session; perform setup steps 1–3. | Both devices local-only after removal; Mac first-install flow after reset; iPhone first-install flow after install. | fixture |
-| B. First and second install | Mac: first-install flow; **Sync with iCloud** must complete (stop rule above) before continuing through Mac setup, `example.com`, and summary, because changes made before linking are not backfilled. iPhone presses **Sync with iCloud** in its fresh flow as soon as the Mac completes, grants Screen Time consent, and chooses **Not now** at the website step. | Mac `sync_bootstrap_state` 0→1 and completed status; iPhone completed or waiting UI (Continue primary, Check again, collapsed Session status), then completed; one exchange on each; no second workspace. Join timing recorded as immediate or waiting (D4). | AC-01 |
-| C. Policy | No session is active. iPhone adds `example.net`; **Sync now** on both. iPhone selects its application first, which creates the group; Mac **Sync now**. Then take the Mac pending/accepted baseline, Mac selects its application, and exchanges again. | Identical website lists on both (UI; Mac SQL); `application_policy` count 1 on the Mac before its own selection; group name on both; Mac mapping count 1 with pending/accepted counts unchanged from the baseline; neither device shows the other's selection. | AC-02 |
-| D1. Mac start, iPhone end | Mac starts 25 minutes with attended administrator confirmation; iPhone receives through foreground or **Sync now**. iPhone ends early; Mac exchanges. | Mac Safari and Chrome, and iPhone Safari, deny both targets and load `example.org`; the Mac selected application is terminated while its control runs; the iPhone selected application is shielded while its control opens. After the end, both targets load in all three browsers and each selected application opens and stays open past the grace period. | AC-03, AC-04 |
-| D2. iPhone start, relaunch, Mac end | iPhone starts 25 minutes; Mac receives, Resume, attended authorization. Relaunch both apps; on the Mac press Resume with attended authorization again. Mac ends early; iPhone receives. | Same enforcement evidence before relaunch. After relaunch: the same end time (Mac SQL, iPhone UI); Mac offers Resume and, after authorization, one target and the selected application are blocked again; iPhone still restricted. D1's cleanup evidence after the end. | AC-03, AC-04, AC-05 |
-| E. Normal expiry | iPhone starts at least 15 minutes; Mac receives and resumes. Confirm restrictions before waiting. iPhone in background; Mac away from Session. | Before waiting: the actual deadline, and one target plus the selected application blocked on each device. After the deadline: the maintainer confirms website and application access on both before reopening Posato; reopening shows inactive with no revival. | AC-04, AC-05 |
-| F. Missed peer | Maintainer takes iPhone offline. Mac starts a short session with attended confirmation, terminates before the read deadline, and reopens after it. Only then does the iPhone reconnect; Posato is not foregrounded on it while online before that. iPhone exchanges. | Actual Mac deadline; Mac inactive after reopen with no Resume offered; iPhone stays inactive after exchange with the targets loading and the selected application usable. | AC-04, AC-05 |
-| G. Cleanup | Remove fixture websites and application selections through the UI. | No active session or restriction on either device; Mac fixture website and mapping rows zero; iPhone lists empty after relaunch; `Applications` group retained as the recorded leftover; pair still linked. | AC-05 |
-
-Durations are taken from the review screen and read-only deadline, not from tap counts. No delivery time is promised; exchange opportunities are foreground and **Sync now**.
-
-## High-risk plan review
-
-- **Verdict:** `changes-required` (independent agent, 2026-09-14); no Critical.
-- **Required findings:** (R1) a desktop reset deletes the removed-workspace tombstone, so the establishing Mac could adopt a still-visible old anchor and show a false wait; (R2) application selection order decides which device authors the group and whether the selection-only count check means anything; (R3) cleanup after relaunch and expiry was claimed without first proving restrictions were active.
-- **Resolution:** R1 phase B stop rule and completion-before-website; R2 iPhone selects first, Mac baseline after exchange; R3 re-blocking after Mac Resume in D2 and pre-wait blocking in E. Recommended points folded: iPhone presses on Mac completion and defers its website; expected Mac anchor-missing removal; phase F reconnect after the deadline; retained group; corrected refusal set; concrete browser and application evidence; no session during picker work; `doctor` after the signed build.
-- **Approval:** the maintainer approved the corrected plan on 2026-09-14 (`user-confirmed`); execution authorized.
+- **Plan review:** `changes-required`, no Critical. Required: (R1) a desktop reset deletes the removed-workspace tombstone, so phase B needs a stop rule on the establishing Mac; (R2) the iPhone selects its application first so group authorship and selection-only counts are meaningful; (R3) prove restrictions active before claiming cleanup after relaunch and expiry. All folded with the recommended points; the maintainer approved the corrected plan.
 
 ## Result
 
-- Pending execution.
+"Cleanup confirmed" means the maintainer loaded both targets in every tested browser and opened each selected application without termination or shield.
+
+| Phase | Outcome and evidence (`build/verification/runs/`) | AC |
+| --- | --- | --- |
+| A | On `f0d68e4` the iPhone **Remove workspace** ended "Sync did not finish" twice while ordinary exchanges completed (`095926-77a2`, `100422-0573`): defect, see correction. On `105ddda` one press ended local-only (`103610-c34f`). Deviation: the still-linked Mac showed waiting for the key instead of the planned action required (`103711-b136`); its removal still ended local-only in about 20 s, bootstrap 1→0 (`103756-9ef0`). Desktop reset to zero (`103828-bb69`); iPhone uninstall and install (`103850-b81d`). | fixture |
+| B | Mac **Sync with iCloud** completed in about 50 s, bootstrap 0→1, stop rule passed (`104116-1c09`). iPhone pressed one second later and was completed at its first read (`104206-dacb`): immediate join, key wait `not observed`. Native Screen Time consent allowed. Deviation: the iPhone website step offered only Continue because the synced website already existed. Both summaries report one website and iCloud connected (`104340-3250`, `104828-c14e`). | AC-01 |
+| C | `example.net` from iPhone and `example.com` from Mac converged on both (`105043-2ebb`; Mac SQL). The iPhone selection created `Applications`, received by the Mac (`105442-6032`). The Mac selected through its native picker, mapping 1, pending/accepted unchanged after exchange; each device shows only its own selection (`105722-15ca`, `105815-668b`). | AC-02 |
+| D1 | Mac 25-minute start with attended prompt (`110049-4dbf`); iPhone received after a manual Sync now. `user-confirmed`: Safari and Chrome on Mac and Safari on iPhone deny both targets and load `example.org`; the Mac terminates the selected application while its control runs; the iPhone shields the selected application while its control opens. Deviation: the iPhone driver then lost automation, so the planned iPhone early end was missed and the session expired at 11:25 (`112800-93a7`, SQL not early); cleanup confirmed on both, iPhone checked before opening Posato (`113118-1416`). The path was repeated on a new session: Mac start (`113143-b4a0`), iPhone receive, blocking confirmed, iPhone early end (`113646-61a3`); the Mac converged to ended early after a manual iPhone Sync now (`114014-c419`); cleanup confirmed. | AC-03, AC-04 |
+| D2 | iPhone 25-minute start (`114601-e7ea`), Mac receive and Resume with attended prompt (`114635-692d`), blocking confirmed on both. Relaunch of both: Mac SQL keeps start 11:42:29 and end 12:07:29, Resume offered and reapplied (`115110-e5e3`, `115123-bef2`); iPhone shows end 12:07 and stays restricted (`115201-4023`); blocking reconfirmed. Mac early end (`115528-be70`); iPhone converged after a manual Sync now; cleanup confirmed. | AC-03–AC-05 |
+| E | iPhone review screen confirmed 15 minutes, deadline 12:17:45 in Mac SQL (`120335-85da`); Mac received and resumed (`120934-2f96`); blocking confirmed; iPhone in background, Mac on Paused items (`121017-d99e`). After the deadline cleanup was confirmed on both before Posato was reopened; reopening shows ended with no revival (`122301-507e`, `122321-f3b8`). | AC-04, AC-05 |
+| F | iPhone offline. Mac 5-minute session to 12:31:02 (`122609-874f`); app terminated before and reopened after the deadline: inactive with no Resume (`123154-d42f`). iPhone reconnected and synced: still inactive, targets load, selected application usable (`123531-c20b`). | AC-04, AC-05 |
+| G | Websites and selections removed through the UI; Mac websites 0, mappings 0, pending 0, still linked; both devices show no active session and the iPhone shows 0 websites and 0 applications after relaunch (`123738-0463`, `123938-a5da`, `125329-b088`). Final `user-confirmed` check: no website or application restriction remains on either device. `Applications` remains the recorded leftover. | AC-05 |
+
+## Correction `105ddda`
+
+- **Defect (`observed`):** the iOS native removal pass drains at most ten one-record change pages per call and returned retryable with a resume token; the iOS adapter called it once, so a populated zone needed several presses, each reporting "Sync did not finish". The macOS adapter already resumes up to ten calls. SYNC-015 added the page bound after its physical gate.
+- **Fix:** the Swift bridge reports `Incomplete` when work remains after resumable progress; the iOS adapter resumes up to ten calls for record deletion and the anchorless sweep; genuine retryable failures still end after one call.
+- **Tests:** six new adapter tests; the four loop tests failed before the loop and all pass after it. Swift expectations and two Swift tests cover the page bound and a failure without progress.
+- **Review:** independent Standard review approved with no Critical or Required. Optional O1 (sweep single-call test) and O2 (token contract comment) were folded; O3 (a pre-existing extra press after a late token expiry) was declined. Physical proof: phase A row on `105ddda`.
 
 ## Completed-change review
 
-- **Verdict:** pending
+- **Correction:** approved; see above.
+- **Closeout documentation:** first review `changes-required`, no Critical. Required: application names instead of categories (D3) and missing evidence that no restriction remains after cleanup; both corrected, the latter with the final maintainer check. Recommended wording on deviations, relaunch end time, test count, verification scope and status folded. Re-review approved with no Critical or Required; its AC-01 wording and coverage-matrix points were folded.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `doctor -t desktop`, `doctor -t device` | pass | provisioning only; package and driver not yet built |
-| `./gradlew quality` at `f0d68e4` product sources | pass | aggregate gate before signed builds; leaves an ad-hoc desktop package |
-| `build -t desktop`, `doctor -t desktop`, `build -t device --driver` | pass | signed package staged; only the always-unknown helper background check remains a warning; device install waits for plan approval |
+| `./gradlew quality` at `f0d68e4` | pass | before signed builds |
+| iOS adapter tests before and after the loop | fail 4 of 27, then pass | red/green for the correction |
+| `./gradlew quality` after the last correction | pass | Swift suite 135 tests, 6 skipped, 0 failures |
+| Signed desktop and device builds of `105ddda`, `doctor` | pass | only the always-unknown helper background warning |
+| Physical phases A–G | pass on `105ddda` except the unobserved key wait; phase A failed on `f0d68e4` and was corrected | table above; browser, application and shield rows `user-confirmed` |
+| iPhone driver Sync now sequence with `textContains` | pass | `130803-3608` |
+| Corrected `first-install.json` on the Simulator | pass | `131042-f1a0`; one website, no bootstrap row |
 
-## Blockers and accepted risks
+## Observations and limits
 
-- Execution requires the attended, unlocked Mac and iPhone on the same Apple Account.
-- Physical key waiting may remain `not observed` (D4).
+- **Open (`SYNC-016`):** iPhone session start and end reached the Mac only after a manual iPhone Sync now (D1 repeat, D2 end, E start: twelve Mac exchanges over three minutes saw nothing). The session owner requests an exchange after each local commit, and an iPhone website edit arrived without a manual sync; the cause is not established. No delivery time is promised.
+- **Copy:** a Mac launched without window activation shows "Not connected · optional" and offers Sync with iCloud until the window resumes; after peer removal the Mac waiting text says the existing workspace stays unchanged; a Mac that received a session without closing shows "Restrictions stopped when the app closed."
+- **Verification tooling:** failed iPhone Sync now scrolls during the run came from a scenario key typo (`text-contains`), which the iOS driver ignores; with `textContains` the documented sequence works. The repository fixture `first-install.json` had the same typo and is corrected. The iPhone driver loses automation while the phone locks. After Enable in first install a second macOS helper stays alive, so the picker needs `--process <pid>`. Recipes record these points.
+- **Limits:** key waiting not observed; the helper was already approved, so Enable returned enabled without a prompt; the iPhone expiry callback time was not measured; one Mac and one iPhone, no reboot inside a session.
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** MVP-001 accepted by the maintainer on `105ddda` with the limits above: AC-02–AC-05 passed, and AC-01 passed except the delayed-key case, which was `not observed` and accepted (D4). No release-readiness claim; `RELEASE-001` owns it.
