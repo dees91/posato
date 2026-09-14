@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 16
+- **Revision:** 17
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
 - **Last amended:** 2026-09-14
@@ -86,6 +86,19 @@ Revision 16 adds a licenses screen on both platforms to `DESIGN-002` after
 the maintainer decided on 2026-09-14 that the bundled license and notice files
 are also shown inside the app. It changes no other task, dependency, wave, or
 integration group.
+
+Revision 17 adds two maintainer-accepted release rows on 2026-09-14.
+`DESIGN-003` styles the macOS pause page, which is still unstyled HTML, in
+the accepted design language within ADR 0005's fixed-presentation limits.
+The page stays on the local `127.0.0.1` listener: a remote `posato.app` page
+would send a request at every block and fail offline, and a locally served
+`posato.app` subdomain cannot work because the `.app` domain requires HTTPS
+and Posato does not intercept TLS.
+`WEB-001` publishes a simple `posato.app` site with a product page, the
+privacy policy, and support routes that the App Store listing can link to;
+hosting the privacy policy and its contact moves from `PRIVACY-001` to it.
+`RELEASE-002` now also depends on both rows. It changes no other task,
+dependency, wave, or integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -181,9 +194,11 @@ wave barriers add the phase ordering stated above.
 | `IOS-003` | Build an App Store iOS release with approved Family Controls distribution, an App Store Connect record, versioning, an encryption declaration, and bundled notices. | Release readiness | Release/R2 | `RELEASE-001` | PR-IOS-DISTRIBUTION |
 | `SYNC-017` | Deploy and verify the production CloudKit schema, quota, and retention behavior for release builds. | Apple synchronization | Release/R2 | `RELEASE-001` | PR-CLOUDKIT-PRODUCTION |
 | [`DESIGN-002`](specifications/design-002-icons-store-assets.md) | Provide the macOS and iOS application icons, store assets, and About Posato with the installed version and a licenses screen showing the bundled license and notice files. | Release readiness | Release/R2 | `RELEASE-001` | PR-STORE-ASSETS |
-| `PRIVACY-001` | Add privacy manifests, prepare the App Store privacy label, and host the privacy policy and its contact on `posato.app`. | Release readiness | Release/R2 | `RELEASE-001` | PR-PRIVACY-PUBLICATION |
+| `DESIGN-003` | Style the macOS pause page in the accepted design language with the Posato mark, light and dark appearance, and the session end, keeping it self-contained and free of attempted targets. | Release readiness | Release/R2 | `MACOS-004`, `DESIGN-002` | PR-PAUSE-PAGE |
+| `PRIVACY-001` | Add privacy manifests and prepare the App Store privacy label. | Release readiness | Release/R2 | `RELEASE-001` | PR-PRIVACY-PUBLICATION |
 | `DOCS-001` | Turn the README into a showcase with screenshots and a Remotion-rendered demo that routes details to the documentation. | Release readiness | Release/R2 | `RELEASE-001`, `DESIGN-002` | PR-SHOWCASE-README |
-| `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `PRIVACY-001`, `DOCS-001` | PR-RELEASE-CANDIDATE |
+| `WEB-001` | Publish a simple `posato.app` site with a product page, the hosted privacy policy and its contact, and support routes usable as the App Store support and privacy URLs. | Release readiness | Release/R2 | `DESIGN-002`, `DOCS-001` | PR-WEBSITE |
+| `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001` | PR-RELEASE-CANDIDATE |
 
 ## PR #1 shared cycle
 
@@ -205,7 +220,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Policy and session convergence | `SYNC-011`, `SYNC-012` | Bidirectional physical convergence, offline/retry, early end, and expiry |
 | Removal and re-link hardening | `SYNC-014`, `SYNC-015` | Fake-port resurrection cases and physical removal, quick re-link, and settle evidence |
 | Complete measurable MVP outcome | `MVP-001` | One controlled Mac-and-iPhone pass without manual repair |
-| Public-release obligations | `RELEASE-001`, `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `PRIVACY-001`, `DOCS-001`, `RELEASE-002` | Readiness audit with a blocked verdict, signed and notarized or App Store artifacts, production configuration, and a final pass or blocked verdict on candidates |
+| Public-release obligations | `RELEASE-001`, `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `RELEASE-002` | Readiness audit with a blocked verdict, signed and notarized or App Store artifacts, production configuration, and a final pass or blocked verdict on candidates |
 
 ## Manual and physical gates
 

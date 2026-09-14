@@ -38,7 +38,7 @@
 - `user-confirmed` (2026-09-14): the public privacy policy text in
   [`PRIVACY.md`](../../../PRIVACY.md) is accepted for publication on
   `posato.app` with a `privacy@posato.app` contact; hosting and the mailbox
-  remain with `PRIVACY-001`. See
+  remain with `WEB-001` (roadmap revision 17). See
   [first-release readiness](first-release-readiness.md).
 - `open`: lifecycle rules for other non-diagnostic data are not accepted.
 

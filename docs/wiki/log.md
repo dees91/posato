@@ -1604,3 +1604,13 @@ and flat button states in DESIGN. Icon exports are ready for the platform
 wiring tasks; installed icon appearance remains their verification dependency.
 See the [execution record](../tasks/executions/design-002-icons-store-assets.md)
 and [brand and design topic](topics/brand-and-design-baseline.md).
+
+## [2026-09-14] proposal | Pause page design and posato.app site rows
+
+Roadmap revision 17 adds `DESIGN-003`, which styles the still unstyled macOS
+pause page within the ADR 0005 fixed-presentation limits, and `WEB-001`, a
+simple `posato.app` site with a product page, the privacy policy, and support
+routes for the App Store listing. Hosting the privacy policy and its contact
+moves from `PRIVACY-001` to `WEB-001`; `RELEASE-002` depends on both new rows.
+See the [roadmap](../tasks/mvp-roadmap.md) and
+[first-release readiness topic](topics/first-release-readiness.md).
