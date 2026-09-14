@@ -572,3 +572,12 @@ not claim that every other device has received the update.
   the corrected sequence passes with actual blocking and cleanup. Device-local
   selections remain unchanged. Revision-specific evidence and limits are in the
   [execution record](../../tasks/executions/sync-012-session-convergence.md).
+
+### MVP acceptance run (`MVP-001`)
+
+- `observed` (2026-09-14): removing a populated workspace from iPhone needs the
+  adapter to resume the bounded native pass; without it each press reported
+  "Sync did not finish". The iOS adapter now resumes up to ten calls like the
+  macOS adapter, and one physical press ends local-only. Acceptance evidence
+  and limits are in the
+  [execution record](../../tasks/executions/mvp-001-end-to-end-acceptance.md).

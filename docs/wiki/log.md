@@ -1564,3 +1564,19 @@ and [execution record](../tasks/executions/sync-012-session-convergence.md)
 separate deterministic tests from the passed attended browser enforcement
 matrix, including background expiry and offline/reconnect, with revision and
 platform limits explicit.
+
+## [2026-09-14] task | MVP-001 acceptance run and iOS removal resume
+
+Ran the attended Mac-and-iPhone acceptance from empty. iPhone workspace
+removal failed repeatably on a populated zone because the iOS adapter did not
+resume the bounded native pass; correction `105ddda` adds the macOS-style
+resume loop with red/green tests and passed physically. On that revision
+first and second install, policy convergence with local selections, both
+session directions with real blocking, relaunch, early end, background expiry,
+a missed offline session and cleanup passed. The maintainer accepted the
+unobserved key wait. Recipes now name the camel-case
+`textContains` scenario key, the compact iPhone iCloud sequence, the helper
+left by Enable, and the joining website step; `first-install.json` uses the
+key its driver reads. See the
+[execution record](../tasks/executions/mvp-001-end-to-end-acceptance.md) and
+[synchronization topic](topics/cross-device-synchronization.md#mvp-acceptance-run-mvp-001).

@@ -83,6 +83,15 @@ do not pin `within` to the Session heading.
 Replace the action label with **Sync with iCloud**, **Sync now**, or
 **Check again** as appropriate.
 
+Scenario query keys are camel case: `textContains`, never `text-contains`.
+The iOS driver ignores an unknown key, so the query then matches any button
+and `scrollTo` or `tap` succeeds on the wrong element. While the collapsed
+header sits under the tab bar its label is only `iCloud`, so reach it first
+with `scrollTo` on `{"textContains":"iCloud,","role":"button"}` (the comma
+appears only once its status is on screen), tap it, then `scrollTo` the
+action. This sequence reached and pressed **Sync now** on the compact iPhone
+during `MVP-001`.
+
 1. Build both applications; use `build -t device --driver`, then `install`.
    `quality` restages an ad-hoc Mac package, so run `build -t desktop` after it.
    Launch preserving existing state, never with `--fresh`.

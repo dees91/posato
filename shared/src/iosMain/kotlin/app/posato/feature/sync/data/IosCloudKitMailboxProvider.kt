@@ -110,6 +110,7 @@ class IosCloudChangePage(
 
 enum class IosCloudRecordDeleteStatus {
     DeletedAndAbsent,
+    Incomplete,
     Retryable,
     AccountChanged,
     UnknownOutcome,
@@ -118,6 +119,7 @@ enum class IosCloudRecordDeleteStatus {
 enum class IosCloudBundleSweepStatus {
     Swept,
     AnchorPresent,
+    Incomplete,
     Retryable,
     AccountChanged,
     UnknownOutcome,
@@ -412,23 +414,13 @@ internal class IosMailboxAdapter(
     override suspend fun deleteWorkspaceRecords(expectedBinding: AccountBinding): RecordDeleteResult {
         val binding = expectedBinding.copyBytes()
         try {
-            return when (provider.cancellableCall { deleteWorkspaceRecords(binding.toNSData()) }) {
-                IosCloudRecordDeleteStatus.DeletedAndAbsent -> {
-                    RecordDeleteResult.DeletedAndAbsent
-                }
-
-                IosCloudRecordDeleteStatus.Retryable -> {
-                    RecordDeleteResult.Retryable
-                }
-
-                IosCloudRecordDeleteStatus.AccountChanged -> {
-                    RecordDeleteResult.AccountChanged
-                }
-
-                IosCloudRecordDeleteStatus.UnknownOutcome -> {
-                    RecordDeleteResult.UnknownOutcome
+            repeat(MAX_REMOVAL_CALLS) {
+                val status = provider.cancellableCall { deleteWorkspaceRecords(binding.toNSData()) }
+                if (status != IosCloudRecordDeleteStatus.Incomplete) {
+                    return status.toRecordDeleteResult()
                 }
             }
+            return RecordDeleteResult.Retryable
         } finally {
             binding.fill(0)
         }
@@ -437,29 +429,59 @@ internal class IosMailboxAdapter(
     override suspend fun sweepBundlesIfAnchorMissing(expectedBinding: AccountBinding): BundleSweepResult {
         val binding = expectedBinding.copyBytes()
         try {
-            return when (provider.cancellableCall { sweepBundlesIfAnchorMissing(binding.toNSData()) }) {
-                IosCloudBundleSweepStatus.Swept -> {
-                    BundleSweepResult.Swept
-                }
-
-                IosCloudBundleSweepStatus.AnchorPresent -> {
-                    BundleSweepResult.AnchorPresent
-                }
-
-                IosCloudBundleSweepStatus.Retryable -> {
-                    BundleSweepResult.Retryable
-                }
-
-                IosCloudBundleSweepStatus.AccountChanged -> {
-                    BundleSweepResult.AccountChanged
-                }
-
-                IosCloudBundleSweepStatus.UnknownOutcome -> {
-                    BundleSweepResult.UnknownOutcome
+            repeat(MAX_REMOVAL_CALLS) {
+                val status = provider.cancellableCall { sweepBundlesIfAnchorMissing(binding.toNSData()) }
+                if (status != IosCloudBundleSweepStatus.Incomplete) {
+                    return status.toBundleSweepResult()
                 }
             }
+            return BundleSweepResult.Retryable
         } finally {
             binding.fill(0)
+        }
+    }
+
+    private fun IosCloudRecordDeleteStatus.toRecordDeleteResult(): RecordDeleteResult {
+        return when (this) {
+            IosCloudRecordDeleteStatus.DeletedAndAbsent -> {
+                RecordDeleteResult.DeletedAndAbsent
+            }
+
+            IosCloudRecordDeleteStatus.Incomplete, IosCloudRecordDeleteStatus.Retryable -> {
+                RecordDeleteResult.Retryable
+            }
+
+            IosCloudRecordDeleteStatus.AccountChanged -> {
+                RecordDeleteResult.AccountChanged
+            }
+
+            IosCloudRecordDeleteStatus.UnknownOutcome -> {
+                RecordDeleteResult.UnknownOutcome
+            }
+        }
+    }
+
+    private fun IosCloudBundleSweepStatus.toBundleSweepResult(): BundleSweepResult {
+        return when (this) {
+            IosCloudBundleSweepStatus.Swept -> {
+                BundleSweepResult.Swept
+            }
+
+            IosCloudBundleSweepStatus.AnchorPresent -> {
+                BundleSweepResult.AnchorPresent
+            }
+
+            IosCloudBundleSweepStatus.Incomplete, IosCloudBundleSweepStatus.Retryable -> {
+                BundleSweepResult.Retryable
+            }
+
+            IosCloudBundleSweepStatus.AccountChanged -> {
+                BundleSweepResult.AccountChanged
+            }
+
+            IosCloudBundleSweepStatus.UnknownOutcome -> {
+                BundleSweepResult.UnknownOutcome
+            }
         }
     }
 
@@ -523,6 +545,10 @@ internal class IosMailboxAdapter(
         val identifier = bundleIdentifier?.copyExact(MAILBOX_BUNDLE_IDENTIFIER_BYTES) ?: return null
         val payload = bundlePayload?.copyBoundedRange(1, MAILBOX_BUNDLE_BYTES) ?: return null
         return MailboxBundle.fromParts(identifier, payload)
+    }
+
+    private companion object {
+        const val MAX_REMOVAL_CALLS: Int = 10
     }
 }
 

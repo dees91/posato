@@ -826,7 +826,7 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         backend.recordHandler = { _ in anchorDeleted ? .missing : .found(self.anchorRecord()) }
         let (provider, _, _) = makeProvider(backend: backend)
         let data = binding()
-        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .retryable)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .incomplete)
         XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .deletedandabsent)
         XCTAssertEqual(backend.deletedIDs.count, 2)
         XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), [bundle.recordID.recordName])
@@ -862,7 +862,7 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         backend.recordHandler = { _ in anchorDeleted ? .missing : .found(self.anchorRecord()) }
         let (provider, _, _) = makeProvider(backend: backend)
         let data = binding()
-        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .retryable)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .incomplete)
         // A concurrent fresh attempt publishes a new anchor before the
         // resumed verification runs.
         anchorDeleted = false
@@ -895,7 +895,7 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         backend.recordHandler = { _ in .missing }
         let (provider, _, _) = makeProvider(backend: backend)
         let data = binding()
-        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .retryable)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .incomplete)
         XCTAssertEqual(provider.deleteWorkspaceRecords(binding: data), .deletedandabsent)
         // Twelve deletion-only pages exceed the ten-page bound, so the first
         // call stops with work remaining and the second call resumes from
@@ -909,6 +909,36 @@ final class CloudKitMailboxProviderTests: XCTestCase {
         XCTAssertEqual(fetchTokens[13], Data([0xFF]))
         XCTAssertEqual(backend.deletedIDs.count, 1)
         XCTAssertEqual(backend.deletedIDs[0].map(\.recordName), ["workspace"])
+    }
+
+    func testDeleteFailureWithoutProgressStaysRetryable() {
+        let backend = FakeMailboxBackend()
+        backend.changesHandler = { _, _ in .failed(self.ckError(.networkFailure)) }
+        let (provider, _, _) = makeProvider(backend: backend)
+        XCTAssertEqual(provider.deleteWorkspaceRecords(binding: binding()), .retryable)
+        XCTAssertTrue(backend.deletedIDs.isEmpty)
+    }
+
+    func testSweepReportsIncompleteAfterPageBoundThenSwept() {
+        let backend = FakeMailboxBackend()
+        var fetches = 0
+        backend.changesHandler = { _, _ in
+            fetches += 1
+            return .fetched(
+                MailboxChanges(
+                    changed: [],
+                    deletedNames: ["tombstone-\(fetches)"],
+                    tokenData: Data([UInt8(fetches)]),
+                    moreComing: fetches <= 12
+                )
+            )
+        }
+        backend.recordHandler = { _ in .missing }
+        let (provider, _, _) = makeProvider(backend: backend)
+        let data = binding()
+        XCTAssertEqual(provider.sweepBundlesIfAnchorMissing(binding: data), .incomplete)
+        XCTAssertEqual(provider.sweepBundlesIfAnchorMissing(binding: data), .swept)
+        XCTAssertEqual(fetches, 13)
     }
 
     // MARK: - Binding gates
