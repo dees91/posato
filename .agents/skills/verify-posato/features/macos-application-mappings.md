@@ -73,8 +73,11 @@ Preconditions:
   the bundle, and `--process PosatoMacOSHelper` is refused with exit 3 and a
   detail naming both pids before any wait runs. Address the picker by pid in
   that case — the one the `--for exists` wait succeeds on — and keep the
-  by-name form while only one helper is alive. No recipe starts enforcement
-  today, so this begins with `SESSION-002`.
+  by-name form while only one helper is alive. A helper started by
+  **Enable on this Mac** also stays alive without a session, so after the
+  first-install permission step the picker needs the pid as well; it is the
+  same process the `--for exists` wait succeeds on, the one started by the
+  **Choose apps** press.
 - The helper must be frontmost for those key events, because a process with no
   accessibility server cannot receive a per-process post. The driver brings it
   forward itself and refuses with `PROCESS_NOT_ALLOWED` if it cannot, so a

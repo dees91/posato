@@ -18,7 +18,7 @@
     {"name":"permission-defer","action":"tap","query":{"text":"Not now","role":"button"}},
     {"name":"website-ready","action":"waitFor","state":"exists","query":{"role":"textField"}},
     {"name":"website-enter","action":"type","query":{"role":"textField"},"text":"example.com","clear":true,"submit":true},
-    {"name":"website-saved","action":"waitFor","state":"exists","query":{"text-contains":"added","role":"text"}},
+    {"name":"website-saved","action":"waitFor","state":"exists","query":{"textContains":"added","role":"text"}},
     {"name":"website-reveal","action":"scrollTo","query":{"text":"Continue","role":"button"},"timeoutSeconds":60},
     {"name":"website-continue-ready","action":"waitFor","state":"exists","query":{"text":"Continue","role":"button"}},
     {"name":"website-continue","action":"tap","query":{"text":"Continue","role":"button"}},
