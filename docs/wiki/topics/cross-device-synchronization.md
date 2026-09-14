@@ -578,8 +578,6 @@ not claim that every other device has received the update.
 - `observed` (2026-09-14): removing a populated workspace from iPhone needs the
   adapter to resume the bounded native pass; without it each press reported
   "Sync did not finish". The iOS adapter now resumes up to ten calls like the
-  macOS adapter, and one physical press ends local-only.
-- `open` (`SYNC-016`): iPhone session start and end reached the Mac only after
-  a manual iPhone Sync now, although a commit requests an exchange and an
-  iPhone website edit arrived without one. Acceptance evidence and limits are
-  in the [execution record](../../tasks/executions/mvp-001-end-to-end-acceptance.md).
+  macOS adapter, and one physical press ends local-only. Acceptance evidence
+  and limits are in the
+  [execution record](../../tasks/executions/mvp-001-end-to-end-acceptance.md).

@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 15
+- **Revision:** 14
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-14
+- **Last amended:** 2026-09-11
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -72,12 +72,6 @@ records instead, so no zone purge exists. It may run in a separate worktree
 alongside `SYNC-012` only under the file freeze its brief states; the
 physical gates run one after the other. It changes no other task,
 dependency, wave, or integration group.
-
-Revision 15 adds the maintainer-accepted `SYNC-016` follow-up after the
-`MVP-001` acceptance run observed iPhone session starts and ends reaching the
-Mac only after a manual iPhone **Sync now**, although each local session
-commit requests an exchange. It changes no other task, dependency, wave, or
-integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -168,7 +162,6 @@ wave barriers add the phase ordering stated above.
 | `SYNC-015` | Remove a workspace by deleting its records and keeping the zone, so a re-link right after removal is never lost to a late zone purge. | Apple synchronization | P4/W4.3c | `SYNC-009`, `SYNC-010`, `SYNC-014` | PR-RECORD-REMOVAL |
 | `SYNC-012` | Converge session start, early termination, and expiry without unsafe delivery promises. [Draft brief](specifications/sync-012-session-convergence.md). | Apple synchronization | P4/W4.4 | `SYNC-011`, `SESSION-002` | PR-SESSION-SYNC |
 | [`MVP-001`](specifications/mvp-001-end-to-end-acceptance.md) | Pass the accepted MVP flow on one supported Mac and iPhone without manual repair. | Completion | P5/W5.1 | `SYNC-012` | PR-MVP-ACCEPTANCE |
-| `SYNC-016` | Deliver iPhone session starts and ends to linked devices without a manual Sync now, without promising a delivery time. | Apple synchronization | P5/W5.2 | `SYNC-012`, `MVP-001` | PR-SESSION-DELIVERY |
 | `RELEASE-001` | Pass or explicitly block every first-release readiness obligation. | Release readiness | Release/R1 | `MVP-001` | PR-RELEASE-READINESS |
 
 ## PR #1 shared cycle
@@ -188,7 +181,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Bounded local sessions and platform enforcement | `SESSION-001`, `SESSION-002`, `MACOS-001`–`MACOS-006`, `IOS-001`, `IOS-002` | IPC, launchable development packaging, browser/app matrices, physical start/end/expiry/failure cleanup |
 | Common encrypted operations and one Apple workspace | `SYNC-001`–`SYNC-010` | Security decisions, vectors, tamper/replay rejection, physical Keychain/CloudKit delay and account isolation |
 | First and second installation | `ONBOARDING-001`, `ONBOARDING-002` | Physical flows without a product account or parallel workspace |
-| Policy and session convergence | `SYNC-011`, `SYNC-012`, `SYNC-016` | Bidirectional physical convergence, offline/retry, early end, and expiry |
+| Policy and session convergence | `SYNC-011`, `SYNC-012` | Bidirectional physical convergence, offline/retry, early end, and expiry |
 | Removal and re-link hardening | `SYNC-014`, `SYNC-015` | Fake-port resurrection cases and physical removal, quick re-link, and settle evidence |
 | Complete measurable MVP outcome | `MVP-001` | One controlled Mac-and-iPhone pass without manual repair |
 | Public-release obligations | `RELEASE-001` | Separate pass or blocked readiness verdict |

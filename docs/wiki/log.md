@@ -1574,8 +1574,7 @@ resume loop with red/green tests and passed physically. On that revision
 first and second install, policy convergence with local selections, both
 session directions with real blocking, relaunch, early end, background expiry,
 a missed offline session and cleanup passed. The maintainer accepted the
-unobserved key wait; delivery of iPhone session commits without a manual Sync
-now became roadmap row `SYNC-016`. Recipes now name the camel-case
+unobserved key wait. Recipes now name the camel-case
 `textContains` scenario key, the compact iPhone iCloud sequence, the helper
 left by Enable, and the joining website step; `first-install.json` uses the
 key its driver reads. See the
