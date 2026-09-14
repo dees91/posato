@@ -1786,6 +1786,8 @@ Solutions remain open; existing exact-host and one-use Apply authorization
 contracts remain unchanged.
 The [feature idea queue](topics/mvp-open-questions.md#post-mvp-feature-ideas-for-discovery)
 also retains recurring schedules, family controls, ad blocking, a Focusly
-comparison, YouTube distraction reduction, and local session-start/end
-notifications on iOS and macOS for later discovery, without committing to
-scope, feasibility, or delivery.
+comparison, YouTube distraction reduction, local session-start/end
+notifications on iOS and macOS, a macOS menu bar presence that keeps sessions
+working without the main window, and Intel Mac support starting with a 2019
+MacBook Air for later discovery, without committing to scope, feasibility, or
+delivery.

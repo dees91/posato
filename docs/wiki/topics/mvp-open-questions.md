@@ -649,6 +649,29 @@ not an accepted feature plan or an expansion of the MVP.
 6. **Local session notifications on iOS and macOS.** Explore on-device
    notifications when a session starts or ends. Notification preferences,
    permission flow, and delivery behavior remain for post-MVP discovery.
+7. **macOS menu bar presence without an open main window.** `user-confirmed`
+   (2026-09-14): explore a status-bar menu, similar to Tunnelblick, from which
+   a person can see the current session, start or end one, and open the full
+   window only when needed, so that sessions keep working without the desktop
+   window staying open. Today the Compose Desktop application owns policy and
+   orchestration, and the privileged daemon holds a renewable ownership lease
+   under
+   [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md),
+   so blocking stops when Posato quits. Whether the existing application keeps
+   running as a menu bar process after its window closes, or session
+   orchestration moves into a native helper, remains `open`, together with
+   launch at login, resource use, and any ADR 0003 or ADR 0004 revision.
+8. **Intel Mac support, starting with a 2019 MacBook Air.** `user-confirmed`
+   (2026-09-14): explore running Posato on the maintainer's 2019 Intel MacBook
+   Air. `source-claim`: Apple lists macOS Sequoia (15) for MacBook Air models
+   from 2020 or later, so that model tops out at macOS Sonoma (14). Support
+   therefore needs two changes to
+   [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md),
+   which accepts only arm64 on macOS 15 or later: an x86-64 (or universal)
+   build and a macOS 14 deployment target. Discovery must cover the bundled
+   Java runtime and native libraries per architecture, the Swift helpers,
+   packaging and notarization for both architectures, macOS 14 API
+   availability, and a physical test device in the release matrix.
 
 ## Later platform questions
 
