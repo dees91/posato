@@ -335,6 +335,68 @@ class IosCloudKitMailboxAdapterTest {
     }
 
     @Test
+    fun `given incomplete then deleted when deleting then the provider is called again until deleted`() = runTest {
+        val provider = FakeIosCloudKitMailboxProvider(recordDelete = IosCloudRecordDeleteStatus.DeletedAndAbsent)
+        provider.recordDeleteSequence += listOf(IosCloudRecordDeleteStatus.Incomplete, IosCloudRecordDeleteStatus.Incomplete)
+
+        val result = IosMailboxAdapter(provider).deleteWorkspaceRecords(testBinding())
+
+        assertEquals(RecordDeleteResult.DeletedAndAbsent, result)
+        assertEquals(3, provider.deleteCalls)
+    }
+
+    @Test
+    fun `given incomplete across the call cap when deleting then retryable is returned`() = runTest {
+        val provider = FakeIosCloudKitMailboxProvider(recordDelete = IosCloudRecordDeleteStatus.Incomplete)
+
+        val result = IosMailboxAdapter(provider).deleteWorkspaceRecords(testBinding())
+
+        assertEquals(RecordDeleteResult.Retryable, result)
+        assertEquals(10, provider.deleteCalls)
+    }
+
+    @Test
+    fun `given a retryable failure when deleting then the provider is called once`() = runTest {
+        val provider = FakeIosCloudKitMailboxProvider(recordDelete = IosCloudRecordDeleteStatus.Retryable)
+
+        val result = IosMailboxAdapter(provider).deleteWorkspaceRecords(testBinding())
+
+        assertEquals(RecordDeleteResult.Retryable, result)
+        assertEquals(1, provider.deleteCalls)
+    }
+
+    @Test
+    fun `given incomplete then swept when sweeping then the provider is called again until swept`() = runTest {
+        val provider = FakeIosCloudKitMailboxProvider(bundleSweep = IosCloudBundleSweepStatus.Swept)
+        provider.bundleSweepSequence += listOf(IosCloudBundleSweepStatus.Incomplete, IosCloudBundleSweepStatus.Incomplete)
+
+        val result = IosMailboxAdapter(provider).sweepBundlesIfAnchorMissing(testBinding())
+
+        assertEquals(BundleSweepResult.Swept, result)
+        assertEquals(3, provider.sweepCalls)
+    }
+
+    @Test
+    fun `given incomplete across the call cap when sweeping then retryable is returned`() = runTest {
+        val provider = FakeIosCloudKitMailboxProvider(bundleSweep = IosCloudBundleSweepStatus.Incomplete)
+
+        val result = IosMailboxAdapter(provider).sweepBundlesIfAnchorMissing(testBinding())
+
+        assertEquals(BundleSweepResult.Retryable, result)
+        assertEquals(10, provider.sweepCalls)
+    }
+
+    @Test
+    fun `given a retryable failure when sweeping then the provider is called once`() = runTest {
+        val provider = FakeIosCloudKitMailboxProvider(bundleSweep = IosCloudBundleSweepStatus.Retryable)
+
+        val result = IosMailboxAdapter(provider).sweepBundlesIfAnchorMissing(testBinding())
+
+        assertEquals(BundleSweepResult.Retryable, result)
+        assertEquals(1, provider.sweepCalls)
+    }
+
+    @Test
     fun `given removal completion when cleared then the reset reaches the provider`() = runTest {
         val provider = FakeIosCloudKitMailboxProvider()
 
@@ -541,14 +603,21 @@ private class FakeIosCloudKitMailboxProvider(
         return changePage
     }
 
+    val recordDeleteSequence = ArrayDeque<IosCloudRecordDeleteStatus>()
+    val bundleSweepSequence = ArrayDeque<IosCloudBundleSweepStatus>()
+    var deleteCalls = 0
+    var sweepCalls = 0
+
     override fun deleteWorkspaceRecords(binding: NSData): IosCloudRecordDeleteStatus {
         seenBindings += binding.copyBytes()
-        return recordDelete
+        deleteCalls += 1
+        return recordDeleteSequence.removeFirstOrNull() ?: recordDelete
     }
 
     override fun sweepBundlesIfAnchorMissing(binding: NSData): IosCloudBundleSweepStatus {
         seenBindings += binding.copyBytes()
-        return bundleSweep
+        sweepCalls += 1
+        return bundleSweepSequence.removeFirstOrNull() ?: bundleSweep
     }
 
     var resetCalls = 0

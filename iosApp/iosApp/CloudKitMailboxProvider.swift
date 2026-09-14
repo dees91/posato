@@ -624,9 +624,10 @@ struct MailboxStore {
     /// `deletePagesPerCall` change pages per call. The resume token carries
     /// the phase, so verification continues where it stopped instead of
     /// restarting: the anchor is deleted at most once no matter how many
-    /// calls the pass takes. A non-nil token means the page bound was hit
-    /// with work remaining and the caller must call again from that token;
-    /// a nil token means the outcome is terminal.
+    /// calls the pass takes. A non-nil token means work remains after
+    /// resumable progress (the page bound was hit, or a repeated token
+    /// expiry followed fetched pages) and the caller must call again from
+    /// that token; a nil token means the outcome is terminal.
     func deleteWorkspaceRecords(timeout: TimeInterval, startingAt resumeToken: Data?) -> (MailboxRecordDelete, Data?) {
         guard let (phase, server) = Self.splitDeleteResumeToken(resumeToken) else {
             return (.unknownOutcome, nil)
@@ -1277,7 +1278,7 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         case .deletedAndAbsent:
             return .deletedandabsent
         case .retryable:
-            return .retryable
+            return resumeToken == nil ? .retryable : .incomplete
         case .unknownOutcome:
             return .unknownoutcome
         }
@@ -1314,7 +1315,7 @@ final class CloudKitMailboxProvider: IosCloudKitMailboxProvider {
         case .anchorPresent:
             return .anchorpresent
         case .retryable:
-            return .retryable
+            return resumeToken == nil ? .retryable : .incomplete
         case .unknownOutcome:
             return .unknownoutcome
         }
