@@ -26,11 +26,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNavigationPlacement
-import app.posato.core.designsystem.PosatoNavigationScaffold
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformNavigationPlacement
+import app.posato.feature.about.AboutScreen
+import app.posato.feature.licenses.LicensesScreen
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
@@ -128,48 +129,59 @@ class PosatoApplication internal constructor(
     ) {
         val browser = remember { TargetsBrowserState() }
         var showingSession by remember { mutableStateOf(true) }
-        val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-        val hideNavigation = placement == PosatoNavigationPlacement.Bottom && keyboardVisible
+        var informationPage by remember { mutableStateOf<ApplicationInformationPage?>(null) }
         val deviceLabel = if (placement == PosatoNavigationPlacement.Sidebar) "On this Mac only" else "On this iPhone only"
-        PosatoNavigationScaffold(
+        ApplicationNavigationScaffold(
             placement = placement,
-            modifier = modifier.fillMaxSize().background(
-                MaterialTheme.colorScheme.surface,
-            ).windowInsetsPadding(WindowInsets.safeDrawing),
-            headerContent = { if (!hideNavigation) ApplicationNavigationHeader(placement) },
-            navigationContent = {
-                if (!hideNavigation) {
-                    ApplicationNavigation(placement, showingSession, { showingSession = it })
-                }
+            showingSession = showingSession,
+            showingInformation = informationPage != null,
+            onSelect = {
+                showingSession = it
+                informationPage = null
             },
+            onOpenAbout = { informationPage = ApplicationInformationPage.ABOUT },
+            modifier = modifier,
         ) { layout ->
             val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
-                if (showingSession) {
-                    SessionScreen(
-                        store,
-                        applicationMappings,
-                        sessionIds,
-                        clock,
-                        timeFormat,
-                        sessionOwner,
-                        onOpenPausedItems = { showingSession = false },
-                        modifier = contentModifier,
-                        layout = layout,
-                        deviceLabel = deviceLabel,
-                        syncState = syncState,
-                        macSetupState = macSetupState,
-                        onMacSetupAnnouncement = onMacSetupAnnouncement,
-                    )
-                } else {
-                    TargetsScreen(
-                        store,
-                        applicationMappings,
-                        contentModifier.padding(horizontal = inset, vertical = PosatoSpace.Medium),
-                        browser,
-                        deviceLabel,
-                    )
+                val currentInformationPage = informationPage
+                when {
+                    currentInformationPage != null -> {
+                        ApplicationInformationHost(
+                            page = currentInformationPage,
+                            onNavigate = { informationPage = it },
+                            modifier = contentModifier.padding(inset),
+                        )
+                    }
+
+                    showingSession -> {
+                        SessionScreen(
+                            store,
+                            applicationMappings,
+                            sessionIds,
+                            clock,
+                            timeFormat,
+                            sessionOwner,
+                            onOpenPausedItems = { showingSession = false },
+                            modifier = contentModifier,
+                            layout = layout,
+                            deviceLabel = deviceLabel,
+                            syncState = syncState,
+                            macSetupState = macSetupState,
+                            onMacSetupAnnouncement = onMacSetupAnnouncement,
+                        )
+                    }
+
+                    else -> {
+                        TargetsScreen(
+                            store,
+                            applicationMappings,
+                            contentModifier.padding(horizontal = inset, vertical = PosatoSpace.Medium),
+                            browser,
+                            deviceLabel,
+                        )
+                    }
                 }
             }
         }
@@ -208,5 +220,30 @@ class PosatoApplication internal constructor(
                 }
             }
         }
+    }
+}
+
+private enum class ApplicationInformationPage {
+    ABOUT,
+    LICENSES,
+}
+
+@Composable
+private fun ApplicationInformationHost(
+    page: ApplicationInformationPage,
+    onNavigate: (ApplicationInformationPage?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    when (page) {
+        ApplicationInformationPage.ABOUT -> AboutScreen(
+            onOpenLicenses = { onNavigate(ApplicationInformationPage.LICENSES) },
+            onBack = { onNavigate(null) },
+            modifier = modifier,
+        )
+
+        ApplicationInformationPage.LICENSES -> LicensesScreen(
+            onBack = { onNavigate(ApplicationInformationPage.ABOUT) },
+            modifier = modifier,
+        )
     }
 }

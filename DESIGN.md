@@ -216,6 +216,8 @@ All geometry below uses Compose dp; native window radius uses Apple points.
 - Shapes: extraSmall 6, small 8, medium 10, large 14, extraLarge 24.
 - Interactive minimum: 44 on both app hosts.
 - Standard button padding: horizontal 18, vertical 11; compact padding 12 / 8.
+- Buttons stay flat during hover, focus, and press; state indication follows
+  the rounded button shape without adding elevation.
 - Standard icons 18; prominent/navigation icons 24; item-symbol surface 36.
 - Wordmark mark 24 × 32; decorative interval artwork 122 × 144.
 - Primary sidebar 224; content maximum 820; compact breakpoint 600.
@@ -240,6 +242,55 @@ PosatoIcons supplies consistent vector strokes for pause, items, globe,
 applications, search, arrows, edit, remove, close, and state symbols. Essential
 icons have a visible label or accessibility description. Native pickers keep
 their own recognizable system labels; the shared iOS UI must not invent app names.
+
+### Application icon
+
+`user-confirmed` (2026-09-14): the maintainer chose **Forest**, proposal B
+from `DESIGN-002`. The default icon uses a moss `#2E5D50` field with sage
+`#A7C3A2` and warm-white `#FFFEFA` interval forms, preserving the mark's
+rounded ends, offset, and eight-degree rotation. The dark version uses the
+dark surface with sage and warm-white forms; the tinted source is monochrome.
+
+The [source artwork](docs/design/app-icon/README.md) accompanies the exports.
+iOS receives opaque 1024 × 1024 default, dark, and tinted sources in
+`iosApp/iosApp/Assets.xcassets/AppIcon.appiconset`. macOS receives
+`desktopApp/Config/Posato.icns`, with the same default artwork inside a rounded
+tile and transparent outer padding. Platform wiring remains with `IOS-003`
+and `MACOS-008`; supplying assets does not prove installed icon appearance.
+
+### About Posato and licenses
+
+`user-confirmed` (2026-09-14): a quiet **About Posato** button sits beside the
+wordmark on iPhone and below **On this Mac** in the Mac sidebar after setup.
+The Mac device label and About text align with the primary navigation labels;
+a 4 dp gap keeps the device label and About action together.
+Session and Paused items remain the two primary destinations. About Posato
+opens a secondary content screen with the app's short purpose, installed
+version, and a **Licenses** disclosure. **Back** returns to the preceding
+primary destination. On iPhone, the bottom navigation gives way to this
+secondary flow. On Mac, the sidebar stays available, with neither primary
+destination selected.
+
+The version comes from the running application's metadata, without a second
+hand-maintained version string. An unpackaged or incomplete build reports
+**Version unavailable** rather than inventing a version. The Android preview
+target is not a product host and uses that unavailable case.
+
+Licenses lists **License**, **Notice**, and **Third-party notices** using
+existing disclosure rows. Each opens the complete scrollable document with
+selectable text, a heading, and a persistent **Back to licenses** action.
+Third-party notices render Markdown headings, emphasis, inline code, and lists.
+The component table uses three columns on wide panes and labeled cells in each
+row on narrow panes. Document links appear as labeled Read buttons beneath their
+paragraphs, so keyboard and screen-reader users can open the bundled document
+on either platform.
+The other two legal files retain their original plain-text formatting.
+**Back to About Posato** returns from the list to the information screen.
+Content uses the existing surface, typography, spacing, and quiet-button
+tokens. Loading and an unavailable document have explicit text; a read failure
+offers **Try again**. These documents work offline and contain no device or
+account data. Build-time resources come directly from the root `LICENSE`,
+`NOTICE`, and `THIRD_PARTY_NOTICES.md`, without hand-maintained copies.
 
 ## Components
 
