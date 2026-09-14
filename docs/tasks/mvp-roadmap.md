@@ -90,6 +90,10 @@ integration group.
 Revision 17 adds two maintainer-accepted release rows on 2026-09-14.
 `DESIGN-003` styles the macOS pause page, which is still unstyled HTML, in
 the accepted design language within ADR 0005's fixed-presentation limits.
+The page stays on the local `127.0.0.1` listener: a remote `posato.app` page
+would send a request at every block and fail offline, and a locally served
+`posato.app` subdomain cannot work because the `.app` domain requires HTTPS
+and Posato does not intercept TLS.
 `WEB-001` publishes a simple `posato.app` site with a product page, the
 privacy policy, and support routes that the App Store listing can link to;
 hosting the privacy policy and its contact moves from `PRIVACY-001` to it.
