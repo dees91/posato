@@ -34,16 +34,19 @@
 
 | Obligation | AC | Evidence | Result | Owner / next action |
 | --- | --- | --- | --- | --- |
-| Refs, metadata, and trailers free of credentials, private data, and private URLs | AC-01 | pending | pending | pending |
-| Session-link trailers removed from published history | AC-01 | six commits on `main` (preliminary) | blocked | `RELEASE-002`: authorized history rewrite before the visibility change |
-| GitHub-hosted issues, pull requests, comments, and workflow logs safe to publish | AC-01 | pending | pending | pending |
-| Dependency, asset, and notice inventory; `LICENSE` and `NOTICE` | AC-01 | pending | pending | pending |
-| Product-name trademark search | AC-01 | pending | pending | pending |
-| Clean checkout passes local gates; environment and release verification policy | AC-02 | pending | pending | pending |
-| README accurate, links and build-from-source steps work | AC-03 | pending | pending | pending |
-| Security, contribution, issue-template, and privacy documents agree with the product; privacy text accepted | AC-03 | pending | pending | pending |
-| Private vulnerability reporting and Issues enabled | AC-03 | pending | blocked until the repository is public | maintainer |
-| Privacy policy hosted on `posato.app` | AC-03 | pending | pending | maintainer |
+| Refs, metadata, and trailers free of credentials, private data, and private URLs | AC-01 | Mirror of 34 branches, 1 tag, 56 pull refs, 457 commits (2026-09-14): no tokens, private-key bodies, real team, issuer, or device identifiers, personal paths, or blobs over 1 MB; flagged key headers, secret-like strings, and identifier-shaped values are test fixtures | pass except the rows below | — |
+| Session-link trailers removed from published history | AC-01 | six commits on `main` carry session-link trailers | blocked | `RELEASE-002`: authorized history rewrite before the visibility change |
+| Maintainer personal e-mail in commit metadata | AC-01 | two author identities; the maintainer's personal address is on most commits | accepted by the maintainer; published unchanged | — |
+| GitHub-hosted issues, pull requests, comments, and workflow logs safe to publish | AC-01 | 0 issues, 54 pull requests, 36 workflow runs; logs contain only hosted-runner paths; 32 of 34 artifacts expired, 2 expire 2026-09-21; review-bot links point to public settings pages | pass except the rows below | — |
+| Private task links in pull-request bodies | AC-01 | seven login-gated task-share links in pull-request bodies | blocked | `RELEASE-002`: remove the links before the visibility change |
+| Attachments in pull requests | AC-01 | nine uploaded attachments in three pull requests | accepted by the maintainer; published unchanged | — |
+| Dependency, asset, and notice inventory; `LICENSE` and `NOTICE` | AC-01 | 171 resolved runtime artifacts across macOS JVM and iOS: Apache-2.0 except one MIT library, confirmed from published metadata; native Skia (BSD-3-Clause) and SQLite (public domain) payloads and the bundled OpenJDK runtime (GPL-2.0 with Classpath Exception, `legal` notices present) attributed in `THIRD_PARTY_NOTICES.md`; unmodified Apache-2.0 `LICENSE` and a `NOTICE` added; no tracked assets | pass for the repository | `MACOS-008` and `IOS-003`: ship full notices inside the application bundles and choose the release JDK vendor |
+| Product-name trademark search | AC-01 | 2026-09-14: official EUIPO TMview, WIPO Brand Database, and USPTO search refuse automated reads (JavaScript or CAPTCHA); web index shows no exact mark, nearest similar marks in unrelated goods | blocked for automated search | maintainer: manual search in the official databases |
+| Clean checkout passes local gates; environment and release verification policy | AC-02 | Fresh clone of `e2f701f` without `local.properties` or the research checkout: `./gradlew quality` passed in 5 min 16 s (Swift suite 135 tests, 6 skipped). Environment: Java 17 launcher with the build-provisioned JDK 21, Xcode 26.6, Android SDK through `ANDROID_HOME`, no Gradle user properties; all documented in the README and development guide. Signed variants depend on identifiers registered to the maintainer's team. Release verification stays local (CI disabled) | pass | `RELEASE-002`: local release checklist for signed and notarized candidates |
+| README accurate, links and build-from-source steps work | AC-03 | README rewritten for users and contributors: verified MVP-001 capabilities and limits, deployment targets, unavailable channels, credential-free build steps, and the signed-build dependency on team-registered identifiers; clean-clone step verification in progress | in progress | this task |
+| Security, contribution, issue-template, and privacy documents agree with the product; privacy text accepted | AC-03 | `SECURITY.md`, `CONTRIBUTING.md`, bug template without personal fields, and `PRIVACY.md` reconciled with the threat model, diagnostics policy (no capture or logging in shipped code), ADR 0005, and MVP scope; privacy text accepted by the maintainer on 2026-09-14 | pass pending independent review | this task |
+| Private vulnerability reporting and Issues enabled | AC-03 | repository settings | blocked until the repository is public | maintainer |
+| Privacy policy hosted on `posato.app` with the `privacy@posato.app` contact | AC-03 | domain owned; policy text and contact decided | blocked until hosted and the mailbox exists | maintainer, through `PRIVACY-001` |
 | macOS Developer ID, notarization, versioning, bundled notices, install/update/removal | AC-04 | pending | pending | pending |
 | iOS App Store: Release configuration, Family Controls distribution, versioning, privacy manifest and label, icon | AC-04 | pending | pending | pending |
 | CloudKit production schema, quota, and retention; Keychain environment | AC-04 | pending | pending | pending |
