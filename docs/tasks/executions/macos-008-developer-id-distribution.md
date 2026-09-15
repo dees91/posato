@@ -80,11 +80,11 @@
    - **Baseline.** The maintainer follows a one-time checklist:
      1. Quit the development build at `Idle` and delete its bundles.
      2. Run `sudo launchctl bootout system/app.posato.macos.proxy-settings` and `sudo security authorizationdb remove app.posato.macos.proxy.apply`.
-     3. Back up and clear the development database with `posato-control --target desktop reset --yes`, so the release build cannot resume a linked workspace against Production. Record the deleted paths, which must include `posato-policy.db`, and the backup directory.
+     3. Back up and clear the development database with `posato-control reset --target desktop --yes`, so the release build cannot resume a linked workspace against Production. Record the deleted paths, which must include `posato-policy.db`, and the backup directory.
 
      Then record `sfltool dumpbtm` (including orphaned entries), `launchctl print` reporting the daemon not found, and `scutil --proxy`. `hypothesis`: an orphaned development entry does not block release registration.
    - **Install.** Download candidate 1's DMG through Safari from a local HTTP server, drag Posato to `/Applications`, and open it. Record `xattr -p com.apple.quarantine`, the Gatekeeper prompt, `spctl -a -vvv`, and a non-translocated process path.
-   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off. At the end, `log show --start <baseline time> --predicate 'process == "PosatoMacOSSync"'` returns no entries for the whole run.
+   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off. The recorded deletion of `posato-policy.db` is the main control. At the end, `log show --info --debug --start <baseline time> --predicate 'process == "PosatoMacOSSync" OR eventMessage CONTAINS "PosatoMacOSSync"'` returns no entries.
    - **Update to candidate 2** (build number plus one), with no UI action: start a session, quit Posato, replace it with a Safari-downloaded candidate 2, and open it.
      - `inferred` from the lifecycle observations: launchd starts the replaced `BundleProgram` on the next helper connection.
      - **Pass criteria:**
