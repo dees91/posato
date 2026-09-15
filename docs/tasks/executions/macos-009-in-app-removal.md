@@ -92,6 +92,7 @@ The write surface is the port, setup state, `MacSetupSection`, session wiring, s
   - **R3:** Remove could reconcile another pending request. It now reconciles that request first, and only a concluded Remove maps to `REMOVED`.
   - **R4:** the physical checks had no baseline. The baseline, background-item pass criteria, no-prompt observation, and rerun rule are now in step 6.
   - **Second pass (`10fe15a`): `changes-required`.** R2–R4 were confirmed. **R5:** the table rows were ambiguous, so a rule failure matched `PROXY_ATTENTION` and a daemon failure matched `NOT_ENABLED`. Fixed with exact tuple conditions and pinning tests.
+  - **Third pass (`e75617e`): `approved`.** R5 was resolved with no new Critical or Required findings.
   - **Recommendations adopted:** confirm-time refusal including a starting session or busy enforcement, no Remove in `RECOVERY_REQUIRED`, observing a post-removal session start, and reusing the existing button style.
 
 ## Blockers and accepted risks
