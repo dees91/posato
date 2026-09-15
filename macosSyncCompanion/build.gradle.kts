@@ -1,3 +1,5 @@
+import app.posato.buildlogic.PosatoVersion
+import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.tasks.Sync
 
 plugins {
@@ -6,6 +8,8 @@ plugins {
 
 val swiftScratchDirectory = layout.buildDirectory.dir("swift")
 val companionBundleDirectory = layout.buildDirectory.dir("bundle/PosatoMacOSSync.app")
+val posatoMarketingVersion = PosatoVersion.marketingVersion(rootProject.file("Version.xcconfig"))
+val posatoBuildNumber = PosatoVersion.developmentBuildNumber(providers.gradleProperty("posatoMacOsBuildNumber").orNull)
 
 val buildSwiftRelease by tasks.registering(Exec::class) {
     group = "build"
@@ -30,10 +34,18 @@ val assembleCompanionBundle by tasks.registering(Sync::class) {
     group = "build"
     description = "Assembles the unsigned nested macOS synchronization companion."
     dependsOn(buildSwiftRelease)
+    inputs.property("posatoMarketingVersion", posatoMarketingVersion)
+    inputs.property("posatoBuildNumber", posatoBuildNumber)
 
     into(companionBundleDirectory)
     from("Resources/Info.plist") {
         into("Contents")
+        filter<ReplaceTokens>(
+            "tokens" to mapOf(
+                "POSATO_MARKETING_VERSION" to posatoMarketingVersion,
+                "POSATO_BUILD_NUMBER" to posatoBuildNumber,
+            ),
+        )
     }
     from(swiftScratchDirectory.map { it.file("release/PosatoMacOSSync") }) {
         into("Contents/MacOS")

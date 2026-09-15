@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 17
+- **Revision:** 18
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-14
+- **Last amended:** 2026-09-15
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -100,6 +100,17 @@ hosting the privacy policy and its contact moves from `PRIVACY-001` to it.
 `RELEASE-002` now also depends on both rows. It changes no other task,
 dependency, wave, or integration group.
 
+Revision 18 adds the maintainer-accepted `MACOS-009` row on 2026-09-15.
+The `MACOS-008` plan review found that the macOS application has no Disable
+or Remove entry, although the helper already implements both operations and
+ADR 0004 defines supported removal. Moving the application to the Trash
+leaves the background registration and the authorization right behind, and
+after a failed restore it can leave the proxy pointing at a daemon that no
+longer exists. `MACOS-009` adds the in-app removal. Updating stays a plain
+quit, replace, and open with no UI action, as `MACOS-008` verifies.
+`RELEASE-002` now also depends on `MACOS-009`. It changes no other task,
+dependency, wave, or integration group.
+
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
 [architecture baseline](../decisions/0003-mvp-application-architecture-baseline.md),
@@ -191,6 +202,7 @@ wave barriers add the phase ordering stated above.
 | [`MVP-001`](specifications/mvp-001-end-to-end-acceptance.md) | Pass the accepted MVP flow on one supported Mac and iPhone without manual repair. | Completion | P5/W5.1 | `SYNC-012` | PR-MVP-ACCEPTANCE |
 | [`RELEASE-001`](specifications/release-001-first-release-readiness.md) | Pass or explicitly block every first-release readiness obligation. | Release readiness | Release/R1 | `MVP-001` | PR-RELEASE-READINESS |
 | `MACOS-008` | Sign the macOS package with Developer ID and a secure timestamp, notarize and staple it, version it, bundle third-party notices, and choose the release JDK. | Release readiness | Release/R2 | `RELEASE-001` | PR-MAC-DISTRIBUTION |
+| `MACOS-009` | Offer supported in-app removal on macOS: restore proxy ownership, remove the authorization right, unregister the daemon, verify each step, and tell the user when the application can be moved to the Trash. | Release readiness | Release/R2 | `RELEASE-001` | PR-MAC-REMOVAL |
 | `IOS-003` | Build an App Store iOS release with approved Family Controls distribution, an App Store Connect record, versioning, an encryption declaration, and bundled notices. | Release readiness | Release/R2 | `RELEASE-001` | PR-IOS-DISTRIBUTION |
 | `SYNC-017` | Deploy and verify the production CloudKit schema, quota, and retention behavior for release builds. | Apple synchronization | Release/R2 | `RELEASE-001` | PR-CLOUDKIT-PRODUCTION |
 | [`DESIGN-002`](specifications/design-002-icons-store-assets.md) | Provide the macOS and iOS application icons, store assets, and About Posato with the installed version and a licenses screen showing the bundled license and notice files. | Release readiness | Release/R2 | `RELEASE-001` | PR-STORE-ASSETS |
@@ -198,7 +210,7 @@ wave barriers add the phase ordering stated above.
 | `PRIVACY-001` | Add privacy manifests and prepare the App Store privacy label. | Release readiness | Release/R2 | `RELEASE-001` | PR-PRIVACY-PUBLICATION |
 | `DOCS-001` | Turn the README into a showcase with screenshots and a Remotion-rendered demo that routes details to the documentation. | Release readiness | Release/R2 | `RELEASE-001`, `DESIGN-002` | PR-SHOWCASE-README |
 | `WEB-001` | Publish a simple `posato.app` site with a product page, the hosted privacy policy and its contact, and support routes usable as the App Store support and privacy URLs. | Release readiness | Release/R2 | `DESIGN-002`, `DOCS-001` | PR-WEBSITE |
-| `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001` | PR-RELEASE-CANDIDATE |
+| `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001` | PR-RELEASE-CANDIDATE |
 
 ## PR #1 shared cycle
 
@@ -220,7 +232,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Policy and session convergence | `SYNC-011`, `SYNC-012` | Bidirectional physical convergence, offline/retry, early end, and expiry |
 | Removal and re-link hardening | `SYNC-014`, `SYNC-015` | Fake-port resurrection cases and physical removal, quick re-link, and settle evidence |
 | Complete measurable MVP outcome | `MVP-001` | One controlled Mac-and-iPhone pass without manual repair |
-| Public-release obligations | `RELEASE-001`, `MACOS-008`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `RELEASE-002` | Readiness audit with a blocked verdict, signed and notarized or App Store artifacts, production configuration, and a final pass or blocked verdict on candidates |
+| Public-release obligations | `RELEASE-001`, `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `RELEASE-002` | Readiness audit with a blocked verdict, signed and notarized or App Store artifacts, production configuration, and a final pass or blocked verdict on candidates |
 
 ## Manual and physical gates
 

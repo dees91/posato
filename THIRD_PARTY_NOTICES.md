@@ -26,14 +26,14 @@ whenever a runtime dependency changes.
 | kuri | macOS, iOS | MIT |
 | JSpecify annotations | macOS | Apache-2.0 |
 | JetBrains Runtime API | macOS | Apache-2.0 |
-| OpenJDK runtime, bundled in the macOS application | macOS | GPL-2.0 with Classpath Exception |
+| OpenJDK runtime from Eclipse Temurin 21 (Eclipse Adoptium), bundled in the macOS application | macOS | GPL-2.0 with Classpath Exception |
 
 ## Required attributions
 
 - **Skia:** Copyright (c) 2011 Google Inc. All rights reserved. Distributed under the BSD-3-Clause license.
 - **SQLite JDBC:** portions Copyright (c) 2006, David Crawshaw. All rights reserved. Distributed under a BSD-style license.
 - **kuri:** Copyright Omar Aljarrah. Distributed under the MIT License.
-- **OpenJDK:** the bundled runtime includes its own `legal` notices directory, which must stay in the distributed application.
+- **OpenJDK (Eclipse Temurin 21):** the bundled runtime is produced from the Eclipse Temurin 21 JDK and includes its own `legal` notices directory, which must stay in the distributed application.
 
 ## Build and verification tools
 
