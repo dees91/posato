@@ -113,7 +113,7 @@ The write surface is `desktopApp/build.gradle.kts`, the helper and companion bun
 - **Second pass (2026-09-15, `6b230c9`): `changes-required`.** R1 and R4 were confirmed resolved.
   - **R2a:** the app has no Disable or Remove entry. Resolved by the update and removal decisions and step 9.
   - **R3a:** the profile check must cover every signed entitlement. Resolved in step 5.
-- **Third pass (2026-09-15, `d28b683`): `changes-required`.** R2a and R3a were confirmed, and the update chain holds. R5 (a development database could start the companion against Production) is resolved by baseline step 3 and a whole-run log query. A fourth pass tightened both: an explicit desktop target and a log query instead of `pgrep`. R6 (update criteria could not be observed, and the session is still active on open) is resolved by the step 9 pass criteria.
+- **Third pass (2026-09-15, `d28b683`): `changes-required`.** R2a and R3a were confirmed, and the update chain holds. R5 (a development database could start the companion against Production) is resolved by baseline step 3 and a whole-run log query. Passes four to seven tightened both: an explicit desktop target, `/usr/bin/log` instead of `pgrep`, and excluding the log tool's own entries. **Final verdict: `approved`** (2026-09-15, `a1881dd`). R6 (update criteria could not be observed, and the session is still active on open) is resolved by the step 9 pass criteria.
 
 ## Blockers and accepted risks
 
