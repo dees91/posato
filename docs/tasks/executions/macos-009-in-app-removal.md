@@ -40,7 +40,7 @@
 ## Plan
 
 1. **Client.** `MacOsHelperClient.remove()` returns the `HelperResult` together with whether it concluded a Remove:
-   - If a non-Remove request is pending, reconcile it first. If that is still inconclusive, return it marked as not a Remove. Otherwise continue.
+   - If a non-Remove request is pending, reconcile it first. If that result fails `concludesReconciliation()`, return it marked as not a Remove. Otherwise continue.
    - Send Remove. `shouldReconcileUnknownRequest` also diverts a pending Remove, so a retried press finishes the original request.
    - Tests: a pending Remove, a pending Apply or Enable, and a reconcile that stays unknown.
 2. **Port.** Add `MacHelperRemoval` and `suspend fun remove()` to `MacHelperPort` and `MacHelperCommands`; the fakes are updated. The desktop mapping is ordered, and the first match wins:
@@ -50,14 +50,14 @@
    | Remove concluded: `Success` + `NotRegistered` + `Idle` | `REMOVED` | helper removed; Posato can move to the Trash |
    | any other `Success` | `REMOVE_AGAIN` | Remove from this Mac again |
    | `UnknownOutcome` of a Remove | `UNCERTAIN` | Remove again finishes that request |
-   | still-unknown earlier request, verification or transport failure | `CHECK_AGAIN` | Check again |
-   | unlaunchable registration tuple | `CANNOT_START` | the existing registered-but-cannot-start copy |
-   | `ApprovalRequired` or `BackgroundApproval` | `APPROVAL_REQUIRED` | allow Posato in System Settings, then remove again |
-   | `NotRegistered` or `Unavailable` local answer | `NOT_ENABLED` | Enable on this Mac, then remove again |
-   | `RecoveryRequired` with `Integrity`/`Storage`, or `Conflict` | `PROXY_ATTENTION` | proxy settings need attention; remove again |
-   | any other daemon answer (`RuleRepair`, `Failure`) | `REMOVE_AGAIN` | Remove from this Mac again, never Check again |
+   | earlier request with `!concludesReconciliation()`, or a verification or transport failure | `CHECK_AGAIN` | Check again |
+   | exact unlaunchable tuple: `ActionRequired`, service `RecoveryRequired`, phase `RecoveryRequired`, `ManualRecovery`, `Lifecycle` | `CANNOT_START` | the existing registered-but-cannot-start copy |
+   | service `ApprovalRequired`, or action `BackgroundApproval` | `APPROVAL_REQUIRED` | allow Posato in System Settings, then remove again |
+   | exact local not-enabled tuple: `ActionRequired`, service `NotRegistered` or `UnavailableOrIncompatible`, phase `RecoveryRequired`, `ManualRecovery`, `Lifecycle` | `NOT_ENABLED` | Enable on this Mac, then remove again |
+   | action `ManualRecovery` with failure `Integrity` or `Storage` (any phase), or outcome `Conflict` | `PROXY_ATTENTION` | proxy settings need attention; remove again |
+   | anything else, such as `RuleRepair`/`Integrity` or `Failure`/`Unavailable` | `REMOVE_AGAIN` | Remove from this Mac again, never Check again |
 
-   Tests cover every tuple above.
+   Tests pin every tuple above to its result, including the rule failure (`RecoveryRequired` service + `RuleRepair`/`Integrity`) and the daemon failure (`Failure`/`Unavailable`). The reconciliation decision is an internal pure function, because the client talks to a real process.
 3. **State.** `MacHelperSetupUiState` gets:
    - a `REMOVING` activity and a `removal` result in `MacSetupPresentation`;
    - `remove(sessionBlocked)`, which is refused, with no call, while a session is active, starting, or enforcement is busy;
@@ -91,6 +91,7 @@ The write surface is the port, setup state, `MacSetupSection`, session wiring, s
   - **R2:** "Check again" re-installed a removed right. Now daemon-reached failures point to Remove again.
   - **R3:** Remove could reconcile another pending request. It now reconciles that request first, and only a concluded Remove maps to `REMOVED`.
   - **R4:** the physical checks had no baseline. The baseline, background-item pass criteria, no-prompt observation, and rerun rule are now in step 6.
+  - **Second pass (`10fe15a`): `changes-required`.** R2–R4 were confirmed. **R5:** the table rows were ambiguous, so a rule failure matched `PROXY_ATTENTION` and a daemon failure matched `NOT_ENABLED`. Fixed with exact tuple conditions and pinning tests.
   - **Recommendations adopted:** confirm-time refusal including a starting session or busy enforcement, no Remove in `RECOVERY_REQUIRED`, observing a post-removal session start, and reusing the existing button style.
 
 ## Blockers and accepted risks
