@@ -443,8 +443,27 @@ sets, signature mismatch, interrupted unregister, or incomplete cleanup remain
 action-required or `recoveryRequired`; they are not reset silently.
 
 This decision does not invent an updater or claim an uninstall hook when the
-application is dragged to Trash or damaged. Exact update delivery and release
-packaging remain RELEASE-001 concerns.
+application is dragged to Trash or damaged. Release packaging and update
+delivery belong to MACOS-008.
+
+`user-confirmed` clarification (2026-09-15, MACOS-008): a new notarized build
+is delivered as a manual download. Updating is to quit Posato, replace the
+application bundle, and open it again, with no stop action in the interface.
+That path meets the steps above:
+
+- Quit ends the helper. The helper restores any Apply it owns when its input
+  closes. If that restore fails, the daemon restores on disconnect or when the
+  lease expires.
+- The daemon exits successfully only at `Idle` with no connection or lease.
+  While restore is unconfirmed the old daemon stays running, and Repair applies.
+- Replacing the bundle needs no unregister or re-register while the daemon
+  label and `BundleProgram` stay unchanged. launchd starts the replaced
+  executable on the next helper connection.
+- `ready` is still verified before a session's restrictions resume.
+
+A future change to the daemon label, `BundleProgram`, or an incompatible
+protocol requires explicit re-registration. In-app Disable and Remove remain
+owned by MACOS-009.
 
 ### Required implementation verification
 

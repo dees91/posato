@@ -1627,3 +1627,23 @@ early end and expiry. See the
 [execution record](../tasks/executions/ios-003-app-store-release.md),
 [iOS enforcement topic](topics/ios-enforcement.md#distribution-build-ios-003),
 and [first-release readiness topic](topics/first-release-readiness.md).
+
+## [2026-09-15] implementation | Developer ID macOS release and removal row
+
+`MACOS-008` adds a manual release path for macOS. It stages, signs with
+Developer ID and a secure timestamp, verifies, notarizes, and staples both the
+application and the DMG, using the shared `Version.xcconfig` marketing version,
+the Temurin 21 runtime, and the Forest icon.
+
+Physical acceptance on notarized candidates covered a quarantined install,
+helper setup, website and application blocking, and an update by quit, replace,
+and open. It also found two onboarding defects, both fixed in the same pull
+request: Check again did not install a missing Apply right after background
+approval, and Open System Settings opened the browser. ADR 0004 now records the
+manual-download update path.
+
+Roadmap revision 18 adds `MACOS-009` for supported in-app removal, because
+nothing in the application calls the helper's Disable or Remove operations.
+See the [execution record](../tasks/executions/macos-008-developer-id-distribution.md),
+[macOS enforcement topic](topics/macos-enforcement.md), and
+[roadmap](../tasks/mvp-roadmap.md).

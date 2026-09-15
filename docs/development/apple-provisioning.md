@@ -87,6 +87,38 @@ signed companion carries the CloudKit container, the CloudKit service, one
 keychain access group ending `.app.posato.sync`, and an application identifier
 of `<team>.app.posato.macos.sync`.
 
+## macOS Developer ID release
+
+`MACOS-008` adds a release path next to development packaging. `posato-provisioning` does not create its resources:
+
+- **Certificate.** A Developer ID Application certificate needs the Account Holder role, and the Admin team key cannot create it. The maintainer creates it in Xcode under Settings → Accounts → Manage Certificates → + → Developer ID Application.
+- **Profile.** The maintainer creates a Developer ID provisioning profile named `Posato macOS Sync Developer ID` for `app.posato.macos.sync` in the portal (Profiles → + → Developer ID) and saves it as `~/Library/Developer/Posato/Posato_macOS_Sync_Developer_ID.provisionprofile`.
+
+Both stay outside the checkout. The release is built by hand and never runs in `quality`:
+
+```shell
+./gradlew :desktopApp:notarizeMacOsRelease \
+  -PposatoMacOsBuildNumber=<next build number> \
+  "-PposatoMacOsReleaseSigningIdentity=Developer ID Application: <name> (<team>)" \
+  -PposatoMacOsSyncDeveloperIdProfile=~/Library/Developer/Posato/Posato_macOS_Sync_Developer_ID.provisionprofile
+```
+
+Notarization uses the same App Store Connect team key as this tool. It reads the `posato.asc.*` values from `local.properties`, or the `POSATO_ASC_*` environment variables. `-PposatoAscKeyId`, `-PposatoAscIssuerId`, and `-PposatoAscPrivateKeyPath` override them for a single run.
+
+Create the certificate under the **G2 Sub-CA**. A certificate from the previous Sub-CA expires on 1 February 2027, and Xcode can still issue one. When the keychain holds more than one Developer ID Application identity with the same name, pass the SHA-1 hash that `security find-identity -v -p codesigning` prints for the G2 identity instead of the name.
+
+The build number is a positive integer higher than the previous candidate's. The release tasks refuse to run without it, and it is never tracked. The marketing version comes from the root `Version.xcconfig`.
+
+The chain works in this order:
+1. It stages a separate `release-package`.
+2. It signs every nested item with Developer ID and a secure timestamp.
+3. It verifies the result: signatures, the embedded profile against every signed companion entitlement, versions, the icon, the notices, and the Temurin runtime.
+4. It notarizes and staples the application.
+5. It builds the DMG, then signs, notarizes, and staples that too.
+6. It checks both artifacts with `stapler validate` and `spctl`.
+
+A rejected submission leaves the notarization log under the task's `build/tmp` directory. The first signing run may raise a keychain prompt asking `codesign` to use the Developer ID key.
+
 ## Idempotence and `--replace`
 
 A repeat run issues only reads and changes nothing.

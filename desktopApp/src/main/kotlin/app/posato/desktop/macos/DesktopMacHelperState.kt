@@ -16,20 +16,33 @@ internal class DesktopMacHelperState(
     private val openSettings: (URI) -> Unit,
 ) : MacHelperPort {
     override suspend fun enable(): MacHelperReadiness {
+        return readiness { enableThenStatus() }
+    }
+
+    override suspend fun recheck(): MacHelperReadiness {
         return readiness {
-            val enabled = commands.enable()
-            if (enabled.outcome == HelperResult.Outcome.Success &&
-                enabled.serviceState == HelperResult.State.Ready
-            ) {
-                commands.status()
+            val status = commands.status()
+            if (status.requiresRuleInstallation()) {
+                enableThenStatus()
             } else {
-                enabled
+                status
             }
         }
     }
 
-    override suspend fun recheck(): MacHelperReadiness {
-        return readiness { commands.status() }
+    private fun enableThenStatus(): HelperResult {
+        val enabled = commands.enable()
+        return if (enabled.outcome == HelperResult.Outcome.Success && enabled.serviceState == HelperResult.State.Ready) {
+            commands.status()
+        } else {
+            enabled
+        }
+    }
+
+    private fun HelperResult.requiresRuleInstallation(): Boolean {
+        return outcome == HelperResult.Outcome.ActionRequired &&
+            requiredAction == HelperResult.RequiredAction.RuleRepair &&
+            ownershipPhase == HelperResult.Phase.Idle
     }
 
     override fun openApprovalSettings() {
