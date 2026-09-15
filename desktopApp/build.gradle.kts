@@ -1,3 +1,4 @@
+import app.posato.buildlogic.PosatoPaths
 import app.posato.buildlogic.PosatoVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -712,8 +713,14 @@ abstract class NotarizeMacOsArtifact : DefaultTask() {
 
     @TaskAction
     fun notarize() {
-        val target = artifact.get()
-        val privateKeyFile = File(expandHome(requiredValue(privateKey, "posatoAscPrivateKeyPath")))
+        val configuredArtifact = artifact.get()
+        val target = if (configuredArtifact.isDirectory && configuredArtifact.extension != "app") {
+            configuredArtifact.listFiles().orEmpty().singleOrNull { file -> file.extension == "dmg" }
+                ?: throw GradleException("Expected exactly one DMG in ${configuredArtifact.name}.")
+        } else {
+            configuredArtifact
+        }
+        val privateKeyFile = File(PosatoPaths.expandHome(requiredValue(privateKey, "posatoAscPrivateKeyPath")))
         check(privateKeyFile.isFile) { "The App Store Connect private key file is missing." }
         val credentials = arrayOf(
             "--key",
@@ -799,10 +806,6 @@ abstract class NotarizeMacOsArtifact : DefaultTask() {
         val SUBMISSION_ID = Regex(""""id"\s*:\s*"([0-9a-fA-F-]{36})"""")
         val SUBMISSION_STATUS = Regex(""""status"\s*:\s*"([A-Za-z ]+)"""")
     }
-}
-
-fun expandHome(path: String): String {
-    return if (path.startsWith("~/")) System.getProperty("user.home") + path.removePrefix("~") else path
 }
 
 val macOsHelperBundle = project(":macosHelper").layout.buildDirectory
@@ -1026,7 +1029,8 @@ val stageMacOsReleasePackage by tasks.registering(Sync::class) {
     description = "Stages the embedded macOS application for Developer ID signing."
     dependsOn(embedMacOsHelper, embedMacOsSyncCompanion)
     mustRunAfter(signMacOsDevelopmentPackage, stageMacOsDevelopmentPackage)
-    doFirst { PosatoVersion.releaseBuildNumber(requestedReleaseBuildNumber) }
+    val releaseBuildNumber = requestedReleaseBuildNumber
+    doFirst { PosatoVersion.releaseBuildNumber(releaseBuildNumber) }
 
     from(macOsDistributable)
     into(macOsReleaseApplication)
@@ -1045,7 +1049,7 @@ val signMacOsReleasePackage by tasks.registering(SignMacOsDevelopmentPackage::cl
     )
     val companionProfile = providers.gradleProperty("posatoMacOsSyncDeveloperIdProfile")
     if (companionProfile.isPresent) {
-        companionProvisioningProfile.set(file(expandHome(companionProfile.get())))
+        companionProvisioningProfile.set(file(PosatoPaths.expandHome(companionProfile.get())))
     }
     signingIdentity.set(macOsReleaseSigningIdentity)
     release.set(true)
@@ -1091,11 +1095,7 @@ tasks.register<NotarizeMacOsArtifact>("notarizeMacOsRelease") {
     group = "distribution"
     description = "Signs, notarizes, staples, and assesses the macOS release DMG."
     dependsOn(packageMacOsReleaseDmg)
-    artifact.set(
-        macOsReleaseDiskImageDirectory.map { directory ->
-            directory.asFile.listFiles().orEmpty().single { file -> file.extension == "dmg" }
-        },
-    )
+    artifact.set(macOsReleaseDiskImageDirectory.map { directory -> directory.asFile })
     keyId.set(providers.gradleProperty("posatoAscKeyId"))
     issuerId.set(providers.gradleProperty("posatoAscIssuerId"))
     privateKey.set(providers.gradleProperty("posatoAscPrivateKeyPath"))
