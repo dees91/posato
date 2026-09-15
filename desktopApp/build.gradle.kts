@@ -1,3 +1,4 @@
+import app.posato.buildlogic.PosatoVersion
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
@@ -501,6 +502,8 @@ val macOsHelperApplication = macOsDistributable.get().dir(
     "Contents/Helpers/PosatoMacOSHelper.app",
 ).asFile.absolutePath
 val macOsApplication = macOsDistributable.get().asFile.absolutePath
+val posatoMarketingVersion = PosatoVersion.marketingVersion(rootProject.file("Version.xcconfig"))
+val posatoBuildNumber = PosatoVersion.developmentBuildNumber(providers.gradleProperty("posatoMacOsBuildNumber").orNull)
 
 plugins {
     alias(libs.plugins.compose.compiler)
@@ -543,12 +546,13 @@ sqldelight {
 
 val windowChromeResources = layout.buildDirectory.dir("generated/window-chrome")
 val windowChromeLibrary = windowChromeResources.map { it.file("macos-arm64/native/libPosatoWindow.dylib") }
-val windowChromeJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {
+val posatoJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {
     languageVersion.set(JavaLanguageVersion.of(21))
+    vendor.set(JvmVendorSpec.ADOPTIUM)
 }
 val compileWindowChrome = tasks.register<Exec>("compileWindowChrome") {
     val source = layout.projectDirectory.file("src/main/objc/WindowChrome.m")
-    val javaInstallation = windowChromeJavaLauncher.get().metadata.installationPath.asFile
+    val javaInstallation = posatoJavaLauncher.get().metadata.installationPath.asFile
     val compiledLibrary = windowChromeLibrary.get().asFile
     inputs.file(source)
     outputs.file(compiledLibrary)
@@ -583,16 +587,19 @@ tasks.withType<AbstractJPackageTask>().configureEach {
 compose.desktop {
     application {
         mainClass = "app.posato.desktop.MainKt"
+        javaHome = posatoJavaLauncher.get().metadata.installationPath.asFile.absolutePath
 
         nativeDistributions {
             appResourcesRootDir.set(compileWindowChrome.map { windowChromeResources.get() })
             packageName = "Posato"
-            packageVersion = "1.0.0"
+            packageVersion = posatoMarketingVersion
             modules("java.sql")
 
             macOS {
                 bundleID = "app.posato.macos"
                 minimumSystemVersion = "15.0"
+                packageBuildVersion = posatoBuildNumber
+                iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
             }
         }
     }
@@ -684,7 +691,7 @@ val packageDmg = tasks.register<AbstractNativeMacApplicationPackageDmgTask>("pac
     description = "Packages the verified development-signed macOS application as a DMG."
     dependsOn(verifyMacOsDevelopmentPackaging)
     packageName.set("Posato")
-    packageVersion.set("1.0.0")
+    packageVersion.set(posatoMarketingVersion)
     destinationDir.set(layout.buildDirectory.dir("compose/binaries/main/dmg"))
     appDir.set(macOsDevelopmentPackageRoot)
 }

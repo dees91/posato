@@ -1,3 +1,5 @@
+import app.posato.buildlogic.PosatoVersion
+import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.tasks.Sync
 
 plugins {
@@ -6,6 +8,8 @@ plugins {
 
 val swiftScratchDirectory = layout.buildDirectory.dir("swift")
 val helperBundleDirectory = layout.buildDirectory.dir("bundle/PosatoMacOSHelper.app")
+val posatoMarketingVersion = PosatoVersion.marketingVersion(rootProject.file("Version.xcconfig"))
+val posatoBuildNumber = PosatoVersion.developmentBuildNumber(providers.gradleProperty("posatoMacOsBuildNumber").orNull)
 
 val buildSwiftRelease by tasks.registering(Exec::class) {
     group = "build"
@@ -30,11 +34,19 @@ val assembleHelperBundle by tasks.registering(Sync::class) {
     group = "build"
     description = "Assembles the unsigned nested macOS helper application."
     dependsOn(buildSwiftRelease)
+    inputs.property("posatoMarketingVersion", posatoMarketingVersion)
+    inputs.property("posatoBuildNumber", posatoBuildNumber)
 
     into(helperBundleDirectory)
     from("Resources/HelperInfo.plist") {
         into("Contents")
         rename { "Info.plist" }
+        filter<ReplaceTokens>(
+            "tokens" to mapOf(
+                "POSATO_MARKETING_VERSION" to posatoMarketingVersion,
+                "POSATO_BUILD_NUMBER" to posatoBuildNumber,
+            ),
+        )
     }
     from("Resources/app.posato.macos.proxy-settings.plist") {
         into("Contents/Library/LaunchDaemons")
