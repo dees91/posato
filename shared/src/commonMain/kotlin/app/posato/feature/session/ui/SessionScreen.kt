@@ -79,6 +79,7 @@ internal fun SessionScreen(
         onMacSetupEnable = { macSetupState?.enable() },
         onMacSetupOpenSettings = { macSetupState?.openSettings() },
         onMacSetupAnnouncement = onMacSetupAnnouncement,
+        onMacSetupRemove = { macSetupState?.remove(sessionBlocked = state.blocksHelperRemoval()) },
     )
 }
 
@@ -106,6 +107,7 @@ internal fun SessionScreen(
     onMacSetupEnable: () -> Unit = {},
     onMacSetupOpenSettings: () -> Unit = {},
     onMacSetupAnnouncement: (String) -> Unit = {},
+    onMacSetupRemove: () -> Unit = {},
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
         val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
@@ -164,6 +166,7 @@ internal fun SessionScreen(
                         onMacSetupEnable,
                         onMacSetupOpenSettings,
                         onMacSetupAnnouncement,
+                        onMacSetupRemove,
                     )
                 }
             }

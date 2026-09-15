@@ -514,6 +514,39 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   accessibility announcements for progress and the returned result, including
   an unchanged result after rechecking and the repeated-result sentence when
   it is shown. No time or success claim.
+  `user-confirmed` (2026-09-15, MACOS-009): the removal entry point sits here,
+  and removal is refused during a session.
+  - **When offered.** After a check reports the helper ready, awaiting
+    approval, not checkable, or with an unfinished request, the options add a
+    quiet error-colored **Remove from this Mac**. It is not offered before a
+    check, while the helper is not enabled, or while it is registered but
+    cannot start.
+  - **Confirmation.** A destructive dialog names what removal does:
+    - proxy settings are restored and the administrator rule is removed;
+    - the background helper turns off, and website and app pauses stop on this
+      Mac until it is enabled again;
+    - paused items stay saved.
+
+    **Keep the helper** cancels.
+  - **During a session.** While a session is active, starting, or changing
+    enforcement, the action is disabled and "Removal is available after the
+    session ends." is shown. An open confirmation closes.
+  - **Progress.** While removal runs the row reads "Removing the background
+    helper…".
+  - **Verified removal.** A Positive notice says the helper is removed and
+    Posato can be moved to the Trash. The row then offers **Enable on this
+    Mac** again.
+  - **Other results.** A Caution notice names the next action without claiming
+    removal:
+    - remove again;
+    - remove again to finish the unfinished request;
+    - check again when the helper could not be reached;
+    - allow background approval, then remove;
+    - enable first, because cleanup cannot be confirmed;
+    - check proxy settings, then remove.
+
+    A failure after the daemon was reached never suggests Check again, which
+    could reinstall the removed rule.
 - `user-confirmed` (2026-09-11): when a helper read has returned a state other
   than ready and no helper call is running, Session names that state once as a
   notice beside the enforcement notice, above the session action. Expanding

@@ -4,4 +4,6 @@ internal interface MacHelperCommands {
     fun enable(): HelperResult
 
     fun status(): HelperResult
+
+    fun remove(): HelperRemovalAttempt
 }
