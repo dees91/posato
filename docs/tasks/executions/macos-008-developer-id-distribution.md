@@ -84,7 +84,7 @@
 
      Then record `sfltool dumpbtm` (including orphaned entries), `launchctl print` reporting the daemon not found, and `scutil --proxy`. `hypothesis`: an orphaned development entry does not block release registration.
    - **Install.** Download candidate 1's DMG through Safari from a local HTTP server, drag Posato to `/Applications`, and open it. Record `xattr -p com.apple.quarantine`, the Gatekeeper prompt, `spctl -a -vvv`, and a non-translocated process path.
-   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off. The recorded deletion of `posato-policy.db` is the main control. At the end, `log show --info --debug --start <baseline time> --predicate 'process == "PosatoMacOSSync" OR eventMessage CONTAINS "PosatoMacOSSync"'` returns no entries.
+   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off. The recorded deletion of `posato-policy.db` is the main control. At the end, `/usr/bin/log show --info --debug --start <baseline time> --predicate 'process == "PosatoMacOSSync" OR eventMessage CONTAINS "PosatoMacOSSync"'` prints its header line and no entries. zsh's builtin `log` would silently fail.
    - **Update to candidate 2** (build number plus one), with no UI action: start a session, quit Posato, replace it with a Safari-downloaded candidate 2, and open it.
      - `inferred` from the lifecycle observations: launchd starts the replaced `BundleProgram` on the next helper connection.
      - **Pass criteria:**
