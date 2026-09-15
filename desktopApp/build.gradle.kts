@@ -21,6 +21,7 @@ import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.time.Instant
+import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import javax.inject.Inject
@@ -776,7 +777,7 @@ abstract class NotarizeMacOsArtifact : DefaultTask() {
         name: String,
     ): String {
         return property.orNull?.takeIf(String::isNotBlank)
-            ?: throw GradleException("A macOS release needs -P$name.")
+            ?: throw GradleException("A macOS release needs $name as a -P property, its environment variable, or local.properties.")
     }
 
     private fun run(vararg arguments: String): CommandResult {
@@ -1023,6 +1024,23 @@ val macOsReleaseApplication = macOsReleasePackageRoot.map { directory -> directo
 val macOsReleaseDiskImageDirectory = layout.buildDirectory.dir("compose/binaries/main/release-dmg")
 val macOsReleaseSigningIdentity = providers.gradleProperty("posatoMacOsReleaseSigningIdentity").orElse("")
 val requestedReleaseBuildNumber = providers.gradleProperty("posatoMacOsBuildNumber").orNull
+val localProperties = Properties().apply {
+    rootProject.file("local.properties").takeIf(File::isFile)?.inputStream()?.use { input -> load(input) }
+}
+
+fun releaseCredential(
+    gradleProperty: String,
+    environmentVariable: String,
+    localKey: String,
+): Provider<String> {
+    return providers.gradleProperty(gradleProperty)
+        .orElse(providers.environmentVariable(environmentVariable))
+        .orElse(localProperties.getProperty(localKey).orEmpty())
+}
+
+val ascKeyId = releaseCredential("posatoAscKeyId", "POSATO_ASC_KEY_ID", "posato.asc.keyId")
+val ascIssuerId = releaseCredential("posatoAscIssuerId", "POSATO_ASC_ISSUER_ID", "posato.asc.issuerId")
+val ascPrivateKeyPath = releaseCredential("posatoAscPrivateKeyPath", "POSATO_ASC_PRIVATE_KEY_PATH", "posato.asc.privateKeyPath")
 
 val stageMacOsReleasePackage by tasks.registering(Sync::class) {
     group = "distribution"
@@ -1075,9 +1093,9 @@ val notarizeMacOsReleaseApplication by tasks.registering(NotarizeMacOsArtifact::
     description = "Notarizes, staples, and assesses the verified Developer ID macOS application."
     dependsOn(verifyMacOsReleasePackaging)
     artifact.set(macOsReleaseApplication.map { directory -> directory.asFile })
-    keyId.set(providers.gradleProperty("posatoAscKeyId"))
-    issuerId.set(providers.gradleProperty("posatoAscIssuerId"))
-    privateKey.set(providers.gradleProperty("posatoAscPrivateKeyPath"))
+    keyId.set(ascKeyId)
+    issuerId.set(ascIssuerId)
+    privateKey.set(ascPrivateKeyPath)
     releaseSigningIdentity.set(macOsReleaseSigningIdentity)
 }
 
@@ -1096,9 +1114,9 @@ tasks.register<NotarizeMacOsArtifact>("notarizeMacOsRelease") {
     description = "Signs, notarizes, staples, and assesses the macOS release DMG."
     dependsOn(packageMacOsReleaseDmg)
     artifact.set(macOsReleaseDiskImageDirectory.map { directory -> directory.asFile })
-    keyId.set(providers.gradleProperty("posatoAscKeyId"))
-    issuerId.set(providers.gradleProperty("posatoAscIssuerId"))
-    privateKey.set(providers.gradleProperty("posatoAscPrivateKeyPath"))
+    keyId.set(ascKeyId)
+    issuerId.set(ascIssuerId)
+    privateKey.set(ascPrivateKeyPath)
     releaseSigningIdentity.set(macOsReleaseSigningIdentity)
 }
 
