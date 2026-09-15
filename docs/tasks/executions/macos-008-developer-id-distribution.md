@@ -80,11 +80,11 @@
    - **Baseline.** The maintainer follows a one-time checklist:
      1. Quit the development build at `Idle` and delete its bundles.
      2. Run `sudo launchctl bootout system/app.posato.macos.proxy-settings` and `sudo security authorizationdb remove app.posato.macos.proxy.apply`.
-     3. Back up and clear the development database with `posato-control reset --yes`, so the release build cannot resume a linked workspace or pending join against Production.
+     3. Back up and clear the development database with `posato-control --target desktop reset --yes`, so the release build cannot resume a linked workspace against Production. Record the deleted paths, which must include `posato-policy.db`, and the backup directory.
 
      Then record `sfltool dumpbtm` (including orphaned entries), `launchctl print` reporting the daemon not found, and `scutil --proxy`. `hypothesis`: an orphaned development entry does not block release registration.
    - **Install.** Download candidate 1's DMG through Safari from a local HTTP server, drag Posato to `/Applications`, and open it. Record `xattr -p com.apple.quarantine`, the Gatekeeper prompt, `spctl -a -vvv`, and a non-translocated process path.
-   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off, and `pgrep PosatoMacOSSync` stays empty through install, update, and the end of the run.
+   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off. At the end, `log show --start <baseline time> --predicate 'process == "PosatoMacOSSync"'` returns no entries for the whole run.
    - **Update to candidate 2** (build number plus one), with no UI action: start a session, quit Posato, replace it with a Safari-downloaded candidate 2, and open it.
      - `inferred` from the lifecycle observations: launchd starts the replaced `BundleProgram` on the next helper connection.
      - **Pass criteria:**
@@ -113,7 +113,7 @@ The write surface is `desktopApp/build.gradle.kts`, the helper and companion bun
 - **Second pass (2026-09-15, `6b230c9`): `changes-required`.** R1 and R4 were confirmed resolved.
   - **R2a:** the app has no Disable or Remove entry. Resolved by the update and removal decisions and step 9.
   - **R3a:** the profile check must cover every signed entitlement. Resolved in step 5.
-- **Third pass (2026-09-15, `d28b683`): `changes-required`.** R2a and R3a were confirmed, and the update chain holds. R5 (a development database could start the companion against Production) is resolved by baseline step 3 and the `pgrep` check. R6 (update criteria could not be observed, and the session is still active on open) is resolved by the step 9 pass criteria.
+- **Third pass (2026-09-15, `d28b683`): `changes-required`.** R2a and R3a were confirmed, and the update chain holds. R5 (a development database could start the companion against Production) is resolved by baseline step 3 and a whole-run log query. A fourth pass tightened both: an explicit desktop target and a log query instead of `pgrep`. R6 (update criteria could not be observed, and the session is still active on open) is resolved by the step 9 pass criteria.
 
 ## Blockers and accepted risks
 
