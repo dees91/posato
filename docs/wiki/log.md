@@ -1780,8 +1780,10 @@ processed with no errors or warnings. See the
 
 ## [2026-09-13] proposal | Post-MVP usability and feature ideas
 
-Recorded the maintainer's request to plan clearer `www` website coverage and
-fewer repeated macOS session-start authorization prompts after the MVP in
+Recorded the maintainer's request to plan clearer `www` website coverage,
+fewer repeated macOS session-start authorization prompts, continuous website
+entry with an accurate count in onboarding, and discoverable website and app
+editing from the Session screen after the MVP in
 [the decision queue](topics/mvp-open-questions.md#post-mvp-session-usability-proposals).
 Solutions remain open; existing exact-host and one-use Apply authorization
 contracts remain unchanged.

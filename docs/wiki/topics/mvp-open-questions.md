@@ -595,8 +595,9 @@ applicable consumer, and the separate pre-release audit to `RELEASE-001`.
 
 ## Post-MVP session usability proposals
 
-`user-confirmed` (2026-09-12): retain these two improvements for planning in
-the next iteration after the MVP. They do not expand MVP scope or authorize
+`user-confirmed` (2026-09-12, extended 2026-09-15): retain these improvements
+for planning in the next iteration after the MVP. They do not expand MVP scope
+or authorize
 implementation. The solution and any changes to accepted contracts remain
 `open`.
 
@@ -617,6 +618,21 @@ implementation. The solution and any changes to accepted contracts remain
   [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
   and review of the security implications; this note does not grant persistent
   authorization or choose its implementation.
+- **Keep website entry continuous and its count accurate in onboarding.**
+  `user-confirmed` (2026-09-15): after typing a website in the first-website
+  step and pressing Enter, the field loses focus, so adding another website
+  needs a new click; after adding two websites one at a time, the step shows
+  "1 added". `observed` in code: the step clears focus after every submission
+  with at least one added website, overriding the entry field's own focus
+  request, and the supporting text reports only the last submission's count
+  rather than the saved total. Decide how onboarding keeps entry focused while
+  still revealing its continue action, and which count it states.
+- **Make website and app editing discoverable from the Session screen.**
+  `user-confirmed` (2026-09-15): people look for adding or editing websites and
+  apps on the Session screen, where the paused items are summarized, and take
+  a while to recall that editing lives under Paused items. Evaluate a direct
+  route from that summary to editing, within the accepted two-destination
+  navigation in [DESIGN.md](../../../DESIGN.md).
 
 ## Post-MVP feature ideas for discovery
 
