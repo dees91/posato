@@ -1,120 +1,101 @@
 # Execution: `IOS-003`
 
 - **Brief:** [App Store release build](../specifications/ios-003-app-store-release.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code
 - **Reviewer:** independent Claude Code agent (plan and completed change)
 - **Branch:** `feature/ios-003-app-store-release`
-- **Updated:** 2026-09-14
+- **Updated:** 2026-09-15
 
 ## Starting facts
 
-- `observed` (2026-09-14, on `c8112c4`): Release has no app `CODE_SIGN_ENTITLEMENTS`; the Debug-only
-  `iphoneos` condition `POSATO_FAMILY_CONTROLS_DEVELOPMENT` gates six app Swift branches, while the
-  extension has no gated code and signs with its entitlements in both configurations. Version and build
-  number repeat per target. `AppIcon` is in the resource phase but not selected. Legal files ship as
-  Compose resources under `files/legal`. The generated app `Info.plist` declares iPhone and iPad but no
-  orientations.
-- `observed`: Xcode 26.6 with the iOS 26.5 SDK meets the upload requirement; this Mac holds only an Apple
-  Development identity; `posato-provisioning doctor` passes with the team API key.
-- `observed` (Apple documentation, 2026-09-14): the App Store Connect API cannot create an app record.
-  The Account Holder requests Family Controls distribution separately for the app and each Screen Time
-  extension; approval shows **Assigned**. `ITSAppUsesNonExemptEncryption` is `NO` only when all
-  encryption is exempt.
+- `observed` (2026-09-14, on `c8112c4`): Release had no app entitlements; the Debug-only `iphoneos`
+  condition gated six app Swift branches; version and build number repeated per target; `AppIcon`
+  was not selected; the generated app `Info.plist` declared iPhone and iPad without orientations.
+- `observed` (Apple documentation, 2026-09-14): the App Store Connect API cannot create an app record;
+  `ITSAppUsesNonExemptEncryption` is `NO` only when all encryption is exempt.
 
-## Maintainer decisions (2026-09-14)
+## Maintainer decisions
 
-- Build number: latest App Store Connect build plus one, supplied at archive time, never tracked.
-- App Store name "Posato" with no fallback; stop and ask if it is unavailable.
-- Encryption: `ITSAppUsesNonExemptEncryption = NO`, accepting the candidate assessment below.
-- `observed` (2026-09-14): the current request form has no bundle-identifier field; the maintainer
-  accepted its terms and Apple assigned Family Controls (Distribution) to the whole account within
-  a minute. Phase C is no longer blocked by approval.
-- 2026-09-15: App Store Connect required accepting the renewed Paid Apps Agreement before any new
-  record, even for a free app; the maintainer accepted it without banking or tax setup and created the
-  record. The capability also had to be enabled on each App ID before export succeeded.
-- 2026-09-15, scope change after validation error 90474: keep iPad with all four orientations. iPhone
-  declares the orientations it already allowed. Landscape and iPad layout need verification here; iPad
-  store screenshots become a `RELEASE-002` input.
+- 2026-09-14: build number is the latest App Store Connect build plus one, supplied at archive time;
+  name "Posato" with no fallback; `ITSAppUsesNonExemptEncryption = NO` per the assessment below.
+- 2026-09-15: accepted the renewed Paid Apps Agreement (no banking or tax setup), which App Store
+  Connect required before creating any record, even for a free app.
+- 2026-09-15, scope change after validation error 90474: keep iPad with all four orientations.
 
 ## Plan
 
-Phase A needs no Apple approval; B is maintainer action; C waits for approval. Raw output and signing
-details stay under ignored `build/verification/`; tracked text holds no team, key, profile, or device value.
+1. Root `Version.xcconfig` as the project base configuration; one project-level build-number default.
+2. `Posato.entitlements` and `POSATO_FAMILY_CONTROLS` for `iphoneos` in Debug and Release.
+3. Select `AppIcon`; declare the encryption answer after maintainer confirmation.
+4. `quality`, build settings, and a development-signed Release archive inspection.
+5. Maintainer creates the App Store Connect record.
+6. Archive build 1, export one IPA with automatic distribution signing, inspect, validate, upload.
+7. Uninstall the development build, install from TestFlight, drive `MVP-001` enforcement, restore.
+8. Closeout review, record, wiki.
 
-1. **Version (A).** Root `Version.xcconfig` contains exactly `MARKETING_VERSION = 1.0.0` and is the
-   project-level base configuration for Debug and Release. Per-target version and build settings go;
-   one project-level `CURRENT_PROJECT_VERSION = 1` stays as the local default.
-2. **Entitlements and enforcement (A).** Rename `PosatoDebug.entitlements` to `Posato.entitlements`
-   unchanged and use it for `iphoneos` in both app configurations. Rename the condition to
-   `POSATO_FAMILY_CONTROLS`, set for `iphoneos` in both; historical records keep the old names.
-3. **Icon and encryption (A).** Select `AppIcon`. Add `ITSAppUsesNonExemptEncryption` to the app
-   `Info.plist` only after the maintainer confirms the assessment below.
-4. **Local checks (A).** `./gradlew quality`; no target-level version setting remains and
-   `-showBuildSettings` agrees for app, extension, and tests; a development-signed Release archive with
-   entitlements, version pairs, icon, and the three legal files inspected.
-5. **Record (B).** The maintainer creates the iOS record: Posato, English (U.S.), `app.posato.ios`, own SKU.
-6. **Distribution (C).** Archive with `CURRENT_PROJECT_VERSION=<latest build + 1>`; archive and export
-   pass `-allowProvisioningUpdates` and the API key flags from `local.properties`. Export one IPA
-   (`app-store-connect`, `manageAppVersionAndBuildNumber` off, untracked options under `build/`), check
-   it against the expected entitlements, validate it with App Store Connect, and upload that IPA. An
-   iPad orientation rejection goes to the maintainer before any upload.
-7. **TestFlight run (C).** Needs the encryption answer in the plist or App Store Connect. The maintainer
-   confirms losing the iPhone's local development data, including the App Group container. End any
-   session, uninstall the development build without Remove workspace, install from TestFlight, confirm
-   first install and the Screen Time prompt, and keep sync unconfigured. Drive the build without
-   `install -t device` (fallback: manual launch plus snapshot, tap, screenshot); run the `MVP-001`
-   block, expiry, and early-end steps; then restore the development build.
-8. **Closeout.** Completed-change review, this record, `ios-enforcement.md` and
-   `first-release-readiness.md` wiki updates, one log entry.
-
-## Expected entitlements (AC-01)
-
-Equal between the Debug device app and the export: Family Controls, App Group
-`group.app.posato.ios.session`, the iCloud container, CloudKit, and the team-prefixed `app.posato.sync`
-keychain group; for the extension, Family Controls and the App Group. Expected export differences:
-`get-task-allow` false, `icloud-container-environment` Production, `beta-reports-active` true.
-
-## Encryption assessment (candidate, `inferred`, not a legal opinion)
+## Encryption assessment (`inferred`, not a legal opinion)
 
 Synchronized data is encrypted with standard algorithms: CryptoKit AES-GCM and Ed25519, and HKDF in
-common Kotlin on the system HMAC (ADR 0006); transport is system HTTPS; nothing is proprietary.
-Candidate answers: uses encryption, qualifies for an exemption, not proprietary, hence `NO`. `open`:
-whether a year-end self-classification report applies. The maintainer decides.
+common Kotlin on the system HMAC (ADR 0006); transport is system HTTPS; nothing is proprietary. App
+Store Connect answers: uses encryption, qualifies for an exemption, not proprietary. `open`: whether a
+year-end self-classification report applies.
 
 ## High-risk plan review
 
 - **Verdict:** `approved` after one correction round.
 - **Critical or Required findings:** (R1) replacing the development build kept sync state and Screen
-  Time approval; (R2) "matching Debug" had no expected set; (R3) no pre-upload validation of the iPad
-  orientation gap.
-- **Resolution:** uninstall-first step 7, expected entitlements section, validated single-IPA upload
-  with a maintainer decision on rejection. Recommended items folded into steps 4, 6, 7 and the assessment.
+  Time approval; (R2) "matching Debug" had no expected entitlement set; (R3) no pre-upload validation.
+- **Resolution:** uninstall-first TestFlight run, expected entitlements listed, validated single-IPA upload.
 
 ## Result
 
-- Pending.
+- Release builds of the app and extension now sign with Family Controls, the App Group, iCloud,
+  CloudKit, and Keychain entitlements and compile enforcement. All targets read `Version.xcconfig`.
+- Build 1.0.0 (1) is on internal TestFlight for record Posato (`app.posato.ios`).
+- Deviation, `user-confirmed` (maintainer's portal and Apple email): the Family Controls distribution
+  request form has no bundle-identifier field; Apple assigned the entitlement to the account within a
+  minute. `observed`: export still failed until the maintainer enabled **Family Controls
+  (Distribution)** on each App ID.
+- Deviation: validation required `CFBundleDisplayName` in the extension (90360) and orientations for
+  iPad (90474). The extension is named Posato; iPad declares all four orientations, and iPhone declares
+  portrait and both landscape orientations, which keeps its previous implicit behavior.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
+- **Verdict:** `approved` after one correction.
+- **Critical or Required findings:** the readiness topic labelled iPhone blocking `observed` although
+  only the maintainer saw it.
+- **Resolution:** blocking and clearing are labelled `user-confirmed` there; the account-level
+  assignment is labelled `user-confirmed` in the record and enforcement topic.
+- **Scope checked:** full diff, build settings for every target, stale references, secret patterns, and
+  all seven run directories; no tracked consumer of the old names remains outside historical records.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Pending | | |
+| `./gradlew quality` | pass | after the project change and again after the orientation change |
+| Build settings, all targets, Debug and Release | pass | 1.0.0 (1) from project level; entitlements and condition on `iphoneos` only |
+| Development-signed Release archive | pass | expected entitlements, icon compiled, three legal files byte-identical |
+| Exported IPA | pass | Apple Distribution; expected entitlement set with `get-task-allow` false, Production container environment, `beta-reports-active`; encryption key `false` |
+| App Store Connect validation and upload | pass | first validation failed (90360, 90474); after fixes `VERIFY SUCCEEDED`, upload succeeded, processing complete without a compliance hold |
+| iPad Air 11-inch (M4) Simulator | pass | portrait onboarding and navigation run `20260915-093552-a298`; landscape run `20260915-094523-37cc` |
+| TestFlight build, physical iPhone | pass | first install and system Screen Time prompt `20260915-102352-db65`; grant, website, picker `20260915-102612-b4e1`; 25-minute session with restrictions active `20260915-103044-f4f0`; early end `20260915-103205-cae3`; 5-minute natural expiry at the reviewed end time `20260915-103409-008e` |
+| Enforcement on the iPhone | pass, `user-confirmed` | the maintainer saw Safari `example.com` and the selected Calculator blocked during the session and usable after early end and after expiry; no screenshots |
 
 ## Blockers and accepted risks
 
-- **Cleared (2026-09-14):** Family Controls distribution, assigned at account level.
-- **Risk:** distribution builds use CloudKit Production without a schema (`SYNC-017`); no sync claim.
-  Synchronizable Keychain items survive the uninstall.
-- **Risk:** a privacy-manifest rejection (`PRIVACY-001`) becomes a maintainer scope decision.
-- `hypothesis`: the driver's UI-testing runner can drive a distribution-signed build by bundle ID.
+- Distribution builds use CloudKit Production without a deployed schema (`SYNC-017`); sync stayed
+  unconfigured and no sync claim is made.
+- No privacy-manifest error appeared in validation or processing; the manifest and label remain `PRIVACY-001`.
+- Follow-up: iPad shows iPhone-specific copy ("On this iPhone only") and needs store screenshots before
+  review; physical iPad and iPhone landscape layouts were not observed.
+- Follow-up for `RELEASE-002`: EU trader status (Digital Services Act) before App Store submission.
+- Not re-run on the distribution build: suspended-app expiry through the extension and reboot.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** met; AC-04 blocking and clearing are `user-confirmed` on one iPhone

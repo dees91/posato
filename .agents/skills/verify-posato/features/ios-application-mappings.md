@@ -1,9 +1,9 @@
 # iOS application mappings
 
-On a development-signed iPhone a person grants Screen Time access and chooses
-individual applications through Family Controls. The shared UI knows only a
-count, not application names. Simulator and Release builds report this
-capability as unavailable.
+On an iPhone running a development-signed or TestFlight build a person grants
+Screen Time access and chooses individual applications through Family Controls.
+The shared UI knows only a count, not application names. The Simulator reports
+this capability as unavailable.
 
 ## Sub-features
 
@@ -73,4 +73,7 @@ Preconditions:
   only and must preserve prior application choices.
 - A native selection saved before metadata failure stays on the phone; use
   Enable selected apps after resolving the real failure, not a second picker.
-- Simulator and Release runs cannot verify the Family Controls picker.
+- Simulator runs cannot verify the Family Controls picker.
+- A TestFlight build is driven after its installation from TestFlight: skip
+  `build` and `install`, because `install -t device` would replace it with a
+  development build, and `reset -t device` uninstalls whichever build is present.
