@@ -31,6 +31,12 @@
 - `observed` (2026-09-14): the current request form has no bundle-identifier field; the maintainer
   accepted its terms and Apple assigned Family Controls (Distribution) to the whole account within
   a minute. Phase C is no longer blocked by approval.
+- 2026-09-15: App Store Connect required accepting the renewed Paid Apps Agreement before any new
+  record, even for a free app; the maintainer accepted it without banking or tax setup and created the
+  record. The capability also had to be enabled on each App ID before export succeeded.
+- 2026-09-15, scope change after validation error 90474: keep iPad with all four orientations. iPhone
+  declares the orientations it already allowed. Landscape and iPad layout need verification here; iPad
+  store screenshots become a `RELEASE-002` input.
 
 ## Plan
 
