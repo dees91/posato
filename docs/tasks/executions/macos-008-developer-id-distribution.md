@@ -73,6 +73,7 @@ Seven passes, 2026-09-14 to 2026-09-15. The final verdict was `approved` at `a18
   - **Required 2:** this record had dropped the plan-review findings. The table is restored.
   - **Optional 3 and 4:** the credential error message and blank-value fall-through, both fixed.
   - Re-check: `approved`, with no Critical or Required findings.
+- **Hosted review at `52d5c68`:** no P1. One P2 was accepted by the maintainer. The build-number guard ran in `doFirst`, which Gradle skips when staging is up to date. The validated number is now a task input, and the omitted-number sequence fails.
 
 ## Verification
 
@@ -82,6 +83,7 @@ Seven passes, 2026-09-14 to 2026-09-15. The final verdict was `approved` at `a18
 | `DesktopMacHelperStateTest`, `MacOsSystemSettingsTest`, detekt, ktlint | pass (21/21 and 2/2) | local run |
 | Development packaging after jar stripping | pass; only the arm64 SQLite dylib remains archived | `verifyMacOsDevelopmentPackaging` |
 | Release fail-closed paths | missing identity or build number stops with a clear message | local run |
+| Build number after up-to-date staging | stage with `=1` passes; stage with no number fails on the release guard; `=1` again is `UP-TO-DATE` | local run |
 | Configuration cache | `notarizeMacOsRelease --dry-run` stores the entry on the final tree | local run |
 | Runtime | source JDK `IMPLEMENTOR="Eclipse Adoptium"`, `JAVA_VERSION` `21.0.12.1` | verifier |
 | AC-01 candidates 1–4 | app and DMG `Accepted`, stapled, `spctl`: `Notarized Developer ID`; deep strict pass | `build/verification/macos-008-release-20260915T094241`, `…T120226` |

@@ -1048,7 +1048,7 @@ val stageMacOsReleasePackage by tasks.registering(Sync::class) {
     dependsOn(embedMacOsHelper, embedMacOsSyncCompanion)
     mustRunAfter(signMacOsDevelopmentPackage, stageMacOsDevelopmentPackage)
     val releaseBuildNumber = requestedReleaseBuildNumber
-    doFirst { PosatoVersion.releaseBuildNumber(releaseBuildNumber) }
+    inputs.property("posatoReleaseBuildNumber", providers.provider { PosatoVersion.releaseBuildNumber(releaseBuildNumber) })
 
     from(macOsDistributable)
     into(macOsReleaseApplication)
