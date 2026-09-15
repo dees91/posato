@@ -2,7 +2,7 @@
 
 - **Review tier:** `standard`
 - **Tier reason:** Declarative manifests and label answers change no data flow; an independent check still compares every declared reason and answer with the shipped binaries and the privacy policy.
-- **Dependencies:** completed `IOS-003` (merged as `9324a60`). Publishing the label's privacy policy URL waits for `WEB-001`.
+- **Dependencies:** completed `IOS-003` (merged as `9324a60`). `WEB-001` (merged as `1a113f4`) publishes the privacy policy URL.
 - **Integration group:** `PR-PRIVACY-PUBLICATION`, roadmap wave Release/R2, in parallel with `DESIGN-003`, `MACOS-009`, and `SYNC-017` (maintainer raised the parallel limit to four on 2026-09-15).
 - **Authority:** [MVP roadmap](../mvp-roadmap.md) (revision 17), [privacy policy](../../../PRIVACY.md), [diagnostics policy](../../security/diagnostics-and-support-data.md), [privacy and trust topic](../../wiki/topics/privacy-and-trust-model.md), [IOS-003 record](../executions/ios-003-app-store-release.md), [RELEASE-001 record](../executions/release-001-first-release-readiness.md).
 
@@ -34,5 +34,5 @@ The iOS app and its `ActivityMonitor` extension ship privacy manifests that decl
 
 ## Decisions or blockers
 
-- **Blocker (maintainer):** entering the label in App Store Connect; the privacy policy URL waits for `WEB-001`.
-- **Open:** a manifest for the macOS bundles (recommended: none).
+- **Blocker (maintainer):** entering the label in App Store Connect with `https://posato.app/privacy/`.
+- **Decided** (`user-confirmed`, 2026-09-15): no manifest for the macOS bundles; required-reason codes are recorded in the [execution record](../executions/privacy-001-manifests-label.md).

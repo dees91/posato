@@ -1728,3 +1728,16 @@ third-party assets. Cloudflare Pages builds it from GitHub only when those
 sources change; `www` redirects to the apex. Pages Git integration requires
 the legacy Cloudflare Pages GitHub app, installed from the Cloudflare
 dashboard. See the [execution record](../tasks/executions/web-001-posato-site.md).
+
+## [2026-09-16] implementation | iOS privacy manifests and App Store label
+
+`PRIVACY-001` adds privacy manifests to the iOS app and its `ActivityMonitor`
+extension, with tracking off and no collected data. A scan of the Release
+binaries found only Skiko's `stat` and `fstat` in the app, declared with
+`0A2A.1` as the maintainer chose from JetBrains' guidance, and no listed API in
+the extension. The macOS bundles get no manifest. The maintainer accepted the
+"Data Not Collected" label, to be entered with the published policy URL
+`https://posato.app/privacy/`. A TestFlight upload to validate the manifests is
+on hold. See the
+[execution record](../tasks/executions/privacy-001-manifests-label.md) and
+[first-release readiness topic](topics/first-release-readiness.md).

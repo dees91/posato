@@ -30,6 +30,8 @@
 		C900001729CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C900001629CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift */; };
 		C900001529CC810C00F8E227 /* ActivityMonitor.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = C900000129CC810C00F8E227 /* ActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A93A953E29CC810D00F8E227 /* Assets.xcassets */; };
+		AA00000129CC810C00F8E227 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AA00000229CC810C00F8E227 /* PrivacyInfo.xcprivacy */; };
+		AA00000429CC810C00F8E227 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = AA00000329CC810C00F8E227 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -92,6 +94,8 @@
 		C900001629CC810C00F8E227 /* SuspendedExpiryDeviceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SuspendedExpiryDeviceTests.swift; sourceTree = "<group>"; };
 		A93A954829CC810D00F8E227 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Version.xcconfig; path = ../Version.xcconfig; sourceTree = SOURCE_ROOT; };
 		A93A953E29CC810D00F8E227 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		AA00000229CC810C00F8E227 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		AA00000329CC810C00F8E227 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -147,6 +151,7 @@
 				C900000229CC810C00F8E227 /* DeviceActivityMonitorExtension.swift */,
 				C900000329CC810C00F8E227 /* Info.plist */,
 				C900000429CC810C00F8E227 /* ActivityMonitor.entitlements */,
+				AA00000329CC810C00F8E227 /* PrivacyInfo.xcprivacy */,
 			);
 			path = ActivityMonitor;
 			sourceTree = "<group>";
@@ -166,6 +171,7 @@
 				F100000229CC810C00F8E227 /* ApplicationAuthorizationAccess.swift */,
 				B300000329CC810C00F8E227 /* Posato.entitlements */,
 				A93A953E29CC810D00F8E227 /* Assets.xcassets */,
+				AA00000229CC810C00F8E227 /* PrivacyInfo.xcprivacy */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -239,6 +245,7 @@
 			buildPhases = (
 				C900002029CC810C00F8E227 /* Sources */,
 				C900002129CC810C00F8E227 /* Frameworks */,
+				AA00000529CC810C00F8E227 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -304,6 +311,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				A93A953F29CC810D00F8E227 /* Assets.xcassets in Resources */,
+				AA00000129CC810C00F8E227 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA00000529CC810C00F8E227 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA00000429CC810C00F8E227 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
