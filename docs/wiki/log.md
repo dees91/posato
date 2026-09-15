@@ -1664,6 +1664,7 @@ deleted, so the acceptance criterion now reads no enabled item after removal and
 no item at all after deletion. See the
 [execution record](../tasks/executions/macos-009-in-app-removal.md) and
 [macOS enforcement topic](topics/macos-enforcement.md).
+
 ## [2026-09-16] task | SYNC-017 CloudKit Production schema and release verification
 
 The production CloudKit schema is deployed and verified. `cktool` exports
@@ -1691,3 +1692,11 @@ by hand and keeps its existing automated coverage.
 See the [execution record](../tasks/executions/sync-017-cloudkit-production.md),
 [synchronization topic](topics/cross-device-synchronization.md), and
 [ADR 0007](../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md).
+
+## [2026-09-15] design | Apply Posato identity to the local pause page
+
+The macOS fixed pause page uses the application mark, light/dark semantic
+palette, and reflowing system typography while keeping its target-free,
+self-contained content boundary. The design topic records the local rendering
+evidence and the still-open physical browser gate; DESIGN.md records layout
+and copy.
