@@ -345,7 +345,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
     }
 
     func observeInvalidations(handler: @escaping () -> Void) -> IosApplicationMappingsObservation {
-#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
+#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
         return ApplicationMappingsObservation(cancellation: {})
 #else
         let observation: AnyCancellable = performOnMainSync {
@@ -362,7 +362,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         operation: ApplicationMappingsOperation,
         completion: @escaping (IosApplicationMappingsResponse) -> Void
     ) {
-#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
+#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
         completion(response(outcome: .unavailable, access: .unavailable))
 #else
         guard pickerController == nil else {
@@ -405,7 +405,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         operation: ApplicationMappingsOperation,
         completion: @escaping (IosApplicationMappingsResponse) -> Void
     ) {
-#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
+#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
         completion(response(outcome: .unavailable, access: .unavailable))
 #else
         let generation = chooseSession.begin(
@@ -548,7 +548,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
     private func loadResponse() -> IosApplicationMappingsResponse {
         do {
             let mappings = try validatedMappings(try storeFactory().load())
-#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
+#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
             return response(outcome: .unavailable, access: .unavailable, mappings: mappings)
 #else
             return response(outcome: .success, access: currentAccess(), mappings: mappings)
