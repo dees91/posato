@@ -358,6 +358,25 @@ class DesktopMacHelperStateTest {
     }
 
     @Test
+    fun `given a missing rule while a session owns the proxy when checked again then enable is not issued`() = runTest {
+        listOf(HelperResult.Phase.Applied, HelperResult.Phase.RecoveryRequired).forEach { phase ->
+            val commands = FakeHelperCommands(
+                enableBehavior = { throw AssertionError("enable must not restore an owned proxy") },
+                statusBehavior = { ruleRepairResult().copy(ownershipPhase = phase) },
+            )
+            val state = DesktopMacHelperState(
+                commands = commands,
+                verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+                ioDispatcher = Dispatchers.Unconfined,
+                openSettings = { },
+            )
+
+            assertEquals(MacHelperReadiness.UNAVAILABLE, state.recheck())
+            assertEquals(listOf("status"), commands.calls.map { it.operation })
+        }
+    }
+
+    @Test
     fun `given incompatible signing when checked then unavailable is reported and status is unchanged`() = runTest {
         val commands = FakeHelperCommands(
             { readyResult() },

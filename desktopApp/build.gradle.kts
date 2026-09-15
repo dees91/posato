@@ -427,7 +427,6 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         check(entries.size % 2 == 0)
         return entries.chunked(2).map { (key, value) ->
             check(key.nodeName == "key")
-            check(value is org.w3c.dom.Element)
             key.textContent to value
         }
     }
@@ -777,7 +776,7 @@ abstract class NotarizeMacOsArtifact : DefaultTask() {
         name: String,
     ): String {
         return property.orNull?.takeIf(String::isNotBlank)
-            ?: throw GradleException("A macOS release needs $name as a -P property, its environment variable, or local.properties.")
+            ?: throw GradleException("A macOS release needs a value for $name; see docs/development/apple-provisioning.md.")
     }
 
     private fun run(vararg arguments: String): CommandResult {
@@ -1033,9 +1032,10 @@ fun releaseCredential(
     environmentVariable: String,
     localKey: String,
 ): Provider<String> {
-    return providers.gradleProperty(gradleProperty)
-        .orElse(providers.environmentVariable(environmentVariable))
-        .orElse(localProperties.getProperty(localKey).orEmpty())
+    val value = providers.gradleProperty(gradleProperty).orNull?.takeIf(String::isNotBlank)
+        ?: providers.environmentVariable(environmentVariable).orNull?.takeIf(String::isNotBlank)
+        ?: localProperties.getProperty(localKey)?.takeIf(String::isNotBlank)
+    return providers.provider { value.orEmpty() }
 }
 
 val ascKeyId = releaseCredential("posatoAscKeyId", "POSATO_ASC_KEY_ID", "posato.asc.keyId")

@@ -1,7 +1,7 @@
 # Execution: `MACOS-008`
 
 - **Brief:** [macos-008-developer-id-distribution.md](../specifications/macos-008-developer-id-distribution.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code
 - **Reviewer:** independent review agents (plan and completed change)
@@ -35,6 +35,19 @@
 5. **Notarization.** Notarize and staple the app, build the DMG, then sign, notarize, and staple the DMG. Assess both with `stapler` and `spctl`. The tasks are manual, never part of `quality`, and compatible with the configuration cache.
 6. **Physical AC-04.** An attended run on quarantined Safari downloads, with the baseline, blocking, update, and companion-log criteria agreed in plan review.
 
+## High-risk plan review
+
+Seven passes, 2026-09-14 to 2026-09-15. The final verdict was `approved` at `a1881dd`. Required findings and resolutions:
+
+| Finding | Resolution |
+| --- | --- |
+| R1: icon not wired | `iconFile` plus a byte check in the verifier |
+| R2/R2a: update proof insufficient; no in-app Disable or Remove | Decided update path, `MACOS-009` transfer, explicit update pass criteria |
+| R3/R3a: companion profile and launch unproven | Profile must allow every signed entitlement; launch moves to `SYNC-017` |
+| R4: silent build-number default | No release default; `CFBundleVersion` checks |
+| R5, R5b–R5f: development data could start the companion; the absence proof was weak | Desktop reset with backup; process-level `/usr/bin/log` query that excludes the log tool |
+| R6: update criteria not observable | Same path, new PID, running code timestamp, Idle only after the session ends |
+
 ## Result
 
 - **Release path.** The chain is `stageMacOsReleasePackage` → `signMacOsReleasePackage` → `verifyMacOsReleasePackaging` → `notarizeMacOsReleaseApplication` → `packageMacOsReleaseDmg` → `notarizeMacOsRelease`. The command is documented in `docs/development/apple-provisioning.md`.
@@ -55,17 +68,21 @@
 ## Completed-change review
 
 - **Implementation `6a47e4e..e1bf3cb`:** `approved`, no Critical or Required findings. Recommended 1 was adopted. Optional 2 and 3 were declined as advisory. Optional 4 is covered by recording `JAVA_VERSION` `21.0.12.1` here.
-- **Credential fallback, both defect fixes, ADR 0004 clarification, and closeout documents:** pending.
+- **Corrections and closeout:** credential fallback, both defect fixes, the ADR 0004 clarification, and the closeout documents. The first pass was `changes-required`:
+  - **Required 1:** Check again could send Enable during an applied or recovery phase, which restores the proxy mid-session. Fixed by requiring ownership `Idle`, with a test.
+  - **Required 2:** this record had dropped the plan-review findings. The table is restored.
+  - **Optional 3 and 4:** the credential error message and blank-value fall-through, both fixed.
+  - Re-check: `approved`, with no Critical or Required findings.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | pass at `1ba48a2`; rebased head pending | local run |
-| `DesktopMacHelperStateTest`, `MacOsSystemSettingsTest`, detekt, ktlint | pass (20/20 and 2/2) | local run |
+| `./gradlew quality` | pass on the final tree, rebased onto `9324a60` after the last correction; no build-script warnings | local run |
+| `DesktopMacHelperStateTest`, `MacOsSystemSettingsTest`, detekt, ktlint | pass (21/21 and 2/2) | local run |
 | Development packaging after jar stripping | pass; only the arm64 SQLite dylib remains archived | `verifyMacOsDevelopmentPackaging` |
 | Release fail-closed paths | missing identity or build number stops with a clear message | local run |
-| Configuration cache | `notarizeMacOsRelease --dry-run` stores the entry | local run |
+| Configuration cache | `notarizeMacOsRelease --dry-run` stores the entry on the final tree | local run |
 | Runtime | source JDK `IMPLEMENTOR="Eclipse Adoptium"`, `JAVA_VERSION` `21.0.12.1` | verifier |
 | AC-01 candidates 1–4 | app and DMG `Accepted`, stapled, `spctl`: `Notarized Developer ID`; deep strict pass | `build/verification/macos-008-release-20260915T094241`, `…T120226` |
 | AC-02 | app, helper, and companion versions `1.0.0` with build numbers 1–4 | verifier and plist reads |
@@ -78,7 +95,7 @@
 | AC-04 update 3 → 4 | Cmd-Q restored the proxy; old daemon exited 0; Finder Replace; reopened; after Resume a new daemon PID from the same path runs build 4 code (`Timestamp` 12:07:58); blocking repeated | `candidate-4/*` |
 | AC-04 end | End session early: proxy off, daemon exited 0, sites and Chess open | `candidate-4/after-end.txt` |
 | Companion | process `PosatoMacOSSync`: 0 entries since baseline | `companion-log-query-refined.txt` |
-| Settings link | `/usr/bin/open` of the Login Items link; maintainer confirmation pending | local run |
+| Settings link | `user-confirmed`: `/usr/bin/open` of the Login Items link opened System Settings rather than the browser | attended |
 
 ## Blockers and accepted risks
 
@@ -88,4 +105,9 @@
 
 ## Final
 
-- **Status:** pending the rebased `quality` run, the completed-change review of the corrections, and the settings-link confirmation.
+- **Status:** `done`
+- **Outcome:** met.
+  - AC-01 to AC-03 pass on notarized candidates.
+  - AC-04 passes as amended (quit, replace, and open; removal belongs to `MACOS-009`).
+  - Two onboarding defects found physically were fixed and reviewed.
+  - A companion launch in Production remains with `SYNC-017`.

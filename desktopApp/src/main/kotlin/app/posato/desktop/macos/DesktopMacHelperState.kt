@@ -40,7 +40,9 @@ internal class DesktopMacHelperState(
     }
 
     private fun HelperResult.requiresRuleInstallation(): Boolean {
-        return outcome == HelperResult.Outcome.ActionRequired && requiredAction == HelperResult.RequiredAction.RuleRepair
+        return outcome == HelperResult.Outcome.ActionRequired &&
+            requiredAction == HelperResult.RequiredAction.RuleRepair &&
+            ownershipPhase == HelperResult.Phase.Idle
     }
 
     override fun openApprovalSettings() {
