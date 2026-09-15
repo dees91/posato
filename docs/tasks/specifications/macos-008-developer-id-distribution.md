@@ -24,7 +24,7 @@ A release build task produces a Developer ID signed, securely timestamped, notar
 - `AC-01` — The release package passes `codesign --verify --deep --strict`, `spctl --assess` reports a notarized Developer ID source, notarization is accepted, and `stapler validate` passes; no nested code lacks a secure timestamp or hardened runtime.
 - `AC-02` — Application, helper, and companion bundles report the version from `Version.xcconfig`; the build-number policy is recorded.
 - `AC-03` — The chosen runtime's notices and the repository notices are present in the signed bundle and match what ships.
-- `AC-04` — On a physical Mac with no development build installed, a quarantined copy of the package opens, completes helper setup, and blocks the MVP-001 website and application scenarios; updating over the previous candidate and removal follow ADR 0004 without a stale helper registration.
+- `AC-04` — On a physical Mac with no development build installed, a quarantined copy of the package opens, completes helper setup, and blocks the MVP-001 website and application scenarios. Quitting, replacing the app with the next candidate, and opening it again runs the new daemon without a UI action or a stale helper registration. Supported in-app removal belongs to `MACOS-009` (maintainer decision 2026-09-15).
 
 ## Verification
 
