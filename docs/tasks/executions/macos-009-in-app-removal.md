@@ -95,6 +95,16 @@ The write surface is the port, setup state, `MacSetupSection`, session wiring, s
   - **Third pass (`e75617e`): `approved`.** R5 was resolved with no new Critical or Required findings.
   - **Recommendations adopted:** confirm-time refusal including a starting session or busy enforcement, no Remove in `RECOVERY_REQUIRED`, observing a post-removal session start, and reusing the existing button style.
 
+## Completed-change review
+
+- **First pass (`bfdaf66`): `changes-required`.** The mapping, wiring, session refusal, and UI were confirmed.
+  - **Required 1:** the removal sequencing in the client had no test. It was moved into `removeAfterReconciling`, with tests for an earlier request that stays unknown, one that concludes, and a pending Remove.
+  - **Recommended 2, adopted:** Check again stayed beside results that had reached the daemon and could reinstall the rule. It is now hidden while such a result is shown.
+  - **Optional 3, adopted:** DESIGN.md now lists `CANNOT_START` and the availability wording.
+  - **Optional 4, declined:** starting a session while a removal is in progress waits and then fails truthfully.
+  - **Rerun rule:** because these fixes touch removal wiring, candidate 5 is superseded by candidate 6 before the physical run.
+- **Re-check: `approved`.** R1 is resolved, with no remaining Critical or Required findings.
+
 ## Blockers and accepted risks
 
 - **`open`: Remove retry with the right already absent.** A retried Remove relies on `AuthorizationRightRemove` returning `errAuthorizationDenied` when the right is already absent. That is unverified; the helper and daemon are out of scope.
