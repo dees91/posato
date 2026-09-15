@@ -19,6 +19,7 @@ import java.io.ByteArrayOutputStream
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import javax.inject.Inject
 import javax.xml.parsers.DocumentBuilderFactory
@@ -89,7 +90,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         val runtime = application.resolve("Contents/runtime")
         val applicationCode = application.resolve("Contents/app")
         val launcher = application.resolve("Contents/MacOS/Posato")
-        val sqliteLibrary = extractSqliteLibrary(applicationCode)
+        val archivedNativeLibraries = nativeLibrariesInArchives(applicationCode)
         val windowLibrary = applicationCode.resolve("resources/native/libPosatoWindow.dylib")
         check(windowLibrary.isFile) { "The packaged window chrome library is missing." }
 
@@ -115,7 +116,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
             add(daemon)
             add(companion)
             add(companionExecutable)
-            add(sqliteLibrary)
+            addAll(archivedNativeLibraries)
             add(windowLibrary)
         }
         val signatures = signedCode.map(::signature)
@@ -167,22 +168,43 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         check(applicationIdentifier.removeSuffix(".app.posato.macos.sync").length == 10)
     }
 
-    private fun extractSqliteLibrary(applicationCode: File): File {
-        val sqliteJar = applicationCode.listFiles()
+    private fun nativeLibrariesInArchives(applicationCode: File): List<File> {
+        val jars = applicationCode.listFiles()
             .orEmpty()
-            .filter { file -> file.name.startsWith("sqlite-jdbc-") && file.extension == "jar" }
-            .singleOrNull()
+            .filter { file -> file.isFile && file.extension == "jar" }
+            .sortedBy(File::getName)
+        val sqliteJar = jars.singleOrNull { jar -> jar.name.startsWith("sqlite-jdbc-") }
             ?: throw GradleException("The packaged arm64 SQLite JDBC archive is missing or ambiguous.")
-        val sqliteLibrary = temporaryDir.resolve(SQLITE_LIBRARY_PATH)
-        sqliteLibrary.parentFile.mkdirs()
-        ZipFile(sqliteJar).use { archive ->
-            val entry = archive.getEntry(SQLITE_LIBRARY_PATH)
-                ?: throw GradleException("The packaged arm64 SQLite JDBC library is missing.")
-            archive.getInputStream(entry).use { input ->
-                sqliteLibrary.outputStream().use(input::copyTo)
+        val libraries = jars.flatMap { jar ->
+            ZipFile(jar).use { archive ->
+                archive.entries().asSequence()
+                    .filter { entry -> !entry.isDirectory && !entry.name.endsWith(".class") }
+                    .filter { entry -> archive.getInputStream(entry).use { input -> input.readNBytes(4) }.isMachOMagic() }
+                    .map { entry -> extractEntry(archive, jar, entry) }
+                    .filter { file -> command("/usr/bin/file", "--brief", file.absolutePath).contains("Mach-O") }
+                    .toList()
             }
         }
-        return sqliteLibrary
+        val sqliteLibrary = temporaryDir.resolve(sqliteJar.nameWithoutExtension).resolve(SQLITE_LIBRARY_PATH)
+        check(sqliteLibrary in libraries) { "The packaged arm64 SQLite JDBC library is missing." }
+        return libraries
+    }
+
+    private fun extractEntry(
+        archive: ZipFile,
+        jar: File,
+        entry: ZipEntry,
+    ): File {
+        val extracted = temporaryDir.resolve(jar.nameWithoutExtension).resolve(entry.name)
+        extracted.parentFile.mkdirs()
+        archive.getInputStream(entry).use { input ->
+            extracted.outputStream().use(input::copyTo)
+        }
+        return extracted
+    }
+
+    private fun ByteArray.isMachOMagic(): Boolean {
+        return size == 4 && toList() in MACH_O_MAGIC_NUMBERS
     }
 
     private fun machOFiles(
@@ -298,6 +320,15 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
     private companion object {
         const val SQLITE_LIBRARY_PATH = "org/sqlite/native/Mac/aarch64/libsqlitejdbc.dylib"
 
+        val MACH_O_MAGIC_NUMBERS = listOf(
+            listOf(0xCF, 0xFA, 0xED, 0xFE),
+            listOf(0xCE, 0xFA, 0xED, 0xFE),
+            listOf(0xFE, 0xED, 0xFA, 0xCF),
+            listOf(0xFE, 0xED, 0xFA, 0xCE),
+            listOf(0xCA, 0xFE, 0xBA, 0xBE),
+            listOf(0xBE, 0xBA, 0xFE, 0xCA),
+        ).map { bytes -> bytes.map(Int::toByte) }
+
         val DEVELOPMENT_APPLICATION_ENTITLEMENTS = mapOf("com.apple.security.cs.allow-jit" to true)
         val AD_HOC_APPLICATION_ENTITLEMENTS = mapOf(
             "com.apple.security.cs.allow-jit" to true,
@@ -337,6 +368,7 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         val identity = signingIdentity.get()
         val windowLibrary = applicationCode.resolve("resources/native/libPosatoWindow.dylib")
         check(windowLibrary.isFile) { "The packaged window chrome library is missing." }
+        removeForeignNativeLibraries(applicationCode)
         signCode(windowLibrary, identity)
 
         if (identity == "-") {
@@ -477,8 +509,27 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         return standardOutput.toString(Charsets.UTF_8) + errorOutput.toString(Charsets.UTF_8)
     }
 
+    private fun removeForeignNativeLibraries(applicationCode: File) {
+        applicationCode.listFiles()
+            .orEmpty()
+            .filter { file -> file.isFile && file.extension == "jar" }
+            .forEach { jar ->
+                FileSystems.newFileSystem(jar.toPath()).use { archive ->
+                    FOREIGN_NATIVE_LIBRARY_PATHS
+                        .map { path -> archive.getPath(path) }
+                        .filter { path -> Files.isRegularFile(path) }
+                        .forEach(Files::delete)
+                }
+            }
+    }
+
     private companion object {
         const val SQLITE_LIBRARY_PATH = "org/sqlite/native/Mac/aarch64/libsqlitejdbc.dylib"
+
+        val FOREIGN_NATIVE_LIBRARY_PATHS = listOf(
+            "libskiko-macos-x64.dylib",
+            "org/sqlite/native/Mac/x86_64/libsqlitejdbc.dylib",
+        )
     }
 }
 
