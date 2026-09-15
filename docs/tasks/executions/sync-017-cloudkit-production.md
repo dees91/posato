@@ -20,9 +20,8 @@ per workspace, so Development and Production keys cannot collide. In
 Production an extra type, field, or index is permanent; a missing one only
 fails saves until a later deploy adds it.
 
-1. **Token (maintainer).** Management token saved with `cktool save-token`
-   in the login Keychain; team id passed from `local.properties` in a shell
-   variable. Neither enters Git, evidence, or chat.
+1. **Token (maintainer).** Management token in the login Keychain via
+   `cktool save-token`; team id from `local.properties`, never recorded.
 2. **Export.** `cktool export-schema` for Production and Development under
    ignored `build/verification/`. The expected schema is the Production
    default system types copied as exported, plus the two Posato types with
@@ -69,8 +68,7 @@ fails saves until a later deploy adds it.
    heavy-use extrapolations are `inferred`; storage is a share of the quota
    the person shares with other iCloud data.
 10. **Quota and retention (D5).** A full account keeps local saves committed
-    and reports generic retryable with nothing storage-specific. Propose
-    disclosure only or a follow-up row; the maintainer decides.
+    and reports generic retryable; the maintainer picks disclosure or a row.
 11. **Closeout.** Remove fixture domains and the workspace in Production on
     both devices; restore development builds; `cktool remove-token` and
     revoke the token; shorten this plan; update the sync topic question,
@@ -79,8 +77,8 @@ fails saves until a later deploy adds it.
 ## Decisions
 
 `user-confirmed` (2026-09-15): **D1** audit with `cktool` export and diff.
-**D2** extras are removed by reset and import, never deployed (brief
-boundary). **D3** no tracked schema file; ADR 0007 stays the authority.
+**D2** extras are never deployed (brief boundary); index-only extras are
+removed by import without reset, falling back to reset and import. **D3** no tracked schema file; ADR 0007 stays the authority.
 **D4** reuse the release builds when sync paths match `main`. **D5** open
 until step 9.
 
@@ -97,7 +95,10 @@ until step 9.
 
 ## Result
 
-- Pending. Step 3 artifact check passed (Verification).
+- Steps 3–4 `observed`: Production has only the default `Users` type.
+  Development had the two types and four `BYTES` fields plus just-in-time
+  `QUERYABLE SORTABLE` indexes; an import without reset made its export equal
+  the index-free schema. `validate-schema` rejects Production.
 
 ## Completed-change review
 
