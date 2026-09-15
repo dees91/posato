@@ -15,13 +15,13 @@ import app.posato.desktop.macos.MacOsApplicationEnforcer
 import app.posato.desktop.macos.MacOsBrowserDomainEnforcer
 import app.posato.desktop.macos.MacOsHelperClient
 import app.posato.desktop.macos.MacOsHelperSigningVerifier
+import app.posato.desktop.macos.MacOsSystemSettings
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.enforcement.JvmSessionEnforcement
 import kotlinx.coroutines.Dispatchers
-import java.awt.Desktop
 import java.awt.Dimension
 
 fun main() {
@@ -42,7 +42,7 @@ fun main() {
                     MacOsHelperSigningVerifier.verify(MacOsHelperSigningVerifier.installedHelperPath())
                 },
                 ioDispatcher = Dispatchers.IO,
-                openSettings = { uri -> Desktop.getDesktop().browse(uri) },
+                openSettings = MacOsSystemSettings::open,
             )
             val applicationGraph = createDesktopApplicationGraph(applicationMappings, enforcement, helperState)
 
