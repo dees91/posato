@@ -4,7 +4,7 @@
 - **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code
-- **Reviewer:** independent plan-review agent
+- **Reviewer:** independent review agents (plan and completed change)
 - **Branch:** `feature/macos-008-developer-id`
 - **Updated:** 2026-09-15
 
@@ -12,109 +12,80 @@
 
 `user-confirmed` 2026-09-14 and 2026-09-15:
 
-- **Package.** The release ships as a signed, notarized, and stapled DMG, with an Eclipse Temurin 21 runtime. There is no updater (ADR 0004). The maintainer creates the Developer ID Application certificate.
-- **Build number.** A positive integer passed as `posatoMacOsBuildNumber`. The release task has no default and fails without the value. It rises with each candidate and is never tracked. Development packaging keeps `1`.
-- **Update.** The only supported update is to quit, replace the app, and open it, with no stop action in the UI.
-- **Removal.** The application has no Disable or Remove entry. Supported in-app removal moves to the new roadmap row `MACOS-009`. An actual companion launch under the release signature transfers to `SYNC-017`.
-- **ADR 0004.** The clarification in step 10 is reviewed in this PR.
+- **Release format.**
+  - **Package:** a signed, notarized, and stapled DMG with the Eclipse Temurin 21 runtime. There is no updater (ADR 0004).
+  - **Build number:** a positive integer passed as `posatoMacOsBuildNumber`. Release tasks fail without it, it is never tracked, and development packaging keeps `1`.
+- **Certificate.** The Developer ID Application certificate comes from the G2 Sub-CA and is valid until 2031. The maintainer created it in the portal from a CSR, because Xcode issued a previous-Sub-CA certificate that expires on 2027-02-01. Release signing therefore passes the G2 identity by SHA-1 hash.
+- **Update.** The supported update is quit, replace, and open, with no stop action in the UI. The ADR 0004 clarification is recorded in this PR.
+- **Transfers.** Supported in-app removal moves to the new roadmap row `MACOS-009` (revision 18). A companion launch under the release signature moves to `SYNC-017`.
+- **Review follow-up.** App Store Connect credentials are read from `-P`, then `POSATO_ASC_*`, then `local.properties` (review Recommended 1).
+- **Scope additions (defects found by AC-04):**
+  - Check again did not install a missing helper rule after background approval.
+  - Open System Settings opened the browser.
 
-## Starting observations
+## Plan (approved after seven plan-review passes, final at `a1881dd`)
 
-`observed` at `e5bd3dc`:
+1. **Version.** One strict `Version.xcconfig` parser in buildSrc, with an in-code regression contract. The version and build number feed Compose and the helper and companion plists.
+2. **Icon and runtime.** Wire `Config/Posato.icns`. Take `javaHome` from the Adoptium 21 toolchain and name Temurin 21 in the notices.
+3. **Signing.** Strip the non-arm64 Mach-O jar entries in both modes. A release mode on the signing task adds the Developer ID identity, `--timestamp`, the Production CloudKit environment, and the embedded Developer ID profile.
+4. **Verification.** A release mode on the verifier checks:
+   - authority, timestamp, and hardened runtime;
+   - that the embedded profile allows every signed entitlement;
+   - versions, the icon, notices, the Temurin `release` file, and absence of unsigned archived Mach-O files.
+5. **Notarization.** Notarize and staple the app, build the DMG, then sign, notarize, and staple the DMG. Assess both with `stapler` and `spctl`. The tasks are manual, never part of `quality`, and compatible with the configuration cache.
+6. **Physical AC-04.** An attended run on quarantined Safari downloads, with the baseline, blocking, update, and companion-log criteria agreed in plan review.
 
-- **Signing.** `SignMacOsDevelopmentPackage` signs inside-out, in place, with `--options runtime --timestamp=none`. The task is never up to date. Application entitlements are JIT-only under Apple Development. The companion gets the template entitlements plus an embedded development profile.
-- **Peers.** Helper and daemon peers require `anchor apple generic`, the exact identifier, and the team OU (`CodeSigning.swift`). The JVM verifiers compare the identifier and team only. `inferred`: a Developer ID signature from the same team satisfies all of them.
-- **Version and icon.** `1.0.0` is hard-coded in two Compose `packageVersion` values and in the helper and companion `Info.plist`, whose `CFBundleVersion` is `1`. About reads `jpackage.app-version`. No `iconFile` is set, so jpackage's default icon ships.
-- **Runtime.** Compose has no `javaHome`, so jpackage uses the Gradle daemon JVM, pinned to Adoptium 21 in `gradle/gradle-daemon-jvm.properties`. The bundled runtime is 21.0.12.1 with a `legal/` directory. The jlink `release` file lacks `IMPLEMENTOR`.
-- **Notices.** `shared` already copies `LICENSE`, `NOTICE`, and `THIRD_PARTY_NOTICES.md` into Compose resources (`files/legal`) in the shared jar.
-- **Jars.** They contain three Mach-O entries: unsigned x86_64 `libskiko-macos-x64.dylib`, unsigned `org/sqlite/native/Mac/x86_64/libsqlitejdbc.dylib`, and the signed arm64 SQLite library. The existing walk covers the runtime's 28 Mach-O files and the launcher.
-- **Lifecycle.**
-  - The helper registers the daemon only when it is not enabled.
-  - On quit, the helper reads end-of-input and sends Restore. Closing the window also runs `MacOsHelperClient.close()`, while Cmd-Q likely exits without it. If Restore fails, the daemon restores on disconnect or when the lease expires.
-  - The daemon exits with success about one second after it reaches `Idle` with no connections.
-  - The launchd plist has `KeepAlive.SuccessfulExit` false and an on-demand Mach service.
-- **Companion.** It starts only on a sync exchange. codesign and notarization do not check entitlements against the profile; launch does.
-- **Tooling.** `quality` depends on the ad-hoc `verifyMacOsDevelopmentPackaging`. `posato-control` `build` and `launch` target the staged `development-package` and bypass Gatekeeper. This Mac has only an Apple Development identity; `posato.asc.*` keys exist.
+## Result
 
-## Plan
+- **Release path.** The chain is `stageMacOsReleasePackage` → `signMacOsReleasePackage` → `verifyMacOsReleasePackaging` → `notarizeMacOsReleaseApplication` → `packageMacOsReleaseDmg` → `notarizeMacOsRelease`. The command is documented in `docs/development/apple-provisioning.md`.
+- **Defect fixes.**
+  - `DesktopMacHelperState.recheck` runs Enable once when status reports `RuleRepair`. Enable installs a missing rule and never overwrites a changed one.
+  - `MacOsSystemSettings` opens only `x-apple.systempreferences:` links through `/usr/bin/open`.
+- **Deviations from the plan.**
+  - Candidates 1–2 proved AC-01 but exposed the setup defect. After the fix, AC-04 ran on candidates 3–4.
+  - The companion-log criterion was refined. The combined query also matched 35 `com.apple.fsevents.matching` install events and 4 kernel sandbox reports of GamePolicyAgent reading `PosatoMacOSSync.app` metadata. The process-only query returned 0 entries.
+  - After reopening during an active session, restrictions need the existing Resume with administrator authentication. That is prior session behavior, not an update step.
+- **Export compliance.** `inferred`, not a legal opinion: a Developer ID download has no Apple encryption declaration. Posato uses standard cryptography to protect user data; any U.S. export classification and self-classification filing stay with the maintainer.
+- **`TB-08`/`T-13` handover.**
+  - **Signing chain:** Developer ID G2 with a secure timestamp and hardened runtime on every nested item. Entitlements are minimal: JIT for the app, and CloudKit, keychain, and Production for the companion. The profile is verified as a superset of the signed entitlements, and notarization plus Gatekeeper assessment cover both artifacts.
+  - **Credentials:** kept outside Git.
+  - **Update trust:** a quarantined, notarized download installed by the user, replacing the whole bundle.
+  - **Residual:** there is no automatic security update, the companion's Production launch is unverified (`SYNC-017`), and removal belongs to `MACOS-009`.
 
-1. **Version (AC-02).**
-   - Add a root `Version.xcconfig` byte-identical to `IOS-003`'s: `MARKETING_VERSION = 1.0.0` and a newline.
-   - One strict parser, shared by `desktopApp`, `:macosHelper`, and `:macosSyncCompanion`, accepts exactly that line shape and fails the build otherwise.
-   - The version feeds both Compose package versions. The build number feeds `packageBuildVersion`.
-   - The helper and companion plist copies substitute both values and declare them as `inputs.property`.
-2. **Icon.** Set `macOS.iconFile` to `Config/Posato.icns`.
-3. **Release runtime (AC-03).**
-   - Set Compose `javaHome` from a Java 21 toolchain with vendor `ADOPTIUM`; development uses it too.
-   - The release task checks `IMPLEMENTOR="Eclipse Adoptium"` and `JAVA_VERSION` in that JDK's `release` file and records the version.
-   - `THIRD_PARTY_NOTICES.md` names Eclipse Temurin 21.
-4. **Release staging and signing.**
-   - Stage the embedded distributable into a separate `release-package/Posato.app`, using `mustRunAfter(signMacOsDevelopmentPackage)`.
-   - Remove the two non-arm64 Mach-O jar entries in both modes.
-   - Give the existing signing task a release mode: Developer ID identity, `--timestamp`, the same JIT-only application entitlements, and companion template entitlements plus `com.apple.developer.icloud-container-environment` set to `Production`.
-   - Embed the Developer ID profile.
-   - The profile path, the identity, and the `posato.asc.*` values are untracked `@Internal` properties.
-5. **Release verification (AC-01–AC-03).** The existing verifier gets a release mode that checks:
-   - **Signatures:** every signed item has a `Developer ID Application` leaf, one team, a secure `Timestamp=`, and hardened runtime. No item has `get-task-allow`, and no jar holds an unsigned Mach-O.
-   - **Embedded profile** (`security cms -D`):
-     - it is a Developer ID profile (`ProvisionsAllDevices`, no `ProvisionedDevices`), unexpired, from the signing team;
-     - its `Entitlements` allow every signed companion entitlement, with keychain wildcards expanded;
-     - that covers the exact `<team>.app.posato.macos.sync` application identifier, `CloudKit` services, the container, the keychain group, and `Production`.
-   - **Versions:** the application, helper, and companion `CFBundleShortVersionString` equals `Version.xcconfig`, and their `CFBundleVersion` equals the build number.
-   - **Icon:** `Contents/Resources/Posato.icns` is byte-identical to the Config file.
-   - **Notices:** the shared jar's `files/legal` entries match the root files, and the runtime `legal/` exists.
-6. **Notarize and staple (AC-01).** A manual release task, never part of `quality`:
-   1. Zip the verified app with `ditto`, submit it with `xcrun notarytool submit --wait`, and staple the app.
-   2. Build the DMG with a second task of the Compose DMG type; `packageDmg` stays unchanged.
-   3. Sign the DMG with `--timestamp`, submit it, and staple it.
-   4. Run `stapler validate` on both. `spctl --assess --type execute` on the app must report `Notarized Developer ID`. Run `spctl --assess --type open --context context:primary-signature` on the DMG.
-   5. On `Invalid`, save the `notarytool log` under `build/` and fail.
+## Completed-change review
 
-   The second submission gives the dragged-out app its own ticket. Submission IDs stay under `build/`.
-7. **Maintainer resources.** One step at a time, with no new tooling:
-   - the Developer ID Application certificate (in progress);
-   - the Developer ID profile `Posato macOS Sync Developer ID` for `app.posato.macos.sync`, kept under `~/Library/Developer/Posato`.
-8. **Export compliance.** Record an `inferred` assessment without a legal opinion. A download outside the App Store has no Apple declaration; classification and any self-classification filing stay with the maintainer.
-9. **Physical acceptance (AC-04), attended.**
-   - **Driver scope.** The maintainer performs the Finder steps. The agent collects evidence under `build/verification/` from shell reads, screenshots, and `posato-control` snapshots and `db` reads, never `build` or `launch`.
-   - **Baseline.** The maintainer follows a one-time checklist:
-     1. Quit the development build at `Idle` and delete its bundles.
-     2. Run `sudo launchctl bootout system/app.posato.macos.proxy-settings` and `sudo security authorizationdb remove app.posato.macos.proxy.apply`.
-     3. Back up and clear the development database with `posato-control reset --target desktop --yes`, so the release build cannot resume a linked workspace against Production. Record the deleted paths, which must include `posato-policy.db`, and the backup directory.
+- **Implementation `6a47e4e..e1bf3cb`:** `approved`, no Critical or Required findings. Recommended 1 was adopted. Optional 2 and 3 were declined as advisory. Optional 4 is covered by recording `JAVA_VERSION` `21.0.12.1` here.
+- **Credential fallback, both defect fixes, ADR 0004 clarification, and closeout documents:** pending.
 
-     Then record `sfltool dumpbtm` (including orphaned entries), `launchctl print` reporting the daemon not found, and `scutil --proxy`. `hypothesis`: an orphaned development entry does not block release registration.
-   - **Install.** Download candidate 1's DMG through Safari from a local HTTP server, drag Posato to `/Applications`, and open it. Record `xattr -p com.apple.quarantine`, the Gatekeeper prompt, `spctl -a -vvv`, and a non-translocated process path.
-   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off. The recorded deletion of `posato-policy.db` is the main control. At the end, `/usr/bin/log show --info --debug --start <baseline time> --predicate '(process == "PosatoMacOSSync" OR eventMessage CONTAINS "PosatoMacOSSync") AND process != "log"'` prints only its header line. zsh's builtin `log` would silently fail, and `log` records its own arguments.
-   - **Update to candidate 2** (build number plus one), with no UI action: start a session, quit Posato, replace it with a Safari-downloaded candidate 2, and open it.
-     - `inferred` from the lifecycle observations: launchd starts the replaced `BundleProgram` on the next helper connection.
-     - **Pass criteria:**
-       - after quit (method recorded), `scutil --proxy` shows the restored baseline and the old daemon PID is gone;
-       - after open, the daemon runs from the same program path with a new PID started after the replacement; `sudo codesign -dvvv <pid>` shows candidate 2's `Timestamp=`, and the bundle reports the new `CFBundleVersion`;
-       - the helper reports `ready` and the still-running session blocks again; any repeated approval prompt is resolved by the existing setup screen and recorded;
-       - after the session ends, the helper is `Idle`, `scutil --proxy` is restored, and the daemon exits.
-   - **Removal** transfers to `MACOS-009`. The **companion launch** transfers to `SYNC-017`; the profile check in step 5 covers entitlement consistency.
-10. **Closeout.** Update:
-    - `docs/development/apple-provisioning.md` with the release command and profile;
-    - `docs/wiki/topics/macos-enforcement.md` with the release-signing evidence;
-    - the `TB-08`/`T-13` signing and update review handed over by `RELEASE-001`;
-    - ADR 0004, after AC-04 proves the update path. A manual-download update is a quit that restores ownership, with the daemon exiting only at `Idle`. It is followed by a bundle replacement that needs no unregister or re-register while the label and `BundleProgram` stay unchanged. launchd then starts the new daemon on demand, and `ready` is still checked before Apply. A failed restore keeps the Repair path, and "RELEASE-001 concerns" becomes `MACOS-008`;
-    - one wiki-log entry.
+## Verification
 
-The write surface is `desktopApp/build.gradle.kts`, the helper and companion bundle tasks and plists, one shared version parser, `Version.xcconfig`, `THIRD_PARTY_NOTICES.md`, ADR 0004, and the documents above.
-
-## High-risk plan review
-
-- **First pass (2026-09-14, `c63472b`): `changes-required`.** The core notarization, entitlement, and two-submission approach was confirmed. Four Required findings were resolved:
-  - **R1**, the icon was not wired: steps 2 and 5.
-  - **R2**, the update check was insufficient: step 9 and the 2026-09-15 update decision.
-  - **R3**, companion profile and launch: step 5 and the `SYNC-017` transfer.
-  - **R4**, a silent build-number default: steps 1 and 5.
-- **Adopted recommendations from the first pass:** the duplicate notices copy is dropped, and a shared parser, the `IMPLEMENTOR` check, `mustRunAfter`, jar stripping in both modes, Safari quarantine, the baseline, and `TB-08`/`T-13` were added.
-- **Second pass (2026-09-15, `6b230c9`): `changes-required`.** R1 and R4 were confirmed resolved.
-  - **R2a:** the app has no Disable or Remove entry. Resolved by the update and removal decisions and step 9.
-  - **R3a:** the profile check must cover every signed entitlement. Resolved in step 5.
-- **Third pass (2026-09-15, `d28b683`): `changes-required`.** R2a and R3a were confirmed, and the update chain holds. R5 (a development database could start the companion against Production) is resolved by baseline step 3 and a whole-run log query. Passes four to seven tightened both: an explicit desktop target, `/usr/bin/log` instead of `pgrep`, and excluding the log tool's own entries. **Final verdict: `approved`** (2026-09-15, `a1881dd`). R6 (update criteria could not be observed, and the session is still active on open) is resolved by the step 9 pass criteria.
+| Check run | Result | Evidence |
+| --- | --- | --- |
+| `./gradlew quality` | pass at `1ba48a2`; rebased head pending | local run |
+| `DesktopMacHelperStateTest`, `MacOsSystemSettingsTest`, detekt, ktlint | pass (20/20 and 2/2) | local run |
+| Development packaging after jar stripping | pass; only the arm64 SQLite dylib remains archived | `verifyMacOsDevelopmentPackaging` |
+| Release fail-closed paths | missing identity or build number stops with a clear message | local run |
+| Configuration cache | `notarizeMacOsRelease --dry-run` stores the entry | local run |
+| Runtime | source JDK `IMPLEMENTOR="Eclipse Adoptium"`, `JAVA_VERSION` `21.0.12.1` | verifier |
+| AC-01 candidates 1–4 | app and DMG `Accepted`, stapled, `spctl`: `Notarized Developer ID`; deep strict pass | `build/verification/macos-008-release-20260915T094241`, `…T120226` |
+| AC-02 | app, helper, and companion versions `1.0.0` with build numbers 1–4 | verifier and plist reads |
+| AC-03 | notices match in the shared jar; runtime `legal/` present | verifier |
+| Credential fallback | real app submission without `-PposatoAsc*`: `Accepted` | local run |
+| AC-04 baseline | daemon not found, rule absent, proxy off, no copies, database reset with backup, no Posato background items | `…T120226/baseline-*` |
+| AC-04 install | Safari quarantine `0083`, Gatekeeper prompt, not translocated | `candidate-3/*` |
+| AC-04 setup with fix | background item off → approval required → on → Check again installed the rule → helper enabled | `candidate-3/approval-required.txt`, `check-again-ready.txt` |
+| AC-04 blocking | `user-confirmed`: Safari and Chrome block `example.com`/`example.net`, `example.org` loads; helper quit Chess, Calculator untouched | `attended-observations.txt`, `helper-quit-events.txt` |
+| AC-04 update 3 → 4 | Cmd-Q restored the proxy; old daemon exited 0; Finder Replace; reopened; after Resume a new daemon PID from the same path runs build 4 code (`Timestamp` 12:07:58); blocking repeated | `candidate-4/*` |
+| AC-04 end | End session early: proxy off, daemon exited 0, sites and Chess open | `candidate-4/after-end.txt` |
+| Companion | process `PosatoMacOSSync`: 0 entries since baseline | `companion-log-query-refined.txt` |
+| Settings link | `/usr/bin/open` of the Login Items link; maintainer confirmation pending | local run |
 
 ## Blockers and accepted risks
 
-- **Blocker (maintainer):** the Developer ID Application certificate (in progress) and the Developer ID profile for `app.posato.macos.sync`. Signing and submission wait for both. Result, review, verification, and final sections are added at closeout.
+- **Launchd metadata.** Launchd keeps the registration's `parent bundle version = 3` after the update, while candidate 4 code runs. It is metadata only and does not change behavior.
+- **Previous certificate.** The previous-Sub-CA Developer ID certificate remains in the keychain until 2027-02-01. It is unused; identity selection uses the G2 hash.
+- **Tests and CI.** Physical AC-04 depends on attended steps. Hosted CI stays disabled.
+
+## Final
+
+- **Status:** pending the rebased `quality` run, the completed-change review of the corrections, and the settings-link confirmation.

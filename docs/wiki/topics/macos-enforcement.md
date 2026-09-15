@@ -339,6 +339,33 @@ prevent automatic execution and therefore requires repair or truthful manual
 proxy recovery rather than a success claim. The architecture is non-sandboxed;
 RELEASE-001 must select a compatible distribution path or revisit the ADR.
 
+`observed` (2026-09-15, MACOS-008): Developer ID distribution keeps this
+architecture unchanged.
+
+- **Candidates.** Candidates 3 and 4 used Developer ID signing, a secure
+  timestamp, hardened runtime, and the Temurin 21 runtime. Each application and
+  each DMG was notarized, stapled, and assessed by Gatekeeper as `Notarized
+  Developer ID`.
+- **Pairing.** On one Apple silicon Mac, the helper and daemon mutual
+  code-signing requirements passed unchanged for Developer ID code.
+- **Install.** Each candidate was downloaded through Safari, so the copy was
+  quarantined, and installed in `/Applications`.
+- **Setup.** First setup exposed a defect. After background approval, Check
+  again only read status and never installed the Apply right. The fix: Check
+  again now runs Enable, which installs a missing right but never overwrites a
+  changed one. The approval path was reproduced by switching the background
+  item off, and then passed.
+- **Blocking.** Safari and Chrome blocked the selected domains while an
+  unselected domain loaded. The selected application was quit while a control
+  application kept running.
+- **Update.** The user quit Posato during an active session, replaced the
+  bundle, and reopened it. Quitting restored the proxy and ended the old daemon
+  cleanly. After Resume, a new daemon ran the replaced build's code. launchd
+  still reported the earlier parent bundle version in its metadata.
+- **Companion.** It did not launch while sync stayed off.
+
+Supported in-app removal remains open and belongs to `MACOS-009`.
+
 `observed` (2026-08-30): on one Apple silicon Mac running macOS 26, the signed
 daemon restored an active Apply to the exact proxy baseline during physical
 sleep/wake, reached Idle after wake, and did not silently reapply. A later
