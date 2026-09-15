@@ -12,12 +12,10 @@
 
 `user-confirmed` 2026-09-14 and 2026-09-15:
 
-- **Package.** The release ships as a signed, notarized, and stapled DMG, with an Eclipse Temurin 21 runtime. There is no updater (ADR 0004).
-- **Certificate.** The maintainer creates the Developer ID Application certificate.
+- **Package.** The release ships as a signed, notarized, and stapled DMG, with an Eclipse Temurin 21 runtime. There is no updater (ADR 0004). The maintainer creates the Developer ID Application certificate.
 - **Build number.** A positive integer passed as `posatoMacOsBuildNumber`. The release task has no default and fails without the value. It rises with each candidate and is never tracked. Development packaging keeps `1`.
 - **Update.** The only supported update is to quit, replace the app, and open it, with no stop action in the UI.
-- **Removal.** The application has no Disable or Remove entry. Supported in-app removal moves to the new roadmap row `MACOS-009`.
-- **Companion.** An actual companion launch under the release signature transfers to `SYNC-017`.
+- **Removal.** The application has no Disable or Remove entry. Supported in-app removal moves to the new roadmap row `MACOS-009`. An actual companion launch under the release signature transfers to `SYNC-017`.
 - **ADR 0004.** The clarification in step 10 is reviewed in this PR.
 
 ## Starting observations
@@ -32,7 +30,7 @@
 - **Jars.** They contain three Mach-O entries: unsigned x86_64 `libskiko-macos-x64.dylib`, unsigned `org/sqlite/native/Mac/x86_64/libsqlitejdbc.dylib`, and the signed arm64 SQLite library. The existing walk covers the runtime's 28 Mach-O files and the launcher.
 - **Lifecycle.**
   - The helper registers the daemon only when it is not enabled.
-  - Quitting the app sends Restore and ends the helper.
+  - On quit, the helper reads end-of-input and sends Restore. Closing the window also runs `MacOsHelperClient.close()`, while Cmd-Q likely exits without it. If Restore fails, the daemon restores on disconnect or when the lease expires.
   - The daemon exits with success about one second after it reaches `Idle` with no connections.
   - The launchd plist has `KeepAlive.SuccessfulExit` false and an on-demand Mach service.
 - **Companion.** It starts only on a sync exchange. codesign and notarization do not check entitlements against the profile; launch does.
@@ -82,17 +80,18 @@
    - **Baseline.** The maintainer follows a one-time checklist:
      1. Quit the development build at `Idle` and delete its bundles.
      2. Run `sudo launchctl bootout system/app.posato.macos.proxy-settings` and `sudo security authorizationdb remove app.posato.macos.proxy.apply`.
+     3. Back up and clear the development database with `posato-control reset --yes`, so the release build cannot resume a linked workspace or pending join against Production.
 
      Then record `sfltool dumpbtm` (including orphaned entries), `launchctl print` reporting the daemon not found, and `scutil --proxy`. `hypothesis`: an orphaned development entry does not block release registration.
    - **Install.** Download candidate 1's DMG through Safari from a local HTTP server, drag Posato to `/Applications`, and open it. Record `xattr -p com.apple.quarantine`, the Gatekeeper prompt, `spctl -a -vvv`, and a non-translocated process path.
-   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off.
+   - **Setup and blocking.** Complete helper setup, then block the MVP-001 website and application scenarios. Sync stays off, and `pgrep PosatoMacOSSync` stays empty through install, update, and the end of the run.
    - **Update to candidate 2** (build number plus one), with no UI action: start a session, quit Posato, replace it with a Safari-downloaded candidate 2, and open it.
      - `inferred` from the lifecycle observations: launchd starts the replaced `BundleProgram` on the next helper connection.
      - **Pass criteria:**
-       - after quit, `scutil --proxy` shows the restored baseline and the old daemon PID is gone;
-       - after open, the daemon has a new PID, start time, and program path, and the running bundle reports the new `CFBundleVersion`;
-       - the helper is `ready`/`Idle`, with any repeated approval prompt resolved by the existing setup screen and recorded;
-       - blocking repeats.
+       - after quit (method recorded), `scutil --proxy` shows the restored baseline and the old daemon PID is gone;
+       - after open, the daemon runs from the same program path with a new PID started after the replacement; `sudo codesign -dvvv <pid>` shows candidate 2's `Timestamp=`, and the bundle reports the new `CFBundleVersion`;
+       - the helper reports `ready` and the still-running session blocks again; any repeated approval prompt is resolved by the existing setup screen and recorded;
+       - after the session ends, the helper is `Idle`, `scutil --proxy` is restored, and the daemon exits.
    - **Removal** transfers to `MACOS-009`. The **companion launch** transfers to `SYNC-017`; the profile check in step 5 covers entitlement consistency.
 10. **Closeout.** Update:
     - `docs/development/apple-provisioning.md` with the release command and profile;
@@ -114,6 +113,7 @@ The write surface is `desktopApp/build.gradle.kts`, the helper and companion bun
 - **Second pass (2026-09-15, `6b230c9`): `changes-required`.** R1 and R4 were confirmed resolved.
   - **R2a:** the app has no Disable or Remove entry. Resolved by the update and removal decisions and step 9.
   - **R3a:** the profile check must cover every signed entitlement. Resolved in step 5.
+- **Third pass (2026-09-15, `d28b683`): `changes-required`.** R2a and R3a were confirmed, and the update chain holds. R5 (a development database could start the companion against Production) is resolved by baseline step 3 and the `pgrep` check. R6 (update criteria could not be observed, and the session is still active on open) is resolved by the step 9 pass criteria.
 
 ## Blockers and accepted risks
 
