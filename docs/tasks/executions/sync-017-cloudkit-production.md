@@ -86,7 +86,7 @@ until step 9.
 
 ## High-risk plan review
 
-- **Verdict:** changes-required twice, corrections folded; re-check pending
+- **Verdict:** approved after two changes-required passes (2026-09-15)
 - **Required:** R1 system `Users` defaults cannot meet a no-index rule; R2
   import without a development round cannot prove the code's schema; R3
   deploying extras breaks the brief; R4 one-shot companion and weak zone or
@@ -107,7 +107,7 @@ until step 9.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Release build sources vs `main`, sync paths | pass | `observed`: `shared/`, adapters, companion identical for build 4 and TestFlight build 1; only unrelated iOS files differ |
+| Release build sources vs `main`, sync paths | pass | `observed`: `shared/`, adapters, companion identical for build 4 and TestFlight build 1; only unrelated iOS, desktop helper, and version-token files differ |
 
 ## Blockers and accepted risks
 
