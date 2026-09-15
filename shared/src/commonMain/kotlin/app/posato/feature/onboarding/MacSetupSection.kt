@@ -105,7 +105,7 @@ internal fun MacSetupSection(
             if (!running && presentation.repeatedResult && presentation.readiness.escalatesRepeat()) {
                 PosatoCaption(stringResource(Res.string.mac_setup_unchanged))
             }
-            MacSetupActions(presentation.readiness, running, onCheck, onEnable, onOpenSettings)
+            MacSetupActions(presentation.readiness, running, !presentation.removal.reachedDaemon(), onCheck, onEnable, onOpenSettings)
             if (presentation.readiness in removableReadiness) {
                 RemoveFromMacAction(running, sessionBlocksRemoval, onRemove)
             }
@@ -145,6 +145,10 @@ internal fun MacHelperRemoval.message(): StringResource {
     }
 }
 
+private fun MacHelperRemoval?.reachedDaemon(): Boolean {
+    return this == MacHelperRemoval.REMOVE_AGAIN || this == MacHelperRemoval.UNCERTAIN || this == MacHelperRemoval.PROXY_ATTENTION
+}
+
 private fun MacHelperReadiness?.summary(): StringResource {
     return when (this) {
         null -> Res.string.mac_setup_unchecked
@@ -169,6 +173,7 @@ private fun MacHelperReadiness?.escalatesRepeat(): Boolean {
 private fun MacSetupActions(
     readiness: MacHelperReadiness?,
     running: Boolean,
+    offerCheckAgain: Boolean,
     onCheck: () -> Unit,
     onEnable: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -181,7 +186,9 @@ private fun MacSetupActions(
         }
 
         MacHelperReadiness.READY -> {
-            CheckAgainButton(running, onCheck)
+            if (offerCheckAgain) {
+                CheckAgainButton(running, onCheck)
+            }
         }
 
         MacHelperReadiness.NOT_ENABLED -> {
@@ -202,7 +209,9 @@ private fun MacSetupActions(
         MacHelperReadiness.UNAVAILABLE,
         MacHelperReadiness.UNCERTAIN,
         MacHelperReadiness.RECOVERY_REQUIRED -> {
-            CheckAgainButton(running, onCheck)
+            if (offerCheckAgain) {
+                CheckAgainButton(running, onCheck)
+            }
         }
     }
 }

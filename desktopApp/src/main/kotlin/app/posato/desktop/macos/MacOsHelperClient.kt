@@ -103,14 +103,11 @@ internal class MacOsHelperClient(
 
     @Synchronized
     override fun remove(): HelperRemovalAttempt {
-        val pending = pendingUnknownRequest
-        if (pending != null && reconcilesEarlierRequestBeforeRemoval(pending.operation)) {
-            val earlier = reconcileUnknown()
-            if (!earlier.concludesReconciliation()) {
-                return HelperRemovalAttempt(earlier, concernsRemove = false)
-            }
-        }
-        return HelperRemovalAttempt(request(HelperOperation.Remove), concernsRemove = true)
+        return removeAfterReconciling(
+            pendingOperation = pendingUnknownRequest?.operation,
+            reconcileEarlier = ::reconcileUnknown,
+            sendRemove = { request(HelperOperation.Remove) },
+        )
     }
 
     @Synchronized
@@ -438,6 +435,20 @@ internal fun shouldReconcileUnknownRequest(
 
 internal fun reconcilesEarlierRequestBeforeRemoval(pendingOperation: HelperOperation): Boolean {
     return pendingOperation != HelperOperation.Remove
+}
+
+internal fun removeAfterReconciling(
+    pendingOperation: HelperOperation?,
+    reconcileEarlier: () -> HelperResult,
+    sendRemove: () -> HelperResult,
+): HelperRemovalAttempt {
+    if (pendingOperation != null && reconcilesEarlierRequestBeforeRemoval(pendingOperation)) {
+        val earlier = reconcileEarlier()
+        if (!earlier.concludesReconciliation()) {
+            return HelperRemovalAttempt(earlier, concernsRemove = false)
+        }
+    }
+    return HelperRemovalAttempt(sendRemove(), concernsRemove = true)
 }
 
 internal data class HelperRemovalAttempt(

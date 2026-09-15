@@ -516,8 +516,9 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   it is shown. No time or success claim.
   `user-confirmed` (2026-09-15, MACOS-009): the removal entry point sits here,
   and removal is refused during a session.
-  - **When offered.** After a check reports the helper ready, awaiting
-    approval, not checkable, or with an unfinished request, the options add a
+  - **When offered.** Once a check or a removal result names the helper as
+    ready, awaiting approval, not checkable, or with an unfinished request, the
+    options add a
     quiet error-colored **Remove from this Mac**. It is not offered before a
     check, while the helper is not enabled, or while it is registered but
     cannot start.
@@ -543,10 +544,13 @@ in PR #44. The six steps and existing service/persistence behavior remain.
     - check again when the helper could not be reached;
     - allow background approval, then remove;
     - enable first, because cleanup cannot be confirmed;
-    - check proxy settings, then remove.
+    - check proxy settings, then remove;
+    - the existing registered-but-cannot-start copy when the helper cannot
+      start.
 
-    A failure after the daemon was reached never suggests Check again, which
-    could reinstall the removed rule.
+    While a failure that reached the daemon is shown, **Check again** is
+    hidden. Such a failure never suggests it, because it could reinstall the
+    removed rule.
 - `user-confirmed` (2026-09-11): when a helper read has returned a state other
   than ready and no helper call is running, Session names that state once as a
   notice beside the enforcement notice, above the session action. Expanding
