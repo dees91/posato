@@ -633,6 +633,14 @@ implementation. The solution and any changes to accepted contracts remain
   a while to recall that editing lives under Paused items. Evaluate a direct
   route from that summary to editing, within the accepted two-destination
   navigation in [DESIGN.md](../../../DESIGN.md).
+- **Arrange onboarding actions better on macOS.** `user-confirmed`
+  (2026-09-15): on the Mac helper permission step, **Open System Settings**,
+  **Check again**, and **Not now** stack vertically at their own content
+  widths, which looks uneven while the window leaves ample horizontal space.
+  `observed` in code: expanded layouts size the primary onboarding action to
+  its content and place every action in one column. Evaluate a horizontal
+  arrangement or consistent widths for expanded layouts, keeping the compact
+  full-width primary button and the DESIGN.md action hierarchy.
 
 ## Post-MVP feature ideas for discovery
 
