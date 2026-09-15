@@ -104,6 +104,8 @@ Both stay outside the checkout. The release is built by hand and never runs in `
   -PposatoAscKeyId=<key id> -PposatoAscIssuerId=<issuer id> -PposatoAscPrivateKeyPath=<path to .p8>
 ```
 
+Create the certificate under the **G2 Sub-CA**. A certificate from the previous Sub-CA expires on 1 February 2027, and Xcode can still issue one. When the keychain holds more than one Developer ID Application identity with the same name, pass the SHA-1 hash that `security find-identity -v -p codesigning` prints for the G2 identity instead of the name.
+
 The build number is a positive integer higher than the previous candidate's. The release tasks refuse to run without it, and it is never tracked. The marketing version comes from the root `Version.xcconfig`.
 
 The chain works in this order:

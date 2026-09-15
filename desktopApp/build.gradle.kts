@@ -102,8 +102,9 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
 
     @TaskAction
     fun verify() {
-        check(!release.get() || signingIdentity.get().startsWith("Developer ID Application:")) {
-            "A macOS release needs -PposatoMacOsReleaseSigningIdentity with a Developer ID Application identity."
+        val identity = signingIdentity.get()
+        check(!release.get() || identity.startsWith("Developer ID Application:") || identity.matches(Regex("[0-9A-F]{40}"))) {
+            "A macOS release needs -PposatoMacOsReleaseSigningIdentity with a Developer ID Application identity name or SHA-1 hash."
         }
         val application = applicationBundle.get().asFile
         val helper = application.resolve("Contents/Helpers/PosatoMacOSHelper.app")
@@ -506,8 +507,10 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         val runtime = application.resolve("Contents/runtime")
         val applicationCode = application.resolve("Contents/app")
         val identity = signingIdentity.get()
-        if (release.get() && !identity.startsWith("Developer ID Application:")) {
-            throw GradleException("A macOS release needs -PposatoMacOsReleaseSigningIdentity with a Developer ID Application identity.")
+        if (release.get() && !(identity.startsWith("Developer ID Application:") || identity.matches(Regex("[0-9A-F]{40}")))) {
+            throw GradleException(
+                "A macOS release needs -PposatoMacOsReleaseSigningIdentity with a Developer ID Application identity name or SHA-1 hash.",
+            )
         }
         val windowLibrary = applicationCode.resolve("resources/native/libPosatoWindow.dylib")
         check(windowLibrary.isFile) { "The packaged window chrome library is missing." }
