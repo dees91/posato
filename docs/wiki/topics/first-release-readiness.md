@@ -38,6 +38,15 @@ their roadmap owners (revision 15) are:
 | `posato.app` site with the hosted privacy policy, its contact, and support routes (moved from `PRIVACY-001` in revision 17) | `WEB-001` |
 | Supported platform matrix, history and link cleanup, final verdict, publication hand-off | `RELEASE-002` |
 
+`observed` (2026-09-15, `IOS-003`): the iOS row is cleared for internal
+TestFlight. A distribution-signed Release build with Family Controls, the
+shared version, and an encryption declaration is processed for record Posato,
+installs from TestFlight on a physical iPhone, and starts sessions with
+restrictions active. `user-confirmed`: the maintainer saw it block and clear a
+website and an application. It adds release inputs: iPad stays supported with
+all orientations, so iPad copy and store screenshots are needed, and EU trader
+status must be declared before App Store submission.
+
 `open`: automated searches of official trademark databases were refused, so a
 manual trademark check remains with the maintainer.
 

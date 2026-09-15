@@ -1614,3 +1614,16 @@ routes for the App Store listing. Hosting the privacy policy and its contact
 moves from `PRIVACY-001` to `WEB-001`; `RELEASE-002` depends on both new rows.
 See the [roadmap](../tasks/mvp-roadmap.md) and
 [first-release readiness topic](topics/first-release-readiness.md).
+## [2026-09-15] task | IOS-003 App Store release build on TestFlight
+
+Release iOS builds now carry Family Controls and the Debug entitlement set,
+read the shared `Version.xcconfig`, select the Forest icon, and declare exempt
+encryption. Family Controls distribution was assigned account-wide but had to
+be enabled per App ID; App Store Connect required the renewed Paid Apps
+Agreement before the record. The maintainer kept iPad with all orientations.
+Build 1.0.0 (1) passed validation and processing, and the TestFlight build
+blocked a website and an application on one iPhone and cleared them after
+early end and expiry. See the
+[execution record](../tasks/executions/ios-003-app-store-release.md),
+[iOS enforcement topic](topics/ios-enforcement.md#distribution-build-ios-003),
+and [first-release readiness topic](topics/first-release-readiness.md).

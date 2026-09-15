@@ -30,7 +30,7 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
     private let calendar: Calendar
 
     private static var defaultCapable: Bool {
-#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
+#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
         return false
 #else
         return true

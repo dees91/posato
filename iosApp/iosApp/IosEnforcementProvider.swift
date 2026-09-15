@@ -105,7 +105,7 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
     private let storedMappings: () throws -> [StoredApplicationMapping]
 
     private static var defaultCapable: Bool {
-#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS_DEVELOPMENT
+#if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
         return false
 #else
         return true

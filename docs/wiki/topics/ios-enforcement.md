@@ -238,10 +238,28 @@ platform; failure surfaces action-required with Retry.
 `open`: the physical iPhone rows (Screen Time granted, site presentation,
 force-quit expiry, reopen reconciliation).
 
+## Distribution build (`IOS-003`)
+
+`user-confirmed` (2026-09-14/15, maintainer's portal and Apple email): the
+Family Controls (Distribution) request form has no bundle-identifier field, and
+Apple assigned the entitlement to the whole account within a minute.
+`observed`: distribution profiles still omitted it until
+**Family Controls (Distribution)** was enabled on the app and extension App
+IDs. Release now signs both targets with the Debug entitlement set and
+compiles enforcement under `POSATO_FAMILY_CONTROLS`.
+
+`observed` on one iPhone with the internal TestFlight build 1.0.0 (1): first
+install showed the system Screen Time prompt, the grant was read back, and the
+picker opened. `user-confirmed`: a website and an individual application were
+blocked during a session and usable again after early end and after natural
+expiry. Suspended expiry through the extension, reboot, and CloudKit
+Production were not exercised on this build.
+
 ## Open questions
 
-- Which Family Controls entitlement and distribution paths are available for
-  the intended public product at implementation time?
+- ~~Which Family Controls entitlement and distribution paths are available for
+  the intended public product at implementation time?~~ Answered by
+  `IOS-003`: account-level distribution assignment plus per-App ID enablement.
 - ~~What App Group callback protocol is the minimum safe implementation for
   scheduled expiry?~~ Answered for the MVP by `IOS-002`: pending/cleared
   versioned records in a dedicated `SuspendedExpiry` directory.
