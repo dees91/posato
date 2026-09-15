@@ -323,18 +323,10 @@ class DesktopMacHelperStateTest {
     }
 
     @Test
-    fun `given a rule repair requirement when checked then login items recovery is not offered`() = runTest {
+    fun `given a rule that enable cannot install when checked then unavailable is reported after one enable`() = runTest {
         val commands = FakeHelperCommands(
-            { readyResult() },
-            {
-                HelperResult(
-                    outcome = HelperResult.Outcome.ActionRequired,
-                    serviceState = HelperResult.State.RecoveryRequired,
-                    ownershipPhase = HelperResult.Phase.Idle,
-                    requiredAction = HelperResult.RequiredAction.RuleRepair,
-                    failure = HelperResult.Failure.None,
-                )
-            },
+            { ruleRepairResult() },
+            { ruleRepairResult() },
         )
         val state = DesktopMacHelperState(
             commands = commands,
@@ -344,6 +336,25 @@ class DesktopMacHelperStateTest {
         )
 
         assertEquals(MacHelperReadiness.UNAVAILABLE, state.recheck())
+        assertEquals(listOf("status", "enable"), commands.calls.map { it.operation })
+    }
+
+    @Test
+    fun `given an approved helper without its rule when checked again then enable installs it and ready is reported`() = runTest {
+        val statusResults = ArrayDeque(listOf(ruleRepairResult(), readyResult()))
+        val commands = FakeHelperCommands(
+            enableBehavior = { readyResult() },
+            statusBehavior = { statusResults.removeFirst() },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperReadiness.READY, state.recheck())
+        assertEquals(listOf("status", "enable", "status"), commands.calls.map { it.operation })
     }
 
     @Test
@@ -379,6 +390,16 @@ class DesktopMacHelperStateTest {
             ownershipPhase = HelperResult.Phase.Idle,
             requiredAction = HelperResult.RequiredAction.None,
             failure = HelperResult.Failure.None,
+        )
+    }
+
+    private fun ruleRepairResult(): HelperResult {
+        return HelperResult(
+            outcome = HelperResult.Outcome.ActionRequired,
+            serviceState = HelperResult.State.RecoveryRequired,
+            ownershipPhase = HelperResult.Phase.Idle,
+            requiredAction = HelperResult.RequiredAction.RuleRepair,
+            failure = HelperResult.Failure.Integrity,
         )
     }
 
