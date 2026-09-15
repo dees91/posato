@@ -29,6 +29,7 @@ their roadmap owners (revision 15) are:
 | Blocker | Owner |
 | --- | --- |
 | Developer ID signing with a secure timestamp, notarization, versioning, bundled notices, release JDK | `MACOS-008` |
+| Supported in-app removal on macOS (added in revision 18) | `MACOS-009` |
 | Release iOS configuration with Family Controls distribution, App Store Connect record, encryption declaration | `IOS-003` |
 | Production CloudKit schema, quota, and retention | `SYNC-017` |
 | Application icons and store assets | `DESIGN-002` |

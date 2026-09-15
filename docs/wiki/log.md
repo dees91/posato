@@ -1627,3 +1627,13 @@ early end and expiry. See the
 [execution record](../tasks/executions/ios-003-app-store-release.md),
 [iOS enforcement topic](topics/ios-enforcement.md#distribution-build-ios-003),
 and [first-release readiness topic](topics/first-release-readiness.md).
+
+## [2026-09-15] proposal | Supported macOS removal row
+
+Roadmap revision 18 adds `MACOS-009`, a supported in-app removal on macOS. The
+`MACOS-008` plan review found that the helper implements Disable and Remove but
+no application entry calls them, so moving Posato to the Trash leaves the
+background registration and authorization right behind. Updating stays a plain
+quit, replace, and open without a UI action. `RELEASE-002` now depends on the
+new row. See the [roadmap](../tasks/mvp-roadmap.md) and
+[first-release readiness topic](topics/first-release-readiness.md).
