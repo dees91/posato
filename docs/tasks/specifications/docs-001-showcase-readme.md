@@ -34,4 +34,4 @@ The root README draws a newcomer in within its first screen: the Posato identity
 ## Decisions or blockers
 
 - **Blocker (maintainer):** uploading the full walkthrough as a GitHub attachment and accepting the final README.
-- **Open:** Remotion licensing for this project (recommended: confirm the free individual license applies, as for the reference projects).
+- **Resolved (2026-09-16):** the maintainer confirmed individual use; Remotion's free license permits individuals to create videos, including commercial work. Verify the pinned package's license during implementation.

@@ -36,7 +36,7 @@ first.
 `FOUNDATION-001`, `QUALITY-001`, and `CI-001` are complete. The first hosted
 GitHub Actions run and the manual Codex review passed, and the foundation was
 merged. This section preserves its original boundary; the root
-[README](../../README.md#what-posato-does) describes today's MVP.
+[README](../../README.md#how-it-works) describes today's MVP.
 
 ## Foundation local use
 
