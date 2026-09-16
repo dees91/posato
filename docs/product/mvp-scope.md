@@ -41,7 +41,8 @@ application identifier or an automatic macOS match.
 ## Platform order and support baseline
 
 macOS and iOS are the first supported platforms and are both required for the
-complete MVP outcome. Android and Linux follow later and do not gate the MVP.
+complete MVP outcome. Android, Linux and Windows desktop, and Intel Macs follow
+later and do not gate the MVP.
 
 At release, the product supports the current and immediately preceding major
 versions of both macOS and iOS. The architecture baseline must translate this

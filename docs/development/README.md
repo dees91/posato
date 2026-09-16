@@ -15,6 +15,51 @@ generator-import boundaries are in
 [ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md). All
 seven preparation gates and the ready checkpoint are complete.
 
+## Build from source
+
+Posato is pre-release with no official download yet; see
+[availability](../product/limits-and-platforms.md#availability). Build from
+source for development and evaluation using the steps below. Release readiness
+is tracked in the
+[first-release readiness record](../tasks/executions/release-001-first-release-readiness.md).
+
+Requirements:
+
+- A Mac with Apple silicon, Xcode, and an iOS Simulator runtime that supports
+  iPhone 17 (used by the test suite).
+- Java 17 or later to launch Gradle, installed system-wide or through
+  `JAVA_HOME` so that Xcode build phases can find it; the build downloads the
+  JDK 21 it uses.
+- Android SDK Platform 36 and Build Tools 36.0.0, with `ANDROID_HOME` pointing
+  to the SDK. It is used only for shared Compose previews; Posato is not an
+  Android app.
+
+Clone the repository, then run:
+
+```shell
+git clone https://github.com/dees91/posato.git
+cd posato
+./gradlew :desktopApp:run      # run the macOS app
+./gradlew quality              # formatting, analysis, tests, and packaging checks
+```
+
+Build the iOS app for the Simulator:
+
+```shell
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+```
+
+These steps need no Apple credentials, and the apps run without blocking or
+sync. Blocking, the macOS helper, and iCloud sync need Apple Development signing
+with the Posato app identifiers, iCloud container, and App Group, which are
+registered to the Posato developer team; building signed variants under another
+team currently requires changing those identifiers throughout the project. The
+iOS Simulator cannot use Screen Time controls. See
+[Foundation local use](#foundation-local-use) and
+[Apple development provisioning](apple-provisioning.md).
+
 ## First production pull request
 
 `user-confirmed` (2026-08-24): PR #1 is a small production skeleton. It adds:
@@ -36,7 +81,7 @@ first.
 `FOUNDATION-001`, `QUALITY-001`, and `CI-001` are complete. The first hosted
 GitHub Actions run and the manual Codex review passed, and the foundation was
 merged. This section preserves its original boundary; the root
-[README](../../README.md#what-posato-does) describes today's MVP.
+[README](../../README.md#how-it-works) describes today's MVP.
 
 ## Foundation local use
 

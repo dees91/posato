@@ -1701,3 +1701,17 @@ self-contained content boundary. The design topic records the local rendering
 evidence and the completed attended Safari/Chrome HTTP/HTTPS gate, with the
 maintainer accepting dark-only Safari verification; DESIGN.md records layout
 and copy.
+
+## [2026-09-16] implementation | Showcase README with reproducible demo media
+
+The root README leads with the identity, a one-sentence mechanism statement,
+a 24-second demo GIF, and a link to the 47-second walkthrough attachment, then
+routes to build steps, illustrated user steps, a limits summary, privacy, and
+documentation. Media come from the real apps with synthetic choices and are
+rendered by a pinned Remotion project under `video/`, whose README records
+provenance and size budgets. The full limits, availability table, and supported
+platforms moved verbatim to `docs/product/limits-and-platforms.md`, which also
+records that Intel Macs, Android, Linux desktop, and Windows desktop are
+planned for later releases without dates; `mvp-scope.md` names the same
+platforms. See the
+[execution record](../tasks/executions/docs-001-showcase-readme.md).
