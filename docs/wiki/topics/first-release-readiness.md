@@ -72,6 +72,18 @@ about 350 bytes of payload against the 65,536-byte cap, a deletion costs a
 record like an addition, and a heavy year is about 2.3 MB (`inferred`). A full
 iCloud account keeps local saves and reports a generic retryable status.
 
+`observed` (2026-09-15, `PRIVACY-001`): the iOS app and its `ActivityMonitor`
+extension bundle privacy manifests with tracking off and no collected data. A
+scan of the Release binaries found only `stat` and `fstat`, both from Skiko
+inside Compose Multiplatform, in the app, and no listed API in the extension.
+`user-confirmed`: the app declares the file timestamp reason `0A2A.1` following
+JetBrains' guidance, although Apple's text reserves that reason for third-party
+SDKs; the extension declares none; the macOS bundles get no manifest; and the
+App Store label answer is "Data Not Collected". `observed` (2026-09-16): the
+row is cleared. TestFlight build 1.0.0 (2) with both manifests processed with no
+errors or warnings, the policy URL `https://posato.app/privacy/` is set through
+the App Store Connect API, and the maintainer published the label.
+
 `open`: automated searches of official trademark databases were refused, so a
 manual trademark check remains with the maintainer.
 
