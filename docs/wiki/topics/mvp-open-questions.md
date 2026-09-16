@@ -636,9 +636,11 @@ implementation. The solution and any changes to accepted contracts remain
   `user-confirmed` (2026-09-16): the search field in the Session selected-items
   browser repeatedly draws that intent, because a text field on this screen
   reads as a place to add a website. `observed` in code: that field only
-  filters the read-only list (`SessionSelectionSummary.kt`). Decide whether the
-  browser offers an explicit route to adding, whether its search field should
-  read less like entry, or both.
+  filters the read-only list (`SessionSelectionSummary.kt`). The maintainer
+  reports this as a recurring frustration rather than a one-time slip, so treat
+  it as the strongest candidate in this section. Decide whether the browser
+  offers an explicit route to adding, whether its search field should read less
+  like entry, or both.
 - **Arrange onboarding actions better on macOS.** `user-confirmed`
   (2026-09-15): on the Mac helper permission step, **Open System Settings**,
   **Check again**, and **Not now** stack vertically at their own content
