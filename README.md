@@ -17,8 +17,12 @@ Open source under the [Apache License 2.0](LICENSE).
 
 ## Quick start
 
-Posato is **pre-release**, with no official download yet. It supports
-**macOS 15+ on Apple silicon** and **iOS 18+**.
+Posato is **pre-release**, with
+[no official download yet](docs/product/limits-and-platforms.md#availability).
+It targets **macOS 15 or later on Apple silicon** and **iOS 18 or later**; the
+[release test matrix](docs/product/limits-and-platforms.md#supported-platforms)
+is still being confirmed. Intel Macs, Android, Linux, and Windows are
+[planned for later releases](docs/product/limits-and-platforms.md#planned-platforms).
 
 To try it from source, follow the [build instructions](docs/development/README.md#build-from-source).
 Unsigned builds let you explore the apps; blocking and sync require Apple
@@ -66,11 +70,12 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   administrator approval. Paused apps are quit, so save your work first.
   Website blocking covers Safari and Google Chrome Stable using the system proxy.
 - **iPhone:** restrictions can linger after a session ends. For sessions under
-  15 minutes, open Posato at the end to clear them.
+  15 minutes, they clear when Posato is open at the end or the next time you
+  open it.
 - **Sync:** delivery is best effort. If every copy of your workspace key is
   lost, synchronized data cannot be recovered.
 
-Read the [full blocking and sync limits](docs/development/README.md#blocking-and-sync-limits)
+Read the [full blocking and sync limits](docs/product/limits-and-platforms.md#limits)
 for browser coverage, VPN and Private Relay behavior, resuming after sleep,
 and data recovery boundaries.
 
