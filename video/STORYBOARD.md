@@ -48,7 +48,7 @@ Names are the files in `public/`; provenance is in `README.md`.
 
 | Capture | State |
 | --- | --- |
-| `mac-session-inactive` | Session with no active session, the two websites and one application counted |
+| `mac-session-inactive` | Session with no active session, the two websites and one application counted; also the state after ending early |
 | `mac-websites-empty` | Paused items, Websites, only example.com, empty field |
 | `mac-websites-typed` | example.net typed, Add enabled |
 | `mac-websites-added` | both domains saved, with the added-count hint after Add |
@@ -60,7 +60,6 @@ Names are the files in `public/`; provenance is in `README.md`.
 | `mac-review-45` | One last look with the end time |
 | `mac-active-45` | Session active, Restrictions active. |
 | `mac-end-confirm` | Ready to return? |
-| `mac-session-ended` | back to no active session |
 | `iphone-websites` | Paused items, Websites, both domains |
 | `iphone-apps-empty` | Apps tab, nothing chosen |
 | `iphone-apps` | one application chosen |

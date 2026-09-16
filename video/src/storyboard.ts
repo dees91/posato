@@ -1,4 +1,4 @@
-import type { Device, LayoutId, Point } from "./layout";
+import { capturePoint, LAYOUTS, type Device, type LayoutId, type Point } from "./layout";
 
 // Executable projection of STORYBOARD.md. Frame numbers inside a scene are
 // scene-relative; scenes overlap by SCENE_OVERLAP frames for the crossfade.
@@ -105,7 +105,7 @@ const startScene = (start: number, end: number): StoryScene => ({
   layoutTo: { layout: "macWithPhone", from: 42, to: 62 },
   mac: { captures: ["mac-review-45.png", "mac-active-45.png"] },
   iphone: { captures: ["iphone-active-45.png"], enterAt: 44 },
-  pointerEntry: [700, 760],
+  pointerEntry: capturePoint(LAYOUTS.macSolo.mac, MAC_TARGETS.reviewSession),
   actions: [
     { device: "mac", kind: "click", target: MAC_TARGETS.startThisPause, at: 30, travel: 20, label: "Start this pause", swapTo: 1 },
   ],
@@ -231,7 +231,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     end: 1194,
     kind: "capture",
     layout: "macWithPhone",
-    mac: { captures: ["mac-active-45.png", "mac-end-confirm.png", "mac-session-ended.png"] },
+    mac: { captures: ["mac-active-45.png", "mac-end-confirm.png", "mac-session-inactive.png"] },
     iphone: { captures: ["iphone-active-45.png"] },
     actions: [
       { device: "mac", kind: "click", target: MAC_TARGETS.endSessionEarly, at: 30, label: "End session early", swapTo: 1 },

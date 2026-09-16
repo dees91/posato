@@ -1,4 +1,4 @@
-import { Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Img, interpolate, spring, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { SceneLayer } from "../components/SceneLayer";
 import { Eyebrow, Headline, Support } from "../components/Typography";
 import { Wordmark } from "../components/Wordmark";
@@ -16,7 +16,8 @@ export const TitleScene: React.FC<{ readonly scene: StoryScene }> = ({ scene }) 
   const footer = scene.copy.footer;
 
   return (
-    <SceneLayer durationInFrames={duration} exitFrames={closing ? 1 : 6} style={closing ? { opacity: finalFade } : undefined}>
+    <SceneLayer durationInFrames={duration} wash={!closing}>
+      <AbsoluteFill style={{ opacity: finalFade }}>
       <div style={{ position: "absolute", left: 120, top: 0, bottom: 0, width: 1040, display: "flex", flexDirection: "column", justifyContent: "center", gap: 26 }}>
         {closing ? null : (
           <div style={{ opacity: mark, transform: `translateY(${(1 - mark) * 12}px)`, marginBottom: 18 }}>
@@ -45,6 +46,7 @@ export const TitleScene: React.FC<{ readonly scene: StoryScene }> = ({ scene }) 
           }}
         />
       ) : null}
+      </AbsoluteFill>
     </SceneLayer>
   );
 };

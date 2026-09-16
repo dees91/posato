@@ -34,7 +34,7 @@
   (660 frames), `Walkthrough` (1260), stills `StepWebsites`, `StepDuration`,
   `SocialPreview`. The recording-based end scene and `@remotion/media` and
   `@remotion/transitions` are gone.
-- Captures: 17 tracked PNGs from `9b40a2f`, taken through `capture/mac-captures.sh`
+- Captures: 17 tracked PNGs (the websites screen twice: with the added-count hint for the video, at rest for the stills and the site) from `9b40a2f`, taken through `capture/mac-captures.sh`
   (Mac, picker driven by keyboard, administrator prompt confirmed by the
   maintainer; the window is activated before every screenshot because a
   driver tap does not keep Posato frontmost) and `capture/iphone-captures.sh`
@@ -62,16 +62,31 @@
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `changes-required` on `fa1b664` (2026-09-16), corrected in the
+  next commit; the corrected render passed `npm run check` and `npm run verify`.
+- **Critical or Required findings:** (1) capture crossfades were hard cuts
+  except for the last swap in a scene; (2) crossfades stacked both captures at
+  partial opacity so the window brightened mid-fade; (3) the closing card
+  overrode the scene layer's opacity and cut in hard over the outgoing scene;
+  (4) the site poster alt described devices while the poster frame was the
+  title card.
+- **Resolution:** swaps that have not started are skipped and only the
+  incoming capture fades in over an opaque stack; the closing card fades an
+  inner layer and drops the wash so the loop still lands on the canvas; the
+  poster comes from the paired active-session frame (19.3 s) and the alt
+  describes it. Recommended items taken: roadmap "Last amended" date, the start
+  scene's pointer begins where the duration scene left it. Optional items
+  taken: the duplicate ended-session capture is dropped, the verify script
+  asserts capture sizes, the README narrows the cursor claim.
+- **Advisory findings:** `<source media>` on video is honoured by Chrome and
+  Safari; other mobile browsers may fetch the hidden video (bandwidth only).
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | `npm run check` (eslint, tsc, 10 storyboard tests) | pass | clean run before `media` |
-| `npm run media` and `npm run verify` | pass | hero 1600x1000x30/660, walkthrough 1260 frames; GIF 960x600, 12 fps, 8,969,326 bytes, infinite loop, seam YAVG 35.5 both ends; web MP4 1,297,692 bytes faststart; poster 36,609 bytes; attachment 2,216,834 bytes; stills 531,460 and 572,437 bytes; social preview 91,335 bytes |
+| `npm run media` and `npm run verify` | pass | hero 1600x1000x30/660, walkthrough 1260 frames; GIF 960x600, 12 fps, 8,909,899 bytes, infinite loop, seam YAVG 35.5 both ends; web MP4 1,281,500 bytes faststart; poster 67,998 bytes; attachment 2,181,040 bytes; stills 531,460 and 572,437 bytes; social preview 91,335 bytes |
 | Capture runs (posato-control) | pass | `build/verification/runs/20260916-2052*` to `-2210*` (Mac items, three attended session runs, iPhone install, first-install skip, apps, session); every tracked PNG checked for synthetic data |
 | Probe frames at every click and tap | pass | `video/out/probe/` reviewed: pointer tip and tap ring on the control in each scene, callouts readable, loop seam frames identical |
 | Website `npm run build` and output scan | pass | five pages; no scripts, inline styles, external assets, or em/en dashes; video and single `<source media>` present |
@@ -79,7 +94,7 @@
 | Lighthouse after (mobile / desktop) | pass, no regression | `build/verification/docs-002/lighthouse/after-*`: 100/100/100/100 both; LCP 1.4 s / 0.3 s; CLS 0; 84 KiB / 1,351 KiB; mobile fetches the poster only, never `hero.mp4` |
 | Browser check 390 and 1280 CSS px, light and dark | pass | `build/verification/docs-002/browser/preview-*.png` on the Pages preview (agent-browser): scroll width equals viewport at 390, hero panel `display: none` there; at 1280 the video plays (`paused: false`, `currentSrc` hero.mp4); with Reduce Motion the video is `display: none` and the poster `block` |
 | Pages preview headers | pass | `curl -I` on the preview: CSP with `media-src 'self'`, `X-Robots-Tag: noindex`, no cookies; `/media/hero.mp4` is `video/mp4`, the poster `image/jpeg` |
-| Independent completed-change review | pending | |
+| Independent completed-change review | pass after corrections | separate agent on `fa1b664`; four Required findings resolved, verification rerun on the corrected render |
 
 ## Blockers and accepted risks
 

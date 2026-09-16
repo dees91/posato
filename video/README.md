@@ -5,7 +5,7 @@ longer `Walkthrough`; the composed `StepWebsites` and `StepDuration`
 stills are the README's step screenshots; `SocialPreview` is the repository
 card; and posato.app plays the hero as a silent looping video. Every output
 shows real Posato captures with synthetic choices inside the same generic
-device frames as the site, with a synthetic cursor that names each click.
+device frames as the site; both videos add a synthetic cursor that names each click.
 [STORYBOARD.md](STORYBOARD.md) is the human contract and
 `src/storyboard.ts` its executable projection; `src/storyboard.test.ts`
 enforces the storyboard rules. This is documentation artwork, not a test of
@@ -33,17 +33,17 @@ resolve a different font. Package versions are exact and locked by
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 960 x 600, 12 fps, 22 seconds, infinite loop, 8,969,326 bytes.
+- `../.github/assets/demo.gif`: 960 x 600, 12 fps, 22 seconds, infinite loop, 8,909,899 bytes.
 - `../.github/assets/step-websites.png` and `step-duration.png`: 1920 x 1080
   composed stills on a transparent background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 1,297,692 bytes, with a JPEG poster for the first paint and
+  faststart, 1,281,500 bytes, with a JPEG poster for the first paint and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
-- `out/walkthrough-attachment.mp4`: 42 seconds, 2,216,834 bytes, the file
+- `out/walkthrough-attachment.mp4`: 42 seconds, 2,181,040 bytes, the file
   the maintainer uploads as a GitHub attachment.
 
 ## Media budget and publication
@@ -54,7 +54,7 @@ below 1 MiB, each capture at or below 250 KiB, and the walkthrough attachment
 below 10 MiB. `scripts/render-gif.sh` lowers frame rate, then palette, then
 size to stay within budget and never shortens the story; `scripts/verify-output.sh`
 asserts dimensions, durations, the infinite-loop extension, the loop seam,
-faststart, and every size.
+faststart, capture widths, and every size budget.
 
 The maintainer uploaded `out/walkthrough-attachment.mp4` as a GitHub attachment
 on 2026-09-16 and the root README links to it. While the repository is private

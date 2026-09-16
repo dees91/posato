@@ -73,9 +73,11 @@ test "$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,wid
 
 for capture in "${video_dir}"/public/mac-*.png; do
   test "$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "${capture}")" = "1272" || { echo "Mac capture is not 1272 wide: ${capture}" >&2; exit 1; }
+  (( $(size "${capture}") <= 250 * 1024 )) || { echo "Capture exceeds 250 KiB: ${capture}" >&2; exit 1; }
 done
 for capture in "${video_dir}"/public/iphone-*.png; do
   test "$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "${capture}")" = "660" || { echo "iPhone capture is not 660 wide: ${capture}" >&2; exit 1; }
+  (( $(size "${capture}") <= 250 * 1024 )) || { echo "Capture exceeds 250 KiB: ${capture}" >&2; exit 1; }
 done
 
 echo "Verified hero ($(meta "${hero}")), walkthrough ($(meta "${walkthrough}")), GIF (${gif_meta}, $(size "${gif}") bytes, infinite loop, seam YAVG ${seam//$'\n'/ }), web MP4 ($(size "${web}") bytes, faststart), poster, attachment ($(size "${attachment}") bytes), stills, and social preview."

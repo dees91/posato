@@ -27,15 +27,16 @@ type Move = {
 function captureOpacities(track: DeviceTrack, device: Device, actions: readonly Action[], frame: number): number[] {
   const swaps = actions.filter((action) => action.device === device && action.swapTo !== undefined);
   let position = 0;
-  let previous = 0;
   for (const swap of swaps) {
-    const progress = interpolate(frame, [swap.at, swap.at + SWAP_FRAMES], [0, 1], clamp);
-    position = previous + ((swap.swapTo ?? previous) - previous) * progress;
-    if (frame >= swap.at + SWAP_FRAMES) {
-      previous = swap.swapTo ?? previous;
+    if (frame < swap.at) {
+      break;
     }
+    const progress = interpolate(frame, [swap.at, swap.at + SWAP_FRAMES], [0, 1], clamp);
+    position += ((swap.swapTo ?? position) - position) * progress;
   }
-  return track.captures.map((_, index) => Math.max(0, 1 - Math.abs(position - index)));
+  // Earlier captures stay opaque underneath; only the incoming capture fades in,
+  // so a crossfade never lets the wallpaper brighten the window.
+  return track.captures.map((_, index) => (index === 0 ? 1 : Math.min(1, Math.max(0, position - index + 1))));
 }
 
 function currentLayout(scene: StoryScene, frame: number): Layout {

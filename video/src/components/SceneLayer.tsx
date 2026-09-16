@@ -6,10 +6,11 @@ type SceneLayerProps = {
   readonly children: ReactNode;
   readonly durationInFrames: number;
   readonly exitFrames?: number;
+  readonly wash?: boolean;
   readonly style?: CSSProperties;
 };
 
-export const SceneLayer: React.FC<SceneLayerProps> = ({ children, durationInFrames, exitFrames = 6, style }) => {
+export const SceneLayer: React.FC<SceneLayerProps> = ({ children, durationInFrames, exitFrames = 6, wash = true, style }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const entrance = spring({ frame, fps, config: { damping: 20, stiffness: 115, mass: 0.85 } });
@@ -29,9 +30,11 @@ export const SceneLayer: React.FC<SceneLayerProps> = ({ children, durationInFram
         ...style,
       }}
     >
-      <AbsoluteFill
-        style={{ backgroundImage: `radial-gradient(circle at 78% 18%, ${colors.primary}0F 0, transparent 40%)` }}
-      />
+      {wash ? (
+        <AbsoluteFill
+          style={{ backgroundImage: `radial-gradient(circle at 78% 18%, ${colors.primary}0F 0, transparent 40%)` }}
+        />
+      ) : null}
       {children}
     </AbsoluteFill>
   );

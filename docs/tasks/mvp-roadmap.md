@@ -6,7 +6,7 @@
 - **Revision:** 19
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-15
+- **Last amended:** 2026-09-16
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
