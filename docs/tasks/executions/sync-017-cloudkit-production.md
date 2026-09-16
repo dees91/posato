@@ -20,17 +20,15 @@ field, or index is permanent; a missing one only fails saves until a deploy.
 1–4. **Audit (done).** Management token in the login Keychain, team id from
    `local.properties`, neither recorded. `cktool export-schema` for both
    environments under ignored `build/verification/`; the expected schema is
-   Production's system types plus the two Posato types with four fields and no
-   index. An index-free import without reset removed the extras (D2), the
-   builds' sync paths were checked (D4), and a re-export showed an empty diff.
+   Production's system types plus the two Posato types. An index-free import
+   without reset removed the extras (D2), and a re-export showed an empty diff.
 5–11. **Production run (done).** The maintainer deployed in the Console after
    the preview matched the exported schema, then release builds ran: Developer
    ID build 6 on the Mac and TestFlight 1.0.0 (1) on the iPhone. Evidence is
-   Mac-side aggregates, the Console zone list and static `codesign`, because
+   Mac-side aggregates, the Console zone list and static `codesign`, since
    `posato-control` must not drive a notarized or TestFlight build; the
-   maintainer pressed every device step, and snapshots around each step gave
-   the `AC-04` deltas. Dropped by the 2026-09-16 maintainer decision: the
-   second timed removal, the post-run zone check, and the closing removal.
+   maintainer pressed every step. Dropped by the 2026-09-16 maintainer
+   decision: the second timed removal, the zone check, and the closing removal.
 
 ## Decisions
 
@@ -53,10 +51,9 @@ The brief's removal boundary carries a dated amendment: devices stay linked.
 
 ## Result
 
-- Steps 3–4 `observed`: Production had only the default `Users` type, while
-  Development had the two types and four `BYTES` fields plus just-in-time
-  `QUERYABLE SORTABLE` indexes; an import without reset made its export equal
-  the index-free schema. `validate-schema` rejects Production.
+- Steps 3–4 `observed`: Production held only `Users`, while Development added
+  just-in-time `QUERYABLE SORTABLE` indexes to its four fields; an index-free
+  import equalled the expected schema, and `validate-schema` rejects Production.
 - The development round established on the Mac (21 bundles from local policy),
   joined from the iPhone with no key wait, and removed the workspace; the peer
   reported action required and the Mac ended local-only. Its re-export still
@@ -90,17 +87,20 @@ The brief's removal boundary carries a dated amendment: devices stay linked.
 
 ## Completed-change review
 
-- **Verdict:** changes-required, corrections folded; re-check pending
+- **Verdict:** approved (2026-09-16) after one changes-required pass
 - **Required:** stale header; brief and plan deviations unreconciled; token
   state unevidenced; readiness row stale; wiki overclaimed the round; no
   retained companion signature. **Resolution:** folded above, with the brief
   amendment, readiness paragraph, wiki wording and `companion-codesign.txt`.
+- **Evidence:** the branch diff and working tree across five documents; schema
+  checksums, source-parity diffs, evidence reconciliation, privacy and line
+  scans; both task records, three wiki pages, both record writers and ADR 0007.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Release build sources vs `main`, sync paths | pass | `observed`: no `shared/`, adapter, or companion difference for Developer ID build 6 or TestFlight build 1 |
+| Release build sources vs the branch base `9e7e677`, sync paths | pass | `observed`: no difference under `shared/`, `iosApp/`, or `macosSyncCompanion/` for Developer ID build 6 or TestFlight build 1; later `shared/` changes are `MACOS-009` UI, outside `feature/sync/` |
 | Development export after the development round | pass | byte-identical to the index-free expected schema |
 | Production export after the deploy (`AC-01`) | pass | equals Development and the expected schema; two types, four `BYTES` fields, no index |
 | Companion signature and Production zone (`AC-02`) | pass | `companion-codesign.txt`; one zone after the Mac press; `sync_bootstrap_state` 1 |

@@ -539,10 +539,13 @@ not claim that every other device has received the update.
   production schema then holds only `PosatoWorkspaceV1` and
   `PosatoEncryptedBundleV1` with their four `BYTES` fields and no index.
   Release builds of both platforms link, converge both directions, share a
-  session, remove, and re-link against it. Quota is negligible: one edit or
-  session record is about 350 bytes against the 65,536-byte cap, and a year of
-  heavy use is about 2.3 MB. Deletions cost a record like additions, because
-  format 1 has no compaction. Container ownership for forks stays `open`.
+  session, remove, and re-link against it; the device and Console observations
+  are `user-confirmed`, the schema exports and local aggregates `observed`.
+  Quota is negligible: one edit or session record carries about 350 bytes of
+  payload against the 65,536-byte cap, with CloudKit metadata on top as a
+  `source-claim`, and a year of heavy use is about 2.3 MB. Deletions cost a
+  record like additions, because format 1 has no compaction. Container
+  ownership for forks stays `open`.
 - How is a full iCloud account surfaced? `CKError.quotaExceeded` maps to
   retryable on both platforms, so the status is generic while local saves stay
   committed. `user-confirmed` (2026-09-16): disclosure only for the MVP.
