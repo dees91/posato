@@ -1783,8 +1783,8 @@ processed with no errors or warnings. See the
 Recorded the maintainer's request to plan clearer `www` website coverage,
 fewer repeated macOS session-start authorization prompts, continuous website
 entry with an accurate count in onboarding, discoverable website and app
-editing from the Session screen, and better arranged macOS onboarding actions
-after the MVP in
+editing from the Session screen including its search field that reads as entry,
+and better arranged macOS onboarding actions after the MVP in
 [the decision queue](topics/mvp-open-questions.md#post-mvp-session-usability-proposals).
 Solutions remain open; existing exact-host and one-use Apply authorization
 contracts remain unchanged.
