@@ -1669,8 +1669,9 @@ no item at all after deletion. See the
 The production CloudKit schema is deployed and verified. `cktool` exports
 showed that the development container held exactly the two record types the
 code writes, but with just-in-time `QUERYABLE SORTABLE` indexes on every field;
-an index-free import without a reset removed them, and a development round on
-both platforms proved that real writes do not add fields or indexes back. The
+an index-free import without a reset removed them, and a development round
+proved that the Mac's real writes do not add fields or indexes back; the iOS
+writers use the same record types and fields, established by code reading. The
 Console preview matched the exported schema byte for byte, and the deployed
 production schema equals both it and the development export.
 

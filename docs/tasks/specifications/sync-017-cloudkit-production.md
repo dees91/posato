@@ -16,7 +16,7 @@ The Production schema matches what the code writes, and a Developer ID Mac packa
 - Before deployment, audit the Development schema against the code: deployment copies every record type and field, including ones left by earlier experiments. The agent prepares the exact schema and a checklist; the maintainer deploys in the CloudKit Console. Credentials and management tokens never enter Git.
 - Add no record type, field, index, subscription, or format change beyond what the code already uses. Mailbox compaction stays out of scope (ADR 0006).
 - Quota and retention: measure record sizes and counts for a representative workload against the person's iCloud storage, and decide whether the privacy policy, README, or a later row needs a limit or disclosure.
-- Physical runs create data in the maintainer's own iCloud account; each run ends with **Remove workspace**. The Mac is shared with `MACOS-009` and `DESIGN-003`, so physical gates run one after the other.
+- Physical runs create data in the maintainer's own iCloud account; each run ends with **Remove workspace**. **Amendment (`user-confirmed` 2026-09-16):** the synthetic fixtures are removed, but the maintainer's own devices stay linked to the Production workspace at the end of the run; their data is theirs and stays encrypted. The Mac is shared with `MACOS-009` and `DESIGN-003`, so physical gates run one after the other.
 
 ## Acceptance
 
