@@ -9,7 +9,7 @@ or iPhone, within the [limits](#limits) below.
   <img src=".github/assets/demo.gif" width="960" alt="Posato demo: choose websites and apps to pause on a Mac and an iPhone, set a duration, and start a session">
 </p>
 
-Watch the [full 42-second walkthrough](https://github.com/user-attachments/assets/59e2bec3-368d-402b-bb45-f06ebd386ebb),
+Watch the [full 42-second walkthrough](https://github.com/user-attachments/assets/a810e657-0a76-4b84-a931-a622fd9c401e),
 which adds the Mac app picker, the review screen, and ending a session early.
 
 [Quick start](#quick-start) · [How it works](#how-it-works) ·
