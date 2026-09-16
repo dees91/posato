@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 18
+- **Revision:** 19
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
 - **Last amended:** 2026-09-15
@@ -111,6 +111,17 @@ quit, replace, and open with no UI action, as `MACOS-008` verifies.
 `RELEASE-002` now also depends on `MACOS-009`. It changes no other task,
 dependency, wave, or integration group.
 
+Revision 19 adds the maintainer-accepted `DOCS-002` row on 2026-09-16.
+The maintainer reviewed the `DOCS-001` media and the `WEB-001` product page
+and found the demo weak: raw captures on a flat canvas without device frames,
+no visible cursor so a viewer cannot tell what was clicked, static scenes
+long enough to look paused, README screenshots that line up only by
+accident, and a hero on `posato.app` that visually repeats the iPhone frame
+shown in the step below it. `DOCS-002` rebuilds the showcase media with a
+synthetic cursor, matching device frames, composed side-by-side stills, and
+a silent looping hero video on the site. `RELEASE-002` now also depends on
+`DOCS-002`. It changes no other task, dependency, wave, or integration group.
+
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
 [architecture baseline](../decisions/0003-mvp-application-architecture-baseline.md),
@@ -210,7 +221,8 @@ wave barriers add the phase ordering stated above.
 | `PRIVACY-001` | Add privacy manifests and prepare the App Store privacy label. | Release readiness | Release/R2 | `RELEASE-001` | PR-PRIVACY-PUBLICATION |
 | `DOCS-001` | Turn the README into a showcase with screenshots and a Remotion-rendered demo that routes details to the documentation. | Release readiness | Release/R2 | `RELEASE-001`, `DESIGN-002` | PR-SHOWCASE-README |
 | `WEB-001` | Publish a simple `posato.app` site with a product page, the hosted privacy policy and its contact, and support routes usable as the App Store support and privacy URLs. | Release readiness | Release/R2 | `DESIGN-002`, `DOCS-001` | PR-WEBSITE |
-| `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001` | PR-RELEASE-CANDIDATE |
+| [`DOCS-002`](specifications/docs-002-showcase-media.md) | Rebuild the showcase media: a demo and walkthrough with a visible cursor and matching device frames, composed side-by-side README stills, and a silent looping hero video on `posato.app`. | Release readiness | Release/R2 | `DOCS-001`, `WEB-001` | PR-SHOWCASE-MEDIA |
+| `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `DOCS-002` | PR-RELEASE-CANDIDATE |
 
 ## PR #1 shared cycle
 
@@ -232,7 +244,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Policy and session convergence | `SYNC-011`, `SYNC-012` | Bidirectional physical convergence, offline/retry, early end, and expiry |
 | Removal and re-link hardening | `SYNC-014`, `SYNC-015` | Fake-port resurrection cases and physical removal, quick re-link, and settle evidence |
 | Complete measurable MVP outcome | `MVP-001` | One controlled Mac-and-iPhone pass without manual repair |
-| Public-release obligations | `RELEASE-001`, `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `RELEASE-002` | Readiness audit with a blocked verdict, signed and notarized or App Store artifacts, production configuration, and a final pass or blocked verdict on candidates |
+| Public-release obligations | `RELEASE-001`, `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `DOCS-002`, `RELEASE-002` | Readiness audit with a blocked verdict, signed and notarized or App Store artifacts, production configuration, and a final pass or blocked verdict on candidates |
 
 ## Manual and physical gates
 
