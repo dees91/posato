@@ -56,10 +56,10 @@ size to stay within budget and never shortens the story; `scripts/verify-output.
 asserts dimensions, durations, the infinite-loop extension, the loop seam,
 faststart, and every size.
 
-The maintainer uploads `out/walkthrough-attachment.mp4` as a GitHub attachment
-and the root README links to it. While the repository is private the
-attachment is reachable only when signed in to GitHub; `RELEASE-002` rechecks
-the link at publication.
+The maintainer uploaded `out/walkthrough-attachment.mp4` as a GitHub attachment
+on 2026-09-16 and the root README links to it. While the repository is private
+the attachment is reachable only when signed in to GitHub; `RELEASE-002`
+rechecks the link at publication.
 
 ## Capture provenance
 

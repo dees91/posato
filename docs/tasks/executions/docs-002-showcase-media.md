@@ -56,9 +56,9 @@
   the download, a poster under Reduce Motion and in compact layouts hidden
   with the panel; CSP gains `media-src 'self'`; the duration step uses the
   45-minute captures. `DESIGN.md` website paragraph amended.
-- Deviation: the walkthrough is 42 seconds and replaces the 47-second
-  attachment once the maintainer uploads `out/walkthrough-attachment.mp4`;
-  the README keeps the old link until then.
+- The walkthrough is 42 seconds; the maintainer uploaded
+  `out/walkthrough-attachment.mp4` as a GitHub attachment on 2026-09-16 and the
+  README links to it.
 
 ## Completed-change review
 
@@ -85,10 +85,11 @@
 
 - Attended captures done on 2026-09-16 (administrator prompt confirmed three
   times because the first two active frames lost window focus; iPhone picker
-  and Screen Time consent). Remaining hand-offs: upload
-  `video/out/walkthrough-attachment.mp4` as a GitHub attachment and paste the
-  URL; review the Pages preview; accept the clarity copy edits and the
-  `DESIGN.md` amendment already applied.
+  and Screen Time consent). The walkthrough attachment
+  was uploaded on 2026-09-16. Remaining hand-offs: review the Pages preview;
+  accept the clarity copy edits and the `DESIGN.md` amendment already applied.
+  While the repository is private the attachment answers 404 to signed-out
+  visitors; `RELEASE-002` rechecks it at publication.
 - Accepted as real state in the Mac captures: "The session ended early." on the
   inactive Session screen and the iCloud row reading "Sync needs attention".
 - Mac captures show a 12-hour clock and iPhone captures a 24-hour clock; both
