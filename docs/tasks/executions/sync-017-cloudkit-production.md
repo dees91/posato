@@ -109,7 +109,7 @@ The brief's removal boundary carries a dated amendment: devices stay linked.
 
 ## Blockers and accepted risks
 
-- Open maintainer action: revoke the management token; not claimed done here.
+- The management token was revoked after the run (`user-confirmed` 2026-09-16).
 - Accepted risk: removal duration at scale stays unmeasured by hand; the
   deletion path keeps its automated development coverage.
 - Production record types and fields are now permanent; the devices stay linked.
