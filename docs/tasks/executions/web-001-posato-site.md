@@ -1,7 +1,7 @@
 # Execution: `WEB-001`
 
 - **Brief:** [web-001-posato-site.md](../specifications/web-001-posato-site.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** Claude Code agent
 - **Reviewer:** separate Claude Code agent
@@ -106,6 +106,7 @@
 
 ## Final
 
-- **Status:** `active`
+- **Status:** `done`
 - **Outcome:** `AC-01`, `AC-02`, and `AC-04` met; `AC-03` met except production
-  content, which follows the merge.
+  content, which follows the merge. The maintainer accepted the change for merge
+  on 2026-09-16.
