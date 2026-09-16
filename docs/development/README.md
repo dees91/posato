@@ -15,6 +15,99 @@ generator-import boundaries are in
 [ADR 0003](../decisions/0003-mvp-application-architecture-baseline.md). All
 seven preparation gates and the ready checkpoint are complete.
 
+## Build from source
+
+Posato is **pre-release**. There is no official download yet:
+
+| Platform | Planned channel | Availability |
+| --- | --- | --- |
+| macOS | Signed and notarized download (Developer ID) | Not available yet |
+| iOS | App Store | Not available yet |
+
+Build from source for development and evaluation using the steps below.
+Release readiness is tracked in the
+[first-release readiness record](../tasks/executions/release-001-first-release-readiness.md).
+
+Requirements:
+
+- A Mac with Apple silicon, Xcode, and an iOS Simulator runtime that supports
+  iPhone 17 (used by the test suite).
+- Java 17 or later to launch Gradle, installed system-wide or through
+  `JAVA_HOME` so that Xcode build phases can find it; the build downloads the
+  JDK 21 it uses.
+- Android SDK Platform 36 and Build Tools 36.0.0, with `ANDROID_HOME` pointing
+  to the SDK. It is used only for shared Compose previews; Posato is not an
+  Android app.
+
+Clone the repository, then run:
+
+```shell
+git clone https://github.com/dees91/posato.git
+cd posato
+./gradlew :desktopApp:run      # run the macOS app
+./gradlew quality              # formatting, analysis, tests, and packaging checks
+```
+
+Build the iOS app for the Simulator:
+
+```shell
+xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp \
+  -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build
+```
+
+These steps need no Apple credentials, and the apps run without blocking or
+sync. Blocking, the macOS helper, and iCloud sync need Apple Development signing
+with the Posato app identifiers, iCloud container, and App Group, which are
+registered to the Posato developer team; building signed variants under another
+team currently requires changing those identifiers throughout the project. The
+iOS Simulator cannot use Screen Time controls. See the
+[development guide](#foundation-local-use) and
+[Apple development provisioning](apple-provisioning.md).
+
+## Blocking and sync limits
+
+Posato adds deliberate friction; it is not a lock you cannot open.
+
+- It does not resist a device administrator and can always be removed. Ending a
+  session early is always possible.
+- On macOS, blocking works only while Posato is running. If Posato quits, or
+  after sleep, wake, or a network change, blocking stops until you resume it in
+  Posato with administrator approval. A session received from your iPhone also
+  needs that approval before the Mac blocks anything.
+- On macOS, paused apps are quit while a session is active, including apps that
+  were already open when it started, so unsaved work in them can be lost.
+- On macOS, website blocking covers **Safari** and **Google Chrome Stable** for
+  web traffic on ports 80 and 443 while they use the system proxy settings.
+  Firefox, other browsers, in-app browsers, and apps that bypass the system
+  proxy are not covered. Visiting a paused site by its IP address is not
+  blocked, and iCloud Private Relay can bypass blocking without being detected.
+  A session does not start blocking while a VPN or a manually configured proxy
+  is active. Pages already loaded, cached, or downloaded are not erased, and the
+  pause page may occasionally not appear even though the site stays blocked.
+- On macOS, Posato uses a background helper that requires administrator approval
+  and may ask for Automation permission to show its pause page in the current
+  tab.
+- On iPhone, the system clears restrictions after a session ends and may keep
+  them for a while past the end time. Sessions shorter than 15 minutes are
+  cleared only when Posato is open at the end or when you open it again.
+- Sync is best effort. Posato cannot promise when, or whether, a change reaches
+  your other device, and it cannot wake a sleeping device.
+- If every copy of the workspace key is lost, synchronized data cannot be
+  recovered. Data already copied to another device cannot be erased remotely.
+
+## Supported platforms
+
+- macOS 15 or later on Apple silicon.
+- iOS 18 or later.
+
+Posato targets the current and previous major versions of macOS and iOS. The
+exact release test matrix is still being confirmed.
+
+The core flow was [verified end to end on one Mac and one iPhone](../tasks/executions/mvp-001-end-to-end-acceptance.md),
+including blocking, early end from either device, expiry, relaunch, and a
+device that was offline during a session.
+
 ## First production pull request
 
 `user-confirmed` (2026-08-24): PR #1 is a small production skeleton. It adds:
