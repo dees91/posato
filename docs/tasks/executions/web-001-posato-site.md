@@ -95,6 +95,9 @@
   messages to both addresses.
 - The security reporting route is missing from the support page while the
   repository is private; `RELEASE-002` adds it with the GitHub Issues link.
+- When the repository is public, `RELEASE-002` adds a repository link with an
+  inline GitHub logo to the site header (`user-confirmed`, 2026-09-16), not the
+  footer, and may restore the "open source" wording.
 - `README.md` still omits "only" in its under-15-minute iPhone summary, and the
   store listing says "open source". Both are outside this task and are
   recorded for `RELEASE-002`.
