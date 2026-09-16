@@ -78,7 +78,7 @@ The write surface is the port, setup state, `MacSetupSection`, session wiring, s
 
 ## Result
 
-`./gradlew quality` passed at `641f280`, with `DesktopMacHelperStateTest` (26), `MacOsHelperClientTest` (6), and `MacHelperSetupUiStateTest` (16) green. The physical run was attended on 2026-09-16 on notarized candidate 6, installed over build 4 by quit, replace, and open. `AC-04` ran before `AC-03`, because the Mac was already in the removed state, which saved one enable cycle. Evidence stays in the ignored run directory.
+`./gradlew quality` passed at `641f280`, with `DesktopMacHelperStateTest` (26), `MacOsHelperClientTest` (6), and `MacHelperSetupUiStateTest` (16) green. The physical run was attended on 2026-09-16 on notarized candidate 6, installed over build 4 by quit, replace, and open. `AC-04` ran before `AC-03`, because the Mac was already in the removed state, which saved one enable cycle. Evidence stays in the ignored run directory `build/verification/macos-009-removal-20260915T204247`, which holds the baseline, the state captured after each step, and the background item records before removal, after removal, after the Trash, and after deletion.
 
 | Check | Result |
 | --- | --- |
@@ -113,6 +113,6 @@ The write surface is the port, setup state, `MacSetupSection`, session wiring, s
 ## Blockers and accepted risks
 
 - **`open`: Remove retry with the right already absent.** A retried Remove relies on `AuthorizationRightRemove` returning `errAuthorizationDenied` when the right is already absent. That is unverified; the helper and daemon are out of scope.
-- **Evidence limit:** physically, removal only restores from `Idle`, because the session ends first. Restoring a non-`Idle` proxy is covered by unit tests only.
+- **Evidence limit:** physically, removal only restores from `Idle`, because the session ends first. Restoring a non-`Idle` proxy is covered by unit tests only. The verification driver cannot drive a Developer ID install or script the system dialogs, so acceptance was attended; a driver pass on the development package was declined, because it would register a second helper beside the working install.
 - **Accepted:** a pending Remove finished by a later Status shows `NOT_ENABLED` without the removal message.
 - **Criteria amended by evidence (2026-09-16):** background item records keep `allowed` after unregistering, so only `enabled` separates a removed helper; the records survive a move to the Trash and disappear when the bundle is deleted; and the Login Items pane shows a removed item until System Settings is reopened.
