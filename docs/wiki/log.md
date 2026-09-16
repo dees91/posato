@@ -1664,3 +1664,30 @@ deleted, so the acceptance criterion now reads no enabled item after removal and
 no item at all after deletion. See the
 [execution record](../tasks/executions/macos-009-in-app-removal.md) and
 [macOS enforcement topic](topics/macos-enforcement.md).
+## [2026-09-16] task | SYNC-017 CloudKit Production schema and release verification
+
+The production CloudKit schema is deployed and verified. `cktool` exports
+showed that the development container held exactly the two record types the
+code writes, but with just-in-time `QUERYABLE SORTABLE` indexes on every field;
+an index-free import without a reset removed them, and a development round
+proved that the Mac's real writes do not add fields or indexes back; the iOS
+writers use the same record types and fields, established by code reading. The
+Console preview matched the exported schema byte for byte, and the deployed
+production schema equals both it and the development export.
+
+A Developer ID Mac package and a TestFlight iPhone then linked in production on
+one Apple Account. Websites converged in both directions, a session started on
+the iPhone ended early from the Mac, and the pair removed and re-linked. A
+Mac-authored domain appearing on the iPhone proves the synchronizable Keychain
+workspace key is readable across the two signing environments, which was a
+source claim before.
+
+Storage is negligible: about 350 bytes per edit or session record against the
+65,536-byte cap, and about 2.3 MB for a year of heavy use. Deletions cost a
+record like additions because format 1 has no compaction. A full iCloud account
+reports a generic retryable status while local saves stay committed; the
+maintainer accepted disclosure only. Removal duration at scale stays unmeasured
+by hand and keeps its existing automated coverage.
+See the [execution record](../tasks/executions/sync-017-cloudkit-production.md),
+[synchronization topic](topics/cross-device-synchronization.md), and
+[ADR 0007](../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md).

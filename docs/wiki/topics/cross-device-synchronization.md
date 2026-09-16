@@ -532,8 +532,23 @@ not claim that every other device has received the update.
 
 ## Open production questions
 
-- How are production CloudKit schema, environment promotion, quota, and
-  container ownership managed for official builds and forks?
+- `observed` (2026-09-16, `SYNC-017`): the Apple MVP promotes its schema by
+  auditing the development container with `cktool` exports and deploying it in
+  the CloudKit Console. Just-in-time development schemas add `QUERYABLE
+  SORTABLE` to every field, so an index-free import precedes the deploy; the
+  production schema then holds only `PosatoWorkspaceV1` and
+  `PosatoEncryptedBundleV1` with their four `BYTES` fields and no index.
+  Release builds of both platforms link, converge both directions, share a
+  session, remove, and re-link against it; the device and Console observations
+  are `user-confirmed`, the schema exports and local aggregates `observed`.
+  Quota is negligible: one edit or session record carries about 350 bytes of
+  payload against the 65,536-byte cap, with CloudKit metadata on top as a
+  `source-claim`, and a year of heavy use is about 2.3 MB. Deletions cost a
+  record like additions, because format 1 has no compaction. Container
+  ownership for forks stays `open`.
+- How is a full iCloud account surfaced? `CKError.quotaExceeded` maps to
+  retryable on both platforms, so the status is generic while local saves stay
+  committed. `user-confirmed` (2026-09-16): disclosure only for the MVP.
 - What retry policy is appropriate without a delivery SLA?
 - How do portable authenticated completeness metadata and high-water marks
   distinguish rollback or deletion from incomplete first synchronization?
