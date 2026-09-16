@@ -45,10 +45,13 @@ viewport with 200% text, without horizontal overflow. The page remains inline,
 target-free, and without scripts or controls. The layout and copy are recorded
 in [DESIGN.md](../../../DESIGN.md#macos-browser-pause-page).
 
-`open`: the maintainer deferred the physical Safari/Chrome HTTP/HTTPS matrix;
-local rendering does not establish that browser-enforcement integration.
-The [execution record](../../tasks/executions/design-003-pause-page.md) retains
-the remaining acceptance gate.
+`observed` (2026-09-16): an attended session in the signed worktree app showed
+the styled page for blocked HTTP and HTTPS in Safari 26.5.2 and Chrome
+152.0.7977.83. Chrome light/dark and Safari dark were checked; `user-confirmed`:
+the maintainer accepted dark-only Safari verification. Ending the session
+restored navigation. These checks do not establish complete assistive-technology
+coverage. The [execution record](../../tasks/executions/design-003-pause-page.md)
+records verification and its limits.
 
 ## Accepted second-install waiting direction
 

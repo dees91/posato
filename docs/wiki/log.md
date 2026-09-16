@@ -1698,5 +1698,6 @@ See the [execution record](../tasks/executions/sync-017-cloudkit-production.md),
 The macOS fixed pause page uses the application mark, light/dark semantic
 palette, and reflowing system typography while keeping its target-free,
 self-contained content boundary. The design topic records the local rendering
-evidence and the still-open physical browser gate; DESIGN.md records layout
+evidence and the completed attended Safari/Chrome HTTP/HTTPS gate, with the
+maintainer accepting dark-only Safari verification; DESIGN.md records layout
 and copy.

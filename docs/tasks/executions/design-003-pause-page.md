@@ -1,7 +1,7 @@
 # Execution: `DESIGN-003`
 
 - **Brief:** [Pause page](../specifications/design-003-pause-page.md)
-- **Status:** `blocked`
+- **Status:** `complete`
 - **Review tier:** `standard`
 - **Implementer:** Codex
 - **Reviewer:** Independent Codex review agent
@@ -29,7 +29,7 @@ end values, UTF-8 framing, an explicit test-owned 16 KiB response-size budget, a
 
 ## Completed-change review
 
-- **Verdict:** Prepared implementation approved; physical acceptance remains open.
+- **Verdict:** Implementation approved; physical acceptance completed after review.
 - **Critical or Required findings:** None.
 - **Evidence:** Reviewer examined the complete page and new response tests,
   changed proxy tests, DESIGN.md subsection, brief, execution, ADR 0005,
@@ -57,7 +57,8 @@ change to the replayed implementation.
 | Independent focused Swift tests | Pass | Seven tests, 13 cases covering page, time, HTTP/local route, and CONNECT. |
 | Chromium rendering | Pass within checked scope | Light/dark, absent end, 320-pixel viewport at 200% text; no horizontal overflow. Checked axe-core audits report zero violations. |
 | `./gradlew quality` | Pass | Final run succeeded after rebase and review corrections, including native tests and host builds. |
-| Physical Safari/Chrome HTTP/HTTPS | Deferred | Maintainer requested preparation now and attended testing later. |
+| Physical Safari/Chrome HTTP/HTTPS | Pass | Safari 26.5.2 and Chrome 152.0.7977.83 displayed the styled page for both schemes through an active session in the signed worktree app. Chrome light/dark and Safari dark checked; maintainer explicitly waived Safari light. |
+| Session cleanup | Pass | Ended through the app; no active session, HTTP/HTTPS proxies disabled, and Safari loaded the previously blocked site. Saved selections unchanged. |
 
 SwiftLint initially rejected the HTML function's length. Extracting its inline
 CSS into a private constant resolved that finding without a rule exception.
@@ -65,14 +66,20 @@ Runtime artifacts remain ignored under the repository verification directory.
 
 ## Blockers and accepted risks
 
-The maintainer deferred AC-03 and the physical appearance rows on 2026-09-15.
-Complete the attended browser matrix through verify-posato while MACOS-009 is
-not unregistering the helper, then review the styled page before merge.
-Local Chromium rendering does not establish Safari/Chrome enforcement behavior
-or complete assistive-technology coverage. The draft PR remains unready to merge.
+The first attended attempt could not start enforcement: the registered daemon
+reported a launch failure and helper status timed out. After a Mac restart,
+Check Mac setup succeeded and the maintainer approved session activation.
+Both browsers then showed direct HTTP presentation and HTTPS navigation to the
+local page. This establishes the checked result, not the cause or a general fix
+for the earlier daemon failure.
+
+The maintainer accepted dark-only Safari verification; Chrome was checked in
+both appearances. The live Chrome page passed axe-core with zero violations.
+Local enlarged-text checks supplement this run; neither proves complete
+assistive-technology coverage. No implementation blocker remains.
 
 ## Final
 
-- **Status:** `blocked`
-- **Outcome:** Implementation and local checks complete; attended physical
-  browser acceptance remains pending.
+- **Status:** `complete`
+- **Outcome:** Implementation, independent review, automated checks, and the
+  maintainer-approved physical browser matrix are complete.
