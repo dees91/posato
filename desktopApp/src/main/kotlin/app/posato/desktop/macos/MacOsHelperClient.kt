@@ -102,8 +102,12 @@ internal class MacOsHelperClient(
     }
 
     @Synchronized
-    fun remove(): HelperResult {
-        return request(HelperOperation.Remove)
+    override fun remove(): HelperRemovalAttempt {
+        return removeAfterReconciling(
+            pendingOperation = pendingUnknownRequest?.operation,
+            reconcileEarlier = ::reconcileUnknown,
+            sendRemove = { request(HelperOperation.Remove) },
+        )
     }
 
     @Synchronized
@@ -426,8 +430,31 @@ internal fun shouldReconcileUnknownRequest(
     operation: HelperOperation,
 ): Boolean {
     return pendingUnknown &&
-        (operation == HelperOperation.Enable || operation == HelperOperation.Status)
+        (operation == HelperOperation.Enable || operation == HelperOperation.Status || operation == HelperOperation.Remove)
 }
+
+internal fun reconcilesEarlierRequestBeforeRemoval(pendingOperation: HelperOperation): Boolean {
+    return pendingOperation != HelperOperation.Remove
+}
+
+internal fun removeAfterReconciling(
+    pendingOperation: HelperOperation?,
+    reconcileEarlier: () -> HelperResult,
+    sendRemove: () -> HelperResult,
+): HelperRemovalAttempt {
+    if (pendingOperation != null && reconcilesEarlierRequestBeforeRemoval(pendingOperation)) {
+        val earlier = reconcileEarlier()
+        if (!earlier.concludesReconciliation()) {
+            return HelperRemovalAttempt(earlier, concernsRemove = false)
+        }
+    }
+    return HelperRemovalAttempt(sendRemove(), concernsRemove = true)
+}
+
+internal data class HelperRemovalAttempt(
+    val result: HelperResult,
+    val concernsRemove: Boolean,
+)
 
 /**
  * Only a reply that still says nothing about the original request keeps it pending: a lost reply and

@@ -2,6 +2,7 @@ package app.posato.desktop.macos
 
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
+import app.posato.feature.onboarding.MacHelperRemoval
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -26,6 +27,21 @@ internal class DesktopMacHelperState(
                 enableThenStatus()
             } else {
                 status
+            }
+        }
+    }
+
+    override suspend fun remove(): MacHelperRemoval {
+        return withContext(ioDispatcher) {
+            if (runCatching { verifyHelper() }.isFailure) {
+                return@withContext MacHelperRemoval.CHECK_AGAIN
+            }
+            try {
+                commands.remove().toRemoval()
+            } catch (cancellation: CancellationException) {
+                throw cancellation
+            } catch (_: Exception) {
+                MacHelperRemoval.CHECK_AGAIN
             }
         }
     }
@@ -104,4 +120,41 @@ internal class DesktopMacHelperState(
     private companion object {
         const val LOGIN_ITEMS_SETTINGS: String = "x-apple.systempreferences:com.apple.LoginItems-Settings.extension"
     }
+}
+
+internal fun HelperRemovalAttempt.toRemoval(): MacHelperRemoval {
+    val outcome = result.outcome
+    return when {
+        concernsRemove && outcome == HelperResult.Outcome.Success && result.isRemovedService() -> MacHelperRemoval.REMOVED
+        outcome == HelperResult.Outcome.Success -> MacHelperRemoval.REMOVE_AGAIN
+        concernsRemove && outcome == HelperResult.Outcome.UnknownOutcome -> MacHelperRemoval.UNCERTAIN
+        !concernsRemove -> MacHelperRemoval.CHECK_AGAIN
+        result.isUnlaunchableRegistration() -> MacHelperRemoval.CANNOT_START
+        result.needsBackgroundApproval() -> MacHelperRemoval.APPROVAL_REQUIRED
+        result.isLocalNotEnabledAnswer() -> MacHelperRemoval.NOT_ENABLED
+        result.needsProxyAttention() -> MacHelperRemoval.PROXY_ATTENTION
+        else -> MacHelperRemoval.REMOVE_AGAIN
+    }
+}
+
+private fun HelperResult.needsBackgroundApproval(): Boolean {
+    return serviceState == HelperResult.State.ApprovalRequired || requiredAction == HelperResult.RequiredAction.BackgroundApproval
+}
+
+private fun HelperResult.isRemovedService(): Boolean {
+    return serviceState == HelperResult.State.NotRegistered && ownershipPhase == HelperResult.Phase.Idle
+}
+
+private fun HelperResult.isLocalNotEnabledAnswer(): Boolean {
+    return outcome == HelperResult.Outcome.ActionRequired &&
+        (serviceState == HelperResult.State.NotRegistered || serviceState == HelperResult.State.UnavailableOrIncompatible) &&
+        ownershipPhase == HelperResult.Phase.RecoveryRequired &&
+        requiredAction == HelperResult.RequiredAction.ManualRecovery &&
+        failure == HelperResult.Failure.Lifecycle
+}
+
+private fun HelperResult.needsProxyAttention(): Boolean {
+    val recoveryFailure = requiredAction == HelperResult.RequiredAction.ManualRecovery &&
+        (failure == HelperResult.Failure.Integrity || failure == HelperResult.Failure.Storage)
+    return recoveryFailure || outcome == HelperResult.Outcome.Conflict
 }

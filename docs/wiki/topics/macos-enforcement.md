@@ -619,6 +619,23 @@ ready is named once above the session action while This Mac is collapsed, so a
 Mac that can enforce nothing is visible before a session starts. Nothing is
 named before an explicit read.
 
+`observed` (2026-09-16, MACOS-009 removal): the This Mac row removes the helper,
+and the whole removal needs no administrator prompt, because the root daemon
+restores the proxy, removes and verifies the Apply right, and the helper then
+unregisters. On a notarized package the right disappeared, the daemon left the
+system domain, and proxy settings matched the pre-removal baseline. Background
+item records keep the `allowed` bit after unregistering, so only `enabled`
+separates a removed helper; the records survive a move to the Trash with stale
+URLs and disappear once the bundle is deleted. The Login Items pane keeps
+showing a removed item until System Settings is quit and reopened, so that pane
+is not evidence on its own. Turning the background item off unregisters the
+daemon but leaves the right installed, which is why a refused removal must be
+retried after approval rather than replaced by anything the app can do alone.
+A failure that reached the daemon therefore offers Remove again instead of
+Check again, which would reinstall the right through the repair path. A session
+started after removal reports that the helper is not enabled rather than
+claiming a pause.
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the

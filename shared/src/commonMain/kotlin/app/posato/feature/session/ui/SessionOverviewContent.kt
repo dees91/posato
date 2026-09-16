@@ -55,6 +55,7 @@ internal fun SessionOverviewContent(
     onMacSetupEnable: () -> Unit = {},
     onMacSetupOpenSettings: () -> Unit = {},
     onMacSetupAnnouncement: (String) -> Unit = {},
+    onMacSetupRemove: () -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
     val hasItems = state.displayDomains().isNotEmpty() ||
@@ -97,6 +98,8 @@ internal fun SessionOverviewContent(
                 onEnable = onMacSetupEnable,
                 onOpenSettings = onMacSetupOpenSettings,
                 onAnnouncement = onMacSetupAnnouncement,
+                sessionBlocksRemoval = state.blocksHelperRemoval(),
+                onRemove = onMacSetupRemove,
             )
         }
     }
