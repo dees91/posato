@@ -425,6 +425,31 @@ from accessibility; the page has one main landmark and one level-one heading.
 All styling and mark geometry are inline, with no scripts, network assets, or
 attempted/selected target in the page, as required by ADR 0005.
 
+### posato.app website
+
+The public site at `posato.app` has a product page, the limits, the privacy
+policy, a support page, and a not-found page. It uses the pause page's surface, ink,
+primary, and muted tokens, plus surfaceContainer and outlineVariant, in light
+and dark appearance, with the same system sans-serif stack, lowercase
+wordmark, and CSS open-interval mark. Content is one left-aligned column with
+an 820 CSS-pixel maximum and a 600-pixel compact breakpoint; navigation and
+footer links keep a 44-pixel minimum height.
+
+The product page reuses the README and store-listing copy: **Pause. Then
+choose.**, the three steps, the limits summary, privacy, and a pre-release
+availability note. Real Mac and iPhone captures with synthetic choices come
+from `video/public/`, set in generic CSS device frames so they stand apart
+from either appearance: the Mac window sits on a moss-to-sage wallpaper inside
+a graphite display bezel, the iPhone capture inside a rounded graphite phone
+bezel, each with a 1-pixel outline. Frames are not Apple artwork and add no
+base, shadow, or raster asset; the iPhone hero capture is omitted in compact
+layouts.
+The policy page renders `PRIVACY.md` without typographic substitution, the
+limits page renders the Limits section of the accepted limits document, and the
+favicon is the Forest icon source. Pages have no scripts, inline styles,
+cookies, analytics, web fonts, or third-party assets, and no link to the source
+repository before it is public.
+
 ### First-install onboarding
 
 `user-confirmed` (2026-09-09): adopt the reviewed onboarding UI proposal

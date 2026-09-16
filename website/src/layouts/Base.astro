@@ -1,0 +1,48 @@
+---
+import iconUrl from "../../../docs/design/app-icon/forest.svg?url";
+import "../styles/site.css";
+
+interface Props {
+  title?: string;
+  description: string;
+  indexable?: boolean;
+}
+
+const { title, description, indexable = true } = Astro.props;
+const pageTitle = title ? `${title} - Posato` : "Posato - Pause. Then choose.";
+const canonical = new URL(Astro.url.pathname, Astro.site);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    {indexable ? <link rel="canonical" href={canonical} /> : <meta name="robots" content="noindex" />}
+    <link rel="icon" href={iconUrl} type="image/svg+xml" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="identity" href="/"><span class="mark" aria-hidden="true"></span>posato</a>
+      <nav aria-label="Site">
+        <a href="/privacy/">Privacy</a>
+        <a href="/support/">Support</a>
+      </nav>
+    </header>
+    <main>
+      <slot />
+    </main>
+    <footer class="site-footer">
+      <nav aria-label="Footer">
+        <a href="/">Posato</a>
+        <a href="/limits/">Limits</a>
+        <a href="/privacy/">Privacy policy</a>
+        <a href="/support/">Support</a>
+      </nav>
+      <p>Copyright 2026 Piotr Krawczyk and Posato contributors. Licensed under the Apache License 2.0.</p>
+    </footer>
+  </body>
+</html>

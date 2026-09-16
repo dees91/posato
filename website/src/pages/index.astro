@@ -1,0 +1,146 @@
+---
+import { Image } from "astro:assets";
+import Base from "../layouts/Base.astro";
+import iphoneActive from "../../../video/public/iphone-active.png";
+import iphoneDuration from "../../../video/public/iphone-duration.png";
+import iphoneWebsites from "../../../video/public/iphone-websites.png";
+import macDuration from "../../../video/public/mac-duration.png";
+import macWebsites from "../../../video/public/mac-websites.png";
+---
+
+<Base description="Posato blocks the websites and apps you choose for a timed pause on your Mac or iPhone. No Posato account, no analytics, and no Posato-operated server.">
+  <section class="hero">
+    <div>
+      <p class="eyebrow">Posato for Mac and iPhone</p>
+      <h1>Pause. Then choose.</h1>
+      <p class="lead">
+        Posato blocks the websites and apps you choose for a timed pause on your Mac or iPhone,
+        within the <a href="#limits">limits</a> below.
+      </p>
+      <p class="muted">No Posato account, no analytics, and no Posato-operated server.</p>
+    </div>
+    <div class="device device-iphone hero-device">
+      <div class="device-screen">
+        <Image
+          src={iphoneActive}
+          widths={[240, 480]}
+          sizes="15rem"
+          alt="iPhone showing an active Posato session with two websites and one app paused"
+          loading="eager"
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="step" aria-labelledby="choose">
+    <h2 id="choose">Choose what to pause</h2>
+    <p class="prose">
+      Add exact website domains, then choose apps separately on each device. App choices stay on that
+      device; only the shared app group's name syncs.
+    </p>
+    <div class="shots">
+      <div class="device device-mac shot-mac">
+        <div class="device-screen">
+          <Image
+            src={macWebsites}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Mac Paused items screen showing the sample domains example.com and example.net"
+          />
+        </div>
+      </div>
+      <div class="device device-iphone shot-iphone">
+        <div class="device-screen">
+          <Image
+            src={iphoneWebsites}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="iPhone Paused items screen with sample website choices"
+          />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" aria-labelledby="start">
+    <h2 id="start">Start a timed pause</h2>
+    <p class="prose">
+      Set a duration from <strong>5 minutes to 24 hours</strong>, review your choices, and start the
+      session. Posato blocks your chosen websites and apps on that device, within the <a href="#limits">limits</a> below. The session ends at the selected time or when you deliberately end
+      it early. On iPhone, restrictions can linger after the session ends.
+    </p>
+    <div class="shots">
+      <div class="device device-mac shot-mac">
+        <div class="device-screen">
+          <Image
+            src={macDuration}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Mac session setup with a 25-minute pause selected"
+          />
+        </div>
+      </div>
+      <div class="device device-iphone shot-iphone">
+        <div class="device-screen">
+          <Image
+            src={iphoneDuration}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="iPhone session duration picker"
+          />
+        </div>
+      </div>
+    </div>
+    <p class="muted">Screenshots are from the real apps and show sample choices.</p>
+  </section>
+
+  <section class="step" aria-labelledby="sync">
+    <h2 id="sync">Share the session with iCloud</h2>
+    <p class="prose">
+      Choose <strong>Sync with iCloud</strong> on one Mac and one iPhone signed in to the same Apple
+      Account to share your website list and sessions. No QR code or invitation is needed. Sync is best
+      effort, so a change may arrive late or not at all. The Mac also needs administrator approval
+      before blocking starts.
+    </p>
+  </section>
+
+  <section aria-labelledby="limits">
+    <h2 id="limits">Limits</h2>
+    <p class="prose">Posato adds deliberate friction; it is not a lock you cannot open.</p>
+    <ul class="prose">
+      <li>
+        <strong>Mac:</strong> Posato must stay open. Starting or resuming blocking needs administrator
+        approval. Paused apps are quit, so save your work before a session starts. Website blocking
+        covers Safari and Google Chrome Stable while they use the system proxy settings.
+      </li>
+      <li>
+        <strong>iPhone:</strong> Restrictions can linger after a session ends. For sessions under 15
+        minutes, they clear only when Posato is open at the end or the next time you open it.
+      </li>
+      <li>
+        <strong>Sync:</strong> Sync is best effort; a change may arrive late or not at all. If every copy of your workspace key is lost,
+        synchronized data cannot be recovered.
+      </li>
+    </ul>
+    <p class="prose">
+      Read the <a href="/limits/">full blocking and sync limits</a> for browser coverage, VPN and Private Relay behavior, resuming after sleep, and data recovery.
+    </p>
+  </section>
+
+  <section aria-labelledby="privacy">
+    <h2 id="privacy">Privacy</h2>
+    <p class="prose">
+      Posato's developer does not receive your data. Your websites, app choices, and sessions stay on
+      your devices. If you turn on iCloud sync, changes are encrypted on your device before they are
+      stored in your private iCloud database. See the <a href="/privacy/">privacy policy</a>.
+    </p>
+  </section>
+
+  <section class="note" aria-labelledby="availability">
+    <h2 id="availability" class="eyebrow">Availability</h2>
+    <p>
+      Posato is <strong>pre-release</strong>. There is no official download yet. It targets macOS 15 or
+      later on Apple silicon and iOS 18 or later.
+    </p>
+  </section>
+</Base>
