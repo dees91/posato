@@ -23,7 +23,7 @@ On macOS, the This Mac setup offers a removal action with a destructive confirma
 - `AC-01` — The removal action is reachable from This Mac, asks for destructive confirmation, and shows progress while the helper call runs.
 - `AC-02` — After a successful removal on a Developer ID package, the proxy settings match the pre-session state, the authorization right is absent, and the daemon is no longer registered, each checked independently of the app's own report.
 - `AC-03` — A helper that is not enabled or awaits background approval, a lost reply, a proxy restore conflict, and a failed rule removal or unregister each end in a truthful state with a precise next action, and never report removal as complete. Removal needs no administrator prompt: the root daemon restores and removes the right, then the helper unregisters (`observed` 2026-09-15).
-- `AC-04` — After removal, moving the app to the Trash leaves no Posato background item, and reinstalling the package and enabling the helper works again.
+- `AC-04` — After removal, no Posato background item is enabled, deleting the app leaves no Posato background item at all, and reinstalling the package and enabling the helper works again.
 
 ## Verification
 

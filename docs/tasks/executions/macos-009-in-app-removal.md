@@ -1,12 +1,12 @@
 # Execution: `MACOS-009`
 
 - **Brief:** [macos-009-in-app-removal.md](../specifications/macos-009-in-app-removal.md)
-- **Status:** `active`
+- **Status:** `complete`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code
 - **Reviewer:** independent plan-review agent
 - **Branch:** `feature/macos-009-in-app-removal`
-- **Updated:** 2026-09-15
+- **Updated:** 2026-09-16
 
 ## Decisions
 
@@ -71,18 +71,23 @@
    - **Feedback:** progress reads "Removing the background helper…", each result has its own notice and announcement, and the leaf preview gains the new states.
    - **Wiring:** `SessionOverviewContent` and `SessionScreen` pass the session-blocked flag and the callback.
 5. **DESIGN.md.** Amend the This Mac bullet: removal action, availability, confirmation, progress, refusal during a session, and each result's copy.
-6. **Physical acceptance**, attended on a Developer ID candidate built from this branch (build number 5).
-   - **Install.** Install over build 4 by quit, replace, and open.
-   - **Baseline before removal:** `security authorizationdb read app.posato.macos.proxy.apply` shows the definition; `launchctl print system/app.posato.macos.proxy-settings` finds the daemon; `scutil --proxy`; and the Posato entries in `sfltool dumpbtm`, run by the maintainer with sudo.
-   - **AC-01 and D1:** start a session and confirm Remove is disabled; end the session; remove, confirming there is no administrator prompt, with confirmation and progress shown.
-   - **AC-02:** the right is absent, the daemon is not found, proxy is back at baseline, and there is no enabled or allowed Posato daemon entry compared with the baseline.
-   - **After removal:** a session start fails truthfully; then quit and relaunch.
-   - **AC-03 subset:** turn the background item off, then remove, and see `APPROVAL_REQUIRED`.
-   - **AC-04:** move Posato to the Trash, confirm there is no Posato item in Login Items and no enabled daemon entry, reinstall, enable, and block a website.
-   - **Rerun rule:** if a completed-change review fix touches removal, mapping, or client wiring, rebuild and rerun this step.
+6. **Physical acceptance**, attended on a Developer ID candidate built from this branch, against a captured baseline, and rebuilt whenever a review fix touches removal, mapping, or client wiring. Results are below.
 7. **Closeout.** Update the wiki macOS enforcement topic, add one wiki-log entry, run `./gradlew quality`, and get an independent completed-change review.
 
 The write surface is the port, setup state, `MacSetupSection`, session wiring, strings, `DesktopMacHelperState`, `MacHelperCommands`, the `MacOsHelperClient` remove and reconciliation, tests and fakes, and DESIGN.md. No helper, daemon, or wire protocol change is made.
+
+## Result
+
+`./gradlew quality` passed at `641f280`, with `DesktopMacHelperStateTest` (26), `MacOsHelperClientTest` (6), and `MacHelperSetupUiStateTest` (16) green. The physical run was attended on 2026-09-16 on notarized candidate 6, installed over build 4 by quit, replace, and open. `AC-04` ran before `AC-03`, because the Mac was already in the removed state, which saved one enable cycle. Evidence stays in the ignored run directory.
+
+| Check | Result |
+| --- | --- |
+| `AC-01`, `D1` | Remove appears in the expanded row, is disabled during a session under "Removal is available after the session ends", and confirms destructively before running |
+| Removal | No administrator prompt appeared, and the row reported the helper removed and Posato ready for the Trash |
+| `AC-02` | The right is absent, the daemon is gone from the system domain, HTTP and HTTPS proxy match the baseline, and the daemon background item changed from `enabled` to `disabled` |
+| After removal | A session started but said the helper is not enabled instead of claiming a pause, and a relaunch kept the removed state |
+| `AC-04` | Moving the app to the Trash left both records `disabled`; emptying the Trash removed every Posato record; reinstall, enable, and a blocked website all worked |
+| `AC-03` subset | With the background item off, Remove refused with the approval notice beside Check again, and the right stayed installed |
 
 ## High-risk plan review
 
@@ -110,3 +115,4 @@ The write surface is the port, setup state, `MacSetupSection`, session wiring, s
 - **`open`: Remove retry with the right already absent.** A retried Remove relies on `AuthorizationRightRemove` returning `errAuthorizationDenied` when the right is already absent. That is unverified; the helper and daemon are out of scope.
 - **Evidence limit:** physically, removal only restores from `Idle`, because the session ends first. Restoring a non-`Idle` proxy is covered by unit tests only.
 - **Accepted:** a pending Remove finished by a later Status shows `NOT_ENABLED` without the removal message.
+- **Criteria amended by evidence (2026-09-16):** background item records keep `allowed` after unregistering, so only `enabled` separates a removed helper; the records survive a move to the Trash and disappear when the bundle is deleted; and the Login Items pane shows a removed item until System Settings is reopened.
