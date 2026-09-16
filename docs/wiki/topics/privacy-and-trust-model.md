@@ -41,6 +41,13 @@
   `https://posato.app/privacy/`, in effect from 2026-09-16 and rendered from
   that file at build time; the site has no cookies, analytics, or third-party
   assets. See [first-release readiness](first-release-readiness.md).
+- `user-confirmed` (2026-09-15, `PRIVACY-001`): the App Store privacy label
+  answer is "Data Not Collected" with no tracking. `source-claim`: Apple counts
+  data as collected when it leaves the device so that the developer or its
+  partners can access it longer than needed to serve the request in real time.
+  Synchronized data is encrypted in the person's private CloudKit database,
+  and Posato sends nothing to its developer. Manifest decisions are in the
+  [execution record](../../tasks/executions/privacy-001-manifests-label.md).
 - `open`: lifecycle rules for other non-diagnostic data are not accepted.
 
 ## Accepted Apple MVP threat model
