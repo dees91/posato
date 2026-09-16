@@ -50,8 +50,9 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   and may ask for Automation permission to show its pause page in the current
   tab.
 - On iPhone, the system clears restrictions after a session ends and may keep
-  them for a while past the end time. Sessions shorter than 15 minutes are
-  cleared only when Posato is open at the end or when you open it again.
+  them for a while past the end time. Restrictions from sessions shorter than
+  15 minutes clear only when Posato is open at the end or when you open it
+  again.
 - Sync is best effort. Posato cannot promise when, or whether, a change reaches
   your other device, and it cannot wake a sleeping device.
 - If every copy of the workspace key is lost, synchronized data cannot be
