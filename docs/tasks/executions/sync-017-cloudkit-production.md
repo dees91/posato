@@ -20,18 +20,14 @@ per workspace, so Development and Production keys cannot collide. In
 Production an extra type, field, or index is permanent; a missing one only
 fails saves until a later deploy adds it.
 
-1. **Token (maintainer).** Management token in the login Keychain via
-   `cktool save-token`; team id from `local.properties`, never recorded.
-2. **Export.** `cktool export-schema` for both environments under ignored
+1–4. **Audit (done).** Management token in the login Keychain via
+   `cktool save-token`, team id from `local.properties`, never recorded.
+   `cktool export-schema` for both environments under ignored
    `build/verification/`; the expected schema is Production's default system
-   types as exported plus the two Posato types with exactly four fields and
-   no index.
-3. **Diff Development.** Record the categorical diff; check the release
-   builds' sync paths against `main` here, before any deploy (D4).
-4. **Correct Development (D2).** Import the expected schema with `--validate`
-   (no reset for index-only extras), run one development round that deletes
-   the Development workspace and its key, and re-export until the diff is
-   empty.
+   types plus the two Posato types with four fields and no index. An import
+   with `--validate` and no reset removed the index-only extras (D2); the
+   release builds' sync paths were checked against `main` (D4); one
+   development round and a re-export confirmed an empty diff.
 5. **Deploy (maintainer).** Console → Deploy Schema Changes with an empty
    diff, comparing the preview with the recorded diff and never adding the
    `recordName` index. Re-export Production and diff it (`AC-01`).
@@ -99,6 +95,9 @@ until step 9.
   writer and `payload` field, and the iPhone would have needed an attended
   Screen Time grant; the iOS anchor writer stays covered by code reading.
 
+- `AC-01` met: the Console preview matched the expected schema beforehand, and
+  after the deploy the Production export equals Development and that schema.
+
 ## Completed-change review
 
 - **Verdict:** pending
@@ -109,6 +108,7 @@ until step 9.
 | --- | --- | --- |
 | Release build sources vs `main`, sync paths | pass | `observed`: identical for the installed Developer ID build 6 (built from the `MACOS-009` branch) and TestFlight build 1; only unrelated iOS, desktop helper, and version-token files differ |
 | Development export after the development round | pass | byte-identical to the index-free expected schema |
+| Production export after the deploy (`AC-01`) | pass | equals Development and the expected schema; two types, four `BYTES` fields, no index |
 
 ## Blockers and accepted risks
 
