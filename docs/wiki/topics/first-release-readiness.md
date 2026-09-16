@@ -48,6 +48,16 @@ website and an application. It adds release inputs: iPad stays supported with
 all orientations, so iPad copy and store screenshots are needed, and EU trader
 status must be declared before App Store submission.
 
+`observed` (2026-09-16, `SYNC-017`): the production CloudKit row is cleared.
+The deployed production schema equals the audited development schema and what
+the code writes: `PosatoWorkspaceV1` and `PosatoEncryptedBundleV1` with four
+`BYTES` fields and no index. A Developer ID Mac package and a TestFlight iPhone
+link, converge both directions, share a session, remove, and re-link against
+it. Quota and retention are disclosed rather than limited: a record carries
+about 350 bytes of payload against the 65,536-byte cap, a deletion costs a
+record like an addition, and a heavy year is about 2.3 MB (`inferred`). A full
+iCloud account keeps local saves and reports a generic retryable status.
+
 `open`: automated searches of official trademark databases were refused, so a
 manual trademark check remains with the maintainer.
 
