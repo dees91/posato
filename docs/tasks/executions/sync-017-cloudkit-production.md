@@ -28,47 +28,23 @@ fails saves until a later deploy adds it.
    with `--validate` and no reset removed the index-only extras (D2); the
    release builds' sync paths were checked against `main` (D4); one
    development round and a re-export confirmed an empty diff.
-5. **Deploy (maintainer).** Console → Deploy Schema Changes with an empty
-   diff, comparing the preview with the recorded diff and never adding the
-   `recordName` index. Re-export Production and diff it (`AC-01`).
-6. **Baseline.** Development builds removed once (step 4 or now); no
-   database reset, since step 9 uses differences. Install the release builds.
-   An existing `PosatoSyncV1` zone in Production stops the run for a
-   maintainer decision; the app never deletes zones.
-7. **Mac first (`AC-02`).** Static `codesign -dvv --entitlements :-` on the
-   nested companion in `/Applications/Posato.app` (Developer ID, Production;
-   team id not recorded). The maintainer presses **Sync with iCloud**. Proof:
-   Mac `sync_bootstrap_state` = 1 and exactly one Production zone before the
-   iPhone acts, plus the process-only log query; if it is empty, the verifier
-   grants CloudKit only to the companion, so the zone still proves it.
-8. **Join and converge (`AC-02`, `AC-03`).** The TestFlight iPhone joins. A
-   Mac-authored synthetic domain in the iPhone's Paused items proves the
-   shared synchronizable key across signing environments (replaces the
-   `source-claim`). Converge the reverse direction, start a session on one
-   device and end it early from the other, Remove workspace on both, link
-   fresh once. The maintainer presses Mac steps; posato-control provides
-   `db query`, the run directory, and iPhone snapshots by bundle id.
-9. **Measure (`AC-04`).** Before and after each step, snapshot on the Mac
-   `count(*)`, `sum(length(bundle_bytes))`, and `max(length(bundle_bytes))`
-   of `sync_accepted_bundle`, plus `count(*)` of `sync_pending_bundle`, which
-   must be 0. Length aggregates select no bytes. Record differences per step
-   and the first Remove workspace duration at its record count. Per-record and
-   heavy-use extrapolations are `inferred`; storage is a share of the quota
-   the person shares with other iCloud data.
-10. **Quota and retention (D5).** A full account keeps local saves committed
-    and reports generic retryable; the maintainer picks disclosure or a row.
-11. **Closeout.** Remove fixture domains and the workspace in Production on
-    both devices; restore development builds; `cktool remove-token` and
-    revoke the token; shorten this plan; update the sync topic question,
-    readiness row, and wiki log; `./gradlew quality` only if code changed.
+5–11. **Production run (done).** The maintainer deployed in the Console after
+   the preview matched the exported schema, then release builds ran on both
+   devices: Developer ID build 6 on the Mac and TestFlight 1.0.0 (1) on the
+   iPhone. Evidence is Mac-side aggregates, the Console zone list and static
+   `codesign` on the nested companion, because `posato-control` must not drive
+   a notarized or TestFlight build; the maintainer pressed every device step.
+   Snapshots before and after each step gave the `AC-04` deltas. The synthetic
+   fixtures were removed, and by maintainer decision the devices stay linked
+   and the management token is revoked at closeout.
 
 ## Decisions
 
 `user-confirmed` (2026-09-15): **D1** audit with `cktool` export and diff.
 **D2** extras are never deployed (brief boundary); index-only extras are
 removed by import without reset, falling back to reset and import. **D3** no tracked schema file; ADR 0007 stays the authority.
-**D4** reuse the release builds when sync paths match `main`. **D5** open
-until step 9.
+**D4** reuse the release builds when sync paths match `main`. **D5**
+(2026-09-16) disclosure only: no product change and no follow-up row.
 
 ## High-risk plan review
 
@@ -97,6 +73,25 @@ until step 9.
 
 - `AC-01` met: the Console preview matched the expected schema beforehand, and
   after the deploy the Production export equals Development and that schema.
+- `AC-02` met: the nested companion is Developer ID signed with a hardened
+  runtime, a secure timestamp and `icloud-container-environment` Production.
+  One Mac press produced exactly one `PosatoSyncV1` zone in the Production
+  private database with `sync_bootstrap_state` 1, and the TestFlight iPhone
+  then read the Mac-authored websites, so the synchronizable key works across
+  signing environments (`observed`, replacing the `source-claim`). The
+  process-only log query stayed empty as in `MACOS-008`, so the planned
+  fallback carried the claim.
+- `AC-03` met: websites converged both ways after linking, a session started on
+  the iPhone ended early from the Mac, and both devices removed the workspace
+  and linked fresh once.
+- `AC-04` partly measured. A record costs about 350 B (website change 347,
+  registration 316, session operation 349, largest 357 against the 65,536 cap),
+  and a deletion costs a record like an addition because format 1 has no
+  compaction, so a heavy year of about 6,600 records is about 2.3 MB, roughly
+  0.05 percent of the 5 GB tier (`inferred`). The first removal cleared 9
+  records in under 73 s, but the press instant was missed, so the duration is
+  not measured; `user-confirmed` (2026-09-16) accepts that bound rather than
+  repeating runs already covered by development automation and `SYNC-015`.
 
 ## Completed-change review
 
@@ -109,12 +104,17 @@ until step 9.
 | Release build sources vs `main`, sync paths | pass | `observed`: identical for the installed Developer ID build 6 (built from the `MACOS-009` branch) and TestFlight build 1; only unrelated iOS, desktop helper, and version-token files differ |
 | Development export after the development round | pass | byte-identical to the index-free expected schema |
 | Production export after the deploy (`AC-01`) | pass | equals Development and the expected schema; two types, four `BYTES` fields, no index |
+| Companion signature and Production zone (`AC-02`) | pass | static `codesign`; one zone after the Mac press; `sync_bootstrap_state` 1 |
+| Convergence, session, removal, re-link (`AC-03`) | pass | Mac aggregates per step; maintainer confirmation on the iPhone |
+| Sizes, storage and full-account behaviour (`AC-04`) | partly | sizes measured; removal duration accepted as unmeasured |
 
 ## Blockers and accepted risks
 
-- Maintainer: Console deployment, attended physical run (token done).
+- Accepted risk: removal duration at scale stays unmeasured by hand; the
+  deletion path keeps its automated development coverage.
+- Production record types and fields are now permanent; the devices stay linked.
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** met, with the `AC-04` removal duration accepted as unmeasured
