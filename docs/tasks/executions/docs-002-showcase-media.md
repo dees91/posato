@@ -1,10 +1,10 @@
 # Execution: `DOCS-002`
 
 - **Brief:** [docs-002-showcase-media.md](../specifications/docs-002-showcase-media.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** Claude Code agent
-- **Reviewer:** pending until assigned
+- **Reviewer:** separate Claude Code agent
 - **Branch:** `feature/docs-002-showcase-media`
 - **Updated:** 2026-09-16
 
@@ -112,5 +112,7 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** met; AC-01 to AC-05 verified on the corrected render, the
+  maintainer uploaded the corrected walkthrough attachment on 2026-09-16 and
+  accepted the pull request for merge.
