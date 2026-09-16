@@ -1,0 +1,34 @@
+{
+  "name": "posato-showcase",
+  "version": "1.0.0",
+  "description": "Posato README hero and walkthrough",
+  "license": "Apache-2.0",
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.525",
+    "@remotion/media": "4.0.525",
+    "@remotion/transitions": "4.0.525",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.525"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.525",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.39.5",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "lint": "eslint src --max-warnings 0 && tsc",
+    "render:hero": "remotion render Hero out/hero.mp4 --codec h264 --crf 18 --concurrency 4",
+    "render:walkthrough": "remotion render Walkthrough out/walkthrough.mp4 --codec h264 --crf 18 --concurrency 4",
+    "export:gif": "ffmpeg -y -hide_banner -loglevel error -i out/hero.mp4 -vf \"fps=12,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3\" -loop 0 ../.github/assets/demo.gif"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}
