@@ -22,27 +22,19 @@ fails saves until a later deploy adds it.
 
 1. **Token (maintainer).** Management token in the login Keychain via
    `cktool save-token`; team id from `local.properties`, never recorded.
-2. **Export.** `cktool export-schema` for Production and Development under
-   ignored `build/verification/`. The expected schema is the Production
-   default system types copied as exported, plus the two Posato types with
-   exactly the four fields and no index on any of their fields, system
-   fields included.
-3. **Diff Development.** Record the categorical diff (types, fields,
-   indexes, grants). Artifacts: sync paths of the release builds are checked
-   against `main` here, before any deploy (D4).
-4. **Correct Development (D2), only if the diff is not empty.** On the
-   development builds complete **Remove workspace** on both devices (this
-   deliberately deletes the Development workspace and its key; Mac
-   `sync_bootstrap_state` = 0, iPhone local-only). Notify the `MACOS-009` and
-   `DESIGN-003` worktrees, run `cktool reset-schema`, import the expected
-   schema with `--validate`, then run one development round (link, website
-   change, session start and early end, Remove workspace) so any field the
-   code writes but the import lacks reappears. Re-export; the diff must be
+2. **Export.** `cktool export-schema` for both environments under ignored
+   `build/verification/`; the expected schema is Production's default system
+   types as exported plus the two Posato types with exactly four fields and
+   no index.
+3. **Diff Development.** Record the categorical diff; check the release
+   builds' sync paths against `main` here, before any deploy (D4).
+4. **Correct Development (D2).** Import the expected schema with `--validate`
+   (no reset for index-only extras), run one development round that deletes
+   the Development workspace and its key, and re-export until the diff is
    empty.
-5. **Deploy (maintainer).** Console → Deploy Schema Changes, only with an
-   empty diff; the maintainer compares the Console preview with the recorded
-   diff. Never add the `recordName` index the Records browser may request.
-   Re-export Production and diff it against Development (`AC-01`).
+5. **Deploy (maintainer).** Console → Deploy Schema Changes with an empty
+   diff, comparing the preview with the recorded diff and never adding the
+   `recordName` index. Re-export Production and diff it (`AC-01`).
 6. **Baseline.** Development builds removed once (step 4 or now); no
    database reset, since step 9 uses differences. Install the release builds.
    An existing `PosatoSyncV1` zone in Production stops the run for a
@@ -99,6 +91,13 @@ until step 9.
   Development had the two types and four `BYTES` fields plus just-in-time
   `QUERYABLE SORTABLE` indexes; an import without reset made its export equal
   the index-free schema. `validate-schema` rejects Production.
+- The development round established on the Mac (21 bundles from existing local
+  policy), joined from the iPhone with no key wait, and removed the workspace;
+  the peer then reported action required, and the Mac ended local-only. Its
+  re-export still equalled the expected schema. Deviations: no session bundles
+  and no iPhone-authored website, because both use the same single bundle
+  writer and `payload` field, and the iPhone would have needed an attended
+  Screen Time grant; the iOS anchor writer stays covered by code reading.
 
 ## Completed-change review
 
@@ -108,11 +107,12 @@ until step 9.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Release build sources vs `main`, sync paths | pass | `observed`: `shared/`, adapters, companion identical for build 4 and TestFlight build 1; only unrelated iOS, desktop helper, and version-token files differ |
+| Release build sources vs `main`, sync paths | pass | `observed`: identical for the installed Developer ID build 6 (built from the `MACOS-009` branch) and TestFlight build 1; only unrelated iOS, desktop helper, and version-token files differ |
+| Development export after the development round | pass | byte-identical to the index-free expected schema |
 
 ## Blockers and accepted risks
 
-- Maintainer: token, Console deployment, attended physical run.
+- Maintainer: Console deployment, attended physical run (token done).
 
 ## Final
 
