@@ -12,8 +12,8 @@ When Posato blocks a website in Safari or Chrome, the pause page looks like Posa
 
 ## Boundaries
 
-- `observed` starting point: `BlockedPage.swift` returns unstyled HTML with a headline and one sentence, served only at `GET /blocked` on the `127.0.0.1` listener with `Cache-Control: no-store`.
-- Keep ADR 0005 limits: no attempted or selected target, query, fragment, network or third-party asset, or session-mutation endpoint. Styles and the mark are inline; use the system font stack and no JavaScript. The page stays on `127.0.0.1` (revision 17 decision).
+- `observed` starting point: `BlockedPage.swift` returns unstyled HTML with a headline and one sentence, served directly for blocked cleartext HTTP requests and at the local `GET /blocked` route on the `127.0.0.1` listener with `Cache-Control: no-store`.
+- Keep ADR 0005 limits: no attempted or selected target, query, fragment, network or third-party asset, or session-mutation endpoint. Styles and the mark are inline; use the system font stack and no JavaScript. The browser adapter’s fixed navigation destination stays on `127.0.0.1` (revision 17 decision); blocked cleartext HTTP receives the page directly at the requested origin.
 - Follow the DESIGN.md voice: no shame, urgency, or claims of perfect prevention. The route back to Posato stays text unless a safe fixed activation already exists; adding a URL scheme or other new entry point is out of scope.
 - Change only `macosHelper/Sources/PosatoMacOSHelper/BlockedPage.swift`, its tests, and a DESIGN.md pause page subsection. `MACOS-009` owns the This Mac removal UI and helper lifecycle code.
 - Non-goals: the iPhone Screen Time shield, new copy for enforcement limits, localization beyond the existing locale-aware time.
@@ -21,7 +21,7 @@ When Posato blocks a website in Safari or Chrome, the pause page looks like Posa
 ## Acceptance
 
 - `AC-01` — The page renders the mark, headline, session end, and route to Posato in both light and dark appearance, readable at default and enlarged text sizes.
-- `AC-02` — Tests assert that the response contains no script, external URL, form, or attempted host, and stays within the proxy's response bounds.
+- `AC-02` — Tests assert that the response contains no script, external URL, form, or attempted host, and stays within an explicit test-owned 16 KiB response-size budget.
 - `AC-03` — On a physical Mac, a blocked HTTP site and a blocked HTTPS site show the styled page in Safari and Google Chrome.
 - `AC-04` — DESIGN.md records the pause page layout and copy.
 

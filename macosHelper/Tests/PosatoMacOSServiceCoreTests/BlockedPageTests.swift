@@ -18,11 +18,12 @@ func givenFixedPageWhenRenderedThenItHasNoActiveOrNetworkContent(end: UInt64?) t
 }
 
 @Test(arguments: [nil, 0, 1_800_000_000_000, UInt64.max] as [UInt64?])
-func givenFixedPageWhenEncodedThenLengthMatchesAndFitsOneProxyChunk(end: UInt64?) throws {
+func givenFixedPageWhenEncodedThenLengthMatchesAndFitsPageSizeBudget(end: UInt64?) throws {
   let body = BlockedPage.html(sessionEndEpochMilliseconds: end)
   let response = BlockedPage.httpResponse(sessionEndEpochMilliseconds: end)
   let encoded = try #require(String(data: response, encoding: .utf8))
-  #expect(response.count <= BoundedHTTPProxy.receiveChunkLength)
+  let maximumPageResponseBytes = 16_384
+  #expect(response.count <= maximumPageResponseBytes)
   #expect(encoded.hasPrefix("HTTP/1.1 200 OK\r\n"))
   #expect(encoded.contains("Content-Type: text/html; charset=utf-8\r\n"))
   #expect(encoded.contains("Cache-Control: no-store\r\n"))
