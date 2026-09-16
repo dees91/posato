@@ -437,18 +437,23 @@ footer links keep a 44-pixel minimum height.
 
 The product page reuses the README and store-listing copy: **Pause. Then
 choose.**, the three steps, the limits summary, privacy, and a pre-release
-availability note. Real Mac and iPhone captures with synthetic choices come
-from `video/public/`, set in generic CSS device frames so they stand apart
-from either appearance: the Mac window sits on a moss-to-sage wallpaper inside
-a graphite display bezel, the iPhone capture inside a rounded graphite phone
-bezel, each with a 1-pixel outline. Frames are not Apple artwork and add no
-base, shadow, or raster asset; the iPhone hero capture is omitted in compact
-layouts.
+availability note. The hero plays the showcase demo rendered from `video/`
+as a silent, looping, self-hosted video in a plain outlined panel, with a
+poster for the first paint and under Reduce Motion; compact layouts omit it
+(`user-confirmed`, 2026-09-16, replacing the earlier iPhone hero capture that
+repeated the frame of the step below it). The step sections show real Mac and
+iPhone captures with synthetic choices from `video/public/`, set in generic
+CSS device frames so they stand apart from either appearance: the Mac window
+sits on a moss-to-sage wallpaper inside a graphite display bezel, the iPhone
+capture inside a rounded graphite phone bezel, each with a 1-pixel outline.
+The demo draws the same bezels, so the hero panel adds none. Frames are not
+Apple artwork and add no base or shadow.
 The policy page renders `PRIVACY.md` without typographic substitution, the
 limits page renders the Limits section of the accepted limits document, and the
 favicon is the Forest icon source. Pages have no scripts, inline styles,
 cookies, analytics, web fonts, or third-party assets, and no link to the source
-repository before it is public.
+repository before it is public; the hero video and its poster are the only
+self-hosted media.
 
 ### First-install onboarding
 

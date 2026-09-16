@@ -6,7 +6,7 @@ Posato blocks the websites and apps you choose for a timed pause on your Mac
 or iPhone, within the [limits](#limits) below.
 
 <p align="center">
-  <img src=".github/assets/demo.gif" width="960" alt="Posato on Mac and iPhone: choose paused items, set a duration, and start a session">
+  <img src=".github/assets/demo.gif" width="960" alt="Posato demo: choose websites and apps to pause on a Mac and an iPhone, set a duration, and start a session">
 </p>
 
 Watch the [full 47-second walkthrough](https://github.com/user-attachments/assets/a0358f5b-8ba9-4a4c-b462-21c218f5d843),
@@ -39,8 +39,7 @@ Add exact website domains, then choose apps on each device. App choices stay
 on that device; only the shared app group name synchronizes.
 
 <p align="center">
-  <img src="video/public/mac-websites.png" width="660" alt="Mac Paused items showing the synthetic domains example.com and example.net">
-  <img src="video/public/iphone-websites.png" width="230" alt="iPhone Paused items with synthetic website choices">
+  <a href=".github/assets/step-websites.png"><img src=".github/assets/step-websites.png" width="960" alt="Paused items on a Mac and an iPhone, side by side, showing the sample domains example.com and example.net"></a>
 </p>
 
 ### Start a timed pause
@@ -51,8 +50,7 @@ within the [limits](#limits) below. It ends at the selected time or when you
 deliberately end it early. On iPhone, restrictions can linger after it ends.
 
 <p align="center">
-  <img src="video/public/mac-duration.png" width="660" alt="Mac session setup with a 25-minute pause selected">
-  <img src="video/public/iphone-duration.png" width="230" alt="iPhone session duration picker">
+  <a href=".github/assets/step-duration.png"><img src=".github/assets/step-duration.png" width="960" alt="Session setup on a Mac and an iPhone, side by side, with a 45-minute pause selected"></a>
 </p>
 
 Screenshots and the demo show synthetic choices in the real apps; see the

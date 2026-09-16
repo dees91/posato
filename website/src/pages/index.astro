@@ -1,7 +1,6 @@
 ---
 import { Image } from "astro:assets";
 import Base from "../layouts/Base.astro";
-import iphoneActive from "../../../video/public/iphone-active.png";
 import iphoneDuration from "../../../video/public/iphone-duration.png";
 import iphoneWebsites from "../../../video/public/iphone-websites.png";
 import macDuration from "../../../video/public/mac-duration.png";
@@ -19,18 +18,31 @@ import macWebsites from "../../../video/public/mac-websites.png";
       </p>
       <p class="muted">No Posato account, no analytics, and no Posato-operated server.</p>
     </div>
-    <div class="device device-iphone hero-device">
-      <div class="device-screen">
-        <Image
-          src={iphoneActive}
-          widths={[240, 480]}
-          sizes="15rem"
-          alt="iPhone showing an active Posato session with two websites and one app paused"
-          loading="eager"
-        />
-      </div>
+    <div class="hero-demo">
+      <video
+        class="hero-video"
+        autoplay
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        width="1600"
+        height="1000"
+        poster="/media/hero-poster.jpg"
+        aria-label="Posato demo: choose websites and apps to pause on a Mac and an iPhone, set a duration, and start a session"
+      >
+        <source src="/media/hero.mp4" type="video/mp4" media="(min-width: 601px)" />
+      </video>
+      <img
+        class="hero-poster"
+        src="/media/hero-poster.jpg"
+        width="1600"
+        height="1000"
+        alt="Posato on a Mac and an iPhone with websites and apps chosen for a timed pause"
+        loading="lazy"
+      />
     </div>
-  </section>
+</section>
 
   <section class="step" aria-labelledby="choose">
     <h2 id="choose">Choose what to pause</h2>

@@ -1,13 +1,11 @@
 {
   "name": "posato-showcase",
   "version": "1.0.0",
-  "description": "Posato README hero and walkthrough",
+  "description": "Posato showcase media: README demo and walkthrough, composed stills, site hero video",
   "license": "Apache-2.0",
   "private": true,
   "dependencies": {
     "@remotion/cli": "4.0.525",
-    "@remotion/media": "4.0.525",
-    "@remotion/transitions": "4.0.525",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "remotion": "4.0.525"
@@ -18,17 +16,28 @@
     "@types/web": "0.0.166",
     "eslint": "9.39.5",
     "prettier": "3.8.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "@types/node": "24.10.13",
+    "tsx": "4.23.12"
   },
   "scripts": {
     "dev": "remotion studio",
-    "build": "remotion bundle",
     "lint": "eslint src --max-warnings 0 && tsc",
-    "render:hero": "remotion render Hero out/hero.mp4 --codec h264 --crf 18 --concurrency 4",
-    "render:walkthrough": "remotion render Walkthrough out/walkthrough.mp4 --codec h264 --crf 18 --concurrency 4",
-    "export:gif": "ffmpeg -y -hide_banner -loglevel error -i out/hero.mp4 -vf \"fps=12,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=3\" -loop 0 ../.github/assets/demo.gif"
+    "test": "tsx --test src/storyboard.test.ts",
+    "check": "npm run lint && npm test",
+    "render:hero": "remotion render Hero out/hero-master.mp4 --codec h264 --crf 18 --pixel-format yuv420p --muted --concurrency 4",
+    "render:walkthrough": "remotion render Walkthrough out/walkthrough-master.mp4 --codec h264 --crf 18 --pixel-format yuv420p --muted --concurrency 4",
+    "export:gif": "./scripts/render-gif.sh",
+    "export:web": "./scripts/render-web.sh",
+    "export:attachment": "./scripts/render-attachment.sh",
+    "stills": "remotion still StepWebsites ../.github/assets/step-websites.png && remotion still StepDuration ../.github/assets/step-duration.png && remotion still SocialPreview ../.github/assets/social-preview.png",
+    "verify": "./scripts/verify-output.sh",
+    "media": "npm run check && npm run render:hero && npm run render:walkthrough && npm run export:gif && npm run export:web && npm run export:attachment && npm run stills && npm run verify"
   },
   "sideEffects": [
     "*.css"
-  ]
+  ],
+  "allowScripts": {
+    "esbuild@0.28.1": true
+  }
 }
