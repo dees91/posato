@@ -71,13 +71,14 @@
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | `npm run check` (eslint, tsc, 10 storyboard tests) | pass | clean run before `media` |
-| `npm run media` and `npm run verify` | pass | hero 1600x1000x30/660, walkthrough 1260 frames; GIF 960x600, 12 fps, 8,972,876 bytes, infinite loop, seam YAVG 35.5 both ends; web MP4 1,296,796 bytes faststart; poster 36,609 bytes; attachment 2,209,803 bytes; stills 527,588 and 572,437 bytes; social preview 91,335 bytes |
+| `npm run media` and `npm run verify` | pass | hero 1600x1000x30/660, walkthrough 1260 frames; GIF 960x600, 12 fps, 8,969,326 bytes, infinite loop, seam YAVG 35.5 both ends; web MP4 1,297,692 bytes faststart; poster 36,609 bytes; attachment 2,216,834 bytes; stills 531,460 and 572,437 bytes; social preview 91,335 bytes |
 | Capture runs (posato-control) | pass | `build/verification/runs/20260916-2052*` to `-2210*` (Mac items, three attended session runs, iPhone install, first-install skip, apps, session); every tracked PNG checked for synthetic data |
 | Probe frames at every click and tap | pass | `video/out/probe/` reviewed: pointer tip and tap ring on the control in each scene, callouts readable, loop seam frames identical |
 | Website `npm run build` and output scan | pass | five pages; no scripts, inline styles, external assets, or em/en dashes; video and single `<source media>` present |
 | Lighthouse before (mobile / desktop) | baseline | `build/verification/docs-002/lighthouse/baseline-*`: 100/100/100/100 both; LCP 1.2 s / 0.3 s; CLS 0; 65 KiB / 54 KiB |
 | Lighthouse after (mobile / desktop) | pass, no regression | `build/verification/docs-002/lighthouse/after-*`: 100/100/100/100 both; LCP 1.4 s / 0.3 s; CLS 0; 84 KiB / 1,351 KiB; mobile fetches the poster only, never `hero.mp4` |
-| Browser check 390 and 1280 CSS px | pass | `build/verification/docs-002/browser/`; no horizontal overflow, hero panel hidden at 390 |
+| Browser check 390 and 1280 CSS px, light and dark | pass | `build/verification/docs-002/browser/preview-*.png` on the Pages preview (agent-browser): scroll width equals viewport at 390, hero panel `display: none` there; at 1280 the video plays (`paused: false`, `currentSrc` hero.mp4); with Reduce Motion the video is `display: none` and the poster `block` |
+| Pages preview headers | pass | `curl -I` on the preview: CSP with `media-src 'self'`, `X-Robots-Tag: noindex`, no cookies; `/media/hero.mp4` is `video/mp4`, the poster `image/jpeg` |
 | Independent completed-change review | pending | |
 
 ## Blockers and accepted risks

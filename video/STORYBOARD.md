@@ -51,7 +51,8 @@ Names are the files in `public/`; provenance is in `README.md`.
 | `mac-session-inactive` | Session with no active session, the two websites and one application counted |
 | `mac-websites-empty` | Paused items, Websites, only example.com, empty field |
 | `mac-websites-typed` | example.net typed, Add enabled |
-| `mac-websites` | both domains saved |
+| `mac-websites-added` | both domains saved, with the added-count hint after Add |
+| `mac-websites` | both domains saved, field at rest (stills and the site) |
 | `mac-apps-empty` | Apps tab, Make room beyond the browser. |
 | `mac-apps` | Chess chosen |
 | `mac-duration` | setup with the 25-minute default |

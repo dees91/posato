@@ -33,17 +33,17 @@ resolve a different font. Package versions are exact and locked by
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 960 x 600, 12 fps, 22 seconds, infinite loop, 8,972,876 bytes.
+- `../.github/assets/demo.gif`: 960 x 600, 12 fps, 22 seconds, infinite loop, 8,969,326 bytes.
 - `../.github/assets/step-websites.png` and `step-duration.png`: 1920 x 1080
   composed stills on a transparent background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 1,296,796 bytes, with a JPEG poster for the first paint and
+  faststart, 1,297,692 bytes, with a JPEG poster for the first paint and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
-- `out/walkthrough-attachment.mp4`: 42 seconds, 2,209,803 bytes, the file
+- `out/walkthrough-attachment.mp4`: 42 seconds, 2,216,834 bytes, the file
   the maintainer uploads as a GitHub attachment.
 
 ## Media budget and publication

@@ -125,7 +125,7 @@ export const HERO: readonly StoryScene[] = [
     end: 246,
     kind: "capture",
     layout: "macSolo",
-    mac: { captures: ["mac-websites-empty.png", "mac-websites-typed.png", "mac-websites.png"] },
+    mac: { captures: ["mac-websites-empty.png", "mac-websites-typed.png", "mac-websites-added.png"] },
     actions: websitesActions(36),
     pointerExit: { from: 140, to: 160 },
     callouts: [
@@ -171,7 +171,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     kind: "capture",
     layout: "macSolo",
     mac: {
-      captures: ["mac-session-inactive.png", "mac-websites-empty.png", "mac-websites-typed.png", "mac-websites.png"],
+      captures: ["mac-session-inactive.png", "mac-websites-empty.png", "mac-websites-typed.png", "mac-websites-added.png"],
     },
     actions: [
       { device: "mac", kind: "click", target: MAC_TARGETS.pausedItemsSidebar, at: 30, label: "Paused items", swapTo: 1 },
