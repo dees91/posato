@@ -88,8 +88,8 @@ export type Layout = { readonly mac?: FrameSpec; readonly iphone?: FrameSpec };
 export const LAYOUTS = {
   macSolo: { mac: { device: "mac", left: 250, top: 70, width: 1100 } },
   macWithPhone: {
-    mac: { device: "mac", left: 60, top: 130, width: 1060 },
-    iphone: { device: "iphone", left: 1190, top: 150, width: 340 },
+    mac: { device: "mac", left: 80, top: 120, width: 980 },
+    iphone: { device: "iphone", left: 1180, top: 140, width: 340 },
   },
   phoneLead: {
     mac: { device: "mac", left: 90, top: 190, width: 900 },

@@ -25,7 +25,7 @@ export const TitleScene: React.FC<{ readonly scene: StoryScene }> = ({ scene }) 
         )}
         <Eyebrow delay={6}>{copyString(scene, "eyebrow")}</Eyebrow>
         <Headline delay={10}>{copyString(scene, "headline")}</Headline>
-        <Support delay={18}>{copyString(scene, "support") || ""}</Support>
+        {scene.copy.support ? <Support delay={18}>{scene.copy.support}</Support> : null}
         {steps ? <Support delay={26} size={26}>{steps}</Support> : null}
         {footer ? <Support delay={26} size={26}>{footer}</Support> : null}
       </div>
