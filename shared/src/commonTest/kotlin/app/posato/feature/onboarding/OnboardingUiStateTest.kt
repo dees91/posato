@@ -576,6 +576,11 @@ private class FakeMacHelper(
         return gate?.await() ?: readiness
     }
 
+    override suspend fun remove(): MacHelperRemoval {
+        calls.add("remove")
+        return MacHelperRemoval.CHECK_AGAIN
+    }
+
     override fun openApprovalSettings() {
         calls.add("settings")
     }

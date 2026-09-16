@@ -2,6 +2,7 @@ package app.posato.di
 
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
+import app.posato.feature.onboarding.MacHelperRemoval
 import app.posato.feature.session.ui.FakeEnforcementPort
 import app.posato.feature.session.ui.FakeSessionMappings
 import app.posato.feature.sync.bootstrap.BootstrapResult
@@ -91,6 +92,10 @@ private class FakeMacHelperPort : MacHelperPort {
     }
 
     override suspend fun recheck(): MacHelperReadiness {
+        throw AssertionError("graph construction must not touch the helper port")
+    }
+
+    override suspend fun remove(): MacHelperRemoval {
         throw AssertionError("graph construction must not touch the helper port")
     }
 

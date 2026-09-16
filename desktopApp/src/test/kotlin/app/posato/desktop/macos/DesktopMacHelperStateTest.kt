@@ -1,6 +1,12 @@
 package app.posato.desktop.macos
 
+import app.posato.desktop.macos.HelperResult.Failure
+import app.posato.desktop.macos.HelperResult.Outcome
+import app.posato.desktop.macos.HelperResult.Phase
+import app.posato.desktop.macos.HelperResult.RequiredAction
+import app.posato.desktop.macos.HelperResult.State
 import app.posato.feature.onboarding.MacHelperReadiness
+import app.posato.feature.onboarding.MacHelperRemoval
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Runnable
@@ -402,6 +408,126 @@ class DesktopMacHelperStateTest {
         assertEquals(listOf("status", "status"), commands.calls.map { it.operation })
     }
 
+    @Test
+    fun `given a concluded removal or an unfinished request when mapped then success and retries are named`() {
+        val expected = listOf(
+            attempt(Outcome.Success, State.NotRegistered, Phase.Idle, RequiredAction.None, Failure.None) to MacHelperRemoval.REMOVED,
+            attempt(Outcome.Success, State.Ready, Phase.Idle, RequiredAction.None, Failure.None) to MacHelperRemoval.REMOVE_AGAIN,
+            HelperRemovalAttempt(HelperResult.unknownOutcome(), concernsRemove = true) to MacHelperRemoval.UNCERTAIN,
+            HelperRemovalAttempt(HelperResult.unknownOutcome(), concernsRemove = false) to MacHelperRemoval.CHECK_AGAIN,
+            HelperRemovalAttempt(unreconciledResult(), concernsRemove = false) to MacHelperRemoval.CHECK_AGAIN,
+            HelperRemovalAttempt(unreconciledResult(), concernsRemove = true) to MacHelperRemoval.CANNOT_START,
+        )
+
+        expected.forEach { (attempt, removal) ->
+            assertEquals(removal, attempt.toRemoval(), "attempt $attempt")
+        }
+    }
+
+    @Test
+    fun `given a local helper answer to a removal when mapped then approval or enabling is named first`() {
+        val expected = listOf(
+            attempt(
+                Outcome.ActionRequired,
+                State.ApprovalRequired,
+                Phase.RecoveryRequired,
+                RequiredAction.BackgroundApproval,
+                Failure.Lifecycle,
+            ) to MacHelperRemoval.APPROVAL_REQUIRED,
+            HelperRemovalAttempt(notRegisteredResult(), concernsRemove = true) to MacHelperRemoval.NOT_ENABLED,
+            attempt(
+                Outcome.ActionRequired,
+                State.UnavailableOrIncompatible,
+                Phase.RecoveryRequired,
+                RequiredAction.ManualRecovery,
+                Failure.Lifecycle,
+            ) to MacHelperRemoval.NOT_ENABLED,
+        )
+
+        expected.forEach { (attempt, removal) ->
+            assertEquals(removal, attempt.toRemoval(), "attempt $attempt")
+        }
+    }
+
+    @Test
+    fun `given a daemon failure during removal when mapped then proxy attention or remove again is named`() {
+        val expected = listOf(
+            attempt(Outcome.ActionRequired, State.RecoveryRequired, Phase.RestorePending, RequiredAction.ManualRecovery, Failure.Integrity) to
+                MacHelperRemoval.PROXY_ATTENTION,
+            attempt(Outcome.ActionRequired, State.RecoveryRequired, Phase.RecoveryRequired, RequiredAction.ManualRecovery, Failure.Storage) to
+                MacHelperRemoval.PROXY_ATTENTION,
+            attempt(Outcome.Conflict, State.RecoveryRequired, Phase.RecoveryRequired, RequiredAction.ProxyRecovery, Failure.None) to
+                MacHelperRemoval.PROXY_ATTENTION,
+            HelperRemovalAttempt(ruleRepairResult(), concernsRemove = true) to MacHelperRemoval.REMOVE_AGAIN,
+            attempt(Outcome.Failure, State.Ready, Phase.Idle, RequiredAction.None, Failure.Unavailable) to MacHelperRemoval.REMOVE_AGAIN,
+        )
+
+        expected.forEach { (attempt, removal) ->
+            assertEquals(removal, attempt.toRemoval(), "attempt $attempt")
+        }
+    }
+
+    private fun attempt(
+        outcome: Outcome,
+        state: State,
+        phase: Phase,
+        action: RequiredAction,
+        failure: Failure,
+    ): HelperRemovalAttempt {
+        return HelperRemovalAttempt(HelperResult(outcome, state, phase, action, failure), concernsRemove = true)
+    }
+
+    @Test
+    fun `given an unverifiable helper or a failing client when removing then check again is reported`() = runTest {
+        val untouched = FakeHelperCommands({ readyResult() }, { readyResult() })
+        val unverifiable = DesktopMacHelperState(
+            commands = untouched,
+            verifyHelper = { throw IllegalStateException("unverifiable") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+        val failingCommands = FakeHelperCommands(
+            enableBehavior = { readyResult() },
+            statusBehavior = { readyResult() },
+            removeBehavior = { throw IllegalStateException("ipc failed") },
+        )
+        val failing = DesktopMacHelperState(
+            commands = failingCommands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperRemoval.CHECK_AGAIN, unverifiable.remove())
+        assertTrue(untouched.calls.isEmpty())
+        assertEquals(MacHelperRemoval.CHECK_AGAIN, failing.remove())
+    }
+
+    @Test
+    fun `given a verified removal from the client when removing then removed is reported`() = runTest {
+        val removed = HelperResult(
+            HelperResult.Outcome.Success,
+            HelperResult.State.NotRegistered,
+            HelperResult.Phase.Idle,
+            HelperResult.RequiredAction.None,
+            HelperResult.Failure.None,
+        )
+        val commands = FakeHelperCommands(
+            enableBehavior = { readyResult() },
+            statusBehavior = { readyResult() },
+            removeBehavior = { HelperRemovalAttempt(removed, concernsRemove = true) },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        assertEquals(MacHelperRemoval.REMOVED, state.remove())
+        assertEquals(listOf("remove"), commands.calls.map { it.operation })
+    }
+
     private fun readyResult(): HelperResult {
         return HelperResult(
             outcome = HelperResult.Outcome.Success,
@@ -472,6 +598,7 @@ private class FakeHelperCommands(
     private val statusBehavior: () -> HelperResult,
     private val reconcileBehavior: (() -> HelperResult)? = null,
     pendingUnknown: Boolean = false,
+    private val removeBehavior: (() -> HelperRemovalAttempt)? = null,
 ) : MacHelperCommands {
     val calls = mutableListOf<HelperCall>()
 
@@ -493,6 +620,11 @@ private class FakeHelperCommands(
         }
         calls.add(HelperCall("status"))
         return rememberUnknown(statusBehavior())
+    }
+
+    override fun remove(): HelperRemovalAttempt {
+        calls.add(HelperCall("remove"))
+        return removeBehavior?.invoke() ?: throw AssertionError("remove was not expected")
     }
 
     private fun reconcileUnknown(): HelperResult {

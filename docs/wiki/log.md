@@ -1647,3 +1647,20 @@ nothing in the application calls the helper's Disable or Remove operations.
 See the [execution record](../tasks/executions/macos-008-developer-id-distribution.md),
 [macOS enforcement topic](topics/macos-enforcement.md), and
 [roadmap](../tasks/mvp-roadmap.md).
+
+## [2026-09-16] implementation | In-app removal of the macOS background helper
+
+`MACOS-009` adds Remove from this Mac to the expanded This Mac row. It confirms
+destructively, is refused while a session is active, and maps every helper reply
+to a truthful next action, so a failure that reached the daemon offers Remove
+again rather than a Check again that would reinstall the right. Removal needs no
+administrator prompt.
+
+Attended acceptance on a notarized package verified the absent right, the
+unregistered daemon, restored proxy settings, background item records before and
+after, and a reinstall that enabled and blocked a website again. Those records
+keep the `allowed` bit after unregistering and disappear only when the bundle is
+deleted, so the acceptance criterion now reads no enabled item after removal and
+no item at all after deletion. See the
+[execution record](../tasks/executions/macos-009-in-app-removal.md) and
+[macOS enforcement topic](topics/macos-enforcement.md).
