@@ -52,7 +52,7 @@ export const MAC_TARGETS = {
   reviewSession: [415, 721],
   startThisPause: [417, 347],
   endSessionEarly: [423, 448],
-  endSessionConfirm: [640, 520],
+  endSessionConfirm: [403, 229],
 } as const satisfies Record<string, Point>;
 
 export const IPHONE_TARGETS = {
@@ -63,7 +63,7 @@ export const IPHONE_TARGETS = {
 const OPEN_COPY = {
   eyebrow: "Posato for Mac and iPhone",
   headline: "Pause. Then choose.",
-  support: "Block the websites and apps you choose, for a timed pause.",
+  support: "A timed pause from the websites and apps you choose.",
 } as const;
 
 const CLOSE_COPY = {
@@ -111,7 +111,7 @@ const startScene = (start: number, end: number): StoryScene => ({
   ],
   pointerExit: { from: 36, to: 52 },
   callouts: [
-    { text: "Start the pause.", from: 4, to: 40 },
+    { text: "Nothing is blocked until you start.", from: 4, to: 40 },
     { text: "Restrictions active.", from: 44, to: end - start - SCENE_OVERLAP },
   ],
   copy: {},
@@ -130,7 +130,7 @@ export const HERO: readonly StoryScene[] = [
     pointerExit: { from: 140, to: 160 },
     callouts: [
       { text: "Add exact domains.", from: 10, to: 96 },
-      { text: "Saved on this device.", from: 100, to: 180 },
+      { text: "One at a time, or paste a list.", from: 100, to: 180 },
     ],
     copy: {},
   },
@@ -147,7 +147,7 @@ export const HERO: readonly StoryScene[] = [
       { device: "mac", kind: "click", target: MAC_TARGETS.reviewSession, at: 90, label: "Review session", swapTo: 2 },
     ],
     callouts: [
-      { text: "Five minutes to 24 hours.", from: 6, to: 94 },
+      { text: "5 minutes to 24 hours.", from: 6, to: 94 },
       { text: "One last look.", from: 98, to: 126 },
     ],
     copy: {},
@@ -182,7 +182,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     callouts: [
       { text: "Choose what to pause.", from: 8, to: 92 },
       { text: "Add exact domains.", from: 94, to: 172 },
-      { text: "Saved on this device.", from: 176, to: 264 },
+      { text: "One at a time, or paste a list.", from: 176, to: 264 },
     ],
     copy: {},
   },
@@ -200,7 +200,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     pointerExit: { from: 140, to: 160 },
     callouts: [
       { text: "Choose apps on this Mac.", from: 8, to: 92 },
-      { text: "Chess, chosen here.", from: 96, to: 174 },
+      { text: "On this Mac only.", from: 96, to: 174 },
     ],
     copy: {},
   },
@@ -219,7 +219,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     ],
     callouts: [
       { text: "Room for what matters.", from: 6, to: 92 },
-      { text: "Five minutes to 24 hours.", from: 94, to: 160 },
+      { text: "5 minutes to 24 hours.", from: 94, to: 160 },
       { text: "One last look.", from: 164, to: 204 },
     ],
     copy: {},
@@ -240,7 +240,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     pointerExit: { from: 140, to: 160 },
     callouts: [
       { text: "Ready to return?", from: 8, to: 92 },
-      { text: "Your choices stay ready.", from: 94, to: 174 },
+      { text: "You can always end early.", from: 94, to: 174 },
     ],
     copy: {},
   },

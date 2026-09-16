@@ -15,7 +15,18 @@ set -euo pipefail
 PC="${PC:-tools/posato-control/build/install/posato-control/bin/posato-control}"
 pc() { "${PC}" "$1" -t desktop "${@:2}"; }
 ok() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["artifacts"] or d["ok"]); sys.exit(0 if d["ok"] else 1)'; }
-shot() { echo "capture ${1}"; pc screenshot --name "$1" | ok; }
+# The window must be key so the traffic lights are colored; a driver tap alone
+# does not always leave Posato frontmost.
+focus() {
+  for _ in 1 2 3 4 5 6; do
+    osascript -e 'tell application "Posato" to activate' >/dev/null
+    sleep 0.7
+    lsappinfo info -only name "$(lsappinfo front)" | grep -q '"Posato"' && return 0
+  done
+  echo "Posato did not come to the front" >&2
+  return 1
+}
+shot() { echo "capture ${1}"; focus; pc screenshot --name "$1" | ok; }
 ready() { pc wait --for exists --text "Paused items" --role button --timeout-seconds 30 | ok; }
 
 items() {
