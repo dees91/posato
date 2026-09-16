@@ -1715,3 +1715,16 @@ records that Intel Macs, Android, Linux desktop, and Windows desktop are
 planned for later releases without dates; `mvp-scope.md` names the same
 platforms. See the
 [execution record](../tasks/executions/docs-001-showcase-readme.md).
+
+## [2026-09-16] implementation | posato.app site with the in-effect privacy policy
+
+The privacy policy is in effect from 2026-09-16 and published at
+`https://posato.app/privacy/`, rendered from `PRIVACY.md` at build time. An
+Astro site in `website/` also serves a product page with real captures in CSS
+device frames, a limits page built from the Limits section of
+`docs/product/limits-and-platforms.md`, a support page with `support@` and
+`privacy@posato.app`, and a 404 page, with no scripts, cookies, analytics, or
+third-party assets. Cloudflare Pages builds it from GitHub only when those
+sources change; `www` redirects to the apex. Pages Git integration requires
+the legacy Cloudflare Pages GitHub app, installed from the Cloudflare
+dashboard. See the [execution record](../tasks/executions/web-001-posato-site.md).
