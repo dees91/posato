@@ -1,7 +1,6 @@
 # Posato Privacy Policy
 
-> **Draft.** This text is prepared for publication at `posato.app` and is not yet
-> in effect. It describes Posato as built from this repository.
+Effective September 16, 2026.
 
 Posato is built so that its developer does not receive your data. There is no
 Posato account, no analytics, no advertising, and no Posato-operated server.

@@ -15,6 +15,10 @@
 - Release verification stays local; hosted CI remains disabled.
 - The privacy policy text in [`PRIVACY.md`](../../../PRIVACY.md) is accepted for
   `posato.app` with a `privacy@posato.app` contact.
+  `user-confirmed` (2026-09-16, `WEB-001`): it is in effect from 2026-09-16 and
+  published at `https://posato.app/privacy/`, with support at
+  `https://posato.app/support/` and `support@posato.app` until GitHub Issues is
+  public.
 - Before the repository becomes public, session-link trailers are removed by an
   authorized history rewrite and task-share links are removed from pull-request
   bodies; the maintainer's author e-mail and pull-request attachments stay.
