@@ -36,6 +36,23 @@ That evidence-only status for concrete presentation choices was superseded by
 the explicit adoption on 2026-09-07. Mock services and unimplemented product
 flows remain evidence only.
 
+## macOS browser pause page
+
+`observed` (2026-09-15): DESIGN-003 applies the application's open-interval
+mark, system typography, and light/dark semantic palette to the fixed helper
+page. Local Chromium inspection covers the missing-end branch and a 320-pixel
+viewport with 200% text, without horizontal overflow. The page remains inline,
+target-free, and without scripts or controls. The layout and copy are recorded
+in [DESIGN.md](../../../DESIGN.md#macos-browser-pause-page).
+
+`observed` (2026-09-16): an attended session in the signed worktree app showed
+the styled page for blocked HTTP and HTTPS in Safari 26.5.2 and Chrome
+152.0.7977.83. Chrome light/dark and Safari dark were checked; `user-confirmed`:
+the maintainer accepted dark-only Safari verification. Ending the session
+restored navigation. These checks do not establish complete assistive-technology
+coverage. The [execution record](../../tasks/executions/design-003-pause-page.md)
+records verification and its limits.
+
 ## Accepted second-install waiting direction
 
 `user-confirmed` (2026-09-10): the ONBOARDING-002 fresh-join wait keeps
