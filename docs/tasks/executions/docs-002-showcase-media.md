@@ -91,7 +91,7 @@
 | Probe frames at every click and tap | pass | `video/out/probe/` reviewed: pointer tip and tap ring on the control in each scene, callouts readable, loop seam frames identical |
 | Website `npm run build` and output scan | pass | five pages; no scripts, inline styles, external assets, or em/en dashes; video and single `<source media>` present |
 | Lighthouse before (mobile / desktop) | baseline | `build/verification/docs-002/lighthouse/baseline-*`: 100/100/100/100 both; LCP 1.2 s / 0.3 s; CLS 0; 65 KiB / 54 KiB |
-| Lighthouse after (mobile / desktop) | pass, no regression | `build/verification/docs-002/lighthouse/after-*`: 100/100/100/100 both; LCP 1.4 s / 0.3 s; CLS 0; 84 KiB / 1,351 KiB; mobile fetches the poster only, never `hero.mp4` |
+| Lighthouse after (mobile / desktop) | pass, no regression | `build/verification/docs-002/lighthouse/after-*` on the first render and `final-*` on the corrected one: 100/100/100/100 both; final LCP 1.6 s / 0.4 s, 115 KiB / 1,367 KiB; CLS 0; final mobile fetches the poster only, never `hero.mp4` |
 | Browser check 390 and 1280 CSS px, light and dark | pass | `build/verification/docs-002/browser/preview-*.png` on the Pages preview (agent-browser): scroll width equals viewport at 390, hero panel `display: none` there; at 1280 the video plays (`paused: false`, `currentSrc` hero.mp4); with Reduce Motion the video is `display: none` and the poster `block` |
 | Pages preview headers | pass | `curl -I` on the preview: CSP with `media-src 'self'`, `X-Robots-Tag: noindex`, no cookies; `/media/hero.mp4` is `video/mp4`, the poster `image/jpeg` |
 | Independent completed-change review | pass after corrections | separate agent on `fa1b664`; four Required findings resolved, verification rerun on the corrected render |
