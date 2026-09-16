@@ -47,7 +47,8 @@ loop_extension="$(xxd -p "${gif}" | tr -d '\n' | grep -Eo '21ff0b4e4554534341504
 test "${loop_extension}" = "21ff0b4e45545343415045322e300301000000" || { echo "GIF does not declare an infinite loop" >&2; exit 1; }
 seam="$(ffmpeg -v error -i "${gif}" -vf "select='eq(n,0)+eq(n,$((hero_frames / 2 - 1)))+eq(n,$((hero_frames * 2 / 5 - 1)))',signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-" -f null - 2>/dev/null | grep -o 'YAVG=[0-9.]*' | cut -d= -f2)"
 for value in ${seam}; do
-  awk -v v="${value}" 'BEGIN { exit !(v <= 30) }' || { echo "GIF loop seam is not near the canvas: YAVG ${value}" >&2; exit 1; }
+  # Limited-range luma of the #141B17 canvas is 37; the GIF palette lands within a few steps.
+  awk -v v="${value}" 'BEGIN { exit !(v <= 45) }' || { echo "GIF loop seam is not near the canvas: YAVG ${value}" >&2; exit 1; }
 done
 
 test "$(codec "${web}")" = "h264,yuv420p" || { echo "Web MP4 must be h264 yuv420p: $(codec "${web}")" >&2; exit 1; }
