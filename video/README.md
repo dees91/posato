@@ -1,10 +1,14 @@
 # Posato showcase media
 
-The root README uses the `Hero` composition as a looping GIF. `Walkthrough`
-adds the review screen and more time for each step. Both include a recording
-of deliberately ending the Mac session.
-Both use real Posato captures with synthetic choices, composed in the accepted
-[Posato palette](../DESIGN.md). This is documentation artwork, not a test of
+The root README uses the `Hero` composition as a looping GIF and links the
+longer `Walkthrough`; the composed `StepWebsites` and `StepDuration`
+stills are the README's step screenshots; `SocialPreview` is the repository
+card; and posato.app plays the hero as a silent looping video. Every output
+shows real Posato captures with synthetic choices inside the same generic
+device frames as the site; both videos add a synthetic cursor that names each click.
+[STORYBOARD.md](STORYBOARD.md) is the human contract and
+`src/storyboard.ts` its executable projection; `src/storyboard.test.ts`
+enforces the storyboard rules. This is documentation artwork, not a test of
 cross-device delivery or the supported OS matrix.
 
 ## Reproduce
@@ -14,79 +18,89 @@ folder:
 
 ```shell
 npm ci
-npm run lint
-npm run render:hero
-npm run export:gif
-npm run render:walkthrough
+npm run media
 ```
 
-The first render downloads Remotion's Chrome Headless Shell. Subsequent renders
-use the cached browser. All image and video inputs are local; no account,
-signing material, device, font download, or running Posato instance is needed.
-The system Arial font is used for captions; renders on another operating
-system may resolve that font differently. Versions of the JavaScript packages
-are exact and the dependency graph is locked by `package-lock.json`.
+`media` runs lint and the storyboard test, renders both masters, converts the
+GIF, the site MP4 and its poster, the walkthrough attachment, and the stills,
+then verifies every output (`npm run verify`). The first render downloads
+Remotion's Chrome Headless Shell. All inputs are local; no account, signing
+material, device, font download, or running Posato instance is needed. Titles
+and callouts use the system sans-serif stack, so another operating system may
+resolve a different font. Package versions are exact and locked by
+`package-lock.json`. For interactive editing and target calibration run
+`npm run dev -- --no-open` and open the printed local URL.
 
-- `../.github/assets/demo.gif`: 960 × 600, 12 fps, 24 seconds, no audio.
-- `out/hero.mp4`: 1600 × 1000, 30 fps, intermediate for the GIF.
-- `out/walkthrough.mp4`: 1600 × 1000, 30 fps, 47 seconds, no audio.
+Outputs:
 
-For interactive editing, run `npm run dev -- --no-open` and open the printed
-local URL. Choose Hero or Walkthrough. Animations use the frame clock; they
-do not depend on CSS transitions or wall-clock timers.
+- `../.github/assets/demo.gif`: 960 x 600, 12 fps, 22 seconds, infinite loop, 8,909,899 bytes.
+- `../.github/assets/step-websites.png` and `step-duration.png`: 1920 x 1080
+  composed stills on a transparent background.
+- `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
+  under the repository's social preview setting by hand.
+- `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
+  faststart, 1,281,500 bytes, with a JPEG poster for the first paint and
+  Reduce Motion.
+- `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
+  ignored intermediates.
+- `out/walkthrough-attachment.mp4`: 42 seconds, 2,181,040 bytes, the file
+  the maintainer uploads as a GitHub attachment.
 
 ## Media budget and publication
 
-Keep the tracked GIF at or below 3 MiB, each PNG at or below 250 KiB, and all
-tracked media together at or below 8 MiB. Keep the walkthrough below 10 MiB
-for the attachment handoff. Rendered MP4s and previews under `out/` are ignored.
-The short source recording in `public/` is tracked so a clean install can
-reproduce the walkthrough.
+The tracked GIF stays at or below 10 MiB, the site MP4 at or below 3 MiB, its
+poster at or below 300 KiB, each composed still and the social preview at or
+below 1 MiB, each capture at or below 250 KiB, and the walkthrough attachment
+below 10 MiB. `scripts/render-gif.sh` lowers frame rate, then palette, then
+size to stay within budget and never shortens the story; `scripts/verify-output.sh`
+asserts dimensions, durations, the infinite-loop extension, the loop seam,
+faststart, capture widths, and every size budget.
 
-The maintainer uploaded `out/walkthrough.mp4` as a GitHub attachment on
-2026-09-16, and the root README links to it. While the repository is private,
+The maintainer uploaded `out/walkthrough-attachment.mp4` as a GitHub attachment
+on 2026-09-16 and the root README links to it. While the repository is private
 the attachment is reachable only when signed in to GitHub; `RELEASE-002`
-rechecks the link at publication. There is still no public download channel.
+rechecks the link at publication.
 
 ## Capture provenance
 
-- `mac-*.png`: development-signed Posato at the DOCS-001 starting product
-  revision, `7a3aee7`, driven through `posato-control` on macOS. The existing
-  fixture contained `example.com`, `example.net`, and the built-in Chess app.
-  No website or application choice was changed. The active-session frame was
-  captured only after the maintainer approved the system prompt and the app
-  reported **Restrictions active.** The session was subsequently ended.
-- `mac-end.mp4`: real recording of that Mac window, including the early-end
-  confirmation and return to the inactive state. FFmpeg removes the exterior
-  window shadow, scales to 1272 × 936, converts to H.264/yuv420p at 30 fps,
-  removes metadata, and includes no audio. Playback runs at its original speed.
-- `iphone-websites.png`, `iphone-apps.png`, and `iphone-active.png`: the same
-  development revision on a physical iPhone, driven through `posato-control`.
-  The maintainer granted Screen Time access and chose one built-in application.
-  The two synthetic domains were added through onboarding. The active frame
-  follows the app reporting **Restrictions active.** This was a separate local
-  session, with iCloud left off; matching items do not demonstrate sync.
-- `iphone-duration.png`: a reduced copy of the accepted DESIGN-002
-  [store screenshot](../docs/store/en-US/listing.md#screenshots), which shows
-  the full duration controls in the real app on a larger Simulator. This frame
-  does not demonstrate Screen Time permission or enforcement.
+All captures come from the product revision `9b40a2f` (the `main` commit the
+`DOCS-002` branch started from), driven through `posato-control` by the
+scripts in `capture/`, and reduced with FFmpeg only: Mac frames to 1272 pixels
+wide, iPhone frames to 660 pixels wide. No label, timer value, service result,
+or application UI has been reconstructed or retouched.
 
-PNG preparation only reduces resolution with FFmpeg: Mac frames to 1272 pixels
-wide, iPhone frames to 660 pixels wide. No labels, timer values, service results,
-or application UI have been reconstructed or retouched. The timeline selects
-observed states; its cuts do not assert elapsed session time or iCloud delivery.
-The Mac's visible sync status is independent of its local restriction status.
-Raw verification captures, logs, and identifiers remain in ignored
-`build/verification/`; only these reviewed artwork exports are tracked.
+- `mac-*.png`: development-signed Posato on macOS. The fixture is
+  `example.com`, `example.net`, and the built-in Chess application.
+  `capture/mac-captures.sh items` removes and re-adds `example.net` and Chess
+  to capture the empty, typed, and saved states, driving the native application
+  picker by keyboard; `capture/mac-captures.sh session` selects 45 minutes,
+  reviews, starts the pause while the maintainer confirms the administrator
+  prompt, and ends it early. The setup, review, and active frames were captured
+  within one minute so their end times agree. The Session screen shows the
+  Mac's real state: an earlier session ended early and iCloud sync needing
+  attention; the Mac's visible sync status is independent of its local
+  restriction status.
+- `iphone-*.png`: the same revision on a physical iPhone 13 mini in a fresh
+  install, driven through `posato-control` after the first-install skip
+  scenario. The two synthetic domains were added through the app; the
+  maintainer granted Screen Time access and chose one built-in application in
+  the system picker (`capture/iphone-captures.sh`). The active frame follows
+  the app reporting **Restrictions active.** iCloud was left off, so matching
+  items do not demonstrate sync.
+
+The timeline selects observed states; its cuts do not assert elapsed session
+time or iCloud delivery, and the native application pickers and the
+administrator prompt are elided between captures. Raw verification captures,
+logs, and identifiers remain in ignored `build/verification/`; only these
+reviewed artwork exports are tracked.
 
 ## Dependencies and licenses
 
-This project uses Remotion 4.0.525, React 19.2.3, and TypeScript 5.9.3. Remotion
-and its CLI/media/transitions packages are development tools for rendering;
-they are not dependencies of either Posato application. The generated blank
-Remotion scaffold was adapted for this project; unused Tailwind dependencies
-were removed. ESLint 9.39.5 replaces the scaffold's 9.19.0 to address the
-plugin-kit advisory while retaining its flat-config compatibility.
+This project uses Remotion 4.0.525, React 19.2.3, TypeScript 5.9.3, and tsx for
+the storyboard test. Remotion and its CLI package are development tools for
+rendering; they are not dependencies of either Posato application. ESLint
+9.39.5 keeps the flat-config compatibility of the Remotion scaffold this
+project was adapted from.
 
 Posato's source compositions and artwork use the repository's Apache-2.0
 license. Remotion has its own [license](https://github.com/remotion-dev/remotion/blob/v4.0.525/LICENSE.md),

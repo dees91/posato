@@ -1741,3 +1741,20 @@ the extension. The macOS bundles get no manifest. The maintainer accepted the
 processed with no errors or warnings. See the
 [execution record](../tasks/executions/privacy-001-manifests-label.md) and
 [first-release readiness topic](topics/first-release-readiness.md).
+
+## [2026-09-16] implementation | Showcase media rebuilt with a cursor, device frames, and a site hero video
+
+- `DOCS-002` (roadmap revision 19) replaces the DOCS-001 demo: a data-first
+  Remotion storyboard with a tested no-dead-pause rule, a synthetic cursor and
+  tap ring naming every action, Mac and iPhone bezels matching posato.app,
+  composed side-by-side README stills, a 22-second seamless GIF at 12 fps
+  under 10 MiB, and a 42-second walkthrough for the attachment hand-off.
+- posato.app's hero plays the same demo as a silent looping MP4 (1.3 MB) in a
+  plain outlined panel; phones skip the download through `<source media>`, and
+  Lighthouse stays at 100 in every category before and after.
+- Captures were driven through posato-control at `9b40a2f`; the macOS
+  application picker is keyboard-drivable on a development-signed stage, a
+  driver tap does not keep the Posato window key (activate it before a
+  screenshot), and a fresh iPhone install needs the first-install skip
+  scenario plus the maintainer's Screen Time consent.
+- Record: `docs/tasks/executions/docs-002-showcase-media.md`.
