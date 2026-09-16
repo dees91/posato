@@ -1,7 +1,7 @@
 # Execution: `PRIVACY-001`
 
 - **Brief:** [Privacy manifests and label](../specifications/privacy-001-manifests-label.md)
-- **Status:** `blocked`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** Claude Code
 - **Reviewer:** independent Claude Code agent
@@ -15,6 +15,7 @@
 3. Add `PrivacyInfo.xcprivacy` to the app and the `ActivityMonitor` extension after maintainer decisions.
 4. Prepare label answers against `PRIVACY.md` and the diagnostics policy for maintainer acceptance.
 5. Lint, rebuild, `quality`, independent review, then a TestFlight upload for `AC-01` and `AC-04`.
+6. Set the policy URL through the App Store Connect API; the maintainer publishes the label.
 
 ## Binary scan (`AC-02`)
 
@@ -42,12 +43,13 @@ disassembly. The Kotlin framework is static, so its code is in the app executabl
 
 - App manifest declares the file timestamp category with `0A2A.1` only, following JetBrains'
   Compose Multiplatform guidance. Recorded risk: Apple's text reserves `0A2A.1` for third-party
-  SDKs and does not name the app's own metadata reads; upload validation is the check.
+  SDKs and does not name the app's own metadata reads; upload validation checked it (see Verification).
 - Extension manifest declares no accessed API category, as its binary scan found none.
 - macOS bundles get no privacy manifest: they ship with Developer ID outside the App Store, and
   required-reason declarations apply to iOS, iPadOS, tvOS, visionOS, and watchOS.
 - The App Store privacy label answers below are accepted (`AC-03`).
-- The TestFlight upload is on hold until the maintainer releases it.
+- 2026-09-16: the maintainer released the TestFlight upload and published the label in App Store
+  Connect; the API has no endpoint for the data-collection questionnaire.
 
 ## App Store privacy label (`AC-03`)
 
@@ -78,9 +80,8 @@ third-party partners can access it longer than needed to serve the request in re
 
 - `iosApp/iosApp/PrivacyInfo.xcprivacy` and `iosApp/ActivityMonitor/PrivacyInfo.xcprivacy` are
   resources of their targets; the extension gained a Resources build phase.
-- `AC-02` and `AC-03` are met. `AC-01` and `AC-04` are not yet met: the unsigned Release build
-  contains both valid manifests, and the Release archive check and upload validation wait for the
-  held upload.
+- All acceptance criteria are met. Build 1.0.0 (2), archived from `77a1819`, is on TestFlight with
+  both manifests; the App Store privacy label is published with `https://posato.app/privacy/`.
 
 ## Completed-change review
 
@@ -100,15 +101,20 @@ third-party partners can access it longer than needed to serve the request in re
 | `plutil -lint` on both manifests and `project.pbxproj` | pass | all OK |
 | Unsigned Release `iphoneos` build with manifests | pass | both bundles contain the manifest at their root, byte-identical to source |
 | `./gradlew quality` | pass | after the manifest and project change, and again after rebasing onto `1a113f4` |
-| Release archive, TestFlight upload validation and processing | blocked | upload held by the maintainer |
+| Release archive 1.0.0 (2) | pass | both manifests byte-identical to source; same `stat` and `fstat` scan result |
+| Exported IPA | pass | Apple Distribution; entitlement set as in `IOS-003`, `get-task-allow` false, CloudKit Production |
+| `altool` validation and upload | pass | `VERIFY SUCCEEDED`, `UPLOAD SUCCEEDED` |
+| App Store Connect processing | pass | build `VALID`; build upload `COMPLETE` with no errors, warnings, or infos |
+| Privacy policy URL | pass | set through the API; read back as `https://posato.app/privacy/` |
+| Label published | pass, `user-confirmed` | maintainer selected "Data Not Collected" and published |
 
 ## Blockers and accepted risks
 
-- Maintainer: release the TestFlight upload (build 2 or later) to close `AC-01` and `AC-04`.
-- Maintainer: enter the accepted label in App Store Connect with `https://posato.app/privacy/`.
-- Accepted risk: `0A2A.1` may be rejected for an app; the fix would be a manifest-only change.
+- Accepted risk: `0A2A.1` passed processing, but Apple may still report it at App Review; the fix
+  would be a manifest-only change.
+- Next TestFlight upload needs build 3 or later.
 
 ## Final
 
-- **Status:** `blocked`
-- **Outcome:** manifests and label ready; `AC-01` and `AC-04` blocked on the held upload
+- **Status:** `done`
+- **Outcome:** met

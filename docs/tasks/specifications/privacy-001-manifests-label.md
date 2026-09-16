@@ -34,5 +34,5 @@ The iOS app and its `ActivityMonitor` extension ship privacy manifests that decl
 
 ## Decisions or blockers
 
-- **Blocker (maintainer):** entering the label in App Store Connect with `https://posato.app/privacy/`.
+- **Maintainer action:** publishing the label in App Store Connect (done 2026-09-16).
 - **Decided** (`user-confirmed`, 2026-09-15): no manifest for the macOS bundles; required-reason codes are recorded in the [execution record](../executions/privacy-001-manifests-label.md).

@@ -1736,8 +1736,8 @@ extension, with tracking off and no collected data. A scan of the Release
 binaries found only Skiko's `stat` and `fstat` in the app, declared with
 `0A2A.1` as the maintainer chose from JetBrains' guidance, and no listed API in
 the extension. The macOS bundles get no manifest. The maintainer accepted the
-"Data Not Collected" label, to be entered with the published policy URL
-`https://posato.app/privacy/`. A TestFlight upload to validate the manifests is
-on hold. See the
+"Data Not Collected" label and published it with the policy URL
+`https://posato.app/privacy/`. TestFlight build 1.0.0 (2) with both manifests
+processed with no errors or warnings. See the
 [execution record](../tasks/executions/privacy-001-manifests-label.md) and
 [first-release readiness topic](topics/first-release-readiness.md).
