@@ -19,14 +19,17 @@ import macWebsites from "../../../video/public/mac-websites.png";
       </p>
       <p class="muted">No Posato account, no analytics, and no Posato-operated server.</p>
     </div>
-    <Image
-      class="hero-shot"
-      src={iphoneActive}
-      widths={[240, 480]}
-      sizes="15rem"
-      alt="iPhone showing an active Posato session with two websites and one application paused"
-      loading="eager"
-    />
+    <div class="device device-iphone hero-device">
+      <div class="device-screen">
+        <Image
+          src={iphoneActive}
+          widths={[240, 480]}
+          sizes="15rem"
+          alt="iPhone showing an active Posato session with two websites and one application paused"
+          loading="eager"
+        />
+      </div>
+    </div>
   </section>
 
   <section class="step" aria-labelledby="choose">
@@ -36,20 +39,26 @@ import macWebsites from "../../../video/public/mac-websites.png";
       only the shared app group name synchronizes.
     </p>
     <div class="shots">
-      <Image
-        class="shot-mac"
-        src={macWebsites}
-        widths={[480, 636, 960, 1272]}
-        sizes="(max-width: 600px) 70vw, 36rem"
-        alt="Mac Paused items showing the synthetic domains example.com and example.net"
-      />
-      <Image
-        class="shot-iphone"
-        src={iphoneWebsites}
-        widths={[160, 330, 660]}
-        sizes="(max-width: 600px) 24vw, 12rem"
-        alt="iPhone Paused items with synthetic website choices"
-      />
+      <div class="device device-mac shot-mac">
+        <div class="device-screen">
+          <Image
+            src={macWebsites}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Mac Paused items showing the synthetic domains example.com and example.net"
+          />
+        </div>
+      </div>
+      <div class="device device-iphone shot-iphone">
+        <div class="device-screen">
+          <Image
+            src={iphoneWebsites}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="iPhone Paused items with synthetic website choices"
+          />
+        </div>
+      </div>
     </div>
   </section>
 
@@ -61,20 +70,26 @@ import macWebsites from "../../../video/public/mac-websites.png";
       early. On iPhone, restrictions can linger after it ends.
     </p>
     <div class="shots">
-      <Image
-        class="shot-mac"
-        src={macDuration}
-        widths={[480, 636, 960, 1272]}
-        sizes="(max-width: 600px) 70vw, 36rem"
-        alt="Mac session setup with a 25-minute pause selected"
-      />
-      <Image
-        class="shot-iphone"
-        src={iphoneDuration}
-        widths={[160, 330, 660]}
-        sizes="(max-width: 600px) 24vw, 12rem"
-        alt="iPhone session duration picker"
-      />
+      <div class="device device-mac shot-mac">
+        <div class="device-screen">
+          <Image
+            src={macDuration}
+            widths={[480, 636, 960, 1272]}
+            sizes="(max-width: 600px) 70vw, 36rem"
+            alt="Mac session setup with a 25-minute pause selected"
+          />
+        </div>
+      </div>
+      <div class="device device-iphone shot-iphone">
+        <div class="device-screen">
+          <Image
+            src={iphoneDuration}
+            widths={[160, 330, 660]}
+            sizes="(max-width: 600px) 24vw, 12rem"
+            alt="iPhone session duration picker"
+          />
+        </div>
+      </div>
     </div>
     <p class="muted">Screenshots show synthetic choices in the real apps.</p>
   </section>

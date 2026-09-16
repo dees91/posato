@@ -8,6 +8,7 @@
   --container: #f6f6f0;
   --outline-variant: #dedfd5;
   --outline: #a3afa2;
+  --bezel: #0f1411;
   --content-max: 51.25rem;
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   color: var(--ink);
@@ -238,10 +239,8 @@ code {
   letter-spacing: -0.1125rem;
 }
 
-.hero-shot {
+.hero-device {
   width: 15rem;
-  height: auto;
-  border-radius: 1.5rem;
 }
 
 .step {
@@ -264,22 +263,40 @@ code {
   margin: 1.5rem 0 1rem;
 }
 
-.shots img {
-  display: block;
-  height: auto;
+/* Device frames: generic CSS bezels whose sizes scale with each frame's width. */
+.device {
+  container-type: inline-size;
   min-width: 0;
+}
+
+.device-screen img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.device-iphone .device-screen {
+  overflow: hidden;
+  border: 3.5cqi solid var(--bezel);
+  border-radius: 15cqi;
+  outline: 1px solid var(--outline);
+}
+
+.device-mac .device-screen {
+  padding: 5cqi 6cqi;
+  border: 1.8cqi solid var(--bezel);
+  border-radius: 2.6cqi;
+  outline: 1px solid var(--outline);
+  background: linear-gradient(160deg, #a7c3a2, #2e5d50);
 }
 
 .shot-mac {
   flex: 3 1 0;
-  width: 100%;
 }
 
 .shot-iphone {
   flex: 1 1 0;
-  width: 100%;
   max-width: 13rem;
-  border-radius: 0.875rem;
 }
 
 .note {
@@ -325,7 +342,7 @@ code {
     padding-top: 1rem;
   }
 
-  .hero-shot {
+  .hero-device {
     display: none;
   }
 
