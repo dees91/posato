@@ -1,7 +1,7 @@
 # Execution: `DOCS-001`
 
 - **Brief:** [Showcase README](../specifications/docs-001-showcase-readme.md)
-- **Status:** `blocked`
+- **Status:** `done`; walkthrough linked 2026-09-16, merge pending maintainer acceptance
 - **Review tier:** `standard`
 - **Implementer:** Codex
 - **Reviewer:** Independent Codex completed-change review
@@ -52,11 +52,12 @@ An optional editorial finding noted that the hero cut ended during the app's
 asynchronous restriction cleanup. Hero now skips the source clip's first three
 seconds and holds the settled inactive state; Walkthrough is unchanged. Focused
 re-review confirmed the final frame, lint, GIF decoding, and the corrected
-inbound development-guide anchor. The subsequent maintainer review identified a Required omission of the blocking mechanism; it is now explicit in the introduction and session instructions. Four prose suggestions were also accepted: descriptive heading, linked provenance, a clearer value sentence, and the explicit one-Mac/one-iPhone sync bound. The maintainer requested a lighter README; build and limit details now route to docs. Independent review of these corrections found no Critical or Required defects. The cosmetic warning-state media suggestion was declined: the captures accurately show local restriction status, and a uniform crop would cut session content as the layout changes. No outstanding blocking findings. No hosted
+inbound development-guide anchor. The subsequent maintainer review identified a Required omission of the blocking mechanism; it is now explicit in the introduction and session instructions. Four prose suggestions were also accepted: descriptive heading, linked provenance, a clearer value sentence, and the explicit one-Mac/one-iPhone sync bound. The maintainer requested a lighter README; build and limit details now route to docs. Independent review of these corrections found no Critical or Required defects. The cosmetic warning-state media suggestion was declined: the captures accurately show local restriction status, and a uniform crop would cut session content as the layout changes. A maintainer follow-up review left three advisory findings on the relocation; `02d21d4` moved the user-facing limits, availability table, and supported platforms verbatim to `docs/product/limits-and-platforms.md`, restored the release-matrix caveat and the second iPhone clearing path, and recorded the maintainer's planned later platforms (Intel Macs, Android, Linux desktop, Windows desktop, no dates) there and in `mvp-scope.md`. No outstanding blocking findings. No hosted
 Codex review is requested for this documentation/media change.
 
 ## Blockers
 
-The maintainer must upload the finished walkthrough as a GitHub attachment and
-accept the final README. The attachment URL is deliberately absent until that
-upload. This task cannot be marked done before the link and acceptance exist.
+None open. The maintainer uploaded the walkthrough as a GitHub attachment on
+2026-09-16 and the README links to it. The attachment answers 404 to signed-out
+visitors while the repository is private; `RELEASE-002` rechecks it at
+publication. Acceptance of the final README is the pull-request merge.

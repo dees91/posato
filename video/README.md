@@ -43,9 +43,10 @@ for the attachment handoff. Rendered MP4s and previews under `out/` are ignored.
 The short source recording in `public/` is tracked so a clean install can
 reproduce the walkthrough.
 
-The maintainer uploads `out/walkthrough.mp4` as a GitHub attachment and provides
-its resulting URL for the root README's full-walkthrough link. An upload is
-still pending; there is no invented attachment URL or public download channel.
+The maintainer uploaded `out/walkthrough.mp4` as a GitHub attachment on
+2026-09-16, and the root README links to it. While the repository is private,
+the attachment is reachable only when signed in to GitHub; `RELEASE-002`
+rechecks the link at publication. There is still no public download channel.
 
 ## Capture provenance
 

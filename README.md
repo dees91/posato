@@ -9,6 +9,9 @@ or iPhone, within the [limits](#limits) below.
   <img src=".github/assets/demo.gif" width="960" alt="Posato on Mac and iPhone: choose paused items, set a duration, and start a session">
 </p>
 
+Watch the [full 47-second walkthrough](https://github.com/user-attachments/assets/a0358f5b-8ba9-4a4c-b462-21c218f5d843),
+which adds the review screen and more time for each step.
+
 [Quick start](#quick-start) · [How it works](#how-it-works) ·
 [Limits](#limits) · [Privacy](#privacy) · [Documentation](#project-documentation)
 

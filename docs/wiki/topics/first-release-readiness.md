@@ -39,6 +39,16 @@ their roadmap owners (revision 15) are:
 | `posato.app` site with the hosted privacy policy, its contact, and support routes (moved from `PRIVACY-001` in revision 17) | `WEB-001` |
 | Supported platform matrix, history and link cleanup, final verdict, publication hand-off | `RELEASE-002` |
 
+`observed` (2026-09-16, `DOCS-001`): the README row is implemented on its pull
+request: hero GIF, walkthrough attachment link, quick start routed to the
+development guide, and the user-facing limits, availability table, and
+supported platforms relocated verbatim to
+[`docs/product/limits-and-platforms.md`](../../product/limits-and-platforms.md).
+`user-confirmed`: Intel Macs, Android, Linux desktop, and Windows desktop are
+planned for later releases with no dates. The walkthrough attachment answers
+404 to signed-out visitors while the repository is private; `RELEASE-002`
+rechecks it at publication.
+
 `observed` (2026-09-15, `IOS-003`): the iOS row is cleared for internal
 TestFlight. A distribution-signed Release build with Family Controls, the
 shared version, and an encryption declaration is processed for record Posato,
