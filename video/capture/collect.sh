@@ -14,7 +14,9 @@ video_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 command -v ffmpeg >/dev/null || { echo "ffmpeg is required" >&2; exit 1; }
 
 for name in "$@"; do
-  source="$(ls -t "${runs_dir}"/*/screenshots/"${name}.png" 2>/dev/null | head -1 || true)"
+  # Desktop runs write screenshots/<name>.png; iPhone driver runs write
+  # driver/<device>/screenshot-<index>-<name>.png.
+  source="$(ls -t "${runs_dir}"/*/screenshots/"${name}.png" "${runs_dir}"/*/driver/*/screenshot-*-"${name}.png" 2>/dev/null | head -1 || true)"
   test -n "${source}" || { echo "No run holds screenshots/${name}.png" >&2; exit 1; }
   echo "${source}"
   case "${name}" in
