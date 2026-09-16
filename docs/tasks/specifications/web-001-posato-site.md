@@ -12,7 +12,7 @@
 
 ## Boundaries
 
-- Site source lives in `website/` (Astro) and builds the policy from the repository's `PRIVACY.md`, the screenshots from `video/public/`, and the favicon from `docs/design/app-icon/forest.svg`, never from copies. Pages hosting on Cloudflare builds from GitHub only when one of those sources changes.
+- Site source lives in `website/` (Astro) and builds the policy from the repository's `PRIVACY.md`, the screenshots from `video/public/`, and the favicon from `docs/design/app-icon/forest.svg`, and a `/limits/` page from the Limits section of `docs/product/limits-and-platforms.md`, never from copies. Pages hosting on Cloudflare builds from GitHub only when one of those sources changes.
 - Copy reuses accepted text (README, store listing, limits page) and keeps every limit it summarizes accurate; nothing claims a download, store availability, or public source that does not exist yet. No links to the private GitHub repository until `RELEASE-002`.
 - No cookies, analytics, third-party scripts, fonts, or network assets; strict security headers.
 - Email: `privacy@posato.app` (exists) and a new `support@posato.app`, both forwarding to the maintainer's mailbox. Security reporting stays as `SECURITY.md` defines it.
@@ -21,8 +21,8 @@
 ## Acceptance
 
 - `AC-01` — `PRIVACY.md` states it is in effect from 2026-09-16 instead of a draft, and `/privacy/` renders exactly that text.
-- `AC-02` — `/`, `/privacy/`, `/support/`, and a 404 page render in light and dark appearance at phone and desktop widths, with only first-party assets and the security headers.
-- `AC-03` — The Cloudflare Pages project builds from `main` with watch paths limited to `website/`, `PRIVACY.md`, `video/public/`, and `docs/design/app-icon/forest.svg`, and serves `posato.app` over HTTPS with `www.posato.app` redirecting to it.
+- `AC-02` — `/`, `/limits/`, `/privacy/`, `/support/`, and a 404 page render in light and dark appearance at phone and desktop widths, with only first-party assets and the security headers.
+- `AC-03` — The Cloudflare Pages project builds from `main` with watch paths limited to `website/`, `PRIVACY.md`, `video/public/`, `docs/design/app-icon/forest.svg`, and `docs/product/limits-and-platforms.md`, and serves `posato.app` over HTTPS with `www.posato.app` redirecting to it.
 - `AC-04` — Mail to `support@posato.app` and `privacy@posato.app` reaches the maintainer.
 
 ## Verification

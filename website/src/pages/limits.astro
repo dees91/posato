@@ -1,0 +1,23 @@
+---
+import Base from "../layouts/Base.astro";
+import { compiledContent } from "../../../docs/product/limits-and-platforms.md";
+
+// Publish only the Limits section; the rest of the page links to repository documents.
+const html = await compiledContent();
+const start = html.indexOf('<h2 id="limits">');
+const end = html.indexOf("<h2 ", start + 1);
+if (start < 0 || end < 0) {
+  throw new Error("docs/product/limits-and-platforms.md no longer has a Limits section");
+}
+const limits = html.slice(start, end).replace('<h2 id="limits">Limits</h2>', "");
+---
+
+<Base title="Limits" description="What Posato's blocking and sync can and cannot do on Mac and iPhone.">
+  <div class="prose">
+    <h1>Limits</h1>
+    <Fragment set:html={limits} />
+    <p>
+      Posato targets macOS 15 or later on Apple silicon and iOS 18 or later. See the <a href="/privacy/">privacy policy</a> for what Posato keeps on your devices and in iCloud.
+    </p>
+  </div>
+</Base>

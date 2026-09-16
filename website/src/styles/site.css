@@ -7,6 +7,7 @@
   --muted: #626b63;
   --container: #f6f6f0;
   --outline-variant: #dedfd5;
+  --outline: #a3afa2;
   --content-max: 51.25rem;
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   color: var(--ink);
@@ -23,13 +24,14 @@
     --muted: #afb9ae;
     --container: #232e26;
     --outline-variant: #39453b;
+    --outline: #6d816e;
   }
 }
 
 @media (prefers-contrast: more) {
   :root {
     --muted: var(--ink);
-    --outline-variant: var(--ink);
+    --outline-variant: var(--outline);
   }
 }
 
