@@ -13,13 +13,15 @@ import Testing
   let denied = try await sendLoopbackRequest(
     port: port,
     request:
-      "GET http://example.com/private HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"
+      "GET http://example.com/private-canary?query-canary HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"
   )
   #expect(denied.hasPrefix("HTTP/1.1 200 OK\r\n"))
   #expect(denied.contains("Cache-Control: no-store"))
   #expect(denied.contains("Connection: close"))
   #expect(denied.contains("This site is paused"))
   #expect(!denied.contains("example.com"))
+  #expect(!denied.contains("private-canary"))
+  #expect(!denied.contains("query-canary"))
   #expect(!denied.lowercased().contains("<script"))
 }
 

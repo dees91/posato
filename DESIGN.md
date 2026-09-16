@@ -404,6 +404,27 @@ a normal-size screenshot alone does not prove coverage.
 
 ## Current Screens and Interactions
 
+### macOS browser pause page
+
+The fixed local page uses the application surface, ink, primary, and muted
+text tokens in light and dark appearance, with a system sans-serif stack.
+The open-interval mark and lowercase wordmark lead one left-aligned column,
+centered in the viewport with a 600 CSS-pixel maximum width at default text
+size. The mark preserves the application's asymmetric 24 × 32 geometry.
+
+The headline reads **This site is paused until {local time}**, or **This site
+is paused** when the session end is unavailable. Supporting text reads
+“Return to Posato to change this session.” It is a plain instruction. The
+page offers no session controls or app-activation link. The displayed end is
+the session end at page load; there is no countdown, refresh, or animation.
+
+Use rem-based typography and spacing, wrapping content, and natural vertical
+scrolling at enlarged text sizes or short viewports. Increased contrast uses
+the primary text color for supporting copy. The decorative mark is hidden
+from accessibility; the page has one main landmark and one level-one heading.
+All styling and mark geometry are inline, with no scripts, network assets, or
+attempted/selected target in the page, as required by ADR 0005.
+
 ### First-install onboarding
 
 `user-confirmed` (2026-09-09): adopt the reviewed onboarding UI proposal
