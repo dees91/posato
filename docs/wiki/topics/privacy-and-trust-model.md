@@ -37,9 +37,10 @@
   erasure, and custom backup policy remain outside MODEL-001.
 - `user-confirmed` (2026-09-14): the public privacy policy text in
   [`PRIVACY.md`](../../../PRIVACY.md) is accepted for publication on
-  `posato.app` with a `privacy@posato.app` contact; hosting and the mailbox
-  remain with `WEB-001` (roadmap revision 17). See
-  [first-release readiness](first-release-readiness.md).
+  `posato.app` with a `privacy@posato.app` contact. `WEB-001` publishes it at
+  `https://posato.app/privacy/`, in effect from 2026-09-16 and rendered from
+  that file at build time; the site has no cookies, analytics, or third-party
+  assets. See [first-release readiness](first-release-readiness.md).
 - `open`: lifecycle rules for other non-diagnostic data are not accepted.
 
 ## Accepted Apple MVP threat model
