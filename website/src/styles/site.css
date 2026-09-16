@@ -248,10 +248,6 @@ code {
   border-top: 1px solid var(--outline-variant);
 }
 
-.step:first-of-type {
-  margin-top: 3rem;
-}
-
 .step h2 {
   margin-top: 1.5rem;
 }
