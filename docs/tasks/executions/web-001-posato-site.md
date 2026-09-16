@@ -74,6 +74,10 @@
   correction, the device frames, and the copy changes, with no new findings.
 - **Advisory findings:** accepted the Optional contrast-token and
   `Permissions-Policy` corrections and added `/limits/` to `AC-02`.
+- **Hosted review (first pass, `9d40543`):** one P1, that the contact addresses
+  did not deliver. It was resolved by the separate mail-routing work and the
+  maintainer's delivery confirmation; the only repository change is this
+  record.
 
 ## Verification
 
@@ -85,14 +89,12 @@
 | `AC-02` local browser | pass | Chrome at 390 and 1280 CSS pixels in light and dark, no horizontal overflow; screenshots under ignored `build/verification/web-001/` |
 | `AC-02` preview | pass | Pull-request preview at build `201730a`: 200 for every page, 404 for an unknown path, security headers, `X-Robots-Tag: noindex`, no cookies, no CSP console errors |
 | `AC-03` hosting | partial | Project, watch paths, active custom domain, `http` to `https`, and `www` 301 with path and query verified; the apex serves 404 until the first production build from `main` |
-| `AC-04` mail | blocked | Test messages to `support@` and `privacy@` did not arrive; mail routing setup is handled in a separate maintainer workstream |
+| `AC-04` mail | pass | After separate mail-routing work, the maintainer confirmed on 2026-09-16 that test messages to `support@` and `privacy@` reached the maintainer's mailbox |
 
 ## Blockers and accepted risks
 
 - `AC-03` production content needs the merge to `main`. After the merge, check
   with `curl` that the apex serves the pages, headers, and 404 without cookies.
-- `AC-04` stays blocked until the separate mail-routing work delivers test
-  messages to both addresses.
 - The security reporting route is missing from the support page while the
   repository is private; `RELEASE-002` adds it with the GitHub Issues link.
 - When the repository is public, `RELEASE-002` adds a repository link with an
@@ -105,5 +107,5 @@
 ## Final
 
 - **Status:** `active`
-- **Outcome:** `AC-01` and `AC-02` met; `AC-03` met except production content,
-  which follows the merge; `AC-04` blocked on separate mail-routing work.
+- **Outcome:** `AC-01`, `AC-02`, and `AC-04` met; `AC-03` met except production
+  content, which follows the merge.
