@@ -2,7 +2,7 @@
 
 - **Review tier:** `high-risk`
 - **Tier reason:** Distribution signing, the Family Controls distribution entitlement, and creating an App Store Connect record and uploads are account-level release operations.
-- **Dependencies:** completed `RELEASE-001` (merged as `18a17b2`, blocked verdict with this row as owner). The upload also needs the `DESIGN-002` application icon.
+- **Dependencies:** completed `RELEASE-001` (merged as `f96c0c6`, blocked verdict with this row as owner). The upload also needs the `DESIGN-002` application icon.
 - **Integration group:** `PR-IOS-DISTRIBUTION`, roadmap wave Release/R2, in parallel with `MACOS-008` and `DESIGN-002`.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md), [RELEASE-001 record](../executions/release-001-first-release-readiness.md) (AC-04 rows), [architecture baseline](../../decisions/0003-mvp-application-architecture-baseline.md), [threat model](../../security/apple-mvp-threat-model.md), [Apple provisioning](../../development/apple-provisioning.md), [`posato-provisioning`](../../../tools/posato-provisioning/README.md).
 

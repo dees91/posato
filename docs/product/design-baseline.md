@@ -23,7 +23,7 @@ Current authoritative Apple design evidence is summarized in the
 and complete reusable design system in the real MVP in one pull request. Keep
 the visual result practically 1:1 while adapting Compose code to the existing
 ViewModels, persistence, and native application-selection boundaries. The
-frozen reference is revision `c879ff7df7ad29f286b7976756e707b0179520d3`.
+frozen reference is revision `27da7bdd6c831213a65b71db59a57cc5df70f174`.
 
 This supersedes the previous deferral of exact tokens, component visuals,
 and navigation. The root `DESIGN.md` now owns those specifications; the

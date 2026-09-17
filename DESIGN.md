@@ -68,7 +68,7 @@ The maintainer accepted the native prototype and its design-system adoption on
 geometry, platform-color-only theme, and top segmented navigation. The original
 2026-08-25 brand promise, privacy boundary, and respectful tone remain.
 
-The reference is the native prototype at `c879ff7`. Product components are
+The reference is the native prototype at `27da7bd`. Product components are
 adapted into `shared/core/designsystem`; the real app does not depend on a
 prototype module. Preserve visual hierarchy, palette, typography, geometry,
 and interaction patterns practically one-to-one while adapting code to the

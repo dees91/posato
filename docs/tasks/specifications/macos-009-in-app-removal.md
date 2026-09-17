@@ -2,7 +2,7 @@
 
 - **Review tier:** `high-risk`
 - **Tier reason:** Removal changes system proxy ownership, deletes a custom Authorization Services right, and unregisters a root daemon; a wrong order can leave the proxy pointing at a daemon that no longer exists.
-- **Dependencies:** completed `MACOS-008` (merged as `9e7e677`), which transferred removal here in roadmap revision 18.
+- **Dependencies:** completed `MACOS-008` (merged as `73ecb2b`), which transferred removal here in roadmap revision 18.
 - **Integration group:** `PR-MAC-REMOVAL`, roadmap wave Release/R2, in parallel with `DESIGN-003` and `SYNC-017`.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md) (revision 18), [macOS helper ADR](../../decisions/0004-macos-helper-ownership-and-lifecycle.md) (update, repair, disablement, and removal), [browser enforcement ADR](../../decisions/0005-macos-browser-enforcement-and-coexistence.md), [DESIGN.md](../../../DESIGN.md) (This Mac), [threat model](../../security/apple-mvp-threat-model.md), [MACOS-008 record](../executions/macos-008-developer-id-distribution.md).
 

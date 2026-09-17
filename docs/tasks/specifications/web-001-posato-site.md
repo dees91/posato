@@ -2,7 +2,7 @@
 
 - **Review tier:** `standard`
 - **Tier reason:** A static site with accepted copy changes no product behavior; publishing the policy as in effect and the public claims still get an independent completed-change review before the custom domain serves them.
-- **Dependencies:** completed `DESIGN-002` (icon) and `DOCS-001` (demo, merged as `33495be`). Unblocks the privacy policy URL for `PRIVACY-001`.
+- **Dependencies:** completed `DESIGN-002` (icon) and `DOCS-001` (demo, merged as `6a0ca5f`). Unblocks the privacy policy URL for `PRIVACY-001`.
 - **Integration group:** `PR-WEBSITE`, roadmap wave Release/R2.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md) (revision 17), [privacy policy](../../../PRIVACY.md), [limits and platforms](../../product/limits-and-platforms.md), [store listing](../../store/en-US/listing.md), [DESIGN.md](../../../DESIGN.md) (voice, palette, icon), [security policy](../../../SECURITY.md).
 

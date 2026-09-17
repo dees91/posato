@@ -10,7 +10,7 @@
 
 ## Starting facts
 
-- `observed` (2026-09-14, on `c8112c4`): Release had no app entitlements; the Debug-only `iphoneos`
+- `observed` (2026-09-14, on `e1ffab8`): Release had no app entitlements; the Debug-only `iphoneos`
   condition gated six app Swift branches; version and build number repeated per target; `AppIcon`
   was not selected; the generated app `Info.plist` declared iPhone and iPad without orientations.
 - `observed` (Apple documentation, 2026-09-14): the App Store Connect API cannot create an app record;

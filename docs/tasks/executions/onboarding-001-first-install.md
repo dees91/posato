@@ -116,5 +116,5 @@ erasure claim is made, preserving `R-04`/`R-05`.
   shows setup once; this is the accepted upgrade-seed boundary.
 
 ## Outcome
-The reviewed code and local checks pass at `fda6af1`. The maintainer authorized
+The reviewed code and local checks pass at `a153149`. The maintainer authorized
 merge with the bounded AC-06 waiver above; this closeout changes only records.

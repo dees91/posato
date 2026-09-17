@@ -1752,7 +1752,7 @@ processed with no errors or warnings. See the
 - posato.app's hero plays the same demo as a silent looping MP4 (1.3 MB) in a
   plain outlined panel; phones skip the download through `<source media>`, and
   Lighthouse stays at 100 in every category before and after.
-- Captures were driven through posato-control at `9b40a2f`; the macOS
+- Captures were driven through posato-control at `6850481`; the macOS
   application picker is keyboard-drivable on a development-signed stage, a
   driver tap does not keep the Posato window key (activate it before a
   screenshot), and a fresh iPhone install needs the first-install skip

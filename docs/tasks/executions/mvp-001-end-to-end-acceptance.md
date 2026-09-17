@@ -10,7 +10,7 @@
 
 ## Observed starting point
 
-- Product sources at `f0d68e4` (SYNC-012). A defect found in phase A led to correction `105ddda`; every result row below ran on signed builds of `105ddda` unless marked.
+- Product sources at `966c786` (SYNC-012). A defect found in phase A led to correction `105ddda`; every result row below ran on signed builds of `105ddda` unless marked.
 - Inherited limits: ONBOARDING-002 never observed a physical key wait; SYNC-012 used an already linked pair without selected applications; IOS-002 needs sessions of at least 15 minutes for suspended expiry.
 
 ## Decisions (`user-confirmed`, 2026-09-14)
@@ -36,7 +36,7 @@
 
 | Phase | Outcome and evidence (`build/verification/runs/`) | AC |
 | --- | --- | --- |
-| A | On `f0d68e4` the iPhone **Remove workspace** ended "Sync did not finish" twice while ordinary exchanges completed (`095926-77a2`, `100422-0573`): defect, see correction. On `105ddda` one press ended local-only (`103610-c34f`). Deviation: the still-linked Mac showed waiting for the key instead of the planned action required (`103711-b136`); its removal still ended local-only in about 20 s, bootstrap 1→0 (`103756-9ef0`). Desktop reset to zero (`103828-bb69`); iPhone uninstall and install (`103850-b81d`). | fixture |
+| A | On `966c786` the iPhone **Remove workspace** ended "Sync did not finish" twice while ordinary exchanges completed (`095926-77a2`, `100422-0573`): defect, see correction. On `105ddda` one press ended local-only (`103610-c34f`). Deviation: the still-linked Mac showed waiting for the key instead of the planned action required (`103711-b136`); its removal still ended local-only in about 20 s, bootstrap 1→0 (`103756-9ef0`). Desktop reset to zero (`103828-bb69`); iPhone uninstall and install (`103850-b81d`). | fixture |
 | B | Mac **Sync with iCloud** completed in about 50 s, bootstrap 0→1, stop rule passed (`104116-1c09`). iPhone pressed one second later and was completed at its first read (`104206-dacb`): immediate join, key wait `not observed`. Native Screen Time consent allowed. Deviation: the iPhone website step offered only Continue because the synced website already existed. Both summaries report one website and iCloud connected (`104340-3250`, `104828-c14e`). | AC-01 |
 | C | `example.net` from iPhone and `example.com` from Mac converged on both (`105043-2ebb`; Mac SQL). The iPhone selection created `Applications`, received by the Mac (`105442-6032`). The Mac selected through its native picker, mapping 1, pending/accepted unchanged after exchange; each device shows only its own selection (`105722-15ca`, `105815-668b`). | AC-02 |
 | D1 | Mac 25-minute start with attended prompt (`110049-4dbf`); iPhone received after Sync now. `user-confirmed`: Safari and Chrome on Mac and Safari on iPhone deny both targets and load `example.org`; the Mac terminates the selected application while its control runs; the iPhone shields the selected application while its control opens. Deviation: the iPhone driver then lost automation, so the planned iPhone early end was missed and the session expired at 11:25 (`112800-93a7`, SQL not early); cleanup confirmed on both, iPhone checked before opening Posato (`113118-1416`). The path was repeated on a new session: Mac start (`113143-b4a0`), iPhone receive, blocking confirmed, iPhone early end (`113646-61a3`); after iPhone Sync now the Mac converged to ended early (`114014-c419`); cleanup confirmed. | AC-03, AC-04 |
@@ -61,11 +61,11 @@
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` at `f0d68e4` | pass | before signed builds |
+| `./gradlew quality` at `966c786` | pass | before signed builds |
 | iOS adapter tests before and after the loop | fail 4 of 27, then pass | red/green for the correction |
 | `./gradlew quality` after the last correction | pass | Swift suite 135 tests, 6 skipped, 0 failures |
 | Signed desktop and device builds of `105ddda`, `doctor` | pass | only the always-unknown helper background warning |
-| Physical phases A–G | pass on `105ddda` except the unobserved key wait; phase A failed on `f0d68e4` and was corrected | table above; browser, application and shield rows `user-confirmed` |
+| Physical phases A–G | pass on `105ddda` except the unobserved key wait; phase A failed on `966c786` and was corrected | table above; browser, application and shield rows `user-confirmed` |
 | iPhone driver Sync now sequence with `textContains` | pass | `130803-3608` |
 | Corrected `first-install.json` on the Simulator | pass | `131042-f1a0`; one website, no bootstrap row |
 

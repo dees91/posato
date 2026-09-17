@@ -2,7 +2,7 @@
 
 - **Review tier:** `standard`
 - **Tier reason:** A self-contained page served by the existing loopback listener changes presentation only; an independent check still covers the ADR 0005 content limits and both browsers.
-- **Dependencies:** completed `MACOS-004` and `DESIGN-002` (Forest icon and palette, merged as `c8112c4`).
+- **Dependencies:** completed `MACOS-004` and `DESIGN-002` (Forest icon and palette, merged as `e1ffab8`).
 - **Integration group:** `PR-PAUSE-PAGE`, roadmap wave Release/R2, in parallel with `MACOS-009` and `SYNC-017`. `DOCS-001` and `WEB-001` follow it.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md) (revision 17), [browser enforcement ADR](../../decisions/0005-macos-browser-enforcement-and-coexistence.md) (fixed presentation), [DESIGN.md](../../../DESIGN.md) (voice, palette, typography, identity), [privacy policy](../../../PRIVACY.md) (Blocking on Mac).
 

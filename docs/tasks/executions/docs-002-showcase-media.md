@@ -34,7 +34,7 @@
   (660 frames), `Walkthrough` (1260), stills `StepWebsites`, `StepDuration`,
   `SocialPreview`. The recording-based end scene and `@remotion/media` and
   `@remotion/transitions` are gone.
-- Captures: 17 tracked PNGs (the websites screen twice: with the added-count hint for the video, at rest for the stills and the site) from `9b40a2f`, taken through `capture/mac-captures.sh`
+- Captures: 17 tracked PNGs (the websites screen twice: with the added-count hint for the video, at rest for the stills and the site) from `6850481`, taken through `capture/mac-captures.sh`
   (Mac, picker driven by keyboard, administrator prompt confirmed by the
   maintainer; the window is activated before every screenshot because a
   driver tap does not keep Posato frontmost) and `capture/iphone-captures.sh`

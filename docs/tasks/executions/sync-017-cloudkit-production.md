@@ -100,7 +100,7 @@ The brief's removal boundary carries a dated amendment: devices stay linked.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Release build sources vs the branch base `9e7e677`, sync paths | pass | `observed`: no difference under `shared/`, `iosApp/`, or `macosSyncCompanion/` for Developer ID build 6 or TestFlight build 1; later `shared/` changes are `MACOS-009` UI, outside `feature/sync/` |
+| Release build sources vs the branch base `73ecb2b`, sync paths | pass | `observed`: no difference under `shared/`, `iosApp/`, or `macosSyncCompanion/` for Developer ID build 6 or TestFlight build 1; later `shared/` changes are `MACOS-009` UI, outside `feature/sync/` |
 | Development export after the development round | pass | byte-identical to the index-free expected schema |
 | Production export after the deploy (`AC-01`) | pass | equals Development and the expected schema; two types, four `BYTES` fields, no index |
 | Companion signature and Production zone (`AC-02`) | pass | `companion-codesign.txt`; one zone after the Mac press; `sync_bootstrap_state` 1 |

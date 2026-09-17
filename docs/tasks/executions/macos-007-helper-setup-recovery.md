@@ -7,7 +7,7 @@
 - **Reviewer:** independent plan reviewer (2026-09-11); three independent completed-change reviews (2026-09-11)
 - **Branch:** `docs/mac-helper-startup-diagnosis`
 - **Updated:** 2026-09-11
-- **Baseline:** rebased onto `origin/main` (`e9467a0`, SYNC-014)
+- **Baseline:** rebased onto `origin/main` (`8403c14`, SYNC-014)
 
 ## Plan
 

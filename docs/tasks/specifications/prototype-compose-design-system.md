@@ -2,7 +2,7 @@
 
 - **Review tier:** Standard
 - **Tier reason:** New reusable component contracts and multiplatform build integration.
-- **Dependencies:** Prototype design commit `bfc4a49`; existing pinned Compose toolchain.
+- **Dependencies:** Prototype design commit `d7db29e`; existing pinned Compose toolchain.
 - **Integration group:** Prototype design worktree; no production-screen migration.
 - **Authority:** Explicit maintainer request on 2026-09-05.
 

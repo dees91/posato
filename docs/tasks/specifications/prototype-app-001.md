@@ -2,7 +2,7 @@
 
 - **Review tier:** Standard
 - **Tier reason:** Isolated mock state, shared UI, and two new native hosts.
-- **Dependencies:** Committed prototype design system at `566bdb6`.
+- **Dependencies:** Committed prototype design system at `2561ee0`.
 - **Integration group:** Prototype migration on `design/mvp-interaction-polish`.
 - **Authority:** Maintainer-approved native prototype implementation plan.
 

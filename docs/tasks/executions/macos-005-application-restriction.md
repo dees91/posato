@@ -71,7 +71,7 @@
 
 - **Scope:** stale-snapshot re-resolution in `poll`, `destroySpawnedHelper`,
   harness `destroyHelper` simplification, record rows for runs 2–4
-  (committed diff `3a157b5..c244436`).
+  (committed diff `e49f717..c244436`).
 - **Verdict:** `changes-required` (independent review agent, 2026-09-05):
   no pipe/capability violation, no privacy leak; 2 Required, 2 advisory.
 - **Triage:**

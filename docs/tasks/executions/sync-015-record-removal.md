@@ -77,7 +77,7 @@
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Removal over fakes: success, partial, remaining, retryable, unknown, account, idempotent | done 2026-09-11 | `jvmTest` 544/544, `iosSimulatorArm64Test` 540/540, 0 failures |
-| Gates re-run after rebase onto `e40deed` | done 2026-09-12 | `quality` exit 0, companion `swift test` 131/131 pass |
+| Gates re-run after rebase onto `0201314` | done 2026-09-12 | `quality` exit 0, companion `swift test` 131/131 pass |
 | `ANCHOR_MISSING` peer cases and removal path | done 2026-09-11 | same suites green, new cases included in totals above |
 | Deletion-entry page, foreign skip, fresh establish, sweep race | done 2026-09-11 | companion `swift test` 131/131 pass; fakes covered in `jvmTest` |
 | Adapter tests, both targets | done 2026-09-11 | `iosSwiftTest` 115 run, 6 skipped, 0 failures; `iosSimulatorArm64Test` green |

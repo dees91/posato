@@ -2,7 +2,7 @@
 
 - **Review tier:** `high-risk`
 - **Tier reason:** Rewriting published history, making the repository public, and publishing signed artifacts to users are irreversible release operations.
-- **Dependencies:** completed `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, and `DOCS-002` (all merged by `65443bd`).
+- **Dependencies:** completed `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, and `DOCS-002` (all merged by `84d0c47`).
 - **Integration group:** `PR-RELEASE-CANDIDATE`, roadmap wave Release/R3 (revision 20).
 - **Authority:** [MVP roadmap](../mvp-roadmap.md), [RELEASE-001 record](../executions/release-001-first-release-readiness.md) (obligation table), [first-release readiness topic](../../wiki/topics/first-release-readiness.md), [limits and platforms](../../product/limits-and-platforms.md), [threat model](../../security/apple-mvp-threat-model.md) (`TB-08`, `T-13`), and the records of the dependency rows.
 

@@ -17,7 +17,7 @@
 
 ## Starting observations
 
-`observed` at `9e7e677`:
+`observed` at `73ecb2b`:
 
 - **Helper routing.** The helper forwards Remove to the root daemon only when the service is enabled. Otherwise it answers locally with `unreconciledServiceResponse`: `NotRegistered`/`ManualRecovery`, `ApprovalRequired`/`BackgroundApproval`, or `Unavailable`/`ManualRecovery`. It never touches the right.
 - **Daemon.** `performRemove` restores ownership, requires `Idle`, then removes the right and verifies it is absent. Possible failures:

@@ -22,7 +22,7 @@
   events, previews, hidden controls, appearance options, and retained drafts.
 - Retired HTML and its Node suite after common regression and native parity
   checks; non-release tag `archive/mvp-interaction-flow-html` retains both at
-  `566bdb6` independently of a squash merge or work-branch deletion.
+  `2561ee0` independently of a squash merge or work-branch deletion.
 - Reworked the 50-website study with primary session actions above two counted
   summaries, read-only details, separate website/app tabs, search, lazy rows,
   and labelled menus. Browser state belongs to composition above editor navigation.
@@ -69,7 +69,7 @@
 - Earlier hosted-advisory corrections passed root `quality` (199 tasks), all
   31 Mac Free play AX button checks, active sync/failure/retry/completion/expiry,
   and 11-step and 15-step iPhone flows. A fresh tag-only fetch recovered the retired
-  files and `bfc4a49` ancestry. Mock sessions were ended after verification.
+  files and `d7db29e` ancestry. Mock sessions were ended after verification.
 - The original full-content host passed root `quality --rerun-tasks` (203 tasks)
   and native corner/fullscreen/minimize/drag/resize/appearance/draft checks.
 - Final follow-up `quality --rerun-tasks` passed with 193 tasks executed.

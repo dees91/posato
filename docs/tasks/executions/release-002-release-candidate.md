@@ -13,6 +13,7 @@
 - `main` at `65443bd`; repository private with 33 remote branches besides `main`, one archive tag, no releases, 34 stored Actions artifacts and 36 workflow runs without workflows; classic `main` protection with admins enforced and force pushes blocked, no rulesets.
 - Six commits on `main` from 2026-09-02 carry session-link trailers; a seventh sits only on a local `refs/original/` backup ref.
 - The seven private task links are `View task` share links in review-bot comments on pull requests 4, 10, 33, 34, 41, 43, and 49, not in pull-request bodies as the `RELEASE-001` record states; the other review-bot links point to public settings pages.
+- Commit IDs in this section predate the history rewrite, which moved `main` from `65443bd` to `84d0c47` with identical trees; citations of rewritten `main` commits elsewhere in tracked documents were updated to the new IDs, while work-branch commit IDs were not rewritten and resolve through pull-request refs.
 - macOS releases through `:desktopApp:notarizeMacOsRelease` (last Developer ID build 6); iOS archive and upload are manual steps from `IOS-003` (last TestFlight build 2); `Version.xcconfig` is `1.0.0`; `ITSAppUsesNonExemptEncryption` is `NO`.
 
 ## Decisions (`user-confirmed`, 2026-09-17)

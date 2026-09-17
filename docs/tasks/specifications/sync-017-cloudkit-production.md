@@ -2,7 +2,7 @@
 
 - **Review tier:** `high-risk`
 - **Tier reason:** Deploying the Production schema is irreversible (Production record types and fields cannot be deleted), touches an account-level resource, and puts real user data under the release builds.
-- **Dependencies:** completed `MACOS-008` (merged as `9e7e677`) and `IOS-003` (merged as `9324a60`), whose release builds already use CloudKit Production.
+- **Dependencies:** completed `MACOS-008` (merged as `73ecb2b`) and `IOS-003` (merged as `465b2e1`), whose release builds already use CloudKit Production.
 - **Integration group:** `PR-CLOUDKIT-PRODUCTION`, roadmap wave Release/R2, in parallel with `MACOS-009` and `DESIGN-003`.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md), [encrypted operation ADR](../../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md) (no compaction in format 1), [workspace bootstrap ADR](../../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md) (schema, production handover), [privacy policy](../../../PRIVACY.md), [MACOS-008 record](../executions/macos-008-developer-id-distribution.md), [IOS-003 record](../executions/ios-003-app-store-release.md).
 

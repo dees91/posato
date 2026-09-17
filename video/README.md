@@ -63,7 +63,7 @@ rechecks the link at publication.
 
 ## Capture provenance
 
-All captures come from the product revision `9b40a2f` (the `main` commit the
+All captures come from the product revision `6850481` (the `main` commit the
 `DOCS-002` branch started from), driven through `posato-control` by the
 scripts in `capture/`, and reduced with FFmpeg only: Mac frames to 1272 pixels
 wide, iPhone frames to 660 pixels wide. No label, timer value, service result,
