@@ -49,7 +49,7 @@
 | Obligation | AC | Evidence | Result | Owner / next action |
 | --- | --- | --- | --- | --- |
 | Session-link trailers removed from published branches and tags | AC-02 | fresh mirror: 0 in 3 branches; no tags remain | pass | — |
-| Private task links removed from pull requests | AC-02 | 0 private links in current bodies, comments, review comments, and reviews; 136 public settings links remain; edit histories of pull requests 15, 16, and 17 each keep one body revision with a session link | blocked | maintainer deletes the three revisions before the visibility change; rescan edit histories |
+| Private task links removed from pull requests | AC-02 | 0 private links in current bodies, comments, review comments, and reviews; 136 public settings links remain; one session-link body revision in the edit histories of pull requests 15, 16, and 17 deleted by the maintainer; rescan of bodies and body, comment, and review edit histories finds 0 | pass | — |
 | Exposure rescan of branches, tags, and hosted content | AC-02 | blobs: only synthetic key markers and `/Users/someone/` fixtures; 0 issues, releases, artifacts, runs, commit comments, secrets, variables, hooks | pass | — |
 | Residual through pull-request refs | AC-02 | 6 trailer commits reachable from refs of pull requests 12 and 15–65; only GitHub Support could purge them | accepted by the maintainer | — |
 | Clean-clone `quality` on R; local release checklist for signed candidates (`RELEASE-001`) | AC-01 | no `local.properties`; 5 min 4 s; exit 0; this record's candidate checks serve as the checklist | pass | — |
@@ -60,23 +60,23 @@
 | Product-name trademark search | AC-03 | maintainer manual search 2026-09-17: UPRP, EUIPO TMview, WIPO Global Brand Database, USPTO; no results; no legal opinion | pass | — |
 | `TB-08`/`T-13` signing and update review | AC-03 | least entitlements (app JIT only, helper none, sync CloudKit and one keychain group); credentials and profiles outside Git; updates are whole notarized bundles without an updater, so security fixes need a manual download | pass with accepted risk | — |
 | Export compliance | AC-03 | iOS `ITSAppUsesNonExemptEncryption` `NO`; no Apple declaration for Developer ID (`MACOS-008`, inferred, no legal opinion) | pass | — |
-| EU trader status before App Review | AC-03 | submitted 2026-09-17 | blocked | Apple review; blocks only the App Store submission |
+| EU trader status before App Review | AC-03 | submitted 2026-09-17; not yet approved at the verdict | blocked | Apple review; blocks only the App Store submission |
 | `PRIVACY-001` `0A2A.1` reason | AC-03 | accepted again at build 3 processing; App Review may still question it | accepted risk | manifest-only fix if rejected |
-| Known limits carried from dependency rows | AC-03 | `IOS-003` iPad copy and unrerun suspended expiry on distribution builds; `IOS-001` reinstall behavior; `MACOS-009` Remove retry; `DESIGN-003` one helper launch failure until restart; `DESIGN-002` installed icon appearance | accepted by the maintainer (iPad copy); others pending acceptance | maintainer at the verdict |
+| Known limits carried from dependency rows | AC-03 | `IOS-003` iPad copy and unrerun suspended expiry on distribution builds; `IOS-001` reinstall behavior; `MACOS-009` Remove retry; `DESIGN-003` one helper launch failure until restart; `DESIGN-002` installed icon appearance | accepted by the maintainer | — |
 | Walkthrough attachment reachable signed out (`DOCS-001`, `DOCS-002`) | AC-05 | — | pending | after visibility change |
 | Release wording: README under-15-minute "only", store listing "open source"; site repository link, Issues and security routes, download buttons (`WEB-001`) | AC-05 | — | pending | publication |
 | iPad store screenshots before App Review (`IOS-003`) | AC-05 | — | pending | App Store submission |
-| Public review-bot and pull-request content: Cloudflare account ID in Pages bot dashboard links; secret gists with interface screenshots | AC-02 | not credentials; screenshots show only the app interface | pending | maintainer: accept or remove before the visibility change |
+| Public review-bot and pull-request content: Cloudflare account ID in Pages bot dashboard links; secret gists with interface screenshots | AC-02 | not credentials; screenshots show only the app interface | accepted by the maintainer | — |
 | Private vulnerability reporting and Issues enabled | AC-05 | — | pending | maintainer after visibility change |
 
 ## Completed-change and readiness review
 
 - **Verdict:** `changes-required` (independent agent, 2026-09-17). Critical: session links remain in the edit history of three pull-request bodies. Required: the citation update moved two prototype commit IDs to objects no ref contains.
-- **Resolution:** the edit-history row is blocked on the maintainer's deletion and a rescan; the two prototype IDs were restored. Recommended points folded: missing obligation rows, a dated and gated verdict, the exported IPA kept as evidence, the pull-request residual range, and the superseded plan marker.
+- **Resolution:** the maintainer deleted the three revisions and the rescan found no private link; the two prototype IDs were restored. Recommended points folded: missing obligation rows, a dated and gated verdict, the exported IPA kept as evidence, the pull-request residual range, and the superseded plan marker.
 
 ## Verdict
 
-- **Proposed on 2026-09-17, pending maintainer acceptance:** **ready**, once the three edit-history revisions are deleted and rescanned and the pending known limits and public bot content are accepted, for revision `84d0c47`, the Developer ID DMG 1.0.0 (7), and TestFlight 1.0.0 (3) for publication through GitHub Releases; the App Store submission waits for EU trader approval.
+- **2026-09-17, proposed and pending maintainer acceptance:** **ready** for revision `84d0c47`, the Developer ID DMG 1.0.0 (7), and TestFlight 1.0.0 (3) for publication through GitHub Releases; the App Store submission waits for EU trader approval.
 
 ## Blockers and accepted risks
 
