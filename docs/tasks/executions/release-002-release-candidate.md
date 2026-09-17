@@ -5,7 +5,7 @@
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code session
 - **Reviewers:** independent plan-review agent; independent readiness review agent; independent documentation review agent
-- **Branch:** `feature/release-002-release-candidate` (PR #66)
+- **Branch:** `feature/release-002-release-candidate` (PR #66, merged as `319b595`); publication follow-up `docs/release-002-publication`
 - **Updated:** 2026-09-17
 
 ## Observed starting point (2026-09-17)
@@ -86,4 +86,10 @@
 ## Final
 
 - **Status:** `blocked` on Apple's approval of EU trader status, which gates the App Store submission only.
-- **Outcome:** `AC-01`, `AC-02`, and `AC-03` met with the accepted limits above. `AC-04` and the rest of `AC-05` follow the merge of this pull request: the annotated `v1.0.0` tag on the `main` tip, the GitHub Release with the DMG and `SHA256SUMS` verified after download, and the live site and README link checks, recorded with the App Store submission and badge in a follow-up change. An independent documentation review approved the release copy and site; its recommended points were folded.
+- **Outcome:** `AC-01`, `AC-02`, `AC-03`, and `AC-04` met with the accepted limits above; `AC-05` met except the App Review submission and the App Store badge, which wait for EU trader approval. An independent documentation review approved the release copy and site; its recommended points were folded.
+
+## Publication (2026-09-17)
+
+- PR #66 merged as `319b595`, whose diff from `84d0c47` changes only documentation, the website, and media scripts. Annotated tag `v1.0.0` on `319b595`; GitHub Release "Posato 1.0.0" (latest, not a prerelease) with `Posato-1.0.0.dmg` and `SHA256SUMS`.
+- Signed-out download from the release: checksum, DMG signature, `spctl` (`Notarized Developer ID`) and `stapler validate` for the DMG and the mounted app, and `codesign --verify --deep --strict` pass. The DMG has no Applications alias, so the README and release notes say to move Posato to the Applications folder.
+- Live `posato.app` after the Cloudflare deployment: home, support, limits, privacy, the badge, and the walkthrough answer 200 with the site CSP; the header, badge, Issues, security policy, and release links resolve signed out, and a browser loads both badges. On GitHub the README renders the demo and the badge, and `releases/latest` redirects to `v1.0.0`.

@@ -440,9 +440,9 @@ choose.**, the three steps, the limits summary, privacy, and an availability
 note. `user-confirmed` (2026-09-17, `RELEASE-002`): the hero and the availability
 note carry the maintainer-provided "Download for Mac" badge artwork, recolored
 to the ink surface (`#18231F`) with a `#6D816E` outline and a 12-pixel radius,
-self-hosted and linked to the latest GitHub Release; the matching App Store
-badge joins it once the listing is live, and Apple badge guidelines are not
-reviewed for now. The
+self-hosted and linked to the latest GitHub Release. The matching App Store
+badge sits beside it, unlinked at reduced opacity with a "Coming soon" caption,
+until the listing is live. Apple badge guidelines are not reviewed for now. The
 header ends with a GitHub mark linking to the public repository, and the support
 page adds GitHub Issues and private vulnerability reporting. The hero plays the showcase demo rendered from `video/`
 as a silent, looping, self-hosted video in a plain outlined panel, with a
