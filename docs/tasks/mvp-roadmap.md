@@ -127,8 +127,10 @@ Besides the verdict, the task now publishes the first release: a version tag
 and GitHub Release with the notarized macOS download, the README updated for
 the release, and `posato.app` updated with the repository link and download
 buttons. The agent performs every step it can and hands the maintainer only
-the actions that need the maintainer's account or authorization. It changes no
-other task, dependency, wave, or integration group.
+the actions that need the maintainer's account or authorization. The same day
+the maintainer dropped the device matrix: the candidates pass the release checks
+and rely on the earlier release-build acceptance runs. It changes no other task,
+dependency, wave, or integration group.
 
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
@@ -230,7 +232,7 @@ wave barriers add the phase ordering stated above.
 | `DOCS-001` | Turn the README into a showcase with screenshots and a Remotion-rendered demo that routes details to the documentation. | Release readiness | Release/R2 | `RELEASE-001`, `DESIGN-002` | PR-SHOWCASE-README |
 | `WEB-001` | Publish a simple `posato.app` site with a product page, the hosted privacy policy and its contact, and support routes usable as the App Store support and privacy URLs. | Release readiness | Release/R2 | `DESIGN-002`, `DOCS-001` | PR-WEBSITE |
 | [`DOCS-002`](specifications/docs-002-showcase-media.md) | Rebuild the showcase media: a demo and walkthrough with a visible cursor and matching device frames, composed side-by-side README stills, and a silent looping hero video on `posato.app`. | Release readiness | Release/R2 | `DOCS-001`, `WEB-001` | PR-SHOWCASE-MEDIA |
-| [`RELEASE-002`](specifications/release-002-release-candidate.md) | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and publish the first release: version tag, GitHub Release with the macOS download, release README, and `posato.app` download links, handing the maintainer only account-owned actions. | Release readiness | Release/R3 | `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `DOCS-002` | PR-RELEASE-CANDIDATE |
+| [`RELEASE-002`](specifications/release-002-release-candidate.md) | Verify the release candidates, clean published history and pull-request links, give the final ready verdict, and publish the first release: version tag, GitHub Release with the macOS download, release README, and `posato.app` download links, handing the maintainer only account-owned actions. | Release readiness | Release/R3 | `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `DOCS-002` | PR-RELEASE-CANDIDATE |
 
 ## PR #1 shared cycle
 
