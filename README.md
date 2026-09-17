@@ -25,7 +25,7 @@ Open source under the [Apache License 2.0](LICENSE).
 </p>
 
 - **Mac:** download the signed and notarized DMG from
-  [GitHub Releases](https://github.com/dees91/posato/releases/latest), open it, and drag Posato to Applications.
+  [GitHub Releases](https://github.com/dees91/posato/releases/latest), open it, and move Posato to your Applications folder.
 - **iPhone:** Posato is coming to the App Store.
 
 Posato targets **macOS 15 or later on Apple silicon** and **iOS 18 or later**;
