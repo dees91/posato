@@ -7,13 +7,14 @@
 - **Provenance:** `user-confirmed`
 
 The Availability, Limits, and Supported platforms sections were relocated
-verbatim from the root README as accepted in `RELEASE-001`; the README keeps a
+verbatim from the root README as accepted in `RELEASE-001`, and `RELEASE-002`
+updated Availability for the 1.0 release; the README keeps a
 summary and links here. The Planned platforms section records the maintainer's
 2026-09-16 direction for later releases.
 
 ## Availability
 
-Posato 1.0 is available for Mac:
+Posato 1.0 is available for Mac; the iPhone app is coming to the App Store.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |

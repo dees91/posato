@@ -436,8 +436,8 @@ an 820 CSS-pixel maximum and a 600-pixel compact breakpoint; navigation and
 footer links keep a 44-pixel minimum height.
 
 The product page reuses the README and store-listing copy: **Pause. Then
-choose.**, the three steps, the limits summary, privacy, and an availability note.
-`user-confirmed` (2026-09-17, `RELEASE-002`): the hero and the availability
+choose.**, the three steps, the limits summary, privacy, and an availability
+note. `user-confirmed` (2026-09-17, `RELEASE-002`): the hero and the availability
 note carry the maintainer-provided "Download for Mac" badge artwork, self-hosted
 and linked to the latest GitHub Release; an App Store badge joins it once the
 listing is live, and Apple badge guidelines are not reviewed for now. The
@@ -456,8 +456,9 @@ Apple artwork and add no base or shadow.
 The policy page renders `PRIVACY.md` without typographic substitution, the
 limits page renders the Limits section of the accepted limits document, and the
 favicon is the Forest icon source. Pages have no scripts, inline styles,
-cookies, analytics, web fonts, or third-party assets; the hero video, its
-poster, and the download badge are the only self-hosted media.
+cookies, analytics, web fonts, or third-party assets; all media, including the
+hero video, its poster, the step captures, and the download badge, is
+self-hosted.
 
 ### First-install onboarding
 
