@@ -1,8 +1,8 @@
 # Posato prototype Compose design system
 
 A reusable Compose Multiplatform library for the [native interaction prototype](../README.md),
-with a native desktop component catalog. The historical HTML refinement at `d7db29e`,
-retained under `archive/mvp-interaction-flow-html`, is its
+with a native desktop component catalog. The historical HTML refinement, visible in the
+commits of pull request #32, is its
 visual source. [The prototype design reference](../DESIGN.md) records the current
 components and their native use. [The root DESIGN.md](../../../DESIGN.md) remains
 the accepted production design authority.
