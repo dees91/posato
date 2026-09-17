@@ -22,7 +22,7 @@
 - **Task links:** the seven bot comments are deleted, not edited, because GitHub keeps and publishes comment edit history.
 - **Platform matrix:** not repeated, including a device smoke test of the final candidates. The MVP flow was accepted on release builds (`MACOS-009` notarized build 6, `SYNC-017` CloudKit Production, `PRIVACY-001` TestFlight build 2), and later product changes touch only privacy manifests, pause-page styling, and the removal itself. macOS 15 and iOS 18 stay unverified, the `ONBOARDING-001` and `ONBOARDING-002` release-build rechecks close with this decision, and public copy keeps its target-only wording.
 - **iPad:** the iPhone-only copy on iPad is an accepted limit; the listing adds iPad screenshots only.
-- **Publication:** tag, GitHub Release, README, and `posato.app` download links are part of this task (revision 20); the tag placement is decided before publication.
+- **Publication:** tag, GitHub Release, README, and `posato.app` download links are part of this task (revision 20); the annotated `v1.0.0` tag goes on the `main` tip after this pull request merges, with an empty product diff from R outside `docs/`, `website/`, and `README.md` as evidence.
 
 ## Plan
 
@@ -76,7 +76,7 @@
 
 ## Verdict
 
-- **2026-09-17, proposed and pending maintainer acceptance:** **ready** for revision `84d0c47`, the Developer ID DMG 1.0.0 (7), and TestFlight 1.0.0 (3) for publication through GitHub Releases; the App Store submission waits for EU trader approval.
+- **Ready** (2026-09-17, accepted by the maintainer, `user-confirmed`) for revision `84d0c47`, the Developer ID DMG 1.0.0 (7), and TestFlight 1.0.0 (3) for publication through GitHub Releases; the App Store submission waits for EU trader approval.
 
 ## Blockers and accepted risks
 
