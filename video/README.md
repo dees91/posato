@@ -22,7 +22,7 @@ npm run media
 ```
 
 `media` runs lint and the storyboard test, renders both masters, converts the
-GIF, the site MP4 and its poster, the walkthrough attachment, and the stills,
+GIF, the site MP4 and its poster, the site walkthrough, and the stills,
 then verifies every output (`npm run verify`). The first render downloads
 Remotion's Chrome Headless Shell. All inputs are local; no account, signing
 material, device, font download, or running Posato instance is needed. Titles
@@ -43,23 +43,24 @@ Outputs:
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
-- `out/walkthrough-attachment.mp4`: 42 seconds, 2,181,040 bytes, the file
-  the maintainer uploads as a GitHub attachment.
+- `../website/public/media/walkthrough.mp4`: 42 seconds, silent, faststart,
+  served at `https://posato.app/media/walkthrough.mp4` and linked from the root
+  README.
 
 ## Media budget and publication
 
 The tracked GIF stays at or below 10 MiB, the site MP4 at or below 3 MiB, its
 poster at or below 300 KiB, each composed still and the social preview at or
-below 1 MiB, each capture at or below 250 KiB, and the walkthrough attachment
+below 1 MiB, each capture at or below 250 KiB, and the walkthrough
 below 10 MiB. `scripts/render-gif.sh` lowers frame rate, then palette, then
 size to stay within budget and never shortens the story; `scripts/verify-output.sh`
 asserts dimensions, durations, the infinite-loop extension, the loop seam,
 faststart, capture widths, and every size budget.
 
-The maintainer uploaded `out/walkthrough-attachment.mp4` as a GitHub attachment
-on 2026-09-16 and the root README links to it. While the repository is private
-the attachment is reachable only when signed in to GitHub; `RELEASE-002`
-rechecks the link at publication.
+The maintainer uploaded the walkthrough as a GitHub attachment on 2026-09-16,
+but an attachment uploaded while the repository was private stayed unreachable
+to signed-out visitors after it became public. `RELEASE-002` moved the
+walkthrough to posato.app on 2026-09-17 (`user-confirmed`).
 
 ## Capture provenance
 

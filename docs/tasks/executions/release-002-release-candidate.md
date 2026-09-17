@@ -63,11 +63,11 @@
 | EU trader status before App Review | AC-03 | submitted 2026-09-17; not yet approved at the verdict | blocked | Apple review; blocks only the App Store submission |
 | `PRIVACY-001` `0A2A.1` reason | AC-03 | accepted again at build 3 processing; App Review may still question it | accepted risk | manifest-only fix if rejected |
 | Known limits carried from dependency rows | AC-03 | `IOS-003` iPad copy and unrerun suspended expiry on distribution builds; `IOS-001` reinstall behavior; `MACOS-009` Remove retry; `DESIGN-003` one helper launch failure until restart; `DESIGN-002` installed icon appearance | accepted by the maintainer | — |
-| Walkthrough attachment reachable signed out (`DOCS-001`, `DOCS-002`) | AC-05 | — | pending | after visibility change |
+| Walkthrough reachable signed out (`DOCS-001`, `DOCS-002`) | AC-05 | the private-era GitHub attachment still answered 404 after the visibility change; the walkthrough was re-rendered to `posato.app/media/walkthrough.mp4` (42 s, 1600 x 1000, faststart) and the README relinked, by maintainer decision | pass after deployment | publication check |
 | Release wording: README under-15-minute "only", store listing "open source"; site repository link, Issues and security routes, download buttons (`WEB-001`) | AC-05 | — | pending | publication |
 | iPad store screenshots before App Review (`IOS-003`) | AC-05 | — | pending | App Store submission |
 | Public review-bot and pull-request content: Cloudflare account ID in Pages bot dashboard links; secret gists with interface screenshots | AC-02 | not credentials; screenshots show only the app interface | accepted by the maintainer | — |
-| Private vulnerability reporting and Issues enabled | AC-05 | — | pending | maintainer after visibility change |
+| Repository public; private vulnerability reporting and Issues enabled | AC-05 | visibility changed 2026-09-17 after authorization; Issues already on; reporting enabled through the API | pass | — |
 
 ## Completed-change and readiness review
 
