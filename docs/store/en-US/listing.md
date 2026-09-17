@@ -1,7 +1,8 @@
 # App Store listing — English (US)
 
 Status: maintainer accepted, 2026-09-14; copy edited with Clarity as requested.
-Upload belongs to `IOS-003` / `RELEASE-002` after release readiness.
+Uploaded to App Store Connect by `RELEASE-002` on 2026-09-17 with the iPad set
+below and submitted to App Review for version 1.0.0 (3).
 
 ## Name
 
@@ -64,6 +65,25 @@ accepted About Posato entry. The maintainer accepted the three-screen set on
 The captures show session setup, paused websites, and About Posato without private
 account, application, or device labels. Simulator captures must not imply that Screen
 Time authorization or enforcement succeeded on that target.
+
+The iPad set repeats the three screens on an iPad Pro 13-inch (M5) Simulator in
+Dark Mode with the same synthetic websites, as 2064 × 2752 RGB PNGs without an
+alpha channel; the maintainer accepted it on 2026-09-17. iPad shows the
+iPhone-only wording as an accepted limit:
+
+- [Paused websites](screenshots/ipad-13/01-paused-websites.png)
+- [Session duration](screenshots/ipad-13/02-session-duration.png)
+- [About Posato](screenshots/ipad-13/03-about-posato.png)
+
+## Store settings
+
+Accepted by the maintainer on 2026-09-17: primary category Productivity; free in
+all territories, including new ones; age rating 4+ with every questionnaire
+answer none or no (Parental Controls no, because Posato only restricts the
+person who runs it); copyright "2026 Piotr Krawczyk"; no third-party content;
+support `https://posato.app/support/` and marketing `https://posato.app/`;
+manual release after approval; review notes explain that no account is needed
+and that the Mac app is not required.
 
 Use portrait PNGs at 1320 × 2868, without an alpha channel, for the 6.9-inch
 slot. Apple accepts this size; a 6.5-inch set is required only when a 6.9-inch
