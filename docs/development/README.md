@@ -17,11 +17,11 @@ seven preparation gates and the ready checkpoint are complete.
 
 ## Build from source
 
-Posato is pre-release with no official download yet; see
+Posato 1.0 for Mac is available from GitHub Releases; see
 [availability](../product/limits-and-platforms.md#availability). Build from
-source for development and evaluation using the steps below. Release readiness
-is tracked in the
-[first-release readiness record](../tasks/executions/release-001-first-release-readiness.md).
+source for development and evaluation using the steps below. The release
+verdict is recorded in the
+[release candidate record](../tasks/executions/release-002-release-candidate.md).
 
 Requirements:
 

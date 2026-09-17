@@ -22,6 +22,9 @@
 - Before the repository becomes public, session-link trailers are removed by an
   authorized history rewrite and task-share links are removed from pull-request
   bodies; the maintainer's author e-mail and pull-request attachments stay.
+  `superseded` in part (2026-09-17, `RELEASE-002`): the links were in review-bot
+  comments and three pull-request body edit histories, so the comments were
+  deleted and reposted without links and the maintainer deleted the revisions.
 
 ## Verdict and blockers
 
@@ -84,16 +87,42 @@ row is cleared. TestFlight build 1.0.0 (2) with both manifests processed with no
 errors or warnings, the policy URL `https://posato.app/privacy/` is set through
 the App Store Connect API, and the maintainer published the label.
 
-`open`: automated searches of official trademark databases were refused, so a
-manual trademark check remains with the maintainer.
+`user-confirmed` (2026-09-17): the maintainer's manual search of UPRP, EUIPO
+TMview, WIPO Global Brand Database, and USPTO found no "Posato" mark; this is
+not a legal opinion.
+
+## Release verdict
+
+`user-confirmed` (2026-09-17, `RELEASE-002`): the verdict is **ready** for
+revision `84d0c47`, Developer ID DMG 1.0.0 (7), and TestFlight 1.0.0 (3), for
+publication through GitHub Releases; App Store submission waits for Apple's
+approval of EU trader status.
+
+- The device matrix was not repeated: the maintainer relied on earlier
+  release-build acceptance (`MACOS-009` notarized build 6, `SYNC-017`,
+  `PRIVACY-001` TestFlight build 2). macOS 15 and iOS 18 remain unverified.
+- `observed`: a clean clone passed `quality`; both candidates passed signature,
+  notarization or processing, and entitlement checks.
+- History cleanup was best effort. A plumbing rewrite removed the trailers from
+  222 `main` commits with identical trees (`main` moved from `65443bd` to
+  `84d0c47`); `git filter-repo` was unsuitable because it strips GitHub
+  merge-commit signatures and would have changed 347 commits. 51 merge commits
+  lost their verified signature, and the six old trailer commits stay reachable
+  through pull-request refs, which only GitHub Support could purge.
+- Exposure scans must include edit histories of pull-request bodies and
+  comments, which GitHub publishes; only the web UI can delete a revision.
+- Accepted limits: iPad shows iPhone-only copy; suspended expiry and reinstall
+  behavior were not rerun on distribution builds; the Mac app has no automatic
+  updater, so security fixes need a manual download.
 
 ## Evidence limits
 
-- Physical evidence covers one development-signed Mac on macOS 26 with Safari
-  and Chrome Stable and one iPhone; previous major versions and distribution
-  signing are unverified.
+- Physical evidence covers one Mac on macOS 26 with Safari and Chrome Stable
+  and one iPhone, on development and earlier release builds; previous major
+  versions and the final candidates on devices are unverified.
 - Apple requirements were read from official documentation on 2026-09-14 and
   must be rechecked when the follow-up rows run.
 
 Details are in the
-[execution record](../../tasks/executions/release-001-first-release-readiness.md).
+[`RELEASE-001` record](../../tasks/executions/release-001-first-release-readiness.md)
+and the [`RELEASE-002` record](../../tasks/executions/release-002-release-candidate.md).

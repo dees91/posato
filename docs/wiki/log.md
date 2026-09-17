@@ -1758,3 +1758,21 @@ processed with no errors or warnings. See the
   screenshot), and a fresh iPhone install needs the first-install skip
   scenario plus the maintainer's Screen Time consent.
 - Record: `docs/tasks/executions/docs-002-showcase-media.md`.
+
+## [2026-09-17] release | Posato 1.0 release candidates and ready verdict
+
+- `RELEASE-002` gives the ready verdict for `84d0c47`, Developer ID DMG 1.0.0
+  (7), and TestFlight 1.0.0 (3); the maintainer skipped a repeated device
+  matrix, so macOS 15 and iOS 18 stay unverified.
+- Exposure cleanup: review-bot comments with task links deleted and reposted,
+  three pull-request body revisions deleted by the maintainer, stale branches,
+  the prototype archive tag, and Actions artifacts and runs removed, and a
+  trailer-only history rewrite that moved `main` from `65443bd` to `84d0c47`.
+  `git filter-repo` strips GitHub merge-commit signatures, so a plumbing rewrite
+  kept earlier commits byte-identical; old commits stay reachable through
+  pull-request refs.
+- The README, availability page, security policy, and posato.app now point to
+  GitHub Releases, with a download badge, a repository link, and GitHub support
+  and security routes.
+- Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
+  `docs/wiki/topics/first-release-readiness.md`.

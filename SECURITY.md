@@ -2,8 +2,9 @@
 
 ## Supported versions
 
-Posato has not had a public release yet. Security fixes are made on the `main`
-branch. Once releases exist, the latest release of each platform is supported.
+The latest release of each platform is supported. Security fixes are made on
+the `main` branch and shipped in a new release; the Mac app has no automatic
+updater, so install the latest download from GitHub Releases.
 
 ## Reporting a vulnerability
 

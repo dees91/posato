@@ -369,3 +369,26 @@ code {
     gap: 0.75rem;
   }
 }
+
+.repository {
+  justify-content: center;
+  min-width: 2.75rem;
+  color: var(--ink);
+}
+
+.github-mark {
+  display: block;
+}
+
+.download {
+  margin-top: 1.5rem;
+}
+
+.download a {
+  display: inline-block;
+  border-radius: 0.5rem;
+}
+
+.download img {
+  display: block;
+}
