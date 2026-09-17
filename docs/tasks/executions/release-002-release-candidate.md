@@ -1,10 +1,10 @@
 # Execution: `RELEASE-002`
 
 - **Brief:** [Verify the release candidates and publish Posato 1.0](../specifications/release-002-release-candidate.md)
-- **Status:** `active`
+- **Status:** `blocked`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code session
-- **Reviewers:** independent plan-review agent; completed-change and readiness reviewer pending
+- **Reviewers:** independent plan-review agent; independent readiness review agent; independent documentation review agent
 - **Branch:** `feature/release-002-release-candidate` (PR #66)
 - **Updated:** 2026-09-17
 
@@ -82,3 +82,8 @@
 
 - macOS 15, iOS 18, and the final candidates on devices are unverified by maintainer decision.
 - Pre-rewrite commits stay reachable through pull-request refs and commit URLs after the repository becomes public.
+
+## Final
+
+- **Status:** `blocked` on Apple's approval of EU trader status, which gates the App Store submission only.
+- **Outcome:** `AC-01`, `AC-02`, and `AC-03` met with the accepted limits above. `AC-04` and the rest of `AC-05` follow the merge of this pull request: the annotated `v1.0.0` tag on the `main` tip, the GitHub Release with the DMG and `SHA256SUMS` verified after download, and the live site and README link checks, recorded with the App Store submission and badge in a follow-up change. An independent documentation review approved the release copy and site; its recommended points were folded.
