@@ -19,7 +19,7 @@
 
 ## Binary scan (`AC-02`)
 
-`observed` (2026-09-15, unsigned Release `iphoneos` build of `9e7e677` plus the brief): imported
+`observed` (2026-09-15, unsigned Release `iphoneos` build of `73ecb2b` plus the brief): imported
 symbols from every category in Apple's `NSPrivacyAccessedAPIType` list, with callers found by
 disassembly. The Kotlin framework is static, so its code is in the app executable.
 
@@ -100,7 +100,7 @@ third-party partners can access it longer than needed to serve the request in re
 | --- | --- | --- |
 | `plutil -lint` on both manifests and `project.pbxproj` | pass | all OK |
 | Unsigned Release `iphoneos` build with manifests | pass | both bundles contain the manifest at their root, byte-identical to source |
-| `./gradlew quality` | pass | after the manifest and project change, and again after rebasing onto `1a113f4` |
+| `./gradlew quality` | pass | after the manifest and project change, and again after rebasing onto `dc3bb78` |
 | Release archive 1.0.0 (2) | pass | both manifests byte-identical to source; same `stat` and `fstat` scan result |
 | Exported IPA | pass | Apple Distribution; entitlement set as in `IOS-003`, `get-task-allow` false, CloudKit Production |
 | `altool` validation and upload | pass | `VERIFY SUCCEEDED`, `UPLOAD SUCCEEDED` |

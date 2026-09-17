@@ -7,24 +7,24 @@
 - **Provenance:** `user-confirmed`
 
 The Availability, Limits, and Supported platforms sections were relocated
-verbatim from the root README as accepted in `RELEASE-001`; the README keeps a
+verbatim from the root README as accepted in `RELEASE-001`, and `RELEASE-002`
+updated Availability for the 1.0 release; the README keeps a
 summary and links here. The Planned platforms section records the maintainer's
 2026-09-16 direction for later releases.
 
 ## Availability
 
-Posato is **pre-release**. There is no official download yet:
+Posato 1.0 is available for Mac; the iPhone app is coming to the App Store.
 
-| Platform | Planned channel | Availability |
+| Platform | Channel | Availability |
 | --- | --- | --- |
-| macOS | Signed and notarized download (Developer ID) | Not available yet |
-| iOS | App Store | Not available yet |
+| macOS | Signed and notarized download (Developer ID) | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
+| iOS | App Store | Coming soon |
 
-Release readiness is tracked in the
-[first-release readiness record](../tasks/executions/release-001-first-release-readiness.md).
-Until a channel opens, Posato can be
-[built from source](../development/README.md#build-from-source) for development
-and evaluation.
+The release verdict is recorded in the
+[release candidate record](../tasks/executions/release-002-release-candidate.md).
+Posato can also be [built from source](../development/README.md#build-from-source)
+for development and evaluation.
 
 ## Limits
 

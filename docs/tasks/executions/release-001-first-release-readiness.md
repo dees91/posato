@@ -10,7 +10,7 @@
 
 ## Observed starting point
 
-- Reviewed revision base: `main` at `0d33be3` (MVP-001 accepted on `105ddda`). The repository was private, had no license, notice, security, contributing, or privacy documents, and its README was an internal status page with stale implementation claims.
+- Reviewed revision base: `main` at `f7b7b7a` (MVP-001 accepted on `105ddda`). The repository was private, had no license, notice, security, contributing, or privacy documents, and its README was an internal status page with stale implementation claims.
 - Distribution gaps were already visible: development-only signing without a secure timestamp or notarization, a Release iOS configuration without Family Controls, no production CloudKit schema, App Store Connect record, application icon, or privacy manifests.
 
 ## Decisions (`user-confirmed`, 2026-09-14)
@@ -64,7 +64,7 @@
 
 ## Result
 
-- **Verdict: blocked** for revision `0d33be3` plus this change, Developer ID on macOS and the App Store on iOS, deployment targets macOS 15 (arm64) and iOS 18. Repository hygiene, licensing, clean-checkout build, public documents, disclosures, and residual-risk rechecks pass; distribution signing, iOS Release enforcement, production CloudKit, store assets, privacy publication, the platform matrix, history cleanup, and trademark confirmation are blocked with named owners.
+- **Verdict: blocked** for revision `f7b7b7a` plus this change, Developer ID on macOS and the App Store on iOS, deployment targets macOS 15 (arm64) and iOS 18. Repository hygiene, licensing, clean-checkout build, public documents, disclosures, and residual-risk rechecks pass; distribution signing, iOS Release enforcement, production CloudKit, store assets, privacy publication, the platform matrix, history cleanup, and trademark confirmation are blocked with named owners.
 - Added `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, `PRIVACY.md`, `SECURITY.md`, `CONTRIBUTING.md`, and bug-report and question-or-idea templates; rewrote the README; updated the brief and roadmap revision 15. No product code changed, and no external write action was taken against Apple or GitHub.
 - Deviation: official trademark databases refused automated searches, so that obligation stays with the maintainer.
 
@@ -80,7 +80,7 @@
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Rebase onto `0d33be3`, `git diff --check` | pass | only this task's documents and the roadmap differ from `main` |
+| Rebase onto `f7b7b7a`, `git diff --check` | pass | only this task's documents and the roadmap differ from `main` |
 | History mirror and GitHub-hosted content scans | pass with recorded decisions | categories and counts only; comparisons against real identifiers matched nothing |
 | Clean clone `./gradlew quality` | pass | `e2f701f`, 5 min 16 s |
 | README iOS Simulator build and desktop run task | pass | clean clone; build succeeded |

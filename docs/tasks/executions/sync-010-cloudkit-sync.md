@@ -62,10 +62,10 @@
   checks passed separately. Standard correction review also passed:
   empty-cursor guard and regression, 20 iOS adapter tests.
 - High-risk correction review (2026-09-09) passed with no Critical/Required
-  findings. Reviewer inspected the correction against `1c4e3ff`, including new
+  findings. Reviewer inspected the correction against `30d89a6`, including new
   authoring and regression files, and ran 25 focused JVM tests successfully.
 
-| PR feedback class after `1c4e3ff` | Count | Decision |
+| PR feedback class after `30d89a6` | Count | Decision |
 | --- | --- | --- |
 | Local save waits / unopened writer | 2 P1 | fixed; writer scope narrowed with maintainer acceptance |
 | Duplicate lifecycle trigger / pending copy | 2 P2 | fixed in the maintainer-approved plan |

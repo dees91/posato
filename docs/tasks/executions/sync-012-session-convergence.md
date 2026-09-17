@@ -11,7 +11,7 @@
 
 ## Observed starting point
 
-- Baseline `111251f` includes PR #50 and the driver documentation correction. No SYNC-015 parallel-write freeze remains necessary after its merge; preserve its regression behavior.
+- Baseline `03ba1a2` includes PR #50 and the driver documentation correction. No SYNC-015 parallel-write freeze remains necessary after its merge; preserve its regression behavior.
 - `SyncWriter` already supports `StartSession`, `EndSession`, `evaluateSession`, and checkpointed `markTerminalExpiry`; `SyncReducer` owns total-order arbitration, conflict quarantine, future-start filtering, and no fallback from an ended/expired winner.
 - `AppleSync.runExchange` currently projects policies only. `SessionViewModel` writes `LocalSessionStore` directly and drives an enforcement coordinator tied to `viewModelScope`; session reads/ticks depend on UI subscription.
 - `SqlLocalSessionStore.start` accepts only a start at the current instant and removes other local expiry markers. Remote historical starts need a separate reconciliation path, and synchronized expiry retention cannot use that pruning rule.

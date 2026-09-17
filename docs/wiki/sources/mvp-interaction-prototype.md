@@ -6,10 +6,10 @@
   `a081d4278cf8517c46b4322ed3c098462f153570`
 - **Current artifact:** [native interaction prototype](../../../prototypes/mvp-interaction-flow/README.md)
 - **Design-system library:** `prototypes/mvp-interaction-flow/compose/`
-- **Historical HTML and Node suite:** non-release tag
-  `archive/mvp-interaction-flow-html`, pinned to `566bdb6`
+- **Historical HTML and Node suite:** commits of pull request #32 only; the
+  archive tag was removed on 2026-09-17 before the first release
 - **Source type:** disposable interactive UX prototype
-- **Frozen adoption reference:** `c879ff7df7ad29f286b7976756e707b0179520d3`
+- **Frozen adoption reference:** `27da7bdd6c831213a65b71db59a57cc5df70f174`
 - **Reviewed:** 2026-09-07
 - **Authority:** evidence only; not a product, design, architecture, or
   implementation authority
@@ -102,7 +102,7 @@ These are `observed` prototype results, not production acceptance evidence.
   also available within the Mac full-screen preview.
 - `observed`: the former dependency-free model regression checks covered duration
   boundaries, return navigation, active-session mapping repair, and the four
-  guided scenarios. The 24 Node cases are retained at `566bdb6`; current checks
+  guided scenarios. The 24 Node cases survive only in pull request #32; current checks
   run as common Kotlin tests through `:prototypeApp:jvmTest`.
 
 The single HTML artifact had no build step, remote assets, persistence, or

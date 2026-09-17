@@ -2,7 +2,7 @@
 
 - **Review tier:** `standard`
 - **Tier reason:** Brand assets, screenshots, and read-only shared information screens change no security, privacy, or synchronization boundary; an independent check still covers design fidelity and the new navigation entry.
-- **Dependencies:** completed `RELEASE-001` (merged as `18a17b2`). `DOCS-001` depends on this row.
+- **Dependencies:** completed `RELEASE-001` (merged as `f96c0c6`). `DOCS-001` depends on this row.
 - **Integration group:** `PR-STORE-ASSETS`, roadmap wave Release/R2, in parallel with `MACOS-008` and `IOS-003`.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md), [DESIGN.md](../../../DESIGN.md) (identity and iconography, components), [product identity](../../product/product-identity.md), [LICENSE](../../../LICENSE), [NOTICE](../../../NOTICE), [third-party notices](../../../THIRD_PARTY_NOTICES.md).
 

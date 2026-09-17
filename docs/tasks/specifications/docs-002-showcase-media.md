@@ -2,7 +2,7 @@
 
 - **Review tier:** `standard`
 - **Tier reason:** Public-facing media, README, and site changes alter no product behavior; an independent check still covers claim accuracy, synthetic captures, reproducible renders, size budgets, and the site's performance baseline.
-- **Dependencies:** completed `DOCS-001` (`33495be`) and `WEB-001` (`1a113f4`). `RELEASE-002` rechecks the walkthrough attachment link at publication.
+- **Dependencies:** completed `DOCS-001` (`6a0ca5f`) and `WEB-001` (`dc3bb78`). `RELEASE-002` rechecks the walkthrough attachment link at publication.
 - **Integration group:** `PR-SHOWCASE-MEDIA`, roadmap wave Release/R2.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md) (revision 19 maintainer request), [DESIGN.md](../../../DESIGN.md) (voice, palette, website), [README](../../../README.md), [showcase media](../../../video/README.md), [WEB-001 record](../executions/web-001-posato-site.md).
 

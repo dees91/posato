@@ -79,7 +79,7 @@ Seven passes, 2026-09-14 to 2026-09-15. The final verdict was `approved` at `a18
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | pass on the final tree, rebased onto `9324a60` after the last correction; no build-script warnings | local run |
+| `./gradlew quality` | pass on the final tree, rebased onto `465b2e1` after the last correction; no build-script warnings | local run |
 | `DesktopMacHelperStateTest`, `MacOsSystemSettingsTest`, detekt, ktlint | pass (21/21 and 2/2) | local run |
 | Development packaging after jar stripping | pass; only the arm64 SQLite dylib remains archived | `verifyMacOsDevelopmentPackaging` |
 | Release fail-closed paths | missing identity or build number stops with a clear message | local run |

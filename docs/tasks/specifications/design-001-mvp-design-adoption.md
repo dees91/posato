@@ -2,7 +2,7 @@
 
 - **Review tier:** `high-risk`
 - **Tier reason:** Native window code enters the signed desktop package; batch input and automatic application-policy activation cross persistence boundaries.
-- **Dependencies:** `SESSION-001`, `TARGETS-001`–`TARGETS-005`, `MACOS-006`, `QUALITY-002`; prototype reference `c879ff7`.
+- **Dependencies:** `SESSION-001`, `TARGETS-001`–`TARGETS-005`, `MACOS-006`, `QUALITY-002`; prototype reference `27da7bd`.
 - **Integration group:** One design-adoption PR, including the `QUALITY-003` desktop scrolling outcome.
 - **Authority:** Maintainer-approved implementation plan, 2026-09-07.
 
@@ -15,7 +15,7 @@ and ViewModels, and remains verifiable through the maintained native driver.
 ## Boundaries
 
 - Adopt the product components in the existing shared design-system package;
-  freeze the prototype implementation at `c879ff7` without an MVP dependency.
+  freeze the prototype implementation at `27da7bd` without an MVP dependency.
 - Preserve real session, availability, authorization, and persistence outcomes;
   do not integrate onboarding, synchronization, enforcement, or inspection controls.
 - Support bounded domain/HTTP(S)-URL batches and automatic creation of the

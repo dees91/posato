@@ -157,17 +157,10 @@ resource, packaging, or build-wiring changes; then drive the affected native
 app. Other production checks in root quality are unchanged. Common tests
 replace the former Node model suite, not native rendering or accessibility QA.
 
-The former HTML study and Node tests are preserved by the non-release tag
-`archive/mvp-interaction-flow-html`, pinned to `566bdb6`. The tag keeps this
-history reachable independently of the work branch or a squash merge. In a
-checkout that did not fetch tags, retrieve it explicitly:
-
-```sh
-git fetch origin tag archive/mvp-interaction-flow-html
-git show archive/mvp-interaction-flow-html:prototypes/mvp-interaction-flow/index.html
-```
-
-The earlier refinement at `bfc4a49` remains in the archived ancestry as visual
-provenance, not an accepted production design contract.
+The former HTML study, its earlier visual refinement, and the Node tests are
+no longer kept in the repository: their archive tag was removed on 2026-09-17
+before the first release. They remain visible only in the commits of pull
+request #32. That refinement was visual provenance, not an accepted production
+design contract.
 [The root DESIGN.md](../../DESIGN.md) remains the production authority.
 [The prototype design reference](DESIGN.md) describes the current mock in full.

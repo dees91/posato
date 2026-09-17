@@ -2,7 +2,7 @@
 
 - **Review tier:** `high-risk`
 - **Tier reason:** Developer ID signing, notarization submissions, and release packaging use account-level Apple resources and produce the artifact users will trust.
-- **Dependencies:** completed `RELEASE-001` (merged as `18a17b2`, blocked verdict with this row as owner).
+- **Dependencies:** completed `RELEASE-001` (merged as `f96c0c6`, blocked verdict with this row as owner).
 - **Integration group:** `PR-MAC-DISTRIBUTION`, roadmap wave Release/R2, in parallel with `IOS-003` and `DESIGN-002`.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md), [RELEASE-001 record](../executions/release-001-first-release-readiness.md) (AC-04 rows), [architecture baseline](../../decisions/0003-mvp-application-architecture-baseline.md), [macOS helper ADR](../../decisions/0004-macos-helper-ownership-and-lifecycle.md), [threat model](../../security/apple-mvp-threat-model.md) (`TB-08`, `T-13`), [third-party notices](../../../THIRD_PARTY_NOTICES.md).
 

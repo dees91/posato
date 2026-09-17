@@ -22,7 +22,8 @@
   events, previews, hidden controls, appearance options, and retained drafts.
 - Retired HTML and its Node suite after common regression and native parity
   checks; non-release tag `archive/mvp-interaction-flow-html` retains both at
-  `566bdb6` independently of a squash merge or work-branch deletion.
+  `566bdb6` independently of a squash merge or work-branch deletion (the tag was
+  deleted on 2026-09-17; the commits stay visible in pull request #32).
 - Reworked the 50-website study with primary session actions above two counted
   summaries, read-only details, separate website/app tabs, search, lazy rows,
   and labelled menus. Browser state belongs to composition above editor navigation.

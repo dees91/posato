@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 19
+- **Revision:** 20
 - **Prepared:** 2026-08-25
 - **Accepted:** 2026-08-25
-- **Last amended:** 2026-09-16
+- **Last amended:** 2026-09-17
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`
 - **Gate 6:** complete
@@ -122,6 +122,16 @@ synthetic cursor, matching device frames, composed side-by-side stills, and
 a silent looping hero video on the site. `RELEASE-002` now also depends on
 `DOCS-002`. It changes no other task, dependency, wave, or integration group.
 
+Revision 20 extends `RELEASE-002` on 2026-09-17 at the maintainer's request.
+Besides the verdict, the task now publishes the first release: a version tag
+and GitHub Release with the notarized macOS download, the README updated for
+the release, and `posato.app` updated with the repository link and download
+buttons. The agent performs every step it can and hands the maintainer only
+the actions that need the maintainer's account or authorization. The same day
+the maintainer dropped the device matrix: the candidates pass the release checks
+and rely on the earlier release-build acceptance runs. It changes no other task,
+dependency, wave, or integration group.
+
 The accepted [MVP scope](../product/mvp-scope.md),
 [design authority](../../DESIGN.md),
 [architecture baseline](../decisions/0003-mvp-application-architecture-baseline.md),
@@ -222,7 +232,7 @@ wave barriers add the phase ordering stated above.
 | `DOCS-001` | Turn the README into a showcase with screenshots and a Remotion-rendered demo that routes details to the documentation. | Release readiness | Release/R2 | `RELEASE-001`, `DESIGN-002` | PR-SHOWCASE-README |
 | `WEB-001` | Publish a simple `posato.app` site with a product page, the hosted privacy policy and its contact, and support routes usable as the App Store support and privacy URLs. | Release readiness | Release/R2 | `DESIGN-002`, `DOCS-001` | PR-WEBSITE |
 | [`DOCS-002`](specifications/docs-002-showcase-media.md) | Rebuild the showcase media: a demo and walkthrough with a visible cursor and matching device frames, composed side-by-side README stills, and a silent looping hero video on `posato.app`. | Release readiness | Release/R2 | `DOCS-001`, `WEB-001` | PR-SHOWCASE-MEDIA |
-| `RELEASE-002` | Verify release candidates across the supported matrix, clean published history and pull-request links, give the final ready verdict, and hand publication to the maintainer. | Release readiness | Release/R3 | `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `DOCS-002` | PR-RELEASE-CANDIDATE |
+| [`RELEASE-002`](specifications/release-002-release-candidate.md) | Verify the release candidates, clean published history and pull-request links, give the final ready verdict, and publish the first release: version tag, GitHub Release with the macOS download, release README, and `posato.app` download links, handing the maintainer only account-owned actions. | Release readiness | Release/R3 | `MACOS-008`, `MACOS-009`, `IOS-003`, `SYNC-017`, `DESIGN-002`, `DESIGN-003`, `PRIVACY-001`, `DOCS-001`, `WEB-001`, `DOCS-002` | PR-RELEASE-CANDIDATE |
 
 ## PR #1 shared cycle
 
@@ -260,7 +270,7 @@ integrated increment, not three task cycles plus another holistic review.
 | Browser support and proxy coexistence | `MACOS-002` / `MACOS-004` | Accepted support contract and physical browser matrix pass. |
 | CloudKit and Keychain environments | `SYNC-005`–`SYNC-010` | Physical account, delay, restart, error, and cleanup evidence passes. |
 | Complete product flow | `MVP-001` | The accepted Mac-and-iPhone matrix passes without manual repair. |
-| Public distribution | `RELEASE-002` | Final readiness verdict on candidate artifacts; never inferred from MVP behavior or the `RELEASE-001` audit. |
+| Public distribution | `RELEASE-002` | Final readiness verdict on candidate artifacts, never inferred from MVP behavior or the `RELEASE-001` audit, followed by the published GitHub Release and the App Store submission. |
 
 No credential, signing identity, provisioning profile, private device ID, raw
 capture, opaque application token, real-person domain, or account-specific

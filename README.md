@@ -9,7 +9,7 @@ or iPhone, within the [limits](#limits) below.
   <img src=".github/assets/demo.gif" width="960" alt="Posato demo: choose websites and apps to pause on a Mac and an iPhone, set a duration, and start a session">
 </p>
 
-Watch the [full 42-second walkthrough](https://github.com/user-attachments/assets/a810e657-0a76-4b84-a931-a622fd9c401e),
+Watch the [full 42-second walkthrough](https://posato.app/media/walkthrough.mp4),
 which adds the Mac app picker, the review screen, and ending a session early.
 
 [Quick start](#quick-start) · [How it works](#how-it-works) ·
@@ -20,14 +20,20 @@ Open source under the [Apache License 2.0](LICENSE).
 
 ## Quick start
 
-Posato is **pre-release**, with
-[no official download yet](docs/product/limits-and-platforms.md#availability).
-It targets **macOS 15 or later on Apple silicon** and **iOS 18 or later**; the
-[release test matrix](docs/product/limits-and-platforms.md#supported-platforms)
+<p>
+  <a href="https://github.com/dees91/posato/releases/latest"><img src="website/public/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac"></a>
+</p>
+
+- **Mac:** download the signed and notarized DMG from
+  [GitHub Releases](https://github.com/dees91/posato/releases/latest), open it, and drag Posato to Applications.
+- **iPhone:** Posato is coming to the App Store.
+
+Posato targets **macOS 15 or later on Apple silicon** and **iOS 18 or later**;
+the [release test matrix](docs/product/limits-and-platforms.md#supported-platforms)
 is still being confirmed. Intel Macs, Android, Linux, and Windows are
 [planned for later releases](docs/product/limits-and-platforms.md#planned-platforms).
 
-To try it from source, follow the [build instructions](docs/development/README.md#build-from-source).
+To build it yourself, follow the [build instructions](docs/development/README.md#build-from-source).
 Unsigned builds let you explore the apps; blocking and sync require Apple
 Development signing. The iOS Simulator cannot use Screen Time controls.
 
@@ -71,8 +77,8 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   administrator approval. Paused apps are quit, so save your work first.
   Website blocking covers Safari and Google Chrome Stable using the system proxy.
 - **iPhone:** restrictions can linger after a session ends. For sessions under
-  15 minutes, they clear when Posato is open at the end or the next time you
-  open it.
+  15 minutes, they clear only when Posato is open at the end or the next time
+  you open it.
 - **Sync:** delivery is best effort. If every copy of your workspace key is
   lost, synchronized data cannot be recovered.
 

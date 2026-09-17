@@ -2,7 +2,7 @@
 
 - **Review tier:** `standard`
 - **Tier reason:** Public-facing documentation and media change no product behavior; an independent check still covers claim accuracy against verified behavior, synthetic media, and links.
-- **Dependencies:** completed `RELEASE-001`, `DESIGN-002` (icons and store screenshots), and, for final UI, `DESIGN-003` and `MACOS-009` (all merged by `7a3aee7`). `WEB-001` follows this row.
+- **Dependencies:** completed `RELEASE-001`, `DESIGN-002` (icons and store screenshots), and, for final UI, `DESIGN-003` and `MACOS-009` (all merged by `543b5c5`). `WEB-001` follows this row.
 - **Integration group:** `PR-SHOWCASE-README`, roadmap wave Release/R2.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md) (revision 15 maintainer request), [README](../../../README.md), [DESIGN.md](../../../DESIGN.md) (voice and identity), [privacy policy](../../../PRIVACY.md), [RELEASE-001 record](../executions/release-001-first-release-readiness.md) (disclosed limits), [store listing](../../store/en-US/listing.md).
 

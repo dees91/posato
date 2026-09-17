@@ -3,7 +3,7 @@
 - **Execution record:** [RELEASE-001 execution](../executions/release-001-first-release-readiness.md)
 - **Review tier:** `high-risk`
 - **Tier reason:** Public repository exposure, signing, distribution, privacy disclosures, and release artifacts cross security and irreversible publication boundaries.
-- **Dependencies:** completed `MVP-001` (accepted on `105ddda`, merged as `0d33be3`, with its recorded limits).
+- **Dependencies:** completed `MVP-001` (accepted on `105ddda`, merged as `f7b7b7a`, with its recorded limits).
 - **Integration group:** `PR-RELEASE-READINESS`, roadmap wave Release/R1.
 - **Authority:** [MVP roadmap](../mvp-roadmap.md), [AGENTS.md](../../../AGENTS.md), [quality contract](../../development/engineering-quality-contract.md#release-readiness-boundary), [MVP scope](../../product/mvp-scope.md), [product identity](../../product/product-identity.md), [architecture baseline](../../decisions/0003-mvp-application-architecture-baseline.md), [macOS helper ADR](../../decisions/0004-macos-helper-ownership-and-lifecycle.md), [threat model](../../security/apple-mvp-threat-model.md), and [diagnostics policy](../../security/diagnostics-and-support-data.md).
 

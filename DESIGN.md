@@ -68,7 +68,7 @@ The maintainer accepted the native prototype and its design-system adoption on
 geometry, platform-color-only theme, and top segmented navigation. The original
 2026-08-25 brand promise, privacy boundary, and respectful tone remain.
 
-The reference is the native prototype at `c879ff7`. Product components are
+The reference is the native prototype at `27da7bd`. Product components are
 adapted into `shared/core/designsystem`; the real app does not depend on a
 prototype module. Preserve visual hierarchy, palette, typography, geometry,
 and interaction patterns practically one-to-one while adapting code to the
@@ -436,8 +436,15 @@ an 820 CSS-pixel maximum and a 600-pixel compact breakpoint; navigation and
 footer links keep a 44-pixel minimum height.
 
 The product page reuses the README and store-listing copy: **Pause. Then
-choose.**, the three steps, the limits summary, privacy, and a pre-release
-availability note. The hero plays the showcase demo rendered from `video/`
+choose.**, the three steps, the limits summary, privacy, and an availability
+note. `user-confirmed` (2026-09-17, `RELEASE-002`): the hero and the availability
+note carry the maintainer-provided "Download for Mac" badge artwork, recolored
+to the ink surface (`#18231F`) with a `#6D816E` outline and a 12-pixel radius,
+self-hosted and linked to the latest GitHub Release; the matching App Store
+badge joins it once the listing is live, and Apple badge guidelines are not
+reviewed for now. The
+header ends with a GitHub mark linking to the public repository, and the support
+page adds GitHub Issues and private vulnerability reporting. The hero plays the showcase demo rendered from `video/`
 as a silent, looping, self-hosted video in a plain outlined panel, with a
 poster for the first paint and under Reduce Motion; compact layouts omit it
 (`user-confirmed`, 2026-09-16, replacing the earlier iPhone hero capture that
@@ -451,9 +458,9 @@ Apple artwork and add no base or shadow.
 The policy page renders `PRIVACY.md` without typographic substitution, the
 limits page renders the Limits section of the accepted limits document, and the
 favicon is the Forest icon source. Pages have no scripts, inline styles,
-cookies, analytics, web fonts, or third-party assets, and no link to the source
-repository before it is public; the hero video and its poster are the only
-self-hosted media.
+cookies, analytics, web fonts, or third-party assets; all media, including the
+hero video, its poster, the step captures, and the download badge, is
+self-hosted.
 
 ### First-install onboarding
 
