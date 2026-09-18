@@ -32,7 +32,11 @@ provenance rather than a parallel public brand.
   just-in-time task brief, concise execution record, wave, and parallel-work
   process.
 - [../tasks/mvp-roadmap.md](../tasks/mvp-roadmap.md) — accepted Gate 6
-  MVP task-stub, dependency, wave, evidence, and integration-group authority.
+  MVP task-stub, dependency, wave, evidence, and integration-group authority;
+  complete and retained as history.
+- [../tasks/release-roadmap.md](../tasks/release-roadmap.md) — planned
+  releases after 1.0.0 with their rows, waves, backlog, and the idea intake
+  rule.
 - [../../DESIGN.md](../../DESIGN.md) — accepted, tool-neutral Posato brand and
   product design system for the Apple MVP.
 - [Prototype design reference](../../prototypes/mvp-interaction-flow/DESIGN.md)
