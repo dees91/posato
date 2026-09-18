@@ -11,8 +11,7 @@ that seeds completion opens on Session without the flow.
 ## Sub-features
 
 - `first-install-full` completes purpose, privacy, declined iCloud,
-  unavailable permission, one typed website (stored with its `www`
-  counterpart), and the service-read summary.
+  unavailable permission, one website, and the service-read summary.
 - `first-install-skip` dismisses the flow without adding anything, so older
   recipes keep passing after a fresh launch or reset.
 - `first-install-upgrade` opens an upgraded database with existing product
@@ -53,10 +52,10 @@ Preconditions:
 
 - **Full flow:** `$PC run -t sim --scenario tools/posato-control/fixtures/scenarios/first-install.json`.
   It declines iCloud, takes the unavailable permission answer, adds
-  `example.com`, waits for `2 websites saved` on the summary, captures a screenshot
+  `example.com`, waits for `1 website saved` on the summary, captures a screenshot
   and a snapshot, and lands on Session. Confirm the side effects with
   `$PC db query -t sim --sql "select canonical_domain from exact_domain_policy"`
-  (`example.com` and `www.example.com`) and zero `sync_bootstrap_state` rows.
+  (one row) and zero `sync_bootstrap_state` rows.
 - **Late summary refresh:** during an attended second-install join, leave
   the joining device on Summary while the peer adds or removes a reserved
   fixture website. After a completed exchange, capture the updated saved

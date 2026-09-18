@@ -61,14 +61,6 @@ internal interface LocalTargetPolicyStore {
         policy: TargetPolicy,
         syncWrite: PolicySyncWrite? = null,
     ): LocalPolicyResult<LocalTargetPolicyState>
-
-    suspend fun wwwCounterpartExpansionCompleted(): Boolean {
-        return true
-    }
-
-    suspend fun markWwwCounterpartExpansionCompleted(): LocalPolicyResult<Unit> {
-        return LocalPolicyResult.Success(Unit)
-    }
 }
 
 internal interface LocalPolicySyncStore : LocalTargetPolicyStore {

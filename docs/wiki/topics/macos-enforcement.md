@@ -87,9 +87,9 @@ and A-label round-tripping. Product input accepts a domain rather than a URL,
 requires at least two labels, excludes IP literals through the WHATWG
 [ends-in-a-number](https://url.spec.whatwg.org/#ends-in-a-number) rule, and
 permits only one terminal DNS dot before canonicalization. The proxy revalidates
-authority, permits one terminal dot on the wire, compares equality only, never
-includes subdomains or IP literals, and rejects malformed, duplicate, or
-conflicting authority without falling back direct. A selected host is denied
+authority, permits one terminal dot on the wire, compares equality after `www`
+equivalence, never includes other subdomains or IP literals, and rejects
+malformed, duplicate, or conflicting authority without falling back direct. A selected host is denied
 before the port check. Allowed HTTPS is an opaque tunnel and the helper uses
 direct upstream sockets to avoid proxy recursion.
 

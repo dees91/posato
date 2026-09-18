@@ -129,35 +129,11 @@ class ExactDomainPolicyTest {
     }
 
     @Test
-    fun `given a policy of apex hosts when expanded then missing www counterparts are added`() {
-        val policy = assertPolicy(listOf("example.com", "news.example"))
+    fun `given a doubled www host when a counterpart is derived then one www label is stripped`() {
+        val domain = assertSuccess(ExactDomain.parse("www.www.example.com"))
 
-        assertEquals(
-            listOf("example.com", "news.example", "www.example.com", "www.news.example"),
-            policy.withWwwCounterparts().domains.map(ExactDomain::canonicalValue),
-        )
+        assertEquals("www.example.com", domain.wwwCounterpart()?.canonicalValue)
     }
-
-    @Test
-    fun `given a policy that already contains both hosts when expanded then it is unchanged`() {
-        val policy = assertPolicy(listOf("example.com", "www.example.com"))
-
-        assertEquals(policy, policy.withWwwCounterparts())
-    }
-
-    @Test
-    fun `given a full policy when expanded then existing hosts are kept and extra counterparts are skipped`() {
-        val existing = (1..ExactDomainPolicyLimits.MAX_DOMAIN_COUNT).map { index -> "site$index.example" }
-        val policy = assertPolicy(existing)
-
-        assertEquals(policy, policy.withWwwCounterparts())
-    }
-}
-
-private fun assertPolicy(canonicalDomains: List<String>): TargetPolicy {
-    return assertIs<TargetPolicyValidationResult.Success>(
-        TargetPolicy.fromStoredValues(canonicalDomains, null),
-    ).policy
 }
 
 private fun assertSuccess(result: ExactDomainInputResult): ExactDomain {

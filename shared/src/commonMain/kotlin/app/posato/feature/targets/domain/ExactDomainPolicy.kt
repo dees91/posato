@@ -119,30 +119,6 @@ internal class TargetPolicy private constructor(
         return "TargetPolicy(redacted)"
     }
 
-    fun withWwwCounterparts(): TargetPolicy {
-        val retained = LinkedHashSet(domains)
-        val room = ExactDomainPolicyLimits.MAX_DOMAIN_COUNT - retained.size
-        if (room > 0) {
-            domains.asSequence()
-                .mapNotNull(ExactDomain::wwwCounterpart)
-                .filter { counterpart -> counterpart !in retained }
-                .take(room)
-                .forEach(retained::add)
-        }
-        if (retained.size == domains.size) {
-            return this
-        }
-        return when (
-            val result = fromStoredValues(
-                retained.map(ExactDomain::canonicalValue),
-                applicationPolicyName?.canonicalValue,
-            )
-        ) {
-            is TargetPolicyValidationResult.Success -> result.policy
-            is TargetPolicyValidationResult.Failure -> this
-        }
-    }
-
     companion object {
         fun fromStoredValues(
             canonicalDomains: Iterable<String>,

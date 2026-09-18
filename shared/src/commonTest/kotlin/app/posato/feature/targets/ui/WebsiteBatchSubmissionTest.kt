@@ -9,12 +9,8 @@ class WebsiteBatchSubmissionTest {
     fun `given domains and URLs when submitted then only canonical exact hosts survive`() {
         val result = ready("EXAMPLE.COM, https://www.example.com/private?q=secret#fragment\nbücher.example")
 
-        assertEquals(
-            listOf("example.com", "www.example.com", "www.xn--bcher-kva.example", "xn--bcher-kva.example"),
-            result.canonicalDomains,
-        )
-        assertEquals(4, result.addedCount)
-        assertEquals(1, result.duplicateCount)
+        assertEquals(listOf("example.com", "www.example.com", "xn--bcher-kva.example"), result.canonicalDomains)
+        assertEquals(3, result.addedCount)
         assertEquals(emptyList(), result.rejectedIndices)
         assertEquals("WebsiteBatchSubmission.Ready(redacted)", result.toString())
     }
@@ -23,8 +19,8 @@ class WebsiteBatchSubmissionTest {
     fun `given duplicate and invalid entries when submitted then rejected positions remain identifiable`() {
         val result = ready("example.com, EXAMPLE.COM, invalid, https://other.example/path", listOf("example.com"))
 
-        assertEquals(listOf("example.com", "other.example", "www.other.example"), result.canonicalDomains)
-        assertEquals(2, result.addedCount)
+        assertEquals(listOf("example.com", "other.example"), result.canonicalDomains)
+        assertEquals(1, result.addedCount)
         assertEquals(2, result.duplicateCount)
         assertEquals(listOf(2), result.rejectedIndices)
     }
@@ -67,41 +63,8 @@ class WebsiteBatchSubmissionTest {
     fun `given empty separators and oversized entries when submitted then valid entries still survive`() {
         val result = ready(",\r\n example.com,,${"a".repeat(1025)}\n")
 
-        assertEquals(listOf("example.com", "www.example.com"), result.canonicalDomains)
+        assertEquals(listOf("example.com"), result.canonicalDomains)
         assertEquals(listOf(1), result.rejectedIndices)
-    }
-
-    @Test
-    fun `given a bare host when submitted then its www counterpart is also stored`() {
-        val result = ready("example.com")
-
-        assertEquals(listOf("example.com", "www.example.com"), result.canonicalDomains)
-        assertEquals(2, result.addedCount)
-    }
-
-    @Test
-    fun `given a www host when submitted then its bare counterpart is also stored`() {
-        val result = ready("www.example.com")
-
-        assertEquals(listOf("example.com", "www.example.com"), result.canonicalDomains)
-        assertEquals(2, result.addedCount)
-    }
-
-    @Test
-    fun `given both hosts when submitted then the pair is stored once`() {
-        val result = ready("example.com, www.example.com")
-
-        assertEquals(listOf("example.com", "www.example.com"), result.canonicalDomains)
-        assertEquals(2, result.addedCount)
-        assertEquals(1, result.duplicateCount)
-    }
-
-    @Test
-    fun `given a www plus public suffix when submitted then no invalid remainder is stored`() {
-        val result = ready("www.com")
-
-        assertEquals(listOf("www.com"), result.canonicalDomains)
-        assertEquals(1, result.addedCount)
     }
 }
 

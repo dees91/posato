@@ -1,6 +1,5 @@
 package app.posato.feature.targets.data
 
-import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.PolicySyncWrite
@@ -55,21 +54,6 @@ internal class SqlLocalTargetPolicyStore(
                     replaceValidRevision(database, expectedRevision, policy, syncWrite)
                 }
             }
-        }
-    }
-
-    override suspend fun wwwCounterpartExpansionCompleted(): Boolean {
-        return withContext(databaseDispatcher) {
-            database.localExactDomainPolicyQueries
-                .selectWwwCounterpartExpansion()
-                .awaitAsList()
-                .isNotEmpty()
-        }
-    }
-
-    override suspend fun markWwwCounterpartExpansionCompleted(): LocalPolicyResult<Unit> {
-        return transact(databaseDispatcher, database) {
-            localExactDomainPolicyQueries.insertWwwCounterpartExpansion()
         }
     }
 

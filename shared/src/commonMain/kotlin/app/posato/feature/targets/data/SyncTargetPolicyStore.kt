@@ -24,36 +24,7 @@ internal class SyncTargetPolicyStore(
         get() = local.policyChanges
 
     override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
-        if (local.wwwCounterpartExpansionCompleted()) {
-            return local.read()
-        }
-        return local.withWriteGate {
-            if (local.wwwCounterpartExpansionCompleted()) {
-                return@withWriteGate local.read()
-            }
-            val before = when (val read = local.read()) {
-                is LocalPolicyResult.Success -> read.value
-                is LocalPolicyResult.Failure -> return@withWriteGate read
-            }
-            val expanded = before.policy.withWwwCounterparts()
-            if (expanded == before.policy) {
-                local.markWwwCounterpartExpansionCompleted()
-                return@withWriteGate LocalPolicyResult.Success(before)
-            }
-            val workspace = sync.captureWorkspace()
-            currentCoroutineContext().ensureActive()
-            withContext(NonCancellable) {
-                val write = recordedWrite(workspace, before.policy, expanded)
-                val result = local.replace(before.revision, expanded, write)
-                if (result is LocalPolicyResult.Success) {
-                    local.markWwwCounterpartExpansionCompleted()
-                    if (write != null || workspace is BootstrapStoreResult.Failure) {
-                        sync.syncNow()
-                    }
-                }
-                result
-            }
-        }
+        return local.read()
     }
 
     override suspend fun replace(

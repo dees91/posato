@@ -36,6 +36,7 @@ import app.posato.core.designsystem.PosatoItemSymbol
 import app.posato.core.designsystem.PosatoSearchField
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
+import app.posato.feature.targets.domain.ExactDomain
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -134,7 +135,7 @@ internal fun WebsiteEditor(
             label = "Website domain",
             enabled = state.canMutatePolicy(),
             errorMessage = state.domainInputFailure?.let { stringResource(it.domainMessage()) },
-            supportingText = "Only this exact domain is included. Subdomains are separate entries.",
+            supportingText = "This host and its www variant. Other subdomains are separate entries.",
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done, autoCorrectEnabled = false),
             onSubmit = submit,
         )
@@ -152,8 +153,12 @@ private fun WebsiteRow(
     onEdit: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val counterpart = ExactDomain.restore(domain)?.wwwCounterpart()?.canonicalValue
     PosatoItemRow(
         headlineContent = { Text(domain, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = counterpart?.let { covered ->
+            { PosatoCaption("Also pauses $covered") }
+        },
         leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
         modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onEdit() },
         trailingContent = {

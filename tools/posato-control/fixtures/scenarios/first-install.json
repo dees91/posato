@@ -23,7 +23,7 @@
     {"name":"website-continue-ready","action":"waitFor","state":"exists","query":{"text":"Continue","role":"button"}},
     {"name":"website-continue","action":"tap","query":{"text":"Continue","role":"button"}},
     {"name":"summary-ready","action":"waitFor","state":"exists","query":{"text":"A pause, on your terms."}},
-    {"name":"summary-websites","action":"waitFor","state":"exists","query":{"text":"2 websites saved","role":"text"}},
+    {"name":"summary-websites","action":"waitFor","state":"exists","query":{"text":"1 website saved","role":"text"}},
     {"name":"summary-shot","action":"screenshot"},
     {"name":"summary-tree","action":"snapshot"},
     {"name":"summary-open-session","action":"tap","query":{"text":"Go to Session","role":"button"}},

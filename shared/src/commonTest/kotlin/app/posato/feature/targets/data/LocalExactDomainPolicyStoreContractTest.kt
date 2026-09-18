@@ -86,7 +86,6 @@ class LocalExactDomainPolicyStoreContractTest {
             driver.executeSql("DROP TABLE sync_policy_base_application")
             driver.executeSql("DROP TABLE sync_removed_workspace")
             driver.executeSql("DROP TABLE sync_session_intent")
-            driver.executeSql("DROP TABLE www_counterpart_expansion")
             driver.executeSql("PRAGMA user_version = 1")
             driver.close()
 
@@ -122,7 +121,6 @@ class LocalExactDomainPolicyStoreContractTest {
             driver.executeSql("DROP TABLE sync_policy_base_application")
             driver.executeSql("DROP TABLE sync_removed_workspace")
             driver.executeSql("DROP TABLE sync_session_intent")
-            driver.executeSql("DROP TABLE www_counterpart_expansion")
             driver.executeSql("PRAGMA user_version = 2")
             driver.close()
 

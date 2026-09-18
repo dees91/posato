@@ -8,8 +8,9 @@ devices joined to one workspace (see Sync with iCloud).
 
 ## Sub-features
 
-- `website-add` saves all valid unique entries in one revision, including the
-  `www` counterpart of each accepted host as a second exact-domain row.
+- `website-add` saves all valid unique entries in one revision. Each saved
+  host also pauses its `www` variant through matching; the list still shows
+  one row.
 - `website-batch` discards URL paths, queries, and fragments before storage;
   reports added/duplicate counts and retains rejected entries in the draft.
 - `website-draft` keeps newer text when an earlier save completes, keeps the
@@ -41,9 +42,9 @@ Preconditions:
   `changed-proof.example`; start with neither present and a short visible list.
 
 - **Add:** `$PC type -t <target> --role textField --input example.com --clear --submit`,
-  then `$PC tap -t <target> --text Done --role button`. Expect both
-  `example.com` and `www.example.com`. Run the add-website fixture for a
-  complete sequence with screenshot, snapshot, and real scrollTo.
+  then `$PC tap -t <target> --text Done --role button`. Expect one SQL row
+  and a caption that `www.example.com` is also paused. Run the add-website
+  fixture for a complete sequence with screenshot, snapshot, and real scrollTo.
 - **Batch and long list:** `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/website-batch-list.json`.
   It leaves the rejected `invalid` text in the field, reaches both list ends,
   filters one row, and verifies the draft after switching destinations.
@@ -66,13 +67,10 @@ Preconditions:
   After a fresh launch or reset, run `first-install-skip.json` first (see
   [First install](./onboarding.md)).
 - **Remove:** Open `Actions for example.org`, then `Remove`, and wait for
-  that domain to be absent. Removing one host of a `www` pair leaves the
-  other. The remove-website fixtures remove `example.com` and then
-  `www.example.com`.
+  that domain to be absent. The remove-website fixtures remove `example.com`.
 - **Restore batch:** Run `website-batch-list-cleanup.json` from Websites.
-  It removes the 50 fixture domains and their `www` counterparts through
-  their menus. Confirm their absence using a database query or relaunch
-  read-back on iPhone.
+  It removes only the 50 fixture domains through their menus. Confirm
+  their absence using a database query or relaunch read-back on iPhone.
 
 ## Gotchas
 

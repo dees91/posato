@@ -109,7 +109,10 @@ final class IosEnforcementTests: XCTestCase {
         let enforcer = capableEnforcer(store: store, storedMappings: [])
 
         XCTAssertEqual(try apply(domains: ["example.com"], enforcer: enforcer), .applied)
-        XCTAssertEqual(store.storedFilter, .specific([WebDomain(domain: "example.com")]))
+        XCTAssertEqual(
+            store.storedFilter,
+            .specific([WebDomain(domain: "example.com"), WebDomain(domain: "www.example.com")])
+        )
         XCTAssertNil(store.storedApplications)
     }
 
@@ -240,7 +243,10 @@ final class IosEnforcementTests: XCTestCase {
             try apply(domains: ["example.com"], mappingIds: context.identifiers, enforcer: context.enforcer),
             .applied
         )
-        XCTAssertEqual(context.probe.webContent.blockedByFilter, .specific([WebDomain(domain: "example.com")]))
+        XCTAssertEqual(
+            context.probe.webContent.blockedByFilter,
+            .specific([WebDomain(domain: "example.com"), WebDomain(domain: "www.example.com")])
+        )
         XCTAssertEqual(context.probe.shield.applications, context.tokens)
 
         XCTAssertEqual(try clear(enforcer: context.enforcer), .cleared)

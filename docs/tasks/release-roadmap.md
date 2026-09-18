@@ -3,12 +3,16 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 1
+- **Revision:** 2
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
+- **Last amended:** 2026-09-18
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
-  composition, the document form, and this revision on 2026-09-18
+  composition, the document form, and revision 1 on 2026-09-18. Revision 2
+  restates the `TARGETS-006` outcome as a matching rule with one stored row
+  per typed host, after the completed-change review of PR #72 rejected
+  materialized `www` counterparts.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -136,7 +140,7 @@ Low product risk except the update path, which revises an accepted contract.
 | --- | --- | --- | --- | --- | --- | --- |
 | `SESSION-004` | Offer a direct route from the Session screen's paused-items summary to adding and editing websites and applications, and make the selected-items search field read as a filter rather than an entry field, within the accepted two-destination navigation in `DESIGN.md`. | Sessions and enforcement | delivery | R1.1/W1 | None | PR-SESSION-EDIT-ROUTE |
 | `ONBOARDING-003` | Keep the first-website step focused after each added website while its continue action stays visible, state the saved total, and give the expanded macOS helper-permission actions a consistent arrangement under the `DESIGN.md` action hierarchy. | Onboarding | delivery | R1.1/W1 | None | PR-ONBOARDING-ENTRY |
-| `TARGETS-006` | Include the `www` variant automatically as a second exact-domain entry when a website is entered, keeping the ADR 0005 exact-domain contract and recording separately whether broader subdomain coverage is wanted. | Target management | delivery | R1.1/W1 | None | PR-WWW-COVERAGE |
+| `TARGETS-006` | Treat `www.<host>` and `<host>` as one paused website through the matching rule on both platforms and say so at entry, keeping one stored exact-domain row per typed host under a clarified ADR 0005, and recording separately whether broader subdomain coverage is wanted. | Target management | delivery | R1.1/W1 | None | PR-WWW-COVERAGE |
 | `IOS-004` | Show iPad-appropriate wording and layout wherever the iPhone-only copy appears, and refresh the iPad store screenshots when a captured surface changes. | Platform coverage | delivery | R1.1/W1 | None | PR-IPAD-COPY |
 | `MACOS-010` | Decide how Posato on macOS learns about a newer release: compare a check-and-download flow against GitHub Releases with a Sparkle-style in-app installer on hosting, update signing, the ADR 0004 update path that restores proxy ownership and helper registration before the bundle is replaced, and the `PRIVACY.md` boundary that allows no request beyond the version check; propose the ADR 0004 revision. High-risk. | Release readiness | discovery | R1.1/W1 | None | PR-MAC-UPDATE-DECISION |
 | `MACOS-011` | Implement the accepted update path from `MACOS-010`, with the feed or release metadata published from the repository's release process and verified on a notarized candidate. High-risk. | Release readiness | delivery | R1.1/W2 | `MACOS-010` | PR-MAC-UPDATES |

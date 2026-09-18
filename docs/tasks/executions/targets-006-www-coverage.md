@@ -5,55 +5,49 @@
 - **Status:** `active`
 - **Review tier:** `standard`
 - **Implementer:** Grok
-- **Reviewer:** pending
+- **Reviewer:** maintainer completed-change review of `af6636b`
 - **Branch:** `feature/targets-006-www-coverage`
 - **Updated:** 2026-09-18
 
 ## Plan
 
-1. Derive a `www` counterpart on `ExactDomain` and expand new hosts in
-   `createWebsiteBatchSubmission`, keeping edit as a single-row replace.
-2. Expand already-saved domains once on first `SyncTargetPolicyStore` read
-   after upgrade, recording sync intents for any new rows.
-3. Update website recipes, `DESIGN.md`, the wiki proposal, and the roadmap
-   outcome sentence so they describe automatic persistence rather than an
-   opt-in.
+1. Remove materialized counterparts, the read-path rewrite, and schema 10.
+2. Match `www` and apex in `ExactHostPolicy.matches`; expand iOS `WebDomain`s
+   at apply; keep one stored row; say so at entry and on the row.
+3. Clarify ADR 0005, restated roadmap revision 2, restore recipes to one row.
 
 ## Result
 
-- Entering a host now also stores its valid `www` counterpart as a second
-  exact-domain row. Matching stays equality-only. Edit still replaces one
-  row. A one-shot flag expands already-saved lists on first policy read
-  after upgrade and does not restore a later removal.
-- Independent completed-change review is still required. AC-04 (Safari and
-  Chrome on a synthetic pair) remains a maintainer-attended physical check.
+- Matching-rule rework after the completed-change review rejected persistence.
+  One stored row; macOS `ExactHostPolicy.matches` and iOS apply-time
+  `WebDomain` expansion; entry and row copy name the counterpart.
 
 ## Completed-change review
 
-- **Verdict:** pending
-- **Critical or Required findings:** none yet
-- **Resolution:** pending
+- **Verdict:** `changes required` on `af6636b`
+- **Critical or Required findings:** direction (materialized counterparts);
+  write in a read path; batch double-count; accepted documents; tests
+- **Resolution:** matching-rule rework in this correction
+- **Advisory findings:** none accepted as scope
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | pass | worktree, 2026-09-18 |
-| Simulator add `example.com` | pass | both rows in SQL; run `20260918-143714-023f` |
-| Simulator remove one of the pair | pass | apex gone, `www.example.com` remained; then cleaned |
-| Simulator first-install | pass | summary `2 websites saved`; run `20260918-143748-d1e5` |
-| Desktop add/remove `targets006-proof.example` | pass | both rows, independent remove; run `20260918-143900-456b` |
-| Physical Safari/Chrome pair | pending | AC-04, maintainer-attended |
+| `./gradlew quality` | pass | worktree after rework |
+| Simulator add/remove `example.com` | pass | one SQL row; caption present; run `20260918-151409-9897` |
+| Desktop add/remove `targets006-proof.example` | pass | `1 added`; one SQL row; caption in the row name; run `20260918-151445-ce36` |
+| Physical Safari/Chrome | pending | AC-04 after Mac list/`user_version` cleanup |
 
 ## Blockers and accepted risks
 
-- AC-04 needs the maintainer at the Mac.
-- First launch of this build on the supported Mac expanded the local
-  `example.com` / `example.net` list with their `www` counterparts. That is
-  the intended upgrade behavior.
+- Before `AC-04`: in the UI remove `www.example.com` and `www.example.net`
+  added by `af6636b`, then
+  `sqlite3 ~/Library/Application Support/Posato/posato-policy.db "PRAGMA user_version = 10; DROP TABLE IF EXISTS www_counterpart_expansion;"`.
+- Accepted leftover: a 1.0 list that already stored both hosts still works;
+  the row caption is then redundant and is not cleaned here.
 
 ## Final
 
 - **Status:** `active`
-- **Outcome:** implementation complete pending review and AC-04
-
+- **Outcome:** rework after review
