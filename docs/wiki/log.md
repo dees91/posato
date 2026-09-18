@@ -1809,3 +1809,12 @@ to scope, feasibility, or delivery.
 - `AGENTS.md`, the task workflow authority table, and the wiki index route to
   the new roadmap; the MVP roadmap stays as history. Accepted by the
   maintainer on 2026-09-18.
+
+## [2026-09-18] process | Public GitHub Projects mirror of the release roadmap
+
+- The maintainer chose a public GitHub project, "Posato roadmap", as an
+  easily reachable mirror of `docs/tasks/release-roadmap.md`, with one draft
+  item per row and fields that mirror the tables; issues stay reserved for
+  reports from people who use Posato. The document remains the source of
+  truth and now states the mirror rule; `AGENTS.md` tells agents to update
+  the mirror in the same step as any row change.

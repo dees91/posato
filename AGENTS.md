@@ -220,7 +220,9 @@ as history. Releases after 1.0.0 are planned in
 [`docs/tasks/release-roadmap.md`](docs/tasks/release-roadmap.md). Start a row
 only when the maintainer names it and its release is composed, following that
 document's intake and activation rules; new ideas enter the wiki idea queue
-and the roadmap backlog rather than a release.
+and the roadmap backlog rather than a release. The roadmap has a public
+GitHub Projects mirror described in that document; update the mirror in the
+same step as any row change.
 
 Use the `android-compose-engineering` skill when it is available for
 agent-authored Kotlin or Compose Multiplatform implementation. The repository's
