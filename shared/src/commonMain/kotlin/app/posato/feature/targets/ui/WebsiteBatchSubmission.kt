@@ -44,7 +44,7 @@ internal fun createWebsiteBatchSubmission(
                 rejectedIndices.add(index)
             }
 
-            domain in domains -> {
+            wwwCoveredBy(domain, domains) != null -> {
                 duplicateCount++
             }
 

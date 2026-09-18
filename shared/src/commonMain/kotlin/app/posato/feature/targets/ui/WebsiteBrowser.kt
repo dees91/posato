@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -36,6 +37,7 @@ import app.posato.core.designsystem.PosatoItemSymbol
 import app.posato.core.designsystem.PosatoSearchField
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
+import app.posato.feature.targets.domain.ExactDomain
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -95,7 +97,7 @@ internal fun WebsiteBrowser(
                 }
             }
             items(domains, key = { it }) { domain ->
-                WebsiteRow(domain, state.canMutatePolicy(), {
+                WebsiteRow(domain, state.domains, state.canMutatePolicy(), {
                     focus.clearFocus()
                     onEdit(domain)
                 }, {
@@ -134,7 +136,7 @@ internal fun WebsiteEditor(
             label = "Website domain",
             enabled = state.canMutatePolicy(),
             errorMessage = state.domainInputFailure?.let { stringResource(it.domainMessage()) },
-            supportingText = "Only this exact domain is included. Subdomains are separate entries.",
+            supportingText = "This host and its www variant. Other subdomains are separate entries.",
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, imeAction = ImeAction.Done, autoCorrectEnabled = false),
             onSubmit = submit,
         )
@@ -148,12 +150,24 @@ internal fun WebsiteEditor(
 @Composable
 private fun WebsiteRow(
     domain: String,
+    listed: List<String>,
     enabled: Boolean,
     onEdit: () -> Unit,
     onRemove: () -> Unit
 ) {
+    val caption = remember(domain, listed) {
+        val counterpart = ExactDomain.restore(domain)?.wwwCounterpart()?.canonicalValue
+        if (counterpart != null && counterpart !in listed) {
+            "Also pauses $counterpart"
+        } else {
+            null
+        }
+    }
     PosatoItemRow(
         headlineContent = { Text(domain, style = MaterialTheme.typography.bodyLarge) },
+        supportingContent = caption?.let { covered ->
+            { PosatoCaption(covered) }
+        },
         leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
         modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onEdit() },
         trailingContent = {

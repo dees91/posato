@@ -626,6 +626,8 @@ retains its existing availability. Do not add an unrelated active-session lock.
 - Add websites is the primary input. Search is a quiet secondary action below it.
 - Commas/newlines separate entries; domain names and HTTP(S) URLs are accepted.
   Only canonical exact hosts reach policy storage; paths/query/fragment do not.
+  One stored host is what was typed. Matching also pauses its `www` variant;
+  other subdomains stay separate. Entry copy and each row caption say so.
 - Limits: 65,536 UTF-16 code units per batch, 1,024 per trimmed entry, 1,024
   unique domains in the policy. Credentials, other schemes, IPs, wildcards,
   malformed hosts, and overflow are rejected.

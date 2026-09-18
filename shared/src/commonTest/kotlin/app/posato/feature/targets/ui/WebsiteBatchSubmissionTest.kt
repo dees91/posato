@@ -9,8 +9,9 @@ class WebsiteBatchSubmissionTest {
     fun `given domains and URLs when submitted then only canonical exact hosts survive`() {
         val result = ready("EXAMPLE.COM, https://www.example.com/private?q=secret#fragment\nbücher.example")
 
-        assertEquals(listOf("example.com", "www.example.com", "xn--bcher-kva.example"), result.canonicalDomains)
-        assertEquals(3, result.addedCount)
+        assertEquals(listOf("example.com", "xn--bcher-kva.example"), result.canonicalDomains)
+        assertEquals(2, result.addedCount)
+        assertEquals(1, result.duplicateCount)
         assertEquals(emptyList(), result.rejectedIndices)
         assertEquals("WebsiteBatchSubmission.Ready(redacted)", result.toString())
     }
@@ -65,6 +66,24 @@ class WebsiteBatchSubmissionTest {
 
         assertEquals(listOf("example.com"), result.canonicalDomains)
         assertEquals(listOf(1), result.rejectedIndices)
+    }
+
+    @Test
+    fun `given a www counterpart of a listed host when submitted then it counts as a duplicate`() {
+        val result = ready("www.example.com", listOf("example.com"))
+
+        assertEquals(listOf("example.com"), result.canonicalDomains)
+        assertEquals(0, result.addedCount)
+        assertEquals(1, result.duplicateCount)
+    }
+
+    @Test
+    fun `given both hosts in one batch when submitted then only the first is stored`() {
+        val result = ready("example.com, www.example.com")
+
+        assertEquals(listOf("example.com"), result.canonicalDomains)
+        assertEquals(1, result.addedCount)
+        assertEquals(1, result.duplicateCount)
     }
 }
 

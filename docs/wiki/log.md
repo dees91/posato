@@ -1818,3 +1818,10 @@ to scope, feasibility, or delivery.
   reports from people who use Posato. The document remains the source of
   truth and now states the mirror rule; `AGENTS.md` tells agents to update
   the mirror in the same step as any row change.
+
+## [2026-09-18] decision | www is a matching rule, one stored row
+
+- `TARGETS-006` treats `www.<host>` and `<host>` as one paused website
+  through the matching rule on both platforms. One stored exact-domain row
+  is what the person typed. Broader subdomain coverage remains open.
+- ADR 0005 is clarified in PR #72. Roadmap revision 2 restates the row.

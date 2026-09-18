@@ -59,7 +59,7 @@ internal fun WebsiteEntry(
         supportingText = if (receipt != null && receipt.saved) {
             "${receipt.addedCount} added · ${receipt.duplicateCount} already on your list"
         } else {
-            "Add one, or paste several separated by commas or new lines."
+            "Add one, or paste several. The www variant is included; other subdomains are not."
         },
         errorMessage = error,
         lineLimits = TextFieldLineLimits.MultiLine(maxHeightInLines = 2),

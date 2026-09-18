@@ -197,7 +197,7 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
             return .platformFailure
         }
         let expectedFilter: WebContentSettings.FilterPolicy? =
-            request.domains.isEmpty ? nil : .specific(Set(request.domains.map(WebDomain.init(domain:))))
+            request.domains.isEmpty ? nil : .specific(webDomains(from: request.domains))
         let expectedApplications: Set<ApplicationToken>? = tokens.isEmpty ? nil : tokens
         let store = storeFactory()
         store.blockedWebFilter = expectedFilter
@@ -213,6 +213,31 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
 
     private func authorizationRefusal() -> IosEnforcementOutcome? {
         authorization().refusal
+    }
+
+    private func webDomains(from hosts: [String]) -> Set<WebDomain> {
+        var domains = Set<WebDomain>()
+        for host in hosts {
+            domains.insert(WebDomain(domain: host))
+            if let counterpart = wwwCounterpart(host) {
+                domains.insert(WebDomain(domain: counterpart))
+            }
+        }
+        return domains
+    }
+
+    private func wwwCounterpart(_ host: String) -> String? {
+        let labels = host.split(separator: ".", omittingEmptySubsequences: false)
+        guard labels.count >= 2 else {
+            return nil
+        }
+        if labels.first == "www" {
+            guard labels.count >= 3 else {
+                return nil
+            }
+            return labels.dropFirst().joined(separator: ".")
+        }
+        return "www.\(host)"
     }
 
     private func performOnMain(_ action: @escaping () -> Void) {
