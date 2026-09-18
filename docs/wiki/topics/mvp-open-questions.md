@@ -608,7 +608,7 @@ implementation. The solution and any changes to accepted contracts remain
   `www` equivalence is a matching rule, not data. Broader subdomain coverage
   remains `open`. The
   [ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md)
-  clarification in `TARGETS-006` is the acceptance vehicle.
+  clarification was accepted in PR #72.
 - **Reduce repeated macOS authorization prompts at session start.** Evaluate
   a one-time administrator opt-in for subsequent session starts, with an
   explicit revocation path and authenticated, narrowly scoped helper requests.

@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
@@ -96,7 +97,7 @@ internal fun WebsiteBrowser(
                 }
             }
             items(domains, key = { it }) { domain ->
-                WebsiteRow(domain, state.canMutatePolicy(), {
+                WebsiteRow(domain, state.domains, state.canMutatePolicy(), {
                     focus.clearFocus()
                     onEdit(domain)
                 }, {
@@ -149,15 +150,23 @@ internal fun WebsiteEditor(
 @Composable
 private fun WebsiteRow(
     domain: String,
+    listed: List<String>,
     enabled: Boolean,
     onEdit: () -> Unit,
     onRemove: () -> Unit
 ) {
-    val counterpart = ExactDomain.restore(domain)?.wwwCounterpart()?.canonicalValue
+    val caption = remember(domain, listed) {
+        val counterpart = ExactDomain.restore(domain)?.wwwCounterpart()?.canonicalValue
+        if (counterpart != null && counterpart !in listed) {
+            "Also pauses $counterpart"
+        } else {
+            null
+        }
+    }
     PosatoItemRow(
         headlineContent = { Text(domain, style = MaterialTheme.typography.bodyLarge) },
-        supportingContent = counterpart?.let { covered ->
-            { PosatoCaption("Also pauses $covered") }
+        supportingContent = caption?.let { covered ->
+            { PosatoCaption(covered) }
         },
         leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
         modifier = Modifier.fillMaxWidth().clickable(enabled = enabled) { onEdit() },

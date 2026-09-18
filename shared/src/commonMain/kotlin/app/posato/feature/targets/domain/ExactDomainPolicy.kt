@@ -67,6 +67,10 @@ internal value class ExactDomain private constructor(
         return restore(candidate)
     }
 
+    fun covers(other: ExactDomain): Boolean {
+        return this == other || wwwCounterpart() == other
+    }
+
     companion object {
         fun parse(rawInput: String): ExactDomainInputResult {
             return if (rawInput.length > ExactDomainPolicyLimits.MAX_RAW_INPUT_LENGTH) {

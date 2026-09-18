@@ -24,19 +24,23 @@
 
 ## Completed-change review
 
-- **Verdict:** `changes required` on `af6636b`
-- **Critical or Required findings:** direction (materialized counterparts);
-  write in a read path; batch double-count; accepted documents; tests
-- **Resolution:** matching-rule rework in this correction
-- **Advisory findings:** none accepted as scope
+- **Verdict:** `changes required` on `af6636b`; second pass on `ae99685`+`601db43`
+  also `changes required` (two P1)
+- **Critical or Required findings:** pairwise matcher vs key equality; counterpart
+  treated as covered at entry
+- **Resolution:** `matches` is pairwise with the shared counterpart vector;
+  batch and editor count a counterpart as a duplicate
+- **Advisory findings:** caption `remember` and hide-when-listed taken;
+  helper key precompute declined (lookup stays linear, same as before)
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | pass | worktree after rework |
-| Simulator add/remove `example.com` | pass | one SQL row; caption present; run `20260918-151409-9897` |
-| Desktop add/remove `targets006-proof.example` | pass | `1 added`; one SQL row; caption in the row name; run `20260918-151445-ce36` |
+| `./gradlew quality` | pass | after pairwise matcher and covered-at-entry |
+| Simulator add/remove `example.com` | pass | one SQL row; run `20260918-154450-bd2d` |
+| Desktop add/remove `targets006-proof.example` | pass | one SQL row; run `20260918-154621-613b` |
+| `xcodebuild test` `IosEnforcementTests` (iPhone 17 Simulator) | pass | 17 executed, 3 skipped (device-only), 0 failures; `testWebsitesOnlyApplySetsFilterAndLeavesApplicationsUnset` and `testWwwCounterpartVectorExpandsTheShieldSet` passed |
 | Physical Safari/Chrome | pending | AC-04, maintainer-attended |
 
 ## Blockers and accepted risks

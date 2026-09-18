@@ -1824,5 +1824,4 @@ to scope, feasibility, or delivery.
 - `TARGETS-006` treats `www.<host>` and `<host>` as one paused website
   through the matching rule on both platforms. One stored exact-domain row
   is what the person typed. Broader subdomain coverage remains open.
-- ADR 0005 is clarified in this PR. Roadmap revision 2 restates the row.
-  Draft PR #72.
+- ADR 0005 is clarified in PR #72. Roadmap revision 2 restates the row.

@@ -12,7 +12,7 @@
 `user-confirmed` (2026-09-18): one stored exact host is what the person typed.
 Matching treats `www.<host>` and `<host>` as one paused website. No other
 subdomain, suffix, or wildcard coverage is added. The sync format is
-unchanged. This PR is the acceptance vehicle for the clarification.
+unchanged. Accepted by the maintainer on 2026-09-18 in PR #72.
 
 ## Context
 

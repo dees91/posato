@@ -116,6 +116,32 @@ final class IosEnforcementTests: XCTestCase {
         XCTAssertNil(store.storedApplications)
     }
 
+    func testWwwCounterpartVectorExpandsTheShieldSet() throws {
+        // Shared with ExactDomainPolicyTest and ExactHostPolicyTests: host → counterpart.
+        let vector: [(String, String)] = [
+            ("example.com", "www.example.com"),
+            ("www.example.com", "example.com"),
+            ("news.example.com", "www.news.example.com"),
+            ("www.news.example.com", "news.example.com"),
+            ("www.www.example.com", "www.example.com"),
+            ("xn--bcher-kva.example", "www.xn--bcher-kva.example"),
+        ]
+        for (host, counterpart) in vector {
+            let store = FakeEnforcementSettingsStore()
+            let enforcer = capableEnforcer(store: store, storedMappings: [])
+            XCTAssertEqual(try apply(domains: [host], enforcer: enforcer), .applied, host)
+            XCTAssertEqual(
+                store.storedFilter,
+                .specific([WebDomain(domain: host), WebDomain(domain: counterpart)]),
+                host
+            )
+        }
+        let store = FakeEnforcementSettingsStore()
+        let enforcer = capableEnforcer(store: store, storedMappings: [])
+        XCTAssertEqual(try apply(domains: ["www.com"], enforcer: enforcer), .applied)
+        XCTAssertEqual(store.storedFilter, .specific([WebDomain(domain: "www.com")]))
+    }
+
     func testVerifyMismatchRollsBackToAnEmptyOwnedStore() throws {
         for corruptApplications in [false, true] {
             let store = FakeEnforcementSettingsStore()

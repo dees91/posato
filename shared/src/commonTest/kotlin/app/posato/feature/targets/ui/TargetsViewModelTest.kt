@@ -397,6 +397,21 @@ class TargetsViewModelTest {
     }
 
     @Test
+    fun `given a www counterpart of a listed host when submitted then it is rejected as already covered`() = runTest(dispatcher) {
+        val store = FakeTargetPolicyStore(stateOf(4, domains = listOf("example.com")))
+        val viewModel = TargetsViewModel(store)
+        observe(viewModel)
+        scheduler.runCurrent()
+
+        viewModel.submitDomain("www.example.com")
+        scheduler.runCurrent()
+
+        assertEquals(ExactDomainEntryFailure.DUPLICATE, viewModel.uiState.value.domainInputFailure)
+        assertEquals(listOf("example.com"), viewModel.uiState.value.domains)
+        assertEquals(0, store.replaceCalls)
+    }
+
+    @Test
     fun `given the domain limit when another domain is submitted then the limit error is shown without replacing storage`() = runTest(dispatcher) {
         val domains = List(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) { index -> "domain$index.example" }
         val store = FakeTargetPolicyStore(stateOf(4, domains = domains, applicationPolicyName = "Social feeds"))
