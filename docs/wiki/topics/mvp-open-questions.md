@@ -593,6 +593,128 @@ applicable consumer, and the separate pre-release audit to `RELEASE-001`.
 - Repository license, contribution policy, security contact, and public support
   boundary.
 
+## Post-MVP session usability proposals
+
+`user-confirmed` (2026-09-12, extended 2026-09-15): retain these improvements
+for planning in the next iteration after the MVP. They do not expand MVP scope
+or authorize
+implementation. The solution and any changes to accepted contracts remain
+`open`.
+
+- **Make website coverage easier to understand and configure.** Exact-host
+  matching treats `example.com` and `www.example.com` as separate entries;
+  redirects can therefore lead to a host outside the selected set. Evaluate
+  clearer entry-time guidance and an explicit way to include the `www`
+  variant. Decide separately whether broader subdomain coverage is desirable.
+  Automatic inclusion is not accepted by this note; the current
+  [ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md)
+  exact-domain contract remains in force.
+- **Reduce repeated macOS authorization prompts at session start.** Evaluate
+  a one-time administrator opt-in for subsequent session starts, with an
+  explicit revocation path and authenticated, narrowly scoped helper requests.
+  Background-helper approval and permission to apply proxy settings are
+  separate today. Replacing fresh one-use Apply authorization requires an
+  explicit revision of
+  [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md)
+  and review of the security implications; this note does not grant persistent
+  authorization or choose its implementation.
+- **Keep website entry continuous and its count accurate in onboarding.**
+  `user-confirmed` (2026-09-15): after typing a website in the first-website
+  step and pressing Enter, the field loses focus, so adding another website
+  needs a new click; after adding two websites one at a time, the step shows
+  "1 added". `observed` in code: the step clears focus after every submission
+  with at least one added website, overriding the entry field's own focus
+  request, and the supporting text reports only the last submission's count
+  rather than the saved total. Decide how onboarding keeps entry focused while
+  still revealing its continue action, and which count it states.
+- **Make website and app editing discoverable from the Session screen.**
+  `user-confirmed` (2026-09-15): people look for adding or editing websites and
+  apps on the Session screen, where the paused items are summarized, and take
+  a while to recall that editing lives under Paused items. Evaluate a direct
+  route from that summary to editing, within the accepted two-destination
+  navigation in [DESIGN.md](../../../DESIGN.md).
+  `user-confirmed` (2026-09-16): the search field in the Session selected-items
+  browser repeatedly draws that intent, because a text field on this screen
+  reads as a place to add a website. `observed` in code: that field only
+  filters the read-only list (`SessionSelectionSummary.kt`). The maintainer
+  reports this as a recurring frustration rather than a one-time slip, so treat
+  it as the strongest candidate in this section. Decide whether the browser
+  offers an explicit route to adding, whether its search field should read less
+  like entry, or both.
+- **Arrange onboarding actions better on macOS.** `user-confirmed`
+  (2026-09-15): on the Mac helper permission step, **Open System Settings**,
+  **Check again**, and **Not now** stack vertically at their own content
+  widths, which looks uneven while the window leaves ample horizontal space.
+  `observed` in code: expanded layouts size the primary onboarding action to
+  its content and place every action in one column. Evaluate a horizontal
+  arrangement or consistent widths for expanded layouts, keeping the compact
+  full-width primary button and the DESIGN.md action hierarchy.
+
+## Post-MVP feature ideas for discovery
+
+`user-confirmed` (2026-09-13): retain the following larger, loosely defined
+ideas for future iterations after the MVP. Their priority, scope, feasibility,
+platform coverage, and implementation remain `open`. This is an idea queue,
+not an accepted feature plan or an expansion of the MVP.
+
+1. **Recurring session schedules.** Explore automatic sessions on a recurring
+   timetable. Scheduling is already classified as Later in the
+   [MVP scope](../../product/mvp-scope.md); recurrence and exception behavior
+   still need discovery.
+2. **Family controls for children's websites and applications.** Explore a
+   parent/child use case. Device ownership, consent, access boundaries, and
+   privacy need a separate product decision; the current personal-use model
+   does not establish a family-control contract.
+3. **Ad blocking.** Explore whether reducing advertising belongs in Posato
+   and what coverage would be useful and feasible. No filtering mechanism or
+   effectiveness claim is selected.
+4. **Review Focusly for useful ideas.** Assess which interactions or features
+   from the maintainer-provided
+   [Focusly Chrome Web Store listing](https://chromewebstore.google.com/detail/focusly/ipkamplfnlmbpgmhbdfcbajjmcnfmghj)
+   fit Posato. This is a future comparative-research task, not approval to
+   copy the extension or adopt its advertised capabilities. The extension
+   has not been installed or independently tested for this note.
+5. **Reduce distractions within YouTube.** Explore hiding Shorts,
+   recommended videos, and similar distracting surfaces while keeping useful
+   video access. Browser versus native-app coverage and a suitable mechanism
+   remain undecided; exact-host blocking alone does not define this behavior.
+6. **Local session notifications on iOS and macOS.** Explore on-device
+   notifications when a session starts or ends. Notification preferences,
+   permission flow, and delivery behavior remain for post-MVP discovery.
+7. **macOS menu bar presence without an open main window.** `user-confirmed`
+   (2026-09-14): explore a status-bar menu, similar to Tunnelblick, from which
+   a person can see the current session, start or end one, and open the full
+   window only when needed, so that sessions keep working without the desktop
+   window staying open. Today the Compose Desktop application owns policy and
+   orchestration, and the privileged daemon holds a renewable ownership lease
+   under
+   [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md),
+   so blocking stops when Posato quits. Whether the existing application keeps
+   running as a menu bar process after its window closes, or session
+   orchestration moves into a native helper, remains `open`, together with
+   launch at login, resource use, and any ADR 0003 or ADR 0004 revision.
+8. **Intel Mac support, starting with a 2019 MacBook Air.** `user-confirmed`
+   (2026-09-14): explore running Posato on the maintainer's 2019 Intel MacBook
+   Air. `source-claim`: Apple lists macOS Sequoia (15) for MacBook Air models
+   from 2020 or later, so that model tops out at macOS Sonoma (14). Support
+   therefore needs two changes to
+   [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md),
+   which accepts only arm64 on macOS 15 or later: an x86-64 (or universal)
+   build and a macOS 14 deployment target. Discovery must cover the bundled
+   Java runtime and native libraries per architecture, the Swift helpers,
+   packaging and notarization for both architectures, macOS 14 API
+   availability, and a physical test device in the release matrix.
+9. **In-app updates for macOS.** `user-confirmed` (2026-09-14): explore
+   delivering new macOS versions from inside Posato, for example with Sparkle,
+   after `MACOS-008` chose a manual download of each notarized build without
+   an updater. Discovery must cover the update feed and its hosting, signing
+   of update archives, how Posato checks for updates without weakening the
+   no-telemetry promise in [`PRIVACY.md`](../../../PRIVACY.md), and the
+   supported update path in
+   [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md),
+   which restores and verifies proxy settings and helper registration before
+   an update replaces the application.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do
