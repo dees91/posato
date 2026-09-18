@@ -1794,3 +1794,18 @@ notifications on iOS and macOS, a macOS menu bar presence that keeps sessions
 working without the main window, Intel Mac support starting with a 2019
 MacBook Air, and in-app macOS updates for later discovery, without committing
 to scope, feasibility, or delivery.
+
+## [2026-09-18] plan | Release roadmap after 1.0.0
+
+- `docs/tasks/release-roadmap.md` plans three releases from the wiki idea
+  queue and the limits carried out of the release records: 1.1 everyday use
+  and a macOS update path, 1.2 a menu bar presence with fewer authorization
+  prompts and local notifications, 1.3 an Intel decision and a schedule
+  decision. Sixteen backlog rows keep the remaining ideas and deferred
+  questions without a release.
+- The document sets the intake rule: an idea becomes a wiki bullet and a
+  backlog row; only the maintainer assigns rows to a release at a planning
+  checkpoint, and a release's composition freezes when its first row starts.
+- `AGENTS.md`, the task workflow authority table, and the wiki index route to
+  the new roadmap; the MVP roadmap stays as history. Accepted by the
+  maintainer on 2026-09-18.

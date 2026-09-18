@@ -22,7 +22,8 @@ The standing quality bar is the
 | Workflow, record paths, review tiers, and artifact roles | This file |
 | Standing quality and Definition of Done | Engineering quality contract |
 | Preparation-gate state before PR #1 | `first-mvp-pr-preparation-todo.md` |
-| MVP ordering, dependencies, waves, and integration groups | `mvp-roadmap.md` |
+| MVP ordering, dependencies, waves, and integration groups (complete; history) | `mvp-roadmap.md` |
+| Releases after 1.0.0: themes, rows, waves, backlog, and idea intake | `release-roadmap.md` |
 | Lightweight change outcome | One concise entry in `docs/wiki/log.md` |
 | Recorded task outcome and boundaries | Its brief under `specifications/` |
 | Recorded task plan, result, checks, and blockers | Its execution record under `executions/` |

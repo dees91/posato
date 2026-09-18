@@ -213,13 +213,14 @@ Exact deferred dependency versions and helper implementation details remain
 decisions for their named pull requests rather than assumptions inherited from
 the PoC.
 
-The active preparation route to the first production-code pull request is
-[`docs/tasks/first-mvp-pr-preparation-plan.md`](docs/tasks/first-mvp-pr-preparation-plan.md),
-with gate state in
-[`docs/tasks/first-mvp-pr-preparation-todo.md`](docs/tasks/first-mvp-pr-preparation-todo.md).
-Continue the first incomplete gate unless the user explicitly changes the
-milestone. Do not scaffold application code until the "Ready to open PR #1"
-checkpoint is complete and explicitly accepted.
+The MVP preparation route in
+[`docs/tasks/first-mvp-pr-preparation-plan.md`](docs/tasks/first-mvp-pr-preparation-plan.md)
+and the [MVP roadmap](docs/tasks/mvp-roadmap.md) are complete and retained
+as history. Releases after 1.0.0 are planned in
+[`docs/tasks/release-roadmap.md`](docs/tasks/release-roadmap.md). Start a row
+only when the maintainer names it and its release is composed, following that
+document's intake and activation rules; new ideas enter the wiki idea queue
+and the roadmap backlog rather than a release.
 
 Use the `android-compose-engineering` skill when it is available for
 agent-authored Kotlin or Compose Multiplatform implementation. The repository's
