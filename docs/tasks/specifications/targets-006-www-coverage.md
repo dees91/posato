@@ -58,7 +58,5 @@ Entry copy and the saved row say so. Other subdomains stay separate.
 - **Decision (maintainer, 2026-09-18):** one stored row is what the person
   typed; `www` equivalence is a matching rule, not data. Materialized
   counterparts are rejected.
-- **Blocker:** before `AC-04`, remove the extra `www.example.com` and
-  `www.example.net` rows added by `af6636b` on the supported Mac, then
-  `PRAGMA user_version = 10; DROP TABLE IF EXISTS www_counterpart_expansion;`
-  so a later real `10.sqm` is not skipped.
+- **Blocker:** none. The extra `www` rows from `af6636b` were removed in the
+  UI and `user_version` was reset to 10 on the supported Mac.
