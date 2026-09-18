@@ -2,14 +2,13 @@
 
 ## Status and authority
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Revision:** 1
 - **Prepared:** 2026-09-18
-- **Accepted:** pending
+- **Accepted:** 2026-09-18
 - **Accepted by:** Project maintainer
-- **Provenance:** `user-confirmed` for the three-release composition and the
-  document form (2026-09-18); `inferred` for row wording, dependencies, and
-  waves until the maintainer accepts this revision
+- **Provenance:** `user-confirmed`; the maintainer accepted the three-release
+  composition, the document form, and this revision on 2026-09-18
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -201,7 +200,7 @@ or account-specific value enters tracked evidence.
 
 ## Activation rule
 
-Maintainer acceptance of this document makes its rows planning authority, not
+Acceptance of this document makes its rows planning authority, not
 implementation authorization. Start a row only when the maintainer names it,
 its release is composed, its dependencies and wave barrier are clear, and its
 brief exists; then apply the proportional review tier and evidence rules in
