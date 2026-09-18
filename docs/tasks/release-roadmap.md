@@ -84,6 +84,30 @@ governs how a new idea becomes a row.
 5. Rows dropped by the maintainer are deleted from the tables and named in the
    revision prose, so the tables show only live work.
 
+## GitHub Projects mirror
+
+The public GitHub project
+[Posato roadmap](https://github.com/users/dees91/projects/1) mirrors this
+document so that anyone can see the plan and its execution state without
+reading the repository. This document remains the source of truth; the
+project never introduces a row, release, or dependency that the document
+does not have.
+
+- One draft item per row, titled `<ID>: <outcome>`, with a link back to this
+  document. Roadmap rows are not issues; issues are reserved for reports from
+  people who use Posato.
+- Fields mirror the tables: Release, Class, Epic, Wave, Risk, Dependencies,
+  and Integration group. Status (Todo, In Progress, Done), PR, Start, and
+  Target carry execution state that the document does not track.
+- Keep the mirror current in the same step as the change, never later: a
+  roadmap revision adds, moves, or removes items; starting a row sets Status
+  to In Progress and records the pull request; merging that pull request sets
+  Done; a dropped row is archived. An agent that changes a row and cannot
+  update the project says so in the pull request.
+- Update through `gh project` (`item-list`, `item-create`, `item-edit`,
+  `item-archive`) with the `project` token scope. Views are created once in
+  the GitHub interface and are not part of the mirror rule.
+
 ## Prerequisites and handovers
 
 These items belong to the MVP roadmap or to maintainer-owned accounts and are
