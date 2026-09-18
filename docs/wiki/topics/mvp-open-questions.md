@@ -603,12 +603,13 @@ implementation. The solution and any changes to accepted contracts remain
 
 - **Make website coverage easier to understand and configure.** Exact-host
   matching treats `example.com` and `www.example.com` as separate entries;
-  redirects can therefore lead to a host outside the selected set. Evaluate
-  clearer entry-time guidance and an explicit way to include the `www`
-  variant. Decide separately whether broader subdomain coverage is desirable.
-  Automatic inclusion is not accepted by this note; the current
+  redirects can therefore lead to a host outside the selected set.
+  `user-confirmed` (2026-09-18): persist the `www` counterpart automatically
+  as a second exact-domain row on add and once for already-saved lists; do
+  not treat `www` as a matcher alias. The current
   [ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md)
-  exact-domain contract remains in force.
+  exact-domain contract remains in force. Broader subdomain coverage remains
+  `open`.
 - **Reduce repeated macOS authorization prompts at session start.** Evaluate
   a one-time administrator opt-in for subsequent session starts, with an
   explicit revocation path and authenticated, narrowly scoped helper requests.

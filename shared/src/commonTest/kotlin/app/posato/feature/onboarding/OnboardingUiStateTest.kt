@@ -259,11 +259,14 @@ class OnboardingUiStateTest {
         holder.submitWebsites("example.com", 1) { receipt = it }
         runCurrent()
 
-        assertEquals(listOf("example.com"), policy.replaced.single().domains.map { it.canonicalValue })
-        assertEquals(1, holder.savedWebsites)
+        assertEquals(
+            listOf("example.com", "www.example.com"),
+            policy.replaced.single().domains.map { it.canonicalValue },
+        )
+        assertEquals(2, holder.savedWebsites)
         val saved = assertIs<WebsiteBatchReceipt>(receipt)
         assertTrue(saved.saved)
-        assertEquals(1, saved.addedCount)
+        assertEquals(2, saved.addedCount)
     }
 
     @Test
@@ -277,7 +280,7 @@ class OnboardingUiStateTest {
         runCurrent()
 
         assertEquals(1, policy.replaced.size)
-        assertEquals(1, holder.savedWebsites)
+        assertEquals(2, holder.savedWebsites)
     }
 
     @Test

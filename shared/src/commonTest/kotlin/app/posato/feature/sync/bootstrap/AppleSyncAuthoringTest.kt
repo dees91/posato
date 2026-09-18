@@ -28,6 +28,7 @@ class AppleSyncAuthoringTest {
             harness.establish()
             harness.keys.scriptRead(KeyItemReadResult.Missing, KeyItemReadResult.Missing)
             val local = harness.syncPolicy
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.read())
             val saved = local.replace(0, testPolicy("waiting.example"))
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(saved)
             advanceUntilIdle()

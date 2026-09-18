@@ -91,6 +91,73 @@ class ExactDomainPolicyTest {
 
         assertEquals("ExactDomain(redacted)", domain.toString())
     }
+
+    @Test
+    fun `given a bare host when a counterpart is derived then the www host is returned`() {
+        val domain = assertSuccess(ExactDomain.parse("example.com"))
+
+        assertEquals("www.example.com", domain.wwwCounterpart()?.canonicalValue)
+    }
+
+    @Test
+    fun `given a www host when a counterpart is derived then the bare host is returned`() {
+        val domain = assertSuccess(ExactDomain.parse("www.example.com"))
+
+        assertEquals("example.com", domain.wwwCounterpart()?.canonicalValue)
+    }
+
+    @Test
+    fun `given a multi-label www host when a counterpart is derived then one www label is stripped`() {
+        val domain = assertSuccess(ExactDomain.parse("www.news.example.com"))
+
+        assertEquals("news.example.com", domain.wwwCounterpart()?.canonicalValue)
+    }
+
+    @Test
+    fun `given an IDN host when a counterpart is derived then the A-label www host is returned`() {
+        val input = "b" + Char(0x00FC) + "cher.example"
+        val domain = assertSuccess(ExactDomain.parse(input))
+
+        assertEquals("www.xn--bcher-kva.example", domain.wwwCounterpart()?.canonicalValue)
+    }
+
+    @Test
+    fun `given a www plus public suffix when a counterpart is derived then the single-label remainder is rejected`() {
+        val domain = assertSuccess(ExactDomain.parse("www.com"))
+
+        assertNull(domain.wwwCounterpart())
+    }
+
+    @Test
+    fun `given a policy of apex hosts when expanded then missing www counterparts are added`() {
+        val policy = assertPolicy(listOf("example.com", "news.example"))
+
+        assertEquals(
+            listOf("example.com", "news.example", "www.example.com", "www.news.example"),
+            policy.withWwwCounterparts().domains.map(ExactDomain::canonicalValue),
+        )
+    }
+
+    @Test
+    fun `given a policy that already contains both hosts when expanded then it is unchanged`() {
+        val policy = assertPolicy(listOf("example.com", "www.example.com"))
+
+        assertEquals(policy, policy.withWwwCounterparts())
+    }
+
+    @Test
+    fun `given a full policy when expanded then existing hosts are kept and extra counterparts are skipped`() {
+        val existing = (1..ExactDomainPolicyLimits.MAX_DOMAIN_COUNT).map { index -> "site$index.example" }
+        val policy = assertPolicy(existing)
+
+        assertEquals(policy, policy.withWwwCounterparts())
+    }
+}
+
+private fun assertPolicy(canonicalDomains: List<String>): TargetPolicy {
+    return assertIs<TargetPolicyValidationResult.Success>(
+        TargetPolicy.fromStoredValues(canonicalDomains, null),
+    ).policy
 }
 
 private fun assertSuccess(result: ExactDomainInputResult): ExactDomain {

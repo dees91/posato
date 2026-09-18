@@ -92,7 +92,7 @@ class TargetsDesignAdoptionViewModelTest {
             viewModel.submitWebsites("first.example", 2)
             scheduler.runCurrent()
             assertTrue(checkNotNull(viewModel.uiState.value.websiteBatchReceipt).saved)
-            assertEquals(listOf("first.example"), viewModel.uiState.value.domains)
+            assertEquals(listOf("first.example", "www.first.example"), viewModel.uiState.value.domains)
         }
     }
 
@@ -125,12 +125,15 @@ class TargetsDesignAdoptionViewModelTest {
             viewModel.submitWebsites("https://first.example/path, invalid, second.example, FIRST.EXAMPLE", 1)
             scheduler.runCurrent()
 
-            assertEquals(listOf("first.example", "second.example"), viewModel.uiState.value.domains)
+            assertEquals(
+                listOf("first.example", "second.example", "www.first.example", "www.second.example"),
+                viewModel.uiState.value.domains,
+            )
             assertEquals(1, store.replaceCalls)
             val receipt = checkNotNull(viewModel.uiState.value.websiteBatchReceipt)
             assertEquals(1L, receipt.submissionId)
             assertTrue(receipt.saved)
-            assertEquals(2, receipt.addedCount)
+            assertEquals(4, receipt.addedCount)
             assertEquals(1, receipt.duplicateCount)
             assertEquals(listOf(1), receipt.rejectedIndices)
         }

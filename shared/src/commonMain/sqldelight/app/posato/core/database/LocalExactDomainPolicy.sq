@@ -22,6 +22,10 @@ CREATE TABLE application_policy (
   )
 );
 
+CREATE TABLE www_counterpart_expansion (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
+);
+
 selectRevision:
 SELECT revision
 FROM local_policy_metadata
@@ -57,3 +61,12 @@ DELETE FROM application_policy;
 insertApplicationPolicy:
 INSERT INTO application_policy(singleton, canonical_name)
 VALUES (1, :canonical_name);
+
+selectWwwCounterpartExpansion:
+SELECT singleton
+FROM www_counterpart_expansion
+WHERE singleton = 1;
+
+insertWwwCounterpartExpansion:
+INSERT OR REPLACE INTO www_counterpart_expansion(singleton)
+VALUES (1);

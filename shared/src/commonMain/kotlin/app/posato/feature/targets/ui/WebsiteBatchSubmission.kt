@@ -55,6 +55,11 @@ internal fun createWebsiteBatchSubmission(
             else -> {
                 domains.add(domain)
                 addedCount++
+                val counterpart = ExactDomain.restore(domain)?.wwwCounterpart()?.canonicalValue
+                if (counterpart != null && counterpart !in domains && domains.size < ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
+                    domains.add(counterpart)
+                    addedCount++
+                }
             }
         }
     }

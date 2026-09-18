@@ -18,6 +18,10 @@
     {"name":"open-row-menu","action":"tap","query":{"text":"Actions for example.com","role":"button"}},
     {"name":"remove-domain","action":"tap","query":{"text":"Remove","role":"button"}},
     {"name":"row-removed","action":"waitFor","state":"absent","query":{"text":"example.com","role":"text"}},
+    {"name":"reach-www-row","action":"scrollTo","query":{"text":"www.example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
+    {"name":"open-www-row-menu","action":"tap","query":{"text":"Actions for www.example.com","role":"button"}},
+    {"name":"remove-www-domain","action":"tap","query":{"text":"Remove","role":"button"}},
+    {"name":"www-row-removed","action":"waitFor","state":"absent","query":{"text":"www.example.com","role":"text"}},
     {"name":"removed-shot","action":"screenshot"},
     {"name":"removed-tree","action":"snapshot"}
   ]
