@@ -1776,7 +1776,6 @@ processed with no errors or warnings. See the
   and security routes.
 - Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
   `docs/wiki/topics/first-release-readiness.md`.
-## [2026-09-12] proposal | Post-MVP session usability improvements
 
 ## [2026-09-13] proposal | Post-MVP usability and feature ideas
 
