@@ -35,9 +35,9 @@ can require Resume restrictions and an attended administrator confirmation.
   navigation on iOS or the Mac sidebar.
 - Choose Start a session, adjust duration, Review session, then Start this pause.
 - Open a summary disclosure to inspect a long list without editing it.
-- Use Add or edit websites or Choose apps in the summary to reach the matching
+- Use Add or edit websites or Manage apps in the summary to reach the matching
   Paused items category in one action. The selected-items list offers the same
-  route beside its filter or application count.
+  route. Filter list reveals the website-only filter when needed.
 - End session early opens its own confirmation surface. Paused items remains
   editable during an active session.
 - Expand iCloud to reach sync and workspace-removal controls. Expanding the row
@@ -86,10 +86,10 @@ Preconditions:
   List rows have no inline edit or remove action.
 - **Edit route:** From Session, `$PC tap -t <target> --text "Add or edit websites" --role button`.
   A snapshot shows the Paused items heading and Add websites field. Return to
-  Session, then `$PC tap -t <target> --text "Choose apps" --role button`;
+  Session, then `$PC tap -t <target> --text "Manage apps" --role button`;
   the Paused items Apps tab and its Choose apps action are visible. Repeat each
   route from the matching category inside Selected items.
-- **Filter:** Open the website count, then `$PC type -t <target> --text "Filter selected websites" --role textField --input absent.example --clear`.
+- **Filter:** Open the website count, tap Filter list, then `$PC type -t <target> --role textField --input absent.example --clear`.
   A snapshot shows Filters this list only, the filtered count, and No websites
   match this filter. Clear the field and confirm the original list returns.
 - **Unfinished edit:** Start editing a saved website without submitting, return

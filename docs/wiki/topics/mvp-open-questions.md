@@ -641,7 +641,10 @@ accepted contracts.
   (2026-09-21, `SESSION-004`): keep the summary disclosures as a read-only
   preview, add category-specific routes to Paused items from the summary and
   browser, and make the website field read as a list-only filter. The two
-  primary destinations remain unchanged.
+  primary destinations remain unchanged. `user-confirmed` (2026-09-21, PR #71
+  review): call the app route Manage apps because the system picker is a second
+  action in Paused items; explain the frozen start set before its summary and
+  reveal the list-only website filter through a quiet action.
 - **Arrange onboarding actions better on macOS.** `user-confirmed`
   (2026-09-15): on the Mac helper permission step, **Open System Settings**,
   **Check again**, and **Not now** stack vertically at their own content

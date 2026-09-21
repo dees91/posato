@@ -60,7 +60,7 @@ internal fun SessionSelectionSummary(
     var details by remember { mutableStateOf<TargetsCategory?>(null) }
     val domains = state.displayDomains()
     val applicationCount = state.displayApplicationCount()
-    PosatoSection(titleContent = { Text("Selected items") }) {
+    PosatoSection(titleContent = { Text(summaryTitle(state)) }) {
         PosatoDisclosureRow(
             onClick = { details = TargetsCategory.WEBSITES },
             headlineContent = { Text(if (domains.size == 1) "1 website" else "${domains.size} websites") },
@@ -88,7 +88,7 @@ internal fun SessionSelectionSummary(
                 Text("Add or edit websites")
             }
             PosatoButton(onClick = { onEditItems(TargetsCategory.APPLICATIONS) }, style = PosatoButtonStyle.Quiet) {
-                Text("Choose apps")
+                Text("Manage apps")
             }
         }
     }
@@ -119,28 +119,43 @@ private fun SessionSelectionPanel(
     val focus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
     var category by remember { mutableStateOf(initialCategory) }
+    var filterVisible by remember { mutableStateOf(false) }
     val search = remember { TextFieldState() }
     val scroll = rememberLazyListState()
     LaunchedEffect(category, search.text.toString()) { scroll.scrollToItem(0) }
     LaunchedEffect(Unit) { focus.requestFocus() }
     Column(Modifier.fillMaxSize().imePadding().padding(PosatoSpace.Section), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
         PosatoSectionHeader(
-            titleContent = { Text("Selected items", style = MaterialTheme.typography.headlineSmall) },
+            titleContent = { Text(selectionPanelTitle(state, category), style = MaterialTheme.typography.headlineSmall) },
             actionContent = { PosatoButton(onDismiss, Modifier.focusRequester(focus), style = PosatoButtonStyle.Quiet) { Text("Close list") } },
         )
         TargetsCategoryTabs(category, state.displayDomains().size, state.applicationMappings.size) {
             focusManager.clearFocus()
             category = it
         }
-        PosatoButton(
-            onClick = {
-                focusManager.clearFocus()
-                onDismiss()
-                onEditItems(category)
-            },
-            style = PosatoButtonStyle.Quiet,
-        ) { Text(if (category == TargetsCategory.WEBSITES) "Add or edit websites" else "Choose apps") }
-        SessionSelectionPanelList(state, category, search, scroll, Modifier.weight(1f))
+        if (state.showsPersistedStartSet()) {
+            PosatoCaption(
+                if (category == TargetsCategory.WEBSITES) {
+                    "These websites were selected at session start. The action below edits current Paused items."
+                } else {
+                    "These apps are in current Paused items. The Session summary keeps the count from session start."
+                },
+            )
+        }
+        PosatoActionRow {
+            PosatoButton(
+                onClick = {
+                    focusManager.clearFocus()
+                    onDismiss()
+                    onEditItems(category)
+                },
+                style = PosatoButtonStyle.Quiet,
+            ) { Text(if (category == TargetsCategory.WEBSITES) "Add or edit websites" else "Manage apps") }
+            if (category == TargetsCategory.WEBSITES && state.displayDomains().isNotEmpty() && !filterVisible) {
+                PosatoButton(onClick = { filterVisible = true }, style = PosatoButtonStyle.Quiet) { Text("Filter list") }
+            }
+        }
+        SessionSelectionPanelList(state, category, search, scroll, filterVisible, Modifier.weight(1f))
     }
 }
 
@@ -150,11 +165,12 @@ private fun SessionSelectionPanelList(
     category: TargetsCategory,
     search: TextFieldState,
     scroll: LazyListState,
+    filterVisible: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val values = selectedItemValues(state, category)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-        if (category == TargetsCategory.WEBSITES) {
+        if (category == TargetsCategory.WEBSITES && filterVisible) {
             PosatoSearchField(search, "Filter selected websites")
             PosatoCaption("Filters this list only.")
         }
@@ -182,6 +198,18 @@ private fun SessionSelectionPanelList(
             }
         }
     }
+}
+
+private fun summaryTitle(state: SessionUiState): String {
+    return if (state.showsPersistedStartSet()) "Items at session start" else "Selected items"
+}
+
+private fun selectionPanelTitle(
+    state: SessionUiState,
+    category: TargetsCategory,
+): String {
+    if (!state.showsPersistedStartSet()) return "Selected items"
+    return if (category == TargetsCategory.WEBSITES) "Websites at session start" else "Current apps"
 }
 
 private fun selectedItemValues(

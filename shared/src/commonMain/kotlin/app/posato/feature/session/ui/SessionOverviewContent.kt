@@ -87,8 +87,8 @@ internal fun SessionOverviewContent(
                 Text(if (hasItems) "Start a session" else "Choose paused items")
             }
         }
-        SessionSelectionSummary(state, deviceLabel, onEditItems)
         FrozenSetCaption(state)
+        SessionSelectionSummary(state, deviceLabel, onEditItems)
         PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
         SyncSection(syncState)
         macSetup?.let { presentation ->
@@ -193,7 +193,7 @@ private fun FrozenSetCaption(state: SessionUiState) {
     }
     PosatoCaption(
         if (state.showsPersistedStartSet()) {
-            "Showing what this pause started with. Restrictions follow your current Paused items."
+            "These counts stay as they were at session start. The actions below edit current Paused items, which restrictions follow."
         } else {
             "Showing your current Paused items."
         },
