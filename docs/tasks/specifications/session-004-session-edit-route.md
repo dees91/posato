@@ -4,7 +4,7 @@
 - **Tier reason:** A navigation and presentation change inside the accepted two-destination model; no policy, enforcement, or sync behavior changes. An independent review checks `DESIGN.md` conformance and that the active session's frozen set stays truthful.
 - **Dependencies:** none; release 1.1, wave R1.1/W1.
 - **Integration group:** `PR-SESSION-EDIT-ROUTE`, milestone `1.1.0`.
-- **Authority:** [release roadmap](../release-roadmap.md) (revision 1), [DESIGN.md](../../../DESIGN.md) (two primary destinations, action hierarchy), [session usability proposals](../../wiki/topics/mvp-open-questions.md#post-mvp-session-usability-proposals) (`user-confirmed` frustration and the observed cause in `SessionSelectionSummary.kt`).
+- **Authority:** [release roadmap](../release-roadmap.md) (revision 2), [DESIGN.md](../../../DESIGN.md) (two primary destinations, action hierarchy), [session usability proposals](../../wiki/topics/mvp-open-questions.md#post-mvp-session-usability-proposals) (`user-confirmed` frustration and the observed cause in `SessionSelectionSummary.kt`).
 
 ## Outcome
 
@@ -13,10 +13,10 @@ A person on the Session screen who wants to add or change a paused website or ap
 ## Boundaries
 
 - The route lands on the existing editing surface under Paused items; Session does not gain a second editor, and no third primary destination appears.
-- The selected-items browser's search field either becomes an unmistakable filter (label, placeholder, icon, empty-state copy) or gives way to an explicit add or edit action beside it; the brief proposes both, the maintainer confirms at implementation.
+- The selected-items browser's search field reads as a filter, and an explicit category-specific add or edit action routes to Paused items (`user-confirmed`, 2026-09-21).
 - Both platforms: the Mac sidebar placement and the iPhone bottom navigation, using existing components; a new component requires a `DESIGN.md` amendment.
 - During an active session the route still works, the policy changes as today, and the active summary keeps showing the frozen start set (`SESSION-003`).
-- Non-goals: policy model, sync, onboarding, the Paused items editors themselves, `TARGETS-006` entry guidance.
+- Non-goals: policy model, sync, onboarding, unrelated Paused items editor behavior, `TARGETS-006` entry guidance.
 
 ## Acceptance
 
@@ -33,5 +33,5 @@ A person on the Session screen who wants to add or change a paused website or ap
 
 ## Decisions or blockers
 
-- **Decision (maintainer, at implementation):** explicit add action, filter re-styling, or both; default proposal is both.
+- **Decision (`user-confirmed`, 2026-09-21):** provide both an explicit add or edit action and filter wording.
 - No blocker.

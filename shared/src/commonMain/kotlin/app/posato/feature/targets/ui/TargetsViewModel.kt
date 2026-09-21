@@ -153,10 +153,11 @@ internal class TargetsViewModel(
 
     fun submitWebsites(
         input: String,
-        submissionId: Long
+        submissionId: Long,
+        preserveEditingDomain: Boolean = false,
     ) {
         val state = currentState
-        if (!state.canMutatePolicy() || state.editingDomain != null) {
+        if (!state.canMutatePolicy() || (state.editingDomain != null && !preserveEditingDomain)) {
             domainEditorState.update { it.copy(batchReceipt = WebsiteBatchReceipt(submissionId, saved = false)) }
             return
         }
@@ -176,7 +177,12 @@ internal class TargetsViewModel(
                 if (submission.addedCount == 0) {
                     domainEditorState.update { it.copy(batchReceipt = receipt) }
                 } else {
-                    persist(submission.canonicalDomains, state.applicationPolicyName, TargetMutation.DOMAIN) { saved ->
+                    persist(
+                        submission.canonicalDomains,
+                        state.applicationPolicyName,
+                        TargetMutation.DOMAIN,
+                        preserveDomainEditor = preserveEditingDomain,
+                    ) { saved ->
                         domainEditorState.update { it.copy(batchReceipt = if (saved) receipt else WebsiteBatchReceipt(submissionId, saved = false)) }
                     }
                 }
@@ -230,6 +236,7 @@ internal class TargetsViewModel(
         canonicalDomains: List<String>,
         applicationPolicyName: String?,
         mutation: TargetMutation,
+        preserveDomainEditor: Boolean = false,
         onCompleted: (Boolean) -> Unit = {},
     ) {
         val policy = when (val result = TargetPolicy.fromStoredValues(canonicalDomains, applicationPolicyName)) {
@@ -261,7 +268,7 @@ internal class TargetsViewModel(
                     is LocalPolicyResult.Success -> {
                         policyState.update { TargetsPolicyState(snapshot = result.value) }
                         when (mutation) {
-                            TargetMutation.DOMAIN -> domainEditorState.resetDomainEditor()
+                            TargetMutation.DOMAIN -> if (!preserveDomainEditor) domainEditorState.resetDomainEditor()
                             TargetMutation.APPLICATION_POLICY -> applicationEditorState.resetApplicationEditor()
                         }
                         submissionState.update { TargetsSubmissionState.Idle }

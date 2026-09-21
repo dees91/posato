@@ -528,9 +528,12 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   compact item summary. Copy explicitly describes a local timer.
 - Early end: Ready to return?, End session, Keep this pause.
 - Ended/expired: inactive state plus the real early-end or expiration message.
-- Summary: two disclosure rows, not every website/app. Selected items opens a
-  read-only browser with category tabs, website search, and Close list.
-  iOS shows opaque application counts; Mac shows actual local names.
+- Summary: two disclosure rows, not every website/app. Quiet Add or edit websites
+  and Choose apps actions route directly to the corresponding category under
+  Paused items. Selected items opens a read-only list with category tabs,
+  Filter selected websites, a category-specific editing route, and Close list.
+  Filtering changes only the visible list. iOS shows opaque application counts;
+  Mac shows actual local names.
 - Device setup uses collapsed **iCloud** and **This Mac** rows with short,
   real-state summaries. This Mac is macOS-only. Expanding a row reveals its
   explanation and controls; it never starts a helper check or sync attempt.
@@ -640,6 +643,9 @@ retains its existing availability. Do not add an unrelated active-session lock.
   Edit opens Website domain with Save changes and Cancel.
 - Add/search/edit drafts belong to UI state and survive destination changes.
   They are not persisted across application relaunch.
+- If an unfinished website edit is open when Session routes to website adding,
+  keep its draft available through Resume website edit; disable other website
+  row changes until that edit is resumed and finished or canceled.
 
 ### Paused items: applications
 

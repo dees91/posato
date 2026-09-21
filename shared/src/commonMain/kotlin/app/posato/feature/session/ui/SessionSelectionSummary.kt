@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.input.TextFieldState
@@ -29,6 +30,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -52,7 +54,8 @@ import app.posato.feature.targets.ui.TargetsCategoryTabs
 @Composable
 internal fun SessionSelectionSummary(
     state: SessionUiState,
-    deviceLabel: String
+    deviceLabel: String,
+    onEditItems: (TargetsCategory) -> Unit,
 ) {
     var details by remember { mutableStateOf<TargetsCategory?>(null) }
     val domains = state.displayDomains()
@@ -61,7 +64,7 @@ internal fun SessionSelectionSummary(
         PosatoDisclosureRow(
             onClick = { details = TargetsCategory.WEBSITES },
             headlineContent = { Text(if (domains.size == 1) "1 website" else "${domains.size} websites") },
-            supportingContent = { PosatoCaption("Exact domains · view all") },
+            supportingContent = { PosatoCaption("Selected websites · view all") },
             leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Globe, null) } },
         )
         PosatoDisclosureRow(
@@ -80,11 +83,19 @@ internal fun SessionSelectionSummary(
             },
             leadingContent = { PosatoItemSymbol { PosatoIcon(PosatoIcons.Apps, null) } },
         )
+        PosatoActionRow {
+            PosatoButton(onClick = { onEditItems(TargetsCategory.WEBSITES) }, style = PosatoButtonStyle.Quiet) {
+                Text("Add or edit websites")
+            }
+            PosatoButton(onClick = { onEditItems(TargetsCategory.APPLICATIONS) }, style = PosatoButtonStyle.Quiet) {
+                Text("Choose apps")
+            }
+        }
     }
     details?.let { category ->
         if (platformNavigationPlacement() == PosatoNavigationPlacement.Bottom) {
             ModalBottomSheet(onDismissRequest = { details = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
-                SessionSelectionPanel(state, category, onDismiss = { details = null })
+                SessionSelectionPanel(state, category, onDismiss = { details = null }, onEditItems = onEditItems)
             }
         } else {
             Dialog(onDismissRequest = { details = null }, properties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -92,7 +103,7 @@ internal fun SessionSelectionSummary(
                     modifier = Modifier.padding(PosatoSpace.Section).widthIn(max = PosatoSize.Content).fillMaxWidth().fillMaxHeight(),
                     shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.surface,
-                ) { SessionSelectionPanel(state, category, onDismiss = { details = null }) }
+                ) { SessionSelectionPanel(state, category, onDismiss = { details = null }, onEditItems = onEditItems) }
             }
         }
     }
@@ -102,7 +113,8 @@ internal fun SessionSelectionSummary(
 private fun SessionSelectionPanel(
     state: SessionUiState,
     initialCategory: TargetsCategory,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onEditItems: (TargetsCategory) -> Unit,
 ) {
     val focus = remember { FocusRequester() }
     val focusManager = LocalFocusManager.current
@@ -120,24 +132,37 @@ private fun SessionSelectionPanel(
             focusManager.clearFocus()
             category = it
         }
-        val values = when (category) {
-            TargetsCategory.WEBSITES -> state.displayDomains()
+        PosatoButton(
+            onClick = {
+                focusManager.clearFocus()
+                onDismiss()
+                onEditItems(category)
+            },
+            style = PosatoButtonStyle.Quiet,
+        ) { Text(if (category == TargetsCategory.WEBSITES) "Add or edit websites" else "Choose apps") }
+        SessionSelectionPanelList(state, category, search, scroll, Modifier.weight(1f))
+    }
+}
 
-            TargetsCategory.APPLICATIONS -> state.applicationMappings.mapNotNull { mapping ->
-                when (val display = mapping.display) {
-                    is LocalApplicationMappingDisplay.Named -> display.value
-                    LocalApplicationMappingDisplay.Opaque -> null
-                }
-            }
+@Composable
+private fun SessionSelectionPanelList(
+    state: SessionUiState,
+    category: TargetsCategory,
+    search: TextFieldState,
+    scroll: LazyListState,
+    modifier: Modifier = Modifier,
+) {
+    val values = selectedItemValues(state, category)
+    Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
+        if (category == TargetsCategory.WEBSITES) {
+            PosatoSearchField(search, "Filter selected websites")
+            PosatoCaption("Filters this list only.")
         }
-        if (category == TargetsCategory.WEBSITES) PosatoSearchField(search, "Search websites")
         val opaqueCount = state.applicationMappings.count { it.display is LocalApplicationMappingDisplay.Opaque }
         if (category == TargetsCategory.APPLICATIONS && opaqueCount > 0) {
             PosatoCaption("$opaqueCount applications selected privately. Review them in the system picker from Paused items.")
         }
-        val visible = if (category ==
-            TargetsCategory.WEBSITES
-        ) {
+        val visible = if (category == TargetsCategory.WEBSITES) {
             values.filter { it.contains(search.text.toString().trim(), ignoreCase = true) }
         } else {
             values
@@ -145,12 +170,43 @@ private fun SessionSelectionPanel(
         PosatoCaption(if (category == TargetsCategory.WEBSITES) "${visible.size} of ${values.size} websites" else "On this device only")
         PosatoDivider()
         LazyColumn(Modifier.weight(1f).fillMaxWidth(), state = scroll) {
-            if (visible.isEmpty()) item { PosatoCaption(if (values.isEmpty()) "No named items to show." else "No matching websites") }
+            if (visible.isEmpty()) {
+                item {
+                    PosatoCaption(emptyResultsMessage(values, category))
+                }
+            }
             items(visible) { value ->
                 PosatoItemRow(headlineContent = { Text(value) }, leadingContent = {
                     PosatoItemSymbol { PosatoIcon(if (category == TargetsCategory.WEBSITES) PosatoIcons.Globe else PosatoIcons.Apps, null) }
                 })
             }
         }
+    }
+}
+
+private fun selectedItemValues(
+    state: SessionUiState,
+    category: TargetsCategory
+): List<String> {
+    return when (category) {
+        TargetsCategory.WEBSITES -> state.displayDomains()
+
+        TargetsCategory.APPLICATIONS -> state.applicationMappings.mapNotNull { mapping ->
+            when (val display = mapping.display) {
+                is LocalApplicationMappingDisplay.Named -> display.value
+                LocalApplicationMappingDisplay.Opaque -> null
+            }
+        }
+    }
+}
+
+private fun emptyResultsMessage(
+    values: List<String>,
+    category: TargetsCategory
+): String {
+    return when {
+        values.isEmpty() && category == TargetsCategory.WEBSITES -> "No selected websites to show."
+        values.isEmpty() -> "No named applications to show."
+        else -> "No websites match this filter."
     }
 }

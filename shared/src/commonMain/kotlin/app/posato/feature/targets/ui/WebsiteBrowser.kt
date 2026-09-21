@@ -48,6 +48,7 @@ internal fun WebsiteBrowser(
     onEdit: (String) -> Unit,
     onRemove: (String) -> Unit,
     modifier: Modifier = Modifier,
+    rowActionsEnabled: Boolean = true,
 ) {
     val focus = LocalFocusManager.current
     val query = browser.search.text.toString().trim()
@@ -97,7 +98,7 @@ internal fun WebsiteBrowser(
                 }
             }
             items(domains, key = { it }) { domain ->
-                WebsiteRow(domain, state.domains, state.canMutatePolicy(), {
+                WebsiteRow(domain, state.domains, state.canMutatePolicy() && rowActionsEnabled, {
                     focus.clearFocus()
                     onEdit(domain)
                 }, {

@@ -9,7 +9,9 @@ import app.posato.feature.session.domain.FakeSessionClock
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
+import app.posato.feature.session.domain.SessionOrigin
 import app.posato.feature.session.domain.SessionRecord
+import app.posato.feature.session.domain.SessionReview
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalPolicyResult
@@ -283,6 +285,29 @@ class SessionEnforcementTest {
         scheduler.runCurrent()
 
         assertTrue(enforcement.calls.contains("clear"))
+    }
+
+    @Test
+    fun `given inactive enforcement when active policy changes then the summary keeps the persisted start set`() {
+        val record = SessionRecord(SessionId(testIdentifier(25)), NOW - 600_000L, NOW + 1_200_000L)
+        val state = SessionUiState(
+            status = LocalSessionStatus.Active(
+                record = record,
+                remainingMillis = 1_200_000L,
+                frozenStartSet = FrozenStartSet(persistentListOf("frozen.example"), 1),
+                origin = SessionOrigin.LOCAL,
+            ),
+            review = SessionReview(domains = persistentListOf("edited.example"), selectedMappingCount = 2),
+        )
+
+        assertEquals(listOf("frozen.example"), state.displayDomains())
+        assertEquals(1, state.displayApplicationCount())
+        assertTrue(state.showsFrozenSet())
+        assertTrue(state.showsPersistedStartSet())
+        assertEquals(
+            listOf("edited.example"),
+            state.copy(status = LocalSessionStatus.Ended(record, SessionEndKind.ENDED_EARLY, SessionOrigin.LOCAL)).displayDomains(),
+        )
     }
 
     @Test

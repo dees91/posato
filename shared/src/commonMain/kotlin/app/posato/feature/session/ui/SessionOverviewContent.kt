@@ -34,6 +34,7 @@ import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.sync.ui.SyncBootstrapSection
 import app.posato.feature.sync.ui.SyncBootstrapUiState
+import app.posato.feature.targets.ui.TargetsCategory
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_setup_unavailable
 import app.posato.generated.resources.session_ended_early
@@ -48,6 +49,7 @@ internal fun SessionOverviewContent(
     onSetup: () -> Unit,
     onEnd: () -> Unit,
     onItems: () -> Unit,
+    onEditItems: (TargetsCategory) -> Unit,
     onRetryEnforcement: () -> Unit = {},
     syncState: SyncBootstrapUiState? = null,
     macSetup: MacSetupPresentation? = null,
@@ -85,7 +87,7 @@ internal fun SessionOverviewContent(
                 Text(if (hasItems) "Start a session" else "Choose paused items")
             }
         }
-        SessionSelectionSummary(state, deviceLabel)
+        SessionSelectionSummary(state, deviceLabel, onEditItems)
         FrozenSetCaption(state)
         PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
         SyncSection(syncState)
@@ -217,6 +219,7 @@ internal fun SessionReviewContent(
     onStart: () -> Unit,
     onChangeDuration: () -> Unit,
     onItems: () -> Unit,
+    onEditItems: (TargetsCategory) -> Unit,
     onRetry: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
@@ -245,7 +248,7 @@ internal fun SessionReviewContent(
                 PosatoButton(onStart, enabled = state.canStart()) { Text(if (state.isStarting) "Starting…" else "Start this pause") }
                 PosatoButton(onChangeDuration, style = PosatoButtonStyle.Quiet, enabled = !state.isStarting) { Text("Change duration") }
             }
-            SessionSelectionSummary(state, deviceLabel)
+            SessionSelectionSummary(state, deviceLabel, onEditItems)
             PosatoCaption("This starts the session and applies the chosen restrictions on this device.")
         }
     }

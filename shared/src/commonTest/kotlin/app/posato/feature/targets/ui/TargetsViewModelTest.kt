@@ -47,6 +47,29 @@ class TargetsDesignAdoptionViewModelTest {
     private val dispatcher = StandardTestDispatcher(scheduler)
 
     @Test
+    fun `given a batch add route during a domain edit then the edit draft survives the save`() = runTest(dispatcher) {
+        val store = FakeTargetPolicyStore(stateOf(0, listOf("first.example")))
+        val viewModel = TargetsViewModel(store)
+        observe(viewModel)
+        scheduler.runCurrent()
+        viewModel.beginEditingDomain("first.example")
+        scheduler.runCurrent()
+        val session = viewModel.uiState.value.domainEditorSession
+        val browser = TargetsBrowserState()
+        val editorDraft = browser.editorDraft(session, "first.example")
+        editorDraft.edit { replace(0, length, "unsaved.example") }
+
+        viewModel.submitWebsites("next.example", 1, preserveEditingDomain = true)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("first.example", "next.example"), viewModel.uiState.value.domains)
+        assertEquals("first.example", viewModel.uiState.value.editingDomain)
+        assertEquals(session, viewModel.uiState.value.domainEditorSession)
+        assertEquals("unsaved.example", browser.editorDraft(session, "first.example").text.toString())
+        assertTrue(checkNotNull(viewModel.uiState.value.websiteBatchReceipt).saved)
+    }
+
+    @Test
     fun `given a stale add callback during editing then rejection releases the pending draft`() {
         runTest(dispatcher) {
             val store = FakeTargetPolicyStore(stateOf(0, listOf("first.example")))
@@ -58,7 +81,7 @@ class TargetsDesignAdoptionViewModelTest {
             val browser = TargetsBrowserState()
             browser.websiteDraft.edit { append("next.example") }
 
-            browser.submit(viewModel::submitWebsites)
+            browser.submit { input, id -> viewModel.submitWebsites(input, id) }
             scheduler.runCurrent()
             browser.accept(viewModel.uiState.value.websiteBatchReceipt)
 
@@ -67,7 +90,7 @@ class TargetsDesignAdoptionViewModelTest {
             assertEquals(0, store.replaceCalls)
             viewModel.cancelEditingDomain()
             scheduler.runCurrent()
-            browser.submit(viewModel::submitWebsites)
+            browser.submit { input, id -> viewModel.submitWebsites(input, id) }
             scheduler.runCurrent()
             browser.accept(viewModel.uiState.value.websiteBatchReceipt)
             assertTrue(checkNotNull(browser.lastReceipt).saved)
