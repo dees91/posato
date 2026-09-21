@@ -60,7 +60,7 @@
 | Product-name trademark search | AC-03 | maintainer manual search 2026-09-17: UPRP, EUIPO TMview, WIPO Global Brand Database, USPTO; no results; no legal opinion | pass | — |
 | `TB-08`/`T-13` signing and update review | AC-03 | least entitlements (app JIT only, helper none, sync CloudKit and one keychain group); credentials and profiles outside Git; updates are whole notarized bundles without an updater, so security fixes need a manual download | pass with accepted risk | — |
 | Export compliance | AC-03 | iOS `ITSAppUsesNonExemptEncryption` `NO`; no Apple declaration for Developer ID (`MACOS-008`, inferred, no legal opinion) | pass | — |
-| EU trader status before App Review | AC-03 | submitted 2026-09-17; not yet approved at the verdict | blocked | Apple review; blocks only the App Store submission |
+| EU trader status before App Review | AC-03 | submitted 2026-09-17; Apple verified the trader contact information on 2026-09-19 and it is live on the EU App Store | pass | — |
 | `PRIVACY-001` `0A2A.1` reason | AC-03 | accepted again at build 3 processing; App Review may still question it | accepted risk | manifest-only fix if rejected |
 | Known limits carried from dependency rows | AC-03 | `IOS-003` iPad copy and unrerun suspended expiry on distribution builds; `IOS-001` reinstall behavior; `MACOS-009` Remove retry; `DESIGN-003` one helper launch failure until restart; `DESIGN-002` installed icon appearance | accepted by the maintainer | — |
 | Walkthrough reachable signed out (`DOCS-001`, `DOCS-002`) | AC-05 | the private-era GitHub attachment still answered 404 after the visibility change; the walkthrough was re-rendered to `posato.app/media/walkthrough.mp4` (42 s, 1600 x 1000, faststart) and the README relinked, by maintainer decision | pass after deployment | publication check |
@@ -85,7 +85,7 @@
 
 ## Final
 
-- **Status:** `blocked` on App Review, which rejected 1.0.0 (3) through an automated check, and on Apple's EU trader verification, which gates EU availability.
+- **Status:** `blocked` on App Review, which rejected 1.0.0 (3) through an automated check; EU trader verification passed on 2026-09-19.
 - **Outcome:** `AC-01`, `AC-02`, `AC-03`, and `AC-04` met with the accepted limits above; `AC-05` met except the live App Store badge, which waits for App Review and the manual release. An independent documentation review approved the release copy and site; its recommended points were folded.
 
 ## Publication (2026-09-17)
