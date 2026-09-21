@@ -596,10 +596,9 @@ applicable consumer, and the separate pre-release audit to `RELEASE-001`.
 ## Post-MVP session usability proposals
 
 `user-confirmed` (2026-09-12, extended 2026-09-15): retain these improvements
-for planning in the next iteration after the MVP. They do not expand MVP scope
-or authorize
-implementation. The solution and any changes to accepted contracts remain
-`open`.
+for planning in the next iteration after the MVP. A bullet records any later
+accepted solution; the remaining proposals do not expand MVP scope or change
+accepted contracts.
 
 - **Make website coverage easier to understand and configure.** Exact-host
   matching treated `example.com` and `www.example.com` as separate entries;
@@ -638,9 +637,14 @@ implementation. The solution and any changes to accepted contracts remain
   reads as a place to add a website. `observed` in code: that field only
   filters the read-only list (`SessionSelectionSummary.kt`). The maintainer
   reports this as a recurring frustration rather than a one-time slip, so treat
-  it as the strongest candidate in this section. Decide whether the browser
-  offers an explicit route to adding, whether its search field should read less
-  like entry, or both.
+  it as the strongest candidate in this section. `user-confirmed`
+  (2026-09-21, `SESSION-004`): keep the summary disclosures as a read-only
+  preview, add category-specific routes to Paused items from the summary and
+  browser, and make the website field read as a list-only filter. The two
+  primary destinations remain unchanged. `user-confirmed` (2026-09-21, PR #71
+  review): call the app route Manage apps because the system picker is a second
+  action in Paused items; explain the frozen start set before its summary and
+  reveal the list-only website filter through a quiet action.
 - **Arrange onboarding actions better on macOS.** `user-confirmed`
   (2026-09-15): on the Mac helper permission step, **Open System Settings**,
   **Check again**, and **Not now** stack vertically at their own content

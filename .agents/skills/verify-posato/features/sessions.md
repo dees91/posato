@@ -16,7 +16,9 @@ can require Resume restrictions and an attended administrator confirmation.
 - `session-review` shows the real end time, selection summary, current warnings,
   Start this pause, and Change duration.
 - `session-details` opens read-only website/app lists in an iOS sheet or Mac
-  dialog, with category tabs, website search, and Close list.
+  dialog, with category tabs, a website filter, an editing route, and Close list.
+- `session-edit-route` opens the corresponding Paused items category from
+  the Session summary or selected-items list.
 - `session-active` shows SESSION ACTIVE, remaining time, and End session early.
 - `session-early-end` asks Ready to return? with End session and Keep this pause.
 - `session-expiry` persists natural expiry and does not revive after restart.
@@ -33,6 +35,9 @@ can require Resume restrictions and an attended administrator confirmation.
   navigation on iOS or the Mac sidebar.
 - Choose Start a session, adjust duration, Review session, then Start this pause.
 - Open a summary disclosure to inspect a long list without editing it.
+- Use Add or edit websites or Manage apps in the summary to reach the matching
+  Paused items category in one action. The selected-items list offers the same
+  route. Filter list reveals the website-only filter when needed.
 - End session early opens its own confirmation surface. Paused items remains
   editable during an active session.
 - Expand iCloud to reach sync and workspace-removal controls. Expanding the row
@@ -78,7 +83,20 @@ Preconditions:
 - **Details:** Tap the website or application count, inspect Selected items,
   switch category using `--text-contains Websites` or Apps with role button,
   then `$PC tap -t <target> --text "Close list" --role button`.
-  No edit or remove action should be offered in this view.
+  List rows have no inline edit or remove action.
+- **Edit route:** From Session, `$PC tap -t <target> --text "Add or edit websites" --role button`.
+  A snapshot shows the Paused items heading and Add websites field. Return to
+  Session, then `$PC tap -t <target> --text "Manage apps" --role button`;
+  the Paused items Apps tab and its Choose apps action are visible. Repeat each
+  route from the matching category inside Selected items.
+- **Filter:** Open the website count, tap Filter list, then `$PC type -t <target> --role textField --input absent.example --clear`.
+  A snapshot shows Filters this list only, the filtered count, and No websites
+  match this filter. Clear the field and confirm the original list returns.
+- **Unfinished edit:** Start editing a saved website without submitting, return
+  to Session, then use Add or edit websites. Paused items shows Add websites and
+  Resume website edit. Add a different website, resume, and verify the original
+  unsaved Website domain text remains. Other website row actions stay disabled
+  until the edit is resumed and finished or canceled.
 - **Persist and end early:** `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/session-early-end.json`.
   It really relaunches first, verifies the active state, and confirms End session.
   On Mac/Simulator, `db query --sql "select ended_early from local_session"`

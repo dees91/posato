@@ -53,6 +53,7 @@ import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.TargetsBrowserState
+import app.posato.feature.targets.ui.TargetsCategory
 import app.posato.feature.targets.ui.TargetsScreen
 import dev.zacsweers.metro.Inject
 
@@ -138,6 +139,7 @@ class PosatoApplication internal constructor(
             onSelect = {
                 showingSession = it
                 informationPage = null
+                if (!it) browser.showingWebsiteEditor = true
             },
             onOpenAbout = { informationPage = ApplicationInformationPage.ABOUT },
             modifier = modifier,
@@ -164,6 +166,7 @@ class PosatoApplication internal constructor(
                             timeFormat,
                             sessionOwner,
                             onOpenPausedItems = { showingSession = false },
+                            onEditPausedItems = browser.editRoute { showingSession = false },
                             modifier = contentModifier,
                             layout = layout,
                             deviceLabel = deviceLabel,
@@ -184,6 +187,17 @@ class PosatoApplication internal constructor(
                     }
                 }
             }
+        }
+    }
+
+    private fun TargetsBrowserState.editRoute(onOpen: () -> Unit): (TargetsCategory) -> Unit {
+        return { category ->
+            this.category = category
+            if (category == TargetsCategory.WEBSITES) {
+                searching = false
+                showingWebsiteEditor = false
+            }
+            onOpen()
         }
     }
 

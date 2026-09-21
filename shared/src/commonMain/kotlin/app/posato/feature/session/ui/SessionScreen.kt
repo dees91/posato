@@ -33,6 +33,7 @@ import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.ui.TargetsCategory
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -44,6 +45,7 @@ internal fun SessionScreen(
     timeFormat: SessionTimeFormat,
     owner: SessionTransitionOwner,
     onOpenPausedItems: () -> Unit,
+    onEditPausedItems: (TargetsCategory) -> Unit,
     modifier: Modifier = Modifier,
     layout: PosatoLayout = PosatoLayout.Compact,
     deviceLabel: String = "On this device",
@@ -70,6 +72,7 @@ internal fun SessionScreen(
         onRetry = viewModel::retry,
         onRetryEnforcement = viewModel::retryEnforcement,
         onOpenPausedItems = onOpenPausedItems,
+        onEditPausedItems = onEditPausedItems,
         modifier = modifier,
         layout = layout,
         deviceLabel = deviceLabel,
@@ -101,6 +104,7 @@ internal fun SessionScreen(
     onRetry: () -> Unit = {},
     onRetryEnforcement: () -> Unit = {},
     onOpenPausedItems: () -> Unit = {},
+    onEditPausedItems: (TargetsCategory) -> Unit = {},
     syncState: SyncBootstrapUiState? = null,
     macSetup: MacSetupPresentation? = null,
     onMacSetupCheck: () -> Unit = {},
@@ -115,11 +119,7 @@ internal fun SessionScreen(
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
-            state.operationFailure?.let { failure ->
-                PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry) { Text("Retry") } }) {
-                    Text(stringResource(failure.operationMessage()))
-                }
-            }
+            SessionOperationFailureNotice(state.operationFailure, onRetry)
             when {
                 state.status == null && state.operationFailure == null -> {
                     CircularProgressIndicator()
@@ -144,7 +144,7 @@ internal fun SessionScreen(
                 }
 
                 state.isReviewing -> {
-                    SessionReviewContent(state, layout, deviceLabel, onStartSession, onExitReview, onOpenPausedItems, onRetry)
+                    SessionReviewContent(state, layout, deviceLabel, onStartSession, onExitReview, onOpenPausedItems, onEditPausedItems, onRetry)
                 }
 
                 state.isSettingUp -> {
@@ -159,6 +159,7 @@ internal fun SessionScreen(
                         onEnterSetup,
                         onRequestEarlyEnd,
                         onOpenPausedItems,
+                        onEditPausedItems,
                         onRetryEnforcement,
                         syncState,
                         macSetup,
@@ -170,6 +171,18 @@ internal fun SessionScreen(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SessionOperationFailureNotice(
+    failure: SessionOperationFailure?,
+    onRetry: () -> Unit
+) {
+    failure?.let {
+        PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry) { Text("Retry") } }) {
+            Text(stringResource(it.operationMessage()))
         }
     }
 }

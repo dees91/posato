@@ -11,6 +11,7 @@ internal enum class TargetsCategory { WEBSITES, APPLICATIONS }
 internal class TargetsBrowserState {
     var category: TargetsCategory by mutableStateOf(TargetsCategory.WEBSITES)
     var searching: Boolean by mutableStateOf(false)
+    var showingWebsiteEditor: Boolean by mutableStateOf(true)
     val search = TextFieldState()
     val websiteDraft = TextFieldState()
     val websitesScroll = LazyListState()

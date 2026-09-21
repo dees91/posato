@@ -45,9 +45,12 @@ internal fun TargetsScreen(
         state = state,
         browser = browser,
         deviceLabel = deviceLabel,
-        onSubmitWebsites = viewModel::submitWebsites,
+        onSubmitWebsites = { input, id -> viewModel.submitWebsites(input, id, preserveEditingDomain = !browser.showingWebsiteEditor) },
         onSubmitDomain = viewModel::submitDomain,
-        onEditDomain = viewModel::beginEditingDomain,
+        onEditDomain = { domain ->
+            browser.showingWebsiteEditor = true
+            viewModel.beginEditingDomain(domain)
+        },
         onCancelDomainEdit = viewModel::cancelEditingDomain,
         onRemoveDomain = viewModel::removeDomain,
         onRetry = viewModel::retry,
@@ -102,16 +105,26 @@ internal fun TargetsScreen(
             }
         }
         if (!state.hasLoaded) return@Column
-        if (state.editingDomain != null) {
+        if (state.editingDomain != null && browser.category == TargetsCategory.WEBSITES && browser.showingWebsiteEditor) {
             WebsiteEditor(state, browser.editorDraft(state.domainEditorSession, state.editingDomain), onSubmitDomain, onCancelDomainEdit)
             return@Column
         }
+        val suspendedWebsiteEdit = state.editingDomain != null && browser.category == TargetsCategory.WEBSITES
         TargetsCategoryTabs(browser.category, state.domains.size, state.applicationMappings.size) {
             focus.clearFocus()
             browser.category = it
         }
+        if (suspendedWebsiteEdit) SuspendedWebsiteEditNotice { browser.showingWebsiteEditor = true }
         when (browser.category) {
-            TargetsCategory.WEBSITES -> WebsiteBrowser(state, browser, onSubmitWebsites, onEditDomain, onRemoveDomain, Modifier.weight(1f))
+            TargetsCategory.WEBSITES -> WebsiteBrowser(
+                state,
+                browser,
+                onSubmitWebsites,
+                onEditDomain,
+                onRemoveDomain,
+                rowActionsEnabled = !suspendedWebsiteEdit,
+                modifier = Modifier.weight(1f),
+            )
 
             TargetsCategory.APPLICATIONS -> ApplicationBrowser(
                 state,
@@ -125,6 +138,15 @@ internal fun TargetsScreen(
                 Modifier.weight(1f),
             )
         }
+    }
+}
+
+@Composable
+private fun SuspendedWebsiteEditNotice(onResume: () -> Unit) {
+    PosatoNotice(actionContent = {
+        PosatoButton(onResume, style = PosatoButtonStyle.Quiet) { Text("Resume website edit") }
+    }) {
+        Text("Your unfinished website edit is still here. Resume it to finish or cancel before changing another saved website.")
     }
 }
 

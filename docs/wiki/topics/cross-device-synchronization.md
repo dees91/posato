@@ -558,6 +558,11 @@ not claim that every other device has received the update.
 
 ### Session integration and recoverable terminal facts (`SYNC-012`)
 
+- `observed` (2026-09-21, `SESSION-004`): the active Session summary reads its
+  persisted start set even when the platform reports no active enforcement.
+  Paused-items edits remain the current policy; after the session ends, the
+  summary reads that policy again. Presentation of the start set is not an
+  enforcement claim.
 - `observed` (2026-09-13, code and deterministic tests): a single session owner
   serializes native effects and checks the desired identity and deadline after
   waits. A generic native APPLIED result cannot establish which session is
