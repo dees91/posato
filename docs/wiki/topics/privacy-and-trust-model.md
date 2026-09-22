@@ -48,6 +48,13 @@
   Synchronized data is encrypted in the person's private CloudKit database,
   and Posato sends nothing to its developer. Manifest decisions are in the
   [execution record](../../tasks/executions/privacy-001-manifests-label.md).
+- `user-confirmed` (2026-09-22): [ADR 0008](../../decisions/0008-macos-update-delivery.md)
+  selects opt-in macOS update checks against GitHub Releases, explicit downloads,
+  and no system profile or installation identifier. Provider-visible connection
+  metadata remains observable. Full proposed policy text is staged in that
+  decision; `PRIVACY.md` and its hosted rendering change with verified delivery.
+  `open`: `MACOS-011` must establish actual headers, redirects, and cookie
+  behavior before claiming that the updater meets the data boundary.
 - `open`: lifecycle rules for other non-diagnostic data are not accepted.
 
 ## Accepted Apple MVP threat model

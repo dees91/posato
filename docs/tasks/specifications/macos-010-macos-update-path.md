@@ -1,10 +1,10 @@
 # `MACOS-010`: Decide the macOS update path
 
 - **Review tier:** `high-risk`
-- **Tier reason:** The decision revises the ADR 0004 update contract, adds the application's first outbound network request outside iCloud, and touches the `PRIVACY.md` promise; a brief independent plan review precedes the comparison and the decision record receives a completed-change review.
+- **Tier reason:** The decision proposes an updater boundary, an ADR 0004 lifecycle revision, and the first updater requests outside iCloud under revised privacy wording; a brief independent plan review precedes the comparison and the decision record receives a completed-change review.
 - **Dependencies:** none; release 1.1, wave R1.1/W1. `MACOS-011` implements the accepted path.
 - **Integration group:** `PR-MAC-UPDATE-DECISION`, milestone `1.1.0`. Documentation only.
-- **Authority:** [release roadmap](../release-roadmap.md) (revision 1), [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md) (update path: restore proxy ownership and helper registration before the bundle is replaced; manual download clarification of 2026-09-15), [`PRIVACY.md`](../../../PRIVACY.md), [threat model](../../security/apple-mvp-threat-model.md) (`TB-08`, `T-13`), [MACOS-008 record](../executions/macos-008-developer-id-distribution.md).
+- **Authority:** [release roadmap](../release-roadmap.md), [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md) (native boundaries), [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md) (confirmed restoration and compatibility, including the unchanged-registration exception of 2026-09-15), [`PRIVACY.md`](../../../PRIVACY.md), [threat model](../../security/apple-mvp-threat-model.md) (`TB-08`, `T-13`), [MACOS-008 record](../executions/macos-008-developer-id-distribution.md).
 
 ## Outcome
 
@@ -27,9 +27,9 @@ A recorded, maintainer-accepted decision on how Posato on macOS learns about and
 ## Verification
 
 - Independent plan review before the comparison and an independent review of the decision record.
-- No build or device verification; the documents are the deliverable.
+- No task-specific application or device experiment; the documents are the deliverable. The standing local `./gradlew quality` merge gate still applies.
 
 ## Decisions or blockers
 
-- **Decisions for the maintainer:** feed hosting, whether the check is on by default with an opt-out or off by default, and who holds any update signing key.
-- No blocker.
+- `user-confirmed` (2026-09-22): Sparkle, opt-in daily checks, GitHub Releases for feed and DMG, installation after the session ends, and the private key in the maintainer's Keychain with an encrypted backup outside Git. The accepted documentation plan is recorded in [ADR 0008](../../decisions/0008-macos-update-delivery.md).
+- No discovery blocker. `MACOS-011` starts separately and must first prove safe installation admission, cancellation, and crash/relaunch recovery; failure blocks delivery rather than weakening the contract.

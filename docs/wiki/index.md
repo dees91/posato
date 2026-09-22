@@ -70,6 +70,9 @@ provenance rather than a parallel public brand.
 - [ADR 0007: Apple Workspace Bootstrap and Native Sync Boundary](../decisions/0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
   — accepted CloudKit zone, anchor, mailbox, synchronizable workspace-key,
   account-isolation, deterministic bootstrap, and macOS native-sync boundaries.
+- [ADR 0008: macOS Update Delivery](../decisions/0008-macos-update-delivery.md)
+  — accepted Sparkle direction, staged authority and privacy wording, and the
+  required cancellation and recovery proof before delivery.
 - [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
   assets and data classification, trust boundaries, threats, required controls,
   downstream owners, and residual risks.
