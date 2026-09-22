@@ -75,6 +75,16 @@ contract should express actions such as selecting targets, applying a policy,
 clearing enforcement, and reporting action-required state rather than
 exporting platform tokens.
 
+`observed` (2026-09-22, `IOS-004`): the device noun and the iPad landscape
+sidebar come from a semantic `expect fun platformDevice()` (Mac, iPhone, iPad
+from the UIKit idiom) plus a common placement rule over the window aspect,
+not from navigation placement or width alone. On the iOS Simulator, moving a
+focused Compose text field to a different parent layout when the placement
+changes ended its input session: the keyboard hid, and a stale keyboard inset
+kept the bottom navigation hidden even after Done. Keeping the content's
+parent stable across placements and moving only the navigation chrome
+preserved the keyboard through all four orientations.
+
 ## macOS direction
 
 Compose Desktop uses a JVM process. `user-confirmed` (2026-08-25): native

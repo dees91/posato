@@ -134,6 +134,7 @@ internal fun OnboardingScreen(
                     PermissionStep(
                         state,
                         permissionPlatform,
+                        deviceNoun,
                         layout,
                         onRequestAccess,
                         onEnableHelper,

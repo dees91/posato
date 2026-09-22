@@ -111,7 +111,8 @@ approval of EU trader status.
   through pull-request refs, which only GitHub Support could purge.
 - Exposure scans must include edit histories of pull-request bodies and
   comments, which GitHub publishes; only the web UI can delete a revision.
-- Accepted limits: iPad shows iPhone-only copy; suspended expiry and reinstall
+- Accepted limits: iPad shows iPhone-only copy (`superseded` for 1.1 by
+  `IOS-004`, which names the iPad and adds its landscape sidebar); suspended expiry and reinstall
   behavior were not rerun on distribution builds; the Mac app has no automatic
   updater, so security fixes need a manual download.
 

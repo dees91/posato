@@ -11,6 +11,8 @@ import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
 import platform.UIKit.UIAccessibilityDarkerSystemColorsEnabled
 import platform.UIKit.UIAccessibilityDarkerSystemColorsStatusDidChangeNotification
+import platform.UIKit.UIDevice
+import platform.UIKit.UIUserInterfaceIdiomPad
 
 @Composable
 internal actual fun platformTheme(): PlatformTheme {
@@ -27,6 +29,6 @@ internal actual fun platformTheme(): PlatformTheme {
     return PlatformTheme(isLight = !isSystemInDarkTheme(), highContrast = highContrast)
 }
 
-internal actual fun platformNavigationPlacement(): PosatoNavigationPlacement {
-    return PosatoNavigationPlacement.Bottom
+internal actual fun platformDevice(): PosatoDevice {
+    return if (UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPad) PosatoDevice.IPad else PosatoDevice.IPhone
 }

@@ -24,12 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import app.posato.core.designsystem.PosatoDevice
 import app.posato.core.designsystem.PosatoLayout
-import app.posato.core.designsystem.PosatoNavigationPlacement
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
-import app.posato.core.designsystem.platformNavigationPlacement
+import app.posato.core.designsystem.platformDevice
 import app.posato.feature.about.AboutScreen
 import app.posato.feature.licenses.LicensesScreen
 import app.posato.feature.onboarding.MacHelperSetupUiState
@@ -85,8 +85,7 @@ class PosatoApplication internal constructor(
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
         LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
-        val placement = platformNavigationPlacement()
-        val deviceNoun = if (placement == PosatoNavigationPlacement.Sidebar) "Mac" else "iPhone"
+        val device = remember { platformDevice() }
         PosatoTheme(highContrast = highContrast) {
             // Session reconciliation runs on every foreground, even when the
             // Session screen is not subscribed: subscriptions do not own the work.
@@ -103,8 +102,7 @@ class PosatoApplication internal constructor(
                 OnboardingHost(
                     onboarding = onboarding,
                     syncState = syncState,
-                    placement = placement,
-                    deviceNoun = deviceNoun,
+                    device = device,
                     onSetupComplete = { setupDone = true },
                     modifier = modifier,
                 )
@@ -113,7 +111,7 @@ class PosatoApplication internal constructor(
                     syncState = syncState,
                     onMacSetupAnnouncement = onAnnouncement,
                     macSetupState = helperSetup.takeIf { onboardingDependencies.permissionPlatform == OnboardingPermissionPlatform.MAC },
-                    placement = placement,
+                    device = device,
                     modifier = modifier,
                 )
             }
@@ -125,15 +123,15 @@ class PosatoApplication internal constructor(
         syncState: SyncBootstrapUiState,
         macSetupState: MacHelperSetupUiState?,
         onMacSetupAnnouncement: (String) -> Unit,
-        placement: PosatoNavigationPlacement,
+        device: PosatoDevice,
         modifier: Modifier = Modifier,
     ) {
         val browser = remember { TargetsBrowserState() }
         var showingSession by remember { mutableStateOf(true) }
         var informationPage by remember { mutableStateOf<ApplicationInformationPage?>(null) }
-        val deviceLabel = if (placement == PosatoNavigationPlacement.Sidebar) "On this Mac only" else "On this iPhone only"
+        val deviceLabel = "On this ${device.noun} only"
         ApplicationNavigationScaffold(
-            placement = placement,
+            device = device,
             showingSession = showingSession,
             showingInformation = informationPage != null,
             onSelect = {
@@ -205,8 +203,7 @@ class PosatoApplication internal constructor(
     private fun OnboardingHost(
         onboarding: OnboardingUiState,
         syncState: SyncBootstrapUiState,
-        placement: PosatoNavigationPlacement,
-        deviceNoun: String,
+        device: PosatoDevice,
         onSetupComplete: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
@@ -218,15 +215,15 @@ class PosatoApplication internal constructor(
             val layout = if (maxWidth < PosatoSize.CompactBreakpoint) PosatoLayout.Compact else PosatoLayout.Expanded
             Column(Modifier.fillMaxSize()) {
                 val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
-                if (placement != PosatoNavigationPlacement.Bottom || !keyboardVisible) {
-                    ApplicationNavigationHeader(placement)
+                if (device == PosatoDevice.Mac || !keyboardVisible) {
+                    ApplicationNavigationHeader(device)
                 }
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                     OnboardingScreen(
                         holder = onboarding,
                         syncState = syncState,
                         permissionPlatform = onboardingDependencies.permissionPlatform,
-                        deviceNoun = deviceNoun,
+                        deviceNoun = device.noun,
                         onComplete = onSetupComplete,
                         modifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth(),
                         layout = layout,

@@ -120,6 +120,7 @@ internal fun OnboardingViewState.permissionSummary(permissionPlatform: Onboardin
 internal fun PermissionStep(
     state: OnboardingViewState,
     platform: OnboardingPermissionPlatform,
+    deviceNoun: String,
     layout: PosatoLayout,
     onRequestAccess: () -> Unit,
     onEnableHelper: () -> Unit,
@@ -162,13 +163,11 @@ internal fun PermissionStep(
     ) {
         PosatoHeading(
             stringResource(Res.string.onboarding_permission_title),
-            description = stringResource(
-                if (platform == OnboardingPermissionPlatform.IOS) {
-                    Res.string.onboarding_permission_ios_body
-                } else {
-                    Res.string.onboarding_permission_mac_body
-                },
-            ),
+            description = if (platform == OnboardingPermissionPlatform.IOS) {
+                stringResource(Res.string.onboarding_permission_ios_body, deviceNoun)
+            } else {
+                stringResource(Res.string.onboarding_permission_mac_body)
+            },
             layout = layout,
         )
         if (platform == OnboardingPermissionPlatform.MAC) {

@@ -34,19 +34,19 @@ import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
+import app.posato.core.designsystem.PosatoDevice
 import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoDivider
 import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoItemRow
 import app.posato.core.designsystem.PosatoItemSymbol
-import app.posato.core.designsystem.PosatoNavigationPlacement
 import app.posato.core.designsystem.PosatoSearchField
 import app.posato.core.designsystem.PosatoSection
 import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
-import app.posato.core.designsystem.platformNavigationPlacement
+import app.posato.core.designsystem.platformDevice
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.ui.TargetsCategory
 import app.posato.feature.targets.ui.TargetsCategoryTabs
@@ -93,7 +93,7 @@ internal fun SessionSelectionSummary(
         }
     }
     details?.let { category ->
-        if (platformNavigationPlacement() == PosatoNavigationPlacement.Bottom) {
+        if (platformDevice() != PosatoDevice.Mac) {
             ModalBottomSheet(onDismissRequest = { details = null }, sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)) {
                 SessionSelectionPanel(state, category, onDismiss = { details = null }, onEditItems = onEditItems)
             }

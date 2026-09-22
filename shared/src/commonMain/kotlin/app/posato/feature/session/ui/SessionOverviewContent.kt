@@ -23,6 +23,7 @@ import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.designsystem.platformDevice
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.onboarding.MacHelperReadiness
@@ -143,7 +144,7 @@ private fun EnforcementNotice(
     when (val enforcement = state.enforcement) {
         is EnforcementState.Active -> {
             if (enforcement.belowPlatformMinimum) {
-                PosatoCaption("Short pause — iPhone restricts it only while the app stays open.")
+                PosatoCaption("Short pause — ${platformDevice().noun} restricts it only while the app stays open.")
             } else {
                 PosatoCaption("Restrictions active.")
             }
