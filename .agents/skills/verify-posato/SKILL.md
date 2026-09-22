@@ -173,8 +173,11 @@ pays it once. Scenario steps: `waitFor`, `tap`, `type`, `press`, `assert`,
 
 Rotate an iOS target with `orient --to portrait|portraitUpsideDown|landscapeLeft|landscapeRight`
 or the scenario step `{"action":"orient","orientation":"landscapeLeft"}`. It
-rotates through XCUITest and waits until the window has the new aspect, so it
-never needs the Simulator window in front. Do not rotate with synthesized
+rotates through XCUITest, passing through the other aspect when the target
+shares the current one, and waits until the window has the new aspect, so it
+never needs the Simulator window in front. An unsupported orientation, such as
+upside down on the iPhone, fails. The orientation outlives the run: finish
+rotation work, including after a failed run, with `orient --to portrait`. Do not rotate with synthesized
 keystrokes or clicks: the Simulator window may sit under the maintainer's
 windows, and the events land there instead. Simulator screenshots of a
 landscape device stay in the portrait pixel orientation; rotate them only for

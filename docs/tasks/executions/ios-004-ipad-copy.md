@@ -2,10 +2,10 @@
 
 - **Brief:**
   [`../specifications/ios-004-ipad-copy.md`](../specifications/ios-004-ipad-copy.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** Claude
-- **Reviewer:** pending
+- **Reviewer:** independent agent, completed-change review
 - **Branch:** `feature/ios-004-ipad-copy`
 - **Updated:** 2026-09-22
 
@@ -37,26 +37,34 @@
 - Scope addition (`user-confirmed`): `posato-control` gains `orient` (command
   and scenario step, XCUITest `XCUIDevice.orientation`, refused on desktop),
   after synthesized Simulator keystrokes landed on the maintainer's windows.
+  A target that shares the current aspect goes through the other aspect
+  first, so every rotation is observable.
 - `AC-04`: no captured surface changed. The iPad store set is portrait Paused
   items websites, Session duration, and About; none carries a device noun, and
   portrait placement is unchanged.
 
 ## Completed-change review
 
-- **Verdict:** pending
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `changes-required`, resolved
+- **Critical or Required findings:** `orient` returned before a same-aspect
+  rotation finished (two landscapeRight captures were mid-rotation) and passed
+  iPhone upside down silently
+- **Resolution:** same-aspect targets go through the other aspect; iPhone
+  upside down now fails with `WAIT_TIMEOUT`; landscapeRight rerun settled
+- **Advisory findings:** portrait-restore note taken; per-component
+  `platformDevice()` reads and iPhone-only recipe wording kept
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| `./gradlew quality` | pass | after the scaffold and `orient` corrections; `NavigationPlacementTest` on JVM and iOS Simulator, `orient` CLI and runner tests |
-| iPad Pro 13-inch, onboarding, four orientations (`AC-01`, `AC-02`) | pass | "on this iPad." and "Saved on this iPad" asserted, no "iPhone"; runs `ios004-ipad13-portrait-onboarding`, `ios004-ipad13-{landscapeLeft,landscapeRight,portraitUpsideDown}-onboarding` |
-| iPad Pro 13-inch, Session, review, active, Paused items, About, four orientations (`AC-01`, `AC-02`) | pass | "On this iPad only" asserted; landscape sidebar with **On this iPad** and **About Posato**, portrait bottom navigation; runs `ios004-ipad13-*-destinations-v2` |
+| `./gradlew quality` | pass | after the last correction; `NavigationPlacementTest` on JVM and iOS Simulator, `orient` CLI and runner tests |
+| `orient` rotation checks | pass | iPhone upside down fails with `WAIT_TIMEOUT` and portrait restores; landscapeLeft to landscapeRight takes about 2 s through portrait (`ios004-orient-check`) |
+| iPad Pro 13-inch, onboarding, four orientations (`AC-01`, `AC-02`) | pass | "on this iPad." and "Saved on this iPad" asserted, no "iPhone"; runs `ios004-ipad13-portrait-onboarding`, `ios004-ipad13-{landscapeLeft,portraitUpsideDown}-onboarding`, `ios004-ipad13-landscapeRight-onboarding-v3` |
+| iPad Pro 13-inch, Session, review, active, Paused items, About, four orientations (`AC-01`, `AC-02`) | pass | "On this iPad only" asserted; landscape sidebar with **On this iPad** and **About Posato**, portrait bottom navigation; runs `ios004-ipad13-{portrait,landscapeLeft,portraitUpsideDown}-destinations-v2`, `ios004-ipad13-landscapeRight-destinations-v3` |
 | iPad keyboard across four rotations | fail, then pass | draft and destination kept; before the fix the keyboard hid and Done left navigation hidden (`ios004-ipad13-keyboard-rotation-2`); `main` passed (`ios004-main-ipad13-keyboard-rotation`); after the fix pass (`ios004-ipad13-keyboard-rotation-fix`) |
 | iPad mini, portrait and landscape (`AC-02`) | pass | no clipping at 744 points; runs `ios004-ipadmini-{portrait,landscapeLeft}-{onboarding,destinations}` |
-| iPhone 17 (`AC-03`) | pass | iPhone wording, bottom navigation in both orientations, keyboard kept across rotation; runs `ios004-iphone17-portrait-onboarding`, `ios004-iphone17-portrait-destinations-v2`, `ios004-iphone17-keyboard-rotation-iphone-v3`; landscape identical to `main` (`ios004-iphone17-landscape-v4`, `ios004-main-iphone17-landscape`) |
+| iPhone 17 (`AC-03`) | pass | iPhone wording, bottom navigation in both orientations, keyboard kept across rotation; runs `ios004-iphone17-portrait-onboarding`, `ios004-iphone17-portrait-destinations-v2`, `ios004-iphone17-keyboard-rotation-iphone-v3`; in landscape both the branch (`ios004-iphone17-landscape-v4`) and `main` (`ios004-main-iphone17-landscape`) stop at the same collapsed Apps header with identical snapshots |
 | Mac desktop smoke | pass | **On this Mac**, traffic-light inset, Session, Paused items, About unchanged; run `ios004-desktop-smoke-2` |
 
 ## Blockers and accepted risks
@@ -72,5 +80,5 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending review
+- **Status:** `done`
+- **Outcome:** met; `AC-04` met by stating that no captured surface changed
