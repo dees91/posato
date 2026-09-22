@@ -15,6 +15,7 @@ internal object ExactDomainPolicyLimits {
 private const val RESERVED_HYPHEN_FIRST_INDEX: Int = 2
 private const val RESERVED_HYPHEN_SECOND_INDEX: Int = 3
 private const val RESERVED_HYPHEN_MINIMUM_LENGTH: Int = 4
+private const val WWW_LABEL: String = "www"
 
 internal enum class TargetPolicyValidationFailure {
     INVALID_CANONICAL_DOMAIN,
@@ -54,6 +55,20 @@ internal value class ExactDomain private constructor(
 ) {
     override fun toString(): String {
         return "ExactDomain(redacted)"
+    }
+
+    fun wwwCounterpart(): ExactDomain? {
+        val labels = canonicalValue.split('.')
+        val candidate = if (labels.first() == WWW_LABEL) {
+            labels.drop(1).joinToString(separator = ".")
+        } else {
+            "$WWW_LABEL.$canonicalValue"
+        }
+        return restore(candidate)
+    }
+
+    fun covers(other: ExactDomain): Boolean {
+        return this == other || wwwCounterpart() == other
     }
 
     companion object {

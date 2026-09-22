@@ -45,7 +45,6 @@ internal data class SessionUiState(
     val enforcement: EnforcementState = EnforcementState.Inactive,
     val enforced: EnforcedSet = EnforcedSet(),
     val enforcementBusy: Boolean = false,
-    val hasPersistedStartSet: Boolean = false,
 ) {
     override fun toString(): String {
         return "SessionUiState(redacted)"
@@ -63,19 +62,23 @@ internal data class EnforcementViewState(
 }
 
 internal fun SessionUiState.displayDomains(): PersistentList<String> {
-    return if (status is Active && enforced.hasContent()) enforced.domains else review.domains
+    val active = status as? Active ?: return review.domains
+    return active.frozenStartSet?.domains ?: if (enforced.hasContent()) enforced.domains else review.domains
 }
 
 internal fun SessionUiState.displayApplicationCount(): Int? {
-    return if (status is Active && enforced.hasContent()) enforced.applicationCount else review.selectedMappingCount
+    val active = status as? Active ?: return review.selectedMappingCount
+    active.frozenStartSet?.let { return it.applicationCount }
+    return if (enforced.hasContent()) enforced.applicationCount else review.selectedMappingCount
 }
 
 internal fun SessionUiState.showsFrozenSet(): Boolean {
-    return status is Active && enforcement !is EnforcementState.Inactive && enforced.hasContent()
+    return showsPersistedStartSet() ||
+        (status is Active && enforcement !is EnforcementState.Inactive && enforced.hasContent())
 }
 
 internal fun SessionUiState.showsPersistedStartSet(): Boolean {
-    return showsFrozenSet() && hasPersistedStartSet
+    return (status as? Active)?.frozenStartSet != null
 }
 
 internal fun SessionUiState.nothingIsRestricted(): Boolean {
@@ -151,7 +154,6 @@ internal fun createSessionUiState(
 
     return SessionUiState(
         status = load.status,
-        hasPersistedStartSet = active?.frozenStartSet != null,
         operationFailure = load.failure,
         isSettingUp = draft.isSettingUp,
         durationMinutes = draft.durationMinutes,

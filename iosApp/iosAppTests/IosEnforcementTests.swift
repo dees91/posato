@@ -109,8 +109,37 @@ final class IosEnforcementTests: XCTestCase {
         let enforcer = capableEnforcer(store: store, storedMappings: [])
 
         XCTAssertEqual(try apply(domains: ["example.com"], enforcer: enforcer), .applied)
-        XCTAssertEqual(store.storedFilter, .specific([WebDomain(domain: "example.com")]))
+        XCTAssertEqual(
+            store.storedFilter,
+            .specific([WebDomain(domain: "example.com"), WebDomain(domain: "www.example.com")])
+        )
         XCTAssertNil(store.storedApplications)
+    }
+
+    func testWwwCounterpartVectorExpandsTheShieldSet() throws {
+        // Shared with ExactDomainPolicyTest and ExactHostPolicyTests: host → counterpart.
+        let vector: [(String, String)] = [
+            ("example.com", "www.example.com"),
+            ("www.example.com", "example.com"),
+            ("news.example.com", "www.news.example.com"),
+            ("www.news.example.com", "news.example.com"),
+            ("www.www.example.com", "www.example.com"),
+            ("xn--bcher-kva.example", "www.xn--bcher-kva.example"),
+        ]
+        for (host, counterpart) in vector {
+            let store = FakeEnforcementSettingsStore()
+            let enforcer = capableEnforcer(store: store, storedMappings: [])
+            XCTAssertEqual(try apply(domains: [host], enforcer: enforcer), .applied, host)
+            XCTAssertEqual(
+                store.storedFilter,
+                .specific([WebDomain(domain: host), WebDomain(domain: counterpart)]),
+                host
+            )
+        }
+        let store = FakeEnforcementSettingsStore()
+        let enforcer = capableEnforcer(store: store, storedMappings: [])
+        XCTAssertEqual(try apply(domains: ["www.com"], enforcer: enforcer), .applied)
+        XCTAssertEqual(store.storedFilter, .specific([WebDomain(domain: "www.com")]))
     }
 
     func testVerifyMismatchRollsBackToAnEmptyOwnedStore() throws {
@@ -240,7 +269,10 @@ final class IosEnforcementTests: XCTestCase {
             try apply(domains: ["example.com"], mappingIds: context.identifiers, enforcer: context.enforcer),
             .applied
         )
-        XCTAssertEqual(context.probe.webContent.blockedByFilter, .specific([WebDomain(domain: "example.com")]))
+        XCTAssertEqual(
+            context.probe.webContent.blockedByFilter,
+            .specific([WebDomain(domain: "example.com"), WebDomain(domain: "www.example.com")])
+        )
         XCTAssertEqual(context.probe.shield.applications, context.tokens)
 
         XCTAssertEqual(try clear(enforcer: context.enforcer), .cleared)

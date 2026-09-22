@@ -44,7 +44,7 @@
     <string name="domain_input_placeholder">example.com</string>
     <string name="empty_domains_description">Add a domain to prepare the websites Posato can pause.</string>
     <string name="empty_domains_title">No websites added</string>
-    <string name="entry_error_duplicate">That exact domain is already in the list.</string>
+    <string name="entry_error_duplicate">Already covered by a listed website.</string>
     <string name="entry_error_empty">Enter an exact domain.</string>
     <string name="entry_error_invalid">Enter a valid domain with at least two labels.</string>
     <string name="entry_error_limit">The website limit has been reached.</string>

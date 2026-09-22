@@ -528,9 +528,15 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   compact item summary. Copy explicitly describes a local timer.
 - Early end: Ready to return?, End session, Keep this pause.
 - Ended/expired: inactive state plus the real early-end or expiration message.
-- Summary: two disclosure rows, not every website/app. Selected items opens a
-  read-only browser with category tabs, website search, and Close list.
-  iOS shows opaque application counts; Mac shows actual local names.
+- Summary: two disclosure rows, not every website/app. Quiet Add or edit websites
+  and Manage apps actions route directly to the corresponding category under
+  Paused items. During an active session, Items at session start names the frozen
+  summary, and preceding copy explains that the actions edit current Paused items.
+  Its detail list distinguishes start-set websites from the current app selection.
+  The read-only list has category tabs, a category-specific editing route,
+  Filter list to reveal Filter selected websites, and Close list. Filtering
+  changes only the visible list. iOS shows opaque application counts; Mac shows
+  actual local names.
 - Device setup uses collapsed **iCloud** and **This Mac** rows with short,
   real-state summaries. This Mac is macOS-only. Expanding a row reveals its
   explanation and controls; it never starts a helper check or sync attempt.
@@ -626,6 +632,8 @@ retains its existing availability. Do not add an unrelated active-session lock.
 - Add websites is the primary input. Search is a quiet secondary action below it.
 - Commas/newlines separate entries; domain names and HTTP(S) URLs are accepted.
   Only canonical exact hosts reach policy storage; paths/query/fragment do not.
+  One stored host is what was typed. Matching also pauses its `www` variant;
+  other subdomains stay separate. Entry copy and each row caption say so.
 - Limits: 65,536 UTF-16 code units per batch, 1,024 per trimmed entry, 1,024
   unique domains in the policy. Credentials, other schemes, IPs, wildcards,
   malformed hosts, and overflow are rejected.
@@ -638,6 +646,9 @@ retains its existing availability. Do not add an unrelated active-session lock.
   Edit opens Website domain with Save changes and Cancel.
 - Add/search/edit drafts belong to UI state and survive destination changes.
   They are not persisted across application relaunch.
+- If an unfinished website edit is open when Session routes to website adding,
+  keep its draft available through Resume website edit; disable other website
+  row changes until that edit is resumed and finished or canceled.
 
 ### Paused items: applications
 

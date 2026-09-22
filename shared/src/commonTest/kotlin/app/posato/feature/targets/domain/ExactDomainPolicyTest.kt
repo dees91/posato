@@ -2,8 +2,10 @@ package app.posato.feature.targets.domain
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 class ExactDomainPolicyTest {
     @Test
@@ -91,7 +93,41 @@ class ExactDomainPolicyTest {
 
         assertEquals("ExactDomain(redacted)", domain.toString())
     }
+
+    @Test
+    fun `given the shared www vector when a counterpart is derived then Kotlin matches the table`() {
+        WWW_COUNTERPART_VECTOR.forEach { (host, counterpart) ->
+            assertEquals(counterpart, assertSuccess(ExactDomain.parse(host)).wwwCounterpart()?.canonicalValue, host)
+        }
+        WWW_WITHOUT_COUNTERPART.forEach { host ->
+            assertNull(assertSuccess(ExactDomain.parse(host)).wwwCounterpart(), host)
+        }
+    }
+
+    @Test
+    fun `given a listed host when covering is checked then the counterpart is covered and doubled www is one step`() {
+        val apex = assertSuccess(ExactDomain.parse("example.com"))
+        val www = assertSuccess(ExactDomain.parse("www.example.com"))
+        val doubled = assertSuccess(ExactDomain.parse("www.www.example.com"))
+
+        assertTrue(apex.covers(www))
+        assertTrue(www.covers(apex))
+        assertTrue(doubled.covers(www))
+        assertFalse(doubled.covers(apex))
+        assertFalse(apex.covers(doubled))
+    }
 }
+
+internal val WWW_COUNTERPART_VECTOR: List<Pair<String, String>> = listOf(
+    "example.com" to "www.example.com",
+    "www.example.com" to "example.com",
+    "news.example.com" to "www.news.example.com",
+    "www.news.example.com" to "news.example.com",
+    "www.www.example.com" to "www.example.com",
+    "xn--bcher-kva.example" to "www.xn--bcher-kva.example",
+)
+
+internal val WWW_WITHOUT_COUNTERPART: List<String> = listOf("www.com")
 
 private fun assertSuccess(result: ExactDomainInputResult): ExactDomain {
     return assertIs<ExactDomainInputResult.Success>(result).domain

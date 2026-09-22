@@ -31,9 +31,10 @@ internal fun createExactDomainSubmission(
         return ExactDomainSubmission.EntryFailed(domainResult.reason.toEntryFailure())
     }
     val canonicalValue = (domainResult as ExactDomainInputResult.Success).domain.canonicalValue
-    val isDuplicate = state.domains.any { existingDomain ->
-        existingDomain == canonicalValue && existingDomain != state.editingDomain
-    }
+    val isDuplicate = wwwCoveredBy(
+        canonicalValue,
+        state.domains.filter { existingDomain -> existingDomain != state.editingDomain },
+    ) != null
 
     return when {
         isDuplicate -> ExactDomainSubmission.EntryFailed(ExactDomainEntryFailure.DUPLICATE)
@@ -47,6 +48,16 @@ internal fun createExactDomainSubmission(
                 if (existingDomain == state.editingDomain) canonicalValue else existingDomain
             },
         )
+    }
+}
+
+internal fun wwwCoveredBy(
+    candidate: String,
+    listed: Iterable<String>
+): String? {
+    val parsed = ExactDomain.restore(candidate) ?: return listed.firstOrNull { existing -> existing == candidate }
+    return listed.firstOrNull { existing ->
+        ExactDomain.restore(existing)?.covers(parsed) == true
     }
 }
 

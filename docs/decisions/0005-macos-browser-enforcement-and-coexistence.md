@@ -7,6 +7,13 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## TARGETS-006 www-equivalence clarification
+
+`user-confirmed` (2026-09-18): one stored exact host is what the person typed.
+Matching treats `www.<host>` and `<host>` as one paused website. No other
+subdomain, suffix, or wildcard coverage is added. The sync format is
+unchanged. Accepted by the maintainer on 2026-09-18 in PR #72.
+
 ## Context
 
 The macOS MVP needs to deny selected exact website domains without TLS
@@ -102,10 +109,11 @@ terminal dot, wildcard, IP literal, single-label or local name, scheme,
 userinfo, port, path, query, or fragment.
 
 The proxy revalidates the untrusted network representation. DNS names compare
-case-insensitively after accepting at most one terminal dot. Equality is the
-only match: a selected `example.com` does not match `www.example.com`,
-`badexample.com`, or another suffix. The port does not change a selected-host
-match. IPv4 and IPv6 literals can never match an `ExactDomain`.
+case-insensitively after accepting at most one terminal dot. A selected
+`example.com` matches `www.example.com` and the reverse; it does not match
+`badexample.com`, `mail.example.com`, or another suffix. The port does not
+change a selected-host match. IPv4 and IPv6 literals can never match an
+`ExactDomain`.
 
 For proxied HTTP, the request target must be an absolute-form `http` URI and
 there must be exactly one valid `Host` field. Canonical authority and effective

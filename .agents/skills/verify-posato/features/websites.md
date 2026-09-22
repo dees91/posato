@@ -8,7 +8,9 @@ devices joined to one workspace (see Sync with iCloud).
 
 ## Sub-features
 
-- `website-add` saves all valid unique entries in one revision.
+- `website-add` saves all valid unique entries in one revision. Each saved
+  host also pauses its `www` variant through matching; the list still shows
+  one row.
 - `website-batch` discards URL paths, queries, and fragments before storage;
   reports added/duplicate counts and retains rejected entries in the draft.
 - `website-draft` keeps newer text when an earlier save completes, keeps the
@@ -40,7 +42,8 @@ Preconditions:
   `changed-proof.example`; start with neither present and a short visible list.
 
 - **Add:** `$PC type -t <target> --role textField --input example.com --clear --submit`,
-  then `$PC tap -t <target> --text Done --role button`. Run the add-website
+  then `$PC tap -t <target> --text Done --role button`. Expect one SQL row
+  and a caption that `www.example.com` is also paused. Run the add-website
   fixture for a complete sequence with screenshot, snapshot, and real scrollTo.
 - **Batch and long list:** `$PC run -t <target> --scenario tools/posato-control/fixtures/scenarios/website-batch-list.json`.
   It leaves the rejected `invalid` text in the field, reaches both list ends,

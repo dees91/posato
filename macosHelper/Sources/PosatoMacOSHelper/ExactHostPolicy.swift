@@ -10,8 +10,23 @@ enum ExactHostPolicy {
       return false
     }
     return selectedHosts.contains { candidate in
-      normalizedHost(candidate) == normalized
+      let stored = normalizedHost(candidate)
+      return normalized == stored || normalized == wwwCounterpart(stored)
     }
+  }
+
+  static func wwwCounterpart(_ host: String) -> String? {
+    let labels = host.split(separator: ".", omittingEmptySubsequences: false)
+    guard labels.count >= 2 else {
+      return nil
+    }
+    if labels.first == "www" {
+      guard labels.count >= 3 else {
+        return nil
+      }
+      return labels.dropFirst().joined(separator: ".")
+    }
+    return "www.\(host)"
   }
 
   static func normalizedHost(_ host: String) -> String {

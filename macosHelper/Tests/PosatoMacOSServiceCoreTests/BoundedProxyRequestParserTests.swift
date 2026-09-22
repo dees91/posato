@@ -23,6 +23,22 @@ private let listenerPort: UInt16 = 17_769
   )
   #expect(
     BoundedProxyRequestParser.route(
+      requestData: Data(
+        "CONNECT www.example.com:443 HTTP/1.1\r\nHost: www.example.com:443\r\n\r\n".utf8),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == .blockedConnect
+  )
+  #expect(
+    BoundedProxyRequestParser.route(
+      requestData: Data(
+        "CONNECT www.example.com:444 HTTP/1.1\r\nHost: www.example.com:444\r\n\r\n".utf8),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == .blockedConnect
+  )
+  #expect(
+    BoundedProxyRequestParser.route(
       requestData: Data("GET http://EXAMPLE.COM/path HTTP/1.1\r\nHost: EXAMPLE.COM\r\n\r\n".utf8),
       selectedHosts: selected,
       listenerPort: listenerPort
@@ -42,7 +58,7 @@ private let listenerPort: UInt16 = 17_769
   guard
     case .tunnel(let subdomain, let subdomainPort, _) = BoundedProxyRequestParser.route(
       requestData: Data(
-        "CONNECT www.example.com:443 HTTP/1.1\r\nHost: www.example.com:443\r\n\r\n".utf8
+        "CONNECT mail.example.com:443 HTTP/1.1\r\nHost: mail.example.com:443\r\n\r\n".utf8
       ),
       selectedHosts: selected,
       listenerPort: listenerPort
@@ -51,7 +67,7 @@ private let listenerPort: UInt16 = 17_769
     Issue.record("A subdomain must not match the exact-host rule")
     return
   }
-  #expect(subdomain == "www.example.com")
+  #expect(subdomain == "mail.example.com")
   #expect(subdomainPort == 443)
 
   guard
@@ -73,7 +89,7 @@ private let listenerPort: UInt16 = 17_769
   #expect(
     BoundedProxyRequestParser.route(
       requestData: Data(
-        "CONNECT www.example.com:444 HTTP/1.1\r\nHost: www.example.com:444\r\n\r\n".utf8
+        "CONNECT mail.example.com:444 HTTP/1.1\r\nHost: mail.example.com:444\r\n\r\n".utf8
       ),
       selectedHosts: selected,
       listenerPort: listenerPort
