@@ -718,6 +718,12 @@ not an accepted feature plan or an expansion of the MVP.
    [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md),
    which restores and verifies proxy settings and helper registration before
    an update replaces the application.
+   `user-confirmed` (2026-09-22): `MACOS-010` selects Sparkle, opt-in checks,
+   GitHub Releases, and installation after the session ends in
+   [ADR 0008](../../decisions/0008-macos-update-delivery.md). It includes the
+   unchanged-registration clarification, proposed public wording, and the
+   cancellation/recovery proof required before separately activated
+   `MACOS-011` delivery. No updater is implemented by the discovery.
 
 ## Later platform questions
 

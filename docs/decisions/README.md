@@ -29,3 +29,6 @@ evidence at the revision recorded in the wiki. Accepted product ADRs are:
 - [ADR 0007: Apple Workspace Bootstrap and macOS Native Sync Boundary](0007-apple-workspace-bootstrap-and-native-sync-boundary.md)
   — accepted CloudKit mailbox, synchronizable-Keychain item, deterministic
   one-workspace bootstrap, and dedicated macOS synchronization companion.
+- [ADR 0008: Deliver macOS updates through Sparkle](0008-macos-update-delivery.md)
+  — accepted post-MVP update direction, consent, hosting, signing, proposed
+  lifecycle and privacy amendments, and delivery gates; not yet implemented.

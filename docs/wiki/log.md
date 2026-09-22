@@ -1830,3 +1830,13 @@ to scope, feasibility, or delivery.
 
 - `SESSION-004` adds direct website and app editing routes from Session while keeping the two accepted destinations. The selected-items website field identifies itself as a list-only filter. An unfinished website edit remains recoverable when the add route opens the browser.
 - The active summary reads the persisted start set independently of platform enforcement state; later policy edits appear after the session ends.
+
+## [2026-09-22] decision | Sparkle update direction and delivery gates
+
+- `MACOS-010` records the maintainer's selected Sparkle path in ADR 0008:
+  opt-in daily checks, explicit installation after the session ends, signed
+  feed and DMG assets on GitHub Releases, and local Keychain signing custody.
+- The decision stages the native-boundary, lifecycle, privacy, and availability
+  amendments. `MACOS-011` must first prove safe admission, cancellation, and
+  crash/relaunch recovery; an aborted Sparkle cycle does not prove its installer
+  has stopped. The current product retains the manual update path.

@@ -636,6 +636,21 @@ Check again, which would reinstall the right through the repair path. A session
 started after removal reports that the helper is not enabled rather than
 claiming a pause.
 
+## Planned update delivery
+
+`user-confirmed` (2026-09-22): [ADR 0008](../../decisions/0008-macos-update-delivery.md)
+selects Sparkle with opt-in checks and installation after the session ends.
+`MACOS-011` must prove maintenance admission across installation, cancellation,
+and crash/relaunch before delivering it. The unchanged-registration exception
+in ADR 0004 remains applicable to compatible updates; an absent service or
+best-effort close is not proof of restored ownership.
+
+`observed` in Sparkle 2.10.0 source: canceling an update cycle does not await
+termination of its installer. `open`: the exact positive evidence that lets
+Posato safely admit enforcement again. ADR 0008 defines the release conditions
+and makes their proof the first delivery gate. Until it passes, the supported
+product path remains manual quit, replace, and open.
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the
