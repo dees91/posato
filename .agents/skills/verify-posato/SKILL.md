@@ -8,8 +8,9 @@ description: "Drive the real Posato macOS desktop app and iOS app (Simulator or 
 Posato is a Kotlin Multiplatform app with two destinations on two hosts, a
 Compose Desktop macOS app and a Compose iOS app: `Session` (the screen shown
 after every launch) and `Paused items` (websites and the application group).
-iOS uses bottom navigation and macOS uses a sidebar, with the buttons
-`Session` and `Paused items`; the choice is not remembered across a relaunch.
+iPhone and iPad portrait use bottom navigation; macOS and iPad landscape use a
+sidebar, with the buttons `Session` and `Paused items`; the choice is not
+remembered across a relaunch.
 The nested `Websites` / `Apps` tabs include counts in their accessibility labels.
 The native prototype is a frozen reference, not the application under test. There is no web UI, no HTTP API, and no debug menu. The only
 scripted way to drive either app is
@@ -166,9 +167,18 @@ application.
 Prefer `run --scenario` on iOS: every single command costs an XCUITest
 launch (about 5 s on the Simulator, 6-12 s on the iPhone), while a scenario
 pays it once. Scenario steps: `waitFor`, `tap`, `type`, `press`, `assert`,
-`screenshot`, `snapshot`, `sleep`, `scrollTo`, `terminate`, `relaunch`; a
-failed step records `failure-<index>-screenshot.png` and
+`screenshot`, `snapshot`, `sleep`, `scrollTo`, `orient`, `terminate`,
+`relaunch`; a failed step records `failure-<index>-screenshot.png` and
 `failure-<index>-snapshot.json` automatically.
+
+Rotate an iOS target with `orient --to portrait|portraitUpsideDown|landscapeLeft|landscapeRight`
+or the scenario step `{"action":"orient","orientation":"landscapeLeft"}`. It
+rotates through XCUITest and waits until the window has the new aspect, so it
+never needs the Simulator window in front. Do not rotate with synthesized
+keystrokes or clicks: the Simulator window may sit under the maintainer's
+windows, and the events land there instead. Simulator screenshots of a
+landscape device stay in the portrait pixel orientation; rotate them only for
+viewing.
 
 Platform traps that invalidate a run:
 

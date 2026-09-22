@@ -102,6 +102,23 @@ class MainTest {
     }
 
     @Test
+    fun `given the desktop target when orient runs then it is refused before any launch`() {
+        val (exitCode, output) = capture("orient", "-t", "desktop", "--to", "landscapeLeft")
+        assertEquals(6, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertEquals("UNSUPPORTED_ON_TARGET", envelope.error?.code)
+    }
+
+    @Test
+    fun `given an unknown orientation when orient runs then a usage envelope names the choices`() {
+        val (exitCode, output) = capture("orient", "-t", "sim", "--to", "sideways")
+        assertEquals(2, exitCode)
+        val envelope = ControlJson.lenient.decodeFromString(Envelope.serializer(), output.substring(output.indexOf('{')))
+        assertEquals("USAGE", envelope.error?.code)
+        assertTrue(envelope.error?.message.orEmpty().contains("landscapeLeft"), envelope.error?.message)
+    }
+
+    @Test
     fun `help still exits with zero`() {
         val (exitCode, output) = capture("--help")
         assertEquals(0, exitCode)

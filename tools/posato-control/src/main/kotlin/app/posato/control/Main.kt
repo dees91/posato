@@ -15,6 +15,7 @@ import app.posato.control.cli.FindCommand
 import app.posato.control.cli.InstallCommand
 import app.posato.control.cli.LaunchCommand
 import app.posato.control.cli.LogsCommand
+import app.posato.control.cli.OrientCommand
 import app.posato.control.cli.PressCommand
 import app.posato.control.cli.ResetCommand
 import app.posato.control.cli.RunCommand
@@ -63,6 +64,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     TapCommand(),
     TypeCommand(),
     PressCommand(),
+    OrientCommand(),
     WaitCommand(),
     RunCommand(),
     LogsCommand(),

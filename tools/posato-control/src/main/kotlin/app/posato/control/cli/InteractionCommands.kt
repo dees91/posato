@@ -3,8 +3,10 @@ package app.posato.control.cli
 import app.posato.control.core.ControlException
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
+import app.posato.control.core.Target
 import app.posato.control.model.Actions
 import app.posato.control.model.LaunchConfiguration
+import app.posato.control.model.Orientations
 import app.posato.control.model.Query
 import app.posato.control.model.RunResult
 import app.posato.control.model.Scenario
@@ -18,6 +20,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.options.split
+import com.github.ajalt.clikt.parameters.types.choice
 import com.github.ajalt.clikt.parameters.types.double
 import com.github.ajalt.clikt.parameters.types.int
 import kotlinx.serialization.SerializationException
@@ -115,6 +118,20 @@ class PressCommand :
                 .runScenario(singleStep(Step(action = Actions.PRESS, key = key, modifiers = modifiers))),
         ),
     )
+}
+
+class OrientCommand : ControlCommand("orient", "Rotate the iOS device and wait until the application adopts the orientation.") {
+    private val orientation by option("--to", help = "portrait, portraitUpsideDown, landscapeLeft, or landscapeRight.")
+        .choice(*Orientations.all.toTypedArray())
+        .required()
+
+    override fun execute(session: Session): JsonElement {
+        if (session.target() == Target.DESKTOP) {
+            throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "orient rotates an iOS device; the desktop window has no orientation.")
+        }
+        val step = Step(action = Actions.ORIENT, orientation = orientation)
+        return runResultElement(failIfStepFailed(session.backend().runScenario(singleStep(step))))
+    }
 }
 
 class WaitCommand : ControlCommand("wait", "Wait until an element exists, is absent, enabled, disabled, or until the UI has settled.") {
