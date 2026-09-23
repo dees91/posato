@@ -51,5 +51,5 @@
 
 - The desktop accessibility bridge reports `focused: false` for the Compose text field, so Mac focus evidence is visual only.
 - The approval-required Mac row (**Open System Settings**, **Check again**, **Not now**) was not driven, because it needs attended helper approval. It uses the same `OnboardingActions` container as the driven rows, and its hierarchy and enablement code are unchanged.
-- On iPad landscape with the keyboard up, the saved-total caption scrolls out of view below the field; it remains reachable by scrolling and is a live region.
+- On iPad mini landscape with the keyboard up, the content viewport is only a few lines tall: the field's lower edge is clipped and the saved-total caption scrolls out of view below it. Both remain reachable by scrolling, the caption is a live region, and **Continue** stays visible.
 - The first save's live-region announcement and Summary's actions at large text on a short Mac window were not checked separately. Compact pages already had the same fixed-actions limit.
