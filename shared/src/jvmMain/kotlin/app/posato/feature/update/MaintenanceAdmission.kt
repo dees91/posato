@@ -32,7 +32,7 @@ public sealed interface MaintenanceReopenResult {
     public data object StorageFailure : MaintenanceReopenResult
 }
 
-public class ClosedMaintenanceGate internal constructor(
+public class ClosedMaintenanceGate(
     public val fromBuild: String,
     public val targetBuild: String,
     public val closedEpochMillis: Long,
@@ -52,10 +52,25 @@ public class ClosedMaintenanceGate internal constructor(
     }
 }
 
+public interface UpdateMaintenanceGate {
+    public suspend fun close(
+        fromBuild: String,
+        targetBuild: String,
+    ): MaintenanceCloseResult
+
+    public suspend fun closedGate(): ClosedMaintenanceGate?
+
+    public suspend fun markCycleAdmitted()
+
+    public suspend fun markCycleEnded()
+
+    public suspend fun reopenWhen(evidence: suspend (ClosedMaintenanceGate) -> Boolean): MaintenanceReopenResult
+}
+
 public class MaintenanceAdmission internal constructor(
     private val store: UpdateMaintenanceStore,
     private val clock: () -> Long,
-) {
+) : UpdateMaintenanceGate {
     private val mutex = Mutex()
     private var admittedCycle = false
 
@@ -73,7 +88,7 @@ public class MaintenanceAdmission internal constructor(
         }
     }
 
-    public suspend fun close(
+    override suspend fun close(
         fromBuild: String,
         targetBuild: String,
     ): MaintenanceCloseResult {
@@ -88,38 +103,25 @@ public class MaintenanceAdmission internal constructor(
         }
     }
 
-    public suspend fun closedGate(): ClosedMaintenanceGate? {
+    override suspend fun closedGate(): ClosedMaintenanceGate? {
         return mutex.withLock {
             readClosedGate()
         }
     }
 
-    public suspend fun isGateOpen(): Boolean {
-        return mutex.withLock {
-            val gate = store.read()
-            gate is MaintenanceStoreResult.Success && gate.value == MaintenanceGate.Open
-        }
-    }
-
-    public suspend fun markCycleAdmitted() {
+    override suspend fun markCycleAdmitted() {
         mutex.withLock {
             admittedCycle = true
         }
     }
 
-    public suspend fun markCycleEnded() {
+    override suspend fun markCycleEnded() {
         mutex.withLock {
             admittedCycle = false
         }
     }
 
-    public suspend fun isCycleAdmitted(): Boolean {
-        return mutex.withLock {
-            admittedCycle
-        }
-    }
-
-    public suspend fun reopenWhen(evidence: suspend (ClosedMaintenanceGate) -> Boolean): MaintenanceReopenResult {
+    override suspend fun reopenWhen(evidence: suspend (ClosedMaintenanceGate) -> Boolean): MaintenanceReopenResult {
         return mutex.withLock {
             val gate = store.read()
             val closed = ((gate as? MaintenanceStoreResult.Success)?.value as? MaintenanceGate.Closed)?.toPublic()
@@ -174,6 +176,6 @@ public class GatedEnforcementPort(
 }
 
 public class DesktopUpdateMaintenance(
-    public val admission: MaintenanceAdmission,
+    public val gate: UpdateMaintenanceGate,
     public val companion: CompanionMaintenance,
 )
