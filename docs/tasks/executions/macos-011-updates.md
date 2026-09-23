@@ -133,47 +133,101 @@ refusing a local Start wait for the rebase after `ONBOARDING-003`.
 ## Stage 2 plan
 
 Stage 2 starts from `9e12f56` and completes plan steps 3-5 and the rest of
-the ADR 0008 matrix. It keeps the Stage 1 gate unchanged. Any material
-change to that gate needs focused plan re-review. Implementation waits for
-decisions D1-D4 and an independent review of this plan.
+the ADR 0008 matrix. The Stage 1 gate stays unchanged; a material change to
+it needs focused plan re-review. Implementation waits for an approved review
+of this plan (revised below after the first review).
 
-1. **Consent and settings.**
-   - After first-run setup, ask once with a native prompt.
-   - After consent, check every 24 hours while the app runs. Keep the
-     scheduler state in Sparkle's local settings.
-   - Provide a visible opt-out and a manual "Check for updates" action, placed
-     per D3 and recorded in `DESIGN.md`.
-   - Make no request before consent or after opt-out.
-2. **Copy.** Replace the temporary English menu item, preparing panel, and
-   refusal alert with localized strings in `strings.xml`. Give the
-   second-instance refusal its own message.
-3. **Requests and privacy.**
-   - Measure the check and the download against real GitHub Releases per D1:
-     headers, cookies, redirects, and the `Accept-Language` handling per D2.
-   - Reconcile the staged privacy-policy and availability wording with that
-     measurement.
-4. **Release process.**
-   - Generate the signed `appcast.xml` from the final notarized DMG in the
-     repeated local release flow, using Sparkle's tools. Disable deltas.
-   - Prepare draft-release assets together, and use the stable
-     `releases/latest/download/appcast.xml` URL.
-   - Keep a separate test feed that never becomes latest.
-   - Pass the production public key and feed only to release builds, per D4.
-5. **Remaining matrix.** Test these with synthetic fixtures and notarized
-   candidates:
-   - wrong or missing feed and archive signatures;
-   - tampered bytes;
-   - the same or an older build;
-   - an unsupported platform;
-   - no network, and HTTP failures;
-   - the resumable installing stage and the system-domain installer, where they
-     are reachable.
-6. **Closeout.**
-   - Apply the staged ADR 0003 and ADR 0004 amendments and the `TB-08` and
-     `T-13` threat-model updates.
+1. **Consent and settings (D3).**
+   - Keep `SUEnableAutomaticChecks=NO` in Info.plist; packaging already checks
+     it.
+   - Consent and opt-out change only `automaticallyChecksForUpdates`. "Asked
+     once" means Sparkle's user-default key is present.
+   - Never call `checkForUpdatesInBackground` or
+     `checkForUpdateInformation`. Consent schedules the 24-hour checks, and
+     the first check may start at once.
+   - Show the native prompt after first-run setup.
+   - Put "Check for Updates…" in the application menu. Put the toggle and a
+     manual check in a Mac-only semantic slot on About Posato, with no Sparkle
+     types in commonMain and iOS unchanged. The manual check is disabled
+     while `!canCheckForUpdates`.
+   - Record in `DESIGN.md`: the group, the source of truth, the prompt timing
+     and copy, and that there is no new destination.
+2. **Copy.**
+   - Replace the temporary English menu item, preparing panel, and refusal
+     alerts with `strings.xml` strings. Kotlin resolves them and passes them
+     over JNI.
+   - Give the second-instance refusal its own message.
+3. **Requests and privacy (D1, D2).**
+   - Before `startUpdater`, set `Accept-Language: en` through
+     `SPUUpdater.httpHeaders`.
+   - Before `startUpdater`, also set the process cookie policy to never
+     accept. `observed` 2026-09-23: `releases/latest/download` sets a
+     one-year `_octo` cookie, and Sparkle's downloader uses the shared cookie
+     store.
+   - Measure the `latest/download` hop, the version-specific hop, and the
+     asset-host hop with a named HTTPS header-capture method.
+   - Pass only if no request sends `Cookie`, including a second check, and
+     the app keeps no GitHub cookies. Otherwise delivery is blocked.
+   - From cleared Sparkle defaults, show zero requests before consent across
+     two launches and with a stale `SULastCheckTime`. Show zero requests
+     after opt-out. Explain or close the Stage 1 09:46 request.
+   - Reconcile the staged privacy and availability wording with the
+     measurements.
+4. **Test prerelease (D1).**
+   - Create the test release as a draft, then publish it with `--prerelease
+     --latest=false`.
+   - Give the assets distinct test names and notes.
+   - Before and after, check that `releases/latest` still resolves to
+     v1.0.0.
+   - Delete the release with `--cleanup-tag` and remove test installs.
+   - Record each step.
+5. **Key custody (D4).** Intake checklist:
+   - The maintainer runs `generate_keys` into the login Keychain and makes an
+     encrypted backup, leaving no plaintext export behind.
+   - The agent receives only the `generate_keys -p` output.
+   - Tools read the key only from the Keychain: no `-s`, no
+     `--ed-key-file`, no environment variables, nothing written to logs.
+   - Record the build-number range of test candidates signed with this key.
+     The first stable updater `CFBundleVersion` must exceed all of them.
+6. **Release process.**
+   - Release packaging fails unless the feed URL is exactly the stable URL
+     and the key matches the tracked public key. A separate candidate mode
+     builds notarized test candidates against the test feed, and release
+     validation refuses them.
+   - After stapling and validation, run `generate_appcast` in a clean
+     directory with deltas disabled.
+   - Embed plain-text notes, with no `releaseNotesLink`.
+   - The appcast declares `sparkle:version` equal to `CFBundleVersion` and
+     above the previous release, minimum macOS 15.0, and arm64.
+   - The enclosure points to the version-specific asset in the same draft.
+   - Before publishing, verify the feed and archive signatures against the
+     embedded key, and check the length and checksums against the final DMG.
+   - Hand three duties to `RELEASE-003`: publish only complete drafts; after
+     publishing, check that `latest/download/appcast.xml` resolves and
+     verifies; publish any release without a macOS feed with
+     `--latest=false`.
+7. **Remaining matrix.**
+   - Cover the wrong or missing feed and archive signatures, tampered bytes,
+     the same or an older build, an unsupported platform, no network and HTTP
+     failure, and the cleanup-failure row (lost Restore, proxy conflict,
+     unavailable daemon, unknown ownership).
+   - Use synthetic fixtures, and notarized runs where reachable. Record an
+     explicit limit for anything unreachable, including the resumable stage
+     and the system-domain installer.
+   - Archive failures happen after admission. The gate stays closed and
+     reopens on evidence once the cycle aborts.
+   - Run a final notarized A-to-B through the test prerelease on the
+     integrated code, with a previously disabled service and preserved sync
+     configuration.
+8. **Closeout.**
+   - Add an evidence table mapping every matrix row and AC-02 to AC-05 to
+     its evidence, labelled Stage 1 physical, synthetic, or Stage 2.
+   - Apply the ADR 0003 and ADR 0004 amendments.
+   - Update the ADR 0008 status line.
+   - In `TB-08` and `T-13`, classify the provider-visible metadata.
+   - Update the wiki.
    - Obtain an independent completed-change review, then run `quality`.
-   - Hand publication of the public wording and the stable release to
-     `RELEASE-003`.
+   - Hand the staged public wording and the stable release to `RELEASE-003`.
 
 ## Parallel ownership
 
@@ -214,6 +268,15 @@ decisions D1-D4 and an independent review of this plan.
   Required finding, Q3: maintenance mode could end during an admitted
   download. It is folded in above, and maintenance now ends only once no
   admitted cycle exists.
+
+- **Stage 2 plan review:** `changes-required` from an independent Claude
+  agent on 2026-09-23. Six Required findings: the `latest/download`
+  tracking cookie, the consent mechanism and its evidence, the test
+  prerelease procedure, key custody and test/release separation, release
+  validation and handoff, and matrix coverage with a final A-to-B. All are
+  folded into the plan above.
+- **Verdict:** `approved` after the focused re-check, with no Critical or
+  Required findings. Implementation may start when the maintainer asks.
 
 ## Result
 
