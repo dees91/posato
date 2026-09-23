@@ -59,8 +59,8 @@ internal class UpdateAdmissionCoordinator(
     private val storedProxies: () -> StoredProxyEvidence,
     private val installer: () -> InstallerObservation,
     private val bundleIdentity: () -> BundleIdentity,
-) {
-    suspend fun admit(targetBuild: String): AdmissionOutcome {
+) : UpdateAdmission {
+    override suspend fun admit(targetBuild: String): AdmissionOutcome {
         if (!instanceLock.tryUpgradeForAdmission()) {
             return AdmissionOutcome.Refused(AdmissionRefusal.OTHER_INSTANCE)
         }
@@ -81,11 +81,23 @@ internal class UpdateAdmissionCoordinator(
         return AdmissionOutcome.Admitted
     }
 
-    suspend fun onCycleEnded() {
+    override suspend fun admitPendingInstallation(targetBuild: String): AdmissionOutcome {
+        if (gate.closedGate() == null) {
+            return admit(targetBuild)
+        }
+        helperMaintenance.engageBackstop()
+        if (!enterMaintenanceMode()) {
+            return AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE)
+        }
+        gate.markCycleAdmitted()
+        return AdmissionOutcome.Admitted
+    }
+
+    override suspend fun onCycleEnded() {
         gate.markCycleEnded()
     }
 
-    suspend fun restoreMaintenanceAtStartup(): Boolean {
+    override suspend fun restoreMaintenanceAtStartup(): Boolean {
         if (gate.closedGate() == null) {
             return false
         }
@@ -94,7 +106,7 @@ internal class UpdateAdmissionCoordinator(
         return true
     }
 
-    suspend fun evaluateRelease(): MaintenanceReopenResult {
+    override suspend fun evaluateRelease(): MaintenanceReopenResult {
         val result = gate.reopenWhen { closed ->
             val settled = replacementSettled(GateBuilds(closed.fromBuild, closed.targetBuild), installer(), bundleIdentity())
             if (settled) {

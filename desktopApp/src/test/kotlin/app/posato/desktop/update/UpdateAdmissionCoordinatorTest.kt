@@ -201,6 +201,35 @@ class UpdateAdmissionCoordinatorTest {
         assertFalse(fixture.companion.draining)
     }
 
+    @Test
+    fun `given a closed gate after relaunch when a pending installation continues then the cycle is admitted without new cleanup`() = runTest {
+        val gate = FakeGate().apply { closed = ClosedMaintenanceGate(FROM_BUILD, TARGET_BUILD, 1L) }
+        val fixture = Fixture(gate = gate)
+        fixture.coordinator.restoreMaintenanceAtStartup()
+
+        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admitPendingInstallation(TARGET_BUILD))
+        assertTrue(gate.cycleAdmitted)
+        assertTrue(fixture.helper.calls.isEmpty())
+    }
+
+    @Test
+    fun `given an open gate when a pending installation continues then full admission runs first`() = runTest {
+        val fixture = Fixture()
+
+        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admitPendingInstallation(TARGET_BUILD))
+        assertEquals(listOf("status", "restore", "configure-empty"), fixture.helper.calls)
+    }
+
+    @Test
+    fun `given a closed gate whose maintenance mode did not hold when a pending installation continues then it is refused`() = runTest {
+        val gate = FakeGate().apply { closed = ClosedMaintenanceGate(FROM_BUILD, TARGET_BUILD, 1L) }
+        val fixture = Fixture(gate = gate, companion = FakeCompanion(drains = false))
+        fixture.coordinator.restoreMaintenanceAtStartup()
+
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE), fixture.coordinator.admitPendingInstallation(TARGET_BUILD))
+        assertFalse(gate.cycleAdmitted)
+    }
+
     private class Fixture(
         val gate: FakeGate = FakeGate(),
         val lock: FakeLock = FakeLock(),
