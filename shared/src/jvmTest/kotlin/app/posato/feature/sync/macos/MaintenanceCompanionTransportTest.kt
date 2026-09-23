@@ -1,9 +1,12 @@
 package app.posato.feature.sync.macos
 
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -39,13 +42,45 @@ class MaintenanceCompanionTransportTest {
     }
 
     @Test
-    fun `given a companion process that has not exited when maintenance drains then draining fails`() = runTest {
+    fun `given a transaction that outlives the grace period when maintenance drains then its companion is stopped and draining succeeds`() = runTest {
+        val companion = ProcessBuilder("/bin/sleep", "30").start()
+        try {
+            val transport = MaintenanceCompanionTransport(drainGraceMillis = 50L) {
+                CountingTransport(beforeExchange = { withContext(Dispatchers.IO) { companion.waitFor() } })
+            }
+            transport.registerProcess(companion)
+            val exchanging = async { transport.transact(message()) }
+            runCurrent()
+
+            assertTrue(transport.drainForMaintenance())
+            assertFalse(companion.isAlive)
+            exchanging.await()
+        } finally {
+            companion.destroyForcibly().waitFor()
+        }
+    }
+
+    @Test
+    fun `given a transaction that never finishes when maintenance drains then draining fails instead of waiting forever`() = runTest {
+        val never = CompletableDeferred<Unit>()
+        val transport = MaintenanceCompanionTransport(drainGraceMillis = 50L, exitTimeoutMillis = 50L) {
+            CountingTransport(beforeExchange = { never.await() })
+        }
+        backgroundScope.launch { transport.transact(message()) }
+        runCurrent()
+
+        assertFalse(transport.drainForMaintenance())
+    }
+
+    @Test
+    fun `given a companion process that has not exited when maintenance drains then it is stopped before draining succeeds`() = runTest {
         val transport = MaintenanceCompanionTransport(exitTimeoutMillis = 50L) { CountingTransport() }
         val lingering = ProcessBuilder("/bin/sleep", "30").start()
         try {
             transport.registerProcess(lingering)
 
-            assertFalse(transport.drainForMaintenance())
+            assertTrue(transport.drainForMaintenance())
+            assertFalse(lingering.isAlive)
         } finally {
             lingering.destroyForcibly().waitFor()
         }

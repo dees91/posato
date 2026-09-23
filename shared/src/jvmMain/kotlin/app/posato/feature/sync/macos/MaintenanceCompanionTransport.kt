@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.util.concurrent.TimeUnit
 
 public interface CompanionMaintenance {
@@ -14,6 +15,7 @@ public interface CompanionMaintenance {
 }
 
 internal class MaintenanceCompanionTransport(
+    private val drainGraceMillis: Long = COMPANION_DRAIN_GRACE_MILLIS,
     private val exitTimeoutMillis: Long = COMPANION_EXIT_TIMEOUT_MILLIS,
     createDelegate: (onProcessStarted: (Process) -> Unit) -> SyncCompanionTransport,
 ) : SyncCompanionTransport,
@@ -57,11 +59,15 @@ internal class MaintenanceCompanionTransport(
         synchronized(monitor) {
             refusing = true
         }
-        inFlight.first { count -> count == 0 }
-        val processes = synchronized(monitor) { startedProcesses.toList() }
-        return withContext(Dispatchers.IO) {
-            processes.all { process -> process.waitFor(exitTimeoutMillis, TimeUnit.MILLISECONDS) }
+        if (awaitIdle(drainGraceMillis)) {
+            return awaitProcessExit()
         }
+        val processes = synchronized(monitor) { startedProcesses.toList() }
+        withContext(Dispatchers.IO) {
+            processes.filter(Process::isAlive).forEach(Process::destroy)
+        }
+        val exited = awaitProcessExit()
+        return awaitIdle(exitTimeoutMillis) && exited
     }
 
     override fun resumeAfterMaintenance() {
@@ -69,6 +75,21 @@ internal class MaintenanceCompanionTransport(
             refusing = false
         }
     }
+
+    private suspend fun awaitIdle(timeoutMillis: Long): Boolean {
+        return withTimeoutOrNull(timeoutMillis) { inFlight.first { count -> count == 0 } } != null
+    }
+
+    private suspend fun awaitProcessExit(): Boolean {
+        val processes = synchronized(monitor) { startedProcesses.toList() }
+        return withContext(Dispatchers.IO) {
+            processes.all { process ->
+                process.waitFor(exitTimeoutMillis, TimeUnit.MILLISECONDS) ||
+                    process.destroyForcibly().waitFor(exitTimeoutMillis, TimeUnit.MILLISECONDS)
+            }
+        }
+    }
 }
 
+private const val COMPANION_DRAIN_GRACE_MILLIS: Long = 2_000L
 private const val COMPANION_EXIT_TIMEOUT_MILLIS: Long = 5_000L

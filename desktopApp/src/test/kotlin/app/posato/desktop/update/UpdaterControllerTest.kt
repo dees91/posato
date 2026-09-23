@@ -40,6 +40,19 @@ class UpdaterControllerTest {
     }
 
     @Test
+    fun `given admission that fails unexpectedly when requested then the reply refuses it instead of leaving the update waiting`() = runTest {
+        val admission = FakeAdmission(beforeAdmit = { throw IllegalStateException("helper exploded") })
+        val replies = RecordingReplies()
+        val controller = controller(admission, replies)
+
+        controller.onInstallRequested(TOKEN, TARGET_BUILD, InstallRequestStage.NEW_INSTALLATION)
+        advanceUntilIdle()
+
+        assertEquals(listOf(TOKEN to false), replies.replies)
+        assertEquals(AdmissionRefusal.CLEANUP_UNCERTAIN, replies.refusals.single())
+    }
+
+    @Test
     fun `given a pending installation after relaunch when requested then it continues the closed gate`() = runTest {
         val admission = FakeAdmission()
         val replies = RecordingReplies()
@@ -101,6 +114,7 @@ class UpdaterControllerTest {
 
     private class RecordingReplies : UpdaterReplies {
         val replies = mutableListOf<Pair<Long, Boolean>>()
+        val refusals = mutableListOf<AdmissionRefusal?>()
 
         override fun completeAdmission(
             token: Long,
@@ -108,6 +122,7 @@ class UpdaterControllerTest {
             refusal: AdmissionRefusal?,
         ) {
             replies += token to granted
+            refusals += refusal
         }
     }
 

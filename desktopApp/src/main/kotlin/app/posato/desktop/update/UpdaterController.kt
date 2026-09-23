@@ -1,6 +1,7 @@
 package app.posato.desktop.update
 
 import app.posato.feature.update.MaintenanceReopenResult
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -53,10 +54,7 @@ internal class UpdaterController(
     ) {
         val requestedIn = cycleGeneration.get()
         scope.launch {
-            val outcome = when (stage) {
-                InstallRequestStage.NEW_INSTALLATION -> admission.admit(targetBuild)
-                InstallRequestStage.PENDING_INSTALLATION -> admission.admitPendingInstallation(targetBuild)
-            }
+            val outcome = decide(targetBuild, stage)
             val sameCycle = cycleGeneration.get() == requestedIn
             replies.completeAdmission(token, outcome == AdmissionOutcome.Admitted && sameCycle, (outcome as? AdmissionOutcome.Refused)?.reason)
             if (outcome == AdmissionOutcome.Admitted && !sameCycle) {
@@ -65,6 +63,22 @@ internal class UpdaterController(
             if (outcome != AdmissionOutcome.Admitted || !sameCycle) {
                 evaluateReleaseUntilSettled()
             }
+        }
+    }
+
+    private suspend fun decide(
+        targetBuild: String,
+        stage: InstallRequestStage,
+    ): AdmissionOutcome {
+        return try {
+            when (stage) {
+                InstallRequestStage.NEW_INSTALLATION -> admission.admit(targetBuild)
+                InstallRequestStage.PENDING_INSTALLATION -> admission.admitPendingInstallation(targetBuild)
+            }
+        } catch (expectedCancellation: CancellationException) {
+            throw expectedCancellation
+        } catch (_: Exception) {
+            AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN)
         }
     }
 

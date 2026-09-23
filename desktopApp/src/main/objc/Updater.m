@@ -39,6 +39,7 @@ static void PosatoClearPendingException(JNIEnv *environment) {
     SPUStandardUserDriver *_standard;
     NSMutableDictionary<NSNumber *, void (^)(SPUUserUpdateChoice)> *_pendingReplies;
     jlong _nextToken;
+    NSPanel *_preparingPanel;
 }
 
 - (instancetype)initWithStandardDriver:(SPUStandardUserDriver *)standardDriver {
@@ -101,12 +102,42 @@ static void PosatoClearPendingException(JNIEnv *environment) {
         void (^pending)(SPUUserUpdateChoice) = _pendingReplies[@(token)];
         [_pendingReplies removeObjectForKey:@(token)];
         if (pending != nil) pending(SPUUserUpdateChoiceDismiss);
+        return;
     }
+    if (_pendingReplies[@(token)] != nil) {
+        [self showPreparingPanel];
+    }
+}
+
+- (void)showPreparingPanel {
+    if (_preparingPanel != nil) return;
+    NSPanel *panel = [[NSPanel alloc] initWithContentRect:NSMakeRect(0, 0, 320, 88)
+                                                styleMask:NSWindowStyleMaskTitled
+                                                  backing:NSBackingStoreBuffered
+                                                    defer:NO];
+    panel.title = @"Posato";
+    panel.releasedWhenClosed = NO;
+    NSProgressIndicator *spinner = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(20, 28, 32, 32)];
+    spinner.style = NSProgressIndicatorStyleSpinning;
+    [spinner startAnimation:nil];
+    NSTextField *label = [NSTextField labelWithString:@"Preparing to update…"];
+    label.frame = NSMakeRect(64, 34, 236, 20);
+    [panel.contentView addSubview:spinner];
+    [panel.contentView addSubview:label];
+    [panel center];
+    [panel makeKeyAndOrderFront:nil];
+    _preparingPanel = panel;
+}
+
+- (void)closePreparingPanel {
+    [_preparingPanel close];
+    _preparingPanel = nil;
 }
 
 - (void)completeAdmission:(jlong)token granted:(BOOL)granted refusal:(jint)refusal {
     void (^reply)(SPUUserUpdateChoice) = _pendingReplies[@(token)];
     if (reply == nil) return;
+    [self closePreparingPanel];
     [_pendingReplies removeObjectForKey:@(token)];
     if (granted) {
         reply(SPUUserUpdateChoiceInstall);
@@ -123,6 +154,7 @@ static void PosatoClearPendingException(JNIEnv *environment) {
 
 - (void)dropPendingReplies {
     [_pendingReplies removeAllObjects];
+    [self closePreparingPanel];
 }
 
 - (void)showUpdateReleaseNotesWithDownloadData:(SPUDownloadData *)downloadData {
@@ -264,6 +296,7 @@ JNIEXPORT jboolean JNICALL Java_app_posato_desktop_update_MacUpdater_nativeStart
                                              applicationBundle:bundle
                                                     userDriver:posatoUserDriver
                                                       delegate:posatoUpdaterDelegate];
+        posatoUpdater.userAgentString = @"PosatoUpdater";
         NSError *error = nil;
         if (![posatoUpdater startUpdater:&error]) {
             posatoUpdater = nil;
