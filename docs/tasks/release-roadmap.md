@@ -3,16 +3,17 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 2
+- **Revision:** 3
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-18
+- **Last amended:** 2026-09-23
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
   restates the `TARGETS-006` outcome as a matching rule with one stored row
   per typed host, after the completed-change review of PR #72 rejected
-  materialized `www` counterparts.
+  materialized `www` counterparts. Revision 3 adds the `QUALITY-010` backlog row
+  from idea 10 (verification without the maintainer).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -197,6 +198,7 @@ The idea numbers refer to the wiki idea queue.
 | `PLATFORM-001` | Decide the order, enforcement mechanisms, privilege models, and shared UI for Android, Linux, and Windows. | Platform coverage | Availability page planned platforms | A product decision to leave the Apple-only release train |
 | `QUALITY-008` | Decide whether golden or automated UI tests join the quality gate now that the interface is stable, and with which tool. | Verification | Engineering quality contract post-MVP decision | Two releases of interface stability |
 | `QUALITY-009` | Decide whether hosted CI returns for pull requests and whether external contributions are accepted, with the Actions budget and review load that implies. | Verification | First-release readiness policy | Maintainer capacity decision |
+| `QUALITY-010` | Let an agent verify every task without the maintainer: Posato on macOS in Tart virtual machines and on a dedicated physical test iPhone, both on a dedicated test Apple Account, with every system prompt, permission, and picker driven by the verification driver after one-time setup. | Verification | Idea 10 | Passing go/no-go measurements (CloudKit in a VM; Screen Time consent and the application picker through XCUITest), plus the maintainer's test account and dedicated iPhone |
 
 ## Coverage matrix
 

@@ -1876,3 +1876,11 @@ to scope, feasibility, or delivery.
   README now links to the listing.
 - Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
   `docs/wiki/topics/first-release-readiness.md`.
+
+## [2026-09-23] decision | Idea: verification without the maintainer
+
+- Idea 10 and backlog row `QUALITY-010` record the maintainer's goal: an agent
+  verifies every task without human help. The targets are Tart macOS VMs and
+  a dedicated test iPhone, both on a dedicated test Apple Account, and the
+  maintainer helps only with one-time setup. The go/no-go measurements come
+  first.

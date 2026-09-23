@@ -732,6 +732,35 @@ not an accepted feature plan or an expansion of the MVP.
    cancellation/recovery proof required before separately activated
    `MACOS-011` delivery. No updater is implemented by the discovery.
 
+10. **Verification without the maintainer.** `user-confirmed` (2026-09-23):
+    an agent verifies every task on its own, and the maintainer only helps
+    with one-time setup. The two targets are Posato on macOS in Tart virtual
+    machines on the supported Mac, and Posato on a dedicated physical test
+    iPhone. Both sign in with a dedicated test Apple Account, whose CloudKit
+    private data is separate from the maintainer's. `inferred` from the
+    `MACOS-011` Stage 1 discussion:
+    - Keyboard and pointer input over the VM's VNC display counts as hardware
+      input to the guest. It can drive SecurityAgent, System Settings,
+      Gatekeeper, and Sparkle without loosening the ADR 0004 authorization
+      rules.
+    - A golden VM image keeps the one-time approvals.
+    - A second VM gives a Mac-to-Mac sync peer.
+    - On the iPhone, the XCUITest driver can reach SpringBoard alerts. It can
+      tap the out-of-process application picker by screen coordinates,
+      located with text recognition.
+    - Development builds use the CloudKit Development environment, which can
+      be reset.
+    - Credentials stay in the host Keychain and are read at run time.
+
+    `open` go/no-go measurements:
+    - CloudKit and iCloud Keychain for the Developer ID sync companion inside
+      a VM;
+    - Screen Time consent and any passcode prompt through XCUITest;
+    - coordinate taps in the picker;
+    - deterministic VNC control;
+    - the network-service-switch scenarios with the VM's single network
+      interface.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do
