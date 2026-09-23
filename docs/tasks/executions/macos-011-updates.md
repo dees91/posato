@@ -6,7 +6,7 @@
 - **Implementer:** Claude; Codex prepared the handoff
 - **Reviewer:** independent plan reviewer; implementation review pending
 - **Branch:** `feature/macos-011-updates`
-- **Updated:** 2026-09-23
+- **Updated:** 2026-09-23 (Stage 1 implementation)
 
 ## Plan
 
@@ -172,8 +172,24 @@ refusing a local Start wait for the rebase after `ONBOARDING-003`.
 
 ## Result
 
-- Prepared the brief and delegated execution plan in an isolated worktree. No updater code, dependency, signing key, feed, or release has been created.
-- Worktree provisioned from the main checkout's complete ignored `local.properties`; the verification driver builds and its help command runs. Independent plan/handoff review passed.
+- Prepared the brief and delegated execution plan in an isolated worktree, then
+  implemented the reviewed Stage 1 mechanism on this branch:
+  - the persisted gate (migration 10) and the gated enforcement port;
+  - companion draining and the helper backstop with spawn refusal;
+  - the cross-process instance lock;
+  - the admission coordinator and confirmed cleanup;
+  - the exact `launchctl`, bundle-identity, and stored-proxy evidence;
+  - the cycle-matched controller and the separate `libPosatoUpdater` leaf;
+  - Sparkle 2.10.0 pinned by SHA-256 and embedded without its sandbox XPC
+    services, with signing, verification, and notices updated.
+- Sparkle 2.10.0 was reviewed on 2026-09-23 as the current stable release. OSV
+  returned no entries. All five GitHub advisories affect 2.9.5 or earlier and
+  are fixed in 2.9.6. The distribution is MIT, with bundled BSD-2-Clause, MIT,
+  and zlib components.
+- Stage 1 adds a temporary English "Check for Updates…" application-menu item
+  and refusal alert. Localized copy and final placement belong to Stage 2
+  after `ONBOARDING-003`.
+- The physical A-to-B proof has not run yet. Feasibility remains unproven.
 
 ## Completed-change review
 
