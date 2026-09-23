@@ -2,10 +2,19 @@ package app.posato.feature.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
@@ -133,24 +142,7 @@ internal fun IcloudStep(
     val running = syncRunning || syncSnapshot.checkingJoin || syncSnapshot.status == SyncStatus.SYNCING
     OnboardingPage(
         layout = layout,
-        actions = {
-            if (syncSnapshot.joinPending) {
-                OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer)
-                PosatoButton(onClick = onSync, style = PosatoButtonStyle.Secondary, enabled = !running) {
-                    Text(stringResource(Res.string.action_check_again))
-                }
-            } else if (syncSnapshot.linked) {
-                OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer, enabled = !running)
-                PosatoButton(onClick = onSync, style = PosatoButtonStyle.Quiet, enabled = !running) {
-                    Text(stringResource(Res.string.action_sync_now))
-                }
-            } else {
-                OnboardingPrimaryAction(stringResource(Res.string.action_sync_with_icloud), layout, onSync, enabled = !running)
-                PosatoButton(onClick = onDefer, style = PosatoButtonStyle.Quiet, enabled = !running) {
-                    Text(stringResource(Res.string.onboarding_action_not_now))
-                }
-            }
-        },
+        actions = { IcloudActions(syncSnapshot, running, layout, onSync, onDefer) },
     ) {
         PosatoHeading(
             stringResource(Res.string.onboarding_icloud_title),
@@ -190,6 +182,34 @@ internal fun IcloudStep(
 }
 
 @Composable
+private fun IcloudActions(
+    syncSnapshot: AppleSyncState,
+    running: Boolean,
+    layout: PosatoLayout,
+    onSync: () -> Unit,
+    onDefer: () -> Unit,
+) {
+    OnboardingActions(layout) {
+        if (syncSnapshot.joinPending) {
+            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer)
+            PosatoButton(onClick = onSync, style = PosatoButtonStyle.Secondary, enabled = !running) {
+                Text(stringResource(Res.string.action_check_again))
+            }
+        } else if (syncSnapshot.linked) {
+            OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onDefer, enabled = !running)
+            PosatoButton(onClick = onSync, style = PosatoButtonStyle.Quiet, enabled = !running) {
+                Text(stringResource(Res.string.action_sync_now))
+            }
+        } else {
+            OnboardingPrimaryAction(stringResource(Res.string.action_sync_with_icloud), layout, onSync, enabled = !running)
+            PosatoButton(onClick = onDefer, style = PosatoButtonStyle.Quiet, enabled = !running) {
+                Text(stringResource(Res.string.onboarding_action_not_now))
+            }
+        }
+    }
+}
+
+@Composable
 internal fun WebsiteStep(
     state: OnboardingViewState,
     browser: TargetsBrowserState,
@@ -198,10 +218,11 @@ internal fun WebsiteStep(
     onDefer: () -> Unit,
     layout: PosatoLayout,
 ) {
-    val focus = LocalFocusManager.current
-    LaunchedEffect(browser.lastReceipt) {
-        if ((browser.lastReceipt?.addedCount ?: 0) > 0) {
-            focus.clearFocus()
+    val entryArea = remember { BringIntoViewRequester() }
+    val keyboardHeight = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(keyboardHeight) {
+        if (keyboardHeight > 0) {
+            entryArea.bringIntoView()
         }
     }
     OnboardingPage(
@@ -221,7 +242,15 @@ internal fun WebsiteStep(
             description = stringResource(Res.string.onboarding_website_body),
             layout = layout,
         )
-        WebsiteEntry(browser = browser, enabled = !state.websiteSaving, onSubmit = onSubmitWebsites)
+        Column(
+            modifier = Modifier.bringIntoViewRequester(entryArea),
+            verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
+        ) {
+            WebsiteEntry(browser = browser, enabled = !state.websiteSaving, onSubmit = onSubmitWebsites)
+            if (state.savedWebsites > 0) {
+                PosatoCaption(state.websiteSummary(), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            }
+        }
         PosatoCaption(stringResource(Res.string.onboarding_permission_control))
     }
 }

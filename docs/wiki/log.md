@@ -1850,3 +1850,12 @@ to scope, feasibility, or delivery.
 - Moving a focused Compose text field to another parent on rotation hid the
   iOS keyboard and left a stale inset; the scaffold keeps the content's parent
   stable.
+
+## [2026-09-23] outcome | Continuous onboarding website entry
+
+- `ONBOARDING-003` keeps the first-website field focused after each
+  submission and states the saved total separately from the last
+  submission's feedback. Expanded onboarding pages scroll content above their
+  actions, which share one wrapping row in primary, secondary, quiet order.
+- The desktop accessibility bridge does not report text-field focus; Mac
+  focus evidence is visual, while the iOS snapshot reports it directly.

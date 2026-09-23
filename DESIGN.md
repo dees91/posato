@@ -507,7 +507,11 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   request still disables **Not now** until the system sheet returns.
 - Website entry uses “What pulls you away?”, the existing domain form and
   validation, and **Continue** after a saved addition. Before an addition,
-  **Not now** keeps an empty setup possible.
+  **Not now** keeps an empty setup possible. `user-confirmed` (2026-09-23,
+  `ONBOARDING-003`): entry keeps focus after each submission, so the next
+  website needs no click. Below the field, a caption states the saved total
+  from policy state, separate from the feedback about the last submission; it
+  follows policy changes while the step is visible.
 - Summary leads with saved choices, device access, and local/iCloud scope.
   Its saved-website count follows policy changes while the step is visible;
   a failed read keeps the last valid count. Website-entry focus responds only
@@ -516,9 +520,16 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   **Go to Session** opens Session; it does not start a pause.
 - Compact pages keep actions beneath independently scrolling content, with a
   full-width primary button. The iPhone wordmark hides while typing. Expanded
-  pages keep actions adjacent to content in a scrolling column capped at
-  600 dp inside the existing 820 dp outer canvas. Use the existing typography,
-  spacing, colors, safe-area handling, and native permission presentation.
+  pages keep actions directly after content in a column capped at 600 dp
+  inside the existing 820 dp outer canvas. `user-confirmed` (2026-09-23,
+  `ONBOARDING-003`): the expanded content scrolls on its own, so actions stay
+  above the keyboard or window edge, and several expanded actions share one
+  wrapping action row in primary, secondary, quiet order. `user-confirmed`
+  (2026-09-23, `ONBOARDING-003`): the keyboard must not cover the website
+  field. While it is up, expanded pages use 24 dp vertical margins and gap
+  before the actions, and the website step scrolls the whole field and its
+  saved total into view. Use the existing typography, spacing, colors,
+  safe-area handling, and native permission presentation.
 
 ### Session
 

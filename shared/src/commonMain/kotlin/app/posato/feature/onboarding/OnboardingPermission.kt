@@ -135,28 +135,30 @@ internal fun PermissionStep(
             if (ready) {
                 OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
             } else {
-                when (platform) {
-                    OnboardingPermissionPlatform.IOS -> {
-                        if (state.accessResult != ApplicationAccessResult.Unavailable) {
-                            OnboardingPrimaryAction(
-                                stringResource(Res.string.onboarding_permission_ios_action),
-                                layout,
-                                onRequestAccess,
-                                enabled = !state.permissionRunning,
-                            )
+                OnboardingActions(layout) {
+                    when (platform) {
+                        OnboardingPermissionPlatform.IOS -> {
+                            if (state.accessResult != ApplicationAccessResult.Unavailable) {
+                                OnboardingPrimaryAction(
+                                    stringResource(Res.string.onboarding_permission_ios_action),
+                                    layout,
+                                    onRequestAccess,
+                                    enabled = !state.permissionRunning,
+                                )
+                            }
+                        }
+
+                        OnboardingPermissionPlatform.MAC -> {
+                            MacPermissionActions(state, layout, onEnableHelper, onRecheckHelper, onOpenHelperSettings)
                         }
                     }
-
-                    OnboardingPermissionPlatform.MAC -> {
-                        MacPermissionActions(state, layout, onEnableHelper, onRecheckHelper, onOpenHelperSettings)
+                    PosatoButton(
+                        onClick = onContinue,
+                        style = PosatoButtonStyle.Quiet,
+                        enabled = state.canDeferPermission(platform),
+                    ) {
+                        Text(stringResource(Res.string.onboarding_action_not_now))
                     }
-                }
-                PosatoButton(
-                    onClick = onContinue,
-                    style = PosatoButtonStyle.Quiet,
-                    enabled = state.canDeferPermission(platform),
-                ) {
-                    Text(stringResource(Res.string.onboarding_action_not_now))
                 }
             }
         },
