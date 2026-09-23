@@ -267,6 +267,10 @@ internal class SqlLocalSessionStore(
     }
 }
 
+internal suspend fun PosatoDatabase.hasActiveLocalSession(nowEpochMillis: Long): Boolean {
+    return evaluateStoredLocalSession(nowEpochMillis).evaluation is SessionEvaluation.ShowActive
+}
+
 private suspend fun PosatoDatabase.evaluateStoredLocalSession(nowEpochMillis: Long): EvaluatedStored {
     val stored = readStoredLocalSession()
     if (stored == null) {

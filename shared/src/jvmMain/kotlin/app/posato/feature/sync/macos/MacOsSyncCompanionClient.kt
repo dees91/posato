@@ -194,8 +194,9 @@ internal class MacOsSyncCompanionClient(
         fun verified(
             applicationRoot: Path,
             verifier: MacOsSyncCompanionVerifier = MacOsSyncCompanionVerifier(),
+            onProcessStarted: (Process) -> Unit = {},
         ): MacOsSyncCompanionClient {
-            return MacOsSyncCompanionClient(verifier.verify(applicationRoot))
+            return MacOsSyncCompanionClient(verifier.verify(applicationRoot), onProcessStarted = onProcessStarted)
         }
     }
 }

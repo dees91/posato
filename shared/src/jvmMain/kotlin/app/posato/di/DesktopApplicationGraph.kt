@@ -29,12 +29,14 @@ import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.macos.MacOsBootstrapCloudAdapter
 import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
 import app.posato.feature.sync.macos.MacOsMailboxAdapter
-import app.posato.feature.sync.macos.defaultSyncCompanionTransport
+import app.posato.feature.sync.macos.MaintenanceCompanionTransport
+import app.posato.feature.sync.macos.SyncCompanionTransport
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
+import app.posato.feature.update.DesktopUpdateMaintenance
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -46,7 +48,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 @DependencyGraph(AppScope::class)
-internal interface DesktopApplicationGraph : ApplicationGraph {
+internal interface DesktopApplicationGraph :
+    DesktopApplicationComponents,
+    DesktopUpdateBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
@@ -58,7 +62,7 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
     fun interface Factory {
         fun create(
             @Provides applicationMappings: LocalApplicationMappings,
-            @Provides enforcement: EnforcementPort,
+            @Provides @Named("helper") enforcement: EnforcementPort,
             @Provides databasePath: String,
             @Provides macHelper: MacHelperPort,
         ): DesktopApplicationGraph
@@ -170,8 +174,9 @@ internal interface DesktopApplicationGraph : ApplicationGraph {
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         policySync: LocalPolicySyncStore,
         sessions: LocalSessionSyncStore,
+        companion: MaintenanceCompanionTransport,
     ): AppleSync {
-        val transport = defaultSyncCompanionTransport()
+        val transport: SyncCompanionTransport = companion
         val keys = MacOsBootstrapKeychainAdapter(transport)
         val crypto = JdkSyncCryptoProvider()
         val store = SqlBootstrapStore(database, databaseDispatcher)
@@ -203,7 +208,7 @@ fun createDesktopApplicationGraph(
     enforcement: EnforcementPort,
     macHelper: MacHelperPort,
     databasePath: String = defaultDesktopPolicyDatabasePath(),
-): ApplicationGraph {
+): DesktopApplicationComponents {
     return synchronized(desktopGraphLock) {
         val existing = processDesktopGraph
         if (existing != null) {
@@ -223,6 +228,10 @@ fun createDesktopApplicationGraph(
     }
 }
 
+interface DesktopApplicationComponents : ApplicationGraph {
+    val updateMaintenance: DesktopUpdateMaintenance
+}
+
 private val desktopGraphLock = Any()
-private var processDesktopGraph: ApplicationGraph? = null
+private var processDesktopGraph: DesktopApplicationComponents? = null
 private var processDatabasePath: String? = null

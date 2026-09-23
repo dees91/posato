@@ -59,6 +59,7 @@ class SqlRemovedWorkspaceMigrationTest {
         seeds.forEach { seed -> driver.executeSql(seed) }
         driver.executeSql("DROP TABLE sync_removed_workspace")
         driver.executeSql("DROP TABLE sync_session_intent")
+        driver.executeSql("DROP TABLE local_update_maintenance")
         driver.executeSql("ALTER TABLE local_session DROP COLUMN origin")
         driver.executeSql("PRAGMA user_version = $PREVIOUS_VERSION")
         driver.close()

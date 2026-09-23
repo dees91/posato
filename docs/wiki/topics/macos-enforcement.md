@@ -646,10 +646,34 @@ in ADR 0004 remains applicable to compatible updates; an absent service or
 best-effort close is not proof of restored ownership.
 
 `observed` in Sparkle 2.10.0 source: canceling an update cycle does not await
-termination of its installer. `open`: the exact positive evidence that lets
-Posato safely admit enforcement again. ADR 0008 defines the release conditions
-and makes their proof the first delivery gate. Until it passes, the supported
-product path remains manual quit, replace, and open.
+termination of its installer.
+
+`observed` (2026-09-23, `MACOS-011` Stage 1 on notarized builds 8-14): a
+persisted maintenance gate held on every tested path. The gate closes with a
+no-active-session check before the first Install reply. Every scenario stayed
+safe: completed updates, Cmd-Q or a crash at Ready to Install, a crash or
+cancel during download, an active session, and a second instance. The gate
+reopened only when all of the following held:
+- the installer job was absent in the user and system launchd domains;
+- the on-disk bundle matched the running signed build;
+- the service revalidated.
+
+Findings from the proof:
+- The standard Ready to Install window cannot be dismissed. Replacement is
+  committed once the installer reaches that stage, so quitting or crashing
+  installs.
+- Sparkle's default User-Agent carries the app version, so Posato sets a
+  fixed one.
+- Admission must bound companion draining and show progress. Without that,
+  an in-flight sync transaction left Install silently waiting.
+- Update transitions must be serialized and tied to their cycle. Otherwise a
+  release poll or a late admission from an ended cycle can reopen maintenance
+  during a newer installation.
+- Ad-hoc helper copies registered in LaunchServices by development worktrees
+  can stop the daemon from launching (`EX_CONFIG`).
+
+Consent, scheduling, and the release feed remain Stage 2. Until then, the
+supported product path remains manual quit, replace, and open.
 
 ## Open questions
 

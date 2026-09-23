@@ -1,0 +1,8 @@
+CREATE TABLE local_update_maintenance (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  from_build TEXT NOT NULL CHECK (typeof(from_build) = 'text' AND length(from_build) BETWEEN 1 AND 32),
+  target_build TEXT NOT NULL CHECK (typeof(target_build) = 'text' AND length(target_build) BETWEEN 1 AND 32),
+  closed_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(closed_epoch_millis) = 'integer' AND closed_epoch_millis BETWEEN 0 AND 4102444800000
+  )
+);

@@ -1859,3 +1859,11 @@ to scope, feasibility, or delivery.
   actions, which share one wrapping row in primary, secondary, quiet order.
 - The desktop accessibility bridge does not report text-field focus; Mac
   focus evidence is visual, while the iOS snapshot reports it directly.
+
+## [2026-09-23] outcome | macOS updater Stage 1 safety proof
+
+- `MACOS-011` Stage 1 proved the ADR 0008 maintenance gate on notarized
+  Sparkle candidates. Enforcement stayed closed through every replacement,
+  cancel, crash, and second instance, and reopened only on exact installer,
+  bundle, and service evidence. Consent, scheduling, and the release feed
+  remain Stage 2.

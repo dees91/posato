@@ -2,6 +2,7 @@
 
 package app.posato.desktop.macos
 
+import app.posato.desktop.update.UpdateCleanupCommands
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.Closeable
@@ -25,11 +26,13 @@ import java.util.concurrent.TimeoutException
 internal class MacOsHelperClient(
     helperPath: Path? = null,
     private val launchPrefix: List<String> = emptyList(),
+    private val maintenance: HelperMaintenance = processHelperMaintenance,
 ) : Closeable,
     MacHelperCommands,
     MacOsApplicationPicker,
     MacOsBrowserDomainCommands,
-    MacOsApplicationCommands {
+    MacOsApplicationCommands,
+    UpdateCleanupCommands {
     private val helperPath: Path by lazy { helperPath ?: MacOsHelperSigningVerifier.installedHelperPath() }
     private val random = SecureRandom()
     private val readerExecutor = Executors.newSingleThreadExecutor()
@@ -68,6 +71,9 @@ internal class MacOsHelperClient(
         domains: List<String>,
         sessionEndEpochMilliseconds: Long?,
     ): BrowserDomainConfigureResponse {
+        if (domains.isNotEmpty() && maintenance.isBackstopEngaged) {
+            return BrowserDomainConfigureResponse(HelperResult.maintenanceRefusal(), 0.toUShort())
+        }
         val payload = BrowserDomainConfigurePayload(domains, sessionEndEpochMilliseconds).encode()
         return configureRequest(payload)
     }
@@ -77,6 +83,9 @@ internal class MacOsHelperClient(
         requirements: List<ByteArray>,
         sessionEndEpochMilliseconds: Long?,
     ): ApplicationEnforcementResponse {
+        if (requirements.isNotEmpty() && maintenance.isBackstopEngaged) {
+            return ApplicationEnforcementResponse(HelperResult.maintenanceRefusal(), 0)
+        }
         val payload = ApplicationEnforcementPayload(requirements, sessionEndEpochMilliseconds).encode()
         return configureApplicationRequest(payload)
     }
@@ -84,6 +93,9 @@ internal class MacOsHelperClient(
     @Synchronized
     override fun apply(port: UShort): HelperResult {
         require(port > 0u)
+        if (maintenance.isBackstopEngaged) {
+            return HelperResult.maintenanceRefusal()
+        }
         val payload = ByteBuffer.allocate(2)
             .order(ByteOrder.BIG_ENDIAN)
             .putShort(port.toShort())
@@ -297,11 +309,12 @@ internal class MacOsHelperClient(
             return
         }
         check(!isClosed)
+        check(maintenance.allowsSpawns)
         check(Files.isRegularFile(helperPath) && Files.isExecutable(helperPath))
         val verifiedHelper = MacOsHelperSigningVerifier.verify(helperPath)
         val builder = ProcessBuilder(launchPrefix + verifiedHelper.toString())
         builder.environment().clear()
-        val started = builder.start()
+        val started = maintenance.spawn { builder.start() }
         process = started
         input = BufferedInputStream(started.inputStream)
         output = BufferedOutputStream(started.outputStream)
@@ -503,6 +516,16 @@ internal data class HelperResult(
     internal enum class Failure { None, InvalidInput, Unavailable, Permission, Timeout, Integrity, Storage, Ipc, Lifecycle, Cancelled }
 
     companion object {
+        fun maintenanceRefusal(): HelperResult {
+            return HelperResult(
+                outcome = Outcome.Failure,
+                serviceState = State.UnavailableOrIncompatible,
+                ownershipPhase = Phase.Idle,
+                requiredAction = RequiredAction.None,
+                failure = Failure.Unavailable,
+            )
+        }
+
         fun unknownOutcome(): HelperResult {
             return HelperResult(
                 outcome = Outcome.UnknownOutcome,
