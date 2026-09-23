@@ -4,9 +4,9 @@ import java.io.IOException
 import java.nio.file.Path
 import kotlin.io.path.name
 
-internal fun defaultSyncCompanionTransport(): SyncCompanionTransport {
+internal fun defaultSyncCompanionTransport(onProcessStarted: (Process) -> Unit = {}): SyncCompanionTransport {
     return object : SyncCompanionTransport {
-        private val delegate by lazy { resolveTransport() }
+        private val delegate by lazy { resolveTransport(onProcessStarted) }
 
         override suspend fun transact(message: SyncCompanionMessage): CompanionExchange {
             return delegate.transact(message)
@@ -43,9 +43,9 @@ internal class UnavailableSyncCompanionTransport : SyncCompanionTransport {
     }
 }
 
-private fun resolveTransport(): SyncCompanionTransport {
+private fun resolveTransport(onProcessStarted: (Process) -> Unit): SyncCompanionTransport {
     return try {
-        MacOsSyncCompanionClient.verified(applicationBundleRoot())
+        MacOsSyncCompanionClient.verified(applicationBundleRoot(), onProcessStarted = onProcessStarted)
     } catch (_: IllegalStateException) {
         UnavailableSyncCompanionTransport()
     } catch (_: IOException) {
