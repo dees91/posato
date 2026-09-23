@@ -189,7 +189,43 @@ refusing a local Start wait for the rebase after `ONBOARDING-003`.
 - Stage 1 adds a temporary English "Check for Updates…" application-menu item
   and refusal alert. Localized copy and final placement belong to Stage 2
   after `ONBOARDING-003`.
-- The physical A-to-B proof has not run yet. Feasibility remains unproven.
+- **Stage 1 go/no-go: `pass` (`observed`, 2026-09-23).** Notarized test
+  candidates were builds 8-14, served from a loopback test feed signed with
+  the throwaway key. Evidence is in ignored
+  `build/verification/macos-011-stage1`. Across ten runs the gate closed
+  before every download, stayed closed through each replacement and crash,
+  and reopened only on exact evidence:
+  - A to B with a never-registered service, and B to C with an enabled
+    service, where Cmd-Q at Ready to Install still installed on quit;
+  - refusal with an active session and refusal with a second instance, where
+    the gate never closed;
+  - crash during a download, cancel during a download, and crash at Ready to
+    Install, where the installer replaced the bundle immediately;
+  - a complete Install and Relaunch, after which a new session's proxy
+    enforcement was admitted only after ready/Idle and the end of the session
+    restored the proxy baseline.
+- Corrections made during the proof:
+  - a fixed `PosatoUpdater` User-Agent, because Sparkle's default carried the
+    installed version;
+  - a bounded companion drain;
+  - an admission reply on every failure;
+  - a "Preparing to update…" panel. Before these fixes, an in-flight sync
+    transaction and on-demand helper latency left Install silently waiting
+    for more than 10 s.
+- Limits and Stage 2 items:
+  - Sparkle's standard Ready to Install window cannot be dismissed, so no
+    decline is reachable after extraction.
+  - The resumable installing stage, the system-domain installer, and tampered
+    or invalid signatures were not exercised physically.
+  - Lost Restore replies and an unavailable daemon are covered only by
+    synthetic tests.
+  - `Accept-Language` is still sent.
+  - One unexplained 09:46 feed request did not recur in three later
+    relaunches. It was most likely a manual check.
+  - The refusal copy is English and generic.
+  - Development worktrees can register ad-hoc helper copies that break
+    daemon launch resolution (`EX_CONFIG`). This is an environment hazard,
+    handled with `lsregister -u` and a re-registration.
 
 ## Completed-change review
 
