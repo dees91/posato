@@ -232,6 +232,14 @@ refusing a local Start wait for the rebase after `ONBOARDING-003`.
 - Handoff documents: approved by independent Codex agent `review_handoff`; no Critical, Required, or advisory findings.
 - Review evidence: the agent examined the complete brief and execution plan against the task workflow, quality contract, roadmap, and relevant design/ADR authorities; validated local links and explicit anchors; checked whitespace, conflict markers, portable paths, named source files, and base commit `a8bc2c5`. It ran document checks only, with no application tests.
 - Product implementation: pending; the delivery review must examine the actual admission/recovery mechanism and measured privacy behavior.
+- **Stage 1 implementation:** reviewed by the maintainer on PR #76. The
+  review found two Required race findings: a release poll could reopen
+  maintenance during a retried admission, and a late admission from an ended
+  cycle could do the same during a newer installation. Both are fixed by
+  serializing coordinator transitions and refusing ended or superseded cycles
+  under the lock. Each fix has a regression test that failed before the fix.
+  An independent Claude agent approved each correction. `./gradlew quality`
+  passes on the final head.
 
 ## Verification
 
