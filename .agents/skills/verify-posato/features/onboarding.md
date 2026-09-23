@@ -56,6 +56,20 @@ Preconditions:
   and a snapshot, and lands on Session. Confirm the side effects with
   `$PC db query -t sim --sql "select canonical_domain from exact_domain_policy"`
   (one row) and zero `sync_bootstrap_state` rows.
+- **Continuous entry:** on the website step, submit two websites one at a
+  time with Return and no tap in between. After each submission the field
+  stays focused and the keyboard stays up; the caption below the field reads
+  `1 website saved`, then `2 websites saved`, while the field feedback
+  describes only the last submission. A duplicate or invalid entry leaves the
+  total unchanged, and invalid text stays in the field. **Continue** is
+  visible above the keyboard without scrolling on iPhone, iPad portrait, and
+  iPad landscape. The total is a live region, so on iOS it is exposed as a
+  group: select it by text without `role`. The iOS snapshot reports the
+  field's `focused` state; the desktop bridge does not, so on Mac prove focus
+  with a screenshot showing the caret and focus border.
+- **Expanded actions:** on iPad and Mac, the iCloud and permission steps
+  show their actions in one wrapping row in primary, secondary, quiet order.
+  Compact pages keep the full-width primary action above the others.
 - **Late summary refresh:** during an attended second-install join, leave
   the joining device on Summary while the peer adds or removes a reserved
   fixture website. After a completed exchange, capture the updated saved

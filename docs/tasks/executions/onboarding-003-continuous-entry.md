@@ -1,19 +1,20 @@
 # Execution: `ONBOARDING-003`
 
 - **Brief:** [Continuous onboarding entry](../specifications/onboarding-003-continuous-entry.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `standard`
-- **Implementer:** delegated implementer, pending assignment; Codex prepared the handoff
-- **Reviewer:** independent agent for handoff review; implementation review pending
+- **Implementer:** Claude; Codex prepared the handoff
+- **Reviewer:** independent Claude agents (standards and spec axes); handoff reviewed by an independent Codex agent
 - **Branch:** `feature/onboarding-003-continuous-entry`
 - **Updated:** 2026-09-23
 
 ## Plan
 
-1. Inspect `WebsiteStep`, `OnboardingPage`, submission receipts, and saved-policy reads. Keep field focus after accepted entry and keep Continue reachable with keyboard insets.
-2. Present the saved total separately from per-submission feedback and arrange expanded Mac permission actions using the existing design tokens.
-3. Test any changed state behavior and drive the accepted onboarding paths on Mac, iPhone, and iPad. Preserve local data and clean up synthetic entries.
-4. Obtain independent completed-change review, resolve Required findings, run final quality checks, and close the record and wiki entry before the final substantive push.
+1. Remove the website step's focus clearing so `WebsiteEntry` keeps focus after each accepted submission.
+2. Scroll expanded onboarding content on its own, with actions directly after it, so **Continue** stays above the keyboard.
+3. State the saved total below the field from policy state, observed while the step is visible, separate from the last submission's feedback.
+4. Place expanded permission and iCloud actions in one `PosatoActionRow`; keep compact layouts unchanged.
+5. Test saved-count behavior, drive iPhone, iPad, and Mac, then review, run the quality gate, and close the record.
 
 ## Parallel ownership
 
@@ -24,20 +25,31 @@
 
 ## Result
 
-- Prepared the brief and delegated execution plan in an isolated worktree. Product implementation has not started.
-- Worktree provisioned from the main checkout's complete ignored `local.properties`; the verification driver builds and its help command runs. Independent handoff review passed.
+- `WebsiteStep` no longer clears focus after a saved addition; the entry field's own focus request keeps it ready for the next website.
+- The website step shows `1 website saved` / `N websites saved` below the field as a polite live region, from `savedWebsites`; the WEBSITE step now observes policy changes like Summary. Field feedback still describes only the last submission. No resource entries were added.
+- `OnboardingPage` scrolls expanded content with `weight(1f, fill = false)` and keeps actions outside the scroll. `OnboardingActions` is one `FlowRow`: expanded pages wrap actions with the action-row spacing (12 horizontal, 8 vertical); compact pages place one centered action per row, so the full-width primary action is unchanged. The iCloud actions moved into `IcloudActions`.
+- `DESIGN.md`, the onboarding verification recipe, and the wiki open-question entries record the accepted behavior. Helper ports, lifecycle, persistence, and navigation are unchanged.
 
 ## Completed-change review
 
-- Handoff documents: approved by independent Codex agent `review_handoff`; no Critical, Required, or advisory findings.
-- Review evidence: the agent examined the complete brief and execution plan against the task workflow, quality contract, roadmap, and relevant design/ADR authorities; validated local links and explicit anchors; checked whitespace, conflict markers, portable paths, named source files, and base commit `a8bc2c5`. It ran document checks only, with no application tests.
-- Product implementation: pending; review the completed diff and actual verification before marking this task done.
+- Handoff documents: approved by independent Codex agent `review_handoff`; no findings.
+- Standards axis (independent agent, full diff against `a8bc2c5`): no Critical or Required findings. Recommended: a large-text check of Summary's actions on a short Mac window, and the first save's live-region announcement, because the caption node appears on that save. Both are recorded below as accepted risks.
+- Spec axis (independent agent, diff plus run evidence): one Required finding. The expanded-scroll change carried a `user-confirmed` label that the brief did not record. Resolved by recording its acceptance in the approved implementation plan in the brief. Recommended: state the uncaptured approval-required Mac row, and note that the total scrolls out of view in iPad landscape while typing. Both are recorded below.
+- Correction review (independent agent, action-container and `IcloudActions` delta): no Critical, Required, or Recommended findings; compact centering, full-width primary, 12/8 expanded spacing, and every branch's `enabled` rules match the base.
 
 ## Verification
 
-- `./gradlew :posato-control:installDist` passed; installed driver `--help` passed. Configuration copy matches the main checkout and remains ignored.
-- Brief and execution-record relative links resolve; both documents are within the task-workflow size guidance. No product verification has run for this task.
+- `./gradlew :shared:jvmTest` for onboarding and targets UI tests passed; `OnboardingUiStateTest` ran 26 tests, including three new saved-total tests.
+- First `./gradlew quality` failed on two Detekt findings, reused content slots in `OnboardingActions` and `IcloudStep` length, fixed at the source without suppressions. It also failed on `:desktopApp:verifyMacOsDevelopmentPackaging`, because the driver's desktop build had left a development-signed package; restaging made it pass. The final `./gradlew quality` passed.
+- Native runs were repeated after the action-container correction: iPad mini `20260923-084906-cf13` (identical row frames, focus kept, Continue above the keyboard in both orientations), iPhone 17 `20260923-085009-f6fc` (compact full-width primary with a centered quiet action, focus and totals as before), and Mac `20260923-085052-e5e1` (iCloud and permission rows). The Mac databases were restored from the `reset` backup in run `20260923-085052-4eb1`, and the development package was restaged ad-hoc.
+- Earlier runs, on the first action-container implementation:
+  - iPhone 17 Simulator, run `20260923-083045-0157`: two separate additions via Return; the snapshot reports the field focused after each; totals 1 and 2; a duplicate and invalid input leave 2, and invalid text stays; Continue above the keyboard without scrolling; Summary `2 websites saved`; Session after finishing and after relaunch; two rows in the database.
+  - iPad mini Simulator, run `20260923-083204-3612`: iCloud and permission actions in one row in portrait and landscape; focus kept after additions in both orientations; Continue pinned above the keyboard in landscape; Summary; Session after relaunch; restored to portrait.
+  - Mac desktop, runs `20260923-083356-ef55` and `20260923-083556-d189`: the iCloud row and the **Enable on this Mac** / **Not now** row; two additions with totals 1 and 2 and a visible caret and focus border; Summary; Session after relaunch. The desktop databases were backed up by `reset` (run `20260923-083355-5e11`), restored byte-identical afterwards, and hold only the maintainer's original rows.
 
 ## Blockers and accepted risks
 
-- No known prerequisite blocker. Assign an implementer and schedule native-target access before implementation verification.
+- The desktop accessibility bridge reports `focused: false` for the Compose text field, so Mac focus evidence is visual only.
+- The approval-required Mac row (**Open System Settings**, **Check again**, **Not now**) was not driven, because it needs attended helper approval. It uses the same `OnboardingActions` container as the driven rows, and its hierarchy and enablement code are unchanged.
+- On iPad landscape with the keyboard up, the saved-total caption scrolls out of view below the field; it remains reachable by scrolling and is a live region.
+- The first save's live-region announcement and Summary's actions at large text on a short Mac window were not checked separately. Compact pages already had the same fixed-actions limit.

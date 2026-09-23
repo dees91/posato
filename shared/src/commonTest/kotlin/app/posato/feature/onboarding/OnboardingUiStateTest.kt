@@ -281,6 +281,58 @@ class OnboardingUiStateTest {
     }
 
     @Test
+    fun `given two websites submitted separately when both save then the count states the saved total`() = runTest {
+        val policy = FakeTargetPolicyStore()
+        val holder = OnboardingUiState(FakeSetupStore(), policy, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
+        val receipts = mutableListOf<WebsiteBatchReceipt?>()
+
+        holder.submitWebsites("first.example", 1) { receipts.add(it) }
+        runCurrent()
+        holder.submitWebsites("second.example", 2) { receipts.add(it) }
+        runCurrent()
+
+        assertEquals(listOf(1, 1), receipts.map { assertIs<WebsiteBatchReceipt>(it).addedCount })
+        assertEquals(2, holder.savedWebsites)
+        assertEquals(2, holder.snapshot().savedWebsites)
+    }
+
+    @Test
+    fun `given saved websites when a duplicate or invalid entry is submitted then the count stays`() = runTest {
+        val policy = FakeTargetPolicyStore()
+        val existing = TargetPolicy.fromStoredValues(listOf("one.example", "two.example"), null)
+        policy.replace(0, assertIs<TargetPolicyValidationResult.Success>(existing).policy, null)
+        val holder = OnboardingUiState(FakeSetupStore(), policy, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
+        var duplicate: WebsiteBatchReceipt? = null
+        var invalid: WebsiteBatchReceipt? = null
+
+        holder.submitWebsites("one.example", 1) { duplicate = it }
+        runCurrent()
+        holder.submitWebsites("not a website", 2) { invalid = it }
+        runCurrent()
+
+        assertEquals(1, assertIs<WebsiteBatchReceipt>(duplicate).duplicateCount)
+        assertTrue(assertIs<WebsiteBatchReceipt>(invalid).rejectedIndices.isNotEmpty())
+        assertEquals(1, policy.replaced.size)
+        assertEquals(2, holder.savedWebsites)
+    }
+
+    @Test
+    fun `given a saved website when the next save fails then the count stays and the receipt reports failure`() = runTest {
+        val policy = FakeTargetPolicyStore()
+        val holder = OnboardingUiState(FakeSetupStore(), policy, FakeApplicationAccess(), MacHelperSetupUiState(FakeMacHelper(), this), this)
+        var receipt: WebsiteBatchReceipt? = null
+        holder.submitWebsites("first.example", 1) { }
+        runCurrent()
+
+        policy.replaceFailure = true
+        holder.submitWebsites("second.example", 2) { receipt = it }
+        runCurrent()
+
+        assertEquals(false, assertIs<WebsiteBatchReceipt>(receipt).saved)
+        assertEquals(1, holder.savedWebsites)
+    }
+
+    @Test
     fun `given synced websites when entering steps without manual adds then the summary counts the real policy`() = runTest {
         val policy = FakeTargetPolicyStore()
         val synced = TargetPolicy.fromStoredValues(listOf("one.example", "two.example"), null)
@@ -496,6 +548,7 @@ private class FailingSetupStore : LocalSetupStore {
 private class FakeTargetPolicyStore : LocalTargetPolicyStore {
     override val policyChanges = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     var readFailure = false
+    var replaceFailure = false
     var readGate: CompletableDeferred<Unit>? = null
 
     override suspend fun <T> withWriteGate(block: suspend () -> T): T {
@@ -523,6 +576,9 @@ private class FakeTargetPolicyStore : LocalTargetPolicyStore {
         policy: TargetPolicy,
         syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
+        if (replaceFailure) {
+            return LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
+        }
         replaced.add(policy)
         revision = expectedRevision + 1
         this.policy = policy

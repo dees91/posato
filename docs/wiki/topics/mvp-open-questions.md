@@ -626,6 +626,10 @@ accepted contracts.
   request, and the supporting text reports only the last submission's count
   rather than the saved total. Decide how onboarding keeps entry focused while
   still revealing its continue action, and which count it states.
+  `user-confirmed` (2026-09-23, `ONBOARDING-003`): entry keeps focus after
+  each submission; a separate caption states the saved total from policy
+  state and follows policy changes on the website step. Expanded pages scroll
+  their content above the actions, so **Continue** stays above the keyboard.
 - **Make website and app editing discoverable from the Session screen.**
   `user-confirmed` (2026-09-15): people look for adding or editing websites and
   apps on the Session screen, where the paused items are summarized, and take
@@ -653,6 +657,9 @@ accepted contracts.
   its content and place every action in one column. Evaluate a horizontal
   arrangement or consistent widths for expanded layouts, keeping the compact
   full-width primary button and the DESIGN.md action hierarchy.
+  `user-confirmed` (2026-09-23, `ONBOARDING-003`): expanded onboarding steps,
+  including iCloud, place their actions in one wrapping action row in
+  primary, secondary, quiet order; compact layouts are unchanged.
 
 ## Post-MVP feature ideas for discovery
 
