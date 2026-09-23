@@ -7,7 +7,7 @@
 - **Implementer:** Claude
 - **Reviewer:** independent agent, completed-change review
 - **Branch:** `feature/ios-004-ipad-copy`
-- **Updated:** 2026-09-22
+- **Updated:** 2026-09-23
 
 ## Plan
 
@@ -45,7 +45,7 @@
 
 ## Completed-change review
 
-- **Verdict:** `changes-required`, resolved
+- **Verdict:** `changes-required` on `5b19e6a`; `approved` on `5b73d72`
 - **Critical or Required findings:** `orient` returned before a same-aspect
   rotation finished (two landscapeRight captures were mid-rotation) and passed
   iPhone upside down silently
@@ -53,19 +53,34 @@
   upside down now fails with `WAIT_TIMEOUT`; landscapeRight rerun settled
 - **Advisory findings:** portrait-restore note taken; per-component
   `platformDevice()` reads and iPhone-only recipe wording kept
+- **Diff examined:** every hunk of `origin/main...5b19e6a`, with the full
+  `PosatoNavigationScaffold.kt` and `ApplicationNavigation.kt`, the platform
+  actuals, onboarding, Session, and driver call sites, `DESIGN.md:255-280,355-410`;
+  then `5b73d72` (`ScenarioExecutor.swift:272-305`, `README.md:152`,
+  `SKILL.md:174-184`, this record)
+- **Tests run by the reviewer:** `./gradlew :posato-control:test --rerun`
+  (100 tests, 0 failures, three for `orient`),
+  `./gradlew :posato-control:swiftFormatCheck --rerun` (pass), and
+  `./gradlew :shared:jvmTest --tests 'app.posato.core.designsystem.NavigationPlacementTest' --rerun`
+  (3 tests, 0 failures)
+- **Paths checked:** iOS supported orientations in `project.pbxproj`, the
+  short-pause caption producers, the AC-04 screens (`SessionScreen.kt`,
+  `ApplicationBrowser.kt`), driver plumbing (`IosInteraction.kt`,
+  `ControlJson.kt`, `build.gradle.kts`), and every `ios004-*` run directory
+  cited below, including branch and `main` landscape snapshots
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | `./gradlew quality` | pass | after the last correction; `NavigationPlacementTest` on JVM and iOS Simulator, `orient` CLI and runner tests |
-| `orient` rotation checks | pass | iPhone upside down fails with `WAIT_TIMEOUT` and portrait restores; landscapeLeft to landscapeRight takes about 2 s through portrait (`ios004-orient-check`) |
-| iPad Pro 13-inch, onboarding, four orientations (`AC-01`, `AC-02`) | pass | "on this iPad." and "Saved on this iPad" asserted, no "iPhone"; runs `ios004-ipad13-portrait-onboarding`, `ios004-ipad13-{landscapeLeft,portraitUpsideDown}-onboarding`, `ios004-ipad13-landscapeRight-onboarding-v3` |
-| iPad Pro 13-inch, Session, review, active, Paused items, About, four orientations (`AC-01`, `AC-02`) | pass | "On this iPad only" asserted; landscape sidebar with **On this iPad** and **About Posato**, portrait bottom navigation; runs `ios004-ipad13-{portrait,landscapeLeft,portraitUpsideDown}-destinations-v2`, `ios004-ipad13-landscapeRight-destinations-v3` |
-| iPad keyboard across four rotations | fail, then pass | draft and destination kept; before the fix the keyboard hid and Done left navigation hidden (`ios004-ipad13-keyboard-rotation-2`); `main` passed (`ios004-main-ipad13-keyboard-rotation`); after the fix pass (`ios004-ipad13-keyboard-rotation-fix`) |
-| iPad mini, portrait and landscape (`AC-02`) | pass | no clipping at 744 points; runs `ios004-ipadmini-{portrait,landscapeLeft}-{onboarding,destinations}` |
-| iPhone 17 (`AC-03`) | pass | iPhone wording, bottom navigation in both orientations, keyboard kept across rotation; runs `ios004-iphone17-portrait-onboarding`, `ios004-iphone17-portrait-destinations-v2`, `ios004-iphone17-keyboard-rotation-iphone-v3`; in landscape both the branch (`ios004-iphone17-landscape-v4`) and `main` (`ios004-main-iphone17-landscape`) stop at the same collapsed Apps header with identical snapshots |
-| Mac desktop smoke | pass | **On this Mac**, traffic-light inset, Session, Paused items, About unchanged; run `ios004-desktop-smoke-2` |
+| `orient` rotation checks | pass | iPhone upside down fails with `WAIT_TIMEOUT` and portrait restores; landscapeLeft to landscapeRight takes about 2 s through portrait: `build/verification/runs/ios004-orient-check/` |
+| iPad Pro 13-inch, onboarding, four orientations (`AC-01`, `AC-02`) | pass | "on this iPad." and "Saved on this iPad" asserted, no "iPhone": `build/verification/runs/ios004-ipad13-portrait-onboarding/`, `build/verification/runs/ios004-ipad13-landscapeLeft-onboarding/`, `build/verification/runs/ios004-ipad13-landscapeRight-onboarding-v3/`, `build/verification/runs/ios004-ipad13-portraitUpsideDown-onboarding/` |
+| iPad Pro 13-inch, Session, review, active, Paused items, About, four orientations (`AC-01`, `AC-02`) | pass | "On this iPad only" asserted; landscape sidebar with **On this iPad** and **About Posato**, portrait bottom navigation: `build/verification/runs/ios004-ipad13-portrait-destinations-v2/`, `build/verification/runs/ios004-ipad13-landscapeLeft-destinations-v2/`, `build/verification/runs/ios004-ipad13-landscapeRight-destinations-v3/`, `build/verification/runs/ios004-ipad13-portraitUpsideDown-destinations-v2/` |
+| iPad keyboard across four rotations | fail, then pass | draft and destination kept; before the fix the keyboard hid and Done left navigation hidden: `build/verification/runs/ios004-ipad13-keyboard-rotation-2/`; `main` passed: `build/verification/runs/ios004-main-ipad13-keyboard-rotation/`; after the fix pass: `build/verification/runs/ios004-ipad13-keyboard-rotation-fix/` |
+| iPad mini, portrait and landscape (`AC-02`) | pass | no clipping at 744 points: `build/verification/runs/ios004-ipadmini-portrait-onboarding/`, `build/verification/runs/ios004-ipadmini-portrait-destinations/`, `build/verification/runs/ios004-ipadmini-landscapeLeft-onboarding/`, `build/verification/runs/ios004-ipadmini-landscapeLeft-destinations/` |
+| iPhone 17 (`AC-03`) | pass | iPhone wording, bottom navigation in both orientations, keyboard kept across rotation: `build/verification/runs/ios004-iphone17-portrait-onboarding/`, `build/verification/runs/ios004-iphone17-portrait-destinations-v2/`, `build/verification/runs/ios004-iphone17-keyboard-rotation-iphone-v3/`; in landscape the branch (`build/verification/runs/ios004-iphone17-landscape-v4/`) and `main` (`build/verification/runs/ios004-main-iphone17-landscape/`) stop at the same collapsed Apps header with identical snapshots |
+| Mac desktop smoke | pass | **On this Mac**, traffic-light inset, Session, Paused items, About unchanged: `build/verification/runs/ios004-desktop-smoke-2/` |
 
 ## Blockers and accepted risks
 
