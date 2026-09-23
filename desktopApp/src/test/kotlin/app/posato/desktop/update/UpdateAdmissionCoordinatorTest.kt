@@ -247,6 +247,32 @@ class UpdateAdmissionCoordinatorTest {
         assertTrue(fixture.gate.closed != null)
     }
 
+    @Test
+    fun `given a cycle that already ended when its admission arrives then it is refused before any cleanup`() = runTest {
+        val fixture = Fixture()
+        fixture.coordinator.onCycleEnded(CYCLE)
+
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CYCLE_ENDED), fixture.coordinator.admit(TARGET_BUILD, CYCLE))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CYCLE_ENDED), fixture.coordinator.admitPendingInstallation(TARGET_BUILD, CYCLE))
+        assertNull(fixture.gate.closed)
+        assertTrue(fixture.helper.calls.isEmpty())
+        assertFalse(fixture.helperMaintenance.isBackstopEngaged)
+    }
+
+    @Test
+    fun `given a newer admitted cycle when an older admission arrives late then it is refused and the newer cycle is kept`() = runTest {
+        val fixture = Fixture(installer = InstallerObservation.TERMINATED)
+        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admit(TARGET_BUILD, CYCLE + 1))
+        val callsBefore = fixture.helper.calls.toList()
+
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CYCLE_ENDED), fixture.coordinator.admit(TARGET_BUILD, CYCLE))
+        fixture.coordinator.onCycleEnded(CYCLE)
+
+        assertEquals(callsBefore, fixture.helper.calls)
+        assertTrue(fixture.gate.cycleAdmitted)
+        assertEquals(MaintenanceReopenResult.CycleInProgress, fixture.coordinator.evaluateRelease())
+    }
+
     private class Fixture(
         val gate: FakeGate = FakeGate(),
         val lock: FakeLock = FakeLock(),

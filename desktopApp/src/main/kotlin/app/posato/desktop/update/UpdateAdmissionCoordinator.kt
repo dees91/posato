@@ -39,6 +39,7 @@ internal enum class AdmissionRefusal {
     CLEANUP_UNCERTAIN,
     SERVICE_ACTION_REQUIRED,
     SHUTDOWN_INCOMPLETE,
+    CYCLE_ENDED,
 }
 
 internal sealed interface AdmissionOutcome {
@@ -62,26 +63,29 @@ internal class UpdateAdmissionCoordinator(
 ) : UpdateAdmission {
     private val cleanup = MaintenanceCleanup(helper, storedProxies)
     private val transitions = Mutex()
-    private var admittedCycle: Long? = null
+    private val cycles = AdmissionCycles()
 
     override suspend fun admit(
         targetBuild: String,
         cycle: Long,
     ): AdmissionOutcome {
-        return transitions.withLock { admitLocked(targetBuild, cycle) }
+        return transitions.withLock {
+            if (cycles.hasEnded(cycle)) STALE_CYCLE else admitLocked(targetBuild, cycle)
+        }
     }
 
     override suspend fun admitPendingInstallation(
         targetBuild: String,
         cycle: Long,
     ): AdmissionOutcome {
-        return transitions.withLock { admitPendingLocked(targetBuild, cycle) }
+        return transitions.withLock {
+            if (cycles.hasEnded(cycle)) STALE_CYCLE else admitPendingLocked(targetBuild, cycle)
+        }
     }
 
     override suspend fun onCycleEnded(cycle: Long) {
         transitions.withLock {
-            if (admittedCycle == cycle) {
-                admittedCycle = null
+            if (cycles.end(cycle)) {
                 gate.markCycleEnded()
             }
         }
@@ -104,7 +108,7 @@ internal class UpdateAdmissionCoordinator(
             return AdmissionOutcome.Refused(refusal)
         }
         gate.markCycleAdmitted()
-        admittedCycle = cycle
+        cycles.admit(cycle)
         return AdmissionOutcome.Admitted
     }
 
@@ -120,7 +124,7 @@ internal class UpdateAdmissionCoordinator(
             return AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE)
         }
         gate.markCycleAdmitted()
-        admittedCycle = cycle
+        cycles.admit(cycle)
         return AdmissionOutcome.Admitted
     }
 
@@ -167,3 +171,30 @@ internal class UpdateAdmissionCoordinator(
         return helpersStopped && companionStopped
     }
 }
+
+private class AdmissionCycles {
+    private var admitted: Long? = null
+    private var endedThrough: Long = NO_CYCLE_ENDED
+
+    fun hasEnded(cycle: Long): Boolean {
+        endedThrough = maxOf(endedThrough, cycle - 1)
+        return cycle <= endedThrough
+    }
+
+    fun admit(cycle: Long) {
+        admitted = cycle
+    }
+
+    fun end(cycle: Long): Boolean {
+        endedThrough = maxOf(endedThrough, cycle)
+        val endsAdmitted = admitted == cycle
+        if (endsAdmitted) {
+            admitted = null
+        }
+        return endsAdmitted
+    }
+}
+
+private val STALE_CYCLE: AdmissionOutcome = AdmissionOutcome.Refused(AdmissionRefusal.CYCLE_ENDED)
+
+private const val NO_CYCLE_ENDED: Long = -1L
