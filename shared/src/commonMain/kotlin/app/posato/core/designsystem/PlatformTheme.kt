@@ -6,6 +6,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalWindowInfo
 
 @Immutable
 internal data class PlatformTheme(
@@ -41,4 +45,32 @@ internal fun PosatoTheme(
     }
 }
 
-internal expect fun platformNavigationPlacement(): PosatoNavigationPlacement
+internal enum class PosatoDevice(
+    val noun: String
+) {
+    Mac("Mac"),
+    IPhone("iPhone"),
+    IPad("iPad"),
+}
+
+internal expect fun platformDevice(): PosatoDevice
+
+internal fun navigationPlacement(
+    device: PosatoDevice,
+    landscape: Boolean
+): PosatoNavigationPlacement {
+    return when (device) {
+        PosatoDevice.Mac -> PosatoNavigationPlacement.Sidebar
+        PosatoDevice.IPad -> if (landscape) PosatoNavigationPlacement.Sidebar else PosatoNavigationPlacement.Bottom
+        PosatoDevice.IPhone -> PosatoNavigationPlacement.Bottom
+    }
+}
+
+@Composable
+internal fun windowNavigationPlacement(device: PosatoDevice): PosatoNavigationPlacement {
+    val window = LocalWindowInfo.current
+    val landscape by remember(window) {
+        derivedStateOf { window.containerSize.width > window.containerSize.height }
+    }
+    return navigationPlacement(device, landscape)
+}

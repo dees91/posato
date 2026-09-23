@@ -92,6 +92,7 @@ struct Step: Codable {
   var modifiers: [String]?
   var maxDepth: Int?
   var seconds: Double?
+  var orientation: String?
 
   init(action: String, name: String? = nil, query: ElementQuery? = nil) {
     self.action = action

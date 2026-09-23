@@ -370,6 +370,15 @@ for entry; Done clears focus and restores them.
 The root applies `windowInsetsPadding(WindowInsets.safeDrawing)` once; these
 insets already include the keyboard. Do not append a second IME padding modifier.
 
+`user-confirmed` (2026-09-22, `IOS-004`): iPad follows these rules and names
+itself **iPad** wherever the iPhone names itself. In landscape, iPad moves
+Session / Paused items into the 224 sidebar used on Mac: the wordmark on top,
+then the destinations, then **On this iPad** and **About Posato**, without the
+Mac traffic-light inset. The sidebar stays visible while the keyboard is up
+and during About, as on Mac. iPad portrait and iPhone in either orientation
+keep the bottom navigation. Rotation keeps the selected destination and
+entered text. Selected-item details stay a bottom sheet on iOS.
+
 Content uses 24 horizontal padding in compact layout. Session uses the same
 vertical inset inside its scrollable canvas; Paused items uses 12 vertically.
 Lists consume the remaining height

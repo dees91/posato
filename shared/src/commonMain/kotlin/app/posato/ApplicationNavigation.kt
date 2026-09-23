@@ -30,6 +30,7 @@ import app.posato.core.designsystem.PosatoBottomNavigationItem
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoControlDefaults
+import app.posato.core.designsystem.PosatoDevice
 import app.posato.core.designsystem.PosatoDeviceLabel
 import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
@@ -40,20 +41,21 @@ import app.posato.core.designsystem.PosatoSidebarNavigationItem
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoWordmark
+import app.posato.core.designsystem.windowNavigationPlacement
 
 @Composable
 internal fun ApplicationNavigationHeader(
-    placement: PosatoNavigationPlacement,
+    device: PosatoDevice,
     onOpenAbout: (() -> Unit)? = null,
 ) {
-    val topInset = if (placement == PosatoNavigationPlacement.Sidebar) PosatoSpace.Spacious else 0.dp
+    val topInset = if (device == PosatoDevice.Mac) PosatoSpace.Spacious else 0.dp
     Row(
         modifier = Modifier.fillMaxWidth().padding(PosatoSpace.Section).padding(top = topInset),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         PosatoWordmark(Modifier.heightIn(min = PosatoSize.Control))
-        if (placement == PosatoNavigationPlacement.Bottom && onOpenAbout != null) {
+        if (onOpenAbout != null) {
             PosatoButton(onClick = onOpenAbout, style = PosatoButtonStyle.Quiet) { Text("About Posato") }
         }
     }
@@ -62,6 +64,7 @@ internal fun ApplicationNavigationHeader(
 @Composable
 internal fun ApplicationNavigation(
     placement: PosatoNavigationPlacement,
+    device: PosatoDevice,
     showingSession: Boolean,
     showingInformation: Boolean,
     onSelect: (Boolean) -> Unit,
@@ -104,7 +107,7 @@ internal fun ApplicationNavigation(
             val labelInset = PosatoSpace.Medium + PosatoSize.Icon + PosatoSpace.Medium
             val buttonInset = labelInset - PosatoControlDefaults.ContentPadding.calculateStartPadding(LocalLayoutDirection.current)
             Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Tiny)) {
-                PosatoDeviceLabel("On this Mac", Modifier.padding(start = labelInset))
+                PosatoDeviceLabel("On this ${device.noun}", Modifier.padding(start = labelInset))
                 PosatoButton(
                     onClick = onOpenAbout,
                     modifier = Modifier.padding(start = buttonInset),
@@ -117,7 +120,7 @@ internal fun ApplicationNavigation(
 
 @Composable
 internal fun ApplicationNavigationScaffold(
-    placement: PosatoNavigationPlacement,
+    device: PosatoDevice,
     showingSession: Boolean,
     showingInformation: Boolean,
     onSelect: (Boolean) -> Unit,
@@ -125,6 +128,7 @@ internal fun ApplicationNavigationScaffold(
     modifier: Modifier = Modifier,
     content: @Composable (PosatoLayout) -> Unit,
 ) {
+    val placement = windowNavigationPlacement(device)
     val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val hideNavigation = placement == PosatoNavigationPlacement.Bottom && keyboardVisible
     PosatoNavigationScaffold(
@@ -132,12 +136,15 @@ internal fun ApplicationNavigationScaffold(
         modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.surface).windowInsetsPadding(WindowInsets.safeDrawing),
         headerContent = {
             if (!hideNavigation) {
-                ApplicationNavigationHeader(placement, onOpenAbout = onOpenAbout.takeUnless { showingInformation })
+                ApplicationNavigationHeader(
+                    device,
+                    onOpenAbout = onOpenAbout.takeUnless { showingInformation || placement == PosatoNavigationPlacement.Sidebar },
+                )
             }
         },
         navigationContent = {
             if (!hideNavigation && (placement == PosatoNavigationPlacement.Sidebar || !showingInformation)) {
-                ApplicationNavigation(placement, showingSession, showingInformation, onSelect, onOpenAbout)
+                ApplicationNavigation(placement, device, showingSession, showingInformation, onSelect, onOpenAbout)
             }
         },
         content = content,

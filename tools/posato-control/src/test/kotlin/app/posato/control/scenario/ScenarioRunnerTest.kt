@@ -3,6 +3,7 @@ package app.posato.control.scenario
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import app.posato.control.model.Actions
+import app.posato.control.model.Orientations
 import app.posato.control.model.Query
 import app.posato.control.model.Scenario
 import app.posato.control.model.ScenarioDefaults
@@ -175,5 +176,14 @@ class ScenarioRunnerTest {
     fun `unknown actions are scenario errors`() {
         val result = ScenarioRunner(RecordingActions(tree), Path::toString).run(Scenario(steps = listOf(Step(action = "fly"))))
         assertEquals(ErrorCode.SCENARIO_INVALID.name, result.error?.code)
+    }
+
+    @Test
+    fun `given an orient step when the desktop runner executes it then it is unsupported on the target`() {
+        val actions = RecordingActions(tree)
+        val step = Step(action = Actions.ORIENT, orientation = Orientations.LANDSCAPE_LEFT)
+        val result = ScenarioRunner(actions, Path::toString).run(Scenario(steps = listOf(step)))
+        assertEquals(ErrorCode.UNSUPPORTED_ON_TARGET.name, result.error?.code)
+        assertEquals(0, actions.preparedInteractions)
     }
 }

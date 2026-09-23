@@ -26,25 +26,26 @@ internal fun PosatoNavigationScaffold(
 ) {
     val latestHeader by rememberUpdatedState(headerContent)
     val latestNavigation by rememberUpdatedState(navigationContent)
-    val latestContent by rememberUpdatedState(content)
     val header = remember { movableContentOf { latestHeader() } }
     val navigation = remember { movableContentOf { latestNavigation() } }
-    val body = remember { movableContentOf<PosatoLayout> { latestContent(it) } }
-    when (placement) {
-        PosatoNavigationPlacement.Bottom -> Column(modifier.background(MaterialTheme.colorScheme.surface)) {
-            header()
-            NavigationBody(Modifier.weight(1f).fillMaxWidth(), body)
-            navigation()
-        }
-
-        PosatoNavigationPlacement.Sidebar -> Row(modifier.background(MaterialTheme.colorScheme.surface)) {
+    val sidebar = placement == PosatoNavigationPlacement.Sidebar
+    Row(modifier.background(MaterialTheme.colorScheme.surface)) {
+        if (sidebar) {
             Column(
                 Modifier.width(PosatoSize.NavigationSidebar).fillMaxHeight().background(MaterialTheme.colorScheme.surfaceContainer),
             ) {
                 header()
                 navigation()
             }
-            NavigationBody(Modifier.weight(1f).fillMaxHeight(), body)
+        }
+        Column(Modifier.weight(1f).fillMaxHeight()) {
+            if (!sidebar) {
+                header()
+            }
+            NavigationBody(Modifier.weight(1f).fillMaxWidth(), content)
+            if (!sidebar) {
+                navigation()
+            }
         }
     }
 }

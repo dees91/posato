@@ -23,6 +23,10 @@ interface NativeActions {
         throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "This native driver does not implement scrolling.")
     }
 
+    fun orient(orientation: String) {
+        throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "orient rotates an iOS device; this target has no orientation.")
+    }
+
     fun snapshot(maxDepth: Int?): SnapshotNode
 
     fun tap(node: SnapshotNode)
@@ -118,6 +122,7 @@ class ScenarioRunner(
             Actions.PRESS -> actions.press(requireField(step.key, "press needs a key"), step.modifiers)
             Actions.ASSERT -> assertState(step)
             Actions.SCROLL_TO -> actions.scrollTo(step.query ?: throw invalid("scrollTo needs a query"), timeoutMs)
+            Actions.ORIENT -> actions.orient(requireField(step.orientation, "orient needs an orientation"))
             else -> throw invalid("Unknown action '${step.action}'.")
         }
     }

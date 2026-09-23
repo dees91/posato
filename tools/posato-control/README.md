@@ -149,6 +149,7 @@ grants a permission.
 | `tap <query>` | all | Presses a button or taps an element. |
 | `type <query> --input TEXT [--clear] [--submit]` | all | Types into a text field. |
 | `press --key <key> [--modifiers cmd,shift]` | all | Keyboard input. Desktop: `return`, `escape`, `tab`, `delete`, `space`, arrows, digits, letters, with `--modifiers`. iOS: `return`, `delete`, `space`, `home`, `volumeUp`, `volumeDown` (device only), and `escape`/`tab` where the keyboard offers them. |
+| `orient --to portrait\|portraitUpsideDown\|landscapeLeft\|landscapeRight` | simulator, device | Rotates the device through XCUITest and waits until the application window has the matching aspect and has settled. A target that shares the current aspect first goes through the other aspect, so every rotation is observable and an orientation the application does not support fails. The orientation outlives the run. The desktop refuses the command. |
 | `wait --for exists\|absent\|enabled\|disabled\|settled [query] [--timeout-seconds 10]` | all | Polls until the condition holds. |
 | `run --scenario file.json` (or `-`) | all | Runs a batched scenario and reports every step with its evidence. The primary path on iOS. |
 | `logs [--tail n] [--stream-seconds s]` | all | Captured application log; the simulator can also stream the unified log for a few seconds. |
@@ -271,7 +272,8 @@ Rejected text stays editable and does not require a relaunch.
 Actions: `waitFor` (`exists`, `absent`, `enabled`, `disabled`, `settled`),
 `tap`, `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
 `assert`, `screenshot`, `snapshot` (`query`, `maxDepth`), `sleep`
-(`seconds`), `scrollTo`, `terminate`, and `relaunch`.
+(`seconds`), `scrollTo`, `orient` (`orientation`; iOS only), `terminate`, and
+`relaunch`.
 
 `scrollTo` performs native scrolling on both hosts, not an existence check.
 It chooses the largest visible scroll area in the requested scope, moves

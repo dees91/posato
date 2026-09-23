@@ -39,6 +39,7 @@ data class Step(
     val seconds: Double? = null,
     val timeoutSeconds: Double? = null,
     val maxDepth: Int? = null,
+    val orientation: String? = null,
 )
 
 @Serializable
@@ -63,7 +64,16 @@ object Actions {
     const val SCROLL_TO = "scrollTo"
     const val TERMINATE = "terminate"
     const val RELAUNCH = "relaunch"
-    val all: Set<String> = setOf(WAIT_FOR, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH)
+    const val ORIENT = "orient"
+    val all: Set<String> = setOf(WAIT_FOR, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH, ORIENT)
+}
+
+object Orientations {
+    const val PORTRAIT = "portrait"
+    const val PORTRAIT_UPSIDE_DOWN = "portraitUpsideDown"
+    const val LANDSCAPE_LEFT = "landscapeLeft"
+    const val LANDSCAPE_RIGHT = "landscapeRight"
+    val all: List<String> = listOf(PORTRAIT, PORTRAIT_UPSIDE_DOWN, LANDSCAPE_LEFT, LANDSCAPE_RIGHT)
 }
 
 object States {

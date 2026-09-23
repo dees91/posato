@@ -31,7 +31,8 @@ feature file as the recipe.
 
 - Every recipe names the exact `posato-control` command; keep labels, flags,
   and quoted copy unchanged.
-- Main navigation is at the bottom on iOS and in the sidebar on Mac.
+- Main navigation is at the bottom on iPhone and iPad portrait, and in the
+  sidebar on Mac and iPad landscape.
   Nested category-tab labels include counts; use `textContains` with role
   `button`. Open a row's `Actions for <name>` menu before Edit or Remove.
 - Each website mode has one text field, selected with `--role textField`.

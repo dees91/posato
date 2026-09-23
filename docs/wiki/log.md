@@ -1840,3 +1840,13 @@ to scope, feasibility, or delivery.
   amendments. `MACOS-011` must first prove safe admission, cancellation, and
   crash/relaunch recovery; an aborted Sparkle cycle does not prove its installer
   has stopped. The current product retains the manual update path.
+
+## [2026-09-22] outcome | iPad names itself and gains a landscape sidebar
+
+- `IOS-004` derives device nouns from the platform idiom and places iPad
+  navigation in the sidebar in landscape only; iPhone and Mac are unchanged.
+  `DESIGN.md` records the rule, and `posato-control` gains `orient` for
+  four-orientation checks without synthesized desktop input.
+- Moving a focused Compose text field to another parent on rotation hid the
+  iOS keyboard and left a stale inset; the scaffold keeps the content's parent
+  stable.

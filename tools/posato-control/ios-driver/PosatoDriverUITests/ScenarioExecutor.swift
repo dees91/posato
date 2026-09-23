@@ -20,6 +20,12 @@ final class ScenarioExecutor {
   private static let scrollSettle: TimeInterval = 0.5
   private static let minDragViewportHeight: CGFloat = 80
   private static let screenSwipeCoverage: CGFloat = 0.9
+  private static let orientations: [String: UIDeviceOrientation] = [
+    "portrait": .portrait,
+    "portraitUpsideDown": .portraitUpsideDown,
+    "landscapeLeft": .landscapeLeft,
+    "landscapeRight": .landscapeRight,
+  ]
 
   private let scenario: Scenario
   private let app: XCUIApplication
@@ -146,6 +152,8 @@ final class ScenarioExecutor {
       Thread.sleep(forTimeInterval: seconds)
     case "scrollTo":
       try scrollTo(step, timeout: timeout)
+    case "orient":
+      try orient(step, timeout: timeout)
     case "terminate":
       app.terminate()
     case "relaunch":
@@ -259,6 +267,41 @@ final class ScenarioExecutor {
     default:
       throw DriverError(.unsupportedStep, "unknown key '\(key)'")
     }
+  }
+
+  /// Rotates the device, then waits until the application window has the
+  /// matching aspect and its accessibility tree has settled. The window aspect
+  /// is the only observable sign of a rotation, so a target that shares the
+  /// current aspect (landscape left and right, portrait and upside down, or the
+  /// same orientation) first goes through the other aspect. Every hop then
+  /// changes the aspect, and an orientation the application does not support
+  /// fails instead of passing silently.
+  private func orient(_ step: Step, timeout: TimeInterval) throws {
+    guard let name = step.orientation, let orientation = Self.orientations[name] else {
+      let valid = Self.orientations.keys.sorted().joined(separator: ", ")
+      throw DriverError(.scenarioInvalid, "orient requires orientation: \(valid)")
+    }
+    if windowIsLandscape() == orientation.isLandscape {
+      let other: UIDeviceOrientation = orientation.isLandscape ? .portrait : .landscapeLeft
+      try rotate(to: other, named: "the intermediate orientation", timeout: timeout)
+    }
+    try rotate(to: orientation, named: name, timeout: timeout)
+    try waitForSettled(timeout: timeout)
+  }
+
+  private func rotate(
+    to orientation: UIDeviceOrientation, named name: String, timeout: TimeInterval
+  ) throws {
+    XCUIDevice.shared.orientation = orientation
+    let adopted = poll(timeout: timeout) { self.windowIsLandscape() == orientation.isLandscape }
+    guard adopted else {
+      throw DriverError(.waitTimeout, "the application did not adopt \(name) within \(timeout) s")
+    }
+  }
+
+  private func windowIsLandscape() -> Bool? {
+    let frame = app.windows.firstMatch.frame
+    return frame.isEmpty ? nil : frame.width > frame.height
   }
 
   private func pressVolume(_ key: String) throws {

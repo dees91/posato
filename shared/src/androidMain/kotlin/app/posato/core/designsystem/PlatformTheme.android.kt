@@ -8,6 +8,6 @@ internal actual fun platformTheme(): PlatformTheme {
     return PlatformTheme(isLight = !isSystemInDarkTheme())
 }
 
-internal actual fun platformNavigationPlacement(): PosatoNavigationPlacement {
-    return PosatoNavigationPlacement.Bottom
+internal actual fun platformDevice(): PosatoDevice {
+    return PosatoDevice.IPhone
 }
