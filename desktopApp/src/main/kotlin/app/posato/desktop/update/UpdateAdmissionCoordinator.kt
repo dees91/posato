@@ -3,12 +3,10 @@ package app.posato.desktop.update
 import app.posato.desktop.macos.ApplicationEnforcementResponse
 import app.posato.desktop.macos.HelperMaintenance
 import app.posato.desktop.macos.HelperResult
-import app.posato.desktop.macos.concludesReconciliation
 import app.posato.feature.sync.macos.CompanionMaintenance
 import app.posato.feature.update.MaintenanceCloseResult
 import app.posato.feature.update.MaintenanceReopenResult
 import app.posato.feature.update.UpdateMaintenanceGate
-import kotlinx.coroutines.CancellationException
 
 internal interface UpdateCleanupCommands {
     fun reconcileUnknown(): HelperResult
@@ -50,32 +48,22 @@ internal sealed interface AdmissionOutcome {
 }
 
 internal class UpdateAdmissionCoordinator(
-    private val runningBuild: String,
+    private val runningBuild: () -> String,
     private val gate: UpdateMaintenanceGate,
     private val instanceLock: AdmissionInstanceLock,
-    private val helper: UpdateCleanupCommands,
+    helper: UpdateCleanupCommands,
     private val helperMaintenance: HelperMaintenance,
     private val companion: CompanionMaintenance,
-    private val storedProxies: () -> StoredProxyEvidence,
+    storedProxies: () -> StoredProxyEvidence,
     private val installer: () -> InstallerObservation,
     private val bundleIdentity: () -> BundleIdentity,
 ) : UpdateAdmission {
+    private val cleanup = MaintenanceCleanup(helper, storedProxies)
+
     override suspend fun admit(targetBuild: String): AdmissionOutcome {
-        if (!instanceLock.tryUpgradeForAdmission()) {
-            return AdmissionOutcome.Refused(AdmissionRefusal.OTHER_INSTANCE)
-        }
-        when (gate.close(runningBuild, targetBuild)) {
-            MaintenanceCloseResult.Closed -> Unit
-            MaintenanceCloseResult.SessionActive -> return refuseWithOpenGate(AdmissionRefusal.SESSION_ACTIVE)
-            MaintenanceCloseResult.StorageFailure -> return refuseWithOpenGate(AdmissionRefusal.STORAGE)
-        }
-        helperMaintenance.engageBackstop()
-        val cleanup = confirmCleanup()
-        if (cleanup != null) {
-            return AdmissionOutcome.Refused(cleanup)
-        }
-        if (!enterMaintenanceMode()) {
-            return AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE)
+        val refusal = if (instanceLock.tryUpgradeForAdmission()) closeAndClean(targetBuild) else AdmissionRefusal.OTHER_INSTANCE
+        if (refusal != null) {
+            return AdmissionOutcome.Refused(refusal)
         }
         gate.markCycleAdmitted()
         return AdmissionOutcome.Admitted
@@ -112,10 +100,8 @@ internal class UpdateAdmissionCoordinator(
             if (settled) {
                 helperMaintenance.allowSpawns()
                 companion.resumeAfterMaintenance()
-                serviceRevalidated()
-            } else {
-                false
             }
+            settled && cleanup.serviceRevalidated()
         }
         if (result == MaintenanceReopenResult.Reopened || result == MaintenanceReopenResult.AlreadyOpen) {
             helperMaintenance.allowSpawns()
@@ -126,63 +112,14 @@ internal class UpdateAdmissionCoordinator(
         return result
     }
 
-    private fun refuseWithOpenGate(reason: AdmissionRefusal): AdmissionOutcome {
-        instanceLock.downgradeAfterMaintenance()
-        return AdmissionOutcome.Refused(reason)
-    }
-
-    private suspend fun confirmCleanup(): AdmissionRefusal? {
-        return try {
-            if (!reconcilePendingOutcomes()) {
-                AdmissionRefusal.CLEANUP_UNCERTAIN
-            } else {
-                cleanupForService(helper.status())
-            }
-        } catch (expectedCancellation: CancellationException) {
-            throw expectedCancellation
-        } catch (_: Exception) {
-            AdmissionRefusal.CLEANUP_UNCERTAIN
+    private suspend fun closeAndClean(targetBuild: String): AdmissionRefusal? {
+        val closed = gate.close(runningBuild(), targetBuild)
+        if (closed != MaintenanceCloseResult.Closed) {
+            instanceLock.downgradeAfterMaintenance()
+            return if (closed == MaintenanceCloseResult.SessionActive) AdmissionRefusal.SESSION_ACTIVE else AdmissionRefusal.STORAGE
         }
-    }
-
-    private fun reconcilePendingOutcomes(): Boolean {
-        repeat(RECONCILE_ATTEMPTS) {
-            if (helper.reconcileUnknown().concludesReconciliation()) {
-                return true
-            }
-        }
-        return false
-    }
-
-    private fun cleanupForService(status: HelperResult): AdmissionRefusal? {
-        return when {
-            status.isReady() -> cleanupEnabledService(status)
-            status.isNotRegistered() -> cleanupUnregisteredService()
-            else -> AdmissionRefusal.SERVICE_ACTION_REQUIRED
-        }
-    }
-
-    private fun cleanupEnabledService(status: HelperResult): AdmissionRefusal? {
-        if (status.ownershipPhase == HelperResult.Phase.Applied || status.ownershipPhase == HelperResult.Phase.Prepared) {
-            return AdmissionRefusal.FOREIGN_LEASE
-        }
-        val restored = helper.restore()
-        if (restored.outcome != HelperResult.Outcome.Success || restored.ownershipPhase != HelperResult.Phase.Idle) {
-            return AdmissionRefusal.CLEANUP_UNCERTAIN
-        }
-        return clearApplications()
-    }
-
-    private fun cleanupUnregisteredService(): AdmissionRefusal? {
-        if (storedProxies() != StoredProxyEvidence.NO_LOOPBACK_PROXY) {
-            return AdmissionRefusal.CLEANUP_UNCERTAIN
-        }
-        return clearApplications()
-    }
-
-    private fun clearApplications(): AdmissionRefusal? {
-        val cleared = helper.configureApplications(emptyList(), null)
-        return if (cleared.result.outcome == HelperResult.Outcome.Success) null else AdmissionRefusal.CLEANUP_UNCERTAIN
+        helperMaintenance.engageBackstop()
+        return cleanup.confirm() ?: if (enterMaintenanceMode()) null else AdmissionRefusal.SHUTDOWN_INCOMPLETE
     }
 
     private suspend fun enterMaintenanceMode(): Boolean {
@@ -190,31 +127,4 @@ internal class UpdateAdmissionCoordinator(
         val companionStopped = companion.drainForMaintenance()
         return helpersStopped && companionStopped
     }
-
-    private fun serviceRevalidated(): Boolean {
-        return try {
-            if (!reconcilePendingOutcomes()) {
-                false
-            } else {
-                val status = helper.status()
-                when {
-                    status.isReady() -> status.ownershipPhase == HelperResult.Phase.Idle
-                    status.isNotRegistered() -> storedProxies() == StoredProxyEvidence.NO_LOOPBACK_PROXY
-                    else -> false
-                }
-            }
-        } catch (_: Exception) {
-            false
-        }
-    }
 }
-
-private fun HelperResult.isReady(): Boolean {
-    return outcome == HelperResult.Outcome.Success && serviceState == HelperResult.State.Ready
-}
-
-private fun HelperResult.isNotRegistered(): Boolean {
-    return outcome == HelperResult.Outcome.ActionRequired && serviceState == HelperResult.State.NotRegistered
-}
-
-private const val RECONCILE_ATTEMPTS: Int = 3

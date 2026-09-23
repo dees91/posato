@@ -95,6 +95,7 @@ public class MaintenanceAdmission internal constructor(
         return mutex.withLock {
             when (val closed = store.close(fromBuild, targetBuild, clock())) {
                 is MaintenanceStoreResult.Failure -> MaintenanceCloseResult.StorageFailure
+
                 is MaintenanceStoreResult.Success -> when (closed.value) {
                     MaintenanceCloseOutcome.CLOSED -> MaintenanceCloseResult.Closed
                     MaintenanceCloseOutcome.SESSION_ACTIVE -> MaintenanceCloseResult.SessionActive

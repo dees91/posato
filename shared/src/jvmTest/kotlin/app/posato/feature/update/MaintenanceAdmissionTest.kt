@@ -88,7 +88,10 @@ class MaintenanceAdmissionTest {
         admission.markCycleAdmitted()
         var consulted = false
 
-        val result = admission.reopenWhen { consulted = true; true }
+        val result = admission.reopenWhen {
+            consulted = true
+            true
+        }
 
         assertEquals(MaintenanceReopenResult.CycleInProgress, result)
         assertFalse(consulted)
@@ -124,7 +127,13 @@ class MaintenanceAdmissionTest {
         val admission = MaintenanceAdmission(InMemoryMaintenanceStore(), clock = { NOW })
         var consulted = false
 
-        assertEquals(MaintenanceReopenResult.AlreadyOpen, admission.reopenWhen { consulted = true; true })
+        assertEquals(
+            MaintenanceReopenResult.AlreadyOpen,
+            admission.reopenWhen {
+                consulted = true
+                true
+            },
+        )
         assertFalse(consulted)
     }
 

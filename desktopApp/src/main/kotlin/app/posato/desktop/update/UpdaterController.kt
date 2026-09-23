@@ -23,6 +23,7 @@ internal fun interface UpdaterReplies {
     fun completeAdmission(
         token: Long,
         granted: Boolean,
+        refusal: AdmissionRefusal?,
     )
 }
 
@@ -57,7 +58,7 @@ internal class UpdaterController(
                 InstallRequestStage.PENDING_INSTALLATION -> admission.admitPendingInstallation(targetBuild)
             }
             val sameCycle = cycleGeneration.get() == requestedIn
-            replies.completeAdmission(token, outcome == AdmissionOutcome.Admitted && sameCycle)
+            replies.completeAdmission(token, outcome == AdmissionOutcome.Admitted && sameCycle, (outcome as? AdmissionOutcome.Refused)?.reason)
             if (outcome == AdmissionOutcome.Admitted && !sameCycle) {
                 admission.onCycleEnded()
             }

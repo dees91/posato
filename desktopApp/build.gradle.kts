@@ -11,21 +11,74 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.desktop.application.tasks.AbstractNativeMacApplicationPackageDmgTask
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import java.io.ByteArrayOutputStream
+import java.net.URI
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
 import java.time.Instant
 import java.util.Properties
 import java.util.zip.ZipEntry
 import java.util.zip.ZipFile
 import javax.inject.Inject
 import javax.xml.parsers.DocumentBuilderFactory
+
+abstract class DownloadVerifiedFile : DefaultTask() {
+    @get:Input
+    abstract val sourceUrl: Property<String>
+
+    @get:Input
+    abstract val sha256: Property<String>
+
+    @get:OutputFile
+    abstract val destination: RegularFileProperty
+
+    @TaskAction
+    fun download() {
+        val target = destination.get().asFile
+        val downloaded = temporaryDir.resolve(target.name)
+        URI(sourceUrl.get()).toURL().openStream().use { input ->
+            downloaded.outputStream().use { output -> input.copyTo(output) }
+        }
+        val digest = MessageDigest.getInstance("SHA-256")
+            .digest(downloaded.readBytes())
+            .joinToString("") { byte -> "%02x".format(byte) }
+        if (digest != sha256.get()) {
+            downloaded.delete()
+            throw GradleException("The downloaded ${target.name} does not match its pinned SHA-256.")
+        }
+        target.parentFile.mkdirs()
+        Files.move(downloaded.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+    }
+}
+
+abstract class StageMacOsApplication : DefaultTask() {
+    @get:Internal
+    abstract val sourceApplication: DirectoryProperty
+
+    @get:Internal
+    abstract val stagedApplication: DirectoryProperty
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    @TaskAction
+    fun stage() {
+        val staged = stagedApplication.get().asFile
+        staged.deleteRecursively()
+        staged.parentFile.mkdirs()
+        execOperations.exec {
+            commandLine("/usr/bin/ditto", sourceApplication.get().asFile.absolutePath, staged.absolutePath)
+        }
+    }
+}
 
 abstract class VerifyMacOsHelperStructure : DefaultTask() {
     @get:InputFiles
@@ -99,6 +152,9 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
     @get:InputFiles
     abstract val noticeFiles: ConfigurableFileCollection
 
+    @get:Input
+    abstract val sparkleVersion: Property<String>
+
     @get:Inject
     abstract val execOperations: ExecOperations
 
@@ -119,6 +175,18 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         val archivedNativeLibraries = nativeLibrariesInArchives(applicationCode)
         val windowLibrary = applicationCode.resolve("resources/native/libPosatoWindow.dylib")
         check(windowLibrary.isFile) { "The packaged window chrome library is missing." }
+        val updaterLibrary = applicationCode.resolve("resources/native/libPosatoUpdater.dylib")
+        check(updaterLibrary.isFile) { "The packaged updater library is missing." }
+        val sparkle = application.resolve("Contents/Frameworks/Sparkle.framework")
+        val sparkleVersioned = sparkle.resolve("Versions/B")
+        val sparkleAutoupdate = sparkleVersioned.resolve("Autoupdate")
+        val sparkleProgress = sparkleVersioned.resolve("Updater.app")
+        check(Files.isSymbolicLink(sparkle.resolve("Versions/Current").toPath())) { "The embedded Sparkle framework lost its version links." }
+        check(!sparkleVersioned.resolve("XPCServices").exists()) { "The embedded Sparkle framework still carries sandbox XPC services." }
+        check(plistValue(sparkleVersioned.resolve("Resources/Info.plist"), "CFBundleShortVersionString") == sparkleVersion.get()) {
+            "The embedded Sparkle framework is not the pinned version."
+        }
+        verifyUpdaterSettings(application.resolve("Contents/Info.plist"))
 
         command("/usr/bin/codesign", "--verify", "--deep", "--strict", application.absolutePath)
 
@@ -144,6 +212,10 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
             add(companionExecutable)
             addAll(archivedNativeLibraries)
             add(windowLibrary)
+            add(updaterLibrary)
+            add(sparkleAutoupdate)
+            add(sparkleProgress)
+            add(sparkle)
         }
         val signatures = signedCode.map(::signature)
         val expectedApplicationEntitlements = if (signingIdentity.get() == "-") {
@@ -183,6 +255,12 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         if (release.get()) {
             verifyReleaseRuntime(runtime)
             verifyDeveloperIdProfile(companion, applicationSignature.teamId.orEmpty())
+        }
+    }
+
+    private fun verifyUpdaterSettings(info: File) {
+        REQUIRED_UPDATER_SETTINGS.forEach { (key, value) ->
+            check(plistValue(info, key) == value) { "The application Info.plist does not set $key to $value." }
         }
     }
 
@@ -474,6 +552,15 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
             "com.apple.security.cs.allow-unsigned-executable-memory" to true,
             "com.apple.security.cs.disable-library-validation" to true,
         )
+        val REQUIRED_UPDATER_SETTINGS = mapOf(
+            "SURequireSignedFeed" to "true",
+            "SUVerifyUpdateBeforeExtraction" to "true",
+            "SUSignedFeedFailureExpirationInterval" to "0",
+            "SUAutomaticallyUpdate" to "false",
+            "SUAllowsAutomaticUpdates" to "false",
+            "SUEnableSystemProfiling" to "false",
+            "SUEnableAutomaticChecks" to "false",
+        )
     }
 }
 
@@ -515,8 +602,11 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         }
         val windowLibrary = applicationCode.resolve("resources/native/libPosatoWindow.dylib")
         check(windowLibrary.isFile) { "The packaged window chrome library is missing." }
+        val updaterLibrary = applicationCode.resolve("resources/native/libPosatoUpdater.dylib")
+        check(updaterLibrary.isFile) { "The packaged updater library is missing." }
         removeForeignNativeLibraries(applicationCode)
         signCode(windowLibrary, identity)
+        signCode(updaterLibrary, identity)
 
         if (identity == "-") {
             signSqliteLibrary(applicationCode, identity)
@@ -526,6 +616,7 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
             signCode(daemon, identity, identifier = "app.posato.macos.proxy-settings")
             signCode(helper, identity, identifier = "app.posato.macos.helper")
             signCompanion(application, identity, entitlements = null)
+            signSparkle(application, identity)
             signCode(application, identity, preserveEntitlements = true)
             return
         }
@@ -537,6 +628,7 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         signCode(daemon, identity, identifier = "app.posato.macos.proxy-settings")
         signCode(helper, identity, identifier = "app.posato.macos.helper")
         signCompanion(application, identity, entitlements = companionEntitlements())
+        signSparkle(application, identity)
         signCode(
             application,
             identity,
@@ -554,6 +646,18 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         val executable = companion.resolve("Contents/MacOS/PosatoMacOSSync")
         signCode(executable, identity, identifier = "app.posato.macos.sync", entitlements = entitlements)
         signCode(companion, identity, identifier = "app.posato.macos.sync", entitlements = entitlements)
+    }
+
+    private fun signSparkle(
+        application: File,
+        identity: String,
+    ) {
+        val sparkle = application.resolve("Contents/Frameworks/Sparkle.framework")
+        val versioned = sparkle.resolve("Versions/B")
+        check(versioned.isDirectory) { "The embedded Sparkle framework is missing." }
+        signCode(versioned.resolve("Autoupdate"), identity)
+        signCode(versioned.resolve("Updater.app"), identity)
+        signCode(sparkle, identity)
     }
 
     private fun companionEntitlements(): File {
@@ -904,10 +1008,117 @@ val compileWindowChrome = tasks.register<Exec>("compileWindowChrome") {
     )
 }
 
+val pinnedSparkleVersion = "2.10.0"
+val sparkleArchive = layout.buildDirectory.file("sparkle/Sparkle-$pinnedSparkleVersion.tar.xz")
+val sparkleDistribution = layout.buildDirectory.dir("sparkle/$pinnedSparkleVersion")
+val downloadSparkle = tasks.register<DownloadVerifiedFile>("downloadSparkle") {
+    group = "build"
+    description = "Downloads the pinned Sparkle distribution and verifies its checksum."
+    sourceUrl.set("https://github.com/sparkle-project/Sparkle/releases/download/$pinnedSparkleVersion/Sparkle-$pinnedSparkleVersion.tar.xz")
+    sha256.set("c2bf58aa8387266ac179357b1415d6f2635f044da8be41042af32425dae6da0c")
+    destination.set(sparkleArchive)
+}
+val extractSparkle = tasks.register<Exec>("extractSparkle") {
+    group = "build"
+    description = "Extracts the pinned Sparkle framework and release tools."
+    inputs.file(downloadSparkle.flatMap { task -> task.destination })
+    val distribution = sparkleDistribution.get().asFile
+    outputs.dir(distribution)
+    doFirst {
+        distribution.deleteRecursively()
+        distribution.mkdirs()
+    }
+    commandLine(
+        "/usr/bin/tar",
+        "-xf",
+        sparkleArchive.get().asFile.absolutePath,
+        "-C",
+        distribution.absolutePath,
+        "Sparkle.framework",
+        "bin/generate_appcast",
+        "bin/generate_keys",
+        "bin/sign_update",
+        "LICENSE",
+    )
+}
+
+val updaterResources = layout.buildDirectory.dir("generated/updater")
+val updaterLibrary = updaterResources.map { it.file("macos-arm64/native/libPosatoUpdater.dylib") }
+val compileUpdater = tasks.register<Exec>("compileUpdater") {
+    val source = layout.projectDirectory.file("src/main/objc/Updater.m")
+    val javaInstallation = posatoJavaLauncher.get().metadata.installationPath.asFile
+    val compiledLibrary = updaterLibrary.get().asFile
+    val frameworks = sparkleDistribution.get().asFile
+    dependsOn(extractSparkle)
+    inputs.file(source)
+    inputs.dir(frameworks)
+    outputs.file(compiledLibrary)
+    doFirst { compiledLibrary.parentFile.mkdirs() }
+    commandLine(
+        "xcrun",
+        "clang",
+        "-dynamiclib",
+        "-fobjc-arc",
+        "-Wall",
+        "-Werror",
+        "-target",
+        "arm64-apple-macos15.0",
+        "-framework",
+        "AppKit",
+        "-F${frameworks.absolutePath}",
+        "-framework",
+        "Sparkle",
+        "-install_name",
+        "@loader_path/libPosatoUpdater.dylib",
+        "-Wl,-rpath,@loader_path/../../../Frameworks",
+        "-I$javaInstallation/include",
+        "-I$javaInstallation/include/darwin",
+        source.asFile.absolutePath,
+        "-o",
+        compiledLibrary.absolutePath,
+    )
+}
+
+val nativeLeafResources = layout.buildDirectory.dir("generated/native-leaves")
+val assembleNativeLeaves = tasks.register<Sync>("assembleNativeLeaves") {
+    from(compileWindowChrome.map { windowChromeResources.get() })
+    from(compileUpdater.map { updaterResources.get() })
+    into(nativeLeafResources)
+}
+
 tasks.withType<AbstractJPackageTask>().configureEach {
-    inputs.file(compileWindowChrome.map { windowChromeLibrary.get() })
-        .withPropertyName("windowChrome")
+    inputs.dir(assembleNativeLeaves.map { nativeLeafResources.get() })
+        .withPropertyName("nativeLeaves")
         .withPathSensitivity(PathSensitivity.RELATIVE)
+}
+
+tasks.named<Test>("test") {
+    systemProperty("posato.sparkle.version", pinnedSparkleVersion)
+}
+
+val updateFeedUrl = providers.gradleProperty("posatoMacOsUpdateFeedUrl").orNull?.takeIf(String::isNotBlank)
+val updatePublicKey = providers.gradleProperty("posatoMacOsUpdatePublicKey").orNull?.takeIf(String::isNotBlank)
+check((updateFeedUrl == null) == (updatePublicKey == null)) {
+    "Set posatoMacOsUpdateFeedUrl and posatoMacOsUpdatePublicKey together."
+}
+check(updateFeedUrl == null || updateFeedUrl.startsWith("https://") || updateFeedUrl.startsWith("http://127.0.0.1:")) {
+    "posatoMacOsUpdateFeedUrl must use HTTPS or a loopback test server."
+}
+val updaterInfoPlistKeys = buildString {
+    append("<key>SURequireSignedFeed</key><true/>")
+    append("<key>SUVerifyUpdateBeforeExtraction</key><true/>")
+    append("<key>SUSignedFeedFailureExpirationInterval</key><integer>0</integer>")
+    append("<key>SUAutomaticallyUpdate</key><false/>")
+    append("<key>SUAllowsAutomaticUpdates</key><false/>")
+    append("<key>SUEnableSystemProfiling</key><false/>")
+    append("<key>SUEnableAutomaticChecks</key><false/>")
+    if (updateFeedUrl != null && updatePublicKey != null) {
+        append("<key>SUFeedURL</key><string>$updateFeedUrl</string>")
+        append("<key>SUPublicEDKey</key><string>$updatePublicKey</string>")
+        if (updateFeedUrl.startsWith("http://127.0.0.1:")) {
+            append("<key>NSAppTransportSecurity</key><dict><key>NSAllowsLocalNetworking</key><true/></dict>")
+        }
+    }
 }
 
 compose.desktop {
@@ -916,7 +1127,7 @@ compose.desktop {
         javaHome = posatoJavaLauncher.get().metadata.installationPath.asFile.absolutePath
 
         nativeDistributions {
-            appResourcesRootDir.set(compileWindowChrome.map { windowChromeResources.get() })
+            appResourcesRootDir.set(assembleNativeLeaves.map { nativeLeafResources.get() })
             packageName = "Posato"
             packageVersion = posatoMarketingVersion
             modules("java.sql")
@@ -926,6 +1137,9 @@ compose.desktop {
                 minimumSystemVersion = "15.0"
                 packageBuildVersion = posatoBuildNumber
                 iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
+                infoPlist {
+                    extraKeysRawXml = updaterInfoPlistKeys
+                }
             }
         }
     }
@@ -957,10 +1171,28 @@ val embedMacOsSyncCompanion by tasks.registering(Sync::class) {
     )
 }
 
+val embedSparkleFramework by tasks.registering(Exec::class) {
+    group = "build"
+    description = "Embeds the pinned Sparkle framework without its sandbox XPC services."
+    dependsOn(extractSparkle, "createDistributable")
+    val source = sparkleDistribution.get().dir("Sparkle.framework").asFile
+    val frameworks = macOsDistributable.get().dir("Contents/Frameworks").asFile
+    val embedded = frameworks.resolve("Sparkle.framework")
+    doFirst {
+        embedded.deleteRecursively()
+        frameworks.mkdirs()
+    }
+    commandLine("/usr/bin/ditto", source.absolutePath, embedded.absolutePath)
+    doLast {
+        embedded.resolve("XPCServices").delete()
+        embedded.resolve("Versions/B/XPCServices").deleteRecursively()
+    }
+}
+
 val signMacOsDevelopmentPackage by tasks.registering(SignMacOsDevelopmentPackage::class) {
     group = "build"
     description = "Signs the generated macOS application and its nested code inside-out."
-    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion)
+    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
     applicationBundle.set(macOsDistributable)
     developmentEntitlements.set(layout.projectDirectory.file("Config/PosatoDevelopment.entitlements"))
     companionEntitlementsTemplate.set(
@@ -996,13 +1228,12 @@ val verifyMacOsHelperStructure by tasks.registering(VerifyMacOsHelperStructure::
     )
 }
 
-val stageMacOsDevelopmentPackage by tasks.registering(Sync::class) {
+val stageMacOsDevelopmentPackage by tasks.registering(StageMacOsApplication::class) {
     group = "build"
     description = "Stages the verified signed application for macOS packaging."
     dependsOn(verifyMacOsHelperStructure)
-
-    from(macOsDistributable)
-    into(macOsDevelopmentApplication)
+    sourceApplication.set(macOsDistributable)
+    stagedApplication.set(macOsDevelopmentApplication)
 }
 
 val verifyMacOsDevelopmentPackaging by tasks.registering(VerifyMacOsDevelopmentPackaging::class) {
@@ -1016,6 +1247,7 @@ val verifyMacOsDevelopmentPackaging by tasks.registering(VerifyMacOsDevelopmentP
     buildNumber.set(posatoBuildNumber)
     iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
     noticeFiles.from(rootProject.files("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"))
+    sparkleVersion.set(pinnedSparkleVersion)
 }
 
 val macOsReleasePackageRoot = layout.buildDirectory.dir("compose/binaries/main/release-package")
@@ -1042,16 +1274,15 @@ val ascKeyId = releaseCredential("posatoAscKeyId", "POSATO_ASC_KEY_ID", "posato.
 val ascIssuerId = releaseCredential("posatoAscIssuerId", "POSATO_ASC_ISSUER_ID", "posato.asc.issuerId")
 val ascPrivateKeyPath = releaseCredential("posatoAscPrivateKeyPath", "POSATO_ASC_PRIVATE_KEY_PATH", "posato.asc.privateKeyPath")
 
-val stageMacOsReleasePackage by tasks.registering(Sync::class) {
+val stageMacOsReleasePackage by tasks.registering(StageMacOsApplication::class) {
     group = "distribution"
     description = "Stages the embedded macOS application for Developer ID signing."
-    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion)
+    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
     mustRunAfter(signMacOsDevelopmentPackage, stageMacOsDevelopmentPackage)
     val releaseBuildNumber = requestedReleaseBuildNumber
     inputs.property("posatoReleaseBuildNumber", providers.provider { PosatoVersion.releaseBuildNumber(releaseBuildNumber) })
-
-    from(macOsDistributable)
-    into(macOsReleaseApplication)
+    sourceApplication.set(macOsDistributable)
+    stagedApplication.set(macOsReleaseApplication)
 }
 
 val signMacOsReleasePackage by tasks.registering(SignMacOsDevelopmentPackage::class) {
@@ -1085,6 +1316,7 @@ val verifyMacOsReleasePackaging by tasks.registering(VerifyMacOsDevelopmentPacka
     buildNumber.set(posatoBuildNumber)
     iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
     noticeFiles.from(rootProject.files("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"))
+    sparkleVersion.set(pinnedSparkleVersion)
     runtimeSourceRelease.set(posatoJavaLauncher.map { launcher -> launcher.metadata.installationPath.file("release") })
 }
 

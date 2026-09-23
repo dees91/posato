@@ -31,16 +31,12 @@ import app.posato.feature.sync.macos.MacOsBootstrapKeychainAdapter
 import app.posato.feature.sync.macos.MacOsMailboxAdapter
 import app.posato.feature.sync.macos.MaintenanceCompanionTransport
 import app.posato.feature.sync.macos.SyncCompanionTransport
-import app.posato.feature.sync.macos.defaultSyncCompanionTransport
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
 import app.posato.feature.update.DesktopUpdateMaintenance
-import app.posato.feature.update.GatedEnforcementPort
-import app.posato.feature.update.MaintenanceAdmission
-import app.posato.feature.update.data.SqlUpdateMaintenanceStore
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -52,7 +48,9 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
 @DependencyGraph(AppScope::class)
-internal interface DesktopApplicationGraph : DesktopApplicationComponents {
+internal interface DesktopApplicationGraph :
+    DesktopApplicationComponents,
+    DesktopUpdateBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
@@ -81,40 +79,6 @@ internal interface DesktopApplicationGraph : DesktopApplicationComponents {
     @SingleIn(AppScope::class)
     fun provideDatabase(databasePath: String): PosatoDatabase {
         return PosatoDatabase(createDesktopDatabaseDriver(databasePath))
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideMaintenanceAdmission(
-        database: PosatoDatabase,
-        @Named("database") databaseDispatcher: CoroutineDispatcher,
-        clock: SessionClock,
-    ): MaintenanceAdmission {
-        return MaintenanceAdmission(SqlUpdateMaintenanceStore(database, databaseDispatcher), clock::currentEpochMillis)
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideEnforcement(
-        @Named("helper") helper: EnforcementPort,
-        admission: MaintenanceAdmission,
-    ): EnforcementPort {
-        return GatedEnforcementPort(helper, admission)
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideCompanionTransport(): MaintenanceCompanionTransport {
-        return MaintenanceCompanionTransport(createDelegate = ::defaultSyncCompanionTransport)
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun provideUpdateMaintenance(
-        admission: MaintenanceAdmission,
-        companion: MaintenanceCompanionTransport,
-    ): DesktopUpdateMaintenance {
-        return DesktopUpdateMaintenance(admission, companion)
     }
 
     @Provides

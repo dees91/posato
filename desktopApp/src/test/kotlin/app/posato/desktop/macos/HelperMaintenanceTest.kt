@@ -82,7 +82,7 @@ class HelperMaintenanceTest {
 
     private companion object {
         val MISSING_HELPER: Path = Path.of("/nonexistent/PosatoMacOSHelper")
-        val PORT: UShort = 8080u
+        const val PORT: UShort = 8080u
         const val END: Long = 1_700_000_000_000L
     }
 }

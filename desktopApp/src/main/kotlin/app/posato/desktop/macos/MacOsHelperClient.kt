@@ -2,6 +2,7 @@
 
 package app.posato.desktop.macos
 
+import app.posato.desktop.update.UpdateCleanupCommands
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.Closeable
@@ -30,7 +31,8 @@ internal class MacOsHelperClient(
     MacHelperCommands,
     MacOsApplicationPicker,
     MacOsBrowserDomainCommands,
-    MacOsApplicationCommands {
+    MacOsApplicationCommands,
+    UpdateCleanupCommands {
     private val helperPath: Path by lazy { helperPath ?: MacOsHelperSigningVerifier.installedHelperPath() }
     private val random = SecureRandom()
     private val readerExecutor = Executors.newSingleThreadExecutor()

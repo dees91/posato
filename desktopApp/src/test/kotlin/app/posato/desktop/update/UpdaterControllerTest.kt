@@ -105,6 +105,7 @@ class UpdaterControllerTest {
         override fun completeAdmission(
             token: Long,
             granted: Boolean,
+            refusal: AdmissionRefusal?,
         ) {
             replies += token to granted
         }

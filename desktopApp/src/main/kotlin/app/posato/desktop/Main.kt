@@ -1,5 +1,6 @@
 package app.posato.desktop
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,12 +20,23 @@ import app.posato.desktop.macos.MacOsSystemSettings
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
+import app.posato.desktop.update.MacUpdater
+import app.posato.desktop.update.createUpdaterController
+import app.posato.desktop.update.openInstanceLock
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.enforcement.JvmSessionEnforcement
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.runBlocking
 import java.awt.Dimension
+import kotlin.system.exitProcess
 
 fun main() {
+    val instanceLock = openInstanceLock()
+    if (!instanceLock.acquireShared()) {
+        exitProcess(0)
+    }
     MacOsHelperClient().use { enforcementClient ->
         DesktopLocalApplicationMappings().use { applicationMappings ->
             Runtime.getRuntime().addShutdownHook(Thread(applicationMappings::close, "application-mappings-shutdown"))
@@ -45,6 +57,9 @@ fun main() {
                 openSettings = MacOsSystemSettings::open,
             )
             val applicationGraph = createDesktopApplicationGraph(applicationMappings, enforcement, helperState)
+            val updaterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+            val updater = createUpdaterController(enforcementClient, applicationGraph.updateMaintenance, instanceLock, updaterScope)
+            runBlocking { updater.start() }
 
             application {
                 var highContrast by remember { mutableStateOf(false) }
@@ -60,6 +75,7 @@ fun main() {
                         window.rootPane.putClientProperty("apple.awt.windowTitleVisible", false)
                         window.minimumSize = Dimension(MINIMUM_WINDOW_WIDTH, 0)
                     }
+                    LaunchedEffect(Unit) { MacUpdater.start(updater) }
                     WindowChrome(window, state.placement == WindowPlacement.Fullscreen, onContrastChange = { highContrast = it })
                     applicationGraph.application.Content(highContrast = highContrast, onAnnouncement = MacWindow::announce)
                 }

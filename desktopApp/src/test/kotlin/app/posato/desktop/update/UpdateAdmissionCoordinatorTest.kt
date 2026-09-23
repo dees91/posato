@@ -111,8 +111,10 @@ class UpdateAdmissionCoordinatorTest {
 
     @Test
     fun `given approval or recovery required when admission runs then it is refused as action required`() = runTest {
-        listOf(HelperResult.State.ApprovalRequired, HelperResult.State.RecoveryRequired, HelperResult.State.UnavailableOrIncompatible).forEach { state ->
-            val fixture = Fixture(helper = FakeCleanup(statusResult = result(HelperResult.Outcome.ActionRequired, state, HelperResult.Phase.RecoveryRequired)))
+        val states = listOf(HelperResult.State.ApprovalRequired, HelperResult.State.RecoveryRequired, HelperResult.State.UnavailableOrIncompatible)
+        states.forEach { state ->
+            val status = result(HelperResult.Outcome.ActionRequired, state, HelperResult.Phase.RecoveryRequired)
+            val fixture = Fixture(helper = FakeCleanup(statusResult = status))
 
             assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SERVICE_ACTION_REQUIRED), fixture.coordinator.admit(TARGET_BUILD), "$state")
         }
@@ -151,14 +153,15 @@ class UpdateAdmissionCoordinatorTest {
     }
 
     @Test
-    fun `given a settled replacement but a service needing action when release is evaluated then spawns resume while the gate stays closed`() = runTest {
+    fun `given a settled replacement but a service needing action when release is evaluated then spawns resume with the gate closed`() = runTest {
         val fixture = Fixture(
             installer = InstallerObservation.TERMINATED,
             identity = BundleIdentity(FROM_BUILD, FROM_BUILD, signedByTeam = true),
         )
         fixture.coordinator.admit(TARGET_BUILD)
         fixture.coordinator.onCycleEnded()
-        fixture.helper.statusResult = result(HelperResult.Outcome.ActionRequired, HelperResult.State.ApprovalRequired, HelperResult.Phase.RecoveryRequired)
+        fixture.helper.statusResult =
+            result(HelperResult.Outcome.ActionRequired, HelperResult.State.ApprovalRequired, HelperResult.Phase.RecoveryRequired)
 
         assertEquals(MaintenanceReopenResult.EvidenceMissing, fixture.coordinator.evaluateRelease())
         assertTrue(fixture.helperMaintenance.allowsSpawns)
@@ -167,7 +170,7 @@ class UpdateAdmissionCoordinatorTest {
     }
 
     @Test
-    fun `given a disabled service after a settled replacement when release is evaluated then the gate reopens and the service stays disabled`() = runTest {
+    fun `given a disabled service after a settled replacement when release is evaluated then the gate reopens and it stays disabled`() = runTest {
         val notRegistered = result(HelperResult.Outcome.ActionRequired, HelperResult.State.NotRegistered, HelperResult.Phase.RecoveryRequired)
         val fixture = Fixture(
             helper = FakeCleanup(statusResult = notRegistered),
@@ -241,7 +244,7 @@ class UpdateAdmissionCoordinatorTest {
     ) {
         val helperMaintenance = HelperMaintenance()
         val coordinator = UpdateAdmissionCoordinator(
-            runningBuild = FROM_BUILD,
+            runningBuild = { FROM_BUILD },
             gate = gate,
             instanceLock = lock,
             helper = helper,
