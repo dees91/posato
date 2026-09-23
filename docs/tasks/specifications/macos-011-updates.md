@@ -38,9 +38,14 @@ A notarized Mac candidate can obtain and install a newer notarized candidate thr
 - `user-confirmed`, 2026-09-23: the Stage 1 test feed runs on a local loopback server, test candidates use a separate throwaway Ed25519 key, and Stage 1 is production-quality code without consent UI. A failed proof marks the pull request blocked.
 - `observed`, 2026-09-23: exact installer-job absence in every launchd domain, no `Autoupdate` process from this bundle, an on-disk bundle identity matching the running signed build, and service revalidation established safe release on notarized candidates. See the execution record; an aborted cycle alone is still never sufficient.
 - `user-confirmed`, 2026-09-23: open Stage 2 as one task on this row; do not split it into smaller rows.
-- `open` Stage 2 decisions, needed before implementation:
-  - D1: where the real-GitHub request measurement and the test feed run.
-  - D2: how to handle the default `Accept-Language` header.
-  - D3: where the consent prompt, opt-out, and manual check live in the product.
-  - D4: when the maintainer creates the production update key and its encrypted backup.
+- `user-confirmed`, 2026-09-23, Stage 2 decisions:
+  - D1: a public GitHub prerelease with a separate `appcast-test.xml` hosts
+    the real-GitHub request measurement and the test feed. It never becomes
+    latest and is deleted after measurement.
+  - D2: set a fixed `Accept-Language: en` through `SPUUpdater.httpHeaders`.
+  - D3: a native consent prompt after first-run setup, "Check for Updates…" in
+    the application menu, and the automatic-check toggle and manual check in
+    About Posato. No new destination.
+  - D4: the maintainer creates the production key and its encrypted backup at
+    Stage 2 intake. Stage 2 candidates embed the production public key.
 - Confirm signing/notarization access and private-key custody at implementation intake. Account-owned actions use a short maintainer checklist when needed.
