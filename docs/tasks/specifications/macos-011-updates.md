@@ -35,5 +35,6 @@ A notarized Mac candidate can obtain and install a newer notarized candidate thr
 ## Decisions or blockers
 
 - `user-confirmed`, 2026-09-23: prepare a worktree, brief, and draft PR for delegated implementation; the first stage is the ADR 0008 safety proof.
+- `user-confirmed`, 2026-09-23: the Stage 1 test feed runs on a local loopback server, test candidates use a separate throwaway Ed25519 key, and Stage 1 is production-quality code without consent UI. A failed proof marks the pull request blocked.
 - `open`: the supported positive evidence that proves the exact installer has stopped with no pending replacement. An aborted update cycle alone is insufficient; failure to establish this evidence blocks delivery pending a maintainer decision.
 - Confirm signing/notarization access and private-key custody at implementation intake. Account-owned actions use a short maintainer checklist when needed.
