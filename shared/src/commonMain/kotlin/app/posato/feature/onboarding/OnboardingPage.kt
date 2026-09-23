@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.FlowRowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoSize
@@ -27,9 +30,10 @@ internal fun OnboardingPage(
 ) {
     val compact = layout == PosatoLayout.Compact
     val scroll = rememberScrollState()
+    val keyboardVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     Column(
         modifier = if (compact) Modifier.fillMaxSize() else Modifier.widthIn(max = PosatoSize.CompactBreakpoint).fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(PosatoSpace.Spacious),
+        verticalArrangement = Arrangement.spacedBy(if (compact || !keyboardVisible) PosatoSpace.Spacious else PosatoSpace.Section),
     ) {
         Column(
             modifier = if (compact) {

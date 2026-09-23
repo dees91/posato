@@ -2,9 +2,16 @@ package app.posato.feature.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -211,6 +218,13 @@ internal fun WebsiteStep(
     onDefer: () -> Unit,
     layout: PosatoLayout,
 ) {
+    val entryArea = remember { BringIntoViewRequester() }
+    val keyboardHeight = WindowInsets.ime.getBottom(LocalDensity.current)
+    LaunchedEffect(keyboardHeight) {
+        if (keyboardHeight > 0) {
+            entryArea.bringIntoView()
+        }
+    }
     OnboardingPage(
         layout = layout,
         actions = {
@@ -228,9 +242,14 @@ internal fun WebsiteStep(
             description = stringResource(Res.string.onboarding_website_body),
             layout = layout,
         )
-        WebsiteEntry(browser = browser, enabled = !state.websiteSaving, onSubmit = onSubmitWebsites)
-        if (state.savedWebsites > 0) {
-            PosatoCaption(state.websiteSummary(), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+        Column(
+            modifier = Modifier.bringIntoViewRequester(entryArea),
+            verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
+        ) {
+            WebsiteEntry(browser = browser, enabled = !state.websiteSaving, onSubmit = onSubmitWebsites)
+            if (state.savedWebsites > 0) {
+                PosatoCaption(state.websiteSummary(), Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+            }
         }
         PosatoCaption(stringResource(Res.string.onboarding_permission_control))
     }

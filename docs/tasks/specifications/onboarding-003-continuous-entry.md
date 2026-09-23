@@ -37,5 +37,6 @@ During first-run setup, a person can add consecutive websites without refocusing
 - `user-confirmed`, 2026-09-23: expanded onboarding actions share one wrapping `PosatoActionRow` in primary, secondary, quiet order on the permission and iCloud steps; compact layout is unchanged.
 - `user-confirmed`, 2026-09-23: the website step states the saved total in a separate caption below the field, reusing the summary strings, shown above zero and following policy changes while the step is visible.
 - `user-confirmed`, 2026-09-23, in the approved implementation plan: on expanded pages the content scrolls on its own and the actions sit directly after it, so **Continue** stays above the keyboard or window edge; this replaces the whole-page scroll for every expanded onboarding step.
+- `user-confirmed`, 2026-09-23, after reviewing the PR screenshots: the keyboard must not cover the website field in iPad landscape. While the keyboard is up, expanded pages use 24 dp vertical margins and gap before the actions, and the website step brings the whole field and its total into view.
 - `user-confirmed`, 2026-09-23: Claude implements the task in this worktree; merge stays with the maintainer.
 - No known prerequisite blocker. Coordinate shared-document edits and serialize native runs on the same target as recorded in the execution plan.

@@ -63,7 +63,8 @@ Preconditions:
   describes only the last submission. A duplicate or invalid entry leaves the
   total unchanged, and invalid text stays in the field. **Continue** is
   visible above the keyboard without scrolling on iPhone, iPad portrait, and
-  iPad landscape. The total is a live region, so on iOS it is exposed as a
+  iPad landscape, and in iPad landscape the whole field and the total stay
+  visible above it. The total is a live region, so on iOS it is exposed as a
   group: select it by text without `role`. The iOS snapshot reports the
   field's `focused` state; the desktop bridge does not, so on Mac prove focus
   with a screenshot showing the caret and focus border.

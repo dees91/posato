@@ -524,9 +524,12 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   inside the existing 820 dp outer canvas. `user-confirmed` (2026-09-23,
   `ONBOARDING-003`): the expanded content scrolls on its own, so actions stay
   above the keyboard or window edge, and several expanded actions share one
-  wrapping action row in primary, secondary, quiet order. Use the existing
-  typography, spacing, colors, safe-area handling, and native permission
-  presentation.
+  wrapping action row in primary, secondary, quiet order. `user-confirmed`
+  (2026-09-23, `ONBOARDING-003`): the keyboard must not cover the website
+  field. While it is up, expanded pages use 24 dp vertical margins and gap
+  before the actions, and the website step scrolls the whole field and its
+  saved total into view. Use the existing typography, spacing, colors,
+  safe-area handling, and native permission presentation.
 
 ### Session
 
