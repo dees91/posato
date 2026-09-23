@@ -10,7 +10,7 @@
 
 ## Plan
 
-1. Settle D1-D3 with the maintainer, then confirm when the older-system targets and the physical Mac are available.
+1. D1-D3 are settled. Before `MACOS-011` merges, prepare the Tart macOS 15 VM and the iOS 18 iPhone with a short maintainer checklist. Then wait for the final 1.1 candidates.
 2. On macOS 15:
    - install the recorded 1.1 candidate in the VM;
    - run the core flow with the helper and sync;
@@ -32,4 +32,4 @@
 
 ## Blockers and accepted risks
 
-- The older-system targets depend on the maintainer's VM and device (D1, D2).
+- The runs wait for `MACOS-011` to merge (D3). The targets depend on the maintainer's Tart VM and iOS 18 iPhone (D1, D2).

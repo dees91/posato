@@ -19,7 +19,7 @@ The published support claim (macOS 15 or later on Apple silicon, iOS 18 or later
   - relaunch;
   - sync with the other device.
 - macOS 15 runs in a virtual machine on the supported Mac. iOS 18 runs on a physical iPhone.
-- Use 1.1 candidates as composed at run time. Record the exact builds, and rerun only what a later 1.1 change affects.
+- Run on the final 1.1 candidates after `MACOS-011` merges, and record the exact builds.
 - Update the Availability and Supported platforms text in `docs/product/limits-and-platforms.md`, and matching website copy, with the verified matrix or its stated gaps. Wording beyond that belongs to `RELEASE-003`.
 - Keep the physical Mac serialized with `MACOS-011` notarized experiments. Keep VM images, device identifiers, and captures out of tracked files.
 - Non-goals: product fixes, which get their own rows if a run fails; new platforms; automating the VM.
@@ -37,7 +37,7 @@ The published support claim (macOS 15 or later on Apple silicon, iOS 18 or later
 
 ## Decisions or blockers
 
-- `open`:
-  - D1: a macOS 15 virtual machine (image, tool, Apple Account for iCloud sync).
-  - D2: an iOS 18 physical iPhone, or recording the gap.
-  - D3: whether to run on current `main` builds now and rerun after `MACOS-011`, or wait for the final 1.1 candidates.
+- `user-confirmed`, 2026-09-23:
+  - D1: the macOS 15 target is a Tart virtual machine from a macOS Sequoia image on the supported Mac. The maintainer installs Tart and signs in the Apple Account for sync.
+  - D2: the maintainer provides a physical iPhone on iOS 18, connected by cable for the runs.
+  - D3: run once on the final 1.1 candidates, after `MACOS-011` merges. Until then, only the VM and device are prepared.
