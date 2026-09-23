@@ -5,8 +5,8 @@
 - **Review tier:** `high-risk`
 - **Implementer:** Claude; Codex prepared the handoff
 - **Reviewer:** independent plan reviewer; implementation review pending
-- **Branch:** `feature/macos-011-updates`
-- **Updated:** 2026-09-23 (Stage 1 implementation)
+- **Branch:** `feature/macos-011-stage-2` (Stage 1 merged from `feature/macos-011-updates` in PR #76)
+- **Updated:** 2026-09-23 (Stage 2 opened)
 
 ## Plan
 
@@ -129,6 +129,51 @@ re-review below. Evidence:
 Stage 1 does not touch the shared `strings.xml` or the session UI. A refused
 apply surfaces as the existing apply failure. Distinct update messaging and
 refusing a local Start wait for the rebase after `ONBOARDING-003`.
+
+## Stage 2 plan
+
+Stage 2 starts from `9e12f56` and completes plan steps 3-5 and the rest of
+the ADR 0008 matrix. It keeps the Stage 1 gate unchanged. Any material
+change to that gate needs focused plan re-review. Implementation waits for
+decisions D1-D4 and an independent review of this plan.
+
+1. **Consent and settings.**
+   - After first-run setup, ask once with a native prompt.
+   - After consent, check every 24 hours while the app runs. Keep the
+     scheduler state in Sparkle's local settings.
+   - Provide a visible opt-out and a manual "Check for updates" action, placed
+     per D3 and recorded in `DESIGN.md`.
+   - Make no request before consent or after opt-out.
+2. **Copy.** Replace the temporary English menu item, preparing panel, and
+   refusal alert with localized strings in `strings.xml`. Give the
+   second-instance refusal its own message.
+3. **Requests and privacy.**
+   - Measure the check and the download against real GitHub Releases per D1:
+     headers, cookies, redirects, and the `Accept-Language` handling per D2.
+   - Reconcile the staged privacy-policy and availability wording with that
+     measurement.
+4. **Release process.**
+   - Generate the signed `appcast.xml` from the final notarized DMG in the
+     repeated local release flow, using Sparkle's tools. Disable deltas.
+   - Prepare draft-release assets together, and use the stable
+     `releases/latest/download/appcast.xml` URL.
+   - Keep a separate test feed that never becomes latest.
+   - Pass the production public key and feed only to release builds, per D4.
+5. **Remaining matrix.** Test these with synthetic fixtures and notarized
+   candidates:
+   - wrong or missing feed and archive signatures;
+   - tampered bytes;
+   - the same or an older build;
+   - an unsupported platform;
+   - no network, and HTTP failures;
+   - the resumable installing stage and the system-domain installer, where they
+     are reachable.
+6. **Closeout.**
+   - Apply the staged ADR 0003 and ADR 0004 amendments and the `TB-08` and
+     `T-13` threat-model updates.
+   - Obtain an independent completed-change review, then run `quality`.
+   - Hand publication of the public wording and the stable release to
+     `RELEASE-003`.
 
 ## Parallel ownership
 

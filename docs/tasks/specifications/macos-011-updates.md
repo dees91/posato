@@ -3,7 +3,7 @@
 - **Review tier:** `high-risk`
 - **Tier reason:** Third-party installation, update signing, new network requests, and enforcement cleanup must remain safe across cancellation and process restart.
 - **Dependencies:** `MACOS-010`, merged in PR #74; release 1.1, wave R1.1/W2. The initial proof stage may run beside `ONBOARDING-003` under the maintainer's 2026-09-23 preparation/delegation decision.
-- **Integration group:** `PR-MAC-UPDATES`, milestone `1.1.0`.
+- **Integration group:** `PR-MAC-UPDATES`, milestone `1.1.0`. Stage 1 (the safety proof) merged in PR #76; Stage 2 delivers the rest of this brief in one pull request.
 - **Authority:** [ADR 0008](../../decisions/0008-macos-update-delivery.md), [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md), [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md), [threat model](../../security/apple-mvp-threat-model.md), [PRIVACY.md](../../../PRIVACY.md), [release roadmap](../release-roadmap.md), and [quality contract](../../development/engineering-quality-contract.md).
 
 ## Outcome
@@ -37,4 +37,10 @@ A notarized Mac candidate can obtain and install a newer notarized candidate thr
 - `user-confirmed`, 2026-09-23: prepare a worktree, brief, and draft PR for delegated implementation; the first stage is the ADR 0008 safety proof.
 - `user-confirmed`, 2026-09-23: the Stage 1 test feed runs on a local loopback server, test candidates use a separate throwaway Ed25519 key, and Stage 1 is production-quality code without consent UI. A failed proof marks the pull request blocked.
 - `observed`, 2026-09-23: exact installer-job absence in every launchd domain, no `Autoupdate` process from this bundle, an on-disk bundle identity matching the running signed build, and service revalidation established safe release on notarized candidates. See the execution record; an aborted cycle alone is still never sufficient.
+- `user-confirmed`, 2026-09-23: open Stage 2 as one task on this row; do not split it into smaller rows.
+- `open` Stage 2 decisions, needed before implementation:
+  - D1: where the real-GitHub request measurement and the test feed run.
+  - D2: how to handle the default `Accept-Language` header.
+  - D3: where the consent prompt, opt-out, and manual check live in the product.
+  - D4: when the maintainer creates the production update key and its encrypted backup.
 - Confirm signing/notarization access and private-key custody at implementation intake. Account-owned actions use a short maintainer checklist when needed.
