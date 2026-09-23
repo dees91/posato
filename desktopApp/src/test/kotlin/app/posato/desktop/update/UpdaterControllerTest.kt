@@ -23,7 +23,7 @@ class UpdaterControllerTest {
         advanceUntilIdle()
 
         assertEquals(listOf(TOKEN to true), replies.replies)
-        assertEquals(listOf("admit"), admission.calls)
+        assertEquals(listOf("admit:0"), admission.calls)
     }
 
     @Test
@@ -61,7 +61,7 @@ class UpdaterControllerTest {
         controller.onInstallRequested(TOKEN, TARGET_BUILD, InstallRequestStage.PENDING_INSTALLATION)
         advanceUntilIdle()
 
-        assertEquals(listOf("admit-pending"), admission.calls)
+        assertEquals(listOf("admit-pending:0"), admission.calls)
         assertEquals(listOf(TOKEN to true), replies.replies)
     }
 
@@ -80,7 +80,7 @@ class UpdaterControllerTest {
         advanceUntilIdle()
 
         assertEquals(listOf(TOKEN to false), replies.replies)
-        assertEquals("cycle-ended", admission.calls.last { call -> call != "evaluate" })
+        assertEquals("cycle-ended:0", admission.calls.last { call -> call != "evaluate" })
     }
 
     @Test
@@ -91,7 +91,27 @@ class UpdaterControllerTest {
         controller.onCycleFinished()
         advanceUntilIdle()
 
-        assertEquals(listOf("cycle-ended", "evaluate", "evaluate"), admission.calls)
+        assertEquals(listOf("cycle-ended:0", "evaluate", "evaluate"), admission.calls)
+    }
+
+    @Test
+    fun `given consecutive cycles when each finishes then admission and cycle end carry the same cycle id`() = runTest {
+        val admission = FakeAdmission()
+        val controller = controller(admission, RecordingReplies())
+
+        controller.onInstallRequested(TOKEN, TARGET_BUILD, InstallRequestStage.NEW_INSTALLATION)
+        advanceUntilIdle()
+        controller.onCycleFinished()
+        advanceUntilIdle()
+        controller.onInstallRequested(TOKEN + 1, TARGET_BUILD, InstallRequestStage.PENDING_INSTALLATION)
+        advanceUntilIdle()
+        controller.onCycleFinished()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("admit:0", "cycle-ended:0", "admit-pending:1", "cycle-ended:1"),
+            admission.calls.filter { call -> call != "evaluate" },
+        )
     }
 
     @Test
@@ -134,19 +154,25 @@ class UpdaterControllerTest {
     ) : UpdateAdmission {
         val calls = mutableListOf<String>()
 
-        override suspend fun admit(targetBuild: String): AdmissionOutcome {
+        override suspend fun admit(
+            targetBuild: String,
+            cycle: Long,
+        ): AdmissionOutcome {
             beforeAdmit()
-            calls += "admit"
+            calls += "admit:$cycle"
             return outcome
         }
 
-        override suspend fun admitPendingInstallation(targetBuild: String): AdmissionOutcome {
-            calls += "admit-pending"
+        override suspend fun admitPendingInstallation(
+            targetBuild: String,
+            cycle: Long,
+        ): AdmissionOutcome {
+            calls += "admit-pending:$cycle"
             return outcome
         }
 
-        override suspend fun onCycleEnded() {
-            calls += "cycle-ended"
+        override suspend fun onCycleEnded(cycle: Long) {
+            calls += "cycle-ended:$cycle"
         }
 
         override suspend fun evaluateRelease(): MaintenanceReopenResult {

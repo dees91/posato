@@ -1,13 +1,10 @@
 package app.posato.desktop.update
 
-import app.posato.desktop.macos.ApplicationEnforcementResponse
 import app.posato.desktop.macos.HelperMaintenance
 import app.posato.desktop.macos.HelperResult
-import app.posato.feature.sync.macos.CompanionMaintenance
 import app.posato.feature.update.ClosedMaintenanceGate
 import app.posato.feature.update.MaintenanceCloseResult
 import app.posato.feature.update.MaintenanceReopenResult
-import app.posato.feature.update.UpdateMaintenanceGate
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -20,7 +17,7 @@ class UpdateAdmissionCoordinatorTest {
     fun `given an enabled idle service when admission runs then cleanup is confirmed and maintenance mode holds`() = runTest {
         val fixture = Fixture()
 
-        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admit(TARGET_BUILD, CYCLE))
         assertEquals(listOf("status", "restore", "configure-empty"), fixture.helper.calls)
         assertTrue(fixture.gate.cycleAdmitted)
         assertTrue(fixture.helperMaintenance.isBackstopEngaged)
@@ -32,7 +29,7 @@ class UpdateAdmissionCoordinatorTest {
     fun `given another instance when admission runs then it is refused before the gate closes`() = runTest {
         val fixture = Fixture(lock = FakeLock(upgrades = false))
 
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.OTHER_INSTANCE), fixture.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.OTHER_INSTANCE), fixture.coordinator.admit(TARGET_BUILD, CYCLE))
         assertNull(fixture.gate.closed)
         assertTrue(fixture.helper.calls.isEmpty())
     }
@@ -41,7 +38,7 @@ class UpdateAdmissionCoordinatorTest {
     fun `given an active session when admission runs then it is refused with the gate open and the lock downgraded`() = runTest {
         val fixture = Fixture(gate = FakeGate(closeResult = MaintenanceCloseResult.SessionActive))
 
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SESSION_ACTIVE), fixture.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SESSION_ACTIVE), fixture.coordinator.admit(TARGET_BUILD, CYCLE))
         assertTrue(fixture.lock.downgraded)
         assertFalse(fixture.helperMaintenance.isBackstopEngaged)
     }
@@ -51,7 +48,7 @@ class UpdateAdmissionCoordinatorTest {
         val helper = FakeCleanup(reconcileResults = mutableListOf(UNKNOWN, SUCCESS_IDLE))
         val fixture = Fixture(helper = helper)
 
-        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admit(TARGET_BUILD, CYCLE))
         assertEquals(listOf("reconcile", "reconcile", "status", "restore", "configure-empty"), helper.calls)
     }
 
@@ -60,7 +57,7 @@ class UpdateAdmissionCoordinatorTest {
         val helper = FakeCleanup(reconcileResults = mutableListOf(UNKNOWN, UNKNOWN, UNKNOWN, UNKNOWN))
         val fixture = Fixture(helper = helper)
 
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), fixture.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), fixture.coordinator.admit(TARGET_BUILD, CYCLE))
         assertTrue(fixture.gate.closed != null)
         assertFalse(fixture.gate.cycleAdmitted)
         assertFalse(helper.calls.contains("restore"))
@@ -71,7 +68,7 @@ class UpdateAdmissionCoordinatorTest {
         val helper = FakeCleanup(statusResult = result(HelperResult.Outcome.Success, HelperResult.State.Ready, HelperResult.Phase.Applied))
         val fixture = Fixture(helper = helper)
 
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.FOREIGN_LEASE), fixture.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.FOREIGN_LEASE), fixture.coordinator.admit(TARGET_BUILD, CYCLE))
         assertFalse(helper.calls.contains("restore"))
     }
 
@@ -84,7 +81,7 @@ class UpdateAdmissionCoordinatorTest {
         ).forEach { restore ->
             val fixture = Fixture(helper = FakeCleanup(restoreResult = restore))
 
-            assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), fixture.coordinator.admit(TARGET_BUILD), "$restore")
+            assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), fixture.coordinator.admit(TARGET_BUILD, CYCLE), "$restore")
             assertFalse(fixture.gate.cycleAdmitted)
         }
     }
@@ -93,7 +90,7 @@ class UpdateAdmissionCoordinatorTest {
     fun `given a failing helper call when admission runs then admission is refused as uncertain`() = runTest {
         val fixture = Fixture(helper = FakeCleanup(failure = IllegalStateException("helper unavailable")))
 
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), fixture.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), fixture.coordinator.admit(TARGET_BUILD, CYCLE))
     }
 
     @Test
@@ -103,10 +100,10 @@ class UpdateAdmissionCoordinatorTest {
         val dirty = Fixture(helper = FakeCleanup(statusResult = notRegistered), proxies = StoredProxyEvidence.LOOPBACK_PROXY_ENABLED)
         val unreadable = Fixture(helper = FakeCleanup(statusResult = notRegistered), proxies = StoredProxyEvidence.UNREADABLE)
 
-        assertEquals(AdmissionOutcome.Admitted, clean.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Admitted, clean.coordinator.admit(TARGET_BUILD, CYCLE))
         assertFalse(clean.helper.calls.contains("restore"))
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), dirty.coordinator.admit(TARGET_BUILD))
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), unreadable.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), dirty.coordinator.admit(TARGET_BUILD, CYCLE))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.CLEANUP_UNCERTAIN), unreadable.coordinator.admit(TARGET_BUILD, CYCLE))
     }
 
     @Test
@@ -116,7 +113,7 @@ class UpdateAdmissionCoordinatorTest {
             val status = result(HelperResult.Outcome.ActionRequired, state, HelperResult.Phase.RecoveryRequired)
             val fixture = Fixture(helper = FakeCleanup(statusResult = status))
 
-            assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SERVICE_ACTION_REQUIRED), fixture.coordinator.admit(TARGET_BUILD), "$state")
+            assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SERVICE_ACTION_REQUIRED), fixture.coordinator.admit(TARGET_BUILD, CYCLE), "$state")
         }
     }
 
@@ -124,15 +121,15 @@ class UpdateAdmissionCoordinatorTest {
     fun `given a companion that does not stop when admission runs then admission is refused`() = runTest {
         val fixture = Fixture(companion = FakeCompanion(drains = false))
 
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE), fixture.coordinator.admit(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE), fixture.coordinator.admit(TARGET_BUILD, CYCLE))
         assertFalse(fixture.gate.cycleAdmitted)
     }
 
     @Test
     fun `given a settled replacement and a ready idle service when release is evaluated then the gate reopens and maintenance ends`() = runTest {
         val fixture = Fixture(installer = InstallerObservation.TERMINATED, identity = BundleIdentity(TARGET_BUILD, TARGET_BUILD, signedByTeam = true))
-        fixture.coordinator.admit(TARGET_BUILD)
-        fixture.coordinator.onCycleEnded()
+        fixture.coordinator.admit(TARGET_BUILD, CYCLE)
+        fixture.coordinator.onCycleEnded(CYCLE)
 
         assertEquals(MaintenanceReopenResult.Reopened, fixture.coordinator.evaluateRelease())
         assertTrue(fixture.helperMaintenance.allowsSpawns)
@@ -144,8 +141,8 @@ class UpdateAdmissionCoordinatorTest {
     @Test
     fun `given a running installer when release is evaluated then maintenance mode stays on`() = runTest {
         val fixture = Fixture(installer = InstallerObservation.RUNNING, identity = BundleIdentity(FROM_BUILD, FROM_BUILD, signedByTeam = true))
-        fixture.coordinator.admit(TARGET_BUILD)
-        fixture.coordinator.onCycleEnded()
+        fixture.coordinator.admit(TARGET_BUILD, CYCLE)
+        fixture.coordinator.onCycleEnded(CYCLE)
 
         assertEquals(MaintenanceReopenResult.EvidenceMissing, fixture.coordinator.evaluateRelease())
         assertFalse(fixture.helperMaintenance.allowsSpawns)
@@ -158,8 +155,8 @@ class UpdateAdmissionCoordinatorTest {
             installer = InstallerObservation.TERMINATED,
             identity = BundleIdentity(FROM_BUILD, FROM_BUILD, signedByTeam = true),
         )
-        fixture.coordinator.admit(TARGET_BUILD)
-        fixture.coordinator.onCycleEnded()
+        fixture.coordinator.admit(TARGET_BUILD, CYCLE)
+        fixture.coordinator.onCycleEnded(CYCLE)
         fixture.helper.statusResult =
             result(HelperResult.Outcome.ActionRequired, HelperResult.State.ApprovalRequired, HelperResult.Phase.RecoveryRequired)
 
@@ -177,8 +174,8 @@ class UpdateAdmissionCoordinatorTest {
             installer = InstallerObservation.TERMINATED,
             identity = BundleIdentity(TARGET_BUILD, TARGET_BUILD, signedByTeam = true),
         )
-        fixture.coordinator.admit(TARGET_BUILD)
-        fixture.coordinator.onCycleEnded()
+        fixture.coordinator.admit(TARGET_BUILD, CYCLE)
+        fixture.coordinator.onCycleEnded(CYCLE)
 
         assertEquals(MaintenanceReopenResult.Reopened, fixture.coordinator.evaluateRelease())
         assertFalse(fixture.helper.calls.contains("enable"))
@@ -210,7 +207,7 @@ class UpdateAdmissionCoordinatorTest {
         val fixture = Fixture(gate = gate)
         fixture.coordinator.restoreMaintenanceAtStartup()
 
-        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admitPendingInstallation(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admitPendingInstallation(TARGET_BUILD, CYCLE))
         assertTrue(gate.cycleAdmitted)
         assertTrue(fixture.helper.calls.isEmpty())
     }
@@ -219,7 +216,7 @@ class UpdateAdmissionCoordinatorTest {
     fun `given an open gate when a pending installation continues then full admission runs first`() = runTest {
         val fixture = Fixture()
 
-        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admitPendingInstallation(TARGET_BUILD))
+        assertEquals(AdmissionOutcome.Admitted, fixture.coordinator.admitPendingInstallation(TARGET_BUILD, CYCLE))
         assertEquals(listOf("status", "restore", "configure-empty"), fixture.helper.calls)
     }
 
@@ -229,8 +226,25 @@ class UpdateAdmissionCoordinatorTest {
         val fixture = Fixture(gate = gate, companion = FakeCompanion(drains = false))
         fixture.coordinator.restoreMaintenanceAtStartup()
 
-        assertEquals(AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE), fixture.coordinator.admitPendingInstallation(TARGET_BUILD))
+        assertEquals(
+            AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE),
+            fixture.coordinator.admitPendingInstallation(TARGET_BUILD, CYCLE),
+        )
         assertFalse(gate.cycleAdmitted)
+    }
+
+    @Test
+    fun `given a newer admitted cycle when an older cycle ends late then the newer cycle stays admitted`() = runTest {
+        val fixture = Fixture(installer = InstallerObservation.TERMINATED)
+        fixture.coordinator.admit(TARGET_BUILD, CYCLE)
+        fixture.coordinator.onCycleEnded(CYCLE)
+        fixture.coordinator.admit(TARGET_BUILD, CYCLE + 1)
+
+        fixture.coordinator.onCycleEnded(CYCLE)
+
+        assertTrue(fixture.gate.cycleAdmitted)
+        assertEquals(MaintenanceReopenResult.CycleInProgress, fixture.coordinator.evaluateRelease())
+        assertTrue(fixture.gate.closed != null)
     }
 
     private class Fixture(
@@ -256,132 +270,10 @@ class UpdateAdmissionCoordinatorTest {
         )
     }
 
-    private class FakeGate(
-        private val closeResult: MaintenanceCloseResult = MaintenanceCloseResult.Closed,
-    ) : UpdateMaintenanceGate {
-        var closed: ClosedMaintenanceGate? = null
-        var cycleAdmitted = false
-
-        override suspend fun close(
-            fromBuild: String,
-            targetBuild: String,
-        ): MaintenanceCloseResult {
-            if (closeResult == MaintenanceCloseResult.Closed) {
-                closed = ClosedMaintenanceGate(fromBuild, targetBuild, 1L)
-            }
-            return closeResult
-        }
-
-        override suspend fun closedGate(): ClosedMaintenanceGate? {
-            return closed
-        }
-
-        override suspend fun markCycleAdmitted() {
-            cycleAdmitted = true
-        }
-
-        override suspend fun markCycleEnded() {
-            cycleAdmitted = false
-        }
-
-        override suspend fun reopenWhen(evidence: suspend (ClosedMaintenanceGate) -> Boolean): MaintenanceReopenResult {
-            val current = closed ?: return MaintenanceReopenResult.AlreadyOpen
-            return when {
-                cycleAdmitted -> MaintenanceReopenResult.CycleInProgress
-                !evidence(current) -> MaintenanceReopenResult.EvidenceMissing
-                else -> MaintenanceReopenResult.Reopened.also { closed = null }
-            }
-        }
-    }
-
-    private class FakeLock(
-        private val upgrades: Boolean = true,
-    ) : AdmissionInstanceLock {
-        var downgraded = false
-
-        override fun tryUpgradeForAdmission(): Boolean {
-            return upgrades
-        }
-
-        override fun downgradeAfterMaintenance() {
-            downgraded = true
-        }
-    }
-
-    private class FakeCompanion(
-        private val drains: Boolean = true,
-    ) : CompanionMaintenance {
-        var draining = false
-
-        override suspend fun drainForMaintenance(): Boolean {
-            draining = true
-            return drains
-        }
-
-        override fun resumeAfterMaintenance() {
-            draining = false
-        }
-    }
-
-    private class FakeCleanup(
-        private val reconcileResults: MutableList<HelperResult> = mutableListOf(SUCCESS_IDLE),
-        var statusResult: HelperResult = SUCCESS_IDLE,
-        private val restoreResult: HelperResult = SUCCESS_IDLE,
-        private val failure: Exception? = null,
-    ) : UpdateCleanupCommands {
-        val calls = mutableListOf<String>()
-        private var pending = reconcileResults.size > 1
-
-        override fun reconcileUnknown(): HelperResult {
-            failure?.let { throw it }
-            if (!pending) {
-                return statusResult
-            }
-            calls += "reconcile"
-            val next = reconcileResults.removeAt(0)
-            if (next.outcome != HelperResult.Outcome.UnknownOutcome) {
-                pending = false
-            }
-            return next
-        }
-
-        override fun status(): HelperResult {
-            failure?.let { throw it }
-            calls += "status"
-            return statusResult
-        }
-
-        override fun restore(): HelperResult {
-            calls += "restore"
-            return restoreResult
-        }
-
-        override fun configureApplications(
-            requirements: List<ByteArray>,
-            sessionEndEpochMilliseconds: Long?,
-        ): ApplicationEnforcementResponse {
-            calls += if (requirements.isEmpty()) "configure-empty" else "configure"
-            return ApplicationEnforcementResponse(SUCCESS_IDLE, 0)
-        }
-
-        override fun enable(): HelperResult {
-            calls += "enable"
-            return SUCCESS_IDLE
-        }
-    }
-
     private companion object {
         const val FROM_BUILD: String = "8"
         const val TARGET_BUILD: String = "9"
-        val SUCCESS_IDLE: HelperResult = result(HelperResult.Outcome.Success, HelperResult.State.Ready, HelperResult.Phase.Idle)
+        const val CYCLE: Long = 0L
         val UNKNOWN: HelperResult = HelperResult.unknownOutcome()
-
-        fun result(
-            outcome: HelperResult.Outcome,
-            state: HelperResult.State,
-            phase: HelperResult.Phase,
-        ): HelperResult {
-            return HelperResult(outcome, state, phase, HelperResult.RequiredAction.None, HelperResult.Failure.None)
-        }
     }
 }

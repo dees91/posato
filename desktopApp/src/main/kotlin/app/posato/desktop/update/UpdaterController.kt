@@ -9,11 +9,17 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicLong
 
 internal interface UpdateAdmission {
-    suspend fun admit(targetBuild: String): AdmissionOutcome
+    suspend fun admit(
+        targetBuild: String,
+        cycle: Long,
+    ): AdmissionOutcome
 
-    suspend fun admitPendingInstallation(targetBuild: String): AdmissionOutcome
+    suspend fun admitPendingInstallation(
+        targetBuild: String,
+        cycle: Long,
+    ): AdmissionOutcome
 
-    suspend fun onCycleEnded()
+    suspend fun onCycleEnded(cycle: Long)
 
     suspend fun evaluateRelease(): MaintenanceReopenResult
 
@@ -54,11 +60,11 @@ internal class UpdaterController(
     ) {
         val requestedIn = cycleGeneration.get()
         scope.launch {
-            val outcome = decide(targetBuild, stage)
+            val outcome = decide(targetBuild, stage, requestedIn)
             val sameCycle = cycleGeneration.get() == requestedIn
             replies.completeAdmission(token, outcome == AdmissionOutcome.Admitted && sameCycle, (outcome as? AdmissionOutcome.Refused)?.reason)
             if (outcome == AdmissionOutcome.Admitted && !sameCycle) {
-                admission.onCycleEnded()
+                admission.onCycleEnded(requestedIn)
             }
             if (outcome != AdmissionOutcome.Admitted || !sameCycle) {
                 evaluateReleaseUntilSettled()
@@ -69,11 +75,12 @@ internal class UpdaterController(
     private suspend fun decide(
         targetBuild: String,
         stage: InstallRequestStage,
+        cycle: Long,
     ): AdmissionOutcome {
         return try {
             when (stage) {
-                InstallRequestStage.NEW_INSTALLATION -> admission.admit(targetBuild)
-                InstallRequestStage.PENDING_INSTALLATION -> admission.admitPendingInstallation(targetBuild)
+                InstallRequestStage.NEW_INSTALLATION -> admission.admit(targetBuild, cycle)
+                InstallRequestStage.PENDING_INSTALLATION -> admission.admitPendingInstallation(targetBuild, cycle)
             }
         } catch (expectedCancellation: CancellationException) {
             throw expectedCancellation
@@ -83,9 +90,9 @@ internal class UpdaterController(
     }
 
     fun onCycleFinished() {
-        cycleGeneration.incrementAndGet()
+        val ended = cycleGeneration.getAndIncrement()
         scope.launch {
-            admission.onCycleEnded()
+            admission.onCycleEnded(ended)
             evaluateReleaseUntilSettled()
         }
     }

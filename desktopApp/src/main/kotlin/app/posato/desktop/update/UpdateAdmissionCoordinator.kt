@@ -7,6 +7,8 @@ import app.posato.feature.sync.macos.CompanionMaintenance
 import app.posato.feature.update.MaintenanceCloseResult
 import app.posato.feature.update.MaintenanceReopenResult
 import app.posato.feature.update.UpdateMaintenanceGate
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 internal interface UpdateCleanupCommands {
     fun reconcileUnknown(): HelperResult
@@ -59,33 +61,70 @@ internal class UpdateAdmissionCoordinator(
     private val bundleIdentity: () -> BundleIdentity,
 ) : UpdateAdmission {
     private val cleanup = MaintenanceCleanup(helper, storedProxies)
+    private val transitions = Mutex()
+    private var admittedCycle: Long? = null
 
-    override suspend fun admit(targetBuild: String): AdmissionOutcome {
+    override suspend fun admit(
+        targetBuild: String,
+        cycle: Long,
+    ): AdmissionOutcome {
+        return transitions.withLock { admitLocked(targetBuild, cycle) }
+    }
+
+    override suspend fun admitPendingInstallation(
+        targetBuild: String,
+        cycle: Long,
+    ): AdmissionOutcome {
+        return transitions.withLock { admitPendingLocked(targetBuild, cycle) }
+    }
+
+    override suspend fun onCycleEnded(cycle: Long) {
+        transitions.withLock {
+            if (admittedCycle == cycle) {
+                admittedCycle = null
+                gate.markCycleEnded()
+            }
+        }
+    }
+
+    override suspend fun restoreMaintenanceAtStartup(): Boolean {
+        return transitions.withLock { restoreAtStartupLocked() }
+    }
+
+    override suspend fun evaluateRelease(): MaintenanceReopenResult {
+        return transitions.withLock { evaluateReleaseLocked() }
+    }
+
+    private suspend fun admitLocked(
+        targetBuild: String,
+        cycle: Long,
+    ): AdmissionOutcome {
         val refusal = if (instanceLock.tryUpgradeForAdmission()) closeAndClean(targetBuild) else AdmissionRefusal.OTHER_INSTANCE
         if (refusal != null) {
             return AdmissionOutcome.Refused(refusal)
         }
         gate.markCycleAdmitted()
+        admittedCycle = cycle
         return AdmissionOutcome.Admitted
     }
 
-    override suspend fun admitPendingInstallation(targetBuild: String): AdmissionOutcome {
+    private suspend fun admitPendingLocked(
+        targetBuild: String,
+        cycle: Long,
+    ): AdmissionOutcome {
         if (gate.closedGate() == null) {
-            return admit(targetBuild)
+            return admitLocked(targetBuild, cycle)
         }
         helperMaintenance.engageBackstop()
         if (!enterMaintenanceMode()) {
             return AdmissionOutcome.Refused(AdmissionRefusal.SHUTDOWN_INCOMPLETE)
         }
         gate.markCycleAdmitted()
+        admittedCycle = cycle
         return AdmissionOutcome.Admitted
     }
 
-    override suspend fun onCycleEnded() {
-        gate.markCycleEnded()
-    }
-
-    override suspend fun restoreMaintenanceAtStartup(): Boolean {
+    private suspend fun restoreAtStartupLocked(): Boolean {
         if (gate.closedGate() == null) {
             return false
         }
@@ -94,7 +133,7 @@ internal class UpdateAdmissionCoordinator(
         return true
     }
 
-    override suspend fun evaluateRelease(): MaintenanceReopenResult {
+    private suspend fun evaluateReleaseLocked(): MaintenanceReopenResult {
         val result = gate.reopenWhen { closed ->
             val settled = replacementSettled(GateBuilds(closed.fromBuild, closed.targetBuild), installer(), bundleIdentity())
             if (settled) {
