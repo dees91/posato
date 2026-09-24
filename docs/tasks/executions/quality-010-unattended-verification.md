@@ -27,12 +27,12 @@ disk; that run directory was deleted and no other trace was found.
    and `Step` gains `launchApp`, `openURL`, and `pressKeys` with a secret
    reference; the desktop runner refuses them; fixture and round-trip tests.
    Swift: SpringBoard queries without activation, no-break spaces matched as
-   spaces, system identifiers through `id`. A scenario with a secret step
-   filters key-tap lines from the xcodebuild log, deletes the `.xcresult`
-   after exporting attachments, and skips failure capture for that step; a
-   test covers the filter, and the no-secret guard covers envelope,
-   transcript, log, and run directory. The Screen Time consent fixture works
-   with a direct passcode and with two failed Face ID attempts.
+   spaces, system identifiers through `id`. A secret never enters the
+   scenario, envelope, or transcript, and key-tap lines are filtered from the
+   xcodebuild log (unit test). `user-confirmed` 2026-09-24: the local
+   `.xcresult` may keep key labels; deleting it or skipping failure capture
+   would cost diagnosis for little gain on a private machine. The Screen Time
+   consent fixture works with a direct passcode and two failed Face ID tries.
 4. VMs as a location of the desktop target: `-t desktop --vm primary|peer`
    keeps `--process` and `doctor`. Host-side: `build` and `vm create|destroy|
    prompt`; everything else runs the guest's driver through `tart exec`, with
