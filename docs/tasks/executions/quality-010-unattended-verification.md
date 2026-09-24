@@ -29,11 +29,10 @@ Order, cheapest no-go first:
    complete Setup Assistant over Virtualization's own VNC server with a
    random local administrator password and automatic login. Then run `M0`,
    `M2`, and `M3`.
-2. Maintainer: decide D3 to D5 on that evidence.
-3. Maintainer, one-time checklist in chat: create the test Apple Account with
+2. Maintainer, after D3 to D5, one-time checklist in chat: create the test Apple Account with
    iCloud Keychain and the D5 trusted number or device, and enter the first
    two-factor code. Then the agent runs `M1`, `M4`, and `M5`.
-4. `M6` and `M7` when the test iPhone exists (D4).
+3. `M6` and `M7` on the test iPhone (D4).
 
 Measurements, each a go or no-go with its run directory:
 
@@ -72,14 +71,13 @@ scripts stay in the ignored scratch area.
 
 Open decisions for the maintainer:
 
-- D1, `user-confirmed` 2026-09-24: macOS 26 for the golden VM. The
-  `QUALITY-007` macOS 15 image stays separate and must also be created from an
-  IPSW on this host.
-- D2, `user-confirmed` 2026-09-24: the internal disk (about 150 GB free).
+- D1, D2, `user-confirmed` 2026-09-24: macOS 26 golden VM on the internal
+  disk. The `QUALITY-007` macOS 15 image stays separate and must also be
+  created from an IPSW on this host.
 - D3, `user-confirmed` 2026-09-24: register the two VM identifiers through
   the App Store Connect API, which this task sets up (team key outside Git).
-- D4, `user-confirmed` 2026-09-24: a dedicated test iPhone exists; it moves
-  to the test Apple Account.
+- D4, `user-confirmed` 2026-09-24: the dedicated test iPhone (iPhone 13 mini,
+  iOS 26.5.2, wired, Developer Mode on) is signed in to the test account.
 - D5, `user-confirmed` 2026-09-24: the test iPhone is the trusted device.
 - D6, only if `M2` fails: whether guest Screen Sharing input is acceptable.
 - D7, `user-confirmed` 2026-09-24: risk accepted; the VNC server listens on
@@ -100,7 +98,10 @@ Open decisions for the maintainer:
   together leave one of them permanently re-identified. The sync companion of
   a development package is rejected by AMFI in an unregistered VM ("restricted
   entitlements"). Two registered identifiers (primary and peer lines) cover
-  every per-run clone if a golden VM never runs beside its own clone.
+  every per-run clone if a golden VM never runs beside its own clone. After
+  registering both via the App Store Connect API and recreating the
+  companion profile, the companion starts from a local copy in the guest; on
+  the virtiofs share `codesign` rejects the bundle, so the driver must copy it.
 - `M3` desktop driving, `observed`: with the worktree and a JDK shared into
   the guest, `doctor`, `launch`, `snapshot`, `screenshot`, `tap`, and
   `db query` work through `tart exec` after Accessibility and Screen Recording
@@ -112,9 +113,8 @@ Open decisions for the maintainer:
 
 ## Verification
 
-- Worktree provisioned from the main checkout's complete ignored `local.properties`. `:posato-control:installDist` and the driver's `--help` pass.
+- Worktree provisioned from the main checkout's ignored `local.properties`; `:posato-control:installDist` passes.
 
 ## Blockers and accepted risks
 
-- The test Apple Account and the dedicated test iPhone are maintainer inputs. The physical Mac stays serialized with `MACOS-011` Stage 2 notarized experiments when they switch network services.
 - Two macOS guests at a time: the golden and peer VMs cannot run beside the `QUALITY-007` macOS 15 VM.
