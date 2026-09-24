@@ -23,44 +23,27 @@ Starting facts, `source-claim` (Apple Support 120468, Apple Developer Forums
 on this macOS 15+ host; every restore is a clone; at most two macOS guests run
 at once; a registered VM can still be rejected by a development profile.
 
-Order, cheapest no-go first:
+Order, cheapest no-go first: agent setup, then `M0` and `M3`; the
+maintainer's one-time account checklist (D3 to D5); then `M1`, `M4`, `M2`,
+and `M5` on the VMs and `M6` and `M7` on the test iPhone. `M0`, `M1`, `M3`,
+and the sync half of `M4` are recorded under Result. Remaining, each a go or
+no-go with its run directory:
 
-1. Agent: install Tart, create one VM with `tart create --from-ipsw` (D1, D2),
-   complete Setup Assistant over Virtualization's own VNC server with a
-   random local administrator password and automatic login. Then run `M0`,
-   `M2`, and `M3`.
-2. Maintainer, after D3 to D5, one-time checklist in chat: create the test Apple Account with
-   iCloud Keychain and the D5 trusted number or device, and enter the first
-   two-factor code. Then the agent runs `M1`, `M4`, and `M5`.
-3. `M6` and `M7` on the test iPhone (D4).
-
-Measurements, each a go or no-go with its run directory:
-
-- `M0` development provisioning: identifier stability across restart, clone,
-  and concurrent VMs, then the development sync companion in the guest.
-  No-go means no per-task sync in a VM; the Developer ID path stays a release
-  check in Production and is not a substitute.
 - `M2` VNC control through Virtualization's own server: 20 of 20 for the
   helper's SecurityAgent prompt; fewer runs, each with a stated reset, for
   the one-time System Settings approvals and the Gatekeeper first-open
-  dialog, located by host-side text recognition. Guest Screen Sharing is a
-  different input class and needs D6 before it counts.
-- `M3` desktop driving in the guest: `doctor`, `launch`, `snapshot`,
-  `screenshot`, and `db query` for `-t desktop`, equivalent to a host run.
-- `M1` iCloud identity: a clone of the signed-in golden VM appears as a
-  separate device in the test account and joins iCloud Keychain, and an
-  agent completes any required re-sign-in with no maintainer action. Fallback:
-  one long-lived VM per role reset by application state, listing the lost
-  rows (Gatekeeper first open, privacy approvals, helper approval).
-- `M4` sync, helper, and enforcement: the Sync with iCloud consent on the
-  golden VM and the peer linking to it in the Development environment; the
-  pause page for a paused synthetic domain, a control domain loading, the
-  paused application ending, and both recovering after the session.
+  dialog. Guest Screen Sharing is a different input class and needs D6.
+- `M4` enforcement half: the pause page for a paused synthetic domain, a
+  control domain loading, the paused application ending, and both recovering
+  after the session.
 - `M5` network-service switching with one virtual interface: a second
   service on the same interface, a reordered service list, or a second
   interface, compared with the physical-Mac scenario.
 - `M6` Screen Time consent and any passcode prompt through XCUITest on the
   test iPhone; `M7` picker taps located by text recognition.
+- No-go fallbacks: without development provisioning there is no per-task sync
+  in a VM (Developer ID is a release check only); without clone sessions, one
+  long-lived VM per role reset by application state.
 
 Secret handling: each host Keychain item has an access list limited to its
 consumer, and a secret is piped straight into the typing or sign-in step,
@@ -110,6 +93,17 @@ Open decisions for the maintainer:
   `scrollTo` only accepts a target inside the largest scroll area, so the
   onboarding Continue button below that area in the guest's taller window
   never counts as reached (run `m3-guest-scenario`, step 3).
+
+- `M1` iCloud identity, `observed`: the golden VM signed in once with a
+  two-factor code approved on the test iPhone and joined iCloud Keychain with
+  the VM password. A fresh clone of it boots signed in with no prompt; the
+  peer (same machine lineage, different identifier) signed in without a
+  code. Go, with one gap: the account's device list could not be read.
+- `M4` sync half, `observed`: in the clone, onboarding **Sync with iCloud**
+  established a workspace; the peer joined the same one (identical bootstrap
+  row), and a website added on the clone arrived on the peer after
+  **Sync now**. The peer now carries Posato data and must be reset before it
+  serves as a base again. Enforcement half, `M2`, and `M5` remain.
 
 ## Verification
 
