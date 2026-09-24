@@ -18,25 +18,15 @@
 
 ### Stage 1 plan
 
-Starting facts, `source-claim` (Apple Support 120468, Apple Developer Forums
-787827, Tart issue 1068): iCloud works only in a guest created from an IPSW
-on this macOS 15+ host; every restore is a clone; at most two macOS guests run
-at once; a registered VM can still be rejected by a development profile.
-
 Order, cheapest no-go first: agent setup, `M0`, `M3`, the maintainer's
-account checklist, then `M1`, `M4`, `M2`, `M5` on VMs (all under Result).
-Remaining: `M6` Screen Time consent and any passcode prompt through XCUITest
-on the test iPhone, and `M7` picker taps located by text recognition.
-- No-go fallbacks: without development provisioning there is no per-task sync
-  in a VM (Developer ID is a release check only); without clone sessions, one
-  long-lived VM per role reset by application state.
+account checklist, `M1`, `M4`, `M2`, `M5` on VMs, then `M6` Screen Time
+consent and `M7` application picker on the test iPhone; all under Result.
+Platform facts and their sources live in the
+[unattended verification topic](../../wiki/topics/unattended-verification.md).
 
-Secret handling: each host Keychain item has an access list limited to its
-consumer, and a secret is piped straight into the typing or sign-in step,
-never printed, logged, or written to a run directory; Tart's VNC address
-stays outside run logs. Captures that show the account email are skipped,
-and a final check searches every run artifact for the secrets. Measurement
-scripts stay in the ignored scratch area.
+Secret handling: host Keychain secrets are piped straight into typing or
+sign-in, never printed or written to run directories, and Tart's VNC address
+stays outside run logs. The scans of all run directories found none.
 
 Open decisions for the maintainer:
 
@@ -104,10 +94,21 @@ Open decisions for the maintainer:
   and re-enabling the original leaves "Restrictions active" with no proxy and
   no application termination, and a stale ownership record then makes every
   later start report "Restrictions may still apply". Candidate `MACOS` row.
-- `M6` blocked: the first XCUITest run on the test iPhone times out "while
-  enabling automation mode" until UI Automation is enabled on the device
-  (maintainer, once). The CoreDevice tunnel also idles, so `doctor` reports no
-  device until `devicectl device info details` wakes it.
+- `M6` go, `observed` with a temporary driver probe (not committed): after
+  the maintainer enabled UI Automation and entered the passcode once, about
+  25 driver runs asked nothing more. The Screen Time consent passes through
+  SpringBoard: Continue, Allow (Face ID), two failed Face ID attempts, Enter
+  Passcode, six keypad keys from the host Keychain, Done; the app then shows
+  access allowed (runs `m6-probe*`). Labels carry no-break spaces, and the
+  authentication buttons have stable `com.apple.localauthentication`
+  identifiers. The CoreDevice tunnel idles within a minute and must be woken.
+- `M7` go: the application picker's rows, search field, and Save are in the
+  app's own accessibility tree; the unchanged driver searched, toggled, and
+  saved an application (run `m7-picker`), no text recognition needed.
+- Stage 3 preview, `observed`: during a session Safari showed the system
+  "site not allowed" page for the paused domain and Calculator its Screen
+  Time shield, both readable in the SpringBoard tree; after an early end both
+  opened normally (runs `ios-block*`, `ios-unblock-probe`).
 
 ## Verification
 

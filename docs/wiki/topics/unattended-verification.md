@@ -111,15 +111,32 @@ directories and the acceptance state.
 
 - `observed`: the first XCUITest run on a new device fails with "Timed out
   while enabling automation mode" until UI Automation is enabled on the device
-  (Settings, Developer); this is a one-time step for its owner.
-- `observed`: the CoreDevice tunnel to a wired iPhone idles; `devicectl list`
-  then shows "available (paired)" and the driver reports no device until a
-  call such as `xcrun devicectl device info details --device <id>` wakes it.
+  (Settings, Developer). The next run shows a passcode prompt for XCTest; after
+  its owner enters it once, about 25 further runs asked nothing. A restart
+  needs one unlock by the owner anyway.
+- `observed`: the CoreDevice tunnel to a wired iPhone idles within about a
+  minute; `devicectl list` then shows "available (paired)" and the driver
+  reports no device until a call such as
+  `xcrun devicectl device info details --device <id>` wakes it.
+- `observed`: the Screen Time consent is reachable through SpringBoard
+  (`XCUIApplication(bundleIdentifier: "com.apple.springboard")`) without
+  activating it: the first sheet's Continue, then Allow with Face ID. With
+  nobody in front of the phone Face ID fails twice and offers Enter Passcode;
+  the passcode keypad exposes keys `0` to `9`. The authentication buttons have
+  stable `com.apple.localauthentication.ax.authentication.button.*`
+  identifiers, and system labels can contain no-break spaces, so match by
+  identifier or by a fragment rather than a whole localized label. A test
+  device without Face ID enrolled goes straight to the passcode.
+- `observed`: the Family Controls application picker is not opaque to
+  XCUITest: its rows (switches labeled with the application name), search
+  field, and Save are in the Posato app's own accessibility tree.
+- `observed`: during a session the paused domain shows Safari's "site not
+  allowed" page and a paused application shows the Screen Time shield; both
+  texts are readable in the SpringBoard tree, so blocking can be asserted.
 
 ## Open
 
-- `open`: the iPhone measurements (Screen Time consent, passcode, application
-  picker, two-factor approval) are still being measured in `QUALITY-010`
-  Stage 1.
+- `open`: approving a two-factor sign-in request on the test iPhone through
+  SpringBoard, and how often the automation-mode passcode returns over days.
 - `open`: how `posato-control` will package these steps for contributors is
   decided in Stage 2.
