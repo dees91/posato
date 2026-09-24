@@ -3,16 +3,25 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 2
+- **Revision:** 3
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-18
+- **Last amended:** 2026-09-23
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
   restates the `TARGETS-006` outcome as a matching rule with one stored row
   per typed host, after the completed-change review of PR #72 rejected
-  materialized `www` counterparts.
+  materialized `www` counterparts. Revision 3 adds the `QUALITY-010` backlog row
+  from idea 10 (verification without the maintainer). At the maintainer's
+  request it merges `QUALITY-006`, verifying actual blocking from the driver,
+  into that row and deletes `QUALITY-006` from the backlog. It also adds the
+  `PAUSE-001` backlog row from idea 11 (a useful moment on the pause page). It
+  also adds the `I18N-001` backlog row from idea 12 (Polish as the first
+  additional language). It also adds the `NAV-001` backlog row from idea 13
+  (Navigation 3 and system back gestures). Preliminary rows
+  `TARGETS-007` and `TARGETS-008` come from ideas 14 and 15 (file export and
+  import, and sharing across Apple Accounts).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -182,7 +191,6 @@ The idea numbers refer to the wiki idea queue.
 | Task | Outcome | Epic | Origin | What unblocks assignment |
 | --- | --- | --- | --- | --- |
 | `SCHEDULE-002` | Deliver recurring schedules on both platforms per the `SCHEDULE-001` decision. | Schedules | Idea 1 | `SCHEDULE-001` decision accepted |
-| `QUALITY-006` | Verify actual website blocking and unblocking on a physical iPhone and Mac from the verification driver, so physical acceptance needs fewer attended steps. | Verification | Pull request #52 discussion | A release whose physical gates make attended runs the bottleneck |
 | `FAMILY-001` | Decide whether a parent-and-child use case belongs in Posato: device ownership, consent, access boundaries, and privacy. | Product discovery | Idea 2 | A product decision that the personal-use model may extend |
 | `FILTER-001` | Decide whether reducing advertising belongs in Posato and which coverage is useful and feasible. | Product discovery | Idea 3 | A product decision on scope beyond blocking chosen targets |
 | `RESEARCH-001` | Compare the Focusly extension's interactions and features with Posato and list the ones worth adopting. | Product discovery | Idea 4 | Any planning checkpoint; cheap |
@@ -197,6 +205,12 @@ The idea numbers refer to the wiki idea queue.
 | `PLATFORM-001` | Decide the order, enforcement mechanisms, privilege models, and shared UI for Android, Linux, and Windows. | Platform coverage | Availability page planned platforms | A product decision to leave the Apple-only release train |
 | `QUALITY-008` | Decide whether golden or automated UI tests join the quality gate now that the interface is stable, and with which tool. | Verification | Engineering quality contract post-MVP decision | Two releases of interface stability |
 | `QUALITY-009` | Decide whether hosted CI returns for pull requests and whether external contributions are accepted, with the Actions budget and review load that implies. | Verification | First-release readiness policy | Maintainer capacity decision |
+| `QUALITY-010` | Let an agent verify every task without the maintainer: Posato on macOS in Tart virtual machines and on a dedicated physical test iPhone, both on a dedicated test Apple Account, with every system prompt, permission, and picker driven by the verification driver after one-time setup, including observing actual website and application blocking and unblocking. | Verification | Idea 10; absorbs `QUALITY-006` (pull request #52 discussion) | Passing go/no-go measurements (CloudKit in a VM; Screen Time consent and the application picker through XCUITest), plus the maintainer's test account and dedicated iPhone |
+| `PAUSE-001` | Decide whether the pause page should offer a useful local activity, from the session's stated intention up to user-provided flashcards, within the privacy boundary, the self-contained pause page of `DESIGN-003`, and the iOS shield limits; end with a product decision and a delivery plan. | Product discovery | Idea 11 | A product decision that the pause moment is in scope |
+| `I18N-001` | Ship Posato in Polish as the first additional language, following the system language: the whole UI of both applications with Polish plural forms, the macOS pause page, iOS permission descriptions, and date and time formatting, plus the App Store listing and screenshots and a Polish posato.app including the privacy policy. It adds a narrow `AGENTS.md` exception so the agent can author localized product resources for the maintainer's approval, and keeps verification recipes independent of English labels. | Platform coverage | Idea 12 | Any planning checkpoint; the maintainer's time to review the Polish copy |
+| `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the two-destination navigation accepted in `DESIGN.md`. | Platform coverage | Idea 13; `IOS-004` decision | Any planning checkpoint |
+| `TARGETS-007` | Decide whether and how saved websites and application choices can be exported to and imported from a file: format, encryption, what an application choice can carry across devices, merge or replace, and sync interaction; end with a product decision and a delivery plan. Preliminary. | Target management | Idea 14 | A product decision that file transfer is in scope |
+| `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
 
 ## Coverage matrix
 

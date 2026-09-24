@@ -732,6 +732,107 @@ not an accepted feature plan or an expansion of the MVP.
    cancellation/recovery proof required before separately activated
    `MACOS-011` delivery. No updater is implemented by the discovery.
 
+10. **Verification without the maintainer.** `user-confirmed` (2026-09-23):
+    an agent verifies every task on its own, and the maintainer only helps
+    with one-time setup. The two targets are Posato on macOS in Tart virtual
+    machines on the supported Mac, and Posato on a dedicated physical test
+    iPhone. Both sign in with a dedicated test Apple Account, whose CloudKit
+    private data is separate from the maintainer's. `inferred` from the
+    `MACOS-011` Stage 1 discussion:
+    - Keyboard and pointer input over the VM's VNC display counts as hardware
+      input to the guest. It can drive SecurityAgent, System Settings,
+      Gatekeeper, and Sparkle without loosening the ADR 0004 authorization
+      rules.
+    - A golden VM image keeps the one-time approvals.
+    - A second VM gives a Mac-to-Mac sync peer.
+    - On the iPhone, the XCUITest driver can reach SpringBoard alerts. It can
+      tap the out-of-process application picker by screen coordinates,
+      located with text recognition.
+    - Development builds use the CloudKit Development environment, which can
+      be reset.
+    - Credentials stay in the host Keychain and are read at run time.
+
+    `open` go/no-go measurements:
+    - CloudKit and iCloud Keychain for the Developer ID sync companion inside
+      a VM;
+    - Screen Time consent and any passcode prompt through XCUITest;
+    - coordinate taps in the picker;
+    - deterministic VNC control;
+    - the network-service-switch scenarios with the VM's single network
+      interface.
+11. **A useful moment on the pause page.** `user-confirmed` (2026-09-23):
+    explore offering something worthwhile when a person reflexively opens a
+    paused website instead of an empty pause page, such as flashcards or a
+    short learning prompt. The motivating case is a developer who hands work
+    to an agent and, while waiting for it, opens a distracting site out of
+    habit. `inferred` constraints:
+    - The macOS pause page is a local page served by the helper. It stays
+      self-contained and free of attempted targets (`DESIGN-003`), fetches
+      nothing remote, and records no browsing.
+    - The iOS Screen Time shield can only change its icon, title, subtitle,
+      and two buttons, so iOS parity is limited to text or a hand-off to the
+      app.
+    - Content could come from user-provided decks, synchronized like other
+      data, rather than built-in material.
+    - Lighter options could come first: the session's stated intention, the
+      time remaining, or one short prompt.
+
+    Whether review progress may be recorded without revealing when paused
+    sites were attempted remains `open`.
+12. **Polish as the first additional language.** `user-confirmed`
+    (2026-09-24):
+    - Posato follows the system language, with no in-app switch. People can
+      still choose a per-app language in the system settings.
+    - The first Polish version covers the whole UI of both applications with
+      Polish plural forms, the macOS pause page, and the iOS permission
+      descriptions. It also covers date and time formatting, the App Store
+      listing and screenshots, and a Polish posato.app including the privacy
+      policy.
+    - The agent drafts the Polish copy and the maintainer, a native speaker,
+      approves it. This needs a narrow `AGENTS.md` exception for localized
+      product resources; the rest of the repository stays in English.
+
+    `inferred` from the current code:
+    - The English strings live in the shared Compose resources, which have no
+      plurals.
+    - The pause page is rendered by the Swift helper.
+    - Driver recipes select elements by English labels, which matters for
+      `QUALITY-010`.
+13. **Navigation 3 and system back gestures.** `user-confirmed` (2026-09-22,
+    the `IOS-004` decision): adopt Navigation 3 with system back gestures as
+    a separate task. `inferred`:
+    - The applications already have screen stacks, such as About Posato to
+      Licenses to a license text, that return only through explicit **Back**
+      actions.
+    - There is no interactive edge swipe on iPhone or iPad, and no keyboard
+      back on the Mac.
+    - `architecture-direction` names Navigation 3 as the accepted default for
+      multi-screen flows.
+
+    The two-destination navigation in `DESIGN.md` stays unchanged. Only the
+    stacks within a destination move to Navigation 3.
+14. **Export to and import from a file.** `user-confirmed` (2026-09-24,
+    preliminary): let a person export the saved lists to a file and import
+    them from one, for backup, a fresh install, or moving between devices.
+    `open`:
+    - The format, and whether the file is encrypted. The list of websites is
+      personal data, and the privacy policy promises nothing leaves the
+      device unasked.
+    - How applications are represented. On iOS, Screen Time selections are
+      opaque device tokens that cannot move between devices, so only names or
+      nothing can travel.
+    - Merge versus replace on import, and how imported changes enter the sync
+      intent log.
+15. **Quick sharing of saved websites across Apple Accounts.**
+    `user-confirmed` (2026-09-24, preliminary): a fast way to pass saved
+    websites to a device signed in to a different iCloud account, for example
+    a partner's or a second personal account, where iCloud sync cannot reach.
+    `inferred` options: AirDrop or the share sheet carrying an idea-14 export
+    file, a QR code or link that holds the list, or a one-time pairing. `open`:
+    - the privacy of a shared list, and whether it is encrypted;
+    - whether sharing is one-time or ongoing;
+    - how it relates to the portable workspace in `SYNC-018`.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do

@@ -1876,3 +1876,22 @@ to scope, feasibility, or delivery.
   README now links to the listing.
 - Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
   `docs/wiki/topics/first-release-readiness.md`.
+
+## [2026-09-24] decision | Backlog refinement: verification, pause page, Polish, navigation, sharing
+
+- Idea 10 and backlog row `QUALITY-010` record the maintainer's goal: an agent
+  verifies every task without human help. The targets are Tart macOS VMs and
+  a dedicated test iPhone, both on a dedicated test Apple Account, and the
+  go/no-go measurements come first. `QUALITY-010` absorbs `QUALITY-006`.
+- Idea 11 and discovery row `PAUSE-001` explore offering a useful local
+  activity on the pause page instead of an empty page, within the privacy
+  boundary and the iOS shield limits.
+- Idea 12 and row `I18N-001` plan Polish as the first additional language.
+  It follows the system language and covers both applications, the store
+  listing, and the website. The agent drafts the copy under a narrow
+  `AGENTS.md` exception, and the maintainer approves it.
+- Idea 13 and row `NAV-001` move screen stacks to Navigation 3 with system
+  back gestures, as the `IOS-004` decision required.
+- Preliminary ideas 14 and 15, with discovery rows `TARGETS-007` and
+  `TARGETS-008`, explore file export and import of the saved lists and quick
+  sharing with a device on a different Apple Account.
