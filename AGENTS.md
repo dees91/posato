@@ -106,6 +106,46 @@ tools that only scan their own directory, and the copy under
 the run directory under the ignored `build/verification/` as evidence and
 keep screenshots, logs, and identifiers out of tracked files.
 
+Verification is unattended by default (`user-confirmed` 2026-09-24). Every
+task verifies its change without the maintainer's help:
+
+- the macOS application runs only in Tart virtual machines, through
+  `posato-control` with `--vm primary|peer`, and every system dialog is
+  answered with `posato-control vm prompt` (administrator password, helper
+  approval, privacy panes, Gatekeeper, iCloud renewal);
+- iOS changes run on the dedicated test iPhone with `-t device`, including
+  Screen Time consent (`fixtures/scenarios/screen-time-consent.json`) and the
+  application picker;
+- the one-time environment is described in
+  [`docs/development/unattended-verification.md`](docs/development/unattended-verification.md).
+
+Never run, install, update, reset, uninstall, or replace a Posato build on
+the maintainer's own Mac, not even as an exception: the Posato installed
+there is the maintainer's real copy and its data, helper, Keychain items,
+and iCloud state are not test fixtures. Build on the host, then run
+the build in a VM; `posato-control` refuses desktop commands outside a
+virtual machine except `build`, `doctor`, and `artifacts`.
+
+Do not ask the maintainer to click, type, or approve anything during
+verification. An attended iOS step is allowed only for an extraordinary
+reason the environment cannot cover, such as an iOS version or hardware
+feature the test iPhone lacks. Name that reason in the task's execution
+record or pull request before asking. When a missing piece of the
+environment blocks a run, report it as a blocker with the exact failing
+command instead of switching to an attended step. Extend `posato-control`
+when a new dialog or flow cannot be driven yet.
+
+## Apple provisioning and signing
+
+Development certificates, device registrations (Macs, iPhones, and the
+verification VMs), and development provisioning profiles come from
+`tools/posato-provisioning`, documented in
+[`docs/development/apple-provisioning.md`](docs/development/apple-provisioning.md).
+It uses the App Store Connect team key configured in the ignored
+`local.properties`. Use it instead of the Apple Developer portal or ad hoc
+App Store Connect API calls; when it lacks an operation a task needs, extend
+the tool rather than scripting around it.
+
 ## Suppression policy
 
 Fix the underlying source of Detekt, ktlint, compiler, and other quality-tool

@@ -78,11 +78,11 @@ own golden VM line, and address them with `--vm primary|peer`.
   peer shows Resume restrictions and needs its own `vm prompt admin`.
   Application choices stay local, so only the website is paused there.
 
-### On the physical Mac and iPhone
+### Between a Mac VM and the test iPhone
 
 Read `tools/posato-control/README.md` for commands and scenario syntax. Use a
-signed Mac package and a connected unlocked development-signed iPhone on the
-same maintainer-owned iCloud account. `doctor` must confirm the signing
+Tart VM clone (`--vm primary`, never the host Mac) and the connected test
+iPhone, both signed in to the test Apple Account. `doctor` must confirm the signing
 identity,
 profile, companion, development team, and device. The Simulator proves only
 local behavior and truthful degradation without its own iCloud account.

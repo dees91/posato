@@ -77,9 +77,6 @@ Preconditions:
   session-expiry-desktop.json. Observe enforcement inside the guest with `tart exec`:
   `curl --proxy` through the address `scutil --proxy` reports returns the pause page for
   `http://example.com`, and a paused application ends within seconds of `open -a`.
-- **Start with enforcement (physical Mac, attended):** run session-start-desktop.json while the
-  maintainer confirms the administrator prompt at the Mac when it appears; an unconfirmed
-  prompt lands in the action-required path above instead.
 - **Duration:** In setup use `$PC tap -t <target> --text "Increase Hours" --role button`
   and the corresponding Decrease Hours / Increase Minutes / Decrease Minutes
   buttons. Read the changed values and Ends at preview. At 24 hours minutes are
@@ -136,9 +133,8 @@ Preconditions:
 
 ## Gotchas
 
-- Starting on the Mac raises the administrator prompt for the helper Apply. In a Tart VM
-  `vm prompt admin` confirms it; on the physical Mac plan attended runs, otherwise expect
-  the action-required state with Retry.
+- Starting on the Mac raises the administrator prompt for the helper Apply; `vm prompt
+  admin` confirms it, otherwise expect the action-required state with Retry.
 - Removing the network service that holds the proxy settings during a session leaves a
   false "Restrictions active" and a stale record (`MACOS-020`); do not use that path as a
   cleanup step.

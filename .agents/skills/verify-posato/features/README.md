@@ -9,8 +9,8 @@ feature file as the recipe.
 - Build the CLI with `./gradlew :posato-control:installDist` and use
   `PC=tools/posato-control/build/install/posato-control/bin/posato-control`.
 - Pick one target: `sim` (booted `iPhone 17`, app installed, no permissions
-  needed), `desktop` (Accessibility and Screen Recording granted to the agent's
-  host application), or `device` (connected, unlocked iPhone and
+  needed), `desktop` (only in a Tart VM clone with `--vm primary|peer`, never
+  on the host Mac; see the skill's unattended section), or `device` (connected, unlocked iPhone and
   `posato.apple.developmentTeam` in the ignored `local.properties`).
 - Launch through the CLI (`launch -t <target>`), wait for the `Paused items`
   button (`wait --for exists --text "Paused items" --role button`), and
@@ -22,9 +22,9 @@ feature file as the recipe.
   --text "Paused items" --role button` and wait for `Search`; the
   Sessions recipe starts on `Session` and needs at least one website first.
 - Start recipes from a state with no website named `example.com` and no
-  active session; the Simulator can start from `launch --fresh`, the desktop
-  keeps the developer's real data, so remove what you add and end what you
-  start instead of resetting.
+  active session; the Simulator can start from `launch --fresh` and a desktop
+  VM clone from `vm create`; on the test iPhone remove what you add and end
+  what you start instead of resetting.
 - Never drive an instance that this run did not launch.
 
 ## Driving conventions

@@ -70,7 +70,13 @@ restages an ad-hoc package and silently removes the application picker. Rerun
 Every command takes `--target/-t desktop|simulator|device` (`sim` is an
 alias) plus the common options `--udid`, `--run-id`, `--artifacts`,
 `--timeout`, `--human`, and `--verbose`. Options go after the command name:
-`posato-control launch -t desktop`.
+`posato-control launch -t desktop --vm primary`.
+
+The desktop target never drives the application on the host Mac, whose
+installed Posato is the maintainer's real copy: outside a virtual machine
+(`kern.hv_vmm_present` is 0) every desktop command except `build`, `doctor`,
+and `artifacts` fails with `DESKTOP_HOST_REFUSED`. Add `--vm primary|peer`
+([Tart VMs](#tart-vms)).
 
 ```json
 {
@@ -93,7 +99,7 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors, which print the same envelope) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |

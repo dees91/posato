@@ -1,8 +1,8 @@
 # Apple Development Provisioning
 
 `posato-provisioning` obtains the Apple **development** resources the Posato
-targets need, so no portal step blocks an agent. It registers this Mac and the
-connected iPhone, confirms the development certificate this Mac signs with, and
+targets need, so no portal step blocks an agent. It registers this Mac, the
+connected iPhone, and the Tart verification VMs, confirms the development certificate this Mac signs with, and
 creates, downloads, and installs a development profile for any of the five
 Posato App IDs.
 
@@ -46,9 +46,14 @@ every known value redacted.
 | Command | Effect |
 | --- | --- |
 | `doctor` | Reports every provisioning condition as OK, MISSING, or UNKNOWN with one action that would clear it. Exits non-zero while an error-severity condition is unmet. |
-| `devices register` | Registers this Mac and every **wired** iPhone the account does not already hold. |
+| `devices register [--tart-vm <name>]...` | Registers this Mac, every **wired** iPhone, and each named running Tart VM the account does not already hold. VMs are named `Posato Verification VM`. |
 | `certificates ensure [--create]` | Confirms this Mac signs with a certificate the account also holds. With `--create`, generates a key pair, requests a certificate, and imports it. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes the development profile for one App ID current and installs it. |
+
+Use this tool, not the portal, for every development device, certificate, and
+profile; when it lacks an operation a task needs, extend it. The
+[unattended verification guide](unattended-verification.md) uses
+`--tart-vm` for its golden VMs.
 
 Exit codes: `2` usage, `3` a condition the maintainer must clear, `4` a
 resource the account does not have, `1` anything that failed while working.

@@ -1,7 +1,10 @@
 # Unattended Verification Environment
 
-This guide sets up the environment in which an agent verifies a Posato change
-with no person at the Mac or the phone: the macOS app inside Tart virtual
+Every task verifies its change in this environment; attended verification is
+an exception that needs a named extraordinary reason (`AGENTS.md`,
+Application verification). The macOS application never runs on the host Mac:
+the host builds the package and `posato-control` refuses to drive it there. This guide sets up the environment in which an
+agent verifies a Posato change with no person at the Mac or the phone: the macOS app inside Tart virtual
 machines and the iOS app on a dedicated test iPhone, both signed in to a
 dedicated test Apple Account. After the one-time setup below, the
 `posato-control` driver answers every system dialog itself. Background,
@@ -75,19 +78,20 @@ privacy approvals.
 
 The sync companion's development profile only runs on registered devices.
 Each golden VM line needs one registration; its per-run clones inherit the
-identifier.
+identifier. Register them with `posato-provisioning`, never in the portal:
 
 ```shell
-tart run <golden> --no-graphics &
-tart exec <golden> /bin/sh -c "system_profiler SPHardwareDataType | grep 'Provisioning UDID'"
+tart run <primary-golden> --no-graphics &
+tart run <peer-golden> --no-graphics &
+tools/posato-provisioning/build/install/posato-provisioning/bin/posato-provisioning \
+  devices register --tart-vm <primary-golden> --tart-vm <peer-golden>
 ```
 
-Register that identifier as a Mac device in the Apple Developer portal, then
-refresh the profile with
-`posato-provisioning profiles ensure app.posato.macos.sync --replace` and
-rebuild with `posato-control build -t desktop`. Never run a golden VM at the
-same time as one of its clones: macOS then gives one of them a new
-identifier, which the profile no longer covers.
+Then refresh the profile with
+`posato-provisioning profiles ensure app.posato.macos.sync --replace`, shut
+both guests down from inside, and rebuild with `posato-control build -t
+desktop`. Never run a golden VM at the same time as one of its clones: macOS
+then gives one of them a new identifier, which the profile no longer covers.
 
 ## Configure the driver
 

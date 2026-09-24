@@ -23,6 +23,8 @@
 
 ## Verification
 
+<!-- Unattended by default (AGENTS.md): macOS in a Tart VM with --vm, never on the host Mac; iOS on the test iPhone. -->
+
 - `<Only a check expected to detect a defect in this task.>`
 
 ## Decisions or blockers

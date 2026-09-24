@@ -223,16 +223,18 @@ tools/posato-control/build/install/posato-control/bin/posato-control doctor
 ```
 
 Every command prints one JSON envelope and takes `--target desktop|simulator|device`.
-The desktop backend needs macOS Accessibility and Screen Recording access for
-the terminal or IDE process that runs it; the physical iPhone needs
+The desktop target runs only inside a Tart VM (`--vm primary|peer`) and never
+drives the application on the host Mac, where the installed Posato is the
+maintainer's real copy; the physical iPhone needs
 `posato.apple.developmentTeam` in the ignored `local.properties` file. All
 evidence stays under the ignored `build/verification/` directory. The command
 reference, query syntax, scenario format, and per-target notes live in
 [`tools/posato-control/README.md`](../../tools/posato-control/README.md).
 
-To verify with nobody at the Mac or the phone, run the desktop app inside Tart
-virtual machines and the iOS app on a dedicated test iPhone; the one-time
-setup is in the [unattended verification guide](unattended-verification.md).
+Verification is unattended and mandatory for every task (`AGENTS.md`): the
+desktop app runs inside Tart virtual machines and the iOS app on a dedicated
+test iPhone; the one-time setup is in the
+[unattended verification guide](unattended-verification.md).
 
 ## Apple development provisioning
 
