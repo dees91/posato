@@ -40,6 +40,10 @@ data class Step(
     val timeoutSeconds: Double? = null,
     val maxDepth: Int? = null,
     val orientation: String? = null,
+    val bundleId: String? = null,
+    val url: String? = null,
+    val secret: String? = null,
+    val optional: Boolean = false,
 )
 
 @Serializable
@@ -65,7 +69,11 @@ object Actions {
     const val TERMINATE = "terminate"
     const val RELAUNCH = "relaunch"
     const val ORIENT = "orient"
-    val all: Set<String> = setOf(WAIT_FOR, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH, ORIENT)
+    const val LAUNCH_APP = "launchApp"
+    const val OPEN_URL = "openURL"
+    const val PRESS_KEYS = "pressKeys"
+    val iosOnly: Set<String> = setOf(ORIENT, LAUNCH_APP, OPEN_URL, PRESS_KEYS)
+    val all: Set<String> = setOf(WAIT_FOR, TAP, TYPE, PRESS, ASSERT, SCREENSHOT, SNAPSHOT, SLEEP, SCROLL_TO, TERMINATE, RELAUNCH) + iosOnly
 }
 
 object Orientations {

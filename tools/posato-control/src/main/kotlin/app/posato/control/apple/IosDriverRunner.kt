@@ -50,12 +50,14 @@ class IosDriverRunner(
         val resultBundle = context.artifactPath("driver", "$target-$invocation.xcresult")
         val encoded = Base64.getEncoder().encodeToString(ControlJson.compact.encodeToString(Scenario.serializer(), scenario).toByteArray())
         val log = context.recordArtifact(context.artifactPath("driver", "$target-$invocation.xcodebuild.log"))
+        val secrets = DriverSecrets.environment(scenario, DriverSecrets.keychainReader(context))
         val exitCode = xcodeBuild.testWithoutBuilding(
             testRun,
             udid,
             resultBundle,
-            mapOf("POSATO_SCENARIO_B64" to encoded, "POSATO_BUNDLE_ID" to bundleId),
+            mapOf("POSATO_SCENARIO_B64" to encoded, "POSATO_BUNDLE_ID" to bundleId) + secrets,
             log,
+            redact = if (secrets.isEmpty()) { text -> text } else DriverSecrets::redactKeyTaps,
         )
         if (log.exists()) driverLogFailure(log.readText())?.let { throw it }
         if (!resultBundle.exists()) {

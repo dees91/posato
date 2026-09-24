@@ -27,8 +27,13 @@ final class ScenarioExecutor {
     "landscapeRight": .landscapeRight,
   ]
 
+  private static let springboardScope = "springboard"
+  private static let secretPrefix = "POSATO_SECRET_"
+  private static let noBreakSpace = "\u{00A0}"
+
   private let scenario: Scenario
   private let app: XCUIApplication
+  private let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
   private let attach: Attach
   private var recordedIssues: [String] = []
 
@@ -109,6 +114,11 @@ final class ScenarioExecutor {
     } catch {
       failure = DriverError(.stepFailed, String(describing: error))
     }
+    if let error = failure, step.optional == true,
+      [DriverErrorCode.elementNotFound, .waitTimeout].map(\.rawValue).contains(error.code)
+    {
+      failure = nil
+    }
     if failure != nil {
       captureFailure(index: index, artifacts: &artifacts)
     }
@@ -154,6 +164,12 @@ final class ScenarioExecutor {
       try scrollTo(step, timeout: timeout)
     case "orient":
       try orient(step, timeout: timeout)
+    case "launchApp":
+      try launchApp(step, timeout: timeout)
+    case "openURL":
+      try openURL(step)
+    case "pressKeys":
+      try pressKeys(step, timeout: timeout)
     case "terminate":
       app.terminate()
     case "relaunch":
@@ -166,6 +182,45 @@ final class ScenarioExecutor {
   }
 
   // MARK: - Actions
+
+  /// Brings another application forward without terminating it, for example to observe a Screen Time shield.
+  private func launchApp(_ step: Step, timeout: TimeInterval) throws {
+    guard let bundleId = step.bundleId else {
+      throw DriverError(.scenarioInvalid, "launchApp requires bundleId")
+    }
+    let other = XCUIApplication(bundleIdentifier: bundleId)
+    other.activate()
+    guard other.wait(for: .runningForeground, timeout: timeout) else {
+      throw DriverError(
+        .waitTimeout, "\(bundleId) did not come to the foreground within \(timeout) s")
+    }
+  }
+
+  private func openURL(_ step: Step) throws {
+    guard let text = step.url, let url = URL(string: text) else {
+      throw DriverError(.scenarioInvalid, "openURL requires a valid url")
+    }
+    XCUIDevice.shared.system.open(url)
+  }
+
+  /// Types a secret on the system keypad one key at a time. Errors never name the key,
+  /// so they cannot leak the secret.
+  private func pressKeys(_ step: Step, timeout: TimeInterval) throws {
+    guard let name = step.secret,
+      let value = ProcessInfo.processInfo.environment[Self.secretPrefix + name.uppercased()],
+      !value.isEmpty
+    else {
+      throw DriverError(.scenarioInvalid, "pressKeys requires a secret the host provided")
+    }
+    for (position, character) in value.enumerated() {
+      let key = springboard.keys[String(character)]
+      guard key.waitForExistence(timeout: timeout) else {
+        throw DriverError(
+          .elementNotFound, "the system keypad has no key for position \(position + 1)")
+      }
+      key.tap()
+    }
+  }
 
   private func waitFor(_ step: Step, timeout: TimeInterval) throws {
     guard let state = step.state else {
@@ -512,7 +567,7 @@ final class ScenarioExecutor {
       throw DriverError(.scenarioInvalid, "\(action) requires a query")
     }
     try validateRole(query.role)
-    let base = try query.within.map { try scope(for: $0) } ?? app
+    let base = try query.within.map { try scope(for: $0) } ?? root(for: query)
     let matches = base.descendants(matching: .any).matching(
       Self.predicate(for: query, includeRole: true))
     if let near = query.near {
@@ -531,7 +586,7 @@ final class ScenarioExecutor {
   /// otherwise the anchor itself.
   private func scope(for inner: ElementQuery) throws -> XCUIElement {
     try validateRole(inner.role)
-    let base = try inner.within.map { try scope(for: $0) } ?? app
+    let base = try inner.within.map { try scope(for: $0) } ?? root(for: inner)
     let anchorPredicate = Self.predicate(for: inner, includeRole: false)
     guard let role = inner.role, role != "any" else {
       let anchors = base.descendants(matching: .any).matching(anchorPredicate)
@@ -548,6 +603,12 @@ final class ScenarioExecutor {
         .elementNotFound, "no \(role) contains an element matching \(describe(inner))")
     }
     return deepest
+  }
+
+  /// SpringBoard for system surfaces, otherwise the application under test. Queries never activate SpringBoard,
+  /// so the application keeps the foreground and its pending system sheet.
+  private func root(for query: ElementQuery) -> XCUIApplication {
+    query.scope == Self.springboardScope ? springboard : app
   }
 
   /// The match closest to `anchor` by frame centre; `index` picks a farther one.
@@ -614,14 +675,21 @@ final class ScenarioExecutor {
     if let id = query.id, attributes.identifier != id {
       return false
     }
-    let texts = SnapshotSerializer.texts(of: attributes)
-    if let text = query.text, !texts.contains(text) {
+    let texts = SnapshotSerializer.texts(of: attributes).map(normalized)
+    if let text = query.text.map(normalized), !texts.contains(text) {
       return false
     }
-    if let fragment = query.textContains, !texts.contains(where: { $0.contains(fragment) }) {
+    if let fragment = query.textContains.map(normalized),
+      !texts.contains(where: { $0.contains(fragment) })
+    {
       return false
     }
     return true
+  }
+
+  /// System labels such as "Face ID" contain no-break spaces; scenarios spell them with ordinary spaces.
+  private static func normalized(_ text: String) -> String {
+    text.replacingOccurrences(of: noBreakSpace, with: " ")
   }
 
   private static func holds(_ state: String, _ element: XCUIElement?) -> Bool {

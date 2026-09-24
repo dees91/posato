@@ -7,6 +7,7 @@ import app.posato.control.model.Orientations
 import app.posato.control.model.Query
 import app.posato.control.model.Scenario
 import app.posato.control.model.ScenarioDefaults
+import app.posato.control.model.Scopes
 import app.posato.control.model.SnapshotNode
 import app.posato.control.model.States
 import app.posato.control.model.Step
@@ -185,5 +186,33 @@ class ScenarioRunnerTest {
         val result = ScenarioRunner(actions, Path::toString).run(Scenario(steps = listOf(step)))
         assertEquals(ErrorCode.UNSUPPORTED_ON_TARGET.name, result.error?.code)
         assertEquals(0, actions.preparedInteractions)
+    }
+
+    @Test
+    fun `given iOS system steps when the desktop runner executes them then each is unsupported on the target`() {
+        val steps = listOf(
+            Step(action = Actions.LAUNCH_APP, bundleId = "com.example.other"),
+            Step(action = Actions.OPEN_URL, url = "http://example.com/"),
+            Step(action = Actions.PRESS_KEYS, secret = "devicePasscode"),
+            Step(action = Actions.TAP, query = Query(text = "Continue", scope = Scopes.SPRINGBOARD)),
+        )
+        steps.forEach { step ->
+            val result = ScenarioRunner(RecordingActions(tree), Path::toString).run(Scenario(steps = listOf(step)))
+            assertEquals(ErrorCode.UNSUPPORTED_ON_TARGET.name, result.error?.code, step.action)
+        }
+    }
+
+    @Test
+    fun `given an optional tap whose element is missing when running then the scenario continues`() {
+        val actions = RecordingActions(tree)
+        val steps = listOf(
+            Step(action = Actions.TAP, query = Query(text = "No such control"), optional = true),
+            Step(action = Actions.SNAPSHOT, name = "after"),
+        )
+
+        val result = ScenarioRunner(actions, Path::toString).run(Scenario(steps = steps))
+
+        assertTrue(result.ok)
+        assertEquals(1, actions.events.count { it.startsWith("snapshot") })
     }
 }
