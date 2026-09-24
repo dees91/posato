@@ -684,3 +684,10 @@ supported product path remains manual quit, replace, and open.
 - How are signed installation, update, notarization, supported removal, public
   support disclosure, and manual recovery verified for the selected release
   channel?
+- `observed` (2026-09-24, `QUALITY-010` `M5`, macOS 26 guest): after Retry
+  applied the proxy to a second network service, deleting that service and
+  re-enabling the original one left **Restrictions active** with no proxy and
+  no application termination. The ownership record still named the deleted
+  service, so every later start reported that restrictions may still apply.
+  How should the helper reconcile a recorded service that no longer exists?
+  Owner: `MACOS-020`.

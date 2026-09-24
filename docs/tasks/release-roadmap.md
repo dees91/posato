@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 3 (amended 2026-09-24: `QUALITY-010` started from the backlog by
+- **Revision:** 4 (amended 2026-09-24: `QUALITY-010` started from the backlog by
   maintainer decision, without a release; it keeps its backlog row until a
   planning checkpoint assigns one)
 - **Prepared:** 2026-09-18
@@ -23,7 +23,10 @@
   additional language). It also adds the `NAV-001` backlog row from idea 13
   (Navigation 3 and system back gestures). Preliminary rows
   `TARGETS-007` and `TARGETS-008` come from ideas 14 and 15 (file export and
-  import, and sharing across Apple Accounts).
+  import, and sharing across Apple Accounts). Revision 4 adds the `MACOS-020`
+  backlog row for a defect that `QUALITY-010` measurement `M5` reproduced:
+  losing the network service that holds the proxy settings leaves a false
+  active claim and a stale ownership record.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -200,6 +203,7 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-017` | Extend macOS browser coverage beyond Safari and Chrome Stable, starting with Firefox, under a revised ADR 0005 support contract. | Sessions and enforcement | macOS enforcement follow-up | A maintainer decision to widen the support promise |
 | `MACOS-018` | Detect or disclose iCloud Private Relay before a session applies proxy settings. | Sessions and enforcement | Open question in the macOS enforcement topic | A supported detection route or a decision to disclose only |
 | `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | `MACOS-012` outcome |
+| `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | `QUALITY-010` `M5` defect, reproduced in a VM | Any planning checkpoint; a defect against ADR 0004 and ADR 0005 |
 | `IOS-005` | Settle iOS reinstall behavior and the lifecycle of an application selection that becomes invalid. | Sessions and enforcement | `IOS-001` and iOS enforcement open questions | Evidence from support or a reproduction |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-018` | Design the portable workspace over one user-selected synchronized folder with its own key delivery and membership. | Portable synchronization | Product framing later direction | A platform beyond Apple in scope |
