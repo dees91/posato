@@ -31,6 +31,10 @@ provenance rather than a parallel public brand.
 - [../tasks/README.md](../tasks/README.md) — accepted proportional review,
   just-in-time task brief, concise execution record, wave, and parallel-work
   process.
+- [topics/unattended-verification.md](topics/unattended-verification.md) —
+  how Posato is verified with no person present: Tart macOS guests with a test
+  Apple Account, provisioning of VM clones, guest control, and open
+  measurements.
 - [../tasks/mvp-roadmap.md](../tasks/mvp-roadmap.md) — accepted Gate 6
   MVP task-stub, dependency, wave, evidence, and integration-group authority;
   complete and retained as history.
