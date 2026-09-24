@@ -760,6 +760,25 @@ not an accepted feature plan or an expansion of the MVP.
     - deterministic VNC control;
     - the network-service-switch scenarios with the VM's single network
       interface.
+11. **A useful moment on the pause page.** `user-confirmed` (2026-09-23):
+    explore offering something worthwhile when a person reflexively opens a
+    paused website instead of an empty pause page, such as flashcards or a
+    short learning prompt. The motivating case is a developer who hands work
+    to an agent and, while waiting for it, opens a distracting site out of
+    habit. `inferred` constraints:
+    - The macOS pause page is a local page served by the helper. It stays
+      self-contained and free of attempted targets (`DESIGN-003`), fetches
+      nothing remote, and records no browsing.
+    - The iOS Screen Time shield can only change its icon, title, subtitle,
+      and two buttons, so iOS parity is limited to text or a hand-off to the
+      app.
+    - Content could come from user-provided decks, synchronized like other
+      data, rather than built-in material.
+    - Lighter options could come first: the session's stated intention, the
+      time remaining, or one short prompt.
+
+    Whether review progress may be recorded without revealing when paused
+    sites were attempted remains `open`.
 
 ## Later platform questions
 
