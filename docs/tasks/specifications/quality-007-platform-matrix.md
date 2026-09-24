@@ -39,5 +39,5 @@ The published support claim (macOS 15 or later on Apple silicon, iOS 18 or later
 
 - `user-confirmed`, 2026-09-23:
   - D1: the macOS 15 target is a Tart virtual machine from a macOS Sequoia image on the supported Mac. The maintainer installs Tart and signs in the Apple Account for sync.
-  - D2: the maintainer provides a physical iPhone on iOS 18, connected by cable for the runs.
+  - D2: the maintainer provides a physical iPhone on iOS 18, connected by cable for the runs. Amended `user-confirmed` 2026-09-24: the maintainer verified the App Store 1.0.0 release on a private iOS 18 iPhone and closes `AC-02` on that confirmation.
   - D3: run once on the final 1.1 candidates, after `MACOS-011` merges. Until then, only the VM and device are prepared.
