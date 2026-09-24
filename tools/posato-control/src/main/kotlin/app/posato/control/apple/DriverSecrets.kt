@@ -4,6 +4,7 @@ import app.posato.control.core.ConfigurationKey
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.RunContext
+import app.posato.control.core.readKeychainSecret
 import app.posato.control.model.Actions
 import app.posato.control.model.Scenario
 
@@ -34,26 +35,13 @@ object DriverSecrets {
     /** XCUITest logs every tapped key's label, so a typed passcode would appear digit by digit in the xcodebuild log. */
     fun redactKeyTaps(log: String): String = log.lines().filterNot { KEY_TAP.matches(it) }.joinToString("\n")
 
-    /** Reads a secret from the login Keychain with `security`; the value stays in memory. */
+    /** Reads a secret from the login Keychain; the value stays in memory. */
     fun keychainReader(context: RunContext): (String) -> String = { _ ->
-        val service = context.configuration.require(
+        readKeychainSecret(
+            context,
             ConfigurationKey.DEVICE_PASSCODE_KEYCHAIN_SERVICE,
-            ErrorCode.SCENARIO_INVALID,
-            "Typing the device passcode",
+            ConfigurationKey.DEVICE_PASSCODE_KEYCHAIN_ACCOUNT,
+            "typing the device passcode",
         )
-        val account = context.configuration.value(ConfigurationKey.DEVICE_PASSCODE_KEYCHAIN_ACCOUNT)
-        val command = buildList {
-            addAll(listOf("/usr/bin/security", "find-generic-password", "-s", service))
-            account?.let { addAll(listOf("-a", it)) }
-            add("-w")
-        }
-        context.subprocess.run(command)
-            .requireSuccess(
-                ErrorCode.SCENARIO_INVALID,
-                "Reading the device passcode from the Keychain",
-                "Store it once with `security add-generic-password -s $service -w`.",
-            )
-            .stdout
-            .trimEnd('\n')
     }
 }

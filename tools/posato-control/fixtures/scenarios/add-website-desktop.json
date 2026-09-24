@@ -16,7 +16,7 @@
     {"name":"entry-ready","action":"waitFor","state":"exists","query":{"text":"Search","role":"button"}},
     {"name":"enter-domain","action":"type","query":{"role":"textField"},"text":"example.com","clear":true,"submit":true},
     {"name":"finish-adding","action":"tap","query":{"text":"Done","role":"button"}},
-    {"name":"row-visible","action":"scrollTo","query":{"text":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
+    {"name":"row-visible","action":"scrollTo","query":{"textContains":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
     {"name":"added-shot","action":"screenshot"},
     {"name":"added-tree","action":"snapshot"}
   ]

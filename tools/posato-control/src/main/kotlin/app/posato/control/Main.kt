@@ -25,11 +25,20 @@ import app.posato.control.cli.StatusCommand
 import app.posato.control.cli.TapCommand
 import app.posato.control.cli.TerminateCommand
 import app.posato.control.cli.TypeCommand
+import app.posato.control.cli.VmClickCommand
+import app.posato.control.cli.VmCommand
+import app.posato.control.cli.VmCreateCommand
+import app.posato.control.cli.VmDestroyCommand
+import app.posato.control.cli.VmPressCommand
+import app.posato.control.cli.VmPromptCommand
+import app.posato.control.cli.VmScreenshotCommand
+import app.posato.control.cli.VmSyncCommand
 import app.posato.control.cli.WaitCommand
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
 import app.posato.control.model.Envelope
 import app.posato.control.model.ErrorPayload
+import app.posato.control.vm.GuestRelay
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.CliktError
 import com.github.ajalt.clikt.core.Context
@@ -72,9 +81,19 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ResetCommand(),
     CleanupCommand(),
     ArtifactsCommand(),
+    VmCommand().subcommands(
+        VmCreateCommand(),
+        VmSyncCommand(),
+        VmDestroyCommand(),
+        VmPromptCommand(),
+        VmClickCommand(),
+        VmPressCommand(),
+        VmScreenshotCommand(),
+    ),
 )
 
 fun run(args: Array<String>): Int {
+    GuestRelay.lineIn(args.toList())?.let { line -> return GuestRelay.forward(args.toList(), line) }
     val command = buildCommand()
     return try {
         command.parse(args.toList())

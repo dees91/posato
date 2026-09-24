@@ -106,6 +106,32 @@ class DesktopScrollerTest {
     }
 
     @Test
+    fun `given a short scoped list without its own scroll area inside a visible page when scrolling then the row is reached`() {
+        var scrolls = 0
+        val page = SnapshotNode(
+            role = "window",
+            frame = Frame(0.0, 0.0, 900.0, 700.0),
+            children = listOf(
+                scrollArea("Page", Frame(200.0, 0.0, 700.0, 700.0)).copy(
+                    children = listOf(
+                        SnapshotNode(
+                            role = "group",
+                            label = "Saved websites",
+                            frame = Frame(230.0, 240.0, 600.0, 60.0),
+                            children = listOf(SnapshotNode(role = "text", label = "target.example", frame = Frame(270.0, 260.0, 120.0, 20.0))),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val scroller = DesktopScroller(snapshot = { page }, scroll = { _, _ -> scrolls++ }, settle = {})
+
+        scroller.scrollTo(Query(text = "target.example", role = "text", within = Query(text = "Saved websites", role = "group")), 1_000)
+
+        assertEquals(0, scrolls)
+    }
+
+    @Test
     fun `given a button outside the scroll area and below the window when scrolling then it is not reached`() {
         val scroller = DesktopScroller(snapshot = { onboardingWindow(buttonY = 900.0) }, scroll = { _, _ -> }, settle = {})
 

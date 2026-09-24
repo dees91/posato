@@ -14,10 +14,10 @@
     {"name":"ready","action":"waitFor","state":"exists","query":{"text":"Paused items","role":"button"}},
     {"name":"open-paused-items","action":"tap","query":{"text":"Paused items","role":"button"}},
     {"name":"entry-ready","action":"waitFor","state":"exists","query":{"text":"Search","role":"button"}},
-    {"name":"reach-row","action":"scrollTo","query":{"text":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
+    {"name":"reach-row","action":"scrollTo","query":{"textContains":"example.com","role":"text","within":{"text":"Saved websites","role":"group"}}},
     {"name":"open-row-menu","action":"tap","query":{"text":"Actions for example.com","role":"button"}},
     {"name":"remove-domain","action":"tap","query":{"text":"Remove","role":"button"}},
-    {"name":"row-removed","action":"waitFor","state":"absent","query":{"text":"example.com","role":"text"}},
+    {"name":"row-removed","action":"waitFor","state":"absent","query":{"textContains":"example.com","role":"text"}},
     {"name":"removed-shot","action":"screenshot"},
     {"name":"removed-tree","action":"snapshot"}
   ]

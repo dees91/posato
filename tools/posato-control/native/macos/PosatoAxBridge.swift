@@ -3,11 +3,14 @@
 // A single-file helper that the `posato-control` CLI compiles on demand. It
 // reads the accessibility tree of a running application, performs button
 // presses, types text through keyboard events, and reports window identifiers
-// and permission state. All output is JSON on standard output.
+// and permission state. Its `ocr` command recognizes text in a PNG, which the
+// CLI uses on framebuffer captures of a Tart guest. All output is JSON on
+// standard output.
 
 import AppKit
 import ApplicationServices
 import Foundation
+import Vision
 
 struct BridgeError: Error {
   let code: String
@@ -447,6 +450,44 @@ enum Bridge {
   }
 }
 
+/// One recognized line in image pixels with a top-left origin.
+struct RecognizedLine: Encodable {
+  let text: String
+  let confidence: Double
+  let x: Int
+  let y: Int
+  let w: Int
+  let h: Int
+}
+
+/// Recognizes text lines in the image at `path`, most accurate level, without language correction so that
+/// labels and identifiers are returned as drawn.
+func recognizeText(path: String) throws -> [RecognizedLine] {
+  guard let image = NSImage(contentsOfFile: path),
+    let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+  else {
+    throw BridgeError(code: "USAGE", message: "The image at \(path) could not be read.")
+  }
+  let width = Double(cgImage.width)
+  let height = Double(cgImage.height)
+  let request = VNRecognizeTextRequest()
+  request.recognitionLevel = .accurate
+  request.usesLanguageCorrection = false
+  try VNImageRequestHandler(cgImage: cgImage).perform([request])
+  return (request.results ?? []).compactMap { observation in
+    guard let candidate = observation.topCandidates(1).first else { return nil }
+    let box = observation.boundingBox
+    return RecognizedLine(
+      text: candidate.string,
+      confidence: Double(candidate.confidence),
+      x: Int(box.minX * width),
+      y: Int((1 - box.maxY) * height),
+      w: Int(box.width * width),
+      h: Int(box.height * height)
+    )
+  }
+}
+
 func emit<T: Encodable>(_ value: T) {
   let encoder = JSONEncoder()
   encoder.outputFormatting = [.sortedKeys]
@@ -508,6 +549,8 @@ do {
     emit(["accessibility": accessibility, "screenRecording": screen])
   case "windows":
     emit(Bridge.windows(pid: try pidArgument(2)))
+  case "ocr":
+    emit(try recognizeText(path: try argument(2, "png")))
   case "snapshot":
     try requireAccessibilityTrust()
     let pid = try pidArgument(2)

@@ -56,17 +56,18 @@ internal class DesktopScroller(
     }
 
     /**
-     * A control laid out below the list rather than inside it, like onboarding's Continue in a tall window, never enters
-     * a scroll area. It is reached when it sits fully inside a window and no scroll area encloses it.
+     * A target counts as visible when every scroll area enclosing it shows it whole and a window contains it. This covers
+     * controls laid out below a list, like onboarding's Continue in a tall window, and short scoped lists that have no
+     * scroll area of their own inside a page-level one.
      */
     private fun visibleOutsideScrollAreas(
         root: SnapshotNode,
         target: SnapshotNode
     ): Boolean {
         val nodes = root.flatten()
-        val insideScrollArea = nodes.any { node -> node.platformRole == SCROLL_AREA && node.flatten().drop(1).any { it === target } }
+        val enclosing = nodes.filter { node -> node.platformRole == SCROLL_AREA && node.flatten().drop(1).any { it === target } }
         val insideWindow = nodes.any { node -> node.role == "window" && node.frame.contains(target.frame) }
-        return !insideScrollArea && insideWindow
+        return insideWindow && enclosing.all { it.frame.contains(target.frame) }
     }
 
     private fun notFound(): ControlException {
