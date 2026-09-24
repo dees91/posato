@@ -1867,3 +1867,12 @@ to scope, feasibility, or delivery.
   cancel, crash, and second instance, and reopened only on exact installer,
   bundle, and service evidence. Consent, scheduling, and the release feed
   remain Stage 2.
+
+## [2026-09-24] release | Posato 1.0.0 live on the App Store
+
+- App Review approved 1.0.0 (3) after a Resolution Center reply to an automated
+  Screen Time entitlement rejection; the maintainer released it through the
+  App Store Connect API, and the App Store badge on posato.app and in the
+  README now links to the listing.
+- Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
+  `docs/wiki/topics/first-release-readiness.md`.
