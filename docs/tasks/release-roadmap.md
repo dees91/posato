@@ -3,10 +3,12 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 3
+- **Revision:** 3 (amended 2026-09-24: `QUALITY-010` started from the backlog by
+  maintainer decision, without a release; it keeps its backlog row until a
+  planning checkpoint assigns one)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-23
+- **Last amended:** 2026-09-24
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
