@@ -1,7 +1,7 @@
 # Execution: `QUALITY-010`
 
 - **Brief:** [Verify every task without the maintainer](../specifications/quality-010-unattended-verification.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** Stage 1 and Stage 2 plans reviewed by a separate agent (Critical and Required folded). `user-confirmed` 2026-09-24: per-stage completed-change reviews are replaced by one maintainer-ordered review of the whole change.
@@ -28,42 +28,35 @@ them), and the Screen Time consent fixture; (4) VMs as a location of the
 desktop target with `vm create|sync|destroy|prompt`, an in-repo RFB client,
 and an OCR mode in the Swift bridge; (5) README, skill, feature recipes, and a
 contributor guide; (6) AC-03 on VMs and AC-04 on the test iPhone. Stage 3
-(AC-05) follows; `MACOS-020` is out of scope.
+(no separate plan review, maintainer away): `observe` for the desktop and
+bundle-scoped iOS queries for the shield and Safari's blocked page.
+`MACOS-020` is out of scope.
 
 ### Decisions
 
-- D1, D2, `user-confirmed` 2026-09-24: macOS 26 golden VM on the internal disk.
-- D3, `user-confirmed`: VM identifiers registered through the App Store
-  Connect API.
-- D4, D5, `user-confirmed`: a dedicated test iPhone (iPhone 13 mini, iOS
-  26.5.2, wired) on the test account is its trusted device.
-- D6 not needed: `M2` passed through Virtualization's own VNC.
-- D7, `user-confirmed`: VNC exposure on the local network accepted.
-- D8, `user-confirmed` 2026-09-24: test devices run in English, like the VM.
-- D9, `user-confirmed` 2026-09-24: remove Face ID from the test iPhone if
-  possible; the driver keeps the two-failure fallback.
+`user-confirmed` 2026-09-24: D1-D2 macOS 26 golden VM on the internal disk;
+D3 VMs registered through the App Store Connect API; D4-D5 a dedicated wired
+test iPhone (13 mini, iOS 26.5.2) as the test account's trusted device; D6 not
+needed (`M2` passed on Virtualization's VNC); D7 local-network VNC accepted;
+D8 test devices in English; D9 Face ID removed if possible, two-failure
+fallback kept.
 
 ## Result
 
-- Stage 1 setup, `observed` 2026-09-24: Tart 2.37.0; golden VM on macOS
-  26.6.2 from the latest IPSW, Setup Assistant over VNC with host-side text
-  recognition. Deviation: `tart-guest-agent` replaces Remote Login, so
-  `tart exec` runs in the user's Aqua session rather than under `sshd`.
+- Stage 1 setup, `observed` 2026-09-24: Tart 2.37.0, macOS 26.6.2 golden VM
+  from the latest IPSW; `tart-guest-agent` replaces Remote Login (deviation).
 - `M0` go: a VM keeps its provisioning identifier; a fresh clone inherits
   it; two VMs with one identifier running together re-identify one of them.
   AMFI rejects the development sync companion in an unregistered VM; after
   registering the primary and peer lines and recreating the profile it runs
   from the guest disk (not from a virtiofs share, where `codesign` fails).
-- `M1` go: the golden VM signed in once with a code approved on the test
-  iPhone; clones boot signed in with iCloud Keychain. Gap: the account's
-  device list was not read.
+- `M1` go: one sign-in with a code from the test iPhone; clones boot signed
+  in with iCloud Keychain. Gap: the account's device list was not read.
 - `M2` go: helper approval and 20 of 20 SecurityAgent prompts confirmed over
   VNC (`m2-loop-*`); Gatekeeper first open of the quarantined notarized
   1.0.0 approved 6 of 6, the first click only activating the dialog.
-- `M3` go: `doctor`, `launch`, `snapshot`, `screenshot`, `tap`, `db query`
-  through `tart exec` once privacy approvals went to `tart-guest-agent`.
-  Defect: `scrollTo` misses a target below the largest scroll area
-  (`m3-guest-scenario`).
+- `M3` go: the driver ran through `tart exec` once privacy approvals went to
+  `tart-guest-agent`; `scrollTo` defect found (`m3-guest-scenario`).
 - `M4` go: two VMs established and joined one workspace and exchanged a
   website; the pause page, HTTPS refusal, control domain, and Safari
   termination held during a session and cleared after it.
@@ -77,10 +70,6 @@ contributor guide; (6) AC-03 on VMs and AC-04 on the test iPhone. Stage 3
   authentication buttons have stable identifiers; the tunnel idles.
 - `M7` go: the picker is in the app's own accessibility tree; the unchanged
   driver searched, toggled, and saved an application (`m7-picker`).
-- Stage 3 preview: during a session Safari showed "site not allowed" and
-  Calculator the Screen Time shield, both readable through SpringBoard, and
-  both opened after the end (`ios-block*`).
-
 - Stage 2, `observed` 2026-09-24: steps 1-5 implemented. Deviations: the VNC
   client also announces DesktopSize, LastRect, and QEMU key pseudo-encodings,
   since without DesktopSize the Virtualization server stops the VM; each
@@ -95,13 +84,36 @@ contributor guide; (6) AC-03 on VMs and AC-04 on the test iPhone. Stage 3
   workspace key created by an earlier clone of its line (runs start from an
   empty workspace via the peer's Remove workspace), and repeated clones
   needed iCloud renewal, answered from the Keychain without a new code.
-- AC-04 on the test iPhone and Stage 3 remain.
+- AC-04 met (`ac04*`): a fresh iPhone install onboarded with iCloud join and
+  Screen Time consent in one run, picked Calculator, blocked it and the
+  website during a session, kept blocking after a relaunch, released both
+  after an early end, synced a website to the Mac, and expired in 324 s.
+- AC-05 met: iPhone `ac05-ios-blocked` and `-unblocked`, Mac VM
+  `ac05-mac-blocked` and `-unblocked` (pause page and Safari ended, then the
+  real page and Safari running); each opposite-state run failed as expected
+  (`ac05-*-negative*`).
+- Closeout, `user-confirmed` 2026-09-24: `AGENTS.md`, the skill, the guides,
+  the quality contract, and the brief template make unattended verification
+  mandatory and route provisioning to `posato-provisioning`, which gained
+  `devices register --tart-vm` (run: both lines already registered).
+  `posato-control` refuses the desktop target on the host Mac
+  (`DESKTOP_HOST_REFUSED`, checked live); the peer golden VM holds both
+  privacy grants.
+- Open observation: one iPhone-started session reached the Mac only after
+  **Sync now** on the iPhone (`ac05-repro-*`); the Mac has no push path.
+  Candidate row for the maintainer; not fixed here.
 
 ## Verification
 
-- `./gradlew :posato-control:test :posato-control:detekt :posato-control:ktlintCheck :posato-control:swiftFormatCheck` pass.
+- `./gradlew :posato-control:check :posato-provisioning:check` pass after the last change.
+- `./gradlew quality` passes (5 min) after the last source change.
 
 ## Blockers and accepted risks
 
 - Two macOS guests at a time: the golden and peer VMs cannot run beside the `QUALITY-007` macOS 15 VM.
 - A test iPhone restart needs one unlock by its owner before the driver runs.
+
+## Final
+
+- **Status:** `done`; the maintainer-ordered whole-change review follows.
+- **Outcome:** AC-01 to AC-05 met; AC-04 with the accepted restart exception.

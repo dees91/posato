@@ -6,6 +6,12 @@ to reproduce the environment; machine-specific names, paths, and account
 values never belong here. The task brief and execution record hold the run
 directories and the acceptance state.
 
+`user-confirmed` 2026-09-24: this environment is the mandatory way every task
+verifies its change (`AGENTS.md`, Application verification), and the macOS
+application never runs on the maintainer's own Mac; `posato-control` refuses
+desktop commands outside a virtual machine except `build`, `doctor`, and
+`artifacts`.
+
 ## Target environment
 
 - macOS: Posato runs inside Tart virtual machines on an Apple silicon Mac
@@ -149,14 +155,35 @@ directories and the acceptance state.
 - `observed`: the Family Controls application picker is not opaque to
   XCUITest: its rows (switches labeled with the application name), search
   field, and Save are in the Posato app's own accessibility tree.
-- `observed`: during a session the paused domain shows Safari's "site not
-  allowed" page and a paused application shows the Screen Time shield; both
-  texts are readable in the SpringBoard tree, so blocking can be asserted.
+- `observed`: during a session a paused application shows the Screen Time
+  shield in the SpringBoard tree ("You cannot use Calculator because it is
+  restricted.") and the paused domain shows "Website Not Allowed" in Safari's
+  own tree (`com.apple.mobilesafari`), so the driver asserts blocking and its
+  release with queries scoped to those bundles; each assertion fails in the
+  opposite state.
+- `observed`: the Mac pulls remote changes only on its own triggers (window
+  foreground, **Sync now**, its own session change); nothing pushes. One
+  iPhone-started session reached CloudKit only after **Sync now** on the
+  iPhone, although the start requests a sync; `inferred`: that upload was
+  interrupted and is not retried until the next foreground or manual sync.
+
+## Observed blocking on macOS
+
+- `observed`: `posato-control observe` in a guest requests a URL through the
+  proxy `scutil --proxy` reports and opens an application. During a session
+  the helper's pause page answers ("This site is paused") and Safari no longer
+  runs after eight seconds; after an early end the real page loads directly
+  and Safari keeps running. An adopted remote session on a peer Mac enforces
+  only after its own **Resume restrictions** and administrator prompt.
 
 ## Open
 
 - `open`: approving a two-factor sign-in request on the test iPhone through
   SpringBoard, and how often the automation-mode passcode returns over days.
+- `open`: a guest network toggle and an Apple Account sign-out in a VM for the
+  offline-retry and account-gate sync steps.
+- `open`: whether an interrupted post-start upload on iOS needs an automatic
+  retry (candidate product row, maintainer decision).
 - `observed` answer to the packaging question: `posato-control` treats a VM as a
   location of the desktop target (`--vm primary|peer`) with `vm create`,
   `sync`, `destroy`, and `prompt`; the one-time setup is in
