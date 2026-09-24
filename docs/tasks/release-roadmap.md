@@ -13,7 +13,9 @@
   restates the `TARGETS-006` outcome as a matching rule with one stored row
   per typed host, after the completed-change review of PR #72 rejected
   materialized `www` counterparts. Revision 3 adds the `QUALITY-010` backlog row
-  from idea 10 (verification without the maintainer).
+  from idea 10 (verification without the maintainer). At the maintainer's
+  request it merges `QUALITY-006`, verifying actual blocking from the driver,
+  into that row and deletes `QUALITY-006` from the backlog.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -183,7 +185,6 @@ The idea numbers refer to the wiki idea queue.
 | Task | Outcome | Epic | Origin | What unblocks assignment |
 | --- | --- | --- | --- | --- |
 | `SCHEDULE-002` | Deliver recurring schedules on both platforms per the `SCHEDULE-001` decision. | Schedules | Idea 1 | `SCHEDULE-001` decision accepted |
-| `QUALITY-006` | Verify actual website blocking and unblocking on a physical iPhone and Mac from the verification driver, so physical acceptance needs fewer attended steps. | Verification | Pull request #52 discussion | A release whose physical gates make attended runs the bottleneck |
 | `FAMILY-001` | Decide whether a parent-and-child use case belongs in Posato: device ownership, consent, access boundaries, and privacy. | Product discovery | Idea 2 | A product decision that the personal-use model may extend |
 | `FILTER-001` | Decide whether reducing advertising belongs in Posato and which coverage is useful and feasible. | Product discovery | Idea 3 | A product decision on scope beyond blocking chosen targets |
 | `RESEARCH-001` | Compare the Focusly extension's interactions and features with Posato and list the ones worth adopting. | Product discovery | Idea 4 | Any planning checkpoint; cheap |
@@ -198,7 +199,7 @@ The idea numbers refer to the wiki idea queue.
 | `PLATFORM-001` | Decide the order, enforcement mechanisms, privilege models, and shared UI for Android, Linux, and Windows. | Platform coverage | Availability page planned platforms | A product decision to leave the Apple-only release train |
 | `QUALITY-008` | Decide whether golden or automated UI tests join the quality gate now that the interface is stable, and with which tool. | Verification | Engineering quality contract post-MVP decision | Two releases of interface stability |
 | `QUALITY-009` | Decide whether hosted CI returns for pull requests and whether external contributions are accepted, with the Actions budget and review load that implies. | Verification | First-release readiness policy | Maintainer capacity decision |
-| `QUALITY-010` | Let an agent verify every task without the maintainer: Posato on macOS in Tart virtual machines and on a dedicated physical test iPhone, both on a dedicated test Apple Account, with every system prompt, permission, and picker driven by the verification driver after one-time setup. | Verification | Idea 10 | Passing go/no-go measurements (CloudKit in a VM; Screen Time consent and the application picker through XCUITest), plus the maintainer's test account and dedicated iPhone |
+| `QUALITY-010` | Let an agent verify every task without the maintainer: Posato on macOS in Tart virtual machines and on a dedicated physical test iPhone, both on a dedicated test Apple Account, with every system prompt, permission, and picker driven by the verification driver after one-time setup, including observing actual website and application blocking and unblocking. | Verification | Idea 10; absorbs `QUALITY-006` (pull request #52 discussion) | Passing go/no-go measurements (CloudKit in a VM; Screen Time consent and the application picker through XCUITest), plus the maintainer's test account and dedicated iPhone |
 
 ## Coverage matrix
 

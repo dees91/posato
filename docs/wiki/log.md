@@ -1883,4 +1883,5 @@ to scope, feasibility, or delivery.
   verifies every task without human help. The targets are Tart macOS VMs and
   a dedicated test iPhone, both on a dedicated test Apple Account, and the
   maintainer helps only with one-time setup. The go/no-go measurements come
-  first.
+  first. `QUALITY-010` absorbs `QUALITY-006`, verifying actual blocking from
+  the driver.
