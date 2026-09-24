@@ -19,7 +19,9 @@
   `PAUSE-001` backlog row from idea 11 (a useful moment on the pause page). It
   also adds the `I18N-001` backlog row from idea 12 (Polish as the first
   additional language). It also adds the `NAV-001` backlog row from idea 13
-  (Navigation 3 and system back gestures).
+  (Navigation 3 and system back gestures). Preliminary rows
+  `TARGETS-007` and `TARGETS-008` come from ideas 14 and 15 (file export and
+  import, and sharing across Apple Accounts).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -207,6 +209,8 @@ The idea numbers refer to the wiki idea queue.
 | `PAUSE-001` | Decide whether the pause page should offer a useful local activity, from the session's stated intention up to user-provided flashcards, within the privacy boundary, the self-contained pause page of `DESIGN-003`, and the iOS shield limits; end with a product decision and a delivery plan. | Product discovery | Idea 11 | A product decision that the pause moment is in scope |
 | `I18N-001` | Ship Posato in Polish as the first additional language, following the system language: the whole UI of both applications with Polish plural forms, the macOS pause page, iOS permission descriptions, and date and time formatting, plus the App Store listing and screenshots and a Polish posato.app including the privacy policy. It adds a narrow `AGENTS.md` exception so the agent can author localized product resources for the maintainer's approval, and keeps verification recipes independent of English labels. | Platform coverage | Idea 12 | Any planning checkpoint; the maintainer's time to review the Polish copy |
 | `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the two-destination navigation accepted in `DESIGN.md`. | Platform coverage | Idea 13; `IOS-004` decision | Any planning checkpoint |
+| `TARGETS-007` | Decide whether and how saved websites and application choices can be exported to and imported from a file: format, encryption, what an application choice can carry across devices, merge or replace, and sync interaction; end with a product decision and a delivery plan. Preliminary. | Target management | Idea 14 | A product decision that file transfer is in scope |
+| `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
 
 ## Coverage matrix
 

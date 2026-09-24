@@ -811,6 +811,27 @@ not an accepted feature plan or an expansion of the MVP.
 
     The two-destination navigation in `DESIGN.md` stays unchanged. Only the
     stacks within a destination move to Navigation 3.
+14. **Export to and import from a file.** `user-confirmed` (2026-09-24,
+    preliminary): let a person export the saved lists to a file and import
+    them from one, for backup, a fresh install, or moving between devices.
+    `open`:
+    - The format, and whether the file is encrypted. The list of websites is
+      personal data, and the privacy policy promises nothing leaves the
+      device unasked.
+    - How applications are represented. On iOS, Screen Time selections are
+      opaque device tokens that cannot move between devices, so only names or
+      nothing can travel.
+    - Merge versus replace on import, and how imported changes enter the sync
+      intent log.
+15. **Quick sharing of saved websites across Apple Accounts.**
+    `user-confirmed` (2026-09-24, preliminary): a fast way to pass saved
+    websites to a device signed in to a different iCloud account, for example
+    a partner's or a second personal account, where iCloud sync cannot reach.
+    `inferred` options: AirDrop or the share sheet carrying an idea-14 export
+    file, a QR code or link that holds the list, or a one-time pairing. `open`:
+    - the privacy of a shared list, and whether it is encrypted;
+    - whether sharing is one-time or ongoing;
+    - how it relates to the portable workspace in `SYNC-018`.
 
 ## Later platform questions
 
