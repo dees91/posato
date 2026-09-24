@@ -1877,7 +1877,7 @@ to scope, feasibility, or delivery.
 - Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
   `docs/wiki/topics/first-release-readiness.md`.
 
-## [2026-09-23] decision | Backlog refinement: unattended verification and the pause page
+## [2026-09-24] decision | Backlog refinement: unattended verification, the pause page, and Polish
 
 - Idea 10 and backlog row `QUALITY-010` record the maintainer's goal: an agent
   verifies every task without human help. The targets are Tart macOS VMs and
@@ -1886,3 +1886,7 @@ to scope, feasibility, or delivery.
 - Idea 11 and discovery row `PAUSE-001` explore offering a useful local
   activity on the pause page instead of an empty page, within the privacy
   boundary and the iOS shield limits.
+- Idea 12 and row `I18N-001` plan Polish as the first additional language.
+  It follows the system language and covers both applications, the store
+  listing, and the website. The agent drafts the copy under a narrow
+  `AGENTS.md` exception, and the maintainer approves it.

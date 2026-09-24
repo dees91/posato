@@ -779,6 +779,25 @@ not an accepted feature plan or an expansion of the MVP.
 
     Whether review progress may be recorded without revealing when paused
     sites were attempted remains `open`.
+12. **Polish as the first additional language.** `user-confirmed`
+    (2026-09-24):
+    - Posato follows the system language, with no in-app switch. People can
+      still choose a per-app language in the system settings.
+    - The first Polish version covers the whole UI of both applications with
+      Polish plural forms, the macOS pause page, and the iOS permission
+      descriptions. It also covers date and time formatting, the App Store
+      listing and screenshots, and a Polish posato.app including the privacy
+      policy.
+    - The agent drafts the Polish copy and the maintainer, a native speaker,
+      approves it. This needs a narrow `AGENTS.md` exception for localized
+      product resources; the rest of the repository stays in English.
+
+    `inferred` from the current code:
+    - The English strings live in the shared Compose resources, which have no
+      plurals.
+    - The pause page is rendered by the Swift helper.
+    - Driver recipes select elements by English labels, which matters for
+      `QUALITY-010`.
 
 ## Later platform questions
 
