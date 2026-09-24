@@ -94,15 +94,14 @@ class TypeCommand : ControlCommand("type", "Type text into the element matching 
     private val process by ProcessOptions()
 
     override fun execute(session: Session): JsonElement {
-        val backend = session.backend(process.selector())
         val target = query.toQuery()
         // Addressing a process without a query types into whatever it has focused, the only path into a panel with no tree.
         if (target == null && process.selector() != null) {
-            backend.typeFocused(text, clear, submit)
+            session.backend(process.selector()).typeFocused(text, clear, submit)
             return buildJsonObject { put("ok", true) }
         }
         val step = Step(action = Actions.TYPE, query = requireQuery(target, "type"), text = text, clear = clear, submit = submit)
-        return runResultElement(failIfStepFailed(backend.runScenario(singleStep(step))))
+        return runResultElement(failIfStepFailed(session.backend(process.selector()).runScenario(singleStep(step))))
     }
 }
 
@@ -141,7 +140,6 @@ class WaitCommand : ControlCommand("wait", "Wait until an element exists, is abs
     private val process by ProcessOptions()
 
     override fun execute(session: Session): JsonElement {
-        val backend = session.backend(process.selector())
         val target = query.toQuery()
         // Addressing a process without a query waits on its window, which needs no element tree. Only presence and
         // absence have a meaning there; the tree-based states would silently answer from an empty query instead.
@@ -157,11 +155,11 @@ class WaitCommand : ControlCommand("wait", "Wait until an element exists, is abs
                     "Add an element query, or use --for exists or --for absent.",
                 )
             }
-            backend.awaitWindow(timeout, present)
+            session.backend(process.selector()).awaitWindow(timeout, present)
             return buildJsonObject { put("ok", true) }
         }
         val step = Step(action = Actions.WAIT_FOR, state = state, query = target, timeoutSeconds = timeout)
-        return runResultElement(failIfStepFailed(backend.runScenario(singleStep(step))))
+        return runResultElement(failIfStepFailed(session.backend(process.selector()).runScenario(singleStep(step))))
     }
 
     private companion object {

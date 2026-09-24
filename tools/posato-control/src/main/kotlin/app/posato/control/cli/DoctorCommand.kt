@@ -17,6 +17,8 @@ import kotlin.io.path.exists
 
 class DoctorCommand :
     ControlCommand("doctor", "Report whether the toolchain, configuration, permissions, and the selected target (or all targets) are ready.") {
+    override val hostDesktopAllowed = true
+
     private val deep by option("--deep", help = "Also verify the Gradle daemon JVM (slower).").flag()
     private val requestPermissions by option("--request-permissions", help = "Trigger the macOS Accessibility and Screen Recording prompts.").flag()
 

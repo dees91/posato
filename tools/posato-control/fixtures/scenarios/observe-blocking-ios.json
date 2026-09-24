@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": false },
+  "defaults": { "timeoutSeconds": 20 },
+  "onFailure": { "screenshot": true, "snapshot": false },
+  "steps": [
+    { "name": "open-app", "action": "launchApp", "bundleId": "com.apple.calculator" },
+    { "name": "app-settle", "action": "sleep", "seconds": 3 },
+    { "name": "app-shot", "action": "screenshot" },
+    { "name": "open-site", "action": "openURL", "url": "http://example.com/" },
+    { "name": "site-settle", "action": "sleep", "seconds": 6 },
+    { "name": "site-shot", "action": "screenshot" }
+  ]
+}
