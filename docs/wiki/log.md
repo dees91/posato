@@ -1877,7 +1877,7 @@ to scope, feasibility, or delivery.
 - Record: `docs/tasks/executions/release-002-release-candidate.md`; topic:
   `docs/wiki/topics/first-release-readiness.md`.
 
-## [2026-09-24] decision | Backlog refinement: unattended verification, the pause page, and Polish
+## [2026-09-24] decision | Backlog refinement: verification, pause page, Polish, navigation
 
 - Idea 10 and backlog row `QUALITY-010` record the maintainer's goal: an agent
   verifies every task without human help. The targets are Tart macOS VMs and
@@ -1890,3 +1890,5 @@ to scope, feasibility, or delivery.
   It follows the system language and covers both applications, the store
   listing, and the website. The agent drafts the copy under a narrow
   `AGENTS.md` exception, and the maintainer approves it.
+- Idea 13 and row `NAV-001` move screen stacks to Navigation 3 with system
+  back gestures, as the `IOS-004` decision required.

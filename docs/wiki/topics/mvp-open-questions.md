@@ -798,6 +798,19 @@ not an accepted feature plan or an expansion of the MVP.
     - The pause page is rendered by the Swift helper.
     - Driver recipes select elements by English labels, which matters for
       `QUALITY-010`.
+13. **Navigation 3 and system back gestures.** `user-confirmed` (2026-09-22,
+    the `IOS-004` decision): adopt Navigation 3 with system back gestures as
+    a separate task. `inferred`:
+    - The applications already have screen stacks, such as About Posato to
+      Licenses to a license text, that return only through explicit **Back**
+      actions.
+    - There is no interactive edge swipe on iPhone or iPad, and no keyboard
+      back on the Mac.
+    - `architecture-direction` names Navigation 3 as the accepted default for
+      multi-screen flows.
+
+    The two-destination navigation in `DESIGN.md` stays unchanged. Only the
+    stacks within a destination move to Navigation 3.
 
 ## Later platform questions
 
