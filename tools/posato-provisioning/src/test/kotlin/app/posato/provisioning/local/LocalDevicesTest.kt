@@ -64,4 +64,24 @@ class LocalDevicesTest {
 
         assertEquals(listOf("00008030-000102030405061E"), LocalDevices.parseConnectedIphones(json))
     }
+
+    @Test
+    fun `reads a Tart guest's provisioning identifier through tart exec and registers it as a secret`() {
+        val runner = RecordingRunner.succeeding("""{"SPHardwareDataType":[{"provisioning_UDID":"0000FAKE0000VM000000"}]}""")
+        val secrets = mutableListOf<String>()
+
+        val device = LocalDeviceReader(runner) { secrets.add(it) }.tartVm("verification-golden")
+
+        assertEquals("0000FAKE0000VM000000", device?.udid)
+        assertEquals(
+            listOf("tart", "exec", "verification-golden", "/usr/sbin/system_profiler", "SPHardwareDataType", "-json"),
+            runner.commands.single(),
+        )
+        assertEquals(listOf("0000FAKE0000VM000000"), secrets)
+    }
+
+    @Test
+    fun `a guest that cannot be read yields no device`() {
+        assertNull(LocalDeviceReader(RecordingRunner.failing("VM is not running")) {}.tartVm("stopped-vm"))
+    }
 }

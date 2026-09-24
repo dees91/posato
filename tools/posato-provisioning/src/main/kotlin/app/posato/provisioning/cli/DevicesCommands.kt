@@ -1,11 +1,15 @@
 package app.posato.provisioning.cli
 
+import app.posato.provisioning.core.ErrorCode
+import app.posato.provisioning.core.ProvisioningException
 import app.posato.provisioning.decide.DeviceDecision
 import app.posato.provisioning.decide.DeviceDecisions
 import app.posato.provisioning.decide.DeviceOutcome
 import app.posato.provisioning.model.ApplePlatform
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
+import com.github.ajalt.clikt.parameters.options.multiple
+import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
@@ -14,6 +18,7 @@ import kotlinx.serialization.json.put
 
 private const val MAC_NAME = "Posato Development Mac"
 private const val IPHONE_NAME = "Posato Development iPhone"
+private const val VM_NAME = "Posato Verification VM"
 
 class DevicesCommand : CliktCommand(name = "devices") {
     override fun help(context: Context): String = "Inspect and register the development devices this Mac can see."
@@ -22,7 +27,8 @@ class DevicesCommand : CliktCommand(name = "devices") {
 }
 
 /**
- * Registers this Mac and every connected iPhone that the account does not already hold.
+ * Registers this Mac, every connected iPhone, and each named running Tart verification VM that the account does not
+ * already hold.
  *
  * The names sent to Apple are fixed rather than taken from the host or the device, so nothing personal is uploaded
  * alongside the identifier. No identifier is printed, returned, or written: the result says only what happened.
@@ -30,21 +36,43 @@ class DevicesCommand : CliktCommand(name = "devices") {
 class DevicesRegisterCommand :
     ProvisioningCommand(
         "register",
-        "Registers this Mac and any connected iPhone in the Apple developer account when they are missing.",
+        "Registers this Mac, any connected iPhone, and the named Tart VMs in the Apple developer account when they are missing.",
     ) {
+    private val tartVms by option(
+        "--tart-vm",
+        help = "Also register this running Tart macOS guest (repeatable), such as a golden verification VM.",
+    ).multiple()
+
     override fun execute(session: Session): JsonElement {
         val client = session.ascClient()
-        val local = listOfNotNull(session.devices.mac()) + session.devices.connectedIphones()
+        val mac = listOfNotNull(session.devices.mac())
+        val vms = tartVms.map { name -> session.devices.tartVm(name) ?: throw unreadableVm(name) }
+        // A clone taken before it was first booted shares its source's identifier; register it once.
+        val local = (mac + session.devices.connectedIphones() + vms).distinctBy { device -> device.udid }
         val decisions = DeviceDecisions.decide(local, client.devices())
         decisions.filter { decision -> decision.requiresCreate }.forEach { decision ->
-            val name = if (decision.device.platform == ApplePlatform.IOS) IPHONE_NAME else MAC_NAME
+            val name = when {
+                decision.device.platform == ApplePlatform.IOS -> IPHONE_NAME
+                decision.device in vms -> VM_NAME
+                else -> MAC_NAME
+            }
             client.createDevice(name, decision.device.platform, decision.device.udid)
         }
-        return report(decisions)
+        return report(decisions.filter { it.device !in vms }, decisions.filter { it.device in vms })
     }
 
-    private fun report(decisions: List<DeviceDecision>): JsonElement = buildJsonObject {
+    private fun unreadableVm(name: String) = ProvisioningException(
+        ErrorCode.DEVICE_UNAVAILABLE,
+        "Could not read the provisioning identifier of the Tart VM '$name'.",
+        "Start it with `tart run $name --no-graphics` and confirm `tart exec $name true` succeeds.",
+    )
+
+    private fun report(
+        decisions: List<DeviceDecision>,
+        vms: List<DeviceDecision>
+    ): JsonElement = buildJsonObject {
         put("mac", outcome(decisions, ApplePlatform.MACOS))
+        put("vms", buildJsonArray { vms.forEach { decision -> add(JsonPrimitive(name(decision.outcome))) } })
         put(
             "iphones",
             buildJsonArray {
