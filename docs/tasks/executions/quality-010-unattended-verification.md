@@ -23,24 +23,10 @@ Starting facts, `source-claim` (Apple Support 120468, Apple Developer Forums
 on this macOS 15+ host; every restore is a clone; at most two macOS guests run
 at once; a registered VM can still be rejected by a development profile.
 
-Order, cheapest no-go first: agent setup, then `M0` and `M3`; the
-maintainer's one-time account checklist (D3 to D5); then `M1`, `M4`, `M2`,
-and `M5` on the VMs and `M6` and `M7` on the test iPhone. `M0`, `M1`, `M3`,
-and the sync half of `M4` are recorded under Result. Remaining, each a go or
-no-go with its run directory:
-
-- `M2` VNC control through Virtualization's own server: 20 of 20 for the
-  helper's SecurityAgent prompt; fewer runs, each with a stated reset, for
-  the one-time System Settings approvals and the Gatekeeper first-open
-  dialog. Guest Screen Sharing is a different input class and needs D6.
-- `M4` enforcement half: the pause page for a paused synthetic domain, a
-  control domain loading, the paused application ending, and both recovering
-  after the session.
-- `M5` network-service switching with one virtual interface: a second
-  service on the same interface, a reordered service list, or a second
-  interface, compared with the physical-Mac scenario.
-- `M6` Screen Time consent and any passcode prompt through XCUITest on the
-  test iPhone; `M7` picker taps located by text recognition.
+Order, cheapest no-go first: agent setup, `M0`, `M3`, the maintainer's
+account checklist, then `M1`, `M4`, `M2`, `M5` on VMs (all under Result).
+Remaining: `M6` Screen Time consent and any passcode prompt through XCUITest
+on the test iPhone, and `M7` picker taps located by text recognition.
 - No-go fallbacks: without development provisioning there is no per-task sync
   in a VM (Developer ID is a release check only); without clone sessions, one
   long-lived VM per role reset by application state.
@@ -102,8 +88,26 @@ Open decisions for the maintainer:
 - `M4` sync half, `observed`: in the clone, onboarding **Sync with iCloud**
   established a workspace; the peer joined the same one (identical bootstrap
   row), and a website added on the clone arrived on the peer after
-  **Sync now**. The peer now carries Posato data and must be reset before it
-  serves as a base again. Enforcement half, `M2`, and `M5` remain.
+  **Sync now**. The peer now carries Posato data and must be reset first.
+- `M2` and `M4` enforcement, `observed` on fresh clones: helper background
+  approval over VNC, then 20 of 20 session starts whose SecurityAgent prompt
+  was confirmed over VNC (active without Retry, clean early end; runs
+  `m2-loop-*`). A paused HTTP domain shows the pause page, HTTPS `CONNECT` is
+  refused, a control domain loads, a paused Safari ends within about two
+  seconds, and all of it is reachable after the end. Gatekeeper first open of
+  the notarized 1.0.0 release, quarantined, approved 6 of 6 (two clicks: the
+  first activates the dialog). Go.
+- `M5`, `observed`: with a second service on the same interface, disabling
+  the primary during a session restores it and asks Retry; Retry applies on
+  the new service. Go for measurability. Product defect found, reproduced on
+  a fresh clone (`m5-network`): removing the service that holds the mutation
+  and re-enabling the original leaves "Restrictions active" with no proxy and
+  no application termination, and a stale ownership record then makes every
+  later start report "Restrictions may still apply". Candidate `MACOS` row.
+- `M6` blocked: the first XCUITest run on the test iPhone times out "while
+  enabling automation mode" until UI Automation is enabled on the device
+  (maintainer, once). The CoreDevice tunnel also idles, so `doctor` reports no
+  device until `devicectl device info details` wakes it.
 
 ## Verification
 

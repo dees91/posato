@@ -92,15 +92,34 @@ directories and the acceptance state.
   request to a paused domain returns the pause page, HTTPS `CONNECT` to it is
   refused, a control domain loads, a paused application is terminated within
   about two seconds, and everything is reachable again after an early end.
+- `observed`: the administrator prompt was confirmed over VNC in 20 of 20
+  consecutive session starts, each about ten seconds after the start press.
+- `observed`: Gatekeeper's first-open dialog for a quarantined, notarized
+  release was approved over VNC every time; the first click only activates
+  the dialog, the second presses **Open**. A fresh clone resets the approval.
 - `observed`: two guests on the same test account establish and join one
   workspace, and a website added on one arrives on the other after
   **Sync now**.
+- `observed`: a primary-network-service change is testable with one virtual
+  interface. Add a second service on the same interface
+  (`networksetup -createnetworkservice "<name>" en0`) and disable the first;
+  the recipe then sees the ADR 0005 restore and Retry path. Disposable clones
+  make destructive network cases cheap: a broken guest is deleted, not
+  repaired.
+
+## iPhone
+
+- `observed`: the first XCUITest run on a new device fails with "Timed out
+  while enabling automation mode" until UI Automation is enabled on the device
+  (Settings, Developer); this is a one-time step for its owner.
+- `observed`: the CoreDevice tunnel to a wired iPhone idles; `devicectl list`
+  then shows "available (paired)" and the driver reports no device until a
+  call such as `xcrun devicectl device info details --device <id>` wakes it.
 
 ## Open
 
-- `open`: Gatekeeper first-open handling, primary-network-service changes
-  with one virtual interface, and the iPhone measurements (Screen Time
-  consent, passcode, application picker, two-factor approval) are still being
-  measured in `QUALITY-010` Stage 1.
+- `open`: the iPhone measurements (Screen Time consent, passcode, application
+  picker, two-factor approval) are still being measured in `QUALITY-010`
+  Stage 1.
 - `open`: how `posato-control` will package these steps for contributors is
   decided in Stage 2.
