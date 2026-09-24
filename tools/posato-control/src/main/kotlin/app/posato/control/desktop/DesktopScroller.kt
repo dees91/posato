@@ -25,7 +25,7 @@ internal class DesktopScroller(
             val root = snapshot()
             val container = scrollContainer(root, query)
             val target = QueryMatcher.find(root, query)
-            if (target != null && container?.frame?.contains(target.frame) == true) {
+            if (target != null && (container?.frame?.contains(target.frame) == true || visibleOutsideScrollAreas(root, target))) {
                 return
             }
             val visible = container?.copy(children = container.children.filter { it.platformRole != "AXScrollBar" })
@@ -51,8 +51,22 @@ internal class DesktopScroller(
     ): SnapshotNode? {
         val scope = query.within?.let { QueryMatcher.scope(root, it) ?: return null } ?: root
         return scope.flatten()
-            .filter { it.platformRole == "AXScrollArea" && it.frame.w > 0 && it.frame.h > 0 }
+            .filter { it.platformRole == SCROLL_AREA && it.frame.w > 0 && it.frame.h > 0 }
             .maxByOrNull { it.frame.w * it.frame.h }
+    }
+
+    /**
+     * A control laid out below the list rather than inside it, like onboarding's Continue in a tall window, never enters
+     * a scroll area. It is reached when it sits fully inside a window and no scroll area encloses it.
+     */
+    private fun visibleOutsideScrollAreas(
+        root: SnapshotNode,
+        target: SnapshotNode
+    ): Boolean {
+        val nodes = root.flatten()
+        val insideScrollArea = nodes.any { node -> node.platformRole == SCROLL_AREA && node.flatten().drop(1).any { it === target } }
+        val insideWindow = nodes.any { node -> node.role == "window" && node.frame.contains(target.frame) }
+        return !insideScrollArea && insideWindow
     }
 
     private fun notFound(): ControlException {
@@ -67,6 +81,7 @@ private fun Frame.contains(other: Frame): Boolean {
     return hasArea && horizontallyInside && verticallyInside
 }
 
+private const val SCROLL_AREA: String = "AXScrollArea"
 private const val MAX_ATTEMPTS: Int = 80
 private const val STABLE_SNAPSHOTS: Int = 3
 private const val SETTLE_MILLIS: Long = 100

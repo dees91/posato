@@ -96,6 +96,23 @@ class DesktopScrollerTest {
     }
 
     @Test
+    fun `given a button below the scroll area in a tall window when scrolling then it counts as reached without scrolling`() {
+        var scrolls = 0
+        val scroller = DesktopScroller(snapshot = { onboardingWindow(buttonY = 588.0) }, scroll = { _, _ -> scrolls++ }, settle = {})
+
+        scroller.scrollTo(Query(text = "Continue", role = "button"), 1_000)
+
+        assertEquals(0, scrolls)
+    }
+
+    @Test
+    fun `given a button outside the scroll area and below the window when scrolling then it is not reached`() {
+        val scroller = DesktopScroller(snapshot = { onboardingWindow(buttonY = 900.0) }, scroll = { _, _ -> }, settle = {})
+
+        assertFailsWith<ControlException> { scroller.scrollTo(Query(text = "Continue", role = "button"), 300) }
+    }
+
+    @Test
     fun `given an explicitly scoped list when scrolling then the sidebar is not scrolled`() {
         val calls = mutableListOf<String?>()
         val scroller = DesktopScroller(
@@ -142,4 +159,25 @@ private fun scrollArea(
     frame: Frame
 ): SnapshotNode {
     return SnapshotNode(role = "group", label = label, platformRole = "AXScrollArea", frame = frame)
+}
+
+/** The guest onboarding window from QUALITY-010 run `m3-guest-scenario`: Continue sits below the privacy list's scroll area. */
+private fun onboardingWindow(buttonY: Double): SnapshotNode {
+    return SnapshotNode(
+        role = "other",
+        label = "Posato",
+        children = listOf(
+            SnapshotNode(
+                role = "window",
+                label = "Posato",
+                frame = Frame(48.0, 44.0, 1060.0, 780.0),
+                children = listOf(
+                    scrollArea("Privacy", Frame(216.0, 254.0, 600.0, 302.0)).copy(
+                        children = listOf(SnapshotNode(role = "text", label = "No browsing history", frame = Frame(216.0, 300.0, 400.0, 30.0))),
+                    ),
+                    SnapshotNode(role = "button", label = "Continue", frame = Frame(216.0, buttonY, 93.0, 44.0)),
+                ),
+            ),
+        ),
+    )
 }
