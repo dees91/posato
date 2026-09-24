@@ -14,12 +14,12 @@ summary and links here. The Planned platforms section records the maintainer's
 
 ## Availability
 
-Posato 1.0 is available for Mac; the iPhone app is coming to the App Store.
+Posato 1.0 is available for Mac and iPhone.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |
 | macOS | Signed and notarized download (Developer ID) | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
-| iOS | App Store | Coming soon |
+| iOS | App Store | [App Store](https://apps.apple.com/app/posato/id6812237585) |
 
 The release verdict is recorded in the
 [release candidate record](../tasks/executions/release-002-release-candidate.md).

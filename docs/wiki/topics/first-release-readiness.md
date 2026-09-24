@@ -95,8 +95,17 @@ not a legal opinion.
 
 `user-confirmed` (2026-09-17, `RELEASE-002`): the verdict is **ready** for
 revision `84d0c47`, Developer ID DMG 1.0.0 (7), and TestFlight 1.0.0 (3), for
-publication through GitHub Releases; App Store submission waits for Apple's
-approval of EU trader status.
+publication through GitHub Releases. `observed` (2026-09-24): App Review
+approved 1.0.0 (3) and the iPhone app is live on the App Store; EU trader
+verification passed on 2026-09-19.
+
+- App Review's automated Screen Time check rejected the build although the
+  Family Controls entitlement was present in every binary and profile and on
+  both App IDs; the Family Controls (Distribution) request form is account
+  level only. A factual reply in Resolution Center was enough: no
+  resubmission, no code-level support request.
+- Submission did not wait for EU trader verification, and a release with
+  manual release type can be triggered through the App Store Connect API.
 
 - The device matrix was not repeated: the maintainer relied on earlier
   release-build acceptance (`MACOS-009` notarized build 6, `SYNC-017`,
