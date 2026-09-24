@@ -76,14 +76,14 @@ Open decisions for the maintainer:
   `QUALITY-007` macOS 15 image stays separate and must also be created from an
   IPSW on this host.
 - D2, `user-confirmed` 2026-09-24: the internal disk (about 150 GB free).
-- D3, after `M0`: development Mac device slots used per VM, and whether they
-  stay valid.
-- D4: the dedicated test iPhone.
-- D5: the account's two-factor trusted number or device, preferably the test
-  iPhone so the agent can approve codes.
+- D3, `user-confirmed` 2026-09-24: register the two VM identifiers through
+  the App Store Connect API, which this task sets up (team key outside Git).
+- D4, `user-confirmed` 2026-09-24: a dedicated test iPhone exists; it moves
+  to the test Apple Account.
+- D5, `user-confirmed` 2026-09-24: the test iPhone is the trusted device.
 - D6, only if `M2` fails: whether guest Screen Sharing input is acceptable.
-- D7: the VNC server listens on all interfaces and the host firewall is off
-  (`observed`); keep it off the local network before an account signs in.
+- D7, `user-confirmed` 2026-09-24: risk accepted; the VNC server listens on
+  all interfaces and the host firewall is off (`observed`).
 
 ## Result
 
