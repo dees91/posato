@@ -19,6 +19,8 @@ enum class ConfigurationKey(
     VM_PEER_GOLDEN("posato.vm.peerGolden", "POSATO_VM_PEER_GOLDEN"),
     VM_ADMIN_KEYCHAIN_SERVICE("posato.vm.adminKeychainService", "POSATO_VM_ADMIN_KEYCHAIN_SERVICE"),
     VM_ADMIN_KEYCHAIN_ACCOUNT("posato.vm.adminKeychainAccount", "POSATO_VM_ADMIN_KEYCHAIN_ACCOUNT"),
+    VM_ACCOUNT_KEYCHAIN_SERVICE("posato.vm.accountKeychainService", "POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE"),
+    VM_ACCOUNT_KEYCHAIN_ACCOUNT("posato.vm.accountKeychainAccount", "POSATO_VM_ACCOUNT_KEYCHAIN_ACCOUNT"),
 }
 
 enum class ConfigurationSource { ENVIRONMENT, LOCAL_PROPERTIES, ABSENT }

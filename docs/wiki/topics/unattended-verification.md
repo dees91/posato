@@ -74,6 +74,10 @@ directories and the acceptance state.
     coordinates.
   - The server listens on all host interfaces behind a short VNC password;
     use it on a trusted network or filter the port.
+- `observed`: a VNC client must announce the DesktopSize pseudo-encoding
+  (-223). Without it Virtualization's VNC server hits an internal assertion
+  and stops the whole VM. Several captures on one connection can also stall;
+  a fresh connection per capture is reliable.
 - Stop a guest from inside (`sync`, then `shutdown -h`) and wait for
   `tart run` to exit. `tart stop` can cut off the guest's last writes.
 - Enable automatic login in the golden VM so a clone reaches the desktop
@@ -100,6 +104,21 @@ directories and the acceptance state.
 - `observed`: two guests on the same test account establish and join one
   workspace, and a website added on one arrives on the other after
   **Sync now**.
+- `observed`: clones of one golden VM share an iCloud Keychain identity. A
+  synchronizable item written by one clone never reached a later clone of the
+  same line, while the other line received it at once. A run therefore starts
+  from an empty workspace: the peer removes the old one, the primary
+  establishes, the peer joins.
+- `observed`: after many clones of one golden VM, macOS reported that the Mac
+  could not connect to iCloud and asked for the account password; iCloud
+  Keychain in the other line asked for the Mac password and a trusted
+  iPhone's passcode. All three were answered over VNC from the Keychain, with
+  no new two-factor code.
+- `observed`: a full core flow ran with nobody present: onboarding with iCloud
+  and helper approval on both lines, website exchange in both directions, the
+  application picker through the helper panel, a session blocking a website
+  and Safari, a relaunch with Resume restrictions, the peer adopting and
+  enforcing the session, an early end clearing both, and a natural expiry.
 - `observed`: a primary-network-service change is testable with one virtual
   interface. Add a second service on the same interface
   (`networksetup -createnetworkservice "<name>" en0`) and disable the first;
@@ -138,5 +157,7 @@ directories and the acceptance state.
 
 - `open`: approving a two-factor sign-in request on the test iPhone through
   SpringBoard, and how often the automation-mode passcode returns over days.
-- `open`: how `posato-control` will package these steps for contributors is
-  decided in Stage 2.
+- `observed` answer to the packaging question: `posato-control` treats a VM as a
+  location of the desktop target (`--vm primary|peer`) with `vm create`,
+  `sync`, `destroy`, and `prompt`; the one-time setup is in
+  `docs/development/unattended-verification.md`.

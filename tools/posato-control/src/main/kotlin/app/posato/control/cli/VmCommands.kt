@@ -52,12 +52,15 @@ class VmDestroyCommand : ControlCommand("destroy", "Shut the clone down from ins
 
 class VmPromptCommand : ControlCommand("prompt", "Answer a system dialog over VNC: admin, background, gatekeeper, or picker-bypass.") {
     private val lineOption by option("--line", help = "VM line: primary or peer.").default(VmLine.PRIMARY.id)
-    private val kind by argument(help = "admin | background | gatekeeper | picker-bypass")
+    private val kind by argument(
+        help = "admin | background | toggle | account-password | mac-password | device-passcode | gatekeeper | picker-bypass",
+    )
+    private val row by option("--row", help = "toggle only: the System Settings row whose switch to turn on.")
     private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the dialog.").long().default(DEFAULT_TIMEOUT_SECONDS)
 
     override fun execute(session: Session): JsonElement {
         val prompt = GuestPrompt.parse(kind)
-        VmPrompts(session.context).answer(VmLine.parse(lineOption), prompt, timeoutSeconds * MILLIS_PER_SECOND)
+        VmPrompts(session.context).answer(VmLine.parse(lineOption), prompt, timeoutSeconds * MILLIS_PER_SECOND, row)
         return buildJsonObject { put("prompt", prompt.id) }
     }
 }

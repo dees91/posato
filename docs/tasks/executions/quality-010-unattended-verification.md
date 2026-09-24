@@ -18,43 +18,17 @@ disk; that run directory was deleted and no other trace was found.
 
 ### Stage 2: driver and skill
 
-1. iOS tunnel: a paired device whose tunnel idles is woken with
-   `devicectl device info details` and read again before refusing; "Timed
-   out while enabling automation mode" gets its own error and an unlock hint.
-2. Desktop `scrollTo`: a target fully inside the window and outside every
-   scroll area counts as reached (unit test with the `M3` geometry).
-3. iOS driver, first the Kotlin model: `Query` gains a `springboard` scope
-   and `Step` gains `launchApp`, `openURL`, and `pressKeys` with a secret
-   reference; the desktop runner refuses them; fixture and round-trip tests.
-   Swift: SpringBoard queries without activation, no-break spaces matched as
-   spaces, system identifiers through `id`. A secret never enters the
-   scenario, envelope, or transcript, and key-tap lines are filtered from the
-   xcodebuild log (unit test). `user-confirmed` 2026-09-24: the local
-   `.xcresult` may keep key labels; deleting it or skipping failure capture
-   would cost diagnosis for little gain on a private machine. The Screen Time
-   consent fixture works with a direct passcode and two failed Face ID tries.
-4. VMs as a location of the desktop target: `-t desktop --vm primary|peer`
-   keeps `--process` and `doctor`. Host-side: `build` and `vm create|destroy|
-   prompt`; everything else runs the guest's driver through `tart exec`, with
-   guest paths in relayed envelopes rewritten to host paths. `vm create`
-   refuses while the source golden VM runs or two guests are up, clones the
-   configured golden VM, boots it headless, reads the VNC URL from a pipe into
-   one 0600 file under ignored `build/verification/vm/` (deleted by
-   `vm destroy`), waits for the agent, and copies the package, the driver,
-   and the prebuilt accessibility bridge; the JDK is installed once in the
-   golden VM. `vm prompt` answers the administrator password, background
-   approval, Gatekeeper open, the private-window-picker bypass, and generic
-   text-located clicks. A Kotlin RFB client (authentication type 2 with
-   `javax.crypto` DES, raw frames, key and pointer events with explicit Shift)
-   and an OCR mode added to the existing Swift bridge add no dependency. Unit
-   tests: RFB against a local fake server and a known DES vector, key mapping,
-   recognition and Tart output parsing, and the running-VM guard.
-5. `verify-posato`, its feature map, and the README gain VM and test-iPhone
-   recipes; a guide in `docs/development/` covers one-time setup and golden
-   refresh with placeholders. The wiki topic answers its packaging question.
-6. Verification: unit tests and `./gradlew quality`; the core flow through
-   the driver on a fresh clone with the peer (AC-03) and on the test iPhone
-   (AC-04). Stage 3 (AC-05) follows; `MACOS-020` is out of scope.
+Reviewed plan, implemented under Result: (1) wake an idle device tunnel and
+name the automation lock; (2) a `scrollTo` target shown whole by every
+enclosing scroll area counts as reached; (3) iOS `springboard` scope,
+no-break-space matching, `launchApp`, `openURL`, `pressKeys` with a Keychain
+secret passed only through the runner environment (key taps filtered from the
+xcodebuild log; `user-confirmed` 2026-09-24: the local `.xcresult` may keep
+them), and the Screen Time consent fixture; (4) VMs as a location of the
+desktop target with `vm create|sync|destroy|prompt`, an in-repo RFB client,
+and an OCR mode in the Swift bridge; (5) README, skill, feature recipes, and a
+contributor guide; (6) AC-03 on VMs and AC-04 on the test iPhone. Stage 3
+(AC-05) follows; `MACOS-020` is out of scope.
 
 ### Decisions
 
@@ -107,9 +81,25 @@ disk; that run directory was deleted and no other trace was found.
   Calculator the Screen Time shield, both readable through SpringBoard, and
   both opened after the end (`ios-block*`).
 
+- Stage 2, `observed` 2026-09-24: steps 1-5 implemented. Deviations: the VNC
+  client also announces DesktopSize, LastRect, and QEMU key pseudo-encodings,
+  since without DesktopSize the Virtualization server stops the VM; each
+  capture uses a fresh connection; `vm prompt` gained `toggle`,
+  `account-password`, `mac-password`, and `device-passcode` for privacy panes
+  and iCloud renewal; desktop fixtures match the website row by fragment.
+- AC-03 met (`ac03-*`): with nobody present, primary and peer clones onboarded
+  with iCloud and helper approval, exchanged websites both ways, picked Safari
+  in the helper panel, started a session that blocked the website and Safari,
+  resumed after a relaunch, let the peer adopt and enforce it, ended early on
+  both, and expired naturally in 306 s. Findings: a clone never receives a
+  workspace key created by an earlier clone of its line (runs start from an
+  empty workspace via the peer's Remove workspace), and repeated clones
+  needed iCloud renewal, answered from the Keychain without a new code.
+- AC-04 on the test iPhone and Stage 3 remain.
+
 ## Verification
 
-- `:posato-control:installDist` passes; Stage 2 checks are listed in step 6.
+- `./gradlew :posato-control:test :posato-control:detekt :posato-control:ktlintCheck :posato-control:swiftFormatCheck` pass.
 
 ## Blockers and accepted risks
 

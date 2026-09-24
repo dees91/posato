@@ -1,8 +1,10 @@
 package app.posato.control.vm
 
+import app.posato.control.core.ConfigurationKey
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.core.RunContext
+import app.posato.control.core.readKeychainSecret
 import java.nio.file.Path
 
 /** System dialogs answered over VNC; each is located by its text, not by fixed coordinates alone. */
@@ -11,6 +13,10 @@ enum class GuestPrompt(
 ) {
     ADMIN("admin"),
     BACKGROUND("background"),
+    TOGGLE("toggle"),
+    ACCOUNT_PASSWORD("account-password"),
+    MAC_PASSWORD("mac-password"),
+    DEVICE_PASSCODE("device-passcode"),
     GATEKEEPER("gatekeeper"),
     PICKER_BYPASS("picker-bypass"),
     ;
@@ -31,7 +37,8 @@ class VmPrompts(
     fun answer(
         line: VmLine,
         prompt: GuestPrompt,
-        timeoutMs: Long
+        timeoutMs: Long,
+        rowText: String? = null
     ) {
         val screen = screen(line)
         when (prompt) {
@@ -40,10 +47,30 @@ class VmPrompts(
             }
 
             GuestPrompt.BACKGROUND -> {
-                val row = screen.waitFor(BACKGROUND_ROW, timeoutMs, exact = true).firstOrNull { it.centerX < screen.width * SETTINGS_CONTENT_RIGHT }
-                    ?: throw notOnScreen(BACKGROUND_ROW)
-                screen.session { client -> client.click((client.width * LOGIN_ITEM_TOGGLE_X).toInt(), row.centerY) }
-                answerAdmin(screen, timeoutMs)
+                toggleRow(screen, BACKGROUND_ROW, timeoutMs)
+            }
+
+            GuestPrompt.TOGGLE -> {
+                toggleRow(screen, rowText ?: throw missingRow(), timeoutMs)
+            }
+
+            GuestPrompt.ACCOUNT_PASSWORD -> {
+                answerAccountPassword(screen, timeoutMs)
+            }
+
+            GuestPrompt.MAC_PASSWORD -> {
+                answerAdmin(screen, timeoutMs, MAC_PASSWORD_REQUEST)
+            }
+
+            GuestPrompt.DEVICE_PASSCODE -> {
+                answerSecret(screen, timeoutMs, DEVICE_PASSCODE_REQUEST) {
+                    readKeychainSecret(
+                        context,
+                        ConfigurationKey.DEVICE_PASSCODE_KEYCHAIN_SERVICE,
+                        ConfigurationKey.DEVICE_PASSCODE_KEYCHAIN_ACCOUNT,
+                        "the test iPhone passcode",
+                    )
+                }
             }
 
             GuestPrompt.GATEKEEPER -> {
@@ -91,16 +118,64 @@ class VmPrompts(
         return context.recordArtifact(screen(line).screenshot(context.artifactPath("screenshots", "$name.png")))
     }
 
-    private fun answerAdmin(
+    /** Switches on the toggle of a System Settings list row (Login Items, Privacy panes) and authenticates. */
+    private fun toggleRow(
         screen: GuestScreen,
+        rowText: String,
         timeoutMs: Long
     ) {
-        screen.waitFor(ADMIN_REQUEST, timeoutMs)
+        // Text recognition can merge a row's icon into its label ("exee tart-guest-agent"), so match a fragment.
+        val row = screen.waitFor(rowText, timeoutMs).firstOrNull { it.centerX < screen.width * SETTINGS_CONTENT_RIGHT }
+            ?: throw notOnScreen(rowText)
+        screen.session { client -> client.click((client.width * LOGIN_ITEM_TOGGLE_X).toInt(), row.centerY) }
+        answerAdmin(screen, timeoutMs)
+    }
+
+    private fun missingRow() = ControlException(ErrorCode.USAGE, "toggle needs --row.", "Name the System Settings row, such as tart-guest-agent.")
+
+    /** The Apple Account password macOS asks for when a guest's iCloud session needs to be renewed. */
+    private fun answerAccountPassword(
+        screen: GuestScreen,
+        timeoutMs: Long
+    ) = answerSecret(screen, timeoutMs, ACCOUNT_REQUEST) {
+        readKeychainSecret(
+            context,
+            ConfigurationKey.VM_ACCOUNT_KEYCHAIN_SERVICE,
+            ConfigurationKey.VM_ACCOUNT_KEYCHAIN_ACCOUNT,
+            "the test Apple Account password",
+        )
+    }
+
+    /**
+     * Waits for a dialog showing [request], types the secret into its focused field, and confirms. The iCloud Keychain
+     * escrow dialog asks for the passcode of a trusted device, here the test iPhone.
+     */
+    private fun answerSecret(
+        screen: GuestScreen,
+        timeoutMs: Long,
+        request: String,
+        secret: () -> String
+    ) {
+        screen.waitFor(request, timeoutMs)
+        screen.session { client ->
+            client.type(secret())
+            client.press("return")
+        }
+        screen.waitGone(request, timeoutMs)
+    }
+
+    /** Types the guest administrator password into a SecurityAgent or iCloud Keychain request showing [request]. */
+    private fun answerAdmin(
+        screen: GuestScreen,
+        timeoutMs: Long,
+        request: String = ADMIN_REQUEST
+    ) {
+        screen.waitFor(request, timeoutMs)
         screen.session { client ->
             client.type(vmAdminPassword(context))
             client.press("return")
         }
-        screen.waitGone(ADMIN_REQUEST, timeoutMs)
+        screen.waitGone(request, timeoutMs)
     }
 
     private fun screen(line: VmLine): GuestScreen {
@@ -113,6 +188,9 @@ class VmPrompts(
     private companion object {
         const val FRAME = "frame.png"
         const val ADMIN_REQUEST = "password to allow this"
+        const val ACCOUNT_REQUEST = "Enter the Apple Account password"
+        const val MAC_PASSWORD_REQUEST = "Enter Mac Password"
+        const val DEVICE_PASSCODE_REQUEST = "passcode you use to unlock"
         const val BACKGROUND_ROW = "PosatoMacOSHelper"
         const val GATEKEEPER_QUESTION = "Are you sure"
         const val GATEKEEPER_OPEN = "Open"

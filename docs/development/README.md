@@ -230,6 +230,10 @@ evidence stays under the ignored `build/verification/` directory. The command
 reference, query syntax, scenario format, and per-target notes live in
 [`tools/posato-control/README.md`](../../tools/posato-control/README.md).
 
+To verify with nobody at the Mac or the phone, run the desktop app inside Tart
+virtual machines and the iOS app on a dedicated test iPhone; the one-time
+setup is in the [unattended verification guide](unattended-verification.md).
+
 ## Apple development provisioning
 
 `posato-provisioning` obtains the Apple development certificate, device

@@ -59,6 +59,27 @@ record and distinguish timer, action-required, and actual enforcement proof.
 
 ## Driving it with posato-control
 
+### In Tart VMs (unattended)
+
+Use a primary and a peer clone (`vm create --line primary|peer`), each from its
+own golden VM line, and address them with `--vm primary|peer`.
+
+- Start from an empty workspace. A clone never receives a workspace key that
+  an earlier clone of the same line created, so when a primary clone waits for
+  the key, link the peer (it can read that key), press **Remove workspace**
+  on the peer and confirm, press **Check again** on the primary until **Sync
+  with iCloud** returns, establish there, and then let the peer join.
+- iCloud may need renewal in a clone. "This Mac can't connect to iCloud"
+  (Apple Account Settings, second click) and "Some iCloud Data Isn't Syncing"
+  (Resume Data Sync) are answered with `vm prompt account-password`, then
+  `vm prompt mac-password` and `vm prompt device-passcode` for iCloud
+  Keychain. The key then arrives without another press.
+- A session started on the primary reaches the peer after **Sync now**; the
+  peer shows Resume restrictions and needs its own `vm prompt admin`.
+  Application choices stay local, so only the website is paused there.
+
+### On the physical Mac and iPhone
+
 Read `tools/posato-control/README.md` for commands and scenario syntax. Use a
 signed Mac package and a connected unlocked development-signed iPhone on the
 same maintainer-owned iCloud account. `doctor` must confirm the signing

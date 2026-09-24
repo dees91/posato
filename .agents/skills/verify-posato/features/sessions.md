@@ -71,11 +71,15 @@ Preconditions:
   the attended path below (active claim, no Retry): `QUALITY-005` proved both on
   2026-09-08 — confirmed runs show `authd` authentication seconds after the prompt,
   while the unconfirmed run reaches Retry with no authentication at all.
-- **Start with enforcement (desktop, attended):** run session-start-desktop.json while the
-  maintainer confirms the administrator prompt at the Mac when it appears. No driver step
-  can script the SecurityAgent dialog; an unconfirmed prompt lands in the action-required
-  path above instead. The same split applies to session-expiry-desktop.json: the full
-  five-minute expiry with enforcement is a maintainer-attended physical row.
+- **Start with enforcement (desktop in a Tart VM, unattended):** run session-start-desktop.json
+  with `--vm primary` in the background and `$PC vm prompt admin --line primary` beside it;
+  the prompt appears about ten seconds after Start. The same pairing runs
+  session-expiry-desktop.json. Observe enforcement inside the guest with `tart exec`:
+  `curl --proxy` through the address `scutil --proxy` reports returns the pause page for
+  `http://example.com`, and a paused application ends within seconds of `open -a`.
+- **Start with enforcement (physical Mac, attended):** run session-start-desktop.json while the
+  maintainer confirms the administrator prompt at the Mac when it appears; an unconfirmed
+  prompt lands in the action-required path above instead.
 - **Duration:** In setup use `$PC tap -t <target> --text "Increase Hours" --role button`
   and the corresponding Decrease Hours / Increase Minutes / Decrease Minutes
   buttons. Read the changed values and Ends at preview. At 24 hours minutes are
@@ -132,9 +136,12 @@ Preconditions:
 
 ## Gotchas
 
-- Starting on the Mac raises the administrator prompt for the helper Apply. The driver
-  cannot confirm it; plan attended runs with the maintainer at the Mac, otherwise expect
+- Starting on the Mac raises the administrator prompt for the helper Apply. In a Tart VM
+  `vm prompt admin` confirms it; on the physical Mac plan attended runs, otherwise expect
   the action-required state with Retry.
+- Removing the network service that holds the proxy settings during a session leaves a
+  false "Restrictions active" and a stale record (`MACOS-020`); do not use that path as a
+  cleanup step.
 - The active summary shows the frozen start set; reapplication uses the current
   local policy. Relaunching the Mac app during a session needs Resume restrictions.
 - There is no minutes text field. Read the displayed duration and review deadline

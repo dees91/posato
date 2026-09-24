@@ -25,6 +25,28 @@ or install, 6 unsupported.
 Read [`features/README.md`](features/README.md) before driving; it is the
 maintained map of user-facing features and the recipes that prove them.
 
+## Unattended targets
+
+Prefer targets that need nobody at the Mac or the phone. With the one-time
+setup in [`docs/development/unattended-verification.md`](../../../docs/development/unattended-verification.md):
+
+- **macOS in Tart VMs.** `$PC build -t desktop`, then
+  `$PC vm create --line primary` (and `--line peer` for Mac-to-Mac sync).
+  Every desktop command takes `--vm primary|peer` and runs inside the guest;
+  evidence lands in `build/verification/runs/<run>/guest/`. System dialogs
+  are answered with `$PC vm prompt <kind> --line <line>`:
+  `admin` (SecurityAgent at session start and Resume restrictions),
+  `background` (helper approval in Login Items), `toggle --row <text>` (privacy
+  panes), `picker-bypass` (macOS 26 after screen captures), `gatekeeper`,
+  `account-password`, `mac-password`, and `device-passcode` (iCloud
+  recovery). Run the prompt right after the step that raises it; a scenario
+  that waits on the confirmed state can run in the background while the
+  prompt command answers. Finish with `$PC vm destroy --line <line>`; a
+  broken guest is deleted, never repaired.
+- **The test iPhone.** `-t device` as before. Screen Time consent is
+  `fixtures/scenarios/screen-time-consent.json` in one run; the application
+  picker is in the app's own accessibility tree.
+
 ## Launch
 
 Run everything from the repository root. Provision and build the CLI once per
@@ -345,6 +367,13 @@ so the developer's local data is unchanged.
   before ending early. The expiry fixtures select 25 minutes, decrease minutes
   twenty times, wait for a real five-minute expiry, and remove `example.com`.
   Desktop session runs split: `session-start-action-required-desktop.json` proves the
-  unattended action-required path when the administrator prompt goes unconfirmed, while
-  the full desktop start and expiry with enforcement are maintainer-attended rows because
-  no driver step can script the SecurityAgent dialog. See `features/sessions.md`.
+  action-required path when the administrator prompt goes unconfirmed. The full desktop
+  start and expiry with enforcement run unattended in a Tart VM, where
+  `vm prompt admin` confirms the SecurityAgent dialog; on the physical Mac they stay
+  maintainer-attended rows. See `features/sessions.md`.
+- `onboarding-sync-desktop.json` and `onboarding-helper-finish-desktop.json` take a fresh
+  desktop install through iCloud consent and helper approval; run `vm prompt background`
+  between them in a VM.
+- `screen-time-consent.json` grants Screen Time access on the test iPhone through the
+  system sheets and the passcode keypad, reading the passcode from the Keychain item in
+  `local.properties`.
