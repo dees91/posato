@@ -1,7 +1,7 @@
 # `QUALITY-010`: Verify every task without the maintainer
 
 - **Review tier:** `high-risk`
-- **Tier reason:** The task automates privileged system prompts, holds test-account credentials outside Git, adds a second Apple Account with its own CloudKit data, and changes the verification driver that every later task relies on. It needs a brief independent plan review before implementation and one independent completed-change review per stage.
+- **Tier reason:** The task automates privileged system prompts, holds test-account credentials outside Git, adds a second Apple Account with its own CloudKit data, and changes the verification driver that every later task relies on. It needs an independent plan review before each stage and one completed-change review of the whole change.
 - **Dependencies:** None blocking. `QUALITY-007` shares the Tart macOS image; `MACOS-011` Stage 2 shares the physical Mac and may touch the driver. Started from the backlog on 2026-09-24 by maintainer decision, ahead of any release composition.
 - **Integration group:** `PR-UNATTENDED-VERIFICATION`, no milestone.
 - **Authority:** [release roadmap](../release-roadmap.md) (backlog row), [wiki idea 10](../../wiki/topics/mvp-open-questions.md#post-mvp-feature-ideas-for-discovery), [verify-posato](../../../.agents/skills/verify-posato/SKILL.md), [`tools/posato-control/README.md`](../../../tools/posato-control/README.md), [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md), [threat model](../../security/apple-mvp-threat-model.md), [`PRIVACY.md`](../../../PRIVACY.md), [quality contract](../../development/engineering-quality-contract.md), and the [task workflow](../README.md).
@@ -27,14 +27,14 @@ An agent can verify a Posato change end to end without the maintainer: on macOS 
 - `AC-01`: Every Stage 1 measurement has a recorded go or no-go with its evidence, and a no-go names the fallback or the stated gap.
 - `AC-02`: The test Apple Account exists, is separate from the maintainer's account, and the driver reads its credentials from the host Keychain without any tracked or logged secret.
 - `AC-03`: A restored golden VM runs the accepted core flow (onboarding, websites and applications, start, block, early end, expiry, relaunch, sync with a peer) through the driver with no attended step.
-- `AC-04`: The dedicated test iPhone runs the same flow through the driver, including Screen Time consent and the application picker, with no attended step.
+- `AC-04`: The dedicated test iPhone runs the same flow through the driver, including Screen Time consent and the application picker, with no attended step. Accepted exception: after the iPhone restarts, its owner unlocks it once and may enter the passcode for UI automation.
 - `AC-05`: Both targets record observed blocking and unblocking of a website and an application, and the `verify-posato` feature map names the recipes.
 
 ## Verification
 
 - Stage evidence lives in ignored `build/verification/`, with run directories cited from the execution record.
 - Driver and skill changes get focused tests where they parse, decide, or validate; `./gradlew quality` after the last correction.
-- Independent plan review before Stage 1 implementation; one independent completed-change review per stage.
+- Independent plan review before each stage's implementation; `user-confirmed` 2026-09-24: one maintainer-ordered completed-change review of the whole change replaces the per-stage reviews.
 
 ## Decisions or blockers
 

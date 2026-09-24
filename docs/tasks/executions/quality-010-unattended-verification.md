@@ -4,7 +4,7 @@
 - **Status:** `active`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
-- **Reviewer:** Stage 1 plan reviewed by a separate agent (revise; Critical and Required folded); Stage 2 plan review pending. `user-confirmed` 2026-09-24: per-stage completed-change reviews are replaced by one maintainer-ordered review of the whole change.
+- **Reviewer:** Stage 1 and Stage 2 plans reviewed by a separate agent (Critical and Required folded). `user-confirmed` 2026-09-24: per-stage completed-change reviews are replaced by one maintainer-ordered review of the whole change.
 - **Branch:** `feature/quality-010-unattended-verification`
 - **Updated:** 2026-09-24
 
@@ -12,51 +12,49 @@
 
 Stage 1 measured `M0`-`M7` (Result). Platform facts and sources live in the
 [unattended verification topic](../../wiki/topics/unattended-verification.md).
-Secrets from the host Keychain are piped into typing only, never printed or
-stored; scans of all run directories found none.
+Correction (Stage 2 plan review): XCUITest logs each tapped key's label, so
+the `M6` probe's log and result bundle held the passcode digits on local
+disk; that run directory was deleted and no other trace was found.
 
 ### Stage 2: driver and skill
 
-1. iOS device tunnel: device discovery treats a paired device whose tunnel is
-   idle as reachable, wakes it with `devicectl device info details`, and
-   reads the state again before refusing. Unit tests on the parsed states.
+1. iOS tunnel: a paired device whose tunnel idles is woken with
+   `devicectl device info details` and read again before refusing; "Timed
+   out while enabling automation mode" gets its own error and an unlock hint.
 2. Desktop `scrollTo`: a target fully inside the window and outside every
-   scroll area counts as reached. Unit test with the `M3` geometry.
-3. iOS driver system surfaces: a scenario query may name the `springboard`
-   scope, resolved without activating SpringBoard; matching treats no-break
-   spaces as spaces; the existing `id` key matches system identifiers; new
-   actions `launchApp` and `openURL` for later blocking recipes; a
-   `pressKeys` action takes digits from a secret that the host reads from the
-   Keychain item named in `local.properties` and passes only through the test
-   runner environment, never through the scenario, result, or log. The
-   Screen Time consent becomes a fixture scenario that works with Face ID
-   removed (direct passcode) and falls back to two failed Face ID attempts.
-4. VM target `-t vm`: `vm create` clones a configured golden VM (primary or
-   peer line), boots it headless with Virtualization's VNC, waits for the
-   guest agent, and copies the development package, the driver, and a JDK
-   onto the guest disk; `vm destroy` shuts it down from inside and deletes it.
-   Desktop commands with `-t vm` run the guest's driver through `tart exec`
-   and copy its run directory back. `vm prompt` answers system dialogs over
-   VNC: administrator password, background-item approval, Gatekeeper open,
-   and generic text-located click or key. A Kotlin RFB client (VNC
-   authentication, raw framebuffer, key and pointer events with explicit
-   Shift) and a Swift Vision text-recognition bridge, compiled on demand like
-   the accessibility bridge, add no dependency. VM names and Keychain item
-   names come from `local.properties`; the VNC address never leaves memory.
-   Unit tests: RFB handshake and authentication against a local fake server,
-   key mapping, recognition output parsing, Tart output parsing, and the
-   guard that no secret reaches an envelope.
-5. `verify-posato` skill, feature map, and `posato-control` README: VM and
-   test-iPhone recipes. A contributor guide in `docs/development/` covers the
-   one-time setup with placeholders: golden VM from an IPSW, guest agent and
-   privacy approvals, device registration, test Apple Account, test iPhone
-   settings, and Keychain items.
-6. Verification: focused unit tests and `./gradlew quality`; the core flow
-   through the driver on a fresh VM clone with the peer (AC-03) and on the
-   test iPhone (AC-04).
-
-Stage 3 (observed blocking recipes, AC-05) follows on this driver. Out of
-Stage 2: the `MACOS-020` fix and committed App Store Connect API tooling.
+   scroll area counts as reached (unit test with the `M3` geometry).
+3. iOS driver, first the Kotlin model: `Query` gains a `springboard` scope
+   and `Step` gains `launchApp`, `openURL`, and `pressKeys` with a secret
+   reference; the desktop runner refuses them; fixture and round-trip tests.
+   Swift: SpringBoard queries without activation, no-break spaces matched as
+   spaces, system identifiers through `id`. A scenario with a secret step
+   filters key-tap lines from the xcodebuild log, deletes the `.xcresult`
+   after exporting attachments, and skips failure capture for that step; a
+   test covers the filter, and the no-secret guard covers envelope,
+   transcript, log, and run directory. The Screen Time consent fixture works
+   with a direct passcode and with two failed Face ID attempts.
+4. VMs as a location of the desktop target: `-t desktop --vm primary|peer`
+   keeps `--process` and `doctor`. Host-side: `build` and `vm create|destroy|
+   prompt`; everything else runs the guest's driver through `tart exec`, with
+   guest paths in relayed envelopes rewritten to host paths. `vm create`
+   refuses while the source golden VM runs or two guests are up, clones the
+   configured golden VM, boots it headless, reads the VNC URL from a pipe into
+   one 0600 file under ignored `build/verification/vm/` (deleted by
+   `vm destroy`), waits for the agent, and copies the package, the driver,
+   and the prebuilt accessibility bridge; the JDK is installed once in the
+   golden VM. `vm prompt` answers the administrator password, background
+   approval, Gatekeeper open, the private-window-picker bypass, and generic
+   text-located clicks. A Kotlin RFB client (authentication type 2 with
+   `javax.crypto` DES, raw frames, key and pointer events with explicit Shift)
+   and an OCR mode added to the existing Swift bridge add no dependency. Unit
+   tests: RFB against a local fake server and a known DES vector, key mapping,
+   recognition and Tart output parsing, and the running-VM guard.
+5. `verify-posato`, its feature map, and the README gain VM and test-iPhone
+   recipes; a guide in `docs/development/` covers one-time setup and golden
+   refresh with placeholders. The wiki topic answers its packaging question.
+6. Verification: unit tests and `./gradlew quality`; the core flow through
+   the driver on a fresh clone with the peer (AC-03) and on the test iPhone
+   (AC-04). Stage 3 (AC-05) follows; `MACOS-020` is out of scope.
 
 ### Decisions
 
