@@ -605,10 +605,15 @@ final class ScenarioExecutor {
     return deepest
   }
 
-  /// SpringBoard for system surfaces, otherwise the application under test. Queries never activate SpringBoard,
-  /// so the application keeps the foreground and its pending system sheet.
+  /// SpringBoard for system surfaces, another application by bundle identifier (a Screen Time shield or Safari's
+  /// blocked page), otherwise the application under test. Queries never activate their root, so the foreground
+  /// application keeps its pending system sheet.
   private func root(for query: ElementQuery) -> XCUIApplication {
-    query.scope == Self.springboardScope ? springboard : app
+    switch query.scope {
+    case nil: return app
+    case Self.springboardScope: return springboard
+    case let bundleIdentifier?: return XCUIApplication(bundleIdentifier: bundleIdentifier)
+    }
   }
 
   /// The match closest to `anchor` by frame centre; `index` picks a farther one.

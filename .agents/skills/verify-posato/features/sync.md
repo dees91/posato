@@ -135,12 +135,16 @@ during `MVP-001`.
    On Mac, compare counts before and after each step using the read-only
    queries below; registrations are also bundles, so establish the baseline
    before adding the domain. A repeat exchange must not add accepted entries.
-5. For offline retry, ask the maintainer to disconnect the authoring target
-   (airplane mode with Wi-Fi off on iPhone). Add a domain; the save stays local
+5. For offline retry, disconnect the authoring target: a Mac VM clone, never
+   the host Mac. The driver has no network toggle yet (`open`); add one to
+   `posato-control` when a task needs this step instead of asking the
+   maintainer. Add a domain; the save stays local
    while sync reports retryable. Reconnect, press **Sync now**, and verify one
-   acceptance on the peer. Never alter system connectivity without coordination.
-6. For the account gate, arrange pending work offline, then ask the maintainer
-   to sign out before the next attempt. Expect action required, unchanged
+   acceptance on the peer. Never alter the host Mac's connectivity.
+6. For the account gate, arrange pending work offline, then sign the VM clone
+   out of the test Apple Account in System Settings over `vm click` before the
+   next attempt (not yet driven, `open`; extend the driver rather than asking
+   the maintainer). Expect action required, unchanged
    pending/accepted counts and cursor state. Restore the original account and
    retry, then verify one peer acceptance. Run in both directions. Device DB
    access is unavailable; Mac reception and device status are the evidence.

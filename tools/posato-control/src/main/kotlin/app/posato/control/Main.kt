@@ -15,6 +15,7 @@ import app.posato.control.cli.FindCommand
 import app.posato.control.cli.InstallCommand
 import app.posato.control.cli.LaunchCommand
 import app.posato.control.cli.LogsCommand
+import app.posato.control.cli.ObserveCommand
 import app.posato.control.cli.OrientCommand
 import app.posato.control.cli.PressCommand
 import app.posato.control.cli.ResetCommand
@@ -81,6 +82,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ResetCommand(),
     CleanupCommand(),
     ArtifactsCommand(),
+    ObserveCommand(),
     VmCommand().subcommands(
         VmCreateCommand(),
         VmSyncCommand(),

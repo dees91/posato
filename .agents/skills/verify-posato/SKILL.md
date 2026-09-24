@@ -394,6 +394,7 @@ so the developer's local data is unchanged.
   `local.properties`.
 - `onboarding-sync-consent-ios.json` takes a fresh iPhone install through iCloud consent,
   Screen Time consent (the same steps in one run), and the remaining onboarding;
-  `choose-app-ios.json` picks Calculator in the picker; `observe-blocking-ios.json` opens
-  Calculator and `http://example.com` and captures both, so the Screen Time shield and
-  Safari's "Website Not Allowed" page (or their absence) are the evidence.
+  `choose-app-ios.json` picks Calculator in the picker; `observe-blocking-ios.json` and
+  `observe-unblocked-ios.json` open Calculator and `http://example.com` and assert the
+  Screen Time shield and Safari's "Website Not Allowed" page, or their absence; on the
+  desktop `observe` does the same in a VM (`features/sessions.md`, Observe blocking).

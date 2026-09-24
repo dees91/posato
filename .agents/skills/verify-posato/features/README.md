@@ -82,13 +82,14 @@ handles, required state, commands, and observable proof.
   desktop-only application picker, driven end to end through the helper
   process, and how to read its result.
 - [iOS application mappings](./ios-application-mappings.md) covers the
-  device-only Family Controls picker, its access states, and the consent and selection steps that need the maintainer.
+  device-only Family Controls picker, its access states, and the consent and selection steps the driver runs on the test iPhone.
 - [Sessions](./sessions.md) covers setting up, reviewing, starting, ending
-  early, and expiring one manual session on every target, and what survives a
-  relaunch.
+  early, and expiring one manual session on every target, what survives a
+  relaunch, and the observed blocking and release of a website and an
+  application.
 - [Sync with iCloud](./sync.md) covers the one consent action, the truthful
-  outcomes it reports, joining in either device order, and what a from-empty
-  rerun costs the maintainer.
+  outcomes it reports, joining in either device order, and how a from-empty
+  rerun starts in VMs.
 - [First install](./onboarding.md) covers the six-step first-run flow, the
   skip prelude every fresh launch needs, the upgrade row, and the degraded
   iCloud outcome.

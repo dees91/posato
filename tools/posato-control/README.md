@@ -167,6 +167,7 @@ grants a permission.
 | `reset [--dry-run] [--yes] [--keep-install]` | all | Deletes local state (desktop, simulator) or uninstalls (device). Refuses without `--yes`; deleted files are backed up into the run directory. |
 | `cleanup [--dry-run] [--purge-derived-data]` | all | Stops tracked processes; never deletes run evidence. |
 | `artifacts` | — | Prints the run directory layout. |
+| `observe [--website URL] [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports (`paused` when the helper's pause page answers, `loaded` for the real page) and opens the application, which counts as blocked when it no longer runs after N seconds (default 8). Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
 | `vm create\|sync\|destroy [--line primary\|peer]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. See [Tart VMs](#tart-vms). |
 | `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`. |
 | `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
@@ -185,7 +186,7 @@ scenario steps use the same keys in a `query` object:
 | `--index` | `index` | The nth match, 0-based. |
 | `--path` | `path` | Desktop accessibility path from a previous snapshot, e.g. `0/0/0/0/9/2`. |
 | `--within-text` + `--within-role` | `within` | Scope: the nearest ancestor with the given role of the element carrying the text; the query then matches inside that scope. Works where the platform exposes containers (desktop rows). |
-| — | `scope` | iOS only: `springboard` addresses system dialogs and sheets (Screen Time consent, the passcode keypad, shields) without activating SpringBoard. |
+| — | `scope` | iOS only: `springboard` addresses system dialogs and sheets (Screen Time consent, the passcode keypad) without activating SpringBoard; a bundle identifier such as `com.apple.mobilesafari` addresses that application's tree, for example a Screen Time shield or a blocked page. |
 | `--near-text` + `--near-role` | `near` | Prefer the match closest to the element carrying the text, with vertical distance weighted three times, so a control on the anchor's row wins over the neighbouring row; `index` then picks farther matches. Works on every target, including iOS lists whose rows expose no container. |
 
 Example: open a website's menu with

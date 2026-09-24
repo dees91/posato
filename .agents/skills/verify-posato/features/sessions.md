@@ -23,6 +23,8 @@ can require Resume restrictions and an attended administrator confirmation.
 - `session-early-end` asks Ready to return? with End session and Keep this pause.
 - `session-expiry` persists natural expiry and does not revive after restart.
 - `session-persist` preserves the active session and its end time across relaunch.
+- `session-blocking` pauses a website and an application during a session, as a
+  person meets them, and releases both after it ends.
 - `session-mac-setup` (Mac only) offers Check Mac setup inside the This Mac row below iCloud,
   reads nothing before the press, then names the real helper state with one
   action and a quiet Check again, except not enabled, which shows Enable on
@@ -68,15 +70,22 @@ Preconditions:
   end, and removes example.com. The Retry wait allows up to 240 seconds for the helper
   deadline path. The nothing-restricted step matches by `textContains` because the
   accepted copy continues with a second sentence. A confirmed prompt instead lands in
-  the attended path below (active claim, no Retry): `QUALITY-005` proved both on
+  the enforcement path below (active claim, no Retry): `QUALITY-005` proved both on
   2026-09-08 — confirmed runs show `authd` authentication seconds after the prompt,
   while the unconfirmed run reaches Retry with no authentication at all.
 - **Start with enforcement (desktop in a Tart VM, unattended):** run session-start-desktop.json
   with `--vm primary` in the background and `$PC vm prompt admin --line primary` beside it;
   the prompt appears about ten seconds after Start. The same pairing runs
-  session-expiry-desktop.json. Observe enforcement inside the guest with `tart exec`:
-  `curl --proxy` through the address `scutil --proxy` reports returns the pause page for
-  `http://example.com`, and a paused application ends within seconds of `open -a`.
+  session-expiry-desktop.json.
+- **Observe blocking (both targets):** with `example.com` and one application paused, on the
+  desktop run `$PC observe -t desktop --vm primary --website http://example.com/ --application
+  Safari --expect blocked` during the session and `--expect allowed` after it: the request
+  through the system proxy returns the pause page (`outcome: paused`) and Safari is ended at
+  launch, then the real page loads and Safari keeps running. On the test iPhone run
+  `observe-blocking-ios.json` during the session and `observe-unblocked-ios.json` after it:
+  SpringBoard shows "You cannot use Calculator because it is restricted." and Safari shows
+  "Website Not Allowed", then Calculator's keypad and the Example Domain page appear. Each
+  fixture fails in the opposite state, so a pass is not a timing accident.
 - **Duration:** In setup use `$PC tap -t <target> --text "Increase Hours" --role button`
   and the corresponding Decrease Hours / Increase Minutes / Decrease Minutes
   buttons. Read the changed values and Ends at preview. At 24 hours minutes are
