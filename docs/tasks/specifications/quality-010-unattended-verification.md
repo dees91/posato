@@ -40,5 +40,6 @@ An agent can verify a Posato change end to end without the maintainer: on macOS 
 
 - `user-confirmed`, 2026-09-24: start now from the backlog without a roadmap planning step; the row stays in the backlog table and gains a release later.
 - `user-confirmed`, 2026-09-24: no test Apple Account exists yet; creating it is one of the first Stage 1 steps.
-- `open`: which physical iPhone becomes the dedicated test device. The maintainer's private iPhone verified iOS 18 for `QUALITY-007` and is not the test device.
-- `open`: which Tart image and macOS version the golden VM uses; `QUALITY-007` D1 prepares a macOS 15 image that Stage 1 may reuse.
+- `user-confirmed`, 2026-09-24: a dedicated test iPhone exists and moves to the test Apple Account as its trusted device. The maintainer's private iPhone is not the test device.
+- `user-confirmed`, 2026-09-24: the golden VM runs macOS 26, created from an IPSW on this Mac; the `QUALITY-007` macOS 15 image stays separate.
+- `user-confirmed`, 2026-09-24: this task sets up App Store Connect API access to register the VMs and regenerate development profiles.
