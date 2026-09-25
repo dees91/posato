@@ -405,6 +405,11 @@ with a notarized candidate, for update and release checks:
 5. A marker under the guest's `build/verification/` then points every desktop
    command at `/Applications/Posato.app`. `vm sync` copies only the driver and
    repeats the single-bundle check.
+6. `launch` then opens the candidate through LaunchServices, as Finder does,
+   and tracks the process it starts. Launched by the guest agent directly, the
+   agent would be responsible for the application: macOS records its App
+   Management denial for the agent, and Sparkle then asks for an administrator
+   for every later update (`observed` 2026-09-25).
 
 The evidence is `candidate-install.json` in the run directory. After an
 update relaunches the application, `launch -t desktop --vm <line> --adopt`

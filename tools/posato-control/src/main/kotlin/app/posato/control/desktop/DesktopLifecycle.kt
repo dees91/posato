@@ -61,24 +61,57 @@ class DesktopLifecycle(
         }
         if (options.fresh) evidence.reset(dryRun = false, keepInstall = true)
         val logPath = context.artifactPath("desktop-app.log")
-        val process = context.subprocess.startDetached(
-            listOf(processes.executablePath().toString()) + options.arguments,
-            logPath,
-            environment = options.environment,
-        )
-        val windowId = awaitWindow(process.pid())
+        val pid = if (context.layout.installedApplicationMarker.exists()) {
+            launchThroughLaunchServices(options, logPath)
+        } else {
+            context.subprocess.startDetached(
+                listOf(processes.executablePath().toString()) + options.arguments,
+                logPath,
+                environment = options.environment,
+            ).pid()
+        }
+        val windowId = awaitWindow(pid)
         stateStore.update(
             Target.DESKTOP,
             LaunchedProcess(
-                pid = process.pid(),
-                startedAt = TrackedProcess.startedAt(process.pid()),
+                pid = pid,
+                startedAt = TrackedProcess.startedAt(pid),
                 logPath = logPath.toString(),
                 windowId = windowId,
                 runId = context.runId,
             ),
         )
         context.recordArtifact(logPath)
-        return LaunchResult(pid = process.pid(), logPath = context.layout.relativize(logPath), windowId = windowId)
+        return LaunchResult(pid = pid, logPath = context.layout.relativize(logPath), windowId = windowId)
+    }
+
+    /**
+     * Opens an installed candidate through LaunchServices, as Finder does, so that the application rather than the
+     * guest agent is responsible for it. Privacy decisions such as App Management then apply to the application and its
+     * update installer; launched from the agent directly, a denial recorded for the agent makes Sparkle ask for an
+     * administrator for every later update (`observed` 2026-09-25).
+     */
+    private fun launchThroughLaunchServices(
+        options: LaunchOptions,
+        logPath: Path,
+    ): Long {
+        java.nio.file.Files.createDirectories(logPath.parent)
+        val command = buildList {
+            addAll(listOf("/usr/bin/open", "--stdout", logPath.toString(), "--stderr", logPath.toString()))
+            options.environment.forEach { (key, value) -> addAll(listOf("--env", "$key=$value")) }
+            add(context.layout.desktopApplication.toString())
+            if (options.arguments.isNotEmpty()) addAll(listOf("--args") + options.arguments)
+        }
+        context.subprocess.run(command).requireSuccess(ErrorCode.COMMAND_FAILED, "Opening the installed candidate")
+        val deadline = System.currentTimeMillis() + WINDOW_TIMEOUT_MS
+        while (true) {
+            val running = processes.foreignPids(null)
+            if (running.isNotEmpty()) return singleInstance(running)
+            if (System.currentTimeMillis() >= deadline) {
+                throw ControlException(ErrorCode.COMMAND_FAILED, "The installed candidate did not start through LaunchServices.")
+            }
+            Thread.sleep(WINDOW_POLL_MS)
+        }
     }
 
     /**
