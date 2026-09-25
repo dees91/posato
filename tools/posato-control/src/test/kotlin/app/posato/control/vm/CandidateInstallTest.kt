@@ -6,6 +6,7 @@ import java.nio.file.Path
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
 class CandidateInstallTest {
@@ -37,6 +38,23 @@ class CandidateInstallTest {
         val sibling = "/Applications/Posato.app copy/Posato.app"
 
         assertEquals(listOf(sibling), foreignRegistrations(listOf(sibling), installed))
+    }
+
+    @Test
+    fun `given only the candidate and its helpers when checking then the single-bundle check holds`() {
+        val registrations = listOf(installed, "$installed/Contents/Helpers/PosatoMacOSSync.app", "/Applications/Safari.app")
+
+        assertNull(singleBundleProblem(registrations, installed))
+    }
+
+    @Test
+    fun `given an empty or unreadable dump when checking then the single-bundle check fails`() {
+        assertNotNull(singleBundleProblem(emptyList(), installed))
+    }
+
+    @Test
+    fun `given another Posato bundle when checking then the single-bundle check fails`() {
+        assertNotNull(singleBundleProblem(listOf(installed, "/Volumes/Posato/Posato.app"), installed))
     }
 
     @Test

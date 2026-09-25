@@ -18,13 +18,8 @@ class GuestRegistrations(
     fun requireSingleBundle(line: VmLine): List<String> {
         retireOtherBundles(line)
         val registrations = registrations(line)
-        val foreign = foreignRegistrations(registrations, INSTALLED_APPLICATION)
-        if (foreign.isNotEmpty()) {
-            throw ControlException(
-                ErrorCode.INSTALL_FAILED,
-                "LaunchServices still knows other Posato bundles: ${foreign.joinToString(", ")}.",
-                "Destroy the clone and install the candidate into a fresh one.",
-            )
+        singleBundleProblem(registrations, INSTALLED_APPLICATION)?.let { problem ->
+            throw ControlException(ErrorCode.INSTALL_FAILED, problem, "Destroy the clone and install the candidate into a fresh one.")
         }
         return registrations.filter { isPosatoBundle(it) }
     }
@@ -46,7 +41,7 @@ class GuestRegistrations(
     }
 
     private fun registrations(line: VmLine): List<String> =
-        tart.exec(line.cloneName, "$LSREGISTER -dump | sed -n 's/^path: *\\(.*\\.app\\) (0x[0-9a-f]*)\$/\\1/p' | sort -u")
+        tart.exec(line.cloneName, "set -o pipefail; $LSREGISTER -dump | sed -n 's/^path: *\\(.*\\.app\\) (0x[0-9a-f]*)\$/\\1/p' | sort -u")
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Listing LaunchServices registrations")
             .stdout.lines().filter { it.isNotBlank() }
 
@@ -64,3 +59,19 @@ internal fun foreignRegistrations(
     registrations: List<String>,
     installed: String
 ): List<String> = registrations.filter { isPosatoBundle(it) && it != installed && !it.startsWith("$installed/") }
+
+/**
+ * Why LaunchServices does not know exactly the installed candidate, or null when it does. An empty or unreadable
+ * dump never passes: the installed candidate itself must be registered.
+ */
+internal fun singleBundleProblem(
+    registrations: List<String>,
+    installed: String
+): String? {
+    val foreign = foreignRegistrations(registrations, installed)
+    return when {
+        foreign.isNotEmpty() -> "LaunchServices still knows other Posato bundles: ${foreign.joinToString(", ")}."
+        installed !in registrations -> "LaunchServices does not list $installed, so the single-bundle check cannot hold."
+        else -> null
+    }
+}

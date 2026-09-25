@@ -111,7 +111,9 @@ class CandidateInstall(
     }
 
     /** True once `vm install` has replaced the development package in this clone. */
-    fun installed(line: VmLine): Boolean = tart.exec(line.cloneName, "test -f \"$GUEST_ROOT/$MARKER\"").exitCode == 0
+    fun installed(line: VmLine): Boolean = guestOutput(line, "if test -f \"$GUEST_ROOT/$MARKER\"; then echo yes; else echo no; fi")
+        .requireSuccess(ErrorCode.VM_UNAVAILABLE, "Checking ${line.cloneName} for an installed candidate")
+        .stdout.trim() == "yes"
 
     private fun preflight(line: VmLine) {
         if (tart.exec(line.cloneName, "/usr/bin/pgrep -x Posato").exitCode == 0) {
@@ -139,7 +141,15 @@ class CandidateInstall(
             .stdout.trim()
         val info = guestOutput(line, "/usr/bin/hdiutil info -plist | /usr/bin/plutil -convert json -o - -")
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Listing attached images").stdout
-        mountPointsOf(info, image).forEach { mountPoint ->
+        val mountPoints = mountPointsOf(info, image)
+        if (mountPoints.isEmpty()) {
+            throw ControlException(
+                ErrorCode.INSTALL_FAILED,
+                "No mounted volume of $image was found to eject.",
+                "Destroy the clone and install again.",
+            )
+        }
+        mountPoints.forEach { mountPoint ->
             guest(line, "/usr/bin/hdiutil detach ${shellQuote(mountPoint)}", "Ejecting $mountPoint")
         }
     }

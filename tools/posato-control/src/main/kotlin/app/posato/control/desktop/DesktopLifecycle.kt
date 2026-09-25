@@ -86,7 +86,7 @@ class DesktopLifecycle(
      * Its output was never captured, so the tracked process has no log.
      */
     private fun adopt(options: LaunchOptions): LaunchResult {
-        if (options != LaunchOptions(captureLogs = options.captureLogs, adopt = true)) {
+        if (options != LaunchOptions(adopt = true)) {
             throw ControlException(ErrorCode.USAGE, "--adopt tracks a running instance and takes no launch options.", "Pass --adopt alone.")
         }
         processes.requireStaged()

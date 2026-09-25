@@ -151,7 +151,7 @@ grants a permission.
 | `build [--signing-identity X] [--verify] [--driver]` | all | Desktop: `:desktopApp:stageMacOsDevelopmentPackage`. iOS: a Debug `xcodebuild` with persistent DerivedData under `build/verification/derived-data/`. `--driver` also builds the XCUITest driver, which is otherwise rebuilt on demand whenever its sources are newer than the last build. |
 | `install` | simulator, device | `simctl install` or `devicectl device install app`. |
 | `launch [--fresh] [--capture-logs] [--build] [--arg A] [--env K=V] [--adopt]` | all | Starts the app and tracks it in `build/verification/state.json`. Desktop launches the staged `Posato.app` binary, or the installed candidate after `vm install`, and records its window id. `--adopt` (desktop only, alone) tracks the one running instance instead, such as the build an update relaunched; it has no captured log. |
-| `terminate` | all | Stops only the instance this tool started, on the simulator or device it was launched on; it does nothing when nothing is tracked. |
+| `terminate` | all | Stops only the instance this tool started or adopted, on the simulator or device it was launched on; it does nothing when nothing is tracked. |
 | `status` | all | Installed, running, pid, app path, container path, signing mode. |
 | `screenshot [--name n] [--out file]` | all | Desktop window capture, `simctl io screenshot`, or a driver screenshot on the device. |
 | `snapshot [--format json\|text] [--max-depth n] [query]` | all | Unified accessibility tree. `--format text` prints an outline with roles, labels, and desktop paths. |
