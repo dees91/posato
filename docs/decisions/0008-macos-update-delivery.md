@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status:** Accepted; delivered and verified by `MACOS-011` on 2026-09-25
+- **Status:** Accepted; delivered and verified by `MACOS-011` and published in Posato 1.1.0 by `RELEASE-003` on 2026-09-25
 - **Date:** 2026-09-22
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -18,9 +18,10 @@ acceptance matrix below on notarized candidates: Stage 1 on a physical Mac
 (builds 8-14, before unattended verification), Stage 2 in Tart clones. Its
 [execution record](../tasks/executions/macos-011-updates.md) maps every row to
 evidence. The ADR 0003 and ADR 0004 amendments below are applied to those
-decisions and kept here as history. The public wording below remains staged
-for `RELEASE-003`, which publishes it with the first updater-capable release;
-until then the published application still follows the manual update path.
+decisions and kept here as history. `observed` (2026-09-25): `RELEASE-003`
+published the first updater-capable release, 1.1.0 (build 26), with the
+public wording below; the stable feed resolves, and an installed 1.1.0 reports
+that it is up to date. Moving from 1.0 to 1.1 remains a manual download.
 
 ## Context and evidence
 

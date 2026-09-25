@@ -1946,3 +1946,13 @@ to scope, feasibility, or delivery.
   on the maintainer's check of 1.0.0. Updated
   [unattended verification](topics/unattended-verification.md) and the
   availability page.
+
+## [2026-09-25] release | RELEASE-003: Posato 1.1.0 published
+
+- Published tag `v1.1.0` with the notarized DMG (build 26), the signed stable
+  `appcast.xml`, and checksums; the public feed and DMG match the verified
+  candidates, and an installed 1.1.0 reports that it is up to date. The iPhone
+  build 1.1.0 (4) is in App Review with automatic release.
+- Found an iPhone relaunch defect present since 1.0 (`IOS-006`, release 1.2).
+  Updated [iOS enforcement](topics/ios-enforcement.md),
+  [macOS enforcement](topics/macos-enforcement.md), and ADR 0008.

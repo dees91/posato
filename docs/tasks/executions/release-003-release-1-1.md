@@ -1,7 +1,7 @@
 # Execution: `RELEASE-003`
 
 - **Brief:** [Verify the 1.1.0 candidates and publish Posato 1.1](../specifications/release-003-release-1-1.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent plan review (approved); completed-change review pending
@@ -94,16 +94,27 @@ Evidence: ignored `build/verification/release-003/` (run groups 01-12).
 
 - 1.0 has no updater: the move to 1.1 is a manual download, as stated.
 - `IOS-006` is published as a limit until release 1.2.
-- Observations, not defects of this release: the first iCloud sync in a
-  fresh guest fails once and succeeds on retry (as in `MACOS-011`); a device
-  that receives a synced early end during onboarding shows "Restrictions may
-  still apply", cleared by Retry; one guest agent lost its host connection
-  during a session and recovered after a guest reboot; a clone that waited
-  for a key under a broken iCloud Keychain adopted a stale workspace key.
-- Environment repaired: the primary golden VM's iCloud Keychain (Resume Data
-  Sync); stale test-account workspaces removed through the app.
+- Observations, not release defects: a fresh guest's first iCloud sync fails
+  once; a synced early end during onboarding shows "Restrictions may still
+  apply" until Retry; a guest agent once lost its host connection; a clone
+  under a broken iCloud Keychain adopted a stale workspace key.
+- Repaired: the primary golden VM's iCloud Keychain; stale test workspaces.
+
+## Publication (2026-09-25)
+
+- Pull request #84 merged as `5aab2ca`, whose tree equals R outside the
+  excluded paths; annotated tag `v1.1.0` on it.
+- [GitHub Release 1.1.0](https://github.com/dees91/posato/releases/tag/v1.1.0),
+  latest: the downloaded draft assets were byte-identical to the candidates
+  before publication; after it, `releases/latest/download/appcast.xml`
+  redirects to v1.1.0 and is byte-identical, the signed-out DMG download
+  matches the checksum, and 1.1.0 in a fresh VM reports "You're up to date!"
+  through the stable feed. `posato.app` shows the 1.1 wording.
+- App Store version 1.1.0 with What's New, the new screenshots, and build 4,
+  release after approval; submitted, `WAITING_FOR_REVIEW`. Projects Done,
+  milestone `1.1.0` closed; the policy date now matches publication.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** met; App Review of 1.1.0 (4) is pending with automatic release.

@@ -696,11 +696,14 @@ maps each row to evidence. Durable findings:
   administrator authorization for every update. Candidates must launch
   through LaunchServices.
 
-The ADR 0003 and ADR 0004 amendments are applied. `RELEASE-003` publishes the
-first updater-capable release, whose build number must exceed every candidate
-that embeds the release key (25 or higher; pass previous build 24 so the feed
-validation enforces it). Until then, the supported product
-path remains manual quit, replace, and open.
+The ADR 0003 and ADR 0004 amendments are applied. `observed` (2026-09-25):
+`RELEASE-003` published 1.1.0 (build 26, above every candidate that embeds the
+release key and the `QUALITY-007` build 25) with the stable feed at
+`releases/latest/download/appcast.xml`; an installed 1.1.0 reports that it is
+up to date through that feed. Every later build must exceed 26, and a release
+without `appcast.xml` must be published with `--latest=false`. Moving from 1.0
+remains manual quit, replace, and open, which `vm install --replace` drives in
+a VM with the user's data kept.
 
 ## Open questions
 
