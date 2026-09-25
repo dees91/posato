@@ -103,6 +103,7 @@ Both stay outside the checkout. The release is built by hand and never runs in `
 
 ```shell
 ./gradlew :desktopApp:notarizeMacOsRelease \
+  -PposatoMacOsUpdateChannel=release \
   -PposatoMacOsBuildNumber=<next build number> \
   "-PposatoMacOsReleaseSigningIdentity=Developer ID Application: <name> (<team>)" \
   -PposatoMacOsSyncDeveloperIdProfile=~/Library/Developer/Posato/Posato_macOS_Sync_Developer_ID.provisionprofile
@@ -123,6 +124,46 @@ The chain works in this order:
 6. It checks both artifacts with `stapler validate` and `spctl`.
 
 A rejected submission leaves the notarization log under the task's `build/tmp` directory. The first signing run may raise a keychain prompt asking `codesign` to use the Developer ID key.
+
+### Update feed and channels
+
+`MACOS-011` adds Sparkle updates. Every Developer ID build names its update channel:
+
+- `-PposatoMacOsUpdateChannel=release` embeds the stable feed `https://github.com/dees91/posato/releases/latest/download/appcast.xml` and the tracked release key. Any other feed or key fails the build.
+- `-PposatoMacOsUpdateChannel=candidate` builds a test candidate. It needs its own `-PposatoMacOsUpdateFeedUrl`, an HTTPS or `http://127.0.0.1:<port>/` URL ending in `/appcast-test.xml`, and `-PposatoMacOsUpdatePublicKey`. It may never read the stable feed, and the release feed refuses a candidate build.
+
+A development package takes no channel and embeds a feed only when both `posatoMacOsUpdateFeedUrl` and `posatoMacOsUpdatePublicKey` are passed.
+
+The release key lives only in the maintainer's login Keychain under account `posato-release`, with an encrypted backup outside the repository. Tools read it only from the Keychain; never pass `-s`, `--ed-key-file`, or an environment variable. Test candidates signed with this key use build numbers that the next stable release must exceed; the `MACOS-011` execution record lists them. Pass the highest of them as `-PposatoMacOsPreviousBuildNumber` for the first release so the validation enforces it.
+
+To build a release together with its signed feed:
+
+```shell
+./gradlew :desktopApp:generateMacOsUpdateFeed \
+  -PposatoMacOsUpdateChannel=release \
+  -PposatoMacOsBuildNumber=<next build number> \
+  -PposatoMacOsPreviousBuildNumber=<previous stable build number> \
+  -PposatoMacOsReleaseNotes=<plain-text notes>.txt \
+  "-PposatoMacOsReleaseSigningIdentity=Developer ID Application: <name> (<team>)" \
+  -PposatoMacOsSyncDeveloperIdProfile=~/Library/Developer/Posato/Posato_macOS_Sync_Developer_ID.provisionprofile
+```
+
+The task runs the whole notarized chain above, then copies the stapled DMG as `Posato-<version>.dmg` into a clean `build/compose/binaries/main/release-feed/`. It runs Sparkle's `generate_appcast` with the Keychain key, embedded plain-text notes, and no deltas. Signing raises a Keychain prompt for the release key. The task then checks the result against the DMG and the key embedded in the application, and refuses to finish unless all of the following hold:
+
+- both the feed signature and the archive signature verify;
+- the feed has exactly one item, whose `sparkle:version` equals `CFBundleVersion` and exceeds the previous build;
+- the item requires macOS 15.0 and arm64 and carries no release-notes link or deltas;
+- the enclosure points to `releases/download/v<version>/Posato-<version>.dmg` and its length matches the DMG.
+
+It also writes `SHA256SUMS`.
+
+Publish `Posato-<version>.dmg`, `appcast.xml`, and `SHA256SUMS` together (`RELEASE-003` owns publication):
+
+1. Upload all three to a draft release and publish it only when it is complete.
+2. After publishing, confirm that `https://github.com/dees91/posato/releases/latest/download/appcast.xml` resolves and that the downloaded feed still verifies.
+3. Publish any release without a macOS feed with `--latest=false`, so the stable feed keeps resolving.
+
+The task reads the feed URL, key, and build number from the application inside the DMG and requires that they match the staged application. A candidate feed uses `-PposatoMacOsUpdateChannel=candidate` and `-PposatoMacOsUpdateDownloadPrefix=<HTTPS or loopback URL ending in />`, and writes `Posato-<version>-<build>-test.dmg` with `appcast-test.xml`. `-PposatoMacOsUpdateKeyAccount` selects another Keychain account, for example a throwaway test key.
 
 ## Idempotence and `--replace`
 

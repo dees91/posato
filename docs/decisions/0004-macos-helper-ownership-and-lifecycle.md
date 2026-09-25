@@ -7,6 +7,48 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-011 in-app update amendment
+
+`user-confirmed` (2026-09-22, [ADR 0008](0008-macos-update-delivery.md));
+applied on 2026-09-25 by `MACOS-011` after the verified delivery recorded in
+its execution record.
+
+The in-app update path uses Sparkle as specified by ADR 0008. Before passing
+an Install continuation that can begin downloading, extracting, or installing,
+Posato atomically acquires maintenance admission with the no-active-session
+check. It rejects every new Apply or Resume, including synchronization-driven
+attempts and retries. It reconciles unknown helper outcomes, confirms that
+both proxy tuples are no longer Posato-owned, reaches Idle, and completes the
+old helper and companion shutdown needed for replacement. Best-effort close,
+process disappearance, and absent registration alone do not prove cleanup.
+
+Maintenance admission remains closed while bundle replacement is possible,
+including after cancellation, ordinary quit, crash, or relaunch. A Sparkle
+dismissal, aborted cycle, or relaunch callback is not sufficient evidence to
+admit enforcement. Reopening admission requires positive evidence of either
+successful replacement, or termination of the exact installer with no pending
+replacement, followed by native ownership and compatibility revalidation.
+An enabled service must be ready and Idle before another Apply. A previously
+disabled or never-enabled service remains disabled; updating does not grant
+permission or silently enable it. Any uncertain outcome retains the gate and
+an action-required recovery state.
+
+The 2026-09-15 registration exception remains valid for an unchanged daemon
+label, BundleProgram, and compatible executable set. Changes to those values
+or an incompatible protocol require a separately verified re-registration
+path after cleanup; they cannot use that exception. Unknown state schemas,
+mismatched signatures, or incomplete restoration never permit replacement or
+silent reset. No active session is ended by the updater. A session arriving
+while an admitted update is running does not bypass maintenance admission;
+after relaunch, existing administrator-approved Resume rules still apply.
+
+MACOS-011 must prove safe installation, cancellation, and restart recovery
+before release. If supported Sparkle mechanisms and exact owned-process
+observation cannot establish the required facts, delivery is blocked pending
+a maintainer decision. This does not authorize private Sparkle APIs, a fork,
+a custom installer, or a weaker fallback. Manual quit, replace, and open
+remains the route from version 1.0 to the first updater-capable build.
+
 ## SYNC-003 amendment
 
 `user-confirmed` (2026-08-28):

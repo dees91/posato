@@ -1,5 +1,8 @@
 package app.posato.control.cli
 
+import app.posato.control.core.ControlJson
+import app.posato.control.vm.CandidateInstall
+import app.posato.control.vm.CandidateInstallation
 import app.posato.control.vm.GuestPrompt
 import app.posato.control.vm.VmLifecycle
 import app.posato.control.vm.VmLine
@@ -10,16 +13,18 @@ import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.nio.file.Path
 
 class VmCommand : CliktCommand(name = "vm") {
     override fun help(context: Context): String =
         "Tart macOS guests for unattended desktop verification: create and destroy the per-run clone of a golden VM, " +
-            "copy the staged package into it, and answer system dialogs over VNC. Desktop commands reach the guest with --vm primary|peer."
+            "copy the staged package or install a notarized candidate into it, and answer system dialogs over VNC. Desktop commands reach the guest with --vm primary|peer."
 
     override fun run() = Unit
 }
@@ -37,6 +42,30 @@ class VmSyncCommand : ControlCommand("sync", "Copy the freshly staged package an
         val line = VmLine.parse(lineOption)
         VmLifecycle(session.context).sync(line)
         return buildJsonObject { put("vm", line.cloneName) }
+    }
+}
+
+class VmInstallCommand :
+    ControlCommand(
+        "install",
+        "Install a notarized candidate DMG into /Applications as a person would and point the guest's desktop commands at it.",
+    ) {
+    private val lineOption by option("--line", help = "VM line: primary or peer.").default(VmLine.PRIMARY.id)
+    private val dmg by option("--dmg", help = "Host path of the notarized candidate disk image.").required()
+    private val applicationLabel by option("--app-label", help = "The application's label in the image window.").default("Posato")
+    private val applicationsLabel by option("--applications-label", help = "The Applications link's label in the image window.")
+        .default("/Applications")
+    private val timeoutSeconds by option("--timeout-seconds", help = "How long each step may take.").long().default(INSTALL_TIMEOUT_SECONDS)
+
+    override fun execute(session: Session): JsonElement {
+        val installation = CandidateInstall(session.context).install(
+            VmLine.parse(lineOption),
+            Path.of(dmg),
+            applicationLabel,
+            applicationsLabel,
+            timeoutSeconds * MILLIS_PER_SECOND,
+        )
+        return ControlJson.pretty.encodeToJsonElement(CandidateInstallation.serializer(), installation)
     }
 }
 
@@ -78,6 +107,23 @@ class VmClickCommand : ControlCommand("click", "Click text on the guest screen, 
     }
 }
 
+class VmDragCommand : ControlCommand("drag", "Drag one recognized label onto another on the guest screen, such as an app icon onto Applications.") {
+    private val lineOption by option("--line", help = "VM line: primary or peer.").default(VmLine.PRIMARY.id)
+    private val from by option("--from", help = "Exact label of the item to drag.").required()
+    private val fromIndex by option("--from-index", help = "The nth --from match from the top, 0-based.").int().default(0)
+    private val to by option("--to", help = "Exact label of the drop target.").required()
+    private val toIndex by option("--to-index", help = "The nth --to match from the top, 0-based.").int().default(0)
+    private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for both labels.").long().default(DEFAULT_TIMEOUT_SECONDS)
+
+    override fun execute(session: Session): JsonElement {
+        VmPrompts(session.context).drag(VmLine.parse(lineOption), from, fromIndex, to, toIndex, timeoutSeconds * MILLIS_PER_SECOND)
+        return buildJsonObject {
+            put("dragged", from)
+            put("onto", to)
+        }
+    }
+}
+
 class VmPressCommand : ControlCommand("press", "Press a key or chord in the guest over VNC, such as return or cmd-q.") {
     private val lineOption by option("--line", help = "VM line: primary or peer.").default(VmLine.PRIMARY.id)
     private val key by argument(help = "Key or chord, for example return, escape, cmd-q.")
@@ -99,4 +145,5 @@ class VmScreenshotCommand : ControlCommand("screenshot", "Capture the whole gues
 }
 
 private const val DEFAULT_TIMEOUT_SECONDS = 60L
+private const val INSTALL_TIMEOUT_SECONDS = 120L
 private const val MILLIS_PER_SECOND = 1_000L

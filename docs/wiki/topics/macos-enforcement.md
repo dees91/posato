@@ -636,7 +636,7 @@ Check again, which would reinstall the right through the repair path. A session
 started after removal reports that the helper is not enabled rather than
 claiming a pause.
 
-## Planned update delivery
+## Update delivery
 
 `user-confirmed` (2026-09-22): [ADR 0008](../../decisions/0008-macos-update-delivery.md)
 selects Sparkle with opt-in checks and installation after the session ends.
@@ -672,8 +672,35 @@ Findings from the proof:
 - Ad-hoc helper copies registered in LaunchServices by development worktrees
   can stop the daemon from launching (`EX_CONFIG`).
 
-Consent, scheduling, and the release feed remain Stage 2. Until then, the
-supported product path remains manual quit, replace, and open.
+`observed` (2026-09-25, `MACOS-011` Stage 2, notarized candidates in Tart
+clones): consent, request privacy, the release feed, and the ADR 0008 matrix
+passed. The [execution record](../../tasks/executions/macos-011-updates.md)
+maps each row to evidence. Durable findings:
+- No request leaves before consent or after opt-out. Besides standard HTTP
+  headers, requests carry the fixed User-Agent `PosatoUpdater` and
+  `Accept-Language: en`. With the cookie policy set
+  to Never, no `Cookie` is sent, even on the redirect right after GitHub's
+  `latest/download` hop sets `_octo`.
+- Archive-signature failures happen after admission: the gate closes before
+  the download, Sparkle's installer rejects the archive, and the gate reopens
+  only after the cycle ends.
+- A proxy conflict or an unavailable daemon refuses admission and keeps the
+  gate closed until the evidence holds. A root-owned bundle uses Sparkle's
+  system-domain installer, and the gate waits for that job too.
+- An update keeps websites, application choices, an established iCloud
+  workspace, and the consent answer, and leaves a removed helper disabled.
+- A blocking modal at launch starves the main-thread work that loads
+  application choices, so update alerts are sheets.
+- Test harness: an app launched by the Tart guest agent makes the agent
+  responsible, and a recorded App Management denial then forces
+  administrator authorization for every update. Candidates must launch
+  through LaunchServices.
+
+The ADR 0003 and ADR 0004 amendments are applied. `RELEASE-003` publishes the
+first updater-capable release, whose build number must exceed every candidate
+that embeds the release key (25 or higher; pass previous build 24 so the feed
+validation enforces it). Until then, the supported product
+path remains manual quit, replace, and open.
 
 ## Open questions
 
@@ -681,9 +708,9 @@ supported product path remains manual quit, replace, and open.
   immediately preceding macOS major line (`RELEASE-001`)?
 - Is there a supported way to detect iCloud Private Relay before Apply, or
   does the release disclose it as an unsupported coexistence?
-- How are signed installation, update, notarization, supported removal, public
+- How are signed installation, notarization, supported removal, public
   support disclosure, and manual recovery verified for the selected release
-  channel?
+  channel? (`MACOS-011` verified the in-app update path.)
 - `observed` (2026-09-24, `QUALITY-010` `M5`, macOS 26 guest): after Retry
   applied the proxy to a second network service, deleting that service and
   re-enabling the original one left **Restrictions active** with no proxy and

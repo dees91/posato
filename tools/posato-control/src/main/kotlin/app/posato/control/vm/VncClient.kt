@@ -249,6 +249,25 @@ class VncClient private constructor(
     }
 }
 
+/** Presses the primary button at the start, moves in small steps while holding it, and releases at the end. */
+internal fun VncClient.drag(
+    fromX: Int,
+    fromY: Int,
+    toX: Int,
+    toY: Int
+) {
+    pointer(fromX, fromY, 0)
+    Thread.sleep(POINTER_SETTLE_MS)
+    pointer(fromX, fromY, 1)
+    Thread.sleep(DRAG_HOLD_MS)
+    for (step in 1..DRAG_STEPS) {
+        pointer(fromX + (toX - fromX) * step / DRAG_STEPS, fromY + (toY - fromY) * step / DRAG_STEPS, 1)
+        Thread.sleep(DRAG_STEP_MS)
+    }
+    Thread.sleep(DRAG_HOLD_MS)
+    pointer(toX, toY, 0)
+}
+
 /** VNC authentication: DES-encrypt the challenge with the first eight password bytes, each bit-reversed (RFC 6143 7.2.2). */
 internal fun vncAuthResponse(
     password: String,
@@ -322,6 +341,9 @@ private const val CONNECT_TIMEOUT_MS = 5_000
 private const val READ_TIMEOUT_MS = 30_000
 private const val KEY_SETTLE_MS = 30L
 private const val POINTER_SETTLE_MS = 150L
+private const val DRAG_HOLD_MS = 800L
+private const val DRAG_STEP_MS = 50L
+private const val DRAG_STEPS = 40
 private const val KEYSYM_SHIFT = 0xffe1
 private const val KEYSYM_SPACE = 0x20
 

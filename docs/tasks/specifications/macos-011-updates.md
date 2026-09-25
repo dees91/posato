@@ -3,7 +3,7 @@
 - **Review tier:** `high-risk`
 - **Tier reason:** Third-party installation, update signing, new network requests, and enforcement cleanup must remain safe across cancellation and process restart.
 - **Dependencies:** `MACOS-010`, merged in PR #74; release 1.1, wave R1.1/W2. The initial proof stage may run beside `ONBOARDING-003` under the maintainer's 2026-09-23 preparation/delegation decision.
-- **Integration group:** `PR-MAC-UPDATES`, milestone `1.1.0`.
+- **Integration group:** `PR-MAC-UPDATES`, milestone `1.1.0`. Stage 1 (the safety proof) merged in PR #76; Stage 2 delivers the rest of this brief in one pull request.
 - **Authority:** [ADR 0008](../../decisions/0008-macos-update-delivery.md), [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md), [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md), [threat model](../../security/apple-mvp-threat-model.md), [PRIVACY.md](../../../PRIVACY.md), [release roadmap](../release-roadmap.md), and [quality contract](../../development/engineering-quality-contract.md).
 
 ## Outcome
@@ -30,11 +30,24 @@ A notarized Mac candidate can obtain and install a newer notarized candidate thr
 
 - Independent plan review before implementation and independent completed-change review before merge; final `./gradlew quality` after the last correction.
 - Focused admission/recovery/state and native-boundary tests with synthetic fixtures, packaging checks, and the full [ADR 0008 scenario matrix](../../decisions/0008-macos-update-delivery.md#macos-011-delivery-plan-and-acceptance).
-- Drive notarized A-to-B candidates with [verify-posato](../../../.agents/skills/verify-posato/SKILL.md), including cancellation/restart and native ownership checks. Measure request behavior using controlled evidence. Keep captures and identifiers in ignored `build/verification/` and preserve local user state.
+- Drive notarized A-to-B candidates with [verify-posato](../../../.agents/skills/verify-posato/SKILL.md) in Tart virtual machines, unattended and never on the maintainer's Mac (`AGENTS.md`), including cancellation/restart and native ownership checks. Measure request behavior using controlled evidence. Keep captures and identifiers in ignored `build/verification/`.
 
 ## Decisions or blockers
 
 - `user-confirmed`, 2026-09-23: prepare a worktree, brief, and draft PR for delegated implementation; the first stage is the ADR 0008 safety proof.
 - `user-confirmed`, 2026-09-23: the Stage 1 test feed runs on a local loopback server, test candidates use a separate throwaway Ed25519 key, and Stage 1 is production-quality code without consent UI. A failed proof marks the pull request blocked.
 - `observed`, 2026-09-23: exact installer-job absence in every launchd domain, no `Autoupdate` process from this bundle, an on-disk bundle identity matching the running signed build, and service revalidation established safe release on notarized candidates. See the execution record; an aborted cycle alone is still never sufficient.
+- `user-confirmed`, 2026-09-23: open Stage 2 as one task on this row; do not split it into smaller rows.
+- `user-confirmed`, 2026-09-23, Stage 2 decisions:
+  - D1: a public GitHub prerelease with a separate `appcast-test.xml` hosts
+    the real-GitHub request measurement and the test feed. It never becomes
+    latest and is deleted after measurement.
+  - D2: set a fixed `Accept-Language: en` through `SPUUpdater.httpHeaders`.
+  - D3: a native consent prompt after first-run setup, "Check for Updates…" in
+    the application menu, and the automatic-check toggle and manual check in
+    About Posato. No new destination.
+  - D4: the maintainer creates the production key and its encrypted backup at
+    Stage 2 intake. Stage 2 candidates embed the production public key.
 - Confirm signing/notarization access and private-key custody at implementation intake. Account-owned actions use a short maintainer checklist when needed.
+- `user-confirmed`, 2026-09-25: D4 done; the release key lives in the maintainer's Keychain as `posato-release` with an encrypted backup, and its public key is tracked in `buildSrc`.
+- `user-confirmed`, 2026-09-25: Stage 2 verification runs unattended in Tart clones (plan step 8).

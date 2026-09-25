@@ -31,6 +31,7 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformDevice
 import app.posato.feature.about.AboutScreen
+import app.posato.feature.about.ApplicationUpdates
 import app.posato.feature.licenses.LicensesScreen
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.OnboardingDependencies
@@ -73,6 +74,7 @@ class PosatoApplication internal constructor(
         modifier: Modifier = Modifier,
         highContrast: Boolean? = null,
         onAnnouncement: (String) -> Unit = {},
+        updates: ApplicationUpdates? = null,
     ) {
         var setupDone by remember { mutableStateOf(false) }
         val syncState = rememberSyncBootstrapUiState(bootstrap)
@@ -107,11 +109,13 @@ class PosatoApplication internal constructor(
                     modifier = modifier,
                 )
             } else {
+                LaunchedEffect(updates) { updates?.askForAutomaticChecksOnce() }
                 DestinationsHost(
                     syncState = syncState,
                     onMacSetupAnnouncement = onAnnouncement,
                     macSetupState = helperSetup.takeIf { onboardingDependencies.permissionPlatform == OnboardingPermissionPlatform.MAC },
                     device = device,
+                    updates = updates,
                     modifier = modifier,
                 )
             }
@@ -124,6 +128,7 @@ class PosatoApplication internal constructor(
         macSetupState: MacHelperSetupUiState?,
         onMacSetupAnnouncement: (String) -> Unit,
         device: PosatoDevice,
+        updates: ApplicationUpdates?,
         modifier: Modifier = Modifier,
     ) {
         val browser = remember { TargetsBrowserState() }
@@ -148,11 +153,7 @@ class PosatoApplication internal constructor(
                 val currentInformationPage = informationPage
                 when {
                     currentInformationPage != null -> {
-                        ApplicationInformationHost(
-                            page = currentInformationPage,
-                            onNavigate = { informationPage = it },
-                            modifier = contentModifier.padding(inset),
-                        )
+                        ApplicationInformationHost(currentInformationPage, { informationPage = it }, updates, contentModifier.padding(inset))
                     }
 
                     showingSession -> {
@@ -243,6 +244,7 @@ private enum class ApplicationInformationPage {
 private fun ApplicationInformationHost(
     page: ApplicationInformationPage,
     onNavigate: (ApplicationInformationPage?) -> Unit,
+    updates: ApplicationUpdates?,
     modifier: Modifier = Modifier,
 ) {
     when (page) {
@@ -250,6 +252,7 @@ private fun ApplicationInformationHost(
             onOpenLicenses = { onNavigate(ApplicationInformationPage.LICENSES) },
             onBack = { onNavigate(null) },
             modifier = modifier,
+            updates = updates,
         )
 
         ApplicationInformationPage.LICENSES -> LicensesScreen(

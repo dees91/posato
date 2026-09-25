@@ -30,6 +30,13 @@ class RepoLayout(
         .resolve("development-package")
         .resolve("Posato.app")
 
+    /** Written only inside a Tart guest by `vm install`: the installed candidate that replaces the staged package. */
+    val installedApplicationMarker: Path = verificationDirectory.resolve("desktop-application")
+
+    /** The bundle desktop commands drive: an installed candidate when the marker names one, otherwise the staged package. */
+    val desktopApplication: Path
+        get() = if (installedApplicationMarker.exists()) Path.of(installedApplicationMarker.readText().trim()) else stagedDesktopApplication
+
     fun derivedData(name: String): Path = verificationDirectory.resolve("derived-data").resolve(name)
 
     fun relativize(path: Path): String = if (path.startsWith(root)) root.relativize(path).toString() else path.toString()

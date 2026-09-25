@@ -292,6 +292,30 @@ offers **Try again**. These documents work offline and contain no device or
 account data. Build-time resources come directly from the root `LICENSE`,
 `NOTICE`, and `THIRD_PARTY_NOTICES.md`, without hand-maintained copies.
 
+### Mac updates
+
+`user-confirmed` (2026-09-23, `MACOS-011` D3): updates add no destination.
+Only a Mac build with a configured update feed shows them; iOS and unpackaged
+builds show nothing.
+
+- **Consent.** The first time the destinations appear after first-run setup,
+  a native alert asks **Check for updates automatically?** with **Check
+  Automatically** and **Don’t Check**. It explains that Posato asks GitHub once
+  a day whether a newer version exists, that nothing is downloaded or installed
+  without a choice, and that About Posato changes it. It is asked once; the
+  answer lives only in the updater's local settings, which are the source of
+  truth for the toggle below.
+- **About Posato.** An **Updates** section sits above Licenses: a selection row
+  **Check for updates automatically** with its explanation, and a quiet
+  **Check for Updates…** button, disabled while the updater is busy.
+- **Application menu.** **Check for Updates…** follows **About Posato** and
+  runs the same manual check.
+- **Installation.** Sparkle's standard windows handle found updates, download,
+  and Ready to Install. **Install Update** first shows **Preparing to update…**
+  while Posato confirms that blocking has stopped. A refusal alert, **The update
+  can’t be installed now**, names the reason: an active session, another open
+  copy of Posato, or unconfirmed cleanup.
+
 ## Components
 
 All product components live in

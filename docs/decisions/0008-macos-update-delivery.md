@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status:** Accepted delivery direction; implementation unverified
+- **Status:** Accepted; delivered and verified by `MACOS-011` on 2026-09-25
 - **Date:** 2026-09-22
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -12,9 +12,15 @@ The maintainer selected Sparkle after the comparison, checks only after consent,
 GitHub Releases hosting, installation after the session ends, and a signing key
 in the maintainer's Keychain with an encrypted backup outside the repository.
 The maintainer then accepted the implementation plan for this documentation.
-This accepts the direction and delivery gates, not a working updater. The exact
-amendment and public-copy proposals below remain staged here until delivery;
-the current application still follows the manual update path in ADR 0004.
+This accepted the direction and delivery gates, not a working updater.
+`observed` (2026-09-25): `MACOS-011` delivered the updater and proved the
+acceptance matrix below on notarized candidates: Stage 1 on a physical Mac
+(builds 8-14, before unattended verification), Stage 2 in Tart clones. Its
+[execution record](../tasks/executions/macos-011-updates.md) maps every row to
+evidence. The ADR 0003 and ADR 0004 amendments below are applied to those
+decisions and kept here as history. The public wording below remains staged
+for `RELEASE-003`, which publishes it with the first updater-capable release;
+until then the published application still follows the manual update path.
 
 ## Context and evidence
 
@@ -144,10 +150,9 @@ release operation and avoid a second deployment. The tradeoff is a GitHub-owned
 feed URL and dependence on its latest-release routing. The existing Cloudflare
 site remains the policy/support host; it receives no automatic update check.
 
-## Proposed authority amendments
+## Authority amendments
 
-Apply these exact additions with the reviewed delivery change, preserving
-earlier evidence as history. They specify future behavior, not current proof.
+Applied on 2026-09-25 by `MACOS-011` to ADR 0003 and ADR 0004, verbatim.
 
 ### ADR 0003: add a separate updater exception
 

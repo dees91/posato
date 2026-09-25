@@ -12,6 +12,7 @@ import app.posato.control.backend.StatusResult
 import app.posato.control.core.ControlException
 import app.posato.control.core.ControlJson
 import app.posato.control.core.ErrorCode
+import app.posato.control.core.Target
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.associate
@@ -50,11 +51,20 @@ class LaunchCommand : ControlCommand("launch", "Launch the application and track
     private val build by option("--build", help = "Build (and install) before launching.").flag()
     private val arguments by option("--arg", help = "Launch argument; repeatable.").multiple()
     private val environment by option("--env", help = "Launch environment variable KEY=VALUE; repeatable.").associate()
+    private val adopt by option(
+        "--adopt",
+        help = "Desktop in a VM: track the one running instance instead of starting one, such as the build an update relaunched.",
+    ).flag()
 
-    override fun execute(session: Session): JsonElement = ControlJson.pretty.encodeToJsonElement(
-        LaunchResult.serializer(),
-        session.backend().launch(LaunchOptions(fresh, captureLogs, build, arguments, environment)),
-    )
+    override fun execute(session: Session): JsonElement {
+        if (adopt && session.target() != Target.DESKTOP) {
+            throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "--adopt applies to the desktop target only.")
+        }
+        return ControlJson.pretty.encodeToJsonElement(
+            LaunchResult.serializer(),
+            session.backend().launch(LaunchOptions(fresh, captureLogs, build, arguments, environment, adopt)),
+        )
+    }
 }
 
 class TerminateCommand : ControlCommand("terminate", "Terminate the application process this tool started.") {

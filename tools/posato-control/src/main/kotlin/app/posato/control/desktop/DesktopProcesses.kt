@@ -19,7 +19,7 @@ class DesktopProcesses(
     private val context: RunContext,
     private val liveProcesses: () -> List<ProcessEntry> = ::currentProcesses,
 ) {
-    private val executable: Path = context.layout.stagedDesktopApplication.resolve("Contents").resolve("MacOS").resolve("Posato")
+    private val executable: Path = context.layout.desktopApplication.resolve("Contents").resolve("MacOS").resolve("Posato")
 
     fun executablePath(): Path = executable
 
@@ -49,7 +49,7 @@ class DesktopProcesses(
 
     /** Every live process whose executable resolves inside the staged bundle, so nothing outside it is addressable. */
     fun containedProcesses(): List<ProcessEntry> {
-        val bundle = realPath(context.layout.stagedDesktopApplication) ?: return emptyList()
+        val bundle = realPath(context.layout.desktopApplication) ?: return emptyList()
         return liveProcesses().filter { entry ->
             val command = realPath(Path.of(entry.command)) ?: return@filter false
             command != bundle && command.startsWith(bundle)
@@ -67,20 +67,30 @@ class DesktopProcesses(
     }
 
     fun signingMode(): String {
-        val output = context.subprocess.run(listOf("/usr/bin/codesign", "-dv", "--verbose=2", context.layout.stagedDesktopApplication.toString()))
+        val output = context.subprocess.run(listOf("/usr/bin/codesign", "-dv", "--verbose=2", context.layout.desktopApplication.toString()))
         if (!output.succeeded) return "unsigned"
-        val team = output.stderr.lineSequence().firstOrNull { it.startsWith("TeamIdentifier=") }?.substringAfter('=')?.trim()
-        return if (team.isNullOrEmpty() || team == "not set") "adhoc" else "development"
+        return signingModeOf(output.stderr)
     }
 
     fun requireStaged() {
         if (!executable.toFile().isFile) {
             throw ControlException(
                 ErrorCode.APP_NOT_STAGED,
-                "The staged desktop application is missing at ${context.layout.relativize(context.layout.stagedDesktopApplication)}.",
+                "The desktop application is missing at ${context.layout.relativize(context.layout.desktopApplication)}.",
                 "Run `posato-control build -t desktop` first.",
             )
         }
+    }
+}
+
+/** Classifies `codesign -dv --verbose=2` output: a Developer ID candidate, a development package, or ad-hoc. */
+internal fun signingModeOf(details: String): String {
+    val lines = details.lineSequence().map { it.trim() }.toList()
+    val team = lines.firstOrNull { it.startsWith("TeamIdentifier=") }?.substringAfter('=')
+    return when {
+        team.isNullOrEmpty() || team == "not set" -> "adhoc"
+        lines.any { it.startsWith("Authority=Developer ID Application:") } -> "developer-id"
+        else -> "development"
     }
 }
 

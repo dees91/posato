@@ -63,28 +63,34 @@ class VmLifecycle(
         )
     }
 
-    /** Copies the staged package, the driver distribution, fixtures, and the prebuilt bridge into the guest. */
+    /**
+     * Copies the staged package, the driver distribution, fixtures, and the prebuilt bridge into the guest. Once a
+     * candidate is installed, only the driver travels, and LaunchServices must still know no other Posato bundle.
+     */
     fun sync(line: VmLine) {
         requireRunning(line)
         AxBridgeBinary(context).ensureBuilt()
         val layout = context.layout
-        if (!layout.stagedDesktopApplication.exists()) {
+        val candidate = CandidateInstall(context)
+        val candidateInstalled = candidate.installed(line)
+        if (!candidateInstalled && !layout.stagedDesktopApplication.exists()) {
             throw ControlException(ErrorCode.APP_NOT_STAGED, "No staged desktop package.", "Run `posato-control build -t desktop` first.")
         }
-        val paths = listOf(
+        val driver = listOf(
             "settings.gradle.kts",
             "tools/posato-control/build/install",
             "tools/posato-control/native",
             "tools/posato-control/fixtures",
             layout.relativize(layout.accessibilityBridgeBinary),
-            layout.relativize(layout.stagedDesktopApplication),
         )
+        val paths = if (candidateInstalled) driver else driver + layout.relativize(layout.stagedDesktopApplication)
         tart.pipe(
             line.cloneName,
             "tar -C ${shellQuote(layout.root.toString())} -cf - " + paths.joinToString(" ") { shellQuote(it) },
             "rm -rf $GUEST_ROOT/tools $GUEST_ROOT/desktopApp && mkdir -p $GUEST_ROOT && tar -C $GUEST_ROOT -xf -",
             "Copying the package and driver into ${line.cloneName}",
         )
+        if (candidateInstalled) GuestRegistrations(context).requireSingleBundle(line)
     }
 
     /** Shuts the guest down from inside, so its last writes reach the disk, then deletes the clone. */
@@ -165,7 +171,6 @@ class VmLifecycle(
     }
 
     private companion object {
-        const val GUEST_ROOT = "~/posato-run"
         const val POLL_MS = 1_000L
         const val BOOT_TIMEOUT_MS = 60_000L
         const val AGENT_TIMEOUT_MS = 240_000L
@@ -173,6 +178,9 @@ class VmLifecycle(
         val AGENT_PROBE: Duration = Duration.ofSeconds(8)
     }
 }
+
+/** The guest directory that holds the driver, fixtures, and evidence; `$HOME` expands in double quotes too. */
+internal const val GUEST_ROOT = "\$HOME/posato-run"
 
 private const val RUN_LOG = "tart-run.log"
 private const val ENDPOINT_POLL_MS = 1_000L
