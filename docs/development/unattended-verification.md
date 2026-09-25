@@ -35,6 +35,10 @@ security add-generic-password -s <apple-account-item> -a <test-account-email> -w
 security add-generic-password -s <iphone-passcode-item> -a <any-label> -w
 ```
 
+Optionally store the test account's trusted phone number, in international
+format, for iCloud re-verification:
+`security add-generic-password -s <apple-account-phone-item> -a <test-account-email> -w`.
+
 ## Tart and the golden VMs
 
 1. Install Tart: `brew install openai/tools/tart`. If Homebrew refuses the
@@ -74,6 +78,32 @@ Create the peer golden VM the same way, from its own IPSW or as a clone of
 the primary golden VM taken before step 6, and give it its own sign-in and
 privacy approvals.
 
+The `legacy` line holds a golden VM on the previous macOS major version for
+platform checks. Apple ships no full installer for some point releases, so
+use the newest `UniversalMac_<version>_Restore.ipsw` for that version from
+Apple's update server. The driver can prepare it without a person:
+
+1. `tart create posato-run-legacy --from-ipsw <ipsw-url> --disk-size 60`, then
+   `tart set` as above. The clone's name lets `posato-control vm` address it.
+2. `$PC vm boot --line legacy` boots it headless. Walk Setup Assistant with
+   `vm click`, `vm press`, and `vm type` (`--secret admin` for the account
+   password). Check checkbox states on a `vm screenshot`.
+3. Serve the checksum-verified agent and a setup script from the host on the
+   Tart bridge address, and run it in the guest's Terminal with `sudo`.
+   After that, continue with `tart exec` as in steps 5-8.
+4. For the two-factor code, answer the sign-in alert on the test iPhone with a
+   `-t device` scenario scoped to `springboard`, read the code from its
+   screenshot, and type it with `vm type`.
+5. `$PC vm shutdown --line legacy`, then
+   `tart rename posato-run-legacy <legacy-golden>`.
+
+A new device signing in can make the other golden VMs report "Some iCloud
+Data Isn't Syncing". iCloud Keychain items, including the Posato workspace key,
+then stop reaching them. Choose System Settings > Resume Data Sync and answer
+`vm prompt account-password` and `vm prompt mac-password`. If Apple asks
+for the trusted phone number, type it with
+`vm type --secret phone` from the phone item below.
+
 ## Register the VMs for development signing
 
 The sync companion's development profile only runs on registered devices.
@@ -100,9 +130,12 @@ Add to the ignored `local.properties`:
 ```properties
 posato.vm.primaryGolden=<primary-golden>
 posato.vm.peerGolden=<peer-golden>
+posato.vm.legacyGolden=<legacy-golden>
 posato.vm.adminKeychainService=<vm-admin-item>
 posato.vm.adminKeychainAccount=<guest-user>
 posato.vm.accountKeychainService=<apple-account-item>
+posato.vm.accountKeychainAccount=<test-account-email>
+posato.vm.accountPhoneKeychainService=<apple-account-phone-item>
 posato.control.devicePasscodeKeychainService=<iphone-passcode-item>
 posato.control.devicePasscodeKeychainAccount=<any-label>
 ```
@@ -124,7 +157,7 @@ $PC run -t desktop --vm primary --scenario tools/posato-control/fixtures/scenari
 $PC vm destroy --line primary
 ```
 
-Desktop commands take `--vm primary|peer` and run inside the guest; their
+Desktop commands take `--vm primary|peer|legacy` and run inside the guest; their
 evidence is copied to `build/verification/runs/<run>/guest/`. The
 `verify-posato` skill lists the recipes, the prompts each one raises, and the
 recovery steps for iCloud dialogs.

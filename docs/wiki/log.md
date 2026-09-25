@@ -1938,3 +1938,12 @@ to scope, feasibility, or delivery.
   state.
 - Applied the ADR 0003 and ADR 0004 amendments and updated ADR 0008 and the
   threat model. Updated [macOS enforcement](topics/macos-enforcement.md).
+
+## [2026-09-25] experiment | QUALITY-007: macOS 15 platform check
+
+- Prepared a macOS 15.6.1 golden VM unattended and ran the 1.1 candidate's core
+  flow on it, including sync with a macOS 26 Mac; iOS 18 rests on the
+  maintainer's check of 1.0.0. Updated
+  [unattended verification](topics/unattended-verification.md) and the
+  availability page.
+

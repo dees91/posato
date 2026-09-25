@@ -22,6 +22,7 @@ enum class VmLine(
 ) {
     PRIMARY("primary", ConfigurationKey.VM_PRIMARY_GOLDEN),
     PEER("peer", ConfigurationKey.VM_PEER_GOLDEN),
+    LEGACY("legacy", ConfigurationKey.VM_LEGACY_GOLDEN),
     ;
 
     val cloneName: String
@@ -29,7 +30,7 @@ enum class VmLine(
 
     companion object {
         fun parse(value: String): VmLine = entries.firstOrNull { it.id == value }
-            ?: throw ControlException(ErrorCode.USAGE, "Unknown VM line '$value'.", "Use primary or peer.")
+            ?: throw ControlException(ErrorCode.USAGE, "Unknown VM line '$value'.", "Use primary, peer, or legacy.")
     }
 }
 
@@ -46,7 +47,7 @@ class VmLifecycle(
     fun create(line: VmLine): JsonObject {
         val golden = context.configuration.require(line.goldenKey, ErrorCode.VM_UNAVAILABLE, "Creating the ${line.id} VM")
         refuseClone(tart.list(), golden, line.cloneName)
-        val jdk = hostJdk()
+        val jdk = hostJdk(context)
         tart.clone(golden, line.cloneName)
         val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
         val started = System.currentTimeMillis()
@@ -91,6 +92,28 @@ class VmLifecycle(
             "Copying the package and driver into ${line.cloneName}",
         )
         if (candidateInstalled) GuestRegistrations(context).requireSingleBundle(line)
+    }
+
+    /**
+     * Boots the line's existing VM headless without cloning, for preparing a golden image under the clone's name
+     * before `tart rename`. It waits only for the VNC address: the guest agent may not be installed yet.
+     */
+    fun boot(line: VmLine): JsonObject {
+        if (tart.list().none { it.name == line.cloneName }) {
+            throw ControlException(ErrorCode.VM_UNAVAILABLE, "No VM named ${line.cloneName} exists.", "Create it with tart create or vm create.")
+        }
+        if (running(line)) throw ControlException(ErrorCode.VM_UNAVAILABLE, "${line.cloneName} already runs.")
+        val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
+        tart.start(line.cloneName, hostJdk(context), log)
+        vmEndpoint(context, line, BOOT_TIMEOUT_MS)
+        return JsonObject(mapOf("vm" to JsonPrimitive(line.cloneName)))
+    }
+
+    /** Shuts the guest down from inside, so its last writes reach the disk, and keeps the VM. */
+    fun shutdown(line: VmLine) {
+        if (!running(line)) return
+        tart.exec(line.cloneName, "sudo -S -p '' /bin/sh -c 'sync; /sbin/shutdown -h +0'", stdin = vmAdminPassword(context) + "\n")
+        awaitStopped(line)
     }
 
     /** Shuts the guest down from inside, so its last writes reach the disk, then deletes the clone. */
@@ -149,27 +172,6 @@ class VmLifecycle(
         }
     }
 
-    /** An APFS clone of the host JDK at a path without `@`, which Tart's directory-share parser rejects. */
-    private fun hostJdk(): Path {
-        val target = context.layout.verificationDirectory.resolve("vm").resolve("jdk")
-        if (target.exists()) return target
-        val home = context.subprocess.run(
-            listOf("/usr/libexec/java_home"),
-        ).requireSuccess(ErrorCode.COMMAND_FAILED, "Finding the host JDK").stdout.trim()
-        val bundle = Path.of(home).parent.parent
-        Files.createDirectories(target.parent)
-        context.subprocess.run(
-            listOf("/bin/cp", "-cR", bundle.toString(), target.toString()),
-        ).requireSuccess(ErrorCode.COMMAND_FAILED, "Cloning the host JDK")
-        return target
-    }
-
-    private fun ownerOnlyFile(file: Path): Path {
-        Files.createDirectories(file.parent)
-        Files.deleteIfExists(file)
-        return Files.createFile(file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")))
-    }
-
     private companion object {
         const val POLL_MS = 1_000L
         const val BOOT_TIMEOUT_MS = 60_000L
@@ -181,6 +183,27 @@ class VmLifecycle(
 
 /** The guest directory that holds the driver, fixtures, and evidence; `$HOME` expands in double quotes too. */
 internal const val GUEST_ROOT = "\$HOME/posato-run"
+
+/** An APFS clone of the host JDK at a path without `@`, which Tart's directory-share parser rejects. */
+internal fun hostJdk(context: RunContext): Path {
+    val target = context.layout.verificationDirectory.resolve("vm").resolve("jdk")
+    if (target.exists()) return target
+    val home = context.subprocess.run(
+        listOf("/usr/libexec/java_home"),
+    ).requireSuccess(ErrorCode.COMMAND_FAILED, "Finding the host JDK").stdout.trim()
+    val bundle = Path.of(home).parent.parent
+    Files.createDirectories(target.parent)
+    context.subprocess.run(
+        listOf("/bin/cp", "-cR", bundle.toString(), target.toString()),
+    ).requireSuccess(ErrorCode.COMMAND_FAILED, "Cloning the host JDK")
+    return target
+}
+
+internal fun ownerOnlyFile(file: Path): Path {
+    Files.createDirectories(file.parent)
+    Files.deleteIfExists(file)
+    return Files.createFile(file, PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString("rw-------")))
+}
 
 private const val RUN_LOG = "tart-run.log"
 private const val ENDPOINT_POLL_MS = 1_000L

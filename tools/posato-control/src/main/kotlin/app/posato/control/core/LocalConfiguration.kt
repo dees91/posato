@@ -17,10 +17,12 @@ enum class ConfigurationKey(
     DEVICE_PASSCODE_KEYCHAIN_ACCOUNT("posato.control.devicePasscodeKeychainAccount", "POSATO_CONTROL_DEVICE_PASSCODE_KEYCHAIN_ACCOUNT"),
     VM_PRIMARY_GOLDEN("posato.vm.primaryGolden", "POSATO_VM_PRIMARY_GOLDEN"),
     VM_PEER_GOLDEN("posato.vm.peerGolden", "POSATO_VM_PEER_GOLDEN"),
+    VM_LEGACY_GOLDEN("posato.vm.legacyGolden", "POSATO_VM_LEGACY_GOLDEN"),
     VM_ADMIN_KEYCHAIN_SERVICE("posato.vm.adminKeychainService", "POSATO_VM_ADMIN_KEYCHAIN_SERVICE"),
     VM_ADMIN_KEYCHAIN_ACCOUNT("posato.vm.adminKeychainAccount", "POSATO_VM_ADMIN_KEYCHAIN_ACCOUNT"),
     VM_ACCOUNT_KEYCHAIN_SERVICE("posato.vm.accountKeychainService", "POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE"),
     VM_ACCOUNT_KEYCHAIN_ACCOUNT("posato.vm.accountKeychainAccount", "POSATO_VM_ACCOUNT_KEYCHAIN_ACCOUNT"),
+    VM_ACCOUNT_PHONE_KEYCHAIN_SERVICE("posato.vm.accountPhoneKeychainService", "POSATO_VM_ACCOUNT_PHONE_KEYCHAIN_SERVICE"),
 }
 
 enum class ConfigurationSource { ENVIRONMENT, LOCAL_PROPERTIES, ABSENT }
