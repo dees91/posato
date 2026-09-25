@@ -27,6 +27,8 @@ Open source under the [Apache License 2.0](LICENSE).
 
 - **Mac:** download the signed and notarized DMG from
   [GitHub Releases](https://github.com/dees91/posato/releases/latest), open it, and move Posato to your Applications folder.
+  Posato 1.1 and later can check for updates after you agree; to move from 1.0,
+  quit Posato and replace it with the new version.
 - **iPhone:** install Posato from the [App Store](https://apps.apple.com/app/posato/id6812237585).
 
 Posato targets **macOS 15 or later on Apple silicon** and **iOS 18 or later**;
@@ -91,8 +93,8 @@ and data recovery boundaries.
 
 Posato does not collect your data. Your websites, app choices, and sessions stay
 on your devices; with iCloud sync on, changes are encrypted on your device
-before they are stored in your private iCloud database. See the
-[privacy policy](PRIVACY.md).
+before they are stored in your private iCloud database. On Mac, update checks go
+to GitHub Releases only after you agree. See the [privacy policy](PRIVACY.md).
 
 ## Support and security
 

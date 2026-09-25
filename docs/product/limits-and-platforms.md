@@ -14,15 +14,23 @@ summary and links here. The Planned platforms section records the maintainer's
 
 ## Availability
 
-Posato 1.0 is available for Mac and iPhone.
+Posato 1.1 is available for Mac and iPhone.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |
 | macOS | Signed and notarized download (Developer ID) | [GitHub Releases](https://github.com/dees91/posato/releases/latest) |
 | iOS | App Store | [App Store](https://apps.apple.com/app/posato/id6812237585) |
 
+Posato for Mac is a signed and notarized download from GitHub Releases.
+Versions with the updater can check for new releases after you agree, or
+when you choose Check for updates. Downloading and installing requires your
+action, and installation waits until your session has ended. To move from
+Posato 1.0 to the first version with updates, download the new DMG, quit
+Posato, replace the application, and open it again. Manual downloads remain
+available if an in-app update cannot complete.
+
 The release verdict is recorded in the
-[release candidate record](../tasks/executions/release-002-release-candidate.md).
+[1.1 release record](../tasks/executions/release-003-release-1-1.md).
 Posato can also be [built from source](../development/README.md#build-from-source)
 for development and evaluation.
 
