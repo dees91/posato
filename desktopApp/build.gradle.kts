@@ -1,5 +1,8 @@
+import app.posato.buildlogic.AppcastExpectation
 import app.posato.buildlogic.PosatoPaths
+import app.posato.buildlogic.PosatoUpdateFeed
 import app.posato.buildlogic.PosatoVersion
+import app.posato.buildlogic.UpdateChannel
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.ConfigurableFileCollection
@@ -11,6 +14,7 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
+import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.ExecOperations
@@ -912,6 +916,176 @@ abstract class NotarizeMacOsArtifact : DefaultTask() {
     }
 }
 
+abstract class GenerateMacOsUpdateFeed : DefaultTask() {
+    @get:InputFiles
+    abstract val diskImageDirectory: DirectoryProperty
+
+    @get:InputFiles
+    abstract val applicationBundle: DirectoryProperty
+
+    @get:InputFile
+    @get:Optional
+    abstract val releaseNotes: RegularFileProperty
+
+    @get:InputFiles
+    abstract val sparkleDistribution: DirectoryProperty
+
+    @get:Input
+    abstract val channel: Property<String>
+
+    @get:Input
+    abstract val marketingVersion: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val previousBuildNumber: Property<String>
+
+    @get:Input
+    @get:Optional
+    abstract val candidateDownloadPrefix: Property<String>
+
+    @get:Input
+    abstract val keyAccount: Property<String>
+
+    @get:OutputDirectory
+    abstract val feedDirectory: DirectoryProperty
+
+    @get:Inject
+    abstract val execOperations: ExecOperations
+
+    @TaskAction
+    fun generate() {
+        val updateChannel = UpdateChannel.entries.firstOrNull { it.propertyValue == channel.get() }
+            ?: throw GradleException("Generating an update feed needs -PposatoMacOsUpdateChannel=release or candidate.")
+        val diskImage = diskImageDirectory.get().asFile.listFiles().orEmpty().singleOrNull { it.extension == "dmg" }
+            ?: throw GradleException("Expected exactly one notarized DMG in ${diskImageDirectory.get().asFile.name}.")
+        val notes = releaseNotes.orNull?.asFile
+            ?: throw GradleException("An update feed needs -PposatoMacOsReleaseNotes=<plain-text .txt file>.")
+        check(notes.extension == "txt") { "Release notes must be a plain-text .txt file." }
+        val staged = applicationBundle.get().file("Contents/Info.plist").asFile
+        val (feedUrl, publicKey, buildNumber) = publishedApplicationValues(diskImage)
+        check(listOf(feedUrl, publicKey, buildNumber) == UPDATE_KEYS.map { key -> plistValue(staged, key) }) {
+            "The DMG does not contain the application this release staged."
+        }
+        val previous = previousBuildNumber.orNull?.takeIf(String::isNotBlank)
+        val prefix = when (updateChannel) {
+            UpdateChannel.RELEASE -> {
+                check(feedUrl == PosatoUpdateFeed.STABLE_FEED_URL && publicKey == PosatoUpdateFeed.STABLE_PUBLIC_KEY) {
+                    "This build does not read the stable feed with the tracked key, so it cannot be released."
+                }
+                check(previous != null) { "A release feed needs -PposatoMacOsPreviousBuildNumber=<previous stable build>." }
+                PosatoUpdateFeed.releaseDownloadPrefix(marketingVersion.get())
+            }
+
+            UpdateChannel.CANDIDATE -> {
+                check(!PosatoUpdateFeed.readsStableFeed(feedUrl)) { "A candidate must never read the stable feed." }
+                PosatoUpdateFeed.candidateDownloadPrefix(candidateDownloadPrefix.orNull)
+            }
+        }
+        val assetName = when (updateChannel) {
+            UpdateChannel.RELEASE -> "Posato-${marketingVersion.get()}.dmg"
+            UpdateChannel.CANDIDATE -> "Posato-${marketingVersion.get()}-$buildNumber-test.dmg"
+        }
+        val output = feedDirectory.get().asFile
+        output.deleteRecursively()
+        output.mkdirs()
+        val asset = output.resolve(assetName)
+        diskImage.copyTo(asset)
+        val stagedNotes = output.resolve(asset.nameWithoutExtension + ".txt")
+        notes.copyTo(stagedNotes)
+        val feed = output.resolve(updateChannel.feedFileName)
+        val generator = sparkleDistribution.get().file("bin/generate_appcast").asFile.absolutePath
+        val result = execOperations.exec {
+            commandLine(
+                generator,
+                "--account",
+                keyAccount.get(),
+                "--download-url-prefix",
+                prefix,
+                "--maximum-deltas",
+                "0",
+                "--embed-release-notes",
+                "-o",
+                feed.absolutePath,
+                output.absolutePath,
+            )
+            isIgnoreExitValue = true
+        }
+        stagedNotes.delete()
+        if (result.exitValue != 0 || !feed.isFile) throw GradleException("generate_appcast did not produce ${feed.name}.")
+        val archive = asset.readBytes()
+        val problems = PosatoUpdateFeed.appcastProblems(
+            feed.readBytes(),
+            AppcastExpectation(feedUrl, publicKey, buildNumber, previous, prefix + assetName, archive),
+        )
+        if (problems.isNotEmpty()) {
+            throw GradleException("The update feed may not be published:\n" + problems.joinToString("\n"))
+        }
+        val digest = MessageDigest.getInstance("SHA-256").digest(archive).joinToString("") { "%02x".format(it) }
+        output.resolve("SHA256SUMS").writeText("$digest  $assetName\n")
+        val leftovers = output.listFiles().orEmpty().map { it.name }.toSet() - setOf(assetName, feed.name, "SHA256SUMS")
+        check(leftovers.isEmpty()) { "Unexpected files beside the feed: ${leftovers.joinToString()}." }
+    }
+
+    /** The feed URL, key, and build number of the application inside the DMG that will be published. */
+    private fun publishedApplicationValues(diskImage: java.io.File): List<String> {
+        val mountPoint = temporaryDir.resolve("published")
+        mountPoint.deleteRecursively()
+        mountPoint.mkdirs()
+        val attach = execOperations.exec {
+            commandLine(
+                "/usr/bin/hdiutil",
+                "attach",
+                "-readonly",
+                "-nobrowse",
+                "-noautoopen",
+                "-mountpoint",
+                mountPoint.absolutePath,
+                diskImage.absolutePath,
+            )
+            standardOutput = ByteArrayOutputStream()
+            isIgnoreExitValue = true
+        }
+        if (attach.exitValue != 0) throw GradleException("Could not mount ${diskImage.name} to read its application.")
+        try {
+            val information = mountPoint.resolve("Posato.app/Contents/Info.plist")
+            return UPDATE_KEYS.map { key -> plistValue(information, key) }
+        } finally {
+            val detach = execOperations.exec {
+                commandLine("/usr/bin/hdiutil", "detach", mountPoint.absolutePath)
+                standardOutput = ByteArrayOutputStream()
+                isIgnoreExitValue = true
+            }
+            if (detach.exitValue != 0) {
+                execOperations.exec {
+                    commandLine("/usr/bin/hdiutil", "detach", "-force", mountPoint.absolutePath)
+                    standardOutput = ByteArrayOutputStream()
+                    isIgnoreExitValue = true
+                }
+            }
+        }
+    }
+
+    private fun plistValue(
+        plist: java.io.File,
+        key: String,
+    ): String {
+        val output = ByteArrayOutputStream()
+        val result = execOperations.exec {
+            commandLine("/usr/bin/plutil", "-extract", key, "raw", "-o", "-", plist.absolutePath)
+            standardOutput = output
+            isIgnoreExitValue = true
+        }
+        val value = output.toString(Charsets.UTF_8).trim()
+        if (result.exitValue != 0 || value.isEmpty()) throw GradleException("The application's Info.plist has no $key.")
+        return value
+    }
+
+    private companion object {
+        val UPDATE_KEYS = listOf("SUFeedURL", "SUPublicEDKey", "CFBundleVersion")
+    }
+}
+
 val macOsHelperBundle = project(":macosHelper").layout.buildDirectory
     .dir("bundle/PosatoMacOSHelper.app")
 val macOsSyncCompanionBundle = project(":macosSyncCompanion").layout.buildDirectory
@@ -1096,14 +1270,13 @@ tasks.named<Test>("test") {
     systemProperty("posato.sparkle.version", pinnedSparkleVersion)
 }
 
-val updateFeedUrl = providers.gradleProperty("posatoMacOsUpdateFeedUrl").orNull?.takeIf(String::isNotBlank)
-val updatePublicKey = providers.gradleProperty("posatoMacOsUpdatePublicKey").orNull?.takeIf(String::isNotBlank)
-check((updateFeedUrl == null) == (updatePublicKey == null)) {
-    "Set posatoMacOsUpdateFeedUrl and posatoMacOsUpdatePublicKey together."
-}
-check(updateFeedUrl == null || updateFeedUrl.startsWith("https://") || updateFeedUrl.startsWith("http://127.0.0.1:")) {
-    "posatoMacOsUpdateFeedUrl must use HTTPS or a loopback test server."
-}
+val updateFeed = PosatoUpdateFeed.resolve(
+    providers.gradleProperty("posatoMacOsUpdateChannel").orNull?.takeIf(String::isNotBlank),
+    providers.gradleProperty("posatoMacOsUpdateFeedUrl").orNull?.takeIf(String::isNotBlank),
+    providers.gradleProperty("posatoMacOsUpdatePublicKey").orNull?.takeIf(String::isNotBlank),
+)
+val updateFeedUrl = updateFeed.feedUrl
+val updatePublicKey = updateFeed.publicKey
 val updaterInfoPlistKeys = buildString {
     append("<key>SURequireSignedFeed</key><true/>")
     append("<key>SUVerifyUpdateBeforeExtraction</key><true/>")
@@ -1274,10 +1447,22 @@ val ascKeyId = releaseCredential("posatoAscKeyId", "POSATO_ASC_KEY_ID", "posato.
 val ascIssuerId = releaseCredential("posatoAscIssuerId", "POSATO_ASC_ISSUER_ID", "posato.asc.issuerId")
 val ascPrivateKeyPath = releaseCredential("posatoAscPrivateKeyPath", "POSATO_ASC_PRIVATE_KEY_PATH", "posato.asc.privateKeyPath")
 
+val releaseUpdateChannel = updateFeed.channel?.propertyValue
+val checkMacOsUpdateChannel by tasks.registering {
+    group = "verification"
+    description = "Refuses a Developer ID build without an explicit update channel."
+    val channelChosen = releaseUpdateChannel != null
+    doLast {
+        if (!channelChosen) {
+            throw GradleException("A Developer ID build needs -PposatoMacOsUpdateChannel=release, or candidate with a test feed and key.")
+        }
+    }
+}
+
 val stageMacOsReleasePackage by tasks.registering(StageMacOsApplication::class) {
     group = "distribution"
     description = "Stages the embedded macOS application for Developer ID signing."
-    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
+    dependsOn(checkMacOsUpdateChannel, embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
     mustRunAfter(signMacOsDevelopmentPackage, stageMacOsDevelopmentPackage)
     val releaseBuildNumber = requestedReleaseBuildNumber
     inputs.property("posatoReleaseBuildNumber", providers.provider { PosatoVersion.releaseBuildNumber(releaseBuildNumber) })
@@ -1350,6 +1535,23 @@ tasks.register<NotarizeMacOsArtifact>("notarizeMacOsRelease") {
     issuerId.set(ascIssuerId)
     privateKey.set(ascPrivateKeyPath)
     releaseSigningIdentity.set(macOsReleaseSigningIdentity)
+}
+
+tasks.register<GenerateMacOsUpdateFeed>("generateMacOsUpdateFeed") {
+    group = "distribution"
+    description = "Builds the notarized DMG, then signs its update feed with the Keychain key and validates both together."
+    dependsOn("notarizeMacOsRelease", extractSparkle)
+    diskImageDirectory.set(macOsReleaseDiskImageDirectory)
+    applicationBundle.set(macOsReleaseApplication)
+    providers.gradleProperty("posatoMacOsReleaseNotes").orNull?.let { notes -> releaseNotes.set(file(PosatoPaths.expandHome(notes))) }
+    sparkleDistribution.set(layout.buildDirectory.dir("sparkle/$pinnedSparkleVersion"))
+    channel.set(releaseUpdateChannel.orEmpty())
+    marketingVersion.set(posatoMarketingVersion)
+    previousBuildNumber.set(providers.gradleProperty("posatoMacOsPreviousBuildNumber"))
+    candidateDownloadPrefix.set(providers.gradleProperty("posatoMacOsUpdateDownloadPrefix"))
+    keyAccount.set(providers.gradleProperty("posatoMacOsUpdateKeyAccount").orElse("posato-release"))
+    feedDirectory.set(layout.buildDirectory.dir("compose/binaries/main/release-feed"))
+    outputs.upToDateWhen { false }
 }
 
 val packageDmg = tasks.register<AbstractNativeMacApplicationPackageDmgTask>("packageDmg") {
