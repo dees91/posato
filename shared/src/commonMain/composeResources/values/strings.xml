@@ -223,4 +223,17 @@ For what matters.</string>
     <string name="sync_checking_key">Checking for the workspace key…</string>
     <string name="sync_waiting_explanation">Your existing workspace stays unchanged. Apple may first ask you to approve iCloud Keychain for this device.</string>
     <string name="onboarding_waiting_continue">You can continue setup while you wait.</string>
+    <string name="update_section_title">Updates</string>
+    <string name="update_automatic_checks">Check for updates automatically</string>
+    <string name="update_automatic_checks_supporting">Once a day, Posato asks GitHub whether a newer version exists. Downloading and installing always wait for you.</string>
+    <string name="update_check_now">Check for Updates…</string>
+    <string name="update_consent_title">Check for updates automatically?</string>
+    <string name="update_consent_message">Posato can ask GitHub once a day whether a newer version exists. Nothing is downloaded or installed until you choose to. You can change this in About Posato.</string>
+    <string name="update_consent_allow">Check Automatically</string>
+    <string name="update_consent_deny">Don’t Check</string>
+    <string name="update_preparing">Preparing to update…</string>
+    <string name="update_refused_title">The update can’t be installed now</string>
+    <string name="update_refused_session">End the current session first, then check for updates again.</string>
+    <string name="update_refused_other_instance">Another copy of Posato is open. Quit it, then check for updates again.</string>
+    <string name="update_refused_other">Posato could not confirm that blocking has stopped. Check the Mac setup, then try again.</string>
 </resources>

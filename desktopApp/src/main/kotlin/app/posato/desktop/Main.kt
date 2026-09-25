@@ -20,11 +20,14 @@ import app.posato.desktop.macos.MacOsSystemSettings
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
+import app.posato.desktop.update.MacUpdateSettings
 import app.posato.desktop.update.MacUpdater
 import app.posato.desktop.update.createUpdaterController
 import app.posato.desktop.update.openInstanceLock
 import app.posato.di.createDesktopApplicationGraph
+import app.posato.feature.about.ApplicationUpdates
 import app.posato.feature.enforcement.JvmSessionEnforcement
+import app.posato.feature.update.loadUpdaterCopy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -63,6 +66,7 @@ fun main() {
 
             application {
                 var highContrast by remember { mutableStateOf(false) }
+                var updates by remember { mutableStateOf<ApplicationUpdates?>(null) }
                 val state = rememberWindowState(width = 1060.dp, height = 780.dp)
                 Window(
                     onCloseRequest = ::exitApplication,
@@ -75,9 +79,15 @@ fun main() {
                         window.rootPane.putClientProperty("apple.awt.windowTitleVisible", false)
                         window.minimumSize = Dimension(MINIMUM_WINDOW_WIDTH, 0)
                     }
-                    LaunchedEffect(Unit) { MacUpdater.start(updater) }
+                    LaunchedEffect(Unit) {
+                        if (MacUpdater.start(updater, loadUpdaterCopy())) updates = MacUpdateSettings
+                    }
                     WindowChrome(window, state.placement == WindowPlacement.Fullscreen, onContrastChange = { highContrast = it })
-                    applicationGraph.application.Content(highContrast = highContrast, onAnnouncement = MacWindow::announce)
+                    applicationGraph.application.Content(
+                        highContrast = highContrast,
+                        onAnnouncement = MacWindow::announce,
+                        updates = updates,
+                    )
                 }
             }
         }

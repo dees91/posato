@@ -4,11 +4,31 @@
 
 static const jint PosatoInstallStageNew = 0;
 static const jint PosatoInstallStagePending = 1;
+static const jint PosatoRefusalSessionActive = 1;
+static const jint PosatoRefusalOtherInstance = 2;
+
+typedef NS_ENUM(NSUInteger, PosatoCopyIndex) {
+    PosatoCopyCheckForUpdates,
+    PosatoCopyPreparing,
+    PosatoCopyRefusedTitle,
+    PosatoCopyRefusedSession,
+    PosatoCopyRefusedOtherInstance,
+    PosatoCopyRefusedOther,
+    PosatoCopyConsentTitle,
+    PosatoCopyConsentMessage,
+    PosatoCopyConsentAllow,
+    PosatoCopyConsentDeny,
+    PosatoCopyCount,
+};
+
+static NSString *const PosatoAutomaticChecksDefaultsKey = @"SUEnableAutomaticChecks";
 
 static JavaVM *posatoVirtualMachine;
 static jclass posatoUpdaterClass;
 static jmethodID posatoInstallRequested;
 static jmethodID posatoCycleFinished;
+static jmethodID posatoStateChanged;
+static NSArray<NSString *> *posatoCopy;
 
 static JNIEnv *PosatoAttachedEnvironment(void) {
     JNIEnv *environment = NULL;
@@ -28,6 +48,24 @@ static void PosatoClearPendingException(JNIEnv *environment) {
     if ((*environment)->ExceptionCheck(environment)) {
         (*environment)->ExceptionClear(environment);
     }
+}
+
+static NSWindow *PosatoAlertWindow(void) {
+    NSWindow *window = NSApp.keyWindow ?: NSApp.mainWindow;
+    if (window.visible && ![window isKindOfClass:NSPanel.class]) return window;
+    for (NSWindow *candidate in NSApp.windows) {
+        if (candidate.visible && ![candidate isKindOfClass:NSPanel.class]) return candidate;
+    }
+    return nil;
+}
+
+static void PosatoPresentAlert(NSAlert *alert, void (^completion)(NSModalResponse)) {
+    NSWindow *window = PosatoAlertWindow();
+    if (window == nil) {
+        completion([alert runModal]);
+        return;
+    }
+    [alert beginSheetModalForWindow:window completionHandler:completion];
 }
 
 @interface PosatoUserDriver : NSObject <SPUUserDriver>
@@ -120,7 +158,7 @@ static void PosatoClearPendingException(JNIEnv *environment) {
     NSProgressIndicator *spinner = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(20, 28, 32, 32)];
     spinner.style = NSProgressIndicatorStyleSpinning;
     [spinner startAnimation:nil];
-    NSTextField *label = [NSTextField labelWithString:@"Preparing to update…"];
+    NSTextField *label = [NSTextField labelWithString:posatoCopy[PosatoCopyPreparing]];
     label.frame = NSMakeRect(64, 34, 236, 20);
     [panel.contentView addSubview:spinner];
     [panel.contentView addSubview:label];
@@ -145,11 +183,15 @@ static void PosatoClearPendingException(JNIEnv *environment) {
     }
     reply(SPUUserUpdateChoiceDismiss);
     NSAlert *alert = [[NSAlert alloc] init];
-    alert.messageText = @"The update can't be installed now";
-    alert.informativeText = refusal == 1
-        ? @"End the current session first, then check for updates again."
-        : @"Posato could not confirm that blocking has stopped. Check the Mac setup, then try again.";
-    [alert runModal];
+    alert.messageText = posatoCopy[PosatoCopyRefusedTitle];
+    if (refusal == PosatoRefusalSessionActive) {
+        alert.informativeText = posatoCopy[PosatoCopyRefusedSession];
+    } else if (refusal == PosatoRefusalOtherInstance) {
+        alert.informativeText = posatoCopy[PosatoCopyRefusedOtherInstance];
+    } else {
+        alert.informativeText = posatoCopy[PosatoCopyRefusedOther];
+    }
+    PosatoPresentAlert(alert, ^(NSModalResponse response) {});
 }
 
 - (void)dropPendingReplies {
@@ -218,12 +260,21 @@ static void PosatoClearPendingException(JNIEnv *environment) {
 
 @end
 
+static void PosatoForgetCookies(void) {
+    NSHTTPCookieStorage *storage = NSHTTPCookieStorage.sharedHTTPCookieStorage;
+    storage.cookieAcceptPolicy = NSHTTPCookieAcceptPolicyNever;
+    for (NSHTTPCookie *cookie in [storage.cookies copy]) {
+        [storage deleteCookie:cookie];
+    }
+}
+
 @interface PosatoUpdaterDelegate : NSObject <SPUUpdaterDelegate>
 @end
 
 @implementation PosatoUpdaterDelegate
 
 - (void)updater:(SPUUpdater *)updater didFinishUpdateCycleForUpdateCheck:(SPUUpdateCheck)updateCheck error:(nullable NSError *)error {
+    PosatoForgetCookies();
     JNIEnv *environment = PosatoAttachedEnvironment();
     if (environment == NULL || posatoUpdaterClass == NULL) return;
     (*environment)->CallStaticVoidMethod(environment, posatoUpdaterClass, posatoCycleFinished);
@@ -240,6 +291,31 @@ static PosatoUserDriver *posatoUserDriver;
 static PosatoUpdaterDelegate *posatoUpdaterDelegate;
 static PosatoUpdateMenuTarget *posatoMenuTarget;
 
+static void PosatoPublishState(void) {
+    JNIEnv *environment = PosatoAttachedEnvironment();
+    if (environment == NULL || posatoUpdaterClass == NULL || posatoUpdater == nil) return;
+    jboolean automaticChecks = posatoUpdater.automaticallyChecksForUpdates ? JNI_TRUE : JNI_FALSE;
+    jboolean canCheck = posatoUpdater.canCheckForUpdates ? JNI_TRUE : JNI_FALSE;
+    (*environment)->CallStaticVoidMethod(environment, posatoUpdaterClass, posatoStateChanged, automaticChecks, canCheck);
+    PosatoClearPendingException(environment);
+}
+
+@interface PosatoUpdaterObserver : NSObject
+@end
+
+@implementation PosatoUpdaterObserver
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        PosatoPublishState();
+    });
+}
+
+@end
+
+static PosatoUpdaterObserver *posatoObserver;
+static BOOL posatoConsentShowing;
+
 @implementation PosatoUpdateMenuTarget
 
 - (void)checkForUpdates:(id)sender {
@@ -255,7 +331,7 @@ static PosatoUpdateMenuTarget *posatoMenuTarget;
 static void PosatoInstallMenuItem(void) {
     NSMenu *applicationMenu = NSApp.mainMenu.itemArray.firstObject.submenu;
     if (applicationMenu == nil) return;
-    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:@"Check for Updates…" action:@selector(checkForUpdates:) keyEquivalent:@""];
+    NSMenuItem *item = [[NSMenuItem alloc] initWithTitle:posatoCopy[PosatoCopyCheckForUpdates] action:@selector(checkForUpdates:) keyEquivalent:@""];
     item.target = posatoMenuTarget;
     [applicationMenu insertItem:item atIndex:MIN((NSInteger)1, applicationMenu.numberOfItems)];
 }
@@ -267,11 +343,35 @@ static BOOL PosatoUpdaterConfigured(void) {
     return [feed isKindOfClass:NSString.class] && feed.length > 0 && [key isKindOfClass:NSString.class] && key.length > 0;
 }
 
+static NSArray<NSString *> *PosatoReadCopy(JNIEnv *environment, jobjectArray copy) {
+    if (copy == NULL || (*environment)->GetArrayLength(environment, copy) != (jsize)PosatoCopyCount) return nil;
+    NSMutableArray<NSString *> *strings = [NSMutableArray arrayWithCapacity:PosatoCopyCount];
+    for (jsize index = 0; index < (jsize)PosatoCopyCount; index++) {
+        jstring element = (jstring)(*environment)->GetObjectArrayElement(environment, copy, index);
+        const jchar *characters = element == NULL ? NULL : (*environment)->GetStringChars(environment, element, NULL);
+        if (characters == NULL) {
+            PosatoClearPendingException(environment);
+            if (element != NULL) (*environment)->DeleteLocalRef(environment, element);
+            return nil;
+        }
+        NSString *string = [NSString stringWithCharacters:(const unichar *)characters
+                                                   length:(NSUInteger)(*environment)->GetStringLength(environment, element)];
+        (*environment)->ReleaseStringChars(environment, element, characters);
+        (*environment)->DeleteLocalRef(environment, element);
+        if (string.length == 0) return nil;
+        [strings addObject:string];
+    }
+    return [strings copy];
+}
+
 JNIEXPORT jboolean JNICALL Java_app_posato_desktop_update_MacUpdater_nativeStart(
     JNIEnv *environment,
-    jobject receiver
+    jobject receiver,
+    jobjectArray copy
 ) {
     if (!PosatoUpdaterConfigured()) return JNI_FALSE;
+    posatoCopy = PosatoReadCopy(environment, copy);
+    if (posatoCopy == nil) return JNI_FALSE;
     if ((*environment)->GetJavaVM(environment, &posatoVirtualMachine) != JNI_OK) return JNI_FALSE;
     jclass updaterClass = (*environment)->FindClass(environment, "app/posato/desktop/update/MacUpdater");
     if (updaterClass == NULL) {
@@ -280,7 +380,8 @@ JNIEXPORT jboolean JNICALL Java_app_posato_desktop_update_MacUpdater_nativeStart
     }
     posatoInstallRequested = (*environment)->GetStaticMethodID(environment, updaterClass, "onInstallRequested", "(JLjava/lang/String;I)V");
     posatoCycleFinished = (*environment)->GetStaticMethodID(environment, updaterClass, "onCycleFinished", "()V");
-    if (posatoInstallRequested == NULL || posatoCycleFinished == NULL) {
+    posatoStateChanged = (*environment)->GetStaticMethodID(environment, updaterClass, "onStateChanged", "(ZZ)V");
+    if (posatoInstallRequested == NULL || posatoCycleFinished == NULL || posatoStateChanged == NULL) {
         PosatoClearPendingException(environment);
         return JNI_FALSE;
     }
@@ -297,14 +398,65 @@ JNIEXPORT jboolean JNICALL Java_app_posato_desktop_update_MacUpdater_nativeStart
                                                     userDriver:posatoUserDriver
                                                       delegate:posatoUpdaterDelegate];
         posatoUpdater.userAgentString = @"PosatoUpdater";
+        posatoUpdater.httpHeaders = @{@"Accept-Language": @"en"};
+        PosatoForgetCookies();
         NSError *error = nil;
         if (![posatoUpdater startUpdater:&error]) {
             posatoUpdater = nil;
             return;
         }
         PosatoInstallMenuItem();
+        posatoObserver = [[PosatoUpdaterObserver alloc] init];
+        [posatoUpdater addObserver:posatoObserver forKeyPath:@"automaticallyChecksForUpdates" options:0 context:NULL];
+        [posatoUpdater addObserver:posatoObserver forKeyPath:@"canCheckForUpdates" options:0 context:NULL];
+        PosatoPublishState();
     });
     return JNI_TRUE;
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_update_MacUpdateSettings_nativeSetAutomaticChecks(
+    JNIEnv *environment,
+    jobject receiver,
+    jboolean enabled
+) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (posatoUpdater == nil) return;
+        posatoUpdater.automaticallyChecksForUpdates = enabled == JNI_TRUE;
+    });
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_update_MacUpdateSettings_nativeCheckForUpdates(
+    JNIEnv *environment,
+    jobject receiver
+) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (posatoUpdater == nil || !posatoUpdater.canCheckForUpdates) return;
+        [posatoUpdater checkForUpdates];
+    });
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_update_MacUpdateSettings_nativeAskForAutomaticChecksOnce(
+    JNIEnv *environment,
+    jobject receiver
+) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (posatoUpdater == nil) return;
+        if (posatoConsentShowing || [NSUserDefaults.standardUserDefaults objectForKey:PosatoAutomaticChecksDefaultsKey] != nil) return;
+        posatoConsentShowing = YES;
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.messageText = posatoCopy[PosatoCopyConsentTitle];
+        alert.informativeText = posatoCopy[PosatoCopyConsentMessage];
+        [alert addButtonWithTitle:posatoCopy[PosatoCopyConsentAllow]];
+        [alert addButtonWithTitle:posatoCopy[PosatoCopyConsentDeny]];
+        PosatoPresentAlert(alert, ^(NSModalResponse response) {
+            posatoConsentShowing = NO;
+            if (response == NSAlertFirstButtonReturn) {
+                posatoUpdater.automaticallyChecksForUpdates = YES;
+            } else if (response == NSAlertSecondButtonReturn) {
+                posatoUpdater.automaticallyChecksForUpdates = NO;
+            }
+        });
+    });
 }
 
 JNIEXPORT void JNICALL Java_app_posato_desktop_update_MacUpdater_nativeCompleteAdmission(
