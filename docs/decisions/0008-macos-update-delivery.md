@@ -14,7 +14,8 @@ in the maintainer's Keychain with an encrypted backup outside the repository.
 The maintainer then accepted the implementation plan for this documentation.
 This accepted the direction and delivery gates, not a working updater.
 `observed` (2026-09-25): `MACOS-011` delivered the updater and proved the
-acceptance matrix below on notarized candidates in Tart virtual machines; its
+acceptance matrix below on notarized candidates: Stage 1 on a physical Mac
+(builds 8-14, before unattended verification), Stage 2 in Tart clones. Its
 [execution record](../tasks/executions/macos-011-updates.md) maps every row to
 evidence. The ADR 0003 and ADR 0004 amendments below are applied to those
 decisions and kept here as history. The public wording below remains staged

@@ -18,9 +18,8 @@
    installer-absence, bundle-identity, and service revalidation evidence.
 2. Stage 2: consent and settings (D3), copy, request privacy (D1, D2), key
    custody (D4), the release process, the remaining matrix, and closeout.
-3. Run every Stage 2 check unattended in Tart clones (amended step 8,
-   `user-confirmed` 2026-09-25): extend `posato-control` for notarized
-   candidates first, then repeat the Stage 1 A-to-B there as a gate.
+3. Run every Stage 2 check unattended in Tart clones (step 8, `user-confirmed`
+   2026-09-25), after a VM gate that repeated the Stage 1 A-to-B.
 
 ## High-risk plan review
 
@@ -44,28 +43,28 @@
   distinct second-instance refusal. `DESIGN.md` records the placement. A
   blocking `runModal` prompt starved the startup mappings load, so both alerts
   are sheets.
-- **Requests.** Fixed `User-Agent: PosatoUpdater` and `Accept-Language: en`.
-  The cookie policy is Never, and cookies are purged at start and after each
-  cycle.
+- **Requests.** Fixed `User-Agent: PosatoUpdater` and `Accept-Language: en`;
+  cookie policy Never, with a purge at start and after each cycle.
 - **Release process.** Every Developer ID build names a channel. A release
   embeds only the stable feed and the tracked key. A candidate needs its own
   `appcast-test.xml` feed. `generateMacOsUpdateFeed` signs with the Keychain
   key and validates the feed and archive against the app inside the DMG, with
   in-code RFC 8032 contracts. `apple-provisioning.md` documents the
   `RELEASE-003` duties.
-- **Key custody (D4).** Maintainer key `posato-release`, encrypted backup.
-  Candidates embedding it: builds 17, 18, 19, 23, 24. The first stable build
+- **Key custody (D4).** Maintainer key `posato-release`, encrypted backup;
+  embedded in candidate builds 17, 18, 19, 23, 24. The first stable build
   must be **25 or higher**. Other test keys: builds 8–16 (Keychain
-  `posato-update-test`) and 21–22 (a throwaway file key, matrix only).
-- **Authorities.** ADR 0003 and ADR 0004 amendments applied, ADR 0008 status
-  updated, `TB-08`/`T-13` and provider-visible metadata classified. The public
-  privacy and availability wording stays staged for `RELEASE-003`; it matches
-  the measurements.
+  `posato-update-test`) and 21–22 (a throwaway file key, matrix only); build
+  20 was never built.
+- **Authorities.** ADR 0003/0004 amendments applied, ADR 0008 status updated,
+  `TB-08`/`T-13` and provider metadata classified; the public wording stays
+  staged for `RELEASE-003` and matches the measurements.
 
 ## Evidence
 
-All runs used notarized Developer ID candidates in fresh Tart clones, with
-evidence in ignored `build/verification/macos-011-stage2/`.
+Stage 1 ran on a physical Mac (builds 8–14, loopback feed, throwaway key,
+before the VM rule). Stage 2 used notarized candidates in fresh Tart clones,
+with evidence in ignored `build/verification/macos-011-stage2/`.
 
 | ADR 0008 row / AC | Evidence | Source |
 | --- | --- | --- |
@@ -74,15 +73,14 @@ evidence in ignored `build/verification/macos-011-stage2/`.
 | Invalid or unavailable update (AC-03) | Unsigned, wrong-key, and tampered feeds; equal and older builds; macOS 99.0; offline; HTTP 404 never close the gate. Missing, wrong, and tampered archive signatures close it before the download; the installer rejects the archive, and the gate reopens after the cycle ends | Stage 2 `matrix` runs 1 and 4 |
 | Active session and concurrent intent | Refusal sheet during an enforced session, no download or installer; Start, Resume, sync, retry, and helper-recreation paths are covered by synthetic tests | Stage 2 `matrix` run 5; Stage 1 tests |
 | Cleanup failure | Foreign `127.0.0.1` proxy and a booted-out daemon both refuse without touching settings and keep the gate closed until the evidence holds; lost Restore reply and unknown ownership are covered by synthetic tests | Stage 2 `matrix` run 6; Stage 1 tests |
-| Cancellation and termination | Cancel and crash during download, Cmd-Q and crash at Ready to Install, and another instance proved in Stage 1; the system-domain installer (root-owned copy, admin prompt) reopens only after its job is gone | Stage 1 physical; Stage 2 run 7 |
+| Cancellation and termination | Cancel and crash during download, Cmd-Q and crash at Ready to Install (window close quits the same way), and another instance; an error after installer launch (Stage 2 archive rows); the system-domain installer reopens only after its job is gone; canceled or retried termination is a limit below | Stage 1 physical Mac; Stage 2 runs 4 and 7 |
 | Complete A-to-B (AC-01, AC-04) | VM gate 15→16; enabled service 21→22 with post-update blocking (`observe`) and restoration; final 23→24 via real GitHub keeps websites, app choice, the established iCloud workspace, and the consent answer, and leaves a removed helper disabled | Stage 2 `vm-gate`, run 5, `final-a-to-b` |
-| Packaging and release (AC-03, AC-05) | Notarized DMGs; a signed feed and SHA256SUMS produced and validated together; the release channel refuses candidates | `generateMacOsUpdateFeed` on builds 18 and 24 |
+| Packaging and release (AC-03, AC-05) | Notarized DMGs; a signed feed and SHA256SUMS produced and validated together on the candidate channel; the release channel refuses candidates and is covered by in-code contracts until its first real run | `generateMacOsUpdateFeed` on builds 18 and 24 |
 
 ## Completed-change review
 
-- **Stage 1:** two maintainer Required races (release poll during a retried
-  admission, stale admission after a newer cycle), both fixed with regression
-  tests and approved.
+- **Stage 1:** two maintainer Required races (poll during a retried admission,
+  stale admission after a newer cycle), fixed with regression tests.
 - **Stage 2 parts:** each approved by an independent agent after corrections:
 
 | Part | Required findings | Corrections |
@@ -91,7 +89,8 @@ evidence in ignored `build/verification/macos-011-stage2/`.
 | Consent and requests (`2aa04cc`) | none | sheet abort, `available` flag, and UTF-16 copy taken |
 | Release feed (`4745403`) | 2: non-numeric previous build; configuration-cache capture | fixed before push |
 
-- **Whole change:** see the Final section.
+- **Whole change:** approved after one Required correction (Stage 1 evidence
+  provenance) and the recommended AC-04, release-path, and wording fixes.
 
 ## Verification
 
@@ -105,12 +104,15 @@ evidence in ignored `build/verification/macos-011-stage2/`.
 - The resumable installing stage (a download pending across launches) was not
   reachable, so the Stage 1 `.skip` limit stands. Sparkle's Ready to Install
   window cannot be dismissed.
-- Sparkle holds a background-found update until the app is next activated
-  (upstream behavior). The first iCloud sync in a fresh guest failed once and
-  succeeded on retry.
+- Sparkle holds a background-found update until the app is next activated;
+  the first iCloud sync in a fresh guest failed once, then succeeded.
 - Open observation: "Applications unavailable" (mappings load failure) at 2 of
   about 10 VM launches, recovered on reload, not reproduced on demand.
-- `RELEASE-003` owns the version bump, the stable feed, and the public wording.
+- Sparkle's canceled or retried termination (an app refusing to quit) was not
+  exercised; Posato never blocks termination.
+- `RELEASE-003` owns the version bump, the first real release-channel feed
+  (pass `-PposatoMacOsPreviousBuildNumber=24` so validation enforces 25 or
+  higher), and the public wording.
 
 ## Final
 

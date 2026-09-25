@@ -134,7 +134,7 @@ A rejected submission leaves the notarization log under the task's `build/tmp` d
 
 A development package takes no channel and embeds a feed only when both `posatoMacOsUpdateFeedUrl` and `posatoMacOsUpdatePublicKey` are passed.
 
-The release key lives only in the maintainer's login Keychain under account `posato-release`, with an encrypted backup kept offline. Tools read it only from the Keychain; never pass `-s`, `--ed-key-file`, or an environment variable. Test candidates signed with this key use build numbers that the next stable release must exceed; the `MACOS-011` execution record lists them.
+The release key lives only in the maintainer's login Keychain under account `posato-release`, with an encrypted backup outside the repository. Tools read it only from the Keychain; never pass `-s`, `--ed-key-file`, or an environment variable. Test candidates signed with this key use build numbers that the next stable release must exceed; the `MACOS-011` execution record lists them. Pass the highest of them as `-PposatoMacOsPreviousBuildNumber` for the first release so the validation enforces it.
 
 To build a release together with its signed feed:
 

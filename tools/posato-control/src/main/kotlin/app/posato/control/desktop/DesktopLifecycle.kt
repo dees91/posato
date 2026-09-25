@@ -56,7 +56,7 @@ class DesktopLifecycle(
             throw ControlException(
                 ErrorCode.ALREADY_RUNNING,
                 "A Posato desktop process that this tool did not start is running (pid ${foreign.first()}).",
-                "Quit that instance first; the tool never terminates processes it did not launch.",
+                "Quit that instance first, or track it with `launch --adopt`; the tool never terminates processes it did not start or adopt.",
             )
         }
         if (options.fresh) evidence.reset(dryRun = false, keepInstall = true)

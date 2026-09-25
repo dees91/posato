@@ -676,8 +676,9 @@ Findings from the proof:
 clones): consent, request privacy, the release feed, and the ADR 0008 matrix
 passed. The [execution record](../../tasks/executions/macos-011-updates.md)
 maps each row to evidence. Durable findings:
-- No request leaves before consent or after opt-out. Every request carries
-  only `PosatoUpdater` and `Accept-Language: en`. With the cookie policy set
+- No request leaves before consent or after opt-out. Besides standard HTTP
+  headers, requests carry the fixed User-Agent `PosatoUpdater` and
+  `Accept-Language: en`. With the cookie policy set
   to Never, no `Cookie` is sent, even on the redirect right after GitHub's
   `latest/download` hop sets `_octo`.
 - Archive-signature failures happen after admission: the gate closes before
@@ -697,7 +698,8 @@ maps each row to evidence. Durable findings:
 
 The ADR 0003 and ADR 0004 amendments are applied. `RELEASE-003` publishes the
 first updater-capable release, whose build number must exceed every candidate
-that embeds the release key (25 or higher). Until then, the supported product
+that embeds the release key (25 or higher; pass previous build 24 so the feed
+validation enforces it). Until then, the supported product
 path remains manual quit, replace, and open.
 
 ## Open questions
