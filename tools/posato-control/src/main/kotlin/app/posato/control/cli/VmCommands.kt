@@ -61,6 +61,10 @@ class VmInstallCommand :
     private val applicationsLabel by option("--applications-label", help = "The Applications link's label in the image window.")
         .default("/Applications")
     private val timeoutSeconds by option("--timeout-seconds", help = "How long each step may take.").long().default(INSTALL_TIMEOUT_SECONDS)
+    private val replace by option(
+        "--replace",
+        help = "Move an installed Posato to the Trash first, as Finder's Replace does, for the manual move between releases.",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         val installation = CandidateInstall(session.context).install(
@@ -69,6 +73,7 @@ class VmInstallCommand :
             applicationLabel,
             applicationsLabel,
             timeoutSeconds * MILLIS_PER_SECOND,
+            replace,
         )
         return ControlJson.pretty.encodeToJsonElement(CandidateInstallation.serializer(), installation)
     }
