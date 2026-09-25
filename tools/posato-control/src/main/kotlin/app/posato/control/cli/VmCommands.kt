@@ -90,10 +90,14 @@ class VmInstallCommand :
 
 class VmDestroyCommand : ControlCommand("destroy", "Shut the clone down from inside the guest and delete it.") {
     private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val keepWorkspace by option(
+        "--keep-workspace",
+        help = "Delete the clone even though Posato is still linked to an iCloud workspace (a broken guest).",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
-        VmLifecycle(session.context).destroy(line)
+        VmLifecycle(session.context).destroy(line, keepWorkspace)
         return buildJsonObject { put("vm", line.cloneName) }
     }
 }

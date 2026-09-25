@@ -57,7 +57,11 @@ never from the Apple Developer portal. With the one-time setup in
   recovery). Run the prompt right after the step that raises it; a scenario
   that waits on the confirmed state can run in the background while the
   prompt command answers. Finish with `$PC vm destroy --line <line>`; a
-  broken guest is deleted, never repaired.
+  broken guest is deleted, never repaired. A run that linked iCloud presses
+  **Remove workspace** first. `vm destroy` refuses a running guest whose
+  database shows a linked workspace (`WORKSPACE_LINKED`, exit 3); it cannot
+  check a stopped guest or an unreadable database, so the rule is yours to
+  keep. `--keep-workspace` is only for a guest whose app cannot run.
 - **Notarized candidates.** Update and release checks install a Developer ID
   DMG in a fresh clone with `$PC vm install --line <line> --dmg <file>`
   instead of using the development package; it installs by Finder drag and

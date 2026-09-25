@@ -64,7 +64,9 @@ record and distinguish timer, action-required, and actual enforcement proof.
 Use a primary and a peer clone (`vm create --line primary|peer`), each from its
 own golden VM line, and address them with `--vm primary|peer`.
 
-- Start from an empty workspace. A clone never receives a workspace key that
+- Start from an empty workspace, and leave one: press **Remove workspace**
+  before `vm destroy`, which refuses a running guest whose database shows a
+  linked workspace. A clone never receives a workspace key that
   an earlier clone of the same line created, so when a primary clone waits for
   the key, link the peer (it can read that key), press **Remove workspace**
   on the peer and confirm, press **Check again** on the primary until **Sync
