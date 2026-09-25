@@ -93,4 +93,29 @@ class CandidateInstallTest {
         assertEquals("TEAM123456", signingDetail(details, "TeamIdentifier="))
         assertNull(signingDetail(details, "Sealed Resources="))
     }
+
+    @Test
+    fun `given a running Posato when installing then the install is refused even with replace`() {
+        val failure = assertFailsWith<ControlException> { requireInstallable("run", running = true, installed = true, replace = true) }
+
+        assertEquals(ErrorCode.ALREADY_RUNNING, failure.code)
+    }
+
+    @Test
+    fun `given an installed build when installing without replace then the install is refused`() {
+        val failure = assertFailsWith<ControlException> { requireInstallable("run", running = false, installed = true, replace = false) }
+
+        assertEquals(ErrorCode.INSTALL_FAILED, failure.code)
+    }
+
+    @Test
+    fun `given an installed build when installing with replace then the installed build is moved aside first`() {
+        assertEquals(true, requireInstallable("run", running = false, installed = true, replace = true))
+    }
+
+    @Test
+    fun `given a fresh clone when installing then nothing is moved, with or without replace`() {
+        assertEquals(false, requireInstallable("run", running = false, installed = false, replace = false))
+        assertEquals(false, requireInstallable("run", running = false, installed = false, replace = true))
+    }
 }

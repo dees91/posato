@@ -32,6 +32,8 @@ data class CandidateInstallation(
     val firstOpenExecutable: String,
     val unregistered: List<String>,
     val registrations: List<String>,
+    val replaced: String? = null,
+    val firstOpenQuit: String = "quit",
 )
 
 /**
@@ -39,7 +41,9 @@ data class CandidateInstallation(
  * application into `/Applications` by drag and drop, and Gatekeeper's first-open question is answered over VNC. A
  * copy made any other way is translocated at launch (`observed` 2026-09-25), and Sparkle refuses to update a
  * translocated application. Afterwards LaunchServices knows no other Posato bundle, and desktop commands in the guest
- * drive the installed candidate instead of the synced development package.
+ * drive the installed candidate instead of the synced development package. With `replace`, an installed older build
+ * first goes to the guest user's Trash, as Finder's Replace does, so that the manual move between releases keeps the
+ * user's data.
  */
 class CandidateInstall(
     private val context: RunContext
@@ -51,13 +55,14 @@ class CandidateInstall(
         dmg: Path,
         applicationLabel: String,
         applicationsLabel: String,
-        timeoutMs: Long
+        timeoutMs: Long,
+        replace: Boolean = false
     ): CandidateInstallation {
         VmLifecycle(context).requireRunning(line)
         val name = candidateFileName(dmg)
         if (!dmg.exists()) throw ControlException(ErrorCode.USAGE, "No candidate image at $dmg.")
         val guestDmg = "$GUEST_CANDIDATES/$name"
-        preflight(line)
+        val moveAside = preflight(line, replace)
         tart.pipe(
             line.cloneName,
             "cat ${shellQuote(dmg.toAbsolutePath().toString())}",
@@ -69,6 +74,7 @@ class CandidateInstall(
             "xattr -w com.apple.quarantine \"0081;\$(printf %x \$(date +%s));posato-control;\$(uuidgen)\" \"$guestDmg\" && open \"$guestDmg\"",
             "Quarantining and opening $name",
         )
+        val replaced = if (moveAside) moveToTrash(line) else null
         VmPrompts(context).drag(line, applicationLabel, 0, applicationsLabel, 0, timeoutMs)
         awaitGuest(line, "/usr/bin/codesign --verify --deep --strict $INSTALLED_APPLICATION", timeoutMs, "Finder's copy into /Applications")
         detach(line, guestDmg)
@@ -81,7 +87,7 @@ class CandidateInstall(
             .requireSuccess(ErrorCode.INSTALL_FAILED, "Gatekeeper's assessment of the candidate").stdout.trim()
         val signing = guestOutput(line, "/usr/bin/codesign -dv --verbose=2 $INSTALLED_APPLICATION 2>&1").stdout
         val quarantineBeforeOpen = quarantine(line)
-        val executable = firstOpen(line, facts.getValue(BUNDLE_IDENTIFIER), timeoutMs)
+        val (executable, firstOpenQuit) = firstOpen(line, facts.getValue(BUNDLE_IDENTIFIER), timeoutMs)
         guest(
             line,
             "mkdir -p \"$GUEST_ROOT/build/verification\" && printf %s $INSTALLED_APPLICATION > \"$GUEST_ROOT/$MARKER\"",
@@ -102,6 +108,8 @@ class CandidateInstall(
             firstOpenExecutable = executable,
             unregistered = unregistered,
             registrations = registrations,
+            replaced = replaced,
+            firstOpenQuit = firstOpenQuit,
         )
         val evidence = context.artifactPath("candidate-install.json")
         Files.createDirectories(evidence.parent)
@@ -115,21 +123,33 @@ class CandidateInstall(
         .requireSuccess(ErrorCode.VM_UNAVAILABLE, "Checking ${line.cloneName} for an installed candidate")
         .stdout.trim() == "yes"
 
-    private fun preflight(line: VmLine) {
-        if (tart.exec(line.cloneName, "/usr/bin/pgrep -x Posato").exitCode == 0) {
-            throw ControlException(
-                ErrorCode.ALREADY_RUNNING,
-                "A Posato process runs in ${line.cloneName}.",
-                "Terminate it before installing a candidate.",
-            )
+    /** Applies [requireInstallable] to the clone; true when an installed build has to be moved aside. */
+    private fun preflight(
+        line: VmLine,
+        replace: Boolean
+    ): Boolean = requireInstallable(
+        line.cloneName,
+        running = tart.exec(line.cloneName, "/usr/bin/pgrep -x Posato").exitCode == 0,
+        installed = tart.exec(line.cloneName, "test -e $INSTALLED_APPLICATION").exitCode == 0,
+        replace = replace,
+    )
+
+    /**
+     * Moves the installed build to the guest user's Trash right before the drag, where a person meets Finder's Replace,
+     * and returns its version; a failure before this point leaves the installed build in place.
+     */
+    private fun moveToTrash(line: VmLine): String {
+        val previous = bundleFacts(line)
+        val version = listOf(BUNDLE_VERSION, BUNDLE_BUILD).map { key ->
+            previous[key] ?: throw ControlException(ErrorCode.INSTALL_FAILED, "The installed Posato has no $key.")
         }
-        if (tart.exec(line.cloneName, "test -e $INSTALLED_APPLICATION").exitCode == 0) {
-            throw ControlException(
-                ErrorCode.INSTALL_FAILED,
-                "${line.cloneName} already has $INSTALLED_APPLICATION.",
-                "Install a candidate into a fresh clone; later builds arrive through the update path.",
-            )
-        }
+        val replaced = "${version[0]} (${version[1]})"
+        guest(
+            line,
+            "mkdir -p \"\$HOME/.Trash\" && stamp=\$(date +%s) && /bin/mv $INSTALLED_APPLICATION \"\$HOME/.Trash/Posato \$stamp.app\"",
+            "Moving the installed Posato $replaced to the Trash",
+        )
+        return replaced
     }
 
     private fun detach(
@@ -168,18 +188,26 @@ class CandidateInstall(
 
     /**
      * Opens the candidate through LaunchServices, answers Gatekeeper, and requires that the process runs from
-     * `/Applications` rather than a translocated copy; then quits it so the first tracked launch starts cleanly.
+     * `/Applications` rather than a translocated copy; then quits it so the first tracked launch starts cleanly. A
+     * replaced installation whose setup is complete opens with the update-consent sheet, which refuses the quit
+     * request; the sheet belongs to the verified flow, so the process is then terminated instead of answering it.
      */
     private fun firstOpen(
         line: VmLine,
         bundleIdentifier: String,
         timeoutMs: Long
-    ): String {
+    ): Pair<String, String> {
         guest(line, "/usr/bin/open $INSTALLED_APPLICATION", "Opening the candidate")
         VmPrompts(context).answer(line, GuestPrompt.GATEKEEPER, timeoutMs)
         awaitGuest(line, "/usr/bin/pgrep -x Posato", timeoutMs, "The candidate's first launch")
         val executable = guestOutput(line, "/bin/ps -o comm= -p \$(/usr/bin/pgrep -x Posato | head -n 1)").stdout.trim()
-        guest(line, "/usr/bin/osascript -e ${shellQuote("quit app id \"$bundleIdentifier\"")}", "Quitting the candidate after its first launch")
+        val quit = guestOutput(line, "/usr/bin/osascript -e ${shellQuote("quit app id \"$bundleIdentifier\"")}")
+        val howQuit = if (quit.exitCode == 0) {
+            "quit"
+        } else {
+            guest(line, "/usr/bin/pkill -TERM -x Posato || true", "Terminating the candidate after it refused to quit")
+            "terminated after refusing to quit: ${quit.stderr.trim()}"
+        }
         awaitGuest(line, "! /usr/bin/pgrep -x Posato", timeoutMs, "The candidate's exit after its first launch")
         if (executable != INSTALLED_EXECUTABLE) {
             throw ControlException(
@@ -188,7 +216,7 @@ class CandidateInstall(
                 "A translocated application cannot be updated; install it by drag and drop into a fresh clone.",
             )
         }
-        return executable
+        return executable to howQuit
     }
 
     private fun awaitGuest(
@@ -250,6 +278,29 @@ private const val BUFFER_BYTES = 1 shl 16
 internal const val INSTALLED_APPLICATION = "/Applications/Posato.app"
 
 private val CANDIDATE_NAME = Regex("""[A-Za-z0-9._-]+\.dmg""")
+
+/**
+ * Decides whether `vm install` may proceed: never while Posato runs, and over an installed build only with [replace].
+ * Returns true when the installed build has to be moved aside first.
+ */
+internal fun requireInstallable(
+    clone: String,
+    running: Boolean,
+    installed: Boolean,
+    replace: Boolean
+): Boolean {
+    if (running) {
+        throw ControlException(ErrorCode.ALREADY_RUNNING, "A Posato process runs in $clone.", "Quit it before installing a candidate.")
+    }
+    if (installed && !replace) {
+        throw ControlException(
+            ErrorCode.INSTALL_FAILED,
+            "$clone already has $INSTALLED_APPLICATION.",
+            "Pass --replace for the manual move from an installed release, or install into a fresh clone.",
+        )
+    }
+    return installed
+}
 
 /** The candidate's file name, restricted so that it can travel unquoted into guest scripts. */
 internal fun candidateFileName(dmg: Path): String {

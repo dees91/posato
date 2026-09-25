@@ -60,7 +60,10 @@ The accepted set contains three unmodified real iPhone Simulator captures in Dar
 
 All captures are 1320 × 2868 RGB PNGs with no alpha channel. They show the
 accepted About Posato entry. The maintainer accepted the three-screen set on
-2026-09-14 and requested Dark Mode for the final captures.
+2026-09-14 and requested Dark Mode for the final captures. `RELEASE-003`
+recaptured the same three screens for 1.1.0 on 2026-09-25, because the
+website list now names the included `www` variant and About shows the new
+version.
 
 The captures show session setup, paused websites, and About Posato without private
 account, application, or device labels. Simulator captures must not imply that Screen
@@ -68,12 +71,20 @@ Time authorization or enforcement succeeded on that target.
 
 The iPad set repeats the three screens on an iPad Pro 13-inch (M5) Simulator in
 Dark Mode with the same synthetic websites, as 2064 × 2752 RGB PNGs without an
-alpha channel; the maintainer accepted it on 2026-09-17. iPad shows the
-iPhone-only wording as an accepted limit:
+alpha channel; the maintainer accepted it on 2026-09-17 and `RELEASE-003`
+recaptured it for 1.1.0 on 2026-09-25, in portrait and with the iPad wording
+from `IOS-004`:
 
 - [Paused websites](screenshots/ipad-13/01-paused-websites.png)
 - [Session duration](screenshots/ipad-13/02-session-duration.png)
 - [About Posato](screenshots/ipad-13/03-about-posato.png)
+
+## What's New in 1.1.0
+
+- Edit your websites and apps straight from the Session screen. The search field there now clearly filters your chosen items.
+- www.example.com and example.com now count as one website. Posato tells you so when you add one.
+- Adding websites during setup is smoother: the field stays ready for the next website and shows how many you have saved.
+- On iPad, Posato now says iPad instead of iPhone and shows a sidebar in landscape.
 
 ## Store settings
 

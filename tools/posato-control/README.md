@@ -171,7 +171,7 @@ grants a permission.
 | `observe [--website URL] [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports, following up to five redirects (`paused` when the helper's pause page answers, `loaded` only for a final 2xx page), and opens the application by its bundle identifier, which counts as blocked when Launch Services lists no process for that bundle after N seconds (default 8). Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
 | `vm create\|sync\|destroy [--line primary\|peer\|legacy]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. See [Tart VMs](#tart-vms). |
 | `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`. |
-| `vm install --dmg file [--line] [--app-label Posato] [--applications-label /Applications]` | desktop in a VM | Install a notarized candidate as a person would and drive it from then on. See [Candidates](#notarized-candidates). |
+| `vm install --dmg file [--line] [--replace] [--app-label Posato] [--applications-label /Applications]` | desktop in a VM | Install a notarized candidate as a person would and drive it from then on; `--replace` first moves an installed release to the Trash. See [Candidates](#notarized-candidates). |
 | `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
 | `vm type --text T \| --secret admin\|account\|phone [--strip-prefix P] [--line]` | desktop in a VM | Type text, or a Keychain secret without echoing it, into the focused guest field. |
 | `vm boot\|shutdown [--line]` | desktop in a VM | Boot the line's existing VM without cloning (to prepare a golden image under the clone's name), or shut it down from inside and keep it; `forced` reports a fallback to `tart stop`. |
@@ -391,6 +391,11 @@ with a notarized candidate, for update and release checks:
 
 1. It refuses when Posato runs or `/Applications/Posato.app` exists; a later
    build arrives through the update path, so each candidate needs a fresh clone.
+   The exception is the manual move between releases, such as from 1.0, which
+   has no updater, to a later version: with `--replace`, the installed
+   application goes to the guest user's Trash first, as Finder's Replace does,
+   and the user's data stays where it is. The result names the replaced
+   version.
 2. The image is copied to the guest and quarantined, as a download would be,
    then opened in Finder. The application is dragged onto the Applications
    link over VNC. A copy made with `ditto`, `cp`, or a scripted Finder
@@ -404,7 +409,10 @@ with a notarized candidate, for update and release checks:
    remains.
 4. It records Gatekeeper's assessment and the signature, opens the candidate
    through LaunchServices, answers Gatekeeper's first-open question, requires
-   that the process runs from `/Applications`, and quits it.
+   that the process runs from `/Applications`, and quits it. A replaced
+   installation whose setup is complete opens with the update-consent sheet,
+   which refuses the quit; the command then terminates the process instead of
+   answering the sheet, and records that as `firstOpenQuit`.
 5. A marker under the guest's `build/verification/` then points every desktop
    command at `/Applications/Posato.app`. `vm sync` copies only the driver and
    repeats the single-bundle check.

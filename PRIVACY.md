@@ -1,9 +1,11 @@
 # Posato Privacy Policy
 
-Effective September 16, 2026.
+Effective September 26, 2026.
 
-Posato is built so that its developer does not receive your data. There is no
-Posato account, no analytics, no advertising, and no Posato-operated server.
+Posato does not send your website list, app choices, sessions, or iCloud
+workspace data to its developer. There is no Posato account, no analytics,
+no advertising, and no Posato-operated server. Optional iCloud sync and
+macOS update requests are described below.
 
 ## Data Posato keeps on your devices
 
@@ -75,12 +77,35 @@ or send it. To show its pause page in the current Safari or Chrome tab, Posato
 may use Automation permission; it reads only the current tab's address at that
 moment and keeps no record. Posato does not decrypt HTTPS traffic.
 
+## Updates on Mac
+
+Posato asks before checking for updates automatically. If you agree, it
+checks once a day while the app is running. You can turn automatic checks
+off or choose Check for updates yourself. Each update requires your action
+to download and install, and installation waits until no session is active.
+
+Update information and downloads come from GitHub Releases through Sparkle,
+an update library included in Posato. Requests do not contain your website
+list, app choices, sessions, iCloud data, an installation identifier, or a
+system profile. Posato compares versions and system requirements on your Mac.
+
+GitHub and its delivery providers can receive your IP address, request time,
+the resource requested, and technical connection information. A download
+address identifies the version you request. They handle this information
+under [GitHub's privacy statement](https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement).
+GitHub makes aggregate download counts available; Posato adds no usage
+analytics or tracking identifier. Opening a release or support link in your
+browser is subject to that website's policies and your browser settings.
+
+Update preferences are stored on this Mac and are not synchronized through
+iCloud. Sparkle stores update-check state and temporary update files locally.
+
 ## Diagnostics
 
-Posato does not collect diagnostics, crash reports, or telemetry, and it does not
-send any data to its developer or third parties. Your operating system or app
-store may collect diagnostics under your device settings and their own
-policies; Posato does not access or add to them.
+Posato does not collect or upload diagnostics, crash reports, or telemetry.
+Update requests are limited to the purposes described in Updates on Mac.
+Your operating system or app store may collect diagnostics under your device
+settings and their own policies; Posato does not access or add to them.
 
 If you ask for help, share only what you choose. Please do not include website
 names, app names, device details, screenshots, or logs in public reports.
