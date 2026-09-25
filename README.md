@@ -30,8 +30,8 @@ Open source under the [Apache License 2.0](LICENSE).
 - **iPhone:** install Posato from the [App Store](https://apps.apple.com/app/posato/id6812237585).
 
 Posato targets **macOS 15 or later on Apple silicon** and **iOS 18 or later**;
-the [release test matrix](docs/product/limits-and-platforms.md#supported-platforms)
-is still being confirmed. Intel Macs, Android, Linux, and Windows are
+the [platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
+records what was checked on each of them. Intel Macs, Android, Linux, and Windows are
 [planned for later releases](docs/product/limits-and-platforms.md#planned-platforms).
 
 To build it yourself, follow the [build instructions](docs/development/README.md#build-from-source).

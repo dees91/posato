@@ -63,8 +63,18 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - macOS 15 or later on Apple silicon.
 - iOS 18 or later.
 
-Posato targets the current and previous major versions of macOS and iOS. The
-exact release test matrix is still being confirmed.
+Posato targets the current and previous major versions of macOS and iOS.
+The [platform matrix check](../tasks/executions/quality-007-platform-matrix.md)
+covers both lines:
+
+| System | What was checked |
+| --- | --- |
+| macOS 15 | A pre-release 1.1 build on macOS 15.6.1 (the newest macOS 15 restore image) in a virtual machine on Apple silicon: setup with iCloud and the helper, websites and apps, blocking, relaunch, early end, expiry, and sync with a Mac on macOS 26 in both directions |
+| macOS 26 | The same flow in virtual machines on macOS 26.6 ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
+| iOS 18 | Posato 1.0.0 from the App Store, checked by hand on an iPhone with iOS 18 |
+| iOS 26 | The core flow, blocking, and unblocking on a test iPhone with iOS 26.5 ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
+
+Later macOS 15 updates were not checked separately.
 
 The core flow was [verified end to end on one Mac and one iPhone](../tasks/executions/mvp-001-end-to-end-acceptance.md),
 including blocking, early end from either device, expiry, relaunch, and a

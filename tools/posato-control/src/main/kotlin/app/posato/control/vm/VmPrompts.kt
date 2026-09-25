@@ -124,6 +124,12 @@ class VmPrompts(
         screen.session { client -> client.drag(source.centerX, source.centerY, target.centerX, target.centerY) }
     }
 
+    /** Types [text] into the focused guest field as hardware key events. */
+    fun type(
+        line: VmLine,
+        text: String
+    ) = guestScreen(context, line).session { client -> client.type(text) }
+
     fun press(
         line: VmLine,
         chord: String

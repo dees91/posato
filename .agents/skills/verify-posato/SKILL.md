@@ -45,8 +45,9 @@ never from the Apple Developer portal. With the one-time setup in
 [`docs/development/unattended-verification.md`](../../../docs/development/unattended-verification.md):
 
 - **macOS in Tart VMs.** `$PC build -t desktop`, then
-  `$PC vm create --line primary` (and `--line peer` for Mac-to-Mac sync).
-  Every desktop command takes `--vm primary|peer` and runs inside the guest;
+  `$PC vm create --line primary` (and `--line peer` for Mac-to-Mac sync, or
+  `--line legacy` for the previous macOS major version).
+  Every desktop command takes `--vm primary|peer|legacy` and runs inside the guest;
   evidence lands in `build/verification/runs/<run>/guest/`. System dialogs
   are answered with `$PC vm prompt <kind> --line <line>`:
   `admin` (SecurityAgent at session start and Resume restrictions),

@@ -46,9 +46,10 @@ variable, which wins). `doctor` reports presence and source, never values.
 | `posato.control.simulator` | `POSATO_CONTROL_SIMULATOR` | Simulator name or UDID to use instead of the booted one. |
 | `posato.control.device` | `POSATO_CONTROL_DEVICE` | Device name or UDID to use instead of the first connected iPhone. |
 | `posato.control.devicePasscodeKeychainService` / `...Account` | `POSATO_CONTROL_DEVICE_PASSCODE_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test iPhone passcode that `pressKeys` types. |
-| `posato.vm.primaryGolden` / `posato.vm.peerGolden` | `POSATO_VM_PRIMARY_GOLDEN` / `POSATO_VM_PEER_GOLDEN` | Tart golden VMs of the primary and peer lines. |
+| `posato.vm.primaryGolden` / `posato.vm.peerGolden` / `posato.vm.legacyGolden` | `POSATO_VM_PRIMARY_GOLDEN` / `POSATO_VM_PEER_GOLDEN` / `POSATO_VM_LEGACY_GOLDEN` | Tart golden VMs of the primary, peer, and legacy (previous macOS version) lines. |
 | `posato.vm.adminKeychainService` / `...Account` | `POSATO_VM_ADMIN_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the guest administrator password. |
 | `posato.vm.accountKeychainService` / `...Account` | `POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test Apple Account password. |
+| `posato.vm.accountPhoneKeychainService` | `POSATO_VM_ACCOUNT_PHONE_KEYCHAIN_SERVICE` | Login Keychain item (same account as above) holding the test account's trusted phone number, for iCloud re-verification. |
 | — | `POSATO_CONTROL_TARGET` | Default for `--target`. |
 
 When `posato.macos.signingIdentity` is an Apple Development identity, Gradle
@@ -75,7 +76,7 @@ alias) plus the common options `--udid`, `--run-id`, `--artifacts`,
 The desktop target never drives the application on the host Mac, whose
 installed Posato is the maintainer's real copy: outside a virtual machine
 (`kern.hv_vmm_present` is 0) every desktop command except `build`, `doctor`,
-and `artifacts` fails with `DESKTOP_HOST_REFUSED`. Add `--vm primary|peer`
+and `artifacts` fails with `DESKTOP_HOST_REFUSED`. Add `--vm primary|peer|legacy`
 ([Tart VMs](#tart-vms)).
 
 ```json
@@ -168,10 +169,12 @@ grants a permission.
 | `cleanup [--dry-run] [--purge-derived-data]` | all | Stops tracked processes; never deletes run evidence. |
 | `artifacts` | — | Prints the run directory layout. |
 | `observe [--website URL] [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports, following up to five redirects (`paused` when the helper's pause page answers, `loaded` only for a final 2xx page), and opens the application by its bundle identifier, which counts as blocked when Launch Services lists no process for that bundle after N seconds (default 8). Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
-| `vm create\|sync\|destroy [--line primary\|peer]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. See [Tart VMs](#tart-vms). |
+| `vm create\|sync\|destroy [--line primary\|peer\|legacy]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. See [Tart VMs](#tart-vms). |
 | `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`. |
 | `vm install --dmg file [--line] [--app-label Posato] [--applications-label /Applications]` | desktop in a VM | Install a notarized candidate as a person would and drive it from then on. See [Candidates](#notarized-candidates). |
 | `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
+| `vm type --text T \| --secret admin\|account\|phone [--strip-prefix P] [--line]` | desktop in a VM | Type text, or a Keychain secret without echoing it, into the focused guest field. |
+| `vm boot\|shutdown [--line]` | desktop in a VM | Boot the line's existing VM without cloning (to prepare a golden image under the clone's name), or shut it down from inside and keep it; `forced` reports a fallback to `tart stop`. |
 | `vm drag --from label --to label [--from-index n] [--to-index n] [--line]` | desktop in a VM | Drag one recognized label onto another, such as an application onto the Applications link. |
 
 ### Element queries
@@ -360,7 +363,7 @@ and its feature map for exact setup, native picker limits, and cleanup.
 
 ## Tart VMs
 
-`-t desktop --vm primary|peer` runs a desktop command inside a Tart guest: the
+`-t desktop --vm primary|peer|legacy` runs a desktop command inside a Tart guest: the
 host forwards it to the guest's own copy of the driver through `tart exec`,
 which runs in the logged-in user's Aqua session, sends a scenario file (or,
 for `--scenario -`, the host's own standard input) on standard input, and copies the guest's run directory to
