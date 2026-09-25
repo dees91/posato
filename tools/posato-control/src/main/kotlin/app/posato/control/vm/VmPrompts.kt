@@ -181,6 +181,7 @@ class VmPrompts(
         secret: () -> String
     ) {
         screen.waitFor(request, timeoutMs)
+        Thread.sleep(SHEET_SETTLE_MS)
         screen.session { client ->
             client.type(secret())
             client.press("return")
@@ -195,6 +196,7 @@ class VmPrompts(
         request: String = ADMIN_REQUEST
     ) {
         screen.waitFor(request, timeoutMs)
+        Thread.sleep(SHEET_SETTLE_MS)
         screen.session { client ->
             client.type(vmAdminPassword(context))
             client.press("return")
@@ -217,6 +219,12 @@ class VmPrompts(
         const val LOGIN_ITEM_TOGGLE_X = 0.716
         const val SETTINGS_CONTENT_RIGHT = 0.76
         const val ACTIVATION_MS = 1_000L
+
+        /**
+         * A sheet's title is recognized while it still slides in, before its field takes focus; typing then went
+         * nowhere and Return never submitted the Mac password (`observed` 2026-09-25).
+         */
+        const val SHEET_SETTLE_MS = 1_500L
     }
 }
 

@@ -7,6 +7,7 @@ import app.posato.control.core.ErrorCode
 import app.posato.control.core.readKeychainSecret
 import app.posato.control.vm.CandidateInstall
 import app.posato.control.vm.CandidateInstallation
+import app.posato.control.vm.GuestICloud
 import app.posato.control.vm.GuestPrompt
 import app.posato.control.vm.VmLifecycle
 import app.posato.control.vm.VmLine
@@ -22,6 +23,8 @@ import com.github.ajalt.clikt.parameters.options.required
 import com.github.ajalt.clikt.parameters.types.int
 import com.github.ajalt.clikt.parameters.types.long
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.nio.file.Path
@@ -37,7 +40,13 @@ class VmCommand : CliktCommand(name = "vm") {
 class VmCreateCommand : ControlCommand("create", "Clone the line's golden VM, boot it headless, and copy the staged package and driver into it.") {
     private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
 
-    override fun execute(session: Session): JsonElement = VmLifecycle(session.context).create(VmLine.parse(lineOption))
+    override fun execute(session: Session): JsonElement {
+        val line = VmLine.parse(lineOption)
+        val created = VmLifecycle(session.context).create(line)
+        // A paused iCloud Keychain only shows much later as a workspace key that never arrives, so report it now.
+        val iCloud = runCatching { GuestICloud(session.context).check(line, ICLOUD_CHECK_TIMEOUT_MS).id }.getOrDefault("unknown")
+        return JsonObject(created + ("iCloudKeychain" to JsonPrimitive(iCloud)))
+    }
 }
 
 class VmSyncCommand : ControlCommand("sync", "Copy the freshly staged package and the driver into the running clone.") {
@@ -212,5 +221,6 @@ class VmScreenshotCommand : ControlCommand("screenshot", "Capture the whole gues
 }
 
 private const val DEFAULT_TIMEOUT_SECONDS = 60L
+private const val ICLOUD_CHECK_TIMEOUT_MS = 60_000L
 private const val INSTALL_TIMEOUT_SECONDS = 120L
 private const val MILLIS_PER_SECOND = 1_000L

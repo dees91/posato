@@ -102,9 +102,13 @@ version from Apple's update server. The driver can prepare it without a person:
 
 A new device signing in can make the other golden VMs report "Some iCloud
 Data Isn't Syncing". iCloud Keychain items, including the Posato workspace key,
-then stop reaching them. Choose System Settings > Resume Data Sync and answer
-`vm prompt account-password` and `vm prompt mac-password`. If Apple asks
-for the trusted phone number, type it with
+then stop reaching them. `vm create` reports the state as `iCloudKeychain`
+(`syncing`, `paused`, `signed-out`, or `unknown`), and `vm icloud --line <line>` checks it
+and exits 3 when it is paused or signed out. `vm icloud --line <line> --resume` runs Resume
+Data Sync and answers the account, Mac password, and passcode dialogs. Repair
+the golden VM itself, not only a clone: boot it under the clone's name
+(`tart rename`, `vm boot`), run `vm icloud --resume`, `vm shutdown`, and
+rename it back. If Apple asks for the trusted phone number, type it with
 `vm type --secret phone` from the optional phone item above.
 
 ## Register the VMs for development signing

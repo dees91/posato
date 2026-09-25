@@ -32,6 +32,7 @@ import app.posato.control.cli.VmCommand
 import app.posato.control.cli.VmCreateCommand
 import app.posato.control.cli.VmDestroyCommand
 import app.posato.control.cli.VmDragCommand
+import app.posato.control.cli.VmICloudCommand
 import app.posato.control.cli.VmInstallCommand
 import app.posato.control.cli.VmPressCommand
 import app.posato.control.cli.VmPromptCommand
@@ -101,6 +102,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
         VmDragCommand(),
         VmPressCommand(),
         VmScreenshotCommand(),
+        VmICloudCommand(),
     ),
 )
 

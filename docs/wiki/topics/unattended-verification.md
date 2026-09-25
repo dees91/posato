@@ -141,7 +141,7 @@ desktop commands outside a virtual machine except `build`, `doctor`, and
   - the two-factor code is read from the test iPhone's screenshot after a `springboard`-scoped scenario taps Allow.
 - Apple publishes no restore image (IPSW) for every point release. For macOS 15 the newest one is 15.6.1.
 - `vm install`, LaunchServices launch, the helper, enforcement, and iCloud sync all work on macOS 15.6.1. Cross-device sync with a macOS 26 guest works in both directions.
-- When a new device signs in to the test account, the existing golden VMs can report "Some iCloud Data Isn't Syncing". iCloud Keychain items then stop reaching them, and Posato waits for the workspace key. Resume Data Sync with the account and guest passwords restores them. A fix in a clone also clears the golden VM, which shares its device identity.
+- When a new device signs in to the test account, the existing golden VMs can report "Some iCloud Data Isn't Syncing". iCloud Keychain items then stop reaching them, and Posato waits for the workspace key. Resume Data Sync with the account and guest passwords restores them. `superseded` (2026-09-25, `RELEASE-003`): a fix in a clone does not carry over to the golden VM; later clones were paused again until the golden VM itself was repaired. `vm create` now reports the state, and `vm icloud --resume` repairs it.
 
 ## iPhone
 
