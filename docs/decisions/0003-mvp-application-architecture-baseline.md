@@ -7,6 +7,29 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-011 updater amendment
+
+`user-confirmed` (2026-09-22, [ADR 0008](0008-macos-update-delivery.md));
+applied on 2026-09-25 by `MACOS-011` after the verified delivery recorded in
+its execution record.
+
+MACOS-011 may add one signed in-process AppKit/JNI updater leaf in the desktop
+application, separate from the DESIGN-001 window-presentation leaf. It adapts
+Sparkle's update UI, network requests, and installer lifecycle. Kotlin owns
+consent-facing orchestration and the decision to admit an installation.
+Sparkle retains its own local preferences and scheduling. Native updater
+objects do not cross into commonMain. This leaf receives no workspace keys,
+policy, application selections, privileged proxy operations, or general
+command interface.
+
+Sparkle's own installation processes remain separate from Posato's
+enforcement helper, root daemon, and synchronization companion. Their signing
+and any installation authorization are verified as release dependencies;
+the Posato daemon's responsibilities do not expand. A native updater failure
+may terminate the desktop application. MACOS-011 must prove cleanup and
+recovery across that failure before releasing the feature. The window leaf's
+existing prohibition on networking remains unchanged.
+
 ## DESIGN-001 window-presentation amendment
 
 `user-confirmed` (2026-09-07): the maintainer accepts one narrow in-process

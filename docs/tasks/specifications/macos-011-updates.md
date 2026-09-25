@@ -49,3 +49,5 @@ A notarized Mac candidate can obtain and install a newer notarized candidate thr
   - D4: the maintainer creates the production key and its encrypted backup at
     Stage 2 intake. Stage 2 candidates embed the production public key.
 - Confirm signing/notarization access and private-key custody at implementation intake. Account-owned actions use a short maintainer checklist when needed.
+- `user-confirmed`, 2026-09-25: D4 done; the release key lives in the maintainer's Keychain as `posato-release` with an encrypted backup, and its public key is tracked in `buildSrc`.
+- `user-confirmed`, 2026-09-25: Stage 2 verification runs unattended in Tart clones (plan step 8).

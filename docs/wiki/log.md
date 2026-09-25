@@ -1929,3 +1929,11 @@ to scope, feasibility, or delivery.
   format, and several ways to supply them, from an in-app editor to a
   learning agent's watched folder. See
   [open questions](topics/mvp-open-questions.md#post-mvp-feature-ideas-for-discovery).
+## [2026-09-25] experiment | MACOS-011 Stage 2: consent, request privacy, and the update matrix
+
+- Delivered Sparkle consent and settings, fixed update request headers with no
+  cookies, and a signed, validated release feed. Proved the ADR 0008 matrix on
+  notarized candidates in Tart clones, including a real-GitHub measurement and a
+  final A-to-B that preserved user state.
+- Applied the ADR 0003 and ADR 0004 amendments and updated ADR 0008 and the
+  threat model. Updated [macOS enforcement](topics/macos-enforcement.md).
