@@ -1906,3 +1906,10 @@ to scope, feasibility, or delivery.
   forbids running the desktop app on the maintainer's Mac.
 - Updated [unattended verification](topics/unattended-verification.md) and
   [macOS enforcement](topics/macos-enforcement.md).
+
+## [2026-09-25] decision | SYNC-020 backlog row for session publication
+
+- Added `SYNC-020` (roadmap revision 5): reproduce, then publish a session
+  start or early end reliably from the device that made it. Origin: the
+  `QUALITY-010` observation recorded in
+  [unattended verification](topics/unattended-verification.md).
