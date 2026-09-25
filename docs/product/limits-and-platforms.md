@@ -59,7 +59,7 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   tab.
 - On iPhone, closing and reopening Posato during a session can end the
   session early and lift its restrictions. Start a new session if that
-  happens; a fix is planned for Posato 1.1.1.
+  happens; a fix is planned for Posato 1.2.
 - On iPhone, the system clears restrictions after a session ends and may keep
   them for a while past the end time. Restrictions from sessions shorter than
   15 minutes clear only when Posato is open at the end or when you open it
