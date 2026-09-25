@@ -17,7 +17,7 @@ For one named source revision, a notarized macOS candidate with the stable updat
 - **Candidates.** Build from one revision with the existing release paths: `generateMacOsUpdateFeed` on the release channel, and the App Store archive and upload used for 1.0. No product changes. A defect found here gets its own row, unless the maintainer decides to fix it in this release. The driver gains `vm install --replace`, so a VM can move from an installed 1.0.0 to the candidate as a person does.
 - **Public wording.** Publish the ADR 0008 privacy and availability passages, reconciled with the `MACOS-011` measurements, and set the policy's effective date at publication. Record the move from 1.0 to 1.1 as a manual download, because 1.0 has no updater. Update the README, the website's Availability section, and the App Store "What's New" text. Historical records stay unchanged.
 - **Publication.** Follow `publish-github-release` in one sitting right after the merge: an annotated tag on the squash commit when its product tree equals the verified revision (otherwise stop), a draft release with exactly the three assets, a byte-for-byte check of the downloaded assets against the validated outputs, then publication. After that, `releases/latest/download/appcast.xml` must resolve and verify. A later release without `appcast.xml` is published with `--latest=false`.
-- **Non-goals:** new features, new signing mechanisms, delta updates, macOS or iOS target changes, and releasing the App Store version once it is approved (see decisions).
+- **Non-goals:** new features, new signing mechanisms, delta updates, and macOS or iOS target changes.
 
 ## Acceptance
 
@@ -35,6 +35,8 @@ For one named source revision, a notarized macOS candidate with the stable updat
 
 ## Decisions or blockers
 
-- **D1, iOS 18:** 1.1 changes the iOS binary, and the test iPhone runs iOS 26. Either the maintainer checks the TestFlight build on the private iOS 18 iPhone (the `AGENTS.md` exception for an iOS version the test iPhone lacks), or the availability page keeps "iOS 18 checked on 1.0.0".
-- **D2, App Store release:** manual release after approval, as for 1.0, or automatic release on approval.
+- `user-confirmed`, 2026-09-25:
+  - D1: the maintainer checks the TestFlight build on a private iPhone with iOS 18. This is the `AGENTS.md` exception for an iOS version the test iPhone (iOS 26) lacks.
+  - D2: the App Store version is released automatically once App Review approves it.
+  - The App Store "What's New" text is prepared as part of this task, together with the GitHub release notes.
 - **Blocker (maintainer):** the Keychain prompt for the `posato-release` key during feed signing.
