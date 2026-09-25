@@ -2,8 +2,13 @@ package app.posato.provisioning.cli
 
 import app.posato.provisioning.asc.AscClient
 import app.posato.provisioning.asc.AscHttp
+import app.posato.provisioning.asc.JdkUploadTransport
 import app.posato.provisioning.asc.PrivateKeyFile
+import app.posato.provisioning.asc.ReviewClient
+import app.posato.provisioning.asc.ScreenshotClient
+import app.posato.provisioning.asc.ScreenshotUploader
 import app.posato.provisioning.asc.Sleeper
+import app.posato.provisioning.asc.StoreClient
 import app.posato.provisioning.asc.TokenSource
 import app.posato.provisioning.core.ConfigurationKey
 import app.posato.provisioning.core.LocalConfiguration
@@ -14,6 +19,8 @@ import app.posato.provisioning.core.Transcript
 import app.posato.provisioning.core.UserPaths
 import app.posato.provisioning.local.KeychainReader
 import app.posato.provisioning.local.LocalDeviceReader
+import app.posato.provisioning.store.ScreenshotReplacement
+import app.posato.provisioning.store.StoreServices
 import java.nio.file.Path
 import java.time.Clock
 import java.time.Duration
@@ -54,12 +61,29 @@ class Session(
     val developmentTeam: String
         get() = configuration.require(ConfigurationKey.DEVELOPMENT_TEAM, "Provisioning for this team")
 
-    fun ascClient(): AscClient {
+    private val clock: Clock = Clock.systemUTC()
+
+    private val sleeper = Sleeper { duration -> Thread.sleep(duration.toMillis()) }
+
+    fun ascClient(): AscClient = AscClient(ascHttp())
+
+    /** The store clients share one token source, so a release run signs at most one token per quarter hour. */
+    fun storeServices(): StoreServices {
+        val http = ascHttp()
+        val screenshots = ScreenshotClient(http)
+        return StoreServices(
+            store = StoreClient(http),
+            screenshots = screenshots,
+            review = ReviewClient(http),
+            replacement = ScreenshotReplacement(screenshots, ScreenshotUploader(JdkUploadTransport(), transcript), clock, sleeper),
+        )
+    }
+
+    private fun ascHttp(): AscHttp {
         val keyId = configuration.require(ConfigurationKey.ASC_KEY_ID, "Signing an App Store Connect token")
         val issuerId = configuration.require(ConfigurationKey.ASC_ISSUER_ID, "Signing an App Store Connect token")
         val keyPath = Path.of(configuration.require(ConfigurationKey.ASC_PRIVATE_KEY_PATH, "Signing an App Store Connect token"))
-        val clock = Clock.systemUTC()
         val source = TokenSource(keyId, issuerId, PrivateKeyFile.read(keyPath), clock)
-        return AscClient(AscHttp(source, transcript, clock, Sleeper { duration -> Thread.sleep(duration.toMillis()) }))
+        return AscHttp(source, transcript, clock, sleeper)
     }
 }

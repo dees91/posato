@@ -1,7 +1,9 @@
 # posato-provisioning
 
 Obtains Apple **development** provisioning for the five Posato App IDs through
-the App Store Connect API, so no portal step blocks an agent.
+the App Store Connect API, so no portal step blocks an agent. Its `store`
+commands drive the iOS App Store release (version, What's New, screenshots,
+build, review submission) so no release needs an ad hoc API script.
 
 The full guide, including the App Store Connect key the maintainer must create,
 is [`docs/development/apple-provisioning.md`](../../docs/development/apple-provisioning.md).
@@ -39,6 +41,9 @@ blank value counting as absent.
 | `devices register [--tart-vm <name>]...` | Registers this Mac, every **wired** iPhone, and each named running Tart VM the account lacks. |
 | `certificates ensure [--create]` | Reuses the certificate this Mac signs with; creates one only with `--create`. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes one App ID's development profile current and installs it. |
+| `store status [--version X.Y.Z]` | Read-only: iOS App Store versions, builds, the next build number, and one version's build, What's New, and screenshot delivery. |
+| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--screenshots <dir>]` | Creates or updates the App Store version, attaches a `VALID` build, and replaces the screenshot sets; changes only what differs. |
+| `store submit --version X.Y.Z` | Submits to App Review once the build and every screenshot are ready; does nothing when already in review. |
 
 Global options: `--human` for a short summary, `--verbose` for a redacted
 transcript on stderr. Exit codes are `2` usage, `3` a condition to clear, `4` a
@@ -47,7 +52,9 @@ missing account resource, `1` a failure while working.
 ## What it never records
 
 The key identifier, the issuer, the team, any device identifier, the
-certificate common name, the `.p8` path, and every response body stay out of
-the envelope, out of stderr, and out of any file. A failed request reports its
-category and, at most, App Store Connect's enumerated error codes. The tool
-writes no transcript file, and it never edits `local.properties`.
+certificate common name, the `.p8` path, every screenshot upload URL, and every
+response body stay out of the envelope, out of stderr, and out of any file. A
+failed request reports its category and, at most, App Store Connect's
+enumerated error codes. The tool writes no transcript file, and it never edits
+`local.properties`. Screenshot upload URLs are the only service-supplied URLs
+it follows, under the policy in the guide's "Request bounds" section.

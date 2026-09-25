@@ -1,6 +1,7 @@
 package app.posato.provisioning.model
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonObject
 
 /** The states App Store Connect uses to say a profile is finished. Only these authorise a delete. */
 private val DEAD_PROFILE_STATES = setOf("INVALID", "EXPIRED")
@@ -10,15 +11,28 @@ data class AscLinks(
     val next: String? = null,
 )
 
+/**
+ * One page of a resource collection.
+ *
+ * `included` stays untyped: only the builds listing reads it, and every other listing that asks for related resources
+ * (such as a profile's devices) must not fail because an included resource carries an attribute a store type models.
+ */
 @Serializable
-data class AscList<T>(
+data class AscPage<T>(
     val data: List<T> = emptyList(),
     val links: AscLinks = AscLinks(),
+    val included: List<JsonObject> = emptyList(),
 )
 
 @Serializable
 data class AscSingle<T>(
     val data: T,
+)
+
+/** A to-one relationship read directly, such as a version's build, whose `data` is `null` when nothing is attached. */
+@Serializable
+data class AscOptional<T>(
+    val data: T? = null,
 )
 
 @Serializable

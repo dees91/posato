@@ -6,9 +6,12 @@ connected iPhone, and the Tart verification VMs, confirms the development certif
 creates, downloads, and installs a development profile for any of the five
 Posato App IDs.
 
-It does not touch distribution certificates, App Store Connect app records,
-TestFlight, notarization, or App ID capabilities, and it never runs in CI.
-Routine CI stays credential-free.
+Its `store` commands drive the iOS App Store release of the existing
+`app.posato.ios` app record: the App Store version, its release type, What's
+New, screenshots, attached build, and the App Review submission. It does not
+create app records or distribution certificates, and it does not touch
+TestFlight groups, notarization, or App ID capabilities. It never runs in CI;
+routine CI stays credential-free.
 
 ## Prerequisites
 
@@ -49,9 +52,13 @@ every known value redacted.
 | `devices register [--tart-vm <name>]...` | Registers this Mac, every **wired** iPhone, and each named running Tart VM the account does not already hold. VMs are named `Posato Verification VM`. |
 | `certificates ensure [--create]` | Confirms this Mac signs with a certificate the account also holds. With `--create`, generates a key pair, requests a certificate, and imports it. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes the development profile for one App ID current and installs it. |
+| `store status [--version X.Y.Z]` | Read-only. Lists the iOS App Store versions with state and release type, the builds with marketing version and processing state, and the next free build number; with `--version`, also that version's attached build, en-US What's New, and screenshot sets with delivery states. |
+| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--screenshots <dir>]` | Brings one App Store version to the release state, changing only what differs. See [iOS App Store release](#ios-app-store-release). |
+| `store submit --version X.Y.Z` | Submits the version to App Review once it has a build and every screenshot is `COMPLETE`. Does nothing when it is already waiting for or in review. |
 
-Use this tool, not the portal, for every development device, certificate, and
-profile; when it lacks an operation a task needs, extend it. The
+Use this tool, not the portal or ad hoc App Store Connect scripts, for every
+development device, certificate, and profile and for the App Store release
+steps below; when it lacks an operation a task needs, extend it. The
 [unattended verification guide](unattended-verification.md) uses
 `--tart-vm` for its golden VMs.
 
@@ -165,6 +172,109 @@ Publish `Posato-<version>.dmg`, `appcast.xml`, and `SHA256SUMS` together (`RELEA
 
 The task reads the feed URL, key, and build number from the application inside the DMG and requires that they match the staged application. A candidate feed uses `-PposatoMacOsUpdateChannel=candidate` and `-PposatoMacOsUpdateDownloadPrefix=<HTTPS or loopback URL ending in />`, and writes `Posato-<version>-<build>-test.dmg` with `appcast-test.xml`. `-PposatoMacOsUpdateKeyAccount` selects another Keychain account, for example a throwaway test key.
 
+## iOS App Store release
+
+The iPhone and iPad app ships through App Store Connect. The archive, export,
+and upload use Xcode and `altool` with the same team key as this tool; the
+App Store version, What's New, screenshots, build attachment, and submission
+use the `store` commands. Replace `<team>`, `<key id>`, `<issuer id>`, and the
+paths; keep every output outside the checkout or under the ignored `build/`.
+
+1. **Pick the build number.** It is the highest build App Store Connect holds
+   plus one; `store status` prints it as `nextBuildNumber`. The marketing
+   version comes from the root `Version.xcconfig`.
+2. **Archive.**
+
+   ```shell
+   xcodebuild archive -project iosApp/iosApp.xcodeproj -scheme iosApp \
+     -configuration Release -destination generic/platform=iOS \
+     -archivePath <out>/Posato-<version>-<build>.xcarchive \
+     -allowProvisioningUpdates \
+     -authenticationKeyPath <key.p8> -authenticationKeyID <key id> \
+     -authenticationKeyIssuerID <issuer id> \
+     DEVELOPMENT_TEAM=<team> CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=<build>
+   ```
+
+3. **Export.** Write `<ExportOptions.plist>` outside the checkout with `method`
+   `app-store-connect`, `destination` `export`, `signingStyle` `automatic`,
+   `teamID` `<team>`, `uploadSymbols` true, and
+   `manageAppVersionAndBuildNumber` false, then run:
+
+   ```shell
+   xcodebuild -exportArchive -archivePath <out>/Posato-<version>-<build>.xcarchive \
+     -exportPath <out>/export -exportOptionsPlist <ExportOptions.plist>
+   ```
+
+   The export writes `<out>/export/Posato.ipa`.
+
+4. **Inspect the signed IPA** before uploading. Unzip it and read both bundles
+   with `codesign -dvv` and `codesign -d --entitlements - --xml`:
+   - `Payload/Posato.app` and `Payload/Posato.app/PlugIns/ActivityMonitor.appex`
+     are signed by **Apple Distribution** for `<team>`;
+   - both carry `com.apple.developer.family-controls` and the app group
+     `group.app.posato.ios.session`;
+   - the app also carries the `iCloud.app.posato.sync` container with the
+     CloudKit service, `com.apple.developer.icloud-container-environment` set
+     to `Production`, and the `<team>.app.posato.sync` keychain access group;
+   - `get-task-allow` is false in both;
+   - `PrivacyInfo.xcprivacy` is present in the app and in the extension.
+5. **Validate and upload.** `altool` reads the key from
+   `API_PRIVATE_KEYS_DIR`, a directory holding `AuthKey_<key id>.p8`:
+
+   ```shell
+   API_PRIVATE_KEYS_DIR=<dir> xcrun altool --validate-app -f <out>/export/Posato.ipa \
+     -t ios --apiKey <key id> --apiIssuer <issuer id>
+   API_PRIVATE_KEYS_DIR=<dir> xcrun altool --upload-app -f <out>/export/Posato.ipa \
+     -t ios --apiKey <key id> --apiIssuer <issuer id>
+   ```
+
+   Wait until `store status` lists the build as `VALID`.
+6. **Prepare the version.** Put the accepted What's New text from
+   [`docs/store/en-US/listing.md`](../store/en-US/listing.md) in a plain-text
+   file, then:
+
+   ```shell
+   posato-provisioning store prepare --version <version> --build <build> \
+     --whats-new <whats-new.txt> --release after-approval \
+     --screenshots docs/store/en-US/screenshots
+   ```
+
+   It refuses a build that is missing or not `VALID` before writing anything,
+   and it refuses an existing version whose state is not
+   `PREPARE_FOR_SUBMISSION`, `DEVELOPER_REJECTED`, `REJECTED`,
+   `METADATA_REJECTED`, or `INVALID_BINARY` (`VERSION_NOT_EDITABLE`). It creates the iOS App Store version when absent, and App Store Connect
+   copies the description, keywords, review details, and screenshots from the
+   previous version. The command then sets the release type, the en-US What's
+   New text, and the build. `--screenshots` replaces `iphone-6.9/*.png` in the
+   `APP_IPHONE_67` set and `ipad-13/*.png` in the `APP_IPAD_PRO_3GEN_129` set,
+   in file-name order. A set that already holds the same files with the same
+   MD5 checksums is left alone. Otherwise every screenshot in it is deleted,
+   and each file is reserved, uploaded, and committed with its MD5. The command
+   then waits up to ten minutes until every screenshot is `COMPLETE`. Input
+   PNGs must have no alpha channel. Use `--release manual` to release by hand
+   after approval.
+7. **Submit.** `posato-provisioning store submit --version <version>` refuses a
+   version without a build, with a screenshot that is not `COMPLETE`, or in a
+   state App Review does not accept, such as one already released. After a
+   rejection it marks the version's rejected item resolved
+   (`PATCH reviewSubmissionItems/<id>` with `resolved: true`), then resubmits
+   the submission with unresolved issues that holds it. Otherwise it reuses an
+   unsubmitted review submission rather than creating a second one, adds the
+   version, and submits. It never creates a submission while another unresolved
+   one is open. Before any write, it refuses a draft or unresolved submission
+   that holds any other item, such as another version, an App Event, or a
+   custom product page, so it never submits material it was not asked to.
+
+`hypothesis`: every `store` command is designed to be idempotent, so a rerun
+after a failure completes what the first run left undone, a rerun with the same
+inputs changes nothing, and `store submit` changes nothing once the version is
+waiting for or in review. Unit tests against recorded responses cover this, but
+no `store prepare` or `store submit` has run against App Store Connect yet. The
+label stays until the first live run of both on the next release confirms it.
+
+The store screenshot capture recipe is in the
+[App Store listing](../store/en-US/listing.md#screenshots).
+
 ## Idempotence and `--replace`
 
 A repeat run issues only reads and changes nothing.
@@ -188,23 +298,51 @@ command stops with `PROFILE_STALE` and asks for `--replace`.
 
 ## Request bounds and what is never recorded
 
-Requests go only to `https://api.appstoreconnect.apple.com/v1/`, over paths
-built from constants, with redirects refused. One 60-second deadline covers all
-attempts, a response is capped at 4 MiB, and a second page of results stops the
-command rather than following a URL the service supplied.
+API requests use only `GET`, `POST`, `PATCH`, and `DELETE`. They go only to
+`https://api.appstoreconnect.apple.com/v1/`, over paths built from constants
+and resource identifiers that must be plain path segments, with redirects
+refused. One 60-second deadline covers all attempts, a response is capped at
+4 MiB, and a second page of results stops the command rather than following a
+URL the service supplied. The one listing that reads only its first page is the
+newest-first build list in `store status`, which reports `moreBuilds` instead
+of following the next page.
 
-Only `GET` is retried. A `POST` or `DELETE` that times out may already have
-been applied, so repeating it could create a duplicate certificate against
-Apple's per-team cap, a conflicting device, or a second profile claiming a
-unique name. Rerunning the command is the safe recovery, because the reuse
-logic sees whatever the first attempt created. An unauthorized response is
-never retried.
+Only `GET` is retried. A `POST`, `PATCH`, or `DELETE` that times out may already
+have been applied, so repeating it could create a duplicate certificate against
+Apple's per-team cap, a conflicting device, a second profile claiming a unique
+name, or a second screenshot reservation. Rerunning the command is the safe
+recovery, because the reuse logic sees whatever the first attempt created. An
+unauthorized response is never retried.
+
+**Screenshot uploads are the one exception** to service-supplied URLs. A
+screenshot's bytes can only go where the reservation's upload operations say,
+so `store prepare` accepts those URLs under a narrow policy, checked for every
+operation before any part is sent:
+
+- the method is exactly `PUT`, the scheme `https`, the host ends in `.apple.com`
+  on the default port, and the URL carries no user information;
+- the request carries only the operation's own headers, which must be plain
+  names and printable values. `Content-Length` and `Host` must match what the
+  client derives from the byte range and the URL; `Connection`, `Expect`,
+  `Upgrade`, and `Transfer-Encoding` are refused;
+- the body is exactly the file slice the operation names, and that slice must
+  lie inside the file;
+- redirects are refused, the App Store Connect token is never sent, each part
+  has a 120-second deadline, and a part is attempted once.
+
+Anything else refuses the whole upload with `UPLOAD_REFUSED` before a byte
+leaves the Mac. Neither the transcript nor an error message repeats an upload
+URL, because its query can carry a signature; the transcript records only the
+part number and size.
 
 Never printed, logged, or written: the key identifier, the issuer identifier,
 the team identifier, any device identifier, the certificate common name, the
-path of the `.p8`, and any response body. A failed request reports its category
-and, at most, App Store Connect's enumerated error codes, which are a closed
-vocabulary carrying no data. The tool writes no transcript file.
+path of the `.p8`, any screenshot upload URL, and any response body. A failed
+request reports its category and, at most, App Store Connect's enumerated error
+codes, which are a closed vocabulary carrying no data. The tool writes no
+transcript file. `store status` prints selected fields (version strings, build
+numbers, states, counts, and the public What's New text) and no resource
+identifiers.
 
 Two paths into a message are closed deliberately. A response whose shape the
 tool cannot read is reported by naming the resource only, because the decoder
@@ -240,6 +378,17 @@ The two reports answer different questions and share no check identifiers.
   then reported. Wait and rerun.
 - **`ASC_TOO_MANY_RESULTS`** — the account holds more resources than one page.
   Remove what this Mac no longer needs in the portal.
+- **`BUILD_MISSING`** / **`BUILD_NOT_READY`** — App Store Connect does not hold
+  that build number for that marketing version, or has not finished processing
+  it. `store status` lists the builds and their states.
+- **`SUBMISSION_NOT_READY`** — the version lacks a build, has a screenshot
+  that is not `COMPLETE`, or is in a state App Review does not accept, or
+  another open submission is in the way: an unresolved one, or a draft or
+  unresolved submission that also holds another item.
+- **`VERSION_NOT_EDITABLE`** — `store prepare` found the version waiting for
+  or in review, pending release, or released, and changed nothing.
+- **`UPLOAD_REFUSED`** — an upload operation failed the policy above. Nothing
+  was uploaded; rerun `store prepare`, and review the tool if it repeats.
 - **`CERTIFICATE_MISSING`** — either this Mac has no usable certificate, or the
   account no longer lists the one it has, which is what a revocation looks
   like. Run `certificates ensure --create`.

@@ -28,10 +28,10 @@ fun interface Sleeper {
 /**
  * Every App Store Connect request, bounded in each direction.
  *
- * Retries are limited to `GET`. A `POST` or `DELETE` that times out may already have been applied, so repeating it
- * would create a duplicate certificate against Apple's per-team cap, a conflicting device, or a second profile
- * claiming a name that must be unique. Failing closed after one attempt is safe because rerunning the command
- * reuses whatever the first attempt actually created.
+ * Retries are limited to `GET`. A `POST`, `PATCH`, or `DELETE` that times out may already have been applied, so
+ * repeating it would create a duplicate certificate against Apple's per-team cap, a conflicting device, a second
+ * profile claiming a name that must be unique, or a second screenshot reservation. Failing closed after one attempt is
+ * safe because rerunning the command reuses whatever the first attempt actually created or changed.
  */
 class AscHttp(
     private val tokenSource: TokenSource,

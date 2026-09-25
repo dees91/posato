@@ -43,6 +43,18 @@ class AscHttpTest {
     }
 
     @Test
+    fun `attempts a PATCH exactly once even when the service is unavailable`() {
+        val exchange = ScriptedExchange(listOf(Reply(503), Reply(200, "{}")))
+
+        val failure = assertFailsWith<ProvisioningException> {
+            httpWith(exchange, mutableListOf()).execute(AscRequest(HttpMethod.PATCH, "appStoreVersions/VER", body = "{}"))
+        }
+
+        assertEquals(ErrorCode.ASC_UNAVAILABLE, failure.code)
+        assertEquals(1, exchange.sent.size)
+    }
+
+    @Test
     fun `attempts a DELETE exactly once even when the service is unavailable`() {
         val exchange = ScriptedExchange(listOf(Reply(503), Reply(200, "{}")))
 

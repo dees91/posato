@@ -1,6 +1,6 @@
 package app.posato.provisioning.asc
 
-enum class HttpMethod { GET, POST, DELETE }
+enum class HttpMethod { GET, POST, PATCH, DELETE }
 
 data class AscRequest(
     val method: HttpMethod,
