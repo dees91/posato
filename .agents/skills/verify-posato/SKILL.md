@@ -412,6 +412,10 @@ so the developer's local data is unchanged.
   `observe-unblocked-ios.json` open Calculator and `http://example.com` and assert the
   Screen Time shield and Safari's "Website Not Allowed" page, or their absence; on the
   desktop `observe` does the same in a VM (`features/sessions.md`, Observe blocking).
+- `session-start-saved-items.json` and `session-start-saved-items-desktop.json` start a
+  25-minute session with whatever is already saved, without adding a website first; use them
+  when the run set up its websites and applications itself (on the desktop, answer
+  `vm prompt admin` while the scenario waits).
 - `session-relaunch-ios.json` relaunches the iPhone app three times during a session and
   checks that the session and both restrictions survive (`features/sessions.md`, Relaunch
   during a session); it fails, as expected and without blocking other tasks, until
