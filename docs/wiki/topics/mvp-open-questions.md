@@ -779,6 +779,37 @@ not an accepted feature plan or an expansion of the MVP.
 
     Whether review progress may be recorded without revealing when paused
     sites were attempted remains `open`.
+
+    `user-confirmed` (2026-09-25) direction: the pause page must be useful
+    with no setup; cards are an optional layer; an agent is only one way to
+    supply them. Posato presents cards and never teaches or generates
+    personal content on its own. One open deck format (question, options or
+    answer, explanation, optional source link) serves every layer:
+    - **Everyone, no setup:** the session's stated intention with the time
+      remaining, a one-line "save for later" note returned after the session,
+      and light built-in prompts such as standing up for a minute.
+    - **Learners without technical tools:** an in-app question-and-answer
+      editor as simple as adding websites, import from CSV and Anki
+      (`inferred`: `.apkg` is a zipped SQLite database readable locally),
+      and possibly built-in starter decks, whose content, licensing, and
+      translation cost make them later or never.
+    - **Personalized without an agent:** Posato offers a prompt to copy into
+      any chatbot with one's notes and validates the pasted result, and
+      possibly on-device generation from shared text (`source-claim`: Apple
+      Foundation Models on iOS and macOS 26, quality to confirm).
+    - **Developers:** a watched folder where a learning agent, such as a
+      `teach` skill workspace, writes decks and reads back results, so the
+      agent picks the next cards. It reuses the same importer.
+
+    Suggested order: intention, time remaining, and "save for later" first;
+    then cards from the editor, CSV, Anki, and the chatbot prompt, with the
+    watched folder; spaced review only after the privacy decision; a text
+    card in the iOS shield last. `hypothesis`: a shield button could toggle
+    between question and answer through shared app-group state. A
+    "waiting for an agent" hook that starts a short session when work is
+    handed to a coding agent would need a new local way to start sessions
+    and its own product decision. No server, product account, or remote
+    content: the privacy boundary stays unchanged.
 12. **Polish as the first additional language.** `user-confirmed`
     (2026-09-24):
     - Posato follows the system language, with no in-app switch. People can

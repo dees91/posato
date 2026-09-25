@@ -1921,3 +1921,11 @@ to scope, feasibility, or delivery.
   17, silencing notifications without blocking the application, as backlog
   row `FILTER-003` (roadmap revision 6). Both are preliminary discovery rows;
   see [open questions](topics/mvp-open-questions.md#post-mvp-feature-ideas-for-discovery).
+
+## [2026-09-25] decision | Layered direction for the pause-page idea
+
+- Idea 11 and `PAUSE-001` (roadmap revision 7) now record the direction:
+  useful with no setup, cards as an optional layer from one open deck
+  format, and several ways to supply them, from an in-app editor to a
+  learning agent's watched folder. See
+  [open questions](topics/mvp-open-questions.md#post-mvp-feature-ideas-for-discovery).
