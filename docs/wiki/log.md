@@ -1956,3 +1956,17 @@ to scope, feasibility, or delivery.
 - Found an iPhone relaunch defect present since 1.0 (`IOS-006`, release 1.2).
   Updated [iOS enforcement](topics/ios-enforcement.md),
   [macOS enforcement](topics/macos-enforcement.md), and ADR 0008.
+
+## [2026-09-25] tooling | Retro fixes after RELEASE-003
+
+- `posato-control`: `vm create` reports the guest's iCloud Keychain state and
+  `vm icloud --resume` repairs a paused one; `vm destroy` refuses a guest still
+  linked to an iCloud workspace; `vm text` and `vm wait-text` read dialogs
+  without screenshots; fixtures for repeated iPhone relaunches (the `IOS-006`
+  regression check) and for starting a session with saved items.
+- `posato-provisioning store` drives the App Store release; the iOS archive and
+  upload steps and the store screenshot recipe are documented.
+- The release feed floors its build number at the published stable feed, and
+  the website build collapses whitespace as HTML does, keeping the space
+  before a link on its own source line.
+  Updated [unattended verification](topics/unattended-verification.md).
