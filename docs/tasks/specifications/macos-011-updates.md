@@ -30,7 +30,7 @@ A notarized Mac candidate can obtain and install a newer notarized candidate thr
 
 - Independent plan review before implementation and independent completed-change review before merge; final `./gradlew quality` after the last correction.
 - Focused admission/recovery/state and native-boundary tests with synthetic fixtures, packaging checks, and the full [ADR 0008 scenario matrix](../../decisions/0008-macos-update-delivery.md#macos-011-delivery-plan-and-acceptance).
-- Drive notarized A-to-B candidates with [verify-posato](../../../.agents/skills/verify-posato/SKILL.md), including cancellation/restart and native ownership checks. Measure request behavior using controlled evidence. Keep captures and identifiers in ignored `build/verification/` and preserve local user state.
+- Drive notarized A-to-B candidates with [verify-posato](../../../.agents/skills/verify-posato/SKILL.md) in Tart virtual machines, unattended and never on the maintainer's Mac (`AGENTS.md`), including cancellation/restart and native ownership checks. Measure request behavior using controlled evidence. Keep captures and identifiers in ignored `build/verification/`.
 
 ## Decisions or blockers
 

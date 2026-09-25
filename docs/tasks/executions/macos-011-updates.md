@@ -219,7 +219,71 @@ of this plan (revised below after the first review).
    - Run a final notarized A-to-B through the test prerelease on the
      integrated code, with a previously disabled service and preserved sync
      configuration.
-8. **Closeout.**
+8. **Verification environment (amended 2026-09-25, `user-confirmed`).**
+   `AGENTS.md` now requires unattended verification and forbids running
+   Posato on the maintainer's Mac, so every Stage 2 run moves into Tart
+   clones driven by `posato-control` (`QUALITY-010`). Steps 3, 4, and 7 run
+   there without the maintainer.
+   - **Driver first.** `vm create|sync` copy only the staged development
+     package, and desktop commands target only that path. Before the VM gate,
+     extend `posato-control` to install a candidate from a DMG and to aim
+     desktop commands at an installed bundle, with the same evidence capture.
+     A missing piece is reported as a blocker with the failing command.
+   - **One bundle per clone.** Before installing candidate A, remove the
+     synced development package, unregister it (`lsregister -u`), and record
+     an `lsregister -dump` that lists only the candidate bundle. Repeat the
+     check after any `vm sync`, which copies the development package back.
+   - **Candidates.** Notarized DMGs are built and signed on the host and
+     copied to the guest disk; the copy carries no quarantine, so set
+     `com.apple.quarantine` in the guest and confirm it with `xattr` and
+     `spctl -a -vv`. Install A into `/Applications` and confirm that its
+     running path is not translocated. Gatekeeper's first open, the helper
+     approval, and administrator prompts are answered with `vm prompt`.
+     Sparkle's windows are driven through the accessibility driver on the
+     app's own process, with `vm click` and `vm press` as the fallback.
+     Crash, second-instance, and system-domain `launchctl` evidence come from
+     `tart exec`, with sudo from the Keychain secret and no password in logs.
+   - **VM gate.** Before any other Stage 2 run, repeat one Stage 1 A-to-B with
+     a never-registered service in a fresh primary clone, from the base code,
+     the throwaway key, and the loopback feed, using the next build numbers,
+     which count in the D4 range. It passes on the Stage 1 evidence:
+     - the gate row's timestamp precedes the feed server's archive request;
+     - `launchctl print` in the `gui/<uid>` and `system` domains and `ps`
+       show no installer job or `Autoupdate` process from this bundle;
+     - `codesign -dv` of the on-disk bundle matches the running build;
+     - the gate reopens only on that evidence.
+
+     An environment failure is a blocker reported with the exact failing
+     command. A safety failure blocks delivery per ADR 0008. Neither may be
+     explained as the other, and there is no fallback to the physical Mac.
+   - **Preserved state.** Before each complete A-to-B (not the VM gate or the
+     cancel and crash runs, which need no workspace), candidate A holds websites,
+     application choices, and an established workspace. After it, B's
+     database and UI show the same data. A clone is disposable only after
+     that comparison. Remove the workspace in the app before `vm destroy`.
+     The notarized sync companion on Production CloudKit has not run in a
+     guest yet, so its failure there is a named AC-04 blocker. The step 3
+     measurement runs with a not-registered service.
+   - **Feeds and measurement.** The loopback test feed runs inside the guest
+     through the JDK's `jwebserver` on the shared JDK. Step 3's header capture
+     runs in the guest through a capture proxy on the guest's non-loopback
+     address, set only for the measurement run, because cleanup refuses any
+     proxy on `127.0.0.1`. The gate check stays unchanged. Its CA is trusted
+     only in that clone. As a positive control, the capture must show
+     GitHub's `Set-Cookie: _octo` on the `latest/download` hop. The
+     zero-request checks before consent and after opt-out add a packet or
+     DNS capture under sudo, since a proxy sees only proxied traffic. The
+     real-GitHub measurement uses the D1 prerelease.
+   - **Newly reachable.** Disposable clones make an enabled-service A-to-B on
+     the integrated code, the system-domain installer (root-owned install,
+     `vm prompt admin`), proxy conflict, an unavailable daemon, and no
+     network cheap to run. Step 7 records them as limits only if the
+     environment cannot run them; a safety failure in any of them blocks
+     delivery per ADR 0008.
+   - **Host.** The host only builds, signs, notarizes, generates and verifies
+     the appcast with the Keychain key (D4), and manages the prerelease. It
+     never runs or installs Posato.
+9. **Closeout.**
    - Add an evidence table mapping every matrix row and AC-02 to AC-05 to
      its evidence, labelled Stage 1 physical, synthetic, or Stage 2.
    - Apply the ADR 0003 and ADR 0004 amendments.
@@ -234,7 +298,7 @@ of this plan (revised below after the first review).
 - Start from `a8bc2c5`, which includes `MACOS-010` and `IOS-004`. The independent updater proof may proceed alongside `ONBOARDING-003`; the wave label introduces no additional dependency on onboarding for that proof.
 - Own updater-specific desktop/native code, required admission and helper/session lifecycle changes, and macOS packaging/build integration. Preserve existing onboarding/helper public contracts during the parallel stage; coordinate any required change before editing it.
 - Leave onboarding UI and resources to `ONBOARDING-003`. Rebase after its merge before editing `DESIGN.md`, shared `strings.xml`, verification recipes, or the wiki log. If proof work needs one of those files earlier, serialize that edit with its owner first.
-- Reserve the physical Mac for notarized update/enforcement experiments. Never run these alongside onboarding's desktop verification; worktrees share installed services and local user data. Confirm the device is available before an attended permission step.
+- Notarized update and enforcement experiments run only in Tart clones (Stage 2 plan step 8), never on the physical Mac. At most two macOS guests run at once, so VM time is serialized with `QUALITY-007`.
 
 ## High-risk plan review
 
@@ -277,6 +341,18 @@ of this plan (revised below after the first review).
   folded into the plan above.
 - **Verdict:** `approved` after the focused re-check, with no Critical or
   Required findings. Implementation may start when the maintainer asks.
+- **VM environment amendment (step 8):** `changes-required` from an
+  independent Claude agent on 2026-09-25. Four Required findings: the driver
+  cannot yet install or target a notarized candidate; the synced development
+  package reintroduces the duplicate-bundle hazard; a loopback capture proxy
+  trips cleanup's own proxy check; and the wording could drop AC-04's
+  preserved-state comparison. All four, plus the recommended quarantine
+  setup, a precise VM gate, newly reachable scenarios, CloudKit hygiene, and
+  a packet capture for zero-request checks, are folded into step 8.
+- **Verdict:** `approved` after the focused re-check on 2026-09-25, with no
+  Critical or Required findings; its two recommended clarifications (the
+  limit wording and the scope of the preserved-state comparison) and the
+  resync check are folded in. Implementation waits for the maintainer.
 
 ## Result
 
