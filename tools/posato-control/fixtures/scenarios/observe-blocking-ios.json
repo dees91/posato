@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": false },
+  "defaults": { "timeoutSeconds": 20 },
+  "onFailure": { "screenshot": true, "snapshot": false },
+  "steps": [
+    { "name": "open-app", "action": "launchApp", "bundleId": "com.apple.calculator" },
+    { "name": "app-shielded", "action": "waitFor", "state": "exists", "query": { "scope": "springboard", "textContains": "You cannot use Calculator" } },
+    { "name": "app-shot", "action": "screenshot" },
+    { "name": "open-site", "action": "openURL", "url": "http://example.com/" },
+    { "name": "site-blocked", "action": "waitFor", "state": "exists", "query": { "scope": "com.apple.mobilesafari", "text": "Website Not Allowed" } },
+    { "name": "site-shot", "action": "screenshot" },
+    { "name": "return", "action": "launchApp", "bundleId": "app.posato.ios" }
+  ]
+}

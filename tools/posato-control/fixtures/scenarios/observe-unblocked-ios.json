@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": false },
+  "defaults": { "timeoutSeconds": 20 },
+  "onFailure": { "screenshot": true, "snapshot": false },
+  "steps": [
+    { "name": "open-app", "action": "launchApp", "bundleId": "com.apple.calculator" },
+    { "name": "app-usable", "action": "waitFor", "state": "exists", "query": { "scope": "com.apple.calculator", "id": "Equals" } },
+    { "name": "no-shield", "action": "waitFor", "state": "absent", "query": { "scope": "springboard", "textContains": "You cannot use Calculator" } },
+    { "name": "app-shot", "action": "screenshot" },
+    { "name": "open-site", "action": "openURL", "url": "http://example.com/" },
+    { "name": "site-loaded", "action": "waitFor", "state": "exists", "query": { "scope": "com.apple.mobilesafari", "textContains": "Example Domain" } },
+    { "name": "not-blocked", "action": "waitFor", "state": "absent", "query": { "scope": "com.apple.mobilesafari", "text": "Website Not Allowed" } },
+    { "name": "site-shot", "action": "screenshot" },
+    { "name": "return", "action": "launchApp", "bundleId": "app.posato.ios" }
+  ]
+}

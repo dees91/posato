@@ -124,7 +124,8 @@ A normal brief contains 20–40 lines of unique content:
 - one observable outcome;
 - boundaries and non-goals;
 - two to five acceptance criteria;
-- only the verification that is expected to matter; and
+- only the verification that is expected to matter, planned as unattended
+  runs (macOS in a Tart VM, iOS on the test iPhone; `AGENTS.md`); and
 - a real decision or blocker, if one exists.
 
 Do not copy the global quality contract, a generic risk matrix, the roadmap, or

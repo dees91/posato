@@ -122,8 +122,8 @@ Use the layers that can reveal a failure introduced by the task:
 | Integration | Several owned components, processes, stores, or adapters must cooperate. |
 | Automated UI | Deferred until the interface stabilizes after the MVP; a golden-test approach such as Paparazzi requires a separate tool and target decision. |
 | Platform build or simulator | A host, native target, extension, helper, entitlement, packaging, or source-set boundary changes. |
-| Physical device | A simulator cannot represent the relevant entitlement, lifecycle, enforcement, or cross-device behavior. |
-| Manual inspection | Visual, accessibility, recovery, installation, or operating-system integration needs human observation. |
+| Physical device | A simulator cannot represent the relevant entitlement, lifecycle, enforcement, or cross-device behavior. The test iPhone and Tart VMs cover it unattended; the host Mac is never a test device. |
+| Manual inspection | Visual, accessibility, recovery, installation, or operating-system integration needs observation. An agent performs it with `posato-control` screenshots and snapshots, unattended by default (`AGENTS.md`). |
 
 Tests protect important business, state, policy, validation, parsing, and
 boundary behavior rather than private structure or framework wiring.

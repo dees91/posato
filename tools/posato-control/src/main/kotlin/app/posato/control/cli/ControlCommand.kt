@@ -20,6 +20,9 @@ abstract class ControlCommand(
 ) : CliktCommand(name = name) {
     private val group by GlobalOptionsGroup()
 
+    /** Whether the desktop target may run on the host Mac; only building and read-only checks may. */
+    protected open val hostDesktopAllowed: Boolean = false
+
     override fun help(context: Context): String = helpText
 
     protected abstract fun execute(session: Session): JsonElement?
@@ -30,7 +33,7 @@ abstract class ControlCommand(
         var session: Session? = null
         var failure: ControlException? = null
         val result = try {
-            session = Session(globals)
+            session = Session(globals, hostDesktopAllowed)
             execute(session)
         } catch (exception: ControlException) {
             failure = exception

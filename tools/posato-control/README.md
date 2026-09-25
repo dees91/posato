@@ -45,6 +45,10 @@ variable, which wins). `doctor` reports presence and source, never values.
 | `posato.macos.syncProvisioningProfile` | `POSATO_MACOS_SYNC_PROVISIONING_PROFILE` | Absolute path to the untracked `app.posato.macos.sync` development profile that development signing requires. |
 | `posato.control.simulator` | `POSATO_CONTROL_SIMULATOR` | Simulator name or UDID to use instead of the booted one. |
 | `posato.control.device` | `POSATO_CONTROL_DEVICE` | Device name or UDID to use instead of the first connected iPhone. |
+| `posato.control.devicePasscodeKeychainService` / `...Account` | `POSATO_CONTROL_DEVICE_PASSCODE_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test iPhone passcode that `pressKeys` types. |
+| `posato.vm.primaryGolden` / `posato.vm.peerGolden` | `POSATO_VM_PRIMARY_GOLDEN` / `POSATO_VM_PEER_GOLDEN` | Tart golden VMs of the primary and peer lines. |
+| `posato.vm.adminKeychainService` / `...Account` | `POSATO_VM_ADMIN_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the guest administrator password. |
+| `posato.vm.accountKeychainService` / `...Account` | `POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test Apple Account password. |
 | — | `POSATO_CONTROL_TARGET` | Default for `--target`. |
 
 When `posato.macos.signingIdentity` is an Apple Development identity, Gradle
@@ -66,7 +70,13 @@ restages an ad-hoc package and silently removes the application picker. Rerun
 Every command takes `--target/-t desktop|simulator|device` (`sim` is an
 alias) plus the common options `--udid`, `--run-id`, `--artifacts`,
 `--timeout`, `--human`, and `--verbose`. Options go after the command name:
-`posato-control launch -t desktop`.
+`posato-control launch -t desktop --vm primary`.
+
+The desktop target never drives the application on the host Mac, whose
+installed Posato is the maintainer's real copy: outside a virtual machine
+(`kern.hv_vmm_present` is 0) every desktop command except `build`, `doctor`,
+and `artifacts` fails with `DESKTOP_HOST_REFUSED`. Add `--vm primary|peer`
+([Tart VMs](#tart-vms)).
 
 ```json
 {
@@ -89,7 +99,7 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors, which print the same envelope) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |
@@ -136,7 +146,7 @@ grants a permission.
 
 | Command | Targets | What it does |
 | --- | --- | --- |
-| `doctor [--deep] [--request-permissions]` | all (or every target when `-t` is omitted) | Toolchain, configuration presence, TCC permissions, staged/installed/running state, driver state. |
+| `doctor [--deep] [--request-permissions]` | all (or every target when `-t` is omitted) | Toolchain, configuration presence, TCC permissions, staged/installed/running state, driver state. With `--vm` the guest reports runtime checks only; build prerequisites (Xcode, Gradle wrapper) are checked by `doctor` on the host. |
 | `devices list` / `devices boot [--device-type "iPhone 17"]` / `devices shutdown` | — | Simulator and paired-iPhone inventory; boot or shut down simulators. |
 | `build [--signing-identity X] [--verify] [--driver]` | all | Desktop: `:desktopApp:stageMacOsDevelopmentPackage`. iOS: a Debug `xcodebuild` with persistent DerivedData under `build/verification/derived-data/`. `--driver` also builds the XCUITest driver, which is otherwise rebuilt on demand whenever its sources are newer than the last build. |
 | `install` | simulator, device | `simctl install` or `devicectl device install app`. |
@@ -157,6 +167,10 @@ grants a permission.
 | `reset [--dry-run] [--yes] [--keep-install]` | all | Deletes local state (desktop, simulator) or uninstalls (device). Refuses without `--yes`; deleted files are backed up into the run directory. |
 | `cleanup [--dry-run] [--purge-derived-data]` | all | Stops tracked processes; never deletes run evidence. |
 | `artifacts` | — | Prints the run directory layout. |
+| `observe [--website URL] [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports, following up to five redirects (`paused` when the helper's pause page answers, `loaded` only for a final 2xx page), and opens the application by its bundle identifier, which counts as blocked when Launch Services lists no process for that bundle after N seconds (default 8). Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
+| `vm create\|sync\|destroy [--line primary\|peer]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. See [Tart VMs](#tart-vms). |
+| `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`. |
+| `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
 
 ### Element queries
 
@@ -172,6 +186,7 @@ scenario steps use the same keys in a `query` object:
 | `--index` | `index` | The nth match, 0-based. |
 | `--path` | `path` | Desktop accessibility path from a previous snapshot, e.g. `0/0/0/0/9/2`. |
 | `--within-text` + `--within-role` | `within` | Scope: the nearest ancestor with the given role of the element carrying the text; the query then matches inside that scope. Works where the platform exposes containers (desktop rows). |
+| — | `scope` | iOS only: `springboard` addresses system dialogs and sheets (Screen Time consent, the passcode keypad) without activating SpringBoard; a bundle identifier such as `com.apple.mobilesafari` addresses that application's tree, for example a Screen Time shield or a blocked page. |
 | `--near-text` + `--near-role` | `near` | Prefer the match closest to the element carrying the text, with vertical distance weighted three times, so a control on the anchor's row wins over the neighbouring row; `index` then picks farther matches. Works on every target, including iOS lists whose rows expose no container. |
 
 Example: open a website's menu with
@@ -273,7 +288,16 @@ Actions: `waitFor` (`exists`, `absent`, `enabled`, `disabled`, `settled`),
 `tap`, `type` (`text`, `clear`, `submit`), `press` (`key`, `modifiers`),
 `assert`, `screenshot`, `snapshot` (`query`, `maxDepth`), `sleep`
 (`seconds`), `scrollTo`, `orient` (`orientation`; iOS only), `terminate`, and
-`relaunch`.
+`relaunch`. iOS only: `launchApp` (`bundleId`, brought forward without being
+terminated), `openURL` (`url`), and `pressKeys` (`secret`: the name
+`devicePasscode`; the host reads the value from the configured Keychain item
+and passes it only through the test runner environment, and key-tap lines are
+removed from the xcodebuild log). Any step can set `optional: true`: a missing
+element or a wait timeout then passes, for surfaces that appear only on some
+paths such as a Face ID retry. On iOS a pending system sheet belongs to the
+running app, and activating the app for a new driver run dismisses it, so a
+consent flow must stay inside one scenario (see
+`fixtures/scenarios/screen-time-consent.json`).
 
 `scrollTo` performs native scrolling on both hosts, not an existence check.
 It chooses the largest visible scroll area in the requested scope, moves
@@ -331,6 +355,29 @@ Canonical scenarios in `fixtures/scenarios/`:
 
 Read the maintained [.agents/skills/verify-posato](../../.agents/skills/verify-posato/SKILL.md)
 and its feature map for exact setup, native picker limits, and cleanup.
+
+## Tart VMs
+
+`-t desktop --vm primary|peer` runs a desktop command inside a Tart guest: the
+host forwards it to the guest's own copy of the driver through `tart exec`,
+which runs in the logged-in user's Aqua session, sends a scenario file (or,
+for `--scenario -`, the host's own standard input) on standard input, and copies the guest's run directory to
+`build/verification/runs/<run>/guest/`. `build` stays on the host; follow it
+with `vm sync`. The one-time setup of the golden VMs, device registration,
+test Apple Account, and Keychain items is in
+[the unattended verification guide](../../docs/development/unattended-verification.md).
+
+- `vm create` refuses while the line's golden VM runs (a golden VM and its
+  clone share a provisioning identity, and running both re-identifies one) or
+  when two guests already run. The VNC address, which carries the session
+  password, stays in an owner-only file under `build/verification/vm/<line>/`
+  and is deleted by `vm destroy`.
+- `vm prompt` locates dialogs by text recognition on the framebuffer and types
+  secrets from the login Keychain; labels assume an English guest. The first
+  click on a dialog that is not frontmost only activates it; the prompts click
+  twice where needed.
+- Code signatures do not validate from a directory share, so the package runs
+  from the guest disk; only the JDK comes from a read-only share.
 
 ## Evidence and state
 

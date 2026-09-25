@@ -25,28 +25,55 @@ data class PhysicalDevice(
     val osVersion: String? = null,
     val connected: Boolean,
     val developerMode: String? = null,
+    val paired: Boolean = false,
+    val wired: Boolean = false,
 )
+
+/** Reads the device list from the `result` object of `devicectl list devices`. */
+internal fun parseDevices(result: JsonObject): List<PhysicalDevice> {
+    val devices = result["devices"]?.jsonArray ?: return emptyList()
+    return devices.map { element ->
+        val device = element.jsonObject
+        val properties = device["deviceProperties"]?.jsonObject
+        val connection = device["connectionProperties"]?.jsonObject
+        val hardware = device["hardwareProperties"]?.jsonObject
+        PhysicalDevice(
+            udid = device.getValue("identifier").jsonPrimitive.content,
+            name = properties?.get("name")?.jsonPrimitive?.content ?: "unknown",
+            model = hardware?.get("marketingName")?.jsonPrimitive?.content ?: hardware?.get("productType")?.jsonPrimitive?.content,
+            osVersion = properties?.get("osVersionNumber")?.jsonPrimitive?.content,
+            connected = connection?.get("tunnelState")?.jsonPrimitive?.content == "connected",
+            developerMode = properties?.get("developerModeStatus")?.jsonPrimitive?.content,
+            paired = connection?.get("pairingState")?.jsonPrimitive?.content == "paired",
+            wired = connection?.get("transportType")?.jsonPrimitive?.content == "wired",
+        )
+    }
+}
+
+/**
+ * Paired devices on a cable whose CoreDevice tunnel has gone idle. The tunnel drops after about a minute
+ * without traffic; a details request brings it back, so these devices are reachable, not missing.
+ */
+internal fun idleWiredDevices(devices: List<PhysicalDevice>): List<PhysicalDevice> = devices.filter { it.paired && it.wired && !it.connected }
 
 class Devicectl(
     private val context: RunContext
 ) {
+    /** Lists paired devices, first waking any idle tunnel to a device on a cable so it reads as connected. */
     fun listDevices(): List<PhysicalDevice> {
-        val result = json(listOf("list", "devices"), ErrorCode.COMMAND_FAILED, "Listing devices")
-        val devices = result["devices"]?.jsonArray ?: return emptyList()
-        return devices.map { element ->
-            val device = element.jsonObject
-            val properties = device["deviceProperties"]?.jsonObject
-            val connection = device["connectionProperties"]?.jsonObject
-            val hardware = device["hardwareProperties"]?.jsonObject
-            PhysicalDevice(
-                udid = device.getValue("identifier").jsonPrimitive.content,
-                name = properties?.get("name")?.jsonPrimitive?.content ?: "unknown",
-                model = hardware?.get("marketingName")?.jsonPrimitive?.content ?: hardware?.get("productType")?.jsonPrimitive?.content,
-                osVersion = properties?.get("osVersionNumber")?.jsonPrimitive?.content,
-                connected = connection?.get("tunnelState")?.jsonPrimitive?.content == "connected",
-                developerMode = properties?.get("developerModeStatus")?.jsonPrimitive?.content,
-            )
+        fun read() = parseDevices(json(listOf("list", "devices"), ErrorCode.COMMAND_FAILED, "Listing devices"))
+
+        val devices = read()
+        val idle = idleWiredDevices(devices)
+        if (idle.isEmpty()) return devices
+        idle.forEach { device ->
+            try {
+                json(listOf("device", "info", "details", "--device", device.udid), ErrorCode.COMMAND_FAILED, "Waking the device tunnel", WAKE_TIMEOUT)
+            } catch (exception: ControlException) {
+                context.log("The device tunnel did not wake: ${exception.message}")
+            }
         }
+        return read()
     }
 
     fun install(
@@ -165,5 +192,6 @@ class Devicectl(
     private companion object {
         val DEFAULT_TIMEOUT: Duration = Duration.ofSeconds(90)
         val INSTALL_TIMEOUT: Duration = Duration.ofMinutes(5)
+        val WAKE_TIMEOUT: Duration = Duration.ofSeconds(30)
     }
 }

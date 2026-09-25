@@ -50,13 +50,16 @@ class IosDriverRunner(
         val resultBundle = context.artifactPath("driver", "$target-$invocation.xcresult")
         val encoded = Base64.getEncoder().encodeToString(ControlJson.compact.encodeToString(Scenario.serializer(), scenario).toByteArray())
         val log = context.recordArtifact(context.artifactPath("driver", "$target-$invocation.xcodebuild.log"))
+        val secrets = DriverSecrets.environment(scenario, DriverSecrets.keychainReader(context))
         val exitCode = xcodeBuild.testWithoutBuilding(
             testRun,
             udid,
             resultBundle,
-            mapOf("POSATO_SCENARIO_B64" to encoded, "POSATO_BUNDLE_ID" to bundleId),
+            mapOf("POSATO_SCENARIO_B64" to encoded, "POSATO_BUNDLE_ID" to bundleId) + secrets,
             log,
+            redact = if (secrets.isEmpty()) { text -> text } else DriverSecrets::redactKeyTaps,
         )
+        if (log.exists()) driverLogFailure(log.readText())?.let { throw it }
         if (!resultBundle.exists()) {
             throw ControlException(
                 ErrorCode.DRIVER_FAILED,
@@ -107,4 +110,20 @@ class IosDriverRunner(
     companion object {
         fun failure(message: String): RunResult = RunResult(false, emptyList(), StepError(ErrorCode.DRIVER_FAILED.name, message))
     }
+}
+
+private const val AUTOMATION_MODE_TIMEOUT = "Timed out while enabling automation mode"
+
+/**
+ * Recognizes a driver run that iOS refused before any step ran. After a restart, or the first time UI
+ * automation is used, the device waits for its owner to unlock it and enter the passcode for XCTest.
+ */
+internal fun driverLogFailure(log: String): ControlException? = if (log.contains(AUTOMATION_MODE_TIMEOUT)) {
+    ControlException(
+        ErrorCode.DEVICE_AUTOMATION_LOCKED,
+        "iOS did not enable UI automation for the driver.",
+        "Ask the device owner to unlock the iPhone and, if it asks, enter the passcode for XCTest; then run the command again.",
+    )
+} else {
+    null
 }

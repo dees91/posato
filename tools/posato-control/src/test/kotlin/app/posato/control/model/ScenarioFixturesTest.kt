@@ -40,4 +40,20 @@ class ScenarioFixturesTest {
         val text = ControlJson.compact.encodeToString(RunResult.serializer(), result)
         assertEquals(result, ControlJson.lenient.decodeFromString(RunResult.serializer(), text))
     }
+
+    @Test
+    fun `iOS system fields survive the encoding the device driver receives`() {
+        val scenario = Scenario(
+            steps = listOf(
+                Step(action = Actions.TAP, query = Query(id = "com.example.fallback", scope = Scopes.SPRINGBOARD), optional = true),
+                Step(action = Actions.PRESS_KEYS, secret = "devicePasscode"),
+                Step(action = Actions.LAUNCH_APP, bundleId = "com.example.other"),
+                Step(action = Actions.OPEN_URL, url = "http://example.com/"),
+            ),
+        )
+
+        val text = ControlJson.compact.encodeToString(Scenario.serializer(), scenario)
+
+        assertEquals(scenario, ControlJson.lenient.decodeFromString(Scenario.serializer(), text))
+    }
 }

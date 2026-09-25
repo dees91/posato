@@ -84,8 +84,12 @@ class ScenarioRunner(
             perform(index, step, scenario, artifacts)
             null
         } catch (exception: ControlException) {
-            captureFailure(index, scenario, artifacts)
-            StepError(exception.code.name, exception.message ?: exception.code.name)
+            if (step.optional && exception.code in OPTIONAL_MISSES) {
+                null
+            } else {
+                captureFailure(index, scenario, artifacts)
+                StepError(exception.code.name, exception.message ?: exception.code.name)
+            }
         }
         val durationMs = (System.nanoTime() - started) / NANOS_PER_MILLI
         return StepResult(index, step.name, step.action, error == null, durationMs, artifacts, error)
@@ -112,6 +116,7 @@ class ScenarioRunner(
         scenario: Scenario
     ) {
         val timeoutMs = ((step.timeoutSeconds ?: scenario.defaults.timeoutSeconds) * MILLIS_PER_SECOND).toLong()
+        refuseIosSystemStep(step)
         if (step.action in setOf(Actions.TYPE, Actions.PRESS, Actions.SCROLL_TO)) {
             actions.prepareInteraction()
         }
@@ -248,6 +253,16 @@ private fun artifactName(
 ): String = "$kind-$index-" + (step.name ?: kind)
 
 private fun invalid(message: String): ControlException = ControlException(ErrorCode.SCENARIO_INVALID, message)
+
+/** SpringBoard queries, app switching, URLs, and typed secrets exist only in the XCUITest driver. */
+private fun refuseIosSystemStep(step: Step) {
+    if (step.query?.isSystemScope == true || step.action in Actions.iosOnly - Actions.ORIENT) {
+        throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "${step.action} with iOS system surfaces runs only in the iOS driver.")
+    }
+}
+
+/** Misses an optional step tolerates: the element it addresses only appears on some paths, such as a Face ID retry. */
+private val OPTIONAL_MISSES: Set<ErrorCode> = setOf(ErrorCode.ELEMENT_NOT_FOUND, ErrorCode.WAIT_TIMEOUT)
 
 private fun requireField(
     value: String?,

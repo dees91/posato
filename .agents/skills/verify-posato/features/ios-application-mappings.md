@@ -38,11 +38,14 @@ Preconditions:
 - **Open picker:** Put `{"action":"tap","query":{"text":"Choose apps","role":"button"}}`
   and a screenshot in the same scenario. With undetermined authorization,
   capture the system consent alert before another XCUITest invocation dismisses it.
-- **Grant and select:** Ask the maintainer to approve the system alert and
-  choose individual applications. The consent alert belongs to SpringBoard
-  and the selection list is rendered out of process; neither is reliably
-  represented by the app's accessibility tree. Stop when this human action
-  is required; do not substitute a fixture or captured token file.
+- **Grant:** On the test iPhone run `fixtures/scenarios/screen-time-consent.json`
+  in one driver run; it answers the SpringBoard sheets and types the passcode from
+  the Keychain. Another driver run in between dismisses the pending sheet. On a
+  personal iPhone without that setup, ask its owner to approve instead.
+- **Select:** The picker's rows are in the app's own tree as switches labeled
+  with the application name. Type into the search field (placeholder `Search`),
+  tap the switch whose label starts with the application name, then Save. Do not
+  substitute a fixture or captured token file.
 - **Save or cancel:** The app-owned toolbar is drivable with
   `$PC tap -t device --text Save --role button` or the same command for Cancel.
 - **Read back:** Capture the app's count with `$PC snapshot -t device --format text --human`

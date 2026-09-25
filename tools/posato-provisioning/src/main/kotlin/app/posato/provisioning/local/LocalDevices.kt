@@ -60,13 +60,21 @@ object LocalDevices {
     }
 }
 
-/** Runs the two local tools that know these identifiers. Everything it reads is registered as a secret at once. */
+/** Runs the local tools that know these identifiers. Everything it reads is registered as a secret at once. */
 class LocalDeviceReader(
     private val subprocess: CommandRunner,
     private val register: (String) -> Unit,
 ) {
-    fun mac(): LocalDevice? {
-        val output = subprocess.run(listOf("/usr/sbin/system_profiler", "SPHardwareDataType", "-json"))
+    fun mac(): LocalDevice? = hardware(emptyList())
+
+    /**
+     * A running Tart macOS guest, read through `tart exec` and `tart-guest-agent`. Clones of that guest inherit its
+     * identifier, so one registration covers every disposable clone of a golden VM that never runs beside them.
+     */
+    fun tartVm(name: String): LocalDevice? = hardware(listOf("tart", "exec", name))
+
+    private fun hardware(prefix: List<String>): LocalDevice? {
+        val output = subprocess.run(prefix + listOf("/usr/sbin/system_profiler", "SPHardwareDataType", "-json"))
         if (!output.succeeded) return null
         return LocalDevices.parseMacUdid(output.stdout)?.let { udid ->
             register(udid)

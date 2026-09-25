@@ -25,7 +25,7 @@ internal class DesktopScroller(
             val root = snapshot()
             val container = scrollContainer(root, query)
             val target = QueryMatcher.find(root, query)
-            if (target != null && container?.frame?.contains(target.frame) == true) {
+            if (target != null && (container?.frame?.contains(target.frame) == true || visibleOutsideScrollAreas(root, target))) {
                 return
             }
             val visible = container?.copy(children = container.children.filter { it.platformRole != "AXScrollBar" })
@@ -51,8 +51,23 @@ internal class DesktopScroller(
     ): SnapshotNode? {
         val scope = query.within?.let { QueryMatcher.scope(root, it) ?: return null } ?: root
         return scope.flatten()
-            .filter { it.platformRole == "AXScrollArea" && it.frame.w > 0 && it.frame.h > 0 }
+            .filter { it.platformRole == SCROLL_AREA && it.frame.w > 0 && it.frame.h > 0 }
             .maxByOrNull { it.frame.w * it.frame.h }
+    }
+
+    /**
+     * A target counts as visible when every scroll area enclosing it shows it whole and a window contains it. This covers
+     * controls laid out below a list, like onboarding's Continue in a tall window, and short scoped lists that have no
+     * scroll area of their own inside a page-level one.
+     */
+    private fun visibleOutsideScrollAreas(
+        root: SnapshotNode,
+        target: SnapshotNode
+    ): Boolean {
+        val nodes = root.flatten()
+        val enclosing = nodes.filter { node -> node.platformRole == SCROLL_AREA && node.flatten().drop(1).any { it === target } }
+        val insideWindow = nodes.any { node -> node.role == "window" && node.frame.contains(target.frame) }
+        return insideWindow && enclosing.all { it.frame.contains(target.frame) }
     }
 
     private fun notFound(): ControlException {
@@ -67,6 +82,7 @@ private fun Frame.contains(other: Frame): Boolean {
     return hasArea && horizontallyInside && verticallyInside
 }
 
+private const val SCROLL_AREA: String = "AXScrollArea"
 private const val MAX_ATTEMPTS: Int = 80
 private const val STABLE_SNAPSHOTS: Int = 3
 private const val SETTLE_MILLIS: Long = 100

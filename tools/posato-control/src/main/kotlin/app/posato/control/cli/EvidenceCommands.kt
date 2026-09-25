@@ -122,6 +122,8 @@ class CleanupCommand : ControlCommand("cleanup", "Stop processes this tool start
 }
 
 class ArtifactsCommand : ControlCommand("artifacts", "Print the run directory layout and the latest run.") {
+    override val hostDesktopAllowed = true
+
     override fun execute(session: Session): JsonElement = buildJsonObject {
         put("runsDirectory", session.layout.relativize(session.layout.runsDirectory))
         put("latest", session.layout.relativize(session.layout.latestRunLink))

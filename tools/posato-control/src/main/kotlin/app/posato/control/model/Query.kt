@@ -12,9 +12,14 @@ data class Query(
     val within: Query? = null,
     val near: Query? = null,
     val path: String? = null,
+    val scope: String? = null,
 ) {
     val isEmpty: Boolean
         get() = listOf(id, text, textContains, role, index, within, near, path).all { it == null }
+
+    /** True when the query addresses SpringBoard or another iOS application rather than the application under test. */
+    val isSystemScope: Boolean
+        get() = scope != null || within?.isSystemScope == true || near?.isSystemScope == true
 
     fun describe(): String = buildList {
         id?.let { add("id=$it") }
@@ -23,7 +28,14 @@ data class Query(
         role?.let { add("role=$it") }
         index?.let { add("index=$it") }
         path?.let { add("path=$it") }
+        scope?.let { add("scope=$it") }
         within?.let { add("within(${it.describe()})") }
         near?.let { add("near(${it.describe()})") }
     }.joinToString(" ")
+}
+
+object Scopes {
+    /** iOS system dialogs and sheets shown over the application, such as Screen Time consent and the passcode keypad. */
+    const val SPRINGBOARD = "springboard"
+    // Any other scope value is the bundle identifier of an iOS application, such as com.apple.mobilesafari.
 }

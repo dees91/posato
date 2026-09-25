@@ -81,7 +81,8 @@ class XcodeBuild(
         udid: String,
         resultBundle: Path,
         environment: Map<String, String>,
-        log: Path
+        log: Path,
+        redact: (String) -> String = { it },
     ): Int {
         val command = listOf(
             "/usr/bin/xcodebuild",
@@ -96,7 +97,7 @@ class XcodeBuild(
         )
         val output = context.subprocess.run(command, environment = environment.mapKeys { (key, _) -> "TEST_RUNNER_$key" }, timeout = TEST_TIMEOUT)
         Files.createDirectories(log.parent)
-        Files.writeString(log, output.stdout + "\n--- stderr ---\n" + output.stderr)
+        Files.writeString(log, redact(output.stdout + "\n--- stderr ---\n" + output.stderr))
         return output.exitCode
     }
 

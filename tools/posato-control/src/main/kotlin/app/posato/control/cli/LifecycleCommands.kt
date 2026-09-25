@@ -24,6 +24,8 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.JsonElement
 
 class BuildCommand : ControlCommand("build", "Build the application for the target (desktop: staged package; iOS: xcodebuild).") {
+    override val hostDesktopAllowed = true
+
     private val signingIdentity by option("--signing-identity", help = "macOS signing identity override for the staged package.")
     private val verify by option("--verify", help = "Run the strict desktop packaging verification after staging.").flag()
     private val driver by option("--driver", help = "Also build the iOS XCUITest driver for the target.").flag()

@@ -8,6 +8,8 @@ import app.posato.control.core.LocalConfiguration
 import app.posato.control.core.RepoLayout
 import app.posato.control.core.RunContext
 import app.posato.control.core.Target
+import app.posato.control.core.refuseHostDesktop
+import app.posato.control.core.runsInVirtualMachine
 import java.nio.file.Path
 import java.time.Duration
 
@@ -22,7 +24,8 @@ class GlobalOptions(
 )
 
 class Session(
-    val options: GlobalOptions
+    val options: GlobalOptions,
+    private val hostDesktopAllowed: Boolean = false,
 ) {
     val layout: RepoLayout = RepoLayout.discover()
     val configuration: LocalConfiguration = LocalConfiguration.load(layout)
@@ -44,11 +47,19 @@ class Session(
             "Pass --target desktop|simulator|device (or export POSATO_CONTROL_TARGET).",
         )
 
-    fun backend(): Backend = cachedBackend ?: Backends.create(target(), context, options.udid).also { cachedBackend = it }
+    fun backend(): Backend = cachedBackend ?: create(target()).also { cachedBackend = it }
 
     /** Backend for an element command; a null selector reuses the cached default backend. */
-    fun backend(processSelector: String?): Backend =
-        if (processSelector == null) backend() else Backends.create(target(), context, options.udid, processSelector)
+    fun backend(processSelector: String?): Backend = if (processSelector == null) backend() else create(target(), processSelector)
 
-    fun backend(target: Target): Backend = Backends.create(target, context, options.udid)
+    fun backend(target: Target): Backend = create(target)
+
+    /** Every backend passes here, so nothing drives the desktop application on the host Mac. */
+    private fun create(
+        target: Target,
+        processSelector: String? = null
+    ): Backend {
+        refuseHostDesktop(target, hostDesktopAllowed, ::runsInVirtualMachine)
+        return Backends.create(target, context, options.udid, processSelector)
+    }
 }

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": false },
+  "defaults": { "timeoutSeconds": 20 },
+  "onFailure": { "screenshot": true, "snapshot": true },
+  "steps": [
+    { "name": "helper-check", "action": "tap", "query": { "text": "Check again", "role": "button" } },
+    { "name": "helper-enabled", "action": "waitFor", "state": "exists", "query": { "text": "Background helper enabled" }, "timeoutSeconds": 30 },
+    { "name": "permission-continue", "action": "tap", "query": { "text": "Continue", "role": "button" } },
+    { "name": "website-ready", "action": "waitFor", "state": "exists", "query": { "role": "textField" } },
+    { "name": "website-skip-reveal", "action": "scrollTo", "optional": true, "timeoutSeconds": 5, "query": { "text": "Not now", "role": "button" } },
+    { "name": "website-skip", "action": "tap", "optional": true, "timeoutSeconds": 5, "query": { "text": "Not now", "role": "button" } },
+    { "name": "website-continue", "action": "tap", "optional": true, "timeoutSeconds": 5, "query": { "text": "Continue", "role": "button" } },
+    { "name": "summary", "action": "tap", "query": { "text": "Go to Session", "role": "button" } },
+    { "name": "session-ready", "action": "waitFor", "state": "exists", "query": { "text": "Paused items", "role": "button" }, "timeoutSeconds": 30 },
+    { "name": "session-shot", "action": "screenshot" }
+  ]
+}

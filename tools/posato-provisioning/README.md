@@ -36,7 +36,7 @@ blank value counting as absent.
 | Command | Effect |
 | --- | --- |
 | `doctor` | Every provisioning condition as OK, MISSING, or UNKNOWN with one remedy. Non-zero while an error-severity condition is unmet. |
-| `devices register` | Registers this Mac and every **wired** iPhone the account lacks. |
+| `devices register [--tart-vm <name>]...` | Registers this Mac, every **wired** iPhone, and each named running Tart VM the account lacks. |
 | `certificates ensure [--create]` | Reuses the certificate this Mac signs with; creates one only with `--create`. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes one App ID's development profile current and installs it. |
 

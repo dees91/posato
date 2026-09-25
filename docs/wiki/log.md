@@ -1895,3 +1895,14 @@ to scope, feasibility, or delivery.
 - Preliminary ideas 14 and 15, with discovery rows `TARGETS-007` and
   `TARGETS-008`, explore file export and import of the saved lists and quick
   sharing with a device on a different Apple Account.
+
+## [2026-09-24] experiment | Unattended verification on Tart VMs and a test iPhone
+
+- `QUALITY-010` measured and automated verification with nobody present:
+  macOS in Tart VMs answered over Virtualization's VNC server, iOS on a test
+  iPhone through XCUITest and SpringBoard, both on a test Apple Account.
+- The core flow and observed blocking and release ran unattended on both
+  targets; `AGENTS.md` now makes this the mandatory verification path and
+  forbids running the desktop app on the maintainer's Mac.
+- Updated [unattended verification](topics/unattended-verification.md) and
+  [macOS enforcement](topics/macos-enforcement.md).

@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "launch": { "terminateExisting": false },
+  "defaults": { "timeoutSeconds": 15 },
+  "onFailure": { "screenshot": true, "snapshot": true },
+  "steps": [
+    { "name": "request", "action": "tap", "query": { "text": "Allow Screen Time access", "role": "button" } },
+    { "name": "system-continue", "action": "tap", "query": { "scope": "springboard", "text": "Continue", "role": "button" } },
+    { "name": "system-allow", "action": "tap", "query": { "scope": "springboard", "textContains": "Allow with", "role": "button" } },
+    { "name": "face-id-retry", "action": "tap", "optional": true, "timeoutSeconds": 8, "query": { "scope": "springboard", "id": "com.apple.localauthentication.ax.authentication.button.try-again" } },
+    { "name": "face-id-fallback", "action": "tap", "optional": true, "timeoutSeconds": 8, "query": { "scope": "springboard", "id": "com.apple.localauthentication.ax.authentication.button.fallback" } },
+    { "name": "passcode", "action": "pressKeys", "secret": "devicePasscode", "timeoutSeconds": 10 },
+    { "name": "system-done", "action": "tap", "query": { "scope": "springboard", "text": "Done", "role": "button" } },
+    { "name": "allowed", "action": "waitFor", "state": "exists", "query": { "text": "Screen Time access allowed" }, "timeoutSeconds": 20 },
+    { "name": "allowed-shot", "action": "screenshot" }
+  ]
+}

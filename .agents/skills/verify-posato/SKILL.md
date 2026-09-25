@@ -25,6 +25,42 @@ or install, 6 unsupported.
 Read [`features/README.md`](features/README.md) before driving; it is the
 maintained map of user-facing features and the recipes that prove them.
 
+## Unattended by default
+
+Verification is unattended and it is not optional (`AGENTS.md`, Application
+verification): never ask the maintainer to click, type, or approve anything.
+**The desktop application never runs on the host Mac**: no launch, install,
+reset, uninstall, or replacement of the maintainer's own Posato. Build on the
+host, run in a Tart VM; the driver refuses every desktop command without
+`--vm` except `build`, `doctor`, and `artifacts`, and in every recipe below
+`-t desktop` means `-t desktop --vm primary` (or `peer`). An attended iOS step
+needs an extraordinary reason named in the execution record or pull request
+first, such as an iOS version the test iPhone does not run. When the
+environment below is missing a piece, report the failing command as a
+blocker; when a dialog or flow cannot be driven yet, extend `posato-control`.
+Device registrations for new Macs, iPhones, and golden VMs, certificates, and
+development profiles come from `tools/posato-provisioning`
+([`docs/development/apple-provisioning.md`](../../../docs/development/apple-provisioning.md)),
+never from the Apple Developer portal. With the one-time setup in
+[`docs/development/unattended-verification.md`](../../../docs/development/unattended-verification.md):
+
+- **macOS in Tart VMs.** `$PC build -t desktop`, then
+  `$PC vm create --line primary` (and `--line peer` for Mac-to-Mac sync).
+  Every desktop command takes `--vm primary|peer` and runs inside the guest;
+  evidence lands in `build/verification/runs/<run>/guest/`. System dialogs
+  are answered with `$PC vm prompt <kind> --line <line>`:
+  `admin` (SecurityAgent at session start and Resume restrictions),
+  `background` (helper approval in Login Items), `toggle --row <text>` (privacy
+  panes), `picker-bypass` (macOS 26 after screen captures), `gatekeeper`,
+  `account-password`, `mac-password`, and `device-passcode` (iCloud
+  recovery). Run the prompt right after the step that raises it; a scenario
+  that waits on the confirmed state can run in the background while the
+  prompt command answers. Finish with `$PC vm destroy --line <line>`; a
+  broken guest is deleted, never repaired.
+- **The test iPhone.** `-t device` as before. Screen Time consent is
+  `fixtures/scenarios/screen-time-consent.json` in one run; the application
+  picker is in the app's own accessibility tree.
+
 ## Launch
 
 Run everything from the repository root. Provision and build the CLI once per
@@ -48,13 +84,14 @@ $PC launch -t sim --fresh          # --fresh deletes the app's data on that simu
 $PC wait -t sim --for exists --text "Paused items" --role button --timeout-seconds 30
 ```
 
-Desktop (needs Accessibility and Screen Recording for the terminal or IDE
-that runs the agent; `doctor` names the host to grant):
+Desktop, always in a Tart VM (the golden VM's `tart-guest-agent` holds
+Accessibility and Screen Recording):
 
 ```shell
-$PC build -t desktop               # staged Posato.app; ad-hoc signed unless posato.macos.signingIdentity is set
-$PC launch -t desktop --capture-logs
-$PC wait -t desktop --for exists --text "Paused items" --role button --timeout-seconds 30
+$PC build -t desktop               # on the host: staged Posato.app, signed with posato.macos.signingIdentity
+$PC vm create --line primary       # disposable clone with the package; `vm sync` after a later build
+$PC launch -t desktop --vm primary --capture-logs
+$PC wait -t desktop --vm primary --for exists --text "Paused items" --role button --timeout-seconds 30
 ```
 
 Connected iPhone (needs `posato.apple.developmentTeam` in the ignored
@@ -295,7 +332,8 @@ POSATO_MACOS_004_PHYSICAL=1 \
 process; both fall back to the harness default and `local.properties`. The run
 is steered by marker files under `build/verification/macos-004/`
 (`ENABLE_APPROVED`, `APPLY_GO`, `ROWS_DONE`, `ABORT`), so it needs the
-maintainer at the Mac and is not an unattended check.
+maintainer at the Mac and is not an unattended check; like every desktop run it
+never runs on the host Mac.
 
 A harness run leaves state that `reset -t desktop` cannot clear, because that
 command only deletes the local databases: the root-owned ownership record at
@@ -345,6 +383,18 @@ so the developer's local data is unchanged.
   before ending early. The expiry fixtures select 25 minutes, decrease minutes
   twenty times, wait for a real five-minute expiry, and remove `example.com`.
   Desktop session runs split: `session-start-action-required-desktop.json` proves the
-  unattended action-required path when the administrator prompt goes unconfirmed, while
-  the full desktop start and expiry with enforcement are maintainer-attended rows because
-  no driver step can script the SecurityAgent dialog. See `features/sessions.md`.
+  action-required path when the administrator prompt goes unconfirmed. The full desktop
+  start and expiry with enforcement run unattended in a Tart VM, where
+  `vm prompt admin` confirms the SecurityAgent dialog. See `features/sessions.md`.
+- `onboarding-sync-desktop.json` and `onboarding-helper-finish-desktop.json` take a fresh
+  desktop install through iCloud consent and helper approval; run `vm prompt background`
+  between them in a VM.
+- `screen-time-consent.json` grants Screen Time access on the test iPhone through the
+  system sheets and the passcode keypad, reading the passcode from the Keychain item in
+  `local.properties`.
+- `onboarding-sync-consent-ios.json` takes a fresh iPhone install through iCloud consent,
+  Screen Time consent (the same steps in one run), and the remaining onboarding;
+  `choose-app-ios.json` picks Calculator in the picker; `observe-blocking-ios.json` and
+  `observe-unblocked-ios.json` open Calculator and `http://example.com` and assert the
+  Screen Time shield and Safari's "Website Not Allowed" page, or their absence; on the
+  desktop `observe` does the same in a VM (`features/sessions.md`, Observe blocking).

@@ -11,6 +11,8 @@ final class ElementQuery: Codable, Sendable {
   let index: Int?
   let within: ElementQuery?
   let near: ElementQuery?
+  /// `springboard` addresses iOS system dialogs and sheets instead of the application under test.
+  let scope: String?
 
   init(
     id: String? = nil,
@@ -19,7 +21,8 @@ final class ElementQuery: Codable, Sendable {
     role: String? = nil,
     index: Int? = nil,
     within: ElementQuery? = nil,
-    near: ElementQuery? = nil
+    near: ElementQuery? = nil,
+    scope: String? = nil
   ) {
     self.id = id
     self.text = text
@@ -28,6 +31,7 @@ final class ElementQuery: Codable, Sendable {
     self.index = index
     self.within = within
     self.near = near
+    self.scope = scope
   }
 }
 
@@ -93,6 +97,12 @@ struct Step: Codable {
   var maxDepth: Int?
   var seconds: Double?
   var orientation: String?
+  var bundleId: String?
+  var url: String?
+  /// Names a secret the host passes in `POSATO_SECRET_<NAME>`; the value never appears in the scenario.
+  var secret: String?
+  /// A missing element does not fail the step, for surfaces that only appear on some paths.
+  var optional: Bool?
 
   init(action: String, name: String? = nil, query: ElementQuery? = nil) {
     self.action = action

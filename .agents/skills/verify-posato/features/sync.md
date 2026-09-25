@@ -59,9 +59,30 @@ record and distinguish timer, action-required, and actual enforcement proof.
 
 ## Driving it with posato-control
 
+### In Tart VMs (unattended)
+
+Use a primary and a peer clone (`vm create --line primary|peer`), each from its
+own golden VM line, and address them with `--vm primary|peer`.
+
+- Start from an empty workspace. A clone never receives a workspace key that
+  an earlier clone of the same line created, so when a primary clone waits for
+  the key, link the peer (it can read that key), press **Remove workspace**
+  on the peer and confirm, press **Check again** on the primary until **Sync
+  with iCloud** returns, establish there, and then let the peer join.
+- iCloud may need renewal in a clone. "This Mac can't connect to iCloud"
+  (Apple Account Settings, second click) and "Some iCloud Data Isn't Syncing"
+  (Resume Data Sync) are answered with `vm prompt account-password`, then
+  `vm prompt mac-password` and `vm prompt device-passcode` for iCloud
+  Keychain. The key then arrives without another press.
+- A session started on the primary reaches the peer after **Sync now**; the
+  peer shows Resume restrictions and needs its own `vm prompt admin`.
+  Application choices stay local, so only the website is paused there.
+
+### Between a Mac VM and the test iPhone
+
 Read `tools/posato-control/README.md` for commands and scenario syntax. Use a
-signed Mac package and a connected unlocked development-signed iPhone on the
-same maintainer-owned iCloud account. `doctor` must confirm the signing
+Tart VM clone (`--vm primary`, never the host Mac) and the connected test
+iPhone, both signed in to the test Apple Account. `doctor` must confirm the signing
 identity,
 profile, companion, development team, and device. The Simulator proves only
 local behavior and truthful degradation without its own iCloud account.
@@ -114,12 +135,16 @@ during `MVP-001`.
    On Mac, compare counts before and after each step using the read-only
    queries below; registrations are also bundles, so establish the baseline
    before adding the domain. A repeat exchange must not add accepted entries.
-5. For offline retry, ask the maintainer to disconnect the authoring target
-   (airplane mode with Wi-Fi off on iPhone). Add a domain; the save stays local
+5. For offline retry, disconnect the authoring target: a Mac VM clone, never
+   the host Mac. The driver has no network toggle yet (`open`); add one to
+   `posato-control` when a task needs this step instead of asking the
+   maintainer. Add a domain; the save stays local
    while sync reports retryable. Reconnect, press **Sync now**, and verify one
-   acceptance on the peer. Never alter system connectivity without coordination.
-6. For the account gate, arrange pending work offline, then ask the maintainer
-   to sign out before the next attempt. Expect action required, unchanged
+   acceptance on the peer. Never alter the host Mac's connectivity.
+6. For the account gate, arrange pending work offline, then sign the VM clone
+   out of the test Apple Account in System Settings over `vm click` before the
+   next attempt (not yet driven, `open`; extend the driver rather than asking
+   the maintainer). Expect action required, unchanged
    pending/accepted counts and cursor state. Restore the original account and
    retry, then verify one peer acceptance. Run in both directions. Device DB
    access is unavailable; Mac reception and device status are the evidence.

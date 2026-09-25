@@ -13,6 +13,14 @@ enum class ConfigurationKey(
     MACOS_SYNC_PROVISIONING_PROFILE("posato.macos.syncProvisioningProfile", "POSATO_MACOS_SYNC_PROVISIONING_PROFILE"),
     SIMULATOR("posato.control.simulator", "POSATO_CONTROL_SIMULATOR"),
     DEVICE("posato.control.device", "POSATO_CONTROL_DEVICE"),
+    DEVICE_PASSCODE_KEYCHAIN_SERVICE("posato.control.devicePasscodeKeychainService", "POSATO_CONTROL_DEVICE_PASSCODE_KEYCHAIN_SERVICE"),
+    DEVICE_PASSCODE_KEYCHAIN_ACCOUNT("posato.control.devicePasscodeKeychainAccount", "POSATO_CONTROL_DEVICE_PASSCODE_KEYCHAIN_ACCOUNT"),
+    VM_PRIMARY_GOLDEN("posato.vm.primaryGolden", "POSATO_VM_PRIMARY_GOLDEN"),
+    VM_PEER_GOLDEN("posato.vm.peerGolden", "POSATO_VM_PEER_GOLDEN"),
+    VM_ADMIN_KEYCHAIN_SERVICE("posato.vm.adminKeychainService", "POSATO_VM_ADMIN_KEYCHAIN_SERVICE"),
+    VM_ADMIN_KEYCHAIN_ACCOUNT("posato.vm.adminKeychainAccount", "POSATO_VM_ADMIN_KEYCHAIN_ACCOUNT"),
+    VM_ACCOUNT_KEYCHAIN_SERVICE("posato.vm.accountKeychainService", "POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE"),
+    VM_ACCOUNT_KEYCHAIN_ACCOUNT("posato.vm.accountKeychainAccount", "POSATO_VM_ACCOUNT_KEYCHAIN_ACCOUNT"),
 }
 
 enum class ConfigurationSource { ENVIRONMENT, LOCAL_PROPERTIES, ABSENT }

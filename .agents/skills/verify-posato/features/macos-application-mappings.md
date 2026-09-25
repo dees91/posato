@@ -34,7 +34,8 @@ Preconditions:
   refuses to start the helper and the button reports `The application picker
   could not be opened.`. `./gradlew quality` restages ad-hoc, so run
   `$PC build -t desktop` after it.
-- Accessibility and Screen Recording are granted to the agent's host.
+- The app runs in a Tart VM clone (`--vm primary`), whose golden VM grants
+  Accessibility and Screen Recording to `tart-guest-agent`.
 - The picker steps address the helper process, so the Mac must not be locked
   and no other application may steal the front while the panel is open; the
   driver brings the helper forward itself and refuses rather than typing
