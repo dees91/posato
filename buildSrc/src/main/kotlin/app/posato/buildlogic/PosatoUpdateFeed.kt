@@ -2,6 +2,8 @@ package app.posato.buildlogic
 
 import org.gradle.api.GradleException
 import org.w3c.dom.Element
+import org.xml.sax.ErrorHandler
+import org.xml.sax.SAXParseException
 import java.io.ByteArrayInputStream
 import java.security.KeyFactory
 import java.security.Signature
@@ -40,7 +42,7 @@ object PosatoUpdateFeed {
     const val MINIMUM_SYSTEM_VERSION = "15.0"
     const val HARDWARE_REQUIREMENTS = "arm64"
 
-    private const val SPARKLE_NAMESPACE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
+    internal const val SPARKLE_NAMESPACE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
     private const val SIGNATURE_BLOCK = "<!-- sparkle-signatures:"
     private const val ED25519_PUBLIC_KEY_PREFIX = "302a300506032b6570032100"
     private const val ED25519_KEY_BYTES = 32
@@ -59,6 +61,7 @@ object PosatoUpdateFeed {
         publicKey: String?,
     ): UpdateFeedConfiguration {
         verifyContract()
+        PosatoPublishedFeed.verifyContract()
         return when (channel) {
             null -> development(feedUrl, publicKey)
             UpdateChannel.RELEASE.propertyValue -> release(feedUrl, publicKey)
@@ -198,14 +201,15 @@ object PosatoUpdateFeed {
         name: String,
     ): String? = item.getElementsByTagNameNS(SPARKLE_NAMESPACE, name).item(0)?.textContent?.trim()
 
-    private fun parse(xml: ByteArray): org.w3c.dom.Document? {
+    /** Parses [xml] namespace-aware without DOCTYPEs; null, without console noise, when it is not well-formed. */
+    internal fun parse(xml: ByteArray): org.w3c.dom.Document? {
         val factory = DocumentBuilderFactory.newInstance().apply {
             isNamespaceAware = true
             setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true)
             setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
         }
         return try {
-            factory.newDocumentBuilder().parse(ByteArrayInputStream(xml))
+            factory.newDocumentBuilder().apply { setErrorHandler(QuietXmlErrors) }.parse(ByteArrayInputStream(xml))
         } catch (_: org.xml.sax.SAXException) {
             null
         }
@@ -310,4 +314,13 @@ object PosatoUpdateFeed {
             throw GradleException("The Posato update feed rules failed their regression contract.")
         }
     }
+}
+
+/** The parser's default error handling without printing: fatal errors throw, recoverable problems stay silent. */
+private object QuietXmlErrors : ErrorHandler {
+    override fun warning(exception: SAXParseException) = Unit
+
+    override fun error(exception: SAXParseException) = Unit
+
+    override fun fatalError(exception: SAXParseException): Unit = throw exception
 }

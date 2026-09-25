@@ -141,7 +141,9 @@ A rejected submission leaves the notarization log under the task's `build/tmp` d
 
 A development package takes no channel and embeds a feed only when both `posatoMacOsUpdateFeedUrl` and `posatoMacOsUpdatePublicKey` are passed.
 
-The release key lives only in the maintainer's login Keychain under account `posato-release`, with an encrypted backup outside the repository. Tools read it only from the Keychain; never pass `-s`, `--ed-key-file`, or an environment variable. Test candidates signed with this key use build numbers that the next stable release must exceed; the `MACOS-011` execution record lists them. Pass the highest of them as `-PposatoMacOsPreviousBuildNumber` for the first release so the validation enforces it.
+The release key lives only in the maintainer's login Keychain under account `posato-release`, with an encrypted backup outside the repository. Tools read it only from the Keychain; never pass `-s`, `--ed-key-file`, or an environment variable. Test candidates signed with this key use build numbers that the next stable release must exceed; the `MACOS-011` execution record lists them.
+
+A release feed takes its previous build from the published stable feed. The task downloads `appcast.xml` from the URL above over HTTPS, following GitHub's redirect to the release asset, with a 30-second limit and a 256 KiB size cap, and reads the highest `sparkle:version` among its items. `-PposatoMacOsPreviousBuildNumber` only raises that floor, for example above a test candidate signed with the release key after the last stable release. The build number must exceed the higher of the two, or the task stops before it signs the feed and names both numbers. When the stable feed URL returns HTTP 404 (no release yet, or a latest release without `appcast.xml`), the property is required instead. Any other download or parse failure stops the task; there is no switch to skip the check. A candidate feed never downloads the stable feed and uses only the property.
 
 To build a release together with its signed feed:
 
@@ -149,7 +151,6 @@ To build a release together with its signed feed:
 ./gradlew :desktopApp:generateMacOsUpdateFeed \
   -PposatoMacOsUpdateChannel=release \
   -PposatoMacOsBuildNumber=<next build number> \
-  -PposatoMacOsPreviousBuildNumber=<previous stable build number> \
   -PposatoMacOsReleaseNotes=<plain-text notes>.txt \
   "-PposatoMacOsReleaseSigningIdentity=Developer ID Application: <name> (<team>)" \
   -PposatoMacOsSyncDeveloperIdProfile=~/Library/Developer/Posato/Posato_macOS_Sync_Developer_ID.provisionprofile
@@ -158,7 +159,7 @@ To build a release together with its signed feed:
 The task runs the whole notarized chain above, then copies the stapled DMG as `Posato-<version>.dmg` into a clean `build/compose/binaries/main/release-feed/`. It runs Sparkle's `generate_appcast` with the Keychain key, embedded plain-text notes, and no deltas. Signing raises a Keychain prompt for the release key. The task then checks the result against the DMG and the key embedded in the application, and refuses to finish unless all of the following hold:
 
 - both the feed signature and the archive signature verify;
-- the feed has exactly one item, whose `sparkle:version` equals `CFBundleVersion` and exceeds the previous build;
+- the feed has exactly one item, whose `sparkle:version` equals `CFBundleVersion` and exceeds the release floor above;
 - the item requires macOS 15.0 and arm64 and carries no release-notes link or deltas;
 - the enclosure points to `releases/download/v<version>/Posato-<version>.dmg` and its length matches the DMG.
 
