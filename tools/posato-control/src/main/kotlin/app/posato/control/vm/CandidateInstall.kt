@@ -205,7 +205,7 @@ class CandidateInstall(
         val howQuit = if (quit.exitCode == 0) {
             "quit"
         } else {
-            guest(line, "/bin/kill -TERM \$(/usr/bin/pgrep -x Posato)", "Terminating the candidate after it refused to quit")
+            guest(line, "/usr/bin/pkill -TERM -x Posato || true", "Terminating the candidate after it refused to quit")
             "terminated after refusing to quit: ${quit.stderr.trim()}"
         }
         awaitGuest(line, "! /usr/bin/pgrep -x Posato", timeoutMs, "The candidate's exit after its first launch")

@@ -10,30 +10,14 @@
 
 ## Plan
 
-1. Driver: `vm install --dmg --replace` moves an installed older build to the
-   guest Trash and installs the candidate as a person would; own review and a
-   VM run (public 1.0.0, then notarized build 25 over it).
-2. Release commit: `MARKETING_VERSION = 1.1.0`; the ADR 0008 privacy and
-   availability passages reconciled with the `MACOS-011` measurements and dated
-   for the publication day; README, website availability and privacy summary;
-   release notes and the App Store "What's New" text (not tracked).
-3. Candidates from R (branch head after steps 1-2): clean-clone `quality`;
-   macOS build 26 through `generateMacOsUpdateFeed` on the release channel with
-   previous build 25 (Keychain prompt); iOS build above the highest in App
-   Store Connect, archived, inspected, uploaded, `VALID` in TestFlight.
-4. Unattended verification: macOS 26 VM from 1.0.0 to 1.1.0 with `--replace`
-   and preserved state, consent, core flow; macOS 15 VM fresh install and core
-   flow; the same revision on the test iPhone; store screenshots against the
-   1.1 UI. iOS 18: the maintainer checks the TestFlight build (D1).
-5. One completed-change review, closeout of this record, `gh pr ready 84`; no
-   hosted review (version string and documentation; the driver change has its
-   own local review). The maintainer merges.
-6. Publication right after the merge: tag `v1.1.0` on the squash commit only if
-   its product tree equals R, draft release with the three assets, byte-for-byte
-   check of the downloads, publication as latest, public feed check, site check,
-   App Store version 1.1.0 with automatic release (D2) submitted. Projects Done
-   and milestone `1.1.0` closed at publication.
-7. Follow-up PR after App Review: outcome, ADR 0008 status, wiki.
+The brief's plan, revision 2 after the plan review: driver `--replace`;
+release commit (version and wording); candidates from a clean clone of R;
+unattended verification on macOS 26, macOS 15, and the test iPhone; store
+screenshots; D1 on iOS 18; one completed-change review; the maintainer merges.
+Publication follows the merge in one sitting (tag, draft release, byte
+comparison, publication, feed and site checks), then App Review with
+automatic release (D2). Projects Done and milestone `1.1.0` closed at
+publication; a follow-up PR records the App Review outcome.
 
 ## High-risk plan review
 
@@ -74,15 +58,20 @@
   is unchanged since 1.0.0, so 1.1 does not introduce it. `user-confirmed`,
   2026-09-25: publish 1.1 with the limit stated on the availability page and
   fix it in release 1.2 (roadmap revision 8), with no patch release.
-- **TB-08 / T-13.** Sparkle 2.10.0 pinned; the feed and archive signatures
-  and the enclosure were validated against the DMG before publication; the
-  release key stayed in the maintainer's Keychain and was used through one
-  Keychain prompt; the application embeds only the stable feed and the
-  tracked key.
+- **TB-08 / T-13.** Sparkle 2.10.0 pinned and listed in
+  `THIRD_PARTY_NOTICES.md`; least entitlements checked (verification table);
+  feed and archive signatures and the enclosure validated against the DMG
+  before publication; the release key stayed in the maintainer's Keychain
+  (one prompt); the application embeds only the stable feed and the tracked
+  key.
 
 ## Completed-change review
 
-- **Verdict:** pending
+- **Verdict:** approved; no Critical or Required findings.
+- **Recommended, applied:** iPhone availability not claimed before App
+  Review; platform rows name 1.1.0; this record shortened; T-13 license and
+  entitlement clauses. The driver's terminate fallback tolerates an app that
+  already exited.
 
 ## Verification
 
@@ -99,7 +88,7 @@ Evidence: ignored `build/verification/release-003/` (run groups 01-12).
 | macOS 15 VM: fresh 1.1.0 | pass | onboarding with iCloud received a website from the macOS 26 install; session blocked, reboot and Resume, early end, allowed |
 | Test iPhone (iOS 26.5), dev-signed R | pass with `IOS-006` | start, Calculator shield, Safari "Website Not Allowed", early end, unblocked; relaunch defect above |
 | Store screenshots | refreshed | iPhone 6.9-inch and iPad 13-inch sets, 1.1 UI |
-| iOS 18 (D1) | pending | maintainer check of TestFlight build 4 |
+| iOS 18 (D1) | pass, `user-confirmed` | the maintainer installed TestFlight build 4 on an iPhone with iOS 18: www note, session with a website and an app blocked, early end unblocked |
 
 ## Blockers and accepted risks
 

@@ -7,14 +7,14 @@
 - **Provenance:** `user-confirmed`
 
 The Availability, Limits, and Supported platforms sections were relocated
-verbatim from the root README as accepted in `RELEASE-001`, and `RELEASE-002`
-updated Availability for the 1.0 release; the README keeps a
+verbatim from the root README as accepted in `RELEASE-001`; `RELEASE-002` and
+`RELEASE-003` updated Availability for the 1.0 and 1.1 releases; the README keeps a
 summary and links here. The Planned platforms section records the maintainer's
 2026-09-16 direction for later releases.
 
 ## Availability
 
-Posato 1.1 is available for Mac and iPhone.
+Posato 1.1 for Mac is available from GitHub Releases, and Posato for iPhone from the App Store.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |
@@ -80,10 +80,10 @@ covers both lines:
 
 | System | What was checked |
 | --- | --- |
-| macOS 15 | A pre-release 1.1 build on macOS 15.6.1 (the newest macOS 15 restore image) in a virtual machine on Apple silicon: setup with iCloud and the helper, websites and apps, blocking, relaunch, early end, expiry, and sync with a Mac on macOS 26 in both directions |
-| macOS 26 | The same flow in virtual machines on macOS 26.6 ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
-| iOS 18 | Posato 1.0.0 from the App Store, checked by hand on an iPhone with iOS 18 |
-| iOS 26 | The core flow, blocking, and unblocking on a test iPhone with iOS 26.5 ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
+| macOS 15 | Posato 1.1.0 on macOS 15.6.1 (the newest macOS 15 restore image) in a virtual machine on Apple silicon: setup with iCloud and the helper, websites and apps, blocking, relaunch, early end, expiry, and sync with a Mac on macOS 26 in both directions |
+| macOS 26 | The same flow in virtual machines on macOS 26.6, and Posato 1.1.0 installed over 1.0.0 with the saved websites, apps, and iCloud workspace kept ([1.1 release record](../tasks/executions/release-003-release-1-1.md)) |
+| iOS 18 | Posato 1.0.0 from the App Store and the 1.1.0 build from TestFlight, checked by hand on an iPhone with iOS 18: websites and apps, blocking, and early end |
+| iOS 26 | The core flow, blocking, and unblocking on a test iPhone with iOS 26.5, for 1.0 and 1.1 ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
 
 Later macOS 15 updates were not checked separately.
 
