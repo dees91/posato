@@ -33,6 +33,7 @@ data class CandidateInstallation(
     val unregistered: List<String>,
     val registrations: List<String>,
     val replaced: String? = null,
+    val firstOpenQuit: String = "quit",
 )
 
 /**
@@ -86,7 +87,7 @@ class CandidateInstall(
             .requireSuccess(ErrorCode.INSTALL_FAILED, "Gatekeeper's assessment of the candidate").stdout.trim()
         val signing = guestOutput(line, "/usr/bin/codesign -dv --verbose=2 $INSTALLED_APPLICATION 2>&1").stdout
         val quarantineBeforeOpen = quarantine(line)
-        val executable = firstOpen(line, facts.getValue(BUNDLE_IDENTIFIER), timeoutMs)
+        val (executable, firstOpenQuit) = firstOpen(line, facts.getValue(BUNDLE_IDENTIFIER), timeoutMs)
         guest(
             line,
             "mkdir -p \"$GUEST_ROOT/build/verification\" && printf %s $INSTALLED_APPLICATION > \"$GUEST_ROOT/$MARKER\"",
@@ -108,6 +109,7 @@ class CandidateInstall(
             unregistered = unregistered,
             registrations = registrations,
             replaced = replaced,
+            firstOpenQuit = firstOpenQuit,
         )
         val evidence = context.artifactPath("candidate-install.json")
         Files.createDirectories(evidence.parent)
@@ -186,18 +188,26 @@ class CandidateInstall(
 
     /**
      * Opens the candidate through LaunchServices, answers Gatekeeper, and requires that the process runs from
-     * `/Applications` rather than a translocated copy; then quits it so the first tracked launch starts cleanly.
+     * `/Applications` rather than a translocated copy; then quits it so the first tracked launch starts cleanly. A
+     * replaced installation whose setup is complete opens with the update-consent sheet, which refuses the quit
+     * request; the sheet belongs to the verified flow, so the process is then terminated instead of answering it.
      */
     private fun firstOpen(
         line: VmLine,
         bundleIdentifier: String,
         timeoutMs: Long
-    ): String {
+    ): Pair<String, String> {
         guest(line, "/usr/bin/open $INSTALLED_APPLICATION", "Opening the candidate")
         VmPrompts(context).answer(line, GuestPrompt.GATEKEEPER, timeoutMs)
         awaitGuest(line, "/usr/bin/pgrep -x Posato", timeoutMs, "The candidate's first launch")
         val executable = guestOutput(line, "/bin/ps -o comm= -p \$(/usr/bin/pgrep -x Posato | head -n 1)").stdout.trim()
-        guest(line, "/usr/bin/osascript -e ${shellQuote("quit app id \"$bundleIdentifier\"")}", "Quitting the candidate after its first launch")
+        val quit = guestOutput(line, "/usr/bin/osascript -e ${shellQuote("quit app id \"$bundleIdentifier\"")}")
+        val howQuit = if (quit.exitCode == 0) {
+            "quit"
+        } else {
+            guest(line, "/bin/kill -TERM \$(/usr/bin/pgrep -x Posato)", "Terminating the candidate after it refused to quit")
+            "terminated after refusing to quit: ${quit.stderr.trim()}"
+        }
         awaitGuest(line, "! /usr/bin/pgrep -x Posato", timeoutMs, "The candidate's exit after its first launch")
         if (executable != INSTALLED_EXECUTABLE) {
             throw ControlException(
@@ -206,7 +216,7 @@ class CandidateInstall(
                 "A translocated application cannot be updated; install it by drag and drop into a fresh clone.",
             )
         }
-        return executable
+        return executable to howQuit
     }
 
     private fun awaitGuest(

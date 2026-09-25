@@ -409,7 +409,10 @@ with a notarized candidate, for update and release checks:
    remains.
 4. It records Gatekeeper's assessment and the signature, opens the candidate
    through LaunchServices, answers Gatekeeper's first-open question, requires
-   that the process runs from `/Applications`, and quits it.
+   that the process runs from `/Applications`, and quits it. A replaced
+   installation whose setup is complete opens with the update-consent sheet,
+   which refuses the quit; the command then terminates the process instead of
+   answering the sheet, and records that as `firstOpenQuit`.
 5. A marker under the guest's `build/verification/` then points every desktop
    command at `/Applications/Posato.app`. `vm sync` copies only the driver and
    repeats the single-bundle check.
