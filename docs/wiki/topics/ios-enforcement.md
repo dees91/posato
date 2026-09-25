@@ -263,6 +263,13 @@ Production were not exercised on this build.
 - ~~What App Group callback protocol is the minimum safe implementation for
   scheduled expiry?~~ Answered for the MVP by `IOS-002`: pending/cleared
   versioned records in a dedicated `SuspendedExpiry` directory.
+- `open` (2026-09-25, `RELEASE-003`): relaunching Posato during a session
+  can end it as expired and lift its restrictions on the test iPhone (4 of 6
+  relaunches, every fast XCUITest relaunch). `inferred` from code: re-applying
+  the same session stops and restarts Device Activity monitoring, and an
+  interval-end callback can then write a cleared record for the running
+  session. The path is unchanged since 1.0.0; `IOS-006` fixes it in release
+  1.2, and the availability page states the limit until then.
 - Which iOS browsers are included in the support promise?
 - What should happen when a selection becomes invalid or the device restores
   from backup?
