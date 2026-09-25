@@ -3,6 +3,7 @@ package app.posato.control.vm
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
@@ -44,6 +45,38 @@ class VmSupportTest {
     fun `a clone is refused when its name is taken or the golden VM is missing`() {
         assertFailsWith<ControlException> { refuseClone(listOf(TartVm("golden-a", false), TartVm("run-a", false)), "golden-a", "run-a") }
         assertFailsWith<ControlException> { refuseClone(emptyList(), "golden-a", "run-a") }
+    }
+
+    @Test
+    fun `a direct boot is refused beside its running golden VM`() {
+        val failure = assertFailsWith<ControlException> {
+            refuseBoot(listOf(TartVm("run-a", false), TartVm("golden-a", true)), "golden-a", "run-a")
+        }
+
+        assertEquals(ErrorCode.VM_UNAVAILABLE, failure.code)
+        assertContains(failure.message.orEmpty(), "golden-a")
+    }
+
+    @Test
+    fun `a direct boot is refused when two guests already run, even with no golden VM`() {
+        val vms = listOf(TartVm("run-a", false), TartVm("x", true), TartVm("y", true))
+
+        val failure = assertFailsWith<ControlException> { refuseBoot(vms, golden = null, target = "run-a") }
+
+        assertContains(failure.message.orEmpty(), "Two macOS guests")
+    }
+
+    @Test
+    fun `a direct boot needs a stopped target, and no golden VM while the first image is prepared`() {
+        refuseBoot(listOf(TartVm("run-a", false)), golden = null, target = "run-a")
+        refuseBoot(listOf(TartVm("run-a", false)), golden = "run-a", target = "run-a")
+        refuseBoot(listOf(TartVm("run-a", false), TartVm("golden-a", false), TartVm("x", true)), "golden-a", "run-a")
+
+        assertContains(assertFailsWith<ControlException> { refuseBoot(emptyList(), "golden-a", "run-a") }.message.orEmpty(), "No VM")
+        assertContains(
+            assertFailsWith<ControlException> { refuseBoot(listOf(TartVm("run-a", true)), "golden-a", "run-a") }.message.orEmpty(),
+            "already runs",
+        )
     }
 
     @Test

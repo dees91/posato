@@ -46,6 +46,43 @@ internal fun refuseClone(
     reason?.let { throw ControlException(ErrorCode.VM_UNAVAILABLE, it, "Stop or destroy the listed VM first (`posato-control vm destroy`).") }
 }
 
+/**
+ * Refuses a direct boot of the line's existing VM under the same rules as [refuseClone]. The golden VM is optional:
+ * while a line's first golden image is prepared under the clone's name, no golden VM exists yet.
+ */
+internal fun refuseBoot(
+    vms: List<TartVm>,
+    golden: String?,
+    target: String
+) {
+    val vm = vms.firstOrNull { it.name == target }
+    val running = vms.filter { it.running }.joinToString { it.name }
+    val (reason, hint) = when {
+        vm == null -> {
+            "No VM named '$target' exists." to "Create it with `tart create` or `posato-control vm create`."
+        }
+
+        vm.running -> {
+            "The VM '$target' already runs." to "Use it, or stop it with `posato-control vm shutdown`."
+        }
+
+        vms.any { it.name == golden && it.running } -> {
+            "The golden VM '$golden' is running; booting its clone beside it would change one provisioning identity." to
+                "Stop the golden VM first (`tart stop $golden`)."
+        }
+
+        vms.count { it.running } >= MAX_RUNNING_GUESTS -> {
+            "Two macOS guests already run ($running), the most Virtualization allows." to
+                "Stop one of them first (`posato-control vm shutdown --line <line>` for a run clone, `tart stop <name>` otherwise)."
+        }
+
+        else -> {
+            return
+        }
+    }
+    throw ControlException(ErrorCode.VM_UNAVAILABLE, reason, hint)
+}
+
 private val VNC_URL = Regex("""vnc://:([^@\s]+)@([^:\s]+):(\d+)""")
 
 /** The endpoint `tart run --no-graphics --vnc-experimental` prints once the server listens. */

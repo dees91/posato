@@ -99,10 +99,7 @@ class VmLifecycle(
      * before `tart rename`. It waits only for the VNC address: the guest agent may not be installed yet.
      */
     fun boot(line: VmLine): JsonObject {
-        if (tart.list().none { it.name == line.cloneName }) {
-            throw ControlException(ErrorCode.VM_UNAVAILABLE, "No VM named ${line.cloneName} exists.", "Create it with tart create or vm create.")
-        }
-        if (running(line)) throw ControlException(ErrorCode.VM_UNAVAILABLE, "${line.cloneName} already runs.")
+        refuseBoot(tart.list(), context.configuration.value(line.goldenKey), line.cloneName)
         val log = ownerOnlyFile(vmDirectory(context, line).resolve(RUN_LOG))
         tart.start(line.cloneName, hostJdk(context), log)
         vmEndpoint(context, line, BOOT_TIMEOUT_MS)

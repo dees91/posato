@@ -64,14 +64,18 @@ guests: `legacy` (macOS 15.6.1) and a macOS 26.6.2 clone.
   and no longer calls the iOS 18 row a 1.1 check; the driver configuration
   table lists the new keys; the guide names the setup script's steps; this
   record names the attended iOS reason.
+- **Hosted review (pass 1):** one P2, accepted by the maintainer: `vm boot`
+  now refuses a start beside the line's running golden VM or when two guests
+  already run, like `vm create`, and still boots when no golden VM exists yet.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | macOS 15 core flow in Tart | pass | table above |
-| `./gradlew :posato-control:check` | pass | after the review corrections |
-| `./gradlew quality` | pass | after the review corrections |
+| `./gradlew :posato-control:check` | pass | after the hosted review correction |
+| `./gradlew quality` | pass | after the hosted review correction |
+| `vm boot` guard on the legacy line | pass | runs 24-28: refused while running, booted when stopped; the golden-VM and two-guest refusals are unit-tested only |
 
 ## Blockers and accepted risks
 
