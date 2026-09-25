@@ -1913,3 +1913,11 @@ to scope, feasibility, or delivery.
   start or early end reliably from the device that made it. Origin: the
   `QUALITY-010` observation recorded in
   [unattended verification](topics/unattended-verification.md).
+
+## [2026-09-25] decision | Backlog ideas 16 and 17
+
+- Added idea 16, a standalone macOS and iOS verification tool from the
+  reusable core of `posato-control`, as backlog row `QUALITY-011`, and idea
+  17, silencing notifications without blocking the application, as backlog
+  row `FILTER-003` (roadmap revision 6). Both are preliminary discovery rows;
+  see [open questions](topics/mvp-open-questions.md#post-mvp-feature-ideas-for-discovery).
