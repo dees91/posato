@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 7 (amended 2026-09-25: `PAUSE-001` clarified with the
-  layered direction from idea 11)
+- **Revision:** 8 (amended 2026-09-25: release 1.1.1 added for the iPhone
+  session lost on relaunch)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-25
@@ -34,7 +34,11 @@
   row from idea 17 (silencing notifications without blocking the
   application). Revision 7 clarifies the `PAUSE-001` outcome with the
   layered direction recorded in idea 11; its assignment condition is
-  unchanged.
+  unchanged. Revision 8 adds release 1.1.1 with `IOS-006` and `RELEASE-006`
+  for a defect that `RELEASE-003` reproduced on the test iPhone: relaunching
+  Posato during a session can end it as expired and lift its restrictions.
+  The code path is unchanged since 1.0.0, so the maintainer chose to publish
+  1.1 and fix it in a patch release (`user-confirmed`, 2026-09-25).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -169,6 +173,17 @@ Low product risk except the update path, which revises an accepted contract.
 | `QUALITY-007` | Verify the accepted flow on macOS 15 in a virtual machine on the supported Mac and on iOS 18 on a physical iPhone with the 1.1 candidates, and update the availability page with the verified matrix or its stated gaps. | Verification | delivery | R1.1/W2 | `SESSION-004`, `ONBOARDING-003`, `TARGETS-006`, `IOS-004` | PR-PLATFORM-MATRIX |
 | `RELEASE-003` | Verify the 1.1.0 candidates, publish the notarized DMG through GitHub Releases with release notes, submit the iOS build to App Review, and hand the maintainer only account-owned steps. | Release readiness | delivery | R1.1/W3 | `MACOS-011`, `QUALITY-007` | PR-RELEASE-1-1 |
 
+## Release 1.1.1: keep an iPhone session across a relaunch
+
+Theme: a patch release for one enforcement defect on iOS. Only the iOS
+binary changes, so the macOS release and update feed stay at 1.1.0 and the
+patch GitHub Release, if any, is published with `--latest=false`.
+
+| Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
+| --- | --- | --- | --- | --- | --- | --- |
+| `IOS-006` | Keep an active iPhone session and its restrictions when Posato is relaunched during the session: re-applying the same session must not stop and restart its Device Activity monitoring, and an interval-end callback that arrives before the planned end must not end the session. Prove it with repeated relaunches on the test iPhone, including a fast relaunch, and keep the `IOS-002` suspended expiry working. High-risk. | Sessions and enforcement | delivery | R1.1.1/W1 | `RELEASE-003` | PR-IOS-RELAUNCH |
+| `RELEASE-006` | Verify the 1.1.1 iOS candidate, submit it to App Review, and remove the relaunch limit from the availability page once it is live. | Release readiness | delivery | R1.1.1/W2 | `IOS-006` | PR-RELEASE-1-1-1 |
+
 ## Release 1.2: the Mac always at hand
 
 Theme: let a session live on the Mac without the main window and without a
@@ -240,7 +255,8 @@ The idea numbers refer to the wiki idea queue.
 | Session notifications | `NOTIFY-001` | Physical permission flow, start and end notifications on both platforms |
 | Intel Macs | `MACOS-015`, `MACOS-016` | Accepted ADR 0003 revision, notarized x86-64 candidate verified on the 2019 MacBook Air |
 | Schedule decision | `SCHEDULE-001` | Accepted product decision and delivery plan |
-| Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005` | GitHub Release with checksums, App Review outcome, availability page and site updated |
+| iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
+| Published releases | `RELEASE-003`, `RELEASE-006`, `RELEASE-004`, `RELEASE-005` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
 ## Manual and physical gates
 
@@ -251,7 +267,7 @@ The idea numbers refer to the wiki idea queue.
 | macOS 15 virtual machine and iOS 18 iPhone | `QUALITY-007` | The maintainer provides the virtual machine image and the iOS 18 device, or the row records the gap on the availability page. |
 | Persistent authorization security review | `MACOS-014` | An independent review of the ADR 0004 revision passes before implementation. |
 | 2019 MacBook Air | `MACOS-016` | The notarized x86-64 candidate passes the accepted flow on the maintainer's device. |
-| App Review per iOS release | `RELEASE-003`–`RELEASE-005` | The submitted build is approved or the row records the rejection and its clearing condition. |
+| App Review per iOS release | `RELEASE-003`–`RELEASE-006` | The submitted build is approved or the row records the rejection and its clearing condition. |
 
 No credential, signing identity, update signing key, provisioning profile,
 private device ID, raw capture, opaque application token, real-person domain,
