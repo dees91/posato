@@ -182,8 +182,9 @@ desktop commands outside a virtual machine except `build`, `doctor`, and
   SpringBoard, and how often the automation-mode passcode returns over days.
 - `open`: a guest network toggle and an Apple Account sign-out in a VM for the
   offline-retry and account-gate sync steps.
-- `open`: whether an interrupted post-start upload on iOS needs an automatic
-  retry (candidate product row, maintainer decision).
+- `user-confirmed` 2026-09-25: the interrupted post-start upload on iOS is
+  backlog row `SYNC-020` (reproduce, then automatic retry and background
+  time); a push path to the Mac is not part of it.
 - `observed` answer to the packaging question: `posato-control` treats a VM as a
   location of the desktop target (`--vm primary|peer`) with `vm create`,
   `sync`, `destroy`, and `prompt`; the one-time setup is in

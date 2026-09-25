@@ -3,12 +3,11 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 4 (amended 2026-09-24: `QUALITY-010` started from the backlog by
-  maintainer decision, without a release; it keeps its backlog row until a
-  planning checkpoint assigns one)
+- **Revision:** 5 (amended 2026-09-25: `SYNC-020` backlog row for a session
+  start that did not reach iCloud without a manual sync)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-24
+- **Last amended:** 2026-09-25
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -26,7 +25,10 @@
   import, and sharing across Apple Accounts). Revision 4 adds the `MACOS-020`
   backlog row for a defect that `QUALITY-010` measurement `M5` reproduced:
   losing the network service that holds the proxy settings leaves a false
-  active claim and a stale ownership record.
+  active claim and a stale ownership record. Revision 5 adds the `SYNC-020`
+  backlog row for the `QUALITY-010` observation that a session started on
+  the iPhone reached iCloud only after a manual **Sync now**; a push path to
+  the Mac stays outside it as a separate product decision.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -208,6 +210,7 @@ The idea numbers refer to the wiki idea queue.
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-018` | Design the portable workspace over one user-selected synchronized folder with its own key delivery and membership. | Portable synchronization | Product framing later direction | A platform beyond Apple in scope |
 | `SYNC-019` | Offer recovery after all workspace keys are lost, without a product account. | Portable synchronization | MVP scope Later | `SYNC-018` or an Apple-only recovery design |
+| `SYNC-020` | Publish a session start or early end reliably from the device that made it: first reproduce, without the maintainer, that an iPhone-started session reaches iCloud only after a manual **Sync now**; then retry an interrupted or failed publication automatically with backoff and give iOS time to finish it in the background, so the peer adopts the session at its next own sync. Remote push to wake the peer is out of scope. | Sessions and enforcement | `QUALITY-010` observation (`ac05-repro`), cause inferred from code | Any planning checkpoint; a reliability defect within the best-effort sync limit |
 | `PLATFORM-001` | Decide the order, enforcement mechanisms, privilege models, and shared UI for Android, Linux, and Windows. | Platform coverage | Availability page planned platforms | A product decision to leave the Apple-only release train |
 | `QUALITY-008` | Decide whether golden or automated UI tests join the quality gate now that the interface is stable, and with which tool. | Verification | Engineering quality contract post-MVP decision | Two releases of interface stability |
 | `QUALITY-009` | Decide whether hosted CI returns for pull requests and whether external contributions are accepted, with the Actions budget and review load that implies. | Verification | First-release readiness policy | Maintainer capacity decision |
