@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 5 (amended 2026-09-25: `SYNC-020` backlog row for a session
-  start that did not reach iCloud without a manual sync)
+- **Revision:** 6 (amended 2026-09-25: `QUALITY-011` and `FILTER-003`
+  backlog rows from ideas 16 and 17)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-25
@@ -28,7 +28,11 @@
   active claim and a stale ownership record. Revision 5 adds the `SYNC-020`
   backlog row for the `QUALITY-010` observation that a session started on
   the iPhone reached iCloud only after a manual **Sync now**; a push path to
-  the Mac stays outside it as a separate product decision.
+  the Mac stays outside it as a separate product decision. Revision 6 adds
+  the `QUALITY-011` backlog row from idea 16 (a standalone verification tool
+  from the reusable core of `posato-control`) and the `FILTER-003` backlog
+  row from idea 17 (silencing notifications without blocking the
+  application).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -202,6 +206,7 @@ The idea numbers refer to the wiki idea queue.
 | `FILTER-001` | Decide whether reducing advertising belongs in Posato and which coverage is useful and feasible. | Product discovery | Idea 3 | A product decision on scope beyond blocking chosen targets |
 | `RESEARCH-001` | Compare the Focusly extension's interactions and features with Posato and list the ones worth adopting. | Product discovery | Idea 4 | Any planning checkpoint; cheap |
 | `FILTER-002` | Decide how to reduce distractions within YouTube, such as Shorts and recommendations, and on which surfaces. | Product discovery | Idea 5 | `FILTER-001` or a separate product decision |
+| `FILTER-003` | Decide whether a session can silence notifications from chosen applications and websites while the applications stay usable, on iOS and macOS: establish what the platforms allow a third party, including whether a Screen Time shield silences notifications and how browser web push can be reached; end with a product decision and, if feasible, a delivery plan. Preliminary. | Product discovery | Idea 17 | A feasibility result showing a supported mechanism on at least one platform |
 | `MACOS-017` | Extend macOS browser coverage beyond Safari and Chrome Stable, starting with Firefox, under a revised ADR 0005 support contract. | Sessions and enforcement | macOS enforcement follow-up | A maintainer decision to widen the support promise |
 | `MACOS-018` | Detect or disclose iCloud Private Relay before a session applies proxy settings. | Sessions and enforcement | Open question in the macOS enforcement topic | A supported detection route or a decision to disclose only |
 | `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | `MACOS-012` outcome |
@@ -215,6 +220,7 @@ The idea numbers refer to the wiki idea queue.
 | `QUALITY-008` | Decide whether golden or automated UI tests join the quality gate now that the interface is stable, and with which tool. | Verification | Engineering quality contract post-MVP decision | Two releases of interface stability |
 | `QUALITY-009` | Decide whether hosted CI returns for pull requests and whether external contributions are accepted, with the Actions budget and review load that implies. | Verification | First-release readiness policy | Maintainer capacity decision |
 | `QUALITY-010` | Let an agent verify every task without the maintainer: Posato on macOS in Tart virtual machines and on a dedicated physical test iPhone, both on a dedicated test Apple Account, with every system prompt, permission, and picker driven by the verification driver after one-time setup, including observing actual website and application blocking and unblocking. | Verification | Idea 10; absorbs `QUALITY-006` (pull request #52 discussion) | Passing go/no-go measurements (CloudKit in a VM; Screen Time consent and the application picker through XCUITest), plus the maintainer's test account and dedicated iPhone |
+| `QUALITY-011` | Decide whether to extract the Tart virtual machine layer and the iOS system-dialog driver of `posato-control` into a standalone, openly licensed tool for macOS and iOS development testing: an application descriptor instead of Posato constants, system-dialog definitions as data per macOS version and language, verification beyond one Mac and one iPhone, dependency licenses, and who maintains it; end with a decision and, if accepted, an extraction plan. Preliminary. | Verification | Idea 16; `QUALITY-010` outcome | `posato-control` stable across one release cycle and a maintainer decision to maintain a public tool |
 | `PAUSE-001` | Decide whether the pause page should offer a useful local activity, from the session's stated intention up to user-provided flashcards, within the privacy boundary, the self-contained pause page of `DESIGN-003`, and the iOS shield limits; end with a product decision and a delivery plan. | Product discovery | Idea 11 | A product decision that the pause moment is in scope |
 | `I18N-001` | Ship Posato in Polish as the first additional language, following the system language: the whole UI of both applications with Polish plural forms, the macOS pause page, iOS permission descriptions, and date and time formatting, plus the App Store listing and screenshots and a Polish posato.app including the privacy policy. It adds a narrow `AGENTS.md` exception so the agent can author localized product resources for the maintainer's approval, and keeps verification recipes independent of English labels. | Platform coverage | Idea 12 | Any planning checkpoint; the maintainer's time to review the Polish copy |
 | `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the two-destination navigation accepted in `DESIGN.md`. | Platform coverage | Idea 13; `IOS-004` decision | Any planning checkpoint |

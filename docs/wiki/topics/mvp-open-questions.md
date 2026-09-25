@@ -832,6 +832,37 @@ not an accepted feature plan or an expansion of the MVP.
     - the privacy of a shared list, and whether it is encrypted;
     - whether sharing is one-time or ongoing;
     - how it relates to the portable workspace in `SYNC-018`.
+16. **A standalone macOS and iOS verification tool.** `user-confirmed`
+    (2026-09-25): consider extracting the reusable core of `posato-control`
+    into a general tool for macOS and iOS development testing. `observed` in
+    `QUALITY-010`: the reusable parts are the Tart virtual machine layer (VNC
+    input with on-screen text recognition answering SecurityAgent, Login
+    Items, privacy panes, Gatekeeper, and iCloud renewal) and the XCUITest
+    driver's system scopes (SpringBoard, other applications, passcode entry
+    from the Keychain with log redaction), behind one JSON envelope for
+    agents. About ten files tie it to Posato: the Gradle layout, bundle
+    identifiers, helper process, databases, and pause page. `open`:
+    - an application descriptor instead of Posato constants;
+    - system-dialog definitions as data per macOS version and language,
+      since today's labels and coordinates fit English macOS 26 at one
+      resolution;
+    - coverage beyond one Mac, one iPhone, and macOS 26 with iOS 26;
+    - the experimental Virtualization VNC server, the JVM dependency, and
+      the licenses of Tart and `tart-guest-agent` (`source-claim`: Fair
+      Source terms, to confirm);
+    - who maintains a public tool as each macOS release changes its dialogs.
+17. **Silencing notifications without blocking the application.**
+    `user-confirmed` (2026-09-25): during a session, silence notifications
+    from chosen applications and websites while the applications themselves
+    stay usable. `inferred` feasibility limits, to confirm:
+    - neither platform offers a public API for one application to filter
+      another application's notifications, and third parties cannot switch
+      Focus on their own;
+    - whether a Screen Time shield on iOS also silences the shielded
+      application's notifications is `open`;
+    - browser web push arrives through the browser's push service rather
+      than the site's domain, so the macOS proxy does not reach it;
+      per-site notification permission belongs to the browser.
 
 ## Later platform questions
 
