@@ -25,7 +25,7 @@ object GuestRelay {
     fun lineIn(args: List<String>): VmLine? {
         val index = args.indexOf(OPTION)
         if (index < 0 || args.firstOrNull() in HOST_COMMANDS) return null
-        val value = args.getOrNull(index + 1) ?: throw ControlException(ErrorCode.USAGE, "$OPTION needs primary or peer.")
+        val value = args.getOrNull(index + 1) ?: throw ControlException(ErrorCode.USAGE, "$OPTION needs primary, peer, or legacy.")
         return VmLine.parse(value)
     }
 

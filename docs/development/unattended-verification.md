@@ -79,18 +79,21 @@ the primary golden VM taken before step 6, and give it its own sign-in and
 privacy approvals.
 
 The `legacy` line holds a golden VM on the previous macOS major version for
-platform checks. Apple ships no full installer for some point releases, so
-use the newest `UniversalMac_<version>_Restore.ipsw` for that version from
-Apple's update server. The driver can prepare it without a person:
+platform checks. Apple publishes no restore image (IPSW) for some point
+releases, so use the newest `UniversalMac_<version>_Restore.ipsw` for that
+version from Apple's update server. The driver can prepare it without a person:
 
 1. `tart create posato-run-legacy --from-ipsw <ipsw-url> --disk-size 60`, then
    `tart set` as above. The clone's name lets `posato-control vm` address it.
 2. `$PC vm boot --line legacy` boots it headless. Walk Setup Assistant with
-   `vm click`, `vm press`, and `vm type` (`--secret admin` for the account
-   password). Check checkbox states on a `vm screenshot`.
-3. Serve the checksum-verified agent and a setup script from the host on the
-   Tart bridge address, and run it in the guest's Terminal with `sudo`.
-   After that, continue with `tart exec` as in steps 5-8.
+   `vm click`, `vm press`, and `vm type` (`--secret admin` for the guest
+   administrator password). Check checkbox states on a `vm screenshot`.
+3. Serve the checksum-verified agent and a small setup script from the host
+   on the Tart bridge address, and run the script in the guest's Terminal
+   with `sudo`. The script performs step 4 (install the agent in
+   `/usr/local/bin` and load its LaunchAgent) and turns off sleep and
+   automatic update checks. After that, continue with `tart exec` as in
+   steps 5-8.
 4. For the two-factor code, answer the sign-in alert on the test iPhone with a
    `-t device` scenario scoped to `springboard`, read the code from its
    screenshot, and type it with `vm type`.
@@ -102,7 +105,7 @@ Data Isn't Syncing". iCloud Keychain items, including the Posato workspace key,
 then stop reaching them. Choose System Settings > Resume Data Sync and answer
 `vm prompt account-password` and `vm prompt mac-password`. If Apple asks
 for the trusted phone number, type it with
-`vm type --secret phone` from the phone item below.
+`vm type --secret phone` from the optional phone item above.
 
 ## Register the VMs for development signing
 

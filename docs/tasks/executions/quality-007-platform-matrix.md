@@ -21,8 +21,9 @@
 
 - **iOS 18 (`AC-02`).** `user-confirmed`, 2026-09-24: the maintainer installed
   the App Store release 1.0.0 on a private iPhone with iOS 18 and reported that
-  everything works as expected. The run was manual, so the availability page
-  names the 1.0.0 check rather than a 1.1 candidate.
+  everything works as expected. It was manual because the dedicated test
+  iPhone runs iOS 26 and cannot cover iOS 18; the availability page names the
+  1.0.0 check rather than a 1.1 candidate.
 - **macOS 15 (`AC-01`).** A new golden VM `legacy` line on macOS 15.6.1 (24G90),
   created from Apple's last full Sequoia IPSW and prepared without a person:
   Setup Assistant over VNC, the guest agent, automatic login, privacy grants,
@@ -41,8 +42,8 @@
 
 ## Evidence (`AC-01`)
 
-Runs in ignored `build/verification/quality-007/` and the listed run
-directories; guests: `legacy` (macOS 15.6.1) and a macOS 26.6.2 clone.
+Runs in ignored `build/verification/quality-007/` (numbered 01-20);
+guests: `legacy` (macOS 15.6.1) and a macOS 26.6.2 clone.
 
 | Step | macOS 15.6.1 result |
 | --- | --- |
@@ -57,14 +58,20 @@ directories; guests: `legacy` (macOS 15.6.1) and a macOS 26.6.2 clone.
 
 ## Completed-change review
 
-- **Verdict:** pending
+- **Verdict:** approved; no Critical or Required findings.
+- **Addressed Recommended findings:** `vm shutdown` reports a forced stop;
+  the restore-image wording is exact; the platform table links its evidence
+  and no longer calls the iOS 18 row a 1.1 check; the driver configuration
+  table lists the new keys; the guide names the setup script's steps; this
+  record names the attended iOS reason.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | macOS 15 core flow in Tart | pass | table above |
-| `./gradlew :posato-control:check` | pass | after the driver change |
+| `./gradlew :posato-control:check` | pass | after the review corrections |
+| `./gradlew quality` | pass | after the review corrections |
 
 ## Blockers and accepted risks
 
@@ -72,8 +79,8 @@ directories; guests: `legacy` (macOS 15.6.1) and a macOS 26.6.2 clone.
   VMs lost iCloud Keychain access ("Some iCloud Data Isn't Syncing") and could
   not receive the workspace key. Resume Data Sync with the account and guest
   passwords fixed both lines. The guide now describes this recovery.
-- Later macOS 15 point releases (15.7.x) were not checked; no full installer
-  image exists for them.
+- Later macOS 15 point releases (15.7.x) were not checked; Apple publishes no
+  restore image (IPSW) for them.
 - iOS 18 was checked on 1.0.0, not on a 1.1 candidate; `RELEASE-003` rechecks
   if the iOS binary changes materially.
 

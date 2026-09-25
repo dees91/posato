@@ -29,7 +29,7 @@ import java.nio.file.Path
 class VmCommand : CliktCommand(name = "vm") {
     override fun help(context: Context): String =
         "Tart macOS guests for unattended desktop verification: create and destroy the per-run clone of a golden VM, " +
-            "copy the staged package or install a notarized candidate into it, and answer system dialogs over VNC. Desktop commands reach the guest with --vm primary|peer."
+            "copy the staged package or install a notarized candidate into it, and answer system dialogs over VNC. Desktop commands reach the guest with --vm primary|peer|legacy."
 
     override fun run() = Unit
 }
@@ -141,8 +141,11 @@ class VmShutdownCommand : ControlCommand("shutdown", "Shut the line's VM down fr
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
-        VmLifecycle(session.context).shutdown(line)
-        return buildJsonObject { put("vm", line.cloneName) }
+        val forced = VmLifecycle(session.context).shutdown(line)
+        return buildJsonObject {
+            put("vm", line.cloneName)
+            put("forced", forced)
+        }
     }
 }
 

@@ -1946,4 +1946,3 @@ to scope, feasibility, or delivery.
   maintainer's check of 1.0.0. Updated
   [unattended verification](topics/unattended-verification.md) and the
   availability page.
-

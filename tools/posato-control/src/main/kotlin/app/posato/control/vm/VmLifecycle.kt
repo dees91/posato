@@ -109,11 +109,11 @@ class VmLifecycle(
         return JsonObject(mapOf("vm" to JsonPrimitive(line.cloneName)))
     }
 
-    /** Shuts the guest down from inside, so its last writes reach the disk, and keeps the VM. */
-    fun shutdown(line: VmLine) {
-        if (!running(line)) return
+    /** Shuts the guest down from inside, so its last writes reach the disk, and keeps the VM; true when it was forced. */
+    fun shutdown(line: VmLine): Boolean {
+        if (!running(line)) return false
         tart.exec(line.cloneName, "sudo -S -p '' /bin/sh -c 'sync; /sbin/shutdown -h +0'", stdin = vmAdminPassword(context) + "\n")
-        awaitStopped(line)
+        return awaitStopped(line)
     }
 
     /** Shuts the guest down from inside, so its last writes reach the disk, then deletes the clone. */
@@ -161,15 +161,17 @@ class VmLifecycle(
         false
     }
 
-    private fun awaitStopped(line: VmLine) {
+    /** True when the guest did not stop by itself and `tart stop` had to force it, which can lose its last writes. */
+    private fun awaitStopped(line: VmLine): Boolean {
         val deadline = System.currentTimeMillis() + SHUTDOWN_TIMEOUT_MS
         while (running(line)) {
             if (System.currentTimeMillis() >= deadline) {
                 tart.stop(line.cloneName)
-                return
+                return true
             }
             Thread.sleep(POLL_MS)
         }
+        return false
     }
 
     private companion object {

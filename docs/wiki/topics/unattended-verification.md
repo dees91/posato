@@ -139,7 +139,7 @@ desktop commands outside a virtual machine except `build`, `doctor`, and
   - Setup Assistant runs over VNC with `vm click`, `vm press`, and `vm type`;
   - the guest agent comes from a host-served, checksum-verified setup script;
   - the two-factor code is read from the test iPhone's screenshot after a `springboard`-scoped scenario taps Allow.
-- Apple ships no full installer for every point release. For macOS 15 the newest full image is 15.6.1.
+- Apple publishes no restore image (IPSW) for every point release. For macOS 15 the newest one is 15.6.1.
 - `vm install`, LaunchServices launch, the helper, enforcement, and iCloud sync all work on macOS 15.6.1. Cross-device sync with a macOS 26 guest works in both directions.
 - When a new device signs in to the test account, the existing golden VMs can report "Some iCloud Data Isn't Syncing". iCloud Keychain items then stop reaching them, and Posato waits for the workspace key. Resume Data Sync with the account and guest passwords restores them. A fix in a clone also clears the golden VM, which shares its device identity.
 

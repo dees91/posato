@@ -42,5 +42,5 @@ The published support claim (macOS 15 or later on Apple silicon, iOS 18 or later
   - D2: the maintainer provides a physical iPhone on iOS 18, connected by cable for the runs. Amended `user-confirmed` 2026-09-24: the maintainer verified the App Store 1.0.0 release on a private iOS 18 iPhone and closes `AC-02` on that confirmation.
   - D3: run once on the final 1.1 candidates, after `MACOS-011` merges. Until then, only the VM and device are prepared.
 - `user-confirmed`, 2026-09-24 (`AGENTS.md`, unattended verification): runs are unattended. This supersedes the attended-run wording above, the D1 note that the maintainer prepares the VM, and the "automating the VM" non-goal. The driver gains the `legacy` line and the `vm boot`, `vm shutdown`, and `vm type` commands so that an agent can prepare the macOS 15 golden VM itself.
-- `observed`, 2026-09-25: Apple ships no full installer image for macOS 15.7, so the macOS 15 target is 15.6.1 (24G90), the last full Sequoia IPSW.
+- `observed`, 2026-09-25: Apple publishes no restore image (IPSW) for macOS 15.7, so the macOS 15 target is 15.6.1 (24G90), the newest macOS 15 IPSW.
 - `user-confirmed`, 2026-09-25: the maintainer stored the test account's trusted phone number in the login Keychain for iCloud re-verification of the golden VMs.
