@@ -57,14 +57,19 @@ internal fun parseVncEndpoint(output: String): VncEndpoint? = VNC_URL.find(outpu
 /** Single-quotes a word for `/bin/sh`. */
 internal fun shellQuote(word: String): String = "'" + word.replace("'", "'\\''") + "'"
 
+/** The scenario source that means the host's own standard input. */
+internal const val STANDARD_INPUT = "-"
+
 /**
  * The guest cannot read host files, so a scenario file argument becomes `-` and its text travels on standard input.
- * Returns the rewritten arguments and the scenario path to send, if any.
+ * Returns the rewritten arguments and the scenario to send: a host path, [STANDARD_INPUT] when the scenario already
+ * arrives on the host's standard input, or null.
  */
 internal fun scenarioOverStdin(args: List<String>): Pair<List<String>, String?> {
     val index = args.indexOf("--scenario")
-    val path = args.getOrNull(index + 1)?.takeIf { index >= 0 && it != "-" } ?: return args to null
-    return args.toMutableList().also { it[index + 1] = "-" } to path
+    val source = args.getOrNull(index + 1)?.takeIf { index >= 0 } ?: return args to null
+    if (source == STANDARD_INPUT) return args to STANDARD_INPUT
+    return args.toMutableList().also { it[index + 1] = STANDARD_INPUT } to source
 }
 
 /** Evidence the guest writes under its run directory is copied to `<run>/guest/` on the host. */

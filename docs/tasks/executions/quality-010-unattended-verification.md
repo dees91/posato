@@ -4,7 +4,7 @@
 - **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
-- **Reviewer:** Stage 1 and Stage 2 plans reviewed by a separate agent (Critical and Required folded). `user-confirmed` 2026-09-24: per-stage completed-change reviews are replaced by one maintainer-ordered review of the whole change.
+- **Reviewer:** Stage 1 and Stage 2 plans reviewed by a separate agent (Critical and Required folded). `user-confirmed` 2026-09-24: per-stage completed-change reviews are replaced by one maintainer-ordered review of the whole change. That review (2026-09-25, head `6101a88`): P1 key diagnostics kept the passcode digits in the xcodebuild log, fixed with its class and existing local logs scrubbed; the three P2 findings (`--scenario -` over `--vm`, application identity, redirects) accepted by the maintainer and fixed (`rv-*`).
 - **Branch:** `feature/quality-010-unattended-verification`
 - **Updated:** 2026-09-24
 

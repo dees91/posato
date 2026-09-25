@@ -64,6 +64,13 @@ class VmSupportTest {
     }
 
     @Test
+    fun `a scenario already on standard input is forwarded from the host's standard input`() {
+        val arguments = listOf("run", "-t", "desktop", "--scenario", "-")
+
+        assertEquals(arguments to STANDARD_INPUT, scenarioOverStdin(arguments))
+    }
+
+    @Test
     fun `shell quoting keeps spaces and quotes literal`() {
         assertEquals("'plain'", shellQuote("plain"))
         assertEquals("'My Shared Files'", shellQuote("My Shared Files"))

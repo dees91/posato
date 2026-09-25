@@ -72,7 +72,11 @@ object GuestRelay {
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         val script = "export PATH=${shellQuote(Tart.GUEST_JDK_BIN)}:\$PATH; cd ~/posato-run && " +
             "tools/posato-control/build/install/posato-control/bin/posato-control " + arguments.joinToString(" ") { shellQuote(it) }
-        val stdin = scenario?.let { Files.readString(Path.of(it)) }
+        val stdin = when (scenario) {
+            null -> null
+            STANDARD_INPUT -> System.`in`.readBytes().decodeToString()
+            else -> Files.readString(Path.of(scenario))
+        }
         val output = tart.exec(line.cloneName, script, stdin = stdin, timeout = Duration.ofMinutes(RELAY_TIMEOUT_MINUTES))
         val hostRun = context.layout.runsDirectory.resolve(runId).resolve("guest")
         Files.createDirectories(hostRun)

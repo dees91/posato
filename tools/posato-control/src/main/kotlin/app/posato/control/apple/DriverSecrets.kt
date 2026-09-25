@@ -16,7 +16,7 @@ import app.posato.control.model.Scenario
 object DriverSecrets {
     const val DEVICE_PASSCODE = "devicePasscode"
     private const val ENVIRONMENT_PREFIX = "POSATO_SECRET_"
-    private val KEY_TAP = Regex("""^\s*t =\s+[\d.]+s\s+(Tap|Find the) ".*" Key\s*$""")
+    private val KEY_ELEMENT = Regex(""""[^"]*" Key\b""")
 
     fun environment(
         scenario: Scenario,
@@ -32,8 +32,12 @@ object DriverSecrets {
             ENVIRONMENT_PREFIX + name.uppercase() to read(name)
         }
 
-    /** XCUITest logs every tapped key's label, so a typed passcode would appear digit by digit in the xcodebuild log. */
-    fun redactKeyTaps(log: String): String = log.lines().filterNot { KEY_TAP.matches(it) }.joinToString("\n")
+    /**
+     * XCUITest names a keyboard key in every message about it (the wait for it to exist, the existence and
+     * interruption checks, the lookup, and the tap), so a typed passcode would appear digit by digit in the
+     * xcodebuild log. Every line naming a key is dropped.
+     */
+    fun redactKeyTaps(log: String): String = log.lines().filterNot { KEY_ELEMENT.containsMatchIn(it) }.joinToString("\n")
 
     /** Reads a secret from the login Keychain; the value stays in memory. */
     fun keychainReader(context: RunContext): (String) -> String = { _ ->

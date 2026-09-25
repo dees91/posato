@@ -167,7 +167,7 @@ grants a permission.
 | `reset [--dry-run] [--yes] [--keep-install]` | all | Deletes local state (desktop, simulator) or uninstalls (device). Refuses without `--yes`; deleted files are backed up into the run directory. |
 | `cleanup [--dry-run] [--purge-derived-data]` | all | Stops tracked processes; never deletes run evidence. |
 | `artifacts` | — | Prints the run directory layout. |
-| `observe [--website URL] [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports (`paused` when the helper's pause page answers, `loaded` for the real page) and opens the application, which counts as blocked when it no longer runs after N seconds (default 8). Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
+| `observe [--website URL] [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports, following up to five redirects (`paused` when the helper's pause page answers, `loaded` only for a final 2xx page), and opens the application by its bundle identifier, which counts as blocked when Launch Services lists no process for that bundle after N seconds (default 8). Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
 | `vm create\|sync\|destroy [--line primary\|peer]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. See [Tart VMs](#tart-vms). |
 | `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`. |
 | `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
@@ -360,8 +360,8 @@ and its feature map for exact setup, native picker limits, and cleanup.
 
 `-t desktop --vm primary|peer` runs a desktop command inside a Tart guest: the
 host forwards it to the guest's own copy of the driver through `tart exec`,
-which runs in the logged-in user's Aqua session, sends a scenario file on
-standard input, and copies the guest's run directory to
+which runs in the logged-in user's Aqua session, sends a scenario file (or,
+for `--scenario -`, the host's own standard input) on standard input, and copies the guest's run directory to
 `build/verification/runs/<run>/guest/`. `build` stays on the host; follow it
 with `vm sync`. The one-time setup of the golden VMs, device registration,
 test Apple Account, and Keychain items is in

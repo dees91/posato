@@ -46,10 +46,15 @@ class DriverSecretsTest {
     }
 
     @Test
-    fun `key taps are removed from the xcodebuild log and other lines stay`() {
+    fun `every line naming a key is removed from the xcodebuild log and other lines stay`() {
+        // The formats XCTest writes for one pressKeys digit: the wait before the tap, its checks, and the tap itself.
         val log =
             """
             t =     1.20s Tap "Continue" Button
+            t =     2.00s Waiting 10.0s for "3" Key to exist
+            t =     2.01s     Checking `Expect predicate `existsNoRetry == 1` for object "3" Key`
+            t =     2.02s         Checking existence of `"3" Key`
+            t =     2.05s     Check for interrupting elements affecting "3" Key
             t =     2.10s Tap "3" Key
             t =     2.40s     Find the "1" Key
             t =     2.60s Tap "4" Key
