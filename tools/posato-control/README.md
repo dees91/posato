@@ -174,6 +174,8 @@ grants a permission.
 | `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`. |
 | `vm install --dmg file [--line] [--replace] [--app-label Posato] [--applications-label /Applications]` | desktop in a VM | Install a notarized candidate as a person would and drive it from then on; `--replace` first moves an installed release to the Trash. See [Candidates](#notarized-candidates). |
 | `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
+| `vm text [--line] [--contains text]` | desktop in a VM | Print the recognized screen text, top to bottom, with positions; read dialogs this way instead of viewing screenshots. |
+| `vm wait-text --text text [--line] [--exact] [--absent] [--timeout-seconds]` | desktop in a VM | Wait until recognized text appears or, with `--absent`, disappears. |
 | `vm type --text T \| --secret admin\|account\|phone [--strip-prefix P] [--line]` | desktop in a VM | Type text, or a Keychain secret without echoing it, into the focused guest field. |
 | `vm boot\|shutdown [--line]` | desktop in a VM | Boot the line's existing VM without cloning (to prepare a golden image under the clone's name), or shut it down from inside and keep it; `forced` reports a fallback to `tart stop`. |
 | `vm drag --from label --to label [--from-index n] [--to-index n] [--line]` | desktop in a VM | Drag one recognized label onto another, such as an application onto the Applications link. |

@@ -54,7 +54,10 @@ never from the Apple Developer portal. With the one-time setup in
   `background` (helper approval in Login Items), `toggle --row <text>` (privacy
   panes), `picker-bypass` (macOS 26 after screen captures), `gatekeeper`,
   `account-password`, `mac-password`, and `device-passcode` (iCloud
-  recovery). Run the prompt right after the step that raises it; a scenario
+  recovery). Read an unexpected dialog with `$PC vm text --line <line>` and
+  wait for one with `vm wait-text --text <text>`; take a `vm screenshot` only
+  as evidence or when the layout matters. Run the prompt right after the step
+  that raises it; a scenario
   that waits on the confirmed state can run in the background while the
   prompt command answers. Finish with `$PC vm destroy --line <line>`; a
   broken guest is deleted, never repaired. A run that linked iCloud presses
