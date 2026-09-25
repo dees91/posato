@@ -17,6 +17,10 @@ export default defineConfig({
   // The privacy policy renders PRIVACY.md exactly, without typographic substitutions.
   markdown: { smartypants: false },
   devToolbar: { enabled: false },
+  // Collapse whitespace as HTML does. Astro's default ("jsx") drops the line
+  // break between text and a link on the next source line, which rendered
+  // "See theprivacy policy" (RELEASE-002 and RELEASE-003).
+  compressHTML: true,
   vite: {
     // Emit the favicon as a file; a data: URL would need img-src data: in the policy.
     build: { assetsInlineLimit: 0 },
