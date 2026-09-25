@@ -57,6 +57,12 @@ never from the Apple Developer portal. With the one-time setup in
   that waits on the confirmed state can run in the background while the
   prompt command answers. Finish with `$PC vm destroy --line <line>`; a
   broken guest is deleted, never repaired.
+- **Notarized candidates.** Update and release checks install a Developer ID
+  DMG in a fresh clone with `$PC vm install --line <line> --dmg <file>`
+  instead of using the development package; it installs by Finder drag and
+  drop, answers Gatekeeper, and leaves only the candidate registered. After an
+  update relaunches the app, `$PC launch -t desktop --vm <line> --adopt`
+  tracks it. See the driver README, "Notarized candidates".
 - **The test iPhone.** `-t device` as before. Screen Time consent is
   `fixtures/scenarios/screen-time-consent.json` in one run; the application
   picker is in the app's own accessibility tree.

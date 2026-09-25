@@ -46,6 +46,7 @@ class DesktopLifecycle(
     }
 
     override fun launch(options: LaunchOptions): LaunchResult {
+        if (options.adopt) return adopt(options)
         if (options.build) build(BuildOptions())
         processes.requireStaged()
         val tracked = stateStore.load().desktop
@@ -80,6 +81,24 @@ class DesktopLifecycle(
         return LaunchResult(pid = process.pid(), logPath = context.layout.relativize(logPath), windowId = windowId)
     }
 
+    /**
+     * Tracks the one running instance this tool did not start, such as the build Sparkle relaunches after an update.
+     * Its output was never captured, so the tracked process has no log.
+     */
+    private fun adopt(options: LaunchOptions): LaunchResult {
+        if (options != LaunchOptions(captureLogs = options.captureLogs, adopt = true)) {
+            throw ControlException(ErrorCode.USAGE, "--adopt tracks a running instance and takes no launch options.", "Pass --adopt alone.")
+        }
+        processes.requireStaged()
+        val pid = singleInstance(processes.foreignPids(null))
+        val windowId = awaitWindow(pid)
+        stateStore.update(
+            Target.DESKTOP,
+            LaunchedProcess(pid = pid, startedAt = TrackedProcess.startedAt(pid), windowId = windowId, runId = context.runId),
+        )
+        return LaunchResult(pid = pid, windowId = windowId)
+    }
+
     override fun terminate(): StatusResult {
         processes.terminate(stateStore.load().desktop)
         stateStore.update(Target.DESKTOP, null)
@@ -94,7 +113,7 @@ class DesktopLifecycle(
             installed = staged,
             running = running,
             pid = tracked?.pid?.takeIf { running },
-            appPath = context.layout.relativize(context.layout.stagedDesktopApplication).takeIf { staged },
+            appPath = context.layout.relativize(context.layout.desktopApplication).takeIf { staged },
             signingMode = if (staged) processes.signingMode() else null,
             windowId = tracked?.windowId?.takeIf { running },
             logPath = tracked?.logPath?.takeIf { running },
@@ -124,6 +143,18 @@ class DesktopLifecycle(
         const val WINDOW_TIMEOUT_MS = 30_000L
         const val WINDOW_POLL_MS = 250L
     }
+}
+
+/** The only running instance of the desktop application; none or several leave nothing unambiguous to adopt. */
+internal fun singleInstance(pids: List<Long>): Long = when (pids.size) {
+    0 -> throw ControlException(ErrorCode.APP_NOT_RUNNING, "No desktop application instance is running to adopt.")
+
+    1 -> pids.single()
+
+    else -> throw ControlException(
+        ErrorCode.ALREADY_RUNNING,
+        "${pids.size} desktop application instances run (${pids.joinToString(", ")}), so none can be adopted unambiguously.",
+    )
 }
 
 private class DesktopDoctor(
@@ -185,7 +216,7 @@ private class DesktopDoctor(
     }
 
     /** Resolves one nested component of the staged package, whose layout `stageMacOsDevelopmentPackage` produces. */
-    private fun nested(relativePath: String): Path = context.layout.stagedDesktopApplication.resolve(relativePath)
+    private fun nested(relativePath: String): Path = context.layout.desktopApplication.resolve(relativePath)
 
     private fun permissionChecks(): List<DoctorCheck> {
         val permissions = try {
@@ -228,6 +259,8 @@ private class DesktopDoctor(
             val configured = context.configuration.value(ConfigurationKey.MACOS_SIGNING_IDENTITY) != null
             when {
                 mode == "development" -> DoctorCheck.pass("desktop.staged", "The staged application is development-signed.")
+
+                mode == "developer-id" -> DoctorCheck.pass("desktop.staged", "The installed candidate is Developer ID-signed.")
 
                 // `./gradlew quality` restages without the signing properties, so a configured identity can still leave an ad-hoc package.
                 configured -> DoctorCheck.fail(

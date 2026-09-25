@@ -40,7 +40,7 @@ class VmPrompts(
         timeoutMs: Long,
         rowText: String? = null
     ) {
-        val screen = screen(line)
+        val screen = guestScreen(context, line)
         when (prompt) {
             GuestPrompt.ADMIN -> {
                 answerAdmin(screen, timeoutMs)
@@ -101,21 +101,39 @@ class VmPrompts(
         index: Int,
         timeoutMs: Long
     ) {
-        val screen = screen(line)
+        val screen = guestScreen(context, line)
         val match = screen.waitFor(text, timeoutMs, exact).getOrNull(index) ?: throw notOnScreen(text)
         screen.session { client -> client.click(match.centerX, match.centerY) }
+    }
+
+    /**
+     * Drags the [fromIndex]th recognized line equal to [from] onto the [toIndex]th equal to [to], as a person would in
+     * Finder. Matches are ordered top to bottom, so a window title precedes an icon label with the same text.
+     */
+    fun drag(
+        line: VmLine,
+        from: String,
+        fromIndex: Int,
+        to: String,
+        toIndex: Int,
+        timeoutMs: Long
+    ) {
+        val screen = guestScreen(context, line)
+        val source = screen.waitFor(from, timeoutMs, exact = true).sortedBy { it.y }.getOrNull(fromIndex) ?: throw notOnScreen(from)
+        val target = screen.waitFor(to, timeoutMs, exact = true).sortedBy { it.y }.getOrNull(toIndex) ?: throw notOnScreen(to)
+        screen.session { client -> client.drag(source.centerX, source.centerY, target.centerX, target.centerY) }
     }
 
     fun press(
         line: VmLine,
         chord: String
-    ) = screen(line).session { client -> client.press(chord) }
+    ) = guestScreen(context, line).session { client -> client.press(chord) }
 
     fun screenshot(
         line: VmLine,
         name: String
     ): Path {
-        return context.recordArtifact(screen(line).screenshot(context.artifactPath("screenshots", "$name.png")))
+        return context.recordArtifact(guestScreen(context, line).screenshot(context.artifactPath("screenshots", "$name.png")))
     }
 
     /** Switches on the toggle of a System Settings list row (Login Items, Privacy panes) and authenticates. */
@@ -178,15 +196,7 @@ class VmPrompts(
         screen.waitGone(request, timeoutMs)
     }
 
-    private fun screen(line: VmLine): GuestScreen {
-        VmLifecycle(context).requireRunning(line)
-        return GuestScreen(context, vmEndpoint(context, line, 0), vmDirectory(context, line).resolve(FRAME))
-    }
-
-    private fun notOnScreen(text: String) = ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The guest screen shows no '$text'.")
-
     private companion object {
-        const val FRAME = "frame.png"
         const val ADMIN_REQUEST = "password to allow this"
         const val ACCOUNT_REQUEST = "Enter the Apple Account password"
         const val MAC_PASSWORD_REQUEST = "Enter Mac Password"
@@ -203,3 +213,16 @@ class VmPrompts(
         const val ACTIVATION_MS = 1_000L
     }
 }
+
+private const val FRAME = "frame.png"
+
+/** The running clone's screen; frames for text recognition go to a scratch file under the line's directory. */
+internal fun guestScreen(
+    context: RunContext,
+    line: VmLine
+): GuestScreen {
+    VmLifecycle(context).requireRunning(line)
+    return GuestScreen(context, vmEndpoint(context, line, 0), vmDirectory(context, line).resolve(FRAME))
+}
+
+internal fun notOnScreen(text: String) = ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The guest screen shows no '$text'.")

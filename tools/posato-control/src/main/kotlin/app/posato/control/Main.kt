@@ -30,6 +30,8 @@ import app.posato.control.cli.VmClickCommand
 import app.posato.control.cli.VmCommand
 import app.posato.control.cli.VmCreateCommand
 import app.posato.control.cli.VmDestroyCommand
+import app.posato.control.cli.VmDragCommand
+import app.posato.control.cli.VmInstallCommand
 import app.posato.control.cli.VmPressCommand
 import app.posato.control.cli.VmPromptCommand
 import app.posato.control.cli.VmScreenshotCommand
@@ -86,9 +88,11 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     VmCommand().subcommands(
         VmCreateCommand(),
         VmSyncCommand(),
+        VmInstallCommand(),
         VmDestroyCommand(),
         VmPromptCommand(),
         VmClickCommand(),
+        VmDragCommand(),
         VmPressCommand(),
         VmScreenshotCommand(),
     ),

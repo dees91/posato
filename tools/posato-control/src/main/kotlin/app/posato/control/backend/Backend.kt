@@ -33,6 +33,7 @@ data class LaunchOptions(
     val build: Boolean = false,
     val arguments: List<String> = emptyList(),
     val environment: Map<String, String> = emptyMap(),
+    val adopt: Boolean = false,
 )
 
 @Serializable

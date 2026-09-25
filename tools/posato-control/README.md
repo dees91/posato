@@ -150,7 +150,7 @@ grants a permission.
 | `devices list` / `devices boot [--device-type "iPhone 17"]` / `devices shutdown` | — | Simulator and paired-iPhone inventory; boot or shut down simulators. |
 | `build [--signing-identity X] [--verify] [--driver]` | all | Desktop: `:desktopApp:stageMacOsDevelopmentPackage`. iOS: a Debug `xcodebuild` with persistent DerivedData under `build/verification/derived-data/`. `--driver` also builds the XCUITest driver, which is otherwise rebuilt on demand whenever its sources are newer than the last build. |
 | `install` | simulator, device | `simctl install` or `devicectl device install app`. |
-| `launch [--fresh] [--capture-logs] [--build] [--arg A] [--env K=V]` | all | Starts the app and tracks it in `build/verification/state.json`. Desktop launches the staged `Posato.app` binary and records its window id. |
+| `launch [--fresh] [--capture-logs] [--build] [--arg A] [--env K=V] [--adopt]` | all | Starts the app and tracks it in `build/verification/state.json`. Desktop launches the staged `Posato.app` binary, or the installed candidate after `vm install`, and records its window id. `--adopt` (desktop only, alone) tracks the one running instance instead, such as the build an update relaunched; it has no captured log. |
 | `terminate` | all | Stops only the instance this tool started, on the simulator or device it was launched on; it does nothing when nothing is tracked. |
 | `status` | all | Installed, running, pid, app path, container path, signing mode. |
 | `screenshot [--name n] [--out file]` | all | Desktop window capture, `simctl io screenshot`, or a driver screenshot on the device. |
@@ -170,7 +170,9 @@ grants a permission.
 | `observe [--website URL] [--application NAME] --expect blocked\|allowed [--seconds N]` | desktop in a VM | Meets enforcement as a person would: requests the URL through the system proxy `scutil --proxy` reports, following up to five redirects (`paused` when the helper's pause page answers, `loaded` only for a final 2xx page), and opens the application by its bundle identifier, which counts as blocked when Launch Services lists no process for that bundle after N seconds (default 8). Fails with `ASSERTION_FAILED` when the observation contradicts `--expect`. iOS uses `observe-blocking-ios.json` and `observe-unblocked-ios.json`. |
 | `vm create\|sync\|destroy [--line primary\|peer]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. See [Tart VMs](#tart-vms). |
 | `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`. |
+| `vm install --dmg file [--line] [--app-label Posato] [--applications-label /Applications]` | desktop in a VM | Install a notarized candidate as a person would and drive it from then on. See [Candidates](#notarized-candidates). |
 | `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
+| `vm drag --from label --to label [--from-index n] [--to-index n] [--line]` | desktop in a VM | Drag one recognized label onto another, such as an application onto the Applications link. |
 
 ### Element queries
 
@@ -378,6 +380,35 @@ test Apple Account, and Keychain items is in
   twice where needed.
 - Code signatures do not validate from a directory share, so the package runs
   from the guest disk; only the JDK comes from a read-only share.
+
+### Notarized candidates
+
+`vm install --dmg <candidate>.dmg` replaces the development package in a clone
+with a notarized candidate, for update and release checks:
+
+1. It refuses when Posato runs or `/Applications/Posato.app` exists; a later
+   build arrives through the update path, so each candidate needs a fresh clone.
+2. The image is copied to the guest and quarantined, as a download would be,
+   then opened in Finder. The application is dragged onto the Applications
+   link over VNC. A copy made with `ditto`, `cp`, or a scripted Finder
+   `duplicate` is translocated at launch, and Sparkle refuses to update a
+   translocated application; the drag sets the quarantine flag that prevents
+   it.
+3. The image is ejected, the synced development package deleted, and every
+   other Posato bundle unregistered from LaunchServices (the golden image
+   keeps stale entries). A second registered bundle can take over launch
+   resolution for the helper and the installer, so the command fails if one
+   remains.
+4. It records Gatekeeper's assessment and the signature, opens the candidate
+   through LaunchServices, answers Gatekeeper's first-open question, requires
+   that the process runs from `/Applications`, and quits it.
+5. A marker under the guest's `build/verification/` then points every desktop
+   command at `/Applications/Posato.app`. `vm sync` copies only the driver and
+   repeats the single-bundle check.
+
+The evidence is `candidate-install.json` in the run directory. After an
+update relaunches the application, `launch -t desktop --vm <line> --adopt`
+tracks the new process.
 
 ## Evidence and state
 
