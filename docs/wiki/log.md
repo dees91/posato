@@ -1941,8 +1941,8 @@ to scope, feasibility, or delivery.
 
 ## [2026-09-25] experiment | QUALITY-007: macOS 15 platform check
 
-- Prepared a macOS 15.6.1 golden VM unattended and ran the 1.1 candidate's core
-  flow on it, including sync with a macOS 26 Mac; iOS 18 rests on the
-  maintainer's check of 1.0.0. Updated
+- Prepared a macOS 15.6.1 golden VM unattended and ran a pre-release 1.1
+  build's core flow on it, including sync with a macOS 26 Mac; iOS 18 rests
+  on the maintainer's check of 1.0.0. Updated
   [unattended verification](topics/unattended-verification.md) and the
   availability page.
