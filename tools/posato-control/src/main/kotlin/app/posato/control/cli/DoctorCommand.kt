@@ -5,6 +5,7 @@ import app.posato.control.core.ConfigurationSource
 import app.posato.control.core.ControlException
 import app.posato.control.core.ControlJson
 import app.posato.control.core.Target
+import app.posato.control.core.runsInVirtualMachine
 import app.posato.control.desktop.AxBridge
 import app.posato.control.model.DoctorCheck
 import app.posato.control.model.DoctorReport
@@ -33,7 +34,23 @@ class DoctorCommand :
         return ControlJson.pretty.encodeToJsonElement(DoctorReport.serializer(), DoctorReport(ok, checks))
     }
 
-    private fun toolchain(session: Session): List<DoctorCheck> {
+    /**
+     * A Tart guest only runs what the host built and copied in (`vm sync`), so it has no Xcode or Gradle wrapper; the
+     * build prerequisites are checked by `doctor` on the host, and the guest reports its runtime checks alone.
+     */
+    private fun toolchain(session: Session): List<DoctorCheck> = if (runsInVirtualMachine()) {
+        listOf(sqliteCheck())
+    } else {
+        buildToolchain(session)
+    }
+
+    private fun sqliteCheck(): DoctorCheck = if (java.io.File("/usr/bin/sqlite3").exists()) {
+        DoctorCheck.pass("sqlite3", "sqlite3 is available.")
+    } else {
+        DoctorCheck.fail("sqlite3", "sqlite3 is missing.", "Install the Xcode command line tools.")
+    }
+
+    private fun buildToolchain(session: Session): List<DoctorCheck> {
         val checks = mutableListOf<DoctorCheck>()
         val developer = session.context.subprocess.run(listOf("/usr/bin/xcode-select", "-p"))
         checks.add(
@@ -57,13 +74,7 @@ class DoctorCommand :
                 DoctorCheck.fail("xcode.version", "xcodebuild is unavailable.", "Install Xcode and select it with xcode-select -s.")
             },
         )
-        checks.add(
-            if (java.io.File("/usr/bin/sqlite3").exists()) {
-                DoctorCheck.pass("sqlite3", "sqlite3 is available.")
-            } else {
-                DoctorCheck.fail("sqlite3", "sqlite3 is missing.", "Install the Xcode command line tools.")
-            },
-        )
+        checks.add(sqliteCheck())
         checks.add(
             if (session.layout.gradlew.exists()) {
                 DoctorCheck.pass(

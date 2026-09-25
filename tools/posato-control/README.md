@@ -146,7 +146,7 @@ grants a permission.
 
 | Command | Targets | What it does |
 | --- | --- | --- |
-| `doctor [--deep] [--request-permissions]` | all (or every target when `-t` is omitted) | Toolchain, configuration presence, TCC permissions, staged/installed/running state, driver state. |
+| `doctor [--deep] [--request-permissions]` | all (or every target when `-t` is omitted) | Toolchain, configuration presence, TCC permissions, staged/installed/running state, driver state. With `--vm` the guest reports runtime checks only; build prerequisites (Xcode, Gradle wrapper) are checked by `doctor` on the host. |
 | `devices list` / `devices boot [--device-type "iPhone 17"]` / `devices shutdown` | — | Simulator and paired-iPhone inventory; boot or shut down simulators. |
 | `build [--signing-identity X] [--verify] [--driver]` | all | Desktop: `:desktopApp:stageMacOsDevelopmentPackage`. iOS: a Debug `xcodebuild` with persistent DerivedData under `build/verification/derived-data/`. `--driver` also builds the XCUITest driver, which is otherwise rebuilt on demand whenever its sources are newer than the last build. |
 | `install` | simulator, device | `simctl install` or `devicectl device install app`. |
