@@ -7,6 +7,50 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SCHEDULE-001 automatic scheduled Apply amendment (proposed)
+
+`proposed` (2026-09-26, `SCHEDULE-001`, delegated night mandate). It needs an
+independent security review and the maintainer's acceptance before
+`SCHEDULE-002` implements it.
+
+- **What changes.** The resident application may request **Apply with
+  grant** without a person's action, but only for a due occurrence of an
+  enabled, synchronized schedule. Its skip and end facts must not cover that
+  occurrence, and the local automatic-start consent must be recorded. That
+  consent comes from the unified setup action, or from the one-time upgrade
+  offer for a grant made through `MACOS-014`.
+- **What stays.**
+  - The daemon's checks are unchanged: the peer user, account, and Mac; the
+    console user; both exact rules; the fixed proxy host; and the helper's own
+    listener port.
+  - The helper still refuses the grant paths when a Java option variable was
+    in the application's launch environment.
+  - The prompted Apply is never used for a schedule. A refused or missing
+    grant leaves the Mac in "setup required", with no dialog.
+- **No new root authority.** No reason code is added to the wire. It would
+  record only what the application claims, so it would add no security. The
+  daemon's authority stays as narrow as for a person's start: Posato's own
+  proxy values, cleaned up by the lease and Restore.
+- **Console user.** Automatic starts run only while the grantee owns the
+  console session. That includes a locked screen, which keeps the same
+  console user. When another account is in front, the start waits and
+  applies when the grantee returns within the interval.
+- **Threat-model delta.**
+  - **Linked devices.** Schedule operations come from the person's own
+    linked devices (ADR 0002 trust). Anyone who can use a linked device can
+    make this Mac apply restrictions without local action. The reach is
+    bounded: Posato's own blocking, **End early** always available locally,
+    and a notification naming the schedule.
+  - **Code running as the grantee.** It could already start a session
+    (`T-07`). Automatic starts add timing, not reach.
+  - **No prompt at due time.** No administrator dialog can appear at a due
+    time, so a scheduled start cannot be used to train people into
+    approving unexpected prompts.
+- **Revocation.** Turning the grant off in This Mac, Disable, or Remove
+  stops automatic starts, like manual ones.
+- **On acceptance.** The threat model rows `TB-04` and `T-07` name
+  schedule-driven Apply and the linked-device residual.
+
 ## Unified Mac setup note (PR #92)
 
 `user-confirmed` (2026-09-26, PR #92): the opt-in below becomes one effect of

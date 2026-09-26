@@ -8,6 +8,30 @@
 - **Provenance:** `user-confirmed`
 - **Owner:** `MACOS-012` decides; `MACOS-013` delivers after separate activation.
 
+## SCHEDULE-001 scheduled starts amendment (proposed)
+
+`proposed` (2026-09-26, `SCHEDULE-001`, delegated night mandate). This takes
+effect together with the ADR 0004 automatic scheduled Apply amendment.
+
+- The rule "the menu, a login launch, and synchronization never apply
+  restrictions by themselves" gains one exception: a due occurrence of an
+  enabled schedule, under the recorded automatic-start consent.
+- The resident process evaluates schedules:
+  - at every launch, including a login launch;
+  - on wake;
+  - on clock and time-zone changes;
+  - every minute.
+
+  An occurrence found inside its interval applies for the remaining time, up
+  to its original end.
+- The menu shows "Scheduled pause: <name>, until <time>" while one runs. It
+  offers **End early…**, which opens the window's confirmation as today.
+- Quit during a running or upcoming scheduled pause keeps the ADR 0009
+  confirmation and names the schedule. Quitting stops new Mac starts until
+  Posato runs again.
+- A missing grant or consent never raises a dialog at due time. It leaves
+  "Setup required on this Mac" and one notification.
+
 ## Unified Mac setup amendment (PR #92)
 
 `user-confirmed` (2026-09-26, PR #92): the maintainer replaced separate Mac

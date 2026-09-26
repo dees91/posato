@@ -115,6 +115,9 @@ wait until configuration is safe without interrupting the current session.
 
 ## Decisions still owned by SCHEDULE-001
 
+`SCHEDULE-001` answers each item below in
+[schedule rules](schedules-decisions.md), with the ADR amendments it proposes.
+
 Before `SCHEDULE-002` starts, settle and record:
 
 - Time-zone ownership, travel, daylight-saving transitions, clock changes,

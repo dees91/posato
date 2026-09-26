@@ -7,6 +7,45 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SCHEDULE-001 schedule operations amendment (proposed)
+
+`proposed` (2026-09-26, `SCHEDULE-001`, delegated night mandate). It takes
+effect when the maintainer accepts it; `SCHEDULE-002` implements it. The
+product rules are in [schedule rules](../product/schedules-decisions.md).
+
+- **New mandatory kinds in format 1.** The payloads are canonical as below:
+  - `8` `schedule-put`: 16-byte schedule identifier (UUIDv4); `u16` name
+    length and a 1-80 byte NFC name without control characters; `u8` weekday
+    mask with bits 0-6 (Monday first), at least one set and bit 7 clear;
+    `u16` start minute 0-1439; `u16` end minute 0-1439; `u8` enabled.
+  - `9` `schedule-remove`: 16-byte schedule identifier.
+  - `10` `schedule-skip`: 16-byte schedule identifier; `u16` year 2000-2100;
+    `u8` month 1-12; `u8` valid day.
+  - `11` `schedule-occurrence-end`: same payload as kind 10.
+- **Reduction.**
+  - Any `schedule-remove` permanently removes its identifier, whatever the
+    order, like `session-end`.
+  - Otherwise the greatest total-order `schedule-put` per identifier is the
+    schedule.
+  - At most 10 live schedules. A put for a new identifier at the cap gets a
+    derived `schedule-capacity` outcome without state change or eviction,
+    recomputed from scratch like the domain cap.
+  - Kinds 10 and 11 build grow-only sets of `(identifier, date)`. They are
+    ignored for a removed identifier and are never undone.
+- **Optional extension kinds.** Kinds 128-255 are optional:
+  - a receiver that does not know one validates the envelope, signature, and
+    author sequence as usual;
+  - it accepts and retains the operation and advances that author's
+    sequence;
+  - it ignores the operation in projection.
+
+  Kinds 12-127 stay mandatory, and an unknown one is rejected as before.
+- **Compatibility.** `observed`: a format-1 replica from release 1.1 rejects
+  kinds 8-11 as invalid operations, and its mailbox exchange stops with
+  action required. Release 1.2 accepts that a device still on 1.1 stops
+  syncing once any schedule operation exists, until it updates. The optional
+  range prevents this for later additions.
+
 ## Context
 
 ADR 0002 requires one transport-neutral application-encrypted format, signed
