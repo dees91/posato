@@ -1,5 +1,8 @@
 package app.posato.feature.onboarding
 
+import androidx.compose.runtime.Stable
+import kotlinx.coroutines.flow.StateFlow
+
 public enum class MacHelperReadiness {
     UNAVAILABLE,
     NOT_ENABLED,
@@ -20,7 +23,21 @@ public enum class MacHelperRemoval {
     PROXY_ATTENTION,
 }
 
+@Stable
+public interface MacLoginItem {
+    public val enabled: StateFlow<Boolean>
+
+    public fun setEnabled(enabled: Boolean)
+
+    public fun refresh()
+}
+
 public interface MacHelperPort {
+    public val loginItem: MacLoginItem?
+        get() {
+            return null
+        }
+
     public suspend fun enable(): MacHelperReadiness
 
     public suspend fun recheck(): MacHelperReadiness

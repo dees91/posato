@@ -61,6 +61,9 @@ internal fun SessionScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(viewModel) { viewModel.onScreenEntered() }
+    val loginItem = macSetupState?.loginItem
+    val loginItemEnabled = loginItem?.enabled?.collectAsState()?.value
+    LaunchedEffect(loginItem) { loginItem?.refresh() }
     LaunchedEffect(windowRequest) {
         when (windowRequest) {
             SessionWindowRequest.START_SESSION -> viewModel.setSetupVisible(true)
@@ -94,6 +97,8 @@ internal fun SessionScreen(
         onMacSetupOpenSettings = { macSetupState?.openSettings() },
         onMacSetupAnnouncement = onMacSetupAnnouncement,
         onMacSetupRemove = { macSetupState?.remove(sessionBlocked = state.blocksHelperRemoval()) },
+        macLoginItemEnabled = loginItemEnabled,
+        onMacLoginItemChange = { loginItem?.setEnabled(it) },
     )
 }
 
@@ -123,6 +128,8 @@ internal fun SessionScreen(
     onMacSetupOpenSettings: () -> Unit = {},
     onMacSetupAnnouncement: (String) -> Unit = {},
     onMacSetupRemove: () -> Unit = {},
+    macLoginItemEnabled: Boolean? = null,
+    onMacLoginItemChange: (Boolean) -> Unit = {},
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
         val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
@@ -179,6 +186,8 @@ internal fun SessionScreen(
                         onMacSetupOpenSettings,
                         onMacSetupAnnouncement,
                         onMacSetupRemove,
+                        macLoginItemEnabled,
+                        onMacLoginItemChange,
                     )
                 }
             }

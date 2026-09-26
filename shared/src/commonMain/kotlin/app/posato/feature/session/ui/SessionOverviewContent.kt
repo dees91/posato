@@ -59,6 +59,8 @@ internal fun SessionOverviewContent(
     onMacSetupOpenSettings: () -> Unit = {},
     onMacSetupAnnouncement: (String) -> Unit = {},
     onMacSetupRemove: () -> Unit = {},
+    macLoginItemEnabled: Boolean? = null,
+    onMacLoginItemChange: (Boolean) -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
     val hasItems = state.displayDomains().isNotEmpty() ||
@@ -103,6 +105,8 @@ internal fun SessionOverviewContent(
                 onAnnouncement = onMacSetupAnnouncement,
                 sessionBlocksRemoval = state.blocksHelperRemoval(),
                 onRemove = onMacSetupRemove,
+                loginItemEnabled = macLoginItemEnabled,
+                onLoginItemChange = onMacLoginItemChange,
             )
         }
     }
@@ -182,7 +186,7 @@ private fun EnforcementState.ActionRequired.attentionMessage(): String {
         }
 
         EnforcementActionKind.RESUME_REQUIRED -> {
-            "Restrictions stopped when the app closed."
+            "Restrictions not active on this Mac."
         }
     }
 }
