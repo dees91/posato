@@ -12,19 +12,6 @@ import kotlin.test.assertTrue
 
 class SqlSyncLocalPolicyMigrationTest {
     @Test
-    fun `given an empty version seven database when migrated then policy sync tables exist empty`() = runTest {
-        val testDatabase = createLocalPolicyTestDatabase("sync-local-policy-migration-empty.db")
-        downgrade(testDatabase, "UPDATE local_policy_metadata SET revision = 0 WHERE singleton = 1")
-        val driver = testDatabase.openDriver()
-        try {
-            assertPolicySyncTablesEmpty(PosatoDatabase(driver))
-        } finally {
-            driver.close()
-            testDatabase.delete()
-        }
-    }
-
-    @Test
     fun `given domains and policies when migrated then rows survive and policy sync tables exist empty`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("sync-local-policy-migration-seeded.db")
         downgrade(

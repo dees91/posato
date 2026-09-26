@@ -12,19 +12,6 @@ import kotlin.test.assertTrue
 
 class SqlRemovedWorkspaceMigrationTest {
     @Test
-    fun `given an empty version eight database when migrated then the tombstone table exists empty`() = runTest {
-        val testDatabase = createLocalPolicyTestDatabase("removed-workspace-migration-empty.db")
-        downgrade(testDatabase, "UPDATE local_policy_metadata SET revision = 0 WHERE singleton = 1")
-        val driver = testDatabase.openDriver()
-        try {
-            assertEquals(0L, PosatoDatabase(driver).syncBootstrapQueries.countRemovedWorkspaces().awaitAsList().single())
-        } finally {
-            driver.close()
-            testDatabase.delete()
-        }
-    }
-
-    @Test
     fun `given bootstrap and policy rows when migrated then they survive and the tombstone table is empty`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("removed-workspace-migration-seeded.db")
         downgrade(

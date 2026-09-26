@@ -8,13 +8,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-private const val SECRET_KEY_ID = "KEYID12345"
-private const val SECRET_ISSUER = "11112222-3333-4444-5555-666677778888"
-private const val SECRET_TEAM = "ABCDE12345"
-private const val SECRET_UDID = "00008030-000102030405061E"
-private const val SECRET_PATH = "/Users/someone/Library/Developer/Posato/AuthKey.p8"
-private const val SECRET_NAME = "Apple Development: Someone (AB12CD34EF)"
-
 class ProvisioningChecksTest {
     @Test
     fun `reports every provisioning condition in a stable order`() {
@@ -66,17 +59,6 @@ class ProvisioningChecksTest {
 
         val withoutSyncProfile = ready().copy(profiles = ready().profiles - AppIdentifier.MACOS_SYNC)
         assertFalse(ProvisioningChecks.report(withoutSyncProfile).ok)
-    }
-
-    @Test
-    fun `never carries a configured or discovered value into the report`() {
-        val rendered = listOf(unconfigured(), ready(), partial())
-            .flatMap { facts -> ProvisioningChecks.checks(facts) }
-            .joinToString(" ") { check -> "${check.detail} ${check.hint.orEmpty()}" }
-
-        listOf(SECRET_KEY_ID, SECRET_ISSUER, SECRET_TEAM, SECRET_UDID, SECRET_PATH, SECRET_NAME).forEach { secret ->
-            assertFalse(rendered.contains(secret), "the report carried $secret")
-        }
     }
 
     @Test

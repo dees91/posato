@@ -14,13 +14,6 @@ private const val CERT = "CERT"
 
 class ProfileDecisionsTest {
     @Test
-    fun `reuses a current profile that already covers this Mac`() {
-        val decision = ProfileDecisions.decide(profile(devices = listOf("MAC")), CERT, setOf("MAC"), NOW, replaceRequested = false)
-
-        assertEquals(ProfileAction.REUSE, decision.action)
-    }
-
-    @Test
     fun `creates when no profile of the name exists`() {
         val decision = ProfileDecisions.decide(null, CERT, setOf("MAC"), NOW, replaceRequested = false)
 

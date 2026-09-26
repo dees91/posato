@@ -4,9 +4,6 @@ import app.posato.feature.onboarding.data.LocalSetupFailure
 import app.posato.feature.onboarding.data.LocalSetupResult
 import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.onboarding.data.SetupCompletion
-import app.posato.feature.sync.bootstrap.SyncAttentionReason
-import app.posato.feature.sync.bootstrap.SyncStatus
-import app.posato.feature.sync.ui.message
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalPolicyResult
@@ -150,24 +147,6 @@ class OnboardingUiStateTest {
         assertTrue(policy.replaced.isEmpty())
         assertEquals(1, setup.reads)
         assertEquals(0, setup.completed)
-    }
-
-    @Test
-    fun `given every sync status when messaged then each maps to a distinct string`() {
-        val messages = SyncStatus.entries.map { status -> status.message(false) }
-
-        assertEquals(SyncStatus.entries.size, messages.toSet().size)
-    }
-
-    @Test
-    fun `given action required when messaged with reasons then each reason maps to a distinct string`() {
-        val messages = listOf(
-            SyncStatus.ACTION_REQUIRED.message(true),
-            SyncStatus.ACTION_REQUIRED.message(true, SyncAttentionReason.LOCAL_CAPACITY),
-            SyncStatus.ACTION_REQUIRED.message(true, SyncAttentionReason.SHARED_CAPACITY),
-        )
-
-        assertEquals(3, messages.toSet().size)
     }
 
     @Test

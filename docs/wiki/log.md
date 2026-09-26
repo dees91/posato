@@ -1997,3 +1997,12 @@ to scope, feasibility, or delivery.
   new idea 18 in [MVP open questions](topics/mvp-open-questions.md): a
   transient helper CPU spike, now backlog row `MACOS-021` (roadmap revision
   9).
+
+## [2026-09-26] quality | Prefer E2E proof and prune redundant tests
+
+- Adopted the maintainer's E2E-first testing policy, repeatable run artifacts,
+  and failure-first isolated tests in AGENTS.md and the quality contract.
+- Audited test bodies in parallel and removed 30 redundant or non-production
+  assertions with their unused support. Retained independent failure-path
+  contracts that current E2E cannot expose. Updated
+  [unattended verification](topics/unattended-verification.md).

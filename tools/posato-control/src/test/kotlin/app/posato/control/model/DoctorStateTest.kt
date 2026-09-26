@@ -9,9 +9,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-/** The report is ready when nothing is missing at error severity, so an unobservable condition never blocks a run. */
-private fun reportOk(checks: List<DoctorCheck>): Boolean = checks.none { !it.ok && it.severity == Severity.ERROR.name.lowercase() }
-
 class DoctorStateTest {
     @Test
     fun `the three states carry the documented ok and severity`() {
@@ -29,19 +26,6 @@ class DoctorStateTest {
         assertEquals("unknown", unknown.state)
         assertFalse(unknown.ok)
         assertEquals("warn", unknown.severity)
-    }
-
-    @Test
-    fun `an unknown condition never claims readiness and never blocks the report`() {
-        val unknown = DoctorCheck.unknown("c", "detail", "remedy")
-        assertFalse(unknown.ok)
-        assertTrue(reportOk(listOf(DoctorCheck.pass("a", "detail"), unknown)))
-    }
-
-    @Test
-    fun `one missing condition at error severity makes the report not ready`() {
-        assertFalse(reportOk(listOf(DoctorCheck.pass("a", "detail"), DoctorCheck.fail("b", "detail", "remedy"))))
-        assertTrue(reportOk(listOf(DoctorCheck.fail("b", "detail", "remedy", Severity.WARN))))
     }
 
     @Test

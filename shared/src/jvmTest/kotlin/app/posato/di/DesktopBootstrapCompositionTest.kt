@@ -54,19 +54,6 @@ class DesktopBootstrapCompositionTest {
     }
 
     @Test
-    fun `given the real desktop graph when created then onboarding dependencies resolve without touching providers`() {
-        val databasePath = isolatedDatabasePath()
-        val graph = createGraphFactory<DesktopApplicationGraph.Factory>().create(
-            FakeSessionMappings(),
-            FakeEnforcementPort(),
-            databasePath,
-            FakeMacHelperPort(),
-        )
-
-        assertIs<DesktopApplicationGraph>(graph)
-    }
-
-    @Test
     fun `given the real desktop graph when inspected then bootstrap runs on the io dispatcher`() {
         val databasePath = isolatedDatabasePath()
         val graph = createGraphFactory<DesktopApplicationGraph.Factory>().create(
