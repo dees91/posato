@@ -3,6 +3,7 @@ package app.posato.feature.enforcement
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -48,6 +49,14 @@ class IosSuspendedExpiryTest {
     }
 
     @Test
+    fun `given a schedule query when completed then the answer for that session is forwarded`() = runTest {
+        val provider = FakeIosSuspendedExpiryProvider(scheduledSessionIds = setOf("session"))
+
+        assertTrue(IosSuspendedExpiry(provider).isScheduled("session"))
+        assertFalse(IosSuspendedExpiry(provider).isScheduled("other-session"))
+    }
+
+    @Test
     fun `given a displacement read when completed then the foreign signal is forwarded unconsumed`() = runTest {
         val provider = FakeIosSuspendedExpiryProvider(displacedSessionId = "earlier-session")
 
@@ -87,7 +96,15 @@ private class FakeIosSuspendedExpiryProvider(
     private val reconciliation: IosExpiryReconciliation = IosExpiryReconciliation.UNKNOWN,
     private val displacedSessionId: String? = null,
     private val displacementFailure: Boolean = false,
+    private val scheduledSessionIds: Set<String> = emptySet(),
 ) : IosSuspendedExpiryProvider {
+    override fun isScheduled(
+        sessionId: String,
+        handler: (Boolean) -> Unit,
+    ) {
+        handler(sessionId in scheduledSessionIds)
+    }
+
     var cancelCalled = false
         private set
     var reconciliationCalled = false

@@ -31,6 +31,17 @@ class IosSessionEnforcementTest {
     }
 
     @Test
+    fun `given a scheduled expiry for the session when asked whether it is held then the session is held`() = runTest {
+        val providers = recordingProviders()
+        providers.scheduling.scheduledSessionIds = setOf("session")
+        val enforcement = IosSessionEnforcement(providers.enforcement, providers.expiry)
+
+        assertTrue(enforcement.holdsSession("session"))
+        assertFalse(enforcement.holdsSession("other-session"))
+        assertEquals(listOf("isScheduled", "isScheduled"), providers.calls)
+    }
+
+    @Test
     fun `given a short session when applying then the active outcome names the platform limit`() = runTest {
         val providers = recordingProviders(scheduleOutcome = IosSuspendedExpiryOutcome.BELOW_PLATFORM_MINIMUM)
         val enforcement = IosSessionEnforcement(providers.enforcement, providers.expiry)
@@ -194,6 +205,15 @@ class IosSessionEnforcementTest {
         val acknowledgedSessionIds = mutableListOf<String>()
         var reconciledSessionIds: Set<String> = setOf("session")
         var displacedSessionId: String? = null
+        var scheduledSessionIds: Set<String> = emptySet()
+
+        override fun isScheduled(
+            sessionId: String,
+            handler: (Boolean) -> Unit,
+        ) {
+            calls.addLast("isScheduled")
+            handler(sessionId in scheduledSessionIds)
+        }
 
         override fun schedule(
             request: IosSuspendedExpiryRequest,

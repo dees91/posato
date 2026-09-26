@@ -9,6 +9,7 @@ import PosatoShared
 protocol SuspendedExpiryMonitoring {
     func startMonitoring(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws
     func stopMonitoring(_ activities: [DeviceActivityName])
+    var activities: [DeviceActivityName] { get }
 }
 
 extension DeviceActivityCenter: SuspendedExpiryMonitoring {
@@ -84,14 +85,19 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
             // to delete: it survives until Kotlin persists it as a retained
             // terminal fact and acknowledges it (see
             // displacedClearedSessionId). Only the acknowledgement consumes.
-            try store.writePending(sessionId: request.sessionId)
             // Absolute one-shot components: hour/minute alone cannot tell a
             // 24-hour session's identical ends apart and wrap at midnight.
             // The product never promises the exact wall-clock instant.
             let components: Set<Calendar.Component> = [.year, .month, .day, .hour, .minute]
+            let intervalEnd = calendar.dateComponents(components, from: end)
+            try store.writePending(
+                sessionId: request.sessionId,
+                intervalEnd: intervalEnd,
+                endEpochSeconds: request.endEpochSeconds
+            )
             let schedule = DeviceActivitySchedule(
                 intervalStart: calendar.dateComponents(components, from: start),
-                intervalEnd: calendar.dateComponents(components, from: end),
+                intervalEnd: intervalEnd,
                 repeats: false
             )
             try monitoring.startMonitoring(SuspendedExpiryActivity.name, during: schedule)
@@ -106,6 +112,21 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
         monitoring.stopMonitoring([SuspendedExpiryActivity.name])
         records()?.removePending()
         handler(.cancelled)
+    }
+
+    func isScheduled(sessionId: String, handler: @escaping (KotlinBoolean) -> Void) {
+        // Proof that this session's restrictions are the ones in the store:
+        // its pending record is written only after its apply succeeded, and
+        // every clear stops monitoring and removes the record first.
+        guard SuspendedExpiryRecordStore.isValidSessionId(sessionId),
+              let store = records(),
+              case let .present(pending) = store.readPendingResult(),
+              pending.sessionId == sessionId
+        else {
+            handler(KotlinBoolean(bool: false))
+            return
+        }
+        handler(KotlinBoolean(bool: monitoring.activities.contains(SuspendedExpiryActivity.name)))
     }
 
     func readReconciliation(sessionId: String, handler: @escaping (IosExpiryReconciliation) -> Void) {

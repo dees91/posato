@@ -503,7 +503,13 @@ internal class SessionTransitionOwner(
             bankObservedExpiry(tag, record, sessionId)
             return
         }
-        val outcome = portMutex.withLock { enforcement.status() }
+        val (outcome, held) = portMutex.withLock {
+            val status = enforcement.status()
+            val held = status == EnforcementOutcome.APPLIED &&
+                enforcedIdentity != tag &&
+                enforcement.holdsSession(sessionId)
+            status to held
+        }
         val current = stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) }
         if (current !is LocalSessionStatus.Active || SessionTag(current.record) != tag) {
             settleForTag()
@@ -512,6 +518,8 @@ internal class SessionTransitionOwner(
         if (outcome == EnforcementOutcome.APPLIED && enforcedIdentity == tag) {
             actionTag = null
             mutableView.update { view -> view.copy(state = EnforcementState.Active(false)) }
+        } else if (held) {
+            adoptHeld(tag, frozen)
         } else if (enforcement.reapplyRequiresPrompt) {
             actionTag = tag
             mutableView.update { view ->
@@ -523,6 +531,17 @@ internal class SessionTransitionOwner(
         } else {
             reapplyCurrent(record, tag, frozen)
         }
+    }
+
+    private suspend fun adoptHeld(
+        tag: SessionTag,
+        frozen: FrozenStartSet?,
+    ) {
+        val displayed = frozen?.toEnforcedSet() ?: loadTargets().toEnforcedSet()
+        unknownStreak = 0
+        enforcedIdentity = tag
+        actionTag = null
+        mutableView.update { it.copy(state = EnforcementState.Active(false), enforced = displayed) }
     }
 
     private suspend fun reapplyCurrent(

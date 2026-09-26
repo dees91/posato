@@ -1970,3 +1970,14 @@ to scope, feasibility, or delivery.
   the website build collapses whitespace as HTML does, keeping the space
   before a link on its own source line.
   Updated [unattended verification](topics/unattended-verification.md).
+
+## [2026-09-26] implementation | IOS-006: iPhone session kept across a relaunch
+
+- `observed` on the test iPhone: restarting Device Activity monitoring inside a
+  running window delivers an interval end within seconds, which the extension
+  took as expiry. A relaunch now adopts a session whose expiry is still
+  scheduled, and the extension ignores a callback clearly before the pending
+  interval end (pending record version 2 with the end).
+- Relaunches no longer apply Paused-items edits made during a session
+  (`user-confirmed`). Updated [iOS enforcement](topics/ios-enforcement.md) and
+  [cross-device synchronization](topics/cross-device-synchronization.md).

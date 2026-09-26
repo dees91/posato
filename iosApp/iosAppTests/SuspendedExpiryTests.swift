@@ -22,16 +22,21 @@ final class FakeExpiryMonitoring: SuspendedExpiryMonitoring {
     var started: [StartedSchedule] = []
     var stopped: [[DeviceActivityName]] = []
     var startError: Error?
+    private(set) var activities: [DeviceActivityName] = []
 
     func startMonitoring(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws {
         if let startError {
             throw startError
         }
         started.append(StartedSchedule(activity: activity, schedule: schedule))
+        if !activities.contains(activity) {
+            activities.append(activity)
+        }
     }
 
     func stopMonitoring(_ activities: [DeviceActivityName]) {
         stopped.append(activities)
+        self.activities.removeAll { activities.contains($0) }
     }
 }
 
@@ -43,7 +48,7 @@ final class SuspendedExpiryTests: XCTestCase {
     func testForeignActivityClearsNothingAndWritesNoRecord() throws {
         let store = FakeExpirySettingsStore()
         let records = try isolatedRecordStore()
-        try records.writePending(sessionId: "session")
+        try writePending(records, sessionId: "session")
 
         SuspendedExpiryClear.handleIntervalEnd(
             activity: DeviceActivityName("foreign.activity"),
@@ -60,12 +65,9 @@ final class SuspendedExpiryTests: XCTestCase {
         let owned = FakeExpirySettingsStore()
         let foreign = FakeExpirySettingsStore()
         let records = try isolatedRecordStore()
+        try writePending(records, sessionId: "session")
 
-        SuspendedExpiryClear.handleIntervalEnd(
-            activity: SuspendedExpiryActivity.name,
-            store: owned,
-            records: records
-        )
+        handleIntervalEnd(store: owned, records: records, now: 1_700_003_600)
 
         XCTAssertEqual(owned.clears, 1)
         XCTAssertEqual(foreign.clears, 0)
@@ -74,34 +76,149 @@ final class SuspendedExpiryTests: XCTestCase {
     func testMatchingActivityWritesClearedRecordAndConsumesPending() throws {
         let store = FakeExpirySettingsStore()
         let records = try isolatedRecordStore()
-        try records.writePending(sessionId: "session")
+        try writePending(records, sessionId: "session")
 
-        SuspendedExpiryClear.handleIntervalEnd(
-            activity: SuspendedExpiryActivity.name,
-            store: store,
-            records: records,
-            now: { Date(timeIntervalSince1970: 1_700_000_000) }
-        )
+        handleIntervalEnd(store: store, records: records, now: 1_700_003_600)
 
+        XCTAssertEqual(store.clears, 1)
         XCTAssertNil(records.readPending())
         let cleared = try XCTUnwrap(records.readCleared())
-        XCTAssertEqual(cleared.version, SuspendedExpiryActivity.recordSchemaVersion)
+        XCTAssertEqual(cleared.version, 1)
         XCTAssertEqual(cleared.sessionId, "session")
-        XCTAssertEqual(cleared.clearedAt, 1_700_000_000, accuracy: 0.001)
+        XCTAssertEqual(cleared.clearedAt, 1_700_003_600, accuracy: 0.001)
     }
 
-    func testMatchingActivityWithoutPendingStillClearsButWritesNoRecord() throws {
+    func testMatchingActivityWithoutPendingClearsNothing() throws {
         let store = FakeExpirySettingsStore()
         let records = try isolatedRecordStore()
 
-        SuspendedExpiryClear.handleIntervalEnd(
-            activity: SuspendedExpiryActivity.name,
-            store: store,
-            records: records
-        )
+        handleIntervalEnd(store: store, records: records, now: 1_700_003_600)
+
+        XCTAssertEqual(store.clears, 0)
+        XCTAssertNil(records.readCleared())
+    }
+
+    // MARK: - Early interval end (IOS-006)
+
+    func testCallbackInsideTheWindowClearsNothingAndKeepsPending() throws {
+        let store = FakeExpirySettingsStore()
+        let records = try isolatedRecordStore()
+        try writePending(records, sessionId: "session")
+
+        handleIntervalEnd(store: store, records: records, now: 1_700_001_000)
+
+        XCTAssertEqual(store.clears, 0)
+        XCTAssertEqual(records.readPending()?.sessionId, "session")
+        XCTAssertNil(records.readCleared())
+    }
+
+    func testCallbackWithinTheLastMinuteOrAfterTheEndClearsAndRecords() throws {
+        for now: Int64 in [1_700_003_541, 1_700_003_600, 1_700_003_840] {
+            let store = FakeExpirySettingsStore()
+            let records = try isolatedRecordStore()
+            try writePending(records, sessionId: "session")
+
+            handleIntervalEnd(store: store, records: records, now: now)
+
+            XCTAssertEqual(store.clears, 1, "now \(now)")
+            XCTAssertNil(records.readPending(), "now \(now)")
+            XCTAssertEqual(records.readCleared()?.sessionId, "session", "now \(now)")
+        }
+    }
+
+    func testLegacyPendingFromVersionOneClearsAtAnyTime() throws {
+        let store = FakeExpirySettingsStore()
+        let records = try isolatedRecordStore()
+        try writeRawPending(records, json: "{\"version\":1,\"sessionId\":\"session\"}")
+        XCTAssertEqual(records.readPending()?.sessionId, "session")
+
+        handleIntervalEnd(store: store, records: records, now: 1_700_001_000)
 
         XCTAssertEqual(store.clears, 1)
-        XCTAssertNil(records.readCleared())
+        XCTAssertNil(records.readPending())
+        XCTAssertEqual(records.readCleared()?.sessionId, "session")
+    }
+
+    func testUnreadablePendingClearsWithoutRecord() throws {
+        let unreadable = [
+            "not-json",
+            "{\"version\":2,\"sessionId\":\"session\"}",
+            "{\"version\":3,\"sessionId\":\"session\",\"endEpochSeconds\":1700003600}",
+        ]
+        for json in unreadable {
+            let store = FakeExpirySettingsStore()
+            let records = try isolatedRecordStore()
+            try writeRawPending(records, json: json)
+
+            handleIntervalEnd(store: store, records: records, now: 1_700_001_000)
+
+            XCTAssertEqual(store.clears, 1, json)
+            XCTAssertNil(records.readCleared(), json)
+        }
+    }
+
+    func testTimeZoneChangesNeverSkipTheRealEnd() throws {
+        let end: Int64 = 1_700_003_600
+        let cases: [(offset: Int, earlyCallback: Int64, realCallback: Int64)] = [
+            (-7_200, end - 600, end),
+            (7_200, end - 7_200 - 600, end - 7_200),
+        ]
+        for testCase in cases {
+            var moved = Calendar(identifier: .gregorian)
+            moved.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: testCase.offset))
+
+            let early = FakeExpirySettingsStore()
+            let earlyRecords = try isolatedRecordStore()
+            try writePending(earlyRecords, sessionId: "session", end: end)
+            handleIntervalEnd(store: early, records: earlyRecords, now: testCase.earlyCallback, calendar: moved)
+            XCTAssertEqual(early.clears, 0, "offset \(testCase.offset)")
+
+            let real = FakeExpirySettingsStore()
+            let realRecords = try isolatedRecordStore()
+            try writePending(realRecords, sessionId: "session", end: end)
+            handleIntervalEnd(store: real, records: realRecords, now: testCase.realCallback, calendar: moved)
+            XCTAssertEqual(real.clears, 1, "offset \(testCase.offset)")
+            XCTAssertEqual(realRecords.readCleared()?.sessionId, "session", "offset \(testCase.offset)")
+        }
+    }
+
+    func testCalendarChangeFallsBackToTheAbsoluteEnd() throws {
+        var buddhist = Calendar(identifier: .buddhist)
+        buddhist.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
+
+        let early = FakeExpirySettingsStore()
+        let earlyRecords = try isolatedRecordStore()
+        try writePending(earlyRecords, sessionId: "session")
+        handleIntervalEnd(store: early, records: earlyRecords, now: 1_700_001_000, calendar: buddhist)
+        XCTAssertEqual(early.clears, 0)
+
+        let real = FakeExpirySettingsStore()
+        let realRecords = try isolatedRecordStore()
+        try writePending(realRecords, sessionId: "session", calendar: buddhist)
+        handleIntervalEnd(store: real, records: realRecords, now: 1_700_003_600)
+        XCTAssertEqual(real.clears, 1)
+    }
+
+    func testReplacementCallbackInsideTheWindowKeepsTheReplacementScheduled() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+        XCTAssertEqual(
+            try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
+            .scheduled
+        )
+        XCTAssertEqual(try cancel(scheduler: scheduler), .cancelled)
+        XCTAssertEqual(
+            try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
+            .scheduled
+        )
+
+        let store = FakeExpirySettingsStore()
+        handleIntervalEnd(store: store, records: records, now: 1_700_001_000)
+
+        XCTAssertEqual(store.clears, 0)
+        XCTAssertEqual(try reconcile(sessionId: "session", scheduler: scheduler), .unknown)
+        XCTAssertTrue(try isScheduled(sessionId: "session", scheduler: scheduler))
     }
 
     func testSchedulerAndClearShareOneActivityName() throws {
@@ -144,7 +261,7 @@ final class SuspendedExpiryTests: XCTestCase {
 
     func testRecordStoreKeepsItsOwnDirectory() throws {
         let records = try isolatedRecordStore()
-        try records.writePending(sessionId: "session")
+        try writePending(records, sessionId: "session")
         try records.writeCleared(sessionId: "session", clearedAt: 1_700_000_000)
 
         XCTAssertTrue(records.directoryURL.lastPathComponent == "SuspendedExpiry")
@@ -282,6 +399,58 @@ final class SuspendedExpiryTests: XCTestCase {
         XCTAssertEqual(records.readPending()?.sessionId, "session")
     }
 
+    func testScheduleWritesThePendingIntervalEnd() throws {
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: FakeExpiryMonitoring(), records: { records })
+
+        XCTAssertEqual(
+            try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
+            .scheduled
+        )
+
+        let pending = try XCTUnwrap(records.readPending())
+        XCTAssertEqual(pending.version, 2)
+        XCTAssertEqual(pending.intervalEnd, DateComponents(year: 2023, month: 11, day: 14, hour: 23, minute: 13))
+        XCTAssertEqual(pending.endEpochSeconds, 1_700_003_600)
+    }
+
+    func testIsScheduledOnlyForTheMatchingPendingWithActiveMonitoring() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+        XCTAssertFalse(try isScheduled(sessionId: "session", scheduler: scheduler))
+
+        XCTAssertEqual(
+            try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
+            .scheduled
+        )
+        XCTAssertTrue(try isScheduled(sessionId: "session", scheduler: scheduler))
+        XCTAssertFalse(try isScheduled(sessionId: "other-session", scheduler: scheduler))
+
+        monitoring.stopMonitoring([SuspendedExpiryActivity.name])
+        XCTAssertFalse(try isScheduled(sessionId: "session", scheduler: scheduler))
+
+        XCTAssertEqual(
+            try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
+            .scheduled
+        )
+        XCTAssertEqual(try cancel(scheduler: scheduler), .cancelled)
+        XCTAssertFalse(try isScheduled(sessionId: "session", scheduler: scheduler))
+    }
+
+    func testIsScheduledAdoptsALegacyPendingWithActiveMonitoring() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+        XCTAssertEqual(
+            try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
+            .scheduled
+        )
+        try writeRawPending(records, json: "{\"version\":1,\"sessionId\":\"session\"}")
+
+        XCTAssertTrue(try isScheduled(sessionId: "session", scheduler: scheduler))
+    }
+
     // MARK: - Stop and reconciliation
 
     func testStopIsIdempotentAndLeavesNoMonitoringBehind() throws {
@@ -410,7 +579,7 @@ final class SuspendedExpiryTests: XCTestCase {
     func testLatePreviousExpiryAndReplacementExpirySurviveRestartIndependently() throws {
         let records = try isolatedRecordStore()
         let scheduler = capableScheduler(monitoring: FakeExpiryMonitoring(), records: { records })
-        try records.writePending(sessionId: "earlier-session")
+        try writePending(records, sessionId: "earlier-session")
         let captured = try XCTUnwrap(records.readPending())
         XCTAssertNil(displaced(currentSessionId: "session", scheduler: scheduler))
         XCTAssertEqual(try schedule(sessionId: "session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler), .scheduled)
@@ -441,6 +610,51 @@ final class SuspendedExpiryTests: XCTestCase {
 
     // MARK: - Helpers
 
+    private static func utcCalendar() -> Calendar {
+        var utc = Calendar(identifier: .gregorian)
+        utc.timeZone = TimeZone(secondsFromGMT: 0)!
+        return utc
+    }
+
+    private func handleIntervalEnd(
+        store: FakeExpirySettingsStore,
+        records: SuspendedExpiryRecordStore,
+        now: Int64,
+        calendar: Calendar = SuspendedExpiryTests.utcCalendar()
+    ) {
+        SuspendedExpiryClear.handleIntervalEnd(
+            activity: SuspendedExpiryActivity.name,
+            store: store,
+            records: records,
+            now: { Date(timeIntervalSince1970: TimeInterval(now)) },
+            calendar: calendar
+        )
+    }
+
+    private func writePending(
+        _ records: SuspendedExpiryRecordStore,
+        sessionId: String,
+        end: Int64 = 1_700_003_600,
+        calendar: Calendar = SuspendedExpiryTests.utcCalendar()
+    ) throws {
+        let components = calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: Date(timeIntervalSince1970: TimeInterval(end))
+        )
+        try records.writePending(sessionId: sessionId, intervalEnd: components, endEpochSeconds: end)
+    }
+
+    private func writeRawPending(_ records: SuspendedExpiryRecordStore, json: String) throws {
+        try FileManager.default.createDirectory(at: records.directoryURL, withIntermediateDirectories: true)
+        try Data(json.utf8).write(to: records.directoryURL.appendingPathComponent("pending-v1.json"))
+    }
+
+    private func isScheduled(sessionId: String, scheduler: SuspendedExpiryScheduler) throws -> Bool {
+        var result: KotlinBoolean?
+        scheduler.isScheduled(sessionId: sessionId) { result = $0 }
+        return try XCTUnwrap(result).boolValue
+    }
+
     private func clearedRecordURL(_ records: SuspendedExpiryRecordStore) throws -> URL {
         let urls = try FileManager.default.contentsOfDirectory(at: records.directoryURL, includingPropertiesForKeys: nil)
         return try XCTUnwrap(urls.first { $0.lastPathComponent.hasPrefix("cleared-") })
@@ -451,14 +665,12 @@ final class SuspendedExpiryTests: XCTestCase {
         authorization: EnforcementAuthorization = .approved,
         records: @escaping () -> SuspendedExpiryRecordStore?
     ) -> SuspendedExpiryScheduler {
-        var utc = Calendar(identifier: .gregorian)
-        utc.timeZone = TimeZone(secondsFromGMT: 0)!
-        return SuspendedExpiryScheduler(
+        SuspendedExpiryScheduler(
             monitoring: monitoring,
             authorization: { authorization },
             isCapable: true,
             records: records,
-            calendar: utc
+            calendar: Self.utcCalendar()
         )
     }
 

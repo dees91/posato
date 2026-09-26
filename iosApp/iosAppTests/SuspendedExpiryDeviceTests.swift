@@ -104,7 +104,84 @@ final class SuspendedExpiryDeviceTests: XCTestCase {
 #endif
     }
 
+    /// `IOS-006` probe and regression check, unattended: repeats the relaunch
+    /// sequence (cancel, clear, apply, schedule for the same session) inside
+    /// a window that is already running, then waits for the real end. The
+    /// restriction must survive the restart callback window and still be
+    /// cleared, with a record, after the real end. Takes about 6 minutes.
+    func testRelaunchSequenceInsideARunningWindowKeepsRestrictionsUntilTheRealEnd() throws {
+#if targetEnvironment(simulator)
+        throw XCTSkip("Requires a development-signed iPhone")
+#else
+        let authorizationDeadline = Date().addingTimeInterval(15)
+        while AuthorizationCenter.shared.authorizationStatus != .approved, Date() < authorizationDeadline {
+            RunLoop.current.run(until: Date().addingTimeInterval(1))
+        }
+        guard AuthorizationCenter.shared.authorizationStatus == .approved else {
+            XCTFail("Requires granted Screen Time authorization; run screen-time-consent.json first")
+            return
+        }
+        let records = try recordStore()
+        guard records.readPending() == nil,
+              !DeviceActivityCenter().activities.contains(SuspendedExpiryActivity.name)
+        else {
+            XCTFail("Posato expiry monitoring is active; end the session before running the probe")
+            return
+        }
+
+        let sessionId = UUID().uuidString.replacingOccurrences(of: "-", with: "").lowercased()
+        let enforcer = IosManagedSettingsEnforcer()
+        let scheduler = SuspendedExpiryScheduler()
+        defer {
+            _ = try? cancel(scheduler: scheduler)
+            records.removeCleared(sessionId: sessionId)
+            ManagedSettingsStore(named: IosEnforcementStoreName.posato).clearAllSettings()
+            XCTAssertNil(records.readCleared(sessionId: sessionId))
+        }
+
+        let now = Date()
+        let start = now.addingTimeInterval(-600)
+        let end = now.addingTimeInterval(360)
+        XCTAssertEqual(try apply(domains: [domain], enforcer: enforcer), .applied)
+        XCTAssertEqual(try schedule(sessionId: sessionId, start: start, end: end, scheduler: scheduler), .scheduled)
+
+        XCTAssertEqual(try cancel(scheduler: scheduler), .cancelled)
+        XCTAssertEqual(try clear(enforcer: enforcer), .cleared)
+        XCTAssertEqual(try apply(domains: [domain], enforcer: enforcer), .applied)
+        XCTAssertEqual(try schedule(sessionId: sessionId, start: start, end: end, scheduler: scheduler), .scheduled)
+
+        let probe = ManagedSettingsStore(named: IosEnforcementStoreName.posato)
+        let restartDeadline = Date().addingTimeInterval(120)
+        while Date() < restartDeadline {
+            let lifted = probe.webContent.blockedByFilter == nil
+            let recorded = records.readCleared(sessionId: sessionId) != nil
+            if lifted || recorded {
+                let elapsed = Int(Date().timeIntervalSince(now))
+                print("POSATO_DEVICE_CHECKPOINT: restart callback after \(elapsed) s, lifted=\(lifted), recorded=\(recorded).")
+                XCTFail("The restart delivered an interval end inside the running window")
+                return
+            }
+            RunLoop.current.run(until: Date().addingTimeInterval(5))
+        }
+        print("POSATO_DEVICE_CHECKPOINT: restriction kept through the restart callback window.")
+
+        let endDeadline = end.addingTimeInterval(300)
+        while Date() < endDeadline, records.readCleared(sessionId: sessionId) == nil {
+            RunLoop.current.run(until: Date().addingTimeInterval(10))
+        }
+        XCTAssertNil(probe.webContent.blockedByFilter)
+        XCTAssertEqual(records.readCleared(sessionId: sessionId)?.sessionId, sessionId)
+        print("POSATO_DEVICE_CHECKPOINT: real end cleared the restriction and recorded the session.")
+#endif
+    }
+
 #if !targetEnvironment(simulator)
+    private func clear(enforcer: IosManagedSettingsEnforcer) throws -> IosEnforcementOutcome {
+        var result: IosEnforcementOutcome?
+        enforcer.clear { result = $0 }
+        return try XCTUnwrap(result)
+    }
+
     private func recordStore() throws -> SuspendedExpiryRecordStore {
         try XCTUnwrap(SuspendedExpiryRecordStore.live(), "App Group container must be reachable on device")
     }
