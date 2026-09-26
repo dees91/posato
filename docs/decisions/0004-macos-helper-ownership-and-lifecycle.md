@@ -7,6 +7,196 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-014 standing Apply grant amendment (proposed)
+
+`proposed` (2026-09-26). The maintainer chose the mechanism and the opt-in
+(`user-confirmed`, recorded in the
+[`MACOS-014` brief](../tasks/specifications/macos-014-authorization.md)).
+This text takes effect only after an independent security review passes and
+the maintainer accepts it. Until then the one-use authorization in
+[Authorization of Apply and cleanup](#authorization-of-apply-and-cleanup)
+remains the only way to authorize Apply.
+
+### What changes
+
+A person can opt in once, with a fresh administrator authentication, so that
+later Apply requests from their own Posato need no administrator prompt. The
+daemon records that decision as a root-only standing grant. A grant
+authorizes Apply with the fixed proxy values only.
+
+It changes nothing else:
+
+- the daemon's operation allowlist and fixed proxy values;
+- durable ownership, the lease, reconciliation, and Restore;
+- Enable, Repair, Disable, and Remove, except for the grant duties below;
+- the rule that Restore and cleanup accept no bearer material.
+
+### Opt-in right
+
+The opt-in uses a second custom right:
+
+```text
+app.posato.macos.proxy.standing-apply
+```
+
+Its compiled definition equals the Apply right: class `user`, group `admin`,
+`authenticate-user`, not `session-owner`, not `shared`, no `allow-root`, the
+30-second transfer bound, and version 1. A separate name keeps one prompted
+Apply from ever becoming a standing grant, and lets the prompt name what the
+administrator allows.
+
+The daemon owns this definition as it owns the Apply right:
+
+- Enable and Repair install or converge both rights. Status verifies the
+  Apply right as today and reports separately whether the standing right is
+  present and exact.
+- A daemon enabled by an earlier version has no standing right and stays
+  `ready`. The opt-in first sends **Prepare grant**, which installs the
+  standing right only when it is absent. A mismatched rule fails closed;
+  only Repair replaces it.
+- Remove removes and verifies the absence of both rights.
+
+### Opt-in operation
+
+1. The helper sends **Prepare grant** (no administrator).
+2. The helper obtains the standing right with interaction allowed and sends
+   only its external form with **Grant**, over the authenticated connection.
+3. The daemon validates and destroys the form under the same one-use rules as
+   the Apply form. The form is bound to the connection, request, and session;
+   it is never persisted, logged, or replayed, and every owned copy is zeroed.
+4. The daemon takes the grantee from the connection, never from the payload:
+   - the effective user ID of the XPC peer;
+   - that account's generated UID, resolved with `mbr_uid_to_uuid`;
+   - the Mac's platform UUID.
+
+   It requires the peer to be the current console user, then writes the
+   grant entry atomically.
+
+**Grant** neither reads nor changes proxy ownership.
+
+### Grant record
+
+The record is `/Library/Application
+Support/Posato/ProxySettings/apply-grant-v1.plist`. It is kept apart from
+`ownership-v1.plist` so that the ownership schema stays unchanged. It uses
+the same file protections:
+
+- root owner, mode `0600`, and one link;
+- no symbolic-link following;
+- atomic replacement with `fsync`;
+- exclusion from backup.
+
+It contains only:
+
+- a schema version;
+- at most 8 entries, each holding a user ID, the account's generated UID, the
+  platform UUID, and the grant time.
+
+It holds no names, no authorization material, and no secret. Nothing in it
+works as a bearer token.
+
+### Grant-authorized Apply
+
+**Apply with grant** is a new operation. Its only payload is the port, and it
+carries no authorization material. It uses the canonical input digest of
+Apply, so one intent keeps one identity however it was authorized. The
+operations are additive, and protocol major version 1 stays.
+
+The daemon checks, in order:
+
+1. the ownership preflight, as for Apply;
+2. the exact Apply right;
+3. the grant record: it must pass the file and schema checks;
+4. an entry for the peer's effective user ID;
+5. that the entry's generated UID equals the account's current one;
+6. that the entry's platform UUID equals this Mac's;
+7. that the peer is the current console user;
+8. the exact standing right.
+
+Only then does it mutate, and it starts the lease as today.
+
+Any failed check returns a new stable category, `standingGrantUnavailable`,
+before any durable claim or side effect. The application may then retry the
+same request identity through the prompted Apply. That is allowed because it
+requests grant-authorized Apply only after the person acts (next section).
+
+### Who may request it
+
+The daemon cannot tell whether a person acted. The application therefore
+keeps the ADR 0009 rule. It requests grant-authorized Apply only for:
+
+- the person's own start of a session;
+- the person's own **Resume restrictions**: after a relaunch, a wake, a login
+  launch, or adopting a session from another device.
+
+The menu, a login launch, synchronization, schedules, and automatic retries
+never request any Apply. `SCHEDULE-001` needs its own review to change this.
+
+### Revocation
+
+- **Switch off.** **Revoke grant** needs no administrator. It deletes only the
+  entry for the peer's own user ID, is idempotent, and leaves other accounts'
+  entries in place.
+- **Remove from this Mac.** After `Idle`, the daemon deletes the whole grant
+  record and verifies it is gone before removing the rights. Reconciling a
+  Remove verifies that too.
+- **Disable.** Deletes the whole record, so enabling again asks for a new
+  opt-in.
+- **Rule lifecycle.** The daemon deletes the whole record first when either
+  of these happens:
+  - Enable finds the Apply right absent and installs it;
+  - Repair replaces either right.
+
+  A missing or mismatched right means a Remove or tampering took place.
+- **Unusable record.** A record that fails the file or schema checks is never
+  used. Revoke, Disable, Remove, and Repair delete it.
+- **Stale entries.** An entry whose generated UID or platform UUID no longer
+  matches is ignored and dropped at the next write.
+
+An update keeps the grant because the signed identity and daemon label stay
+the same. That is intended. Moving the application to the Trash without
+Remove leaves the record and rules, as it already leaves the Apply rule. A
+reinstall of the same signed Posato for the same account then finds the grant
+again. Status reports the grant for the peer, so the switch shows the true
+state and the person can turn it off.
+
+### Threats
+
+| Threat | Handling | Residual |
+| --- | --- | --- |
+| Another local user | The grantee comes from the XPC peer's effective user ID, never the payload. Entries are per account and bound to the generated UID. Apply requires the console user. Revoke deletes only the caller's own entry. The record is root-only. | The proxy is system-wide. While the grantee's session is active, fast user switching leaves it in place for other accounts. That already happens with prompted Apply; the grant only removes the administrator step before each session. |
+| Compromised non-admin process under another account | It cannot match the peer user ID. Without the helper's signature it cannot open the XPC connection. | None new. |
+| Compromised non-admin process under the grantee's account | Only the signed helper passes the XPC requirement. The helper accepts only a signed Posato parent. In release builds, the hardened runtime blocks injection. At most, such a process can drive Posato's own interface to start a session: fixed proxy values, cleaned up by the lease and Restore. | `T-07`: a process with the person's full interface control, such as Accessibility access, can start a session without an administrator. Team-signed debuggable development builds count as team code. |
+| Replay | **Apply with grant** carries no bearer material. The opt-in form keeps the one-use rules. Durable identities reconcile duplicates. | None. |
+| Grant theft | The record has no secret and is root-only. Its entries are bound to the account's generated UID and this Mac's platform UUID. Copying or editing it needs root. | `R-02`: an administrator or root can create a grant. |
+| Stale grants after removal, reinstallation, or account deletion | The revocation rules above, the generated UID binding, and deletion when a rule goes missing or changes. | Trash without Remove followed by a reinstall keeps the grant. Status shows it, and the switch or Remove clears it. |
+| Rule tampering | Only root changes the authorization database. A missing or mismatched right deletes the grants. | `R-02`. |
+| Silent apply | The application rule in "Who may request it". | `T-07`: a compromised application process. |
+| Version skew | An older daemon rejects the unknown operations, so the application falls back to the prompted path. An older helper never requests a grant. | None. |
+
+### Verification
+
+Written failing first, isolated tests cover:
+
+- record parsing, including the schema, size, and file checks;
+- binding to the user ID, generated UID, platform UUID, and console user;
+- every revocation path, including Revoke deleting only the caller's own
+  entry;
+- deleting the record when a rule changes;
+- that a rejected grant-authorized Apply leaves no durable claim;
+- a wrong peer or user.
+
+End-to-end verification follows the brief.
+
+### On acceptance
+
+- Rewrite
+  [Authorization of Apply and cleanup](#authorization-of-apply-and-cleanup) so
+  that Apply is authorized by either the one-use form or a standing grant.
+- Extend the threat model rows `TB-04`, `T-07`, and `T-08`.
+- Check that [`PRIVACY.md`](../../PRIVACY.md) covers the local, root-only
+  user ID and generated UID. Neither leaves the Mac.
+
 ## MACOS-011 in-app update amendment
 
 `user-confirmed` (2026-09-22, [ADR 0008](0008-macos-update-delivery.md));
