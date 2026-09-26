@@ -1,20 +1,27 @@
 package app.posato.desktop
 
 import app.posato.feature.onboarding.MacLoginItem
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 internal enum class PresenceEvent { MENU_OPENED, MENU_CLOSED, POWER_OFF }
 
 internal object MacPresence {
     private val events = Channel<PresenceEvent>(Channel.UNLIMITED)
     private val actions = Channel<Int>(Channel.UNLIMITED)
-    private val alertChoices = Channel<Int>(Channel.CONFLATED)
+    private val alertLock = Mutex()
+    private val pendingAlerts = ConcurrentHashMap<Int, CompletableDeferred<Int>>()
+    private val nextAlert = AtomicInteger()
 
     val menuEvents: Flow<PresenceEvent> = events.receiveAsFlow()
     val menuActions: Flow<Int> = actions.receiveAsFlow()
@@ -60,8 +67,17 @@ internal object MacPresence {
         primary: String,
         secondary: String,
     ): Int {
-        nativePresentAlert(title, message, primary, secondary)
-        return alertChoices.receive()
+        return alertLock.withLock {
+            val request = nextAlert.incrementAndGet()
+            val choice = CompletableDeferred<Int>()
+            pendingAlerts[request] = choice
+            try {
+                nativePresentAlert(request, title, message, primary, secondary)
+                choice.await()
+            } finally {
+                pendingAlerts.remove(request)
+            }
+        }
     }
 
     @JvmStatic
@@ -85,8 +101,11 @@ internal object MacPresence {
     }
 
     @JvmStatic
-    fun onAlertFinished(choice: Int) {
-        alertChoices.trySend(choice)
+    fun onAlertFinished(
+        request: Int,
+        choice: Int,
+    ) {
+        pendingAlerts[request]?.complete(choice)
     }
 
     @JvmStatic
@@ -112,6 +131,7 @@ internal object MacPresence {
 
     @JvmStatic
     private external fun nativePresentAlert(
+        request: Int,
         title: String,
         message: String,
         primary: String,

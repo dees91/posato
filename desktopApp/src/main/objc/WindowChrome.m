@@ -93,11 +93,13 @@ static JNIEnv *PresenceEnvironment(void) {
     return environment;
 }
 
-static void PresenceCall(jmethodID method, jint argument, BOOL withArgument) {
+static void PresenceCallWith(jmethodID method, jint first, jint second, int count) {
     JNIEnv *environment = PresenceEnvironment();
     if (environment == NULL || presenceClass == NULL || method == NULL) return;
-    if (withArgument) {
-        (*environment)->CallStaticVoidMethod(environment, presenceClass, method, argument);
+    if (count == 2) {
+        (*environment)->CallStaticVoidMethod(environment, presenceClass, method, first, second);
+    } else if (count == 1) {
+        (*environment)->CallStaticVoidMethod(environment, presenceClass, method, first);
     } else {
         (*environment)->CallStaticVoidMethod(environment, presenceClass, method);
     }
@@ -162,11 +164,11 @@ static NSImage *PresenceMark(BOOL filled) {
 
 @implementation PosatoPresenceMenuDelegate
 - (void)menuWillOpen:(NSMenu *)menu {
-    PresenceCall(presenceMenuOpened, 0, NO);
+    PresenceCallWith(presenceMenuOpened, 0, 0, 0);
 }
 
 - (void)menuDidClose:(NSMenu *)menu {
-    PresenceCall(presenceMenuClosed, 0, NO);
+    PresenceCallWith(presenceMenuClosed, 0, 0, 0);
 }
 @end
 
@@ -178,7 +180,7 @@ static NSImage *PresenceMark(BOOL filled) {
 - (void)choose:(NSMenuItem *)item {
     jint action = (jint)item.tag;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-        PresenceCall(presenceMenuAction, action, YES);
+        PresenceCallWith(presenceMenuAction, action, 0, 1);
     });
 }
 @end
@@ -205,7 +207,7 @@ JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresence_nativeStart(JNIEn
     presenceMenuClosed = (*environment)->GetStaticMethodID(environment, receiver, "onMenuClosed", "()V");
     presenceMenuAction = (*environment)->GetStaticMethodID(environment, receiver, "onMenuAction", "(I)V");
     presencePowerOff = (*environment)->GetStaticMethodID(environment, receiver, "onPowerOff", "()V");
-    presenceAlertFinished = (*environment)->GetStaticMethodID(environment, receiver, "onAlertFinished", "(I)V");
+    presenceAlertFinished = (*environment)->GetStaticMethodID(environment, receiver, "onAlertFinished", "(II)V");
     if (presenceMenuOpened == NULL || presenceMenuClosed == NULL || presenceMenuAction == NULL || presencePowerOff == NULL ||
         presenceAlertFinished == NULL) {
         if ((*environment)->ExceptionCheck(environment)) (*environment)->ExceptionClear(environment);
@@ -224,7 +226,7 @@ JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresence_nativeStart(JNIEn
                                                                     object:nil
                                                                      queue:nil
                                                                 usingBlock:^(NSNotification *notification) {
-                                                                    PresenceCall(presencePowerOff, 0, NO);
+                                                                    PresenceCallWith(presencePowerOff, 0, 0, 0);
                                                                 }];
         [NSNotificationCenter.defaultCenter addObserverForName:NSApplicationDidBecomeActiveNotification
                                                         object:nil
@@ -314,13 +316,14 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativeSetMainWindowVi
     dispatch_async(dispatch_get_main_queue(), ^{
         presenceMainWindowVisible = shown;
         PresenceApplyPolicy(nil);
-        if (shown) [NSApp activateIgnoringOtherApps:YES];
+        if (shown) [NSApp activate];
     });
 }
 
 JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativePresentAlert(
     JNIEnv *environment,
     jclass receiver,
+    jint request,
     jstring title,
     jstring message,
     jstring primary,
@@ -331,7 +334,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativePresentAlert(
     NSString *primaryTitle = PresenceString(environment, primary);
     NSString *secondaryTitle = PresenceString(environment, secondary);
     dispatch_async(dispatch_get_main_queue(), ^{
-        [NSApp activateIgnoringOtherApps:YES];
+        [NSApp activate];
         NSAlert *alert = [[NSAlert alloc] init];
         alert.messageText = alertTitle;
         alert.informativeText = alertMessage;
@@ -340,7 +343,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativePresentAlert(
         void (^finish)(NSModalResponse) = ^(NSModalResponse response) {
             jint choice = response == NSAlertFirstButtonReturn ? PosatoAlertChoicePrimary : PosatoAlertChoiceSecondary;
             dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
-                PresenceCall(presenceAlertFinished, choice, YES);
+                PresenceCallWith(presenceAlertFinished, request, choice, 2);
             });
         };
         NSWindow *window = NSApp.keyWindow ?: NSApp.mainWindow;

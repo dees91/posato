@@ -90,7 +90,10 @@ fun main() {
                 var powerOffEpochMillis by remember { mutableStateOf<Long?>(null) }
                 val menu by presence.menu.collectAsState(PresenceMenu(PresenceState.LOADING, PresenceAction.OPEN_POSATO, null))
                 val scope = rememberCoroutineScope()
-                val showWindow = { windowVisible = true }
+                val showWindow = {
+                    windowVisible = true
+                    MacPresence.setMainWindowVisible(true)
+                }
                 val confirmQuit: suspend () -> Boolean = {
                     when (quitPromptFor(menu, powerOffEpochMillis, System.currentTimeMillis())) {
                         QuitPrompt.NONE -> true
