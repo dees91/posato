@@ -69,7 +69,7 @@ Everything else was proven E2E through `posato-control` in Tart clones.
 
 ## Completed-change review
 
-- **Verdict:** `approved` after corrections. The first pass had 2 Required
+- **Verdict:** `approved` after corrections and a re-check. The first pass had 2 Required
   findings:
   - the record was not yet closed while the docs claimed verification;
   - the snapshot wake and unlinked exchange had no named test.
@@ -99,8 +99,8 @@ Tart clone of `primary` (macOS 26.6.2). Commands are `posato-control ...
 | Logout not blocked | `0e23ac3` | a restart with an active session completed within about 90 s |
 | Update gate, window closed | `0e23ac3` (builds 1000 and 1001) | refused during the session; admitted, installed, and relaunched as 1001 after it |
 | No notification prompt at launch | `8b96770` | no banner |
-| Resource use | `f3e32ac`+ | RESOURCES |
-| `./gradlew quality` | QUALITY | QUALITY_RESULT |
+| Resource use, window closed, `resources --seconds 600` | `e288e6f`, `7670f61` | idle: JVM 202 MB, 1.1 s CPU, 22 wakeups/s (P1: 261 MB, 4.4 s, 22). Session: JVM 224 MB, 4.9 s, 21/s (P1: 269 MB, 4.1 s, 23); helper 6.9 MB, 23 s, idea 18 / `MACOS-021` |
+| `./gradlew quality` | `9bddc76` | pass; the later commit changes Markdown only |
 
 ## Blockers and accepted risks
 
@@ -114,4 +114,5 @@ Tart clone of `primary` (macOS 26.6.2). Commands are `posato-control ...
 
 - **Status:** `done`
 - **Outcome:** `AC-01` to `AC-04` met, except the sleep-and-wake row, which
-  is blocked in the VM as recorded above.
+  is blocked in the VM as recorded above. Accepting that exception is the
+  maintainer's decision on the pull request.
