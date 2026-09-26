@@ -1,156 +1,113 @@
 # Execution: `IOS-006`
 
 - **Brief:** [ios-006-relaunch-session.md](../specifications/ios-006-relaunch-session.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code
-- **Reviewer:** independent general-purpose agent (plan review)
+- **Reviewer:** independent general-purpose agent (plan and completed change)
 - **Branch:** `feature/ios-006-relaunch-session`
 - **Updated:** 2026-09-26
 
-## Cause from code
+## Cause
 
-`inferred`, to be confirmed on the device in step 1. After a relaunch,
-`SessionTransitionOwner.reconcile` sees `status() == APPLIED` but has lost the
-in-memory `enforcedIdentity`, so it calls `reapplyCurrent`. That path runs
-`prepareApply(clear = true)` → `IosSessionEnforcement.clear()`, which calls
-`SuspendedExpiryScheduler.cancel()` (`stopMonitoring` and `removePending`) and
-clears the named store, then `apply()` re-applies the restrictions and
-`schedule()` writes a new pending record for the same session and calls
-`startMonitoring` again. Stopping or replacing the monitored activity delivers
-`intervalDidEnd` to the monitor extension asynchronously.
-`SuspendedExpiryClear.handleIntervalEnd` clears the store unconditionally, and
-when it reads the new pending record it writes a cleared record for the
-running session. The next `reconcile` reads that record through
-`peekSuspendedExpiry` and banks the session as expired. The race explains
-4 of 6 and every fast relaunch. When the callback lands before the new pending
-record, restrictions are lifted while the session still shows as active. The
-status poll (`onTickSecond` → `handlePollLoss`) and `retry()` reach the same
-`reapplyCurrent`; step 3 covers them. `IOS-002` stopped a window that had not
-started and saw no clear, so the cause needs a window already running.
+`observed` on the test iPhone (iOS 26.5), confirming the code analysis. After
+a relaunch `SessionTransitionOwner.reconcile` has lost the in-memory
+`enforcedIdentity`, so `reapplyCurrent` clears (`cancel`: `stopMonitoring`,
+`removePending`, store clear), re-applies, and schedules the same session
+again. Stopping monitoring inside a running window delivers `intervalDidEnd`
+to the extension within about 2 s; the extension cleared the store
+unconditionally and, reading the new pending record, recorded the running
+session as expired, which the next `reconcile` banked. The status poll and
+`retry()` reach the same path.
 
 ## Plan
 
-0. Run `/skill-advisor` after plan approval, before any code.
-1. **Reproduce (AC-01).** On the test iPhone with the unchanged branch, run
-   `session-relaunch-ios.json` (expected to fail). Then add a device probe in
-   `SuspendedExpiryDeviceTests`, skipped on the Simulator, run unattended with
-   `xcodebuild test-without-building` on the device. It refuses to run when a
-   pending record or active monitoring exists, uses a synthetic UUIDv4 in the
-   32-hex reconciliation form, schedules a window already running (start
-   10 minutes ago, end in 6 minutes) through the real scheduler and
-   extension, performs the relaunch sequence (`cancel`, store clear, apply,
-   `schedule` for the same session), and polls at least 120 s for the store
-   state and a cleared record. A cleared record for the running session
-   confirms the cause; nothing observed is inconclusive, not a refutation.
-   Any other result is recorded and the plan review repeats before code. It
-   removes the pending and synthetic cleared records and asserts none remains
-   before any scenario runs. The probe stays as the device regression check.
-2. **No restart on relaunch (root fix).** Add
-   `EnforcementPort.holdsSession(sessionId): Boolean` with a `false` default
-   in `commonMain`. `reconcile` adopts the session (`enforcedIdentity = tag`,
-   state active, no clear or re-apply) when `status()` is `APPLIED` and the
-   port holds the session, asked under the same `portMutex` as `status()`.
-   Adoption sets what a re-apply sets: `enforced` from the frozen start set
-   or the loaded targets, `unknownStreak = 0`, `actionTag = null`, and
-   `Active(false)`. The iOS adapter answers through a new
-   `IosSuspendedExpiryProvider.isScheduled(sessionId)`: `true` only when the
-   pending record names this session and `DeviceActivityCenter.activities`
-   still contains the Posato activity (added to the monitoring seam). A
-   session below the 15-minute minimum has no pending record and keeps
-   today's re-apply, which starts no monitoring. macOS keeps the default, so
-   its Resume path is unchanged.
-3. **Early-callback guard (safety net).** The pending record gains the
-   interval-end date components (year to minute) exactly as passed to
-   `DeviceActivitySchedule` and the absolute end in epoch seconds, as pending
-   schema version 2 in the same file with its own version constant; cleared
-   records stay at version 1. A new pending read returns absent, present
-   (version 1, or version 2 with both end fields), or unreadable (anything
-   else, including a newer version). `handleIntervalEnd` then:
-   - skips entirely (no clear, pending kept, no record) when now is earlier
-     than `min(components resolved with the current calendar, absolute end)`
-     minus 60 s; components that fail to resolve mean clear;
-   - clears and records as today for a version 2 record at or past its end
-     and for a version 1 record;
-   - no longer clears when no pending record exists, because every remover
-     of the pending record also stops monitoring or has already cleared;
-   - still clears, without a record, when the pending record exists but
-     cannot be read (for example before first unlock), preserving the
-     `IOS-002` fail-safe.
-   Two existing tests change on purpose: clearing without a pending record,
-   and the late previous-expiry test (`SuspendedExpiryTests.swift:410`),
-   which gains an in-window variant that must skip.
-4. **Tests.** Swift `SuspendedExpiryTests`: early, on-time, and late
-   callbacks with an injected calendar and clock; eastward and westward
-   time-zone changes and a calendar change; version 1 compatibility and a
-   1.1 cleared record still readable; absent versus unreadable pending; the
-   version 2 write; `isScheduled` true only for a matching pending record
-   with active monitoring. Kotlin: iOS adapter mapping in `iosTest`; in
-   `commonTest`, `reconcile` adopts without calling `clear` or `apply` when
-   the port holds the session, including a variant of the displayed-set test
-   (`SessionEnforcementTest.kt:350`), and falls back to re-apply when not.
-5. **Device verification (AC-03, AC-04).** On the test iPhone through
-   `posato-control -t device`: `session-relaunch-ios.json` three times (nine
-   relaunches, fast, 5 s, and 120 s windows, shield and Safari checked after
-   the callback window); the step 1 probe after the fix (restrictions stay,
-   no cleared record within the callback window, then the real end still
-   clears the store and records the synthetic session); suspended expiry
-   with a 25-minute session, one relaunch, the app terminated through the
-   driver, and `observe-unblocked-ios.json` after the
-   end; `session-early-end.json` with `observe-unblocked-ios.json`.
-6. Independent completed-change review, `./gradlew quality`, wiki updates
-   of the iOS enforcement topic (the open question answered) and the
-   `cross-device-synchronization` note that a native `APPLIED` cannot name
-   the session (now a session-bound proof on iOS), one wiki-log
-   entry, and record closeout. The availability-page limit stays for
-   `RELEASE-004`.
+0. `/skill-advisor` after plan approval.
+1. Reproduce with `session-relaunch-ios.json` and a device probe
+   (`SuspendedExpiryDeviceTests`, synthetic UUIDv4 id, refuses to run over
+   existing monitoring, window already running, 120 s restart window, then
+   the real end, cleanup in `defer`).
+2. Relaunch adoption: `EnforcementPort.holdsSession` (default `false`);
+   `reconcile` adopts a session whose status is `APPLIED` and whose pending
+   record and active monitoring name it, setting what a re-apply sets.
+3. Extension guard: pending record version 2 with the end components and the
+   absolute end; skip a callback more than 60 s before
+   `min(resolved components, absolute end)`; no clear without a pending
+   record; clear without a record when it is unreadable; version 1 readable.
+4. Swift, `commonTest`, and `iosTest` tests; device runs; review; `quality`;
+   wiki.
 
-Alternatives rejected: deferring `cancel()` inside the iOS adapter until the
-next `apply()` hides a lifecycle decision in the adapter and keeps the
-clear-then-apply gap. The guard alone fixes the symptom but keeps a restart
-and a momentary clear on every relaunch, against the roadmap outcome.
-
-Brief deviation: step 2 touches `commonMain` (`EnforcementPort`,
-`SessionTransitionOwner.reconcile`), which the brief's write surface did not
-list. It adds a defaulted capability and no session model change; macOS
-keeps the default through `JvmSessionEnforcement` and `GatedEnforcementPort`.
-Behavior change: a relaunch on iOS no longer applies Paused-items edits made
-during the session; the session keeps the set it started with. Both accepted
-by the maintainer (`user-confirmed`, 2026-09-26).
+Maintainer decisions (`user-confirmed`, 2026-09-26): the `commonMain` touch
+outside the brief's write surface, and a relaunch keeping the set the session
+started with, so Paused-items edits made during a session no longer apply on
+relaunch.
 
 ## High-risk plan review
 
-- **Verdict:** approved with corrections
-- **Critical or Required findings:** R1 time-zone and calendar resolution can
-  skip the only real end; R2 one shared schema version would break 1.1
-  cleared records and displacement; R3 adoption must set the re-apply view
-  state; R4 no device proof that the real end fires after a skipped early
-  callback; R5 the probe could leave the iPhone unable to start sessions;
-  R6 the `commonMain` touch needs maintainer acceptance.
-- **Resolution:** R1-R5 folded into steps 1-5 above; R6 accepted by the
-  maintainer (`user-confirmed`, 2026-09-26). Recommended: Paused-items behavior change stated above; second
-  changed test listed in step 3; accepted risk below.
+- **Verdict:** approved with corrections.
+- **Required findings:** R1 time-zone and calendar resolution could skip the
+  real end; R2 a shared schema version would break 1.1 cleared records; R3
+  adoption must set the re-apply view state; R4 no device proof of the real
+  end after a skipped callback; R5 the probe could block later sessions; R6
+  the `commonMain` deviation.
+- **Resolution:** R1-R5 folded into the plan before code; R6 accepted by the
+  maintainer.
 
 ## Result
 
-- Pending.
+- Adoption on relaunch and the extension guard as planned; the relaunch path
+  no longer restarts monitoring for a held session, and a restart elsewhere
+  (poll loss, Retry) no longer ends the session.
+- Two Swift tests changed on purpose: a callback without a pending record
+  clears nothing, and the store-isolation test now writes a pending record.
+- verify-posato: the relaunch scenario must pass; a note on Safari hanging on
+  a black page; the device probe named. Wiki: iOS enforcement (open question
+  answered), cross-device synchronization note, log entry.
+- Deviation: the `reconcile` status read moved into `readStatusAndHeld` to
+  satisfy Detekt's complexity limit without a suppression.
 
 ## Completed-change review
 
-- **Verdict:** pending
+- **Verdict:** approved at `8d67a18` after one correction.
+- **Required findings:** a 26-hour calendar-change branch in `isEarly`,
+  outside the reviewed plan, could skip the real end.
+- **Resolution:** removed; plain `min` with a two-direction calendar test.
+- **Advisory findings:** the wiki claim about an interval that had not
+  started is now `inferred`; the probe precheck requires an absent pending
+  record. Declined: `isScheduled` checking `isCapable`, resetting
+  `confirmedClear` on adoption (both harmless).
 
 ## Verification
 
+Runs under the ignored `build/verification/runs/`.
+
 | Check run | Result | Evidence |
 | --- | --- | --- |
+| Baseline `session-relaunch-ios.json` | fail (expected) | `20260926-091517-2b4f`: failed at `active-after-second-relaunch`, "NO SESSION ACTIVE" |
+| Baseline device probe | fail (expected) | cleared record for the running session within 2 s of the restart |
+| Device probe with the fix | pass | restriction kept through 120 s; real end cleared and recorded (322 s) |
+| `session-relaunch-ios.json` with the fix, runs 1, 4, 5 | pass | `20260926-093443-37d4`, `-094327-f02c`, `-094554-5007` (9 relaunches) |
+| Run 2 | fail, not a regression | `20260926-093710-352e`: Safari hung on a black page at `site-blocked-after` after the Calculator shield passed; `observe-blocking-ios.json` in the same session passed (`-094250-cf7d`) |
+| Run 3 | setup failure | failed at `home-inactive` because run 2 left its session active |
+| Early end and `observe-unblocked-ios.json` | pass | `20260926-094318-9560` |
+| Suspended expiry after one relaunch and termination | pass | 25-minute session (`20260926-094838-d8fd`), relaunched, terminated; after the end Calculator had no shield, Safari hung once on a black page (`-101701-fd87`), the repeat loaded Example Domain (`-101752-deef`), Posato showed no session |
+| Kotlin `jvmTest`, `iosSimulatorArm64Test` | pass | after the last correction |
+| `iosSwiftTest` | pass | 147 tests, 7 device-only skipped |
+| `./gradlew quality` | pass | at `8d67a18`, after one Simulator install failure in `iosSwiftTest` that passed on rerun |
+
+The device runs predate `8d67a18`; its only behavioral change is reachable
+after a calendar change and is covered by unit tests. Safari hung on a black
+loading page twice in about ten loads, in both directions, each time with the
+Calculator result from the same store already observed.
 
 ## Blockers and accepted risks
 
-- Accepted risk (proposed): with "absent pending, no clear", a cancel that
-  succeeds while the store clear fails is no longer rescued by the
-  extension; the `CLEAR_FAILED` retry covers it.
+- Accepted risk: without a pending record the extension no longer clears, so
+  a cancel that succeeds while the store clear fails is left to the
+  `CLEAR_FAILED` Retry.
+- The availability-page limit stays until `RELEASE-004` publishes the fix.
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** met; AC-01 to AC-04 evidenced above.
