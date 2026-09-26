@@ -66,7 +66,10 @@ The daemon owns this definition as it owns the Apply right:
 four new operations in the fixed operation set. Protocol major version 1
 stays. Status reports a capability flag for them. The application and helper
 send them only when Status from the running daemon shows that flag. An older
-daemon is never sent an operation it cannot decode.
+daemon is never sent an operation it cannot decode. The daemon returns the
+flag and the caller's grant state only when the Status request asks for them,
+so an older helper still decodes the fixed-length Status reply it expects. A
+version-skew test covers both directions.
 
 ### Opt-in operation
 
