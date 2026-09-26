@@ -52,6 +52,7 @@ private final class FakeRules: AuthorizationRules, @unchecked Sendable {
 private final class MemoryGrants: StandingGrantPersistence, @unchecked Sendable {
   var record: StandingGrantRecord?
   var unreadable = false
+  var ioFailure = false
   let log: EventLog
 
   init(log: EventLog) {
@@ -61,6 +62,9 @@ private final class MemoryGrants: StandingGrantPersistence, @unchecked Sendable 
   func load() throws -> StandingGrantRecord? {
     guard !unreadable else {
       throw DurableOwnershipFailure.invalidState
+    }
+    guard !ioFailure else {
+      throw DurableOwnershipFailure.unavailable
     }
     return record
   }
@@ -128,7 +132,8 @@ private final class Daemon {
   func reply(
     _ operation: WireOperation,
     payload: Data = Data(),
-    peer: UInt32? = person
+    peer: UInt32? = person,
+    requestIdentifier: Data? = nil
   ) throws -> Data {
     sequence += 1
     let request = try WireMessage(
@@ -138,7 +143,8 @@ private final class Daemon {
       deadlineMilliseconds: 5_000,
       connectionIdentifier: Data(repeating: 7, count: 16),
       sessionIdentifier: Data(repeating: 8, count: 16),
-      requestIdentifier: Data(repeating: UInt8(truncatingIfNeeded: sequence), count: 16),
+      requestIdentifier: requestIdentifier
+        ?? Data(repeating: UInt8(truncatingIfNeeded: sequence), count: 16),
       payload: payload
     )
     let encoded = try #require(
@@ -155,10 +161,13 @@ private final class Daemon {
   func send(
     _ operation: WireOperation,
     payload: Data = Data(),
-    peer: UInt32? = person
+    peer: UInt32? = person,
+    requestIdentifier: Data? = nil
   ) throws -> WireResponsePayload {
-    return try WireResponsePayload.decodeStatus(reply(operation, payload: payload, peer: peer))
-      .response
+    return try WireResponsePayload.decodeStatus(
+      reply(operation, payload: payload, peer: peer, requestIdentifier: requestIdentifier)
+    )
+    .response
   }
 
   func reconcile(_ original: WireOperation) throws -> WireResponsePayload {
@@ -313,4 +322,35 @@ private let externalForm = Data(repeating: 1, count: AuthorizationPolicy.externa
   #expect(shared.grants.record == nil)
   #expect(try unreadable.send(.revokeGrant).outcome == .success)
   #expect(unreadable.log.events == ["remove grants"])
+}
+
+@Test func givenLostApplyWithGrantReplyWhenReconciledAsApplyThenTheSameIntentIsFound() throws {
+  let daemon = Daemon()
+  let intent = Data(repeating: 0x42, count: 16)
+  _ = try daemon.send(.applyWithGrant, payload: listenerPort, requestIdentifier: intent)
+  let reconcile = try WireReconcilePayload(
+    originalOperation: .apply,
+    canonicalInputDigest: WireCodec.canonicalInputDigest(operation: .apply, payload: listenerPort)
+  )
+
+  let response = try daemon.send(.reconcile, payload: reconcile.encode(), requestIdentifier: intent)
+
+  #expect(response.outcome == .success)
+  #expect(response.ownershipPhase == .applied)
+}
+
+@Test func givenUnusableRecordWhenRepairedThenItIsDeletedEvenWithExactRules() throws {
+  let daemon = Daemon()
+  daemon.grants.unreadable = true
+
+  #expect(try daemon.send(.repair).outcome == .success)
+  #expect(daemon.log.events == ["remove grants"])
+}
+
+@Test func givenUnreadableStoreWhenGrantedThenOtherAccountsGrantsAreNotOverwritten() throws {
+  let daemon = Daemon(granted: [grantedEntry(otherPerson, account: otherAccount)])
+  daemon.grants.ioFailure = true
+
+  #expect(try daemon.send(.grant, payload: externalForm).failure == .storage)
+  #expect(daemon.grants.record?.entries.map(\.userID) == [otherPerson])
 }

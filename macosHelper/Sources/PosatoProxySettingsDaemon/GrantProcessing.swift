@@ -29,6 +29,9 @@ extension RequestCoordinator {
   /// Enable installs an absent rule, Repair also replaces a mismatched one, and writing either
   /// rule first deletes every grant: a missing or changed rule means a removal or tampering.
   func convergeRules(repair: Bool) throws {
+    if repair, try !grantRecordIsReadable() {
+      try removeGrantRecord()
+    }
     for right in AuthorizationRight.allCases {
       switch try rules.state(of: right) {
       case .exact:
@@ -39,6 +42,16 @@ extension RequestCoordinator {
         try removeGrantRecord()
         try rules.write(right)
       }
+    }
+  }
+
+  /// Only a record that fails its file or schema checks is unusable; an I/O failure is not proof.
+  private func grantRecordIsReadable() throws -> Bool {
+    do {
+      _ = try grants.load()
+      return true
+    } catch DurableOwnershipFailure.invalidFile, DurableOwnershipFailure.invalidState {
+      return false
     }
   }
 
@@ -108,8 +121,14 @@ extension RequestCoordinator {
     guard let peerUserID else {
       throw StandingGrantFailure.unavailable
     }
+    let existing: StandingGrantRecord?
+    do {
+      existing = try grantRecordIsReadable() ? grants.load() : nil
+    } catch {
+      throw StandingGrantFailure.storage
+    }
     let granted = try StandingGrantPolicy.granting(
-      record: try? grants.load(),
+      record: existing,
       peerUserID: peerUserID,
       identity: identity,
       now: Date()
@@ -137,7 +156,9 @@ extension RequestCoordinator {
         return try engine.status()
       }
       if let record {
-        if let kept = StandingGrantPolicy.revoking(record: record, peerUserID: peerUserID) {
+        let kept = StandingGrantPolicy.revoking(
+          record: record, peerUserID: peerUserID, identity: identity)
+        if let kept {
           try grants.save(kept)
         } else {
           try removeGrantRecord()

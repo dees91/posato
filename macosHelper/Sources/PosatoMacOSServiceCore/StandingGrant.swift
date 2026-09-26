@@ -95,9 +95,12 @@ public enum StandingGrantPolicy {
 
   public static func revoking(
     record: StandingGrantRecord,
-    peerUserID: UInt32
+    peerUserID: UInt32,
+    identity: some SystemIdentity
   ) -> StandingGrantRecord? {
-    let kept = record.entries.filter { $0.userID != peerUserID }
+    let kept = record.entries.filter { entry in
+      entry.userID != peerUserID && isCurrent(entry, identity: identity)
+    }
     return kept.isEmpty ? nil : StandingGrantRecord(entries: kept)
   }
 

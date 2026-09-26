@@ -139,11 +139,27 @@ private func record(_ entries: [StandingGrantEntry]) -> StandingGrantRecord {
   let both = record([entry(), entry(otherPerson, account: otherAccount)])
 
   #expect(
-    StandingGrantPolicy.revoking(record: both, peerUserID: person)
+    StandingGrantPolicy.revoking(record: both, peerUserID: person, identity: FixedIdentity())
       == record([entry(otherPerson, account: otherAccount)])
   )
-  #expect(StandingGrantPolicy.revoking(record: record([entry()]), peerUserID: person) == nil)
   #expect(
-    StandingGrantPolicy.revoking(record: record([entry()]), peerUserID: otherPerson)
+    StandingGrantPolicy.revoking(
+      record: record([entry()]), peerUserID: person, identity: FixedIdentity()) == nil)
+  #expect(
+    StandingGrantPolicy.revoking(
+      record: record([entry()]), peerUserID: otherPerson, identity: FixedIdentity())
       == record([entry()]))
+}
+
+@Test func givenStaleEntryWhenAnotherGrantIsRevokedThenItIsDroppedToo() {
+  let stale = entry(otherPerson, account: recreatedAccount)
+  let kept = entry(503, account: otherAccount)
+  var identity = FixedIdentity()
+  identity.accounts[503] = otherAccount
+
+  #expect(
+    StandingGrantPolicy.revoking(
+      record: record([entry(), stale, kept]), peerUserID: person, identity: identity)
+      == record([kept])
+  )
 }

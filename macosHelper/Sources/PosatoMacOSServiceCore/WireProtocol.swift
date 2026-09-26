@@ -199,10 +199,7 @@ public struct WireMessage: Equatable, Sendable {
   }
 
   public var canonicalInputDigest: Data {
-    return WireCodec.canonicalInputDigest(
-      operation: operation.isApply ? .apply : operation,
-      payload: payload
-    )
+    return WireCodec.canonicalInputDigest(operation: operation, payload: payload)
   }
 }
 
