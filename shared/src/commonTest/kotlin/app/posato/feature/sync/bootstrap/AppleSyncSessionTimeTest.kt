@@ -95,6 +95,34 @@ class AppleSyncSessionTimeTest {
     }
 
     @Test
+    fun `given idle waiting when an exchange brings a future start then it applies on time`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-idle-exchange-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-idle-exchange-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
+        try {
+            first.establish()
+            second.establish()
+            advanceUntilIdle()
+            second.clock.nowEpochMillis = SESSION_NOW - 5_000L
+            backgroundScope.launch { second.owner.runWhileHosted(idleRecheckMillis = 60_000L) }
+            runCurrent()
+            val session = SessionId(testIdentifier(97))
+            start(first, session)
+            exchange(first, second)
+            assertIs<LocalSessionStatus.Inactive>(second.read())
+
+            second.clock.nowEpochMillis = SESSION_NOW
+            advanceTimeBy(5_001)
+            runCurrent()
+            assertEquals(session, assertIs<LocalSessionStatus.Active>(second.read()).record.sessionId)
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
     fun `given an accepted future start when the core reopens then local restore needs no mailbox exchange`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val mailbox = SharedFakeMailboxPort()

@@ -4,8 +4,10 @@ import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.ui.EnforcementViewState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.isActive
 
 public enum class PresenceState { LOADING, NO_SESSION, ENFORCING, NOT_ENFORCING, MAINTENANCE }
@@ -63,7 +65,13 @@ internal suspend fun runPeriodicExchange(
     intervalMillis: Long,
 ) {
     while (currentCoroutineContext().isActive) {
-        exchange()
+        try {
+            exchange()
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (_: Exception) {
+            currentCoroutineContext().ensureActive()
+        }
         delay(intervalMillis)
     }
 }

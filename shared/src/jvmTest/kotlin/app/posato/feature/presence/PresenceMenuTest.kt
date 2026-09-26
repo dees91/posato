@@ -77,6 +77,26 @@ class PresenceMenuTest {
         running.cancel()
     }
 
+    @Test
+    fun `given a failing exchange when resident then later exchanges still run`() = runTest {
+        var exchanges = 0
+        val running = launch {
+            runPeriodicExchange(
+                exchange = {
+                    exchanges += 1
+                    if (exchanges == 1) error("exchange failed")
+                },
+                intervalMillis = INTERVAL,
+            )
+        }
+        runCurrent()
+        advanceTimeBy(INTERVAL)
+        runCurrent()
+
+        assertEquals(2, exchanges)
+        running.cancel()
+    }
+
     private data class Case(
         val status: LocalSessionStatus?,
         val enforcement: EnforcementState,

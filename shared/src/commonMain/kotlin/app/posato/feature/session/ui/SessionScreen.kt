@@ -36,6 +36,7 @@ import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.TargetsCategory
+import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -67,12 +68,14 @@ internal fun SessionScreen(
     LaunchedEffect(loginItem) { loginItem?.refresh() }
     val consumeWindowRequest by rememberUpdatedState(onConsumeWindowRequest)
     LaunchedEffect(windowRequest) {
+        if (windowRequest == null) return@LaunchedEffect
+        viewModel.uiState.first { it.status != null }
         when (windowRequest) {
             SessionWindowRequest.START_SESSION -> viewModel.setSetupVisible(true)
             SessionWindowRequest.END_SESSION_EARLY -> viewModel.setEarlyEndConfirmation(true)
-            SessionWindowRequest.SESSION, null -> Unit
+            SessionWindowRequest.SESSION -> Unit
         }
-        if (windowRequest != null) consumeWindowRequest()
+        consumeWindowRequest()
     }
     SessionScreen(
         state = state,
