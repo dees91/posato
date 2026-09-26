@@ -97,6 +97,16 @@ enum BrowserDomainRequestHandler {
     )
   }
 
+  /// Both Apply forms must point the system proxy at this helper's own listener; any other port
+  /// is refused before authorization so no caller can route traffic through a listener of its own.
+  static func applyTargetsSession(payload: Data, sessionPort: UInt16?) -> Bool {
+    guard payload.count == 2, let sessionPort, sessionPort != 0 else {
+      return false
+    }
+    let bytes = [UInt8](payload)
+    return UInt16(bytes[0]) << 8 | UInt16(bytes[1]) == sessionPort
+  }
+
   /// Apply without a configured session would authenticate and mutate the proxy toward a port
   /// with no listener; it is refused before the authorization prompt.
   static func applyWithoutSessionResponse(serviceState: ServiceState) -> WireResponsePayload {

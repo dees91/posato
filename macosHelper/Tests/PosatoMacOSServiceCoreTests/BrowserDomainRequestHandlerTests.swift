@@ -53,3 +53,13 @@ import Testing
   #expect(response.ownershipPhase == .idle)
   #expect(response.failure == .invalidInput)
 }
+
+@Test func givenApplyPortWhenCheckedThenOnlyTheSessionListenerPortIsAccepted() {
+  let listenerPort = Data([0xC3, 0x51])
+
+  #expect(BrowserDomainRequestHandler.applyTargetsSession(payload: listenerPort, sessionPort: 50_001))
+  #expect(!BrowserDomainRequestHandler.applyTargetsSession(payload: Data([0xC3, 0x52]), sessionPort: 50_001))
+  #expect(!BrowserDomainRequestHandler.applyTargetsSession(payload: listenerPort, sessionPort: nil))
+  #expect(!BrowserDomainRequestHandler.applyTargetsSession(payload: Data([0, 0]), sessionPort: 0))
+  #expect(!BrowserDomainRequestHandler.applyTargetsSession(payload: Data([0xC3]), sessionPort: 50_001))
+}
