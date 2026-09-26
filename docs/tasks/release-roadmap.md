@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 10 (amended 2026-09-26: `ONBOARDING-004` from idea 19 in
-  release 1.2)
+- **Revision:** 11 (amended 2026-09-26: accepted Mac setup UX and working
+  schedules in release 1.2)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-26
@@ -46,7 +46,9 @@
   from idea 19 to release 1.2, which the maintainer revised while it runs.
   The row makes the two Mac opt-ins easy to find, and the
   `SCHEDULE-001` row now takes those offers into account (`user-confirmed`,
-  2026-09-26).
+  2026-09-26). Revision 11 records the accepted Mac setup and schedule UX,
+  moves `SCHEDULE-001` and `SCHEDULE-002` into release 1.2, and makes
+  schedule delivery a release gate (`user-confirmed`, 2026-09-26).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -181,15 +183,20 @@ Low product risk except the update path, which revises an accepted contract.
 | `QUALITY-007` | Verify the accepted flow on macOS 15 in a virtual machine on the supported Mac and on iOS 18 on a physical iPhone with the 1.1 candidates, and update the availability page with the verified matrix or its stated gaps. | Verification | delivery | R1.1/W2 | `SESSION-004`, `ONBOARDING-003`, `TARGETS-006`, `IOS-004` | PR-PLATFORM-MATRIX |
 | `RELEASE-003` | Verify the 1.1.0 candidates, publish the notarized DMG through GitHub Releases with release notes, submit the iOS build to App Review, and hand the maintainer only account-owned steps. | Release readiness | delivery | R1.1/W3 | `MACOS-011`, `QUALITY-007` | PR-RELEASE-1-1 |
 
-## Release 1.2: the Mac always at hand
+## Release 1.2: the Mac always at hand, with shared schedules
 
-Theme: let a session live on the Mac without the main window and without a
-password prompt at every start. The three rows revise the same process and
-authorization contracts, so they form one release. `IOS-006` joins as an
-independent iOS fix that `RELEASE-003` found; it shares no write surface with
-the Mac rows. `ONBOARDING-004` makes the opt-ins from `MACOS-013` and
-`MACOS-014` easy to find. It starts after `MACOS-014` merges and is
-serialized with `NOTIFY-001`, because both touch onboarding and This Mac.
+Theme: keep Posato ready on the Mac, make its optional setup easy to find,
+and deliver recurring schedules on Mac and iPhone. The accepted
+[product scope](../product/schedules-and-mac-setup.md) and
+[`DESIGN.md`](../../DESIGN.md#release-12-setup-and-schedules) define the outcome.
+
+`ONBOARDING-004` follows `MACOS-014` and stays serialized with `NOTIFY-001`
+because both touch onboarding and This Mac. `SCHEDULE-001` then settles the
+remaining schedule rules and obtains the required authorization review.
+`SCHEDULE-002` delivers the accepted design on both platforms before
+`RELEASE-004`. `IOS-006` remains an independent prerequisite for reliable
+session lifetime on iPhone. These are planning dependencies; this revision
+starts none of the rows.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -198,21 +205,22 @@ serialized with `NOTIFY-001`, because both touch onboarding and This Mac.
 | `MACOS-014` | Reduce repeated administrator prompts at session start through a one-time opt-in with an explicit revocation path and authenticated, narrowly scoped helper requests, after a security review of the ADR 0004 revision that replaces the one-use Apply authorization. High-risk. | Sessions and enforcement | delivery | R1.2/W2 | `MACOS-012` | PR-MAC-AUTHORIZATION |
 | `IOS-006` | Keep an active iPhone session and its restrictions when Posato is relaunched during the session: re-applying the same session must not stop and restart its Device Activity monitoring, and an interval-end callback that arrives before the planned end must not end the session. Prove it with repeated relaunches on the test iPhone, including a fast relaunch, and keep the `IOS-002` suspended expiry working. High-risk. | Sessions and enforcement | delivery | R1.2/W1 | None | PR-IOS-RELAUNCH |
 | `NOTIFY-001` | Deliver local notifications when a session starts or ends on iOS and macOS, with a permission flow, a preference, and no remote push or server. | Notifications | delivery | R1.2/W2 | `MACOS-012` | PR-LOCAL-NOTIFICATIONS |
-| `ONBOARDING-004` | Make **Open Posato at login** and **Start sessions without the password** easy to find on the Mac. Offer both as explicit choices during Mac onboarding or at the first start. Suggest each one when it helps, for example right after an administrator prompt at a session start or Resume, and when the window closes or Posato quits during a session. Both stay off until the person chooses them. The menu and a login launch still never apply by themselves. Revise `DESIGN.md`, which today keeps the login switch out of first-run setup, before delivery. The flow must be as simple as possible. `SCHEDULE-001` builds on these offers. | Onboarding | delivery | R1.2/W2 | `MACOS-014` | PR-MAC-OPT-INS |
-| `RELEASE-004` | Verify the 1.2.0 candidates, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W3 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004` | PR-RELEASE-1-2 |
+| `ONBOARDING-004` | Deliver the accepted Mac setup UX in `DESIGN.md`: offer login launch and password-free sessions as two independent, initially off choices in the existing Mac permission step, with a defer action and no extra screen. Give existing users one dismissible offer after updating; later hints appear only where the option helps. Keep the options in This Mac and defer password-requiring setup during an active session. | Onboarding | delivery | R1.2/W2 | `MACOS-014` | PR-MAC-OPT-INS |
+| `SCHEDULE-001` | Complete the accepted release 1.2 schedule design: occurrence identity and skip/early-end convergence, time zones and daylight saving, overnight intervals, overlaps and manual-session conflicts, and offline or missing-device behavior. Specify ADR 0006 operation compatibility, iOS Device Activity execution and the resident Mac host. Propose and independently security-review the ADR 0004/0009 changes for explicit consent to automatic scheduled Apply, including startup and wake within an interval. End with accepted decisions and an implementation plan for `SCHEDULE-002` in this release. High-risk. | Schedules | discovery | R1.2/W3 | `MACOS-013`, `MACOS-014`, `ONBOARDING-004` | PR-SCHEDULE-DECISION |
+| `SCHEDULE-002` | Deliver the accepted recurring schedules on Mac and iPhone: the Schedules destination, multiple named weekday/time plans, enable/disable, iCloud sharing with local offline execution, next-run and device-readiness states, skip-next and early-end behavior, and consented automatic Mac start/wake catch-up to the original end. Integrate contextual setup and local session notifications; prove occurrence suppression across restart and sync under the accepted convergence rules. High-risk. | Schedules | delivery | R1.2/W4 | `SCHEDULE-001`, `NOTIFY-001`, `IOS-006` | PR-SCHEDULE-DELIVERY |
+| `RELEASE-004` | Verify the 1.2.0 candidates including shared schedules and Mac setup, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W5 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004`, `SCHEDULE-002` | PR-RELEASE-1-2 |
 
-## Release 1.3: more Macs, more time
+## Release 1.3: more Macs
 
-Theme: two independent directions that can run in parallel worktrees: Intel
-Macs, and sessions that start on a timetable. Schedules follow the menu bar
-work because a Mac schedule needs a resident process.
+Theme: decide and deliver the accepted Intel Mac support path. Schedule
+discovery and delivery now belong to release 1.2; `RELEASE-005` no longer
+waits for them.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
 | `MACOS-015` | Decide whether Posato supports Intel Macs and macOS 14: cost of the x86-64 Compose Desktop artifact and runtime, per-architecture native libraries, universal Swift helpers, two notarized DMGs, macOS 14 API availability, the verification driver on a second architecture, and the support horizon Apple gives Intel Macs and macOS 14; propose the ADR 0003 revision for a go or no-go. | Platform coverage | discovery | R1.3/W1 | None | PR-INTEL-DECISION |
 | `MACOS-016` | Deliver the accepted Intel path from `MACOS-015`: build, sign, notarize, and publish the x86-64 release, verify it on the maintainer's 2019 MacBook Air, and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W2 | `MACOS-015` | PR-INTEL-RELEASE |
-| `SCHEDULE-001` | Decide the recurring session schedule: model and exceptions, additive operation vocabulary under ADR 0006, iOS scheduling through the Device Activity schedule, macOS scheduling through the resident process from `MACOS-013`, and what happens when a scheduled start meets an offline or missing device. Take the `ONBOARDING-004` offers into account: a Mac schedule needs Posato open at login and, to start without a prompt, sessions without the password, so decide where creating a schedule offers either option that is still off. End with a product decision and a delivery plan for the next release. | Schedules | discovery | R1.3/W1 | `MACOS-013` | PR-SCHEDULE-DECISION |
-| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for every accepted architecture, and submit the iOS build to App Review when it changed. | Release readiness | delivery | R1.3/W3 | `MACOS-016`, `SCHEDULE-001` | PR-RELEASE-1-3 |
+| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for every accepted architecture, and submit the iOS build to App Review when it changed. | Release readiness | delivery | R1.3/W3 | `MACOS-016` | PR-RELEASE-1-3 |
 
 ## Backlog
 
@@ -221,7 +229,6 @@ The idea numbers refer to the wiki idea queue.
 
 | Task | Outcome | Epic | Origin | What unblocks assignment |
 | --- | --- | --- | --- | --- |
-| `SCHEDULE-002` | Deliver recurring schedules on both platforms per the `SCHEDULE-001` decision. | Schedules | Idea 1 | `SCHEDULE-001` decision accepted |
 | `FAMILY-001` | Decide whether a parent-and-child use case belongs in Posato: device ownership, consent, access boundaries, and privacy. | Product discovery | Idea 2 | A product decision that the personal-use model may extend |
 | `FILTER-001` | Decide whether reducing advertising belongs in Posato and which coverage is useful and feasible. | Product discovery | Idea 3 | A product decision on scope beyond blocking chosen targets |
 | `RESEARCH-001` | Compare the Focusly extension's interactions and features with Posato and list the ones worth adopting. | Product discovery | Idea 4 | Any planning checkpoint; cheap |
@@ -244,7 +251,7 @@ The idea numbers refer to the wiki idea queue.
 | `QUALITY-011` | Decide whether to extract the Tart virtual machine layer and the iOS system-dialog driver of `posato-control` into a standalone, openly licensed tool for macOS and iOS development testing: an application descriptor instead of Posato constants, system-dialog definitions as data per macOS version and language, verification beyond one Mac and one iPhone, dependency licenses, and who maintains it; end with a decision and, if accepted, an extraction plan. Preliminary. | Verification | Idea 16; `QUALITY-010` outcome | `posato-control` stable across one release cycle and a maintainer decision to maintain a public tool |
 | `PAUSE-001` | Decide whether the pause page should offer a useful local activity, from the session's stated intention up to user-provided flashcards, within the privacy boundary, the self-contained pause page of `DESIGN-003`, and the iOS shield limits; end with a product decision and a delivery plan. The layers in idea 11 guide it: useful with no setup first, then cards from one open deck format (in-app editor, CSV and Anki import, a chatbot prompt, and a watched folder for learning agents), with spaced review only after the privacy decision. | Product discovery | Idea 11 | A product decision that the pause moment is in scope |
 | `I18N-001` | Ship Posato in Polish as the first additional language, following the system language: the whole UI of both applications with Polish plural forms, the macOS pause page, iOS permission descriptions, and date and time formatting, plus the App Store listing and screenshots and a Polish posato.app including the privacy policy. It adds a narrow `AGENTS.md` exception so the agent can author localized product resources for the maintainer's approval, and keeps verification recipes independent of English labels. | Platform coverage | Idea 12 | Any planning checkpoint; the maintainer's time to review the Polish copy |
-| `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the two-destination navigation accepted in `DESIGN.md`. | Platform coverage | Idea 13; `IOS-004` decision | Any planning checkpoint |
+| `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules when delivered by `SCHEDULE-002`. | Platform coverage | Idea 13; `IOS-004` decision | Any planning checkpoint |
 | `TARGETS-007` | Decide whether and how saved websites and application choices can be exported to and imported from a file: format, encryption, what an application choice can carry across devices, merge or replace, and sync interaction; end with a product decision and a delivery plan. Preliminary. | Target management | Idea 14 | A product decision that file transfer is in scope |
 | `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
 
@@ -256,10 +263,10 @@ The idea numbers refer to the wiki idea queue.
 | Supported macOS update path | `MACOS-010`, `MACOS-011` | Accepted ADR 0004 revision, update from a published notarized candidate to a newer one with proxy ownership restored |
 | Verified support matrix | `QUALITY-007` | macOS 15 virtual machine and iOS 18 physical runs, availability page updated |
 | Session without the main window and without repeated prompts | `MACOS-012`, `MACOS-013`, `MACOS-014` | Accepted ADR 0003 and ADR 0004 revisions, physical menu bar start, end, relaunch, login, and revocation evidence |
-| Mac opt-ins easy to find | `ONBOARDING-004` | Accepted `DESIGN.md` revision, onboarding or first-start choice and contextual hints driven in a Tart clone |
+| Mac opt-ins easy to find | `ONBOARDING-004` | Existing-step choices, the dismissible upgrade offer, and contextual hints driven in a Tart clone |
 | Session notifications | `NOTIFY-001` | Physical permission flow, start and end notifications on both platforms |
 | Intel Macs | `MACOS-015`, `MACOS-016` | Accepted ADR 0003 revision, notarized x86-64 candidate verified on the 2019 MacBook Air |
-| Schedule decision | `SCHEDULE-001` | Accepted product decision and delivery plan |
+| Shared recurring schedules | `SCHEDULE-001`, `SCHEDULE-002` | Accepted rules and security-reviewed authorization revision; Mac VM and test-iPhone runs for start/end, offline execution of known plans, synchronization, missing permissions, skipping, early end, restart and Mac catch-up |
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
@@ -271,6 +278,7 @@ The idea numbers refer to the wiki idea queue.
 | Update feed hosting and signing keys | `MACOS-010`, `MACOS-011` | Any update signing key stays outside Git; the feed is served from the repository's release process or `posato.app`; a notarized candidate updates itself on the supported Mac. |
 | macOS 15 virtual machine and iOS 18 iPhone | `QUALITY-007` | The maintainer provides the virtual machine image and the iOS 18 device, or the row records the gap on the availability page. |
 | Persistent authorization security review | `MACOS-014` | An independent review of the ADR 0004 revision passes before implementation. |
+| Automatic scheduled Apply security review | `SCHEDULE-001` | An independent review of the explicit-consent and automatic-start amendments passes, and the maintainer accepts them, before `SCHEDULE-002` implements them. |
 | 2019 MacBook Air | `MACOS-016` | The notarized x86-64 candidate passes the accepted flow on the maintainer's device. |
 | App Review per iOS release | `RELEASE-003`–`RELEASE-005` | The submitted build is approved or the row records the rejection and its clearing condition. |
 

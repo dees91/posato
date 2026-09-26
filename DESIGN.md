@@ -472,7 +472,8 @@ when its window closes and lives in the menu bar.
   first sentence appears only while restrictions are confirmed active.
   Logout, restart, and update relaunch never wait on it.
 - **Open at login.** In This Mac options, a switch **Open Posato at login**,
-  off by default. It is not offered during first-run setup. A login launch
+  off by default. The delivered flow keeps it in This Mac; `ONBOARDING-004`
+  adds the first-run offer specified below. A login launch
   keeps the window closed and never asks for approval on its own.
   **Remove from this Mac** also turns the switch off, so no login item
   remains after Posato is moved to the Trash.
@@ -622,6 +623,58 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   before the actions, and the website step scrolls the whole field and its
   saved total into view. Use the existing typography, spacing, colors,
   safe-area handling, and native permission presentation.
+
+### Release 1.2 setup and schedules
+
+`user-confirmed` (2026-09-26, PR #92): accepted for `ONBOARDING-004` and
+`SCHEDULE-002`, pending delivery. The
+[product scope](docs/product/schedules-and-mac-setup.md) owns schedule
+behavior and the authorization decisions still required by `SCHEDULE-001`.
+
+The existing Mac permission step offers **Open Posato at login** and
+**Start sessions without the password** as two independent choices, both
+initially off. Keep the six-step flow and a clear way to continue without
+either. Explain each benefit beside its control. The helper and system must
+confirm a setting before the UI shows it as enabled; pending, unavailable,
+and failed setup remain visible with a relevant retry or setup action.
+The password option keeps the helper-readiness and session-state guards
+specified above. Neither continuing nor deferring grants consent.
+
+Existing users receive one dismissible setup offer after the update. Keep
+both options in This Mac. After dismissal, offer an option only in a flow
+where it helps, such as creating a schedule. Do not open password-requiring
+configuration during an active session or while enforcement starts or
+changes. Defer the offer until setup is safe. Enabling login launch alone
+does not start a session or authorize restrictions.
+
+Add **Schedules** beside **Session** and **Paused items** in each platform's
+existing adaptive navigation. The current two-destination shell remains
+the delivered baseline until `SCHEDULE-002` adds the third destination.
+
+- The empty state explains recurring pauses and offers **Add schedule**.
+- The list shows each schedule's name, weekdays, hours, enabled state and
+  next run. Show local readiness or a specific problem separately from the
+  enabled switch. Missing permission offers a direct setup action, such as
+  **Set up this Mac**, while keeping the plan available to other devices.
+- The editor has a name, weekday selection, start and end times, and an
+  enabled switch. Use the established form controls and validation style.
+  Saving remains possible before local permission is ready. Explain that
+  automatic starts need consent and local setup before they can run.
+- **Skip next session** applies to the next occurrence. Show the skipped
+  occurrence and the resulting next run so the action is understandable.
+  An active scheduled session identifies its schedule and keeps **End
+  early** in the existing session flow. Neither action disables the plan.
+- Local readiness distinguishes missing enforcement consent or permission
+  from the recommendation to open at login. A running Mac can execute a
+  ready schedule with login launch off. Show actual local restriction state
+  independently of the timetable or another device's state.
+
+Reuse the established typography, colors, spacing and native controls.
+Weekday choices, switches and actions need accessible names and states.
+Keep schedule details and setup actions readable with large text and narrow
+windows through wrapping and scrolling under the existing reflow contract.
+`SCHEDULE-001` settles time-zone presentation, overlaps and manual-session
+conflicts before the editor and active-session details are implemented.
 
 ### Session
 

@@ -2038,10 +2038,13 @@ to scope, feasibility, or delivery.
 - `posato-control` gains `vm exec` and `vm scroll`. Updated
   [macOS enforcement](topics/macos-enforcement.md).
 
-## [2026-09-26] planning | Make the Mac opt-ins easy to find (ONBOARDING-004)
+## [2026-09-26] planning | Accept shared schedules and Mac setup UX for release 1.2
 
-- Added idea 19 to the [idea queue](topics/mvp-open-questions.md) and
-  `ONBOARDING-004` to release 1.2 (roadmap revision 10). **Open Posato at login**
-  and **Start sessions without the password** stay off by default, but should
-  be offered in Mac onboarding or at the first start and suggested at the
-  moment they help. `SCHEDULE-001` takes the offers into account.
+- Recorded the maintainer's accepted [product scope](../product/schedules-and-mac-setup.md)
+  and UI in `DESIGN.md`: optional choices in the existing Mac permission
+  step, a dismissible upgrade offer, and a Schedules destination with local
+  readiness, skipping and early end. Updated the [idea queue](topics/mvp-open-questions.md).
+- Roadmap revision 11 assigns both `SCHEDULE-001` and `SCHEDULE-002` to
+  release 1.2 and makes delivery a release gate. Automatic scheduled Apply
+  still requires the accepted, independently security-reviewed amendment
+  owned by `SCHEDULE-001` before implementation.

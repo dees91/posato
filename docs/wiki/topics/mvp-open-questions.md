@@ -664,14 +664,18 @@ accepted contracts.
 ## Post-MVP feature ideas for discovery
 
 `user-confirmed` (2026-09-13): retain the following larger, loosely defined
-ideas for future iterations after the MVP. Their priority, scope, feasibility,
-platform coverage, and implementation remain `open`. This is an idea queue,
-not an accepted feature plan or an expansion of the MVP.
+ideas for future iterations after the MVP. Unresolved choices remain `open`;
+accepted later decisions link to their product authority and roadmap owners
+below. This queue retains idea provenance without expanding the original MVP.
 
-1. **Recurring session schedules.** Explore automatic sessions on a recurring
-   timetable. Scheduling is already classified as Later in the
-   [MVP scope](../../product/mvp-scope.md); recurrence and exception behavior
-   still need discovery.
+1. **Recurring session schedules.** `user-confirmed` (2026-09-26, PR #92):
+   release 1.2 includes both `SCHEDULE-001` and `SCHEDULE-002`, delivering
+   shared plans on Mac and iPhone with local offline execution. The accepted
+   [product scope](../../product/schedules-and-mac-setup.md) records simple
+   weekday/time plans, skipping, early end, Mac catch-up and local readiness.
+   `SCHEDULE-001` still owns time zones, conflicts, convergence, platform
+   limits and the security-reviewed authorization amendment. Scheduling was
+   deferred from the original MVP; this is its accepted later release.
 2. **Family controls for children's websites and applications.** Explore a
    parent/child use case. Device ownership, consent, access boundaries, and
    privacy need a separate product decision; the current personal-use model
@@ -840,8 +844,9 @@ not an accepted feature plan or an expansion of the MVP.
     - `architecture-direction` names Navigation 3 as the accepted default for
       multi-screen flows.
 
-    The two-destination navigation in `DESIGN.md` stays unchanged. Only the
-    stacks within a destination move to Navigation 3.
+    Only the stacks within a destination move to Navigation 3. Destination
+    choices follow `DESIGN.md`, including the accepted release 1.2 addition
+    of Schedules by `SCHEDULE-002`.
 14. **Export to and import from a file.** `user-confirmed` (2026-09-24,
     preliminary): let a person export the saved lists to a file and import
     them from one, for backup, a fresh install, or moving between devices.
@@ -902,14 +907,15 @@ not an accepted feature plan or an expansion of the MVP.
     boot is a `hypothesis`. Reproduce it, find the cause, and bound the
     helper's cost under heavy proxied traffic.
 19. **Easy-to-find Mac options for login launch and prompt-free sessions.**
-    `user-confirmed` (2026-09-26, after `MACOS-014`): **Open Posato at login**
-    and **Start sessions without the password** are off by default. Today a
-    person must discover them inside This Mac options, so most people would
-    keep typing a password at every start and Resume. Offer both in Mac
-    onboarding or at the first start, and suggest each at the moment it helps.
-    The maintainer asks for the simplest possible flow: nothing hard to find.
-    Assigned to release 1.2 as `ONBOARDING-004`. `SCHEDULE-001` must take
-    these offers into account, because a Mac schedule depends on both options.
+    `user-confirmed` (2026-09-26, PR #92): `ONBOARDING-004` in release 1.2
+    offers both independent, initially off choices in the existing Mac
+    permission step, with a defer action. Existing users get one dismissible
+    offer; later hints are contextual and wait while password-requiring
+    setup is unsafe during a session. The accepted UI lives in
+    [DESIGN.md](../../../DESIGN.md#release-12-setup-and-schedules), and
+    [product scope](../../product/schedules-and-mac-setup.md) distinguishes
+    optional login readiness from explicit consent to automatic enforcement.
+    The current Start/Resume grant does not authorize scheduled Apply.
 
 ## Later platform questions
 
