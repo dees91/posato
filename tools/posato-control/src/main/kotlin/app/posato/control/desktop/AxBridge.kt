@@ -29,6 +29,20 @@ data class WindowInfo(
     val h: Double = 0.0,
 )
 
+@Serializable
+data class StatusMenuItem(
+    val title: String,
+    val enabled: Boolean,
+)
+
+@Serializable
+data class StatusMenuResult(
+    val description: String,
+    val items: List<StatusMenuItem>,
+    val opened: Boolean? = null,
+    val chosen: Boolean? = null,
+)
+
 class AxBridge(
     private val context: RunContext
 ) {
@@ -84,6 +98,16 @@ class AxBridge(
         sessionFallback: Boolean
     ) {
         invoke("key", pid.toString(), key, modifiers.joinToString(","), if (sessionFallback) "1" else "0")
+    }
+
+    fun statusMenu(
+        pid: Long,
+        mode: String,
+        title: String?
+    ): StatusMenuResult = decode(StatusMenuResult.serializer(), invoke("status-menu", pid.toString(), mode, title.orEmpty()))
+
+    fun closeWindow(pid: Long) {
+        invoke("close-window", pid.toString())
     }
 
     private val binary = AxBridgeBinary(context)
