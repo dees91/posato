@@ -16,7 +16,7 @@ sessions exist only in Compose previews.
 ## How to get to it (user POV)
 
 After onboarding, choose Schedules in the primary navigation. On Mac,
-Set up schedules opens the three prerequisites. Continue to schedule remains
+Set up this Mac opens the unified setup explanation. Set up Posato remains
 disabled; Preview schedule editor opens the form without allowing creation.
 On iPhone, Add schedule opens the editor and Set up this iPhone opens setup.
 
@@ -26,8 +26,8 @@ Preconditions: launch the app through the driver and finish onboarding. Use
 `-t desktop --vm primary` on Mac and `-t device` on the test iPhone.
 
 - Open with `$PC tap -t <target> --text Schedules`, then
-  `$PC tap -t <target> --text "Set up schedules"` on Mac. Verify Continue to
-  schedule is disabled, then choose Preview schedule editor. On iPhone, use
+  `$PC tap -t <target> --text "Set up this Mac"` on Mac. Verify Set up
+  Posato is disabled, then choose Preview schedule editor. On iPhone, use
   `$PC tap -t <target> --text "Add schedule"`.
 - Enter a synthetic name with `$PC type -t <target> --role textField --input
   "Morning focus" --submit`. Return clears focus.
@@ -37,7 +37,7 @@ Preconditions: launch the app through the driver and finish onboarding. Use
 - Scroll to Save schedule, then run `$PC wait -t <target> --for disabled
   --text "Save schedule"`. Capture a screenshot and snapshot. Cancel returns
   to the empty state, with no saved row.
-- Open Set up schedules on Mac or Set up this iPhone, capture its disabled actions,
+- Open Set up this Mac on Mac or Set up this iPhone, capture its disabled actions,
   then choose Not now. Session and Paused items remain accessible.
 
 ## Gotchas
@@ -46,5 +46,5 @@ Preconditions: launch the app through the driver and finish onboarding. Use
   visible. The name field's Return action clears focus.
 - No schedule is stored or synchronized. Do not use these shells as evidence
   of recurrence, authorization, notifications or enforcement.
-- The existing This Mac controls still work. The new onboarding and schedule
-  setup shortcuts are disabled, and the upgrade offer is preview-only.
+- The existing This Mac controls still work. The unified onboarding and schedule
+  setup actions are disabled, and the upgrade offer is preview-only.

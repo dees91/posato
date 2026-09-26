@@ -32,8 +32,9 @@ that seeds completion opens on Session without the flow.
   defers an unconfigured service or leaves the website list empty. Configured
   services offer Continue. Go to Session finishes and persists completion.
 - On iPhone the permission step asks for Screen Time access through the real
-  system request and shows the read-back answer. On Mac Enable on this Mac
-  enables the helper; approval required opens System Settings with Check
+  system request and shows the read-back answer. On Mac the unified Set up
+  Posato action is an inactive preview. Expand Blocking settings to use the
+  existing Enable on this Mac action; approval required opens System Settings with Check
   again. After Not now, expand the Session screen's This Mac row to reach the
   same route later (see [Sessions](./sessions.md)). Removing a workspace never
   returns to the flow.
@@ -91,11 +92,11 @@ Preconditions:
   action-required status, never success, and still zero bootstrap rows.
 - **Mac setup prerequisite:** after deferring the helper, Session shows Finish
   setup and a persistent notice. Finish setup opens the existing helper controls;
-  menu Start must reach the same route. Check Mac setup or Enable on this Mac
+  menu Start must reach the same route. Expand This Mac there. Check Mac setup or Enable on this Mac
   reads the real result; only Ready admits the duration form. Back to Session
   does not start a session. Paused items and Schedules remain reachable.
 - **Mac permission:** during the flow before Enable on this Mac, `pgrep -f
-  PosatoMacOSHelper` is empty. Press Enable on this Mac on an approved Mac
+  PosatoMacOSHelper` is empty. Expand Blocking settings, then press Enable on this Mac on an approved Mac
   and expect the enabling caption immediately, then the enabled state. **Not
   now** stays usable while that call runs and does not cancel it; finish to
   Session and expect the shared This Mac row to show the late result without

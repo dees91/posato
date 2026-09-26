@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 12 (amended 2026-09-26: required Mac setup before schedule creation)
+- **Revision:** 13 (amended 2026-09-26: one guided Mac setup)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-26
@@ -47,7 +47,11 @@
   `SCHEDULE-001` row now takes those offers into account (`user-confirmed`,
   2026-09-26). Revision 11 records the accepted Mac setup and schedule UX,
   moves `SCHEDULE-001` and `SCHEDULE-002` into release 1.2, and makes
-  schedule delivery a release gate (`user-confirmed`, 2026-09-26).
+  schedule delivery a release gate (`user-confirmed`, 2026-09-26). Revision 12
+  requires local setup before Mac schedule creation. Revision 13 replaces
+  separate onboarding choices with one guided setup for blocking, quiet login
+  launch and explicit consent to starts without repeated passwords. PR #92
+  supplies the UI shell; authorization implementation remains separately gated.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -184,7 +188,7 @@ Low product risk except the update path, which revises an accepted contract.
 
 ## Release 1.2: the Mac always at hand, with shared schedules
 
-Theme: keep Posato ready on the Mac, make its optional setup easy to find,
+Theme: keep Posato ready on the Mac through one guided setup,
 and deliver recurring schedules on Mac and iPhone. The accepted
 [product scope](../product/schedules-and-mac-setup.md) and
 [`DESIGN.md`](../../DESIGN.md#release-12-setup-and-schedules) define the outcome.
@@ -204,9 +208,9 @@ starts none of the rows.
 | `MACOS-014` | Reduce repeated administrator prompts at session start through a one-time opt-in with an explicit revocation path and authenticated, narrowly scoped helper requests, after a security review of the ADR 0004 revision that replaces the one-use Apply authorization. High-risk. | Sessions and enforcement | delivery | R1.2/W2 | `MACOS-012` | PR-MAC-AUTHORIZATION |
 | `IOS-006` | Keep an active iPhone session and its restrictions when Posato is relaunched during the session: re-applying the same session must not stop and restart its Device Activity monitoring, and an interval-end callback that arrives before the planned end must not end the session. Prove it with repeated relaunches on the test iPhone, including a fast relaunch, and keep the `IOS-002` suspended expiry working. High-risk. | Sessions and enforcement | delivery | R1.2/W1 | None | PR-IOS-RELAUNCH |
 | `NOTIFY-001` | Deliver local notifications when a session starts or ends on iOS and macOS, with a permission flow, a preference, and no remote push or server. | Notifications | delivery | R1.2/W2 | `MACOS-012` | PR-LOCAL-NOTIFICATIONS |
-| `ONBOARDING-004` | Deliver the accepted Mac setup UX in `DESIGN.md`: require helper readiness before session setup, with a persistent notice and Finish setup after deferral. In the existing permission step, group login launch and password-free sessions as initially off settings required for Mac schedule creation and optional for manual sessions. Give existing users one dismissible offer. Keep the options in This Mac and defer password-requiring setup during an active session. | Onboarding | delivery | R1.2/W2 | `MACOS-014` | PR-MAC-OPT-INS |
-| `SCHEDULE-001` | Complete the accepted release 1.2 schedule design: occurrence identity and skip/early-end convergence, time zones and daylight saving, overnight intervals, overlaps and manual-session conflicts, and offline or missing-device behavior. Specify ADR 0006 operation compatibility, iOS Device Activity execution and the resident Mac host. Propose and independently security-review the ADR 0004/0009 changes for explicit consent to automatic scheduled Apply, including startup and wake within an interval. Specify the required helper, login launch and password-free automatic-start consent before Mac schedule creation. End with accepted decisions and an implementation plan for `SCHEDULE-002` in this release. High-risk. | Schedules | discovery | R1.2/W3 | `MACOS-013`, `MACOS-014`, `ONBOARDING-004` | PR-SCHEDULE-DECISION |
-| `SCHEDULE-002` | Deliver the accepted recurring schedules on Mac and iPhone: the Schedules destination, multiple named weekday/time plans, enable/disable, iCloud sharing with local offline execution, next-run and device-readiness states, skip-next and early-end behavior, and consented automatic Mac start/wake catch-up to the original end. Require verified helper readiness, login launch and password-free automatic-start consent before Mac schedule creation; show setup required if a prerequisite is revoked. Integrate contextual setup and local session notifications; prove occurrence suppression across restart and sync under the accepted convergence rules. High-risk. | Schedules | delivery | R1.2/W4 | `SCHEDULE-001`, `NOTIFY-001`, `IOS-006` | PR-SCHEDULE-DELIVERY |
+| `ONBOARDING-004` | Deliver one guided Mac setup in `DESIGN.md` for blocking, quiet login launch and starts without repeated passwords. Reuse the flow from onboarding, Session and Schedules; resume missing steps and verify actual state before completion. Keep a persistent Finish setup route after deferral, one dismissible upgrade offer and advanced revocation controls in This Mac. Preserve existing installations and defer password-requiring setup during a session. Automatic-start consent remains gated by `SCHEDULE-001`; do not claim schedule readiness before that integration. | Onboarding | delivery | R1.2/W2 | `MACOS-014` | PR-MAC-OPT-INS |
+| `SCHEDULE-001` | Complete the accepted release 1.2 schedule design: occurrence identity and skip/early-end convergence, time zones and daylight saving, overnight intervals, overlaps and manual-session conflicts, and offline or missing-device behavior. Specify ADR 0006 operation compatibility, iOS Device Activity execution and the resident Mac host. Propose and independently security-review the ADR 0004/0009 changes for explicit consent to automatic scheduled Apply, including startup and wake within an interval. Specify verified completion of the unified Mac setup before schedule creation, including automatic-start consent, migration of existing grants and recovery after revocation. End with accepted decisions and an implementation plan for `SCHEDULE-002` in this release. High-risk. | Schedules | discovery | R1.2/W3 | `MACOS-013`, `MACOS-014`, `ONBOARDING-004` | PR-SCHEDULE-DECISION |
+| `SCHEDULE-002` | Deliver the accepted recurring schedules on Mac and iPhone: the Schedules destination, multiple named weekday/time plans, enable/disable, iCloud sharing with local offline execution, next-run and device-readiness states, skip-next and early-end behavior, and consented automatic Mac start/wake catch-up to the original end. Integrate the unified Mac setup and require verified blocking, login launch and automatic-start consent before Mac schedule creation; resume missing setup if access is revoked. Integrate contextual setup and local session notifications; prove occurrence suppression across restart and sync under the accepted convergence rules. High-risk. | Schedules | delivery | R1.2/W4 | `SCHEDULE-001`, `NOTIFY-001`, `IOS-006` | PR-SCHEDULE-DELIVERY |
 | `RELEASE-004` | Verify the 1.2.0 candidates including shared schedules and Mac setup, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W5 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004`, `SCHEDULE-002` | PR-RELEASE-1-2 |
 
 ## Release 1.3: more Macs

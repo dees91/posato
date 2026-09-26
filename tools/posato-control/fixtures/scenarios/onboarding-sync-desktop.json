@@ -11,6 +11,9 @@
     { "name": "icloud-consent", "action": "tap", "query": { "text": "Sync with iCloud", "role": "button" } },
     { "name": "icloud-done", "action": "waitFor", "state": "exists", "query": { "textContains": "completed its latest sync attempt" }, "timeoutSeconds": 120 },
     { "name": "icloud-continue", "action": "tap", "query": { "text": "Continue", "role": "button" } },
+    { "name": "blocking-settings-reveal", "action": "scrollTo", "query": { "textContains": "Blocking settings", "role": "button" } },
+    { "name": "blocking-settings-open", "action": "tap", "query": { "textContains": "Blocking settings", "role": "button" } },
+    { "name": "helper-enable-reveal", "action": "scrollTo", "query": { "text": "Enable on this Mac", "role": "button" } },
     { "name": "helper-enable", "action": "tap", "query": { "text": "Enable on this Mac", "role": "button" } },
     { "name": "helper-needs-approval", "action": "waitFor", "state": "exists", "query": { "text": "Open System Settings", "role": "button" }, "timeoutSeconds": 30 },
     { "name": "helper-settings", "action": "tap", "query": { "text": "Open System Settings", "role": "button" } }

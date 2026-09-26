@@ -25,7 +25,6 @@ import app.posato.generated.resources.onboarding_permission_denied
 import app.posato.generated.resources.onboarding_permission_ios_action
 import app.posato.generated.resources.onboarding_permission_ios_body
 import app.posato.generated.resources.onboarding_permission_mac_action
-import app.posato.generated.resources.onboarding_permission_mac_admin
 import app.posato.generated.resources.onboarding_permission_mac_approval
 import app.posato.generated.resources.onboarding_permission_mac_check_again
 import app.posato.generated.resources.onboarding_permission_mac_open_settings
@@ -131,7 +130,12 @@ internal fun PermissionStep(
     OnboardingPage(
         layout = layout,
         actions = {
-            if (ready) {
+            if (platform == OnboardingPermissionPlatform.MAC) {
+                MacSetupPreviewAction()
+                PosatoButton(onClick = onContinue, style = PosatoButtonStyle.Quiet) {
+                    Text(stringResource(if (ready) Res.string.onboarding_action_continue else Res.string.onboarding_action_not_now))
+                }
+            } else if (ready) {
                 OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
             } else {
                 OnboardingActions(layout) {
@@ -163,15 +167,13 @@ internal fun PermissionStep(
         },
     ) {
         PermissionHeading(platform, deviceNoun, layout)
-        if (platform == OnboardingPermissionPlatform.MAC) {
-            PosatoCaption(stringResource(Res.string.onboarding_permission_mac_admin))
-        }
         PosatoNotice {
             Text(stringResource(Res.string.onboarding_permission_control))
         }
-        PermissionStatus(state, platform)
         if (platform == OnboardingPermissionPlatform.MAC) {
-            MacScheduleRequirements()
+            MacPermissionContent(state, layout, onEnableHelper, onRecheckHelper, onOpenHelperSettings)
+        } else {
+            PermissionStatus(state, platform)
         }
         if (!ready && state.accessResult != ApplicationAccessResult.Unavailable) {
             PosatoCaption(
@@ -186,7 +188,7 @@ internal fun PermissionStep(
 }
 
 @Composable
-private fun PermissionStatus(
+internal fun PermissionStatus(
     state: OnboardingViewState,
     platform: OnboardingPermissionPlatform,
 ) {
@@ -282,7 +284,7 @@ internal fun OnboardingViewState.canDeferPermission(platform: OnboardingPermissi
 }
 
 @Composable
-private fun MacPermissionActions(
+internal fun MacPermissionActions(
     state: OnboardingViewState,
     layout: PosatoLayout,
     onEnableHelper: () -> Unit,
@@ -324,14 +326,14 @@ private fun PermissionHeading(
 ) {
     PosatoHeading(
         if (platform == OnboardingPermissionPlatform.MAC) {
-            "Enable blocking on this Mac."
+            "Set up Posato on this Mac."
         } else {
             stringResource(Res.string.onboarding_permission_title)
         },
         description = if (platform == OnboardingPermissionPlatform.IOS) {
             stringResource(Res.string.onboarding_permission_ios_body, deviceNoun)
         } else {
-            "Posato needs its background helper to block your chosen websites and apps. Enable it to start a pause on this Mac."
+            "One setup to block distractions and run your schedules."
         },
         layout = layout,
     )

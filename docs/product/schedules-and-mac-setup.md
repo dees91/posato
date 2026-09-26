@@ -3,7 +3,7 @@
 - **Status:** Accepted product scope; implementation pending
 - **Accepted:** 2026-09-26
 - **Decision owner:** Project maintainer
-- **Provenance:** `user-confirmed`, eight-question clarification of PR #92
+- **Provenance:** `user-confirmed`, PR #92 clarification and unified-setup follow-up
 - **Owners:** `ONBOARDING-004`, `SCHEDULE-001`, `SCHEDULE-002`
 
 Release 1.2 delivers working recurring schedules on Mac and iPhone. Both the
@@ -33,11 +33,11 @@ change permission grants or establish platform proof for automatic starts.
   allows that occurrence to restart on wake or application relaunch. The
   occurrence identity, persistence and cross-device convergence needed to
   preserve this result belong to `SCHEDULE-001`.
-- On Mac, creating a schedule requires a ready background helper, enabled
-  **Open Posato at login**, and **Start sessions without the password** with
-  explicit authorization for automatic scheduled blocking. This supersedes
-  the earlier permission to create Mac plans before local setup. On iPhone,
-  the existing direction of saving a plan before local permission remains.
+- On Mac, creating a schedule requires verified completion of the unified
+  setup: working blocking, login launch and explicit authorization for automatic
+  scheduled blocking. These are outcomes of one guided setup, not separate
+  choices before schedule creation. On iPhone, the existing direction of saving
+  a plan before local permission remains.
 - A shared plan received from another device remains visible when this Mac
   lacks setup, with a direct route to the missing requirements. Other prepared
   devices may execute it. A saved or globally enabled plan alone is not proof
@@ -45,34 +45,50 @@ change permission grants or establish platform proof for automatic starts.
 
 ## Mac setup and consent
 
-`user-confirmed` (2026-09-26, PR #92 follow-up): the background helper is
-required to block websites and applications. The existing permission step
-leads with **Enable blocking on this Mac** and explains that requirement.
-Deferral keeps editing and synchronization available. Session then shows a
-persistent setup notice and **Finish setup** instead of Start. Unknown helper
-state asks for a check; it does not claim a missing permission. The setup action
-opens the existing helper controls, and their returned state determines the
-next screen. Do not repeatedly reopen a modal after **Not now**.
+`user-confirmed` (2026-09-26, latest PR #92 follow-up): use one guided
+**Set up Posato on this Mac** flow for manual pauses and schedules. This
+supersedes the earlier design with independent, initially off onboarding
+switches and a separate schedule-prerequisites checklist.
 
-**Open Posato at login** and **Start sessions without the password** remain
-independent, initially off settings. Both are required before creating a
-schedule on a Mac. They remain optional for manual sessions with a ready
-helper. Present them together under **Required for schedules**, separate from
-the helper requirement. Continuing or deferring never grants consent.
-Existing installations get one dismissible offer after updating; This Mac
-keeps the settings available afterwards.
+Before **Set up Posato**, explain that setup enables blocking, starts Posato
+quietly at login and allows manual and scheduled sessions without repeated
+password prompts. The automatic-start explanation includes signing in or waking
+within a scheduled interval. The deliberate setup action records the person's
+intent; the system and helper must still confirm their permissions. Continuing,
+deferring or viewing the explanation never grants consent.
 
-The Mac schedule entry leads to **Prepare this Mac for schedules** when any
-requirement is missing or unknown. Check actual system and helper state before
-allowing creation. A disabled **Continue to schedule** names what is missing;
-there is no working save path around this step. The UI shell offers an
-explicit **Preview schedule editor** route, with saving inactive, so the form
-can still be reviewed before implementation.
+The application guides the person through outstanding system approvals and
+checks actual state after each operation and on return from System Settings.
+It skips already satisfied steps, resumes after interruption, and only reports
+**This Mac is ready** once every required result is verified. One product flow
+is the goal; exactly one password entry or system dialog is not promised.
+
+**Not now** keeps editing and synchronization available. An incomplete setup
+leaves one persistent Session notice and **Finish setup**, with no repeated
+modal. Unknown state asks for verification rather than claiming permission was
+refused. Existing users get one dismissible offer; advanced status, revocation
+and removal remain in This Mac settings. Do not make users configure separate
+switches in onboarding or before their first schedule.
+
+The same setup screen is reached from onboarding, Session and Schedules.
+After verified completion, manual Start and Add schedule lead directly to their
+forms. Received plans remain visible while local setup is incomplete. If access
+is revoked, preserve plans and explain the missing capability with one
+**Finish setup** action. Any still-usable manual-session fallback and existing
+installation migration must be specified before connecting the new flow.
+
+PR #92 provides the UI shell only. **Set up Posato** stays disabled and clearly
+labelled as a preview. Existing helper controls remain available under a
+collapsed disclosure, and their actual readiness still gates the existing
+manual-session form. That result is not presented as unified setup completion.
+**Preview schedule editor** permits unsaved form exploration. Saving, automatic
+execution, setup orchestration, upgrade eligibility and dismissal persistence
+remain unimplemented.
 
 Login launch starts Posato in the menu bar after sign-in, without opening its
 window. Without it, a restart leaves Posato absent until manual launch. A
 running host is technically able to evaluate schedules without login launch,
-but the accepted product rule requires it for schedule readiness. Quitting
+but the accepted setup includes it for reliable startup after sign-in. Quitting
 Posato prevents new Mac scheduled starts until it runs again; the quit flow
 must disclose this under ADR 0009. If a required setting is later disabled or
 revoked, show setup required on this Mac without deleting the shared plan or

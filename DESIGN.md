@@ -632,53 +632,63 @@ in PR #44. The six steps and existing service/persistence behavior remain.
 [product scope](docs/product/schedules-and-mac-setup.md) owns schedule
 behavior and the authorization decisions still required by `SCHEDULE-001`.
 
-`user-confirmed` (2026-09-26, PR #92 follow-up): deliver the UI shells first.
-The Schedules destination, empty state, editor and device-setup route are
-available to explore. Saving, enabling and executing schedules remain
-inactive, with an explicit availability notice. List, skipped and active
-states have deterministic Compose previews. Mac setup shortcuts are disabled
-in the existing permission step; the upgrade offer has a rendering preview.
-The one-time upgrade eligibility, dismissal persistence and service callbacks
-remain part of later implementation. Existing This Mac controls still work.
+`user-confirmed` (2026-09-26, latest PR #92 follow-up): use one guided
+**Set up Posato on this Mac** screen. The main action is **Set up Posato**.
+Explain its effects in one panel with plain descriptions, without switches or
+separate requirement cards:
 
-`user-confirmed` (2026-09-26, PR #92 correction): the permission step leads
-with **Enable blocking on this Mac**. Explain that the background helper is
-required to block websites and applications. Keep **Not now** and the six-step
-flow. Deferral leaves a persistent setup notice in Session and **Finish setup**
-in place of Start. With unknown helper state, ask for a check instead of
-asserting that permission is missing. Finish setup opens the existing controls;
-a ready result admits duration/review without starting a session. The menu
-Start route uses the same UI prerequisite. Editing and synchronization remain
-available. Do not repeat a modal after deferral.
+- Block chosen websites and applications.
+- Start quietly at login without opening a window. The app stays in the menu bar.
+- Start manual pauses and schedules without repeated passwords. A short caption
+  explains automatic starts on sign-in or wake during a scheduled interval.
 
-Below the helper explanation, group **Open Posato at login** and **Start
-sessions without the password** under **Required for schedules**. Both are
-initially off and remain optional for manual sessions, but both are required
-before creating a schedule on this Mac. Explain sign-in/restart behavior and
-automatic scheduled starts beside the respective controls. A switch must never
-claim readiness until its returned system/helper state confirms it. In this
-UI shell, the new controls remain disabled and explicitly do not represent the
-current settings. The working This Mac settings keep their existing behavior.
+Keep the explanation compact enough to read its effects above the setup action
+at the normal desktop window size. Settings details can scroll below it.
 
-Existing users receive one dismissible setup offer after the update. Keep
-both options in This Mac. Do not open password-requiring configuration during
-an active session or while enforcement starts or changes. Enabling login
-launch alone does not start a session or authorize restrictions. Scheduled
-Apply needs explicit consent under the future accepted ADR amendment; the
-existing manual Start/Resume grant is not sufficient.
+Keep the existing six-step onboarding. The setup screen is reused from
+onboarding, Session's **Finish setup**, Schedules and the dismissible upgrade
+offer. Advanced status, revocation and removal stay in This Mac settings.
+This supersedes the separate onboarding opt-ins and the earlier **Required for
+schedules** checklist. The existing This Mac switches describe current service
+behavior until the unified flow is implemented; they are not extra choices in
+the new primary setup flow.
+
+The intended connected flow shows progress, names the current system action
+when approval is needed, and resumes only the missing step after interruption.
+Re-read actual state after operations and after returning from System Settings.
+Only verified completion of every requirement may show **This Mac is ready**.
+Do not promise exactly one password entry. **Not now** leaves editing and sync
+available, with one persistent notice and **Finish setup** in Session. Unknown
+state asks for a check. Do not repeatedly reopen a modal or prompt when a
+schedule is due. After completion, Start and Add schedule open their forms.
+
+PR #92 delivers UI shells first. **Set up Posato** is disabled beside a short
+preview notice; there are no new permission callbacks or simulated success.
+Onboarding exposes existing helper actions under **Blocking settings**.
+Session's setup route keeps its existing **This Mac** controls collapsed.
+Their readiness still admits the current manual-session form, including the
+menu Start route, without claiming unified setup completion or starting a
+session. Schedule saving and execution remain inactive. Upgrade eligibility,
+dismissal persistence, progress/recovery wiring and setup orchestration remain
+for implementation. Existing users and partially configured installations must
+have their migration and remaining manual-session capabilities specified there.
+
+Do not begin password-requiring setup during a session or while enforcement
+starts or changes. Login registration alone authorizes no restrictions.
+Automatic Apply still needs the independently reviewed ADR amendment owned by
+`SCHEDULE-001`; the existing manual Start/Resume grant is not sufficient.
 
 The UI shell adds **Schedules** beside **Session** and **Paused items** in
 each platform's existing adaptive navigation. `SCHEDULE-002` connects its
 actions and replaces the availability notice with real readiness.
 
-- The empty state explains recurring pauses. On Mac, **Set up schedules**
-  leads to the prerequisites; iPhone retains **Add schedule**. The future
-  ready Mac state offers **Add schedule** after all requirements are verified.
-- **Prepare this Mac for schedules** separates the required background helper
-  from the two required settings. **Continue to schedule** stays disabled
-  until all requirements are confirmed. In the UI shell it always stays
-  disabled; **Preview schedule editor** opens an explicitly labelled form
-  with saving inactive. **Not now** returns without creating anything.
+- The empty state explains recurring pauses. On Mac, **Set up this Mac**
+  opens the shared setup shell; iPhone retains **Add schedule**. The future
+  verified Mac state offers **Add schedule** directly.
+- The Mac setup screen has the same explanation and **Set up Posato** action
+  as onboarding. **Not now** returns without creating anything. A quiet
+  **Preview schedule editor** opens the explicitly labelled form with saving
+  inactive. There is no additional Continue-to-schedule prerequisite button.
 - The list shows each schedule's name, weekdays, hours, enabled state and
   next run. Show local readiness or a specific problem separately from the
   enabled switch. Missing permission offers a direct setup action, such as

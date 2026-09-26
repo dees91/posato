@@ -15,7 +15,9 @@ import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.feature.onboarding.MacHelperReadiness
+import app.posato.feature.onboarding.MacSetupOverview
 import app.posato.feature.onboarding.MacSetupPresentation
+import app.posato.feature.onboarding.MacSetupPreviewAction
 import app.posato.feature.onboarding.MacSetupSection
 
 internal fun SessionUiState.showsMacSetup(macSetup: MacSetupPresentation): Boolean {
@@ -34,14 +36,18 @@ internal fun SessionMacSetup(
     onRemove: () -> Unit,
     onBack: () -> Unit,
 ) {
-    var expanded by remember { mutableStateOf(true) }
+    var expanded by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoHeading(
-            "Enable blocking on this Mac.",
+            "Set up Posato on this Mac.",
             eyebrow = "FINISH SETUP",
-            description = "The background helper is required to block websites and apps. You can edit your saved choices during setup.",
+            description = "One setup to block distractions and run your schedules.",
             layout = layout,
         )
+        MacSetupOverview()
+        PosatoCaption("macOS may ask you to confirm access. You can review or revoke it later in This Mac settings.")
+        MacSetupPreviewAction()
+        PosatoCaption("Existing blocking controls are available in This Mac below.")
         MacSetupSection(
             presentation = macSetup,
             expanded = expanded,
@@ -53,7 +59,7 @@ internal fun SessionMacSetup(
             sessionBlocksRemoval = state.blocksHelperRemoval(),
             onRemove = onRemove,
         )
-        PosatoCaption("Once the helper is ready, you can choose your session duration. Blocking starts only when you confirm Start.")
+        PosatoCaption("The current helper setup lets you start manual pauses. It does not complete the new unified setup or enable schedules.")
         PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to Session") }
     }
 }
