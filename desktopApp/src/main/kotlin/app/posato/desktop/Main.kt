@@ -73,6 +73,7 @@ fun main() {
                 },
                 ioDispatcher = Dispatchers.IO,
                 openSettings = MacOsSystemSettings::open,
+                loginItem = MacLoginItemState,
             )
             val applicationGraph = createDesktopApplicationGraph(applicationMappings, enforcement, helperState)
             val updaterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
