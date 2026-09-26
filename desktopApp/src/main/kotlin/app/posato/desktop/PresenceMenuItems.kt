@@ -83,8 +83,7 @@ private fun remaining(
     copy: PresenceCopy,
     millis: Long,
 ): String {
-    val minutes = (millis + MINUTE_MILLIS - 1) / MINUTE_MILLIS
-    return if (minutes <= 1) copy.lessThanAMinute else copy.minutesLeft.format(minutes)
+    return if (millis < MINUTE_MILLIS) copy.lessThanAMinute else copy.minutesLeft.format(millis / MINUTE_MILLIS)
 }
 
 private fun label(title: String): PresenceMenuItem {
