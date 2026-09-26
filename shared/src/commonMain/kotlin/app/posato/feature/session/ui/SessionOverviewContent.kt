@@ -64,6 +64,7 @@ internal fun SessionOverviewContent(
     onMacStandingGrantChange: (Boolean) -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
+    val needsMacSetup = macSetup != null && macSetup.readiness != MacHelperReadiness.READY
     val hasItems = state.displayDomains().isNotEmpty() ||
         (state.review.applicationGroupName != null && (state.displayApplicationCount() ?: 0) > 0)
     var macSetupExpanded by remember { mutableStateOf(false) }
@@ -74,6 +75,7 @@ internal fun SessionOverviewContent(
                 eyebrow = if (active) "SESSION ACTIVE" else "NO SESSION ACTIVE",
                 description = when {
                     active -> "Your session timer is running on this device."
+                    needsMacSetup -> "Finish setting up blocking, then choose when to take a pause."
                     !hasItems -> "Start with a website or app you’d like a little space from."
                     else -> "A quiet pause is ready when you are. Choose a little space from the things that pull you away."
                 },
@@ -81,15 +83,13 @@ internal fun SessionOverviewContent(
             )
         })
         EnforcementNotice(state, onRetryEnforcement)
-        MacSetupNotice(macSetup, macSetupExpanded, state.enforcement)
+        MacSetupNotice(macSetup, macSetupExpanded, state.enforcement, active)
         if (active) {
             PosatoEndTime("Until ${state.formattedActiveEnd.orEmpty()}", supportingText = state.remainingMillis?.let { remainingText(it) })
             PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, enabled = state.canRequestEarlyEnd()) { Text("End session early") }
         } else {
             SessionEndedCaption(state)
-            PosatoButton(if (hasItems) onSetup else onItems, enabled = state.canEnterSetup()) {
-                Text(if (hasItems) "Start a session" else "Choose paused items")
-            }
+            SessionStartAction(state, needsMacSetup, hasItems, onSetup, onItems)
         }
         FrozenSetCaption(state)
         SessionSelectionSummary(state, deviceLabel, onEditItems)
@@ -114,20 +114,46 @@ internal fun SessionOverviewContent(
     }
 }
 
-/**
- * A Mac whose helper is not ready enforces nothing, so the state it last reported is named above the
- * session action instead of only inside a collapsed row. Expanding the row shows the same sentence
- * there, and the row itself keeps the announcement, so this notice stays silent. A session that is
- * actively enforcing contradicts an older read, and nothing may re-read it without a press, so the
- * enforcement notice speaks alone then.
- */
+@Composable
+private fun SessionStartAction(
+    state: SessionUiState,
+    needsMacSetup: Boolean,
+    hasItems: Boolean,
+    onSetup: () -> Unit,
+    onItems: () -> Unit,
+) {
+    PosatoButton(if (needsMacSetup || hasItems) onSetup else onItems, enabled = state.canEnterSetup()) {
+        Text(
+            when {
+                needsMacSetup -> "Finish setup"
+                hasItems -> "Start a session"
+                else -> "Choose paused items"
+            },
+        )
+    }
+}
+
 @Composable
 private fun MacSetupNotice(
     macSetup: MacSetupPresentation?,
     expanded: Boolean,
     enforcement: EnforcementState,
+    active: Boolean,
 ) {
-    val readiness = macSetup?.readiness ?: return
+    if (macSetup == null) return
+    if (!active && macSetup.readiness != MacHelperReadiness.READY && enforcement is EnforcementState.Inactive) {
+        PosatoNotice(tone = PosatoTone.Caution) {
+            Text(
+                if (macSetup.readiness == null) {
+                    "Check this Mac's setup before starting a pause. Your saved websites and apps remain available to edit."
+                } else {
+                    "Setup incomplete. Posato is not blocking websites or apps on this Mac. Finish setup to start a pause."
+                },
+            )
+        }
+        return
+    }
+    val readiness = macSetup.readiness ?: return
     if (expanded || macSetup.activity != null || readiness == MacHelperReadiness.READY) {
         return
     }

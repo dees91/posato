@@ -27,7 +27,6 @@ import app.posato.generated.resources.onboarding_permission_ios_body
 import app.posato.generated.resources.onboarding_permission_mac_action
 import app.posato.generated.resources.onboarding_permission_mac_admin
 import app.posato.generated.resources.onboarding_permission_mac_approval
-import app.posato.generated.resources.onboarding_permission_mac_body
 import app.posato.generated.resources.onboarding_permission_mac_check_again
 import app.posato.generated.resources.onboarding_permission_mac_open_settings
 import app.posato.generated.resources.onboarding_permission_mac_unavailable
@@ -163,15 +162,7 @@ internal fun PermissionStep(
             }
         },
     ) {
-        PosatoHeading(
-            stringResource(Res.string.onboarding_permission_title),
-            description = if (platform == OnboardingPermissionPlatform.IOS) {
-                stringResource(Res.string.onboarding_permission_ios_body, deviceNoun)
-            } else {
-                stringResource(Res.string.onboarding_permission_mac_body)
-            },
-            layout = layout,
-        )
+        PermissionHeading(platform, deviceNoun, layout)
         if (platform == OnboardingPermissionPlatform.MAC) {
             PosatoCaption(stringResource(Res.string.onboarding_permission_mac_admin))
         }
@@ -180,10 +171,16 @@ internal fun PermissionStep(
         }
         PermissionStatus(state, platform)
         if (platform == OnboardingPermissionPlatform.MAC) {
-            MacOptionalSetup()
+            MacScheduleRequirements()
         }
         if (!ready && state.accessResult != ApplicationAccessResult.Unavailable) {
-            PosatoCaption(stringResource(Res.string.onboarding_permission_defer))
+            PosatoCaption(
+                if (platform == OnboardingPermissionPlatform.MAC) {
+                    "You can finish setup later and still edit your paused items. Blocking stays unavailable until the helper is ready."
+                } else {
+                    stringResource(Res.string.onboarding_permission_defer)
+                },
+            )
         }
     }
 }
@@ -317,4 +314,25 @@ private fun MacPermissionActions(
             )
         }
     }
+}
+
+@Composable
+private fun PermissionHeading(
+    platform: OnboardingPermissionPlatform,
+    deviceNoun: String,
+    layout: PosatoLayout,
+) {
+    PosatoHeading(
+        if (platform == OnboardingPermissionPlatform.MAC) {
+            "Enable blocking on this Mac."
+        } else {
+            stringResource(Res.string.onboarding_permission_title)
+        },
+        description = if (platform == OnboardingPermissionPlatform.IOS) {
+            stringResource(Res.string.onboarding_permission_ios_body, deviceNoun)
+        } else {
+            "Posato needs its background helper to block your chosen websites and apps. Enable it to start a pause on this Mac."
+        },
+        layout = layout,
+    )
 }

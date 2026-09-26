@@ -27,7 +27,7 @@ import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
-import app.posato.feature.onboarding.MacOptionalSetup
+import app.posato.feature.onboarding.MacScheduleRequirements
 
 @Composable
 internal fun SchedulesScreen(
@@ -71,7 +71,7 @@ internal fun SchedulesScreen(
             }
 
             state.showingSetup -> {
-                ScheduleSetupPreview(device, layout) { onShowSetup(false) }
+                ScheduleSetupPreview(device, layout, onBack = { onShowSetup(false) }, onPreviewEditor = { onEdit(ScheduleUiModel()) })
             }
 
             activeSchedule != null -> {
@@ -86,11 +86,21 @@ internal fun SchedulesScreen(
                         description = "Choose the days and hours that work for you. Start with one schedule, then add another when you need it.",
                     )
                 }
-                PosatoButton(onClick = { onEdit(ScheduleUiModel()) }) { Text("Add schedule") }
+                if (device == PosatoDevice.Mac) {
+                    PosatoPanel(modifier = Modifier.fillMaxWidth()) {
+                        PosatoBody("Prepare this Mac before your first schedule.")
+                        PosatoCaption("Background helper, Open Posato at login and Start sessions without the password are all required.")
+                        PosatoButton(onClick = { onShowSetup(true) }) { Text("Set up schedules") }
+                    }
+                } else {
+                    PosatoButton(onClick = { onEdit(ScheduleUiModel()) }) { Text("Add schedule") }
+                }
                 state.schedules.forEach { schedule ->
                     key(schedule.id) { ScheduleRow(schedule, device, onEdit) { onShowSetup(true) } }
                 }
-                PosatoButton(onClick = { onShowSetup(true) }, style = PosatoButtonStyle.Quiet) { Text("Set up this ${device.noun}") }
+                if (device != PosatoDevice.Mac) {
+                    PosatoButton(onClick = { onShowSetup(true) }, style = PosatoButtonStyle.Quiet) { Text("Set up this ${device.noun}") }
+                }
             }
         }
     }
@@ -135,19 +145,39 @@ private fun ScheduleSetupPreview(
     device: PosatoDevice,
     layout: PosatoLayout,
     onBack: () -> Unit,
+    onPreviewEditor: () -> Unit,
 ) {
-    PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
-    PosatoHeading("Ready on this ${device.noun}", description = "Your plan can wait while you set up this device.", layout = layout)
-    PosatoNotice { Text("Schedule setup will be available in a future update. Your current permissions stay unchanged.") }
-    if (device == PosatoDevice.Mac) {
-        MacOptionalSetup()
-        PosatoBody("Opening at login helps Posato be ready after sign-in. It is optional while Posato is already running.")
-        PosatoCaption("Automatic blocking will need separate, explicit consent, including starting or waking your Mac during a scheduled pause.")
-    } else {
-        PosatoBody("Allow Screen Time access so Posato can pause your chosen websites and applications on this device.")
-        PosatoButton(onClick = {}, enabled = false) { Text("Allow Screen Time access") }
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+        PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
+        PosatoHeading(
+            "Prepare this ${device.noun} for schedules.",
+            description = if (device == PosatoDevice.Mac) {
+                "Complete all three requirements before you create a schedule on this Mac."
+            } else {
+                "Allow automatic blocking on this device."
+            },
+            layout = layout,
+        )
+        if (device == PosatoDevice.Mac) {
+            PosatoPanel(modifier = Modifier.fillMaxWidth()) {
+                PosatoCaption("REQUIRED FOR BLOCKING")
+                PosatoBody("Enable the background helper")
+                PosatoCaption("Allow Posato to block your chosen websites and apps on this Mac.")
+                PosatoButton(onClick = {}, enabled = false) { Text("Enable blocking") }
+            }
+            PosatoPanel(modifier = Modifier.fillMaxWidth()) { MacScheduleRequirements() }
+            PosatoCaption("Automatic starts need your explicit approval. You will not be asked for a password when a schedule is due.")
+        } else {
+            PosatoBody("Allow Screen Time access so Posato can pause your chosen websites and applications on this device.")
+            PosatoButton(onClick = {}, enabled = false) { Text("Allow Screen Time access") }
+        }
+        PosatoActionRow {
+            PosatoButton(onClick = {}, enabled = false) { Text("Continue to schedule") }
+            PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Not now") }
+        }
+        PosatoButton(onClick = onPreviewEditor, style = PosatoButtonStyle.Quiet) { Text("Preview schedule editor") }
+        PosatoCaption("Explore the form without creating a schedule. Saving is unavailable in this preview.")
     }
-    PosatoButton(onClick = onBack, style = PosatoButtonStyle.Secondary) { Text("Not now") }
 }
 
 @Composable

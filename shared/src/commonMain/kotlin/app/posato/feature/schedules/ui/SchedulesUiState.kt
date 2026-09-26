@@ -74,7 +74,7 @@ internal class SchedulesNavigationState {
     }
 
     fun closeEditor() {
-        state = state.copy(editor = null)
+        state = state.copy(editor = null, showingSetup = false)
     }
 
     fun showSetup(visible: Boolean) {

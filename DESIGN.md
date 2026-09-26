@@ -641,43 +641,62 @@ in the existing permission step; the upgrade offer has a rendering preview.
 The one-time upgrade eligibility, dismissal persistence and service callbacks
 remain part of later implementation. Existing This Mac controls still work.
 
-The existing Mac permission step offers **Open Posato at login** and
-**Start sessions without the password** as two independent choices, both
-initially off. Keep the six-step flow and a clear way to continue without
-either. Explain each benefit beside its control. The helper and system must
-confirm a setting before the UI shows it as enabled; pending, unavailable,
-and failed setup remain visible with a relevant retry or setup action.
-The password option keeps the helper-readiness and session-state guards
-specified above. Neither continuing nor deferring grants consent.
+`user-confirmed` (2026-09-26, PR #92 correction): the permission step leads
+with **Enable blocking on this Mac**. Explain that the background helper is
+required to block websites and applications. Keep **Not now** and the six-step
+flow. Deferral leaves a persistent setup notice in Session and **Finish setup**
+in place of Start. With unknown helper state, ask for a check instead of
+asserting that permission is missing. Finish setup opens the existing controls;
+a ready result admits duration/review without starting a session. The menu
+Start route uses the same UI prerequisite. Editing and synchronization remain
+available. Do not repeat a modal after deferral.
+
+Below the helper explanation, group **Open Posato at login** and **Start
+sessions without the password** under **Required for schedules**. Both are
+initially off and remain optional for manual sessions, but both are required
+before creating a schedule on this Mac. Explain sign-in/restart behavior and
+automatic scheduled starts beside the respective controls. A switch must never
+claim readiness until its returned system/helper state confirms it. In this
+UI shell, the new controls remain disabled and explicitly do not represent the
+current settings. The working This Mac settings keep their existing behavior.
 
 Existing users receive one dismissible setup offer after the update. Keep
-both options in This Mac. After dismissal, offer an option only in a flow
-where it helps, such as creating a schedule. Do not open password-requiring
-configuration during an active session or while enforcement starts or
-changes. Defer the offer until setup is safe. Enabling login launch alone
-does not start a session or authorize restrictions.
+both options in This Mac. Do not open password-requiring configuration during
+an active session or while enforcement starts or changes. Enabling login
+launch alone does not start a session or authorize restrictions. Scheduled
+Apply needs explicit consent under the future accepted ADR amendment; the
+existing manual Start/Resume grant is not sufficient.
 
 The UI shell adds **Schedules** beside **Session** and **Paused items** in
 each platform's existing adaptive navigation. `SCHEDULE-002` connects its
 actions and replaces the availability notice with real readiness.
 
-- The empty state explains recurring pauses and offers **Add schedule**.
+- The empty state explains recurring pauses. On Mac, **Set up schedules**
+  leads to the prerequisites; iPhone retains **Add schedule**. The future
+  ready Mac state offers **Add schedule** after all requirements are verified.
+- **Prepare this Mac for schedules** separates the required background helper
+  from the two required settings. **Continue to schedule** stays disabled
+  until all requirements are confirmed. In the UI shell it always stays
+  disabled; **Preview schedule editor** opens an explicitly labelled form
+  with saving inactive. **Not now** returns without creating anything.
 - The list shows each schedule's name, weekdays, hours, enabled state and
   next run. Show local readiness or a specific problem separately from the
   enabled switch. Missing permission offers a direct setup action, such as
   **Set up this Mac**, while keeping the plan available to other devices.
 - The editor has a name, weekday selection, start and end times, and an
   enabled switch. Use the established form controls and validation style.
-  Saving remains possible before local permission is ready. Explain that
-  automatic starts need consent and local setup before they can run.
+  Mac creation requires completed local setup. iPhone may still save a plan
+  before local permission. Explain that automatic starts need consent and
+  readiness on each device before they can run.
 - **Skip next session** applies to the next occurrence. Show the skipped
   occurrence and the resulting next run so the action is understandable.
   An active scheduled session identifies its schedule and keeps **End
   early** in the existing session flow. Neither action disables the plan.
-- Local readiness distinguishes missing enforcement consent or permission
-  from the recommendation to open at login. A running Mac can execute a
-  ready schedule with login launch off. Show actual local restriction state
-  independently of the timetable or another device's state.
+- Local Mac readiness requires the helper, login launch and explicit consent
+  to automatic blocking without a password prompt. A revoked requirement
+  shows setup required without deleting the shared plan. Never ask for an
+  administrator password when a schedule is due. Show actual local
+  restrictions independently of the timetable or another device's state.
 
 Reuse the established typography, colors, spacing and native controls.
 Weekday choices, switches and actions need accessible names and states.
@@ -791,14 +810,11 @@ conflicts before the editor and active-session details are implemented.
     While a failure that reached the daemon is shown, **Check again** is
     hidden. Such a failure never suggests it, because it could reinstall the
     removed rule.
-- `user-confirmed` (2026-09-11): when a helper read has returned a state other
-  than ready and no helper call is running, Session names that state once as a
-  notice beside the enforcement notice, above the session action. Expanding
-  This Mac moves the sentence into the row, the notice stays silent because
-  the row already announces, and it never blocks starting a session. Before
-  the first explicit read there is no state to name, so no notice appears, and
-  an active session that is enforcing keeps its own notice rather than showing
-  an older helper read beside it.
+- `user-confirmed` (2026-09-26, PR #92 correction): while inactive, missing
+  helper readiness keeps a persistent setup notice and **Finish setup** in
+  place of Start, even if This Mac is expanded. Unknown state asks for a check.
+  This supersedes the 2026-09-11 informational-only notice. Active enforcement
+  keeps its own status and recovery actions rather than an older helper read.
 
 Main navigation stays available during active sessions, and Paused items editing
 retains its existing availability. Do not add an unrelated active-session lock.

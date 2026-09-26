@@ -44,7 +44,7 @@ internal fun ScheduleEditor(
     }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoButton(onClick = close, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
-        PosatoHeading(if (schedule.id == 0) "Make room, regularly." else "Edit schedule", layout = layout)
+        PosatoHeading(if (schedule.id == 0) "Make room, regularly." else "Edit schedule", eyebrow = "EDITOR PREVIEW", layout = layout)
         PosatoTextField(state = name, label = "Schedule name", placeholder = "Morning focus", onSubmit = { focus.clearFocus() })
         Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
             PosatoCaption("Repeat on")

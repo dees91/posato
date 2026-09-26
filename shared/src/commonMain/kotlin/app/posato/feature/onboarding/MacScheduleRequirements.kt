@@ -18,24 +18,27 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 
 @Composable
-internal fun MacOptionalSetup(modifier: Modifier = Modifier) {
+internal fun MacScheduleRequirements(modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-        PosatoCaption("Make Posato ready when you need it")
+        PosatoCaption("REQUIRED FOR SCHEDULES")
+        Text("Before you create a schedule on this Mac, enable both settings.")
         PosatoSelectionRow(
             modifier = Modifier.fillMaxWidth(),
             checked = false,
             onCheckedChange = {},
             enabled = false,
-            supportingContent = { PosatoCaption("Keep Posato ready after you sign in. You can change this later in This Mac.") },
+            supportingContent = { PosatoCaption("Required so schedules can resume after you restart and sign in to this Mac.") },
         ) { Text("Open Posato at login") }
         PosatoSelectionRow(
             modifier = Modifier.fillMaxWidth(),
             checked = false,
             onCheckedChange = {},
             enabled = false,
-            supportingContent = { PosatoCaption("Approve once with an administrator password, then start sessions without another prompt.") },
+            supportingContent = {
+                PosatoCaption("Required so scheduled pauses can start automatically, including during an interval after sign-in or wake.")
+            },
         ) { Text("Start sessions without the password") }
-        PosatoCaption("These optional setup shortcuts are coming soon. For now, you can change both settings in This Mac.")
+        PosatoCaption("Schedule setup is coming soon. These controls are inactive and do not show your current settings.")
     }
 }
 
@@ -45,8 +48,8 @@ internal fun MacSetupOffer(
     modifier: Modifier = Modifier,
 ) {
     PosatoPanel(modifier = modifier) {
-        PosatoHeading("A little less setup next time.", layout = PosatoLayout.Compact)
-        MacOptionalSetup()
+        PosatoHeading("Prepare this Mac for schedules.", layout = PosatoLayout.Compact)
+        MacScheduleRequirements()
         PosatoButton(onClick = onDismiss, style = PosatoButtonStyle.Quiet) { Text("Not now") }
     }
 }

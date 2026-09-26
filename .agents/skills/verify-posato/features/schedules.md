@@ -15,8 +15,10 @@ sessions exist only in Compose previews.
 
 ## How to get to it (user POV)
 
-After onboarding, choose Schedules in the primary navigation. Add schedule
-opens the editor. Set up this Mac or Set up this iPhone opens setup.
+After onboarding, choose Schedules in the primary navigation. On Mac,
+Set up schedules opens the three prerequisites. Continue to schedule remains
+disabled; Preview schedule editor opens the form without allowing creation.
+On iPhone, Add schedule opens the editor and Set up this iPhone opens setup.
 
 ## Driving it with posato-control
 
@@ -24,6 +26,8 @@ Preconditions: launch the app through the driver and finish onboarding. Use
 `-t desktop --vm primary` on Mac and `-t device` on the test iPhone.
 
 - Open with `$PC tap -t <target> --text Schedules`, then
+  `$PC tap -t <target> --text "Set up schedules"` on Mac. Verify Continue to
+  schedule is disabled, then choose Preview schedule editor. On iPhone, use
   `$PC tap -t <target> --text "Add schedule"`.
 - Enter a synthetic name with `$PC type -t <target> --role textField --input
   "Morning focus" --submit`. Return clears focus.
@@ -33,7 +37,7 @@ Preconditions: launch the app through the driver and finish onboarding. Use
 - Scroll to Save schedule, then run `$PC wait -t <target> --for disabled
   --text "Save schedule"`. Capture a screenshot and snapshot. Cancel returns
   to the empty state, with no saved row.
-- Open Set up this Mac or Set up this iPhone, capture its disabled actions,
+- Open Set up schedules on Mac or Set up this iPhone, capture its disabled actions,
   then choose Not now. Session and Paused items remain accessible.
 
 ## Gotchas

@@ -33,24 +33,51 @@ change permission grants or establish platform proof for automatic starts.
   allows that occurrence to restart on wake or application relaunch. The
   occurrence identity, persistence and cross-device convergence needed to
   preserve this result belong to `SCHEDULE-001`.
-- A person can save a plan before this device has permission to execute it.
-  Show that it requires setup on this device and route to the missing steps.
-  Other prepared devices may execute it. A saved or globally enabled plan
-  alone is not evidence of local readiness or active restrictions.
+- On Mac, creating a schedule requires a ready background helper, enabled
+  **Open Posato at login**, and **Start sessions without the password** with
+  explicit authorization for automatic scheduled blocking. This supersedes
+  the earlier permission to create Mac plans before local setup. On iPhone,
+  the existing direction of saving a plan before local permission remains.
+- A shared plan received from another device remains visible when this Mac
+  lacks setup, with a direct route to the missing requirements. Other prepared
+  devices may execute it. A saved or globally enabled plan alone is not proof
+  of local readiness or active restrictions.
 
 ## Mac setup and consent
 
-The existing Mac permission step offers **Open Posato at login** and
-**Start sessions without the password** as independent, initially off
-choices. Neither is enabled by proceeding or skipping. Keep both available
-in This Mac afterwards. Existing installations get one dismissible offer
-after updating. Later offers appear only in a relevant feature flow.
+`user-confirmed` (2026-09-26, PR #92 follow-up): the background helper is
+required to block websites and applications. The existing permission step
+leads with **Enable blocking on this Mac** and explains that requirement.
+Deferral keeps editing and synchronization available. Session then shows a
+persistent setup notice and **Finish setup** instead of Start. Unknown helper
+state asks for a check; it does not claim a missing permission. The setup action
+opens the existing helper controls, and their returned state determines the
+next screen. Do not repeatedly reopen a modal after **Not now**.
 
-Login launch is recommended for readiness after sign-in. It is not required
-to evaluate a schedule while Posato is already running, and it grants no
-permission to enforce. Creating a schedule offers it in context when off.
-Quitting Posato prevents Mac schedules from starting until it runs again;
-the quit flow must disclose this under ADR 0009.
+**Open Posato at login** and **Start sessions without the password** remain
+independent, initially off settings. Both are required before creating a
+schedule on a Mac. They remain optional for manual sessions with a ready
+helper. Present them together under **Required for schedules**, separate from
+the helper requirement. Continuing or deferring never grants consent.
+Existing installations get one dismissible offer after updating; This Mac
+keeps the settings available afterwards.
+
+The Mac schedule entry leads to **Prepare this Mac for schedules** when any
+requirement is missing or unknown. Check actual system and helper state before
+allowing creation. A disabled **Continue to schedule** names what is missing;
+there is no working save path around this step. The UI shell offers an
+explicit **Preview schedule editor** route, with saving inactive, so the form
+can still be reviewed before implementation.
+
+Login launch starts Posato in the menu bar after sign-in, without opening its
+window. Without it, a restart leaves Posato absent until manual launch. A
+running host is technically able to evaluate schedules without login launch,
+but the accepted product rule requires it for schedule readiness. Quitting
+Posato prevents new Mac scheduled starts until it runs again; the quit flow
+must disclose this under ADR 0009. If a required setting is later disabled or
+revoked, show setup required on this Mac without deleting the shared plan or
+claiming another device has stopped. Never request an administrator password
+spontaneously when an occurrence is due.
 
 Automatic scheduled enforcement requires explicit consent with a clear
 explanation of startup and wake within a scheduled interval. The existing

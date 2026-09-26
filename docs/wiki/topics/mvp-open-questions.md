@@ -914,7 +914,9 @@ below. This queue retains idea provenance without expanding the original MVP.
     setup is unsafe during a session. The accepted UI lives in
     [DESIGN.md](../../../DESIGN.md#release-12-setup-and-schedules), and
     [product scope](../../product/schedules-and-mac-setup.md) distinguishes
-    optional login readiness from explicit consent to automatic enforcement.
+    the required helper from the two settings required for Mac schedule
+    creation. Those settings remain optional for manual sessions. The latest
+    PR #92 correction supersedes optional login readiness for schedules.
     The current Start/Resume grant does not authorize scheduled Apply.
 
 ## Later platform questions
