@@ -109,6 +109,7 @@ class PosatoApplication internal constructor(
                     ).windowInsetsPadding(WindowInsets.safeDrawing),
                 )
             } else if (completion == SetupCompletion.INCOMPLETE && !setupDone) {
+                LaunchedEffect(windowRequests) { windowRequests.collect {} }
                 OnboardingHost(
                     onboarding = onboarding,
                     syncState = syncState,
