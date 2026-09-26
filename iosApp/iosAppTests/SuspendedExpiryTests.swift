@@ -22,21 +22,23 @@ final class FakeExpiryMonitoring: SuspendedExpiryMonitoring {
     var started: [StartedSchedule] = []
     var stopped: [[DeviceActivityName]] = []
     var startError: Error?
-    private(set) var activities: [DeviceActivityName] = []
+    private var installed: [DeviceActivityName: DeviceActivitySchedule] = [:]
 
     func startMonitoring(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws {
         if let startError {
             throw startError
         }
         started.append(StartedSchedule(activity: activity, schedule: schedule))
-        if !activities.contains(activity) {
-            activities.append(activity)
-        }
+        installed[activity] = schedule
     }
 
     func stopMonitoring(_ activities: [DeviceActivityName]) {
         stopped.append(activities)
-        self.activities.removeAll { activities.contains($0) }
+        activities.forEach { installed[$0] = nil }
+    }
+
+    func schedule(for activity: DeviceActivityName) -> DeviceActivitySchedule? {
+        installed[activity]
     }
 }
 
@@ -440,7 +442,20 @@ final class SuspendedExpiryTests: XCTestCase {
         XCTAssertFalse(try isScheduled(sessionId: "session", scheduler: scheduler))
     }
 
-    func testIsScheduledAdoptsALegacyPendingWithActiveMonitoring() throws {
+    func testIsScheduledRefusesAPendingWhoseScheduleWasNeverInstalled() throws {
+        let monitoring = FakeExpiryMonitoring()
+        let records = try isolatedRecordStore()
+        let scheduler = capableScheduler(monitoring: monitoring, records: { records })
+        XCTAssertEqual(
+            try schedule(sessionId: "earlier-session", start: 1_700_000_000, end: 1_700_003_600, scheduler: scheduler),
+            .scheduled
+        )
+        try writePending(records, sessionId: "session", end: 1_700_007_200)
+
+        XCTAssertFalse(try isScheduled(sessionId: "session", scheduler: scheduler))
+    }
+
+    func testIsScheduledRefusesALegacyPendingWithoutAnEnd() throws {
         let monitoring = FakeExpiryMonitoring()
         let records = try isolatedRecordStore()
         let scheduler = capableScheduler(monitoring: monitoring, records: { records })
@@ -450,7 +465,7 @@ final class SuspendedExpiryTests: XCTestCase {
         )
         try writeRawPending(records, json: "{\"version\":1,\"sessionId\":\"session\"}")
 
-        XCTAssertTrue(try isScheduled(sessionId: "session", scheduler: scheduler))
+        XCTAssertFalse(try isScheduled(sessionId: "session", scheduler: scheduler))
     }
 
     // MARK: - Stop and reconciliation

@@ -149,6 +149,7 @@ final class SuspendedExpiryDeviceTests: XCTestCase {
         XCTAssertEqual(try clear(enforcer: enforcer), .cleared)
         XCTAssertEqual(try apply(domains: [domain], enforcer: enforcer), .applied)
         XCTAssertEqual(try schedule(sessionId: sessionId, start: start, end: end, scheduler: scheduler), .scheduled)
+        XCTAssertTrue(try isScheduled(sessionId: sessionId, scheduler: scheduler))
 
         let probe = ManagedSettingsStore(named: IosEnforcementStoreName.posato)
         let restartDeadline = Date().addingTimeInterval(120)
@@ -176,6 +177,12 @@ final class SuspendedExpiryDeviceTests: XCTestCase {
     }
 
 #if !targetEnvironment(simulator)
+    private func isScheduled(sessionId: String, scheduler: SuspendedExpiryScheduler) throws -> Bool {
+        var result: KotlinBoolean?
+        scheduler.isScheduled(sessionId: sessionId) { result = $0 }
+        return try XCTUnwrap(result).boolValue
+    }
+
     private func clear(enforcer: IosManagedSettingsEnforcer) throws -> IosEnforcementOutcome {
         var result: IosEnforcementOutcome?
         enforcer.clear { result = $0 }

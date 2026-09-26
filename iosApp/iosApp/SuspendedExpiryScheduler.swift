@@ -9,7 +9,7 @@ import PosatoShared
 protocol SuspendedExpiryMonitoring {
     func startMonitoring(_ activity: DeviceActivityName, during schedule: DeviceActivitySchedule) throws
     func stopMonitoring(_ activities: [DeviceActivityName])
-    var activities: [DeviceActivityName] { get }
+    func schedule(for activity: DeviceActivityName) -> DeviceActivitySchedule?
 }
 
 extension DeviceActivityCenter: SuspendedExpiryMonitoring {
@@ -117,16 +117,27 @@ final class SuspendedExpiryScheduler: NSObject, IosSuspendedExpiryProvider {
     func isScheduled(sessionId: String, handler: @escaping (KotlinBoolean) -> Void) {
         // Proof that this session's restrictions are the ones in the store:
         // its pending record is written only after its apply succeeded, and
-        // every clear stops monitoring and removes the record first.
+        // every clear stops monitoring and removes the record first. The
+        // installed schedule must end where the record says, because the
+        // record is written before monitoring starts: a process killed in
+        // between leaves a new record beside the previous session's schedule.
+        // A version 1 record has no end to compare and is re-applied instead.
         guard SuspendedExpiryRecordStore.isValidSessionId(sessionId),
               let store = records(),
               case let .present(pending) = store.readPendingResult(),
-              pending.sessionId == sessionId
+              pending.sessionId == sessionId,
+              let pendingEnd = pending.intervalEnd,
+              let installedEnd = monitoring.schedule(for: SuspendedExpiryActivity.name)?.intervalEnd
         else {
             handler(KotlinBoolean(bool: false))
             return
         }
-        handler(KotlinBoolean(bool: monitoring.activities.contains(SuspendedExpiryActivity.name)))
+        handler(KotlinBoolean(bool: Self.sameMinute(pendingEnd, installedEnd)))
+    }
+
+    private static func sameMinute(_ lhs: DateComponents, _ rhs: DateComponents) -> Bool {
+        lhs.year == rhs.year && lhs.month == rhs.month && lhs.day == rhs.day &&
+            lhs.hour == rhs.hour && lhs.minute == rhs.minute
     }
 
     func readReconciliation(sessionId: String, handler: @escaping (IosExpiryReconciliation) -> Void) {
