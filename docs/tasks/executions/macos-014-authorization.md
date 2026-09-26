@@ -25,12 +25,20 @@ named below.
   - bit 0: the standing right is present and exact;
   - bit 1: a valid grant exists for the peer.
 
-  Without the flag, the reply stays 5 bytes. An older daemon rejects the flag
-  with `invalidInput`, which the application reads as "not supported". That
-  is the capability probe.
+  The daemon appends the byte only to a successful reply. Without the flag,
+  the reply stays exactly 5 bytes. An older daemon rejects the flag with
+  `invalidInput`, which the application reads as "not supported". That is
+  the capability probe. The helper decodes the first 5 bytes of a forwarded
+  reply and passes a sixth byte through; local helper answers stay 5 bytes.
+- The Apply right's rule definition is unchanged. **Grant** passes a
+  `kAuthorizationEnvironmentPrompt` naming the permission, so its dialog
+  differs from a session start.
 - `WireOperation.isApply` is true for apply and apply with grant. It is used
   by `effectiveOperation`, `ownsAppliedMutation`, `failClosedApplyResponse`,
-  the helper's `activeRequest` and `LeaseRenewer`, and the Kotlin client.
+  the helper's `applyNeedsRestore` (effective-chain check and restore),
+  `activeRequest`, and `LeaseRenewer`, and by the Kotlin client. Kotlin keeps
+  a pending-unknown Apply with grant under the Apply operation code, because
+  `WireReconcilePayload` rejects code 16.
 - Apply with grant uses the digest `canonicalInputDigest(.apply, port)` in
   the daemon, the helper, and Kotlin. An unknown outcome reconciles with
   original operation `apply`. `WireReconcilePayload.supportedOperations` is
@@ -41,8 +49,9 @@ named below.
 - **Rights.** `AuthorizationPolicy` takes the right name as a parameter for
   install, verify, repair, remove, acquire, and validate. It adds
   `standingApplyRight` with the Apply definition. An `AuthorizationRules`
-  protocol wraps it; the system implementation is the existing code, and a
-  fake serves the tests.
+  protocol wraps it and reports each right as absent, exact, or mismatched.
+  The system implementation is the existing code, and a fake serves the
+  tests.
 - **File primitives.** The private file helpers of `DurableOwnershipStore`
   move into a `ProtectedPlistFile` with a prefix parameter:
   - `O_NOFOLLOW`, owner, `nlink`, mode, and size checks;
@@ -76,7 +85,8 @@ named below.
   - **Status** verifies the Apply right as today and, when flagged, appends
     the grant byte.
   - **Prepare grant** (empty payload) installs the standing right only when
-    it is absent. A mismatch fails as `ruleRepair`.
+    it is absent, deleting any record first. A mismatch fails as
+    `ruleRepair`.
   - **Grant** (payload is the external form):
     1. requires both rights to be exact;
     2. validates and destroys the standing form under the one-use rules;
@@ -99,10 +109,12 @@ named below.
     Disable does the same. Restore never touches grants.
   - **Remove** deletes the grant record and verifies that it is gone, then
     removes both rights. A reconciled Remove does the same.
-  - **Enable** deletes the record first when the Apply right is absent, then
-    installs both rights. When the Apply right is exact, it installs the
-    standing right if absent and fails closed on a mismatch.
-  - **Repair** deletes the record first when it replaces either right.
+  - **Enable** and **Repair**, direct or reconciled, use one shared
+    `convergeRights` function:
+    - Enable deletes the record first when the Apply right is absent, then
+      installs both rights. When the Apply right is exact, it installs the
+      standing right if absent and fails closed on a mismatch.
+    - Repair deletes the record first when it replaces either right.
 
 ### Helper
 
@@ -124,24 +136,30 @@ named below.
   interaction. A declined prompt answers locally with `cancelled` and does
   not exit. The external form is zeroed as it is for Apply.
 - **Service not enabled.** The new operations answer locally with
-  `unavailable`.
+  `unavailable`, including in `setupDaemonUnavailableResponse`, so an
+  unreachable daemon never makes the helper exit on them.
 
 ### Application (Kotlin)
 
-- **Protocol.** `MacOsHelperProtocol` and `HelperResult` gain the operations,
-  `Failure.StandingGrantUnavailable`, and a 6-byte decode only for the
-  flagged Status.
+- **Protocol.** `MacOsHelperProtocol` and `HelperResult` gain the
+  operations, `Failure.StandingGrantUnavailable` right after `Cancelled`
+  (positional mapping), and a 5-or-6-byte decode for the flagged Status only.
 - **Client.** `MacOsHelperClient` gains:
-  - `grantState()`, returning `Unsupported`, `Off`, `On`, or `Unknown`;
+  - `grantState()`, returning `Unsupported`, `Off`, `On`, or `Unknown`.
+    A 5-byte `invalidInput` reply means `Unsupported`; any other 5-byte reply
+    or failure means `Unknown`. A flagged Status never becomes pending-unknown,
+    and an existing pending-unknown request means `Unknown`;
   - `prepareGrant()`, `grant()`, and `revokeGrant()`. None of them joins the
     pending-unknown reconcile bookkeeping; an unknown outcome is settled by a
     flagged Status;
   - `applyWithGrant(port)`, whose pending-unknown reconcile uses the Apply
     digest.
-- **Enforcer.** `MacOsBrowserDomainEnforcer.start` uses `applyWithGrant`
-  while the grant state is `On`. On `StandingGrantUnavailable` it falls back
-  to the prompted `apply` once, in the same person-initiated call, and then
-  refreshes the grant state.
+- **Enforcer.** Inside the person-initiated `start`,
+  `MacOsBrowserDomainEnforcer` sends a flagged Status first and uses
+  `applyWithGrant` only when bit 1 is set. It never relies on the cached
+  switch state, which a relaunch or login launch leaves stale. On
+  `StandingGrantUnavailable` it falls back to the prompted `apply` once, in
+  the same call.
 - **Resume rule.** `reapplyRequiresPrompt` stays `true`. Resume after a
   relaunch, wake, login launch, or adoption still waits for the person's
   **Resume restrictions** (ADR 0009). The grant only removes the prompt when
@@ -151,7 +169,11 @@ named below.
   in `DesktopMacHelperState` or next to it. Turning it on runs Prepare, then
   Grant, then a flagged Status; turning it off runs Revoke, then a flagged
   Status. It shows only what Status confirms, and `Unknown` when the daemon
-  cannot be reached.
+  cannot be reached. The switch is disabled while a session is active,
+  starting, or changing enforcement on this Mac, with the existing "available
+  after the session ends" pattern. The helper client and process are shared
+  with enforcement: a Grant prompt would block End early, and a lost reply
+  would kill the helper and drop restrictions.
 - **UI.** `MacSetupSection` adds the switch below **Open Posato at login**.
   It is shown only while the helper is ready and the grant state is not
   `Unsupported`:
@@ -173,15 +195,18 @@ named below.
 
 | # | Failure | Test |
 | --- | --- | --- |
-| F1 | Grant record parsing: unknown schema, more than 8 entries, oversize, wrong owner, mode, or link | `StandingGrantStoreTests` |
+| F1 | Grant record parsing: unknown schema, more than 8 entries, undecodable data. The file checks keep their one owner, `DurableOwnershipStoreTests`, through the shared `ProtectedPlistFile` | `StandingGrantStoreTests` |
 | F2 | Binding: wrong user ID, account UUID, or platform UUID; no console user, `loginwindow`, or another console user; missing standing right | `StandingGrantPolicyTests` |
 | F3 | Revocation: Revoke deletes only its own entry; a full record fails closed; stale entries drop | `StandingGrantPolicyTests` |
-| F4 | Daemon grant lifecycle: Disable deletes and Restore does not; Remove deletes before the rights; Enable with an absent Apply right and a replacing Repair delete; a rejected apply with grant leaves no durable claim; a missing peer user ID fails | `RequestProcessingGrantTests` with fakes |
-| F5 | Apply with grant counts as Apply: lease ownership, fail-closed response, reconcile digest | `LifecyclePolicyTests`, `WireProtocolTests`, `MacOsHelperClientTest` |
+| F4 | Daemon grant lifecycle: Disable deletes and Restore does not; Remove deletes before the rights; Enable with an absent Apply right and a replacing Repair delete, direct and reconciled; Prepare deletes when it installs; a rejected apply with grant leaves no durable claim; a missing peer user ID fails | `RequestProcessingGrantTests` with fakes |
+| F5 | Apply with grant counts as Apply for the fail-closed response, `applyNeedsRestore`, and the reconcile digest (the lease is shown E2E by a session held past 15 s) | `LifecyclePolicyTests`, `MacOsHelperClientTest` |
 | F6 | The helper rejects a port other than its listener's | `ApplyPortCheckTests` (pure function) |
 | F7 | The launch-environment parser finds each variable and treats unreadable input as unclean | `ParentLaunchEnvironmentTests` |
-| F8 | A lost Revoke reply leaves the switch on until Status confirms; `invalidInput` on a flagged Status means unsupported | `DesktopMacHelperStateTest`, `MacOsHelperClientTest` |
-| F9 | The enforcer falls back to the prompted Apply once on `StandingGrantUnavailable` | `MacOsBrowserDomainEnforcerTest` |
+| F8 | A lost Revoke reply leaves the switch on until Status confirms; a 5-byte `invalidInput` reply to a flagged Status means unsupported; a flagged Status never becomes pending-unknown; the helper passes a sixth byte through | `DesktopMacHelperStateTest`, `MacOsHelperClientTest`, `WireProtocolTests` |
+| F9 | Version skew toward an older helper: the daemon answers an unflagged Status with exactly 5 bytes | `RequestProcessingGrantTests` |
+
+The fallback to the prompted Apply is proven by E2E step 6, not by an
+isolated test.
 
 Each test is seen failing before its fix. A negative control is shown by a
 mutation check where the test could pass vacuously.
@@ -196,28 +221,54 @@ only. They add a `vm exec` command for guest shell steps.
 2. Turn the switch on (one prompt). The session starts with no prompt:
    `vm wait-text` sees no password dialog, and `observe --expect blocked`
    passes.
-3. Quit and relaunch, then press **Resume restrictions**: no prompt,
-   blocked. With the login item on, a login launch followed by Resume
-   through the menu and window: no prompt, blocked. After End early:
-   `--expect allowed`.
+3. Quit and relaunch. Before pressing anything, `observe --expect allowed`
+   and "Restrictions not active on this Mac" prove that nothing applied
+   silently. Then press **Resume restrictions**: no prompt, blocked. Repeat
+   with the login item on and a loginwindow restart (`«event aevtrrst»`):
+   the same silent-apply check, then Resume through the menu and window.
+   Hold the session past 15 s to show the lease renewing. After End early:
+   `--expect allowed`. Wake cannot be driven, because a Tart guest cannot
+   sleep; it uses the same Resume path as a relaunch, and the limit is
+   recorded.
 4. Turn the switch off. The next start prompts.
 5. Turn it on again, then **Remove from this Mac** and enable again. The
    next start prompts, and the switch reads off.
 6. `AC-05`:
-   - Create the attach trigger file and send `SIGQUIT` to the Posato
-     process. No `.java_pid` socket appears.
-   - As a mutation control, a build without the option does create the
-     socket.
-   - Run `launchctl setenv JAVA_TOOL_OPTIONS -Dposato.probe=1` and relaunch
-     Posato. A session start falls back to the prompt, and turning the
-     switch on is refused. Then unset the variable.
+   - As the Posato user, resolve `getconf DARWIN_USER_TEMP_DIR`, create the
+     `.attach_pid<pid>` trigger file there, and send `SIGQUIT` to the Posato
+     process. No `.java_pid<pid>` socket appears.
+   - As a negative control, a build from `main` does create the socket.
+   - Launch with `posato-control launch --env JAVA_TOOL_OPTIONS=-Dposato.probe=1`.
+     A session start falls back to the prompt, and turning the switch on is
+     refused.
+7. With the switch on, a session start during an active session shows the
+   switch disabled.
 
 Then the complete `./gradlew quality`, preceded by
 `:desktopApp:verifyMacOsDevelopmentPackaging --rerun-tasks`.
 
+Closeout updates the wiki `macos-enforcement` topic and the log, the
+verify-posato feature map, and the posato-control README for `vm exec`. The
+amendment gains one residual: code running as the same user can copy the
+bundle, edit its `Posato.cfg`, and launch the copy. The copy then runs with a
+Java agent or with attach enabled, and the helper's static check still
+passes. The impact is applying Posato's own proxy without a prompt.
+
 ## High-risk plan review
 
-- **Verdict:** `pending`
+- **Verdict:** `changes-required`, then folded.
+- **Required findings:**
+  1. The flagged Status reply length breaks the helper and client decode.
+  2. `applyNeedsRestore` is missing from the `isApply` sites.
+  3. Reconciled Enable and Repair do not delete the grant record.
+  4. The cached grant state is stale at Resume.
+  5. A Grant prompt or a lost reply during a session can drop restrictions
+     through the shared helper.
+  6. Version skew toward an older helper is untested.
+  7. The E2E has no silent-apply check.
+- **Resolution:** all seven folded into the plan above, with the recommended
+  test-list, Kotlin, probe, prompt, wake, residual, and closeout points and
+  both optional points.
 
 ## Result
 
