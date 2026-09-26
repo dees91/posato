@@ -901,6 +901,13 @@ not an accepted feature plan or an expansion of the MVP.
     0.2%. The cause is `open`; system traffic through the loopback proxy after
     boot is a `hypothesis`. Reproduce it, find the cause, and bound the
     helper's cost under heavy proxied traffic.
+19. **Easy-to-find Mac options for login launch and prompt-free sessions.**
+    `user-confirmed` (2026-09-26, after `MACOS-014`): **Open Posato at login**
+    and **Start sessions without the password** are off by default. Today a
+    person must discover them inside This Mac options, so most people would
+    keep typing a password at every start and Resume. Offer both in Mac
+    onboarding or at the first start, and suggest each at the moment it helps.
+    The maintainer asks for the simplest possible flow: nothing hard to find.
 
 ## Later platform questions
 

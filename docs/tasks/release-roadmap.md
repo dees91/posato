@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 9 (amended 2026-09-26: `MACOS-021` backlog row from idea 18,
-  and the `MACOS-019` condition after `MACOS-012`)
+- **Revision:** 10 (amended 2026-09-26: `ONBOARDING-004` backlog row from
+  idea 19)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-26
@@ -42,7 +42,9 @@
   (`user-confirmed`, 2026-09-25). Revision 9 adds the `MACOS-021` backlog
   row from idea 18, a transient helper CPU spike that `MACOS-012` measured. It
   also restates the `MACOS-019` condition, because ADR 0009 kept the root
-  daemon (`user-confirmed`, 2026-09-26).
+  daemon (`user-confirmed`, 2026-09-26). Revision 10 adds the `ONBOARDING-004`
+  backlog row from idea 19: make the two Mac opt-ins easy to find
+  (`user-confirmed`, 2026-09-26).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -224,6 +226,7 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-018` | Detect or disclose iCloud Private Relay before a session applies proxy settings. | Sessions and enforcement | Open question in the macOS enforcement topic | A supported detection route or a decision to disclose only |
 | `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | A decision that replaces the root daemon; ADR 0009 (`MACOS-012`) kept it |
 | `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | `QUALITY-010` `M5` defect, reproduced in a VM | Any planning checkpoint; a defect against ADR 0004 and ADR 0005 |
+| `ONBOARDING-004` | Make **Open Posato at login** and **Start sessions without the password** easy to find on the Mac. Offer both as explicit choices during Mac onboarding or at the first start. Suggest each one when it helps, for example right after an administrator prompt at a session start or Resume, and when the window closes or Posato quits during a session. Both stay off until the person chooses them. The menu and a login launch still never apply by themselves. Revise `DESIGN.md`, which today keeps the login switch out of first-run setup, before delivery. The flow must be as simple as possible. | Onboarding | Idea 19; maintainer request after `MACOS-014` | `MACOS-014` merged; a planning checkpoint |
 | `MACOS-021` | Explain and bound the normal-user helper's CPU use during an enforced session: reproduce the transient spike, about 60% of a core for 14 minutes, that `MACOS-012` measured in a first session on a fresh Tart clone, find its cause, and keep the helper's cost bounded under heavy proxied traffic. | Sessions and enforcement | Idea 18; `MACOS-012` measurement | Any planning checkpoint; a resource defect under every process model |
 | `IOS-005` | Settle iOS reinstall behavior and the lifecycle of an application selection that becomes invalid. | Sessions and enforcement | `IOS-001` and iOS enforcement open questions | Evidence from support or a reproduction |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |

@@ -2037,3 +2037,11 @@ to scope, feasibility, or delivery.
   Updated the threat model, `DESIGN.md`, and `PRIVACY.md`.
 - `posato-control` gains `vm exec` and `vm scroll`. Updated
   [macOS enforcement](topics/macos-enforcement.md).
+
+## [2026-09-26] planning | Make the Mac opt-ins easy to find (ONBOARDING-004)
+
+- Added idea 19 to the [idea queue](topics/mvp-open-questions.md) and the
+  `ONBOARDING-004` backlog row (roadmap revision 10). **Open Posato at login**
+  and **Start sessions without the password** stay off by default, but should
+  be offered in Mac onboarding or at the first start and suggested at the
+  moment they help.
