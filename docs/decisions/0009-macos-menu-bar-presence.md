@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status:** Accepted direction; implementation pending `MACOS-013`
+- **Status:** Accepted; delivered and verified by `MACOS-013` on 2026-09-26
 - **Date:** 2026-09-26
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
@@ -11,10 +11,13 @@
 This record compares how Posato for Mac keeps a session running and reachable
 from a status-bar menu while its main window is closed. It recommends one
 process model and writes out the amendments it needs. The maintainer accepted
-every recommendation on 2026-09-26 (see the maintainer decision below). This
-accepts the direction and the delivery gates, not a working menu bar. The
-amendments below are applied to their authorities only after `MACOS-013`'s
-verified delivery.
+every recommendation on 2026-09-26 (see the maintainer decision below).
+`observed` (2026-09-26): `MACOS-013` delivered the resident menu bar
+presence and drove the evidence table below in Tart clones. Its
+[execution record](../tasks/executions/macos-013-menu-bar.md) maps each row to
+its result, including the rows that the VM cannot drive. The amendments below
+are applied to ADR 0003, ADR 0004, ADR 0008, `DESIGN.md`, and the public
+wording, and are kept here as history.
 
 ## Context and evidence
 

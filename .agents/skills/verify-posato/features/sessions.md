@@ -153,6 +153,39 @@ Preconditions:
 - **Restore:** End any session this run started and remove example.com if the
   expiry fixture did not already remove it. Preserve the user's other rows.
 
+## Menu bar presence (desktop, `MACOS-013`)
+
+Posato for Mac stays resident after its window closes (ADR 0009). With the
+window closed, `launch` and `launch --adopt` still track the process; they
+wait up to 30 seconds for a window and continue without one.
+
+- **Read and drive the menu:** `$PC menu -t desktop --vm primary` lists the
+  state line and actions; `--choose "Start a session…"`, `"End session
+  early…"`, `"Resume restrictions…"`, `"Open Posato"`, and `"Quit Posato"`
+  press them. `--open` proves the accessibility press opens the menu; read it
+  with `vm text` and close it with `vm press escape`.
+- **Hide the window:** `$PC close-window -t desktop --vm primary`, then
+  `lsappinfo info -only ApplicationType -app app.posato.macos` in the guest
+  reads `UIElement`. `observe --expect blocked` keeps passing during an
+  enforced session.
+- **Alerts:** the first-close notice and the Quit confirmation are native
+  alerts. Read them with `vm text`; `vm press return` chooses the default
+  button (OK, Keep Posato open). OCR does not read white text on the blue
+  default button. The first-close marker is
+  `~/Library/Application Support/Posato/presence-first-close`; delete it in
+  the guest to see the notice again.
+- **Restart and login launch:** in the guest,
+  `osascript -e 'tell application "loginwindow" to «event aevtrrst»'` restarts
+  through loginwindow about a minute later, and the guest logs in again on its
+  own. `defaults write com.apple.loginwindow TALLogoutSavesState -bool false`
+  first keeps macOS from reopening windows. `vm shutdown` bypasses loginwindow
+  and proves nothing about logout. A Tart guest cannot sleep: `pmset
+  sleepnow` fails with `0xe00002e2`.
+- **Login items:** open
+  `x-apple.systempreferences:com.apple.LoginItems-Settings.extension` in the
+  guest and read the Open at Login and App Background Activity lists with `vm
+  text`.
+
 ## Gotchas
 
 - Starting on the Mac raises the administrator prompt for the helper Apply; `vm prompt

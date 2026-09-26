@@ -597,7 +597,9 @@ enum StatusMenu {
 
   static func closeWindow(pid: pid_t) throws {
     let app = AXUIElementCreateApplication(pid)
-    guard let window = children(app).first(where: { attribute($0, kAXRoleAttribute) as? String == kAXWindowRole }),
+    let windows = children(app).filter { attribute($0, kAXRoleAttribute) as? String == kAXWindowRole }
+    let main = windows.first(where: { attribute($0, kAXTitleAttribute) as? String == "Posato" }) ?? windows.first
+    guard let window = main,
       let button = attribute(window, kAXCloseButtonAttribute)
     else {
       throw BridgeError(code: "DESKTOP_WINDOW_UNAVAILABLE", message: "The application shows no window to close.")

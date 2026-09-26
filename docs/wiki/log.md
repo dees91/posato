@@ -2006,3 +2006,22 @@ to scope, feasibility, or delivery.
   assertions with their unused support. Retained independent failure-path
   contracts that current E2E cannot expose. Updated
   [unattended verification](topics/unattended-verification.md).
+
+## [2026-09-26] implementation | Posato for Mac stays in the menu bar (MACOS-013)
+
+- Delivered [ADR 0009](../decisions/0009-macos-menu-bar-presence.md):
+  - a resident process with a native status item and menu;
+  - window hiding and Cmd-W, with the Dock icon shown only while the window
+    is open;
+  - Quit confirmation and a first-close notice that claim blocking only when
+    it is confirmed;
+  - an opt-in launch at login;
+  - an idle wait for the session loop;
+  - a 30-minute exchange.
+
+  ADR 0003, 0004, 0008, `DESIGN.md`, and the public wording are amended.
+- `posato-control` gains `menu`, `close-window`, and `resources`. A
+  loginwindow restart drives logout and login in a guest; sleep is not
+  possible there. Updated [macOS enforcement](topics/macos-enforcement.md)
+  and [unattended verification](topics/unattended-verification.md).
+

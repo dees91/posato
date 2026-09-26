@@ -164,6 +164,18 @@ before treating a passing test as evidence.
 - `vm install`, LaunchServices launch, the helper, enforcement, and iCloud sync all work on macOS 15.6.1. Cross-device sync with a macOS 26 guest works in both directions.
 - When a new device signs in to the test account, the existing golden VMs can report "Some iCloud Data Isn't Syncing". iCloud Keychain items then stop reaching them, and Posato waits for the workspace key. Resume Data Sync with the account and guest passwords restores them. `superseded` (2026-09-25, `RELEASE-003`): a fix in a clone does not carry over to the golden VM; later clones were paused again until the golden VM itself was repaired. `vm create` now reports the state, and `vm icloud --resume` repairs it.
 
+### Restart, login, and sleep
+
+`observed` (2026-09-26, `MACOS-013`):
+- **Restart.** `osascript -e 'tell application "loginwindow" to «event
+  aevtrrst»'` in the guest restarts through loginwindow about a minute later.
+  Running applications get their normal quit request, and the guest logs in
+  again on its own, so login items and restart handling are drivable.
+  `TALLogoutSavesState` set to false keeps windows from reopening.
+- **Shutdown.** `vm shutdown` uses `shutdown -h` and bypasses loginwindow.
+- **Sleep.** A Tart guest cannot sleep: `pmset sleepnow` fails with
+  `0xe00002e2`. Sleep and wake stay unverifiable in a VM.
+
 ## iPhone
 
 - `observed`: the first XCUITest run on a new device fails with "Timed out

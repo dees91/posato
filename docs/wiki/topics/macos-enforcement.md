@@ -731,6 +731,26 @@ Durable findings from `MACOS-012`, `observed` in Tart clones:
   a separate Open at Login record, apart from the helper's background item.
 - **Windowless driving.** `posato-control` cannot drive a windowless
   application yet. `MACOS-013` extends it.
+`observed` (2026-09-26, `MACOS-013`, Tart clone): the delivered presence
+passed the ADR 0009 table except sleep and wake, which a Tart guest cannot
+perform.
+- **Menu flows.** Start, inspect, and end ran from the menu with the window
+  closed.
+- **Expiry.** A session expired about 2 s after its end with no window.
+- **Relaunch and login.** A relaunch waited in "Restrictions not active on
+  this Mac" with no prompt. A loginwindow restart during a session completed,
+  and the login item started Posato windowless. With the switch off, it did
+  not start.
+- **Login item independence.** Removing the login item, whether with the
+  switch or through **Remove from this Mac**, leaves the helper's background
+  item listed.
+- **Update gate.** It refused an update during a session with the window
+  closed, then admitted and relaunched it after the session ended.
+- **Leaf details.**
+  - `activateIgnoringOtherApps:` does not bring an accessory application
+    forward on macOS 15; the leaf uses `NSApp activate`.
+  - Alert answers need a per-request identity, because a second alert can
+    open before the first returns.
 - **Helper CPU.** The first enforced session in a fresh clone once kept the
   helper at about 60% CPU for 14 minutes. The cause is `open` (idea 18,
   `MACOS-021`).
