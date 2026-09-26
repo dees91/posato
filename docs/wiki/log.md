@@ -2040,8 +2040,8 @@ to scope, feasibility, or delivery.
 
 ## [2026-09-26] planning | Make the Mac opt-ins easy to find (ONBOARDING-004)
 
-- Added idea 19 to the [idea queue](topics/mvp-open-questions.md) and the
-  `ONBOARDING-004` backlog row (roadmap revision 10). **Open Posato at login**
+- Added idea 19 to the [idea queue](topics/mvp-open-questions.md) and
+  `ONBOARDING-004` to release 1.2 (roadmap revision 10). **Open Posato at login**
   and **Start sessions without the password** stay off by default, but should
   be offered in Mac onboarding or at the first start and suggested at the
-  moment they help.
+  moment they help. `SCHEDULE-001` takes the offers into account.

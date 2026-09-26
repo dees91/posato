@@ -908,6 +908,8 @@ not an accepted feature plan or an expansion of the MVP.
     keep typing a password at every start and Resume. Offer both in Mac
     onboarding or at the first start, and suggest each at the moment it helps.
     The maintainer asks for the simplest possible flow: nothing hard to find.
+    Assigned to release 1.2 as `ONBOARDING-004`. `SCHEDULE-001` must take
+    these offers into account, because a Mac schedule depends on both options.
 
 ## Later platform questions
 

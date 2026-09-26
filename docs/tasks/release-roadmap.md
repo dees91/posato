@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 10 (amended 2026-09-26: `ONBOARDING-004` backlog row from
-  idea 19)
+- **Revision:** 10 (amended 2026-09-26: `ONBOARDING-004` from idea 19 in
+  release 1.2)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-26
@@ -42,9 +42,11 @@
   (`user-confirmed`, 2026-09-25). Revision 9 adds the `MACOS-021` backlog
   row from idea 18, a transient helper CPU spike that `MACOS-012` measured. It
   also restates the `MACOS-019` condition, because ADR 0009 kept the root
-  daemon (`user-confirmed`, 2026-09-26). Revision 10 adds the `ONBOARDING-004`
-  backlog row from idea 19: make the two Mac opt-ins easy to find
-  (`user-confirmed`, 2026-09-26).
+  daemon (`user-confirmed`, 2026-09-26). Revision 10 adds `ONBOARDING-004`
+  from idea 19 to release 1.2, which the maintainer revised while it runs.
+  The row makes the two Mac opt-ins easy to find, and the
+  `SCHEDULE-001` row now takes those offers into account (`user-confirmed`,
+  2026-09-26).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -185,7 +187,9 @@ Theme: let a session live on the Mac without the main window and without a
 password prompt at every start. The three rows revise the same process and
 authorization contracts, so they form one release. `IOS-006` joins as an
 independent iOS fix that `RELEASE-003` found; it shares no write surface with
-the Mac rows.
+the Mac rows. `ONBOARDING-004` makes the opt-ins from `MACOS-013` and
+`MACOS-014` easy to find. It starts after `MACOS-014` merges and is
+serialized with `NOTIFY-001`, because both touch onboarding and This Mac.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -194,7 +198,8 @@ the Mac rows.
 | `MACOS-014` | Reduce repeated administrator prompts at session start through a one-time opt-in with an explicit revocation path and authenticated, narrowly scoped helper requests, after a security review of the ADR 0004 revision that replaces the one-use Apply authorization. High-risk. | Sessions and enforcement | delivery | R1.2/W2 | `MACOS-012` | PR-MAC-AUTHORIZATION |
 | `IOS-006` | Keep an active iPhone session and its restrictions when Posato is relaunched during the session: re-applying the same session must not stop and restart its Device Activity monitoring, and an interval-end callback that arrives before the planned end must not end the session. Prove it with repeated relaunches on the test iPhone, including a fast relaunch, and keep the `IOS-002` suspended expiry working. High-risk. | Sessions and enforcement | delivery | R1.2/W1 | None | PR-IOS-RELAUNCH |
 | `NOTIFY-001` | Deliver local notifications when a session starts or ends on iOS and macOS, with a permission flow, a preference, and no remote push or server. | Notifications | delivery | R1.2/W2 | `MACOS-012` | PR-LOCAL-NOTIFICATIONS |
-| `RELEASE-004` | Verify the 1.2.0 candidates, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W3 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006` | PR-RELEASE-1-2 |
+| `ONBOARDING-004` | Make **Open Posato at login** and **Start sessions without the password** easy to find on the Mac. Offer both as explicit choices during Mac onboarding or at the first start. Suggest each one when it helps, for example right after an administrator prompt at a session start or Resume, and when the window closes or Posato quits during a session. Both stay off until the person chooses them. The menu and a login launch still never apply by themselves. Revise `DESIGN.md`, which today keeps the login switch out of first-run setup, before delivery. The flow must be as simple as possible. `SCHEDULE-001` builds on these offers. | Onboarding | delivery | R1.2/W2 | `MACOS-014` | PR-MAC-OPT-INS |
+| `RELEASE-004` | Verify the 1.2.0 candidates, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W3 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004` | PR-RELEASE-1-2 |
 
 ## Release 1.3: more Macs, more time
 
@@ -206,7 +211,7 @@ work because a Mac schedule needs a resident process.
 | --- | --- | --- | --- | --- | --- | --- |
 | `MACOS-015` | Decide whether Posato supports Intel Macs and macOS 14: cost of the x86-64 Compose Desktop artifact and runtime, per-architecture native libraries, universal Swift helpers, two notarized DMGs, macOS 14 API availability, the verification driver on a second architecture, and the support horizon Apple gives Intel Macs and macOS 14; propose the ADR 0003 revision for a go or no-go. | Platform coverage | discovery | R1.3/W1 | None | PR-INTEL-DECISION |
 | `MACOS-016` | Deliver the accepted Intel path from `MACOS-015`: build, sign, notarize, and publish the x86-64 release, verify it on the maintainer's 2019 MacBook Air, and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W2 | `MACOS-015` | PR-INTEL-RELEASE |
-| `SCHEDULE-001` | Decide the recurring session schedule: model and exceptions, additive operation vocabulary under ADR 0006, iOS scheduling through the Device Activity schedule, macOS scheduling through the resident process from `MACOS-013`, and what happens when a scheduled start meets an offline or missing device; end with a product decision and a delivery plan for the next release. | Schedules | discovery | R1.3/W1 | `MACOS-013` | PR-SCHEDULE-DECISION |
+| `SCHEDULE-001` | Decide the recurring session schedule: model and exceptions, additive operation vocabulary under ADR 0006, iOS scheduling through the Device Activity schedule, macOS scheduling through the resident process from `MACOS-013`, and what happens when a scheduled start meets an offline or missing device. Take the `ONBOARDING-004` offers into account: a Mac schedule needs Posato open at login and, to start without a prompt, sessions without the password, so decide where creating a schedule offers either option that is still off. End with a product decision and a delivery plan for the next release. | Schedules | discovery | R1.3/W1 | `MACOS-013` | PR-SCHEDULE-DECISION |
 | `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for every accepted architecture, and submit the iOS build to App Review when it changed. | Release readiness | delivery | R1.3/W3 | `MACOS-016`, `SCHEDULE-001` | PR-RELEASE-1-3 |
 
 ## Backlog
@@ -226,7 +231,6 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-018` | Detect or disclose iCloud Private Relay before a session applies proxy settings. | Sessions and enforcement | Open question in the macOS enforcement topic | A supported detection route or a decision to disclose only |
 | `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | A decision that replaces the root daemon; ADR 0009 (`MACOS-012`) kept it |
 | `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | `QUALITY-010` `M5` defect, reproduced in a VM | Any planning checkpoint; a defect against ADR 0004 and ADR 0005 |
-| `ONBOARDING-004` | Make **Open Posato at login** and **Start sessions without the password** easy to find on the Mac. Offer both as explicit choices during Mac onboarding or at the first start. Suggest each one when it helps, for example right after an administrator prompt at a session start or Resume, and when the window closes or Posato quits during a session. Both stay off until the person chooses them. The menu and a login launch still never apply by themselves. Revise `DESIGN.md`, which today keeps the login switch out of first-run setup, before delivery. The flow must be as simple as possible. | Onboarding | Idea 19; maintainer request after `MACOS-014` | `MACOS-014` merged; a planning checkpoint |
 | `MACOS-021` | Explain and bound the normal-user helper's CPU use during an enforced session: reproduce the transient spike, about 60% of a core for 14 minutes, that `MACOS-012` measured in a first session on a fresh Tart clone, find its cause, and keep the helper's cost bounded under heavy proxied traffic. | Sessions and enforcement | Idea 18; `MACOS-012` measurement | Any planning checkpoint; a resource defect under every process model |
 | `IOS-005` | Settle iOS reinstall behavior and the lifecycle of an application selection that becomes invalid. | Sessions and enforcement | `IOS-001` and iOS enforcement open questions | Evidence from support or a reproduction |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
@@ -252,6 +256,7 @@ The idea numbers refer to the wiki idea queue.
 | Supported macOS update path | `MACOS-010`, `MACOS-011` | Accepted ADR 0004 revision, update from a published notarized candidate to a newer one with proxy ownership restored |
 | Verified support matrix | `QUALITY-007` | macOS 15 virtual machine and iOS 18 physical runs, availability page updated |
 | Session without the main window and without repeated prompts | `MACOS-012`, `MACOS-013`, `MACOS-014` | Accepted ADR 0003 and ADR 0004 revisions, physical menu bar start, end, relaunch, login, and revocation evidence |
+| Mac opt-ins easy to find | `ONBOARDING-004` | Accepted `DESIGN.md` revision, onboarding or first-start choice and contextual hints driven in a Tart clone |
 | Session notifications | `NOTIFY-001` | Physical permission flow, start and end notifications on both platforms |
 | Intel Macs | `MACOS-015`, `MACOS-016` | Accepted ADR 0003 revision, notarized x86-64 candidate verified on the 2019 MacBook Air |
 | Schedule decision | `SCHEDULE-001` | Accepted product decision and delivery plan |
