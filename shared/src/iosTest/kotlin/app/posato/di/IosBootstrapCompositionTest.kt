@@ -175,6 +175,7 @@ private class InertSuspendedExpiryProvider : IosSuspendedExpiryProvider {
     ) {
         throw UnsupportedOperationException()
     }
+
     override fun schedule(
         request: IosSuspendedExpiryRequest,
         completion: (IosSuspendedExpiryOutcome) -> Unit,

@@ -20,11 +20,6 @@ enum SuspendedExpiryActivity {
     /// truncated to the minute, so the real end never comes earlier.
     static let earlyCallbackMargin: TimeInterval = 60
 
-    /// Largest difference between the components resolved in the current
-    /// calendar and the absolute end that a time-zone change can explain.
-    /// A larger one means the calendar changed; the absolute end then decides.
-    static let maximumTimeZoneShift: TimeInterval = 26 * 60 * 60
-
     /// Device Activity refuses intervals below the platform minimum. Shorter
     /// sessions report `below-platform-minimum` and rely on foreground expiry.
     static let minimumInterval: TimeInterval = 15 * 60
@@ -57,8 +52,10 @@ struct SuspendedExpiryPendingRecord: Codable, Equatable {
     let endEpochSeconds: Int64?
 
     /// True only when the callback arrives clearly before this record's
-    /// interval end. A version 1 record or components that do not resolve
-    /// never count as early, so the store is cleared as before.
+    /// interval end, taking the earlier of the components resolved in the
+    /// current calendar and the absolute end, so a time-zone or calendar
+    /// change never skips the real end. A version 1 record or components that
+    /// do not resolve never count as early, so the store is cleared as before.
     func isEarly(at now: Date, calendar: Calendar) -> Bool {
         guard let intervalEnd, let endEpochSeconds,
               let resolved = calendar.date(from: intervalEnd)
@@ -66,8 +63,7 @@ struct SuspendedExpiryPendingRecord: Codable, Equatable {
             return false
         }
         let absoluteEnd = Date(timeIntervalSince1970: TimeInterval(endEpochSeconds))
-        let shift = abs(resolved.timeIntervalSince(absoluteEnd))
-        let end = shift > SuspendedExpiryActivity.maximumTimeZoneShift ? absoluteEnd : min(resolved, absoluteEnd)
+        let end = min(resolved, absoluteEnd)
         return now < end.addingTimeInterval(-SuspendedExpiryActivity.earlyCallbackMargin)
     }
 

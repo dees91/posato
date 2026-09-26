@@ -271,8 +271,9 @@ Production were not exercised on this build.
   Answered by `IOS-006` (2026-09-26). `observed` on the test iPhone (iOS
   26.5): stopping and restarting monitoring inside a running window delivers
   `intervalDidEnd` to the extension within about 2 s, and the old extension
-  cleared the store and recorded the running session as expired. An interval
-  that had not started yet (the `IOS-002` cancel row) delivers nothing. The
+  cleared the store and recorded the running session as expired. `inferred`:
+  an interval that has not started yet delivers no end, as the `IOS-002`
+  cancel row suggested, though it checked only right after the cancel. The
   fix adopts the session on relaunch, and the extension ignores a callback
   more than 60 s before the pending interval end, resolved from the stored
   date components and the absolute end; it clears nothing without a pending

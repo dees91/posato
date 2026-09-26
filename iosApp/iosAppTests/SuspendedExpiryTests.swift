@@ -182,21 +182,23 @@ final class SuspendedExpiryTests: XCTestCase {
         }
     }
 
-    func testCalendarChangeFallsBackToTheAbsoluteEnd() throws {
+    func testCalendarChangeNeverSkipsTheRealEnd() throws {
         var buddhist = Calendar(identifier: .buddhist)
         buddhist.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
 
-        let early = FakeExpirySettingsStore()
-        let earlyRecords = try isolatedRecordStore()
-        try writePending(earlyRecords, sessionId: "session")
-        handleIntervalEnd(store: early, records: earlyRecords, now: 1_700_001_000, calendar: buddhist)
-        XCTAssertEqual(early.clears, 0)
+        let resolvedInThePast = FakeExpirySettingsStore()
+        let pastRecords = try isolatedRecordStore()
+        try writePending(pastRecords, sessionId: "session")
+        handleIntervalEnd(store: resolvedInThePast, records: pastRecords, now: 1_700_001_000, calendar: buddhist)
+        XCTAssertEqual(resolvedInThePast.clears, 1)
 
-        let real = FakeExpirySettingsStore()
-        let realRecords = try isolatedRecordStore()
-        try writePending(realRecords, sessionId: "session", calendar: buddhist)
-        handleIntervalEnd(store: real, records: realRecords, now: 1_700_003_600)
-        XCTAssertEqual(real.clears, 1)
+        let resolvedInTheFuture = FakeExpirySettingsStore()
+        let futureRecords = try isolatedRecordStore()
+        try writePending(futureRecords, sessionId: "session", calendar: buddhist)
+        handleIntervalEnd(store: resolvedInTheFuture, records: futureRecords, now: 1_700_001_000)
+        XCTAssertEqual(resolvedInTheFuture.clears, 0)
+        handleIntervalEnd(store: resolvedInTheFuture, records: futureRecords, now: 1_700_003_600)
+        XCTAssertEqual(resolvedInTheFuture.clears, 1)
     }
 
     func testReplacementCallbackInsideTheWindowKeepsTheReplacementScheduled() throws {

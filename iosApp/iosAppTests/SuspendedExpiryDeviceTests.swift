@@ -122,7 +122,7 @@ final class SuspendedExpiryDeviceTests: XCTestCase {
             return
         }
         let records = try recordStore()
-        guard records.readPending() == nil,
+        guard case .absent = records.readPendingResult(),
               !DeviceActivityCenter().activities.contains(SuspendedExpiryActivity.name)
         else {
             XCTFail("Posato expiry monitoring is active; end the session before running the probe")

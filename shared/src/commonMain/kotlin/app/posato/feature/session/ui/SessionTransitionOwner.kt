@@ -503,13 +503,7 @@ internal class SessionTransitionOwner(
             bankObservedExpiry(tag, record, sessionId)
             return
         }
-        val (outcome, held) = portMutex.withLock {
-            val status = enforcement.status()
-            val held = status == EnforcementOutcome.APPLIED &&
-                enforcedIdentity != tag &&
-                enforcement.holdsSession(sessionId)
-            status to held
-        }
+        val (outcome, held) = portMutex.withLock { readStatusAndHeld(tag, sessionId) }
         val current = stateMutex.withLock { readDesiredLocked(clock.currentEpochMillis()) }
         if (current !is LocalSessionStatus.Active || SessionTag(current.record) != tag) {
             settleForTag()
@@ -531,6 +525,17 @@ internal class SessionTransitionOwner(
         } else {
             reapplyCurrent(record, tag, frozen)
         }
+    }
+
+    private suspend fun readStatusAndHeld(
+        tag: SessionTag,
+        sessionId: String,
+    ): Pair<EnforcementOutcome, Boolean> {
+        val status = enforcement.status()
+        if (status != EnforcementOutcome.APPLIED || enforcedIdentity == tag) {
+            return status to false
+        }
+        return status to enforcement.holdsSession(sessionId)
     }
 
     private suspend fun adoptHeld(
