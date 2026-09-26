@@ -34,4 +34,4 @@ evidence at the revision recorded in the wiki. Accepted product ADRs are:
   lifecycle and privacy amendments, and delivery gates; not yet implemented.
 - [ADR 0009: Keep Posato for Mac present in the menu bar](0009-macos-menu-bar-presence.md)
   — accepted resident process, native status item, window, quit, and login
-  rules, delivered and verified by `MACOS-013`.
+  rules, delivered by `MACOS-013` (sleep and wake unverified in a VM).

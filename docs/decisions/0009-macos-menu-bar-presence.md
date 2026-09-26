@@ -2,7 +2,7 @@
 
 ## Status
 
-- **Status:** Accepted; delivered and verified by `MACOS-013` on 2026-09-26
+- **Status:** Accepted; delivered by `MACOS-013` on 2026-09-26 and verified except sleep and wake, which a Tart guest cannot perform
 - **Date:** 2026-09-26
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`

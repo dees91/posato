@@ -100,19 +100,9 @@ class AxBridge(
         invoke("key", pid.toString(), key, modifiers.joinToString(","), if (sessionFallback) "1" else "0")
     }
 
-    fun statusMenu(
-        pid: Long,
-        mode: String,
-        title: String?
-    ): StatusMenuResult = decode(StatusMenuResult.serializer(), invoke("status-menu", pid.toString(), mode, title.orEmpty()))
-
-    fun closeWindow(pid: Long) {
-        invoke("close-window", pid.toString())
-    }
-
     private val binary = AxBridgeBinary(context)
 
-    private fun invoke(vararg arguments: String): String {
+    internal fun invoke(vararg arguments: String): String {
         binary.ensureBuilt()
         val output = context.subprocess.run(listOf(layout.accessibilityBridgeBinary.toString()) + arguments)
         if (output.exitCode != 0) throw bridgeFailure(output.stdout, output.stderr)
@@ -138,7 +128,7 @@ class AxBridge(
 
     private fun parseObject(output: String): JsonObject = ControlJson.lenient.parseToJsonElement(output).jsonObject
 
-    private fun <T> decode(
+    internal fun <T> decode(
         serializer: kotlinx.serialization.KSerializer<T>,
         output: String
     ): T = try {

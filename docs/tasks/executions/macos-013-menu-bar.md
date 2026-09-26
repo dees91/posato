@@ -17,7 +17,7 @@ isolated failures that E2E cannot reach, written failing first:
 | F1 | The menu claims confirmed restrictions for a session that is not enforcing | `PresenceMenuTest` |
 | F2 | A system termination or maintenance waits on the Quit confirmation, or a stale logout flag skips it | `PresenceMenuTest` |
 | F3 | Desktop idle wait reads every second, misses a start or due future start, or changes iOS's loop | `SessionTransitionOwnerTest`, `AppleSyncSessionTimeTest` |
-| F4 | The resident exchange skips its start or its 30-minute interval | `PresenceMenuTest` |
+| F4 | The resident exchange skips its start or interval, or stops after a failure; unlinked devices are skipped by `AppleSync.onForeground` | `PresenceMenuTest`; `AppleSyncTest` for no consent |
 | F5 | The observable maintenance state disagrees with the persisted gate | `MaintenanceAdmissionTest` |
 
 Everything else was proven E2E through `posato-control` in Tart clones.
@@ -54,7 +54,13 @@ Everything else was proven E2E through `posato-control` in Tart clones.
     window size are hoisted instead; unsent text in a field is not kept.
   - The F3 restore-race test passed without the fix because the restore
     ordering is incidental. It was removed as not failing first, and the
-    snapshot wake was kept per the plan review.
+    snapshot wake was kept per the plan review. After review, a separate test
+    of an exchange that brings a future start during idle waiting guards the
+    wake: it fails when the wake is removed.
+  - The activation policy follows `NSApplicationDidBecomeActive` and window
+    close, not a pre-present notification from `Updater.m`. A manual check
+    showed Sparkle's window regular with the main window closed. A scheduled
+    check while the window is closed was not driven.
   - `activateIgnoringOtherApps:` does not activate the app on macOS 15, so the
     leaf and `Updater.m` use `NSApp activate`.
 - `posato-control` gains `menu`, `close-window`, and `resources`. The README,
@@ -63,7 +69,14 @@ Everything else was proven E2E through `posato-control` in Tart clones.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
+- **Verdict:** `approved` after corrections. The first pass had 2 Required
+  findings:
+  - the record was not yet closed while the docs claimed verification;
+  - the snapshot wake and unlinked exchange had no named test.
+
+  Accepted Recommended fixes: a failed exchange no longer stops the session
+  loop; menu requests wait for session state; unused imports were removed.
+  The deviations above record the rest.
 
 ## Verification
 
@@ -74,9 +87,9 @@ Tart clone of `primary` (macOS 26.6.2). Commands are `posato-control ...
 | Check | Revision | Result |
 | --- | --- | --- |
 | F1-F5 isolated tests, red then green | `35ca8f3`-`edad6c5` | pass; the two negative controls fail under mutation |
-| Start from the menu, window closed | `d44c4d3`, `f3e32ac` | setup opens; after the admin prompt, `close-window` then `observe --expect blocked` gives `paused` |
+| Start from the menu, window closed | `d44c4d3`, `e288e6f` | setup opens; after the admin prompt, `close-window` then `observe --expect blocked` gives `paused` |
 | Inspect from the menu | `d44c4d3`, `f3e32ac` | `menu` shows "Posato, restrictions active", the end time, minutes, and actions; `--open` opens it |
-| End from the menu | `5539c9c` | Keep this pause stays `paused`; End session gives `loaded` |
+| End from the menu | `5539c9c`, `e288e6f` | Keep this pause stays `paused`; End session gives `loaded` |
 | Expiry with the window closed | `5539c9c` | no-session state seen 2 s after the end, then `loaded` |
 | Not enforcing after relaunch | `5539c9c` | "Restrictions not active on this Mac" and Resume, no prompt; Resume, then admin, gives `paused` |
 | Relaunch and reopen | `d44c4d3`, `f3e32ac` | `open` of the bundle reuses one process; Dock follows the window; the destination is kept |

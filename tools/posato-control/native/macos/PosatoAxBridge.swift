@@ -548,7 +548,8 @@ struct StatusMenuResult: Encodable {
 enum StatusMenu {
   static func attribute(_ element: AXUIElement, _ name: String) -> AnyObject? {
     var value: AnyObject?
-    return AXUIElementCopyAttributeValue(element, name as CFString, &value) == .success ? value : nil
+    let status = AXUIElementCopyAttributeValue(element, name as CFString, &value)
+    return status == .success ? value : nil
   }
 
   static func children(_ element: AXUIElement) -> [AXUIElement] {
@@ -557,7 +558,9 @@ enum StatusMenu {
 
   static func item(pid: pid_t) throws -> AXUIElement {
     let app = AXUIElementCreateApplication(pid)
-    guard let bar = attribute(app, "AXExtrasMenuBar"), let first = children(bar as! AXUIElement).first else {
+    guard let bar = attribute(app, "AXExtrasMenuBar"),
+      let first = children(bar as! AXUIElement).first
+    else {
       throw BridgeError(code: "ELEMENT_NOT_FOUND", message: "The application shows no status item.")
     }
     return first
@@ -577,7 +580,9 @@ enum StatusMenu {
       opened = status == .success || status == .cannotComplete
     case "choose":
       guard let title,
-        let target = menuItems(statusItem).first(where: { attribute($0, kAXTitleAttribute) as? String == title })
+        let target = menuItems(statusItem).first(where: {
+          attribute($0, kAXTitleAttribute) as? String == title
+        })
       else {
         throw BridgeError(code: "ELEMENT_NOT_FOUND", message: "No status menu item has that title.")
       }
@@ -597,12 +602,18 @@ enum StatusMenu {
 
   static func closeWindow(pid: pid_t) throws {
     let app = AXUIElementCreateApplication(pid)
-    let windows = children(app).filter { attribute($0, kAXRoleAttribute) as? String == kAXWindowRole }
-    let main = windows.first(where: { attribute($0, kAXTitleAttribute) as? String == "Posato" }) ?? windows.first
+    let windows = children(app).filter {
+      attribute($0, kAXRoleAttribute) as? String == kAXWindowRole
+    }
+    let titled = windows.first(where: {
+      attribute($0, kAXTitleAttribute) as? String == "Posato"
+    })
+    let main = titled ?? windows.first
     guard let window = main,
       let button = attribute(window, kAXCloseButtonAttribute)
     else {
-      throw BridgeError(code: "DESKTOP_WINDOW_UNAVAILABLE", message: "The application shows no window to close.")
+      throw BridgeError(
+        code: "DESKTOP_WINDOW_UNAVAILABLE", message: "The application shows no window to close.")
     }
     AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString)
   }

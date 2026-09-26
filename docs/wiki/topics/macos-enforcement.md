@@ -729,8 +729,9 @@ Durable findings from `MACOS-012`, `observed` in Tart clones:
   A native `NSStatusItem` passes all three.
 - **Launch at login.** `SMAppService.mainApp` registers without approval as
   a separate Open at Login record, apart from the helper's background item.
-- **Windowless driving.** `posato-control` cannot drive a windowless
-  application yet. `MACOS-013` extends it.
+- **Windowless driving.** `superseded`: `MACOS-013` added `menu`,
+  `close-window`, and `resources` for a windowless application.
+
 `observed` (2026-09-26, `MACOS-013`, Tart clone): the delivered presence
 passed the ADR 0009 table except sleep and wake, which a Tart guest cannot
 perform.
