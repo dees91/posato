@@ -14,11 +14,20 @@ extension RequestCoordinator {
     }
   }
 
-  func grantState(peerUserID: UInt32?) -> WireGrantState {
+  /// A store that cannot be read says nothing about the grant, so Status fails instead of reporting
+  /// it off; only a record that fails its file or schema checks, and so can never authorize, reads
+  /// as no grant.
+  func grantState(peerUserID: UInt32?) throws -> WireGrantState {
     guard (try? rules.state(of: .standingApply)) == .exact else {
       return []
     }
-    guard let peerUserID, let record = try? grants.load(),
+    let record: StandingGrantRecord?
+    do {
+      record = try grantRecordIsReadable() ? grants.load() : nil
+    } catch {
+      throw StandingGrantFailure.storage
+    }
+    guard let peerUserID, let record,
       StandingGrantPolicy.isGranted(record: record, peerUserID: peerUserID, identity: identity)
     else {
       return [.standingRightExact]

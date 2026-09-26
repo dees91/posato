@@ -354,3 +354,15 @@ private let externalForm = Data(repeating: 1, count: AuthorizationPolicy.externa
   #expect(try daemon.send(.grant, payload: externalForm).failure == .storage)
   #expect(daemon.grants.record?.entries.map(\.userID) == [otherPerson])
 }
+
+@Test func givenUnreadableGrantStoreWhenRevokedThenStatusNeverReportsTheGrantOff() throws {
+  let daemon = Daemon()
+  daemon.grants.ioFailure = true
+
+  #expect(try daemon.send(.revokeGrant).failure == .storage)
+  let status = try daemon.reply(.status, payload: WireStatusRequest.includeGrantState)
+  #expect(status.count == 5)
+  #expect(try WireResponsePayload.decodeStatus(status).response.failure == .storage)
+  daemon.grants.ioFailure = false
+  #expect(try daemon.reply(.status, payload: WireStatusRequest.includeGrantState).last == 3)
+}

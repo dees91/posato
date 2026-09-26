@@ -126,7 +126,7 @@ extension RequestCoordinator {
     try requireExactRule(.apply)
     let phase = try engine.status()
     if includesGrantState {
-      context.grantState = grantState(peerUserID: context.peerUserID)
+      context.grantState = try grantState(peerUserID: context.peerUserID)
     }
     return phase
   }
