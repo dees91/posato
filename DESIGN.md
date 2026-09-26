@@ -476,6 +476,20 @@ when its window closes and lives in the menu bar.
   keeps the window closed and never asks for approval on its own.
   **Remove from this Mac** also turns the switch off, so no login item
   remains after Posato is moved to the Trash.
+- **Start without the password.** `user-confirmed` (2026-09-26,
+  `MACOS-014`, ADR 0004 amendment): in This Mac options, below **Open
+  Posato at login**, a switch **Start sessions without the password**, off
+  by default. It appears only while the helper is ready and its daemon
+  supports the grant. Turning it on asks an administrator once; turning it
+  off needs no password. Supporting text: "An administrator approves this
+  once. Restrictions still apply only when you start or resume a session."
+  The switch shows only what the helper confirms. It is disabled with "You
+  can change this after the session ends." while a session is active,
+  starting, or changing enforcement. When its state cannot be confirmed, it
+  is disabled with "Posato could not confirm this setting. Check again." With
+  the switch on, starting a session and **Resume restrictions** apply
+  without a prompt. The menu, a login launch, and synchronization still
+  never apply by themselves.
 - **Session notice.** The `RESUME_REQUIRED` notice no longer blames closing
   the app. It reads "Restrictions not active on this Mac." It keeps
   **Resume restrictions**, because quitting, sleep, a login launch, and a
@@ -685,7 +699,8 @@ in PR #44. The six steps and existing service/persistence behavior remain.
     check, while the helper is not enabled, or while it is registered but
     cannot start.
   - **Confirmation.** A destructive dialog names what removal does:
-    - proxy settings are restored and the administrator rule is removed;
+    - proxy settings are restored, and the administrator rules and any
+      permission to start sessions without the password are removed;
     - the background helper turns off, and website and app pauses stop on this
       Mac until it is enabled again;
     - paused items stay saved.
