@@ -8,6 +8,7 @@ import app.posato.control.core.readKeychainSecret
 import app.posato.control.vm.CandidateInstall
 import app.posato.control.vm.CandidateInstallation
 import app.posato.control.vm.GuestICloud
+import app.posato.control.vm.GuestNotificationPrompt
 import app.posato.control.vm.GuestPrompt
 import app.posato.control.vm.GuestScroll
 import app.posato.control.vm.VmLifecycle
@@ -128,6 +129,17 @@ class VmClickCommand : ControlCommand("click", "Click text on the guest screen, 
     override fun execute(session: Session): JsonElement {
         VmPrompts(session.context).click(VmLine.parse(lineOption), text, exact, index, timeoutSeconds * MILLIS_PER_SECOND)
         return buildJsonObject { put("clicked", text) }
+    }
+}
+
+class VmAllowNotificationsCommand :
+    ControlCommand("allow-notifications", "Allow the application's notification permission banner, which shows Allow only under the pointer.") {
+    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the banner.").long().default(DEFAULT_TIMEOUT_SECONDS)
+
+    override fun execute(session: Session): JsonElement {
+        GuestNotificationPrompt(session.context).allow(VmLine.parse(lineOption), timeoutSeconds * MILLIS_PER_SECOND)
+        return buildJsonObject { put("allowed", true) }
     }
 }
 

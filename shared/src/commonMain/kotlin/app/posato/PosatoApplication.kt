@@ -171,13 +171,7 @@ class PosatoApplication internal constructor(
                 val currentInformationPage = informationPage
                 when {
                     currentInformationPage != null -> {
-                        ApplicationInformationHost(
-                            currentInformationPage,
-                            { informationPage = it },
-                            updates,
-                            notifier.takeIf { it.available },
-                            contentModifier.padding(inset),
-                        )
+                        ApplicationInformationHost(currentInformationPage, { informationPage = it }, updates, contentModifier.padding(inset))
                     }
 
                     destination == ApplicationDestination.SESSION -> {
@@ -279,6 +273,29 @@ class PosatoApplication internal constructor(
             }
         }
     }
+
+    @Composable
+    private fun ApplicationInformationHost(
+        page: ApplicationInformationPage,
+        onNavigate: (ApplicationInformationPage?) -> Unit,
+        updates: ApplicationUpdates?,
+        modifier: Modifier = Modifier,
+    ) {
+        when (page) {
+            ApplicationInformationPage.ABOUT -> AboutScreen(
+                onOpenLicenses = { onNavigate(ApplicationInformationPage.LICENSES) },
+                onBack = { onNavigate(null) },
+                modifier = modifier,
+                updates = updates,
+                notifications = notifier.takeIf { it.available },
+            )
+
+            ApplicationInformationPage.LICENSES -> LicensesScreen(
+                onBack = { onNavigate(ApplicationInformationPage.ABOUT) },
+                modifier = modifier,
+            )
+        }
+    }
 }
 
 @Stable
@@ -304,28 +321,4 @@ internal enum class ApplicationDestination {
 internal enum class ApplicationInformationPage {
     ABOUT,
     LICENSES,
-}
-
-@Composable
-private fun ApplicationInformationHost(
-    page: ApplicationInformationPage,
-    onNavigate: (ApplicationInformationPage?) -> Unit,
-    updates: ApplicationUpdates?,
-    notifications: SessionNotifier?,
-    modifier: Modifier = Modifier,
-) {
-    when (page) {
-        ApplicationInformationPage.ABOUT -> AboutScreen(
-            onOpenLicenses = { onNavigate(ApplicationInformationPage.LICENSES) },
-            onBack = { onNavigate(null) },
-            modifier = modifier,
-            updates = updates,
-            notifications = notifications,
-        )
-
-        ApplicationInformationPage.LICENSES -> LicensesScreen(
-            onBack = { onNavigate(ApplicationInformationPage.ABOUT) },
-            modifier = modifier,
-        )
-    }
 }

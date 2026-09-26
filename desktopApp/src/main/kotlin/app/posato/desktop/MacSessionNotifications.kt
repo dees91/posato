@@ -2,11 +2,13 @@ package app.posato.desktop
 
 import app.posato.feature.notifications.NotificationPermission
 import app.posato.feature.notifications.SessionNotificationPlatform
+import java.io.File
 import kotlin.concurrent.thread
 
 internal object MacNotificationsNative {
     init {
-        check(MacPresenceNative.isLoaded())
+        val resourcesDirectory = checkNotNull(System.getProperty("compose.application.resources.dir"))
+        System.load(File(resourcesDirectory, "native/libPosatoWindow.dylib").absolutePath)
     }
 
     @JvmStatic

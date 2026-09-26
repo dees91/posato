@@ -2057,3 +2057,14 @@ to scope, feasibility, or delivery.
   under disclosure, with Finish setup when a quiet read names a state other
   than ready. Schedule saving and execution remain inactive; editor exploration
   is explicitly a preview.
+
+## [2026-09-27] implementation | Pause notifications on iPhone and Mac (NOTIFY-001)
+
+- Local notices only: **Pause over** is scheduled at the planned end and
+  withdrawn on an early end. **Pause started** appears only for a pause from
+  another device. Permission is asked once, after the first pause on the
+  device. About Posato has a **Notifications** switch.
+- `observed` (Tart, macOS 26): the app's permission request appears as a
+  banner whose Allow sits in its **Options** menu, shown only under the
+  pointer. `posato-control` gains `vm allow-notifications`.
+
