@@ -9,6 +9,9 @@ import app.posato.feature.update.data.MaintenanceCloseOutcome
 import app.posato.feature.update.data.MaintenanceGate
 import app.posato.feature.update.data.MaintenanceStoreResult
 import app.posato.feature.update.data.UpdateMaintenanceStore
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -73,6 +76,9 @@ public class MaintenanceAdmission internal constructor(
 ) : UpdateMaintenanceGate {
     private val mutex = Mutex()
     private var admittedCycle = false
+    private val mutableClosed = MutableStateFlow<Boolean?>(null)
+
+    public val closed: StateFlow<Boolean?> = mutableClosed.asStateFlow()
 
     internal suspend fun <T> withApplyPermit(
         refused: () -> T,
@@ -80,6 +86,7 @@ public class MaintenanceAdmission internal constructor(
     ): T {
         return mutex.withLock {
             val gate = store.read()
+            observe(gate)
             if (gate is MaintenanceStoreResult.Success && gate.value == MaintenanceGate.Open) {
                 block()
             } else {
@@ -97,7 +104,11 @@ public class MaintenanceAdmission internal constructor(
                 is MaintenanceStoreResult.Failure -> MaintenanceCloseResult.StorageFailure
 
                 is MaintenanceStoreResult.Success -> when (closed.value) {
-                    MaintenanceCloseOutcome.CLOSED -> MaintenanceCloseResult.Closed
+                    MaintenanceCloseOutcome.CLOSED -> {
+                        mutableClosed.value = true
+                        MaintenanceCloseResult.Closed
+                    }
+
                     MaintenanceCloseOutcome.SESSION_ACTIVE -> MaintenanceCloseResult.SessionActive
                 }
             }
@@ -125,6 +136,7 @@ public class MaintenanceAdmission internal constructor(
     override suspend fun reopenWhen(evidence: suspend (ClosedMaintenanceGate) -> Boolean): MaintenanceReopenResult {
         return mutex.withLock {
             val gate = store.read()
+            observe(gate)
             val closed = ((gate as? MaintenanceStoreResult.Success)?.value as? MaintenanceGate.Closed)?.toPublic()
             when {
                 gate !is MaintenanceStoreResult.Success -> {
@@ -144,6 +156,7 @@ public class MaintenanceAdmission internal constructor(
                 }
 
                 store.reopen() is MaintenanceStoreResult.Success -> {
+                    mutableClosed.value = false
                     MaintenanceReopenResult.Reopened
                 }
 
@@ -155,8 +168,16 @@ public class MaintenanceAdmission internal constructor(
     }
 
     private suspend fun readClosedGate(): ClosedMaintenanceGate? {
-        val gate = (store.read() as? MaintenanceStoreResult.Success)?.value as? MaintenanceGate.Closed
+        val read = store.read()
+        observe(read)
+        val gate = (read as? MaintenanceStoreResult.Success)?.value as? MaintenanceGate.Closed
         return gate?.toPublic()
+    }
+
+    private fun observe(read: MaintenanceStoreResult<MaintenanceGate>) {
+        if (read is MaintenanceStoreResult.Success) {
+            mutableClosed.value = read.value is MaintenanceGate.Closed
+        }
     }
 }
 
