@@ -1193,6 +1193,8 @@ val compileWindowChrome = tasks.register<Exec>("compileWindowChrome") {
         "AppKit",
         "-framework",
         "QuartzCore",
+        "-framework",
+        "ServiceManagement",
         "-I$javaInstallation/include",
         "-I$javaInstallation/include/darwin",
         source.asFile.absolutePath,

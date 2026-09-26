@@ -62,6 +62,7 @@ static NSWindow *PosatoAlertWindow(void) {
 static void PosatoPresentAlert(NSAlert *alert, void (^completion)(NSModalResponse)) {
     NSWindow *window = PosatoAlertWindow();
     if (window == nil) {
+        [NSApp activateIgnoringOtherApps:YES];
         completion([alert runModal]);
         return;
     }
