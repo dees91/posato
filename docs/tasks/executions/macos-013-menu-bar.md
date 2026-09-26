@@ -85,7 +85,8 @@ Steps:
    - `menu`: bridge `status-menu` to read, press, and choose.
    - `window close`: the AX close button.
    - `resources`: footprint, CPU, and wakeups for the app and helper.
-   - `vm restart`: a graceful loginwindow restart, from spike (c).
+   - `vm restart`: a graceful loginwindow restart, from spike (c). It is
+     asserted during a session to complete without the `forced` fallback.
    - Login Items records are read with `vm text` after opening the pane in
      the guest.
    - README and feature map.
@@ -106,7 +107,7 @@ Steps:
 
 ## High-risk plan review
 
-- **Verdict:** `pending`; the first pass had 1 Critical and 8 Required findings, all folded in above.
+- **Verdict:** `approved`; the first pass had 1 Critical and 8 Required findings, all folded in above.
 ## Result
 
 - Pending.

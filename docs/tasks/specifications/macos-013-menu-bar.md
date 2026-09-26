@@ -55,5 +55,4 @@ With its window closed, Posato for Mac keeps running from a status-bar menu. Blo
 
 ## Decisions or blockers
 
-- Blocker until PR #87 merges: this branch is stacked on `docs/macos-012-menu-bar-decision`, and it rebases onto `main` after the merge.
 - No open product decision. D1-D5 are accepted in ADR 0009.
