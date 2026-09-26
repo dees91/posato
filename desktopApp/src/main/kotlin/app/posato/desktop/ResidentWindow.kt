@@ -118,7 +118,7 @@ private fun StatusMenuEffects(
             when (event) {
                 PresenceEvent.MENU_OPENED -> {
                     menuOpen = true
-                    presence.onMenuOpened()
+                    launch { presence.onMenuOpened() }
                 }
 
                 PresenceEvent.MENU_CLOSED -> {

@@ -37,9 +37,9 @@ public class DesktopPresence internal constructor(
         }
     }
 
-    public fun onMenuOpened() {
+    public suspend fun onMenuOpened() {
         owner.onForeground()
-        sync.syncNow()
+        sync.onForeground()
     }
 
     public fun request(request: SessionWindowRequest) {
