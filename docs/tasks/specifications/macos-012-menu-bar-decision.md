@@ -37,6 +37,5 @@ A recorded, maintainer-accepted decision on how Posato on macOS keeps a session 
 
 ## Decisions or blockers
 
-- `open` (maintainer, 2026-09-26): which process model (A, B, or C) to pursue; the comparison ends with a recommendation, not a choice.
-- `open` (maintainer, 2026-09-26): what **Quit** does during an active session: warn, refuse, or end the session.
+- `user-confirmed` (2026-09-26): process model A, and **Quit** during a session warns without ending it, as recommended in [ADR 0009](../../decisions/0009-macos-menu-bar-presence.md), with its other decisions D3-D5.
 - No blocker.

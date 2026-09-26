@@ -1,12 +1,12 @@
 # Execution: `MACOS-012`
 
 - **Brief:** [Menu bar presence decision](../specifications/macos-012-menu-bar-decision.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent agent (plan and decision record); maintainer on PR #87
 - **Branch:** `docs/macos-012-menu-bar-decision`
-- **Updated:** 2026-09-26 (comparison complete; awaiting review and decision)
+- **Updated:** 2026-09-26 (closeout)
 
 ## Plan
 
@@ -42,7 +42,7 @@ Git history of this file (`128f79b`) keeps the full reviewed plan:
 ## Result
 
 - **Decision record.** [ADR 0009](../../decisions/0009-macos-menu-bar-presence.md)
-  (`Proposed`) holds:
+  holds:
   - the comparison of A, B, and C;
   - the measured figures;
   - the recommendation: A, a resident process with a native status item;
@@ -52,8 +52,10 @@ Git history of this file (`128f79b`) keeps the full reviewed plan:
     extensions;
   - the open decisions D1-D5.
 
-  Routing (decisions README, wiki index, idea 7) follows acceptance, as it
-  did for ADR 0008.
+  The maintainer accepted D1-D5 as recommended (`user-confirmed`,
+  2026-09-26). First they confirmed that recurring schedules change none of
+  them; the schedule constraints are added for `SCHEDULE-001`. The routing
+  and the wiki are updated.
 - **Prototypes.**
   - P1 was a patch in a detached throwaway worktree, since removed. The
     window closed without exiting, the session owner and updater ran at
@@ -109,4 +111,10 @@ Git history of this file (`128f79b`) keeps the full reviewed plan:
 
 ## Blockers and accepted risks
 
-- No blocker. `AC-04` waits for the maintainer's answers to D1-D5.
+- None. The transient helper CPU is an idea-queue candidate outside this task.
+
+## Final
+
+- **Status:** `done`
+- **Outcome:** `AC-01` to `AC-04` met. `MACOS-013` may start when the
+  maintainer names it.

@@ -2,16 +2,19 @@
 
 ## Status
 
-- **Status:** Proposed
+- **Status:** Accepted direction; implementation pending `MACOS-013`
 - **Date:** 2026-09-26
 - **Decision owner:** Project maintainer
-- **Provenance:** `inferred` recommendation awaiting maintainer acceptance
+- **Provenance:** `user-confirmed`
 - **Owner:** `MACOS-012` decides; `MACOS-013` delivers after separate activation.
 
 This record compares how Posato for Mac keeps a session running and reachable
 from a status-bar menu while its main window is closed. It recommends one
-process model and writes out the amendments it needs. Nothing here is
-accepted or implemented until the maintainer records a decision below.
+process model and writes out the amendments it needs. The maintainer accepted
+every recommendation on 2026-09-26 (see the maintainer decision below). This
+accepts the direction and the delivery gates, not a working menu bar. The
+amendments below are applied to their authorities only after `MACOS-013`'s
+verified delivery.
 
 ## Context and evidence
 
@@ -193,7 +196,7 @@ removing the JVM.
 
 ## Decision
 
-Recommended, pending the maintainer decision below.
+Accepted as recommended (`user-confirmed`, 2026-09-26).
 
 ### Process and ownership
 
@@ -276,7 +279,7 @@ alone.
 
 ### Quit during a session
 
-Recommended: **warn**. **Quit Posato** from the menu, the application menu,
+Accepted: **warn**. **Quit Posato** from the menu, the application menu,
 or Cmd-Q during an active session shows a confirmation:
 
 > **Quit Posato?**
@@ -294,7 +297,7 @@ does not ask.
 
 ### Launch at login
 
-Recommended: opt-in. A **Open Posato at login** switch lives in the **This
+Accepted: opt-in. An **Open Posato at login** switch lives in the **This
 Mac** options and is off by default. It registers `SMAppService.mainApp` and
 reads its status back. It does not appear during first-run setup.
 
@@ -311,13 +314,12 @@ itself, so the switch needs no extra confirmation.
 
 ### Synchronization while the window is closed
 
-Recommended: an exchange runs when the menu opens and when the window opens,
+Accepted: an exchange runs when the menu opens and when the window opens,
 as today on foreground, plus at most one exchange every 30 minutes while a
 workspace is linked and the process runs. It uses the existing short-lived
 companion and conflated worker; no subscription or push is added. A received
 session is still adopted in `RESUME_REQUIRED` on the Mac and needs the
-person's approval before blocking. The interval is a product and energy
-choice left to the maintainer.
+person's approval before blocking.
 
 ### Preserved guarantees
 
@@ -352,15 +354,30 @@ choice left to the maintainer.
 - **`NOTIFY-001`.** Session start, end, and expiry transitions happen in the
   resident process at application scope. Mac notifications post from there
   with the application's bundle identity. No new process is needed.
-- **`SCHEDULE-001`.** The resident process, together with launch at login, is
-  the macOS scheduling host. A scheduled start meets the same administrator
-  approval as Resume until `MACOS-014` changes it.
+- **`SCHEDULE-001`.** `user-confirmed` (2026-09-26): the maintainer asked
+  whether recurring schedules (for example 9:00-17:00 every weekday) change
+  this recommendation. They do not change D1-D5. They add these constraints:
+  - **Host.** The resident process, together with launch at login, is the
+    macOS scheduling host. The session owner's "due" state includes the next
+    scheduled start, and wake and clock changes re-evaluate it.
+  - **Approval.** A scheduled start meets the same administrator approval as
+    Resume until `MACOS-014` changes it. Without that change, a Mac
+    schedule starts the session in the not-enforcing state, "Restrictions
+    not active on this Mac", and waits for the person. It never raises an
+    unprompted administrator dialog.
+  - **Local evaluation.** Each device evaluates a synchronized schedule
+    locally at its time, so the exchange interval (D4) bounds how fast a
+    schedule edit arrives, not whether a scheduled session starts.
+  - **Launch at login.** Creating a schedule on a Mac offers **Open Posato at
+    login** in context. The default stays off (D3).
+  - **Quit.** The quit confirmation also names upcoming scheduled sessions
+    that will not start on this Mac while Posato is closed.
 - **`MACOS-019`.** Unchanged. This decision keeps the root daemon and
   Authorization Services, so App Sandbox stays out of scope.
 
 ## Authority amendments
 
-Proposed verbatim. `MACOS-013` applies them after its verified delivery,
+Accepted verbatim. `MACOS-013` applies them after its verified delivery,
 as `MACOS-011` did for ADR 0008.
 
 ### ADR 0003: widen the window leaf into an application-presence leaf
@@ -429,7 +446,7 @@ Clarify the Consent, session behavior, and data bullet on Sparkle's settings:
 
 Add under Layout and Responsive Behavior, macOS:
 
-> `user-confirmed` (`MACOS-012`, date of acceptance): Posato stays running
+> `user-confirmed` (`MACOS-012`, 2026-09-26): Posato stays running
 > when its window closes and lives in the menu bar.
 >
 > - **Status item.** A monochrome template of the Posato pause mark that
@@ -555,10 +572,12 @@ review. The bounded work:
 
 ## Maintainer decision
 
-`open` until the maintainer records each answer here (`AC-04`). `MACOS-013`
-does not start before then.
+`user-confirmed` (2026-09-26): the maintainer accepted the recommendation
+for D1-D5, after confirming that future recurring schedules do not change
+them (see the `SCHEDULE-001` constraints above). `MACOS-013` may start once
+the maintainer names it.
 
-| Decision | Recommendation | Alternatives |
+| Decision | Accepted recommendation | Alternatives not chosen |
 | --- | --- | --- |
 | D1. Process model | A: resident Compose Desktop process with a native status item | B: orchestration in a native helper; C: native agent beside a windowless JVM |
 | D2. Quit during a session | Warn with **Keep Posato open** as the default; quitting does not end the session; system terminations are not delayed | Refuse user quit during a session; end the session on quit; quit silently as today |

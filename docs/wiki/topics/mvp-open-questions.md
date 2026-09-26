@@ -700,10 +700,10 @@ not an accepted feature plan or an expansion of the MVP.
    orchestration, and the privileged daemon holds a renewable ownership lease
    under
    [ADR 0004](../../decisions/0004-macos-helper-ownership-and-lifecycle.md),
-   so blocking stops when Posato quits. Whether the existing application keeps
-   running as a menu bar process after its window closes, or session
-   orchestration moves into a native helper, remains `open`, together with
-   launch at login, resource use, and any ADR 0003 or ADR 0004 revision.
+   so blocking stops when Posato quits. `user-confirmed` (2026-09-26):
+   [ADR 0009](../../decisions/0009-macos-menu-bar-presence.md) keeps the
+   existing application running as a menu bar process after its window
+   closes, with launch at login as an opt-in. `MACOS-013` delivers it.
 8. **Intel Mac support, starting with a 2019 MacBook Air.** `user-confirmed`
    (2026-09-14): explore running Posato on the maintainer's 2019 Intel MacBook
    Air. `source-claim`: Apple lists macOS Sequoia (15) for MacBook Air models
