@@ -185,7 +185,7 @@ static NSImage *PresenceMark(BOOL filled) {
 }
 @end
 
-JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativeInstallLaunchProbe(JNIEnv *environment, jclass receiver) {
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_installLaunchProbe(JNIEnv *environment, jclass receiver) {
     presenceLaunchObserver = [NSNotificationCenter.defaultCenter
         addObserverForName:NSApplicationDidFinishLaunchingNotification
                     object:nil
@@ -197,23 +197,29 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativeInstallLaunchPr
                 }];
 }
 
-JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresence_nativeLaunchedAtLogin(JNIEnv *environment, jclass receiver) {
+JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresenceNative_launchedAtLogin(JNIEnv *environment, jclass receiver) {
     return presenceLaunchedAtLogin ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresence_nativeStart(JNIEnv *environment, jclass receiver, jstring closeWindowTitle) {
+JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresenceNative_start(JNIEnv *environment, jclass receiver, jstring closeWindowTitle) {
     if ((*environment)->GetJavaVM(environment, &presenceVirtualMachine) != JNI_OK) return JNI_FALSE;
-    presenceMenuOpened = (*environment)->GetStaticMethodID(environment, receiver, "onMenuOpened", "()V");
-    presenceMenuClosed = (*environment)->GetStaticMethodID(environment, receiver, "onMenuClosed", "()V");
-    presenceMenuAction = (*environment)->GetStaticMethodID(environment, receiver, "onMenuAction", "(I)V");
-    presencePowerOff = (*environment)->GetStaticMethodID(environment, receiver, "onPowerOff", "()V");
-    presenceAlertFinished = (*environment)->GetStaticMethodID(environment, receiver, "onAlertFinished", "(II)V");
+    jclass events = (*environment)->FindClass(environment, "app/posato/desktop/MacPresenceEvents");
+    if (events == NULL) {
+        if ((*environment)->ExceptionCheck(environment)) (*environment)->ExceptionClear(environment);
+        return JNI_FALSE;
+    }
+    presenceMenuOpened = (*environment)->GetStaticMethodID(environment, events, "onMenuOpened", "()V");
+    presenceMenuClosed = (*environment)->GetStaticMethodID(environment, events, "onMenuClosed", "()V");
+    presenceMenuAction = (*environment)->GetStaticMethodID(environment, events, "onMenuAction", "(I)V");
+    presencePowerOff = (*environment)->GetStaticMethodID(environment, events, "onPowerOff", "()V");
+    presenceAlertFinished = (*environment)->GetStaticMethodID(environment, events, "onAlertFinished", "(II)V");
     if (presenceMenuOpened == NULL || presenceMenuClosed == NULL || presenceMenuAction == NULL || presencePowerOff == NULL ||
         presenceAlertFinished == NULL) {
         if ((*environment)->ExceptionCheck(environment)) (*environment)->ExceptionClear(environment);
         return JNI_FALSE;
     }
-    presenceClass = (*environment)->NewGlobalRef(environment, receiver);
+    presenceClass = (*environment)->NewGlobalRef(environment, events);
+    (*environment)->DeleteLocalRef(environment, events);
     NSString *closeTitle = PresenceString(environment, closeWindowTitle);
     dispatch_async(dispatch_get_main_queue(), ^{
         presenceMenuDelegate = [[PosatoPresenceMenuDelegate alloc] init];
@@ -255,7 +261,7 @@ JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresence_nativeStart(JNIEn
     return JNI_TRUE;
 }
 
-JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativeUpdateMenu(
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_setMenu(
     JNIEnv *environment,
     jclass receiver,
     jobjectArray titles,
@@ -311,7 +317,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativeUpdateMenu(
     });
 }
 
-JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativeSetMainWindowVisible(JNIEnv *environment, jclass receiver, jboolean visible) {
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_setMainWindowVisible(JNIEnv *environment, jclass receiver, jboolean visible) {
     BOOL shown = visible == JNI_TRUE;
     dispatch_async(dispatch_get_main_queue(), ^{
         presenceMainWindowVisible = shown;
@@ -320,7 +326,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativeSetMainWindowVi
     });
 }
 
-JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativePresentAlert(
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_presentAlert(
     JNIEnv *environment,
     jclass receiver,
     jint request,
@@ -355,11 +361,11 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresence_nativePresentAlert(
     });
 }
 
-JNIEXPORT jint JNICALL Java_app_posato_desktop_MacPresence_nativeLoginItemStatus(JNIEnv *environment, jclass receiver) {
+JNIEXPORT jint JNICALL Java_app_posato_desktop_MacPresenceNative_loginItemStatus(JNIEnv *environment, jclass receiver) {
     return (jint)SMAppService.mainAppService.status;
 }
 
-JNIEXPORT jint JNICALL Java_app_posato_desktop_MacPresence_nativeSetLoginItem(JNIEnv *environment, jclass receiver, jboolean enabled) {
+JNIEXPORT jint JNICALL Java_app_posato_desktop_MacPresenceNative_setLoginItem(JNIEnv *environment, jclass receiver, jboolean enabled) {
     NSError *error = nil;
     if (enabled == JNI_TRUE) {
         [SMAppService.mainAppService registerAndReturnError:&error];

@@ -11,19 +11,17 @@ internal data class PresenceMenuModel(
     val filled: Boolean,
 )
 
-internal enum class PresenceMenuActionId(
-    val code: Int
-) {
-    START_SESSION(0),
-    END_SESSION_EARLY(1),
-    RESUME_RESTRICTIONS(2),
-    OPEN_POSATO(3),
-    QUIT(4),
+internal enum class PresenceMenuActionId {
+    START_SESSION,
+    END_SESSION_EARLY,
+    RESUME_RESTRICTIONS,
+    OPEN_POSATO,
+    QUIT,
     ;
 
     companion object {
         fun of(code: Int): PresenceMenuActionId? {
-            return entries.firstOrNull { it.code == code }
+            return entries.getOrNull(code)
         }
     }
 }
@@ -94,7 +92,7 @@ private fun item(
     title: String,
     action: PresenceMenuActionId,
 ): PresenceMenuItem {
-    return PresenceMenuItem(title, action.code)
+    return PresenceMenuItem(title, action.ordinal)
 }
 
 private const val NO_ACTION: Int = -1

@@ -3,6 +3,7 @@ package app.posato.desktop
 import app.posato.feature.presence.PresenceCopy
 import app.posato.feature.presence.PresenceMenu
 import app.posato.feature.presence.PresenceState
+import app.posato.feature.presence.QuitPrompt
 import java.io.File
 import java.time.Instant
 import java.time.ZoneId
@@ -13,10 +14,14 @@ internal enum class FirstCloseChoice { HIDE, QUIT }
 
 internal suspend fun confirmsQuit(
     copy: PresenceCopy,
-    message: String,
+    prompt: QuitPrompt,
 ): Boolean {
-    val choice = MacPresence.presentAlert(copy.quitTitle, message, copy.quitKeep, copy.quitConfirm)
-    return choice == SECONDARY_CHOICE
+    val message = when (prompt) {
+        QuitPrompt.NONE -> return true
+        QuitPrompt.CONFIRM_ENFORCING -> copy.quitEnforcing
+        QuitPrompt.CONFIRM_NOT_ENFORCING -> copy.quitNotEnforcing
+    }
+    return MacPresenceEvents.presentAlert(copy.quitTitle, message, copy.quitKeep, copy.quitConfirm) == SECONDARY_CHOICE
 }
 
 internal suspend fun firstCloseChoice(
@@ -27,7 +32,7 @@ internal suspend fun firstCloseChoice(
     val marker = firstCloseMarker()
     if (!sessionRunning || marker.exists()) return FirstCloseChoice.HIDE
     val message = if (menu.state == PresenceState.ENFORCING) copy.firstCloseEnforcing else copy.firstCloseNotEnforcing
-    val choice = MacPresence.presentAlert(message, "", copy.firstCloseOk, copy.quit)
+    val choice = MacPresenceEvents.presentAlert(message, "", copy.firstCloseOk, copy.quit)
     runCatching {
         marker.parentFile?.mkdirs()
         marker.createNewFile()
