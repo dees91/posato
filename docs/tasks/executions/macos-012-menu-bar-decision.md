@@ -10,7 +10,7 @@
 
 ## Plan
 
-Git history of this file (`128f79b`) keeps the full reviewed plan:
+The commit "Add the reviewed execution plan" keeps the full plan:
 
 1. Write the decision as ADR 0009 in the ADR 0008 shape.
 2. Compare A, B, and C from code and ADR analysis. Two criteria were added:
@@ -106,7 +106,7 @@ Git history of this file (`128f79b`) keeps the full reviewed plan:
 | Reopen through LaunchServices (P1) | pass | same process, window shown, `Foreground` |
 | Status-item accessibility | P1 fail, P3 pass | AX tree and `AXPress` through `axmenu` |
 | Login item probe (P1) | pass | status `enabled`; separate Open at Login row |
-| `./gradlew quality` | pass | at `7ad4cdc`; later corrections are Markdown only, which the gate does not read |
+| `./gradlew quality` | pass | at `11ec4a9`, rebased on `main` `b758d02`; later commits are Markdown only |
 | Window, icon, and permission side effects (P1) | observed | accessory policy reported `UIElement`; template glyph rendered as system icons; Cmd-W did nothing; AWT tray raised the notification banner absent from P0 |
 
 ## Blockers and accepted risks
