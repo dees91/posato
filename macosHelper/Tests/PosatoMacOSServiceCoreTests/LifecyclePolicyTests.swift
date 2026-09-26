@@ -395,3 +395,33 @@ import Testing
   #expect(unavailable.actionRequired == .manualRecovery)
   #expect(unavailable.failure == .lifecycle)
 }
+
+@Test func givenApplyWithGrantWhenLifecycleEvaluatedThenItIsTreatedAsApply() {
+  let applied = WireResponsePayload(outcome: .success, serviceState: .ready, ownershipPhase: .applied)
+  let postEffectFailure = WireResponsePayload(
+    outcome: .actionRequired,
+    serviceState: .recoveryRequired,
+    ownershipPhase: .applied,
+    actionRequired: .manualRecovery,
+    failure: .integrity
+  )
+
+  #expect(
+    WireLifecyclePolicy.ownsAppliedMutation(
+      requestOperation: .applyWithGrant,
+      reconcilePayload: nil,
+      ownershipVerified: true,
+      response: applied
+    )
+  )
+  #expect(
+    WireLifecyclePolicy.failClosedApplyResponse(
+      requestOperation: .applyWithGrant,
+      reconcilePayload: nil,
+      ownershipVerified: false,
+      response: postEffectFailure
+    ).outcome == .conflict
+  )
+  #expect(WireLifecyclePolicy.needsEffectiveChainCheck(requestOperation: .applyWithGrant, response: applied))
+  #expect(!WireLifecyclePolicy.needsEffectiveChainCheck(requestOperation: .status, response: applied))
+}

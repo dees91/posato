@@ -1,7 +1,11 @@
+import Darwin.membership
 import Foundation
+import IOKit
+import SystemConfiguration
 
 public enum StandingGrantFailure: Error, Equatable {
   case unavailable
+  case storage
 }
 
 public struct StandingGrantEntry: Codable, Equatable, Sendable {
@@ -166,5 +170,43 @@ public final class StandingGrantStore: StandingGrantPersistence, @unchecked Send
 
   public func remove() throws {
     try file.remove()
+  }
+}
+
+/// Reads the grant binding from the system: the account's generated UID from Open Directory, the
+/// hardware platform UUID from IOKit, and the user who owns the console session.
+public struct SystemIdentityReader: SystemIdentity {
+  public init() {}
+
+  public func accountIdentifier(for userID: UInt32) -> UUID? {
+    var bytes: uuid_t = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    let status = withUnsafeMutableBytes(of: &bytes) { buffer in
+      mbr_uid_to_uuid(uid_t(userID), buffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+    }
+    return status == 0 ? UUID(uuid: bytes) : nil
+  }
+
+  public func platformIdentifier() -> UUID? {
+    let platform = IOServiceGetMatchingService(
+      kIOMainPortDefault,
+      IOServiceMatching("IOPlatformExpertDevice")
+    )
+    guard platform != 0 else {
+      return nil
+    }
+    defer { IOObjectRelease(platform) }
+    let value = IORegistryEntryCreateCFProperty(
+      platform,
+      kIOPlatformUUIDKey as CFString,
+      kCFAllocatorDefault,
+      0
+    )?.takeRetainedValue()
+    return (value as? String).flatMap(UUID.init(uuidString:))
+  }
+
+  public func consoleUserID() -> UInt32? {
+    var userID: uid_t = 0
+    let name = SCDynamicStoreCopyConsoleUser(nil, &userID, nil) as String?
+    return StandingGrantPolicy.consoleUserID(name: name, userID: UInt32(userID))
   }
 }

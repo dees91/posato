@@ -136,7 +136,7 @@ do {
       }
     case .reconcile:
       break
-    case .none, .renew:
+    case .none, .renew, .prepareGrant, .grant, .revokeGrant, .applyWithGrant:
       throw PipeFailure.invalidFrame
     }
     if request.operation == .configureBrowserDomains {

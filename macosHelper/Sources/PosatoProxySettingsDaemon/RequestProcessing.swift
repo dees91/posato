@@ -1,9 +1,16 @@
 import Foundation
 import PosatoMacOSServiceCore
 
+struct RequestContext {
+  let peerUserID: UInt32?
+  var ownershipVerified = false
+  var grantState: WireGrantState?
+}
+
 extension RequestCoordinator {
   func process(
     _ original: Data,
+    peerUserID: UInt32?,
     deadline: DispatchTime,
     connectionState: ConnectionState
   ) -> Data? {
@@ -13,23 +20,27 @@ extension RequestCoordinator {
       return nil
     }
     defer { request.payload.resetBytes(in: request.payload.startIndex..<request.payload.endIndex) }
-    var ownershipVerified = false
-    let rawResponse = response(for: request, ownershipVerified: &ownershipVerified)
+    var context = RequestContext(peerUserID: peerUserID)
+    let rawResponse = response(for: request, context: &context)
     let reconcilePayload =
       request.operation == .reconcile
       ? try? WireReconcilePayload.decode(request.payload) : nil
     let response = WireLifecyclePolicy.failClosedApplyResponse(
       requestOperation: request.operation,
       reconcilePayload: reconcilePayload,
-      ownershipVerified: ownershipVerified,
+      ownershipVerified: context.ownershipVerified,
       response: rawResponse
     )
     connectionState.update(
       request: request,
       response: response,
-      ownershipVerified: ownershipVerified
+      ownershipVerified: context.ownershipVerified
     )
-    return encode(response: response, for: request)
+    var payload = response.encode()
+    if let grantState = context.grantState, response.outcome == .success {
+      payload.append(grantState.rawValue)
+    }
+    return encode(payload: payload, for: request)
   }
 
   private func validRequest(_ encoded: Data) -> WireMessage? {
@@ -49,10 +60,10 @@ extension RequestCoordinator {
 
   private func response(
     for request: WireMessage,
-    ownershipVerified: inout Bool
+    context: inout RequestContext
   ) -> WireResponsePayload {
     do {
-      let phase = try perform(request, ownershipVerified: &ownershipVerified)
+      let phase = try perform(request, context: &context)
       return WireResponsePayload(
         outcome: phase == .recoveryRequired ? .conflict : .success,
         serviceState: phase == .recoveryRequired ? .recoveryRequired : .ready,
@@ -66,38 +77,63 @@ extension RequestCoordinator {
 
   private func perform(
     _ request: WireMessage,
-    ownershipVerified: inout Bool
+    context: inout RequestContext
   ) throws -> OwnershipPhase {
     switch request.operation {
     case .status:
-      return try performStatus(request)
+      return try performStatus(request, context: &context)
     case .enable:
       return try performEnable(request, repair: false)
     case .repair:
       return try performEnable(request, repair: true)
     case .apply:
-      return try performApply(request, ownershipVerified: &ownershipVerified)
-    case .restore, .disable:
-      return try performRestore(request)
+      return try performApply(request, context: &context, grantAuthorized: false)
+    case .applyWithGrant:
+      return try performApply(request, context: &context, grantAuthorized: true)
+    case .restore:
+      try requireEmptyPayload(request)
+      return try performRestore()
+    case .disable:
+      try requireEmptyPayload(request)
+      return try performDisable()
     case .remove:
-      return try performRemove(request)
+      try requireEmptyPayload(request)
+      return try performRemove()
     case .reconcile:
       return try reconcileUnknown(
         request: request,
         payload: WireReconcilePayload.decode(request.payload),
-        ownershipVerified: &ownershipVerified
+        context: &context
       )
     case .renew:
       return try performRenew(request)
+    case .prepareGrant:
+      try requireEmptyPayload(request)
+      return try performPrepareGrant()
+    case .grant:
+      return try performGrant(request, peerUserID: context.peerUserID)
+    case .revokeGrant:
+      try requireEmptyPayload(request)
+      return try performRevokeGrant(peerUserID: context.peerUserID)
     case .none, .selectApplications, .configureBrowserDomains, .configureApplications:
       throw ProxyOwnershipFailure.invalidInput
     }
   }
 
-  private func performStatus(_ request: WireMessage) throws -> OwnershipPhase {
-    try requireEmptyPayload(request)
-    try AuthorizationPolicy.verifyApplyRight()
-    return try engine.status()
+  private func performStatus(
+    _ request: WireMessage,
+    context: inout RequestContext
+  ) throws -> OwnershipPhase {
+    let includesGrantState = request.payload == WireStatusRequest.includeGrantState
+    guard request.payload.isEmpty || includesGrantState else {
+      throw ProxyOwnershipFailure.invalidInput
+    }
+    try requireExactRule(.apply)
+    let phase = try engine.status()
+    if includesGrantState {
+      context.grantState = grantState(peerUserID: context.peerUserID)
+    }
+    return phase
   }
 
   private func performEnable(
@@ -109,63 +145,68 @@ extension RequestCoordinator {
     guard phase == .idle else {
       throw ProxyOwnershipFailure.recoveryRequired
     }
-    if repair {
-      try convergeAuthorizationRule(
-        for: .repair,
-        verify: AuthorizationPolicy.verifyApplyRight,
-        repair: AuthorizationPolicy.repairApplyRight
-      )
-    } else {
-      try AuthorizationPolicy.installApplyRight()
-    }
+    try convergeRules(repair: repair)
     return phase
   }
 
   private func performApply(
     _ request: WireMessage,
-    ownershipVerified: inout Bool
+    context: inout RequestContext,
+    grantAuthorized: Bool
   ) throws -> OwnershipPhase {
-    guard request.payload.count == 2 + AuthorizationPolicy.externalFormBytes else {
+    let authorizationBytes = grantAuthorized ? 0 : AuthorizationPolicy.externalFormBytes
+    guard request.payload.count == 2 + authorizationBytes else {
       throw ProxyOwnershipFailure.invalidInput
     }
-    let canonicalInputDigest = WireCodec.canonicalInputDigest(
-      operation: request.operation,
-      payload: Data(request.payload.prefix(2))
-    )
+    let port = Data(request.payload.prefix(2))
+    let canonicalInputDigest = WireCodec.canonicalInputDigest(operation: .apply, payload: port)
     _ = try engine.verifyApplyOwnership(
       sessionIdentifier: request.sessionIdentifier,
       requestIdentifier: request.requestIdentifier,
       canonicalInputDigest: canonicalInputDigest
     )
-    ownershipVerified = true
-    try AuthorizationPolicy.verifyApplyRight()
-    let port = UInt16(request.payload[0]) << 8 | UInt16(request.payload[1])
-    var authorizationData = Data(request.payload.dropFirst(2))
-    try AuthorizationPolicy.validateAndDestroyApplyExternalForm(&authorizationData)
+    context.ownershipVerified = true
+    try requireExactRule(.apply)
+    if grantAuthorized {
+      try requireStandingGrant(peerUserID: context.peerUserID)
+    } else {
+      var authorizationData = Data(request.payload.dropFirst(2))
+      try rules.validateAndDestroy(.apply, externalForm: &authorizationData)
+    }
     let phase = try engine.apply(
       sessionIdentifier: request.sessionIdentifier,
       requestIdentifier: request.requestIdentifier,
       canonicalInputDigest: canonicalInputDigest,
-      port: port
+      port: UInt16(port[port.startIndex]) << 8 | UInt16(port[port.startIndex + 1])
     )
     leaseDeadline = .now() + .seconds(15)
     return phase
   }
 
-  private func performRestore(_ request: WireMessage) throws -> OwnershipPhase {
-    try requireEmptyPayload(request)
+  private func performRestore() throws -> OwnershipPhase {
     let phase = try engine.restore()
     leaseDeadline = nil
     return phase
   }
 
-  private func performRemove(_ request: WireMessage) throws -> OwnershipPhase {
-    try requireEmptyPayload(request)
+  /// Disable ends with the helper unregistered, so it also takes back every standing grant; the
+  /// Restore that ends a session never does.
+  private func performDisable() throws -> OwnershipPhase {
+    let phase = try performRestore()
+    if phase == .idle {
+      try removeGrantRecord()
+    }
+    return phase
+  }
+
+  private func performRemove() throws -> OwnershipPhase {
     let phase = try engine.restore()
     guard phase == .idle else {
       throw ProxyOwnershipFailure.recoveryRequired
     }
-    try AuthorizationPolicy.removeApplyRight()
+    try removeGrantRecord()
+    try rules.remove(.apply)
+    try rules.remove(.standingApply)
     leaseDeadline = nil
     return phase
   }
@@ -180,7 +221,7 @@ extension RequestCoordinator {
     return phase
   }
 
-  private func requireEmptyPayload(_ request: WireMessage) throws {
+  func requireEmptyPayload(_ request: WireMessage) throws {
     guard request.payload.isEmpty else {
       throw ProxyOwnershipFailure.invalidInput
     }
@@ -189,11 +230,11 @@ extension RequestCoordinator {
   private func reconcileUnknown(
     request: WireMessage,
     payload: WireReconcilePayload,
-    ownershipVerified: inout Bool
+    context: inout RequestContext
   ) throws -> OwnershipPhase {
     switch payload.originalOperation {
     case .apply:
-      ownershipVerified = try engine.verifyApplyOwnership(
+      context.ownershipVerified = try engine.verifyApplyOwnership(
         sessionIdentifier: request.sessionIdentifier,
         requestIdentifier: request.requestIdentifier,
         canonicalInputDigest: payload.canonicalInputDigest
@@ -203,35 +244,29 @@ extension RequestCoordinator {
         requestIdentifier: request.requestIdentifier,
         canonicalInputDigest: payload.canonicalInputDigest
       )
-    case .restore, .disable:
+    case .restore:
       try verifyCanonicalEmptyInput(payload)
-      return try engine.restore()
+      return try performRestore()
+    case .disable:
+      try verifyCanonicalEmptyInput(payload)
+      return try performDisable()
     case .remove:
       try verifyCanonicalEmptyInput(payload)
-      let phase = try engine.restore()
-      guard phase == .idle else {
-        throw ProxyOwnershipFailure.recoveryRequired
-      }
-      try AuthorizationPolicy.removeApplyRight()
-      return .idle
+      return try performRemove()
     case .enable, .repair:
       try verifyCanonicalEmptyInput(payload)
       let phase = try engine.reconcile()
       guard phase == .idle else {
         throw ProxyOwnershipFailure.recoveryRequired
       }
-      try convergeAuthorizationRule(
-        for: payload.originalOperation,
-        verify: AuthorizationPolicy.verifyApplyRight,
-        repair: AuthorizationPolicy.repairApplyRight
-      )
+      try convergeRules(repair: payload.originalOperation == .repair)
       return .idle
     case .status:
       try verifyCanonicalEmptyInput(payload)
-      try AuthorizationPolicy.verifyApplyRight()
+      try requireExactRule(.apply)
       return try engine.status()
     case .none, .reconcile, .renew, .selectApplications, .configureBrowserDomains,
-      .configureApplications:
+      .configureApplications, .prepareGrant, .grant, .revokeGrant, .applyWithGrant:
       throw ProxyOwnershipFailure.invalidInput
     }
   }
@@ -249,7 +284,8 @@ extension RequestCoordinator {
   }
 
   private func response(for error: Error) -> WireResponsePayload {
-    return authorizationResponse(for: error)
+    return grantResponse(for: error)
+      ?? authorizationResponse(for: error)
       ?? ownershipResponse(for: error)
       ?? configurationResponse(for: error)
       ?? persistenceResponse(for: error)
@@ -276,6 +312,17 @@ extension RequestCoordinator {
       )
     case AuthorizationPolicyFailure.invalidExternalForm:
       return failureResponse(.permission)
+    default:
+      return nil
+    }
+  }
+
+  private func grantResponse(for error: Error) -> WireResponsePayload? {
+    switch error {
+    case StandingGrantFailure.unavailable:
+      return failureResponse(.standingGrantUnavailable)
+    case StandingGrantFailure.storage:
+      return failureResponse(.storage)
     default:
       return nil
     }
@@ -334,7 +381,7 @@ extension RequestCoordinator {
   }
 
   private func encode(
-    response: WireResponsePayload,
+    payload: Data,
     for request: WireMessage
   ) -> Data? {
     return try? WireCodec.encode(
@@ -346,27 +393,8 @@ extension RequestCoordinator {
         connectionIdentifier: request.connectionIdentifier,
         sessionIdentifier: request.sessionIdentifier,
         requestIdentifier: request.requestIdentifier,
-        payload: response.encode()
+        payload: payload
       )
     )
-  }
-}
-
-func convergeAuthorizationRule(
-  for operation: WireOperation,
-  verify: () throws -> Void,
-  repair: () throws -> Void
-) throws {
-  switch operation {
-  case .enable:
-    try verify()
-  case .repair:
-    do {
-      try verify()
-    } catch AuthorizationPolicyFailure.ruleUnavailable {
-      try repair()
-    }
-  default:
-    throw ProxyOwnershipFailure.invalidInput
   }
 }

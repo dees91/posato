@@ -26,7 +26,8 @@ public enum WireLimits {
       return maximumSelectionDeadlineMilliseconds
     case .configureBrowserDomains, .configureApplications:
       return maximumConfigureDeadlineMilliseconds
-    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew:
+    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew,
+      .prepareGrant, .grant, .revokeGrant, .applyWithGrant:
       return maximumDeadlineMilliseconds
     }
   }
@@ -75,14 +76,24 @@ public enum WireOperation: UInt8, Sendable {
   case selectApplications = 10
   case configureBrowserDomains = 11
   case configureApplications = 12
+  case prepareGrant = 13
+  case grant = 14
+  case revokeGrant = 15
+  case applyWithGrant = 16
 
   public var isHelperOnly: Bool {
     switch self {
     case .selectApplications, .configureBrowserDomains, .configureApplications:
       return true
-    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew:
+    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew,
+      .prepareGrant, .grant, .revokeGrant, .applyWithGrant:
       return false
     }
+  }
+
+  /// Apply with grant is an Apply in every respect except how it is authorized.
+  public var isApply: Bool {
+    return self == .apply || self == .applyWithGrant
   }
 }
 
@@ -131,6 +142,22 @@ public enum FailureCategory: UInt8, Sendable {
   case ipc = 7
   case lifecycle = 8
   case cancelled = 9
+  case standingGrantUnavailable = 10
+}
+
+public struct WireGrantState: OptionSet, Equatable, Sendable {
+  public let rawValue: UInt8
+
+  public init(rawValue: UInt8) {
+    self.rawValue = rawValue
+  }
+
+  public static let standingRightExact = WireGrantState(rawValue: 1)
+  public static let granted = WireGrantState(rawValue: 2)
+}
+
+public enum WireStatusRequest {
+  public static let includeGrantState = Data([1])
 }
 
 public enum WireProtocolFailure: Error, Equatable {
@@ -187,7 +214,10 @@ public struct WireMessage: Equatable, Sendable {
   }
 
   public var canonicalInputDigest: Data {
-    return WireCodec.canonicalInputDigest(operation: operation, payload: payload)
+    return WireCodec.canonicalInputDigest(
+      operation: operation.isApply ? .apply : operation,
+      payload: payload
+    )
   }
 }
 
@@ -306,6 +336,17 @@ public struct WireResponsePayload: Equatable, Sendable {
       actionRequired.rawValue,
       failure.rawValue,
     ])
+  }
+
+  public static func decodeStatus(
+    _ data: Data
+  ) throws -> (response: WireResponsePayload, grantState: WireGrantState?) {
+    guard data.count == 5 || data.count == 6 else {
+      throw WireProtocolFailure.invalidFrame
+    }
+    let response = try decode(Data(data.prefix(5)))
+    let grantState = data.count == 6 ? WireGrantState(rawValue: data[data.startIndex + 5]) : nil
+    return (response, grantState)
   }
 
   public static func decode(_ data: Data) throws -> WireResponsePayload {

@@ -106,7 +106,7 @@ func forwardDaemonLifecycleRequest(
     )
   }
   if request.operation == .apply {
-    let grant = try AuthorizationPolicy.acquireApplyGrant()
+    let grant = try AuthorizationPolicy.acquireGrant(.apply)
     authorizationGrant = grant
     forwardedPayload.append(grant.externalForm)
   }
