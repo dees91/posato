@@ -26,7 +26,9 @@ import app.posato.feature.sync.bootstrap.SessionSyncAuthoring
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.sync.bootstrap.reconcileSessionTime
 import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.sync.domain.SessionCandidate
 import app.posato.feature.sync.domain.SessionReplicaSnapshot
+import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.domain.SyncWriter
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
@@ -54,6 +56,7 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Suppress("TooManyFunctions")
 internal class SessionTransitionOwner(
@@ -72,6 +75,7 @@ internal class SessionTransitionOwner(
     private val mutableView = MutableStateFlow(EnforcementViewState())
     private val mutableStatus = MutableStateFlow<LocalSessionStatus?>(null)
     private val transitions = Channel<Unit>(Channel.CONFLATED)
+    private val idleWakeups = Channel<Unit>(Channel.CONFLATED)
     private val drainJob = scope.launch(start = CoroutineStart.LAZY) {
         for (ignored in transitions) {
             executeWork()
@@ -101,9 +105,10 @@ internal class SessionTransitionOwner(
             }
             replicaSnapshot = snapshot
         }
+        idleWakeups.trySend(Unit)
     }
 
-    suspend fun runWhileHosted() {
+    suspend fun runWhileHosted(idleRecheckMillis: Long? = null) {
         val running = currentCoroutineContext().job
         check(tickingJob?.isActive != true)
         tickingJob = running
@@ -111,10 +116,26 @@ internal class SessionTransitionOwner(
             triggers.restoreSessions()
             while (currentCoroutineContext().isActive) {
                 onTick(clock.currentEpochMillis())
-                delay(SESSION_TICK_MILLIS)
+                val idleWait = idleRecheckMillis?.let { recheck -> idleWaitMillis(recheck) }
+                if (idleWait == null) {
+                    delay(SESSION_TICK_MILLIS)
+                } else {
+                    withTimeoutOrNull(idleWait) { idleWakeups.receive() }
+                }
             }
         } finally {
             if (tickingJob === running) tickingJob = null
+        }
+    }
+
+    private suspend fun idleWaitMillis(recheckMillis: Long): Long? {
+        if (mutableStatus.value is LocalSessionStatus.Active) return null
+        val snapshot = stateMutex.withLock { replicaSnapshot } ?: return recheckMillis
+        val now = clock.currentEpochMillis()
+        return when (val candidate = SyncReducer.describeSession(snapshot.projection, now, snapshot.terminalExpiryFacts)) {
+            is SessionCandidate.Current -> null
+            is SessionCandidate.Future -> (candidate.start.startEpochMillis - now).coerceIn(0L, recheckMillis)
+            else -> recheckMillis
         }
     }
 
@@ -144,9 +165,11 @@ internal class SessionTransitionOwner(
         stateMutex.withLock {
             settleLocked(status)
         }
+        idleWakeups.trySend(Unit)
     }
 
     fun onForeground() {
+        idleWakeups.trySend(Unit)
         scope.launch {
             onTick(clock.currentEpochMillis())
         }
