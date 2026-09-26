@@ -28,8 +28,10 @@ session as expired, which the next `reconcile` banked. The status poll and
    existing monitoring, window already running, 120 s restart window, then
    the real end, cleanup in `defer`).
 2. Relaunch adoption: `EnforcementPort.holdsSession` (default `false`);
-   `reconcile` adopts a session whose status is `APPLIED` and whose pending
-   record and active monitoring name it, setting what a re-apply sets.
+   `reconcile` adopts a session whose status is `APPLIED`, whose version 2
+   pending record names it, and whose installed schedule ends where that
+   record says, setting what a re-apply sets. A version 1 record from 1.1 is
+   re-applied once instead.
 3. Extension guard: pending record version 2 with the end components and the
    absolute end; skip a callback more than 60 s before
    `min(resolved components, absolute end)`; no clear without a pending
@@ -58,13 +60,10 @@ relaunch.
 - Adoption on relaunch and the extension guard as planned; the relaunch path
   no longer restarts monitoring for a held session, and a restart elsewhere
   (poll loss, Retry) no longer ends the session.
-- Two Swift tests changed on purpose: a callback without a pending record
-  clears nothing, and the store-isolation test now writes a pending record.
-- verify-posato: the relaunch scenario must pass; a note on Safari hanging on
-  a black page; the device probe named. Wiki: iOS enforcement (open question
-  answered), cross-device synchronization note, log entry.
-- Deviation: the `reconcile` status read moved into `readStatusAndHeld` to
-  satisfy Detekt's complexity limit without a suppression.
+- Two Swift tests changed on purpose (no pending record clears nothing; the
+  store-isolation test writes one). verify-posato: the relaunch scenario must
+  pass, Safari black-page note, probe named. Wiki: iOS enforcement, sync note.
+- Deviation: `readStatusAndHeld` keeps `reconcile` under Detekt's limit.
 
 ## Completed-change review
 
@@ -76,10 +75,12 @@ relaunch.
   started is now `inferred`; the probe precheck requires an absent pending
   record. Declined: `isScheduled` checking `isCapable`, resetting
   `confirmedClear` on adoption (both harmless).
+- **PR review P2 (accepted by the maintainer):** a death between the pending
+  write and `startMonitoring` could adopt a session whose schedule was never
+  installed. `f679d80` compares the installed schedule's end with the record;
+  its review approved the code and corrected this record and the wiki.
 
 ## Verification
-
-Runs under the ignored `build/verification/runs/`.
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
@@ -93,15 +94,21 @@ Runs under the ignored `build/verification/runs/`.
 | Suspended expiry after one relaunch and termination | pass | 25-minute session (`20260926-094838-d8fd`), relaunched, terminated; after the end Calculator had no shield, Safari hung once on a black page (`-101701-fd87`), the repeat loaded Example Domain (`-101752-deef`), Posato showed no session |
 | Kotlin `jvmTest`, `iosSimulatorArm64Test` | pass | after the last correction |
 | `iosSwiftTest` | pass | 147 tests, 7 device-only skipped |
-| `./gradlew quality` | pass | at `8d67a18`, after one Simulator install failure in `iosSwiftTest` that passed on rerun |
+| After `f679d80`: device probe, relaunch scenario | pass | probe also asserts `isScheduled` on the real center; `20260926-105917-aa83` |
+| `./gradlew quality` | pass | at `8d67a18` (one Simulator install failure passed on rerun) and at the final head |
 
-The device runs predate `8d67a18`; its only behavioral change is reachable
-after a calendar change and is covered by unit tests. Safari hung on a black
-loading page twice in about ten loads, in both directions, each time with the
-Calculator result from the same store already observed.
+`8d67a18` changes only calendar-change behavior, covered by unit tests. Safari
+hung on a black page twice in about ten loads; the same store's Calculator
+result was observed each time. Run ids are under the ignored
+`build/verification/runs/`.
 
 ## Blockers and accepted risks
 
+- Accepted risk: the pending record is written before monitoring starts. If
+  the process dies in between while the previous session's schedule survives
+  and Posato is not reopened, that schedule's end is skipped and the new one
+  has no callback; a relaunch re-applies. Before `IOS-006` the same death
+  ended the new session as expired.
 - Accepted risk: without a pending record the extension no longer clears, so
   a cancel that succeeds while the store clear fails is left to the
   `CLEAR_FAILED` Retry.
