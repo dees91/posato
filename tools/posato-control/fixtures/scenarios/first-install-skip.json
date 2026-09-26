@@ -11,7 +11,7 @@
     {"name":"privacy-continue","action":"tap","query":{"text":"Continue","role":"button"}},
     {"name":"icloud-ready","action":"waitFor","state":"exists","query":{"text":"Not now","role":"button"}},
     {"name":"icloud-decline","action":"tap","query":{"text":"Not now","role":"button"}},
-    {"name":"permission-ready","action":"waitFor","state":"exists","query":{"text":"Make room on this device."}},
+    {"name":"permission-ready","action":"waitFor","state":"exists","query":{"text":"Nothing is paused until you start a session."}},
     {"name":"permission-defer","action":"tap","query":{"text":"Not now","role":"button"}},
     {"name":"website-ready","action":"waitFor","state":"exists","query":{"role":"textField"}},
     {"name":"website-reveal","action":"scrollTo","query":{"text":"Not now","role":"button"},"timeoutSeconds":60},

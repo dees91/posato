@@ -5,11 +5,12 @@ description: "Drive the real Posato macOS desktop app and iOS app (Simulator or 
 
 # Verify Posato
 
-Posato is a Kotlin Multiplatform app with two destinations on two hosts, a
+Posato is a Kotlin Multiplatform app with three destinations on two hosts, a
 Compose Desktop macOS app and a Compose iOS app: `Session` (the screen shown
-after every launch) and `Paused items` (websites and the application group).
+after every launch), `Paused items` (websites and the application group), and
+`Schedules` (UI shells with saving and execution inactive).
 iPhone and iPad portrait use bottom navigation; macOS and iPad landscape use a
-sidebar, with the buttons `Session` and `Paused items`; the choice is not
+sidebar, with the buttons `Session`, `Paused items` and `Schedules`; the choice is not
 remembered across a relaunch.
 The nested `Websites` / `Apps` tabs include counts in their accessibility labels.
 The native prototype is a frozen reference, not the application under test. There is no web UI, no HTTP API, and no debug menu. The only

@@ -49,6 +49,9 @@ provenance rather than a parallel public brand.
 
 ## Product and architecture
 
+- [../product/schedules-and-mac-setup.md](../product/schedules-and-mac-setup.md)
+  records the accepted release 1.2 schedules and Mac setup scope, with the
+  remaining schedule and authorization decisions owned by `SCHEDULE-001`.
 - [../product/mvp-scope.md](../product/mvp-scope.md) — accepted MVP capability
   classification, platform baseline, primary flow, outcome, and non-goals.
 - [../product/product-identity.md](../product/product-identity.md) — accepted

@@ -2037,3 +2037,20 @@ to scope, feasibility, or delivery.
   Updated the threat model, `DESIGN.md`, and `PRIVACY.md`.
 - `posato-control` gains `vm exec` and `vm scroll`. Updated
   [macOS enforcement](topics/macos-enforcement.md).
+
+## [2026-09-26] planning | Accept shared schedules and Mac setup UX for release 1.2
+
+- Recorded the maintainer's accepted [product scope](../product/schedules-and-mac-setup.md)
+  and UI in `DESIGN.md`: required helper setup, both Mac settings required
+  for schedule creation, a dismissible upgrade offer, and Schedules with local
+  readiness, skipping and early end. Updated the [idea queue](topics/mvp-open-questions.md).
+- Roadmap revision 11 assigns both `SCHEDULE-001` and `SCHEDULE-002` to
+  release 1.2 and makes delivery a release gate. Automatic scheduled Apply
+  still requires the accepted, independently security-reviewed amendment
+  owned by `SCHEDULE-001` before implementation.
+- The maintainer requested the UI shells in the same PR. Added Schedules
+  navigation, empty/editor/setup screens and deterministic state previews,
+  plus disabled Mac onboarding shortcuts and an upgrade-offer preview.
+  Schedule saving and execution remain inactive. The follow-up replaces Start
+  with Finish setup while helper readiness is missing or unknown, and routes
+  Mac schedule creation through its required setup, with a separate editor preview.

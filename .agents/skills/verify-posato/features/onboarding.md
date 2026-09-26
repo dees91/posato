@@ -89,6 +89,11 @@ Preconditions:
 - **Degraded iCloud:** on a Simulator with no signed-in account, launch fresh,
   reach the iCloud step, and press Sync with iCloud. Expect a retryable or
   action-required status, never success, and still zero bootstrap rows.
+- **Mac setup prerequisite:** after deferring the helper, Session shows Finish
+  setup and a persistent notice. Finish setup opens the existing helper controls;
+  menu Start must reach the same route. Check Mac setup or Enable on this Mac
+  reads the real result; only Ready admits the duration form. Back to Session
+  does not start a session. Paused items and Schedules remain reachable.
 - **Mac permission:** during the flow before Enable on this Mac, `pgrep -f
   PosatoMacOSHelper` is empty. Press Enable on this Mac on an approved Mac
   and expect the enabling caption immediately, then the enabled state. **Not

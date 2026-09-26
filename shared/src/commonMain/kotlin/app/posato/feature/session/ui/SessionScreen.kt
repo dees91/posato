@@ -144,28 +144,26 @@ internal fun SessionScreen(
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
-            SessionOperationFailureNotice(state.operationFailure, onRetry)
+            SessionOperationNotice(state, onRetry)
             when {
-                state.status == null && state.operationFailure == null -> {
-                    CircularProgressIndicator()
-                    Text("Loading session")
-                }
-
                 state.status == null -> {}
 
                 state.confirmingEarlyEnd -> {
-                    PosatoHeading(
-                        "Ready to return?",
-                        eyebrow = "END THIS PAUSE",
-                        description = if (state.nothingIsRestricted()) {
-                            "Nothing is restricted in this pause. You can end it now."
-                        } else {
-                            "You can end this session early. Your saved choices will stay ready for another time."
-                        },
-                        layout = layout,
+                    SessionEarlyEndContent(state, layout, onConfirmEarlyEnd, onCancelEarlyEnd)
+                }
+
+                macSetup != null && state.showsMacSetup(macSetup) -> {
+                    SessionMacSetup(
+                        state,
+                        macSetup,
+                        layout,
+                        onMacSetupCheck,
+                        onMacSetupEnable,
+                        onMacSetupOpenSettings,
+                        onMacSetupAnnouncement,
+                        onMacSetupRemove,
+                        onExitSetup,
                     )
-                    PosatoButton(onConfirmEarlyEnd, enabled = !state.isEnding) { Text("End session") }
-                    PosatoButton(onCancelEarlyEnd, style = PosatoButtonStyle.Quiet, enabled = !state.isEnding) { Text("Keep this pause") }
                 }
 
                 state.isReviewing -> {
@@ -204,13 +202,43 @@ internal fun SessionScreen(
 }
 
 @Composable
-private fun SessionOperationFailureNotice(
-    failure: SessionOperationFailure?,
+private fun SessionEarlyEndContent(
+    state: SessionUiState,
+    layout: PosatoLayout,
+    onConfirmEarlyEnd: () -> Unit,
+    onCancelEarlyEnd: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+        PosatoHeading(
+            "Ready to return?",
+            eyebrow = "END THIS PAUSE",
+            description = if (state.nothingIsRestricted()) {
+                "Nothing is restricted in this pause. You can end it now."
+            } else {
+                "You can end this session early. Your saved choices will stay ready for another time."
+            },
+            layout = layout,
+        )
+        PosatoButton(onConfirmEarlyEnd, enabled = !state.isEnding) { Text("End session") }
+        PosatoButton(onCancelEarlyEnd, style = PosatoButtonStyle.Quiet, enabled = !state.isEnding) { Text("Keep this pause") }
+    }
+}
+
+@Composable
+private fun SessionOperationNotice(
+    state: SessionUiState,
     onRetry: () -> Unit
 ) {
-    failure?.let {
-        PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry) { Text("Retry") } }) {
-            Text(stringResource(it.operationMessage()))
+    if (state.status == null && state.operationFailure == null) {
+        Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
+            CircularProgressIndicator()
+            Text("Loading session")
+        }
+    } else {
+        state.operationFailure?.let {
+            PosatoNotice(tone = PosatoTone.Critical, actionContent = { PosatoButton(onRetry) { Text("Retry") } }) {
+                Text(stringResource(it.operationMessage()))
+            }
         }
     }
 }

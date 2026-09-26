@@ -36,6 +36,24 @@ That evidence-only status for concrete presentation choices was superseded by
 the explicit adoption on 2026-09-07. Mock services and unimplemented product
 flows remain evidence only.
 
+## Release 1.2 UI shells
+
+`user-confirmed` (2026-09-26, PR #92): prepare the accepted schedule and Mac
+setup screens before connecting behavior. Schedules has its own navigation
+entry, an editor and a device-setup route. Saving and execution are inactive;
+list and active-session examples stay in Compose previews. Existing Mac
+settings retain their service behavior, while the new onboarding shortcuts
+are disabled. `DESIGN.md` records this temporary delivery boundary.
+
+`user-confirmed` (2026-09-26, PR #92 correction): helper readiness is required
+before the Mac session form. Session keeps a persistent setup notice and a
+Finish setup action after deferral. Mac schedule creation requires the helper,
+login launch and password-free automatic-start consent; the latter two remain
+optional for manual sessions. The schedule setup screen names all requirements,
+with an explicitly labelled editor preview while saving remains inactive.
+This replaces the earlier optional-login and create-before-setup design on Mac.
+Automatic authorization still belongs to the future reviewed ADR amendment.
+
 ## macOS browser pause page
 
 `observed` (2026-09-15): DESIGN-003 applies the application's open-interval
