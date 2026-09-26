@@ -22,7 +22,8 @@ remains the only way to authorize Apply.
 A person can opt in once, with a fresh administrator authentication, so that
 later Apply requests from their own Posato need no administrator prompt. The
 daemon records that decision as a root-only standing grant. A grant
-authorizes Apply with the fixed proxy values only.
+authorizes Apply with the fixed proxy host and the port of the helper's own
+running listener only.
 
 It changes nothing else:
 
@@ -54,7 +55,18 @@ The daemon owns this definition as it owns the Apply right:
   `ready`. The opt-in first sends **Prepare grant**, which installs the
   standing right only when it is absent. A mismatched rule fails closed;
   only Repair replaces it.
-- Remove removes and verifies the absence of both rights.
+- Remove removes and verifies the absence of both rights. An older daemon
+  after a downgrade removes only the Apply right and leaves the standing
+  right in the authorization database. The rule alone authorizes nothing,
+  and a later Enable deletes any record because the Apply right is absent.
+
+### Operation support
+
+**Prepare grant**, **Grant**, **Revoke grant**, and **Apply with grant** are
+four new operations in the fixed operation set. Protocol major version 1
+stays. Status reports a capability flag for them. The application and helper
+send them only when Status from the running daemon shows that flag. An older
+daemon is never sent an operation it cannot decode.
 
 ### Opt-in operation
 
@@ -70,9 +82,25 @@ The daemon owns this definition as it owns the Apply right:
    - the Mac's platform UUID.
 
    It requires the peer to be the current console user, then writes the
-   grant entry atomically.
+   grant entry atomically. When all 8 entries are in use and none is stale,
+   **Grant** fails closed and writes nothing.
+
+The daemon reads the effective user ID from the connection that delivered
+the current message (`NSXPCConnection.current()`). It never caches the value
+per connection and never resolves a user ID through a process ID. The code
+signing requirement is already checked on every message against the sender's
+audit token. There is no console user, the console user is `loginwindow`, or
+the console user has another user ID: each fails closed. The console check
+keeps other accounts out, including SSH sessions and accounts switched to the
+background. It does not prove that the screen is unlocked.
 
 **Grant** neither reads nor changes proxy ownership.
+
+**Prepare grant**, **Grant**, and **Revoke grant** are idempotent by value
+and are not part of `reconcile`. The helper settles an unknown outcome by
+reading Status back. The switch shows the grant as on or off only as Status
+confirms. When the daemon cannot be reached, the switch shows that the state
+is unknown.
 
 ### Grant record
 
@@ -97,10 +125,24 @@ works as a bearer token.
 
 ### Grant-authorized Apply
 
-**Apply with grant** is a new operation. Its only payload is the port, and it
-carries no authorization material. It uses the canonical input digest of
-Apply, so one intent keeps one identity however it was authorized. The
-operations are additive, and protocol major version 1 stays.
+**Apply with grant** carries only the port and no authorization material.
+It is an Apply everywhere except in how it is authorized:
+
+- its canonical input digest is Apply's digest over the port, not a digest
+  of its own operation code, so one intent keeps one identity however it was
+  authorized;
+- the connection that sent it owns cleanup;
+- the lease starts, and the helper renews it as for Apply;
+- the fail-closed Apply response applies;
+- an unknown outcome reconciles with the original operation `apply` and
+  Apply's digest.
+
+The helper rejects both Apply forms unless the port equals the port of its
+own running loopback listener. It checks this before it obtains
+authorization or forwards anything. Without that check, code that controls
+the application could point the system proxy at a listener of its own for
+the moment before the helper's chain validation restores it. With a grant,
+that would need no administrator and could repeat.
 
 The daemon checks, in order:
 
@@ -141,7 +183,11 @@ never request any Apply. `SCHEDULE-001` needs its own review to change this.
   record and verifies it is gone before removing the rights. Reconciling a
   Remove verifies that too.
 - **Disable.** Deletes the whole record, so enabling again asks for a new
-  opt-in.
+  opt-in. Only Disable does this, never the Restore that ends a session,
+  although the daemon runs both on one path today. Disable verifies that the
+  record is gone, and a reconciled Disable repeats the deletion and the
+  check. Turning the background item off in System Settings does not run
+  Disable, so the record stays.
 - **Rule lifecycle.** The daemon deletes the whole record first when either
   of these happens:
   - Enable finds the Apply right absent and installs it;
@@ -166,13 +212,14 @@ state and the person can turn it off.
 | --- | --- | --- |
 | Another local user | The grantee comes from the XPC peer's effective user ID, never the payload. Entries are per account and bound to the generated UID. Apply requires the console user. Revoke deletes only the caller's own entry. The record is root-only. | The proxy is system-wide. While the grantee's session is active, fast user switching leaves it in place for other accounts. That already happens with prompted Apply; the grant only removes the administrator step before each session. |
 | Compromised non-admin process under another account | It cannot match the peer user ID. Without the helper's signature it cannot open the XPC connection. | None new. |
-| Compromised non-admin process under the grantee's account | Only the signed helper passes the XPC requirement. The helper accepts only a signed Posato parent. In release builds, the hardened runtime blocks injection. At most, such a process can drive Posato's own interface to start a session: fixed proxy values, cleaned up by the lease and Restore. | `T-07`: a process with the person's full interface control, such as Accessibility access, can start a session without an administrator. Team-signed debuggable development builds count as team code. |
+| Compromised non-admin process under the grantee's account | Only the signed helper passes the XPC requirement. The helper accepts only a signed Posato parent and only the port of its own listener. The daemon applies only the fixed proxy values, and the lease and Restore clean them up. | `T-07`: any code running as the grantee can start a session without an administrator. The Posato application runs on a Java virtual machine, so such code can load itself into the signed application: through the Java attach mechanism, or by relaunching it with `JAVA_TOOL_OPTIONS` or `JDK_JAVA_OPTIONS`. The hardened runtime does not stop that. Optional hardening, which a VM would verify with `jcmd`: disable the attach mechanism, and refuse to start with those variables set. |
 | Replay | **Apply with grant** carries no bearer material. The opt-in form keeps the one-use rules. Durable identities reconcile duplicates. | None. |
 | Grant theft | The record has no secret and is root-only. Its entries are bound to the account's generated UID and this Mac's platform UUID. Copying or editing it needs root. | `R-02`: an administrator or root can create a grant. |
 | Stale grants after removal, reinstallation, or account deletion | The revocation rules above, the generated UID binding, and deletion when a rule goes missing or changes. | Trash without Remove followed by a reinstall keeps the grant. Status shows it, and the switch or Remove clears it. |
 | Rule tampering | Only root changes the authorization database. A missing or mismatched right deletes the grants. | `R-02`. |
-| Silent apply | The application rule in "Who may request it". | `T-07`: a compromised application process. |
-| Version skew | An older daemon rejects the unknown operations, so the application falls back to the prompted path. An older helper never requests a grant. | None. |
+| Silent apply | The application rule in "Who may request it". A check in the daemon cannot see whether a person acted. | `T-07`: any code running as the grantee, as in the row above. |
+| Version skew | The new operations are sent only when Status reports the capability flag; otherwise the application uses the prompted path. An older helper never requests a grant. | After a downgrade, Remove leaves the standing right in place. It authorizes nothing by itself. |
+| Lost reply | Grant, Revoke, and Prepare are idempotent. Status settles them, and the switch shows only what Status confirms. | None. |
 
 ### Verification
 
@@ -182,9 +229,15 @@ Written failing first, isolated tests cover:
 - binding to the user ID, generated UID, platform UUID, and console user;
 - every revocation path, including Revoke deleting only the caller's own
   entry;
-- deleting the record when a rule changes;
+- deleting the record when a rule changes, and only on Disable, never on
+  Restore;
 - that a rejected grant-authorized Apply leaves no durable claim;
-- a wrong peer or user.
+- **Apply with grant** counting as Apply for the lease, cleanup ownership,
+  the fail-closed response, and reconciliation;
+- the helper rejecting a port other than its own listener's;
+- a lost Revoke reply leaving the switch on until Status confirms;
+- a wrong peer or user, and no console user or `loginwindow`;
+- a full record.
 
 End-to-end verification follows the brief.
 
@@ -193,7 +246,11 @@ End-to-end verification follows the brief.
 - Rewrite
   [Authorization of Apply and cleanup](#authorization-of-apply-and-cleanup) so
   that Apply is authorized by either the one-use form or a standing grant.
-- Extend the threat model rows `TB-04`, `T-07`, and `T-08`.
+- Add the four operations to the fixed operation set in the
+  [MACOS-003 implementation amendment](#macos-003-implementation-amendment).
+- Extend the threat model rows `TB-04`, `T-07`, and `T-08`. `T-07` states
+  that any code running as the grantee can start a session without an
+  administrator.
 - Check that [`PRIVACY.md`](../../PRIVACY.md) covers the local, root-only
   user ID and generated UID. Neither leaves the Mac.
 
