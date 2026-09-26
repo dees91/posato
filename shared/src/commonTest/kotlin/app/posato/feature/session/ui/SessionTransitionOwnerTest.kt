@@ -24,8 +24,10 @@ import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -620,6 +622,42 @@ class SessionTransitionOwnerTest {
         }
     }
 
+    @Test
+    fun `given idle waiting without a session when a minute passes then the store is read only at the recheck`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val owner = ownerOf(store, FakeEnforcementPort(), FakeSessionClock(NOW))
+        backgroundScope.launch { owner.runWhileHosted(idleRecheckMillis = IDLE_RECHECK) }
+        runCurrent()
+        val initialReads = store.reads.size
+
+        advanceTimeBy(IDLE_RECHECK - 1)
+        runCurrent()
+        assertEquals(initialReads, store.reads.size)
+
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(initialReads + 1, store.reads.size)
+        owner.close()
+    }
+
+    @Test
+    fun `given idle waiting when a session starts then ticking resumes within a second`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val owner = ownerOf(store, FakeEnforcementPort(), FakeSessionClock(NOW))
+        backgroundScope.launch { owner.runWhileHosted(idleRecheckMillis = IDLE_RECHECK) }
+        runCurrent()
+        advanceTimeBy(5_000)
+        store.start(SessionId(testIdentifier(7)), NOW, NOW + DURATION, NOW, START_SET)
+        owner.settle(assertRead(store, NOW))
+        runCurrent()
+        val readsAfterStart = store.reads.size
+
+        advanceTimeBy(1_000)
+        runCurrent()
+        assertTrue(store.reads.size > readsAfterStart)
+        owner.close()
+    }
+
     private fun ownerOf(
         store: FakeLocalSessionStore,
         enforcement: FakeEnforcementPort,
@@ -642,6 +680,7 @@ class SessionTransitionOwnerTest {
     private companion object {
         const val NOW: Long = 1_000_000_000_000L
         const val DURATION: Long = 30 * 60_000L
+        const val IDLE_RECHECK: Long = 60_000L
         val START_SET: FrozenStartSet = FrozenStartSet(persistentListOf("stable.example"), null)
 
         fun testPolicy() = policyStoreOf(listOf("stable.example")).let { policy ->

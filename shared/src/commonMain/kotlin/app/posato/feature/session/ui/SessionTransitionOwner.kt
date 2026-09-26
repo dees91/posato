@@ -72,6 +72,7 @@ internal class SessionTransitionOwner(
     private val mutableView = MutableStateFlow(EnforcementViewState())
     private val mutableStatus = MutableStateFlow<LocalSessionStatus?>(null)
     private val transitions = Channel<Unit>(Channel.CONFLATED)
+    private val pacer = SessionTickPacer(mutableStatus, clock) { stateMutex.withLock { replicaSnapshot } }
     private val drainJob = scope.launch(start = CoroutineStart.LAZY) {
         for (ignored in transitions) {
             executeWork()
@@ -101,9 +102,10 @@ internal class SessionTransitionOwner(
             }
             replicaSnapshot = snapshot
         }
+        pacer.wake()
     }
 
-    suspend fun runWhileHosted() {
+    suspend fun runWhileHosted(idleRecheckMillis: Long? = null) {
         val running = currentCoroutineContext().job
         check(tickingJob?.isActive != true)
         tickingJob = running
@@ -111,7 +113,7 @@ internal class SessionTransitionOwner(
             triggers.restoreSessions()
             while (currentCoroutineContext().isActive) {
                 onTick(clock.currentEpochMillis())
-                delay(SESSION_TICK_MILLIS)
+                pacer.pause(idleRecheckMillis, SESSION_TICK_MILLIS)
             }
         } finally {
             if (tickingJob === running) tickingJob = null
@@ -329,7 +331,7 @@ internal class SessionTransitionOwner(
                 }
 
                 is SessionReconcileResult.Halted -> {
-                    val current = readCurrentLocked(nowEpochMillis)
+                    val current = store.readStatus(nowEpochMillis)
                     if (current is LocalSessionStatus.Active) {
                         actionTag = SessionTag(current.record)
                         mutableView.update { it.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
@@ -338,14 +340,7 @@ internal class SessionTransitionOwner(
                 }
             }
         } else {
-            readCurrentLocked(nowEpochMillis)
-        }
-    }
-
-    private suspend fun readCurrentLocked(nowEpochMillis: Long): LocalSessionStatus? {
-        return when (val read = store.read(nowEpochMillis)) {
-            is LocalSessionResult.Failure -> null
-            is LocalSessionResult.Success -> read.value
+            store.readStatus(nowEpochMillis)
         }
     }
 
@@ -797,6 +792,13 @@ internal fun EnforcementActionKind.toAction(repeatsSystemPrompt: Boolean): Enfor
 
 internal fun EnforcementState.isApplyFailure(): Boolean {
     return this is EnforcementState.ActionRequired && kind == EnforcementActionKind.APPLY_FAILED
+}
+
+private suspend fun LocalSessionSyncStore.readStatus(nowEpochMillis: Long): LocalSessionStatus? {
+    return when (val read = read(nowEpochMillis)) {
+        is LocalSessionResult.Failure -> null
+        is LocalSessionResult.Success -> read.value
+    }
 }
 
 private const val STATUS_POLL_TICKS: Long = 15L

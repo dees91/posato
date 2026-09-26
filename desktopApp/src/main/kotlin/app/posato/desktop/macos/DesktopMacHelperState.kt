@@ -3,6 +3,7 @@ package app.posato.desktop.macos
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperRemoval
+import app.posato.feature.onboarding.MacLoginItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -15,6 +16,7 @@ internal class DesktopMacHelperState(
     private val verifyHelper: () -> Path,
     private val ioDispatcher: CoroutineDispatcher,
     private val openSettings: (URI) -> Unit,
+    override val loginItem: MacLoginItem? = null,
 ) : MacHelperPort {
     override suspend fun enable(): MacHelperReadiness {
         return readiness { enableThenStatus() }
@@ -36,6 +38,9 @@ internal class DesktopMacHelperState(
             if (runCatching { verifyHelper() }.isFailure) {
                 return@withContext MacHelperRemoval.CHECK_AGAIN
             }
+            if (!loginItemOff()) {
+                return@withContext MacHelperRemoval.REMOVE_AGAIN
+            }
             try {
                 commands.remove().toRemoval()
             } catch (cancellation: CancellationException) {
@@ -44,6 +49,12 @@ internal class DesktopMacHelperState(
                 MacHelperRemoval.CHECK_AGAIN
             }
         }
+    }
+
+    private fun loginItemOff(): Boolean {
+        val item = loginItem ?: return true
+        item.setEnabled(false)
+        return !item.enabled.value
     }
 
     private fun enableThenStatus(): HelperResult {

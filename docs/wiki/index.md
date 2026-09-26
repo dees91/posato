@@ -79,7 +79,7 @@ provenance rather than a parallel public brand.
   published with its privacy and availability wording in 1.1.0 (`RELEASE-003`).
 - [ADR 0009: macOS Menu Bar Presence](../decisions/0009-macos-menu-bar-presence.md)
   — accepted resident process with a native status item, window, Dock, quit,
-  and login rules, measured resource use, and `MACOS-013` delivery gates.
+  and login rules and measured resource use; delivered by `MACOS-013`.
 - [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
   assets and data classification, trust boundaries, threats, required controls,
   downstream owners, and residual risks.

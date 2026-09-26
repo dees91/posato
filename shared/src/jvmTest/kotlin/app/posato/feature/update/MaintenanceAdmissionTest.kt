@@ -20,6 +20,30 @@ import kotlin.test.assertTrue
 
 class MaintenanceAdmissionTest {
     @Test
+    fun `given a gate persisted closed when it is read at start-up then maintenance is observed as closed`() = runTest {
+        val store = InMemoryMaintenanceStore()
+        MaintenanceAdmission(store, clock = { NOW }).close(FROM_BUILD, TARGET_BUILD)
+        val restarted = MaintenanceAdmission(store, clock = { NOW })
+
+        restarted.closedGate()
+
+        assertEquals(true, restarted.closed.value)
+    }
+
+    @Test
+    fun `given a closed gate when the cycle ends then maintenance stays closed until reopened`() = runTest {
+        val admission = MaintenanceAdmission(InMemoryMaintenanceStore(), clock = { NOW })
+        admission.close(FROM_BUILD, TARGET_BUILD)
+        admission.markCycleAdmitted()
+        admission.markCycleEnded()
+        assertEquals(true, admission.closed.value)
+
+        assertEquals(MaintenanceReopenResult.Reopened, admission.reopenWhen { true })
+
+        assertEquals(false, admission.closed.value)
+    }
+
+    @Test
     fun `given an open gate when enforcement applies then the request reaches the helper`() = runTest {
         val port = RecordingPort()
         val gated = GatedEnforcementPort(port, MaintenanceAdmission(InMemoryMaintenanceStore(), clock = { NOW }))

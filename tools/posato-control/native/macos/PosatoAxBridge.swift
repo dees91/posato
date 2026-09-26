@@ -533,6 +533,92 @@ func requireAccessibilityTrust() throws {
   }
 }
 
+struct StatusMenuItem: Encodable {
+  let title: String
+  let enabled: Bool
+}
+
+struct StatusMenuResult: Encodable {
+  let description: String
+  let items: [StatusMenuItem]
+  let opened: Bool?
+  let chosen: Bool?
+}
+
+enum StatusMenu {
+  static func attribute(_ element: AXUIElement, _ name: String) -> AnyObject? {
+    var value: AnyObject?
+    let status = AXUIElementCopyAttributeValue(element, name as CFString, &value)
+    return status == .success ? value : nil
+  }
+
+  static func children(_ element: AXUIElement) -> [AXUIElement] {
+    return attribute(element, kAXChildrenAttribute) as? [AXUIElement] ?? []
+  }
+
+  static func item(pid: pid_t) throws -> AXUIElement {
+    let app = AXUIElementCreateApplication(pid)
+    guard let bar = attribute(app, "AXExtrasMenuBar"),
+      let first = children(bar as! AXUIElement).first
+    else {
+      throw BridgeError(code: "ELEMENT_NOT_FOUND", message: "The application shows no status item.")
+    }
+    return first
+  }
+
+  static func menuItems(_ statusItem: AXUIElement) -> [AXUIElement] {
+    return children(statusItem).flatMap { children($0) }
+  }
+
+  static func run(pid: pid_t, mode: String, title: String?) throws -> StatusMenuResult {
+    let statusItem = try item(pid: pid)
+    var opened: Bool?
+    var chosen: Bool?
+    switch mode {
+    case "open":
+      let status = AXUIElementPerformAction(statusItem, kAXPressAction as CFString)
+      opened = status == .success || status == .cannotComplete
+    case "choose":
+      guard let title,
+        let target = menuItems(statusItem).first(where: {
+          attribute($0, kAXTitleAttribute) as? String == title
+        })
+      else {
+        throw BridgeError(code: "ELEMENT_NOT_FOUND", message: "No status menu item has that title.")
+      }
+      chosen = AXUIElementPerformAction(target, kAXPressAction as CFString) == .success
+    default:
+      break
+    }
+    let items = menuItems(statusItem).map { element in
+      StatusMenuItem(
+        title: attribute(element, kAXTitleAttribute) as? String ?? "",
+        enabled: attribute(element, kAXEnabledAttribute) as? Bool ?? false)
+    }
+    return StatusMenuResult(
+      description: attribute(statusItem, kAXDescriptionAttribute) as? String ?? "",
+      items: items, opened: opened, chosen: chosen)
+  }
+
+  static func closeWindow(pid: pid_t) throws {
+    let app = AXUIElementCreateApplication(pid)
+    let windows = children(app).filter {
+      attribute($0, kAXRoleAttribute) as? String == kAXWindowRole
+    }
+    let titled = windows.first(where: {
+      attribute($0, kAXTitleAttribute) as? String == "Posato"
+    })
+    let main = titled ?? windows.first
+    guard let window = main,
+      let button = attribute(window, kAXCloseButtonAttribute)
+    else {
+      throw BridgeError(
+        code: "DESKTOP_WINDOW_UNAVAILABLE", message: "The application shows no window to close.")
+    }
+    AXUIElementPerformAction(button as! AXUIElement, kAXPressAction as CFString)
+  }
+}
+
 do {
   let command = try argument(1, "command")
   switch command {
@@ -612,6 +698,16 @@ do {
     try Bridge.key(
       named: try argument(3, "key"), modifiers: modifiers, pid: pid,
       sessionFallback: sessionFallback)
+    emit(["ok": true])
+  case "status-menu":
+    try requireAccessibilityTrust()
+    let pid = try pidArgument(2)
+    let mode = (try? argument(3, "mode")) ?? "read"
+    let title = try? argument(4, "title")
+    emit(try StatusMenu.run(pid: pid, mode: mode, title: title))
+  case "close-window":
+    try requireAccessibilityTrust()
+    try StatusMenu.closeWindow(pid: try pidArgument(2))
     emit(["ok": true])
   default:
     throw BridgeError(code: "USAGE", message: "Unknown command '\(command)'.")

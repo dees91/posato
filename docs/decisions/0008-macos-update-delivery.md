@@ -91,6 +91,10 @@ without a maintainer decision if the Sparkle delivery experiment fails.
   through the existing early-end action; an update does not end it implicitly.
 - Keep the preference and scheduler state local in Sparkle's settings. Do not
   duplicate them in synchronized product state or add a resident process.
+  (`MACOS-013`, ADR 0009: this refers to the updater. Sparkle keeps its
+  schedule in the application process and adds no resident process of its
+  own; its installer processes run only during an admitted installation. It
+  does not bar the resident application process of ADR 0009.)
 - Disable system profiling and automatic downloads/installations. Use a fixed
   updater User-Agent without the installed version, OS, or installation ID;
   compare installed version, OS, and architecture locally. No policy, app
@@ -321,6 +325,15 @@ independent plan review. Use this decision for the following bounded work:
    policy/availability publication with the verified release. `RELEASE-003`
    retains public 1.1 release ownership. `MACOS-012` must preserve this gate if
    it later changes process or window lifetime.
+
+   `MACOS-013` amendment (ADR 0009, applied 2026-09-26): with the resident
+   process of ADR 0009, closing the main window terminates nothing
+   (`observed` in the `MACOS-012` prototype). In the cancellation and
+   termination scenarios, "window close" reads as closing the window of a
+   process that keeps running. The gate's guarantees attach to Quit, crash,
+   and system termination. `MACOS-013` verified that they hold with the
+   window closed: an active session refused an update, and after the session
+   ended the update was admitted, installed, and relaunched.
 
 | Scenario | Required evidence |
 | --- | --- |

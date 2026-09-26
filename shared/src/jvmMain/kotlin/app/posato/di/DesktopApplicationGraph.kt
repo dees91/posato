@@ -9,6 +9,7 @@ import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.UnavailableApplicationAccess
 import app.posato.feature.onboarding.data.SqlLocalSetupStore
+import app.posato.feature.presence.DesktopPresence
 import app.posato.feature.session.JvmSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SqlLocalSessionStore
@@ -230,6 +231,7 @@ fun createDesktopApplicationGraph(
 
 interface DesktopApplicationComponents : ApplicationGraph {
     val updateMaintenance: DesktopUpdateMaintenance
+    val presence: DesktopPresence
 }
 
 private val desktopGraphLock = Any()

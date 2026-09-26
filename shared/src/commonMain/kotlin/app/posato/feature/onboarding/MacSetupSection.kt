@@ -26,6 +26,7 @@ import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoNotice
+import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
 import app.posato.generated.resources.Res
@@ -56,6 +57,8 @@ import app.posato.generated.resources.onboarding_permission_mac_action
 import app.posato.generated.resources.onboarding_permission_mac_check_again
 import app.posato.generated.resources.onboarding_permission_mac_open_settings
 import app.posato.generated.resources.onboarding_summary_helper_on
+import app.posato.generated.resources.presence_login_item
+import app.posato.generated.resources.presence_login_item_supporting
 import app.posato.generated.resources.setup_hide_options
 import app.posato.generated.resources.setup_show_options
 import org.jetbrains.compose.resources.StringResource
@@ -82,6 +85,8 @@ internal fun MacSetupSection(
     onAnnouncement: (String) -> Unit = {},
     sessionBlocksRemoval: Boolean = false,
     onRemove: () -> Unit = {},
+    loginItemEnabled: Boolean? = null,
+    onLoginItemChange: (Boolean) -> Unit = {},
 ) {
     val running = presentation.activity != null
     MacSetupAnnouncements(presentation, onAnnouncement)
@@ -106,6 +111,15 @@ internal fun MacSetupSection(
                 PosatoCaption(stringResource(Res.string.mac_setup_unchanged))
             }
             MacSetupActions(presentation.readiness, running, !presentation.removal.reachedDaemon(), onCheck, onEnable, onOpenSettings)
+            loginItemEnabled?.let { enabled ->
+                PosatoSelectionRow(
+                    checked = enabled,
+                    onCheckedChange = onLoginItemChange,
+                    supportingContent = { PosatoCaption(stringResource(Res.string.presence_login_item_supporting)) },
+                ) {
+                    Text(stringResource(Res.string.presence_login_item), style = MaterialTheme.typography.bodyLarge)
+                }
+            }
             if (presentation.readiness in removableReadiness) {
                 RemoveFromMacAction(running, sessionBlocksRemoval, onRemove)
             }

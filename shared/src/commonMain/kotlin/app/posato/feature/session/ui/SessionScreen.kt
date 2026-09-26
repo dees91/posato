@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -27,6 +28,7 @@ import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.MacSetupPresentation
+import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
@@ -34,6 +36,7 @@ import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.TargetsCategory
+import kotlinx.coroutines.flow.first
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -52,12 +55,28 @@ internal fun SessionScreen(
     syncState: SyncBootstrapUiState? = null,
     macSetupState: MacHelperSetupUiState? = null,
     onMacSetupAnnouncement: (String) -> Unit = {},
+    windowRequest: SessionWindowRequest? = null,
+    onConsumeWindowRequest: () -> Unit = {},
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
     },
 ) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(viewModel) { viewModel.onScreenEntered() }
+    val loginItem = macSetupState?.loginItem
+    val loginItemEnabled = loginItem?.enabled?.collectAsState()?.value
+    LaunchedEffect(loginItem) { loginItem?.refresh() }
+    val consumeWindowRequest by rememberUpdatedState(onConsumeWindowRequest)
+    LaunchedEffect(windowRequest) {
+        if (windowRequest == null) return@LaunchedEffect
+        viewModel.uiState.first { it.status != null }
+        when (windowRequest) {
+            SessionWindowRequest.START_SESSION -> viewModel.setSetupVisible(true)
+            SessionWindowRequest.END_SESSION_EARLY -> viewModel.setEarlyEndConfirmation(true)
+            SessionWindowRequest.SESSION -> Unit
+        }
+        consumeWindowRequest()
+    }
     SessionScreen(
         state = state,
         onEnterSetup = { viewModel.setSetupVisible(true) },
@@ -83,6 +102,8 @@ internal fun SessionScreen(
         onMacSetupOpenSettings = { macSetupState?.openSettings() },
         onMacSetupAnnouncement = onMacSetupAnnouncement,
         onMacSetupRemove = { macSetupState?.remove(sessionBlocked = state.blocksHelperRemoval()) },
+        macLoginItemEnabled = loginItemEnabled,
+        onMacLoginItemChange = { loginItem?.setEnabled(it) },
     )
 }
 
@@ -112,6 +133,8 @@ internal fun SessionScreen(
     onMacSetupOpenSettings: () -> Unit = {},
     onMacSetupAnnouncement: (String) -> Unit = {},
     onMacSetupRemove: () -> Unit = {},
+    macLoginItemEnabled: Boolean? = null,
+    onMacLoginItemChange: (Boolean) -> Unit = {},
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
         val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
@@ -168,6 +191,8 @@ internal fun SessionScreen(
                         onMacSetupOpenSettings,
                         onMacSetupAnnouncement,
                         onMacSetupRemove,
+                        macLoginItemEnabled,
+                        onMacLoginItemChange,
                     )
                 }
             }

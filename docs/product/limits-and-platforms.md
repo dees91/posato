@@ -40,10 +40,11 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 
 - It does not resist a device administrator and can always be removed. Ending a
   session early is always possible.
-- On macOS, blocking works only while Posato is running. If Posato quits, or
-  after sleep, wake, or a network change, blocking stops until you resume it in
-  Posato with administrator approval. A session received from your iPhone also
-  needs that approval before the Mac blocks anything.
+- On macOS, blocking works only while Posato is running. Closing its window
+  keeps it running in the menu bar. If Posato quits, or after sleep, wake, or
+  a network change, blocking stops until you resume it in Posato with
+  administrator approval. A session received from your iPhone also needs that
+  approval before the Mac blocks anything.
 - On macOS, paused apps are quit while a session is active, including apps that
   were already open when it started, so unsaved work in them can be lost.
 - On macOS, website blocking covers **Safari** and **Google Chrome Stable** for

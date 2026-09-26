@@ -3,6 +3,7 @@ package app.posato.control
 import app.posato.control.cli.ArtifactsCommand
 import app.posato.control.cli.BuildCommand
 import app.posato.control.cli.CleanupCommand
+import app.posato.control.cli.CloseWindowCommand
 import app.posato.control.cli.DbCommand
 import app.posato.control.cli.DbPathCommand
 import app.posato.control.cli.DbQueryCommand
@@ -15,10 +16,12 @@ import app.posato.control.cli.FindCommand
 import app.posato.control.cli.InstallCommand
 import app.posato.control.cli.LaunchCommand
 import app.posato.control.cli.LogsCommand
+import app.posato.control.cli.MenuCommand
 import app.posato.control.cli.ObserveCommand
 import app.posato.control.cli.OrientCommand
 import app.posato.control.cli.PressCommand
 import app.posato.control.cli.ResetCommand
+import app.posato.control.cli.ResourcesCommand
 import app.posato.control.cli.RunCommand
 import app.posato.control.cli.ScreenshotCommand
 import app.posato.control.cli.SnapshotCommand
@@ -91,6 +94,9 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     CleanupCommand(),
     ArtifactsCommand(),
     ObserveCommand(),
+    MenuCommand(),
+    CloseWindowCommand(),
+    ResourcesCommand(),
     VmCommand().subcommands(
         VmCreateCommand(),
         VmSyncCommand(),

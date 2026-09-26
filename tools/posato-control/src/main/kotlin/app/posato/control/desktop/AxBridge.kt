@@ -29,6 +29,20 @@ data class WindowInfo(
     val h: Double = 0.0,
 )
 
+@Serializable
+data class StatusMenuItem(
+    val title: String,
+    val enabled: Boolean,
+)
+
+@Serializable
+data class StatusMenuResult(
+    val description: String,
+    val items: List<StatusMenuItem>,
+    val opened: Boolean? = null,
+    val chosen: Boolean? = null,
+)
+
 class AxBridge(
     private val context: RunContext
 ) {
@@ -88,7 +102,7 @@ class AxBridge(
 
     private val binary = AxBridgeBinary(context)
 
-    private fun invoke(vararg arguments: String): String {
+    internal fun invoke(vararg arguments: String): String {
         binary.ensureBuilt()
         val output = context.subprocess.run(listOf(layout.accessibilityBridgeBinary.toString()) + arguments)
         if (output.exitCode != 0) throw bridgeFailure(output.stdout, output.stderr)
@@ -114,7 +128,7 @@ class AxBridge(
 
     private fun parseObject(output: String): JsonObject = ControlJson.lenient.parseToJsonElement(output).jsonObject
 
-    private fun <T> decode(
+    internal fun <T> decode(
         serializer: kotlinx.serialization.KSerializer<T>,
         output: String
     ): T = try {

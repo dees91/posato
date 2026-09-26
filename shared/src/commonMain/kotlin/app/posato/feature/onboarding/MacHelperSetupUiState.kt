@@ -43,6 +43,7 @@ internal class MacHelperSetupUiState(
     private val macHelper: MacHelperPort,
     private val scope: CoroutineScope,
 ) {
+    val loginItem: MacLoginItem? = macHelper.loginItem
     var readiness by mutableStateOf<MacHelperReadiness?>(null)
         private set
     var activity by mutableStateOf<MacSetupActivity?>(null)
