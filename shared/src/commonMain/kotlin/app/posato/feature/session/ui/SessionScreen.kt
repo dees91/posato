@@ -27,6 +27,7 @@ import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.MacSetupPresentation
+import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
@@ -52,12 +53,22 @@ internal fun SessionScreen(
     syncState: SyncBootstrapUiState? = null,
     macSetupState: MacHelperSetupUiState? = null,
     onMacSetupAnnouncement: (String) -> Unit = {},
+    windowRequest: SessionWindowRequest? = null,
+    onWindowRequestHandled: () -> Unit = {},
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
     },
 ) {
     val state by viewModel.uiState.collectAsState()
     LaunchedEffect(viewModel) { viewModel.onScreenEntered() }
+    LaunchedEffect(windowRequest) {
+        when (windowRequest) {
+            SessionWindowRequest.START_SESSION -> viewModel.setSetupVisible(true)
+            SessionWindowRequest.END_SESSION_EARLY -> viewModel.setEarlyEndConfirmation(true)
+            SessionWindowRequest.SESSION, null -> Unit
+        }
+        if (windowRequest != null) onWindowRequestHandled()
+    }
     SessionScreen(
         state = state,
         onEnterSetup = { viewModel.setSetupVisible(true) },

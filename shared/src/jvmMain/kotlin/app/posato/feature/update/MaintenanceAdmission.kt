@@ -109,7 +109,9 @@ public class MaintenanceAdmission internal constructor(
                         MaintenanceCloseResult.Closed
                     }
 
-                    MaintenanceCloseOutcome.SESSION_ACTIVE -> MaintenanceCloseResult.SessionActive
+                    MaintenanceCloseOutcome.SESSION_ACTIVE -> {
+                        MaintenanceCloseResult.SessionActive
+                    }
                 }
             }
         }

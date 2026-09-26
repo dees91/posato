@@ -9,6 +9,7 @@ import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.UnavailableApplicationAccess
 import app.posato.feature.onboarding.data.SqlLocalSetupStore
+import app.posato.feature.presence.DesktopPresence
 import app.posato.feature.session.JvmSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SqlLocalSessionStore
@@ -37,6 +38,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
 import app.posato.feature.update.DesktopUpdateMaintenance
+import app.posato.feature.update.MaintenanceAdmission
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -136,6 +138,16 @@ internal interface DesktopApplicationGraph :
 
     @Provides
     @SingleIn(AppScope::class)
+    fun providePresence(
+        owner: SessionTransitionOwner,
+        sync: AppleSync,
+        maintenance: MaintenanceAdmission,
+    ): DesktopPresence {
+        return DesktopPresence(owner, sync, maintenance)
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
     fun provideOnboarding(
         database: PosatoDatabase,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
@@ -230,6 +242,7 @@ fun createDesktopApplicationGraph(
 
 interface DesktopApplicationComponents : ApplicationGraph {
     val updateMaintenance: DesktopUpdateMaintenance
+    val presence: DesktopPresence
 }
 
 private val desktopGraphLock = Any()

@@ -25,8 +25,8 @@ import app.posato.feature.sync.bootstrap.SessionReconciler
 import app.posato.feature.sync.bootstrap.SessionSyncAuthoring
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.sync.bootstrap.reconcileSessionTime
-import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SessionCandidate
+import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SessionReplicaSnapshot
 import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.domain.SyncWriter

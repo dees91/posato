@@ -42,6 +42,7 @@ import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.onboarding.data.SetupCompletion
 import app.posato.feature.onboarding.rememberMacHelperSetupUiState
 import app.posato.feature.onboarding.rememberOnboardingUiState
+import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
@@ -57,6 +58,8 @@ import app.posato.feature.targets.ui.TargetsBrowserState
 import app.posato.feature.targets.ui.TargetsCategory
 import app.posato.feature.targets.ui.TargetsScreen
 import dev.zacsweers.metro.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 
 @Inject
 class PosatoApplication internal constructor(
@@ -75,6 +78,9 @@ class PosatoApplication internal constructor(
         highContrast: Boolean? = null,
         onAnnouncement: (String) -> Unit = {},
         updates: ApplicationUpdates? = null,
+        hostsSession: Boolean = true,
+        visible: Boolean = true,
+        windowRequests: Flow<SessionWindowRequest> = emptyFlow(),
     ) {
         var setupDone by remember { mutableStateOf(false) }
         val syncState = rememberSyncBootstrapUiState(bootstrap)
@@ -86,7 +92,9 @@ class PosatoApplication internal constructor(
             helperSetup,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
-        LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
+        if (hostsSession) {
+            LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
+        }
         val device = remember { platformDevice() }
         PosatoTheme(highContrast = highContrast) {
             // Session reconciliation runs on every foreground, even when the
@@ -109,13 +117,17 @@ class PosatoApplication internal constructor(
                     modifier = modifier,
                 )
             } else {
-                LaunchedEffect(updates) { updates?.askForAutomaticChecksOnce() }
+                if (visible) {
+                    LaunchedEffect(updates) { updates?.askForAutomaticChecksOnce() }
+                }
                 DestinationsHost(
                     syncState = syncState,
                     onMacSetupAnnouncement = onAnnouncement,
                     macSetupState = helperSetup.takeIf { onboardingDependencies.permissionPlatform == OnboardingPermissionPlatform.MAC },
                     device = device,
                     updates = updates,
+                    visible = visible,
+                    windowRequests = windowRequests,
                     modifier = modifier,
                 )
             }
@@ -129,11 +141,22 @@ class PosatoApplication internal constructor(
         onMacSetupAnnouncement: (String) -> Unit,
         device: PosatoDevice,
         updates: ApplicationUpdates?,
+        visible: Boolean,
+        windowRequests: Flow<SessionWindowRequest>,
         modifier: Modifier = Modifier,
     ) {
         val browser = remember { TargetsBrowserState() }
         var showingSession by remember { mutableStateOf(true) }
         var informationPage by remember { mutableStateOf<ApplicationInformationPage?>(null) }
+        var pendingRequest by remember { mutableStateOf<SessionWindowRequest?>(null) }
+        LaunchedEffect(windowRequests) {
+            windowRequests.collect { request ->
+                showingSession = true
+                informationPage = null
+                pendingRequest = request
+            }
+        }
+        if (!visible) return
         val deviceLabel = "On this ${device.noun} only"
         ApplicationNavigationScaffold(
             device = device,
@@ -172,6 +195,8 @@ class PosatoApplication internal constructor(
                             syncState = syncState,
                             macSetupState = macSetupState,
                             onMacSetupAnnouncement = onMacSetupAnnouncement,
+                            windowRequest = pendingRequest,
+                            onWindowRequestHandled = { pendingRequest = null },
                         )
                     }
 
