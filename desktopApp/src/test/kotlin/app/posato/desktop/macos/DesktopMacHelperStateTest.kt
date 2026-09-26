@@ -7,9 +7,12 @@ import app.posato.desktop.macos.HelperResult.RequiredAction
 import app.posato.desktop.macos.HelperResult.State
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperRemoval
+import app.posato.feature.onboarding.MacLoginItem
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Runnable
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
 import java.io.IOException
 import java.net.URI
@@ -528,6 +531,25 @@ class DesktopMacHelperStateTest {
         assertEquals(listOf("remove"), commands.calls.map { it.operation })
     }
 
+    @Test
+    fun `given a login item that stays registered when removing then removal is not reported complete`() = runTest {
+        val commands = FakeHelperCommands(
+            enableBehavior = { readyResult() },
+            statusBehavior = { readyResult() },
+            removeBehavior = { throw AssertionError("the helper must stay until the login item is off") },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+            loginItem = StuckLoginItem(),
+        )
+
+        assertEquals(MacHelperRemoval.REMOVE_AGAIN, state.remove())
+        assertTrue(commands.calls.isEmpty())
+    }
+
     private fun readyResult(): HelperResult {
         return HelperResult(
             outcome = HelperResult.Outcome.Success,
@@ -587,6 +609,16 @@ class DesktopMacHelperStateTest {
             failure = HelperResult.Failure.Lifecycle,
         )
     }
+}
+
+private class StuckLoginItem : MacLoginItem {
+    private val state = MutableStateFlow(true)
+
+    override val enabled: StateFlow<Boolean> = state
+
+    override fun setEnabled(enabled: Boolean) = Unit
+
+    override fun refresh() = Unit
 }
 
 private data class HelperCall(

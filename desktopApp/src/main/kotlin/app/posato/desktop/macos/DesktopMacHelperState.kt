@@ -38,16 +38,23 @@ internal class DesktopMacHelperState(
             if (runCatching { verifyHelper() }.isFailure) {
                 return@withContext MacHelperRemoval.CHECK_AGAIN
             }
+            if (!loginItemOff()) {
+                return@withContext MacHelperRemoval.REMOVE_AGAIN
+            }
             try {
-                commands.remove().toRemoval().also { removal ->
-                    if (removal == MacHelperRemoval.REMOVED) loginItem?.setEnabled(false)
-                }
+                commands.remove().toRemoval()
             } catch (cancellation: CancellationException) {
                 throw cancellation
             } catch (_: Exception) {
                 MacHelperRemoval.CHECK_AGAIN
             }
         }
+    }
+
+    private fun loginItemOff(): Boolean {
+        val item = loginItem ?: return true
+        item.setEnabled(false)
+        return !item.enabled.value
     }
 
     private fun enableThenStatus(): HelperResult {
