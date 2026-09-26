@@ -76,7 +76,9 @@ Everything else was proven E2E through `posato-control` in Tart clones.
 
   Accepted Recommended fixes: a failed exchange no longer stops the session
   loop; menu requests wait for session state; unused imports were removed.
-  The deviations above record the rest.
+- **Maintainer review on #90:** one P2, accepted. Removal now turns the login
+  item off first and reports `REMOVE_AGAIN` until it is off. A
+  failure-injection test covers it.
 
 ## Verification
 
@@ -94,7 +96,7 @@ Tart clone of `primary` (macOS 26.6.2). Commands are `posato-control ...
 | Not enforcing after relaunch | `5539c9c` | "Restrictions not active on this Mac" and Resume, no prompt; Resume, then admin, gives `paused` |
 | Relaunch and reopen | `d44c4d3`, `f3e32ac` | `open` of the bundle reuses one process; Dock follows the window; the destination is kept |
 | Launch at login | `0e23ac3` | after a loginwindow restart, a windowless `UIElement` waits in Resume with no prompt; with the switch off, Posato does not start |
-| Removal with login on | `0e23ac3` | helper removed; no Open at Login record; the helper's background item stays listed |
+| Removal with login on | `0e23ac3`, `bd2fcbd` | helper removed; no Open at Login record; the helper's background item stays listed |
 | First close and Quit copy | `5539c9c`, `f3e32ac` | both enforcing and not-enforcing texts; Keep stays; Quit gives `loaded` |
 | Logout not blocked | `0e23ac3` | a restart with an active session completed within about 90 s |
 | Update gate, window closed | `0e23ac3` (builds 1000 and 1001) | refused during the session; admitted, installed, and relaunched as 1001 after it |
@@ -110,8 +112,6 @@ Tart clone of `primary` (macOS 26.6.2). Commands are `posato-control ...
   `user-confirmed` (2026-09-26): accepted as is, with no additional test.
 - **Session CPU.** 4.9 s against P1's 4.1 s over 10 minutes.
   `user-confirmed` (2026-09-26): accepted as is.
-- **Tick resumption timing.** The idle wait keeps a 60-second safety
-  recheck.
 
 ## Final
 
