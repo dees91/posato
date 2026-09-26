@@ -189,7 +189,13 @@ wait up to 30 seconds for a window and continue without one.
 ## Gotchas
 
 - Starting on the Mac raises the administrator prompt for the helper Apply; `vm prompt
-  admin` confirms it, otherwise expect the action-required state with Retry.
+  admin` confirms it, otherwise expect the action-required state with Retry. With
+  **Start sessions without the password** on in This Mac (`MACOS-014`), start and
+  Resume apply with no prompt; turning the switch on raises one prompt with Posato's
+  own sentence, which `vm prompt admin` answers. A launch with a Java option variable
+  (`launch --env JAVA_TOOL_OPTIONS=...`) falls back to the prompt.
+- This Mac options sit below the window edge: `vm scroll --text "Selected items"`
+  moves the Compose view where `scrollTo` cannot.
 - Removing the network service that holds the proxy settings during a session leaves a
   false "Restrictions active" and a stale record (`MACOS-020`); do not use that path as a
   cleanup step.

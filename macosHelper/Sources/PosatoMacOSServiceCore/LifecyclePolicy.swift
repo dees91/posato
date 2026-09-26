@@ -52,10 +52,17 @@ public enum WireLifecyclePolicy {
       requestOperation: requestOperation,
       reconcilePayload: reconcilePayload
     )
-    guard operation == .apply, ownershipVerified, response.outcome != .conflict else {
+    guard operation.isApply, ownershipVerified, response.outcome != .conflict else {
       return false
     }
     return response.ownershipPhase != .idle
+  }
+
+  public static func needsEffectiveChainCheck(
+    requestOperation: WireOperation,
+    response: WireResponsePayload
+  ) -> Bool {
+    return requestOperation.isApply && response.outcome == .success
   }
 
   public static func cleanupCompleted(_ phase: OwnershipPhase?) -> Bool {
@@ -84,7 +91,7 @@ public enum WireLifecyclePolicy {
       effectiveOperation(
         requestOperation: requestOperation,
         reconcilePayload: reconcilePayload
-      ) == .apply,
+      ).isApply,
       !ownershipVerified,
       response.ownershipPhase != .idle,
       response.outcome != .conflict

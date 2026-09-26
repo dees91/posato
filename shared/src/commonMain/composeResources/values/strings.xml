@@ -209,7 +209,7 @@ For what matters.</string>
     <string name="mac_setup_unchanged">This result has come back again. Restarting this Mac is the next supported step; it does not repair the registration by itself.</string>
     <string name="mac_setup_remove">Remove from this Mac</string>
     <string name="mac_setup_removing">Removing the background helper…</string>
-    <string name="mac_setup_remove_confirmation">Posato restores your proxy settings, removes its administrator rule, and turns off its background helper. Website and app pauses stop on this Mac until you enable the helper again. Your paused items stay saved.</string>
+    <string name="mac_setup_remove_confirmation">Posato restores your proxy settings, removes its administrator rules and any permission to start sessions without the password, and turns off its background helper. Website and app pauses stop on this Mac until you enable the helper again. Your paused items stay saved.</string>
     <string name="mac_setup_keep_helper">Keep the helper</string>
     <string name="mac_setup_remove_blocked">Removal is available after the session ends.</string>
     <string name="mac_setup_removed">The background helper is removed. You can now move Posato to the Trash.</string>
@@ -248,6 +248,10 @@ For what matters.</string>
     <string name="presence_first_close_not_enforcing">Posato is still running in the menu bar. Restrictions not active on this Mac.</string>
     <string name="presence_first_close_ok">OK</string>
     <string name="presence_login_item">Open Posato at login</string>
+    <string name="mac_standing_grant">Start sessions without the password</string>
+    <string name="mac_standing_grant_supporting">An administrator approves this once. Restrictions still apply only when you start or resume a session.</string>
+    <string name="mac_standing_grant_blocked">You can change this after the session ends.</string>
+    <string name="mac_standing_grant_unknown">Posato could not confirm this setting. Check again.</string>
     <string name="presence_login_item_supporting">Posato starts in the menu bar with its window closed. It never asks for your password at login.</string>
     <string name="update_consent_title">Check for updates automatically?</string>
     <string name="update_consent_message">Posato can ask GitHub once a day whether a newer version exists. Nothing is downloaded or installed until you choose to. You can change this in About Posato.</string>

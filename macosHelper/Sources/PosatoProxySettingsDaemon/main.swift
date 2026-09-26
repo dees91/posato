@@ -43,8 +43,12 @@ private final class ProxySettingsServiceObject: NSObject, ProxySettingsService {
       reply(nil)
       return
     }
+    // The peer's user is read from the connection delivering this message, never from its payload
+    // and never through a process identifier.
+    let peerUserID = NSXPCConnection.current().map { UInt32($0.effectiveUserIdentifier) }
     coordinator.perform(
       request,
+      peerUserID: peerUserID,
       deadline: .now() + .milliseconds(Int(message.deadlineMilliseconds)),
       connectionState: connectionState,
       reply: ReplyBox(reply)

@@ -22,6 +22,9 @@ else {
   exit(EXIT_FAILURE)
 }
 
+// Read once at startup: the environment the application was launched with decides whether code
+// could have been loaded into it before any of Posato's own code ran.
+private let parentLaunchEnvironmentIsClean = ParentLaunchEnvironment.isCleanForParent()
 private let service = SMAppService.daemon(plistName: ServiceContract.daemonPlistName)
 private var daemon: DaemonConnection?
 private var sequenceValidator = WireSequenceValidator()
@@ -122,11 +125,16 @@ do {
       throw PipeFailure.invalidFrame
     }
     switch request.operation {
-    case .status, .enable, .repair, .restore, .disable, .remove, .selectApplications:
+    case .status:
+      guard request.payload.isEmpty || request.payload == WireStatusRequest.includeGrantState else {
+        throw PipeFailure.invalidFrame
+      }
+    case .enable, .repair, .restore, .disable, .remove, .selectApplications, .prepareGrant, .grant,
+      .revokeGrant:
       guard request.payload.isEmpty else {
         throw PipeFailure.invalidFrame
       }
-    case .apply:
+    case .apply, .applyWithGrant:
       guard request.payload.count == 2 else {
         throw PipeFailure.invalidFrame
       }
@@ -149,14 +157,13 @@ do {
     if try applications.dispatch(request: request, receivedAt: receivedAt, service: service) {
       continue
     }
-    if request.operation == .apply, domainSession == nil {
-      let refused = try localResponse(
-        request: request,
-        payload: BrowserDomainRequestHandler.applyWithoutSessionResponse(
-          serviceState: serviceState(service.status)
-        )
-      )
-      try writeFrame(WireCodec.encode(refused))
+    if let refusal = localAuthorizationRefusal(
+      request: request,
+      sessionPort: domainSession?.port,
+      launchEnvironmentIsClean: parentLaunchEnvironmentIsClean,
+      serviceState: serviceState(service.status)
+    ) {
+      try writeFrame(WireCodec.encode(localResponse(request: request, payload: refusal)))
       continue
     }
     if request.operation == .selectApplications {
@@ -249,6 +256,16 @@ do {
             serviceState: serviceState(service.status)
           )
         )
+      case .prepareGrant where service.status != .enabled,
+        .grant where service.status != .enabled,
+        .revokeGrant where service.status != .enabled:
+        response = try localResponse(
+          request: request,
+          payload: grantUnavailableResponse(
+            serviceState: serviceState(service.status),
+            failure: .unavailable
+          )
+        )
       case .enable:
         var registrationFailed = false
         if service.status != .enabled {
@@ -282,10 +299,12 @@ do {
         )
       }
     }
-    var responsePayload = try WireResponsePayload.decode(response.payload)
+    var responsePayload = try WireResponsePayload.decodeStatus(response.payload).response
     let applyNeedsRestore =
-      request.operation == .apply
-      && responsePayload.outcome == .success
+      WireLifecyclePolicy.needsEffectiveChainCheck(
+        requestOperation: request.operation,
+        response: responsePayload
+      )
       && domainSession?.validateEffectiveChain() != true
     if applyNeedsRestore {
       var restoredPayload: WireResponsePayload?

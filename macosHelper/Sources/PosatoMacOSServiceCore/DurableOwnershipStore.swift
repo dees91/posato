@@ -13,17 +13,53 @@ public final class DurableOwnershipStore: OwnershipPersistence, @unchecked Senda
     fileURLWithPath: "/Library/Application Support/Posato/ProxySettings/ownership-v1.plist"
   )
 
-  private let stateURL: URL
-  private let expectedOwner: uid_t
-  private let maximumStateBytes = 64 * 1024
+  private let file: ProtectedPlistFile
 
   public init(stateURL: URL = productionURL, expectedOwner: uid_t = 0) {
-    self.stateURL = stateURL
-    self.expectedOwner = expectedOwner
+    file = ProtectedPlistFile(url: stateURL, expectedOwner: expectedOwner)
   }
 
   public func load() throws -> OwnershipRecord? {
-    let descriptor = Darwin.open(stateURL.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
+    guard let data = try file.load() else {
+      return nil
+    }
+    let decoder = PropertyListDecoder()
+    guard let record = try? decoder.decode(OwnershipRecord.self, from: data),
+      record.hasValidBounds
+    else {
+      throw DurableOwnershipFailure.invalidState
+    }
+    return record
+  }
+
+  public func save(_ record: OwnershipRecord) throws {
+    guard record.hasValidBounds else {
+      throw DurableOwnershipFailure.invalidState
+    }
+    let encoder = PropertyListEncoder()
+    encoder.outputFormat = .binary
+    try file.save(encoder.encode(record))
+  }
+
+  public func remove() throws {
+    try file.remove()
+  }
+}
+
+/// One root-only property list: no symbolic links, one hard link, owner-only mode, bounded size,
+/// atomic durable replacement, and exclusion from backup.
+struct ProtectedPlistFile: Sendable {
+  let url: URL
+  let expectedOwner: uid_t
+  private let maximumBytes = 64 * 1024
+
+  init(url: URL, expectedOwner: uid_t) {
+    self.url = url
+    self.expectedOwner = expectedOwner
+  }
+
+  func load() throws -> Data? {
+    let descriptor = Darwin.open(url.path, O_RDONLY | O_CLOEXEC | O_NOFOLLOW)
     if descriptor < 0, errno == ENOENT {
       return nil
     }
@@ -38,35 +74,22 @@ public final class DurableOwnershipStore: OwnershipPersistence, @unchecked Senda
       attributes.st_nlink == 1,
       (attributes.st_mode & 0o077) == 0,
       attributes.st_size > 0,
-      attributes.st_size <= maximumStateBytes
+      attributes.st_size <= maximumBytes
     else {
       throw DurableOwnershipFailure.invalidFile
     }
-    let data = try read(descriptor: descriptor, count: Int(attributes.st_size))
-    let decoder = PropertyListDecoder()
-    guard let record = try? decoder.decode(OwnershipRecord.self, from: data),
-      record.hasValidBounds
-    else {
-      throw DurableOwnershipFailure.invalidState
-    }
-    return record
+    return try read(descriptor: descriptor, count: Int(attributes.st_size))
   }
 
-  public func save(_ record: OwnershipRecord) throws {
-    guard record.hasValidBounds else {
+  func save(_ data: Data) throws {
+    guard data.count <= maximumBytes else {
       throw DurableOwnershipFailure.invalidState
     }
     try prepareDirectory()
-    let encoder = PropertyListEncoder()
-    encoder.outputFormat = .binary
-    let data = try encoder.encode(record)
-    guard data.count <= maximumStateBytes else {
-      throw DurableOwnershipFailure.invalidState
-    }
     let temporaryURL =
-      stateURL
+      url
       .deletingLastPathComponent()
-      .appending(path: ".ownership-v1.\(UUID().uuidString).tmp")
+      .appending(path: ".\(url.deletingPathExtension().lastPathComponent).\(UUID().uuidString).tmp")
     let descriptor = Darwin.open(
       temporaryURL.path,
       O_WRONLY | O_CREAT | O_EXCL | O_CLOEXEC | O_NOFOLLOW,
@@ -84,26 +107,26 @@ public final class DurableOwnershipStore: OwnershipPersistence, @unchecked Senda
     }
     try write(data: data, descriptor: descriptor)
     guard fchmod(descriptor, 0o600) == 0, fsync(descriptor) == 0,
-      rename(temporaryURL.path, stateURL.path) == 0
+      rename(temporaryURL.path, url.path) == 0
     else {
       throw DurableOwnershipFailure.unavailable
     }
     completed = true
     try synchronizeDirectory()
-    try excludeFromBackup(url: stateURL)
+    try excludeFromBackup(url: url)
   }
 
-  public func remove() throws {
-    if Darwin.unlink(stateURL.path) != 0, errno != ENOENT {
+  func remove() throws {
+    if Darwin.unlink(url.path) != 0, errno != ENOENT {
       throw DurableOwnershipFailure.unavailable
     }
-    if FileManager.default.fileExists(atPath: stateURL.deletingLastPathComponent().path) {
+    if FileManager.default.fileExists(atPath: url.deletingLastPathComponent().path) {
       try synchronizeDirectory()
     }
   }
 
   private func prepareDirectory() throws {
-    let directoryURL = stateURL.deletingLastPathComponent()
+    let directoryURL = url.deletingLastPathComponent()
     do {
       try FileManager.default.createDirectory(
         at: directoryURL,
@@ -126,7 +149,7 @@ public final class DurableOwnershipStore: OwnershipPersistence, @unchecked Senda
 
   private func synchronizeDirectory() throws {
     let directory = Darwin.open(
-      stateURL.deletingLastPathComponent().path,
+      url.deletingLastPathComponent().path,
       O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW
     )
     guard directory >= 0 else {

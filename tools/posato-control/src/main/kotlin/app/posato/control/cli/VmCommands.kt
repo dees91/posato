@@ -9,6 +9,7 @@ import app.posato.control.vm.CandidateInstall
 import app.posato.control.vm.CandidateInstallation
 import app.posato.control.vm.GuestICloud
 import app.posato.control.vm.GuestPrompt
+import app.posato.control.vm.GuestScroll
 import app.posato.control.vm.VmLifecycle
 import app.posato.control.vm.VmLine
 import app.posato.control.vm.VmPrompts
@@ -129,6 +130,23 @@ class VmClickCommand : ControlCommand("click", "Click text on the guest screen, 
         return buildJsonObject { put("clicked", text) }
     }
 }
+
+class VmScrollCommand : ControlCommand("scroll", "Turn the mouse wheel over text on the guest screen, located by text recognition.") {
+    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val text by option("--text", help = "Text under which to scroll.").required()
+    private val clicks by option("--clicks", help = "Wheel notches; positive scrolls down, negative up.").int().default(DEFAULT_SCROLL_CLICKS)
+    private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the text.").long().default(DEFAULT_TIMEOUT_SECONDS)
+
+    override fun execute(session: Session): JsonElement {
+        GuestScroll(session.context).scroll(VmLine.parse(lineOption), text, clicks, timeoutSeconds * MILLIS_PER_SECOND)
+        return buildJsonObject {
+            put("scrolled", text)
+            put("clicks", clicks)
+        }
+    }
+}
+
+private const val DEFAULT_SCROLL_CLICKS = 10
 
 class VmDragCommand : ControlCommand("drag", "Drag one recognized label onto another on the guest screen, such as an app icon onto Applications.") {
     private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)

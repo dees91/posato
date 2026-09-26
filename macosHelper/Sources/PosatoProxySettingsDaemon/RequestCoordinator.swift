@@ -50,13 +50,26 @@ final class ConnectionState: @unchecked Sendable {
 
 final class RequestCoordinator: @unchecked Sendable {
   let queue = DispatchQueue(label: "app.posato.macos.proxy-settings.requests")
-  let engine = ProxyOwnershipEngine(
-    persistence: DurableOwnershipStore(),
-    configuration: SystemProxyConfiguration()
-  )
+  let engine: ProxyOwnershipEngine
+  let grants: StandingGrantPersistence
+  let identity: SystemIdentity
+  let rules: AuthorizationRules
   var leaseDeadline: DispatchTime?
   private var activeConnections = 0
   private var powerMonitor: SystemPowerMonitor?
+
+  init(
+    persistence: OwnershipPersistence = DurableOwnershipStore(),
+    configuration: ProxyConfigurationAccess = SystemProxyConfiguration(),
+    grants: StandingGrantPersistence = StandingGrantStore(),
+    identity: SystemIdentity = SystemIdentityReader(),
+    rules: AuthorizationRules = SystemAuthorizationRules()
+  ) {
+    engine = ProxyOwnershipEngine(persistence: persistence, configuration: configuration)
+    self.grants = grants
+    self.identity = identity
+    self.rules = rules
+  }
 
   func start() throws {
     let monitor = SystemPowerMonitor(queue: queue) { [weak self] in
@@ -78,6 +91,7 @@ final class RequestCoordinator: @unchecked Sendable {
 
   func perform(
     _ encoded: Data,
+    peerUserID: UInt32?,
     deadline: DispatchTime,
     connectionState: ConnectionState,
     reply: ReplyBox
@@ -86,6 +100,7 @@ final class RequestCoordinator: @unchecked Sendable {
       reply(
         self.process(
           encoded,
+          peerUserID: peerUserID,
           deadline: deadline,
           connectionState: connectionState
         )

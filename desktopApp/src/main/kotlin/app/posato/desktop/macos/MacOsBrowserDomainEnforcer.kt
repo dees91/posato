@@ -36,11 +36,12 @@ internal class MacOsBrowserDomainEnforcer(
                 ),
             )
         }
+        val grantedWithoutPrompt = commands.grantState() == HelperGrantState.On
         val configured = commands.configureBrowserDomains(domains, sessionEndEpochMilliseconds)
         if (configured.result.outcome != HelperResult.Outcome.Success || configured.port == 0.toUShort()) {
             return BrowserDomainEnforcementResult.Failed(configured.result)
         }
-        var applied = commands.apply(configured.port)
+        var applied = applyAfterPersonAction(configured.port, grantedWithoutPrompt)
         if (applied.outcome == HelperResult.Outcome.UnknownOutcome) {
             applied = commands.reconcileUnknown()
         }
@@ -51,6 +52,25 @@ internal class MacOsBrowserDomainEnforcer(
             return BrowserDomainEnforcementResult.Failed(applied)
         }
         return BrowserDomainEnforcementResult.Active(configured.port)
+    }
+
+    /**
+     * Runs only for the person's own start or Resume. The grant state is read here rather than
+     * cached, because a relaunch or a login launch leaves any earlier reading stale. A grant the
+     * daemon no longer accepts falls back to the administrator prompt once.
+     */
+    private fun applyAfterPersonAction(
+        port: UShort,
+        grantedWithoutPrompt: Boolean,
+    ): HelperResult {
+        if (!grantedWithoutPrompt) {
+            return commands.apply(port)
+        }
+        val granted = commands.applyWithGrant(port)
+        if (granted.failure == HelperResult.Failure.StandingGrantUnavailable) {
+            return commands.apply(port)
+        }
+        return granted
     }
 
     fun clear(): HelperResult {

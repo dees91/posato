@@ -760,6 +760,50 @@ perform.
   helper at about 60% CPU for 14 minutes. The cause is `open` (idea 18,
   `MACOS-021`).
 
+## Standing Apply grant
+
+`user-confirmed` (2026-09-26): the
+[ADR 0004 `MACOS-014` amendment](../../decisions/0004-macos-helper-ownership-and-lifecycle.md#macos-014-standing-apply-grant-amendment)
+adds an opt-in switch in This Mac, **Start sessions without the password**.
+An administrator approves it once. The daemon then records a root-only grant,
+and Apply with that grant needs no prompt. The grant is bound to:
+- the XPC peer's user ID, read per message from `NSXPCConnection.current()`;
+- the account's generated UID;
+- the platform UUID;
+- the console user.
+
+It covers only the fixed host and the helper's own listener port. The switch,
+Disable, and Remove revoke it. Apply still runs only when the person starts or
+resumes a session. The JVM starts with the attach mechanism disabled. The
+helper refuses the grant paths when the application was launched with a Java
+option variable.
+
+`observed` (2026-09-26, `MACOS-014`, Tart clone, development build):
+- **Without a prompt.** After the opt-in, three Applies ran with no prompt:
+  - a session start;
+  - Resume after a relaunch;
+  - Resume after a loginwindow restart with the login item on.
+
+  A session held past the 15-second lease still blocked.
+- **No silent apply.** Before Resume, the site loaded and the menu read
+  "Restrictions not active on this Mac". Choosing **Resume restrictions…** in
+  the menu only opened the window.
+- **Revocation.** The switch turned off with no prompt, and the next start
+  prompted. **Remove from this Mac** left both rules absent
+  (`security authorizationdb read` returned -60005). After enabling again,
+  the switch read off and the next start prompted.
+- **JVM hardening.** `jcmd` from the shared JDK reports "The VM does not
+  support the attach mechanism", while a plain JVM in the same guest accepts
+  the attach. After a launch with `JAVA_TOOL_OPTIONS`, the start fell back to
+  the prompt even though the grant existed, and granting was refused with no
+  prompt.
+- **Opt-in prompt.** `kAuthorizationEnvironmentPrompt` puts Posato's own
+  sentence above "Enter your password to allow this.", so `vm prompt admin`
+  still answers it.
+- **Driving.** Scrolling a Compose view needs the VNC wheel (`vm scroll`),
+  because the accessibility tree has no scroll area. The guests scroll
+  naturally, so the wheel-up button reveals content further down.
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the

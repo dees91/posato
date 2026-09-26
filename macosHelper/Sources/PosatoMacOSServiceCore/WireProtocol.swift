@@ -26,7 +26,8 @@ public enum WireLimits {
       return maximumSelectionDeadlineMilliseconds
     case .configureBrowserDomains, .configureApplications:
       return maximumConfigureDeadlineMilliseconds
-    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew:
+    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew,
+      .prepareGrant, .grant, .revokeGrant, .applyWithGrant:
       return maximumDeadlineMilliseconds
     }
   }
@@ -75,14 +76,24 @@ public enum WireOperation: UInt8, Sendable {
   case selectApplications = 10
   case configureBrowserDomains = 11
   case configureApplications = 12
+  case prepareGrant = 13
+  case grant = 14
+  case revokeGrant = 15
+  case applyWithGrant = 16
 
   public var isHelperOnly: Bool {
     switch self {
     case .selectApplications, .configureBrowserDomains, .configureApplications:
       return true
-    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew:
+    case .none, .status, .enable, .repair, .apply, .restore, .disable, .remove, .reconcile, .renew,
+      .prepareGrant, .grant, .revokeGrant, .applyWithGrant:
       return false
     }
+  }
+
+  /// Apply with grant is an Apply in every respect except how it is authorized.
+  public var isApply: Bool {
+    return self == .apply || self == .applyWithGrant
   }
 }
 
@@ -131,6 +142,7 @@ public enum FailureCategory: UInt8, Sendable {
   case ipc = 7
   case lifecycle = 8
   case cancelled = 9
+  case standingGrantUnavailable = 10
 }
 
 public enum WireProtocolFailure: Error, Equatable {

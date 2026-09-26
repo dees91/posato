@@ -4,6 +4,7 @@ import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperRemoval
 import app.posato.feature.onboarding.MacLoginItem
+import app.posato.feature.onboarding.MacStandingGrant
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -17,6 +18,7 @@ internal class DesktopMacHelperState(
     private val ioDispatcher: CoroutineDispatcher,
     private val openSettings: (URI) -> Unit,
     override val loginItem: MacLoginItem? = null,
+    override val standingGrant: MacStandingGrant? = null,
 ) : MacHelperPort {
     override suspend fun enable(): MacHelperReadiness {
         return readiness { enableThenStatus() }

@@ -336,3 +336,35 @@ private final class RecoveryHarness {
   #expect(serviceRecoveryOperation(requestOperation: .remove, reconcilePayload: nil) == nil)
   #expect(serviceRecoveryOperation(requestOperation: .enable, reconcilePayload: nil) == nil)
 }
+
+@Test func givenGrantPathsWhenCheckedLocallyThenForeignCodeAndForeignPortsAreRefused() throws {
+  func request(_ operation: WireOperation, _ payload: Data) throws -> WireMessage {
+    return try WireMessage(
+      kind: .request,
+      operation: operation,
+      sequence: 2,
+      deadlineMilliseconds: 1_000,
+      connectionIdentifier: Data(repeating: 1, count: 16),
+      sessionIdentifier: Data(repeating: 2, count: 16),
+      requestIdentifier: Data(repeating: 3, count: 16),
+      payload: payload
+    )
+  }
+  func refusal(_ message: WireMessage, clean: Bool) -> FailureCategory? {
+    return localAuthorizationRefusal(
+      request: message,
+      sessionPort: 50_001,
+      launchEnvironmentIsClean: clean,
+      serviceState: .ready
+    )?.failure
+  }
+  let ownPort = Data([0xC3, 0x51])
+  let foreignPort = Data([0xC3, 0x52])
+
+  #expect(refusal(try request(.grant, Data()), clean: false) == .standingGrantUnavailable)
+  #expect(refusal(try request(.applyWithGrant, ownPort), clean: false) == .standingGrantUnavailable)
+  #expect(refusal(try request(.apply, ownPort), clean: false) == nil)
+  #expect(refusal(try request(.applyWithGrant, ownPort), clean: true) == nil)
+  #expect(refusal(try request(.apply, foreignPort), clean: true) == .invalidInput)
+  #expect(refusal(try request(.revokeGrant, Data()), clean: false) == nil)
+}

@@ -131,6 +131,10 @@ internal enum class HelperOperation(
     SelectApplications(10),
     ConfigureBrowserDomains(11),
     ConfigureApplications(12),
+    PrepareGrant(13),
+    Grant(14),
+    RevokeGrant(15),
+    ApplyWithGrant(16),
 }
 
 internal data class HelperMessage(

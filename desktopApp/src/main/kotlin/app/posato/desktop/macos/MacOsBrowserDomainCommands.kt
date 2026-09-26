@@ -8,6 +8,10 @@ internal interface MacOsBrowserDomainCommands {
 
     fun apply(port: UShort): HelperResult
 
+    fun applyWithGrant(port: UShort): HelperResult
+
+    fun grantState(): HelperGrantState
+
     fun restore(): HelperResult
 
     fun reconcileUnknown(): HelperResult
