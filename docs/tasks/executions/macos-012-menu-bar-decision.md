@@ -6,127 +6,25 @@
 - **Implementer:** Claude
 - **Reviewer:** independent agent (plan and decision record); maintainer on PR #87
 - **Branch:** `docs/macos-012-menu-bar-decision`
-- **Updated:** 2026-09-26
+- **Updated:** 2026-09-26 (comparison complete; awaiting review and decision)
 
 ## Plan
 
-`observed` start point (main `13fc900`), which shapes the comparison:
+Git history of this file (`128f79b`) keeps the full reviewed plan:
 
-- **Window-hosted work.** These run in `LaunchedEffect`s inside the window's
-  composition:
-  - the session tick loop (`SessionTransitionOwner.runWhileHosted`, 1 s),
-    which also ticks with no session;
-  - `MacUpdater.start`;
-  - the update-consent prompt.
-
-  Closing the window ends all three, and `onCloseRequest` also exits the
-  process.
-- **Lease.** The helper renews the daemon lease, not the JVM, every 5 s
-  against a 15 s deadline. It restores when its inherited stdin reaches end of
-  file. It accepts only a parent signed as the application. Keeping blocking
-  alive therefore means keeping that parent alive. The daemon does not know
-  when the session ends.
-- **Synchronization.** It runs only on foreground (`ON_RESUME`), **Sync now**,
-  policy edits, and session transitions. There is no timer or subscription, so
-  nothing arrives while the window is closed.
-- **Relaunch.** A relaunch with an active session enters `RESUME_REQUIRED` and
-  needs an administrator prompt.
-- **Absent today.** There is no quit hook, launch-at-login item, tray, or
-  activation-policy change.
-- **Instances.** The instance lock is shared. A second process started
-  directly runs beside the first, and update admission then refuses with
-  `OTHER_INSTANCE`. Only LaunchServices keeps bundle launches to one.
-
-Steps:
-
-1. Write the decision as ADR 0009, status `Proposed`, in the ADR 0008 shape:
-   - context and evidence;
-   - a comparison table;
-   - the decision;
-   - the authority amendments;
-   - a `MACOS-013` delivery plan;
-   - the constraints handed to `MACOS-014`, `NOTIFY-001`, `SCHEDULE-001`, and
-     `MACOS-019`.
-
-   Route it from the wiki index and from idea 7. Add one log entry.
-2. Compare A, B, and C against the brief's criteria, plus two added ones:
-   - **Preserve guarantees.** Where the updater start and consent prompt run
-     without a window. How Sparkle UI and installation work for a process that
-     rarely quits. What "window close" means in the ADR 0008 scenarios. That
-     `MACOS-009` removal stays reachable. The ADR 0004 lease and
-     reconciliation guarantees.
-   - **Reopen and duplicate instances.** Dock click, Finder or Spotlight open,
-     a login item beside a direct launch, and their effect on update
-     admission.
-
-   Evidence comes from code and ADR analysis, with provenance labels. B and C
-   are not built (`inferred`):
-   - B re-implements Kotlin-owned session, policy, and sync orchestration in
-     Swift.
-   - C still needs a resident JVM for the session's helper pipes.
-   - Both change the ADR 0004 parent-signature trust boundary.
-   - C's cost is at least A plus a native agent.
-3. Measure resources in a clone created by `posato-control vm create --line
-   primary`. Nothing runs on the host Mac.
-   - **Method.** The driver cannot launch without a window, snapshot a
-     windowless process, or run a non-Posato binary. So the clone is driven
-     two ways:
-     - direct `tart exec` runs `footprint`, `ps` CPU time deltas, and
-       `top -stats` idle wakeups and energy impact, with the JVM and the
-       helper sampled separately. It also runs the P3 agent and opens the
-       status menu through an Accessibility `AXPress`, inside the guest only;
-     - `posato-control vm text` and `vm screenshot` read the open menu.
-
-     Each sample is 10 minutes after 2 minutes of settling. Figures are
-     labelled `observed` in a VM, not hardware energy.
-   - **P0.** The current dev-signed Posato with its window open, idle and
-     during a session.
-   - **P1 (A).** A local patch in a detached, never-pushed throwaway worktree:
-     - the window closes without exiting the process;
-     - the session owner and updater start are hosted outside the window;
-     - a Compose `Tray` menu shows the session and remaining time.
-
-     Measured idle and during a session. A capability check covers the
-     template icon in light and dark mode, live remaining time, and the menu
-     in VoiceOver.
-   - **P2.** A JNI `NSStatusItem` variant. It is built only if P1's `Tray`
-     fails that capability check. AWT's tray is already an `NSStatusItem` in
-     the same JVM, so it gets no separate timed run.
-   - **P3.** A `swiftc` status-item agent in the scratchpad, idle only. It is
-     the floor for B and C.
-   - **Launch at login.** The probe runs from the P1 patch, because only
-     Posato's own bundle can answer it. It asks whether registering
-     `SMAppService` `mainApp` creates a background-item record separate from the daemon's,
-     and whether disabling it in System Settings is independent of the daemon.
-
-   Captures stay in `build/verification/`. The throwaway worktree and the
-   clone are removed at the end.
-4. Write out the full text of each change (`AC-02`):
-   - the ADR 0003 and ADR 0004 amendments, including a rewrite of the ADR 0004
-     "Quit ends the helper" clarification;
-   - the ADR 0008 window-close meaning;
-   - the `DESIGN.md` menu, window, Dock, and quit rules, including the menu
-     **End** keeping the early-end confirmation (`SESSION-005` builds on it);
-   - action-required menu states (Resume restrictions, retry, helper
-     unavailable) instead of a countdown while nothing is enforced;
-   - the README and limits wording.
-
-   The `MACOS-013` delivery plan names the `posato-control` extensions it
-   needs:
-   - launch and adopt without a window;
-   - status-item open and inspection through `AXExtrasMenuBar`;
-   - window close told apart from Quit;
-   - a login launch through VM logout or reboot.
-5. Present the open decisions with a recommendation for each (`AC-04`):
-   - the process model;
-   - Quit during a session, where logout, restart, and Sparkle relaunch can't
-     be refused;
-   - launch at login, which must never show an unprompted administrator
-     prompt at login;
-   - exchanges while the window is closed, and how often.
-6. Get an independent review of the record, resolve its findings, and run
-   `./gradlew quality` as the standing gate. Record the maintainer's decision,
-   then mark the PR ready.
+1. Write the decision as ADR 0009 in the ADR 0008 shape.
+2. Compare A, B, and C from code and ADR analysis. Two criteria were added:
+   - the preserved update, removal, and ADR 0004 guarantees;
+   - reopen and duplicate instances.
+3. Measure resources in Tart clones of `primary`, driven through
+   `posato-control` and direct `tart exec`. Probes P0 (current build) and P1
+   (resident patch with `Tray`) run idle and in a session. P2 (JNI status
+   item) is built only if `Tray` fails. P3 (native agent) sets the floor.
+   Add a menu capability check and a launch-at-login probe.
+4. Write out every amendment, including early-end friction in the menu, the
+   not-enforcing states, and the driver extensions for `MACOS-013`.
+5. List the open decisions with recommendations. Get an independent review,
+   run `quality`, then record the maintainer's decision.
 
 ## High-risk plan review
 
@@ -143,14 +41,57 @@ Steps:
 
 ## Result
 
-- Pending.
+- **Decision record.** [ADR 0009](../../decisions/0009-macos-menu-bar-presence.md)
+  (`Proposed`) holds:
+  - the comparison of A, B, and C;
+  - the measured figures;
+  - the recommendation: A, a resident process with a native status item;
+  - the verbatim ADR 0003, ADR 0004, ADR 0008, `DESIGN.md`, README, and
+    limits amendments;
+  - the `MACOS-013` plan with its evidence table and `posato-control`
+    extensions;
+  - the open decisions D1-D5.
+
+  Routing (decisions README, wiki index, idea 7) follows acceptance, as it
+  did for ADR 0008.
+- **Prototypes.**
+  - P1 was a patch in a detached throwaway worktree, since removed. The
+    window closed without exiting, the session owner and updater ran at
+    application scope, and a Compose `Tray`, an activation-policy switch, and
+    `SMAppService.mainApp` probes were added.
+  - P3 was a Swift status agent, and small `axmenu` and `clickat` guest
+    tools opened and inspected menus. All three were built in the
+    scratchpad.
+
+  None is tracked.
+- **Deviations.**
+  - P2 was not built: P1's `Tray` failed accessibility, and P3 answered the
+    native `NSStatusItem` question with the same AppKit API.
+  - P0 without a session ran in a first clone. `first-install-skip` left the
+    daemon unregistered there, and the Retry path ended in a request that did
+    not finish. Every other row ran in a fresh clone, enabled through
+    onboarding and `vm prompt background`. A P1 window-open row on that clone
+    replaces a same-clone P0 idle row.
+  - The login item's removal from System Settings was not driven; only the
+    separate record is `observed`.
+  - A transient 60% helper CPU in the first enforced session is recorded in
+    ADR 0009 as out of scope.
+
+## Completed-change review
+
+- **Verdict:** `pending`
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Pending | | |
+| P0 idle and session, P1 idle and session, P1 window open, P3 in Tart clones of `primary` | pass | 10-minute samples in ADR 0009; run directories under ignored `build/verification/runs/` |
+| Blocking with the window closed (P1) | pass | `observe --website http://example.com/ --expect blocked` returned `paused` |
+| Expiry with no window (P1) | pass | expiry marker in `local_session_expiry`; menu line "No session active" |
+| Reopen through LaunchServices (P1) | pass | same process, window shown, `Foreground` |
+| Status-item accessibility | P1 fail, P3 pass | AX tree and `AXPress` through `axmenu` |
+| Login item probe (P1) | pass | status `enabled`; separate Open at Login row |
 
 ## Blockers and accepted risks
 
-- None yet.
+- No blocker. `AC-04` waits for the maintainer's answers to D1-D5.
