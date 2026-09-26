@@ -1981,3 +1981,19 @@ to scope, feasibility, or delivery.
 - Relaunches no longer apply Paused-items edits made during a session
   (`user-confirmed`). Updated [iOS enforcement](topics/ios-enforcement.md) and
   [cross-device synchronization](topics/cross-device-synchronization.md).
+
+## [2026-09-26] decision | Menu bar presence for Posato for Mac (MACOS-012)
+
+- The maintainer accepted [ADR 0009](../decisions/0009-macos-menu-bar-presence.md):
+  - a resident Compose Desktop process with a native status item;
+  - Quit during a session warns;
+  - opt-in launch at login;
+  - exchanges on menu open and every 30 minutes;
+  - a Dock icon only while the window is open.
+
+  Future schedules add constraints for `SCHEDULE-001` but change no choice.
+- Measured in Tart clones, and found that Compose `Tray` fails accessibility.
+  Updated [macOS enforcement](topics/macos-enforcement.md), idea 7, and the
+  new idea 18 in [MVP open questions](topics/mvp-open-questions.md): a
+  transient helper CPU spike, now backlog row `MACOS-021` (roadmap revision
+  9).

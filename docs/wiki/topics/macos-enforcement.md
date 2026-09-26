@@ -705,6 +705,36 @@ without `appcast.xml` must be published with `--latest=false`. Moving from 1.0
 remains manual quit, replace, and open, which `vm install --replace` drives in
 a VM with the user's data kept.
 
+## Menu bar presence
+
+`user-confirmed` (2026-09-26): [ADR 0009](../../decisions/0009-macos-menu-bar-presence.md)
+keeps Posato for Mac as one resident Compose Desktop process. Closing the
+window no longer quits it; a native `NSStatusItem` in the in-process AppKit
+leaf shows the session and routes into the window's flows. Quit during a
+session warns and does not end it. Launch at login is an opt-in switch. The
+Dock icon shows only while the window is open. `MACOS-013` delivers it. The
+helper, daemon, lease, and update gate are unchanged.
+
+Durable findings from `MACOS-012`, `observed` in Tart clones:
+- **Resident cost.** With its window closed, the resident JVM held about
+  260-270 MB and used under 1% of a core. It woke about four times less often
+  than with its window open and idle. A native status agent holds 13 MB.
+- **Blocking and expiry.** Blocking continued with the window closed, and a
+  session hosted outside the window expired on time.
+- **AWT `SystemTray`.** Compose `Tray` uses it, and it is unusable here:
+  - the status item has no accessible name;
+  - `AXPress` does not open its menu;
+  - it raises a notification permission banner at launch.
+
+  A native `NSStatusItem` passes all three.
+- **Launch at login.** `SMAppService.mainApp` registers without approval as
+  a separate Open at Login record, apart from the helper's background item.
+- **Windowless driving.** `posato-control` cannot drive a windowless
+  application yet. `MACOS-013` extends it.
+- **Helper CPU.** The first enforced session in a fresh clone once kept the
+  helper at about 60% CPU for 14 minutes. The cause is `open` (idea 18,
+  `MACOS-021`).
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the

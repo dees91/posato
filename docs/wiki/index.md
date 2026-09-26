@@ -77,6 +77,9 @@ provenance rather than a parallel public brand.
 - [ADR 0008: macOS Update Delivery](../decisions/0008-macos-update-delivery.md)
   — accepted Sparkle direction, delivered and verified by `MACOS-011`, and
   published with its privacy and availability wording in 1.1.0 (`RELEASE-003`).
+- [ADR 0009: macOS Menu Bar Presence](../decisions/0009-macos-menu-bar-presence.md)
+  — accepted resident process with a native status item, window, Dock, quit,
+  and login rules, measured resource use, and `MACOS-013` delivery gates.
 - [Apple MVP threat model](../security/apple-mvp-threat-model.md) — accepted
   assets and data classification, trust boundaries, threats, required controls,
   downstream owners, and residual risks.

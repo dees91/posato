@@ -32,3 +32,7 @@ evidence at the revision recorded in the wiki. Accepted product ADRs are:
 - [ADR 0008: Deliver macOS updates through Sparkle](0008-macos-update-delivery.md)
   — accepted post-MVP update direction, consent, hosting, signing, proposed
   lifecycle and privacy amendments, and delivery gates; not yet implemented.
+- [ADR 0009: Keep Posato for Mac present in the menu bar](0009-macos-menu-bar-presence.md)
+  — accepted resident-process direction, native status item, window, quit,
+  and login rules, proposed amendments, and `MACOS-013` delivery gates; not
+  yet implemented.
