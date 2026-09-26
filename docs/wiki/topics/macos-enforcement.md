@@ -751,6 +751,10 @@ perform.
     forward on macOS 15; the leaf uses `NSApp activate`.
   - Alert answers need a per-request identity, because a second alert can
     open before the first returns.
+  - A Compose `Window` kept composed with `visible = false` still costs
+    about 74 wakeups a second and about 95 MB more than releasing it.
+    `MACOS-013` releases the window on close and hoists navigation and window
+    state.
 - **Helper CPU.** The first enforced session in a fresh clone once kept the
   helper at about 60% CPU for 14 minutes. The cause is `open` (idea 18,
   `MACOS-021`).
