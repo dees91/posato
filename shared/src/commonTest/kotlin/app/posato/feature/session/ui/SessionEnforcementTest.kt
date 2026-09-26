@@ -201,6 +201,33 @@ class SessionEnforcementTest {
     }
 
     @Test
+    fun `given an applied status on relaunch when the port holds the session then enforcement is adopted without clearing`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val sessionId = SessionId(testIdentifier(12))
+        store.record = SessionRecord(sessionId, NOW - 600_000L, NOW + 1_200_000L)
+        val enforcement = FakeEnforcementPort(heldSessionIds = setOf(sessionId.reconciliationId()))
+        val viewModel = collectedViewModel(store = store, domains = listOf("stable.example"), enforcement = enforcement)
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(listOf("peek", "status", "holds"), enforcement.calls)
+        assertEquals(EnforcementState.Active(false), state.enforcement)
+    }
+
+    @Test
+    fun `given an applied status on relaunch when the port does not hold the session then enforcement re-applies`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        store.record = SessionRecord(SessionId(testIdentifier(13)), NOW - 600_000L, NOW + 1_200_000L)
+        val enforcement = FakeEnforcementPort(heldSessionIds = setOf(SessionId(testIdentifier(14)).reconciliationId()))
+        val viewModel = collectedViewModel(store = store, domains = listOf("stable.example"), enforcement = enforcement)
+        scheduler.runCurrent()
+
+        assertEquals(listOf("peek", "status", "holds", "displace", "clear", "apply"), enforcement.calls)
+        assertEquals(EnforcementState.Active(false), viewModel.uiState.value.enforcement)
+    }
+
+    @Test
     fun `given lost enforcement when the status poll runs then enforcement silently re-applies`() = runTest(dispatcher) {
         val enforcement = FakeEnforcementPort()
         val viewModel = collectedViewModel(domains = listOf("stable.example"), enforcement = enforcement)
@@ -358,6 +385,23 @@ class SessionEnforcementTest {
         assertEquals(listOf("edited.example"), state.displayDomains())
         assertTrue(state.showsFrozenSet())
         assertFalse(state.showsPersistedStartSet())
+    }
+
+    @Test
+    fun `given no persisted set when relaunching into a held session then the summary falls back to the live policy`() = runTest(dispatcher) {
+        val store = FakeLocalSessionStore()
+        val sessionId = SessionId(testIdentifier(25))
+        store.record = SessionRecord(sessionId, NOW - 600_000L, NOW + 1_200_000L)
+        val enforcement = FakeEnforcementPort(heldSessionIds = setOf(sessionId.reconciliationId()))
+        val viewModel = collectedViewModel(store = store, domains = listOf("edited.example"), enforcement = enforcement)
+        scheduler.runCurrent()
+        val state = viewModel.uiState.value
+
+        assertIs<LocalSessionStatus.Active>(state.status)
+        assertEquals(listOf("edited.example"), state.displayDomains())
+        assertTrue(state.showsFrozenSet())
+        assertFalse(state.showsPersistedStartSet())
+        assertEquals(listOf("peek", "status", "holds"), enforcement.calls)
     }
 
     @Test

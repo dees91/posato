@@ -76,6 +76,7 @@ internal class FakeEnforcementPort(
     var statusError: Exception? = null,
     var statusSequence: ArrayDeque<EnforcementOutcome>? = null,
     var expiredSessionIds: Set<String> = emptySet(),
+    var heldSessionIds: Set<String> = emptySet(),
     override val reapplyRequiresPrompt: Boolean = false,
     var clearHook: (() -> Unit)? = null,
     var clearGate: CompletableDeferred<Unit>? = null,
@@ -106,6 +107,11 @@ internal class FakeEnforcementPort(
     override suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
         calls += "peek"
         return sessionId in expiredSessionIds
+    }
+
+    override suspend fun holdsSession(sessionId: String): Boolean {
+        calls += "holds"
+        return sessionId in heldSessionIds
     }
 
     var displacedSessionId: String? = null

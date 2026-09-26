@@ -169,6 +169,13 @@ private class InertEnforcementProvider : IosEnforcementProvider {
 }
 
 private class InertSuspendedExpiryProvider : IosSuspendedExpiryProvider {
+    override fun isScheduled(
+        sessionId: String,
+        handler: (Boolean) -> Unit,
+    ) {
+        throw UnsupportedOperationException()
+    }
+
     override fun schedule(
         request: IosSuspendedExpiryRequest,
         completion: (IosSuspendedExpiryOutcome) -> Unit,

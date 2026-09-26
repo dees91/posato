@@ -418,5 +418,4 @@ so the developer's local data is unchanged.
   `vm prompt admin` while the scenario waits).
 - `session-relaunch-ios.json` relaunches the iPhone app three times during a session and
   checks that the session and both restrictions survive (`features/sessions.md`, Relaunch
-  during a session); it fails, as expected and without blocking other tasks, until
-  `IOS-006` is fixed.
+  during a session); it must pass.

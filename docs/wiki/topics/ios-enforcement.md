@@ -233,7 +233,11 @@ Screen entry and foreground read the reconciliation record for the active
 session identifier and consume it on report; a stale record never ends the
 current session, and clear stays idempotent. Relaunch and foreground silently
 re-apply the current set because no administrator prompt exists on this
-platform; failure surfaces action-required with Retry.
+platform; failure surfaces action-required with Retry. `superseded` in part by
+`IOS-006` (2026-09-26): a relaunch into a session whose expiry is still
+scheduled adopts it without clearing or re-applying, so the session keeps the
+set it started with (`user-confirmed`); re-apply remains for a lost store, a
+session below the 15-minute minimum, and Retry.
 
 `open`: the physical iPhone rows (Screen Time granted, site presentation,
 force-quit expiry, reopen reconciliation).
@@ -263,13 +267,18 @@ Production were not exercised on this build.
 - ~~What App Group callback protocol is the minimum safe implementation for
   scheduled expiry?~~ Answered for the MVP by `IOS-002`: pending/cleared
   versioned records in a dedicated `SuspendedExpiry` directory.
-- `open` (2026-09-25, `RELEASE-003`): relaunching Posato during a session
-  can end it as expired and lift its restrictions on the test iPhone (4 of 6
-  relaunches, every fast XCUITest relaunch). `inferred` from code: re-applying
-  the same session stops and restarts Device Activity monitoring, and an
-  interval-end callback can then write a cleared record for the running
-  session. The path is unchanged since 1.0.0; `IOS-006` fixes it in release
-  1.2, and the availability page states the limit until then.
+- ~~Why does relaunching Posato during a session end it as expired?~~
+  Answered by `IOS-006` (2026-09-26). `observed` on the test iPhone (iOS
+  26.5): stopping and restarting monitoring inside a running window delivers
+  `intervalDidEnd` to the extension within about 2 s, and the old extension
+  cleared the store and recorded the running session as expired. `inferred`:
+  an interval that has not started yet delivers no end, as the `IOS-002`
+  cancel row suggested, though it checked only right after the cancel. The
+  fix adopts the session on relaunch, and the extension ignores a callback
+  more than 60 s before the pending interval end, resolved from the stored
+  date components and the absolute end; it clears nothing without a pending
+  record and still clears on an unreadable one. The availability-page limit
+  stays until `RELEASE-004` publishes the fix.
 - Which iOS browsers are included in the support promise?
 - What should happen when a selection becomes invalid or the device restores
   from backup?

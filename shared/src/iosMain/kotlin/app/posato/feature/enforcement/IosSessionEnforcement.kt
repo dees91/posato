@@ -50,6 +50,10 @@ public class IosSessionEnforcement(
         }
     }
 
+    override suspend fun holdsSession(sessionId: String): Boolean {
+        return expiry.isScheduled(sessionId)
+    }
+
     override suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
         return expiry.readReconciliation(sessionId) == IosExpiryReconciliation.EXPIRED
     }

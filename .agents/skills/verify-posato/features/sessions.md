@@ -83,10 +83,13 @@ Preconditions:
   25-minute session, relaunches three times (at once, after 5 s, and with a
   2-minute window for Device Activity callbacks), observes both restrictions
   again, and ends early. One relaunch is not enough: the defect it guards
-  against (`IOS-006`, release 1.2) ended the session on some relaunches only.
-  Until `IOS-006` merges it fails at `active-after-second-relaunch` or later;
-  that failure is expected, is recorded as the known defect, and does not
-  block an unrelated task. After `IOS-006` it must pass.
+  against (`IOS-006`) ended the session on some relaunches only. It must
+  pass. Safari can occasionally hang on a black page while loading
+  `example.com`; confirm with `observe-blocking-ios.json` in the same session
+  before treating a `site-blocked-after` timeout as a regression. The
+  device-only XCTest
+  `SuspendedExpiryDeviceTests/testRelaunchSequenceInsideARunningWindowKeepsRestrictionsUntilTheRealEnd`
+  (about 6 minutes, no session active) proves the extension guard directly.
 - **Observe blocking (both targets):** with `example.com` and one application paused, on the
   desktop run `$PC observe -t desktop --vm primary --website http://example.com/ --application
   Safari --expect blocked` during the session and `--expect allowed` after it: the request

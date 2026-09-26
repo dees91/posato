@@ -566,7 +566,10 @@ not claim that every other device has received the update.
 - `observed` (2026-09-13, code and deterministic tests): a single session owner
   serializes native effects and checks the desired identity and deadline after
   waits. A generic native APPLIED result cannot establish which session is
-  enforced. Successful empty enforcement and confirmed cleanup are distinct
+  enforced. On iOS, `IOS-006` (2026-09-26) adds a session-bound proof: the
+  version 2 pending expiry record names the session and the installed Device
+  Activity schedule ends where that record says, so a relaunch adopts that
+  session instead of re-applying. Successful empty enforcement and confirmed cleanup are distinct
   from an unknown state after reopening; both must converge without a loop.
   Confirmed cleanup applies only to non-active state: a subsequently adopted
   active identity still requires its own apply or explicit Resume outcome. The

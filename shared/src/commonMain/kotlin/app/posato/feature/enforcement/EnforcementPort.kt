@@ -74,6 +74,10 @@ public interface EnforcementPort {
 
     public suspend fun status(): EnforcementOutcome
 
+    public suspend fun holdsSession(sessionId: String): Boolean {
+        return false
+    }
+
     public suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
         return false
     }

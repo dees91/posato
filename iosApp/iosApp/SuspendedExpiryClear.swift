@@ -10,6 +10,15 @@ enum SuspendedExpiryActivity {
     static let name = DeviceActivityName("app.posato.session.expiry")
     static let appGroupIdentifier = "group.app.posato.ios.session"
     static let recordSchemaVersion = 1
+    /// Version 2 adds the interval end (`IOS-006`); version 1 records from
+    /// 1.1 stay readable and keep their original clear-on-any-callback rule.
+    static let pendingSchemaVersion = 2
+    static let legacyPendingSchemaVersion = 1
+
+    /// A callback earlier than this before the interval end is a restart or
+    /// stop of monitoring, never the real end: the schedule's components are
+    /// truncated to the minute, so the real end never comes earlier.
+    static let earlyCallbackMargin: TimeInterval = 60
 
     /// Device Activity refuses intervals below the platform minimum. Shorter
     /// sessions report `below-platform-minimum` and rely on foreground expiry.
@@ -39,6 +48,41 @@ extension ManagedSettingsStore: SuspendedExpirySettingsStore {
 struct SuspendedExpiryPendingRecord: Codable, Equatable {
     let version: Int
     let sessionId: String
+    let intervalEnd: DateComponents?
+    let endEpochSeconds: Int64?
+
+    /// True only when the callback arrives clearly before this record's
+    /// interval end, taking the earlier of the components resolved in the
+    /// current calendar and the absolute end, so a time-zone or calendar
+    /// change never skips the real end. A version 1 record or components that
+    /// do not resolve never count as early, so the store is cleared as before.
+    func isEarly(at now: Date, calendar: Calendar) -> Bool {
+        guard let intervalEnd, let endEpochSeconds,
+              let resolved = calendar.date(from: intervalEnd)
+        else {
+            return false
+        }
+        let absoluteEnd = Date(timeIntervalSince1970: TimeInterval(endEpochSeconds))
+        let end = min(resolved, absoluteEnd)
+        return now < end.addingTimeInterval(-SuspendedExpiryActivity.earlyCallbackMargin)
+    }
+
+    fileprivate var isReadable: Bool {
+        switch version {
+        case SuspendedExpiryActivity.legacyPendingSchemaVersion:
+            return true
+        case SuspendedExpiryActivity.pendingSchemaVersion:
+            return intervalEnd != nil && endEpochSeconds != nil
+        default:
+            return false
+        }
+    }
+}
+
+enum SuspendedExpiryPendingRead {
+    case absent
+    case present(SuspendedExpiryPendingRecord)
+    case unreadable
 }
 
 struct SuspendedExpiryClearedRecord: Codable, Equatable {
@@ -86,22 +130,35 @@ struct SuspendedExpiryRecordStore {
         )
     }
 
-    func writePending(sessionId: String) throws {
+    func writePending(sessionId: String, intervalEnd: DateComponents, endEpochSeconds: Int64) throws {
         let record = SuspendedExpiryPendingRecord(
-            version: SuspendedExpiryActivity.recordSchemaVersion,
-            sessionId: sessionId
+            version: SuspendedExpiryActivity.pendingSchemaVersion,
+            sessionId: sessionId,
+            intervalEnd: intervalEnd,
+            endEpochSeconds: endEpochSeconds
         )
         try write(record, fileName: Self.pendingFileName)
     }
 
     func readPending() -> SuspendedExpiryPendingRecord? {
-        guard let data = boundedContents(of: Self.pendingFileName),
-              let record = try? JSONDecoder().decode(SuspendedExpiryPendingRecord.self, from: data),
-              record.version == SuspendedExpiryActivity.recordSchemaVersion
-        else {
-            return nil
-        }
+        guard case let .present(record) = readPendingResult() else { return nil }
         return record
+    }
+
+    func readPendingResult() -> SuspendedExpiryPendingRead {
+        let url = directoryURL.appendingPathComponent(Self.pendingFileName)
+        do {
+            let attributes = try fileManager.attributesOfItem(atPath: url.path)
+            guard let size = attributes[.size] as? NSNumber,
+                  size.intValue <= Self.maximumFileBytes else { return .unreadable }
+            let record = try JSONDecoder().decode(SuspendedExpiryPendingRecord.self, from: Data(contentsOf: url))
+            guard record.isReadable, Self.isValidSessionId(record.sessionId) else { return .unreadable }
+            return .present(record)
+        } catch let error as CocoaError where error.code == .fileNoSuchFile || error.code == .fileReadNoSuchFile {
+            return .absent
+        } catch {
+            return .unreadable
+        }
     }
 
     func removePending() {
@@ -194,18 +251,6 @@ struct SuspendedExpiryRecordStore {
         let data = try JSONEncoder().encode(record)
         try data.write(to: directoryURL.appendingPathComponent(fileName), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
     }
-
-    private func boundedContents(of fileName: String) -> Data? {
-        let url = directoryURL.appendingPathComponent(fileName)
-        guard let attributes = try? fileManager.attributesOfItem(atPath: url.path),
-              let size = attributes[.size] as? NSNumber,
-              size.intValue <= Self.maximumFileBytes,
-              let data = try? Data(contentsOf: url)
-        else {
-            return nil
-        }
-        return data
-    }
 }
 
 extension SuspendedExpiryRecordStore {
@@ -217,22 +262,34 @@ extension SuspendedExpiryRecordStore {
 /// Testable expiry-clear logic shared by the monitor extension and the test
 /// bundle. Clears only the injected named store, never touches any other
 /// store, and records the clear only when a pending schedule attributes it to
-/// a session. Logs nothing.
+/// a session. A callback clearly before the pending interval end comes from
+/// stopping or restarting monitoring and changes nothing (`IOS-006`); without
+/// a pending record there is nothing of Posato's left to clear. An unreadable
+/// record still clears, so the phone is not left restricted. Logs nothing.
 enum SuspendedExpiryClear {
     static func handleIntervalEnd(
         activity: DeviceActivityName,
         store: SuspendedExpirySettingsStore,
         records: SuspendedExpiryRecordStore,
-        now: () -> Date = Date.init
+        now: () -> Date = Date.init,
+        calendar: Calendar = .current
     ) {
         guard activity == SuspendedExpiryActivity.name else {
             return
         }
-        store.clearOwnedSettings()
-        guard let pending = records.readPending() else {
+        switch records.readPendingResult() {
+        case .absent:
             return
+        case .unreadable:
+            store.clearOwnedSettings()
+        case let .present(pending):
+            let callbackTime = now()
+            guard !pending.isEarly(at: callbackTime, calendar: calendar) else {
+                return
+            }
+            store.clearOwnedSettings()
+            records.removePending()
+            try? records.writeCleared(sessionId: pending.sessionId, clearedAt: callbackTime.timeIntervalSince1970)
         }
-        records.removePending()
-        try? records.writeCleared(sessionId: pending.sessionId, clearedAt: now().timeIntervalSince1970)
     }
 }
