@@ -7,6 +7,34 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-013 application-presence amendment
+
+`user-confirmed` (2026-09-26, [ADR 0009](0009-macos-menu-bar-presence.md));
+applied on 2026-09-26 by `MACOS-013` after the verified delivery recorded in
+its execution record.
+
+`MACOS-013` widens the DESIGN-001 window-presentation leaf into one
+application-presence leaf in `desktopApp`. In addition to window
+presentation, it owns the status item and its menu, the activation-policy
+switch between regular and accessory, reopen and termination hooks, and
+registration of the application itself as a login item through
+`SMAppService.mainApp`. It remains a signed, in-process AppKit/JNI leaf
+loaded from application resources.
+
+Menu content and every action decision stay in Kotlin. The leaf renders
+titles and enabled states it receives and reports item selection and menu
+opening back. It performs no networking, holds no policy, application
+selections, workspace keys, or authorization material, and talks to no
+Posato process. The status item exposes an accessibility description and
+opens its menu for VoiceOver and keyboard. AWT's `SystemTray` is not used.
+
+The desktop application process may stay resident after its window closes.
+Its lifetime, not the window's, bounds the session owner, the enforcement
+helper pipes, the updater, and synchronization triggers. No new process,
+IPC boundary, or privilege is added. The updater leaf, the enforcement
+helper, the root daemon, and the synchronization companion keep their
+accepted boundaries.
+
 ## MACOS-011 updater amendment
 
 `user-confirmed` (2026-09-22, [ADR 0008](0008-macos-update-delivery.md));

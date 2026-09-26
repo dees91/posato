@@ -420,6 +420,12 @@ The daemon reconciles durable state after:
 - supported in-app disable, repair, update, or removal; and
 - sleep, wake, or primary-network-service change.
 
+The desktop application may remain resident with no window (ADR 0009,
+applied by `MACOS-013`). Window visibility is not a lifecycle event for the
+helper or daemon. A login launch or any relaunch never re-applies ownership
+without a new foreground Apply authorized as above; an active session found at
+launch waits in the Resume state.
+
 Sleep, wake, and network-service changes trigger revalidation. Posato never
 silently transfers an applied mutation to another network service. Cleanup
 remains tied to the recorded service; the support and coexistence behavior for
@@ -493,9 +499,12 @@ is delivered as a manual download. Updating is to quit Posato, replace the
 application bundle, and open it again, with no stop action in the interface.
 That path meets the steps above:
 
-- Quit ends the helper. The helper restores any Apply it owns when its input
-  closes. If that restore fails, the daemon restores on disconnect or when the
-  lease expires.
+- Quitting Posato ends the helper. That covers **Quit Posato**, Cmd-Q, a
+  logout or restart, a supported update relaunch, or a crash. Closing the
+  main window does not quit Posato and leaves the helper and its lease
+  untouched (ADR 0009, applied by `MACOS-013`). The helper restores any Apply
+  it owns when its input closes. If that restore fails, the daemon restores on
+  disconnect or when the lease expires.
 - The daemon exits successfully only at `Idle` with no connection or lease.
   While restore is unconfirmed the old daemon stays running, and Repair applies.
 - Replacing the bundle needs no unregister or re-register while the daemon

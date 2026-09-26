@@ -76,9 +76,11 @@ before blocking starts.
 
 Posato adds deliberate friction; it is not a lock you cannot open.
 
-- **Mac:** Posato must stay open. Starting or resuming blocking needs
-  administrator approval. Paused apps are quit, so save your work first.
-  Website blocking covers Safari and Google Chrome Stable using the system proxy.
+- **Mac:** blocking works while Posato runs, including in the menu bar with
+  its window closed. Quitting Posato stops it. Starting or resuming blocking
+  needs administrator approval. Paused apps are quit, so save your work first.
+  Website blocking covers Safari and Google Chrome Stable using the system
+  proxy.
 - **iPhone:** restrictions can linger after a session ends. For sessions under
   15 minutes, they clear only when Posato is open at the end or the next time
   you open it.
