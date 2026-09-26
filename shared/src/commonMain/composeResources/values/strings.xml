@@ -273,4 +273,5 @@ For what matters.</string>
     <string name="mac_unified_blocking_settings">Blocking settings</string>
     <string name="mac_unified_blocking_settings_caption">Existing helper controls remain available while unified setup is in preview.</string>
     <string name="mac_unified_defer">You can finish setup later and still edit your paused items. Blocking stays unavailable until the helper is ready.</string>
+    <string name="mac_unified_offer_body">One setup for manual pauses and schedules. You can review or revoke access in This Mac settings.</string>
 </resources>

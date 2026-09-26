@@ -309,6 +309,31 @@ class MacHelperQuietReadTest {
     }
 }
 
+class MacHelperQuietReadRaceTest {
+    @Test
+    fun `given a removal that finishes during the quiet read then the older answer is dropped`() = runTest {
+        val gate = CompletableDeferred<MacHelperReadiness>()
+        val helper = RecordingMacHelper(gate = gate)
+        val holder = MacHelperSetupUiState(helper, this)
+
+        holder.readQuietly()
+        runCurrent()
+        holder.remove(sessionBlocked = false)
+        runCurrent()
+        gate.complete(MacHelperReadiness.READY)
+        runCurrent()
+
+        assertEquals(MacHelperReadiness.NOT_ENABLED, holder.presentation().readiness)
+    }
+
+    @Test
+    fun `given an unread helper then setup is not required yet`() {
+        assertEquals(false, MacSetupPresentation(readiness = null).needsSetup())
+        assertEquals(true, MacSetupPresentation(readiness = MacHelperReadiness.NOT_ENABLED).needsSetup())
+        assertEquals(false, MacSetupPresentation(readiness = MacHelperReadiness.READY).needsSetup())
+    }
+}
+
 private class RecordingMacHelper(
     var answer: MacHelperReadiness = MacHelperReadiness.UNAVAILABLE,
     private val gate: CompletableDeferred<MacHelperReadiness>? = null,

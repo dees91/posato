@@ -65,8 +65,8 @@ is the goal; exactly one password entry or system dialog is not promised.
 
 **Not now** keeps editing and synchronization available. An incomplete setup
 leaves one persistent Session notice and **Finish setup**, with no repeated
-modal. Unknown state asks for verification rather than claiming permission was
-refused. Existing users get one dismissible offer; advanced status, revocation
+modal. A read that has not answered yet gates nothing; a lost reply asks for a
+check rather than claiming permission was refused. Existing users get one dismissible offer; advanced status, revocation
 and removal remain in This Mac settings. Do not make users configure separate
 switches in onboarding or before their first schedule.
 
@@ -78,9 +78,10 @@ is revoked, preserve plans and explain the missing capability with one
 installation migration must be specified before connecting the new flow.
 
 PR #92 provides the UI shell only. **Set up Posato** stays disabled and clearly
-labelled as a preview. Existing helper controls remain available under a
-collapsed disclosure, and their actual readiness still gates the existing
-manual-session form. That result is not presented as unified setup completion.
+labelled as a preview. Existing helper controls remain available and start
+expanded while the helper is not ready. Session reads the helper state
+quietly when it appears; only a read that names a state other than ready
+gates the existing manual-session form. That result is not presented as unified setup completion.
 **Preview schedule editor** permits unsaved form exploration. Saving, automatic
 execution, setup orchestration, upgrade eligibility and dismissal persistence
 remain unimplemented.

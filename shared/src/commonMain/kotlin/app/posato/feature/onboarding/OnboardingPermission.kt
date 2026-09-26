@@ -12,13 +12,13 @@ import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.generated.resources.Res
-import app.posato.generated.resources.mac_unified_body
-import app.posato.generated.resources.mac_unified_defer
-import app.posato.generated.resources.mac_unified_title
 import app.posato.generated.resources.application_mapping_access_restricted
 import app.posato.generated.resources.mac_setup_not_enabled
 import app.posato.generated.resources.mac_setup_recovery
 import app.posato.generated.resources.mac_setup_uncertain
+import app.posato.generated.resources.mac_unified_body
+import app.posato.generated.resources.mac_unified_defer
+import app.posato.generated.resources.mac_unified_title
 import app.posato.generated.resources.onboarding_action_continue
 import app.posato.generated.resources.onboarding_action_not_now
 import app.posato.generated.resources.onboarding_permission_check_failed

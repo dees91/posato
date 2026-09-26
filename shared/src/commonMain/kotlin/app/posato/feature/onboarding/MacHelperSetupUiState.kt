@@ -116,9 +116,10 @@ internal class MacHelperSetupUiState(
             return
         }
         quietRead = true
+        val startedAfter = completedOperations
         scope.launch {
             val answer = macHelper.recheck()
-            if (activity == null) {
+            if (activity == null && completedOperations == startedAfter) {
                 readiness = answer
                 standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
             }

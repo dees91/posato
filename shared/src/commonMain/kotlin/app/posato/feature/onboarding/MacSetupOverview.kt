@@ -19,6 +19,7 @@ import app.posato.core.designsystem.PosatoTheme
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_unified_action
 import app.posato.generated.resources.mac_unified_confirm_access
+import app.posato.generated.resources.mac_unified_offer_body
 import app.posato.generated.resources.mac_unified_overview_block
 import app.posato.generated.resources.mac_unified_overview_label
 import app.posato.generated.resources.mac_unified_overview_login
@@ -55,7 +56,7 @@ internal fun MacSetupOffer(
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
         PosatoHeading(
             stringResource(Res.string.mac_unified_title),
-            description = stringResource(Res.string.mac_unified_confirm_access),
+            description = stringResource(Res.string.mac_unified_offer_body),
             layout = PosatoLayout.Compact,
         )
         MacSetupOverview()

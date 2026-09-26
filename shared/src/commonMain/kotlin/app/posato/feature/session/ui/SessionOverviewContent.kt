@@ -28,9 +28,9 @@ import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperReadinessNotice
-import app.posato.feature.onboarding.needsSetup
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.MacSetupSection
+import app.posato.feature.onboarding.needsSetup
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionActionRequired
 import app.posato.feature.session.domain.SessionEndKind

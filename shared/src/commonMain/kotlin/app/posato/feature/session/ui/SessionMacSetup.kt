@@ -14,11 +14,11 @@ import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoSpace
-import app.posato.feature.onboarding.needsSetup
 import app.posato.feature.onboarding.MacSetupOverview
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.MacSetupPreviewAction
 import app.posato.feature.onboarding.MacSetupSection
+import app.posato.feature.onboarding.needsSetup
 
 internal fun SessionUiState.showsMacSetup(macSetup: MacSetupPresentation): Boolean {
     return (isSettingUp || isReviewing) && !isStarting && macSetup.needsSetup()
