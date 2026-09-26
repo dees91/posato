@@ -93,7 +93,10 @@ public enum StandingGrantPolicy {
     return StandingGrantRecord(entries: kept + [granted])
   }
 
-  public static func revoking(record: StandingGrantRecord, peerUserID: UInt32) -> StandingGrantRecord? {
+  public static func revoking(
+    record: StandingGrantRecord,
+    peerUserID: UInt32
+  ) -> StandingGrantRecord? {
     let kept = record.entries.filter { $0.userID != peerUserID }
     return kept.isEmpty ? nil : StandingGrantRecord(entries: kept)
   }
@@ -116,7 +119,10 @@ public enum StandingGrantPolicy {
     )
   }
 
-  private static func isCurrent(_ entry: StandingGrantEntry, identity: some SystemIdentity) -> Bool {
+  private static func isCurrent(
+    _ entry: StandingGrantEntry,
+    identity: some SystemIdentity
+  ) -> Bool {
     return identity.accountIdentifier(for: entry.userID) == entry.accountIdentifier
       && identity.platformIdentifier() == entry.platformIdentifier
   }

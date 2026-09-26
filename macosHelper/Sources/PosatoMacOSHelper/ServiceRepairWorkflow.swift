@@ -22,10 +22,29 @@ func setupDaemonUnavailableResponse(
     return WireLifecyclePolicy.unreconciledServiceResponse(
       serviceState: .recoveryRequired
     )
+  case .prepareGrant, .grant, .revokeGrant:
+    return grantUnavailableResponse(serviceState: .recoveryRequired, failure: .unavailable)
   default:
     return nil
   }
 }
+
+/// Grant operations never own proxy state, so a failure to reach the daemon or a declined prompt is
+/// answered locally instead of ending the helper; the application settles the switch from Status.
+func grantUnavailableResponse(
+  serviceState: ServiceState,
+  failure: FailureCategory
+) -> WireResponsePayload {
+  return WireResponsePayload(
+    outcome: .failure,
+    serviceState: serviceState,
+    ownershipPhase: .idle,
+    failure: failure
+  )
+}
+
+let standingGrantPrompt =
+  "Allow Posato to start and resume sessions on this Mac without an administrator password."
 
 func recoveredSetupPayload(
   requestOperation: WireOperation,
@@ -105,8 +124,15 @@ func forwardDaemonLifecycleRequest(
       in: forwardedPayload.startIndex..<forwardedPayload.endIndex
     )
   }
-  if request.operation == .apply {
-    let grant = try AuthorizationPolicy.acquireGrant(.apply)
+  switch try forwardedAuthorization(for: request.operation) {
+  case .none:
+    break
+  case .declined:
+    return try localResponse(
+      request: request,
+      payload: grantUnavailableResponse(serviceState: .ready, failure: .cancelled)
+    )
+  case .granted(let grant):
     authorizationGrant = grant
     forwardedPayload.append(grant.externalForm)
   }
@@ -232,4 +258,55 @@ private func incompleteRecoveryResponse(
   return WireLifecyclePolicy.unreconciledServiceResponse(
     serviceState: .recoveryRequired
   )
+}
+
+enum ForwardedAuthorization {
+  case none
+  case declined
+  case granted(ApplyAuthorizationGrant)
+}
+
+/// The one-use Apply form is obtained immediately before its Apply. The opt-in form carries its own
+/// prompt, and declining it is an answer rather than a failure that ends the helper.
+func forwardedAuthorization(for operation: WireOperation) throws -> ForwardedAuthorization {
+  switch operation {
+  case .apply:
+    return .granted(try AuthorizationPolicy.acquireGrant(.apply))
+  case .grant:
+    guard
+      let grant = try? AuthorizationPolicy.acquireGrant(
+        .standingApply,
+        prompt: standingGrantPrompt
+      )
+    else {
+      return .declined
+    }
+    return .granted(grant)
+  default:
+    return .none
+  }
+}
+
+/// Answers locally, before any prompt or forwarding, an Apply that does not target this helper's
+/// own listener, and a grant request from an application whose launch could have loaded foreign
+/// code.
+func localAuthorizationRefusal(
+  request: WireMessage,
+  sessionPort: UInt16?,
+  launchEnvironmentIsClean: Bool,
+  serviceState: ServiceState
+) -> WireResponsePayload? {
+  let targetsSession = BrowserDomainRequestHandler.applyTargetsSession(
+    payload: request.payload,
+    sessionPort: sessionPort
+  )
+  if request.operation.isApply, !targetsSession {
+    return BrowserDomainRequestHandler.applyWithoutSessionResponse(serviceState: serviceState)
+  }
+  guard request.operation == .grant || request.operation == .applyWithGrant,
+    !launchEnvironmentIsClean
+  else {
+    return nil
+  }
+  return grantUnavailableResponse(serviceState: serviceState, failure: .standingGrantUnavailable)
 }

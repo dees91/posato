@@ -48,7 +48,9 @@ private func record(_ entries: [StandingGrantEntry]) -> StandingGrantRecord {
 }
 
 @Test func givenMatchingEntryAndConsoleUserWhenEvaluatedThenApplyIsGranted() {
-  #expect(StandingGrantPolicy.isGranted(record: record([entry()]), peerUserID: person, identity: FixedIdentity()))
+  #expect(
+    StandingGrantPolicy.isGranted(
+      record: record([entry()]), peerUserID: person, identity: FixedIdentity()))
 }
 
 @Test func givenBindingMismatchWhenEvaluatedThenApplyIsNotGranted() {
@@ -64,13 +66,18 @@ private func record(_ entries: [StandingGrantEntry]) -> StandingGrantRecord {
   otherConsole.console = otherPerson
   let granted = record([entry()])
 
-  #expect(!StandingGrantPolicy.isGranted(record: nil, peerUserID: person, identity: FixedIdentity()))
-  #expect(!StandingGrantPolicy.isGranted(record: granted, peerUserID: otherPerson, identity: otherConsole))
+  #expect(
+    !StandingGrantPolicy.isGranted(record: nil, peerUserID: person, identity: FixedIdentity()))
+  #expect(
+    !StandingGrantPolicy.isGranted(record: granted, peerUserID: otherPerson, identity: otherConsole)
+  )
   #expect(!StandingGrantPolicy.isGranted(record: granted, peerUserID: person, identity: recreated))
-  #expect(!StandingGrantPolicy.isGranted(record: granted, peerUserID: person, identity: missingAccount))
+  #expect(
+    !StandingGrantPolicy.isGranted(record: granted, peerUserID: person, identity: missingAccount))
   #expect(!StandingGrantPolicy.isGranted(record: granted, peerUserID: person, identity: movedMac))
   #expect(!StandingGrantPolicy.isGranted(record: granted, peerUserID: person, identity: noConsole))
-  #expect(!StandingGrantPolicy.isGranted(record: granted, peerUserID: person, identity: otherConsole))
+  #expect(
+    !StandingGrantPolicy.isGranted(record: granted, peerUserID: person, identity: otherConsole))
 }
 
 @Test func givenConsoleSessionWhenNamedThenOnlyARealUserCounts() {
@@ -104,10 +111,12 @@ private func record(_ entries: [StandingGrantEntry]) -> StandingGrantRecord {
   noPlatform.platform = nil
 
   #expect(throws: StandingGrantFailure.unavailable) {
-    try StandingGrantPolicy.granting(record: nil, peerUserID: person, identity: otherConsole, now: grantedAt)
+    try StandingGrantPolicy.granting(
+      record: nil, peerUserID: person, identity: otherConsole, now: grantedAt)
   }
   #expect(throws: StandingGrantFailure.unavailable) {
-    try StandingGrantPolicy.granting(record: nil, peerUserID: person, identity: noPlatform, now: grantedAt)
+    try StandingGrantPolicy.granting(
+      record: nil, peerUserID: person, identity: noPlatform, now: grantedAt)
   }
 }
 
@@ -121,7 +130,8 @@ private func record(_ entries: [StandingGrantEntry]) -> StandingGrantRecord {
   )
 
   #expect(throws: StandingGrantFailure.unavailable) {
-    try StandingGrantPolicy.granting(record: full, peerUserID: person, identity: identity, now: grantedAt)
+    try StandingGrantPolicy.granting(
+      record: full, peerUserID: person, identity: identity, now: grantedAt)
   }
 }
 
@@ -133,5 +143,7 @@ private func record(_ entries: [StandingGrantEntry]) -> StandingGrantRecord {
       == record([entry(otherPerson, account: otherAccount)])
   )
   #expect(StandingGrantPolicy.revoking(record: record([entry()]), peerUserID: person) == nil)
-  #expect(StandingGrantPolicy.revoking(record: record([entry()]), peerUserID: otherPerson) == record([entry()]))
+  #expect(
+    StandingGrantPolicy.revoking(record: record([entry()]), peerUserID: otherPerson)
+      == record([entry()]))
 }

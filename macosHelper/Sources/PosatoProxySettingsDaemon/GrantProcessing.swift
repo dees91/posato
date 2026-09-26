@@ -1,6 +1,12 @@
 import Foundation
 import PosatoMacOSServiceCore
 
+struct RequestContext {
+  let peerUserID: UInt32?
+  var ownershipVerified = false
+  var grantState: WireGrantState?
+}
+
 extension RequestCoordinator {
   func requireExactRule(_ right: AuthorizationRight) throws {
     guard try rules.state(of: right) == .exact else {
@@ -59,7 +65,25 @@ extension RequestCoordinator {
     }
   }
 
-  func performPrepareGrant() throws -> OwnershipPhase {
+  func performGrantOperation(
+    _ request: WireMessage,
+    peerUserID: UInt32?
+  ) throws -> OwnershipPhase {
+    switch request.operation {
+    case .prepareGrant:
+      try requireEmptyPayload(request)
+      return try performPrepareGrant()
+    case .grant:
+      return try performGrant(request, peerUserID: peerUserID)
+    case .revokeGrant:
+      try requireEmptyPayload(request)
+      return try performRevokeGrant(peerUserID: peerUserID)
+    default:
+      throw ProxyOwnershipFailure.invalidInput
+    }
+  }
+
+  private func performPrepareGrant() throws -> OwnershipPhase {
     try requireExactRule(.apply)
     switch try rules.state(of: .standingApply) {
     case .exact:
@@ -73,7 +97,7 @@ extension RequestCoordinator {
     return try engine.status()
   }
 
-  func performGrant(_ request: WireMessage, peerUserID: UInt32?) throws -> OwnershipPhase {
+  private func performGrant(_ request: WireMessage, peerUserID: UInt32?) throws -> OwnershipPhase {
     guard request.payload.count == AuthorizationPolicy.externalFormBytes else {
       throw ProxyOwnershipFailure.invalidInput
     }
@@ -100,7 +124,7 @@ extension RequestCoordinator {
 
   /// Revoke needs no administrator and only ever takes back the caller's own grant; a record that
   /// cannot be read is deleted whole.
-  func performRevokeGrant(peerUserID: UInt32?) throws -> OwnershipPhase {
+  private func performRevokeGrant(peerUserID: UInt32?) throws -> OwnershipPhase {
     guard let peerUserID else {
       throw StandingGrantFailure.unavailable
     }

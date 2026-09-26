@@ -21,7 +21,9 @@ enum ParentLaunchEnvironment {
     guard bytes.count > countBytes else {
       return false
     }
-    let argumentCount = bytes.prefix(countBytes).withUnsafeBytes { $0.loadUnaligned(as: Int32.self) }
+    let argumentCount = bytes.prefix(countBytes).withUnsafeBytes {
+      $0.loadUnaligned(as: Int32.self)
+    }
     guard argumentCount >= 0 else {
       return false
     }
@@ -35,8 +37,8 @@ enum ParentLaunchEnvironment {
       guard let separator = entry.firstIndex(of: UInt8(ascii: "=")) else {
         return false
       }
-      let name = String(decoding: entry[entry.startIndex..<separator], as: UTF8.self)
-      return javaOptionVariables.contains(name)
+      let name = String(bytes: entry[entry.startIndex..<separator], encoding: .utf8)
+      return name.map(javaOptionVariables.contains) ?? false
     }
   }
 

@@ -16,7 +16,9 @@ private final class EventLog: @unchecked Sendable {
 }
 
 private final class FakeRules: AuthorizationRules, @unchecked Sendable {
-  var states: [AuthorizationRight: AuthorizationRuleState] = [.apply: .exact, .standingApply: .exact]
+  var states: [AuthorizationRight: AuthorizationRuleState] = [
+    .apply: .exact, .standingApply: .exact,
+  ]
   var acceptsForm = true
   let log: EventLog
 
@@ -89,7 +91,10 @@ private struct Identity: SystemIdentity {
   }
 }
 
-private func grantedEntry(_ userID: UInt32 = person, account: UUID = personAccount) -> StandingGrantEntry {
+private func grantedEntry(
+  _ userID: UInt32 = person,
+  account: UUID = personAccount
+) -> StandingGrantEntry {
   return StandingGrantEntry(
     userID: userID,
     accountIdentifier: account,
@@ -120,7 +125,11 @@ private final class Daemon {
     )
   }
 
-  func reply(_ operation: WireOperation, payload: Data = Data(), peer: UInt32? = person) throws -> Data {
+  func reply(
+    _ operation: WireOperation,
+    payload: Data = Data(),
+    peer: UInt32? = person
+  ) throws -> Data {
     sequence += 1
     let request = try WireMessage(
       kind: .request,
@@ -143,10 +152,13 @@ private final class Daemon {
     return try WireCodec.decode(encoded, maximumBytes: WireLimits.maximumXPCBytes).payload
   }
 
-  func send(_ operation: WireOperation, payload: Data = Data(), peer: UInt32? = person) throws
-    -> WireResponsePayload
-  {
-    return try WireResponsePayload.decodeStatus(reply(operation, payload: payload, peer: peer)).response
+  func send(
+    _ operation: WireOperation,
+    payload: Data = Data(),
+    peer: UInt32? = person
+  ) throws -> WireResponsePayload {
+    return try WireResponsePayload.decodeStatus(reply(operation, payload: payload, peer: peer))
+      .response
   }
 
   func reconcile(_ original: WireOperation) throws -> WireResponsePayload {
@@ -198,11 +210,16 @@ private let externalForm = Data(repeating: 1, count: AuthorizationPolicy.externa
   let brokenApplyRule = Daemon()
   brokenApplyRule.rules.states[.apply] = .absent
 
-  #expect(try daemon.reply(.status) .count == 5)
-  #expect(try daemon.reply(.status, payload: WireStatusRequest.includeGrantState) == Data([1, 3, 1, 0, 0, 3]))
+  #expect(try daemon.reply(.status).count == 5)
+  #expect(
+    try daemon.reply(.status, payload: WireStatusRequest.includeGrantState)
+      == Data([1, 3, 1, 0, 0, 3]))
   #expect(try withoutGrant.reply(.status, payload: WireStatusRequest.includeGrantState).last == 1)
-  #expect(try daemon.reply(.status, payload: WireStatusRequest.includeGrantState, peer: otherPerson).last == 1)
-  #expect(try brokenApplyRule.reply(.status, payload: WireStatusRequest.includeGrantState).count == 5)
+  #expect(
+    try daemon.reply(.status, payload: WireStatusRequest.includeGrantState, peer: otherPerson).last
+      == 1)
+  #expect(
+    try brokenApplyRule.reply(.status, payload: WireStatusRequest.includeGrantState).count == 5)
 }
 
 @Test func givenDisableThenGrantsAreDeletedButASessionRestoreKeepsThem() throws {
@@ -240,7 +257,10 @@ private let externalForm = Data(repeating: 1, count: AuthorizationPolicy.externa
   reconciledRepair.rules.states[.apply] = .mismatched
 
   #expect(try absentApply.send(.enable).outcome == .success)
-  #expect(absentApply.log.events == ["remove grants", "write apply", "remove grants", "write standingApply"])
+  #expect(
+    absentApply.log.events == [
+      "remove grants", "write apply", "remove grants", "write standingApply",
+    ])
   #expect(try exact.send(.repair).outcome == .success)
   #expect(exact.log.events.isEmpty && exact.grants.record != nil)
   #expect(try mismatchedOnEnable.send(.enable).actionRequired == .ruleRepair)
@@ -270,9 +290,11 @@ private let externalForm = Data(repeating: 1, count: AuthorizationPolicy.externa
   let noPeer = Daemon(granted: [])
   let granted = Daemon(granted: [])
 
-  #expect(try declined.send(.grant, payload: externalForm).actionRequired == .administratorAuthentication)
+  #expect(
+    try declined.send(.grant, payload: externalForm).actionRequired == .administratorAuthentication)
   #expect(declined.grants.record == nil)
-  #expect(try noPeer.send(.grant, payload: externalForm, peer: nil).failure == .standingGrantUnavailable)
+  #expect(
+    try noPeer.send(.grant, payload: externalForm, peer: nil).failure == .standingGrantUnavailable)
   #expect(noPeer.grants.record == nil)
   #expect(try granted.send(.grant, payload: externalForm).outcome == .success)
   #expect(granted.log.events == ["validate standingApply", "save grants"])

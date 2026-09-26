@@ -1,12 +1,6 @@
 import Foundation
 import PosatoMacOSServiceCore
 
-struct RequestContext {
-  let peerUserID: UInt32?
-  var ownershipVerified = false
-  var grantState: WireGrantState?
-}
-
 extension RequestCoordinator {
   func process(
     _ original: Data,
@@ -82,14 +76,29 @@ extension RequestCoordinator {
     switch request.operation {
     case .status:
       return try performStatus(request, context: &context)
-    case .enable:
-      return try performEnable(request, repair: false)
-    case .repair:
-      return try performEnable(request, repair: true)
-    case .apply:
-      return try performApply(request, context: &context, grantAuthorized: false)
-    case .applyWithGrant:
-      return try performApply(request, context: &context, grantAuthorized: true)
+    case .apply, .applyWithGrant:
+      return try performApply(
+        request,
+        context: &context,
+        grantAuthorized: request.operation == .applyWithGrant
+      )
+    case .reconcile:
+      return try reconcileUnknown(
+        request: request,
+        payload: WireReconcilePayload.decode(request.payload),
+        context: &context
+      )
+    case .prepareGrant, .grant, .revokeGrant:
+      return try performGrantOperation(request, peerUserID: context.peerUserID)
+    default:
+      return try performLifecycle(request)
+    }
+  }
+
+  private func performLifecycle(_ request: WireMessage) throws -> OwnershipPhase {
+    switch request.operation {
+    case .enable, .repair:
+      return try performEnable(request, repair: request.operation == .repair)
     case .restore:
       try requireEmptyPayload(request)
       return try performRestore()
@@ -99,23 +108,9 @@ extension RequestCoordinator {
     case .remove:
       try requireEmptyPayload(request)
       return try performRemove()
-    case .reconcile:
-      return try reconcileUnknown(
-        request: request,
-        payload: WireReconcilePayload.decode(request.payload),
-        context: &context
-      )
     case .renew:
       return try performRenew(request)
-    case .prepareGrant:
-      try requireEmptyPayload(request)
-      return try performPrepareGrant()
-    case .grant:
-      return try performGrant(request, peerUserID: context.peerUserID)
-    case .revokeGrant:
-      try requireEmptyPayload(request)
-      return try performRevokeGrant(peerUserID: context.peerUserID)
-    case .none, .selectApplications, .configureBrowserDomains, .configureApplications:
+    default:
       throw ProxyOwnershipFailure.invalidInput
     }
   }
