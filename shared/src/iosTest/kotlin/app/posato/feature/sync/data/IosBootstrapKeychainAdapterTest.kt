@@ -183,16 +183,6 @@ class IosBootstrapKeychainAdapterTest {
         assertEquals("IosKeychainBinding(redacted)", IosKeychainBinding(IosKeychainBindingStatus.Available, null).toString())
         assertEquals("IosKeychainItemRead(redacted)", IosKeychainItemRead(IosKeychainReadStatus.Found, null).toString())
     }
-
-    @Test
-    fun `given forwarded bytes when compared then copies match the originals`() = runTest {
-        val provider = FakeIosKeychainProvider(itemRead = IosKeychainItemRead(IosKeychainReadStatus.Missing, null))
-        val binding = testBinding()
-
-        IosBootstrapKeychainAdapter(provider).readItem(binding, testAccount())
-
-        assertContentEquals(binding.copyBytes(), provider.seenBindings.single())
-    }
 }
 
 private fun testBinding(): AccountBinding {

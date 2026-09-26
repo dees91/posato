@@ -160,14 +160,43 @@ exceptions elsewhere. The aggregate quality gate enforces the exact approved
 Kotlin suppression allowlist. To keep that gate syntax-independent, do not put
 the `Suppress` token in Kotlin comments, strings, aliases, or examples.
 
+## Testing policy
+
+`user-confirmed` (2026-09-26): prefer E2E tests as the sole testing mechanism
+when they can expose the relevant failures. Verify complex features through
+the real application with `posato-control` and the approved targets above.
+
+- Never write unit tests after writing the implementation they cover. For a
+  bug in existing code, write and demonstrate the failing regression before
+  changing the implementation.
+- If a system must be tested in isolation, first write down its credible
+  failure modes and why E2E cannot reliably exercise them. Write the failing
+  tests before the implementation or repair.
+- End each E2E run with a verifiable, repeatable artifact. Record the tested
+  revision, target, initial state, exact command or scenario, asserted result,
+  and evidence directory. Keep raw artifacts under ignored
+  `build/verification/`, following the privacy rules above.
+- Each test must name an observable contract and a credible regression that
+  stronger existing coverage misses. Do not add tests that mirror source,
+  compare copied constants, assert static UI copy or wiring, or merely prove
+  a mock behaves as configured.
+- Audit existing tests against their actual assertions, production callers,
+  history, and remaining proof before deletion. Keep independent security,
+  protocol, migration, state, parsing, and boundary tests when E2E does not
+  expose their failures. A test's layer alone is not a deletion reason.
+
+The [engineering quality contract](docs/development/engineering-quality-contract.md#tests-and-runtime-checks)
+defines the same bar for implementation and review.
+
 ## Code Review Rules
 
 - Report only actionable defects introduced by the reviewed diff. Map P0 to
   `Critical` and P1 to `Required`; do not turn advisory preferences or
   pre-existing out-of-scope work into blocking findings.
-- Require automated tests only for important business, state, policy,
-  validation, parsing, and boundary behavior. Do not request tests for static
-  UI rendering, copy, theme mapping, or framework wiring.
+- Apply the testing policy above. Prefer E2E proof and request isolated tests
+  only for a named important failure that existing stronger coverage misses.
+  Do not request tests for static UI rendering, copy, theme mapping, or
+  framework wiring.
 - Flag credentials, personal paths, wholesale PoC reuse, and violations of the
   accepted product, architecture, security, privacy, or process boundaries.
   `.research/blocker` must remain read-only evidence and an optional checkout.

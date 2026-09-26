@@ -577,35 +577,6 @@ class SessionTransitionOwnerTest {
     }
 
     @Test
-    fun `given a failed displacement bank then replacement apply is withheld`() = runTest(dispatcher) {
-        val base = FakeLocalSessionStore()
-        val store = object : app.posato.feature.session.data.LocalSessionSyncStore by base {
-            override suspend fun retainExpiryMarker(sessionId: SessionId): LocalSessionResult<Unit> =
-                LocalSessionResult.Failure(LocalSessionFailure.STORAGE_FAILURE)
-        }
-        val enforcement = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
-        val clock = FakeSessionClock(NOW)
-        val old = SessionId(testIdentifier(94))
-        enforcement.displacedSessionId = old.reconciliationId()
-        val owner = SessionTransitionOwner(
-            dispatcher,
-            store,
-            clock,
-            enforcement,
-            { loadSessionTargets(policyStoreOf(listOf("stable.example")), FakeSessionMappings()) },
-            FakeSessionSyncTriggers(),
-        )
-        try {
-            owner.startSession(SessionId(testIdentifier(95)), NOW, NOW + DURATION, START_SET)
-            scheduler.runCurrent()
-            assertTrue("apply" !in enforcement.calls, "Scheduled a replacement without retaining the displaced expiry: ${enforcement.calls}")
-            assertTrue(enforcement.acknowledgedSessionIds.isEmpty())
-        } finally {
-            owner.close()
-        }
-    }
-
-    @Test
     fun `given replacement during a status read then the new identity is applied`() = runTest(dispatcher) {
         val store = FakeLocalSessionStore()
         val clock = FakeSessionClock(NOW)

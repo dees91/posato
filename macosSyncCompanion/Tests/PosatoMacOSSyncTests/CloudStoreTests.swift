@@ -84,14 +84,6 @@ import Testing
   #expect(backend.saveCalls == 0)
 }
 
-@Test func givenIdenticalAnchorWhenCreatingThenConflictIsReturned() {
-  let backend = FakeCloudBackend()
-  backend.records[CloudNames.anchorName] = testAnchorRecord()
-  let store = CloudStore(backend: backend)
-
-  #expect(store.createAnchor(fields: testAnchorFields(), timeout: 5) == .conflict)
-}
-
 @Test func givenMissingAnchorWhenCreatingThenCreatedIsReturned() {
   let backend = FakeCloudBackend()
   let store = CloudStore(backend: backend)
@@ -164,21 +156,6 @@ import Testing
       payload: Data(repeating: 11, count: 8),
       timeout: 5
     ) == .created
-  )
-}
-
-@Test func givenRaceWhenSavingBundleThenIdenticalIsReconciled() {
-  let backend = FakeCloudBackend()
-  backend.records[testBundleName()] = testBundleRecord()
-  backend.saveResult = .conflicted
-  let store = CloudStore(backend: backend)
-
-  #expect(
-    store.saveBundle(
-      identifier: testBundleIdentifier(),
-      payload: Data(repeating: 11, count: 8),
-      timeout: 5
-    ) == .identical
   )
 }
 

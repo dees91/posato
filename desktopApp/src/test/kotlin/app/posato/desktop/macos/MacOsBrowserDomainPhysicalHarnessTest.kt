@@ -26,16 +26,6 @@ import kotlin.test.assertTrue
  */
 class MacOsBrowserDomainPhysicalHarnessTest {
     @Test
-    fun `given the physical gate when unset then the maintainer checklist is skipped`() {
-        if (!gateIsSet()) {
-            return
-        }
-        val checklist = evidenceDirectory().resolve("checklist.md")
-        Files.writeString(checklist, checklistTemplate)
-        assertTrue(Files.isRegularFile(checklist))
-    }
-
-    @Test
     fun `given the physical gate when set then enforcement holds active for manual rows`() {
         if (!gateIsSet()) {
             return
@@ -261,30 +251,6 @@ class MacOsBrowserDomainPhysicalHarnessTest {
               }
               return 128 + WTERMSIG(status);
             }
-            """.trimIndent() + "\n"
-
-        val checklistTemplate =
-            """
-            # MACOS-004 physical checklist
-
-            | Row | Result |
-            | --- | --- |
-            | Safari regular HTTP deny | |
-            | Safari regular HTTPS deny | |
-            | Safari private HTTP deny | |
-            | Safari private HTTPS deny | |
-            | Chrome regular HTTP deny | |
-            | Chrome regular HTTPS deny | |
-            | Chrome incognito HTTP deny | |
-            | Chrome incognito HTTPS deny | |
-            | Control / sibling / subdomain reachable | |
-            | Presentation failure leaves denial intact | |
-            | Conflict preflight refuses Apply | |
-            | Sleep / wake restores baseline | |
-            | Forced helper termination restores baseline | |
-            | Reboot restores baseline | |
-            | Listener failure with cache-busted selected target never DIRECT | |
-            | Privacy canary absent from logs, IPC, durable state | |
             """.trimIndent() + "\n"
     }
 }

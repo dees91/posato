@@ -63,18 +63,6 @@ final class SuspendedExpiryTests: XCTestCase {
         XCTAssertNil(records.readCleared())
     }
 
-    func testMatchingActivityClearsOnlyTheInjectedStore() throws {
-        let owned = FakeExpirySettingsStore()
-        let foreign = FakeExpirySettingsStore()
-        let records = try isolatedRecordStore()
-        try writePending(records, sessionId: "session")
-
-        handleIntervalEnd(store: owned, records: records, now: 1_700_003_600)
-
-        XCTAssertEqual(owned.clears, 1)
-        XCTAssertEqual(foreign.clears, 0)
-    }
-
     func testMatchingActivityWritesClearedRecordAndConsumesPending() throws {
         let store = FakeExpirySettingsStore()
         let records = try isolatedRecordStore()

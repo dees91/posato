@@ -3,8 +3,8 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 14
-- **Accepted:** 2026-09-07
+- **Revision:** 15
+- **Accepted:** 2026-09-26
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
@@ -113,14 +113,27 @@ change, not a suppression.
 
 ## Tests and runtime checks
 
-Use the layers that can reveal a failure introduced by the task:
+`user-confirmed` (2026-09-26): highly prefer E2E tests as the sole testing
+mechanism when they expose the relevant failures. Complex features use real
+user flows through `posato-control`, with macOS in Tart VMs and iOS on the test
+iPhone. This replaces the earlier default of adding unit tests whenever
+product or presentation logic changes.
+
+Never write unit tests after writing the implementation they cover. If
+isolation is needed, first list the credible failure modes and explain why
+E2E cannot reliably exercise them. Write and demonstrate the failing isolated
+test before implementing the behavior or fixing the bug. Existing code can
+receive a regression test before its repair; do not backfill tests that mirror
+an already-written implementation.
+
+Choose proof by the failure it can detect:
 
 | Layer | Use when |
 | --- | --- |
-| Unit | Product, presentation, parsing, validation, state, or policy behavior changes. |
-| Contract | A platform, persistence, transport, IPC, or cryptographic boundary changes. |
-| Integration | Several owned components, processes, stores, or adapters must cooperate. |
-| Automated UI | Deferred until the interface stabilizes after the MVP; a golden-test approach such as Paparazzi requires a separate tool and target decision. |
+| E2E | Default for complex features and user-visible behavior; exercise the real flow and assert its effects. |
+| Isolated unit or contract | A named important failure in state, policy, parsing, persistence, transport, IPC, cryptography, or another boundary cannot be reliably exposed by E2E. Record the failure inventory before coding. |
+| Integration | Cooperation between components, processes, stores, or adapters has a distinct failure that existing E2E proof misses. |
+| Static UI or golden | Do not add tests for static rendering, copy, theme mapping, or framework wiring. Golden testing requires a separate tool and target decision. |
 | Platform build or simulator | A host, native target, extension, helper, entitlement, packaging, or source-set boundary changes. |
 | Physical device | A simulator cannot represent the relevant entitlement, lifecycle, enforcement, or cross-device behavior. The test iPhone and Tart VMs cover it unattended; the host Mac is never a test device. |
 | Manual inspection | Visual, accessibility, recovery, installation, or operating-system integration needs observation. An agent performs it with `posato-control` screenshots and snapshots, unattended by default (`AGENTS.md`). |
@@ -133,10 +146,30 @@ or application-shell wiring. UI changes use platform builds and proportionate
 manual inspection. Golden testing, with Paparazzi named as a candidate, remains
 a post-MVP decision and is not a current dependency or coverage claim.
 
-New important behavior gets a regression-capable automated test when
-practical. A business-logic bug fix gets a regression test unless the selected
-record path explains the concrete automation limit. Record only checks actually
-applicable and run; do not enumerate irrelevant categories as `N/A`.
+End each E2E run with a verifiable, repeatable artifact. Record the tested
+revision, target, initial state, exact command or scenario, expected and actual
+outcome, and evidence directory. Capture the observable action and resulting
+state, check the side effect, and verify cleanup as required by `verify-posato`.
+Raw screenshots, logs, database evidence, and identifiers remain under ignored
+`build/verification/`; tracked records contain only portable commands and
+categorical results.
+
+New important behavior needs regression-capable proof at the strongest useful
+boundary. A business-logic bug fix demonstrates failure before the repair and
+success after it unless the selected record path explains the concrete
+automation limit. One contract has one primary test owner; an additional layer
+must protect a distinct failure. Reject tests that merely restate source,
+compare copied constants, or verify behavior implemented by the mock itself.
+
+Before deleting an existing test, inspect its full assertions, production
+owner and callers, history, and remaining coverage. Name the stronger keeper
+and failure it detects, or explain why the deleted test protects no independent
+contract. Preserve security, protocol, migration, and other boundary proof
+that current E2E scenarios miss. Existing failures are possible product bugs,
+not evidence that a test should be deleted.
+
+Record only checks actually applicable and run; do not enumerate irrelevant
+categories as `N/A`.
 
 Run focused tests for each correction and the complete `./gradlew quality`
 once after the last correction before pushing. Use `--rerun-tasks` only after

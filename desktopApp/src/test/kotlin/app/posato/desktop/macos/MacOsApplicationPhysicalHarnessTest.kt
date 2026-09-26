@@ -28,16 +28,6 @@ import kotlin.test.assertTrue
  */
 class MacOsApplicationPhysicalHarnessTest {
     @Test
-    fun `given the physical gate when unset then the maintainer checklist is skipped`() {
-        if (!gateIsSet()) {
-            return
-        }
-        val checklist = evidenceDirectory().resolve("checklist.md")
-        Files.writeString(checklist, checklistTemplate)
-        assertTrue(Files.isRegularFile(checklist))
-    }
-
-    @Test
     fun `given the physical gate when set then selected apps terminate and control survives`() {
         if (!gateIsSet()) {
             return
@@ -362,21 +352,6 @@ class MacOsApplicationPhysicalHarnessTest {
         const val NOTIFY_TIMEOUT_MILLISECONDS = 15 * 60 * 1_000L
         const val POLL_MILLISECONDS = 500L
         const val TOOL_TIMEOUT_SECONDS = 60L
-
-        val checklistTemplate =
-            """
-            # MACOS-005 physical checklist
-
-            - [ ] Helper enabled under System Settings > General > Login Items (`ENABLE_APPROVED`)
-            - [ ] Selected test application terminated within the grace after launch
-            - [ ] Paused notice observed once, notifications allowed (`NOTIFY_GO`)
-            - [ ] Control test application launched and kept running
-            - [ ] Selected application already running at activation was terminated
-            - [ ] After clear, the selected application launches and keeps running
-            - [ ] Forced helper termination stops observation (selected survives)
-            - [ ] Parent exit stops observation (selected survives)
-            - [ ] Synthetic canary absent from the helper log, evidence, and client output
-            """.trimIndent() + "\n"
 
         fun testApplicationPropertyList(
             name: String,

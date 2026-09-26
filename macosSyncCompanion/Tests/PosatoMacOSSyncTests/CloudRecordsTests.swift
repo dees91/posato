@@ -3,14 +3,6 @@ import Testing
 
 @testable import PosatoMacOSSync
 
-@Test func givenIdentifierWhenConvertedToTextThenItRoundTrips() {
-  let identifier = testBundleIdentifier(9)
-  let text = RecordCodec.uuidText(from: identifier)!
-
-  #expect(RecordCodec.isCanonicalUUID(text))
-  #expect(text == RecordCodec.uuidText(from: identifier))
-}
-
 @Test func givenUppercaseUUIDWhenCheckedThenItIsNotCanonical() {
   #expect(!RecordCodec.isCanonicalUUID("AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE"))
   #expect(!RecordCodec.isCanonicalUUID("not-a-uuid"))

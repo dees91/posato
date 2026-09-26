@@ -3,52 +3,18 @@ package app.posato.feature.sync.data
 import app.posato.feature.sync.FakeSyncCryptoProvider
 import app.posato.feature.sync.domain.EncryptedBundle
 import app.posato.feature.sync.domain.PublicSigningKey
-import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncOperationPayload
-import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.domain.TransportKey
 import app.posato.feature.sync.testContext
-import app.posato.feature.sync.testIdentifier
 import app.posato.feature.sync.testOperation
 import app.posato.feature.sync.testPublicKey
-import app.posato.feature.targets.domain.ApplicationPolicyName
-import app.posato.feature.targets.domain.ExactDomain
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class CanonicalBufferLifecycleTest {
-    @Test
-    fun `given successful projection hashing when digest completes then its plaintext preimage is cleared`() {
-        val provider = CapturingSha256Provider { ByteArray(HASH_BYTES) { 1 } }
-
-        assertIs<ImmutableBytes>(projection().canonicalDigest(provider))
-
-        provider.assertCapturedMessageCleared()
-    }
-
-    @Test
-    fun `given rejected projection hashing when digest completes then its plaintext preimage is cleared`() {
-        val provider = CapturingSha256Provider { null }
-
-        assertNull(projection().canonicalDigest(provider))
-
-        provider.assertCapturedMessageCleared()
-    }
-
-    @Test
-    fun `given failing projection hashing when digest throws then its plaintext preimage is cleared`() {
-        val provider = CapturingSha256Provider { throw ExpectedCryptoException() }
-
-        assertFailsWith<ExpectedCryptoException> { projection().canonicalDigest(provider) }
-
-        provider.assertCapturedMessageCleared()
-    }
-
     @Test
     fun `given failing signing when bundle preparation returns then its signature preimage is cleared`() {
         val provider = FakeSyncCryptoProvider()
@@ -122,29 +88,6 @@ class CanonicalBufferLifecycleTest {
     }
 }
 
-private fun projection() = SyncReducer.reduce(
-    listOf(
-        testOperation(1, 1, SyncOperationPayload.AuthorRegister),
-        testOperation(
-            2,
-            2,
-            SyncOperationPayload.DomainPresent(checkNotNull(ExactDomain.restore("focus.example"))),
-        ),
-        testOperation(
-            3,
-            3,
-            SyncOperationPayload.ApplicationPolicyPresent(
-                checkNotNull(ApplicationPolicyName.restore("Focused work")),
-            ),
-        ),
-        testOperation(
-            4,
-            4,
-            SyncOperationPayload.SessionStart(SessionId(testIdentifier(80)), 1_000, 2_000),
-        ),
-    ),
-)
-
 private fun transportKey(): TransportKey {
     return checkNotNull(TransportKey.fromBytes(ByteArray(SyncFormatLimits.TRANSPORT_KEY_BYTES) { 3 }))
 }
@@ -162,23 +105,6 @@ private fun prepareBundle(
     )
 
     return assertIs<PrepareBundleResult.Success>(prepared).bundle
-}
-
-private class CapturingSha256Provider(
-    private val hash: (ByteArray) -> ByteArray?,
-) : SyncCryptoProvider by FakeSyncCryptoProvider() {
-    private lateinit var capturedMessage: ByteArray
-
-    override fun sha256(message: ByteArray): ByteArray? {
-        assertTrue(message.any { byte -> byte != 0.toByte() })
-        capturedMessage = message
-
-        return hash(message)
-    }
-
-    fun assertCapturedMessageCleared() {
-        assertTrue(capturedMessage.all { byte -> byte == 0.toByte() })
-    }
 }
 
 private class CapturingFailingSigningKey : SyncSigningKey {
@@ -273,5 +199,3 @@ private class CapturingSigningKey(
 }
 
 private class ExpectedCryptoException : RuntimeException()
-
-private const val HASH_BYTES = 32

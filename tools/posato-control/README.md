@@ -6,10 +6,11 @@ application and the iOS application on the Simulator and on a connected
 iPhone. Every command prints one JSON envelope on standard output, so a coding
 agent can verify its own change without a person in the loop.
 
-It is a platform-build and manual-inspection driver, not an automated UI test
-suite. Nothing it drives runs in `./gradlew quality` or in CI; the aggregate
-gate only runs this module's ktlint, Detekt, unit tests, and Swift format
-check.
+It provides platform builds, inspection, and scenario-driven E2E verification.
+The [testing policy](../../AGENTS.md#testing-policy) prefers these real user
+flows for complex features and requires repeatable evidence from each run.
+Scenarios run separately from `./gradlew quality` and CI; the aggregate gate
+runs this module's ktlint, Detekt, unit tests, and Swift format check.
 
 ## Setup
 

@@ -12,6 +12,27 @@ application never runs on the maintainer's own Mac; `posato-control` refuses
 desktop commands outside a virtual machine except `build`, `doctor`, and
 `artifacts`.
 
+## Test selection and evidence
+
+`user-confirmed` 2026-09-26: prefer E2E as the sole testing mechanism when it
+exposes the relevant failures of a complex feature. The
+[quality contract](../../development/engineering-quality-contract.md#tests-and-runtime-checks)
+and `AGENTS.md` own this policy. Isolated tests require a failure inventory
+before implementation and must expose a failure that stronger existing proof
+misses. New unit tests precede the implementation or bug fix.
+
+Each E2E run ends with repeatable proof: revision, target, setup, command or
+scenario, expected and actual outcome, and an ignored evidence directory.
+Passing a normal user flow does not establish malformed-input rejection,
+cryptographic failure handling, migration safety, or race behavior. Retain
+independent tests for those contracts until stronger proof covers them.
+
+`observed` during the September 2026 test audit: some tests asserted copied
+test-only readiness logic, unused privacy canaries, or assertions already
+covered by stronger neighboring tests. Those patterns do not establish the
+production behavior their names suggest. Judge assertions and supplied inputs
+before treating a passing test as evidence.
+
 ## Target environment
 
 - macOS: Posato runs inside Tart virtual machines on an Apple silicon Mac

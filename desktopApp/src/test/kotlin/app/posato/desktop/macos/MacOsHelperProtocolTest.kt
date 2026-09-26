@@ -33,16 +33,6 @@ class MacOsHelperProtocolTest {
     }
 
     @Test
-    fun `canonical digest ignores transport metadata`() {
-        val payload = byteArrayOf(0x45, 0x69)
-
-        assertContentEquals(
-            MacOsHelperProtocol.canonicalInputDigest(HelperOperation.Apply, payload),
-            MacOsHelperProtocol.canonicalInputDigest(HelperOperation.Apply, payload),
-        )
-    }
-
-    @Test
     fun `unknown version is rejected`() {
         val encoded = MacOsHelperProtocol.encode(
             HelperMessage(

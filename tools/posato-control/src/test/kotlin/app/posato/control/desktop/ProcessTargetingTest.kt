@@ -26,11 +26,6 @@ class ProcessTargetingTest {
     ): Long = ProcessTargeting.resolve(selector, trackedPid) { candidates }
 
     @Test
-    fun `no selector keeps the tracked application`() {
-        assertEquals(100, resolve(null))
-    }
-
-    @Test
     fun `no selector never enumerates processes`() {
         assertEquals(100, ProcessTargeting.resolve(null, 100) { error("the process list must not be read") })
     }

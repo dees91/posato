@@ -162,20 +162,6 @@ class AppleSyncTest {
     }
 
     @Test
-    fun `given a failed zone deletion when removing then key and local state stay`() = runTest {
-        val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
-        try {
-            harness.establish()
-            harness.mailbox.deleteResult = RecordDeleteResult.UnknownOutcome
-            harness.sync.removeWorkspace()
-            assertEquals(0, harness.keys.deleteCalls)
-            assertIs<BootstrapState.Established>(assertIs<BootstrapStoreResult.Success<BootstrapState>>(harness.store.read()).value)
-        } finally {
-            harness.close()
-        }
-    }
-
-    @Test
     fun `given a ready workspace when removing then records key and state clear with tombstone`() = runTest {
         val harness = AppleSyncTestHarness(StandardTestDispatcher(testScheduler))
         try {

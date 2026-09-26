@@ -99,16 +99,6 @@ class SessionViewModelTest {
     }
 
     @Test
-    fun `given an inactive status when entering setup then setup opens`() = runTest(dispatcher) {
-        val viewModel = collectedViewModel()
-
-        viewModel.setSetupVisible(true)
-        scheduler.runCurrent()
-
-        assertTrue(viewModel.uiState.value.isSettingUp)
-    }
-
-    @Test
     fun `given setup when adjusting beyond bounds then the duration clamps`() = runTest(dispatcher) {
         val viewModel = collectedViewModel()
         viewModel.setSetupVisible(true)
@@ -275,16 +265,6 @@ class SessionViewModelTest {
         viewModel.setSetupVisible(true)
 
         assertFalse(viewModel.uiState.value.isSettingUp)
-    }
-
-    @Test
-    fun `given an active session when requesting early end then confirmation opens`() = runTest(dispatcher) {
-        val viewModel = startedViewModel()
-
-        viewModel.setEarlyEndConfirmation(true)
-        scheduler.runCurrent()
-
-        assertTrue(viewModel.uiState.value.confirmingEarlyEnd)
     }
 
     @Test

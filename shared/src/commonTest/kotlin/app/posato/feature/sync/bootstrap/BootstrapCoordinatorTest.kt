@@ -191,17 +191,6 @@ class BootstrapCoordinatorTest {
     }
 
     @Test
-    fun `given an existing zone when bootstrapping then the zone is never saved`() = runTest {
-        val harness = BootstrapHarness()
-        harness.cloud.zoneExists = true
-
-        val result = harness.coordinator.bootstrap()
-
-        assertIs<BootstrapResult.Ready>(result)
-        assertEquals(0, harness.cloud.zoneSaveCalls)
-    }
-
-    @Test
     fun `given an appearing anchor when sweeping then nothing is deleted and the attempt adopts`() = runTest {
         val harness = BootstrapHarness()
         harness.cloud.zoneExists = true

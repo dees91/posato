@@ -98,11 +98,6 @@ import Testing
   #expect(runner.writeSource == nil)
 }
 
-@Test func givenPresentationTypesWhenRenderedThenHostsStayRedacted() {
-  let status = BrowserPresentationStatus.presented
-  #expect(!String(describing: status).contains("example.com"))
-}
-
 private final class StubAppleEventRunner: AppleEventRunning {
   var readResult: String
   var writeResult = ""

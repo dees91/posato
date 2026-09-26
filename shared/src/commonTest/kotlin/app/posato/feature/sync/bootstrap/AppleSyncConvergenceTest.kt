@@ -449,18 +449,6 @@ class AppleSyncConvergenceTest {
         return localPolicy(harness).domains.map { it.canonicalValue }
     }
 
-    private suspend fun acceptedSequences(harness: AppleSyncTestHarness): String {
-        return harness.snapshot().acceptedBundles.values.map {
-            it.operation.authorSequence.toString() + ":" + it.operation.payload.toString().substringBefore("(")
-        }.sorted().joinToString()
-    }
-
-    private suspend fun replicaProjection(harness: AppleSyncTestHarness): String {
-        val snapshot = harness.snapshot()
-        val projection = SyncReducer.reduce(snapshot.acceptedBundles.values.map { it.operation })
-        return projection.domains.map { it.canonicalValue }.sorted().joinToString()
-    }
-
     private suspend fun frozenDomains(harness: AppleSyncTestHarness): String? {
         return harness.database.localSessionQueries.selectSession().executeAsList().single().frozen_domains
     }
