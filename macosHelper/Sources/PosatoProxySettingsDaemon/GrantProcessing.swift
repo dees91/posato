@@ -18,7 +18,7 @@ extension RequestCoordinator {
   /// it off; only a record that fails its file or schema checks, and so can never authorize, reads
   /// as no grant.
   func grantState(peerUserID: UInt32?) throws -> WireGrantState {
-    guard (try? rules.state(of: .standingApply)) == .exact else {
+    guard try rules.state(of: .standingApply) == .exact else {
       return []
     }
     let record: StandingGrantRecord?

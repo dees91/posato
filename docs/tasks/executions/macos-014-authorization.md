@@ -306,6 +306,12 @@ passes. The impact is applying Posato's own proxy without a prompt.
   - a Grant I/O error no longer overwrites other accounts' entries;
   - the live-environment residual is recorded;
   - the refusal table test is added.
+- **PR review correction.** A P2 finding showed that an unreadable grant
+  store read as "no grant", so a failed Revoke could show the switch off.
+  Status now fails when the store or the standing rule cannot be read, and
+  the app shows the state as unknown. Only a record that fails its file or
+  schema checks reads as off. This correction, its whole class, and two
+  failing-first daemon tests passed an independent review.
 
 ## Verification
 

@@ -20,6 +20,7 @@ private final class FakeRules: AuthorizationRules, @unchecked Sendable {
     .apply: .exact, .standingApply: .exact,
   ]
   var acceptsForm = true
+  var unreadableRight: AuthorizationRight?
   let log: EventLog
 
   init(log: EventLog) {
@@ -27,6 +28,9 @@ private final class FakeRules: AuthorizationRules, @unchecked Sendable {
   }
 
   func state(of right: AuthorizationRight) throws -> AuthorizationRuleState {
+    guard right != unreadableRight else {
+      throw AuthorizationPolicyFailure.ruleUnavailable
+    }
     return states[right] ?? .absent
   }
 
@@ -365,4 +369,17 @@ private let externalForm = Data(repeating: 1, count: AuthorizationPolicy.externa
   #expect(try WireResponsePayload.decodeStatus(status).response.failure == .storage)
   daemon.grants.ioFailure = false
   #expect(try daemon.reply(.status, payload: WireStatusRequest.includeGrantState).last == 3)
+}
+
+@Test func givenUnconfirmedGrantStateWhenStatusIsFlaggedThenOnlyAnUnusableRecordReadsOff() throws {
+  let unreadableRule = Daemon()
+  unreadableRule.rules.unreadableRight = .standingApply
+  let invalidRecord = Daemon()
+  invalidRecord.grants.unreadable = true
+
+  #expect(
+    try unreadableRule.reply(.status, payload: WireStatusRequest.includeGrantState).count == 5)
+  #expect(
+    try invalidRecord.reply(.status, payload: WireStatusRequest.includeGrantState)
+      == Data([1, 3, 1, 0, 0, 1]))
 }
