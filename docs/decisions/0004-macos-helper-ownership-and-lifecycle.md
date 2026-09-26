@@ -7,15 +7,16 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
-## MACOS-014 standing Apply grant amendment (proposed)
+## MACOS-014 standing Apply grant amendment
 
-`proposed` (2026-09-26). The maintainer chose the mechanism and the opt-in
-(`user-confirmed`, recorded in the
-[`MACOS-014` brief](../tasks/specifications/macos-014-authorization.md)).
-This text takes effect only after an independent security review passes and
-the maintainer accepts it. Until then the one-use authorization in
+`user-confirmed` (2026-09-26). The maintainer chose the mechanism and the
+opt-in, recorded in the
+[`MACOS-014` brief](../tasks/specifications/macos-014-authorization.md). An
+independent security review passed after its Required findings were
+resolved. The maintainer accepted this amendment, with the JVM hardening
+below made part of it rather than optional. `MACOS-014` implements it.
 [Authorization of Apply and cleanup](#authorization-of-apply-and-cleanup)
-remains the only way to authorize Apply.
+states the resulting rule.
 
 ### What changes
 
@@ -140,6 +141,10 @@ It is an Apply everywhere except in how it is authorized:
 - an unknown outcome reconciles with the original operation `apply` and
   Apply's digest.
 
+The helper refuses **Apply with grant** when the application's launch
+environment could have loaded foreign code into it (see "JVM hardening"). It
+returns `standingGrantUnavailable`, and the prompted path stays available.
+
 The helper rejects both Apply forms unless the port equals the port of its
 own running loopback listener. It checks this before it obtains
 authorization or forwards anything. Without that check, code that controls
@@ -164,6 +169,30 @@ Any failed check returns a new stable category, `standingGrantUnavailable`,
 before any durable claim or side effect. The application may then retry the
 same request identity through the prompted Apply. That is allowed because it
 requests grant-authorized Apply only after the person acts (next section).
+
+### JVM hardening
+
+The Posato application runs on a Java virtual machine. Without hardening,
+any code running as the same user could load itself into the signed
+application and request **Apply with grant** directly. Two measures close
+the launch and runtime routes:
+
+- The packaged application starts its virtual machine with
+  `-XX:+DisableAttachMechanism`, so the Java attach mechanism (`jcmd`, agent
+  loading into a running process) is off. Packaging verification checks the
+  option.
+- At startup, the helper reads the launch environment of its parent (the
+  environment the parent was started with, through `KERN_PROCARGS2`). When
+  it contains `JAVA_TOOL_OPTIONS`, `_JAVA_OPTIONS`, or `JDK_JAVA_OPTIONS`,
+  the helper refuses **Apply with grant** and **Grant**. The check runs in
+  the helper, outside the virtual machine, because the virtual machine reads
+  those variables and loads any agent before Posato's own code runs. Other
+  operations, including the prompted Apply, are unchanged, so a person who
+  sets these variables for other reasons can still use Posato with the
+  administrator prompt.
+
+The hardened runtime already blocks `DYLD_` variables and debugger
+attachment in release builds, whose only entitlement is `allow-jit`.
 
 ### Who may request it
 
@@ -215,12 +244,12 @@ state and the person can turn it off.
 | --- | --- | --- |
 | Another local user | The grantee comes from the XPC peer's effective user ID, never the payload. Entries are per account and bound to the generated UID. Apply requires the console user. Revoke deletes only the caller's own entry. The record is root-only. | The proxy is system-wide. While the grantee's session is active, fast user switching leaves it in place for other accounts. That already happens with prompted Apply; the grant only removes the administrator step before each session. |
 | Compromised non-admin process under another account | It cannot match the peer user ID. Without the helper's signature it cannot open the XPC connection. | None new. |
-| Compromised non-admin process under the grantee's account | Only the signed helper passes the XPC requirement. The helper accepts only a signed Posato parent and only the port of its own listener. The daemon applies only the fixed proxy values, and the lease and Restore clean them up. | `T-07`: any code running as the grantee can start a session without an administrator. The Posato application runs on a Java virtual machine, so such code can load itself into the signed application: through the Java attach mechanism, or by relaunching it with `JAVA_TOOL_OPTIONS` or `JDK_JAVA_OPTIONS`. The hardened runtime does not stop that. Optional hardening, which a VM would verify with `jcmd`: disable the attach mechanism, and refuse to start with those variables set. |
+| Compromised non-admin process under the grantee's account | Only the signed helper passes the XPC requirement. The helper accepts only a signed Posato parent and only the port of its own listener. The daemon applies only the fixed proxy values, and the lease and Restore clean them up. | `T-07`: code running as the grantee that the person has given Accessibility access can drive Posato's interface and start a session without an administrator. The JVM hardening above closes loading code into the application through the attach mechanism or the Java option variables. |
 | Replay | **Apply with grant** carries no bearer material. The opt-in form keeps the one-use rules. Durable identities reconcile duplicates. | None. |
 | Grant theft | The record has no secret and is root-only. Its entries are bound to the account's generated UID and this Mac's platform UUID. Copying or editing it needs root. | `R-02`: an administrator or root can create a grant. |
 | Stale grants after removal, reinstallation, or account deletion | The revocation rules above, the generated UID binding, and deletion when a rule goes missing or changes. | Trash without Remove followed by a reinstall keeps the grant. Status shows it, and the switch or Remove clears it. |
 | Rule tampering | Only root changes the authorization database. A missing or mismatched right deletes the grants. | `R-02`. |
-| Silent apply | The application rule in "Who may request it". A check in the daemon cannot see whether a person acted. | `T-07`: any code running as the grantee, as in the row above. |
+| Silent apply | The application rule in "Who may request it", protected by the JVM hardening. A check in the daemon cannot see whether a person acted. | `T-07`: code with Accessibility access, as in the row above. |
 | Version skew | The new operations are sent only when Status reports the capability flag; otherwise the application uses the prompted path. An older helper never requests a grant. | After a downgrade, Remove leaves the standing right in place. It authorizes nothing by itself. |
 | Lost reply | Grant, Revoke, and Prepare are idempotent. Status settles them, and the switch shows only what Status confirms. | None. |
 
@@ -238,24 +267,29 @@ Written failing first, isolated tests cover:
 - **Apply with grant** counting as Apply for the lease, cleanup ownership,
   the fail-closed response, and reconciliation;
 - the helper rejecting a port other than its own listener's;
+- the helper refusing **Apply with grant** and **Grant** when the parent's
+  launch environment contains a Java option variable;
 - a lost Revoke reply leaving the switch on until Status confirms;
 - a wrong peer or user, and no console user or `loginwindow`;
 - a full record.
 
 End-to-end verification follows the brief.
 
-### On acceptance
+End-to-end verification also shows that `jcmd` cannot attach to the
+packaged application, and that a launch with a Java option variable falls
+back to the prompted path.
 
-- Rewrite
-  [Authorization of Apply and cleanup](#authorization-of-apply-and-cleanup) so
-  that Apply is authorized by either the one-use form or a standing grant.
-- Add the four operations to the fixed operation set in the
-  [MACOS-003 implementation amendment](#macos-003-implementation-amendment).
-- Extend the threat model rows `TB-04`, `T-07`, and `T-08`. `T-07` states
-  that any code running as the grantee can start a session without an
-  administrator.
-- Check that [`PRIVACY.md`](../../PRIVACY.md) covers the local, root-only
-  user ID and generated UID. Neither leaves the Mac.
+### Applied on acceptance
+
+- [Authorization of Apply and cleanup](#authorization-of-apply-and-cleanup)
+  now authorizes Apply by either the one-use form or a standing grant.
+- The fixed operation set in the
+  [MACOS-003 implementation amendment](#macos-003-implementation-amendment)
+  includes the four operations.
+- The threat model rows `TB-04`, `T-07`, and `T-08` name the grant and its
+  residual.
+- [`PRIVACY.md`](../../PRIVACY.md) is checked for the local, root-only user
+  ID and generated UID. Neither leaves the Mac.
 
 ## MACOS-011 in-app update amendment
 
@@ -332,7 +366,8 @@ The private pipe and XPC representations share binary protocol major version
 1. Pipe frames are limited to 512 KiB, XPC messages to 64 KiB, deadlines to 120
 seconds, identifiers to 16 bytes, and one connection to 256 operations. The
 fixed operation set is status, enable, repair, apply, restore, disable, remove,
-reconcile, and lease renewal. Version 1 requires its fixed capability bit,
+reconcile, and lease renewal. The MACOS-014 amendment adds prepare grant,
+grant, revoke grant, and apply with grant. Version 1 requires its fixed capability bit,
 strictly increasing sequences, elapsed deadline propagation, and bounded
 cancellation followed by exact helper-process termination when the transport
 cannot acknowledge it. Unknown outcomes reconcile the original operation and
@@ -576,7 +611,10 @@ app.posato.macos.proxy.apply
 
 Its compiled accepted definition requires a freshly authenticated
 administrator, is non-shared, has the 30-second transfer bound recorded in the
-MACOS-003 amendment, and represents one Apply attempt. The root daemon is the
+MACOS-003 amendment, and represents one Apply attempt. The
+[MACOS-014 amendment](#macos-014-standing-apply-grant-amendment) adds the
+opt-in right `app.posato.macos.proxy.standing-apply` with the same
+definition. The root daemon is the
 only component that installs, reads back, verifies, explicitly repairs, and
 removes that definition.
 
@@ -595,6 +633,16 @@ connection, request identity, and session identity; accepts it once; checks the
 right immediately before mutation without presenting UI; and destroys and
 zeroes the material after the attempt. It is never persisted, logged, replayed,
 or accepted on another connection.
+
+Alternatively, after a person has opted in once with a fresh administrator
+authentication, Apply is authorized by a standing grant that the daemon
+records for that account on this Mac. **Apply with grant** carries no
+authorization material. The daemon verifies the grant against the peer's
+effective user ID, the account's generated UID, this Mac's platform UUID,
+the console user, and both exact rights before mutation. The grant covers
+Apply with the fixed proxy host and the helper's own listener port only. The
+[MACOS-014 amendment](#macos-014-standing-apply-grant-amendment) defines its
+storage, revocation, JVM hardening, and failure rules.
 
 Restore and reconciliation accept no Apply bearer material. They are internally
 authorized only for the exact Posato-owned mutation described by durable state.

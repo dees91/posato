@@ -15,6 +15,7 @@ After a one-time administrator opt-in, a person who starts or resumes a session 
 - Write the ADR 0004 revision first. It must state what the opt-in grants, to which user and signed peers, and for which operations. It must cover how the grant is stored, verified, and revoked (a switch in This Mac, and **Remove from this Mac**), and what still fails closed. An independent security review of that revision must pass before any code.
 - Keep the daemon's allowlist, fixed proxy values, durable ownership, lease, reconciliation, and cleanup unchanged. The grant authorizes Apply only. Restore and cleanup already need no bearer material.
 - Keep the ADR 0009 rule: the menu, a login launch, and a synchronized session never apply silently unless this task's security review explicitly accepts that case. The default keeps Apply behind the person's own action.
+- Harden the JVM as the accepted amendment requires: the packaged application disables the Java attach mechanism, and the helper refuses the grant paths when the application's launch environment carries a Java option variable.
 - Non-goals: administrator resistance, App Sandbox (`MACOS-019`), notifications (`NOTIFY-001`), schedules (`SCHEDULE-001`), iOS.
 
 ## Acceptance
@@ -23,6 +24,7 @@ After a one-time administrator opt-in, a person who starts or resumes a session 
 - `AC-02` — After the opt-in, starting a session and resuming after relaunch, wake, or a login launch apply without an administrator prompt when the person acts. Without the opt-in, behavior is unchanged.
 - `AC-03` — Turning the opt-in off and **Remove from this Mac** both revoke the grant. The next Apply then prompts or fails closed.
 - `AC-04` — The failure modes E2E cannot reach have isolated tests written failing first: grant parsing and binding, revocation, and wrong peer or user.
+- `AC-05` — `jcmd` cannot attach to the packaged application, and a launch with a Java option variable in its environment falls back to the prompted path.
 
 ## Verification
 
@@ -40,4 +42,5 @@ After a one-time administrator opt-in, a person who starts or resumes a session 
 
 - `user-confirmed` (2026-09-26): the grant is a standing grant that the root daemon records once, after an administrator authorizes the opt-in. It is bound to the enabling user and the signed helper, covers Apply with the fixed proxy values only, and can be revoked without a password.
 - `user-confirmed` (2026-09-26): the opt-in is a switch in This Mac options, off by default. It covers the person's own actions: a session start and **Resume restrictions** after relaunch, wake, a login launch, or adopting a session from another device. The menu and a login launch never apply by themselves (ADR 0009).
-- The security review of the ADR 0004 revision gates implementation.
+- The security review of the ADR 0004 revision gates implementation. It passed on 2026-09-26 after four Required findings were resolved.
+- `user-confirmed` (2026-09-26): the maintainer accepted the amendment and made the JVM hardening part of this task rather than optional.

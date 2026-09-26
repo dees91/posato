@@ -77,6 +77,12 @@ or send it. To show its pause page in the current Safari or Chrome tab, Posato
 may use Automation permission; it reads only the current tab's address at that
 moment and keeps no record. Posato does not decrypt HTTPS traffic.
 
+If you choose to start sessions on a Mac without an administrator password,
+the helper keeps a record of that permission in a system file that only the
+system can read. The record holds your Mac account's user number and system
+identifier and your Mac's hardware identifier. It never leaves your Mac and
+is deleted when you turn the option off or remove Posato from this Mac.
+
 ## Updates on Mac
 
 Posato asks before checking for updates automatically. If you agree, it
