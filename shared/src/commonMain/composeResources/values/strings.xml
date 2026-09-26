@@ -267,7 +267,6 @@ For what matters.</string>
     <string name="mac_unified_overview_login">Start quietly at login, without opening a window.</string>
     <string name="mac_unified_overview_password">Start manual pauses and schedules without repeated passwords.</string>
     <string name="mac_unified_overview_schedules">Schedules can also start when you sign in or wake this Mac during a scheduled pause.</string>
-    <string name="mac_unified_preview_notice">Unified setup is coming soon. This preview does not change your Mac settings.</string>
     <string name="mac_unified_action">Set up Posato</string>
     <string name="mac_unified_confirm_access">macOS may ask you to confirm access. You can review or revoke it later in This Mac settings.</string>
     <string name="mac_unified_blocking_settings">Blocking settings</string>
@@ -283,4 +282,17 @@ For what matters.</string>
     <string name="notification_setting">Pause notifications</string>
     <string name="notification_setting_supporting">A notice when a pause ends, or when one starts on another device.</string>
     <string name="notification_setting_denied">Notifications are turned off for Posato in System Settings.</string>
+    <string name="mac_unified_status_working">Working on it…</string>
+    <string name="mac_unified_status_approval">Waiting for your approval in System Settings</string>
+    <string name="mac_unified_status_password">Waiting for your Mac password</string>
+    <string name="mac_unified_status_done">Done</string>
+    <string name="mac_unified_status_attention">Not finished yet</string>
+    <string name="mac_unified_ready">This Mac is ready.</string>
+    <string name="mac_unified_running">Setting up…</string>
+    <string name="mac_unified_interrupted">Setup did not finish. Posato continues where it stopped.</string>
+    <string name="mac_unified_session_blocks">You can finish setup after the session ends.</string>
+    <string name="mac_unified_try_again">Try again</string>
+    <string name="mac_unified_next_approval">Turn on Posato in the System Settings window that opened, then come back here.</string>
+    <string name="mac_unified_next_password">Enter your Mac password so pauses can start without asking again.</string>
+    <string name="mac_unified_next_working">Setting up this Mac…</string>
 </resources>

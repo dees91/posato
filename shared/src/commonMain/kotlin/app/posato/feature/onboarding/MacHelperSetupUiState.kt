@@ -13,6 +13,7 @@ import app.posato.generated.resources.mac_setup_checking
 import app.posato.generated.resources.mac_setup_enabling
 import app.posato.generated.resources.mac_setup_removing
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 
@@ -35,6 +36,22 @@ internal fun MacSetupPresentation.needsSetup(): Boolean {
     return known != MacHelperReadiness.READY
 }
 
+internal enum class MacSetupStepStatus {
+    PENDING,
+    WORKING,
+    WAITING_FOR_APPROVAL,
+    WAITING_FOR_PASSWORD,
+    DONE,
+    NEEDS_ATTENTION,
+}
+
+internal data class MacSetupRun(
+    val blocking: MacSetupStepStatus = MacSetupStepStatus.PENDING,
+    val login: MacSetupStepStatus = MacSetupStepStatus.PENDING,
+    val password: MacSetupStepStatus = MacSetupStepStatus.PENDING,
+    val running: Boolean = false,
+)
+
 internal data class MacSetupPresentation(
     val readiness: MacHelperReadiness? = null,
     val activity: MacSetupActivity? = null,
@@ -43,6 +60,9 @@ internal data class MacSetupPresentation(
     val removal: MacHelperRemoval? = null,
     val standingGrant: MacStandingGrantState? = null,
     val standingGrantChanging: Boolean = false,
+    val setup: MacSetupRun? = null,
+    val setupComplete: Boolean = false,
+    val offerVisible: Boolean = false,
 )
 
 @Stable
@@ -60,6 +80,8 @@ internal class MacHelperSetupUiState(
     private var standingGrant by mutableStateOf<MacStandingGrantState?>(null)
     private var standingGrantChanging by mutableStateOf(false)
     private var quietRead = false
+    private var setupRun by mutableStateOf<MacSetupRun?>(null)
+    private var offerDismissed by mutableStateOf(macHelper.setupOfferDismissed())
     private var completedOperations by mutableLongStateOf(0)
     private var repeatedResult by mutableStateOf(false)
 
@@ -78,6 +100,9 @@ internal class MacHelperSetupUiState(
             removal = removal,
             standingGrant = standingGrant,
             standingGrantChanging = standingGrantChanging,
+            setup = setupRun,
+            setupComplete = setupComplete(),
+            offerVisible = readiness == MacHelperReadiness.READY && !setupComplete() && !offerDismissed && setupRun?.running != true,
         )
     }
 
@@ -111,15 +136,102 @@ internal class MacHelperSetupUiState(
      * Session reads the helper once when it appears, so a ready Mac is never asked to finish setup. The
      * read shows no progress and makes no announcement; an explicit check or a running call wins.
      */
+    /**
+     * One action makes this Mac ready: blocking, then opening at login, then starts without a
+     * password. Finished steps are skipped, so pressing it again resumes the missing one. Nothing
+     * that asks for approval or a password runs during a session.
+     */
+    fun setUp(sessionBlocked: Boolean) {
+        if (sessionBlocked || activity != null || setupRun?.running == true) {
+            return
+        }
+        removal = null
+        setupRun = MacSetupRun(blocking = MacSetupStepStatus.WORKING, running = true)
+        scope.launch {
+            try {
+                runSetup()
+            } finally {
+                setupRun = setupRun?.copy(running = false)
+            }
+        }
+    }
+
+    fun dismissOffer() {
+        offerDismissed = true
+        macHelper.dismissSetupOffer()
+    }
+
+    private suspend fun runSetup() {
+        val blockingReady = makeBlockingReady()
+        if (!blockingReady) {
+            return
+        }
+        val item = macHelper.loginItem
+        if (item != null && !item.enabled.value) {
+            item.setEnabled(true)
+        }
+        val loginDone = item == null || item.enabled.value
+        updateSetup { it.copy(login = if (loginDone) MacSetupStepStatus.DONE else MacSetupStepStatus.NEEDS_ATTENTION) }
+        val grant = macHelper.standingGrant
+        if (grant == null) {
+            updateSetup { it.copy(password = MacSetupStepStatus.DONE) }
+            return
+        }
+        var state = grant.read()
+        if (!state.satisfiesSetup()) {
+            updateSetup { it.copy(password = MacSetupStepStatus.WAITING_FOR_PASSWORD) }
+            state = grant.setEnabled(true)
+        }
+        standingGrant = state
+        updateSetup { it.copy(password = if (state.satisfiesSetup()) MacSetupStepStatus.DONE else MacSetupStepStatus.NEEDS_ATTENTION) }
+    }
+
+    private suspend fun makeBlockingReady(): Boolean {
+        var answer = macHelper.recheck()
+        if (answer == MacHelperReadiness.NOT_ENABLED || answer == MacHelperReadiness.UNAVAILABLE) {
+            answer = macHelper.enable()
+        }
+        if (answer == MacHelperReadiness.APPROVAL_REQUIRED) {
+            updateSetup { it.copy(blocking = MacSetupStepStatus.WAITING_FOR_APPROVAL) }
+            macHelper.openApprovalSettings()
+            var polls = 0
+            while (answer == MacHelperReadiness.APPROVAL_REQUIRED && polls < APPROVAL_POLLS) {
+                delay(APPROVAL_POLL_MILLIS)
+                answer = macHelper.recheck()
+                polls += 1
+            }
+        }
+        readiness = answer
+        completedOperations += 1
+        val status = when (answer) {
+            MacHelperReadiness.READY -> MacSetupStepStatus.DONE
+            MacHelperReadiness.APPROVAL_REQUIRED -> MacSetupStepStatus.WAITING_FOR_APPROVAL
+            else -> MacSetupStepStatus.NEEDS_ATTENTION
+        }
+        updateSetup { it.copy(blocking = status) }
+        return answer == MacHelperReadiness.READY
+    }
+
+    private fun updateSetup(change: (MacSetupRun) -> MacSetupRun) {
+        setupRun = change(setupRun ?: MacSetupRun())
+    }
+
+    private fun setupComplete(): Boolean {
+        val loginDone = macHelper.loginItem?.enabled?.value ?: true
+        val grantDone = macHelper.standingGrant == null || standingGrant?.satisfiesSetup() == true
+        return readiness == MacHelperReadiness.READY && loginDone && grantDone
+    }
+
     fun readQuietly() {
-        if (readiness != null || activity != null || quietRead) {
+        if (readiness != null || activity != null || quietRead || setupRun?.running == true) {
             return
         }
         quietRead = true
         val startedAfter = completedOperations
         scope.launch {
             val answer = macHelper.status()
-            if (activity == null && completedOperations == startedAfter) {
+            if (activity == null && completedOperations == startedAfter && setupRun?.running != true) {
+                macHelper.loginItem?.refresh()
                 readiness = answer
                 standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
             }
@@ -193,3 +305,11 @@ internal fun rememberMacHelperSetupUiState(macHelper: MacHelperPort): MacHelperS
     val scope = rememberCoroutineScope()
     return remember(macHelper) { MacHelperSetupUiState(macHelper, scope) }
 }
+
+private fun MacStandingGrantState.satisfiesSetup(): Boolean {
+    return this == MacStandingGrantState.ON || this == MacStandingGrantState.UNSUPPORTED
+}
+
+private const val APPROVAL_POLLS: Int = 90
+private const val APPROVAL_POLL_MILLIS: Long = 2_000L
+
