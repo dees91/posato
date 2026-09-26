@@ -1993,5 +1993,7 @@ to scope, feasibility, or delivery.
 
   Future schedules add constraints for `SCHEDULE-001` but change no choice.
 - Measured in Tart clones, and found that Compose `Tray` fails accessibility.
-  Updated [macOS enforcement](topics/macos-enforcement.md) and idea 7 in
-  [MVP open questions](topics/mvp-open-questions.md).
+  Updated [macOS enforcement](topics/macos-enforcement.md), idea 7, and the
+  new idea 18 in [MVP open questions](topics/mvp-open-questions.md): a
+  transient helper CPU spike, now backlog row `MACOS-021` (roadmap revision
+  9).

@@ -3,11 +3,11 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 8 (amended 2026-09-25: `IOS-006` added to release 1.2 for
-  the iPhone session lost on relaunch)
+- **Revision:** 9 (amended 2026-09-26: `MACOS-021` backlog row from idea 18,
+  and the `MACOS-019` condition after `MACOS-012`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-25
+- **Last amended:** 2026-09-26
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -39,7 +39,10 @@
   Posato during a session can end it as expired and lift its restrictions.
   The code path is unchanged since 1.0.0, so the maintainer chose to publish
   1.1 with the limit stated and fix it in 1.2, without a patch release
-  (`user-confirmed`, 2026-09-25).
+  (`user-confirmed`, 2026-09-25). Revision 9 adds the `MACOS-021` backlog
+  row from idea 18, a transient helper CPU spike that `MACOS-012` measured. It
+  also restates the `MACOS-019` condition, because ADR 0009 kept the root
+  daemon (`user-confirmed`, 2026-09-26).
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -219,8 +222,9 @@ The idea numbers refer to the wiki idea queue.
 | `FILTER-003` | Decide whether a session can silence notifications from chosen applications and websites while the applications stay usable, on iOS and macOS: establish what the platforms allow a third party, including whether a Screen Time shield silences notifications and how browser web push can be reached; end with a product decision and, if feasible, a delivery plan. Preliminary. | Product discovery | Idea 17 | A feasibility result showing a supported mechanism on at least one platform |
 | `MACOS-017` | Extend macOS browser coverage beyond Safari and Chrome Stable, starting with Firefox, under a revised ADR 0005 support contract. | Sessions and enforcement | macOS enforcement follow-up | A maintainer decision to widen the support promise |
 | `MACOS-018` | Detect or disclose iCloud Private Relay before a session applies proxy settings. | Sessions and enforcement | Open question in the macOS enforcement topic | A supported detection route or a decision to disclose only |
-| `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | `MACOS-012` outcome |
+| `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | A decision that replaces the root daemon; ADR 0009 (`MACOS-012`) kept it |
 | `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | `QUALITY-010` `M5` defect, reproduced in a VM | Any planning checkpoint; a defect against ADR 0004 and ADR 0005 |
+| `MACOS-021` | Explain and bound the normal-user helper's CPU use during an enforced session: reproduce the transient spike, about 60% of a core for 14 minutes, that `MACOS-012` measured in a first session on a fresh Tart clone, find its cause, and keep the helper's cost bounded under heavy proxied traffic. | Sessions and enforcement | Idea 18; `MACOS-012` measurement | Any planning checkpoint; a resource defect under every process model |
 | `IOS-005` | Settle iOS reinstall behavior and the lifecycle of an application selection that becomes invalid. | Sessions and enforcement | `IOS-001` and iOS enforcement open questions | Evidence from support or a reproduction |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-018` | Design the portable workspace over one user-selected synchronized folder with its own key delivery and membership. | Portable synchronization | Product framing later direction | A platform beyond Apple in scope |

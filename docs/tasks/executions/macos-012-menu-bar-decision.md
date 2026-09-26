@@ -111,7 +111,7 @@ Git history of this file (`128f79b`) keeps the full reviewed plan:
 
 ## Blockers and accepted risks
 
-- None. The transient helper CPU is an idea-queue candidate outside this task.
+- None. The transient helper CPU became idea 18 and backlog row `MACOS-021`.
 
 ## Final
 

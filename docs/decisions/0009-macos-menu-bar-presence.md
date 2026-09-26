@@ -590,5 +590,5 @@ session of a fresh clone, the normal-user helper used about 60% of one CPU
 for roughly its first 14 minutes, then fell idle. A later enforced session
 in the same clone used 0.2%. The cause is `open`; system traffic through the
 loopback proxy after boot is a `hypothesis`. It affects the current release
-equally under every model. It is a candidate for the idea queue, not a
-`MACOS-013` requirement.
+equally under every model. It is idea 18 and the backlog row `MACOS-021`,
+not a `MACOS-013` requirement.

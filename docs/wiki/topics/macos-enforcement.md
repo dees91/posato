@@ -732,7 +732,8 @@ Durable findings from `MACOS-012`, `observed` in Tart clones:
 - **Windowless driving.** `posato-control` cannot drive a windowless
   application yet. `MACOS-013` extends it.
 - **Helper CPU.** The first enforced session in a fresh clone once kept the
-  helper at about 60% CPU for 14 minutes. The cause is `open`.
+  helper at about 60% CPU for 14 minutes. The cause is `open` (idea 18,
+  `MACOS-021`).
 
 ## Open questions
 

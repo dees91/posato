@@ -894,6 +894,13 @@ not an accepted feature plan or an expansion of the MVP.
     - browser web push arrives through the browser's push service rather
       than the site's domain, so the macOS proxy does not reach it;
       per-site notification permission belongs to the browser.
+18. **Helper CPU spike in a first enforced session.** `observed`
+    (2026-09-26, `MACOS-012`, Tart clone): in the first enforced session of a
+    freshly set-up clone, the normal-user helper used about 60% of one CPU for
+    roughly 14 minutes, then fell idle. A later session in the same clone used
+    0.2%. The cause is `open`; system traffic through the loopback proxy after
+    boot is a `hypothesis`. Reproduce it, find the cause, and bound the
+    helper's cost under heavy proxied traffic.
 
 ## Later platform questions
 
