@@ -32,7 +32,7 @@ With its window closed, Posato for Mac keeps running from a status-bar menu. Blo
 
 ## Acceptance
 
-- `AC-01` — The following behavior has unit tests: the menu state and primary action derived from the session and enforcement state (inactive, enforcing, `RESUME_REQUIRED`, pending, failed, maintenance), the Quit decision for user and system termination, and the tick schedule.
+- `AC-01` — The execution record lists the failures that E2E cannot reliably expose before any implementation: the menu state for every session and enforcement state, including maintenance; the Quit decision for user and system termination; the idle tick and its resumption; the 30-minute exchange; and the updater's in-progress state. Each has an isolated test that was shown failing before its implementation and passes after it.
 - `AC-02` — Every row of the ADR 0009 evidence table passes unattended in a Tart clone:
   - start, inspect, and end from the menu with the window closed;
   - expiry;
@@ -50,8 +50,8 @@ With its window closed, Posato for Mac keeps running from a status-bar menu. Blo
 
 <!-- Unattended by default (AGENTS.md): macOS in a Tart VM with --vm, never on the host Mac; iOS on the test iPhone. -->
 
-- Focused unit tests for `AC-01` and the complete `./gradlew quality` after the last correction.
-- The ADR 0009 evidence table is driven through the extended `posato-control` in Tart clones of `primary`, using a dev-signed build and a notarized candidate for the update gate. Captures stay in ignored `build/verification/`.
+- E2E is the primary proof (engineering quality contract revision 15). Every ADR 0009 row ends with a repeatable artifact: revision, initial state, command or scenario, expected and actual result, and run directory. Isolated `AC-01` tests are written failing first. The complete `./gradlew quality` runs after the last correction.
+- The ADR 0009 evidence table is driven through the extended `posato-control` in Tart clones of `primary`, using a dev-signed build; the update gate uses the development package's loopback feed with a throwaway key. Captures stay in ignored `build/verification/`.
 
 ## Decisions or blockers
 
