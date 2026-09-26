@@ -180,6 +180,8 @@ grants a permission.
 | `vm click\|press\|screenshot [--line]` | desktop in a VM | Click recognized text, press a key or chord, or capture the whole guest screen. |
 | `vm text [--line] [--contains text]` | desktop in a VM | Print the recognized screen text, top to bottom, with positions; read dialogs this way instead of viewing screenshots. |
 | `vm wait-text --text text [--line] [--exact] [--absent] [--timeout-seconds]` | desktop in a VM | Wait until recognized text appears or, with `--absent`, disappears. |
+| `vm scroll --text text [--clicks N] [--line]` | desktop in a VM | Turn the mouse wheel over recognized text, positive `N` down and negative up, for Compose scroll areas that `scrollTo` cannot move, such as This Mac options below the window edge. |
+| `vm exec --script script [--line]` | desktop in a VM | Run a `/bin/sh` script as the logged-in guest user and return its exit code and output, for checks the application interface cannot show, such as whether a process accepts a Java attach. |
 | `vm type --text T \| --secret admin\|account\|phone [--strip-prefix P] [--line]` | desktop in a VM | Type text, or a Keychain secret without echoing it, into the focused guest field. |
 | `vm boot\|shutdown [--line]` | desktop in a VM | Boot the line's existing VM without cloning (to prepare a golden image under the clone's name), or shut it down from inside and keep it; `forced` reports a fallback to `tart stop`. |
 | `vm drag --from label --to label [--from-index n] [--to-index n] [--line]` | desktop in a VM | Drag one recognized label onto another, such as an application onto the Applications link. |

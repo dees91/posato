@@ -249,6 +249,29 @@ class VncClient private constructor(
     }
 }
 
+/**
+ * Rests the pointer at (x, y) and turns the wheel [clicks] notches so that the view moves toward its end, or toward its
+ * start for a negative count. The guests scroll naturally, so the wheel-up button reveals content further down.
+ */
+internal fun VncClient.scroll(
+    x: Int,
+    y: Int,
+    clicks: Int
+) {
+    val button = if (clicks >= 0) WHEEL_UP else WHEEL_DOWN
+    pointer(x, y, 0)
+    Thread.sleep(POINTER_SETTLE_MS)
+    repeat(kotlin.math.abs(clicks)) {
+        pointer(x, y, button)
+        pointer(x, y, 0)
+        Thread.sleep(WHEEL_STEP_MS)
+    }
+}
+
+private const val WHEEL_UP = 8
+private const val WHEEL_DOWN = 16
+private const val WHEEL_STEP_MS = 30L
+
 /** Presses the primary button at the start, moves in small steps while holding it, and releases at the end. */
 internal fun VncClient.drag(
     fromX: Int,
