@@ -43,14 +43,15 @@ provenance label.
   ends on the next day. 22:00 to 06:00 on Friday runs Friday 22:00 to
   Saturday 06:00.
 - **Length.** An occurrence lasts at least 15 minutes and less than 24
-  hours. The 15-minute floor matches the Device Activity minimum that Posato
+  hours; the start and end times differ. The 15-minute floor matches the Device Activity minimum that Posato
   already uses on iPhone (`observed`, `SuspendedExpiryActivity.minimumInterval`
   = 15 minutes). The 24-hour ceiling matches the ADR 0006 session bound.
 - **Daylight saving.** A start time that does not exist on the day of a
   spring-forward change starts at the first valid minute after it. A start
   time that happens twice on a fall-back day starts at its first instance.
-  The end is the stated wall-clock end on the end day, so an occurrence can
-  be an hour shorter or longer on those two days.
+  The end is the stated wall-clock end on the end day. An occurrence can be an
+  hour shorter or longer on those two days, but never runs longer than 24
+  hours of real time; a longer one ends at 24 hours.
 - **Clock changes.** Each device evaluates schedules against its current
   clock whenever it starts, wakes, changes time zone or time, and at least
   once a minute while Posato for Mac is running. A change never creates an
@@ -68,6 +69,9 @@ provenance label.
 - **Manual start during a scheduled pause** is not offered. Start is replaced
   by the running pause. After **End early**, a manual session can start as
   usual.
+- **A session received from another device** is not enforced by a running
+  occurrence on the Mac. When the occurrence ends while that session is still
+  active, the Mac returns to **Resume restrictions** for it.
 - **A scheduled occurrence during a manual session** joins it. Restrictions
   continue until the later end.
 
@@ -95,8 +99,11 @@ provenance label.
 - **Local persistence.** A device remembers its local skip and end facts
   across restart and relaunch before the first sync (the product scope
   requirement), in the same local transaction as the operation it authors.
+  It also keeps a local terminal marker for every occurrence that ended or
+  expired, so a clock rollback or a later edit never recreates it.
+- **Dates.** A skip or end names a date at most 400 days ahead.
 - **Editing a schedule** that is running ends nothing by itself. The running
-  occurrence follows the edited end time. Turning a schedule off or deleting
+  occurrence follows the edited end time, which may extend it. Turning a schedule off or deleting
   it ends its running occurrence at once.
 
 ### Synchronized operations (ADR 0006 amendment)
@@ -161,6 +168,9 @@ Four additive format-1 operation kinds, proposed in the ADR 0006 amendment:
   dialog. It shows "Setup required on this Mac" in Session and Schedules, and
   posts one notification: "A scheduled pause couldn't start on this Mac.
   Open Posato to finish setup."
+- While another account uses the Mac, the occurrence waits for the person's
+  account to return. This is not "Setup required" and posts nothing.
+- At most one attempt runs per trigger per occurrence.
 
 ### Notifications (with `NOTIFY-001`)
 
@@ -178,20 +188,26 @@ Four additive format-1 operation kinds, proposed in the ADR 0006 amendment:
 ### Setup and migration
 
 - The unified setup's single action records the consent to automatic starts
-  shown in its caption. It is a local flag, stored with the grant state.
+  shown in its caption, which says they include "schedules added on your
+  other devices". It is a local flag, stored with the grant state.
 - A Mac that opted in through `MACOS-014` before the schedule wording has the
   grant but not the automatic-start consent. It sees the dismissible upgrade
-  offer once. Accepting it records the consent and needs no second
-  administrator password, because the grant itself is unchanged. Until then,
-  its schedules show "Setup required on this Mac".
-- Revoking the grant in This Mac also stops automatic starts.
+  offer once. Only actively accepting it records the consent; dismissing it
+  does not. Accepting needs no second administrator password, because the
+  grant itself is unchanged. Until then, its schedules show "Setup required
+  on this Mac".
+- The consent counts only while Posato confirms the grant on this Mac.
+  Revoking the grant, Disable, Remove, or a check that finds the grant absent
+  or unknown clears it.
 
 ## Implementation plan for `SCHEDULE-002`
 
 Slices, each on its own branch, stacked:
 
-1. **Model and sync.** Kinds 8-11 and the optional-kind rule in the codec
-   and reducer, with cross-language golden vectors. These are isolated
+1. **Model and sync.** Kinds 8-11, the terminal markers, and the optional-kind
+   rule in the codec and reducer, with cross-language golden vectors for
+   every payload invariant (including start different from end, the
+   15-minute circular duration, and names that are not NFC). These are isolated
    tests, because a codec disagreement between JVM and iOS never shows in a
    single-device E2E.
 2. **Occurrence engine.** A pure function from plans, facts, the clock, and

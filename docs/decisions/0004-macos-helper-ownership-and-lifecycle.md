@@ -9,16 +9,30 @@
 
 ## SCHEDULE-001 automatic scheduled Apply amendment (proposed)
 
-`proposed` (2026-09-26, `SCHEDULE-001`, delegated night mandate). It needs an
-independent security review and the maintainer's acceptance before
-`SCHEDULE-002` implements it.
+`proposed` (2026-09-26, `SCHEDULE-001`, delegated night mandate). An
+independent security review passed after its Required findings were folded
+(2026-09-27). It takes effect when the maintainer accepts it; `SCHEDULE-002`
+implements it.
 
+- **Supersedes.** On acceptance this amendment rewrites the sentences that
+  limit the grant to the person's own start and Resume: "Who may request it"
+  in the MACOS-014 amendment and the PR #92 note above (both already carry
+  the conditional wording), and the ADR 0009 sentences named in its own
+  amendment.
 - **What changes.** The resident application may request **Apply with
-  grant** without a person's action, but only for a due occurrence of an
-  enabled, synchronized schedule. Its skip and end facts must not cover that
-  occurrence, and the local automatic-start consent must be recorded. That
-  consent comes from the unified setup action, or from the one-time upgrade
-  offer for a grant made through `MACOS-014`.
+  grant** without a person's action, but only when all of these hold:
+  - an occurrence of an enabled, synchronized schedule is due;
+  - its skip and end facts, and the local terminal marker, do not cover it;
+  - the local automatic-start consent is valid.
+- **Consent.**
+  - It is recorded only when the person actively chooses the unified setup
+    action, or actively accepts the one-time upgrade offer after a grant made
+    through `MACOS-014`. Dismissing or deferring the offer never counts.
+  - The wording names automatic starts "including schedules added on your
+    other devices".
+  - It is valid only while a flagged Status confirms the caller's grant
+    entry. Revoke, Disable, Remove, and any Status that reads the grant as
+    absent or unknown clear it, so a later grant needs the consent again.
 - **What stays.**
   - The daemon's checks are unchanged: the peer user, account, and Mac; the
     console user; both exact rules; the fixed proxy host; and the helper's own
@@ -28,26 +42,31 @@ independent security review and the maintainer's acceptance before
   - The prompted Apply is never used for a schedule. A refused or missing
     grant leaves the Mac in "setup required", with no dialog.
 - **No new root authority.** No reason code is added to the wire. It would
-  record only what the application claims, so it would add no security. The
-  daemon's authority stays as narrow as for a person's start: Posato's own
-  proxy values, cleaned up by the lease and Restore.
-- **Console user.** Automatic starts run only while the grantee owns the
-  console session. That includes a locked screen, which keeps the same
-  console user. When another account is in front, the start waits and
-  applies when the grantee returns within the interval.
+  record only what the application claims. The daemon's authority stays as
+  narrow as for a person's start: Posato's own proxy values, cleaned up by
+  the lease and Restore.
+- **Console user.** Before requesting Apply, the application checks that its
+  user owns the console. While another account is in front, the occurrence
+  waits, and this is never shown as "Setup required" or notified as a
+  failure. A console refusal from the daemon is classified the same way. A
+  locked screen keeps the same console user.
+- **Received sessions.** `RESUME_REQUIRED` for a session received from
+  another device stays, as a user-experience rule, not a security control:
+  the grant already lets schedules apply without a person. A received manual
+  session is not enforced by a running occurrence. When the occurrence ends
+  while that session is still active, the Mac returns to `RESUME_REQUIRED`
+  for it.
 - **Threat-model delta.**
   - **Linked devices.** Schedule operations come from the person's own
-    linked devices (ADR 0002 trust). Anyone who can use a linked device can
-    make this Mac apply restrictions without local action. The reach is
-    bounded: Posato's own blocking, **End early** always available locally,
-    and a notification naming the schedule.
+    linked devices (ADR 0002 trust). Any linked device, or anyone using one,
+    can now make this Mac block on a schedule without local action. The reach
+    is bounded: Posato's own blocking, **End early** always available
+    locally, and a notification naming the schedule.
   - **Code running as the grantee.** It could already start a session
     (`T-07`). Automatic starts add timing, not reach.
   - **No prompt at due time.** No administrator dialog can appear at a due
     time, so a scheduled start cannot be used to train people into
     approving unexpected prompts.
-- **Revocation.** Turning the grant off in This Mac, Disable, or Remove
-  stops automatic starts, like manual ones.
 - **On acceptance.** The threat model rows `TB-04` and `T-07` name
   schedule-driven Apply and the linked-device residual.
 
@@ -58,9 +77,10 @@ the guided **Set up Posato on this Mac** action that `ONBOARDING-004`
 delivers, instead of a separate switch the person has to find. The grant, its
 binding, its revocation, and its fail-closed rules are unchanged. The action
 still asks a fresh administrator for the standing right, and This Mac keeps a
-control to revoke it without a password. The grant still authorizes only the
-person's own start and **Resume restrictions**. Scheduled or other automatic
-Apply needs the separately reviewed `SCHEDULE-001` amendment.
+control to revoke it without a password. The grant authorizes the person's own
+start and **Resume restrictions**. Once the `SCHEDULE-001` amendment is
+accepted, it also authorizes due scheduled occurrences under the recorded
+automatic-start consent. No other automatic Apply exists.
 
 ## MACOS-014 standing Apply grant amendment
 
@@ -256,10 +276,14 @@ keeps the ADR 0009 rule. It requests grant-authorized Apply only for:
 
 - the person's own start of a session;
 - the person's own **Resume restrictions**: after a relaunch, a wake, a login
-  launch, or adopting a session from another device.
+  launch, or adopting a session from another device;
+- once the `SCHEDULE-001` amendment is accepted: a due occurrence of an
+  enabled schedule under the recorded automatic-start consent. At most one
+  attempt runs per trigger (launch, wake, clock change, minute tick) per
+  occurrence, and a failed attempt waits for the next trigger.
 
-The menu, a login launch, synchronization, schedules, and automatic retries
-never request any Apply. `SCHEDULE-001` needs its own review to change this.
+The menu, a login launch, and synchronization never request any Apply by
+themselves, and there are no other automatic retries.
 
 ### Revocation
 

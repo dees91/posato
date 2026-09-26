@@ -72,7 +72,9 @@ apps you choose. Your app choices are opaque system selections that stay on the
 device; Posato does not receive app names or usage from Screen Time. So that
 a schedule can start while Posato is closed, Posato keeps a copy of your
 schedules and pause choices in storage shared only with its own Screen Time
-extension on the same iPhone. It never leaves the device.
+extension on the same iPhone. It never leaves the device, except in device
+backups like the data above, and it is deleted when Posato's data or the
+workspace is removed.
 
 ## Blocking on Mac
 

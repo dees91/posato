@@ -1,12 +1,12 @@
 # Execution: `SCHEDULE-001`
 
 - **Brief:** [Decide shared recurring schedules and automatic Mac starts](../specifications/schedule-001-decision.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude, under the maintainer's delegated night mandate (2026-09-26)
 - **Reviewer:** independent agent (security review of the amendments)
 - **Branch:** `docs/schedule-001-decision`
-- **Updated:** 2026-09-26
+- **Updated:** 2026-09-27
 
 ## Plan
 
@@ -55,14 +55,51 @@
 
 ## Completed-change review
 
-- **Verdict:** `pending` (independent security review of the amendments)
+- **Verdict:** independent security review `PASS after Required fixes`;
+  folded on 2026-09-27.
+- **Required findings:**
+  - **R1.** Accepted text contradicted the amendments. Each amendment now
+    lists and rewrites the sentences it supersedes: ADR 0004 "Who may request
+    it" and the PR #92 note; the ADR 0009 received-session, after-wake, and
+    `SCHEDULE-001` approval sentences; and the ADR 0006 closed-kinds and
+    unknown-kinds sentences. `RESUME_REQUIRED` for received sessions is now a
+    user-experience rule, not a security control. A received manual session
+    is not enforced by an occurrence, and it returns to `RESUME_REQUIRED`
+    when the occurrence ends. Retries: at most one per trigger per
+    occurrence.
+  - **R2.** Consent could go stale. It is valid only while a flagged Status
+    confirms the caller's grant. Revoke, Disable, Remove, and an absent or
+    unknown grant clear it.
+  - **R3.** Wire invariants were missing. `schedule-put` requires start
+    different from end and a circular duration of at least 15 minutes,
+    pinned by cross-target golden vectors in `SCHEDULE-002`.
+- **Recommended, folded:**
+  - local terminal markers per occurrence, and edits that may extend a
+    running occurrence;
+  - consent wording that names other devices, and upgrade-offer consent
+    only by active acceptance;
+  - a console owned by another account is neither "setup required" nor a
+    notification;
+  - optional kinds carry no restriction or integrity semantics, touch no
+    mandatory state, and ignore invalid payloads deterministically, with
+    byte limits before allocation;
+  - NFC normalized by the writer, with decoders validating only UTF-8 and
+    control characters;
+  - `PRIVACY.md` covers backups and the deletion of the App Group copy.
+- **Optional, folded:**
+  - a 24-hour real-time cap on daylight-saving days;
+  - skip and end dates at most 400 days ahead;
+  - the downgrade rule for a 1.1 installation opening a 1.2 database.
+- The linked-device residual is in the ADR 0004 amendment. Its "On
+  acceptance" list adds it to threat model `T-07`.
+- The amendments stay `proposed` until the maintainer accepts them.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
 | Consistency read against authorities | pass | product scope, `DESIGN.md`, ADR 0002, 0004, 0006, 0009 |
-| Independent security review | pending | |
+| Independent security review | pass after Required fixes; folded | findings above |
 
 ## Blockers and accepted risks
 
@@ -73,5 +110,7 @@
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending the security review
+- **Status:** `done`
+- **Outcome:** met. The decisions are recorded and the amendments reviewed. The
+  maintainer's acceptance of the amendments gates automatic starts in
+  `SCHEDULE-002`.
