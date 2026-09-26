@@ -107,12 +107,14 @@ Tart clone of `primary` (macOS 26.6.2). Commands are `posato-control ...
 - **Sleep and wake.** The ADR 0009 row cannot run in a Tart guest:
   `tart exec <clone> pmset sleepnow` fails with `0xe00002e2`. The daemon's
   sleep restore is unchanged ADR 0004 behavior.
+  `user-confirmed` (2026-09-26): accepted as is, with no additional test.
+- **Session CPU.** 4.9 s against P1's 4.1 s over 10 minutes.
+  `user-confirmed` (2026-09-26): accepted as is.
 - **Tick resumption timing.** The idle wait keeps a 60-second safety
   recheck.
 
 ## Final
 
 - **Status:** `done`
-- **Outcome:** `AC-01` to `AC-04` met, except the sleep-and-wake row, which
-  is blocked in the VM as recorded above. Accepting that exception is the
-  maintainer's decision on the pull request.
+- **Outcome:** `AC-01` to `AC-04` met. The maintainer accepted the
+  sleep-and-wake exception and the session CPU figure on 2026-09-26.
