@@ -2025,3 +2025,15 @@ to scope, feasibility, or delivery.
   possible there. Updated [macOS enforcement](topics/macos-enforcement.md)
   and [unattended verification](topics/unattended-verification.md).
 
+## [2026-09-26] implementation | Start Mac sessions without the password (MACOS-014)
+
+- Accepted and delivered the ADR 0004 standing Apply grant amendment after an
+  independent security review:
+  - an opt-in switch in This Mac, bound to the peer's user, account, Mac, and
+    console session;
+  - revocation by the switch, Disable, and Remove;
+  - JVM hardening against loading agent code.
+
+  Updated the threat model, `DESIGN.md`, and `PRIVACY.md`.
+- `posato-control` gains `vm exec` and `vm scroll`. Updated
+  [macOS enforcement](topics/macos-enforcement.md).

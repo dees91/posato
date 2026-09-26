@@ -1,7 +1,7 @@
 # Execution: `MACOS-014`
 
 - **Brief:** [Reduce repeated administrator prompts on the Mac](../specifications/macos-014-authorization.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude, on the maintainer's delegation (2026-09-26)
 - **Reviewer:** independent agents (amendment security review, plan, and completed change)
@@ -272,23 +272,81 @@ passes. The impact is applying Posato's own proxy without a prompt.
 
 ## Result
 
-- Pending.
+- **Delivered.** The ADR 0004 `MACOS-014` amendment as planned:
+  - the standing grant in the daemon and its root-only record;
+  - four operations and the grant byte on a flagged Status;
+  - the port and launch-environment checks in the helper;
+  - the This Mac switch;
+  - `-XX:+DisableAttachMechanism`, with a packaging check;
+  - `posato-control` `vm exec` and `vm scroll`.
+
+  `DESIGN.md`, `PRIVACY.md`, and the threat model are updated.
+- **Deviations.**
+  - The daemon logic was drafted before the F4 and F9 tests. Each test was
+    then shown failing against stubs that restore the pre-change behavior
+    (seven of nine) or against a targeted mutation (the Status test), then
+    passing on the real code. The later tests were written failing first.
+  - F6 negative cases and the refusal table test were confirmed by mutation,
+    because a stub cannot fail them.
+  - `WireMessage.canonicalInputDigest` is left unchanged. The daemon, helper,
+    and Kotlin compute the Apply digest themselves, and a daemon test covers
+    the reconcile.
+  - The E2E proves the attach probe against a plain JVM in the same guest
+    rather than a build from `main`. The packaging check fails without the
+    flag and passes with it.
 
 ## Completed-change review
 
-- **Verdict:** `pending`
+- **Verdict:** `approved` after one `changes-required` pass.
+- **Critical or Required findings:** the daemon's Apply-with-grant reconcile
+  path was untested. A test now covers it, confirmed by mutation.
+- **Resolution:** also resolved:
+  - Repair deletes an unusable record;
+  - Revoke drops stale entries;
+  - a Grant I/O error no longer overwrites other accounts' entries;
+  - the live-environment residual is recorded;
+  - the refusal table test is added.
 
 ## Verification
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Pending | | |
+| `swift test` (via `:macosHelper:check`) | pass | 196 tests, format and lint clean |
+| `:desktopApp:verifyMacOsDevelopmentPackaging` | pass | failed first without the JVM flag, then passed |
+| `./gradlew quality` | pass | after the last correction |
+| E2E baseline and opt-in (`AC-02`) | pass | `build/verification/runs/20260926-151833-ee2a` to `-153756-6b8c` |
+| E2E silent-apply checks after relaunch and login launch | pass | same runs, before Resume |
+| E2E revocation by the switch and by Remove (`AC-03`) | pass | same runs |
+| E2E attach probe and Java option launch (`AC-05`) | pass | same runs |
+
+The E2E covered:
+- a development-signed build in a primary Tart clone, driven by
+  `posato-control`;
+- a session start without the grant: prompt, then `observe --expect blocked`;
+- the switch disabled during a session;
+- the opt-in, with one prompt carrying Posato's sentence;
+- a start with no prompt, still blocking after 40 s;
+- a relaunch and a loginwindow restart with the login item on. Each read
+  `observe --expect allowed` and "Restrictions not active on this Mac" before
+  Resume, then resumed with no prompt;
+- the switch off with no prompt, after which the start prompted;
+- the opt-in again, then **Remove from this Mac**. Both rules were absent,
+  the switch read off after enabling, and the start prompted;
+- `jcmd` refused ("The VM does not support the attach mechanism"), while a
+  plain JVM in the guest accepted the attach;
+- a launch with `JAVA_TOOL_OPTIONS`: the start fell back to the prompt, and
+  the opt-in was refused with no prompt.
+
+The clone was destroyed afterwards. The review fixes after the E2E touch only
+record edge cases that E2E cannot reach, and their isolated tests cover them.
 
 ## Blockers and accepted risks
 
+- Wake cannot be driven, because a Tart guest cannot sleep. Resume after wake
+  uses the same person-initiated path as after a relaunch.
 - Accepted residuals are listed in the ADR 0004 `MACOS-014` amendment.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending
+- **Status:** `done`
+- **Outcome:** met. AC-01 through AC-05 are satisfied as recorded above.
