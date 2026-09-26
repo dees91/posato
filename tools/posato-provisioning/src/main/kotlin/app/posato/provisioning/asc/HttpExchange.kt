@@ -103,6 +103,12 @@ class JdkHttpExchange(
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body.orEmpty()))
             }
+
+            HttpMethod.PATCH -> {
+                builder
+                    .header("Content-Type", "application/json")
+                    .method("PATCH", HttpRequest.BodyPublishers.ofString(body.orEmpty()))
+            }
         }
         return builder.build()
     }

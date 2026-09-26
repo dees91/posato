@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {"name":"ready","action":"waitFor","state":"exists","query":{"text":"Paused items","role":"button"}},
+    {"name":"open-session","action":"tap","query":{"text":"Session","role":"button"}},
+    {"name":"home-inactive","action":"waitFor","state":"exists","query":{"text":"NO SESSION ACTIVE"}},
+    {"name":"begin-setup","action":"tap","query":{"text":"Start a session","role":"button"}},
+    {"name":"setup-open","action":"waitFor","state":"exists","query":{"text":"YOUR NEXT PAUSE"}},
+    {"name":"preset","action":"tap","query":{"text":"25 min","role":"button"}},
+    {"name":"continue-review","action":"tap","query":{"text":"Review session","role":"button"}},
+    {"name":"review-open","action":"waitFor","state":"exists","query":{"text":"ONE LAST LOOK"}},
+    {"name":"start","action":"tap","query":{"text":"Start this pause","role":"button"}},
+    {"name":"active","action":"waitFor","state":"exists","query":{"text":"End session early","role":"button"}},
+    {"name":"active-shot","action":"screenshot"},
+    {"name":"active-tree","action":"snapshot"}
+  ]
+}

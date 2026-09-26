@@ -54,10 +54,17 @@ never from the Apple Developer portal. With the one-time setup in
   `background` (helper approval in Login Items), `toggle --row <text>` (privacy
   panes), `picker-bypass` (macOS 26 after screen captures), `gatekeeper`,
   `account-password`, `mac-password`, and `device-passcode` (iCloud
-  recovery). Run the prompt right after the step that raises it; a scenario
+  recovery). Read an unexpected dialog with `$PC vm text --line <line>` and
+  wait for one with `vm wait-text --text <text>`; take a `vm screenshot` only
+  as evidence or when the layout matters. Run the prompt right after the step
+  that raises it; a scenario
   that waits on the confirmed state can run in the background while the
   prompt command answers. Finish with `$PC vm destroy --line <line>`; a
-  broken guest is deleted, never repaired.
+  broken guest is deleted, never repaired. A run that linked iCloud presses
+  **Remove workspace** first. `vm destroy` refuses a running guest whose
+  database shows a linked workspace (`WORKSPACE_LINKED`, exit 3); it cannot
+  check a stopped guest or an unreadable database, so the rule is yours to
+  keep. `--keep-workspace` is only for a guest whose app cannot run.
 - **Notarized candidates.** Update and release checks install a Developer ID
   DMG in a fresh clone with `$PC vm install --line <line> --dmg <file>`
   instead of using the development package; it installs by Finder drag and
@@ -405,3 +412,11 @@ so the developer's local data is unchanged.
   `observe-unblocked-ios.json` open Calculator and `http://example.com` and assert the
   Screen Time shield and Safari's "Website Not Allowed" page, or their absence; on the
   desktop `observe` does the same in a VM (`features/sessions.md`, Observe blocking).
+- `session-start-saved-items.json` and `session-start-saved-items-desktop.json` start a
+  25-minute session with whatever is already saved, without adding a website first; use them
+  when the run set up its websites and applications itself (on the desktop, answer
+  `vm prompt admin` while the scenario waits).
+- `session-relaunch-ios.json` relaunches the iPhone app three times during a session and
+  checks that the session and both restrictions survive (`features/sessions.md`, Relaunch
+  during a session); it fails, as expected and without blocking other tasks, until
+  `IOS-006` is fixed.

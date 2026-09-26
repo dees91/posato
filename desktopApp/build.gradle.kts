@@ -1,7 +1,9 @@
 import app.posato.buildlogic.AppcastExpectation
 import app.posato.buildlogic.PosatoPaths
+import app.posato.buildlogic.PosatoPublishedFeed
 import app.posato.buildlogic.PosatoUpdateFeed
 import app.posato.buildlogic.PosatoVersion
+import app.posato.buildlogic.ReleaseFloor
 import app.posato.buildlogic.UpdateChannel
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
@@ -967,19 +969,18 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         check(listOf(feedUrl, publicKey, buildNumber) == UPDATE_KEYS.map { key -> plistValue(staged, key) }) {
             "The DMG does not contain the application this release staged."
         }
-        val previous = previousBuildNumber.orNull?.takeIf(String::isNotBlank)
-        val prefix = when (updateChannel) {
+        val explicitPrevious = previousBuildNumber.orNull?.takeIf(String::isNotBlank)
+        val (prefix, previous) = when (updateChannel) {
             UpdateChannel.RELEASE -> {
                 check(feedUrl == PosatoUpdateFeed.STABLE_FEED_URL && publicKey == PosatoUpdateFeed.STABLE_PUBLIC_KEY) {
                     "This build does not read the stable feed with the tracked key, so it cannot be released."
                 }
-                check(previous != null) { "A release feed needs -PposatoMacOsPreviousBuildNumber=<previous stable build>." }
-                PosatoUpdateFeed.releaseDownloadPrefix(marketingVersion.get())
+                PosatoUpdateFeed.releaseDownloadPrefix(marketingVersion.get()) to releaseFloor(buildNumber, explicitPrevious)
             }
 
             UpdateChannel.CANDIDATE -> {
                 check(!PosatoUpdateFeed.readsStableFeed(feedUrl)) { "A candidate must never read the stable feed." }
-                PosatoUpdateFeed.candidateDownloadPrefix(candidateDownloadPrefix.orNull)
+                PosatoUpdateFeed.candidateDownloadPrefix(candidateDownloadPrefix.orNull) to explicitPrevious
             }
         }
         val assetName = when (updateChannel) {
@@ -1025,6 +1026,24 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         output.resolve("SHA256SUMS").writeText("$digest  $assetName\n")
         val leftovers = output.listFiles().orEmpty().map { it.name }.toSet() - setOf(assetName, feed.name, "SHA256SUMS")
         check(leftovers.isEmpty()) { "Unexpected files beside the feed: ${leftovers.joinToString()}." }
+    }
+
+    /** The build a release must exceed: the published stable feed's highest build, raised by the explicit property. */
+    private fun releaseFloor(
+        buildNumber: String,
+        explicitPrevious: String?,
+    ): String {
+        val published = PosatoPublishedFeed.publishedBuildNumber(PosatoUpdateFeed.STABLE_FEED_URL)
+        return when (val decision = PosatoPublishedFeed.releaseFloor(buildNumber, published, explicitPrevious)) {
+            is ReleaseFloor.Refused -> {
+                throw GradleException(decision.reason)
+            }
+
+            is ReleaseFloor.Above -> {
+                logger.lifecycle("Release build $buildNumber follows the published stable build ${published ?: "(none)"}; floor ${decision.floor}.")
+                decision.floor.toString()
+            }
+        }
     }
 
     /** The feed URL, key, and build number of the application inside the DMG that will be published. */

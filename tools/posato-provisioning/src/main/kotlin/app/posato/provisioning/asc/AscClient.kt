@@ -1,12 +1,8 @@
 package app.posato.provisioning.asc
 
-import app.posato.provisioning.core.ErrorCode
-import app.posato.provisioning.core.ProvisioningException
 import app.posato.provisioning.core.ProvisioningJson
 import app.posato.provisioning.model.AppIdentifier
 import app.posato.provisioning.model.ApplePlatform
-import app.posato.provisioning.model.AscList
-import app.posato.provisioning.model.AscSingle
 import app.posato.provisioning.model.BundleIdResource
 import app.posato.provisioning.model.CertificateResource
 import app.posato.provisioning.model.CreateCertificateAttributes
@@ -25,42 +21,20 @@ import app.posato.provisioning.model.RelationshipRef
 import app.posato.provisioning.model.ToMany
 import app.posato.provisioning.model.ToOne
 import kotlinx.serialization.KSerializer
-import kotlinx.serialization.SerializationException
 
-private const val PAGE_LIMIT = "200"
-private val LIMIT = "limit" to PAGE_LIMIT
+private const val PORTAL_HINT = "Remove resources this Mac no longer needs in the developer portal, then rerun the command."
 
 /**
- * Turns a decoding failure into a message that names the resource and nothing else.
- *
- * kotlinx reports a decoding error by quoting the input around the offset. For a `devices` or `certificates`
- * document that slice is other people's device identifiers and certificate bytes, none of which redaction knows
- * about, and it would travel into an envelope that gets pasted into a record.
- */
-private fun <T> decodeDocument(
-    path: String,
-    read: () -> T
-): T = try {
-    read()
-} catch (exception: SerializationException) {
-    throw ProvisioningException(
-        ErrorCode.ASC_REJECTED,
-        "App Store Connect returned a $path document this tool could not read.",
-        "Rerun with --verbose; if it repeats, the App Store Connect response shape has changed.",
-        exception,
-    )
-}
-
-/**
- * The six App Store Connect operations this tool performs, named rather than generalized.
+ * The development-provisioning operations this tool performs, named rather than generalized.
  *
  * There is no paging. The account holds five App IDs and a handful of devices, certificates, and profiles, so a
- * second page means something unexpected: the command stops instead of following a URL the service supplied, which
- * removes the need to validate one.
+ * second page means something unexpected: [AscDocuments.list] stops instead of following a URL the service supplied.
  */
 class AscClient(
-    private val executor: AscRequestExecutor
+    executor: AscRequestExecutor
 ) {
+    private val documents = AscDocuments(executor)
+
     fun bundleIds(): List<BundleIdResource> = list("bundleIds", emptyList(), BundleIdResource.serializer())
 
     /**
@@ -137,32 +111,18 @@ class AscClient(
     )
 
     fun deleteProfile(id: String) {
-        executor.execute(AscRequest(HttpMethod.DELETE, "profiles/$id"))
+        documents.send(HttpMethod.DELETE, "profiles/$id")
     }
 
     private fun <T> list(
         path: String,
         query: List<Pair<String, String>>,
         serializer: KSerializer<T>,
-    ): List<T> {
-        val response = executor.execute(AscRequest(HttpMethod.GET, path, query + LIMIT))
-        val decoded = decodeDocument(path) { ProvisioningJson.lenient.decodeFromString(AscList.serializer(serializer), response.body) }
-        if (decoded.links.next != null) {
-            throw ProvisioningException(
-                ErrorCode.ASC_TOO_MANY_RESULTS,
-                "The account holds more $path than this tool reads in one page.",
-                "Remove resources this Mac no longer needs in the developer portal, then rerun the command.",
-            )
-        }
-        return decoded.data
-    }
+    ): List<T> = documents.list(path, query, serializer, PORTAL_HINT)
 
     private fun <T> create(
         path: String,
         body: String,
         serializer: KSerializer<T>,
-    ): T {
-        val response = executor.execute(AscRequest(HttpMethod.POST, path, emptyList(), body))
-        return decodeDocument(path) { ProvisioningJson.lenient.decodeFromString(AscSingle.serializer(serializer), response.body) }.data
-    }
+    ): T = documents.write(HttpMethod.POST, path, body, serializer)
 }

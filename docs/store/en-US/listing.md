@@ -79,6 +79,35 @@ from `IOS-004`:
 - [Session duration](screenshots/ipad-13/02-session-duration.png)
 - [About Posato](screenshots/ipad-13/03-about-posato.png)
 
+### Capture recipe
+
+Repeat these steps for each Simulator: iPhone 17 Pro Max (1320 × 2868) and
+iPad Pro 13-inch (M5) in portrait (2064 × 2752). Drive the app with
+[`posato-control`](../../../tools/posato-control/README.md) and name the booted
+Simulator with `--udid <udid>`.
+
+1. Run `xcrun simctl ui <udid> appearance dark`.
+2. Install fresh with `launch -t sim --fresh`, then run
+   `tools/posato-control/fixtures/scenarios/first-install-skip.json`.
+3. Add the synthetic websites `news.example`, `social.example`, and
+   `video.example`.
+4. Relaunch without `--fresh` before the first capture, so the field shows the
+   default hint instead of the feedback shown after an add.
+5. Capture the session duration screen first, with the 25-minute preset
+   selected. Before capturing, run
+   `xcrun simctl status_bar <udid> override --time <HH:MM now> --batteryState discharging --batteryLevel 100 --wifiBars 3`,
+   so the status bar matches the "Ends at" time.
+6. Capture About Posato and the paused items with the same status-bar time.
+   The About screen hides the tab bar, so go Back before switching tabs.
+7. Capture each screen with `xcrun simctl io <udid> screenshot raw.png`. Then
+   remove the alpha channel with `ffmpeg -i raw.png -pix_fmt rgb24 <out>.png`,
+   naming the output after the files above.
+8. Clear the override with `xcrun simctl status_bar <udid> clear`.
+
+`posato-provisioning store prepare --screenshots docs/store/en-US/screenshots`
+uploads both sets in file-name order; see the
+[iOS App Store release](../../development/apple-provisioning.md#ios-app-store-release).
+
 ## What's New in 1.1.0
 
 - Edit your websites and apps straight from the Session screen. The search field there now clearly filters your chosen items.

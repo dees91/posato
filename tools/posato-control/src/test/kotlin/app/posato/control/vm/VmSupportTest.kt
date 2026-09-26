@@ -121,4 +121,20 @@ class VmSupportTest {
             rewritten,
         )
     }
+
+    @Test
+    fun `given the guest query output when counting linked workspaces then unreadable output counts as none`() {
+        assertEquals(1, linkedWorkspaces("1\n"))
+        assertEquals(0, linkedWorkspaces("0"))
+        assertEquals(0, linkedWorkspaces(""))
+        assertEquals(0, linkedWorkspaces("Error: no such table"))
+    }
+
+    @Test
+    fun `given a linked workspace when destroying then the clone is refused, and an unlinked one passes`() {
+        val failure = assertFailsWith<ControlException> { refuseLinkedWorkspace(VmLine.PRIMARY, 1) }
+
+        assertEquals(ErrorCode.WORKSPACE_LINKED, failure.code)
+        refuseLinkedWorkspace(VmLine.PRIMARY, 0)
+    }
 }

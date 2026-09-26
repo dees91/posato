@@ -113,9 +113,21 @@ class VmLifecycle(
         return awaitStopped(line)
     }
 
-    /** Shuts the guest down from inside, so its last writes reach the disk, then deletes the clone. */
-    fun destroy(line: VmLine) {
+    /**
+     * Shuts the guest down from inside, so its last writes reach the disk, then deletes the clone. Refuses a clone
+     * whose Posato is still linked to an iCloud workspace unless [keepWorkspace]: the workspace and its key would stay
+     * in the shared test account, and a later clone of the same line cannot read that key (`observed` 2026-09-25).
+     * Press **Remove workspace** in the app first.
+     */
+    fun destroy(
+        line: VmLine,
+        keepWorkspace: Boolean = false
+    ) {
         if (tart.list().none { it.name == line.cloneName }) return
+        if (running(line) && !keepWorkspace) {
+            val linked = tart.exec(line.cloneName, LINKED_WORKSPACE_QUERY)
+            refuseLinkedWorkspace(line, linkedWorkspaces(linked.stdout))
+        }
         if (running(line)) {
             tart.exec(line.cloneName, "sudo -S -p '' /bin/sh -c 'sync; /sbin/shutdown -h +0'", stdin = vmAdminPassword(context) + "\n")
             awaitStopped(line)

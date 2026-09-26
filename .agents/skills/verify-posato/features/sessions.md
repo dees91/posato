@@ -77,6 +77,16 @@ Preconditions:
   with `--vm primary` in the background and `$PC vm prompt admin --line primary` beside it;
   the prompt appears about ten seconds after Start. The same pairing runs
   session-expiry-desktop.json.
+- **Relaunch during a session (iPhone):** with `example.com` and Calculator
+  saved and Screen Time allowed, run `session-relaunch-ios.json` on the test
+  iPhone in every task that touches iOS sessions or enforcement. It starts a
+  25-minute session, relaunches three times (at once, after 5 s, and with a
+  2-minute window for Device Activity callbacks), observes both restrictions
+  again, and ends early. One relaunch is not enough: the defect it guards
+  against (`IOS-006`, release 1.2) ended the session on some relaunches only.
+  Until `IOS-006` merges it fails at `active-after-second-relaunch` or later;
+  that failure is expected, is recorded as the known defect, and does not
+  block an unrelated task. After `IOS-006` it must pass.
 - **Observe blocking (both targets):** with `example.com` and one application paused, on the
   desktop run `$PC observe -t desktop --vm primary --website http://example.com/ --application
   Safari --expect blocked` during the session and `--expect allowed` after it: the request

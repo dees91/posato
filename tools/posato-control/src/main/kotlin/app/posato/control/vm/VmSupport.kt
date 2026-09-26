@@ -83,6 +83,27 @@ internal fun refuseBoot(
     throw ControlException(ErrorCode.VM_UNAVAILABLE, reason, hint)
 }
 
+/** Counts established workspaces in the guest's policy database; prints 0 when Posato never ran there. */
+internal const val LINKED_WORKSPACE_QUERY = "db=\"\$HOME/Library/Application Support/Posato/posato-policy.db\"; " +
+    "if test -f \"\$db\"; then /usr/bin/sqlite3 -readonly \"\$db\" " +
+    "'select count(*) from sync_bootstrap_state where established_workspace_id is not null' 2>/dev/null || echo 0; else echo 0; fi"
+
+/** The count [LINKED_WORKSPACE_QUERY] printed; anything unreadable counts as none rather than blocking cleanup. */
+internal fun linkedWorkspaces(output: String): Int = output.trim().lines().lastOrNull()?.trim()?.toIntOrNull() ?: 0
+
+internal fun refuseLinkedWorkspace(
+    line: VmLine,
+    linked: Int
+) {
+    if (linked > 0) {
+        throw ControlException(
+            ErrorCode.WORKSPACE_LINKED,
+            "Posato in ${line.cloneName} is still linked to an iCloud workspace.",
+            "Press Remove workspace in the app first, or pass --keep-workspace for a broken guest.",
+        )
+    }
+}
+
 private val VNC_URL = Regex("""vnc://:([^@\s]+)@([^:\s]+):(\d+)""")
 
 /** The endpoint `tart run --no-graphics --vnc-experimental` prints once the server listens. */

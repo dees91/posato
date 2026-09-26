@@ -26,6 +26,12 @@ data class RecognizedLine(
         get() = y + h / 2
 }
 
+/** Whether this line shows [text]: equal to it when [exact], otherwise containing it regardless of case. */
+internal fun RecognizedLine.matches(
+    text: String,
+    exact: Boolean
+): Boolean = if (exact) this.text.trim() == text else this.text.contains(text, ignoreCase = true)
+
 internal fun parseRecognizedLines(json: String): List<RecognizedLine> =
     ControlJson.lenient.decodeFromString(ListSerializer(RecognizedLine.serializer()), json)
 
@@ -71,7 +77,7 @@ class GuestScreen(
     ): List<RecognizedLine> {
         val deadline = System.currentTimeMillis() + timeoutMs
         while (true) {
-            val matches = read().filter { if (exact) it.text.trim() == text else it.text.contains(text, ignoreCase = true) }
+            val matches = read().filter { it.matches(text, exact) }
             if (matches.isNotEmpty()) return matches
             if (System.currentTimeMillis() >= deadline) {
                 throw ControlException(
@@ -85,10 +91,11 @@ class GuestScreen(
 
     fun waitGone(
         text: String,
-        timeoutMs: Long
+        timeoutMs: Long,
+        exact: Boolean = false
     ) {
         val deadline = System.currentTimeMillis() + timeoutMs
-        while (read().any { it.text.contains(text, ignoreCase = true) }) {
+        while (read().any { it.matches(text, exact) }) {
             if (System.currentTimeMillis() >= deadline) {
                 throw ControlException(ErrorCode.WAIT_TIMEOUT, "The text '$text' stayed on the guest screen for ${timeoutMs / MILLIS_PER_SECOND} s.")
             }

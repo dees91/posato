@@ -7,6 +7,10 @@ import app.posato.provisioning.cli.DevicesRegisterCommand
 import app.posato.provisioning.cli.DoctorCommand
 import app.posato.provisioning.cli.ProfilesCommand
 import app.posato.provisioning.cli.ProfilesEnsureCommand
+import app.posato.provisioning.cli.StoreCommand
+import app.posato.provisioning.cli.StorePrepareCommand
+import app.posato.provisioning.cli.StoreStatusCommand
+import app.posato.provisioning.cli.StoreSubmitCommand
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningJson
 import app.posato.provisioning.model.Envelope
@@ -26,8 +30,9 @@ private const val EXIT_USAGE = 2
 class PosatoProvisioning : CliktCommand(name = "posato-provisioning") {
     override fun help(context: Context): String =
         "Provisions Apple development resources for the Posato App IDs through the App Store Connect API: report " +
-            "readiness, register this Mac and the connected iPhone, ensure a development certificate, and install " +
-            "development profiles. Every command prints a JSON envelope and never prints a credential or identifier."
+            "readiness, register this Mac and the connected iPhone, ensure a development certificate, install " +
+            "development profiles, and prepare and submit the iOS App Store release. Every command prints a JSON envelope " +
+            "and never prints a credential or identifier."
 
     override fun run() = Unit
 }
@@ -37,6 +42,7 @@ fun buildCommand(): PosatoProvisioning = PosatoProvisioning().subcommands(
     DevicesCommand().subcommands(DevicesRegisterCommand()),
     CertificatesCommand().subcommands(CertificatesEnsureCommand()),
     ProfilesCommand().subcommands(ProfilesEnsureCommand()),
+    StoreCommand().subcommands(StoreStatusCommand(), StorePrepareCommand(), StoreSubmitCommand()),
 )
 
 fun run(args: Array<String>): Int {
