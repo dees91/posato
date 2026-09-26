@@ -35,6 +35,7 @@ import app.posato.core.designsystem.platformDevice
 import app.posato.feature.about.AboutScreen
 import app.posato.feature.about.ApplicationUpdates
 import app.posato.feature.licenses.LicensesScreen
+import app.posato.feature.notifications.SessionNotifier
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
@@ -75,6 +76,7 @@ class PosatoApplication internal constructor(
     private val sessionOwner: SessionTransitionOwner,
     private val bootstrap: AppleSync,
     private val onboardingDependencies: OnboardingDependencies,
+    private val notifier: SessionNotifier,
 ) {
     @Composable
     fun Content(
@@ -98,6 +100,7 @@ class PosatoApplication internal constructor(
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
         if (hostsSession) {
             LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
+            LaunchedEffect(notifier) { notifier.run() }
         }
         val device = remember { platformDevice() }
         PosatoTheme(highContrast = highContrast) {
@@ -168,7 +171,13 @@ class PosatoApplication internal constructor(
                 val currentInformationPage = informationPage
                 when {
                     currentInformationPage != null -> {
-                        ApplicationInformationHost(currentInformationPage, { informationPage = it }, updates, contentModifier.padding(inset))
+                        ApplicationInformationHost(
+                            currentInformationPage,
+                            { informationPage = it },
+                            updates,
+                            notifier.takeIf { it.available },
+                            contentModifier.padding(inset),
+                        )
                     }
 
                     destination == ApplicationDestination.SESSION -> {
@@ -302,6 +311,7 @@ private fun ApplicationInformationHost(
     page: ApplicationInformationPage,
     onNavigate: (ApplicationInformationPage?) -> Unit,
     updates: ApplicationUpdates?,
+    notifications: SessionNotifier?,
     modifier: Modifier = Modifier,
 ) {
     when (page) {
@@ -310,6 +320,7 @@ private fun ApplicationInformationHost(
             onBack = { onNavigate(null) },
             modifier = modifier,
             updates = updates,
+            notifications = notifications,
         )
 
         ApplicationInformationPage.LICENSES -> LicensesScreen(

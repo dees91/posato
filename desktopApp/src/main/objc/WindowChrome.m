@@ -1,6 +1,7 @@
 #import <AppKit/AppKit.h>
 #import <QuartzCore/QuartzCore.h>
 #import <ServiceManagement/ServiceManagement.h>
+#import <UserNotifications/UserNotifications.h>
 #include <jni.h>
 
 JNIEXPORT void JNICALL Java_app_posato_desktop_MacWindow_announce(
@@ -373,4 +374,108 @@ JNIEXPORT jint JNICALL Java_app_posato_desktop_MacPresenceNative_setLoginItem(JN
         [SMAppService.mainAppService unregisterAndReturnError:&error];
     }
     return (jint)SMAppService.mainAppService.status;
+}
+
+@interface PosatoNotificationDelegate : NSObject <UNUserNotificationCenterDelegate>
+@end
+
+@implementation PosatoNotificationDelegate
+- (void)userNotificationCenter:(UNUserNotificationCenter *)center
+       willPresentNotification:(UNNotification *)notification
+         withCompletionHandler:(void (^)(UNNotificationPresentationOptions))completionHandler {
+    completionHandler(UNNotificationPresentationOptionBanner | UNNotificationPresentationOptionSound);
+}
+@end
+
+static PosatoNotificationDelegate *notificationDelegate;
+
+static UNUserNotificationCenter *NotificationCenter(void) {
+    UNUserNotificationCenter *center = UNUserNotificationCenter.currentNotificationCenter;
+    static dispatch_once_t once;
+    dispatch_once(&once, ^{
+        notificationDelegate = [[PosatoNotificationDelegate alloc] init];
+        center.delegate = notificationDelegate;
+    });
+    return center;
+}
+
+static jint NotificationPermissionCode(UNAuthorizationStatus status) {
+    switch (status) {
+        case UNAuthorizationStatusNotDetermined:
+            return 0;
+        case UNAuthorizationStatusDenied:
+            return 2;
+        default:
+            return 1;
+    }
+}
+
+static jint NotificationPermissionNow(int64_t timeoutSeconds) {
+    __block jint code = 0;
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    [NotificationCenter() getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings *settings) {
+        code = NotificationPermissionCode(settings.authorizationStatus);
+        dispatch_semaphore_signal(done);
+    }];
+    dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, timeoutSeconds * NSEC_PER_SEC));
+    return code;
+}
+
+JNIEXPORT jint JNICALL Java_app_posato_desktop_MacNotificationsNative_permission(JNIEnv *environment, jclass receiver) {
+    return NotificationPermissionNow(5);
+}
+
+JNIEXPORT jint JNICALL Java_app_posato_desktop_MacNotificationsNative_requestPermission(JNIEnv *environment, jclass receiver) {
+    dispatch_semaphore_t done = dispatch_semaphore_create(0);
+    [NotificationCenter() requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound)
+                                        completionHandler:^(BOOL granted, NSError *error) {
+                                            dispatch_semaphore_signal(done);
+                                        }];
+    dispatch_semaphore_wait(done, dispatch_time(DISPATCH_TIME_NOW, 600 * NSEC_PER_SEC));
+    return NotificationPermissionNow(5);
+}
+
+static UNMutableNotificationContent *NotificationContent(JNIEnv *environment, jstring title, jstring body) {
+    UNMutableNotificationContent *content = [[UNMutableNotificationContent alloc] init];
+    content.title = PresenceString(environment, title);
+    content.body = PresenceString(environment, body);
+    content.sound = UNNotificationSound.defaultSound;
+    return content;
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_schedule(
+    JNIEnv *environment,
+    jclass receiver,
+    jstring identifier,
+    jstring title,
+    jstring body,
+    jdouble seconds
+) {
+    if (seconds <= 0) return;
+    UNTimeIntervalNotificationTrigger *trigger = [UNTimeIntervalNotificationTrigger triggerWithTimeInterval:seconds repeats:NO];
+    UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:PresenceString(environment, identifier)
+                                                                          content:NotificationContent(environment, title, body)
+                                                                          trigger:trigger];
+    [NotificationCenter() addNotificationRequest:request withCompletionHandler:nil];
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_post(JNIEnv *environment, jclass receiver, jstring title, jstring body) {
+    UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:NSUUID.UUID.UUIDString
+                                                                          content:NotificationContent(environment, title, body)
+                                                                          trigger:nil];
+    [NotificationCenter() addNotificationRequest:request withCompletionHandler:nil];
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_cancel(JNIEnv *environment, jclass receiver, jstring identifier) {
+    [NotificationCenter() removePendingNotificationRequestsWithIdentifiers:@[ PresenceString(environment, identifier) ]];
+}
+
+JNIEXPORT jint JNICALL Java_app_posato_desktop_MacNotificationsNative_readFlag(JNIEnv *environment, jclass receiver, jstring key) {
+    id value = [NSUserDefaults.standardUserDefaults objectForKey:PresenceString(environment, key)];
+    if (value == nil) return -1;
+    return [value boolValue] ? 1 : 0;
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_writeFlag(JNIEnv *environment, jclass receiver, jstring key, jboolean value) {
+    [NSUserDefaults.standardUserDefaults setBool:(value == JNI_TRUE) forKey:PresenceString(environment, key)];
 }

@@ -1,5 +1,6 @@
 package app.posato.feature.presence
 
+import app.posato.feature.notifications.SessionNotifier
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.update.MaintenanceAdmission
@@ -20,6 +21,7 @@ public class DesktopPresence internal constructor(
     private val owner: SessionTransitionOwner,
     private val sync: AppleSync,
     private val maintenance: MaintenanceAdmission,
+    private val notifier: SessionNotifier,
 ) {
     private val requests = Channel<SessionWindowRequest>(Channel.CONFLATED)
 
@@ -33,6 +35,7 @@ public class DesktopPresence internal constructor(
         maintenance.closedGate()
         coroutineScope {
             launch { owner.runWhileHosted(idleRecheckMillis = IDLE_RECHECK_MILLIS) }
+            launch { notifier.run() }
             launch { runPeriodicExchange(exchange = sync::onForeground, intervalMillis = EXCHANGE_INTERVAL_MILLIS) }
         }
     }

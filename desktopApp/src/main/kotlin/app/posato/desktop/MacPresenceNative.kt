@@ -8,6 +8,10 @@ internal object MacPresenceNative {
         System.load(File(resourcesDirectory, "native/libPosatoWindow.dylib").absolutePath)
     }
 
+    fun isLoaded(): Boolean {
+        return true
+    }
+
     fun updateMenu(model: PresenceMenuModel) {
         setMenu(
             model.items.map { it.title }.toTypedArray(),

@@ -9,9 +9,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -26,11 +28,18 @@ import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
+import app.posato.feature.notifications.NotificationPermission
+import app.posato.feature.notifications.SessionNotifier
 import app.posato.generated.resources.Res
+import app.posato.generated.resources.notification_section_title
+import app.posato.generated.resources.notification_setting
+import app.posato.generated.resources.notification_setting_denied
+import app.posato.generated.resources.notification_setting_supporting
 import app.posato.generated.resources.update_automatic_checks
 import app.posato.generated.resources.update_automatic_checks_supporting
 import app.posato.generated.resources.update_check_now
 import app.posato.generated.resources.update_section_title
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -39,19 +48,44 @@ internal fun AboutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     updates: ApplicationUpdates? = null,
+    notifications: SessionNotifier? = null,
 ) {
     val version = remember { applicationVersion() }
-    if (updates == null) {
-        AboutScreen(version, onOpenLicenses, onBack, modifier)
-        return
+    val updatesContent: (@Composable () -> Unit)? = updates?.let { source ->
+        val updatesState by source.state.collectAsState()
+        if (updatesState.available) {
+            { UpdatesSection(updatesState, source::setAutomaticChecks, source::checkNow) }
+        } else {
+            null
+        }
     }
-    val updatesState by updates.state.collectAsState()
-    val updatesContent: (@Composable () -> Unit)? = if (updatesState.available) {
-        { UpdatesSection(updatesState, updates::setAutomaticChecks, updates::checkNow) }
-    } else {
-        null
+    val notificationsContent: (@Composable () -> Unit)? = notifications?.let { notifier ->
+        { NotificationsSection(notifier) }
     }
-    AboutScreen(version, onOpenLicenses, onBack, modifier, updatesContent)
+    AboutScreen(version, onOpenLicenses, onBack, modifier, updatesContent, notificationsContent)
+}
+
+@Composable
+private fun NotificationsSection(notifier: SessionNotifier) {
+    val settings by notifier.settings.collectAsState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(notifier) { notifier.refreshPermission() }
+    val denied = settings.permission == NotificationPermission.DENIED
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
+        PosatoSectionHeader(titleContent = {
+            Text(stringResource(Res.string.notification_section_title), style = MaterialTheme.typography.titleMedium)
+        })
+        PosatoSelectionRow(
+            checked = settings.enabled && !denied,
+            onCheckedChange = { enabled -> scope.launch { notifier.setEnabled(enabled) } },
+            enabled = !denied,
+            supportingContent = {
+                PosatoCaption(stringResource(if (denied) Res.string.notification_setting_denied else Res.string.notification_setting_supporting))
+            },
+        ) {
+            Text(stringResource(Res.string.notification_setting), style = MaterialTheme.typography.bodyLarge)
+        }
+    }
 }
 
 @Composable
@@ -61,6 +95,7 @@ internal fun AboutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     updatesContent: (@Composable () -> Unit)? = null,
+    notificationsContent: (@Composable () -> Unit)? = null,
 ) {
     Column(modifier = modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back") }
@@ -73,6 +108,7 @@ internal fun AboutScreen(
             PosatoBody("Pause. Then choose.")
             PosatoBody("Posato helps you step away from selected websites and apps for a while. A quiet pause between impulse and action.")
             PosatoBody("Open source. No Posato account, analytics, or Posato-operated server.")
+            notificationsContent?.invoke()
             updatesContent?.invoke()
             PosatoDisclosureRow(
                 onClick = onOpenLicenses,

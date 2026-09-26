@@ -274,4 +274,13 @@ For what matters.</string>
     <string name="mac_unified_blocking_settings_caption">Existing helper controls remain available while unified setup is in preview.</string>
     <string name="mac_unified_defer">You can finish setup later and still edit your paused items. Blocking stays unavailable until the helper is ready.</string>
     <string name="mac_unified_offer_body">One setup for manual pauses and schedules. You can review or revoke access in This Mac settings.</string>
+    <string name="notification_pause_over_title">Pause over</string>
+    <string name="notification_pause_over_body">Your websites and apps are available again.</string>
+    <string name="notification_pause_started_title">Pause started</string>
+    <string name="notification_pause_started_body">A pause started on another device.</string>
+    <string name="notification_pause_started_resume_body">A pause started on another device. Open Posato to block on this Mac too.</string>
+    <string name="notification_section_title">Notifications</string>
+    <string name="notification_setting">Pause notifications</string>
+    <string name="notification_setting_supporting">A notice when a pause ends, or when one starts on another device.</string>
+    <string name="notification_setting_denied">Notifications are turned off for Posato in System Settings.</string>
 </resources>

@@ -49,7 +49,12 @@ fun main() {
                 loginItem = MacLoginItemState,
                 standingGrant = DesktopStandingGrant(enforcementClient, Dispatchers.IO),
             )
-            val applicationGraph = createDesktopApplicationGraph(applicationMappings, enforcement, helperState)
+            val applicationGraph = createDesktopApplicationGraph(
+                applicationMappings,
+                enforcement,
+                helperState,
+                notifications = MacSessionNotifications,
+            )
             val updaterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val updater = createUpdaterController(enforcementClient, applicationGraph.updateMaintenance, instanceLock, updaterScope)
             runBlocking { updater.start() }

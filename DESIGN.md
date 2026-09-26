@@ -625,6 +625,24 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   saved total into view. Use the existing typography, spacing, colors,
   safe-area handling, and native permission presentation.
 
+### Pause notifications
+
+`user-confirmed` (2026-09-27, `NOTIFY-001`, delegated night mandate): local
+notices only.
+
+- **Pause over:** "Your websites and apps are available again." It is
+  scheduled at the planned end and withdrawn if the pause ends early.
+- **Pause started:** only for a pause started on another device: "A pause
+  started on another device." The Mac adds "Open Posato to block on this Mac
+  too.", because a received pause waits for **Resume restrictions**.
+- **Permission:** asked once, right after the person's first pause on the
+  device, never at launch.
+- **Preference:** About Posato has a **Notifications** section with one
+  switch, **Pause notifications**, on by default: "A notice when a pause
+  ends, or when one starts on another device." When the system has denied
+  notifications, the switch is disabled and reads "Notifications are turned
+  off for Posato in System Settings."
+
 ### Release 1.2 setup and schedules
 
 `user-confirmed` (2026-09-26, PR #92): accepted for `ONBOARDING-004` and

@@ -4,6 +4,8 @@ import app.posato.core.database.PosatoDatabase
 import app.posato.core.database.createDesktopDatabaseDriver
 import app.posato.core.database.defaultDesktopPolicyDatabasePath
 import app.posato.feature.enforcement.EnforcementPort
+import app.posato.feature.notifications.SessionNotificationPlatform
+import app.posato.feature.notifications.UnavailableSessionNotifications
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
@@ -66,6 +68,7 @@ internal interface DesktopApplicationGraph :
             @Provides @Named("helper") enforcement: EnforcementPort,
             @Provides databasePath: String,
             @Provides macHelper: MacHelperPort,
+            @Provides notifications: SessionNotificationPlatform,
         ): DesktopApplicationGraph
     }
 
@@ -209,6 +212,7 @@ fun createDesktopApplicationGraph(
     enforcement: EnforcementPort,
     macHelper: MacHelperPort,
     databasePath: String = defaultDesktopPolicyDatabasePath(),
+    notifications: SessionNotificationPlatform = UnavailableSessionNotifications,
 ): DesktopApplicationComponents {
     return synchronized(desktopGraphLock) {
         val existing = processDesktopGraph
@@ -221,6 +225,7 @@ fun createDesktopApplicationGraph(
                 enforcement,
                 databasePath,
                 macHelper,
+                notifications,
             ).also {
                 processDatabasePath = databasePath
                 processDesktopGraph = it
