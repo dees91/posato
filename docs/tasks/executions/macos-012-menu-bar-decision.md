@@ -79,7 +79,20 @@ Git history of this file (`128f79b`) keeps the full reviewed plan:
 
 ## Completed-change review
 
-- **Verdict:** `pending`
+- **Verdict:** `approved` after corrections. The first pass was changes-required, with three Required findings and
+  no Critical:
+  - an `observed` daemon footprint that was never read;
+  - `observed` provenance on the ADR 0008 amendment for a gate this task did
+    not exercise;
+  - one menu string that differed between the rules and the evidence table.
+- **Resolution:** all three corrected. The re-check found one new Required
+  finding, that Sparkle "adds no process", and it is corrected too. Accepted Recommended items:
+  - the stale `RESUME_REQUIRED` notice copy;
+  - the website wording;
+  - the scope of ADR 0008's "no resident process";
+  - the login item turned off by **Remove from this Mac**;
+  - the explanation of the wakeup ratio;
+  - extra check rows.
 
 ## Verification
 
@@ -91,6 +104,8 @@ Git history of this file (`128f79b`) keeps the full reviewed plan:
 | Reopen through LaunchServices (P1) | pass | same process, window shown, `Foreground` |
 | Status-item accessibility | P1 fail, P3 pass | AX tree and `AXPress` through `axmenu` |
 | Login item probe (P1) | pass | status `enabled`; separate Open at Login row |
+| `./gradlew quality` | pass | at `7ad4cdc`; later corrections are Markdown only, which the gate does not read |
+| Window, icon, and permission side effects (P1) | observed | accessory policy reported `UIElement`; template glyph rendered as system icons; Cmd-W did nothing; AWT tray raised the notification banner absent from P0 |
 
 ## Blockers and accepted risks
 

@@ -41,8 +41,9 @@ accepted or implemented until the maintainer records a decision below.
 - **One instance comes only from LaunchServices.** The instance lock is
   shared. A second process started directly runs beside the first, and
   update admission then refuses with `OTHER_INSTANCE`.
-- **Nothing exists yet** for launch at login, a status item, a Dock
-  reopen handler, a quit hook, or an activation-policy change.
+- **Nothing exists yet** in the desktop application for launch at login, a
+  status item, a Dock reopen handler, a quit hook, or an activation-policy
+  change.
 
 The public README and limits page say that Posato must stay open for blocking
 to work. Idea 7 in the wiki idea queue asks for a status-bar menu, like
@@ -81,11 +82,14 @@ What the figures show:
 
 - **Resident cost is memory, not CPU.** A resident Posato with its window
   closed holds about 260-270 MB and under 1% of one core. That is the lowest
-  CPU and energy measured for the JVM. With the window open and idle, the
-  same process woke about three to four times as often and had two to three times
-  the energy impact.
-- **Enforcement adds little once settled.** The helper and daemon together
-  stayed under 10 MB and 0.5% of a core in the settled session.
+  CPU and energy measured for the JVM. In the same clone, the P1 process with
+  its window open and idle woke about four times as often, with about three
+  times the energy impact, as with its window closed. The P0 row with the
+  window open during a session woke far less than either window-open idle
+  row. That difference is not explained here.
+- **Enforcement adds little once settled.** In the settled session, the
+  helper stayed under 7 MB, and the helper and daemon together used under
+  0.5% of a core. The daemon's footprint was not read.
 - **The P0 helper figure is a transient.** In the first enforced session of
   that clone, the helper used about 60% of a core. It burned about 7.5
   minutes of CPU in the session's first 14 minutes, then fell idle, and the
@@ -239,9 +243,9 @@ product surface:
   friction in that same confirmation.
 - **Active but not enforcing:** the timer is not presented as protection.
   For `RESUME_REQUIRED`, a failed or pending apply, or an unavailable
-  helper, the first line reads "Restrictions not active on this Mac" in the
-  Session notice's vocabulary, and the first action is **Resume restrictions…**,
-  which opens the window at that notice. The administrator prompt is raised
+  helper, the first line reads "Restrictions not active on this Mac", the
+  same words as the Session notice, and the first action is **Resume
+  restrictions…**, which opens the window at that notice. The administrator prompt is raised
   only by the person's action in the window, never by the menu opening.
 - **Update or maintenance in progress:** the menu names it and offers **Open
   Posato**.
@@ -322,11 +326,12 @@ choice left to the maintainer.
   Sparkle's scheduled checks now happen in a process that can run for days,
   so the found-update and ready-to-install windows can appear while the main
   window is closed. `MACOS-013` must show them with Posato activated as a
-  regular application; this was not measured here. The consent question is still asked once, the first time the
-  destinations appear after setup. An active session still refuses
-  admission. In the ADR 0008 cancellation and termination scenarios, "window
-  close" no longer terminates anything. Only Quit, a crash, or a system
-  termination does, and those keep their proven behavior.
+  regular application; this was not measured here. The consent question is
+  still asked once, the first time the destinations appear after setup. An
+  active session still refuses admission. In the ADR 0008 cancellation and
+  termination scenarios, "window close" no longer terminates anything. Only
+  Quit, a crash, or a system termination does, and those keep their proven
+  behavior.
 - **Removal (MACOS-009).** It stays in This Mac options in the window, is
   reached through **Open Posato**, and is still refused during a session.
 - **ADR 0004.** No change to the helper, daemon, lease, authorization, or
@@ -403,13 +408,22 @@ Add to Lifecycle and recovery:
 
 ### ADR 0008: define window close for the update gate
 
-Append to the MACOS-011 delivery plan's step 5:
+Append to the MACOS-011 delivery plan's step 5, once `MACOS-013` has passed
+its update-gate evidence:
 
-> `observed` by `MACOS-012`: with a resident process (ADR 0009), closing the
-> main window terminates nothing. In the cancellation and termination
-> scenarios, "window close" reads as closing the window of a process that
-> keeps running. The gate's guarantees attach to Quit, crash, and system
-> termination, which keep their verified behavior.
+> With the resident process of ADR 0009, closing the main window terminates
+> nothing (`observed` in the `MACOS-012` prototype). In the cancellation and
+> termination scenarios, "window close" reads as closing the window of a
+> process that keeps running. The gate's guarantees attach to Quit, crash,
+> and system termination. `MACOS-013` verified that they hold with the
+> window closed.
+
+Clarify the Consent, session behavior, and data bullet on Sparkle's settings:
+
+> "Add a resident process" refers to the updater: Sparkle keeps its schedule
+> in the application process and adds no resident process of its own; its
+> installer processes run only during an admitted installation. It does not
+> bar the resident application process of ADR 0009.
 
 ### DESIGN.md: menu bar, window, and quit rules
 
@@ -454,6 +468,12 @@ Add under Layout and Responsive Behavior, macOS:
 > - **Open at login.** In This Mac options, a switch **Open Posato at login**,
 >   off by default. It is not offered during first-run setup. A login launch
 >   keeps the window closed and never asks for approval on its own.
+>   **Remove from this Mac** also turns the switch off, so no login item
+>   remains after Posato is moved to the Trash.
+> - **Session notice.** The `RESUME_REQUIRED` notice no longer blames closing
+>   the app. It reads "Restrictions not active on this Mac." It keeps
+>   **Resume restrictions**, because quitting, sleep, a login launch, and a
+>   session received from another device all lead there.
 
 ### Public wording
 
@@ -464,6 +484,15 @@ README Limits, the Mac bullet, becomes:
 > needs administrator approval. Paused apps are quit, so save your work first.
 > Website blocking covers Safari and Google Chrome Stable using the system
 > proxy.
+
+The website's Limits list (`website/src/pages/index.astro`), the Mac item,
+becomes:
+
+> **Mac:** blocking works while Posato runs, including in the menu bar with
+> its window closed. Quitting Posato stops it. Starting or resuming blocking
+> needs administrator approval. Paused apps are quit, so save your work before
+> a session starts. Website blocking covers Safari and Google Chrome Stable
+> while they use the system proxy settings.
 
 `docs/product/limits-and-platforms.md`, the second bullet, becomes:
 
@@ -491,9 +520,11 @@ review. The bounded work:
    `applicationShouldTerminate` distinguishing user quit from logout,
    restart, and update relaunch, and `SMAppService.mainApp`. Menu actions call
    Kotlin.
-3. Add the This Mac switch, the first-close notice, the synchronization
-   triggers for menu opening and the accepted interval, and the public
-   wording.
+3. Add:
+   - the This Mac switch and its removal with **Remove from this Mac**;
+   - the first-close notice and the reworded Session notice;
+   - synchronization triggers for menu opening and the accepted interval;
+   - the README, limits page, and website wording.
 4. Extend `posato-control` before relying on it:
    - `launch` and `--adopt` for a process whose window is closed;
    - `menu` to open the status item through its accessibility press and read
@@ -511,12 +542,13 @@ review. The bounded work:
 | Scenario | Required unattended evidence in a Tart clone |
 | --- | --- |
 | Start from the menu | With the window closed, **Start a session…** opens setup; after the administrator prompt, closing the window keeps `observe --expect blocked` true |
-| Inspect from the menu | The menu names the session, the end time, and the minutes left; VoiceOver reads the item and its menu through the accessibility press |
+| Inspect from the menu | With the window closed, the menu names the session, the end time, and the minutes left; VoiceOver reads the item and its menu through the accessibility press |
 | End from the menu | **End session early…** reaches the existing confirmation; Keep this pause changes nothing; End session gives `--expect allowed` |
 | Expiry with the window closed | A session expires on time with no window; the menu returns to no session, and the proxy is restored |
-| Not enforcing | After relaunch and after sleep and wake, the menu shows Blocking stopped and Resume restrictions…, with no prompt until chosen |
+| Not enforcing | After relaunch and after sleep and wake, the menu shows Restrictions not active on this Mac and Resume restrictions…, with no prompt until chosen |
 | Relaunch and reopen | Opening Posato while it is resident shows the existing window without a second process; Dock state follows the window |
 | Launch at login | Switch on, log out and in: Posato starts windowless and resident; with an active session it waits in Resume; switch off removes the login item and leaves the helper's background item enabled |
+| Removal with login on | **Remove from this Mac** turns Open at Login off; no Open at Login record remains |
 | Quit during a session | The confirmation appears; Keep leaves blocking; Quit restores and the next launch shows Resume; logout is not blocked |
 | Update gate | With a found update and the window closed, the gate still refuses during a session and admits after it ends |
 | Resource use | Resident idle and session samples against the figures above; no regression over P1 |
