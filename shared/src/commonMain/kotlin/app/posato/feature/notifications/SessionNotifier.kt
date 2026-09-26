@@ -11,12 +11,14 @@ import app.posato.generated.resources.notification_pause_started_title
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.jetbrains.compose.resources.getString
 import kotlin.coroutines.resume
@@ -82,16 +84,29 @@ internal class SessionNotices(
 
     val settings: StateFlow<SessionNotificationSettings> = mutableSettings.asStateFlow()
 
+    /**
+     * The permission prompt runs beside the status collector, so an unanswered prompt never holds up
+     * a withdrawn or announced notice. Once the person allows notices, the running pause's end is
+     * scheduled again, because a request made before permission may not have been kept.
+     */
     suspend fun follow(statuses: Flow<LocalSessionStatus?>) {
-        refreshPermission()
-        var previous: LocalSessionStatus? = null
-        var firstObservation = true
-        statuses.filterNotNull().collect { status ->
-            val actions = SessionNotificationPlanner.plan(previous, status, firstObservation)
-            previous = status
-            current = status
-            firstObservation = false
-            actions.forEach { action -> perform(action) }
+        coroutineScope {
+            refreshPermission()
+            var previous: LocalSessionStatus? = null
+            var firstObservation = true
+            statuses.filterNotNull().collect { status ->
+                val actions = SessionNotificationPlanner.plan(previous, status, firstObservation)
+                previous = status
+                current = status
+                firstObservation = false
+                actions.forEach { action ->
+                    if (action == SessionNotificationAction.AskPermission) {
+                        launch { askOnce() }
+                    } else {
+                        perform(action)
+                    }
+                }
+            }
         }
     }
 
@@ -118,7 +133,9 @@ internal class SessionNotices(
         when (action) {
             is SessionNotificationAction.ScheduleEnd -> if (platform.isEnabled()) {
                 val text = texts.pauseOver()
-                platform.scheduleEnd(action.endEpochMillis, text.title, text.body)
+                if (platform.isEnabled()) {
+                    platform.scheduleEnd(action.endEpochMillis, text.title, text.body)
+                }
             }
 
             SessionNotificationAction.CancelEnd -> platform.cancelEnd()
@@ -128,9 +145,18 @@ internal class SessionNotices(
                 platform.post(text.title, text.body)
             }
 
-            SessionNotificationAction.AskPermission -> if (platform.isEnabled() && !platform.wasPermissionAsked()) {
-                askPermission()
-            }
+            SessionNotificationAction.AskPermission -> askOnce()
+        }
+    }
+
+    private suspend fun askOnce() {
+        if (!platform.isEnabled() || platform.wasPermissionAsked()) {
+            return
+        }
+        askPermission()
+        val active = current as? LocalSessionStatus.Active
+        if (settings.value.permission == NotificationPermission.ALLOWED && active != null) {
+            perform(SessionNotificationAction.ScheduleEnd(active.record.endEpochMillis))
         }
     }
 

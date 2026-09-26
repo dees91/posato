@@ -390,6 +390,7 @@ JNIEXPORT jint JNICALL Java_app_posato_desktop_MacPresenceNative_setLoginItem(JN
 static PosatoNotificationDelegate *notificationDelegate;
 
 static UNUserNotificationCenter *NotificationCenter(void) {
+    if (NSBundle.mainBundle.bundleIdentifier == nil) return nil;
     UNUserNotificationCenter *center = UNUserNotificationCenter.currentNotificationCenter;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
@@ -411,9 +412,11 @@ static jint NotificationPermissionCode(UNAuthorizationStatus status) {
 }
 
 static jint NotificationPermissionNow(int64_t timeoutSeconds) {
+    UNUserNotificationCenter *center = NotificationCenter();
+    if (center == nil) return 2;
     __block jint code = 0;
     dispatch_semaphore_t done = dispatch_semaphore_create(0);
-    [NotificationCenter() getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings *settings) {
+    [center getNotificationSettingsWithCompletionHandler:^(UNNotificationSettings *settings) {
         code = NotificationPermissionCode(settings.authorizationStatus);
         dispatch_semaphore_signal(done);
     }];
@@ -426,8 +429,10 @@ JNIEXPORT jint JNICALL Java_app_posato_desktop_MacNotificationsNative_permission
 }
 
 JNIEXPORT jint JNICALL Java_app_posato_desktop_MacNotificationsNative_requestPermission(JNIEnv *environment, jclass receiver) {
+    UNUserNotificationCenter *center = NotificationCenter();
+    if (center == nil) return 2;
     dispatch_semaphore_t done = dispatch_semaphore_create(0);
-    [NotificationCenter() requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound)
+    [center requestAuthorizationWithOptions:(UNAuthorizationOptionAlert | UNAuthorizationOptionSound)
                                         completionHandler:^(BOOL granted, NSError *error) {
                                             dispatch_semaphore_signal(done);
                                         }];
@@ -451,7 +456,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_schedule(
     jstring body,
     jdouble seconds
 ) {
-    if (seconds <= 0) return;
+    if (seconds <= 0 || NotificationCenter() == nil) return;
     UNTimeIntervalNotificationTrigger *trigger = [UNTimeIntervalNotificationTrigger triggerWithTimeInterval:seconds repeats:NO];
     UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:PresenceString(environment, identifier)
                                                                           content:NotificationContent(environment, title, body)
@@ -460,6 +465,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_schedule(
 }
 
 JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_post(JNIEnv *environment, jclass receiver, jstring title, jstring body) {
+    if (NotificationCenter() == nil) return;
     UNNotificationRequest *request = [UNNotificationRequest requestWithIdentifier:NSUUID.UUID.UUIDString
                                                                           content:NotificationContent(environment, title, body)
                                                                           trigger:nil];
@@ -467,6 +473,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_post(JNIEn
 }
 
 JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_cancel(JNIEnv *environment, jclass receiver, jstring identifier) {
+    if (NotificationCenter() == nil) return;
     [NotificationCenter() removePendingNotificationRequestsWithIdentifiers:@[ PresenceString(environment, identifier) ]];
 }
 

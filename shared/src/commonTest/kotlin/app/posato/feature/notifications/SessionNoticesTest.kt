@@ -49,6 +49,36 @@ class SessionNoticesTest {
     }
 }
 
+class SessionNoticesSwitchTest {
+    @Test
+    fun `given a pause when the switch goes off and on again then its end notice is withdrawn and restored`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = true)
+        val notices = SessionNotices(platform, FixedTexts)
+        val start = 1_790_000_000_000L
+        val end = start + 25 * 60_000L
+        val active = LocalSessionStatus.Active(SessionRecord(SessionId(testIdentifier(1)), start, end), end - start, origin = SessionOrigin.ADOPTED)
+        notices.follow(flowOf(active))
+        platform.calls.clear()
+
+        notices.setEnabled(false)
+        notices.setEnabled(true)
+
+        assertEquals(listOf("cancel", "schedule"), platform.calls.filter { it == "cancel" || it == "schedule" })
+    }
+
+    @Test
+    fun `given permission allowed after the first pause started then its end notice is scheduled again`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = true)
+        val start = 1_790_000_000_000L
+        val end = start + 25 * 60_000L
+        val active = LocalSessionStatus.Active(SessionRecord(SessionId(testIdentifier(1)), start, end), end - start, origin = SessionOrigin.LOCAL)
+
+        SessionNotices(platform, FixedTexts).follow(flowOf(LocalSessionStatus.Inactive, active))
+
+        assertEquals(listOf("cancel", "schedule", "request", "schedule"), platform.calls)
+    }
+}
+
 private object FixedTexts : SessionNoticeTexts {
     override suspend fun pauseOver(): NoticeText {
         return NoticeText("over", "over")
