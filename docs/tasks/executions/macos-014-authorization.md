@@ -256,7 +256,7 @@ passes. The impact is applying Posato's own proxy without a prompt.
 
 ## High-risk plan review
 
-- **Verdict:** `changes-required`, then folded.
+- **Verdict:** `approved` after one `changes-required` pass.
 - **Required findings:**
   1. The flagged Status reply length breaks the helper and client decode.
   2. `applyNeedsRestore` is missing from the `isApply` sites.
@@ -268,7 +268,7 @@ passes. The impact is applying Posato's own proxy without a prompt.
   7. The E2E has no silent-apply check.
 - **Resolution:** all seven folded into the plan above, with the recommended
   test-list, Kotlin, probe, prompt, wake, residual, and closeout points and
-  both optional points.
+  both optional points. The second pass approved the plan.
 
 ## Result
 
