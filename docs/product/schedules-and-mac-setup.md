@@ -10,7 +10,9 @@ Release 1.2 delivers working recurring schedules on Mac and iPhone. Both the
 schedule decision and its implementation belong to this release. The
 [roadmap](../tasks/release-roadmap.md) owns ordering and release gates;
 [`DESIGN.md`](../../DESIGN.md#release-12-setup-and-schedules) owns the UI.
-This scope does not activate an implementation task or claim platform proof.
+The maintainer subsequently requested UI shells in PR #92, with saving and
+execution inactive. That UI slice does not activate the schedule engine,
+change permission grants or establish platform proof for automatic starts.
 
 ## Schedule behavior
 

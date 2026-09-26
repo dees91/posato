@@ -88,7 +88,8 @@ or a productivity-scoring system.
 
 ### Current implementation boundary
 
-The actual app contains Session and Paused items, real local persistence,
+The actual app contains Session, Paused items and the inactive Schedules UI
+shell, real local persistence,
 native application-selection boundaries, the local session timer, one
 explicit **Sync with iCloud** control on the Session screen, and, on macOS
 only, a **This Mac** helper-setup section below it. Session-driven
@@ -96,7 +97,7 @@ enforcement is not connected to these screens. Never show the prototype's
 demo clock, invented synchronization time, mock application names, onboarding
 success, simulated permission outcome, or inspection overlay in the real app.
 
-On a first install the app opens a six-step first-run flow before the two
+On a first install the app opens a six-step first-run flow before the primary
 destinations: purpose, privacy, Sync with iCloud, this-device permission,
 first website, and a summary read back from the services. Purpose and privacy
 cannot be skipped; every service step offers a defer action that leaves the
@@ -264,11 +265,11 @@ and `MACOS-008`; supplying assets does not prove installed icon appearance.
 wordmark on iPhone and below **On this Mac** in the Mac sidebar after setup.
 The Mac device label and About text align with the primary navigation labels;
 a 4 dp gap keeps the device label and About action together.
-Session and Paused items remain the two primary destinations. About Posato
+Session, Paused items and Schedules are the primary destinations. About Posato
 opens a secondary content screen with the app's short purpose, installed
 version, and a **Licenses** disclosure. **Back** returns to the preceding
 primary destination. On iPhone, the bottom navigation gives way to this
-secondary flow. On Mac, the sidebar stays available, with neither primary
+secondary flow. On Mac, the sidebar stays available, with no primary
 destination selected.
 
 The version comes from the running application's metadata, without a second
@@ -364,7 +365,7 @@ Inactive segments retain normal onSurface text, not low-contrast disabled stylin
 Labels/counts are centered vertically and horizontally; counts are muted.
 The tray's outer edge aligns with the surrounding content.
 
-Use this component for peer choices within a destination. Session / Paused items
+Use this component for peer choices within a destination. Session / Paused items / Schedules
 uses the platform-specific primary navigation, not a second nested tab bar.
 
 ### Rows, menus, and notices
@@ -388,7 +389,7 @@ corruption, retryable failure, and saved-but-not-enabled choices stay distinct.
 
 The app fills the real device viewport, without a fake phone frame.
 Respect safe drawing and keyboard insets. The wordmark sits above content;
-Session / Paused items lives in the bottom navigation. A visible software
+Session / Paused items / Schedules lives in the bottom navigation. A visible software
 keyboard temporarily hides the wordmark and bottom navigation to make room
 for entry; Done clears focus and restores them.
 The root applies `windowInsetsPadding(WindowInsets.safeDrawing)` once; these
@@ -396,7 +397,7 @@ insets already include the keyboard. Do not append a second IME padding modifier
 
 `user-confirmed` (2026-09-22, `IOS-004`): iPad follows these rules and names
 itself **iPad** wherever the iPhone names itself. In landscape, iPad moves
-Session / Paused items into the 224 sidebar used on Mac: the wordmark on top,
+the primary destinations into the 224 sidebar used on Mac: the wordmark on top,
 then the destinations, then **On this iPad** and **About Posato**, without the
 Mac traffic-light inset. The sidebar stays visible while the keyboard is up
 and during About, as on Mac. iPad portrait and iPhone in either orientation
@@ -631,6 +632,15 @@ in PR #44. The six steps and existing service/persistence behavior remain.
 [product scope](docs/product/schedules-and-mac-setup.md) owns schedule
 behavior and the authorization decisions still required by `SCHEDULE-001`.
 
+`user-confirmed` (2026-09-26, PR #92 follow-up): deliver the UI shells first.
+The Schedules destination, empty state, editor and device-setup route are
+available to explore. Saving, enabling and executing schedules remain
+inactive, with an explicit availability notice. List, skipped and active
+states have deterministic Compose previews. Mac setup shortcuts are disabled
+in the existing permission step; the upgrade offer has a rendering preview.
+The one-time upgrade eligibility, dismissal persistence and service callbacks
+remain part of later implementation. Existing This Mac controls still work.
+
 The existing Mac permission step offers **Open Posato at login** and
 **Start sessions without the password** as two independent choices, both
 initially off. Keep the six-step flow and a clear way to continue without
@@ -647,9 +657,9 @@ configuration during an active session or while enforcement starts or
 changes. Defer the offer until setup is safe. Enabling login launch alone
 does not start a session or authorize restrictions.
 
-Add **Schedules** beside **Session** and **Paused items** in each platform's
-existing adaptive navigation. The current two-destination shell remains
-the delivered baseline until `SCHEDULE-002` adds the third destination.
+The UI shell adds **Schedules** beside **Session** and **Paused items** in
+each platform's existing adaptive navigation. `SCHEDULE-002` connects its
+actions and replaces the availability notice with real readiness.
 
 - The empty state explains recurring pauses and offers **Add schedule**.
 - The list shows each schedule's name, weekdays, hours, enabled state and

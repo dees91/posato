@@ -179,6 +179,9 @@ internal fun PermissionStep(
             Text(stringResource(Res.string.onboarding_permission_control))
         }
         PermissionStatus(state, platform)
+        if (platform == OnboardingPermissionPlatform.MAC) {
+            MacOptionalSetup()
+        }
         if (!ready && state.accessResult != ApplicationAccessResult.Unavailable) {
             PosatoCaption(stringResource(Res.string.onboarding_permission_defer))
         }

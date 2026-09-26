@@ -45,6 +45,8 @@ import app.posato.feature.onboarding.data.SetupCompletion
 import app.posato.feature.onboarding.rememberMacHelperSetupUiState
 import app.posato.feature.onboarding.rememberOnboardingUiState
 import app.posato.feature.presence.SessionWindowRequest
+import app.posato.feature.schedules.ui.SchedulesNavigationState
+import app.posato.feature.schedules.ui.SchedulesScreen
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
@@ -147,20 +149,16 @@ class PosatoApplication internal constructor(
         modifier: Modifier = Modifier,
     ) {
         val browser = navigation.browser
-        var showingSession by navigation::showingSession
+        var destination by navigation::destination
         var informationPage by navigation::informationPage
         var pendingRequest by remember { mutableStateOf<SessionWindowRequest?>(null) }
         WindowRequestsEffect(windowRequests, navigation) { pendingRequest = it }
         val deviceLabel = "On this ${device.noun} only"
         ApplicationNavigationScaffold(
             device = device,
-            showingSession = showingSession,
+            destination = destination,
             showingInformation = informationPage != null,
-            onSelect = {
-                showingSession = it
-                informationPage = null
-                if (!it) browser.showingWebsiteEditor = true
-            },
+            onSelect = navigation::select,
             onOpenAbout = { informationPage = ApplicationInformationPage.ABOUT },
             modifier = modifier,
         ) { layout ->
@@ -173,7 +171,7 @@ class PosatoApplication internal constructor(
                         ApplicationInformationHost(currentInformationPage, { informationPage = it }, updates, contentModifier.padding(inset))
                     }
 
-                    showingSession -> {
+                    destination == ApplicationDestination.SESSION -> {
                         SessionScreen(
                             store,
                             applicationMappings,
@@ -181,8 +179,8 @@ class PosatoApplication internal constructor(
                             clock,
                             timeFormat,
                             sessionOwner,
-                            onOpenPausedItems = { showingSession = false },
-                            onEditPausedItems = browser.editRoute { showingSession = false },
+                            onOpenPausedItems = { destination = ApplicationDestination.TARGETS },
+                            onEditPausedItems = browser.editRoute { destination = ApplicationDestination.TARGETS },
                             modifier = contentModifier,
                             layout = layout,
                             deviceLabel = deviceLabel,
@@ -192,6 +190,10 @@ class PosatoApplication internal constructor(
                             windowRequest = pendingRequest,
                             onConsumeWindowRequest = { pendingRequest = null },
                         )
+                    }
+
+                    destination == ApplicationDestination.SCHEDULES -> {
+                        SchedulesScreen(navigation.schedules, device, layout, contentModifier)
                     }
 
                     else -> {
@@ -217,7 +219,7 @@ class PosatoApplication internal constructor(
         val latestOnRequest by rememberUpdatedState(onRequest)
         LaunchedEffect(windowRequests) {
             windowRequests.collect { request ->
-                navigation.showingSession = true
+                navigation.destination = ApplicationDestination.SESSION
                 navigation.informationPage = null
                 latestOnRequest(request)
             }
@@ -273,8 +275,21 @@ class PosatoApplication internal constructor(
 @Stable
 public class ApplicationNavigation {
     internal val browser: TargetsBrowserState = TargetsBrowserState()
-    internal var showingSession: Boolean by mutableStateOf(true)
+    internal var destination: ApplicationDestination by mutableStateOf(ApplicationDestination.SESSION)
+    internal val schedules: SchedulesNavigationState = SchedulesNavigationState()
     internal var informationPage: ApplicationInformationPage? by mutableStateOf(null)
+
+    internal fun select(selected: ApplicationDestination) {
+        destination = selected
+        informationPage = null
+        if (selected == ApplicationDestination.TARGETS) browser.showingWebsiteEditor = true
+    }
+}
+
+internal enum class ApplicationDestination {
+    SESSION,
+    TARGETS,
+    SCHEDULES,
 }
 
 internal enum class ApplicationInformationPage {

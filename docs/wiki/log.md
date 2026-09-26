@@ -2048,3 +2048,7 @@ to scope, feasibility, or delivery.
   release 1.2 and makes delivery a release gate. Automatic scheduled Apply
   still requires the accepted, independently security-reviewed amendment
   owned by `SCHEDULE-001` before implementation.
+- The maintainer requested the UI shells in the same PR. Added Schedules
+  navigation, empty/editor/setup screens and deterministic state previews,
+  plus disabled Mac onboarding shortcuts and an upgrade-offer preview.
+  Schedule saving and execution remain inactive.
