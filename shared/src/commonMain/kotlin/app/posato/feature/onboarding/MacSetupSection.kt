@@ -87,6 +87,7 @@ internal fun MacSetupSection(
     onRemove: () -> Unit = {},
     loginItemEnabled: Boolean? = null,
     onLoginItemChange: (Boolean) -> Unit = {},
+    onStandingGrantChange: (Boolean) -> Unit = {},
 ) {
     val running = presentation.activity != null
     MacSetupAnnouncements(presentation, onAnnouncement)
@@ -119,6 +120,9 @@ internal fun MacSetupSection(
                 ) {
                     Text(stringResource(Res.string.presence_login_item), style = MaterialTheme.typography.bodyLarge)
                 }
+            }
+            if (presentation.readiness == MacHelperReadiness.READY) {
+                StandingGrantRow(presentation, running, sessionBlocksRemoval, onStandingGrantChange)
             }
             if (presentation.readiness in removableReadiness) {
                 RemoveFromMacAction(running, sessionBlocksRemoval, onRemove)

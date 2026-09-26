@@ -258,6 +258,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         }
         check(application.resolve("Contents/Resources/Posato.icns").readBytes().contentEquals(iconFile.get().asFile.readBytes()))
         verifyBundledNotices(applicationCode)
+        verifyJvmHardening(applicationCode)
         if (release.get()) {
             verifyReleaseRuntime(runtime)
             verifyDeveloperIdProfile(companion, applicationSignature.teamId.orEmpty())
@@ -343,6 +344,15 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         key: String,
     ): String {
         return command("/usr/libexec/PlistBuddy", "-c", "Print :$key", file.absolutePath).trim()
+    }
+
+    private fun verifyJvmHardening(applicationCode: File) {
+        val javaOptions = applicationCode.resolve("Posato.cfg").readLines()
+            .filter { line -> line.startsWith("java-options=") }
+            .map { line -> line.removePrefix("java-options=") }
+        check(DISABLE_ATTACH_MECHANISM in javaOptions) {
+            "The packaged virtual machine must start with $DISABLE_ATTACH_MECHANISM."
+        }
     }
 
     private fun verifyCompanionEntitlements(
@@ -553,6 +563,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         ).map { bytes -> bytes.map(Int::toByte) }
 
         val DEVELOPMENT_APPLICATION_ENTITLEMENTS = mapOf("com.apple.security.cs.allow-jit" to true)
+        const val DISABLE_ATTACH_MECHANISM = "-XX:+DisableAttachMechanism"
         val AD_HOC_APPLICATION_ENTITLEMENTS = mapOf(
             "com.apple.security.cs.allow-jit" to true,
             "com.apple.security.cs.allow-unsigned-executable-memory" to true,
@@ -1318,6 +1329,7 @@ val updaterInfoPlistKeys = buildString {
 compose.desktop {
     application {
         mainClass = "app.posato.desktop.MainKt"
+        jvmArgs += "-XX:+DisableAttachMechanism"
         javaHome = posatoJavaLauncher.get().metadata.installationPath.asFile.absolutePath
 
         nativeDistributions {

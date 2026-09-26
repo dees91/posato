@@ -94,4 +94,48 @@ class MacOsHelperClientTest {
         assertEquals(listOf("remove"), calls)
         assertTrue(attempt.concernsRemove)
     }
+
+    @Test
+    fun `given an unknown apply with grant when retained then it reconciles under the apply identity`() {
+        val port = byteArrayOf(0xC3.toByte(), 0x51)
+        val failed = HelperMessage(
+            kind = HelperMessageKind.Request,
+            operation = HelperOperation.ApplyWithGrant,
+            sequence = 2,
+            deadlineMilliseconds = 1_000,
+            connectionIdentifier = ByteArray(16) { 1 },
+            sessionIdentifier = ByteArray(16) { 2 },
+            requestIdentifier = ByteArray(16) { 3 },
+            payload = port,
+        )
+
+        val retained = retainPendingUnknownRequest(pending = null, failed = failed)
+
+        assertEquals(HelperOperation.Apply, retained.operation)
+        assertTrue(retained.payload.contentEquals(port))
+        assertTrue(retained.requestIdentifier.contentEquals(failed.requestIdentifier))
+    }
+
+    @Test
+    fun `given a flagged status reply when decoded then only a six byte success names the grant`() {
+        val success = byteArrayOf(1, 3, 1, 0, 0)
+        val rejectedFlag = byteArrayOf(5, 3, 1, 0, 1)
+        val localAnswer = byteArrayOf(3, 5, 5, 5, 8)
+
+        assertEquals(HelperGrantState.On, decodeGrantState(success + byteArrayOf(3)))
+        assertEquals(HelperGrantState.Off, decodeGrantState(success + byteArrayOf(1)))
+        assertEquals(HelperGrantState.Off, decodeGrantState(success + byteArrayOf(0)))
+        assertEquals(HelperGrantState.Unsupported, decodeGrantState(rejectedFlag))
+        assertEquals(HelperGrantState.Unknown, decodeGrantState(localAnswer))
+        assertEquals(HelperGrantState.Unknown, decodeGrantState(success))
+        assertEquals(HelperGrantState.Unknown, decodeGrantState(null))
+        assertEquals(HelperGrantState.Unknown, decodeGrantState(success + byteArrayOf(3, 0)))
+    }
+
+    @Test
+    fun `given the grant failure code when decoded then it follows cancelled`() {
+        val result = HelperResult.decode(byteArrayOf(5, 3, 1, 0, 10))
+
+        assertEquals(HelperResult.Failure.StandingGrantUnavailable, result.failure)
+    }
 }

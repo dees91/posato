@@ -2,6 +2,7 @@ package app.posato.desktop
 
 import androidx.compose.ui.window.application
 import app.posato.desktop.macos.DesktopMacHelperState
+import app.posato.desktop.macos.DesktopStandingGrant
 import app.posato.desktop.macos.MacOsApplicationEnforcer
 import app.posato.desktop.macos.MacOsBrowserDomainEnforcer
 import app.posato.desktop.macos.MacOsHelperClient
@@ -46,6 +47,7 @@ fun main() {
                 ioDispatcher = Dispatchers.IO,
                 openSettings = MacOsSystemSettings::open,
                 loginItem = MacLoginItemState,
+                standingGrant = DesktopStandingGrant(enforcementClient, Dispatchers.IO),
             )
             val applicationGraph = createDesktopApplicationGraph(applicationMappings, enforcement, helperState)
             val updaterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

@@ -32,8 +32,26 @@ public interface MacLoginItem {
     public fun refresh()
 }
 
+public enum class MacStandingGrantState {
+    UNSUPPORTED,
+    OFF,
+    ON,
+    UNKNOWN,
+}
+
+public interface MacStandingGrant {
+    public suspend fun read(): MacStandingGrantState
+
+    public suspend fun setEnabled(enabled: Boolean): MacStandingGrantState
+}
+
 public interface MacHelperPort {
     public val loginItem: MacLoginItem?
+        get() {
+            return null
+        }
+
+    public val standingGrant: MacStandingGrant?
         get() {
             return null
         }

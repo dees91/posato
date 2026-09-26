@@ -32,6 +32,7 @@ internal class MacOsHelperClient(
     MacOsApplicationPicker,
     MacOsBrowserDomainCommands,
     MacOsApplicationCommands,
+    MacStandingGrantCommands,
     UpdateCleanupCommands {
     private val helperPath: Path by lazy { helperPath ?: MacOsHelperSigningVerifier.installedHelperPath() }
     private val random = SecureRandom()
@@ -101,6 +102,42 @@ internal class MacOsHelperClient(
             .putShort(port.toShort())
             .array()
         return request(HelperOperation.Apply, payload)
+    }
+
+    @Synchronized
+    override fun applyWithGrant(port: UShort): HelperResult {
+        require(port > 0u)
+        if (maintenance.isBackstopEngaged) {
+            return HelperResult.maintenanceRefusal()
+        }
+        val payload = ByteBuffer.allocate(2)
+            .order(ByteOrder.BIG_ENDIAN)
+            .putShort(port.toShort())
+            .array()
+        return request(HelperOperation.ApplyWithGrant, payload)
+    }
+
+    @Synchronized
+    override fun grantState(): HelperGrantState {
+        if (pendingUnknownRequest != null) {
+            return HelperGrantState.Unknown
+        }
+        return decodeGrantState(settledRequest(HelperOperation.Status, GRANT_STATUS_REQUEST))
+    }
+
+    @Synchronized
+    override fun prepareGrant(): HelperResult {
+        return settledResult(HelperOperation.PrepareGrant)
+    }
+
+    @Synchronized
+    override fun grant(): HelperResult {
+        return settledResult(HelperOperation.Grant)
+    }
+
+    @Synchronized
+    override fun revokeGrant(): HelperResult {
+        return settledResult(HelperOperation.RevokeGrant)
     }
 
     @Synchronized
@@ -265,6 +302,56 @@ internal class MacOsHelperClient(
         }
     }
 
+    private fun settledResult(operation: HelperOperation): HelperResult {
+        if (pendingUnknownRequest != null) {
+            return HelperResult.unknownOutcome()
+        }
+        val payload = settledRequest(operation, byteArrayOf()) ?: return HelperResult.unknownOutcome()
+        return runCatching { HelperResult.decode(payload) }.getOrElse { HelperResult.unknownOutcome() }
+    }
+
+    /**
+     * Grant requests and the grant-state Status are idempotent and settled by reading Status back, so
+     * a lost reply never becomes a pending request that the next lifecycle call would reconcile.
+     */
+    private fun settledRequest(
+        operation: HelperOperation,
+        payload: ByteArray,
+    ): ByteArray? {
+        val message = runCatching {
+            ensureStarted()
+            check(nextSequence <= MacOsHelperProtocol.MAXIMUM_OPERATIONS)
+            HelperMessage(
+                kind = HelperMessageKind.Request,
+                operation = operation,
+                sequence = nextSequence++,
+                deadlineMilliseconds = MacOsHelperProtocol.MAXIMUM_LIFECYCLE_DEADLINE_MILLISECONDS,
+                connectionIdentifier = connectionIdentifier,
+                sessionIdentifier = sessionIdentifier,
+                requestIdentifier = randomIdentifier(),
+                payload = payload,
+            )
+        }.getOrNull() ?: return null
+        return try {
+            exchange(message).payload
+        } catch (_: Exception) {
+            terminateProcess(cancellation = message)
+            null
+        }
+    }
+
+    private fun exchange(message: HelperMessage): HelperMessage {
+        write(message)
+        val response = readWithDeadline(message.deadlineMilliseconds.toLong())
+        check(response.kind == HelperMessageKind.Response)
+        check(response.operation == message.operation)
+        check(response.sequence == message.sequence)
+        check(response.connectionIdentifier.contentEquals(connectionIdentifier))
+        check(response.sessionIdentifier.contentEquals(sessionIdentifier))
+        check(response.requestIdentifier.contentEquals(message.requestIdentifier))
+        return response
+    }
+
     private fun request(
         operation: HelperOperation,
         payload: ByteArray = byteArrayOf(),
@@ -287,15 +374,7 @@ internal class MacOsHelperClient(
             payload = payload,
         )
         return try {
-            write(message)
-            val response = readWithDeadline(message.deadlineMilliseconds.toLong())
-            check(response.kind == HelperMessageKind.Response)
-            check(response.operation == operation)
-            check(response.sequence == message.sequence)
-            check(response.connectionIdentifier.contentEquals(connectionIdentifier))
-            check(response.sessionIdentifier.contentEquals(sessionIdentifier))
-            check(response.requestIdentifier.contentEquals(requestIdentifier))
-            HelperResult.decode(response.payload)
+            HelperResult.decode(exchange(message).payload)
         } catch (_: Exception) {
             pendingUnknownRequest = retainPendingUnknownRequest(pendingUnknownRequest, message)
             terminateProcess(cancellation = message)
@@ -436,7 +515,15 @@ internal fun completeRepair(
 internal fun retainPendingUnknownRequest(
     pending: HelperMessage?,
     failed: HelperMessage,
-): HelperMessage = pending ?: failed
+): HelperMessage {
+    if (pending != null) {
+        return pending
+    }
+    if (failed.operation == HelperOperation.ApplyWithGrant) {
+        return failed.copy(operation = HelperOperation.Apply)
+    }
+    return failed
+}
 
 internal fun shouldReconcileUnknownRequest(
     pendingUnknown: Boolean,
@@ -463,6 +550,40 @@ internal fun removeAfterReconciling(
     }
     return HelperRemovalAttempt(sendRemove(), concernsRemove = true)
 }
+
+internal enum class HelperGrantState { Unsupported, Off, On, Unknown }
+
+/**
+ * A daemon that knows the grant answers a flagged Status with one more byte, and only on success. A
+ * five-byte invalid-input rejection comes from a daemon that predates it.
+ */
+internal fun decodeGrantState(payload: ByteArray?): HelperGrantState {
+    if (payload == null || payload.size !in GRANT_STATUS_BYTES - 1..GRANT_STATUS_BYTES) {
+        return HelperGrantState.Unknown
+    }
+    val result = runCatching { HelperResult.decode(payload.copyOf(GRANT_STATUS_BYTES - 1)) }.getOrNull()
+    return when {
+        result == null -> {
+            HelperGrantState.Unknown
+        }
+
+        payload.size == GRANT_STATUS_BYTES && result.outcome == HelperResult.Outcome.Success -> {
+            if (payload.last().toInt() and GRANTED_BIT != 0) HelperGrantState.On else HelperGrantState.Off
+        }
+
+        payload.size == GRANT_STATUS_BYTES - 1 && result.failure == HelperResult.Failure.InvalidInput -> {
+            HelperGrantState.Unsupported
+        }
+
+        else -> {
+            HelperGrantState.Unknown
+        }
+    }
+}
+
+private const val GRANT_STATUS_BYTES: Int = 6
+private val GRANT_STATUS_REQUEST: ByteArray = byteArrayOf(1)
+private const val GRANTED_BIT: Int = 2
 
 internal data class HelperRemovalAttempt(
     val result: HelperResult,
@@ -513,7 +634,19 @@ internal data class HelperResult(
         Incompatible,
     }
 
-    internal enum class Failure { None, InvalidInput, Unavailable, Permission, Timeout, Integrity, Storage, Ipc, Lifecycle, Cancelled }
+    internal enum class Failure {
+        None,
+        InvalidInput,
+        Unavailable,
+        Permission,
+        Timeout,
+        Integrity,
+        Storage,
+        Ipc,
+        Lifecycle,
+        Cancelled,
+        StandingGrantUnavailable,
+    }
 
     companion object {
         fun maintenanceRefusal(): HelperResult {

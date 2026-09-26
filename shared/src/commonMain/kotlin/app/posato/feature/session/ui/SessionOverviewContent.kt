@@ -61,6 +61,7 @@ internal fun SessionOverviewContent(
     onMacSetupRemove: () -> Unit = {},
     macLoginItemEnabled: Boolean? = null,
     onMacLoginItemChange: (Boolean) -> Unit = {},
+    onMacStandingGrantChange: (Boolean) -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
     val hasItems = state.displayDomains().isNotEmpty() ||
@@ -107,6 +108,7 @@ internal fun SessionOverviewContent(
                 onRemove = onMacSetupRemove,
                 loginItemEnabled = macLoginItemEnabled,
                 onLoginItemChange = onMacLoginItemChange,
+                onStandingGrantChange = onMacStandingGrantChange,
             )
         }
     }

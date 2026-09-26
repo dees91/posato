@@ -181,6 +181,14 @@ class MacOsBrowserDomainEnforcerTest {
             return applyResults.removeFirst()
         }
 
+        override fun applyWithGrant(port: UShort): HelperResult {
+            throw AssertionError("no grant is on, so every apply prompts")
+        }
+
+        override fun grantState(): HelperGrantState {
+            return HelperGrantState.Off
+        }
+
         override fun restore(): HelperResult {
             restoreCalls += 1
             if (restoreResults.isNotEmpty()) {

@@ -36,6 +36,8 @@ internal data class MacSetupPresentation(
     val completedOperations: Long = 0,
     val repeatedResult: Boolean = false,
     val removal: MacHelperRemoval? = null,
+    val standingGrant: MacStandingGrantState? = null,
+    val standingGrantChanging: Boolean = false,
 )
 
 @Stable
@@ -50,6 +52,8 @@ internal class MacHelperSetupUiState(
         private set
     var removal by mutableStateOf<MacHelperRemoval?>(null)
         private set
+    private var standingGrant by mutableStateOf<MacStandingGrantState?>(null)
+    private var standingGrantChanging by mutableStateOf(false)
     private var completedOperations by mutableLongStateOf(0)
     private var repeatedResult by mutableStateOf(false)
 
@@ -66,7 +70,31 @@ internal class MacHelperSetupUiState(
             completedOperations = completedOperations,
             repeatedResult = repeatedResult,
             removal = removal,
+            standingGrant = standingGrant,
+            standingGrantChanging = standingGrantChanging,
         )
+    }
+
+    /**
+     * The opt-in shares the helper with enforcement, so it is refused while a session is active or
+     * changing: an administrator prompt would hold the helper and a lost reply would end it.
+     */
+    fun setStandingGrant(
+        enabled: Boolean,
+        sessionBlocked: Boolean,
+    ) {
+        val grant = macHelper.standingGrant ?: return
+        if (sessionBlocked || activity != null || standingGrantChanging) {
+            return
+        }
+        standingGrantChanging = true
+        scope.launch {
+            try {
+                standingGrant = grant.setEnabled(enabled)
+            } finally {
+                standingGrantChanging = false
+            }
+        }
     }
 
     fun check() {
@@ -90,6 +118,7 @@ internal class MacHelperSetupUiState(
             try {
                 val result = macHelper.remove()
                 removal = result
+                standingGrant = null
                 result.readinessAfterRemoval()?.let { next -> readiness = next }
                 repeatedResult = false
                 completedOperations += 1
@@ -115,6 +144,7 @@ internal class MacHelperSetupUiState(
                 if (answer == MacHelperReadiness.READY) {
                     reportedAnswers.clear()
                 }
+                standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
                 readiness = answer
                 completedOperations += 1
             } finally {
