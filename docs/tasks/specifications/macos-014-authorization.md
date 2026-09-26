@@ -38,6 +38,6 @@ After a one-time administrator opt-in, a person who starts or resumes a session 
 
 ## Decisions or blockers
 
-- `open` (maintainer): the grant mechanism. Options: a standing grant recorded by the root daemon for the enabling user; an Authorization Services rule with a longer credential lifetime; or authenticating as the session user instead of an administrator.
-- `open` (maintainer): the default and placement of the opt-in (This Mac options, off by default is proposed), and which resume paths it covers.
+- `user-confirmed` (2026-09-26): the grant is a standing grant that the root daemon records once, after an administrator authorizes the opt-in. It is bound to the enabling user and the signed helper, covers Apply with the fixed proxy values only, and can be revoked without a password.
+- `user-confirmed` (2026-09-26): the opt-in is a switch in This Mac options, off by default. It covers the person's own actions: a session start and **Resume restrictions** after relaunch, wake, a login launch, or adopting a session from another device. The menu and a login launch never apply by themselves (ADR 0009).
 - The security review of the ADR 0004 revision gates implementation.
