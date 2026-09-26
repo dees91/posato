@@ -2047,13 +2047,13 @@ to scope, feasibility, or delivery.
   Advanced controls and revocation stay in This Mac; interruption resumes the
   missing step and completion requires verified state. Updated the
   [idea queue](topics/mvp-open-questions.md).
-- Roadmap revision 13 retains `SCHEDULE-001` and `SCHEDULE-002` in release 1.2
+- Roadmap revision 10 retains `SCHEDULE-001` and `SCHEDULE-002` in release 1.2
   and schedule delivery as a release gate. Automatic scheduled Apply still
   requires the accepted, independently security-reviewed amendment owned by
   `SCHEDULE-001`. The product flow does not promise one system password prompt.
 - PR #92 delivers the UI shells: Schedules navigation, empty/editor/setup
   screens, deterministic schedule-state previews, a shared inactive Mac setup
   action and an upgrade-offer preview. Existing helper controls remain usable
-  under disclosure, with Finish setup while their readiness is missing or
-  unknown. Schedule saving and execution remain inactive; editor exploration
+  under disclosure, with Finish setup when a quiet read names a state other
+  than ready. Schedule saving and execution remain inactive; editor exploration
   is explicitly a preview.

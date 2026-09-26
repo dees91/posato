@@ -2,7 +2,8 @@
 
 - **Review:** Standard; UI routing and accepted product copy, with no new authorization mechanism.
 - **Record path:** Recorded; changes the visible prerequisites for session and schedule creation.
-- **Owners:** `ONBOARDING-004`, `SCHEDULE-001`, `SCHEDULE-002`.
+- **Owners:** a maintainer-requested UI slice ahead of release 1.2 rows; `ONBOARDING-004` and `SCHEDULE-002` later replace its shells, and `SCHEDULE-001` decides the rules they wire.
+- **Dependencies and integration:** after `MACOS-014`; its own pull request, #92.
 - **Authorities:** [Product scope](../../product/schedules-and-mac-setup.md),
   [DESIGN.md](../../../DESIGN.md#release-12-setup-and-schedules), ADR 0004/0009.
 

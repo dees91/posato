@@ -749,8 +749,12 @@ conflicts before the editor and active-session details are implemented.
   removal confirmation. When unlinked, the expanded iCloud options carry the
   full linking sentence as a caption next to the action. Setup controls are
   secondary to the Session action.
-- This Mac (macOS only, after iCloud): reads nothing before a press on
-  **Check Mac setup** inside its expanded options. This runs one status read
+- This Mac (macOS only, after iCloud): `user-confirmed` (2026-09-26, PR #92
+  unified setup, superseding the on-demand read): Session reads the helper
+  state once, quietly, when it first appears, with no progress label or
+  announcement, so a ready Mac never shows **Finish setup**. Before that
+  answer arrives nothing is gated. **Check Mac setup** inside the expanded
+  options stays available for an explicit read. It runs one status read
   when no helper request is outstanding; after a lost reply, **Check again**
   finishes that original request instead of starting a new one. The section
   then names the real helper state with one precise action: **Enable on this
@@ -820,9 +824,12 @@ conflicts before the editor and active-session details are implemented.
     While a failure that reached the daemon is shown, **Check again** is
     hidden. Such a failure never suggests it, because it could reinstall the
     removed rule.
-- `user-confirmed` (2026-09-26, PR #92 correction): while inactive, missing
-  helper readiness keeps a persistent setup notice and **Finish setup** in
-  place of Start, even if This Mac is expanded. Unknown state asks for a check.
+- `user-confirmed` (2026-09-26, PR #92 correction): while inactive, a helper
+  read that names a state other than ready keeps a persistent setup notice and
+  **Finish setup** in place of Start, even if This Mac is expanded. The Finish
+  setup screen shows the existing This Mac controls expanded, so the needed
+  action is visible without another tap. A read that has not answered yet
+  gates nothing.
   This supersedes the 2026-09-11 informational-only notice. Active enforcement
   keeps its own status and recovery actions rather than an older helper read.
 

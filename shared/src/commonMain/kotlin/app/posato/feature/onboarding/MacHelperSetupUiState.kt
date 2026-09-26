@@ -30,6 +30,11 @@ internal fun MacSetupActivity.label(): StringResource {
     }
 }
 
+internal fun MacSetupPresentation.needsSetup(): Boolean {
+    val known = readiness ?: return false
+    return known != MacHelperReadiness.READY
+}
+
 internal data class MacSetupPresentation(
     val readiness: MacHelperReadiness? = null,
     val activity: MacSetupActivity? = null,
@@ -54,6 +59,7 @@ internal class MacHelperSetupUiState(
         private set
     private var standingGrant by mutableStateOf<MacStandingGrantState?>(null)
     private var standingGrantChanging by mutableStateOf(false)
+    private var quietRead = false
     private var completedOperations by mutableLongStateOf(0)
     private var repeatedResult by mutableStateOf(false)
 
@@ -99,6 +105,24 @@ internal class MacHelperSetupUiState(
 
     fun check() {
         run(MacSetupActivity.CHECKING, macHelper::recheck)
+    }
+
+    /**
+     * Session reads the helper once when it appears, so a ready Mac is never asked to finish setup. The
+     * read shows no progress and makes no announcement; an explicit check or a running call wins.
+     */
+    fun readQuietly() {
+        if (readiness != null || activity != null || quietRead) {
+            return
+        }
+        quietRead = true
+        scope.launch {
+            val answer = macHelper.recheck()
+            if (activity == null) {
+                readiness = answer
+                standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
+            }
+        }
     }
 
     fun enable() {

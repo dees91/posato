@@ -274,6 +274,41 @@ class MacHelperSetupUiStateTest {
     }
 }
 
+class MacHelperQuietReadTest {
+    @Test
+    fun `given an unread helper when Session appears then its state is read once without an announcement`() = runTest {
+        val helper = RecordingMacHelper(MacHelperReadiness.READY)
+        val holder = MacHelperSetupUiState(helper, this)
+        val before = holder.presentation().completedOperations
+
+        holder.readQuietly()
+        runCurrent()
+        holder.readQuietly()
+        runCurrent()
+
+        assertEquals(MacHelperReadiness.READY, holder.presentation().readiness)
+        assertNull(holder.presentation().activity)
+        assertEquals(before, holder.presentation().completedOperations)
+        assertEquals(listOf("recheck"), helper.calls)
+    }
+
+    @Test
+    fun `given a running check when Session appears then no second read starts`() = runTest {
+        val gate = CompletableDeferred<MacHelperReadiness>()
+        val helper = RecordingMacHelper(gate = gate)
+        val holder = MacHelperSetupUiState(helper, this)
+
+        holder.check()
+        runCurrent()
+        holder.readQuietly()
+        runCurrent()
+        gate.complete(MacHelperReadiness.READY)
+        runCurrent()
+
+        assertEquals(listOf("recheck"), helper.calls)
+    }
+}
+
 private class RecordingMacHelper(
     var answer: MacHelperReadiness = MacHelperReadiness.UNAVAILABLE,
     private val gate: CompletableDeferred<MacHelperReadiness>? = null,

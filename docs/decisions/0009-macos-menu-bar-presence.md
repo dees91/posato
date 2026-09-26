@@ -8,6 +8,24 @@
 - **Provenance:** `user-confirmed`
 - **Owner:** `MACOS-012` decides; `MACOS-013` delivers after separate activation.
 
+## Unified Mac setup amendment (PR #92)
+
+`user-confirmed` (2026-09-26, PR #92): the maintainer replaced separate Mac
+opt-ins with one guided **Set up Posato on this Mac** flow
+([product scope](../product/schedules-and-mac-setup.md),
+[`DESIGN.md`](../../DESIGN.md#release-12-setup-and-schedules)). This supersedes
+D3 where it keeps **Open Posato at login** out of first-run setup, lists
+offering it there as a rejected alternative, and keeps its default off when a
+schedule is created. Launch at login is now one effect of the setup action,
+which the person chooses explicitly in onboarding, from Session's **Finish
+setup**, from Schedules, or from one dismissible offer to existing users. It
+stays off until that choice, and This Mac keeps it revocable.
+
+The rest of this record stands. The menu, a login launch, and
+synchronization still never apply restrictions by themselves until
+`SCHEDULE-001` passes the security review of an explicit automatic-start
+amendment. A login launch alone authorizes nothing.
+
 This record compares how Posato for Mac keeps a session running and reachable
 from a status-bar menu while its main window is closed. It recommends one
 process model and writes out the amendments it needs. The maintainer accepted

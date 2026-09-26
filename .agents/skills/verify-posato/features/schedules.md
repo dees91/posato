@@ -22,6 +22,11 @@ On iPhone, Add schedule opens the editor and Set up this iPhone opens setup.
 
 ## Driving it with posato-control
 
+Tracked recipes: `tools/posato-control/fixtures/scenarios/schedules-desktop.json`
+(Mac, from the Session screen after onboarding),
+`schedules-device.json` (test iPhone), and `mac-unified-onboarding-desktop.json`
+(the Mac onboarding setup step).
+
 Preconditions: launch the app through the driver and finish onboarding. Use
 `-t desktop --vm primary` on Mac and `-t device` on the test iPhone.
 

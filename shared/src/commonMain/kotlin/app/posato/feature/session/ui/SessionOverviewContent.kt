@@ -28,6 +28,7 @@ import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperReadinessNotice
+import app.posato.feature.onboarding.needsSetup
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.MacSetupSection
 import app.posato.feature.session.domain.LocalSessionStatus
@@ -64,7 +65,7 @@ internal fun SessionOverviewContent(
     onMacStandingGrantChange: (Boolean) -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
-    val needsMacSetup = macSetup != null && macSetup.readiness != MacHelperReadiness.READY
+    val needsMacSetup = macSetup?.needsSetup() == true
     val hasItems = state.displayDomains().isNotEmpty() ||
         (state.review.applicationGroupName != null && (state.displayApplicationCount() ?: 0) > 0)
     var macSetupExpanded by remember { mutableStateOf(false) }
@@ -141,15 +142,9 @@ private fun MacSetupNotice(
     active: Boolean,
 ) {
     if (macSetup == null) return
-    if (!active && macSetup.readiness != MacHelperReadiness.READY && enforcement is EnforcementState.Inactive) {
+    if (!active && macSetup.needsSetup() && enforcement is EnforcementState.Inactive) {
         PosatoNotice(tone = PosatoTone.Caution) {
-            Text(
-                if (macSetup.readiness == null) {
-                    "Check this Mac's setup before starting a pause. Your saved websites and apps remain available to edit."
-                } else {
-                    "Setup incomplete. Posato is not blocking websites or apps on this Mac. Finish setup to start a pause."
-                },
-            )
+            Text("Setup incomplete. Posato is not blocking websites or apps on this Mac. Finish setup to start a pause.")
         }
         return
     }

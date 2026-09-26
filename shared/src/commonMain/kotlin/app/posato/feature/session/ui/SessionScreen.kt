@@ -66,6 +66,7 @@ internal fun SessionScreen(
     val loginItem = macSetupState?.loginItem
     val loginItemEnabled = loginItem?.enabled?.collectAsState()?.value
     LaunchedEffect(loginItem) { loginItem?.refresh() }
+    LaunchedEffect(macSetupState) { macSetupState?.readQuietly() }
     val consumeWindowRequest by rememberUpdatedState(onConsumeWindowRequest)
     LaunchedEffect(windowRequest) {
         if (windowRequest == null) return@LaunchedEffect

@@ -12,6 +12,9 @@ import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.generated.resources.Res
+import app.posato.generated.resources.mac_unified_body
+import app.posato.generated.resources.mac_unified_defer
+import app.posato.generated.resources.mac_unified_title
 import app.posato.generated.resources.application_mapping_access_restricted
 import app.posato.generated.resources.mac_setup_not_enabled
 import app.posato.generated.resources.mac_setup_recovery
@@ -130,10 +133,10 @@ internal fun PermissionStep(
     OnboardingPage(
         layout = layout,
         actions = {
-            if (platform == OnboardingPermissionPlatform.MAC) {
+            if (platform == OnboardingPermissionPlatform.MAC && !ready) {
                 MacSetupPreviewAction()
                 PosatoButton(onClick = onContinue, style = PosatoButtonStyle.Quiet) {
-                    Text(stringResource(if (ready) Res.string.onboarding_action_continue else Res.string.onboarding_action_not_now))
+                    Text(stringResource(Res.string.onboarding_action_not_now))
                 }
             } else if (ready) {
                 OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
@@ -178,7 +181,7 @@ internal fun PermissionStep(
         if (!ready && state.accessResult != ApplicationAccessResult.Unavailable) {
             PosatoCaption(
                 if (platform == OnboardingPermissionPlatform.MAC) {
-                    "You can finish setup later and still edit your paused items. Blocking stays unavailable until the helper is ready."
+                    stringResource(Res.string.mac_unified_defer)
                 } else {
                     stringResource(Res.string.onboarding_permission_defer)
                 },
@@ -326,14 +329,14 @@ private fun PermissionHeading(
 ) {
     PosatoHeading(
         if (platform == OnboardingPermissionPlatform.MAC) {
-            "Set up Posato on this Mac."
+            stringResource(Res.string.mac_unified_title)
         } else {
             stringResource(Res.string.onboarding_permission_title)
         },
         description = if (platform == OnboardingPermissionPlatform.IOS) {
             stringResource(Res.string.onboarding_permission_ios_body, deviceNoun)
         } else {
-            "One setup to block distractions and run your schedules."
+            stringResource(Res.string.mac_unified_body)
         },
         layout = layout,
     )

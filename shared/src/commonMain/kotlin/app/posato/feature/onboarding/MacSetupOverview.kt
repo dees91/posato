@@ -16,23 +16,34 @@ import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.mac_unified_action
+import app.posato.generated.resources.mac_unified_confirm_access
+import app.posato.generated.resources.mac_unified_overview_block
+import app.posato.generated.resources.mac_unified_overview_label
+import app.posato.generated.resources.mac_unified_overview_login
+import app.posato.generated.resources.mac_unified_overview_password
+import app.posato.generated.resources.mac_unified_overview_schedules
+import app.posato.generated.resources.mac_unified_preview_notice
+import app.posato.generated.resources.mac_unified_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun MacSetupOverview(modifier: Modifier = Modifier) {
     PosatoPanel(modifier = modifier.fillMaxWidth()) {
-        PosatoCaption("ONE-TIME SETUP")
-        PosatoBody("Block your chosen websites and apps.")
-        PosatoBody("Start quietly at login, without opening a window.")
-        PosatoBody("Start manual pauses and schedules without repeated passwords.")
-        PosatoCaption("Schedules can also start when you sign in or wake this Mac during a scheduled pause.")
+        PosatoCaption(stringResource(Res.string.mac_unified_overview_label))
+        PosatoBody(stringResource(Res.string.mac_unified_overview_block))
+        PosatoBody(stringResource(Res.string.mac_unified_overview_login))
+        PosatoBody(stringResource(Res.string.mac_unified_overview_password))
+        PosatoCaption(stringResource(Res.string.mac_unified_overview_schedules))
     }
 }
 
 @Composable
 internal fun MacSetupPreviewAction(modifier: Modifier = Modifier) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-        PosatoCaption("Unified setup is coming soon. This preview does not change your Mac settings.")
-        PosatoButton(onClick = {}, enabled = false) { Text("Set up Posato") }
+        PosatoCaption(stringResource(Res.string.mac_unified_preview_notice))
+        PosatoButton(onClick = {}, enabled = false) { Text(stringResource(Res.string.mac_unified_action)) }
     }
 }
 
@@ -43,8 +54,8 @@ internal fun MacSetupOffer(
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
         PosatoHeading(
-            "Set up Posato on this Mac.",
-            description = "One setup for manual pauses and schedules. You can review or revoke access in This Mac settings.",
+            stringResource(Res.string.mac_unified_title),
+            description = stringResource(Res.string.mac_unified_confirm_access),
             layout = PosatoLayout.Compact,
         )
         MacSetupOverview()

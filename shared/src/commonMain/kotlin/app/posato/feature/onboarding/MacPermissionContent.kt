@@ -11,6 +11,11 @@ import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoIcon
 import app.posato.core.designsystem.PosatoIcons
 import app.posato.core.designsystem.PosatoLayout
+import app.posato.generated.resources.Res
+import app.posato.generated.resources.mac_unified_blocking_settings
+import app.posato.generated.resources.mac_unified_blocking_settings_caption
+import app.posato.generated.resources.mac_unified_confirm_access
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun MacPermissionContent(
@@ -20,13 +25,14 @@ internal fun MacPermissionContent(
     onRecheckHelper: () -> Unit,
     onOpenHelperSettings: () -> Unit,
 ) {
-    var showingBlockingSettings by remember { mutableStateOf(false) }
+    var showingBlockingSettings by remember { mutableStateOf(!state.hasDeviceAccess(OnboardingPermissionPlatform.MAC)) }
     MacSetupOverview()
-    PosatoCaption("macOS may ask you to confirm access. You can review or revoke it later in This Mac settings.")
+    PosatoCaption(stringResource(Res.string.mac_unified_confirm_access))
     PosatoDisclosureRow(
         onClick = { showingBlockingSettings = !showingBlockingSettings },
-        headlineContent = { Text("Blocking settings") },
-        supportingContent = { PosatoCaption("Existing helper controls remain available while unified setup is in preview.") },
+        onClickLabel = stringResource(Res.string.mac_unified_blocking_settings),
+        headlineContent = { Text(stringResource(Res.string.mac_unified_blocking_settings)) },
+        supportingContent = { PosatoCaption(stringResource(Res.string.mac_unified_blocking_settings_caption)) },
         trailingContent = { PosatoIcon(if (showingBlockingSettings) PosatoIcons.ChevronUp else PosatoIcons.ChevronDown, null) },
     )
     if (showingBlockingSettings) {

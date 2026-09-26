@@ -144,7 +144,6 @@ For what matters.</string>
     <string name="onboarding_permission_ios_body">Screen Time access lets Posato pause the websites and apps you choose on this %1$s.</string>
     <string name="onboarding_permission_ios_action">Allow Screen Time access</string>
     <string name="onboarding_permission_check_failed">Access could not be checked. You can allow it later from Paused items.</string>
-    <string name="onboarding_permission_mac_body">Posato needs a background helper to pause websites and apps on this Mac. macOS may ask you to allow it in System Settings.</string>
     <string name="onboarding_permission_mac_action">Enable on this Mac</string>
     <string name="onboarding_permission_mac_unavailable">The helper could not be checked or enabled. Check again.</string>
     <string name="onboarding_permission_mac_approval">The helper needs background approval. Open System Settings, allow Posato, then check again.</string>
@@ -171,7 +170,6 @@ For what matters.</string>
     <string name="onboarding_privacy_local_apps_detail">Choose apps separately on each device.</string>
     <string name="onboarding_icloud_optional">Optional — Posato works without iCloud.</string>
     <string name="onboarding_permission_control">Nothing is paused until you start a session.</string>
-    <string name="onboarding_permission_mac_admin">Pausing websites on this Mac requires administrator approval.</string>
     <string name="onboarding_permission_defer">You can continue and save your choices without enabling access.</string>
     <string name="onboarding_permission_unavailable">Screen Time access is not available in this version of Posato.</string>
     <string name="onboarding_permission_required">Allow Screen Time access before pausing websites or apps.</string>
@@ -262,4 +260,17 @@ For what matters.</string>
     <string name="update_refused_session">End the current session first, then check for updates again.</string>
     <string name="update_refused_other_instance">Another copy of Posato is open. Quit it, then check for updates again.</string>
     <string name="update_refused_other">Posato could not confirm that blocking has stopped. Check the Mac setup, then try again.</string>
+    <string name="mac_unified_title">Set up Posato on this Mac.</string>
+    <string name="mac_unified_body">One setup to block distractions and run your schedules.</string>
+    <string name="mac_unified_overview_label">ONE-TIME SETUP</string>
+    <string name="mac_unified_overview_block">Block your chosen websites and apps.</string>
+    <string name="mac_unified_overview_login">Start quietly at login, without opening a window.</string>
+    <string name="mac_unified_overview_password">Start manual pauses and schedules without repeated passwords.</string>
+    <string name="mac_unified_overview_schedules">Schedules can also start when you sign in or wake this Mac during a scheduled pause.</string>
+    <string name="mac_unified_preview_notice">Unified setup is coming soon. This preview does not change your Mac settings.</string>
+    <string name="mac_unified_action">Set up Posato</string>
+    <string name="mac_unified_confirm_access">macOS may ask you to confirm access. You can review or revoke it later in This Mac settings.</string>
+    <string name="mac_unified_blocking_settings">Blocking settings</string>
+    <string name="mac_unified_blocking_settings_caption">Existing helper controls remain available while unified setup is in preview.</string>
+    <string name="mac_unified_defer">You can finish setup later and still edit your paused items. Blocking stays unavailable until the helper is ready.</string>
 </resources>
