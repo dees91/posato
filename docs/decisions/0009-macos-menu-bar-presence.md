@@ -257,17 +257,23 @@ The remaining time is refreshed when the menu opens and at most once a minute
 while it stays open. Nothing ticks for the menu while it is closed. The icon
 is a monochrome template image of the Posato pause mark, adapting to light,
 dark, and increased-contrast menu bars. It does not change color, animate,
-or show a countdown in the menu bar. An active session may use a filled
-variant and an accessibility description that names the state. Every item
+or show a countdown in the menu bar. Only a session whose restrictions are
+confirmed active may use a filled variant. The accessibility description
+names the state. Every item
 has a text title that VoiceOver reads; state is never conveyed by the icon
 alone.
 
 ### Window, Dock, and reopen
 
 - Closing the window hides it and leaves the process running. The first time
-  a window close leaves a session running, a one-time note says that
-  blocking continues and that Posato stays in the menu bar. The note offers
-  **Quit Posato** and **OK**.
+  a window close leaves a session running, a one-time note says that Posato
+  stays in the menu bar. It says that blocking continues only when this Mac's
+  restrictions are confirmed active. For a session that is not enforcing,
+  such as `RESUME_REQUIRED` or a failed apply, it reads "Restrictions not
+  active on this Mac" instead (the exact texts are in the `DESIGN.md` rules
+  below). A
+  running timer never implies active restrictions. The note offers **Quit
+  Posato** and **OK**.
 - While the window is open, Posato is a regular application with a Dock icon
   and its application menu. After the window closes, it becomes an accessory
   application: no Dock icon, and the menu-bar item is its only surface.
@@ -287,6 +293,11 @@ or Cmd-Q during an active session shows a confirmation:
 > stays active on your other devices.
 >
 > **Keep Posato open** (default) · **Quit**
+
+The first sentence appears only when this Mac's restrictions are confirmed
+active. For a session that is not enforcing, the confirmation reads "The
+session stays active. Posato asks you to resume restrictions when it opens
+again." with the same buttons.
 
 Quitting does not end the session: the session is shared through the
 workspace, and ending it is the deliberate early-end flow. Refusing to quit
@@ -451,9 +462,10 @@ Add under Layout and Responsive Behavior, macOS:
 >
 > - **Status item.** A monochrome template of the Posato pause mark that
 >   follows the menu bar's appearance. It has no color, animation, badge, or
->   countdown in the bar. An active session may use the filled variant. The
->   item's accessibility description names Posato and the state, for example
->   "Posato, session active".
+>   countdown in the bar. Only a session whose restrictions are confirmed
+>   active uses the filled variant. The item's accessibility description
+>   names Posato and the state, for example "Posato, restrictions active" or
+>   "Posato, restrictions not active".
 > - **Menu.** The first line names the state, and there is at most one
 >   primary action. Every other item routes into the window's existing flow.
 >   - No session: No session active · Start a session… · Open Posato · Quit
@@ -474,13 +486,17 @@ Add under Layout and Responsive Behavior, macOS:
 >   window is open, and an accessory with only the status item while it is
 >   closed. Opening Posato again from Finder, Spotlight, or **Open Posato**
 >   shows the window in the destination and state it had.
-> - **First close during a session.** One notice, shown once per device: "Posato
->   is still running. Blocking continues while Posato is in the menu bar." with
->   **OK** and **Quit Posato**.
+> - **First close during a session.** One notice, shown once per device, with
+>   **OK** and **Quit Posato**. When this Mac's restrictions are confirmed
+>   active: "Posato is still running. Blocking continues while Posato is in
+>   the menu bar." Otherwise: "Posato is still running in the menu bar.
+>   Restrictions not active on this Mac." A running timer alone never selects
+>   the first text.
 > - **Quit.** **Quit Posato** and Cmd-Q quit at once when no session is active.
 >   During a session a confirmation reads **Quit Posato?** "Blocking stops on
 >   this Mac until you open Posato and resume it. The session stays active on
->   your other devices." with **Keep Posato open** (default) and **Quit**.
+>   your other devices." with **Keep Posato open** (default) and **Quit**. The
+>   first sentence appears only while restrictions are confirmed active.
 >   Logout, restart, and update relaunch never wait on it.
 > - **Open at login.** In This Mac options, a switch **Open Posato at login**,
 >   off by default. It is not offered during first-run setup. A login launch
@@ -566,6 +582,7 @@ review. The bounded work:
 | Relaunch and reopen | Opening Posato while it is resident shows the existing window without a second process; Dock state follows the window |
 | Launch at login | Switch on, log out and in: Posato starts windowless and resident; with an active session it waits in Resume; switch off removes the login item and leaves the helper's background item enabled |
 | Removal with login on | **Remove from this Mac** turns Open at Login off; no Open at Login record remains |
+| First close and quit copy | With restrictions active, the first-close notice and Quit confirmation say blocking continues and stops; in `RESUME_REQUIRED` neither claims blocking |
 | Quit during a session | The confirmation appears; Keep leaves blocking; Quit restores and the next launch shows Resume; logout is not blocked |
 | Update gate | With a found update and the window closed, the gate still refuses during a session and admits after it ends |
 | Resource use | Resident idle and session samples against the figures above; no regression over P1 |
