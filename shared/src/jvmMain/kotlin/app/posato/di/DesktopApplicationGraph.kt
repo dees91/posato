@@ -38,7 +38,6 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
 import app.posato.feature.update.DesktopUpdateMaintenance
-import app.posato.feature.update.MaintenanceAdmission
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -134,16 +133,6 @@ internal interface DesktopApplicationGraph :
         )
         sync.sessionObserver = owner
         return owner
-    }
-
-    @Provides
-    @SingleIn(AppScope::class)
-    fun providePresence(
-        owner: SessionTransitionOwner,
-        sync: AppleSync,
-        maintenance: MaintenanceAdmission,
-    ): DesktopPresence {
-        return DesktopPresence(owner, sync, maintenance)
     }
 
     @Provides

@@ -15,9 +15,11 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,8 +81,8 @@ class PosatoApplication internal constructor(
         onAnnouncement: (String) -> Unit = {},
         updates: ApplicationUpdates? = null,
         hostsSession: Boolean = true,
-        visible: Boolean = true,
         windowRequests: Flow<SessionWindowRequest> = emptyFlow(),
+        navigation: ApplicationNavigation = remember { ApplicationNavigation() },
     ) {
         var setupDone by remember { mutableStateOf(false) }
         val syncState = rememberSyncBootstrapUiState(bootstrap)
@@ -118,16 +120,14 @@ class PosatoApplication internal constructor(
                     modifier = modifier,
                 )
             } else {
-                if (visible) {
-                    LaunchedEffect(updates) { updates?.askForAutomaticChecksOnce() }
-                }
+                LaunchedEffect(updates) { updates?.askForAutomaticChecksOnce() }
                 DestinationsHost(
                     syncState = syncState,
                     onMacSetupAnnouncement = onAnnouncement,
                     macSetupState = helperSetup.takeIf { onboardingDependencies.permissionPlatform == OnboardingPermissionPlatform.MAC },
                     device = device,
                     updates = updates,
-                    visible = visible,
+                    navigation = navigation,
                     windowRequests = windowRequests,
                     modifier = modifier,
                 )
@@ -142,22 +142,15 @@ class PosatoApplication internal constructor(
         onMacSetupAnnouncement: (String) -> Unit,
         device: PosatoDevice,
         updates: ApplicationUpdates?,
-        visible: Boolean,
+        navigation: ApplicationNavigation,
         windowRequests: Flow<SessionWindowRequest>,
         modifier: Modifier = Modifier,
     ) {
-        val browser = remember { TargetsBrowserState() }
-        var showingSession by remember { mutableStateOf(true) }
-        var informationPage by remember { mutableStateOf<ApplicationInformationPage?>(null) }
+        val browser = navigation.browser
+        var showingSession by navigation::showingSession
+        var informationPage by navigation::informationPage
         var pendingRequest by remember { mutableStateOf<SessionWindowRequest?>(null) }
-        LaunchedEffect(windowRequests) {
-            windowRequests.collect { request ->
-                showingSession = true
-                informationPage = null
-                pendingRequest = request
-            }
-        }
-        if (!visible) return
+        WindowRequestsEffect(windowRequests, navigation) { pendingRequest = it }
         val deviceLabel = "On this ${device.noun} only"
         ApplicationNavigationScaffold(
             device = device,
@@ -197,7 +190,7 @@ class PosatoApplication internal constructor(
                             macSetupState = macSetupState,
                             onMacSetupAnnouncement = onMacSetupAnnouncement,
                             windowRequest = pendingRequest,
-                            onWindowRequestHandled = { pendingRequest = null },
+                            onConsumeWindowRequest = { pendingRequest = null },
                         )
                     }
 
@@ -211,6 +204,22 @@ class PosatoApplication internal constructor(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    @Composable
+    private fun WindowRequestsEffect(
+        windowRequests: Flow<SessionWindowRequest>,
+        navigation: ApplicationNavigation,
+        onRequest: (SessionWindowRequest) -> Unit,
+    ) {
+        val latestOnRequest by rememberUpdatedState(onRequest)
+        LaunchedEffect(windowRequests) {
+            windowRequests.collect { request ->
+                navigation.showingSession = true
+                navigation.informationPage = null
+                latestOnRequest(request)
             }
         }
     }
@@ -261,7 +270,14 @@ class PosatoApplication internal constructor(
     }
 }
 
-private enum class ApplicationInformationPage {
+@Stable
+public class ApplicationNavigation {
+    internal val browser: TargetsBrowserState = TargetsBrowserState()
+    internal var showingSession: Boolean by mutableStateOf(true)
+    internal var informationPage: ApplicationInformationPage? by mutableStateOf(null)
+}
+
+internal enum class ApplicationInformationPage {
     ABOUT,
     LICENSES,
 }

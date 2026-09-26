@@ -16,7 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
+import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.rememberWindowState
+import app.posato.ApplicationNavigation
 import app.posato.desktop.update.MacUpdateSettings
 import app.posato.desktop.update.MacUpdater
 import app.posato.desktop.update.UpdaterController
@@ -79,14 +81,18 @@ internal fun ApplicationScope.ResidentPosato(
     ApplicationEventsEffect(window, onQuitRequest = { response ->
         scope.launch { if (confirmQuit()) response.performQuit() else response.cancelQuit() }
     })
-    PosatoWindow(graph, window, updates, onCloseRequest = {
-        scope.launch {
-            when (firstCloseChoice(menu, copy)) {
-                FirstCloseChoice.HIDE -> window.hide()
-                FirstCloseChoice.QUIT -> quit()
+    val navigation = remember { ApplicationNavigation() }
+    val windowState = rememberWindowState(width = 1060.dp, height = 780.dp)
+    if (window.visible) {
+        PosatoWindow(graph, windowState, navigation, updates, onCloseRequest = {
+            scope.launch {
+                when (firstCloseChoice(menu, copy)) {
+                    FirstCloseChoice.HIDE -> window.hide()
+                    FirstCloseChoice.QUIT -> quit()
+                }
             }
-        }
-    })
+        })
+    }
 }
 
 @Composable
@@ -167,13 +173,13 @@ private fun ApplicationEventsEffect(
 @Composable
 private fun PosatoWindow(
     graph: DesktopApplicationComponents,
-    window: ResidentWindow,
+    state: WindowState,
+    navigation: ApplicationNavigation,
     updates: ApplicationUpdates?,
     onCloseRequest: () -> Unit,
 ) {
     var highContrast by remember { mutableStateOf(false) }
-    val state = rememberWindowState(width = 1060.dp, height = 780.dp)
-    Window(onCloseRequest = onCloseRequest, visible = window.visible, title = "Posato", state = state) {
+    Window(onCloseRequest = onCloseRequest, title = "Posato", state = state) {
         SideEffect {
             this.window.rootPane.putClientProperty("apple.awt.fullWindowContent", true)
             this.window.rootPane.putClientProperty("apple.awt.transparentTitleBar", true)
@@ -186,8 +192,8 @@ private fun PosatoWindow(
             onAnnouncement = MacWindow::announce,
             updates = updates,
             hostsSession = false,
-            visible = window.visible,
             windowRequests = graph.presence.windowRequests,
+            navigation = navigation,
         )
     }
 }

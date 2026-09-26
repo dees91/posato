@@ -25,10 +25,8 @@ import app.posato.feature.sync.bootstrap.SessionReconciler
 import app.posato.feature.sync.bootstrap.SessionSyncAuthoring
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.sync.bootstrap.reconcileSessionTime
-import app.posato.feature.sync.domain.SessionCandidate
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SessionReplicaSnapshot
-import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.domain.SyncWriter
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
@@ -56,7 +54,6 @@ import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeoutOrNull
 
 @Suppress("TooManyFunctions")
 internal class SessionTransitionOwner(
@@ -75,7 +72,7 @@ internal class SessionTransitionOwner(
     private val mutableView = MutableStateFlow(EnforcementViewState())
     private val mutableStatus = MutableStateFlow<LocalSessionStatus?>(null)
     private val transitions = Channel<Unit>(Channel.CONFLATED)
-    private val idleWakeups = Channel<Unit>(Channel.CONFLATED)
+    private val pacer = SessionTickPacer(mutableStatus, clock) { stateMutex.withLock { replicaSnapshot } }
     private val drainJob = scope.launch(start = CoroutineStart.LAZY) {
         for (ignored in transitions) {
             executeWork()
@@ -105,7 +102,7 @@ internal class SessionTransitionOwner(
             }
             replicaSnapshot = snapshot
         }
-        idleWakeups.trySend(Unit)
+        pacer.wake()
     }
 
     suspend fun runWhileHosted(idleRecheckMillis: Long? = null) {
@@ -116,26 +113,10 @@ internal class SessionTransitionOwner(
             triggers.restoreSessions()
             while (currentCoroutineContext().isActive) {
                 onTick(clock.currentEpochMillis())
-                val idleWait = idleRecheckMillis?.let { recheck -> idleWaitMillis(recheck) }
-                if (idleWait == null) {
-                    delay(SESSION_TICK_MILLIS)
-                } else {
-                    withTimeoutOrNull(idleWait) { idleWakeups.receive() }
-                }
+                pacer.pause(idleRecheckMillis, SESSION_TICK_MILLIS)
             }
         } finally {
             if (tickingJob === running) tickingJob = null
-        }
-    }
-
-    private suspend fun idleWaitMillis(recheckMillis: Long): Long? {
-        if (mutableStatus.value is LocalSessionStatus.Active) return null
-        val snapshot = stateMutex.withLock { replicaSnapshot } ?: return recheckMillis
-        val now = clock.currentEpochMillis()
-        return when (val candidate = SyncReducer.describeSession(snapshot.projection, now, snapshot.terminalExpiryFacts)) {
-            is SessionCandidate.Current -> null
-            is SessionCandidate.Future -> (candidate.start.startEpochMillis - now).coerceIn(0L, recheckMillis)
-            else -> recheckMillis
         }
     }
 
@@ -165,11 +146,9 @@ internal class SessionTransitionOwner(
         stateMutex.withLock {
             settleLocked(status)
         }
-        idleWakeups.trySend(Unit)
     }
 
     fun onForeground() {
-        idleWakeups.trySend(Unit)
         scope.launch {
             onTick(clock.currentEpochMillis())
         }
@@ -352,7 +331,7 @@ internal class SessionTransitionOwner(
                 }
 
                 is SessionReconcileResult.Halted -> {
-                    val current = readCurrentLocked(nowEpochMillis)
+                    val current = store.readStatus(nowEpochMillis)
                     if (current is LocalSessionStatus.Active) {
                         actionTag = SessionTag(current.record)
                         mutableView.update { it.copy(state = EnforcementActionKind.APPLY_FAILED.toAction(enforcement.reapplyRequiresPrompt)) }
@@ -361,14 +340,7 @@ internal class SessionTransitionOwner(
                 }
             }
         } else {
-            readCurrentLocked(nowEpochMillis)
-        }
-    }
-
-    private suspend fun readCurrentLocked(nowEpochMillis: Long): LocalSessionStatus? {
-        return when (val read = store.read(nowEpochMillis)) {
-            is LocalSessionResult.Failure -> null
-            is LocalSessionResult.Success -> read.value
+            store.readStatus(nowEpochMillis)
         }
     }
 
@@ -820,6 +792,13 @@ internal fun EnforcementActionKind.toAction(repeatsSystemPrompt: Boolean): Enfor
 
 internal fun EnforcementState.isApplyFailure(): Boolean {
     return this is EnforcementState.ActionRequired && kind == EnforcementActionKind.APPLY_FAILED
+}
+
+private suspend fun LocalSessionSyncStore.readStatus(nowEpochMillis: Long): LocalSessionStatus? {
+    return when (val read = read(nowEpochMillis)) {
+        is LocalSessionResult.Failure -> null
+        is LocalSessionResult.Success -> read.value
+    }
 }
 
 private const val STATUS_POLL_TICKS: Long = 15L

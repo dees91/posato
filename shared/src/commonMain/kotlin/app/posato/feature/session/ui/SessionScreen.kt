@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -54,7 +55,7 @@ internal fun SessionScreen(
     macSetupState: MacHelperSetupUiState? = null,
     onMacSetupAnnouncement: (String) -> Unit = {},
     windowRequest: SessionWindowRequest? = null,
-    onWindowRequestHandled: () -> Unit = {},
+    onConsumeWindowRequest: () -> Unit = {},
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
     },
@@ -64,13 +65,14 @@ internal fun SessionScreen(
     val loginItem = macSetupState?.loginItem
     val loginItemEnabled = loginItem?.enabled?.collectAsState()?.value
     LaunchedEffect(loginItem) { loginItem?.refresh() }
+    val consumeWindowRequest by rememberUpdatedState(onConsumeWindowRequest)
     LaunchedEffect(windowRequest) {
         when (windowRequest) {
             SessionWindowRequest.START_SESSION -> viewModel.setSetupVisible(true)
             SessionWindowRequest.END_SESSION_EARLY -> viewModel.setEarlyEndConfirmation(true)
             SessionWindowRequest.SESSION, null -> Unit
         }
-        if (windowRequest != null) onWindowRequestHandled()
+        if (windowRequest != null) consumeWindowRequest()
     }
     SessionScreen(
         state = state,

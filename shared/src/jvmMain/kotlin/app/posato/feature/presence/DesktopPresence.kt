@@ -3,6 +3,9 @@ package app.posato.feature.presence
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.update.MaintenanceAdmission
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -11,6 +14,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
+@Inject
+@SingleIn(AppScope::class)
 public class DesktopPresence internal constructor(
     private val owner: SessionTransitionOwner,
     private val sync: AppleSync,
