@@ -56,9 +56,10 @@ on that device; only the shared app group name synchronizes.
 
 Set a duration from **5 minutes to 24 hours**, review your choices, and start
 the session. Posato blocks your chosen websites and apps on that device,
-within the [limits](#limits) below. On a Mac, a one-time setup lets pauses and
-schedules start without asking for your password each time. It ends at the selected time or when you
-deliberately end it early. On iPhone, restrictions can linger after it ends.
+within the [limits](#limits) below. The session ends at the selected time or
+when you deliberately end it early. On iPhone, restrictions can linger after it
+ends. On a Mac, a one-time setup lets pauses and schedules start without asking
+for your password each time.
 
 <p align="center">
   <a href=".github/assets/step-duration.png"><img src=".github/assets/step-duration.png" width="960" alt="Session setup on a Mac and an iPhone, side by side, with a 45-minute pause selected"></a>
@@ -83,7 +84,8 @@ starts on another device.
 
 Choose **Sync with iCloud** on one Mac and one iPhone signed in to the same
 Apple Account to share your website list, sessions, and schedules. No QR code
-or invitation is needed. Delivery is best effort. Update Posato on every
+or invitation is needed. Delivery is best effort. A session started on your
+iPhone blocks on the Mac only after you resume it there. Update Posato on every
 device: once a schedule is saved, a device still on Posato 1.1 stops syncing.
 
 ## Limits

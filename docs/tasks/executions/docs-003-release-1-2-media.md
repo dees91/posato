@@ -18,12 +18,15 @@
 
 ## Result
 
-- **Showcase.** Storyboard revision 2: the hero is 26 seconds and ends on a schedule being saved; the 52.6-second walkthrough adds the schedule and a scheduled pause running on its own. The Mac no longer shows an administrator prompt at Start, because the VM finished the unified setup. `npm run media` rendered every output within budget: the GIF stepped down to 864 x 540 at 12 fps (9,664,528 bytes), the site hero MP4 is 1,571,481 bytes, the walkthrough 2,948,868 bytes. A new `StepSchedules` still joins the README.
+- **Showcase.** Storyboard revision 2: the hero is 26 seconds and ends on a schedule being saved; the 52.6-second walkthrough adds the schedule and a scheduled pause running on its own. The Mac no longer shows an administrator prompt at Start, because the VM finished the unified setup. `npm run media` rendered every output within budget: the GIF stepped down to 864 x 540 at 12 fps (9,649,297 bytes), the site hero MP4 is 1,575,174 bytes, the walkthrough 2,943,871 bytes. A new `StepSchedules` still joins the README.
 - **Capture scripts.** `video/capture/mac-captures.sh` now drives a VM (`--vm`), picks Chess through recognized screen text because the resident helper and the picker are two processes with one name, and captures schedules. `iphone-captures.sh` needs no hand: Screen Time consent, the app picker, and the notification prompt are driven; the test schedule is deleted afterwards. `collect.sh` also reads VM run folders.
 - **Pages.** README and `posato.app` gain "Plan pauses ahead" with the schedules still and screenshots, the one-time Mac setup, schedule sync, and the update-every-device advice; the limits page drops the `IOS-006` limit fixed in 1.2 and states the schedule limits (Mac setup and a running Posato, 15-minute minimum, device clocks, 1.1 devices stop syncing). The site builds; checked at 1280 and 390 pixels wide, with no horizontal scroll.
 - **App Store.** Four screenshots per device (Schedules added as the third; About moved to fourth), captured from a 1.2.0 Simulator build with `Version.xcconfig` bumped only for the capture and restored; `description.txt` and `whats-new-1.2.0.txt` are the upload inputs.
 - **Tool.** `store prepare --description <file>` sets the en-US description; What's New and the description go in one PATCH, and a matching text is left alone. Tests cover both paths and the input checks.
 - **Deviation.** The platform matrix on the limits page still lists the 1.1 checks; `RELEASE-004` replaces it with the verified 1.2 matrix.
+- **Publication gates for `RELEASE-004`.** Two public claims rest on unit and planner tests, not on an end-to-end run: schedules syncing between linked devices, and the notice when a pause starts on another device. `RELEASE-004` must observe both on linked candidates (a `primary` and `peer` Tart pair, or a VM and the test iPhone) before it publishes. If either fails, publish with the fallback copy below and file the defect.
+  - Schedule sync fails: drop "and sync with your other devices when iCloud sync is on" from What's New, "and schedules" from the iCloud sentences of the description, README, and site, and "shared" wording from the release notes.
+  - The started-elsewhere notice fails: replace "Posato can tell you when a pause ends or when one starts on another device." with "Posato can tell you when a pause ends." in the description, What's New, README, site, and release notes.
 
 ## GitHub release notes for 1.2.0
 
@@ -57,7 +60,7 @@ For `RELEASE-004` to paste into the release; replace the verification line with 
 
 ## Review
 
-- **Completed-change review:** pending.
+- **Completed-change review:** `changes-required`, one Required finding and five Recommended or Optional ones. Required: schedule sync between devices and the started-elsewhere notice had no end-to-end evidence; resolved as the publication gates above with fallback copy. Taken: the README session sentence order; the received-session caveat restored in the README, the site, and the limits page (a session from the iPhone blocks on the Mac only after Resume there); storyboard callouts that name only what the frame shows ("Weekdays, 9 to 11.", "A scheduled pause runs on its own."); an exact match for the picker's Choose button; the `evening` mode in the script usage.
 
 ## Checks
 
@@ -67,6 +70,7 @@ For `RELEASE-004` to paste into the release; replace the verification line with 
 - Store screenshots: iPhone 17 Pro Max and iPad Pro 13-inch (M5) Simulators, 1320 x 2868 and 2064 x 2752 RGB PNGs without alpha.
 - `website/`: `npm ci`, `npm run build`, preview at desktop and phone widths.
 - `./gradlew :posato-provisioning:test`: passed, including the two new tests.
+- `./gradlew quality`: passed after the last correction (Detekt first flagged `prepare` as too complex; the text update moved into its own function).
 - Privacy: the tracked PNGs show only synthetic domains, schedule names, and counts; the phone's own account appears only in an ignored run folder.
 
 ## Final

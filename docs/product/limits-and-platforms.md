@@ -45,7 +45,8 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   quietly at login. If Posato quits, or after sleep, wake, or a network change,
   blocking stops until you resume it in Posato. Without the setup, starting or
   resuming needs administrator approval each time. A session received from
-  your iPhone also needs that approval before the Mac blocks anything.
+  your iPhone blocks on the Mac only after you resume it there; without the
+  setup, that also needs administrator approval.
 - On macOS, schedules start only on a Mac that finished the setup and only
   while Posato is running. Quitting Posato stops new scheduled starts until it
   opens again; closing the window does not.

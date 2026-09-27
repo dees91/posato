@@ -5,6 +5,7 @@ import app.posato.provisioning.asc.StoreClient
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningException
 import app.posato.provisioning.model.AppStoreVersionResource
+import app.posato.provisioning.model.LocalizationResource
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
@@ -62,21 +63,35 @@ class StorePreparation(
             "attached".also { store.attachBuild(version.id, build.id) }
         }
         val localization = StoreLookups.localization(store, version.id)
-        val changes = buildMap {
-            if (localization.attributes.whatsNew?.trim() != request.whatsNew) put(WHATS_NEW, request.whatsNew)
-            request.description?.takeIf { it != localization.attributes.description?.trim() }?.let { put(DESCRIPTION, it) }
-        }
-        if (changes.isNotEmpty()) store.updateLocalization(localization.id, changes)
+        val texts = updateTexts(store, localization, request)
         val screenshots = request.screenshots?.let { sets -> replaceScreenshots(localization.id, sets) }
         return buildJsonObject {
             put("version", request.version)
             put("appStoreVersion", if (existing == null) "created" else UNCHANGED)
             put("releaseType", releaseType)
             put("build", buildOutcome)
-            put(WHATS_NEW, if (WHATS_NEW in changes) "updated" else UNCHANGED)
-            if (request.description != null) put(DESCRIPTION, if (DESCRIPTION in changes) "updated" else UNCHANGED)
+            texts.forEach { (key, outcome) -> put(key, outcome) }
             put("screenshots", screenshots ?: buildJsonArray { })
         }
+    }
+
+    /**
+     * Writes What's New and, when requested, the description in one request, sending only the texts that differ.
+     * Returns each requested text's outcome.
+     */
+    private fun updateTexts(
+        store: StoreClient,
+        localization: LocalizationResource,
+        request: PrepareRequest,
+    ): Map<String, String> {
+        val wanted = listOfNotNull(
+            WHATS_NEW to request.whatsNew,
+            request.description?.let { DESCRIPTION to it },
+        )
+        val current = mapOf(WHATS_NEW to localization.attributes.whatsNew, DESCRIPTION to localization.attributes.description)
+        val changes = wanted.filter { (key, text) -> current[key]?.trim() != text }.toMap()
+        if (changes.isNotEmpty()) store.updateLocalization(localization.id, changes)
+        return wanted.associate { (key, _) -> key to if (key in changes) "updated" else UNCHANGED }
     }
 
     /** The existing version, or `null` when there is none; a version this command may not change stops the run. */

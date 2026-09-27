@@ -138,7 +138,7 @@ const scheduleScene = (start: number, end: number, first: string, lead: number):
   pointerExit: { from: 108 + lead, to: 128 + lead },
   callouts: [
     { text: "Or plan pauses ahead.", from: 6, to: 60 + lead },
-    { text: "Pick the days and hours.", from: 64 + lead, to: 100 + lead },
+    { text: "Weekdays, 9 to 11.", from: 64 + lead, to: 100 + lead },
     { text: "It starts on its own.", from: 104 + lead, to: end - start - SCENE_OVERLAP },
   ],
   copy: {},
@@ -283,7 +283,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     iphone: { captures: ["iphone-apps.png", "iphone-schedules.png"] },
     actions: [{ device: "iphone", kind: "tap", target: IPHONE_TARGETS.schedulesTab, at: 70, label: "Schedules", swapTo: 1 }],
     callouts: [
-      { text: "A scheduled pause, window closed or open.", from: 6, to: 66 },
+      { text: "A scheduled pause runs on its own.", from: 6, to: 66 },
       { text: "Plan schedules on your iPhone too.", from: 70, to: 144 },
     ],
     copy: {},

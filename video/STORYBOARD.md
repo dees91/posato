@@ -41,7 +41,7 @@ Show, without sound and at 960 pixels wide, that Posato is a pause you set up yo
 | 5 | `duration` | 666-876 | Mac | Start a session, pick 45 minutes, review. |
 | 6 | `start` | 870-1020 | Mac, then Mac and iPhone | Start; restrictions active on both. |
 | 7 | `end-early` | 1014-1194 | Mac and iPhone | End early through Ready to return?; choices stay. |
-| 8 | `schedule` | 1188-1368 | Mac | Schedules, Add schedule, name it, save. |
+| 8 | `schedule` | 1188-1368 | Mac | Schedules, Add schedule, save a weekday plan. |
 | 9 | `schedule-runs` | 1362-1512 | Mac and iPhone | A scheduled pause runs on its own; the iPhone lists the same kind of plan. |
 | 10 | `close` | 1506-1578 | title | Land the line and fade to the canvas. |
 

@@ -11,6 +11,7 @@
 #   video/capture/mac-captures.sh websites           # Paused items: empty, typed, added, at rest
 #   video/capture/mac-captures.sh session            # Session at rest, 45 minutes, review, active, ended early
 #   video/capture/mac-captures.sh schedules HH:MM    # a weekday plan, and a daily plan starting at HH:MM
+#   video/capture/mac-captures.sh evening HH:MM      # only the daily plan, when schedules stopped after Deep work
 #   video/capture/mac-captures.sh scheduled          # after HH:MM: the scheduled pause running
 #
 # Raw captures land in build/verification/runs/<run-id>/guest/screenshots/;
@@ -42,7 +43,7 @@ apps() {
   # the picker is driven by recognized text on the guest screen instead.
   "${PC}" vm wait-text --line "${VM}" --text "Chess" | ok
   "${PC}" vm click --line "${VM}" --text "Chess" | ok
-  "${PC}" vm click --line "${VM}" --text "Choose" | ok
+  "${PC}" vm click --line "${VM}" --text "Choose" --exact | ok
   pc wait --for exists --text "Chess" --timeout-seconds 20 | ok
   shot mac-apps
   pc tap --text "Session" --role button | ok
@@ -160,5 +161,5 @@ case "${1:-}" in
   schedules) schedules "${2:-}" ;;
   evening) evening "${2:-}" ;;
   scheduled) scheduled ;;
-  *) echo "usage: $0 apps|websites|session|schedules HH:MM|scheduled" >&2; exit 2 ;;
+  *) echo "usage: $0 apps|websites|session|schedules HH:MM|evening HH:MM|scheduled" >&2; exit 2 ;;
 esac
