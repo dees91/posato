@@ -289,16 +289,38 @@ class MacSetupInterruptionTest {
         holder.readQuietly(refresh = true)
         runCurrent()
         gate.complete(Unit)
-        advanceUntilIdle()
-        elapsed = 5_000
-        holder.readQuietly(refresh = true)
-        advanceUntilIdle()
+        runCurrent()
         assertEquals(1, port.calls.count { it == "recheck" })
 
-        elapsed = 31_000
+        elapsed = 5_000
         holder.readQuietly(refresh = true)
-        advanceUntilIdle()
+        holder.readQuietly(refresh = true)
+        runCurrent()
+        assertEquals(1, port.calls.count { it == "recheck" })
+
+        advanceTimeBy(30_000)
+        runCurrent()
         assertEquals(2, port.calls.count { it == "recheck" })
+    }
+
+    @Test
+    fun `given a quick return after changing a setting then the throttled refresh still reads it when the interval ends`() = runTest {
+        var elapsed = 0L
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), grant = MacStandingGrantState.ON, loginOn = true)
+        val holder = MacHelperSetupUiState(port, this, elapsedMillis = { elapsed })
+        holder.readQuietly(refresh = true)
+        runCurrent()
+        assertTrue(holder.presentation().setupComplete)
+
+        port.revokeLoginInSystemSettings()
+        elapsed = 3_000
+        holder.readQuietly(refresh = true)
+        runCurrent()
+        assertTrue(holder.presentation().setupComplete)
+
+        advanceTimeBy(30_000)
+        runCurrent()
+        assertFalse(holder.presentation().setupComplete)
     }
 
     @Test
