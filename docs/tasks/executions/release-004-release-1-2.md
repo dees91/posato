@@ -12,8 +12,8 @@
 
 The `RELEASE-003` route, with the 1.2 differences marked:
 
-1. After the maintainer merges the 1.2 rows, rebase this branch on `main`, run the plan review, and name revision R.
-2. Release commit: `MARKETING_VERSION = 1.2.0`, the privacy policy's notifications and schedules passages with the effective date left for publication, README and availability wording.
+1. After the maintainer merges the 1.2 rows, rebase this branch on `main` and run the plan review.
+2. Release commit: `MARKETING_VERSION = 1.2.0`, the privacy policy's notifications and schedules passages with the effective date left for publication, README and availability wording. Revision R is this commit, pinned by its full hash; it is the only tree the candidates are built from and the one step 7 compares with the tagged tree.
 3. Candidates from a clean clone of R: `generateMacOsUpdateFeed` on the release channel with build 27 and previous 26; the App Store archive and upload with the next iOS build.
 4. Unattended verification: fresh install on macOS 26 (`primary`) and macOS 15 (`legacy`); **new:** 1.1.0 installed with `vm install --dmg`, then updated in-app to 1.2.0 from a feed served to the VM; the setup offer; a schedule 2 minutes ahead starting and ending on its own; `observe`; the test iPhone core flow and a scheduled start 15 minutes ahead.
 5. Store screenshots against the 1.2 UI if the Session or Schedules screens changed; App Store "What's New".
