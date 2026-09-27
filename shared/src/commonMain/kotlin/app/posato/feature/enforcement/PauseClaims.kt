@@ -45,6 +45,36 @@ internal class PauseClaims(
     }
 
     /**
+     * Keeps a held claim current: when the paused items or the combined pause's latest end changed, the
+     * helper gets the new request through the grant without clearing first, so blocking never lapses.
+     * A joined manual session keeps its later end. A claim not held yet is claimed.
+     */
+    suspend fun updateSchedule(request: EnforcementRequest): EnforcementApplyReport {
+        val held = mutex.withLock { scheduleRequest }
+        if (held == null) {
+            return claimSchedule(request)
+        }
+        return mutex.withLock {
+            val manualEnd = manualRequest?.sessionEndEpochMillis ?: 0L
+            val effective = request.withEnd(maxOf(request.sessionEndEpochMillis, manualEnd))
+            // While a joined manual session holds the helper, its targets are what is enforced.
+            val enforcedTargetsCurrent = holder != Holder.MANUAL || manualRequest?.sameTargets(request) == true
+            if (held.sameEffect(request) && enforcedTargetsCurrent) {
+                EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
+            } else {
+                val report = delegate.apply(effective.withGrantOnly())
+                holder = report.holderAfter(Holder.SCHEDULE)
+                scheduleRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
+                if (report.outcome != EnforcementOutcome.APPLIED) {
+                    // A failed apply cleared the helper; the manual owner sees that through its status.
+                    manualRequest = null
+                }
+                report
+            }
+        }
+    }
+
+    /**
      * Lifts the schedule's claim; nothing happens when it holds none and no clear is pending. The helper
      * is cleared only when no manual claim remains, and a clear that failed is retried on the next call.
      * A manual session that outlasts the schedule gets its own request and end again when the helper
@@ -190,4 +220,16 @@ internal class PauseClaims(
             return delegate.displacedSuspendedExpiry(currentSessionId)
         }
     }
+}
+
+private fun EnforcementRequest.sameTargets(other: EnforcementRequest): Boolean {
+    return domains == other.domains && mappingIds == other.mappingIds
+}
+
+private fun EnforcementRequest.sameEffect(other: EnforcementRequest): Boolean {
+    return sameTargets(other) && sessionEndEpochMillis == other.sessionEndEpochMillis
+}
+
+private fun EnforcementRequest.withEnd(end: Long): EnforcementRequest {
+    return EnforcementRequest(domains, mappingIds, sessionId, sessionStartEpochMillis, end, grantOnly)
 }

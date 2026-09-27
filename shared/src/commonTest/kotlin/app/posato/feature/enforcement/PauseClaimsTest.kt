@@ -5,8 +5,11 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-private fun request(end: Long): EnforcementRequest {
-    return EnforcementRequest(listOf("example.com"), emptyList(), "id", 0L, end)
+private fun request(
+    end: Long,
+    domains: List<String> = listOf("example.com"),
+): EnforcementRequest {
+    return EnforcementRequest(domains, emptyList(), "id", 0L, end)
 }
 
 private class HelperDouble(
@@ -15,12 +18,14 @@ private class HelperDouble(
     val calls = mutableListOf<String>()
     var applied = false
     var clearOutcome = EnforcementOutcome.CLEARED
+    var lastDomains: List<String> = emptyList()
 
     override val reapplyRequiresPrompt: Boolean = true
 
     override suspend fun apply(request: EnforcementRequest): EnforcementApplyReport {
         calls += if (request.grantOnly) "apply grant ${request.sessionEndEpochMillis}" else "apply ${request.sessionEndEpochMillis}"
         applied = applyOutcome == EnforcementOutcome.APPLIED
+        lastDomains = request.domains
         return EnforcementApplyReport(applyOutcome, false, false)
     }
 
@@ -179,5 +184,43 @@ class PauseClaimsTest {
         claims.claimSchedule(request(200))
 
         assertEquals(listOf("apply grant 200", "apply grant 200"), helper.calls)
+    }
+
+    @Test
+    fun `given a held schedule when its paused items change then the helper gets them through the grant without a clear`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200))
+
+        claims.updateSchedule(request(200))
+        claims.updateSchedule(request(200, listOf("example.com", "example.org")))
+
+        assertEquals(listOf("apply grant 200", "apply grant 200"), helper.calls)
+        assertEquals(listOf("example.com", "example.org"), helper.lastDomains)
+    }
+
+    @Test
+    fun `given a held schedule when the combined end moves later then the helper gets the later deadline`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200))
+
+        claims.updateSchedule(request(260))
+
+        assertEquals(listOf("apply grant 200", "apply grant 260"), helper.calls)
+    }
+
+    @Test
+    fun `given a joined manual session when the schedule's items differ then they are applied and the manual end is kept`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300))
+        claims.claimSchedule(request(200))
+
+        claims.updateSchedule(request(200))
+        claims.updateSchedule(request(200, listOf("example.com", "example.org")))
+
+        assertEquals(listOf("apply 300", "apply grant 300"), helper.calls)
+        assertEquals(listOf("example.com", "example.org"), helper.lastDomains)
     }
 }

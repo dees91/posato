@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -33,6 +34,8 @@ internal class ScheduleHostPorts(
     val hadConsent: () -> Boolean,
     val targets: suspend () -> SessionTargetsState,
     val maintenanceClosed: () -> Boolean,
+    /** Paused-item changes, so a running pause restricts the current items within moments. */
+    val targetChanges: Flow<Unit> = emptyFlow(),
 )
 
 /**
@@ -63,6 +66,7 @@ internal class ScheduleHost(
         coroutineScope {
             launch { store.changes.collect { triggers.trySend(Unit) } }
             launch { ticks.collect { triggers.trySend(Unit) } }
+            launch { ports.targetChanges.collect { triggers.trySend(Unit) } }
             triggers.trySend(Unit)
             for (ignored in triggers) {
                 // One failed evaluation must never stop the resident process; the next trigger tries again.
@@ -117,7 +121,8 @@ internal class ScheduleHost(
             return
         }
         val hadConsent = ports.hadConsent()
-        val state = if (holdsRestrictions()) ScheduledPauseState.APPLIED else attempt(step.running)
+        // A held claim is kept current: paused items and the latest end may have changed since it was applied.
+        val state = if (holdsRestrictions()) apply(step.running) else attempt(step.running)
         mutablePause.value = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)?.withoutAnnounced(announced.value)
     }
 
@@ -145,9 +150,10 @@ internal class ScheduleHost(
     private suspend fun apply(running: List<ScheduleOccurrence>): ScheduledPauseState {
         val request = running.toRequest(ports.targets())
         if (request.domains.isEmpty() && request.mappingIds.isEmpty()) {
+            ports.claims.releaseSchedule()
             return ScheduledPauseState.APPLIED
         }
-        return when (ports.claims.claimSchedule(request).outcome) {
+        return when (ports.claims.updateSchedule(request).outcome) {
             EnforcementOutcome.APPLIED -> ScheduledPauseState.APPLIED
 
             // The daemon also refuses the grant while another account has the console or the grant read had no answer.

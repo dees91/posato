@@ -47,12 +47,14 @@ private class Helper : EnforcementPort {
     var outcome = EnforcementOutcome.APPLIED
     var applied = false
     var throws = false
+    var lastDomains: List<String> = emptyList()
 
     override val reapplyRequiresPrompt: Boolean = true
 
     override suspend fun apply(request: EnforcementRequest): EnforcementApplyReport {
         calls += if (request.grantOnly) "grant apply until ${request.sessionEndEpochMillis}" else "prompting apply"
         check(!throws) { "helper could not start" }
+        lastDomains = request.domains
         applied = outcome == EnforcementOutcome.APPLIED
         return EnforcementApplyReport(outcome, false, false)
     }
@@ -78,6 +80,7 @@ private class HostFixture(
     var consent = true
     var gateChecks = 0
     var maintenanceClosed = false
+    var domains = listOf("example.com")
     val claims = PauseClaims(helper)
     val host = ScheduleHost(
         store = store,
@@ -91,7 +94,7 @@ private class HostFixture(
             },
             hadConsent = { consent },
             targets = {
-                val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(listOf("example.com"), null)).policy
+                val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(domains, null)).policy
                 SessionTargetsState(policy, LocalApplicationMappingsLoadResult.Unavailable())
             },
             maintenanceClosed = { maintenanceClosed },
@@ -326,6 +329,27 @@ class ScheduleHostTest {
             host.evaluate()
 
             assertEquals(emptySet(), host.pause.value?.unannounced)
+        }
+    }
+
+    @Test
+    fun `given a running pause when paused items change or the end moves then the helper follows without a lapse`() = runTest {
+        withHost("host-current.db") { fixture ->
+            fixture.now = at(9, 5)
+            fixture.host.evaluate()
+
+            fixture.domains = listOf("example.com", "example.org")
+            fixture.host.evaluate()
+            assertEquals(listOf("example.com", "example.org"), fixture.helper.lastDomains)
+
+            fixture.store.save(SchedulePlan(focusId, "Focus", 1, 9 * 60, 11 * 60, true), null)
+            fixture.host.evaluate()
+
+            assertEquals(
+                listOf("grant apply until ${at(10)}", "grant apply until ${at(10)}", "grant apply until ${at(11)}"),
+                fixture.helper.calls,
+            )
+            assertEquals(ScheduledPauseState.APPLIED, fixture.host.pause.value?.state)
         }
     }
 }

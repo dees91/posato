@@ -17,6 +17,7 @@ import app.posato.feature.update.MaintenanceAdmission
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Provides
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.flow.merge
 
 /** The schedule bindings with this platform's source of the current time zone. */
 internal interface DesktopScheduleBindings : ScheduleBindings {
@@ -43,6 +44,7 @@ internal interface DesktopScheduleBindings : ScheduleBindings {
             hadConsent = { macHelper.automaticStartConsent?.given?.value == true },
             targets = { loadSessionTargets(policyStore, applicationMappings) },
             maintenanceClosed = { admission.closed.value == true },
+            targetChanges = merge(policyStore.policyChanges, applicationMappings.invalidations),
         )
         return ScheduleHost(schedules.store, schedules.zone, clock, ports)
     }
