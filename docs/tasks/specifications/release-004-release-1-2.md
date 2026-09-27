@@ -2,7 +2,7 @@
 
 - **Review tier:** `high-risk`
 - **Tier reason:** Signed artifacts, the stable update feed, and an App Review submission are account-level release operations that cannot be taken back once people install them. Release 1.2 is also the first with a new synchronized operation format (schedules) and an automatic start path on the Mac.
-- **Dependencies:** `MACOS-013`, `MACOS-014`, `IOS-006` (merged); PR #92 (setup direction); `NOTIFY-001` (#94), `ONBOARDING-004` (#95), `SCHEDULE-001` (#93) and every `SCHEDULE-002` slice: #98 (1), #97 (2), #99 (3), #101 (4), #102 (5), #100 (6). Release 1.2, wave R1.2/W5.
+- **Dependencies:** `MACOS-013`, `MACOS-014`, `IOS-006` (merged); PR #92 (setup direction); `NOTIFY-001` (#94), `ONBOARDING-004` (#95), `SCHEDULE-001` (#93) and every `SCHEDULE-002` slice: #98 (1), #97 (2), #99 (3), #101 (4), #102 (5), #100 (6); `DOCS-003` (#103), which prepares the media, pages, store text and screenshots, and release notes. Release 1.2, wave R1.2/W5.
 - **Integration group:** `PR-RELEASE-1-2`, milestone `1.2.0`.
 - **Authority:** [release roadmap](../release-roadmap.md) (the 1.2 release guard), [RELEASE-003 brief](release-003-release-1-1.md) and [record](../executions/release-003-release-1-1.md) (the proven publication route), [ADR 0008](../../decisions/0008-macos-update-delivery.md), [Apple provisioning](../../development/apple-provisioning.md), [schedule rules](../../product/schedules-decisions.md) (the compatibility decision), and the [threat model](../../security/apple-mvp-threat-model.md).
 
@@ -24,7 +24,7 @@ For one named source revision that contains every 1.2 row, a notarized macOS can
 - `AC-01` — Both candidates come from the named revision and pass the release checks: clean-clone `quality`, Developer ID signature, notarization, stapling, Gatekeeper, a validated feed, and TestFlight processing with release entitlements.
 - `AC-02` — The notarized candidate passes the core flow in Tart VMs on macOS 26 and macOS 15: fresh install with the unified setup, a 1.1.0 install updated in-app to 1.2.0 with preserved state and the one-time setup offer, a manual pause, a schedule that starts and ends on its own, and the pause notices. The same revision passes the core flow and a scheduled start on the test iPhone.
 - `AC-03` — Tag `v1.2.0` and its GitHub Release exist and are marked latest; the downloaded assets match the validated outputs; the public `appcast.xml` verifies and offers 1.2.0 to 1.1.0.
-- `AC-04` — The privacy policy (notifications, schedules), availability page, README and `posato.app` describe 1.2 with working links; the iOS build is submitted to App Review.
+- `AC-04` — The privacy policy (notifications, schedules), availability page with the verified 1.2 matrix, README and `posato.app` describe 1.2 with working links, using the `DOCS-003` material; the iOS build is submitted to App Review with the `DOCS-003` description, What's New, and screenshots.
 - `AC-05` — The execution record holds a dated verdict for the named revision, the asset checksums, the consumed build numbers, and the `TB-08`/`T-13` review of the release artifacts.
 
 ## Verification

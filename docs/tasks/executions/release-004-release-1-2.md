@@ -16,14 +16,14 @@ The `RELEASE-003` route, with the 1.2 differences marked:
 2. Release commit: `MARKETING_VERSION = 1.2.0`, the privacy policy's notifications and schedules passages with the effective date left for publication, README and availability wording. Revision R is this commit, pinned by its full hash; it is the only tree the candidates are built from and the one step 7 compares with the tagged tree.
 3. Candidates from a clean clone of R: `generateMacOsUpdateFeed` on the release channel with build 27 and previous 26; the App Store archive and upload with the next iOS build.
 4. Unattended verification: fresh install on macOS 26 (`primary`) and macOS 15 (`legacy`); **new:** 1.1.0 installed with `vm install --dmg`, then updated in-app to 1.2.0 from a feed served to the VM; the setup offer; a schedule 2 minutes ahead starting and ending on its own; `observe`; the test iPhone core flow and a scheduled start 15 minutes ahead.
-5. Store screenshots against the 1.2 UI if the Session or Schedules screens changed; App Store "What's New".
+5. Use the `DOCS-003` (#103) material: `store prepare --whats-new docs/store/en-US/whats-new-1.2.0.txt --description docs/store/en-US/description.txt --screenshots docs/store/en-US/screenshots`, the GitHub release notes from its record, and replace the platform matrix on the limits page with the verified 1.2 runs. Merge #103 in the publication sitting.
 6. Completed-change review; the maintainer merges.
 7. Publication in one sitting (maintainer go): annotated tag on the squash commit when its product tree equals R, draft release with exactly the three assets, byte comparison, publication, then `releases/latest/download/appcast.xml` resolves and a 1.1.0 VM sees the update.
 8. App Review submission (automatic release unless the maintainer decides otherwise), Projects Done, milestone `1.2.0` closed; a follow-up PR records the App Review outcome.
 
 ## Draft release notes
 
-For review; final wording after verification.
+Superseded by the ready notes in the [`DOCS-003` record](docs-003-release-1-2-media.md#github-release-notes-for-120) and the store texts in `docs/store/en-US/`; kept here as the plan's history.
 
 > **Posato 1.2**
 >
