@@ -31,6 +31,7 @@ class SyncWriterScheduleTest {
             LocalSyncMutation.PutSchedule(scheduleId, "Focus\u0000", 1, 540, 720, true),
             LocalSyncMutation.SkipOccurrence(ScheduleOccurrenceRef(scheduleId, today.plusDays(401)), today),
             LocalSyncMutation.EndOccurrence(ScheduleOccurrenceRef(scheduleId, ScheduleDate(2023, 2, 29)), today),
+            LocalSyncMutation.RemoveSchedule(ScheduleSyncId(checkNotNull(SyncIdentifier.fromExactBytes(ByteArray(16) { 1 })))),
         ).forEach { invalid ->
             val store = FakeSyncReplicaStore(snapshot())
             val writer = openWriter(store)

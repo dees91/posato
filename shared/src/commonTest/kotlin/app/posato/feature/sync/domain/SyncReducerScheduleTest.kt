@@ -83,7 +83,7 @@ class SyncReducerScheduleTest {
     }
 
     @Test
-    fun `given a later remove of one of ten schedules when reduced then the eleventh fits in every order`() {
+    fun `given a later remove of one of ten schedules when reduced then the eleventh fits in natural and shuffled order`() {
         val puts = (1..11).map { index -> testOperation(index + 1, index.toLong() + 1, put(100 + index)) }
         val remove = testOperation(13, 13, SyncOperationPayload.ScheduleRemove(id(101)))
 
@@ -148,7 +148,7 @@ class SyncReducerScheduleTest {
             add(register)
             add(testOperation(2, 1, SyncOperationPayload.AuthorRegister, author = 11))
             (1..11).forEach { index -> add(testOperation(10 + index, index.toLong() + 1, put(100 + index))) }
-            add(testOperation(30, 12, SyncOperationPayload.ScheduleRemove(id(103))))
+            add(testOperation(30, 13, SyncOperationPayload.ScheduleRemove(id(103))))
             add(testOperation(31, 2, put(105, "Renamed"), author = 11))
             add(testOperation(32, 3, SyncOperationPayload.ScheduleSkip(ref(104)), author = 11))
             add(testOperation(33, 4, SyncOperationPayload.ScheduleOccurrenceEnd(ref(106)), author = 11))
@@ -156,6 +156,9 @@ class SyncReducerScheduleTest {
         }
         val provider = FakeSyncCryptoProvider()
         val expected = SyncReducer.reduce(operations)
+        assertEquals(SyncAuditOutcome.APPLIED, expected.audit.single { it.operationId == operations[13].operationId }.outcome)
+        assertTrue(id(103) in expected.removedScheduleIds)
+        assertEquals(0, expected.audit.count { it.outcome == SyncAuditOutcome.SCHEDULE_CAPACITY })
 
         repeat(40) { seed ->
             val shuffled = SyncReducer.reduce(operations.shuffled(Random(seed)))

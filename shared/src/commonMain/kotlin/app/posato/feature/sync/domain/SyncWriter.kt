@@ -677,11 +677,11 @@ internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
         is LocalSyncMutation.PutSchedule -> {
             val normalized = normalizeApplicationPolicyNameNfc(name.trim())
             SyncOperationPayload.SchedulePut(scheduleId, normalized, weekdays, startMinute, endMinute, enabled)
-                .takeIf(ScheduleWireRules::isValid)
+                .takeIf { payload -> scheduleId.value.isUuidV4() && ScheduleWireRules.isValid(payload) }
         }
 
         is LocalSyncMutation.RemoveSchedule -> {
-            SyncOperationPayload.ScheduleRemove(scheduleId)
+            SyncOperationPayload.ScheduleRemove(scheduleId).takeIf { scheduleId.value.isUuidV4() }
         }
 
         is LocalSyncMutation.SkipOccurrence -> {
@@ -698,5 +698,7 @@ internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
 
 /** A writer never authors a fact for a date that is not real or is more than 400 days after its own local date. */
 private fun ScheduleOccurrenceRef.isAuthorable(authorLocalDate: ScheduleDate): Boolean {
-    return ScheduleWireRules.isValidDate(date) && date.epochDay - authorLocalDate.epochDay <= ScheduleLimits.MAX_FACT_DAYS_AHEAD
+    return scheduleId.value.isUuidV4() &&
+        ScheduleWireRules.isValidDate(date) &&
+        date.epochDay - authorLocalDate.epochDay <= ScheduleLimits.MAX_FACT_DAYS_AHEAD
 }

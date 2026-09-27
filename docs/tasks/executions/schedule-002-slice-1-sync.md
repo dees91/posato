@@ -29,7 +29,7 @@
 5. **Tests, written first** (`commonTest`, so they run on the JVM and on iOS):
    - `ScheduleOperationCodecTest`: round trips; hand-written payload bytes pinned after a header taken from a known operation, so the layout does not come from the implementation; one rejected vector per invariant for decode and encode; kinds 128 and 255 round-trip with arbitrary tails; kinds 12 and 127 rejected.
    - `SyncReducerScheduleTest`: greatest order wins; remove before or after a put in order; the cap with the 11th new identifier and a later removal freeing a slot; skip and end grow-only and ignored for removed identifiers; an optional operation between two domain operations of one author keeps the later one applied.
-   - Writer or store: a remote bundle with kind 200 is accepted and survives a replica reopen; kind 12 is still `INVALID_OPERATION`.
+   - Writer or store: a remote bundle with kind 200 is accepted and survives a replica reopen (kinds 12-127 stay rejected in the codec test).
    - Redaction: `SchedulePut` and `OptionalExtension` are covered by the redaction test family.
 6. **Docs:** the record, one wiki log entry at closeout.
 
@@ -52,6 +52,13 @@
 - **Found on the way.** Strict UTF-8 decoding throws `CharacterCodingException` on the JVM, which the codec did not catch, so a malformed string in any string payload (domains included) threw instead of being rejected. It is caught now, with a test for the existing domain kind.
 - **Tests.** `ScheduleOperationCodecTest` (14), `SyncReducerScheduleTest` (9), `SyncWriterScheduleTest` (4), one redaction and one domain UTF-8 test. They failed before the implementation (18 failures), except the redaction test, whose `toString` came with the model.
 - **Mutations.** Ten checked; nine fail a test (gap pre-pass, cap boundary, skip for a removed schedule, C1 controls, real dates, 15-minute floor, 400-day rule, NFC, the UTF-8 catch). The enabled-byte check is equivalent: a byte of 2 decodes to `false`, re-encodes as 0, and the canonical check rejects it.
+
+## Completed-change review
+
+- **Verdict:** `changes-required`, then resolved.
+- **R-1** The random-order convergence test's remove shared a sequence number with a put, so it never applied; it now has its own sequence, and the test asserts the remove is `APPLIED`, the identifier is removed, and no capacity refusal remains.
+- **Recommended, taken:** the writer refuses schedule identifiers that are not UUIDv4, so a bad identifier is `INVALID_MUTATION` instead of an operation every replica would reject (test).
+- **Optional, taken:** the record no longer claims a writer-level kind-12 test; a test title no longer says "every order" for two orders.
 
 ## Verification
 
