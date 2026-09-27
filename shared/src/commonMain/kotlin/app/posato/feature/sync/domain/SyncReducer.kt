@@ -10,6 +10,21 @@ internal enum class SyncAuditOutcome {
     DOMAIN_CAPACITY,
     SEQUENCE_GAP,
     SESSION_CONFLICT,
+    SCHEDULE_CAPACITY,
+}
+
+/** The effective schedule for one identifier: its greatest total-order put. */
+internal data class SynchronizedSchedule(
+    val scheduleId: ScheduleSyncId,
+    val name: String,
+    val weekdays: Int,
+    val startMinute: Int,
+    val endMinute: Int,
+    val enabled: Boolean,
+) {
+    override fun toString(): String {
+        return "SynchronizedSchedule(redacted)"
+    }
 }
 
 internal data class SyncAuditEntry(
@@ -36,6 +51,10 @@ internal data class SyncProjection(
     val eligibleSessionStarts: List<SynchronizedSessionStart>,
     val conflictedSessionIds: Set<SessionId>,
     val audit: List<SyncAuditEntry>,
+    val schedules: List<SynchronizedSchedule> = emptyList(),
+    val removedScheduleIds: Set<ScheduleSyncId> = emptySet(),
+    val scheduleSkips: Set<ScheduleOccurrenceRef> = emptySet(),
+    val scheduleEnds: Set<ScheduleOccurrenceRef> = emptySet(),
 ) {
     override fun toString(): String {
         return "SyncProjection(redacted)"
@@ -180,6 +199,15 @@ private class ProjectionAccumulator(
     private val sessionStarts = mutableListOf<Pair<SyncOperation, SyncOperationPayload.SessionStart>>()
     private val endedSessionIds = mutableSetOf<SessionId>()
 
+    // A remove wins whatever the order, so every applicable (gap-free) remove is known before any put.
+    private val removedScheduleIds = applicable.mapNotNullTo(mutableSetOf()) { operation ->
+        (operation.payload as? SyncOperationPayload.ScheduleRemove)?.scheduleId
+    }
+    private val appliedRemoves = mutableSetOf<ScheduleSyncId>()
+    private val schedules = mutableMapOf<ScheduleSyncId, SyncOperationPayload.SchedulePut>()
+    private val scheduleSkips = mutableSetOf<ScheduleOccurrenceRef>()
+    private val scheduleEnds = mutableSetOf<ScheduleOccurrenceRef>()
+
     init {
         applicable
             .filter { it.payload == SyncOperationPayload.AuthorRegister }
@@ -217,6 +245,14 @@ private class ProjectionAccumulator(
             is SyncOperationPayload.SessionEnd -> {
                 outcome(endedSessionIds.add(payload.sessionId))
             }
+
+            is SyncOperationPayload.SchedulePut,
+            is SyncOperationPayload.ScheduleRemove,
+            is SyncOperationPayload.ScheduleSkip,
+            is SyncOperationPayload.ScheduleOccurrenceEnd,
+            is SyncOperationPayload.OptionalExtension -> {
+                applySchedule(payload)
+            }
         }
     }
 
@@ -233,6 +269,12 @@ private class ProjectionAccumulator(
             eligible.sortedBy(SynchronizedSessionStart::order),
             conflicted,
             auditEntries,
+            schedules = schedules.values.sortedBy { put -> put.scheduleId.value }.map { put ->
+                SynchronizedSchedule(put.scheduleId, put.name, put.weekdays, put.startMinute, put.endMinute, put.enabled)
+            },
+            removedScheduleIds = removedScheduleIds.toSet(),
+            scheduleSkips = scheduleSkips.toSet(),
+            scheduleEnds = scheduleEnds.toSet(),
         )
     }
 
@@ -247,6 +289,50 @@ private class ProjectionAccumulator(
 
         else -> {
             domains += domain
+            SyncAuditOutcome.APPLIED
+        }
+    }
+
+    private fun applySchedule(payload: SyncOperationPayload): SyncAuditOutcome = when (payload) {
+        is SyncOperationPayload.SchedulePut -> {
+            applySchedulePut(payload)
+        }
+
+        is SyncOperationPayload.ScheduleRemove -> {
+            outcome(appliedRemoves.add(payload.scheduleId))
+        }
+
+        is SyncOperationPayload.ScheduleSkip -> {
+            outcome(payload.occurrence.scheduleId !in removedScheduleIds && scheduleSkips.add(payload.occurrence))
+        }
+
+        is SyncOperationPayload.ScheduleOccurrenceEnd -> {
+            outcome(payload.occurrence.scheduleId !in removedScheduleIds && scheduleEnds.add(payload.occurrence))
+        }
+
+        // Optional kinds are retained and advance their author's sequence, but never change state.
+        else -> {
+            SyncAuditOutcome.NO_OP
+        }
+    }
+
+    /** Operations arrive in total order, so a put for a live identifier is always the newer one. */
+    private fun applySchedulePut(put: SyncOperationPayload.SchedulePut): SyncAuditOutcome = when {
+        put.scheduleId in removedScheduleIds -> {
+            SyncAuditOutcome.NO_OP
+        }
+
+        put.scheduleId in schedules -> {
+            schedules[put.scheduleId] = put
+            SyncAuditOutcome.APPLIED
+        }
+
+        schedules.size >= SyncFormatLimits.MAX_SYNCHRONIZED_SCHEDULES -> {
+            SyncAuditOutcome.SCHEDULE_CAPACITY
+        }
+
+        else -> {
+            schedules[put.scheduleId] = put
             SyncAuditOutcome.APPLIED
         }
     }

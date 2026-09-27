@@ -106,4 +106,26 @@ class SyncDomainRedactionTest {
             EffectiveSession.Active(sessionId, mandatoryEndEpochMillis).toString(),
         )
     }
+
+    @Test
+    fun `given schedule payloads and mutations when converted to strings then names and dates remain redacted`() {
+        val id = ScheduleSyncId(testIdentifier(70))
+        val ref = ScheduleOccurrenceRef(id, app.posato.feature.schedules.domain.ScheduleDate(2026, 9, 28))
+        val carriers = listOf(
+            SyncOperationPayload.SchedulePut(id, "Private name", 1, 540, 720, true),
+            SyncOperationPayload.ScheduleSkip(ref),
+            SyncOperationPayload.ScheduleOccurrenceEnd(ref),
+            SyncOperationPayload.OptionalExtension(200, app.posato.feature.sync.data.ImmutableBytes(byteArrayOf(1))),
+            LocalSyncMutation.PutSchedule(id, "Private name", 1, 540, 720, true),
+            LocalSyncMutation.SkipOccurrence(ref, ref.date),
+            LocalSyncMutation.EndOccurrence(ref, ref.date),
+            SynchronizedSchedule(id, "Private name", 1, 540, 720, true),
+            ref,
+        )
+
+        carriers.forEach { carrier ->
+            val text = carrier.toString()
+            kotlin.test.assertTrue("redacted" in text && "Private" !in text && "2026" !in text, text)
+        }
+    }
 }

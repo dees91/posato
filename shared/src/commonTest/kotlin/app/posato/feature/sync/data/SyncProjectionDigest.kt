@@ -27,6 +27,26 @@ internal fun SyncProjection.canonicalDigest(cryptoProvider: SyncCryptoProvider):
         conflictedSessionIds.sortedBy { sessionId -> sessionId.value }.forEach { sessionId ->
             writer.writeOwnedBytes(sessionId.value.copyBytes())
         }
+        writer.writeU32(schedules.size.toLong())
+        schedules.sortedBy { schedule -> schedule.scheduleId.value }.forEach { schedule ->
+            writer.writeOwnedBytes(schedule.scheduleId.value.copyBytes())
+            writer.writeCanonicalString(schedule.name)
+            writer.writeByte(schedule.weekdays)
+            writer.writeU16(schedule.startMinute)
+            writer.writeU16(schedule.endMinute)
+            writer.writeByte(if (schedule.enabled) 1 else 0)
+        }
+        writer.writeU32(removedScheduleIds.size.toLong())
+        removedScheduleIds.sortedBy { id -> id.value }.forEach { id -> writer.writeOwnedBytes(id.value.copyBytes()) }
+        listOf(scheduleSkips, scheduleEnds).forEach { facts ->
+            writer.writeU32(facts.size.toLong())
+            facts.sortedWith(compareBy({ it.scheduleId.value }, { it.date })).forEach { fact ->
+                writer.writeOwnedBytes(fact.scheduleId.value.copyBytes())
+                writer.writeU16(fact.date.year)
+                writer.writeByte(fact.date.month)
+                writer.writeByte(fact.date.day)
+            }
+        }
         writer.writeU32(audit.size.toLong())
         audit.forEach { entry ->
             writer.writeOwnedBytes(entry.operationId.value.copyBytes())
@@ -55,6 +75,7 @@ private fun SyncAuditOutcome.formatTag(): Int {
         SyncAuditOutcome.DOMAIN_CAPACITY -> DOMAIN_CAPACITY_TAG
         SyncAuditOutcome.SEQUENCE_GAP -> SEQUENCE_GAP_TAG
         SyncAuditOutcome.SESSION_CONFLICT -> SESSION_CONFLICT_TAG
+        SyncAuditOutcome.SCHEDULE_CAPACITY -> SCHEDULE_CAPACITY_TAG
     }
 }
 
@@ -64,3 +85,4 @@ private const val NO_OP_TAG = 3
 private const val DOMAIN_CAPACITY_TAG = 4
 private const val SEQUENCE_GAP_TAG = 5
 private const val SESSION_CONFLICT_TAG = 6
+private const val SCHEDULE_CAPACITY_TAG = 7

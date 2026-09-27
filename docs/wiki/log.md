@@ -2104,3 +2104,13 @@ to scope, feasibility, or delivery.
 - `observed`: `java.time` shifts a skipped wall time forward by the gap length
   (02:30 becomes 03:30); the schedule rule starts at the change itself, so the
   port resolves gaps through the zone transition.
+
+## [2026-09-27] implementation | SCHEDULE-002 slice 1: schedule operations in sync
+
+- `observed`: on the JVM, `decodeToString(throwOnInvalidSequence = true)`
+  throws `CharacterCodingException`, not `IllegalArgumentException`; the
+  operation codec now rejects malformed UTF-8 in every string payload instead
+  of throwing.
+- Kinds 8-11 follow the proposed ADR 0006 amendment; removal is decided before
+  capacity, so a later remove frees a slot in every delivery order (unlike the
+  domain cap). Optional kinds 128-255 keep their raw tail and never change state.

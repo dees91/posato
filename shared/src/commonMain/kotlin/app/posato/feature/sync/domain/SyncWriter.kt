@@ -1,5 +1,7 @@
 package app.posato.feature.sync.domain
 
+import app.posato.feature.schedules.domain.ScheduleDate
+import app.posato.feature.schedules.domain.ScheduleLimits
 import app.posato.feature.sync.data.DurableClockState
 import app.posato.feature.sync.data.EncryptedBundleCodec
 import app.posato.feature.sync.data.InspectBundleHeaderResult
@@ -17,6 +19,7 @@ import app.posato.feature.sync.data.SyncStoreFailure
 import app.posato.feature.sync.data.SyncStoreResult
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.normalizeApplicationPolicyNameNfc
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.sync.Mutex
@@ -56,6 +59,43 @@ internal sealed interface LocalSyncMutation {
     data class EndSession(
         val sessionId: SessionId,
     ) : LocalSyncMutation
+
+    /** The writer trims and normalizes [name] to NFC, then refuses any schedule the wire rules reject. */
+    data class PutSchedule(
+        val scheduleId: ScheduleSyncId,
+        val name: String,
+        val weekdays: Int,
+        val startMinute: Int,
+        val endMinute: Int,
+        val enabled: Boolean,
+    ) : LocalSyncMutation {
+        override fun toString(): String {
+            return "LocalSyncMutation.PutSchedule(redacted)"
+        }
+    }
+
+    data class RemoveSchedule(
+        val scheduleId: ScheduleSyncId,
+    ) : LocalSyncMutation
+
+    /** [authorLocalDate] is today on the author's clock; a date more than 400 days after it is refused. */
+    data class SkipOccurrence(
+        val occurrence: ScheduleOccurrenceRef,
+        val authorLocalDate: ScheduleDate,
+    ) : LocalSyncMutation {
+        override fun toString(): String {
+            return "LocalSyncMutation.SkipOccurrence(redacted)"
+        }
+    }
+
+    data class EndOccurrence(
+        val occurrence: ScheduleOccurrenceRef,
+        val authorLocalDate: ScheduleDate,
+    ) : LocalSyncMutation {
+        override fun toString(): String {
+            return "LocalSyncMutation.EndOccurrence(redacted)"
+        }
+    }
 }
 
 internal enum class LocalMutationFailure {
@@ -604,22 +644,59 @@ internal fun advanceRemoteClock(
 
 internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
     return when (this) {
-        is LocalSyncMutation.PresentDomain -> SyncOperationPayload.DomainPresent(domain)
+        is LocalSyncMutation.PresentDomain -> {
+            SyncOperationPayload.DomainPresent(domain)
+        }
 
-        is LocalSyncMutation.RemoveDomain -> SyncOperationPayload.DomainAbsent(domain)
+        is LocalSyncMutation.RemoveDomain -> {
+            SyncOperationPayload.DomainAbsent(domain)
+        }
 
-        is LocalSyncMutation.PresentApplicationPolicy -> SyncOperationPayload.ApplicationPolicyPresent(name)
+        is LocalSyncMutation.PresentApplicationPolicy -> {
+            SyncOperationPayload.ApplicationPolicyPresent(name)
+        }
 
-        LocalSyncMutation.RemoveApplicationPolicy -> SyncOperationPayload.ApplicationPolicyAbsent
+        LocalSyncMutation.RemoveApplicationPolicy -> {
+            SyncOperationPayload.ApplicationPolicyAbsent
+        }
 
-        is LocalSyncMutation.StartSession -> SyncOperationPayload.SessionStart(sessionId, startEpochMillis, mandatoryEndEpochMillis)
-            .takeIf { payload ->
-                val duration = payload.mandatoryEndEpochMillis - payload.startEpochMillis
-                payload.startEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS &&
-                    payload.mandatoryEndEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS &&
-                    duration in 1..SyncFormatLimits.MAX_SESSION_DURATION_MILLIS
-            }
+        is LocalSyncMutation.StartSession -> {
+            SyncOperationPayload.SessionStart(sessionId, startEpochMillis, mandatoryEndEpochMillis)
+                .takeIf { payload ->
+                    val duration = payload.mandatoryEndEpochMillis - payload.startEpochMillis
+                    payload.startEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS &&
+                        payload.mandatoryEndEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS &&
+                        duration in 1..SyncFormatLimits.MAX_SESSION_DURATION_MILLIS
+                }
+        }
 
-        is LocalSyncMutation.EndSession -> SyncOperationPayload.SessionEnd(sessionId)
+        is LocalSyncMutation.EndSession -> {
+            SyncOperationPayload.SessionEnd(sessionId)
+        }
+
+        is LocalSyncMutation.PutSchedule -> {
+            val normalized = normalizeApplicationPolicyNameNfc(name.trim())
+            SyncOperationPayload.SchedulePut(scheduleId, normalized, weekdays, startMinute, endMinute, enabled)
+                .takeIf(ScheduleWireRules::isValid)
+        }
+
+        is LocalSyncMutation.RemoveSchedule -> {
+            SyncOperationPayload.ScheduleRemove(scheduleId)
+        }
+
+        is LocalSyncMutation.SkipOccurrence -> {
+            SyncOperationPayload.ScheduleSkip(occurrence)
+                .takeIf { occurrence.isAuthorable(authorLocalDate) }
+        }
+
+        is LocalSyncMutation.EndOccurrence -> {
+            SyncOperationPayload.ScheduleOccurrenceEnd(occurrence)
+                .takeIf { occurrence.isAuthorable(authorLocalDate) }
+        }
     }
+}
+
+/** A writer never authors a fact for a date that is not real or is more than 400 days after its own local date. */
+private fun ScheduleOccurrenceRef.isAuthorable(authorLocalDate: ScheduleDate): Boolean {
+    return ScheduleWireRules.isValidDate(date) && date.epochDay - authorLocalDate.epochDay <= ScheduleLimits.MAX_FACT_DAYS_AHEAD
 }
