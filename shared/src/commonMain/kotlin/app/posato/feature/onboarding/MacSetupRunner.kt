@@ -59,9 +59,20 @@ internal class MacSetupRunner(
 ) {
     var run by mutableStateOf<MacSetupRun?>(null)
         private set
+    private var stopRequested = false
 
     fun start() {
+        stopRequested = false
         run = MacSetupRun(blocking = MacSetupStepStatus.WORKING, running = true)
+    }
+
+    /** Not now and Back stop the run before its next approval or password step; Set up resumes it. */
+    fun requestStop() {
+        stopRequested = true
+    }
+
+    private fun halted(): Boolean {
+        return stopRequested || sessionBusy()
     }
 
     fun stop() {
@@ -73,9 +84,16 @@ internal class MacSetupRunner(
         if (readiness != MacHelperReadiness.READY) {
             return MacSetupOutcome(readiness = readiness)
         }
+        if (halted()) {
+            return MacSetupOutcome(readiness = readiness)
+        }
         val item = macHelper.loginItem
         if (item != null && !item.enabled.value) {
-            withContext(loginContext) { item.setEnabled(true) }
+            withContext(loginContext) {
+                if (!halted()) {
+                    item.setEnabled(true)
+                }
+            }
         }
         val loginDone = item == null || item.enabled.value
         update { it.copy(login = if (loginDone) MacSetupStepStatus.DONE else MacSetupStepStatus.NEEDS_ATTENTION) }
@@ -85,7 +103,7 @@ internal class MacSetupRunner(
             return MacSetupOutcome(readiness = readiness)
         }
         var state = grant.read()
-        if (state != MacStandingGrantState.ON && state != MacStandingGrantState.UNSUPPORTED && !sessionBusy()) {
+        if (state != MacStandingGrantState.ON && state != MacStandingGrantState.UNSUPPORTED && !halted()) {
             update { it.copy(password = MacSetupStepStatus.WAITING_FOR_PASSWORD) }
             state = grant.setEnabled(true)
         }
@@ -95,14 +113,14 @@ internal class MacSetupRunner(
 
     private suspend fun blocking(): MacHelperReadiness {
         var answer = macHelper.recheck()
-        if ((answer == MacHelperReadiness.NOT_ENABLED || answer == MacHelperReadiness.UNAVAILABLE) && !sessionBusy()) {
+        if ((answer == MacHelperReadiness.NOT_ENABLED || answer == MacHelperReadiness.UNAVAILABLE) && !halted()) {
             answer = macHelper.enable()
         }
-        if (answer == MacHelperReadiness.APPROVAL_REQUIRED) {
+        if (answer == MacHelperReadiness.APPROVAL_REQUIRED && !halted()) {
             update { it.copy(blocking = MacSetupStepStatus.WAITING_FOR_APPROVAL) }
             macHelper.openApprovalSettings()
             var polls = 0
-            while (answer == MacHelperReadiness.APPROVAL_REQUIRED && polls < APPROVAL_POLLS) {
+            while (answer == MacHelperReadiness.APPROVAL_REQUIRED && polls < APPROVAL_POLLS && !halted()) {
                 delay(APPROVAL_POLL_MILLIS)
                 answer = macHelper.recheck()
                 polls += 1

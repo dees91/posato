@@ -3,6 +3,7 @@ package app.posato.feature.onboarding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -51,6 +52,8 @@ internal data class MacSetupPresentation(
     val setupComplete: Boolean = false,
     val offerVisible: Boolean = false,
     val sessionBlocked: Boolean = false,
+    val setupOpen: Boolean = false,
+    val reads: Int = 0,
 )
 
 @Stable
@@ -70,6 +73,7 @@ internal class MacHelperSetupUiState(
     private var standingGrant by mutableStateOf<MacStandingGrantState?>(null)
     private var standingGrantChanging by mutableStateOf(false)
     private var quietRead = false
+    private var reads by mutableIntStateOf(0)
 
     /** Whether a session is active or changing, fed by the host so every setup action can show it. */
     var sessionBlocked by mutableStateOf(false)
@@ -101,6 +105,8 @@ internal class MacHelperSetupUiState(
             setupComplete = complete,
             offerVisible = !offerDismissed && upgradeOffered,
             sessionBlocked = sessionBlocked,
+            setupOpen = setupOpen,
+            reads = reads,
         )
     }
 
@@ -187,12 +193,21 @@ internal class MacHelperSetupUiState(
         macHelper.dismissSetupOffer()
     }
 
+    /** The person opened the setup screen; it stays until they leave it, even after a partial run. */
+    var setupOpen by mutableStateOf(false)
+
+    fun deferSetup() {
+        runner.requestStop()
+    }
+
     /**
-     * Session reads the helper once when it appears, so a ready Mac is never asked to finish setup. The
-     * read shows no progress and makes no announcement; an explicit check or a running call wins.
+     * Reads the actual state without progress or announcement. The first read happens once when Session
+     * appears; [refresh] reads again when the window becomes active, so a setting changed in System
+     * Settings never leaves a stale "ready".
      */
-    fun readQuietly() {
-        if (readiness != null || busy || quietRead) {
+    fun readQuietly(refresh: Boolean = false) {
+        val alreadyRead = readiness != null || quietRead
+        if (busy || (alreadyRead && !refresh)) {
             return
         }
         quietRead = true
@@ -203,6 +218,7 @@ internal class MacHelperSetupUiState(
                 macHelper.loginItem?.refresh()
                 readiness = answer
                 standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
+                reads += 1
             }
         }
     }

@@ -2,7 +2,9 @@ package app.posato.feature.onboarding
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -22,10 +24,15 @@ import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_unified_action
 import app.posato.generated.resources.mac_unified_confirm_access
 import app.posato.generated.resources.mac_unified_interrupted
+import app.posato.generated.resources.mac_unified_missing_approval
+import app.posato.generated.resources.mac_unified_missing_blocking
+import app.posato.generated.resources.mac_unified_missing_login
+import app.posato.generated.resources.mac_unified_missing_password
 import app.posato.generated.resources.mac_unified_next_approval
 import app.posato.generated.resources.mac_unified_next_password
 import app.posato.generated.resources.mac_unified_next_working
 import app.posato.generated.resources.mac_unified_offer_body
+import app.posato.generated.resources.mac_unified_offer_title
 import app.posato.generated.resources.mac_unified_overview_block
 import app.posato.generated.resources.mac_unified_overview_label
 import app.posato.generated.resources.mac_unified_overview_login
@@ -108,8 +115,8 @@ internal fun MacSetupAction(
 
             else -> {
                 val interrupted = run != null && run.unfinished()
-                if (interrupted) {
-                    PosatoCaption(stringResource(Res.string.mac_unified_interrupted))
+                if (run != null && interrupted) {
+                    PosatoCaption(stringResource(run.missingStep()))
                 }
                 if (blocked) {
                     PosatoCaption(stringResource(Res.string.mac_unified_session_blocks))
@@ -119,6 +126,17 @@ internal fun MacSetupAction(
                 }
             }
         }
+    }
+}
+
+/** Names the first step that is still missing, so Try again says what it will do. */
+private fun MacSetupRun.missingStep(): StringResource {
+    return when {
+        blocking == MacSetupStepStatus.WAITING_FOR_APPROVAL -> Res.string.mac_unified_missing_approval
+        blocking == MacSetupStepStatus.NEEDS_ATTENTION -> Res.string.mac_unified_missing_blocking
+        login == MacSetupStepStatus.NEEDS_ATTENTION -> Res.string.mac_unified_missing_login
+        password == MacSetupStepStatus.NEEDS_ATTENTION -> Res.string.mac_unified_missing_password
+        else -> Res.string.mac_unified_interrupted
     }
 }
 
@@ -141,15 +159,14 @@ internal fun MacSetupOffer(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-        PosatoHeading(
-            stringResource(Res.string.mac_unified_title),
-            description = stringResource(Res.string.mac_unified_offer_body),
-            layout = PosatoLayout.Compact,
-        )
-        MacSetupOverview(run = presentation.setup)
-        MacSetupAction(presentation, onSetUp, style = PosatoButtonStyle.Secondary)
-        if (presentation.setup?.running != true) {
+    // A short invitation: the full explanation and progress live on the shared setup screen it opens.
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+        Text(stringResource(Res.string.mac_unified_offer_title), style = MaterialTheme.typography.titleMedium)
+        PosatoCaption(stringResource(Res.string.mac_unified_offer_body))
+        Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+            PosatoButton(onClick = onSetUp, style = PosatoButtonStyle.Secondary, enabled = !presentation.sessionBlocked) {
+                Text(stringResource(Res.string.mac_unified_action))
+            }
             PosatoButton(onClick = onDismiss, style = PosatoButtonStyle.Quiet) { Text(stringResource(Res.string.onboarding_action_not_now)) }
         }
     }

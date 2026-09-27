@@ -1,8 +1,12 @@
 package app.posato.feature.onboarding
 
+import app.posato.feature.session.domain.LocalSessionStatus
+import app.posato.feature.session.ui.SessionUiState
+import app.posato.feature.session.ui.showsMacSetup
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -206,6 +210,75 @@ class MacUnifiedSetupGuardTest {
     }
 }
 
+class MacSetupInterruptionTest {
+    @Test
+    fun `given a session that starts while blocking is enabled then System Settings is not opened and nothing else runs`() = runTest {
+        var busy = false
+        val port = SetupPort(
+            rechecks = mutableListOf(MacHelperReadiness.NOT_ENABLED),
+            enableAnswer = MacHelperReadiness.APPROVAL_REQUIRED,
+            onEnable = { busy = true },
+        )
+        val holder = MacHelperSetupUiState(port, this, sessionBusy = { busy })
+
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+
+        assertFalse(port.calls.contains("settings"))
+        assertFalse(port.calls.any { it.startsWith("login") || it.startsWith("grant") })
+        assertFalse(holder.presentation().setup?.running ?: true)
+    }
+
+    @Test
+    fun `given setup deferred while waiting for approval then later steps never run`() = runTest {
+        val port = SetupPort(
+            rechecks = mutableListOf(MacHelperReadiness.NOT_ENABLED),
+            enableAnswer = MacHelperReadiness.APPROVAL_REQUIRED,
+            steadyRecheck = MacHelperReadiness.APPROVAL_REQUIRED,
+        )
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.setUp(sessionBlocked = false)
+        advanceTimeBy(5_000)
+        holder.deferSetup()
+        advanceUntilIdle()
+
+        assertFalse(holder.presentation().setup?.running ?: true)
+        assertFalse(port.calls.any { it.startsWith("login") || it.startsWith("grant") })
+        assertTrue(port.calls.count { it == "recheck" } <= 4)
+    }
+
+    @Test
+    fun `given opening at login turned off in System Settings when the window becomes active then this Mac is no longer ready`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), grant = MacStandingGrantState.ON)
+        val holder = MacHelperSetupUiState(port, this)
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+        assertTrue(holder.presentation().setupComplete)
+
+        port.revokeLoginInSystemSettings()
+        holder.readQuietly(refresh = true)
+        advanceUntilIdle()
+
+        assertFalse(holder.presentation().setupComplete)
+    }
+
+    @Test
+    fun `given the person opened setup then it stays open after a partial run until they leave it`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), loginOn = true, grantAfterRequest = MacStandingGrantState.OFF)
+        val holder = MacHelperSetupUiState(port, this)
+        val settingUp = SessionUiState(status = LocalSessionStatus.Inactive, isSettingUp = true)
+
+        holder.setupOpen = true
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+
+        assertTrue(settingUp.showsMacSetup(holder.presentation()))
+        holder.setupOpen = false
+        assertFalse(settingUp.showsMacSetup(holder.presentation()))
+    }
+}
+
 private class SetupPort(
     private val rechecks: MutableList<MacHelperReadiness>,
     private val enableAnswer: MacHelperReadiness = MacHelperReadiness.READY,
@@ -217,8 +290,16 @@ private class SetupPort(
     private val loginSticksOff: Boolean = false,
     private val gate: CompletableDeferred<Unit>? = null,
     private val readGate: CompletableDeferred<Unit>? = null,
+    private val onEnable: () -> Unit = {},
 ) : MacHelperPort {
     val calls = mutableListOf<String>()
+    private var systemLogin: Boolean? = null
+
+    /** Turns opening at login off in System Settings; the app sees it only after a refresh. */
+    fun revokeLoginInSystemSettings() {
+        systemLogin = false
+    }
+
     var offerDismissed = false
 
     override val loginItem: MacLoginItem = object : MacLoginItem {
@@ -231,7 +312,9 @@ private class SetupPort(
             if (enabled) onLoginOn()
         }
 
-        override fun refresh() = Unit
+        override fun refresh() {
+            systemLogin?.let { state.value = it }
+        }
     }
 
     override val standingGrant: MacStandingGrant = object : MacStandingGrant {
@@ -252,6 +335,7 @@ private class SetupPort(
 
     override suspend fun enable(): MacHelperReadiness {
         calls += "enable"
+        onEnable()
         return enableAnswer
     }
 

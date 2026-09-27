@@ -97,6 +97,10 @@ internal class OnboardingUiState(
     }
 
     fun advance() {
+        // Leaving the Mac step stops a running setup before its next approval or password step.
+        if (step == OnboardingStep.PERMISSION) {
+            helperSetup.deferSetup()
+        }
         step = when (step) {
             OnboardingStep.PURPOSE -> OnboardingStep.PRIVACY
             OnboardingStep.PRIVACY -> OnboardingStep.ICLOUD

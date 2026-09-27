@@ -289,7 +289,13 @@ For what matters.</string>
     <string name="mac_unified_status_attention">Not finished yet</string>
     <string name="mac_unified_ready">This Mac is ready.</string>
     <string name="mac_unified_running">Setting up…</string>
-    <string name="mac_unified_interrupted">Setup did not finish. Posato continues where it stopped.</string>
+    <string name="mac_unified_interrupted">Setup is paused. Posato continues where it stopped.</string>
+    <string name="mac_unified_missing_approval">Blocking still needs your approval. Press Try again, then turn on Posato under Allow in the Background.</string>
+    <string name="mac_unified_missing_blocking">Blocking could not be turned on yet. Press Try again, or open This Mac below for details.</string>
+    <string name="mac_unified_missing_login">Posato could not turn on opening at login. Press Try again.</string>
+    <string name="mac_unified_missing_password">Starting without a password was not allowed. Press Try again and enter your Mac password.</string>
+    <string name="mac_unified_start_without">Start without finishing</string>
+    <string name="mac_unified_offer_title">Finish setting up this Mac</string>
     <string name="mac_unified_session_blocks">You can finish setup after the session ends.</string>
     <string name="mac_unified_try_again">Try again</string>
     <string name="mac_unified_next_approval">Turn on Posato under Allow in the Background in the System Settings window that opened. macOS may ask for your password.</string>

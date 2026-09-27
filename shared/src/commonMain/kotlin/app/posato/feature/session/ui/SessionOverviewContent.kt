@@ -57,16 +57,8 @@ internal fun SessionOverviewContent(
     onRetryEnforcement: () -> Unit = {},
     syncState: SyncBootstrapUiState? = null,
     macSetup: MacSetupPresentation? = null,
-    onMacSetupCheck: () -> Unit = {},
-    onMacSetupEnable: () -> Unit = {},
-    onMacSetupOpenSettings: () -> Unit = {},
-    onMacSetupAnnouncement: (String) -> Unit = {},
-    onMacSetupRemove: () -> Unit = {},
+    macActions: MacSetupCallbacks = MacSetupCallbacks(),
     macLoginItemEnabled: Boolean? = null,
-    onMacLoginItemChange: (Boolean) -> Unit = {},
-    onMacStandingGrantChange: (Boolean) -> Unit = {},
-    onMacSetUp: () -> Unit = {},
-    onMacSetupDismissOffer: () -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
     val needsMacSetup = macSetup?.needsSetup() == true
@@ -95,9 +87,7 @@ internal fun SessionOverviewContent(
         } else {
             SessionEndedCaption(state)
             SessionStartAction(state, needsMacSetup, hasItems, onSetup, onItems)
-            if (macSetup?.offerVisible == true) {
-                PosatoPanel { MacSetupOffer(macSetup, onMacSetUp, onMacSetupDismissOffer) }
-            }
+            macSetup?.takeIf { it.offerVisible }?.let { SessionSetupOffer(it, macActions, onSetup) }
         }
         FrozenSetCaption(state)
         SessionSelectionSummary(state, deviceLabel, onEditItems)
@@ -108,18 +98,34 @@ internal fun SessionOverviewContent(
                 presentation,
                 expanded = macSetupExpanded,
                 onToggle = { macSetupExpanded = !macSetupExpanded },
-                onCheck = onMacSetupCheck,
-                onEnable = onMacSetupEnable,
-                onOpenSettings = onMacSetupOpenSettings,
-                onAnnouncement = onMacSetupAnnouncement,
+                onCheck = macActions.check,
+                onEnable = macActions.enable,
+                onOpenSettings = macActions.openSettings,
+                onAnnouncement = macActions.announce,
                 sessionBlocksRemoval = state.blocksHelperRemoval(),
-                onRemove = onMacSetupRemove,
+                onRemove = macActions.remove,
                 loginItemEnabled = macLoginItemEnabled,
-                onLoginItemChange = onMacLoginItemChange,
-                onStandingGrantChange = onMacStandingGrantChange,
-                onSetUp = onMacSetUp,
+                onLoginItemChange = macActions.loginItemChange,
+                onStandingGrantChange = macActions.standingGrantChange,
+                onSetUp = macActions.setUp,
             )
         }
+    }
+}
+
+/** The compact invitation opens the shared setup screen and starts the run there. */
+@Composable
+private fun SessionSetupOffer(
+    macSetup: MacSetupPresentation,
+    macActions: MacSetupCallbacks,
+    onOpenSetup: () -> Unit,
+) {
+    PosatoPanel {
+        MacSetupOffer(macSetup, onSetUp = {
+            macActions.open()
+            macActions.setUp()
+            onOpenSetup()
+        }, onDismiss = macActions.dismissOffer)
     }
 }
 

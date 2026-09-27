@@ -81,12 +81,6 @@ internal class DesktopMacHelperState(
         }
     }
 
-    private fun HelperResult.requiresRuleInstallation(): Boolean {
-        return outcome == HelperResult.Outcome.ActionRequired &&
-            requiredAction == HelperResult.RequiredAction.RuleRepair &&
-            ownershipPhase == HelperResult.Phase.Idle
-    }
-
     override fun openApprovalSettings() {
         try {
             openSettings(URI(LOGIN_ITEMS_SETTINGS))
@@ -183,4 +177,10 @@ private fun HelperResult.needsProxyAttention(): Boolean {
     val recoveryFailure = requiredAction == HelperResult.RequiredAction.ManualRecovery &&
         (failure == HelperResult.Failure.Integrity || failure == HelperResult.Failure.Storage)
     return recoveryFailure || outcome == HelperResult.Outcome.Conflict
+}
+
+private fun HelperResult.requiresRuleInstallation(): Boolean {
+    return outcome == HelperResult.Outcome.ActionRequired &&
+        requiredAction == HelperResult.RequiredAction.RuleRepair &&
+        ownershipPhase == HelperResult.Phase.Idle
 }

@@ -107,6 +107,19 @@
 | Mac, after the review fixes (R1) | pass | Rebuilt and synced clone: with the login item off and the marker deleted, the offer card showed a secondary **Set up Posato**; a session then started with no password dialog, the card was gone during it, and Schedules' **Set up Posato** read `enabled: false` with "You can finish setup after the session ends." The login item had also opened Posato at boot. |
 | `quality` | pass | after the last correction, without the ignored `local.properties` (a dev-signed package fails the packaging check) |
 
+## Maintainer review (2026-09-27)
+
+Three P2 findings and the combined review's setup recommendations, all taken:
+
+- **Finish setup stays open after a partial run.** `setupOpen` marks a setup screen the person entered; it stays until **Back to Session**, **Continue** after a verified finish, or **Start without finishing** (shown once blocking works, the manual fallback).
+- **Live guard before approval and login.** The runner checks the session guard, and a new stop request, before opening System Settings, in the approval poll, before and inside the login step, and before the password step.
+- **Actual state on return.** The window's activation (`ON_RESUME`) reads the helper status, the login item and the grant again, so a setting changed in System Settings clears "ready".
+- **One meaning for deferral.** **Not now** on the onboarding step and **Back to Session** stop a run before its next approval or password step; **Set up Posato** or **Try again** resumes it.
+- **Compact invitation.** Session's card is a title, one sentence, a secondary **Set up Posato** that opens the setup screen and starts the run, and **Not now**.
+- **Named recovery.** "Try again" is paired with the missing step: approval, blocking, login, or the password.
+- **Tests** (failed before the change): `MacSetupInterruptionTest` (session during Enable, deferral during approval, refresh after an external change, retained setup route) and `OnboardingMacSetupDeferralTest`; the deferral mutation fails its test.
+- **VM** (fresh clone, `peer`): **Not now** during approval, then approval in System Settings, produced no further password dialog; Session then asked to **Finish setup** because the automatic read no longer installs the rule (#92's fix). From the compact card, **Set up Posato** opened the setup screen; the cancelled password left it open with "Starting without a password was not allowed. Press Try again and enter your Mac password." and **Start without finishing**, which led to the pause length. A later run completed with **This Mac is ready.** and **Continue**.
+
 ## Blockers and accepted risks
 
 - **Interruption by closing the window** was not driven (needs the maintainer's acceptance or a follow-up run). The run lives in the window's composition scope and is cancelled with it; the next **Set up Posato** resumes the missing steps through the path proven above.

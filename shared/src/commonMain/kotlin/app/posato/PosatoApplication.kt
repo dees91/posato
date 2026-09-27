@@ -112,6 +112,7 @@ class PosatoApplication internal constructor(
             // Session reconciliation runs on every foreground, even when the
             // Session screen is not subscribed: subscriptions do not own the work.
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = sessionOwner::onForeground)
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { helperSetup.readQuietly(refresh = true) }
             SyncAnnouncements(syncState, onAnnouncement)
             val completion = onboarding.completion
             if (completion == null) {

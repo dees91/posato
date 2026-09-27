@@ -99,16 +99,8 @@ internal fun SessionScreen(
         deviceLabel = deviceLabel,
         syncState = syncState,
         macSetup = macSetupState?.presentation(),
-        onMacSetupCheck = { macSetupState?.check() },
-        onMacSetupEnable = { macSetupState?.enable() },
-        onMacSetupOpenSettings = { macSetupState?.openSettings() },
-        onMacSetupAnnouncement = onMacSetupAnnouncement,
-        onMacSetupRemove = { macSetupState?.remove(sessionBlocked = state.blocksHelperRemoval()) },
+        macActions = macSetupState?.callbacks(state.blocksHelperRemoval(), onMacSetupAnnouncement) ?: MacSetupCallbacks(),
         macLoginItemEnabled = loginItemEnabled,
-        onMacLoginItemChange = { loginItem?.setEnabled(it) },
-        onMacStandingGrantChange = { macSetupState?.setStandingGrant(it, sessionBlocked = state.blocksHelperRemoval()) },
-        onMacSetUp = { macSetupState?.setUp(sessionBlocked = state.blocksHelperRemoval()) },
-        onMacSetupDismissOffer = { macSetupState?.dismissOffer() },
     )
 }
 
@@ -138,16 +130,8 @@ internal fun SessionScreen(
     onEditPausedItems: (TargetsCategory) -> Unit = {},
     syncState: SyncBootstrapUiState? = null,
     macSetup: MacSetupPresentation? = null,
-    onMacSetupCheck: () -> Unit = {},
-    onMacSetupEnable: () -> Unit = {},
-    onMacSetupOpenSettings: () -> Unit = {},
-    onMacSetupAnnouncement: (String) -> Unit = {},
-    onMacSetupRemove: () -> Unit = {},
+    macActions: MacSetupCallbacks = MacSetupCallbacks(),
     macLoginItemEnabled: Boolean? = null,
-    onMacLoginItemChange: (Boolean) -> Unit = {},
-    onMacStandingGrantChange: (Boolean) -> Unit = {},
-    onMacSetUp: () -> Unit = {},
-    onMacSetupDismissOffer: () -> Unit = {},
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
         Column(
@@ -163,18 +147,7 @@ internal fun SessionScreen(
                 }
 
                 macSetup != null && state.showsMacSetup(macSetup) -> {
-                    SessionMacSetup(
-                        state,
-                        macSetup,
-                        layout,
-                        onMacSetupCheck,
-                        onMacSetupEnable,
-                        onMacSetupOpenSettings,
-                        onMacSetupAnnouncement,
-                        onMacSetupRemove,
-                        onExitSetup,
-                        onMacSetUp,
-                    )
+                    SessionMacSetup(state, macSetup, layout, macActions, onExitSetup)
                 }
 
                 state.isReviewing -> {
@@ -197,16 +170,8 @@ internal fun SessionScreen(
                         onRetryEnforcement,
                         syncState,
                         macSetup,
-                        onMacSetupCheck,
-                        onMacSetupEnable,
-                        onMacSetupOpenSettings,
-                        onMacSetupAnnouncement,
-                        onMacSetupRemove,
+                        macActions,
                         macLoginItemEnabled,
-                        onMacLoginItemChange,
-                        onMacStandingGrantChange,
-                        onMacSetUp,
-                        onMacSetupDismissOffer,
                     )
                 }
             }
