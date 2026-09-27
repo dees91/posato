@@ -10,7 +10,7 @@
 #   video/capture/mac-captures.sh apps               # Apps tab: empty, then Chess chosen
 #   video/capture/mac-captures.sh websites           # Paused items: empty, typed, added, at rest
 #   video/capture/mac-captures.sh session            # Session at rest, 45 minutes, review, active, ended early
-#   video/capture/mac-captures.sh schedules HH:MM    # a weekday plan, and a daily plan starting at HH:MM
+#   video/capture/mac-captures.sh schedules HH:MM    # a weekday plan alone, then with a daily plan starting at HH:MM
 #   video/capture/mac-captures.sh evening HH:MM      # only the daily plan, when schedules stopped after Deep work
 #   video/capture/mac-captures.sh scheduled          # after HH:MM: the scheduled pause running
 #
@@ -127,6 +127,7 @@ schedules() {
   shot mac-schedule-editor
   reveal_tap "Save schedule" button
   pc wait --for exists --text "Edit Deep work" --role button --timeout-seconds 20 | ok
+  shot mac-schedules-one
   evening "${start}"
 }
 

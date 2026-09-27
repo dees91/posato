@@ -65,7 +65,8 @@ Names are the files in `public/`; provenance is in `README.md`.
 | `mac-end-confirm` | Ready to return? |
 | `mac-schedules-empty` | Schedules with no plan yet |
 | `mac-schedule-editor` | a new schedule named Deep work, weekdays 09:00 to 11:00 |
-| `mac-schedules` | Deep work and Evening reading saved, each with its next run |
+| `mac-schedules-one` | Deep work saved, alone, with its next run (the video's Save result) |
+| `mac-schedules` | Deep work and Evening reading saved, each with its next run (the still and the site) |
 | `mac-scheduled-active` | Session during Evening reading: a scheduled pause is running |
 | `iphone-websites` | Paused items, Websites, both domains |
 | `iphone-apps-empty` | Apps tab, nothing chosen |

@@ -43,13 +43,17 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - On macOS, blocking works only while Posato is running. Closing its window
   keeps it running in the menu bar, and after the one-time setup Posato opens
   quietly at login. If Posato quits, or after sleep, wake, or a network change,
-  blocking stops until you resume it in Posato. Without the setup, starting or
+  a pause you started yourself stops blocking until you resume it in Posato.
+  Without the setup, starting or
   resuming needs administrator approval each time. A session received from
   your iPhone blocks on the Mac only after you resume it there; without the
   setup, that also needs administrator approval.
 - On macOS, schedules start only on a Mac that finished the setup and only
-  while Posato is running. Quitting Posato stops new scheduled starts until it
-  opens again; closing the window does not.
+  while Posato is running. If Posato opens, including at login, or the Mac
+  wakes during a scheduled pause, the pause starts again on its own, usually
+  within a minute, and still ends at its planned time; no password is asked. Quitting
+  Posato stops new scheduled starts until it opens again; closing the window
+  does not.
 - On macOS, paused apps are quit while a session is active, including apps that
   were already open when it started, so unsaved work in them can be lost.
 - On macOS, website blocking covers **Safari** and **Google Chrome Stable** for

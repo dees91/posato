@@ -127,7 +127,7 @@ const scheduleScene = (start: number, end: number, first: string, lead: number):
   end,
   kind: "capture",
   layout: "macSolo",
-  mac: { captures: [first, ...(lead > 0 ? ["mac-schedules-empty.png"] : []), "mac-schedule-editor.png", "mac-schedules.png"] },
+  mac: { captures: [first, ...(lead > 0 ? ["mac-schedules-empty.png"] : []), "mac-schedule-editor.png", "mac-schedules-one.png"] },
   actions: [
     ...(lead > 0
       ? [{ device: "mac", kind: "click", target: MAC_TARGETS.schedulesSidebar, at: 30, label: "Schedules", swapTo: 1 } as const]
@@ -290,6 +290,19 @@ export const WALKTHROUGH: readonly StoryScene[] = [
   },
   { id: "close", start: 1506, end: 1578, kind: "title", fadeOutAt: 56, copy: CLOSE_COPY },
 ];
+
+/**
+ * The site's poster frame, shown before the hero loads and under Reduce Motion: the hero's start scene once the
+ * iPhone has settled beside the Mac, both showing the active session, and before the next scene fades in.
+ */
+export const POSTER_FRAME: number = (() => {
+  const scene = HERO.find((candidate) => candidate.id === "start");
+  if (!scene?.layoutTo || scene.iphone?.enterAt === undefined) {
+    throw new Error("The hero start scene no longer brings in the iPhone");
+  }
+  const settled = Math.max(scene.layoutTo.to, scene.iphone.enterAt + 20);
+  return scene.start + Math.min(settled + 16, sceneDuration(scene) - SCENE_OVERLAP - 1);
+})();
 
 export const STILLS = {
   StepWebsites: { mac: "mac-websites.png", iphone: "iphone-websites.png" },

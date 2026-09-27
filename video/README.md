@@ -33,14 +33,14 @@ resolve a different font. Package versions are exact and locked by
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 864 x 540, 12 fps, 26 seconds, infinite loop, 9,649,297 bytes.
+- `../.github/assets/demo.gif`: 864 x 540, 12 fps, 26 seconds, infinite loop, 9,615,676 bytes.
 - `../.github/assets/step-websites.png`, `step-duration.png`, and
   `step-schedules.png`: 1920 x 1080 composed stills on a transparent
   background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 1,575,174 bytes, with a JPEG poster for the first paint and
+  faststart, 1,562,629 bytes, with a JPEG poster for the first paint and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
@@ -82,7 +82,9 @@ of revision `6850481` are in Git history.
   recognized screen text, because the resident helper and the picker are two
   processes with one name; `websites` removes and re-adds `example.net`;
   `session` selects 45 minutes, reviews, starts, and ends early;
-  `schedules HH:MM` saves both schedules; and `scheduled` captures Session
+  `schedules HH:MM` saves `Deep work`, captures it alone for the video's
+  Save step, then saves `Evening reading` for the still and the site; and
+  `scheduled` captures Session
   once `Evening reading` started on its own. The duration, review, and active
   frames were captured within one minute so their end times agree.
 - `iphone-*.png`: the same tree on the dedicated test iPhone in a fresh
