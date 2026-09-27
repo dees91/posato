@@ -213,7 +213,9 @@ internal class MacHelperSetupUiState(
         val alreadyRead = readiness != null || quietRead
         // Each read verifies the helper's signature, so activations share one read at a time and at most one per interval.
         val recentlyRefreshed = lastRefresh?.let { elapsedMillis() - it < REFRESH_INTERVAL_MILLIS } == true
-        if (busy || reading || (alreadyRead && (!refresh || recentlyRefreshed))) {
+        val inFlight = busy || reading
+        val skipRefresh = !refresh || recentlyRefreshed
+        if (inFlight || (alreadyRead && skipRefresh)) {
             return
         }
         quietRead = true
