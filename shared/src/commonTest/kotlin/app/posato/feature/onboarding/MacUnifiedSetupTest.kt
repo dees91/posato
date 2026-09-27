@@ -241,11 +241,14 @@ class MacSetupInterruptionTest {
         holder.setUp(sessionBlocked = false)
         advanceTimeBy(5_000)
         holder.deferSetup()
+        val rechecksAtDeferral = port.calls.count { it == "recheck" }
         advanceUntilIdle()
 
         assertFalse(holder.presentation().setup?.running ?: true)
         assertFalse(port.calls.any { it.startsWith("login") || it.startsWith("grant") })
-        assertTrue(port.calls.count { it == "recheck" } <= 4)
+        // A recheck can install a missing rule, so none may run after the person deferred.
+        assertEquals(rechecksAtDeferral, port.calls.count { it == "recheck" })
+        assertEquals(MacSetupStepStatus.WAITING_FOR_APPROVAL, holder.presentation().setup?.blocking)
     }
 
     @Test
@@ -261,6 +264,41 @@ class MacSetupInterruptionTest {
         advanceUntilIdle()
 
         assertFalse(holder.presentation().setupComplete)
+    }
+
+    @Test
+    fun `given a session starting before the password step then the step stays pending rather than refused`() = runTest {
+        var busy = false
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), onLoginOn = { busy = true })
+        val holder = MacHelperSetupUiState(port, this, sessionBusy = { busy })
+
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+
+        assertEquals(MacSetupStepStatus.PENDING, holder.presentation().setup?.password)
+    }
+
+    @Test
+    fun `given repeated window activations then state is reread at most once in flight and once per interval`() = runTest {
+        var elapsed = 0L
+        val gate = CompletableDeferred<Unit>()
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), grant = MacStandingGrantState.ON, gate = gate)
+        val holder = MacHelperSetupUiState(port, this, elapsedMillis = { elapsed })
+
+        holder.readQuietly(refresh = true)
+        holder.readQuietly(refresh = true)
+        runCurrent()
+        gate.complete(Unit)
+        advanceUntilIdle()
+        elapsed = 5_000
+        holder.readQuietly(refresh = true)
+        advanceUntilIdle()
+        assertEquals(1, port.calls.count { it == "recheck" })
+
+        elapsed = 31_000
+        holder.readQuietly(refresh = true)
+        advanceUntilIdle()
+        assertEquals(2, port.calls.count { it == "recheck" })
     }
 
     @Test

@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.time.TimeSource
 
 internal enum class MacSetupActivity {
     CHECKING,
@@ -62,6 +63,7 @@ internal class MacHelperSetupUiState(
     private val scope: CoroutineScope,
     private val sessionBusy: () -> Boolean = { false },
     private val loginContext: CoroutineContext = EmptyCoroutineContext,
+    private val elapsedMillis: () -> Long = { processStart.elapsedNow().inWholeMilliseconds },
 ) {
     val loginItem: MacLoginItem? = macHelper.loginItem
     var readiness by mutableStateOf<MacHelperReadiness?>(null)
@@ -73,6 +75,8 @@ internal class MacHelperSetupUiState(
     private var standingGrant by mutableStateOf<MacStandingGrantState?>(null)
     private var standingGrantChanging by mutableStateOf(false)
     private var quietRead = false
+    private var reading = false
+    private var lastRefresh: Long? = null
     private var reads by mutableIntStateOf(0)
 
     /** Whether a session is active or changing, fed by the host so every setup action can show it. */
@@ -207,18 +211,26 @@ internal class MacHelperSetupUiState(
      */
     fun readQuietly(refresh: Boolean = false) {
         val alreadyRead = readiness != null || quietRead
-        if (busy || (alreadyRead && !refresh)) {
+        // Each read verifies the helper's signature, so activations share one read at a time and at most one per interval.
+        val recentlyRefreshed = lastRefresh?.let { elapsedMillis() - it < REFRESH_INTERVAL_MILLIS } == true
+        if (busy || reading || (alreadyRead && (!refresh || recentlyRefreshed))) {
             return
         }
         quietRead = true
+        reading = true
+        lastRefresh = elapsedMillis()
         val startedAfter = completedOperations
         scope.launch {
-            val answer = macHelper.status()
-            if (!busy && completedOperations == startedAfter) {
-                macHelper.loginItem?.refresh()
-                readiness = answer
-                standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
-                reads += 1
+            try {
+                val answer = macHelper.status()
+                if (!busy && completedOperations == startedAfter) {
+                    macHelper.loginItem?.refresh()
+                    readiness = answer
+                    standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
+                    reads += 1
+                }
+            } finally {
+                reading = false
             }
         }
     }
@@ -294,3 +306,6 @@ internal fun rememberMacHelperSetupUiState(
     val currentBusy by rememberUpdatedState(sessionBusy)
     return remember(macHelper) { MacHelperSetupUiState(macHelper, scope, { currentBusy() }, Dispatchers.Default) }
 }
+
+private const val REFRESH_INTERVAL_MILLIS: Long = 30_000L
+private val processStart = TimeSource.Monotonic.markNow()

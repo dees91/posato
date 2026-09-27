@@ -120,6 +120,12 @@ Three P2 findings and the combined review's setup recommendations, all taken:
 - **Tests** (failed before the change): `MacSetupInterruptionTest` (session during Enable, deferral during approval, refresh after an external change, retained setup route) and `OnboardingMacSetupDeferralTest`; the deferral mutation fails its test.
 - **VM** (fresh clone, `peer`): **Not now** during approval, then approval in System Settings, produced no further password dialog; Session then asked to **Finish setup** because the automatic read no longer installs the rule (#92's fix). From the compact card, **Set up Posato** opened the setup screen; the cancelled password left it open with "Starting without a password was not allowed. Press Try again and enter your Mac password." and **Start without finishing**, which led to the pause length. A later run completed with **This Mac is ready.** and **Continue**.
 
+### Review of the corrections (2026-09-27)
+
+- **Required, approval poll after deferral.** The poll checks the stop and session guard again after its 2 s wait, so no rule-repairing recheck runs once the person deferred; the deferral test now asserts no recheck after the deferral.
+- **Required, refresh cost.** Window activation rereads at most one read at a time and at most once per 30 s, because every status read verifies the helper's signature (test with a controllable clock).
+- **Optional, taken.** The stop flag is `@Volatile`; a password step skipped by a deferral or a session stays pending, so recovery says setup is paused instead of "not allowed" (test).
+
 ## Blockers and accepted risks
 
 - **Interruption by closing the window** was not driven (needs the maintainer's acceptance or a follow-up run). The run lives in the window's composition scope and is cancelled with it; the next **Set up Posato** resumes the missing steps through the path proven above.

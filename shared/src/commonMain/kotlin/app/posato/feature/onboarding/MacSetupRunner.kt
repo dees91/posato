@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.CoroutineContext
 
 internal enum class MacSetupStepStatus {
@@ -59,6 +60,8 @@ internal class MacSetupRunner(
 ) {
     var run by mutableStateOf<MacSetupRun?>(null)
         private set
+
+    @Volatile
     private var stopRequested = false
 
     fun start() {
@@ -103,7 +106,12 @@ internal class MacSetupRunner(
             return MacSetupOutcome(readiness = readiness)
         }
         var state = grant.read()
-        if (state != MacStandingGrantState.ON && state != MacStandingGrantState.UNSUPPORTED && !halted()) {
+        val missing = state != MacStandingGrantState.ON && state != MacStandingGrantState.UNSUPPORTED
+        if (missing && halted()) {
+            // Not refused, only not asked yet: the step stays pending until setup resumes.
+            return MacSetupOutcome(readiness = readiness, grant = state)
+        }
+        if (missing) {
             update { it.copy(password = MacSetupStepStatus.WAITING_FOR_PASSWORD) }
             state = grant.setEnabled(true)
         }
@@ -122,6 +130,8 @@ internal class MacSetupRunner(
             var polls = 0
             while (answer == MacHelperReadiness.APPROVAL_REQUIRED && polls < APPROVAL_POLLS && !halted()) {
                 delay(APPROVAL_POLL_MILLIS)
+                // A recheck can install a missing rule, so none runs once the person deferred or a session began.
+                if (halted()) break
                 answer = macHelper.recheck()
                 polls += 1
             }
