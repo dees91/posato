@@ -2,9 +2,12 @@ package app.posato
 
 import androidx.compose.ui.window.ComposeUIViewController
 import app.posato.di.createIosApplicationRuntime
+import app.posato.feature.enforcement.IosEnforcement
 import app.posato.feature.enforcement.IosEnforcementProvider
 import app.posato.feature.enforcement.IosSuspendedExpiryProvider
 import app.posato.feature.notifications.SessionNotificationPlatform
+import app.posato.feature.schedules.IosScheduleBridge
+import app.posato.feature.schedules.IosScheduleMonitorProvider
 import app.posato.feature.sync.data.IosCloudKitMailboxProvider
 import app.posato.feature.sync.data.IosCryptoProvider
 import app.posato.feature.sync.data.IosKeychainProvider
@@ -20,6 +23,8 @@ fun mainViewController(
     keychainProvider: IosKeychainProvider?,
     mailboxProvider: IosCloudKitMailboxProvider,
     notificationProvider: SessionNotificationPlatform,
+    scheduleEnforcementProvider: IosEnforcementProvider,
+    scheduleMonitorProvider: IosScheduleMonitorProvider,
 ): UIViewController {
     val runtime = createIosApplicationRuntime(
         cryptoProvider,
@@ -29,6 +34,7 @@ fun mainViewController(
         keychainProvider ?: UnavailableIosKeychainProvider,
         mailboxProvider,
         notificationProvider,
+        IosScheduleBridge(IosEnforcement(scheduleEnforcementProvider), scheduleMonitorProvider),
     )
 
     return ComposeUIViewController {

@@ -63,6 +63,8 @@ public class SessionNotifier internal constructor(
 
     public suspend fun setEnabled(enabled: Boolean) {
         notices.setEnabled(enabled)
+        // A monitor that posts while the app is closed reads the switch from the host's next table.
+        scheduled.refresh()
     }
 
     public suspend fun refreshPermission() {

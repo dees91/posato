@@ -1,3 +1,4 @@
+import ManagedSettings
 import PosatoShared
 import SwiftUI
 
@@ -31,7 +32,11 @@ private struct ComposeRoot: UIViewControllerRepresentable {
             suspendedExpiryProvider: SuspendedExpiryScheduler(),
             keychainProvider: keychainProvider,
             mailboxProvider: mailboxProvider,
-            notificationProvider: SessionNotificationCenter()
+            notificationProvider: SessionNotificationCenter(),
+            scheduleEnforcementProvider: IosManagedSettingsEnforcer(storeFactory: {
+                ManagedSettingsStore(named: ScheduleMonitor.storeName)
+            }),
+            scheduleMonitorProvider: IosScheduleMonitorPublisher()
         )
         applicationMappingsProvider.presenter = controller
         return controller

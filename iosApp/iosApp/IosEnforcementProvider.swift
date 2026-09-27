@@ -216,28 +216,7 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
     }
 
     private func webDomains(from hosts: [String]) -> Set<WebDomain> {
-        var domains = Set<WebDomain>()
-        for host in hosts {
-            domains.insert(WebDomain(domain: host))
-            if let counterpart = wwwCounterpart(host) {
-                domains.insert(WebDomain(domain: counterpart))
-            }
-        }
-        return domains
-    }
-
-    private func wwwCounterpart(_ host: String) -> String? {
-        let labels = host.split(separator: ".", omittingEmptySubsequences: false)
-        guard labels.count >= 2 else {
-            return nil
-        }
-        if labels.first == "www" {
-            guard labels.count >= 3 else {
-                return nil
-            }
-            return labels.dropFirst().joined(separator: ".")
-        }
-        return "www.\(host)"
+        PosatoWebDomains.domains(from: hosts)
     }
 
     private func performOnMain(_ action: @escaping () -> Void) {

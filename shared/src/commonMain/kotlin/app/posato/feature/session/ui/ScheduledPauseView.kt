@@ -54,16 +54,24 @@ internal fun ScheduledPauseAttention(
     onSetup: () -> Unit,
 ) {
     when (view.state) {
-        ScheduledPauseState.SETUP_REQUIRED -> PosatoNotice(tone = PosatoTone.Caution) {
-            Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-                Text("Setup required on this Mac")
-                PosatoCaption(
-                    "${view.name} couldn't start here. Finish setup so schedules start on their own. No password is asked when a schedule is due.",
-                )
-                if (macSetup?.schedulesNeedConsent == true) {
-                    PosatoButton(macActions.allowSchedules, style = PosatoButtonStyle.Secondary) { Text("Allow schedules to start on this Mac") }
-                } else {
-                    PosatoButton(onSetup, style = PosatoButtonStyle.Secondary) { Text("Finish setup") }
+        ScheduledPauseState.SETUP_REQUIRED -> if (macSetup == null) {
+            // On iPhone, Screen Time access is the only requirement; Schedules offers it.
+            PosatoNotice(tone = PosatoTone.Caution) {
+                Text("Allow Screen Time in Schedules so ${view.name} can start on this device.")
+            }
+        } else {
+            PosatoNotice(tone = PosatoTone.Caution) {
+                Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+                    Text("Setup required on this Mac")
+                    PosatoCaption(
+                        "${view.name} couldn't start here. Finish setup so schedules start on their own. " +
+                            "No password is asked when a schedule is due.",
+                    )
+                    if (macSetup.schedulesNeedConsent) {
+                        PosatoButton(macActions.allowSchedules, style = PosatoButtonStyle.Secondary) { Text("Allow schedules to start on this Mac") }
+                    } else {
+                        PosatoButton(onSetup, style = PosatoButtonStyle.Secondary) { Text("Finish setup") }
+                    }
                 }
             }
         }

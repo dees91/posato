@@ -125,6 +125,8 @@ class PosatoApplication internal constructor(
         if (hostsSession) {
             LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
             LaunchedEffect(notifier) { notifier.run() }
+            // A process that hosts sessions also starts schedules; the Mac's resident process does both itself.
+            LaunchedEffect(scheduledPauses) { scheduledPauses.run() }
         }
         val device = remember { platformDevice() }
         PosatoTheme(highContrast = highContrast) {
@@ -132,6 +134,8 @@ class PosatoApplication internal constructor(
             // Session screen is not subscribed: subscriptions do not own the work.
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = sessionOwner::onForeground)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { helperSetup.readQuietly(refresh = true) }
+            // A schedule that came due while the app was away is caught up on return.
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = scheduledPauses::refresh)
             SyncAnnouncements(syncState, onAnnouncement)
             val completion = onboarding.completion
             if (completion == null) {

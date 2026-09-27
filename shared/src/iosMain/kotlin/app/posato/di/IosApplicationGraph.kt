@@ -15,6 +15,7 @@ import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.UnavailableMacHelper
 import app.posato.feature.onboarding.data.SqlLocalSetupStore
+import app.posato.feature.schedules.IosScheduleBridge
 import app.posato.feature.schedules.data.ScheduleSyncStore
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.IosSessionTimeFormat
@@ -82,6 +83,7 @@ internal interface IosApplicationGraph :
             @Provides cryptoProvider: IosCryptoProvider,
             @Provides applicationAccess: ApplicationAccessPort,
             @Provides notifications: SessionNotificationPlatform,
+            @Provides schedules: IosScheduleBridge,
         ): IosApplicationGraph
     }
 
@@ -239,6 +241,7 @@ internal fun createIosApplicationRuntime(
     keychainProvider: IosKeychainProvider,
     mailboxProvider: IosCloudKitMailboxProvider,
     notifications: SessionNotificationPlatform,
+    schedules: IosScheduleBridge,
 ): IosApplicationRuntime {
     runtimeLock.lock()
     try {
@@ -251,6 +254,7 @@ internal fun createIosApplicationRuntime(
             keychainProvider,
             mailboxProvider,
             notifications,
+            schedules,
         ).also { processRuntime = it }
     } finally {
         runtimeLock.unlock()
@@ -265,6 +269,7 @@ private fun buildIosApplicationRuntime(
     keychainProvider: IosKeychainProvider,
     mailboxProvider: IosCloudKitMailboxProvider,
     notifications: SessionNotificationPlatform,
+    schedules: IosScheduleBridge,
 ): IosApplicationRuntime {
     val applicationMappings = IosLocalApplicationMappings(applicationMappingsProvider)
     val enforcement = IosSessionEnforcement(
@@ -279,6 +284,7 @@ private fun buildIosApplicationRuntime(
         cryptoProvider,
         IosApplicationAccess(applicationMappings),
         notifications,
+        schedules,
     )
     return IosApplicationRuntime(graph, graph.appleSync.core)
 }

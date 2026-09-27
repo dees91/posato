@@ -14,6 +14,8 @@ import app.posato.feature.enforcement.IosSuspendedExpiryProvider
 import app.posato.feature.enforcement.IosSuspendedExpiryRequest
 import app.posato.feature.notifications.UnavailableSessionNotifications
 import app.posato.feature.onboarding.UnavailableApplicationAccess
+import app.posato.feature.schedules.IosScheduleBridge
+import app.posato.feature.schedules.UnavailableIosScheduleMonitor
 import app.posato.feature.sync.bootstrap.BindingResolution
 import app.posato.feature.sync.bootstrap.BootstrapResult
 import app.posato.feature.sync.data.IosBootstrapKeychainAdapter
@@ -64,6 +66,7 @@ class IosBootstrapCompositionTest {
             InertKeychainProvider(),
             InertMailboxProvider(),
             UnavailableSessionNotifications,
+            IosScheduleBridge(IosEnforcement(InertEnforcementProvider()), UnavailableIosScheduleMonitor),
         )
         val second = createIosApplicationRuntime(
             InertCryptoProvider(),
@@ -73,6 +76,7 @@ class IosBootstrapCompositionTest {
             InertKeychainProvider(),
             InertMailboxProvider(),
             UnavailableSessionNotifications,
+            IosScheduleBridge(IosEnforcement(InertEnforcementProvider()), UnavailableIosScheduleMonitor),
         )
 
         assertSame(first, second)
@@ -122,6 +126,7 @@ class IosBootstrapCompositionTest {
             InertCryptoProvider(),
             UnavailableApplicationAccess,
             UnavailableSessionNotifications,
+            IosScheduleBridge(IosEnforcement(InertEnforcementProvider()), UnavailableIosScheduleMonitor),
         )
     }
 }
