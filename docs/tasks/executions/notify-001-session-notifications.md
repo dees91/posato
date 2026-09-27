@@ -43,7 +43,7 @@
 - **O3** (`@autoreleasepool` in the JNI leaf): not taken. The leaf's existing functions share the pattern; wrapping only the new ones would be inconsistent, and a leaf-wide change belongs in its own change.
 - **O4** (weak iOS delegate if the view controller is ever built twice): accepted residual; the app has one scene.
 - **O5** (housekeeping): `GuestNotificationPrompt` moved to its own file, and `vm allow-notifications` checks that the banner names Posato.
-- **Re-review:** `changes-required` (R-A: `AC-01` not rerun on the fixed build), then resolved by the fresh-clone run above.
+- **Re-review:** `changes-required` (R-A: `AC-01` not rerun on the fixed build), then resolved by the fresh-clone run in Verification below. The review of that correction approved it.
   - **Rec-A**: switching notices on during the first pause now asks and, once allowed, schedules the end again (test).
   - **Rec-B**: a test holds the permission answer and shows an early end is withdrawn at once and not restored by the later answer.
   - **O-A**: scheduling checks that the pause still ends at that time after the text loads (test; the mutation that drops the check fails it).
