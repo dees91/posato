@@ -7,14 +7,13 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
-## SCHEDULE-001 schedule operations amendment (proposed)
+## SCHEDULE-001 schedule operations amendment
 
-`proposed` (2026-09-26, `SCHEDULE-001`, delegated night mandate; security
-review passed after fixes on 2026-09-27). It takes effect when the maintainer
-accepts it; `SCHEDULE-002` implements it. The product rules are in
+Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-27 (proposed 2026-09-26, `SCHEDULE-001`, delegated night mandate; security
+review passed after fixes on 2026-09-27). `SCHEDULE-002` implements it. The product rules are in
 [schedule rules](../product/schedules-decisions.md).
 
-- **Supersedes on acceptance.** "The version-1 operation kinds are closed"
+- **Supersedes.** "The version-1 operation kinds are closed"
   now reads: kinds 1-11 are mandatory, and kinds 128-255 are optional
   extensions. "Unknown versions and kinds are rejected rather than ignored"
   now applies to unknown versions and to unknown kinds 12-127.

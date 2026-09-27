@@ -1,9 +1,9 @@
 # Release 1.2: schedule rules (`SCHEDULE-001`)
 
-- **Status:** Proposed by `SCHEDULE-001`. The product decisions are
-  `user-confirmed` (2026-09-26, delegated night mandate). The ADR amendments
-  they need are `proposed` until an independent security review passes and
-  the maintainer accepts them.
+- **Status:** Accepted. The product decisions are `user-confirmed`
+  (2026-09-26, delegated night mandate); the ADR 0004, ADR 0006 and ADR 0009
+  amendments they need passed an independent security review and were
+  accepted by the maintainer on 2026-09-27 (`user-confirmed`).
 - **Owner:** `SCHEDULE-001` decides; `SCHEDULE-002` delivers.
 - **Authorities:** [product scope](schedules-and-mac-setup.md),
   [`DESIGN.md`](../../DESIGN.md#release-12-setup-and-schedules),
@@ -108,7 +108,7 @@ provenance label.
 
 ### Synchronized operations (ADR 0006 amendment)
 
-Four additive format-1 operation kinds, proposed in the ADR 0006 amendment:
+Four additive format-1 operation kinds, from the accepted ADR 0006 amendment:
 
 | Kind | Payload | Reduction |
 | --- | --- | --- |
@@ -163,7 +163,7 @@ Four additive format-1 operation kinds, proposed in the ADR 0006 amendment:
 - The resident process (ADR 0009) evaluates schedules at launch (including a
   login launch), on wake, on clock and time-zone changes, and every minute.
 - A due occurrence applies through the unified setup's standing grant, with
-  no prompt (proposed ADR 0004 and ADR 0009 amendments). If the grant is
+  no prompt (the accepted ADR 0004 and ADR 0009 amendments). If the grant is
   missing, refused, or the setup is incomplete, Posato never shows a password
   dialog. It shows "Setup required on this Mac" in Session and Schedules, and
   posts one notification: "A scheduled pause couldn't start on this Mac.

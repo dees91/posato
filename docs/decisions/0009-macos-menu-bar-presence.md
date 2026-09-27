@@ -8,13 +8,13 @@
 - **Provenance:** `user-confirmed`
 - **Owner:** `MACOS-012` decides; `MACOS-013` delivers after separate activation.
 
-## SCHEDULE-001 scheduled starts amendment (proposed)
+## SCHEDULE-001 scheduled starts amendment
 
-`proposed` (2026-09-26, `SCHEDULE-001`, delegated night mandate; security
+Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-27 (proposed 2026-09-26, `SCHEDULE-001`, delegated night mandate; security
 review passed after fixes on 2026-09-27). This takes effect together with the
 ADR 0004 automatic scheduled Apply amendment.
 
-- **Supersedes on acceptance:**
+- **Supersedes:**
   - "A received session is still adopted in `RESUME_REQUIRED` on the Mac and
     needs the person's approval before blocking" now holds as a
     user-experience rule, not a security control. A running scheduled

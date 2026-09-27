@@ -103,8 +103,8 @@
 
 ## Blockers and accepted risks
 
-- The maintainer must accept the proposed amendments before `SCHEDULE-002`
-  ships automatic starts.
+- The maintainer accepted the ADR 0004, ADR 0006 and ADR 0009 amendments on
+  2026-09-27 (`user-confirmed`), so `SCHEDULE-002` may ship automatic starts.
 - Accepted for 1.2: a linked device still on 1.1 stops syncing once a
   schedule exists, until it updates.
 

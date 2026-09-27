@@ -7,14 +7,14 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
-## SCHEDULE-001 automatic scheduled Apply amendment (proposed)
+## SCHEDULE-001 automatic scheduled Apply amendment
 
-`proposed` (2026-09-26, `SCHEDULE-001`, delegated night mandate). An
+Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-27 (proposed 2026-09-26, `SCHEDULE-001`, delegated night mandate). An
 independent security review passed after its Required findings were folded
-(2026-09-27). It takes effect when the maintainer accepts it; `SCHEDULE-002`
+(2026-09-27). `SCHEDULE-002`
 implements it.
 
-- **Supersedes.** On acceptance this amendment rewrites the sentences that
+- **Supersedes.** This amendment rewrites the sentences that
   limit the grant to the person's own start and Resume: "Who may request it"
   in the MACOS-014 amendment and the PR #92 note above (both already carry
   the conditional wording), and the ADR 0009 sentences named in its own
