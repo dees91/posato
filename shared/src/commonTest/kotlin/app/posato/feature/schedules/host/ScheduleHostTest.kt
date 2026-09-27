@@ -346,7 +346,7 @@ class ScheduleHostTest {
             fixture.host.evaluate()
 
             assertEquals(
-                listOf("grant apply until ${at(10)}", "grant apply until ${at(10)}", "grant apply until ${at(11)}"),
+                listOf("grant apply until ${at(10)}", "clear", "grant apply until ${at(10)}", "clear", "grant apply until ${at(11)}"),
                 fixture.helper.calls,
             )
             assertEquals(ScheduledPauseState.APPLIED, fixture.host.pause.value?.state)

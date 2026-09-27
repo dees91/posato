@@ -187,7 +187,7 @@ class PauseClaimsTest {
     }
 
     @Test
-    fun `given a held schedule when its paused items change then the helper gets them through the grant without a clear`() = runTest {
+    fun `given a held schedule when its paused items change then the helper gets them through the grant at once`() = runTest {
         val helper = HelperDouble()
         val claims = PauseClaims(helper)
         claims.claimSchedule(request(200))
@@ -195,7 +195,7 @@ class PauseClaimsTest {
         claims.updateSchedule(request(200))
         claims.updateSchedule(request(200, listOf("example.com", "example.org")))
 
-        assertEquals(listOf("apply grant 200", "apply grant 200"), helper.calls)
+        assertEquals(listOf("apply grant 200", "clear", "apply grant 200"), helper.calls)
         assertEquals(listOf("example.com", "example.org"), helper.lastDomains)
     }
 
@@ -207,7 +207,7 @@ class PauseClaimsTest {
 
         claims.updateSchedule(request(260))
 
-        assertEquals(listOf("apply grant 200", "apply grant 260"), helper.calls)
+        assertEquals(listOf("apply grant 200", "clear", "apply grant 260"), helper.calls)
     }
 
     @Test
@@ -220,7 +220,7 @@ class PauseClaimsTest {
         claims.updateSchedule(request(200))
         claims.updateSchedule(request(200, listOf("example.com", "example.org")))
 
-        assertEquals(listOf("apply 300", "apply grant 300"), helper.calls)
+        assertEquals(listOf("apply 300", "clear", "apply grant 300"), helper.calls)
         assertEquals(listOf("example.com", "example.org"), helper.lastDomains)
     }
 }

@@ -46,7 +46,8 @@ internal class PauseClaims(
 
     /**
      * Keeps a held claim current: when the paused items or the combined pause's latest end changed, the
-     * helper gets the new request through the grant without clearing first, so blocking never lapses.
+     * helper gets the new request through the grant. The helper refuses a new configuration while it
+     * holds one, so the change is a clear and an apply back to back.
      * A joined manual session keeps its later end. A claim not held yet is claimed.
      */
     suspend fun updateSchedule(request: EnforcementRequest): EnforcementApplyReport {
@@ -62,6 +63,9 @@ internal class PauseClaims(
             if (held.sameEffect(request) && enforcedTargetsCurrent) {
                 EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
             } else {
+                // The helper takes a new configuration only when idle, so it is cleared and applied again
+                // within this lock: nothing reads the moment between the two.
+                delegate.clear()
                 val report = delegate.apply(effective.withGrantOnly())
                 holder = report.holderAfter(Holder.SCHEDULE)
                 scheduleRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
