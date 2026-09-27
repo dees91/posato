@@ -200,6 +200,89 @@ Four additive format-1 operation kinds, proposed in the ADR 0006 amendment:
   Revoking the grant, Disable, Remove, or a check that finds the grant absent
   or unknown clears it.
 
+## Integration contracts (maintainer review, 2026-09-27)
+
+The combined review of #92-#97 asked for five contracts to be closed before
+the remaining slices. Each is decided here, `user-confirmed` (delegated,
+2026-09-27 goal: "decide autonomously in the spirit of the changes").
+
+### 1. One truthful readiness result
+
+- **Two results, one screen.** "Ready for pauses" is the `ONBOARDING-004`
+  result: blocking, opening at login, and starts without a password, all
+  verified. "Ready for schedules" adds a valid automatic-start consent. Mac
+  schedule creation and automatic starts both read the second result; manual
+  starts keep reading the first.
+- **Consent is its own record.** It is stored as a local, versioned value
+  (`automaticStartConsent = 1`), never derived from the setup-offer marker.
+  **Set up Posato** records it when pressed, because its caption names
+  automatic starts "including schedules added on your other devices"; it
+  counts only while a Status confirms the grant, and it is cleared by
+  Revoke, Disable, Remove, or an absent or unknown grant.
+- **No hidden grantees.** `observed`: the standing grant (`MACOS-014`) never
+  shipped in 1.1, so no installation outside development has a grant
+  without the unified setup. A grant turned on only through This Mac's
+  switch has no consent: Schedules then shows one card, "Allow schedules to
+  start on this Mac", whose single action records the consent without a
+  password (the grant is unchanged). Dismissing it records nothing.
+- **Honest claims.** With a verified setup but no consent, Session and This
+  Mac still say ready for pauses; Schedules says "Schedules can't start on
+  this Mac yet" with the one action. No screen says "ready" while a
+  requirement it depends on is missing.
+
+### 2. Notices follow the combined pause
+
+- One owner, the notifier, plans from the **combined pause**: the manual
+  session and every running occurrence on this device. Its end notice is
+  scheduled for the latest end and rescheduled whenever that end changes; a
+  manual session ending inside a schedule never posts **Pause over**.
+- A scheduled start posts "Scheduled pause started: <name>, until <time>".
+  The end posts the existing **Pause over**, so there is one end message.
+- On iPhone the extension posts only what the app planned: the app writes
+  the switch's state into the App Group file with the schedule table, and the
+  extension reads it before posting. Turning notices off rewrites the file
+  and removes pending requests.
+
+### 3. A permission path for schedule-only use
+
+- The system is asked once per device, at the first of: a pause started
+  here, or the first schedule saved here. Never at launch and never at a
+  scheduled start.
+- A device that only receives schedules shows, in Schedules, a quiet "Turn
+  on pause notices" action while the permission is undetermined and the
+  switch is on. Refusing never affects blocking or setup.
+
+### 4. A running pause survives edits and restarts
+
+- When a host first sees an occurrence running, it **pins** it locally:
+  the occurrence key and its original start. The pin survives relaunch.
+- A pinned occurrence keeps running under edits: its end is the plan's
+  current end time on its start date (the next day when that end is at or
+  before the pinned start's time), capped at 24 hours after the original
+  start. Moving the start, removing the weekday, or a remote edit does not
+  end it; shortening the end can.
+- Turning the schedule off, deleting it, **Skip** or **End early** for that
+  key ends it; the host then writes the terminal marker and drops the pin.
+  The engine takes pins as an input (slice 2 gains it in slice 4).
+
+### 5. Promises agree with automatic starts
+
+- Copy that says nothing is paused "until you start a session" changes to
+  name schedules too; the grant's caption says restrictions apply "only
+  during a pause you start or a schedule you set".
+- Setup explains that it creates no schedule, and that an existing schedule
+  can start once the device is ready.
+- **Quit versus close.** Closing the Mac window leaves Posato in the menu
+  bar and schedules keep starting. Quit stops new scheduled starts until
+  Posato opens again (a login launch counts); when a schedule is enabled,
+  Quit asks for confirmation with that sentence. Release notes say the same.
+- **End early.** It ends the manual session and every occurrence running on
+  this device, and publishes an end fact for each of those keys. Other
+  devices running the same `(schedule, local start date)` end too.
+  `inferred` limit, stated in the confirmation's caption: a device whose
+  local date differs (another time zone around midnight) keeps its own
+  occurrence; its own **End early** ends it.
+
 ## Implementation plan for `SCHEDULE-002`
 
 Slices, each on its own branch, stacked:
