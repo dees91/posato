@@ -78,7 +78,7 @@ internal class MacHelperSetupUiState(
     private var quietRead = false
     private var reading = false
     private var lastRefresh: Long? = null
-    private var trailingRefresh = false
+    private val trailingRead = TrailingRead(scope)
     private var reads by mutableIntStateOf(0)
 
     /** Whether a session is active or changing, fed by the host so every setup action can show it. */
@@ -222,15 +222,7 @@ internal class MacHelperSetupUiState(
         val skipRefresh = !refresh || (recentlyRefreshed && !trailing)
         if (inFlight || (alreadyRead && skipRefresh)) {
             // A throttled return still reads once the interval ends, so a setting changed meanwhile is not missed.
-            if (refresh && !trailing && !trailingRefresh) {
-                trailingRefresh = true
-                val wait = (lastRefresh?.let { REFRESH_INTERVAL_MILLIS - (elapsedMillis() - it) } ?: 0L).coerceAtLeast(TRAILING_MINIMUM_MILLIS)
-                scope.launch {
-                    delay(wait)
-                    trailingRefresh = false
-                    readQuietly(refresh = true, trailing = true)
-                }
-            }
+            trailingRead.request(refresh && !trailing, lastRefresh, elapsedMillis()) { readQuietly(refresh = true, trailing = true) }
             return
         }
         quietRead = true
@@ -322,6 +314,31 @@ internal fun rememberMacHelperSetupUiState(
     val scope = rememberCoroutineScope()
     val currentBusy by rememberUpdatedState(sessionBusy)
     return remember(macHelper) { MacHelperSetupUiState(macHelper, scope, { currentBusy() }, Dispatchers.Default) }
+}
+
+/** One deferred read at the end of the refresh interval, however many activations it absorbs. */
+private class TrailingRead(
+    private val scope: CoroutineScope,
+) {
+    private var pending = false
+
+    fun request(
+        wanted: Boolean,
+        lastRefresh: Long?,
+        now: Long,
+        read: () -> Unit,
+    ) {
+        if (!wanted || pending) {
+            return
+        }
+        pending = true
+        val wait = (REFRESH_INTERVAL_MILLIS - (now - (lastRefresh ?: now))).coerceAtLeast(TRAILING_MINIMUM_MILLIS)
+        scope.launch {
+            delay(wait)
+            pending = false
+            read()
+        }
+    }
 }
 
 private const val REFRESH_INTERVAL_MILLIS: Long = 30_000L
