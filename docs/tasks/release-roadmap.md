@@ -3,11 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 10 (amended 2026-09-26: one guided Mac setup and shared
-  schedules in release 1.2)
+- **Revision:** 11 (amended 2026-09-27: the 1.2 public packaging row)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-26
+- **Last amended:** 2026-09-27
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -49,6 +48,10 @@
   `SCHEDULE-001` and `SCHEDULE-002` into release 1.2 and makes shared
   schedules a release gate. PR #92 supplies the UI shells; the authorization
   for automatic starts stays gated by the `SCHEDULE-001` security review.
+  Revision 11 adds `DOCS-003` to release 1.2 at the maintainer's request
+  (`user-confirmed`, 2026-09-27): the showcase media, README, `posato.app`,
+  App Store text and screenshots, and release notes are prepared for 1.2
+  before `RELEASE-004` publishes them.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -212,7 +215,8 @@ starts none of the rows.
 | `ONBOARDING-004` | Deliver one guided Mac setup in `DESIGN.md` for blocking, quiet login launch and starts without repeated passwords. Reuse the flow from onboarding, Session and Schedules; resume missing steps and verify actual state before completion. Keep a persistent Finish setup route after deferral, one dismissible upgrade offer and advanced revocation controls in This Mac. Preserve existing installations and defer password-requiring setup during a session. The setup's grant covers the person's own Start and Resume; `SCHEDULE-002` extends it to automatic starts only after the `SCHEDULE-001` security review, and neither ships without the other. High-risk. | Onboarding | delivery | R1.2/W2 | `MACOS-014` | PR-MAC-SETUP |
 | `SCHEDULE-001` | Complete the accepted release 1.2 schedule design: occurrence identity and skip/early-end convergence, time zones and daylight saving, overnight intervals, overlaps and manual-session conflicts, and offline or missing-device behavior. Specify ADR 0006 operation compatibility, iOS Device Activity execution and the resident Mac host. Propose and independently security-review the ADR 0004/0009 changes for explicit consent to automatic scheduled Apply, including startup and wake within an interval. Specify verified completion of the unified Mac setup before schedule creation, including automatic-start consent, migration of existing grants and recovery after revocation. Update `PRIVACY.md` and the privacy manifests for the synchronized schedule data. End with accepted decisions and an implementation plan for `SCHEDULE-002` in this release. High-risk. | Schedules | discovery | R1.2/W3 | `MACOS-013`, `MACOS-014`, `ONBOARDING-004` | PR-SCHEDULE-DECISION |
 | `SCHEDULE-002` | Deliver the accepted recurring schedules on Mac and iPhone: the Schedules destination, multiple named weekday/time plans, enable/disable, iCloud sharing with local offline execution, next-run and device-readiness states, skip-next and early-end behavior, and consented automatic Mac start/wake catch-up to the original end. Integrate the unified Mac setup and require verified blocking, login launch and automatic-start consent before Mac schedule creation; resume missing setup if access is revoked. Integrate contextual setup and local session notifications; prove occurrence suppression across restart and sync under the accepted convergence rules. High-risk. | Schedules | delivery | R1.2/W4 | `SCHEDULE-001`, `NOTIFY-001`, `IOS-006` | PR-SCHEDULE-DELIVERY |
-| `RELEASE-004` | Verify the 1.2.0 candidates including shared schedules and Mac setup, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W5 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004`, `SCHEDULE-002` | PR-RELEASE-1-2 |
+| `DOCS-003` | Prepare the public packaging for 1.2 without publishing it: recapture the showcase on the 1.2 applications, revise the storyboard with schedules and render the demo, walkthrough, stills, and social preview again; describe 1.2 in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.2/W5 | `ONBOARDING-004`, `NOTIFY-001`, `SCHEDULE-002` | PR-RELEASE-1-2-MEDIA |
+| `RELEASE-004` | Verify the 1.2.0 candidates including shared schedules and Mac setup, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W5 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004`, `SCHEDULE-002`, `DOCS-003` | PR-RELEASE-1-2 |
 
 ## Release 1.3: more Macs
 
@@ -272,6 +276,7 @@ The idea numbers refer to the wiki idea queue.
 | Intel Macs | `MACOS-015`, `MACOS-016` | Accepted ADR 0003 revision, notarized x86-64 candidate verified on the 2019 MacBook Air |
 | Shared recurring schedules | `SCHEDULE-001`, `SCHEDULE-002` | Accepted rules and security-reviewed authorization revision; Mac VM and test-iPhone runs for start/end, offline execution of known plans, synchronization, missing permissions, skipping, early end, restart and Mac catch-up |
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
+| Public packaging for 1.2 | `DOCS-003` | Media rendered within budget from recorded captures, README and site built, store text and screenshots ready for upload |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
 ## Manual and physical gates

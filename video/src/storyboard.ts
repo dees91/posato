@@ -47,23 +47,27 @@ export const MAC_TARGETS = {
   addButton: [1158, 212],
   appsTab: [985, 116],
   chooseApps: [1133, 191],
-  startSession: [415, 330],
+  startSession: [413, 286],
   fortyFive: [487, 275],
   reviewSession: [415, 721],
   startThisPause: [417, 347],
   endSessionEarly: [423, 448],
   endSessionConfirm: [403, 229],
+  schedulesSidebar: [107, 319],
+  addSchedule: [409, 287],
+  saveSchedule: [412, 684],
 } as const satisfies Record<string, Point>;
 
 export const IPHONE_TARGETS = {
   appsTab: [472, 420],
   chooseApps: [514, 530],
+  schedulesTab: [527, 1309],
 } as const satisfies Record<string, Point>;
 
 const OPEN_COPY = {
   eyebrow: "Posato for Mac and iPhone",
   headline: "Pause. Then choose.",
-  support: "A timed pause from the websites and apps you choose.",
+  support: "Pause the websites and apps you choose, now or on a schedule.",
 } as const;
 
 const CLOSE_COPY = {
@@ -117,28 +121,51 @@ const startScene = (start: number, end: number): StoryScene => ({
   copy: {},
 });
 
+const scheduleScene = (start: number, end: number, first: string, lead: number): StoryScene => ({
+  id: "schedule",
+  start,
+  end,
+  kind: "capture",
+  layout: "macSolo",
+  mac: { captures: [first, ...(lead > 0 ? ["mac-schedules-empty.png"] : []), "mac-schedule-editor.png", "mac-schedules.png"] },
+  actions: [
+    ...(lead > 0
+      ? [{ device: "mac", kind: "click", target: MAC_TARGETS.schedulesSidebar, at: 30, label: "Schedules", swapTo: 1 } as const]
+      : []),
+    { device: "mac", kind: "click", target: MAC_TARGETS.addSchedule, at: 30 + lead, label: "Add schedule", swapTo: lead > 0 ? 2 : 1 },
+    { device: "mac", kind: "click", target: MAC_TARGETS.saveSchedule, at: 88 + lead, label: "Save schedule", swapTo: lead > 0 ? 3 : 2 },
+  ],
+  pointerExit: { from: 108 + lead, to: 128 + lead },
+  callouts: [
+    { text: "Or plan pauses ahead.", from: 6, to: 60 + lead },
+    { text: "Pick the days and hours.", from: 64 + lead, to: 100 + lead },
+    { text: "It starts on its own.", from: 104 + lead, to: end - start - SCENE_OVERLAP },
+  ],
+  copy: {},
+});
+
 export const HERO: readonly StoryScene[] = [
   { id: "open", start: 0, end: 66, kind: "title", copy: OPEN_COPY },
   {
     id: "websites",
     start: 60,
-    end: 246,
+    end: 216,
     kind: "capture",
     layout: "macSolo",
     mac: { captures: ["mac-websites-empty.png", "mac-websites-typed.png", "mac-websites-added.png"] },
     actions: websitesActions(36),
-    pointerExit: { from: 140, to: 160 },
+    pointerExit: { from: 120, to: 140 },
     callouts: [
-      { text: "Add exact domains.", from: 10, to: 96 },
-      { text: "One at a time, or paste a list.", from: 100, to: 180 },
+      { text: "Add exact domains.", from: 10, to: 88 },
+      { text: "One at a time, or paste a list.", from: 92, to: 150 },
     ],
     copy: {},
   },
-  iphoneAppsScene(240, 390),
+  iphoneAppsScene(210, 360),
   {
     id: "duration",
-    start: 384,
-    end: 516,
+    start: 354,
+    end: 486,
     kind: "capture",
     layout: "macSolo",
     mac: { captures: ["mac-duration.png", "mac-duration-45.png", "mac-review-45.png"] },
@@ -152,8 +179,9 @@ export const HERO: readonly StoryScene[] = [
     ],
     copy: {},
   },
-  startScene(510, 606),
-  { id: "close", start: 600, end: 660, kind: "title", fadeOutAt: 44, copy: CLOSE_COPY },
+  startScene(480, 576),
+  scheduleScene(570, 720, "mac-schedules-empty.png", 0),
+  { id: "close", start: 714, end: 780, kind: "title", fadeOutAt: 44, copy: CLOSE_COPY },
 ];
 
 export const WALKTHROUGH: readonly StoryScene[] = [
@@ -162,7 +190,7 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     start: 0,
     end: 90,
     kind: "title",
-    copy: { ...OPEN_COPY, steps: "Choose what to pause. Set a duration. Start." },
+    copy: { ...OPEN_COPY, steps: "Choose what to pause. Start now, or plan it ahead." },
   },
   {
     id: "websites",
@@ -244,12 +272,29 @@ export const WALKTHROUGH: readonly StoryScene[] = [
     ],
     copy: {},
   },
-  { id: "close", start: 1188, end: 1260, kind: "title", fadeOutAt: 56, copy: CLOSE_COPY },
+  scheduleScene(1188, 1368, "mac-session-inactive.png", 30),
+  {
+    id: "schedule-runs",
+    start: 1362,
+    end: 1512,
+    kind: "capture",
+    layout: "macWithPhone",
+    mac: { captures: ["mac-scheduled-active.png"] },
+    iphone: { captures: ["iphone-apps.png", "iphone-schedules.png"] },
+    actions: [{ device: "iphone", kind: "tap", target: IPHONE_TARGETS.schedulesTab, at: 70, label: "Schedules", swapTo: 1 }],
+    callouts: [
+      { text: "A scheduled pause, window closed or open.", from: 6, to: 66 },
+      { text: "Plan schedules on your iPhone too.", from: 70, to: 144 },
+    ],
+    copy: {},
+  },
+  { id: "close", start: 1506, end: 1578, kind: "title", fadeOutAt: 56, copy: CLOSE_COPY },
 ];
 
 export const STILLS = {
   StepWebsites: { mac: "mac-websites.png", iphone: "iphone-websites.png" },
   StepDuration: { mac: "mac-duration-45.png", iphone: "iphone-duration-45.png" },
+  StepSchedules: { mac: "mac-schedules.png", iphone: "iphone-schedules.png" },
 } as const;
 
 export const SOCIAL_PREVIEW = {

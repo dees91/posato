@@ -2,7 +2,9 @@
 
 Status: maintainer accepted, 2026-09-14; copy edited with Clarity as requested.
 Uploaded to App Store Connect by `RELEASE-002` on 2026-09-17 with the iPad set
-below and submitted to App Review for version 1.0.0 (3).
+below and submitted to App Review for version 1.0.0 (3). `DOCS-003` prepared
+the 1.2 description, What's New, and screenshots on 2026-09-27 for
+`RELEASE-004`; nothing was uploaded.
 
 ## Name
 
@@ -14,37 +16,10 @@ Pause. Then choose.
 
 ## Description
 
-Choose the websites and apps you want to step away from, then start a pause
-on your iPhone. Give yourself time to read, work, or be somewhere else.
-
-PAUSE ON YOUR TERMS
-
-Set a duration from 5 minutes to 24 hours. Posato uses Apple's Screen Time
-controls to pause your choices for that session. You can deliberately end it
-early or remove Posato at any time. The pause gives you a moment to reconsider
-before opening something out of habit.
-
-OPTIONAL ICLOUD SYNC
-
-Link your iPhone and Mac through your Apple Account to sync website choices
-and sessions. App choices stay on each device. Changes are encrypted on your
-device before they reach your private iCloud database.
-
-Sync can be delayed or fail to arrive, and Posato cannot wake a sleeping
-device. The Mac app is a separate download and needs administrator approval
-before blocking starts.
-
-NO POSATO ACCOUNT
-
-No analytics, usage scores, streaks, or Posato-operated server. Your choices
-stay on your devices unless you turn on iCloud sync. Posato is open source
-under the Apache License 2.0.
-
-BEFORE YOU START
-
-Screen Time permission is required on iPhone. The system may keep restrictions
-in place after a session ends. For sessions shorter than 15 minutes, keep
-Posato open at the end or open it again to clear them.
+The description is [description.txt](description.txt), the exact text
+`posato-provisioning store prepare --description` uploads. Since 1.2 it adds
+schedules, schedule sync, the one-time Mac setup, and the advice to update
+every device; the 1.0 and 1.1 text is in Git history.
 
 ## Keywords
 
@@ -52,18 +27,21 @@ focus,pause,distractions,websites,apps,screen time,concentration,break,intention
 
 ## Screenshots
 
-The accepted set contains three unmodified real iPhone Simulator captures in Dark Mode, with synthetic website entries and local-only setup:
+The set contains four unmodified real iPhone Simulator captures in Dark Mode, with synthetic website entries, one schedule, and local-only setup:
 
 - [Paused websites](screenshots/iphone-6.9/01-paused-websites.png)
 - [Session duration](screenshots/iphone-6.9/02-session-duration.png)
-- [About Posato](screenshots/iphone-6.9/03-about-posato.png)
+- [Schedules](screenshots/iphone-6.9/03-schedules.png)
+- [About Posato](screenshots/iphone-6.9/04-about-posato.png)
 
 All captures are 1320 × 2868 RGB PNGs with no alpha channel. They show the
 accepted About Posato entry. The maintainer accepted the three-screen set on
 2026-09-14 and requested Dark Mode for the final captures. `RELEASE-003`
 recaptured the same three screens for 1.1.0 on 2026-09-25, because the
 website list now names the included `www` variant and About shows the new
-version.
+version. `DOCS-003` recaptured the set for 1.2.0 on 2026-09-27 and added
+Schedules as the third screen, which moved About Posato to fourth; it awaits
+the maintainer's acceptance.
 
 The captures show session setup, paused websites, and About Posato without private
 account, application, or device labels. Simulator captures must not imply that Screen
@@ -77,7 +55,8 @@ from `IOS-004`:
 
 - [Paused websites](screenshots/ipad-13/01-paused-websites.png)
 - [Session duration](screenshots/ipad-13/02-session-duration.png)
-- [About Posato](screenshots/ipad-13/03-about-posato.png)
+- [Schedules](screenshots/ipad-13/03-schedules.png)
+- [About Posato](screenshots/ipad-13/04-about-posato.png)
 
 ### Capture recipe
 
@@ -90,15 +69,20 @@ Simulator with `--udid <udid>`.
 2. Install fresh with `launch -t sim --fresh`, then run
    `tools/posato-control/fixtures/scenarios/first-install-skip.json`.
 3. Add the synthetic websites `news.example`, `social.example`, and
-   `video.example`.
+   `video.example`, then add a schedule named `Deep work` with the default
+   weekdays and hours.
+   The About screen shows the build's `MARKETING_VERSION`; capture from a build
+   of the release version, even when `Version.xcconfig` is bumped only for the
+   capture.
 4. Relaunch without `--fresh` before the first capture, so the field shows the
    default hint instead of the feedback shown after an add.
 5. Capture the session duration screen first, with the 25-minute preset
    selected. Before capturing, run
    `xcrun simctl status_bar <udid> override --time <HH:MM now> --batteryState discharging --batteryLevel 100 --wifiBars 3`,
    so the status bar matches the "Ends at" time.
-6. Capture About Posato and the paused items with the same status-bar time.
-   The About screen hides the tab bar, so go Back before switching tabs.
+6. Capture About Posato, the paused items, and Schedules with the same
+   status-bar time. The About screen hides the tab bar, so go Back before
+   switching tabs.
 7. Capture each screen with `xcrun simctl io <udid> screenshot raw.png`. Then
    remove the alpha channel with `ffmpeg -i raw.png -pix_fmt rgb24 <out>.png`,
    naming the output after the files above.
@@ -107,6 +91,11 @@ Simulator with `--udid <udid>`.
 `posato-provisioning store prepare --screenshots docs/store/en-US/screenshots`
 uploads both sets in file-name order; see the
 [iOS App Store release](../../development/apple-provisioning.md#ios-app-store-release).
+
+## What's New in 1.2.0
+
+[whats-new-1.2.0.txt](whats-new-1.2.0.txt) is the text for
+`store prepare --whats-new`.
 
 ## What's New in 1.1.0
 

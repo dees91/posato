@@ -45,7 +45,8 @@ class StorePrepareCommand :
     ProvisioningCommand(
         "prepare",
         "Creates the iOS App Store version when absent, sets its release type and en-US What's New, attaches a VALID " +
-            "build, and optionally replaces the iPhone 6.9-inch and iPad 13-inch screenshot sets. Changes only what differs.",
+            "build, and optionally sets the en-US description and replaces the iPhone 6.9-inch and iPad 13-inch " +
+            "screenshot sets. Changes only what differs.",
     ) {
     private val version by option("--version", help = "The marketing version, such as 1.2.0.").required()
     private val build by option("--build", help = "The build number App Store Connect already processed.").int().restrictTo(min = 1).required()
@@ -53,6 +54,10 @@ class StorePrepareCommand :
     private val release by option("--release", help = "Release automatically after approval, or manually.")
         .choice(*ReleaseType.entries.map { it.option }.toTypedArray())
         .required()
+    private val description by option(
+        "--description",
+        help = "A UTF-8 text file holding the en-US description; without it the version keeps the copied one.",
+    )
     private val screenshots by option(
         "--screenshots",
         help = "A directory with iphone-6.9/*.png and ipad-13/*.png; each set is replaced in file-name order.",
@@ -65,6 +70,7 @@ class StorePrepareCommand :
             whatsNew = ReleaseInputs.whatsNew(Path.of(whatsNew)),
             releaseType = ReleaseType.of(release),
             screenshots = screenshots?.let { directory -> ReleaseInputs.screenshots(Path.of(directory)) },
+            description = description?.let { file -> ReleaseInputs.description(Path.of(file)) },
         )
         return StorePreparation(session.storeServices()).prepare(request)
     }

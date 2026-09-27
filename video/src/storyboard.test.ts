@@ -19,8 +19,8 @@ import {
 } from "./storyboard";
 
 const stories: ReadonlyArray<readonly [string, readonly StoryScene[], number, number]> = [
-  ["Hero", HERO, 20, 24],
-  ["Walkthrough", WALKTHROUGH, 35, 45],
+  ["Hero", HERO, 24, 28],
+  ["Walkthrough", WALKTHROUGH, 45, 55],
 ];
 
 const publicFile = (name: string) => resolve(process.cwd(), "public", name);

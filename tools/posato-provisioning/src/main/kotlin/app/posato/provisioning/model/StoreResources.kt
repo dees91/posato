@@ -69,6 +69,7 @@ data class PreReleaseVersionResource(
 data class LocalizationAttributes(
     val locale: String? = null,
     val whatsNew: String? = null,
+    val description: String? = null,
 )
 
 @Serializable

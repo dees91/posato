@@ -12,6 +12,9 @@ import kotlinx.serialization.json.put
 
 private const val UNCHANGED = "unchanged"
 
+private const val WHATS_NEW = "whatsNew"
+private const val DESCRIPTION = "description"
+
 /** The version states in which App Store Connect accepts metadata, build, and screenshot changes. */
 private val EDITABLE_VERSION_STATES = setOf(
     "PREPARE_FOR_SUBMISSION",
@@ -27,6 +30,7 @@ class PrepareRequest(
     val whatsNew: String,
     val releaseType: ReleaseType,
     val screenshots: Map<ScreenshotSlot, List<ScreenshotFile>>?,
+    val description: String? = null,
 )
 
 /**
@@ -36,7 +40,7 @@ class PrepareRequest(
  * untouched, and an existing version outside the editable states (waiting for or in review, pending release, or
  * released) is refused before the first write. A second run with the same inputs is intended to issue only reads.
  * A new version copies its description, keywords, review details, and screenshots from the previous version; this
- * command then overwrites the What's New text and, when asked, the two screenshot sets.
+ * command then overwrites the What's New text and, when asked, the description and the two screenshot sets.
  */
 class StorePreparation(
     private val services: StoreServices
@@ -58,18 +62,19 @@ class StorePreparation(
             "attached".also { store.attachBuild(version.id, build.id) }
         }
         val localization = StoreLookups.localization(store, version.id)
-        val whatsNew = if (localization.attributes.whatsNew?.trim() == request.whatsNew) {
-            UNCHANGED
-        } else {
-            "updated".also { store.updateWhatsNew(localization.id, request.whatsNew) }
+        val changes = buildMap {
+            if (localization.attributes.whatsNew?.trim() != request.whatsNew) put(WHATS_NEW, request.whatsNew)
+            request.description?.takeIf { it != localization.attributes.description?.trim() }?.let { put(DESCRIPTION, it) }
         }
+        if (changes.isNotEmpty()) store.updateLocalization(localization.id, changes)
         val screenshots = request.screenshots?.let { sets -> replaceScreenshots(localization.id, sets) }
         return buildJsonObject {
             put("version", request.version)
             put("appStoreVersion", if (existing == null) "created" else UNCHANGED)
             put("releaseType", releaseType)
             put("build", buildOutcome)
-            put("whatsNew", whatsNew)
+            put(WHATS_NEW, if (WHATS_NEW in changes) "updated" else UNCHANGED)
+            if (request.description != null) put(DESCRIPTION, if (DESCRIPTION in changes) "updated" else UNCHANGED)
             put("screenshots", screenshots ?: buildJsonArray { })
         }
     }

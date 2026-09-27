@@ -72,6 +72,19 @@ class ReleaseInputsTest {
     }
 
     @Test
+    fun `trims the description and refuses an empty or overlong file`() {
+        val file = Files.createTempFile("description", ".txt")
+        file.writeText("\nPause on your terms.\n")
+        assertEquals("Pause on your terms.", ReleaseInputs.description(file))
+
+        file.writeText(" ")
+        assertEquals(ErrorCode.RELEASE_INPUT_INVALID, assertFailsWith<ProvisioningException> { ReleaseInputs.description(file) }.code)
+
+        file.writeText("a".repeat(4001))
+        assertEquals(ErrorCode.RELEASE_INPUT_INVALID, assertFailsWith<ProvisioningException> { ReleaseInputs.description(file) }.code)
+    }
+
+    @Test
     fun `accepts only a three-part marketing version`() {
         assertEquals("1.2.0", ReleaseInputs.version("1.2.0"))
         assertFailsWith<ProvisioningException> { ReleaseInputs.version("1.2") }

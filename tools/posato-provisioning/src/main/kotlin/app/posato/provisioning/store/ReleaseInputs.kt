@@ -18,6 +18,7 @@ const val STORE_LOCALE = "en-US"
 
 private val VERSION_PATTERN = Regex("[0-9]+\\.[0-9]+\\.[0-9]+")
 private const val MAX_WHATS_NEW = 4000
+private const val MAX_DESCRIPTION = 4000
 private const val MAX_SCREENSHOTS_PER_SET = 10
 private const val BYTE_MASK = 0xFF
 private const val HEX_RADIX = 16
@@ -70,13 +71,9 @@ object ReleaseInputs {
         return value
     }
 
-    fun whatsNew(file: Path): String {
-        ensure(file.isRegularFile()) { "The What's New file does not exist or is not a regular file" }
-        val text = read { String(Files.readAllBytes(file), StandardCharsets.UTF_8) }.trim()
-        ensure(text.isNotEmpty()) { "The What's New file is empty" }
-        ensure(text.length <= MAX_WHATS_NEW) { "The What's New text is longer than App Store Connect's $MAX_WHATS_NEW characters" }
-        return text
-    }
+    fun whatsNew(file: Path): String = text(file, "What's New", MAX_WHATS_NEW)
+
+    fun description(file: Path): String = text(file, "description", MAX_DESCRIPTION)
 
     /** Both sets, each in file-name order, which is the order App Store Connect shows them in. */
     fun screenshots(root: Path): Map<ScreenshotSlot, List<ScreenshotFile>> {
@@ -87,6 +84,18 @@ object ReleaseInputs {
     fun md5(bytes: ByteArray): String = MessageDigest.getInstance("MD5")
         .digest(bytes)
         .joinToString("") { byte -> (byte.toInt() and BYTE_MASK).toString(HEX_RADIX).padStart(HEX_WIDTH, '0') }
+
+    private fun text(
+        file: Path,
+        name: String,
+        limit: Int,
+    ): String {
+        ensure(file.isRegularFile()) { "The $name file does not exist or is not a regular file" }
+        val text = read { String(Files.readAllBytes(file), StandardCharsets.UTF_8) }.trim()
+        ensure(text.isNotEmpty()) { "The $name file is empty" }
+        ensure(text.length <= limit) { "The $name text is longer than App Store Connect's $limit characters" }
+        return text
+    }
 
     private fun screenshots(
         directory: Path,

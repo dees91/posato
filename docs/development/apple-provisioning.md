@@ -53,7 +53,7 @@ every known value redacted.
 | `certificates ensure [--create]` | Confirms this Mac signs with a certificate the account also holds. With `--create`, generates a key pair, requests a certificate, and imports it. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes the development profile for one App ID current and installs it. |
 | `store status [--version X.Y.Z]` | Read-only. Lists the iOS App Store versions with state and release type, the builds with marketing version and processing state, and the next free build number; with `--version`, also that version's attached build, en-US What's New, and screenshot sets with delivery states. |
-| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--screenshots <dir>]` | Brings one App Store version to the release state, changing only what differs. See [iOS App Store release](#ios-app-store-release). |
+| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--description <file>] [--screenshots <dir>]` | Brings one App Store version to the release state, changing only what differs. See [iOS App Store release](#ios-app-store-release). |
 | `store submit --version X.Y.Z` | Submits the version to App Review once it has a build and every screenshot is `COMPLETE`. Does nothing when it is already waiting for or in review. |
 
 Use this tool, not the portal or ad hoc App Store Connect scripts, for every
@@ -237,6 +237,7 @@ paths; keep every output outside the checkout or under the ignored `build/`.
    ```shell
    posato-provisioning store prepare --version <version> --build <build> \
      --whats-new <whats-new.txt> --release after-approval \
+     --description <description.txt> \
      --screenshots docs/store/en-US/screenshots
    ```
 
@@ -246,7 +247,9 @@ paths; keep every output outside the checkout or under the ignored `build/`.
    `METADATA_REJECTED`, or `INVALID_BINARY` (`VERSION_NOT_EDITABLE`). It creates the iOS App Store version when absent, and App Store Connect
    copies the description, keywords, review details, and screenshots from the
    previous version. The command then sets the release type, the en-US What's
-   New text, and the build. `--screenshots` replaces `iphone-6.9/*.png` in the
+   New text, the build, and, with `--description`, the en-US description.
+   What's New and the description travel in one request, and a matching text
+   is left alone. `--screenshots` replaces `iphone-6.9/*.png` in the
    `APP_IPHONE_67` set and `ipad-13/*.png` in the `APP_IPAD_PRO_3GEN_129` set,
    in file-name order. A set that already holds the same files with the same
    MD5 checksums is left alone. Otherwise every screenshot in it is deleted,

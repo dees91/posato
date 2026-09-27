@@ -78,6 +78,38 @@ class StorePreparationTest {
     }
 
     @Test
+    fun `sets a new description with What's New in one write and leaves a matching one alone`() {
+        val routes = { description: String ->
+            mapOf(
+                "GET apps" to listOf(APPS),
+                "GET builds" to listOf(StoreFixtures.builds()),
+                "GET apps/APP/appStoreVersions" to listOf(StoreFixtures.version(releaseType = "MANUAL")),
+                "GET appStoreVersions/VER/build" to listOf(ATTACHED_BUILD),
+                "GET appStoreVersions/VER/appStoreVersionLocalizations" to listOf(StoreFixtures.localizations("Old things.", description)),
+                "PATCH appStoreVersionLocalizations/LOC" to listOf("""{"data":{"id":"LOC"}}"""),
+            )
+        }
+        val described = PrepareRequest("1.2.0", 5, "New things.", ReleaseType.MANUAL, screenshots = null, description = "Schedules too.")
+
+        val changed = StoreHarness(routes("Old description."))
+        val result = StorePreparation(changed.services).prepare(described)
+
+        assertEquals("updated", result.text("description"))
+        assertEquals("updated", result.text("whatsNew"))
+        assertEquals(1, changed.executor.writes.size)
+        val attributes = changed.executor.write("PATCH appStoreVersionLocalizations/LOC").data()["attributes"]!!.jsonObject
+        assertEquals("Schedules too.", attributes.text("description"))
+        assertEquals("New things.", attributes.text("whatsNew"))
+
+        val matching = StoreHarness(routes("Schedules too."))
+        val kept = StorePreparation(matching.services).prepare(described)
+
+        assertEquals("unchanged", kept.text("description"))
+        val onlyWhatsNew = matching.executor.write("PATCH appStoreVersionLocalizations/LOC").data()["attributes"]!!.jsonObject
+        assertEquals(setOf("whatsNew"), onlyWhatsNew.keys)
+    }
+
+    @Test
     fun `changes only the release type of an existing version`() {
         val harness = StoreHarness(
             mapOf(
