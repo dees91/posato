@@ -367,6 +367,24 @@ class DesktopMacHelperStateTest {
     }
 
     @Test
+    fun `given an approved helper without its rule when only its status is read then enable is never issued`() = runTest {
+        val commands = FakeHelperCommands(
+            enableBehavior = { readyResult() },
+            statusBehavior = { ruleRepairResult() },
+        )
+        val state = DesktopMacHelperState(
+            commands = commands,
+            verifyHelper = { Path.of("/nonexistent/PosatoMacOSHelper") },
+            ioDispatcher = Dispatchers.Unconfined,
+            openSettings = { },
+        )
+
+        state.status()
+
+        assertEquals(listOf("status"), commands.calls.map { it.operation })
+    }
+
+    @Test
     fun `given a missing rule while a session owns the proxy when checked again then enable is not issued`() = runTest {
         listOf(HelperResult.Phase.Applied, HelperResult.Phase.RecoveryRequired).forEach { phase ->
             val commands = FakeHelperCommands(

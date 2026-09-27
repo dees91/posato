@@ -117,5 +117,5 @@ replaces the editor. Rerun `schedules-device.json` on the unlocked iPhone.
   authorization rule through Enable, which ADR 0004 reserves for a deliberate
   action. `MacHelperPort.status()` now reads without changing anything, and
   Session's quiet read uses it; **Check again** and **Set up Posato** keep
-  `recheck()`. A desktop test shows a rule-repair status issues no Enable, and
+  `recheck()`. `DesktopMacHelperStateTest` shows a rule-repair status issues no Enable (a mutation that routes `status()` through `recheck()` fails it), and
   the quiet-read test expects `status`; both failed before the change.
