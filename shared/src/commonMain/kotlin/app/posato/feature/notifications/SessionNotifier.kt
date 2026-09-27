@@ -120,7 +120,7 @@ internal class SessionNotices(
             perform(SessionNotificationAction.ScheduleEnd(active.record.endEpochMillis))
         }
         if (enabled && settings.value.permission == NotificationPermission.NOT_DETERMINED) {
-            askPermission()
+            askThenReschedule()
         }
     }
 
@@ -133,7 +133,7 @@ internal class SessionNotices(
         when (action) {
             is SessionNotificationAction.ScheduleEnd -> if (platform.isEnabled()) {
                 val text = texts.pauseOver()
-                if (platform.isEnabled()) {
+                if (platform.isEnabled() && endsAt(action.endEpochMillis)) {
                     platform.scheduleEnd(action.endEpochMillis, text.title, text.body)
                 }
             }
@@ -153,11 +153,21 @@ internal class SessionNotices(
         if (!platform.isEnabled() || platform.wasPermissionAsked()) {
             return
         }
+        askThenReschedule()
+    }
+
+    /** A request made before permission may not have been kept, so an allowed answer schedules the running pause's end again. */
+    private suspend fun askThenReschedule() {
         askPermission()
         val active = current as? LocalSessionStatus.Active
         if (settings.value.permission == NotificationPermission.ALLOWED && active != null) {
             perform(SessionNotificationAction.ScheduleEnd(active.record.endEpochMillis))
         }
+    }
+
+    /** Loading the text suspends, so the pause may have ended or moved before the notice is scheduled. */
+    private fun endsAt(endEpochMillis: Long): Boolean {
+        return (current as? LocalSessionStatus.Active)?.record?.endEpochMillis == endEpochMillis
     }
 
     private suspend fun askPermission() {
