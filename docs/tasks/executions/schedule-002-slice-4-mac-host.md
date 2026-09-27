@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-002` slice 4
 
 - **Brief:** [Schedules start on their own on a Mac](../specifications/schedule-002-slice-4-mac-host.md)
-- **Status:** `active`
+- **Status:** `ready-for-review`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude, under the maintainer's delegated goal (2026-09-27)
 - **Reviewer:** independent agents (plan and completed change)
@@ -49,5 +49,13 @@
 
 ## Checks
 
-- `./gradlew quality` (see the closing run below).
+- `./gradlew quality` passed after the last correction (local properties moved aside for the packaging check).
 - Mutations killed: the holder check on release, the clear after a failed hand-back, the pending clear, the evaluation loop's catch, the in-memory announcement set.
+- Mac, Tart VM (primary line), final build, driver answering the setup dialogs:
+  - **Automatic start:** a schedule 2 minutes ahead with the window closed for 2 minutes started on time, the pause page answered `http://example.com/` (`observe --expect blocked`, outcome `paused`), no dialog appeared, the menu read "restrictions active", and one pin was stored.
+  - **Relaunch:** terminated, restrictions lifted within the helper lease (`allowed`); relaunched, blocked again after 2 s with the original start on the pin and its start notice bit kept.
+  - **Natural end:** allowed at the planned end, and the occurrence became terminal.
+  - **End early:** Session showed the scheduled pause, End early asked first, then allowed at once with one end fact, and it stayed allowed after a relaunch.
+  - **Login launch:** a VM shutdown and boot inside an occurrence; the login item opened Posato without a window and restrictions were back 2 s after it was adopted, with no dialog.
+  - **Setup required:** a schedule saved on a ready Mac came due after the grant was turned off in This Mac: no dialog, `allowed`, Session showed "Setup required on this Mac", and Quit asked "Quit stops new scheduled starts until Posato opens again. Closing the window keeps them starting."
+- **Not observed:** the start and end notification banners. The VM's notification area kept macOS's "Login Item Added" banner and notification permission was not confirmed there; the combined-notice rules are covered by `CombinedPauseEndsTest` and `SessionNoticesScheduledTest`. Wake is not testable in Tart (a guest cannot sleep); the minute tick bounds it. Another account at the console is covered by `MacScheduleStartGateTest`.
