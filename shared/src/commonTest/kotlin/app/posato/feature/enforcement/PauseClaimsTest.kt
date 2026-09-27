@@ -106,17 +106,45 @@ class PauseClaimsTest {
     }
 
     @Test
-    fun `given a schedule applied first when it ends inside a longer manual session then the manual request is applied through the grant`() =
+    fun `given a schedule applied first when a longer manual session joins then the helper takes its later end and the schedule's end leaves it`() =
         runTest {
             val helper = HelperDouble()
             val claims = PauseClaims(helper)
             claims.claimSchedule(request(200))
-            claims.manual.apply(request(300))
 
+            claims.manual.apply(request(300))
             claims.releaseSchedule()
 
-            assertEquals(listOf("apply grant 200", "apply grant 300"), helper.calls)
+            assertEquals(listOf("apply grant 200", "clear", "apply grant 300"), helper.calls)
+            assertEquals(EnforcementOutcome.APPLIED, claims.manual.status())
         }
+
+    @Test
+    fun `given a longer manual session joined a schedule when the schedule is updated unchanged then the helper keeps the later end`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200))
+        claims.manual.apply(request(300))
+        helper.calls.clear()
+
+        claims.updateSchedule(request(200))
+
+        assertEquals(emptyList(), helper.calls)
+    }
+
+    @Test
+    fun `given the helper holds an earlier manual end when the schedule is updated then the combined end is applied`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(100))
+        claims.claimSchedule(request(200))
+        helper.calls.clear()
+
+        // The helper still holds the manual end 100 while the combined pause lasts to 200.
+        claims.updateSchedule(request(200))
+
+        assertEquals(listOf("clear", "apply grant 200"), helper.calls)
+    }
 
     @Test
     fun `given the manual request held when the schedule's re-apply fails at the manual end then the helper is cleared and the claim dropped`() =

@@ -101,6 +101,14 @@ internal fun SessionScreen(
         consumeWindowRequest()
     }
     val scheduledView = scheduledPauseView(scheduledPauses, state, timeFormat, clock)
+    val scheduledRestricts = scheduledView?.restricts == true
+    // A manual start is not offered during a scheduled pause, so a duration or review screen left open
+    // when one starts is closed instead of starting a second pause from a stale form.
+    LaunchedEffect(scheduledRestricts) {
+        if (scheduledRestricts) {
+            viewModel.setSetupVisible(false)
+        }
+    }
     SessionScreen(
         state = state,
         scheduled = scheduledView,

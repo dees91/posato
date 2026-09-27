@@ -7,7 +7,8 @@ import kotlinx.coroutines.sync.withLock
  * One helper, two reasons to restrict: a manual session and the running scheduled occurrences. Each
  * holds a claim, and restrictions are cleared only when neither does, so a manual session that ends
  * inside a schedule, or a schedule that ends inside a session, never lifts the other's restrictions.
- * It remembers whose request the helper actually holds, so a claim that only joined never touches it.
+ * It remembers whose request the helper actually holds and that request's targets and end, so a claim
+ * that only joined never touches it and every comparison is made against what the helper enforces.
  */
 internal class PauseClaims(
     private val delegate: EnforcementPort,
@@ -18,6 +19,7 @@ internal class PauseClaims(
     private var manualRequest: EnforcementRequest? = null
     private var scheduleRequest: EnforcementRequest? = null
     private var holder = Holder.NONE
+    private var held: EnforcementRequest? = null
     private var clearPending = false
 
     /** The view the session owner uses; it sees only its own claim. */
@@ -34,7 +36,7 @@ internal class PauseClaims(
             val report = if (joined) {
                 EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
             } else {
-                delegate.apply(request.withGrantOnly()).also { report -> holder = report.holderAfter(Holder.SCHEDULE) }
+                send(request.withGrantOnly(), Holder.SCHEDULE)
             }
             scheduleRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
             if (scheduleRequest != null) {
@@ -51,23 +53,20 @@ internal class PauseClaims(
      * A joined manual session keeps its later end. A claim not held yet is claimed.
      */
     suspend fun updateSchedule(request: EnforcementRequest): EnforcementApplyReport {
-        val held = mutex.withLock { scheduleRequest }
-        if (held == null) {
+        val claimed = mutex.withLock { scheduleRequest }
+        if (claimed == null) {
             return claimSchedule(request)
         }
         return mutex.withLock {
             val manualEnd = manualRequest?.sessionEndEpochMillis ?: 0L
             val effective = request.withEnd(maxOf(request.sessionEndEpochMillis, manualEnd))
-            // While a joined manual session holds the helper, its targets are what is enforced.
-            val enforcedTargetsCurrent = holder != Holder.MANUAL || manualRequest?.sameTargets(request) == true
-            if (held.sameEffect(request) && enforcedTargetsCurrent) {
+            // Compared with what the helper enforces, whoever applied it, so a joined manual session's
+            // later end or changed paused items are never hidden behind an unchanged schedule request.
+            if (held?.sameEffect(effective) == true) {
+                scheduleRequest = request
                 EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
             } else {
-                // The helper takes a new configuration only when idle, so it is cleared and applied again
-                // within this lock: nothing reads the moment between the two.
-                delegate.clear()
-                val report = delegate.apply(effective.withGrantOnly())
-                holder = report.holderAfter(Holder.SCHEDULE)
+                val report = replace(effective.withGrantOnly(), Holder.SCHEDULE)
                 scheduleRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
                 if (report.outcome != EnforcementOutcome.APPLIED) {
                     // A failed apply cleared the helper; the manual owner sees that through its status.
@@ -98,8 +97,7 @@ internal class PauseClaims(
                 }
 
                 holder == Holder.SCHEDULE -> {
-                    val report = delegate.apply(manual.withGrantOnly())
-                    holder = report.holderAfter(Holder.MANUAL)
+                    val report = send(manual.withGrantOnly(), Holder.MANUAL)
                     if (report.outcome != EnforcementOutcome.APPLIED) {
                         manualRequest = null
                     }
@@ -125,7 +123,13 @@ internal class PauseClaims(
             if (scheduleRequest == null) {
                 EnforcementOutcome.CLEARED
             } else {
-                delegate.status().also { status -> if (status == EnforcementOutcome.CLEARED) scheduleRequest = null }
+                delegate.status().also { status ->
+                    if (status == EnforcementOutcome.CLEARED) {
+                        scheduleRequest = null
+                        holder = Holder.NONE
+                        held = null
+                    }
+                }
             }
         }
     }
@@ -140,12 +144,33 @@ internal class PauseClaims(
         clearPending = outcome != EnforcementOutcome.CLEARED
         if (!clearPending) {
             holder = Holder.NONE
+            held = null
         }
         return outcome
     }
 
-    private fun EnforcementApplyReport.holderAfter(applying: Holder): Holder {
-        return if (outcome == EnforcementOutcome.APPLIED) applying else Holder.NONE
+    /** Applies [request] for [applying] and records what the helper then holds; a failed apply leaves it holding nothing. */
+    private suspend fun send(
+        request: EnforcementRequest,
+        applying: Holder,
+    ): EnforcementApplyReport {
+        return delegate.apply(request).also { report ->
+            val applied = report.outcome == EnforcementOutcome.APPLIED
+            holder = if (applied) applying else Holder.NONE
+            held = request.takeIf { applied }
+        }
+    }
+
+    /**
+     * The helper takes a new configuration only when idle, so it is cleared and applied again within the
+     * lock the caller holds: nothing reads the moment between the two.
+     */
+    private suspend fun replace(
+        request: EnforcementRequest,
+        applying: Holder,
+    ): EnforcementApplyReport {
+        delegate.clear()
+        return send(request, applying)
     }
 
     private inner class ManualView : EnforcementPort {
@@ -154,14 +179,27 @@ internal class PauseClaims(
                 return delegate.reapplyRequiresPrompt
             }
 
-        /** A manual start or Resume while the schedule's restrictions hold joins them without a helper call. */
+        /**
+         * A manual start or Resume while the schedule's restrictions hold joins them. The helper is left
+         * alone unless the manual session ends later or pauses other items than it enforces; then it takes
+         * the manual request through the grant, so its deadline is the combined pause's latest end.
+         */
         override suspend fun apply(request: EnforcementRequest): EnforcementApplyReport {
             return mutex.withLock {
                 val joined = scheduleRequest != null && delegate.status() == EnforcementOutcome.APPLIED
-                val report = if (joined) {
-                    EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
-                } else {
-                    delegate.apply(request).also { report -> holder = report.holderAfter(Holder.MANUAL) }
+                val current = held
+                val report = when {
+                    !joined -> {
+                        send(request, Holder.MANUAL)
+                    }
+
+                    current != null && current.sameTargets(request) && current.sessionEndEpochMillis >= request.sessionEndEpochMillis -> {
+                        EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
+                    }
+
+                    else -> {
+                        replace(request.withGrantOnly(), Holder.MANUAL)
+                    }
                 }
                 manualRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
                 if (report.outcome != EnforcementOutcome.APPLIED) {
@@ -186,8 +224,7 @@ internal class PauseClaims(
                     }
 
                     holder == Holder.MANUAL -> {
-                        val report = delegate.apply(schedule.withGrantOnly())
-                        holder = report.holderAfter(Holder.SCHEDULE)
+                        val report = send(schedule.withGrantOnly(), Holder.SCHEDULE)
                         if (report.outcome != EnforcementOutcome.APPLIED) {
                             scheduleRequest = null
                             clearHelper()
