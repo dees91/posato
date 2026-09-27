@@ -28,3 +28,20 @@ class ScheduleScreenTimeReadinessTest {
         assertEquals(true, LocalApplicationMappingsLoadResult.Failure(LocalApplicationMappingsLoadFailure.STORAGE).allowsScheduledStarts())
     }
 }
+
+class MacScheduleReadinessTest {
+    @Test
+    fun `given each Mac setup state then Schedules asks for the one thing missing and nothing before the first read`() {
+        val ready = app.posato.feature.onboarding.MacHelperReadiness.READY
+        val cases = mapOf(
+            app.posato.feature.onboarding.MacSetupPresentation() to MacScheduleReadiness.UNKNOWN,
+            app.posato.feature.onboarding.MacSetupPresentation(readiness = ready) to MacScheduleReadiness.SETUP,
+            app.posato.feature.onboarding.MacSetupPresentation(readiness = ready, setupComplete = true, schedulesNeedConsent = true) to
+                MacScheduleReadiness.CONSENT,
+            app.posato.feature.onboarding.MacSetupPresentation(readiness = ready, setupComplete = true, readyForSchedules = true) to
+                MacScheduleReadiness.READY,
+        )
+
+        cases.forEach { (presentation, expected) -> assertEquals(expected, presentation.scheduleReadiness()) }
+    }
+}

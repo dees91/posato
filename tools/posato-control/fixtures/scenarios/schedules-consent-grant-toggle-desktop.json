@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {
+      "name": "open-session",
+      "action": "tap",
+      "query": {
+        "text": "Session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-this-mac",
+      "action": "tap",
+      "query": {
+        "textContains": "This Mac, ",
+        "role": "button"
+      }
+    },
+    {
+      "name": "grant-reveal",
+      "action": "scrollTo",
+      "query": {
+        "textContains": "Start sessions without the password",
+        "role": "button"
+      }
+    },
+    {
+      "name": "grant-off",
+      "action": "tap",
+      "query": {
+        "textContains": "Start sessions without the password",
+        "role": "button"
+      }
+    },
+    {
+      "name": "grant-settled",
+      "action": "sleep",
+      "seconds": 3
+    },
+    {
+      "name": "grant-on",
+      "action": "tap",
+      "query": {
+        "textContains": "Start sessions without the password",
+        "role": "button"
+      }
+    }
+  ]
+}

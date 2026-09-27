@@ -1,8 +1,10 @@
 package app.posato.desktop
 
 import androidx.compose.ui.window.application
+import app.posato.desktop.macos.AUTOMATIC_START_CONSENT_KEY
 import app.posato.desktop.macos.DesktopMacHelperState
 import app.posato.desktop.macos.DesktopStandingGrant
+import app.posato.desktop.macos.MacAutomaticStartConsentFlag
 import app.posato.desktop.macos.MacOsApplicationEnforcer
 import app.posato.desktop.macos.MacOsBrowserDomainEnforcer
 import app.posato.desktop.macos.MacOsHelperClient
@@ -53,6 +55,10 @@ fun main() {
                 offerFlag = MacSetupOfferFlag(
                     read = { MacNotificationsNative.readFlag(SETUP_OFFER_DISMISSED_KEY) == 1 },
                     write = { MacNotificationsNative.writeFlag(SETUP_OFFER_DISMISSED_KEY, true) },
+                ),
+                automaticStartConsent = MacAutomaticStartConsentFlag(
+                    read = { MacNotificationsNative.readFlag(AUTOMATIC_START_CONSENT_KEY) == 1 },
+                    write = { given -> MacNotificationsNative.writeFlag(AUTOMATIC_START_CONSENT_KEY, given) },
                 ),
             )
             val applicationGraph = createDesktopApplicationGraph(

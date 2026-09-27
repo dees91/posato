@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {
+      "name": "open-schedules",
+      "action": "tap",
+      "query": {
+        "text": "Schedules",
+        "role": "button"
+      }
+    },
+    {
+      "name": "consent-card",
+      "action": "waitFor",
+      "query": {
+        "text": "Allow schedules to start on this Mac",
+        "role": "button"
+      },
+      "state": "exists",
+      "timeoutSeconds": 60
+    },
+    {
+      "name": "no-add",
+      "action": "assert",
+      "query": {
+        "text": "Add schedule",
+        "role": "button"
+      },
+      "state": "absent"
+    },
+    {
+      "name": "schedules-consent-card",
+      "action": "screenshot"
+    },
+    {
+      "name": "allow",
+      "action": "tap",
+      "query": {
+        "text": "Allow schedules to start on this Mac",
+        "role": "button"
+      }
+    },
+    {
+      "name": "add-offered",
+      "action": "waitFor",
+      "query": {
+        "text": "Add schedule",
+        "role": "button"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "schedules-consent-given",
+      "action": "screenshot"
+    }
+  ]
+}

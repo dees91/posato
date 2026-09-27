@@ -1,6 +1,7 @@
 package app.posato.feature.schedules.ui
 
 import androidx.compose.runtime.Immutable
+import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.schedules.domain.MINUTES_PER_DAY
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.ScheduleLimits
@@ -172,4 +173,21 @@ internal fun minuteLabel(minuteOfDay: Int): String {
  */
 internal fun LocalApplicationMappingsLoadResult.allowsScheduledStarts(): Boolean {
     return (this as? LocalApplicationMappingsLoadResult.Success)?.access?.let { it == LocalApplicationMappingsAccess.READY } ?: true
+}
+
+/** Where a Mac stands for schedules; an unread state raises neither a card nor Add schedule. */
+internal enum class MacScheduleReadiness {
+    UNKNOWN,
+    SETUP,
+    CONSENT,
+    READY,
+}
+
+internal fun MacSetupPresentation.scheduleReadiness(): MacScheduleReadiness {
+    return when {
+        readyForSchedules -> MacScheduleReadiness.READY
+        readiness == null -> MacScheduleReadiness.UNKNOWN
+        schedulesNeedConsent -> MacScheduleReadiness.CONSENT
+        else -> MacScheduleReadiness.SETUP
+    }
 }

@@ -1,6 +1,7 @@
 package app.posato.feature.onboarding
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -56,6 +57,8 @@ internal data class MacSetupPresentation(
     val sessionBlocked: Boolean = false,
     val setupOpen: Boolean = false,
     val reads: Int = 0,
+    val readyForSchedules: Boolean = false,
+    val schedulesNeedConsent: Boolean = false,
 )
 
 @Stable
@@ -89,6 +92,9 @@ internal class MacHelperSetupUiState(
             return runner.run
         }
     private var offerDismissed by mutableStateOf(macHelper.setupOfferDismissed())
+
+    /** The consent to automatic starts as this Mac stores it; Schedules and the host read the same value. */
+    val consent: MacConsentKeeper = MacConsentKeeper(macHelper.automaticStartConsent)
     private var completedOperations by mutableLongStateOf(0)
     private var repeatedResult by mutableStateOf(false)
 
@@ -113,6 +119,8 @@ internal class MacHelperSetupUiState(
             sessionBlocked = sessionBlocked,
             setupOpen = setupOpen,
             reads = reads,
+            readyForSchedules = macReadyForSchedules(complete, standingGrant, consent.given),
+            schedulesNeedConsent = complete && standingGrant == MacStandingGrantState.ON && !consent.given,
         )
     }
 
@@ -155,11 +163,17 @@ internal class MacHelperSetupUiState(
             return
         }
         standingGrantChanging = true
+        if (!enabled) {
+            consent.record(false)
+        }
         scope.launch {
             try {
                 standingGrant = grant.setEnabled(enabled)
+                consent.settle(standingGrant)
             } finally {
                 standingGrantChanging = false
+                // A quiet read that started before the change must not overwrite its answer.
+                completedOperations += 1
             }
         }
     }
@@ -178,18 +192,29 @@ internal class MacHelperSetupUiState(
             return
         }
         removal = null
+        // The action's caption names automatic starts, including schedules added on other devices.
+        consent.record(true)
         runner.start()
         scope.launch {
-            val outcome = try {
-                runner.execute()
+            var finished = false
+            try {
+                val outcome = try {
+                    runner.execute()
+                } finally {
+                    runner.stop()
+                }
+                outcome.readiness?.let { answer -> readiness = answer }
+                outcome.grant?.let { grant -> standingGrant = grant }
+                completedOperations += 1
+                finished = complete
+                if (finished) {
+                    dismissOffer()
+                }
             } finally {
-                runner.stop()
-            }
-            outcome.readiness?.let { answer -> readiness = answer }
-            outcome.grant?.let { grant -> standingGrant = grant }
-            completedOperations += 1
-            if (complete) {
-                dismissOffer()
+                // An unfinished run, including one cancelled with the window, withdraws the consent it recorded.
+                if (!finished) {
+                    consent.record(false)
+                }
             }
         }
     }
@@ -232,11 +257,18 @@ internal class MacHelperSetupUiState(
         scope.launch {
             try {
                 val answer = macHelper.status()
-                if (!busy && completedOperations == startedAfter) {
+                val current = { !busy && completedOperations == startedAfter }
+                if (current()) {
                     macHelper.loginItem?.refresh()
-                    readiness = answer
-                    standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
-                    reads += 1
+                    val grant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
+                    // A setup run may have started while the grant was read; its answer wins.
+                    if (current()) {
+                        readiness = answer
+                        standingGrant = grant
+                        consent.settle(answer)
+                        consent.settle(grant)
+                        reads += 1
+                    }
                 }
             } finally {
                 reading = false
@@ -262,6 +294,7 @@ internal class MacHelperSetupUiState(
                 val result = macHelper.remove()
                 removal = result
                 standingGrant = null
+                consent.record(false)
                 result.readinessAfterRemoval()?.let { next -> readiness = next }
                 repeatedResult = false
                 completedOperations += 1
@@ -289,6 +322,8 @@ internal class MacHelperSetupUiState(
                 }
                 standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
                 readiness = answer
+                consent.settle(answer)
+                consent.settle(standingGrant)
                 completedOperations += 1
             } finally {
                 activity = null
@@ -313,7 +348,9 @@ internal fun rememberMacHelperSetupUiState(
 ): MacHelperSetupUiState {
     val scope = rememberCoroutineScope()
     val currentBusy by rememberUpdatedState(sessionBusy)
-    return remember(macHelper) { MacHelperSetupUiState(macHelper, scope, { currentBusy() }, Dispatchers.Default) }
+    val state = remember(macHelper) { MacHelperSetupUiState(macHelper, scope, { currentBusy() }, Dispatchers.Default) }
+    LaunchedEffect(state) { state.consent.observe() }
+    return state
 }
 
 /** One deferred read at the end of the refresh interval, however many activations it absorbs. */
@@ -344,3 +381,46 @@ private class TrailingRead(
 private const val REFRESH_INTERVAL_MILLIS: Long = 30_000L
 private const val TRAILING_MINIMUM_MILLIS: Long = 1_000L
 private val processStart = TimeSource.Monotonic.markNow()
+
+/** Keeps the consent to automatic starts in step with what this Mac stores and with the grant's actual answers. */
+@Stable
+internal class MacConsentKeeper(
+    private val store: MacAutomaticStartConsent?,
+) {
+    var given by mutableStateOf(store?.given?.value == true)
+        private set
+
+    /** Follows the stored value, which the schedule host may clear while the window is closed. */
+    suspend fun observe() {
+        store?.given?.collect { given = it }
+    }
+
+    fun record(value: Boolean) {
+        given = value
+        store?.record(value)
+    }
+
+    /**
+     * Records the consent from the Schedules card. It needs no password, because the grant is unchanged,
+     * and it counts only on a Mac whose setup is verified while nothing else runs.
+     */
+    fun allow(presentation: MacSetupPresentation) {
+        val idle = presentation.activity == null && presentation.setup?.running != true && !presentation.standingGrantChanging
+        if (idle && presentation.schedulesNeedConsent) {
+            record(true)
+        }
+    }
+
+    /** An actual answer that the grant is off, unknown or unsupported withdraws the consent; an unread grant keeps it. */
+    fun settle(grant: MacStandingGrantState?) {
+        if (grant != null && grant != MacStandingGrantState.ON && given) {
+            record(false)
+        }
+    }
+
+    fun settle(readiness: MacHelperReadiness) {
+        if (readiness == MacHelperReadiness.NOT_ENABLED && given) {
+            record(false)
+        }
+    }
+}

@@ -170,7 +170,7 @@ For what matters.</string>
     <string name="onboarding_privacy_encryption_detail">If you enable iCloud, changes are encrypted on this device before upload.</string>
     <string name="onboarding_privacy_local_apps_detail">Choose apps separately on each device.</string>
     <string name="onboarding_icloud_optional">Optional — Posato works without iCloud.</string>
-    <string name="onboarding_permission_control">Nothing is paused until you start a session.</string>
+    <string name="onboarding_permission_control">Nothing is paused until you start a pause or a schedule you set begins.</string>
     <string name="onboarding_permission_defer">You can continue and save your choices without enabling access.</string>
     <string name="onboarding_permission_unavailable">Screen Time access is not available in this version of Posato.</string>
     <string name="onboarding_permission_required">Allow Screen Time access before pausing websites or apps.</string>
@@ -248,7 +248,7 @@ For what matters.</string>
     <string name="presence_first_close_ok">OK</string>
     <string name="presence_login_item">Open Posato at login</string>
     <string name="mac_standing_grant">Start sessions without the password</string>
-    <string name="mac_standing_grant_supporting">An administrator approves this once. Restrictions still apply only when you start or resume a session.</string>
+    <string name="mac_standing_grant_supporting">An administrator approves this once. Restrictions apply only during a pause you start or a schedule you set.</string>
     <string name="mac_standing_grant_blocked">You can change this after the session ends.</string>
     <string name="mac_standing_grant_unknown">Posato could not confirm this setting. Check again.</string>
     <string name="presence_login_item_supporting">Posato starts in the menu bar with its window closed. It never asks for your password at login.</string>
@@ -267,13 +267,13 @@ For what matters.</string>
     <string name="mac_unified_overview_block">Block your chosen websites and apps.</string>
     <string name="mac_unified_overview_login">Start quietly at login, without opening a window.</string>
     <string name="mac_unified_overview_password">Start manual pauses and schedules without repeated passwords.</string>
-    <string name="mac_unified_overview_schedules">Schedules can also start when you sign in or wake this Mac during a scheduled pause.</string>
+    <string name="mac_unified_overview_schedules">Once this Mac is set up, your schedules start on their own, including schedules added on your other devices, and catch up when you sign in or wake this Mac during one. Setup itself creates no schedule.</string>
     <string name="mac_unified_action">Set up Posato</string>
     <string name="mac_unified_confirm_access">macOS may ask you to confirm access. You can review or revoke it later in This Mac settings.</string>
     <string name="mac_unified_blocking_settings">Blocking settings</string>
     <string name="mac_unified_blocking_settings_caption">Check or repeat one step on its own if setup needs help.</string>
     <string name="mac_unified_defer">You can finish setup later and still edit your paused items. Blocking stays unavailable until the helper is ready.</string>
-    <string name="mac_unified_offer_body">One setup for manual pauses and schedules. You can review or revoke access in This Mac settings.</string>
+    <string name="mac_unified_offer_body">One setup for manual pauses and schedules, which then start on their own, including schedules added on your other devices. You can review or revoke access in This Mac settings.</string>
     <string name="notification_pause_over_title">Pause over</string>
     <string name="notification_pause_over_body">Your websites and apps are available again.</string>
     <string name="notification_pause_started_title">Pause started</string>

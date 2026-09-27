@@ -45,6 +45,16 @@ public interface MacStandingGrant {
     public suspend fun setEnabled(enabled: Boolean): MacStandingGrantState
 }
 
+/**
+ * The consent to automatic starts, including schedules added on other devices. It is a local value of its
+ * own, never derived from the offer marker, so a host without a window reads it too.
+ */
+public interface MacAutomaticStartConsent {
+    public val given: StateFlow<Boolean>
+
+    public fun record(given: Boolean)
+}
+
 public interface MacHelperPort {
     public val loginItem: MacLoginItem?
         get() {
@@ -63,6 +73,12 @@ public interface MacHelperPort {
     public fun dismissSetupOffer() {
         return
     }
+
+    /** The person's consent to automatic starts; null where automatic starts do not exist. */
+    public val automaticStartConsent: MacAutomaticStartConsent?
+        get() {
+            return null
+        }
 
     public suspend fun enable(): MacHelperReadiness
 
@@ -95,4 +111,16 @@ internal object UnavailableMacHelper : MacHelperPort {
     }
 
     override fun openApprovalSettings() = Unit
+}
+
+/**
+ * Ready for schedules: the unified setup is verified, the grant is confirmed on, and the person agreed
+ * to automatic starts. Schedules and the host that starts them read this one answer.
+ */
+internal fun macReadyForSchedules(
+    setupComplete: Boolean,
+    grant: MacStandingGrantState?,
+    consent: Boolean,
+): Boolean {
+    return setupComplete && grant == MacStandingGrantState.ON && consent
 }
