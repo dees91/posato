@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
@@ -58,7 +59,9 @@ public class SessionNotifier internal constructor(
     public val available: Boolean = platform !== UnavailableSessionNotifications
 
     public suspend fun run() {
-        notices.follow(owner.status, scheduled.pause, scheduled::markAnnounced)
+        // Where the monitor extension owns a scheduled pause's notices, the app plans only the manual session's end.
+        val pauses = if (scheduled.ownsNotices) scheduled.pause else flowOf(null)
+        notices.follow(owner.status, pauses, scheduled::markAnnounced)
     }
 
     public suspend fun setEnabled(enabled: Boolean) {

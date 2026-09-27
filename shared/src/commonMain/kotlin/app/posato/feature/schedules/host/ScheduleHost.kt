@@ -87,6 +87,9 @@ internal class ScheduleHost(
         }
     }
 
+    override val ownsNotices: Boolean
+        get() = ports.announcesStarts
+
     override fun refresh() {
         triggers.trySend(Unit)
     }

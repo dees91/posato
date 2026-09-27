@@ -11,6 +11,8 @@ enum ScheduleMonitor {
     static let storeName = ManagedSettingsStore.Name("app.posato.schedule")
     static let activityPrefix = "app.posato.schedule."
     static let tailActivity = DeviceActivityName("app.posato.schedule.tail")
+    /// A one-shot end at the 24-hour cap, for an occurrence whose wall-clock end is later (a fall-back night).
+    static let capActivity = DeviceActivityName("app.posato.schedule.cap")
     static let fileVersion = 1
     static let startRecordVersion = 1
     /// Restarting or stopping monitoring calls the end early; a callback this
@@ -38,7 +40,7 @@ enum ScheduleMonitor {
 
     /// The schedule an activity starts, or nil for the tail and foreign activities.
     static func scheduleId(of activity: DeviceActivityName) -> String? {
-        guard isScheduleActivity(activity), activity != tailActivity else { return nil }
+        guard isScheduleActivity(activity), activity != tailActivity, activity != capActivity else { return nil }
         return String(activity.rawValue.dropFirst(activityPrefix.count))
     }
 }
@@ -113,19 +115,28 @@ enum ScheduleMonitorRule {
         on day: Date,
         calendar: Calendar
     ) -> ScheduleMonitorOccurrence? {
+        guard let bounds = wallClockBounds(schedule, on: day, calendar: calendar) else { return nil }
+        let end = min(bounds.end, bounds.start.addingTimeInterval(ScheduleMonitor.maximumOccurrence))
+        guard end > bounds.start else { return nil }
+        return ScheduleMonitorOccurrence(scheduleId: schedule.id, date: dateText(day, calendar: calendar), start: bounds.start, end: end)
+    }
+
+    /// The start and the wall-clock end Device Activity uses, before the 24-hour cap.
+    static func wallClockBounds(
+        _ schedule: ScheduleMonitorFile.Schedule,
+        on day: Date,
+        calendar: Calendar
+    ) -> (start: Date, end: Date)? {
         // Calendar weekdays run Sunday = 1 ... Saturday = 7; the plan's bit 0 is Monday.
         let weekday = (calendar.component(.weekday, from: day) + 5) % 7
-        let date = dateText(day, calendar: calendar)
         guard schedule.weekdays & (1 << weekday) != 0,
-              !schedule.stoppedDates.contains(date),
+              !schedule.stoppedDates.contains(dateText(day, calendar: calendar)),
               let start = time(on: day, minute: schedule.startMinute, calendar: calendar),
               let endDay = schedule.endMinute <= schedule.startMinute
                 ? calendar.date(byAdding: .day, value: 1, to: day) : day,
-              let rawEnd = time(on: endDay, minute: schedule.endMinute, calendar: calendar)
+              let end = time(on: endDay, minute: schedule.endMinute, calendar: calendar)
         else { return nil }
-        let end = min(rawEnd, start.addingTimeInterval(ScheduleMonitor.maximumOccurrence))
-        guard end > start else { return nil }
-        return ScheduleMonitorOccurrence(scheduleId: schedule.id, date: date, start: start, end: end)
+        return (start, end)
     }
 
     /// Every occurrence the table says runs at `now`: by the rule, or pinned by
@@ -341,9 +352,14 @@ extension ManagedSettingsStore: ScheduleShieldStore {
 
 protocol ScheduleNoticePoster {
     func post(identifier: String, title: String, body: String)
+    func removePending(identifier: String)
 }
 
 struct UserNotificationSchedulePoster: ScheduleNoticePoster {
+    func removePending(identifier: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+    }
+
     func post(identifier: String, title: String, body: String) {
         let content = UNMutableNotificationContent()
         content.title = title

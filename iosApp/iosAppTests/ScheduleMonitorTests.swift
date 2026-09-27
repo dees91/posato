@@ -25,9 +25,14 @@ final class FakeScheduleShieldStore: ScheduleShieldStore {
 
 final class FakeSchedulePoster: ScheduleNoticePoster {
     var posted: [String] = []
+    var removed: [String] = []
 
     func post(identifier: String, title: String, body: String) {
         posted.append(identifier)
+    }
+
+    func removePending(identifier: String) {
+        removed.append(identifier)
     }
 }
 
@@ -357,5 +362,61 @@ final class ScheduleMonitorTests: XCTestCase {
 
         XCTAssertEqual(store.clears, 1)
         XCTAssertEqual(poster.posted, [])
+    }
+
+    func testAnOnTimeEndClearsEvenWhenAnotherPlanStartsAMinuteLater() throws {
+        let files = try isolatedFiles()
+        let next = ScheduleMonitorFile.Schedule(
+            id: "000000000000400080000000000000a2", weekdays: 0b0011111, startMinute: 10 * 60 + 1, endMinute: 11 * 60,
+            stoppedDates: [], startTitle: "", startBody: ""
+        )
+        try files.writeTable(file([schedule(), next]))
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["example.com"]), applications: [])
+
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 10) }, calendar: calendar
+        )
+
+        XCTAssertEqual(store.clears, 1)
+    }
+
+    func testAStartInsideAManualSessionThatEndsFirstWithdrawsTheAppsEarlierPauseOver() throws {
+        let files = try isolatedFiles()
+        let base = file([schedule()])
+        let withManual = ScheduleMonitorFile(
+            version: base.version, schedules: base.schedules, running: [], domains: base.domains, applicationTokens: [],
+            notices: ScheduleMonitorFile.Notices(
+                enabled: true, endTitle: "Pause over", endBody: "",
+                manualSessionEnd: Int64(local(2026, 9, 28, 9, 30).timeIntervalSince1970)
+            )
+        )
+        try files.writeTable(withManual)
+        let poster = FakeSchedulePoster()
+
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: FakeScheduleShieldStore(), files: files, poster: poster,
+            now: { self.local(2026, 9, 28, 9) }, calendar: calendar
+        )
+
+        XCTAssertEqual(poster.removed, [ScheduleMonitor.endNoticeIdentifier])
+    }
+
+    func testAFallBackOccurrenceLongerThanADayGetsAnEndAtTheCap() throws {
+        // 2026-10-25 falls back from 03:00 to 02:00 in Warsaw, so Saturday 04:00 until Sunday 03:45 is 24 h 45 min.
+        let saturday = ScheduleMonitorFile.Schedule(
+            id: focusId, weekdays: 1 << 5, startMinute: 4 * 60, endMinute: 3 * 60 + 45,
+            stoppedDates: [], startTitle: "", startBody: ""
+        )
+        let publisher = IosScheduleMonitorPublisher(
+            files: try isolatedFiles(), center: { FakeScheduleCenter() }, authorized: { true }, isCapable: true,
+            storedMappings: { [] }, calendar: { self.calendar }, now: { self.local(2026, 10, 24, 12) }
+        )
+
+        let cap = try XCTUnwrap(publisher.cap(for: file([saturday])))
+
+        XCTAssertEqual(calendar.date(from: cap.intervalEnd), local(2026, 10, 24, 4).addingTimeInterval(24 * 60 * 60))
+        XCTAssertNil(publisher.cap(for: file([schedule()])))
     }
 }

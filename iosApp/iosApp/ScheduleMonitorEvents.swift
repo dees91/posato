@@ -27,6 +27,14 @@ enum ScheduleMonitorEvents {
         let domains = PosatoWebDomains.domains(from: file.domains)
         guard !domains.isEmpty || !applications.isEmpty else { return }
         store.applySchedule(domains: domains, applications: applications)
+        // A manual session ending inside this pause must not say Pause over early; the end of the
+        // combined pause is announced here instead.
+        if let manualEnd = file.notices.manualSessionEnd,
+           let latest = running.map(\.end).max(),
+           Int64(latest.timeIntervalSince1970) > manualEnd,
+           manualEnd > Int64(time.timeIntervalSince1970) {
+            poster.removePending(identifier: ScheduleMonitor.endNoticeIdentifier)
+        }
         for occurrence in running where !files.hasStarted(scheduleId: occurrence.scheduleId, date: occurrence.date) {
             try? files.recordStarted(occurrence, at: time)
             guard file.notices.enabled,
@@ -60,11 +68,13 @@ enum ScheduleMonitorEvents {
             return
         }
         let time = now()
-        // Anything that still runs a minute from now keeps the shields.
-        let stillRunning = ScheduleMonitorRule.running(
-            in: file, at: time.addingTimeInterval(ScheduleMonitor.earlyCallbackMargin), calendar: calendar
-        )
-        guard stillRunning.isEmpty else { return }
+        let running = ScheduleMonitorRule.running(in: file, at: time, calendar: calendar)
+        let own = ScheduleMonitor.scheduleId(of: activity)
+        // A restart or stop of monitoring calls this plan's end early; its own occurrence still runs.
+        let ownStillRuns = running.contains { $0.scheduleId == own && $0.end > time.addingTimeInterval(ScheduleMonitor.earlyCallbackMargin) }
+        // Another occurrence running now keeps the shields; one that starts later reapplies them itself.
+        let othersRun = running.contains { $0.scheduleId != own }
+        guard !ownStillRuns, !othersRun else { return }
         let held = store.holdsAnyShield
         store.clearSchedule()
         let sessionEnded = (file.notices.manualSessionEnd ?? 0) <= Int64(time.timeIntervalSince1970)

@@ -62,6 +62,10 @@ internal interface ScheduledPauses {
 
     /** Evaluates now, such as when the app returns to the foreground. */
     fun refresh() = Unit
+
+    /** False where another process owns the scheduled pause's notices, such as the iPhone's monitor extension. */
+    val ownsNotices: Boolean
+        get() = true
 }
 
 internal object NoScheduledPauses : ScheduledPauses {

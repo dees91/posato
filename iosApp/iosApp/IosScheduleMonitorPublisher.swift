@@ -121,6 +121,9 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         if let tail = tail(for: file) {
             wanted[ScheduleMonitor.tailActivity] = tail
         }
+        if let cap = cap(for: file) {
+            wanted[ScheduleMonitor.capActivity] = cap
+        }
         let stale = center.monitoredActivities.filter { ScheduleMonitor.isScheduleActivity($0) && wanted[$0] == nil }
         if !stale.isEmpty {
             center.stopMonitoringSchedules(stale)
@@ -162,6 +165,32 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
     }
 
     /// Compares only the fields Posato sets, since the system may fill in others such as the calendar.
+    /// The nearest occurrence in the next two weeks whose wall-clock end passes the 24-hour cap (a
+    /// fall-back night) gets a one-shot end at the cap, so the extension ends it like the engine does.
+    func cap(for file: ScheduleMonitorFile) -> DeviceActivitySchedule? {
+        let calendar = calendar()
+        let time = now()
+        let today = calendar.startOfDay(for: time)
+        var nearest: Date?
+        for offset in -1 ... 14 {
+            guard let day = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
+            for schedule in file.schedules {
+                guard let bounds = ScheduleMonitorRule.wallClockBounds(schedule, on: day, calendar: calendar) else { continue }
+                let cap = bounds.start.addingTimeInterval(ScheduleMonitor.maximumOccurrence)
+                if bounds.end > cap, cap > time, cap < (nearest ?? .distantFuture) {
+                    nearest = cap
+                }
+            }
+        }
+        guard let end = nearest else { return nil }
+        let fields: Set<Calendar.Component> = [.year, .month, .day, .hour, .minute, .second]
+        return DeviceActivitySchedule(
+            intervalStart: calendar.dateComponents(fields, from: end.addingTimeInterval(-SuspendedExpiryActivity.minimumInterval)),
+            intervalEnd: calendar.dateComponents(fields, from: end),
+            repeats: false
+        )
+    }
+
     static func sameInterval(_ left: DeviceActivitySchedule, _ right: DeviceActivitySchedule) -> Bool {
         let fields: [Calendar.Component] = [.year, .month, .day, .hour, .minute, .second]
         func matches(_ first: DateComponents, _ second: DateComponents) -> Bool {
