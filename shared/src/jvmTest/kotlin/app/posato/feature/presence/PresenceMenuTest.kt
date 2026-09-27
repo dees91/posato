@@ -2,6 +2,11 @@ package app.posato.feature.presence
 
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
+import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.ScheduleDate
+import app.posato.feature.schedules.domain.ScheduleId
+import app.posato.feature.schedules.host.ScheduledPause
+import app.posato.feature.schedules.host.ScheduledPauseState
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.session.domain.SessionOrigin
@@ -37,6 +42,29 @@ class PresenceMenuTest {
             assertEquals(case.expectedState, menu.state, "state for $case")
             assertEquals(case.expectedAction, menu.primaryAction, "action for $case")
         }
+    }
+
+    @Test
+    fun `given a scheduled pause restricting this Mac then the menu shows it as enforcing until the latest end`() {
+        val key = OccurrenceKey(ScheduleId("000000000000400080000000000000a1"), ScheduleDate(2026, 9, 28))
+        val scheduled = ScheduledPause("Focus", 0L, 9_000_000_000_000L, setOf(key), ScheduledPauseState.APPLIED)
+
+        val alone = presenceMenuOf(LocalSessionStatus.Inactive, EnforcementViewState(), false, scheduled)
+        assertEquals(PresenceState.ENFORCING, alone.state)
+        assertEquals(PresenceAction.END_SESSION_EARLY, alone.primaryAction)
+        assertEquals(9_000_000_000_000L, alone.sessionEndEpochMillis)
+
+        val waiting =
+            presenceMenuOf(LocalSessionStatus.Inactive, EnforcementViewState(), false, scheduled.copy(state = ScheduledPauseState.SETUP_REQUIRED))
+        assertEquals(PresenceState.NO_SESSION, waiting.state)
+    }
+
+    @Test
+    fun `given an enabled schedule and nothing running when quitting then Quit asks first`() {
+        val idle = presenceMenuOf(LocalSessionStatus.Inactive, EnforcementViewState(), false, null, schedulesEnabled = true)
+
+        assertEquals(QuitPrompt.CONFIRM_SCHEDULES, quitPromptFor(idle, null, 0L))
+        assertEquals(QuitPrompt.NONE, quitPromptFor(idle.copy(schedulesEnabled = false), null, 0L))
     }
 
     @Test

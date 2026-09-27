@@ -48,6 +48,7 @@ internal class MacSetupCallbacks(
     val dismissOffer: () -> Unit = {},
     val open: () -> Unit = {},
     val leave: () -> Unit = {},
+    val allowSchedules: () -> Unit = {},
 )
 
 internal fun MacHelperSetupUiState.callbacks(
@@ -65,6 +66,7 @@ internal fun MacHelperSetupUiState.callbacks(
         setUp = { setUp(sessionBlocked) },
         dismissOffer = ::dismissOffer,
         open = { setupOpen = true },
+        allowSchedules = { consent.allow(presentation()) },
         leave = {
             deferSetup()
             setupOpen = false

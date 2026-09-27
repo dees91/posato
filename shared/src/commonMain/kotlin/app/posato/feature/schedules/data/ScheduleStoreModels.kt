@@ -1,6 +1,7 @@
 package app.posato.feature.schedules.data
 
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.OccurrencePin
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleFacts
 import app.posato.feature.schedules.domain.ScheduleId
@@ -12,14 +13,25 @@ internal data class StoredSchedule(
     val refused: Boolean = false,
 )
 
-/** A running occurrence as the host first saw it, so edits and relaunches keep its original start. */
-internal data class OccurrencePin(
-    val key: OccurrenceKey,
-    val startEpochMillis: Long,
-    val notices: Int = 0,
+/** A skip or an early end: both are one fact per occurrence and stop it on every device. */
+internal enum class OccurrenceStop {
+    SKIP,
+    END,
+}
+
+/** What a host saw: occurrences it saw start, notice bits it posted, and occurrences that ended here. */
+internal data class ScheduleHostUpdate(
+    val pins: List<OccurrencePin> = emptyList(),
+    val notices: Map<OccurrenceKey, Int> = emptyMap(),
+    val finished: Set<OccurrenceKey> = emptySet(),
 ) {
+    val isEmpty: Boolean
+        get() {
+            return pins.isEmpty() && notices.isEmpty() && finished.isEmpty()
+        }
+
     override fun toString(): String {
-        return "OccurrencePin(redacted)"
+        return "ScheduleHostUpdate(redacted)"
     }
 }
 

@@ -20,6 +20,7 @@ internal suspend fun confirmsQuit(
         QuitPrompt.NONE -> return true
         QuitPrompt.CONFIRM_ENFORCING -> copy.quitEnforcing
         QuitPrompt.CONFIRM_NOT_ENFORCING -> copy.quitNotEnforcing
+        QuitPrompt.CONFIRM_SCHEDULES -> copy.quitSchedules
     }
     return MacPresenceEvents.presentAlert(copy.quitTitle, message, copy.quitKeep, copy.quitConfirm) == SECONDARY_CHOICE
 }

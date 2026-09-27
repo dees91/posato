@@ -23,6 +23,16 @@ internal class MacOsBrowserEnforcementLink(
         return enforcer.start(domains, sessionEndEpochMillis) is BrowserDomainEnforcementResult.Active
     }
 
+    override fun startWithGrant(
+        domains: List<String>,
+        sessionEndEpochMillis: Long,
+    ): EnforcementOutcome {
+        return when (val result = enforcer.start(domains, sessionEndEpochMillis, grantOnly = true)) {
+            is BrowserDomainEnforcementResult.Active -> EnforcementOutcome.APPLIED
+            is BrowserDomainEnforcementResult.Failed -> result.result.grantOnlyOutcome()
+        }
+    }
+
     override fun clear(): EnforcementOutcome {
         return enforcer.clear().toClearOutcome()
     }
@@ -71,6 +81,15 @@ internal fun HelperResult.toClearOutcome(): EnforcementOutcome {
             serviceState == HelperResult.State.ApprovalRequired ||
             serviceState == HelperResult.State.UnavailableOrIncompatible -> EnforcementOutcome.UNAVAILABLE
 
+        else -> EnforcementOutcome.FAILED
+    }
+}
+
+/** A scheduled start that the grant does not cover needs setup, not a password; a helper that is not ready is retried. */
+internal fun HelperResult.grantOnlyOutcome(): EnforcementOutcome {
+    return when {
+        failure == HelperResult.Failure.StandingGrantUnavailable -> EnforcementOutcome.AUTHORIZATION_REQUIRED
+        serviceState != HelperResult.State.Ready -> EnforcementOutcome.UNAVAILABLE
         else -> EnforcementOutcome.FAILED
     }
 }

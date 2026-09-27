@@ -19,6 +19,8 @@ import app.posato.desktop.update.createUpdaterController
 import app.posato.desktop.update.openInstanceLock
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.enforcement.JvmSessionEnforcement
+import app.posato.feature.onboarding.MacConsole
+import app.posato.feature.onboarding.MacHelperOperations
 import app.posato.feature.presence.loadPresenceCopy
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -43,6 +45,7 @@ fun main() {
                     enforcementClient,
                 ),
             )
+            val helperOperations = MacHelperOperations()
             val helperState = DesktopMacHelperState(
                 commands = enforcementClient,
                 verifyHelper = {
@@ -51,11 +54,13 @@ fun main() {
                 ioDispatcher = Dispatchers.IO,
                 openSettings = MacOsSystemSettings::open,
                 loginItem = MacLoginItemState,
-                standingGrant = DesktopStandingGrant(enforcementClient, Dispatchers.IO),
+                standingGrant = DesktopStandingGrant(enforcementClient, Dispatchers.IO, helperOperations),
                 offerFlag = MacSetupOfferFlag(
                     read = { MacNotificationsNative.readFlag(SETUP_OFFER_DISMISSED_KEY) == 1 },
                     write = { MacNotificationsNative.writeFlag(SETUP_OFFER_DISMISSED_KEY, true) },
                 ),
+                operations = helperOperations,
+                console = consoleOfThisAccount,
                 automaticStartConsent = MacAutomaticStartConsentFlag(
                     read = { MacNotificationsNative.readFlag(AUTOMATIC_START_CONSENT_KEY) == 1 },
                     write = { given -> MacNotificationsNative.writeFlag(AUTOMATIC_START_CONSENT_KEY, given) },
@@ -77,5 +82,14 @@ fun main() {
                 ResidentPosato(applicationGraph, updater, presenceCopy, launchedAtLogin)
             }
         }
+    }
+}
+
+/** Whether this account has the console, so a scheduled start waits while another account uses the Mac. */
+private val consoleOfThisAccount = MacConsole {
+    when (MacPresenceNative.consoleIsOurs()) {
+        1 -> true
+        0 -> false
+        else -> null
     }
 }

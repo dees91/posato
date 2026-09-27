@@ -17,9 +17,16 @@ public class EnforcementRequest(
     public val sessionId: String,
     public val sessionStartEpochMillis: Long,
     public val sessionEndEpochMillis: Long,
+    /** Applies only through the standing grant and never asks for a password; scheduled starts use it. */
+    public val grantOnly: Boolean = false,
 ) {
+    public fun withGrantOnly(): EnforcementRequest {
+        return EnforcementRequest(domains, mappingIds, sessionId, sessionStartEpochMillis, sessionEndEpochMillis, grantOnly = true)
+    }
+
     override fun equals(other: Any?): Boolean {
         return other is EnforcementRequest &&
+            grantOnly == other.grantOnly &&
             domains == other.domains &&
             mappingIds == other.mappingIds &&
             sessionId == other.sessionId &&
@@ -33,6 +40,7 @@ public class EnforcementRequest(
         result = 31 * result + sessionId.hashCode()
         result = 31 * result + sessionStartEpochMillis.hashCode()
         result = 31 * result + sessionEndEpochMillis.hashCode()
+        result = 31 * result + grantOnly.hashCode()
         return result
     }
 

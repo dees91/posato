@@ -2,6 +2,7 @@ package app.posato.feature.update.data
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.schedules.data.hasRunningSchedule
 import app.posato.feature.session.data.hasActiveLocalSession
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -65,7 +66,7 @@ internal class SqlUpdateMaintenanceStore(
         nowEpochMillis: Long,
     ): MaintenanceStoreResult<MaintenanceCloseOutcome> {
         return databaseCall {
-            if (database.hasActiveLocalSession(nowEpochMillis)) {
+            if (database.hasActiveLocalSession(nowEpochMillis) || database.hasRunningSchedule(nowEpochMillis)) {
                 MaintenanceCloseOutcome.SESSION_ACTIVE
             } else {
                 database.updateMaintenanceQueries.closeGate(fromBuild, targetBuild, nowEpochMillis)

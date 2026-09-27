@@ -10,10 +10,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
@@ -30,6 +35,8 @@ import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.presence.SessionWindowRequest
+import app.posato.feature.schedules.host.ScheduledPauses
+import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
@@ -37,7 +44,9 @@ import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.TargetsCategory
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -58,6 +67,7 @@ internal fun SessionScreen(
     onMacSetupAnnouncement: (String) -> Unit = {},
     windowRequest: SessionWindowRequest? = null,
     onConsumeWindowRequest: () -> Unit = {},
+    scheduledPauses: ScheduledPauses? = null,
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
     },
@@ -68,19 +78,33 @@ internal fun SessionScreen(
     val loginItemEnabled = loginItem?.enabled?.collectAsState()?.value
     LaunchedEffect(loginItem) { loginItem?.refresh() }
     LaunchedEffect(macSetupState) { macSetupState?.readQuietly() }
+    val scope = rememberCoroutineScope()
+    val scheduledEnd = remember(viewModel, scheduledPauses) {
+        ScheduledEndState(viewModel::setEarlyEndConfirmation, viewModel::confirmEarlyEnd, { scheduledPauses?.endEarly() }, scope)
+    }
     val consumeWindowRequest by rememberUpdatedState(onConsumeWindowRequest)
     LaunchedEffect(windowRequest) {
         if (windowRequest == null) return@LaunchedEffect
         viewModel.uiState.first { it.status != null }
         when (windowRequest) {
-            SessionWindowRequest.START_SESSION -> viewModel.setSetupVisible(true)
-            SessionWindowRequest.END_SESSION_EARLY -> viewModel.setEarlyEndConfirmation(true)
-            SessionWindowRequest.SESSION -> Unit
+            SessionWindowRequest.START_SESSION -> {
+                viewModel.setSetupVisible(true)
+            }
+
+            SessionWindowRequest.END_SESSION_EARLY -> {
+                viewModel.setEarlyEndConfirmation(true)
+                scheduledEnd.confirming = scheduledPauses?.pause?.value?.restricts == true
+            }
+
+            SessionWindowRequest.SESSION -> {}
         }
         consumeWindowRequest()
     }
+    val scheduledView = scheduledPauseView(scheduledPauses, state, timeFormat, clock)
     SessionScreen(
         state = state,
+        scheduled = scheduledView,
+        scheduledEnd = scheduledEnd.actions(scheduledView?.restricts == true),
         onEnterSetup = { viewModel.setSetupVisible(true) },
         onExitSetup = { viewModel.setSetupVisible(false) },
         onSetDuration = viewModel::setDurationMinutes,
@@ -103,6 +127,58 @@ internal fun SessionScreen(
         macLoginItemEnabled = loginItemEnabled,
     )
 }
+
+@Composable
+private fun scheduledPauseView(
+    scheduledPauses: ScheduledPauses?,
+    state: SessionUiState,
+    timeFormat: SessionTimeFormat,
+    clock: SessionClock,
+): ScheduledPauseView? {
+    val scheduled = scheduledPauses?.pause?.collectAsState()?.value ?: return null
+    val manualEnd = (state.status as? LocalSessionStatus.Active)?.record?.endEpochMillis ?: 0L
+    val until = timeFormat.formatTime(maxOf(scheduled.endEpochMillis, manualEnd), clock.currentEpochMillis())
+    return ScheduledPauseView(scheduled.name, until, scheduled.state)
+}
+
+/** Asks before ending a scheduled pause; the menu's End early opens the same question. */
+@Stable
+private class ScheduledEndState(
+    private val confirmManualEnd: (Boolean) -> Unit,
+    private val endManual: () -> Unit,
+    private val endScheduled: suspend () -> Unit,
+    private val scope: CoroutineScope,
+) {
+    var confirming by mutableStateOf(false)
+
+    fun actions(restricts: Boolean): ScheduledEndActions {
+        return ScheduledEndActions(
+            confirming = confirming && restricts,
+            onRequest = {
+                confirmManualEnd(true)
+                confirming = true
+            },
+            onConfirm = {
+                confirming = false
+                // End early ends the manual session too, then every occurrence running here.
+                endManual()
+                scope.launch { endScheduled() }
+            },
+            onCancel = {
+                confirming = false
+                confirmManualEnd(false)
+            },
+        )
+    }
+}
+
+/** End early for a scheduled pause: it asks first, then ends the manual session and every occurrence running here. */
+internal class ScheduledEndActions(
+    val confirming: Boolean = false,
+    val onRequest: () -> Unit = {},
+    val onConfirm: () -> Unit = {},
+    val onCancel: () -> Unit = {},
+)
 
 private val PosatoLayout.screenInset: Dp
     get() {
@@ -132,8 +208,10 @@ internal fun SessionScreen(
     macSetup: MacSetupPresentation? = null,
     macActions: MacSetupCallbacks = MacSetupCallbacks(),
     macLoginItemEnabled: Boolean? = null,
+    scheduled: ScheduledPauseView? = null,
+    scheduledEnd: ScheduledEndActions = ScheduledEndActions(),
 ) {
-    key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
+    key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd, scheduledEnd.confirming) {
         Column(
             modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
@@ -141,6 +219,10 @@ internal fun SessionScreen(
             SessionOperationNotice(state, onRetry)
             when {
                 state.status == null -> {}
+
+                scheduled != null && scheduledEnd.confirming -> {
+                    ScheduledEarlyEndContent(scheduled, layout, scheduledEnd.onConfirm, scheduledEnd.onCancel)
+                }
 
                 state.confirmingEarlyEnd -> {
                     SessionEarlyEndContent(state, layout, onConfirmEarlyEnd, onCancelEarlyEnd)
@@ -172,6 +254,8 @@ internal fun SessionScreen(
                         macSetup,
                         macActions,
                         macLoginItemEnabled,
+                        scheduled,
+                        scheduledEnd.onRequest,
                     )
                 }
             }

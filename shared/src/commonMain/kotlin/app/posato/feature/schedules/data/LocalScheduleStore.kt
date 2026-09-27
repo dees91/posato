@@ -28,11 +28,16 @@ internal interface LocalScheduleStore {
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit>
 
-    suspend fun skip(
-        key: OccurrenceKey,
+    /** Skips or ends [keys]: one fact each, and one intent each while linked. */
+    suspend fun stop(
+        keys: Set<OccurrenceKey>,
+        kind: OccurrenceStop,
         authorDate: ScheduleDate,
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit>
+
+    /** Records what the host saw; pins keep their notice bits, and a finished occurrence becomes terminal here. */
+    suspend fun recordHost(update: ScheduleHostUpdate): ScheduleResult<Unit>
 }
 
 /** What the shared workspace says, already converted to schedule types. */

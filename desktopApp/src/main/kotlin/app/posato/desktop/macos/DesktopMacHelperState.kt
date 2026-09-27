@@ -1,6 +1,8 @@
 package app.posato.desktop.macos
 
 import app.posato.feature.onboarding.MacAutomaticStartConsent
+import app.posato.feature.onboarding.MacConsole
+import app.posato.feature.onboarding.MacHelperOperations
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperRemoval
@@ -22,6 +24,8 @@ internal class DesktopMacHelperState(
     override val standingGrant: MacStandingGrant? = null,
     private val offerFlag: MacSetupOfferFlag? = null,
     override val automaticStartConsent: MacAutomaticStartConsent? = null,
+    override val operations: MacHelperOperations = MacHelperOperations(),
+    override val console: MacConsole? = null,
 ) : MacHelperPort {
     override fun setupOfferDismissed(): Boolean {
         return offerFlag?.read() ?: true
@@ -32,16 +36,18 @@ internal class DesktopMacHelperState(
     }
 
     override suspend fun enable(): MacHelperReadiness {
-        return readiness { enableThenStatus() }
+        return operations.track { readiness { enableThenStatus() } }
     }
 
     override suspend fun recheck(): MacHelperReadiness {
-        return readiness {
-            val status = commands.status()
-            if (status.requiresRuleInstallation()) {
-                enableThenStatus()
-            } else {
-                status
+        return operations.track {
+            readiness {
+                val status = commands.status()
+                if (status.requiresRuleInstallation()) {
+                    enableThenStatus()
+                } else {
+                    status
+                }
             }
         }
     }
@@ -51,19 +57,21 @@ internal class DesktopMacHelperState(
     }
 
     override suspend fun remove(): MacHelperRemoval {
-        return withContext(ioDispatcher) {
-            if (runCatching { verifyHelper() }.isFailure) {
-                return@withContext MacHelperRemoval.CHECK_AGAIN
-            }
-            if (!loginItemOff()) {
-                return@withContext MacHelperRemoval.REMOVE_AGAIN
-            }
-            try {
-                commands.remove().toRemoval()
-            } catch (cancellation: CancellationException) {
-                throw cancellation
-            } catch (_: Exception) {
-                MacHelperRemoval.CHECK_AGAIN
+        return operations.track {
+            withContext(ioDispatcher) {
+                if (runCatching { verifyHelper() }.isFailure) {
+                    return@withContext MacHelperRemoval.CHECK_AGAIN
+                }
+                if (!loginItemOff()) {
+                    return@withContext MacHelperRemoval.REMOVE_AGAIN
+                }
+                try {
+                    commands.remove().toRemoval()
+                } catch (cancellation: CancellationException) {
+                    throw cancellation
+                } catch (_: Exception) {
+                    MacHelperRemoval.CHECK_AGAIN
+                }
             }
         }
     }

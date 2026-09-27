@@ -11,6 +11,18 @@ public interface BrowserEnforcementLink {
     ): Boolean
 
     /**
+     * Applies only through the standing grant and never shows a password dialog. Reports
+     * [EnforcementOutcome.APPLIED], [EnforcementOutcome.AUTHORIZATION_REQUIRED] when the grant is not
+     * usable, or [EnforcementOutcome.FAILED].
+     */
+    public fun startWithGrant(
+        domains: List<String>,
+        sessionEndEpochMillis: Long,
+    ): EnforcementOutcome {
+        return EnforcementOutcome.AUTHORIZATION_REQUIRED
+    }
+
+    /**
      * Reports [EnforcementOutcome.CLEARED] when nothing remains enforced,
      * [EnforcementOutcome.UNAVAILABLE] when the helper service is not registered,
      * approved, or compatible (nothing can be owned there), and
@@ -101,10 +113,17 @@ public class JvmSessionEnforcement(
 
     private suspend fun applyBoth(request: EnforcementRequest): EnforcementApplyReport {
         if (request.domains.isNotEmpty()) {
-            if (!browser.start(request.domains, request.sessionEndEpochMillis)) {
+            val browsers = if (request.grantOnly) {
+                browser.startWithGrant(request.domains, request.sessionEndEpochMillis)
+            } else if (browser.start(request.domains, request.sessionEndEpochMillis)) {
+                EnforcementOutcome.APPLIED
+            } else {
+                EnforcementOutcome.FAILED
+            }
+            if (browsers != EnforcementOutcome.APPLIED) {
                 appliedBrowsers = false
                 appliedApplications = false
-                return EnforcementApplyReport(EnforcementOutcome.FAILED, false, true)
+                return EnforcementApplyReport(browsers, false, !request.grantOnly)
             }
             appliedBrowsers = true
         } else {

@@ -4,6 +4,7 @@ import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.cash.sqldelight.async.coroutines.awaitAsOne
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.OccurrencePin
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleFacts
 import app.posato.feature.schedules.domain.ScheduleId
@@ -36,6 +37,11 @@ internal suspend fun PosatoDatabase.readSnapshot(): ScheduleSnapshot {
         OccurrencePin(OccurrenceKey(scheduleIdOf(id), ScheduleDate(year.toInt(), month.toInt(), day.toInt())), start, notices.toInt())
     }.awaitAsList()
     return ScheduleSnapshot(schedules, ScheduleFacts(skipped, ended, terminal), pins)
+}
+
+/** Whether a scheduled pause runs on this device, so an update waits for it like for a manual session. */
+internal suspend fun PosatoDatabase.hasRunningSchedule(nowEpochMillis: Long): Boolean {
+    return scheduleQueries.countRunningPins(nowEpochMillis).awaitAsOne() > 0
 }
 
 internal suspend fun PosatoDatabase.liveScheduleCount(): Long {
@@ -71,6 +77,28 @@ internal suspend fun PosatoDatabase.writeFact(
     key: OccurrenceKey,
 ) {
     scheduleQueries.insertFact(key.schedule.toBytes(), kind, key.date.year.toLong(), key.date.month.toLong(), key.date.day.toLong())
+}
+
+internal suspend fun PosatoDatabase.writeHostUpdate(update: ScheduleHostUpdate) {
+    update.pins.forEach { pin ->
+        val date = pin.key.date
+        scheduleQueries.insertPinIfAbsent(
+            pin.key.schedule.toBytes(),
+            date.year.toLong(),
+            date.month.toLong(),
+            date.day.toLong(),
+            pin.startEpochMillis,
+        )
+    }
+    update.notices.forEach { (key, bits) ->
+        scheduleQueries.addPinNotices(bits.toLong(), key.schedule.toBytes(), key.date.year.toLong(), key.date.month.toLong(), key.date.day.toLong())
+    }
+    update.finished.forEach { key ->
+        val id = key.schedule.toBytes()
+        val date = key.date
+        scheduleQueries.insertTerminal(id, date.year.toLong(), date.month.toLong(), date.day.toLong())
+        scheduleQueries.deletePin(id, date.year.toLong(), date.month.toLong(), date.day.toLong())
+    }
 }
 
 internal suspend fun PosatoDatabase.writeIntent(

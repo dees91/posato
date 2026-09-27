@@ -68,15 +68,24 @@ internal class SqlScheduleStore(
         }
     }
 
-    override suspend fun skip(
-        key: OccurrenceKey,
+    override suspend fun stop(
+        keys: Set<OccurrenceKey>,
+        kind: OccurrenceStop,
         authorDate: ScheduleDate,
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit> {
         return transact {
-            writeFact(FACT_SKIP, key)
-            workspaceId?.let { writeIntent(it, ScheduleIntent.Skip(key, authorDate)) }
+            keys.forEach { key ->
+                writeFact(if (kind == OccurrenceStop.SKIP) FACT_SKIP else FACT_END, key)
+                val intent = if (kind == OccurrenceStop.SKIP) ScheduleIntent.Skip(key, authorDate) else ScheduleIntent.End(key, authorDate)
+                workspaceId?.let { writeIntent(it, intent) }
+            }
         }
+    }
+
+    override suspend fun recordHost(update: ScheduleHostUpdate): ScheduleResult<Unit> {
+        // The host's own writes never wake the host again.
+        return transact(changed = false) { writeHostUpdate(update) }
     }
 
     override suspend fun readIntents(): ScheduleResult<List<SequencedScheduleIntent>> {

@@ -123,6 +123,55 @@ class MacOsBrowserDomainEnforcerTest {
     }
 
     @Test
+    fun `given a scheduled start without the grant when started then nothing is configured or applied and no password is asked`() {
+        val commands = FakeBrowserDomainCommands(configurePort = 8080u)
+        val enforcer = MacOsBrowserDomainEnforcer(commands)
+
+        val result = enforcer.start(listOf("example.com"), grantOnly = true)
+
+        val failed = result as BrowserDomainEnforcementResult.Failed
+        assertEquals(HelperResult.Failure.StandingGrantUnavailable, failed.result.failure)
+        assertEquals(0, commands.configureCalls + commands.applyCalls + commands.grantApplyCalls)
+    }
+
+    @Test
+    fun `given a scheduled start with the grant when the daemon refuses it then it never falls back to the password apply`() {
+        val refused = HelperResult(
+            outcome = HelperResult.Outcome.Failure,
+            serviceState = HelperResult.State.Ready,
+            ownershipPhase = HelperResult.Phase.Idle,
+            requiredAction = HelperResult.RequiredAction.None,
+            failure = HelperResult.Failure.StandingGrantUnavailable,
+        )
+        val commands = FakeBrowserDomainCommands(configurePort = 8080u, grant = HelperGrantState.On, grantResults = mutableListOf(refused))
+        val enforcer = MacOsBrowserDomainEnforcer(commands)
+
+        val result = enforcer.start(listOf("example.com"), grantOnly = true)
+
+        assertTrue(result is BrowserDomainEnforcementResult.Failed)
+        assertEquals(1, commands.grantApplyCalls)
+        assertEquals(0, commands.applyCalls)
+    }
+
+    @Test
+    fun `given a scheduled start with the grant when applied then only the grant path runs`() {
+        val applied = HelperResult(
+            outcome = HelperResult.Outcome.Success,
+            serviceState = HelperResult.State.Ready,
+            ownershipPhase = HelperResult.Phase.Applied,
+            requiredAction = HelperResult.RequiredAction.None,
+            failure = HelperResult.Failure.None,
+        )
+        val commands = FakeBrowserDomainCommands(configurePort = 8080u, grant = HelperGrantState.On, grantResults = mutableListOf(applied))
+        val enforcer = MacOsBrowserDomainEnforcer(commands)
+
+        val result = enforcer.start(listOf("example.com"), grantOnly = true)
+
+        assertEquals(BrowserDomainEnforcementResult.Active(8080u), result)
+        assertEquals(0, commands.applyCalls)
+    }
+
+    @Test
     fun `given sensitive values when rendered then they remain redacted`() {
         val active = BrowserDomainEnforcementResult.Active(4_443u)
         val failed = BrowserDomainEnforcementResult.Failed(successHelperResult())
@@ -162,7 +211,10 @@ class MacOsBrowserDomainEnforcerTest {
         ),
         private val restoreResults: MutableList<HelperResult> = mutableListOf(),
         private val reconcileResults: MutableList<HelperResult> = mutableListOf(),
+        private val grant: HelperGrantState = HelperGrantState.Off,
+        private val grantResults: MutableList<HelperResult>? = null,
     ) : MacOsBrowserDomainCommands {
+        var grantApplyCalls = 0
         var configureCalls = 0
         var applyCalls = 0
         var restoreCalls = 0
@@ -182,11 +234,12 @@ class MacOsBrowserDomainEnforcerTest {
         }
 
         override fun applyWithGrant(port: UShort): HelperResult {
-            throw AssertionError("no grant is on, so every apply prompts")
+            grantApplyCalls += 1
+            return checkNotNull(grantResults) { "no grant is on, so every apply prompts" }.removeFirst()
         }
 
         override fun grantState(): HelperGrantState {
-            return HelperGrantState.Off
+            return grant
         }
 
         override fun restore(): HelperResult {

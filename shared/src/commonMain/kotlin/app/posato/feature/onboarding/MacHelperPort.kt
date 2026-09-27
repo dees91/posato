@@ -55,6 +55,11 @@ public interface MacAutomaticStartConsent {
     public fun record(given: Boolean)
 }
 
+/** Whether this account has the console: true, false for another account, null when it cannot be read. */
+public fun interface MacConsole {
+    public fun isOurs(): Boolean?
+}
+
 public interface MacHelperPort {
     public val loginItem: MacLoginItem?
         get() {
@@ -76,6 +81,17 @@ public interface MacHelperPort {
 
     /** The person's consent to automatic starts; null where automatic starts do not exist. */
     public val automaticStartConsent: MacAutomaticStartConsent?
+        get() {
+            return null
+        }
+
+    public val console: MacConsole?
+        get() {
+            return null
+        }
+
+    /** Operations in flight that an automatic start must wait for; null where none are tracked. */
+    public val operations: MacHelperOperations?
         get() {
             return null
         }

@@ -34,6 +34,17 @@ class JvmSessionEnforcementTest {
     }
 
     @Test
+    fun `given a scheduled request when the link cannot apply with the grant then setup is required and the password apply never runs`() {
+        val links = recordingLinks()
+        val enforcement = JvmSessionEnforcement(links.browser, links.applications)
+
+        val report = runBlocking { enforcement.apply(request().withGrantOnly()) }
+
+        assertEquals(EnforcementOutcome.AUTHORIZATION_REQUIRED, report.outcome)
+        assertTrue(links.calls.isEmpty())
+    }
+
+    @Test
     fun `given an application failure when applying then the browser is restored and the apply fails`() {
         val links = recordingLinks(appStart = false)
         val enforcement = JvmSessionEnforcement(links.browser, links.applications)

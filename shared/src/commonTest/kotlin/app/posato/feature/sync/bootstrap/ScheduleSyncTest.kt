@@ -121,7 +121,12 @@ class ScheduleSyncTest {
         withSync("schedule-sync-invalid.db") { store, writer ->
             store.save(plan(10), workspaceId = null)
             ScheduleSync(store) { today }.pass(writer, workspace) { null }
-            store.skip(OccurrenceKey(plan(10).id, today.plusDays(500)), today, testContext.workspaceId.value.copyBytes())
+            store.stop(
+                setOf(OccurrenceKey(plan(10).id, today.plusDays(500))),
+                app.posato.feature.schedules.data.OccurrenceStop.SKIP,
+                today,
+                testContext.workspaceId.value.copyBytes(),
+            )
 
             val result = ScheduleSync(store) { today }.pass(writer, workspace) { null }
 

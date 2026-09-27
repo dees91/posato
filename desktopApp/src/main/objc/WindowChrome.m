@@ -198,6 +198,16 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_installLaunchPr
                 }];
 }
 
+// 1 when this account has the console, 0 when another account does, -1 when unknown.
+JNIEXPORT jint JNICALL Java_app_posato_desktop_MacPresenceNative_consoleIsOurs(JNIEnv *environment, jclass receiver) {
+    CFDictionaryRef session = CGSessionCopyCurrentDictionary();
+    if (session == NULL) return -1;
+    CFBooleanRef onConsole = CFDictionaryGetValue(session, kCGSessionOnConsoleKey);
+    jint result = onConsole == NULL ? -1 : (CFBooleanGetValue(onConsole) ? 1 : 0);
+    CFRelease(session);
+    return result;
+}
+
 JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresenceNative_launchedAtLogin(JNIEnv *environment, jclass receiver) {
     return presenceLaunchedAtLogin ? JNI_TRUE : JNI_FALSE;
 }

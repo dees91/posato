@@ -59,39 +59,36 @@ internal fun SessionOverviewContent(
     macSetup: MacSetupPresentation? = null,
     macActions: MacSetupCallbacks = MacSetupCallbacks(),
     macLoginItemEnabled: Boolean? = null,
+    scheduled: ScheduledPauseView? = null,
+    onEndSchedule: () -> Unit = {},
 ) {
-    val active = state.status is LocalSessionStatus.Active
+    val scheduledRestricts = scheduled?.restricts == true
+    val active = state.status is LocalSessionStatus.Active || scheduledRestricts
     val needsMacSetup = macSetup?.needsSetup() == true
     val hasItems = state.displayDomains().isNotEmpty() ||
         (state.review.applicationGroupName != null && (state.displayApplicationCount() ?: 0) > 0)
     var macSetupExpanded by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoHero(layout = layout, artworkContent = { PosatoIntervalArtwork() }, headingContent = {
-            PosatoHeading(
-                title = if (active) "A little room.\nJust for you." else "Room for what matters.",
-                eyebrow = if (active) "SESSION ACTIVE" else "NO SESSION ACTIVE",
-                description = when {
-                    active -> "Your session timer is running on this device."
-                    needsMacSetup -> "Finish setting up blocking, then choose when to take a pause."
-                    !hasItems -> "Start with a website or app you’d like a little space from."
-                    else -> "A quiet pause is ready when you are. Choose a little space from the things that pull you away."
-                },
-                layout = layout,
-            )
-        })
-        EnforcementNotice(state, onRetryEnforcement)
+        SessionHero(layout, overviewDescription(active, scheduledRestricts, needsMacSetup, hasItems), active, scheduledRestricts)
+        // While a schedule restricts this Mac, a received session needs no Resume here.
+        if (!scheduledRestricts) {
+            EnforcementNotice(state, onRetryEnforcement)
+        }
         MacSetupNotice(macSetup, macSetupExpanded, state.enforcement, active)
-        if (active) {
+        if (scheduled != null && scheduledRestricts) {
+            ScheduledPauseRunning(scheduled, onEndSchedule)
+        } else if (active) {
             PosatoEndTime("Until ${state.formattedActiveEnd.orEmpty()}", supportingText = state.remainingMillis?.let { remainingText(it) })
             PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, enabled = state.canRequestEarlyEnd()) { Text("End session early") }
         } else {
             SessionEndedCaption(state)
+            scheduled?.let { ScheduledPauseAttention(it, macSetup, macActions, onSetup) }
             SessionStartAction(state, needsMacSetup, hasItems, onSetup, onItems)
             macSetup?.takeIf { it.offerVisible }?.let { SessionSetupOffer(it, macActions, onSetup) }
         }
         FrozenSetCaption(state)
         SessionSelectionSummary(state, deviceLabel, onEditItems)
-        PosatoCaption("Saved on this device. Restrictions apply only while a session is active.")
+        PosatoCaption("Saved on this device. Restrictions apply only during a pause you start or a schedule you set.")
         SyncSection(syncState)
         macSetup?.let { presentation ->
             MacSetupSection(

@@ -1,6 +1,12 @@
 package app.posato.feature.update.data
 
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.schedules.data.ScheduleHostUpdate
+import app.posato.feature.schedules.data.SqlScheduleStore
+import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.OccurrencePin
+import app.posato.feature.schedules.domain.ScheduleDate
+import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.session.data.LocalSessionResult
 import app.posato.feature.session.data.SqlLocalSessionStore
 import app.posato.feature.session.domain.FrozenStartSet
@@ -61,6 +67,27 @@ class SqlUpdateMaintenanceStoreTest {
 
             assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.SESSION_ACTIVE), store.close(FROM_BUILD, TARGET_BUILD, NOW + 1L))
             assertEquals(MaintenanceStoreResult.Success(MaintenanceGate.Open), store.read())
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a scheduled pause running here when the gate closes then closing is refused until its pin ends`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("maintenance-schedule.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val schedules = SqlScheduleStore(database, Dispatchers.Default)
+            val key = OccurrenceKey(ScheduleId("000000000000400080000000000000a1"), ScheduleDate(2026, 9, 28))
+            schedules.recordHost(ScheduleHostUpdate(pins = listOf(OccurrencePin(key, NOW))))
+            val store = SqlUpdateMaintenanceStore(database, Dispatchers.Default)
+
+            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.SESSION_ACTIVE), store.close(FROM_BUILD, TARGET_BUILD, NOW + 1L))
+
+            schedules.recordHost(ScheduleHostUpdate(finished = setOf(key)))
+            assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED), store.close(FROM_BUILD, TARGET_BUILD, NOW + 2L))
         } finally {
             driver.close()
             testDatabase.delete()

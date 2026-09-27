@@ -47,6 +47,7 @@ import app.posato.feature.onboarding.rememberMacHelperSetupUiState
 import app.posato.feature.onboarding.rememberOnboardingUiState
 import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.schedules.ScheduleDependencies
+import app.posato.feature.schedules.host.ScheduledPauses
 import app.posato.feature.schedules.ui.SchedulesDestination
 import app.posato.feature.schedules.ui.SchedulesInputs
 import app.posato.feature.session.domain.LocalSessionStatus
@@ -66,6 +67,7 @@ import app.posato.feature.targets.ui.TargetsCategory
 import app.posato.feature.targets.ui.TargetsScreen
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 
 @Inject
@@ -80,6 +82,7 @@ class PosatoApplication internal constructor(
     private val onboardingDependencies: OnboardingDependencies,
     private val notifier: SessionNotifier,
     private val schedules: ScheduleDependencies,
+    private val scheduledPauses: ScheduledPauses,
 ) {
     private val scheduleInputs = SchedulesInputs(
         schedules.store,
@@ -114,7 +117,11 @@ class PosatoApplication internal constructor(
             helperSetup,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
-        LaunchedEffect(helperSetup) { sessionOwner.blockingSetup().collect { helperSetup.sessionBlocked = it } }
+        LaunchedEffect(helperSetup) {
+            // A scheduled pause holds the helper like a session, so setup waits for it too.
+            combine(sessionOwner.blockingSetup(), scheduledPauses.pause) { blocked, pause -> blocked || pause?.restricts == true }
+                .collect { helperSetup.sessionBlocked = it }
+        }
         if (hostsSession) {
             LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
             LaunchedEffect(notifier) { notifier.run() }
@@ -210,6 +217,7 @@ class PosatoApplication internal constructor(
                             onMacSetupAnnouncement = onMacSetupAnnouncement,
                             windowRequest = pendingRequest,
                             onConsumeWindowRequest = { pendingRequest = null },
+                            scheduledPauses = scheduledPauses,
                         )
                     }
 

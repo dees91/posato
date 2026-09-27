@@ -20,6 +20,7 @@ import app.posato.generated.resources.presence_quit_confirm
 import app.posato.generated.resources.presence_quit_enforcing
 import app.posato.generated.resources.presence_quit_keep
 import app.posato.generated.resources.presence_quit_not_enforcing
+import app.posato.generated.resources.presence_quit_schedules
 import app.posato.generated.resources.presence_quit_title
 import app.posato.generated.resources.presence_resume_restrictions
 import app.posato.generated.resources.presence_start_session
@@ -47,6 +48,7 @@ public data class PresenceCopy(
     val quitTitle: String,
     val quitEnforcing: String,
     val quitNotEnforcing: String,
+    val quitSchedules: String,
     val quitKeep: String,
     val quitConfirm: String,
     val firstCloseEnforcing: String,
@@ -76,6 +78,7 @@ public suspend fun loadPresenceCopy(): PresenceCopy {
         quitTitle = getString(Res.string.presence_quit_title),
         quitEnforcing = getString(Res.string.presence_quit_enforcing),
         quitNotEnforcing = getString(Res.string.presence_quit_not_enforcing),
+        quitSchedules = getString(Res.string.presence_quit_schedules),
         quitKeep = getString(Res.string.presence_quit_keep),
         quitConfirm = getString(Res.string.presence_quit_confirm),
         firstCloseEnforcing = getString(Res.string.presence_first_close_enforcing),

@@ -53,12 +53,17 @@ internal class SyncScheduleStore(
         return recorded { workspace -> local.remove(id, workspace) }
     }
 
-    override suspend fun skip(
-        key: OccurrenceKey,
+    override suspend fun stop(
+        keys: Set<OccurrenceKey>,
+        kind: OccurrenceStop,
         authorDate: ScheduleDate,
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit> {
-        return recorded { workspace -> local.skip(key, authorDate, workspace) }
+        return recorded { workspace -> local.stop(keys, kind, authorDate, workspace) }
+    }
+
+    override suspend fun recordHost(update: ScheduleHostUpdate): ScheduleResult<Unit> {
+        return local.recordHost(update)
     }
 
     private suspend fun <T> recorded(change: suspend (ByteArray?) -> ScheduleResult<T>): ScheduleResult<T> {

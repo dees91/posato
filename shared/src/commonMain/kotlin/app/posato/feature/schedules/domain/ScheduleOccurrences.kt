@@ -20,6 +20,20 @@ internal data class ScheduleFacts(
     }
 }
 
+/**
+ * An occurrence a host saw running, with its original start. It keeps running under later edits to
+ * the plan's days or start, and ends at the plan's current end time.
+ */
+internal data class OccurrencePin(
+    val key: OccurrenceKey,
+    val startEpochMillis: Long,
+    val notices: Int = 0,
+) {
+    override fun toString(): String {
+        return "OccurrencePin(redacted)"
+    }
+}
+
 internal data class ScheduleOccurrence(
     val key: OccurrenceKey,
     val name: String,
@@ -41,12 +55,16 @@ internal object ScheduleOccurrences {
         facts: ScheduleFacts,
         nowEpochMillis: Long,
         zone: ScheduleZone,
+        pins: List<OccurrencePin> = emptyList(),
     ): List<ScheduleOccurrence> {
         val today = zone.localAt(nowEpochMillis).date
+        val pinned = pins.mapNotNull { pin -> pinnedOccurrence(pin, plans, facts, zone) }
+        val pinnedKeys = pins.map { it.key }.toSet()
         // An occurrence lasts less than a day, so one running now started today or yesterday.
-        return plans.filter { it.enabled }.flatMap { plan ->
+        val derived = plans.filter { it.enabled }.flatMap { plan ->
             listOf(today.plusDays(-1), today).mapNotNull { date -> occurrence(plan, date, facts, zone) }
-        }.filter { nowEpochMillis >= it.startEpochMillis && nowEpochMillis < it.endEpochMillis }
+        }.filterNot { it.key in pinnedKeys }
+        return (pinned + derived).filter { nowEpochMillis >= it.startEpochMillis && nowEpochMillis < it.endEpochMillis }
             .sortedWith(compareBy({ it.startEpochMillis }, { it.key.schedule.hex }))
     }
 
@@ -55,8 +73,9 @@ internal object ScheduleOccurrences {
         facts: ScheduleFacts,
         nowEpochMillis: Long,
         zone: ScheduleZone,
+        pins: List<OccurrencePin> = emptyList(),
     ): SchedulePause? {
-        val running = active(plans, facts, nowEpochMillis, zone)
+        val running = active(plans, facts, nowEpochMillis, zone, pins)
         val first = running.firstOrNull() ?: return null
         return SchedulePause(first.name, running.maxOf { it.endEpochMillis }, running)
     }
@@ -75,6 +94,23 @@ internal object ScheduleOccurrences {
         return (0L..ScheduleLimits.MAX_FACT_DAYS_AHEAD.toLong()).asSequence()
             .mapNotNull { offset -> occurrence(plan, today.plusDays(offset), facts, zone) }
             .firstOrNull { it.startEpochMillis > nowEpochMillis }
+    }
+
+    /**
+     * A pinned occurrence ignores later edits to the days and the start; it ends at the plan's current
+     * end time on its date, or the next day when that end is at or before the pinned start's time.
+     */
+    private fun pinnedOccurrence(
+        pin: OccurrencePin,
+        plans: List<SchedulePlan>,
+        facts: ScheduleFacts,
+        zone: ScheduleZone,
+    ): ScheduleOccurrence? {
+        val plan = plans.firstOrNull { it.id == pin.key.schedule }?.takeIf { it.enabled && !facts.stops(pin.key) } ?: return null
+        val startMinute = zone.localAt(pin.startEpochMillis).minuteOfDay
+        val endDate = if (plan.endMinute <= startMinute) pin.key.date.plusDays(1) else pin.key.date
+        val end = minOf(zone.instantOf(endDate, plan.endMinute), pin.startEpochMillis + ScheduleLimits.MAX_OCCURRENCE_MILLIS)
+        return ScheduleOccurrence(pin.key, plan.name, pin.startEpochMillis, end).takeIf { end > pin.startEpochMillis }
     }
 
     private fun occurrence(

@@ -24,6 +24,10 @@ internal object MacPresenceNative {
     @JvmStatic
     external fun launchedAtLogin(): Boolean
 
+    /** 1 when this account has the console, 0 when another account does, -1 when unknown. */
+    @JvmStatic
+    external fun consoleIsOurs(): Int
+
     @JvmStatic
     external fun start(closeWindowTitle: String): Boolean
 
