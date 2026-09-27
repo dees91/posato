@@ -14,6 +14,7 @@ enum ScheduleMonitorEvents {
         store: ScheduleShieldStore,
         files: ScheduleMonitorFileStore?,
         poster: ScheduleNoticePoster,
+        caps: ScheduleCapRegistrar? = nil,
         now: () -> Date = Date.init,
         calendar: Calendar = ScheduleMonitor.calendar
     ) {
@@ -27,6 +28,15 @@ enum ScheduleMonitorEvents {
         let domains = PosatoWebDomains.domains(from: file.domains)
         guard !domains.isEmpty || !applications.isEmpty else { return }
         store.applySchedule(domains: domains, applications: applications)
+        // A fall-back occurrence would outlast 24 hours by the wall clock; its start registers the end at the cap.
+        for occurrence in running {
+            guard let caps,
+                  let schedule = file.schedules.first(where: { $0.id == occurrence.scheduleId }),
+                  let cap = ScheduleMonitorRule.overrunCap(schedule, on: calendar.startOfDay(for: occurrence.start), calendar: calendar),
+                  cap > time
+            else { continue }
+            caps.register(cap: ScheduleMonitorRule.capSchedule(endingAt: cap, calendar: calendar))
+        }
         // A manual session ending inside this pause must not say Pause over early; the end of the
         // combined pause is announced here instead.
         if let manualEnd = file.notices.manualSessionEnd,

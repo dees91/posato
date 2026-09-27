@@ -419,4 +419,40 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(calendar.date(from: cap.intervalEnd), local(2026, 10, 24, 4).addingTimeInterval(24 * 60 * 60))
         XCTAssertNil(publisher.cap(for: file([schedule()])))
     }
+
+    func testAFallBackOccurrenceRegistersItsCapWhenItStartsEvenWithoutTheApp() throws {
+        let saturday = ScheduleMonitorFile.Schedule(
+            id: focusId, weekdays: 1 << 5, startMinute: 4 * 60, endMinute: 3 * 60 + 45,
+            stoppedDates: [], startTitle: "", startBody: ""
+        )
+        let files = try isolatedFiles()
+        try files.writeTable(file([saturday]))
+        let caps = RecordingCapRegistrar()
+
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: FakeScheduleShieldStore(), files: files,
+            poster: FakeSchedulePoster(), caps: caps, now: { self.local(2026, 10, 24, 4) }, calendar: calendar
+        )
+
+        let cap = try XCTUnwrap(caps.registered.first)
+        XCTAssertEqual(caps.registered.count, 1)
+        XCTAssertEqual(calendar.date(from: cap.intervalEnd), local(2026, 10, 24, 4).addingTimeInterval(24 * 60 * 60))
+        XCTAssertFalse(cap.repeats)
+
+        let ordinary = RecordingCapRegistrar()
+        try files.writeTable(file([schedule()]))
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: FakeScheduleShieldStore(), files: files,
+            poster: FakeSchedulePoster(), caps: ordinary, now: { self.local(2026, 9, 28, 9) }, calendar: calendar
+        )
+        XCTAssertTrue(ordinary.registered.isEmpty)
+    }
+}
+
+final class RecordingCapRegistrar: ScheduleCapRegistrar {
+    var registered: [DeviceActivitySchedule] = []
+
+    func register(cap: DeviceActivitySchedule) {
+        registered.append(cap)
+    }
 }

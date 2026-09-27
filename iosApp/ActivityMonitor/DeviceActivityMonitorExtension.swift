@@ -14,7 +14,8 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
             activity: activity,
             store: ManagedSettingsStore(named: ScheduleMonitor.storeName),
             files: ScheduleMonitorFileStore.live(),
-            poster: UserNotificationSchedulePoster()
+            poster: UserNotificationSchedulePoster(),
+            caps: DeviceActivityCapRegistrar()
         )
     }
 

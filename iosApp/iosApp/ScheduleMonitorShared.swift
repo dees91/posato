@@ -121,6 +121,27 @@ enum ScheduleMonitorRule {
         return ScheduleMonitorOccurrence(scheduleId: schedule.id, date: dateText(day, calendar: calendar), start: bounds.start, end: end)
     }
 
+    /// The 24-hour cap of the occurrence on `day` when its wall-clock end passes it (a fall-back night), or nil.
+    static func overrunCap(
+        _ schedule: ScheduleMonitorFile.Schedule,
+        on day: Date,
+        calendar: Calendar
+    ) -> Date? {
+        guard let bounds = wallClockBounds(schedule, on: day, calendar: calendar) else { return nil }
+        let cap = bounds.start.addingTimeInterval(ScheduleMonitor.maximumOccurrence)
+        return bounds.end > cap ? cap : nil
+    }
+
+    /// A one-shot interval ending at `end`, which Device Activity accepts only when it lasts the minimum interval.
+    static func capSchedule(endingAt end: Date, calendar: Calendar) -> DeviceActivitySchedule {
+        let fields: Set<Calendar.Component> = [.year, .month, .day, .hour, .minute, .second]
+        return DeviceActivitySchedule(
+            intervalStart: calendar.dateComponents(fields, from: end.addingTimeInterval(-SuspendedExpiryActivity.minimumInterval)),
+            intervalEnd: calendar.dateComponents(fields, from: end),
+            repeats: false
+        )
+    }
+
     /// The start and the wall-clock end Device Activity uses, before the 24-hour cap.
     static func wallClockBounds(
         _ schedule: ScheduleMonitorFile.Schedule,
@@ -365,5 +386,18 @@ struct UserNotificationSchedulePoster: ScheduleNoticePoster {
         content.title = title
         content.body = body
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
+    }
+}
+
+/// Registers the one-shot end at an occurrence's 24-hour cap. The extension
+/// registers it when a fall-back occurrence starts, so the cap holds even when
+/// Posato has not been opened for weeks.
+protocol ScheduleCapRegistrar {
+    func register(cap: DeviceActivitySchedule)
+}
+
+struct DeviceActivityCapRegistrar: ScheduleCapRegistrar {
+    func register(cap: DeviceActivitySchedule) {
+        try? DeviceActivityCenter().startMonitoring(ScheduleMonitor.capActivity, during: cap)
     }
 }

@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
@@ -52,16 +51,16 @@ public class SessionNotifier internal constructor(
     clock: SessionClock,
     timeFormat: SessionTimeFormat,
 ) {
-    private val notices = SessionNotices(platform, ResourceNoticeTexts(timeFormat, clock), clock::currentEpochMillis)
+    private val notices = SessionNotices(platform, ResourceNoticeTexts(timeFormat, clock), clock::currentEpochMillis, scheduled.ownsNotices)
 
     public val settings: StateFlow<SessionNotificationSettings> = notices.settings
 
     public val available: Boolean = platform !== UnavailableSessionNotifications
 
     public suspend fun run() {
-        // Where the monitor extension owns a scheduled pause's notices, the app plans only the manual session's end.
-        val pauses = if (scheduled.ownsNotices) scheduled.pause else flowOf(null)
-        notices.follow(owner.status, pauses, scheduled::markAnnounced)
+        // Where the monitor extension owns a scheduled pause's notices, the app still follows the pause, so it
+        // plans only a manual end that outlasts it and announces nothing about the schedule itself.
+        notices.follow(owner.status, scheduled.pause, scheduled::markAnnounced)
     }
 
     public suspend fun setEnabled(enabled: Boolean) {
@@ -148,10 +147,11 @@ internal class SessionNotices(
     private val platform: SessionNotificationPlatform,
     private val texts: SessionNoticeTexts,
     now: () -> Long = { 0L },
+    private val announcesScheduled: Boolean = true,
 ) {
     private val mutableSettings = MutableStateFlow(SessionNotificationSettings(platform.isEnabled(), permission = null))
     private var current: LocalSessionStatus? = null
-    private val ends = CombinedPauseEnds(now)
+    private val ends = CombinedPauseEnds(now, appOwnsScheduled = announcesScheduled)
 
     val settings: StateFlow<SessionNotificationSettings> = mutableSettings.asStateFlow()
 
@@ -186,7 +186,9 @@ internal class SessionNotices(
 
                     is NoticeEvent.Scheduled -> {
                         ends.onScheduled(event.pause)?.let { perform(it) }
-                        event.pause?.let { announceScheduled(it, announced) }
+                        if (announcesScheduled) {
+                            event.pause?.let { announceScheduled(it, announced) }
+                        }
                     }
                 }
             }

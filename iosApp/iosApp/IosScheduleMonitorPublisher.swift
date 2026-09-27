@@ -167,6 +167,8 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
     /// Compares only the fields Posato sets, since the system may fill in others such as the calendar.
     /// The nearest occurrence in the next two weeks whose wall-clock end passes the 24-hour cap (a
     /// fall-back night) gets a one-shot end at the cap, so the extension ends it like the engine does.
+    /// The extension also registers it when such an occurrence starts, which covers a phone where
+    /// Posato was not opened within the two weeks.
     func cap(for file: ScheduleMonitorFile) -> DeviceActivitySchedule? {
         let calendar = calendar()
         let time = now()
@@ -175,20 +177,13 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         for offset in -1 ... 14 {
             guard let day = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
             for schedule in file.schedules {
-                guard let bounds = ScheduleMonitorRule.wallClockBounds(schedule, on: day, calendar: calendar) else { continue }
-                let cap = bounds.start.addingTimeInterval(ScheduleMonitor.maximumOccurrence)
-                if bounds.end > cap, cap > time, cap < (nearest ?? .distantFuture) {
+                guard let cap = ScheduleMonitorRule.overrunCap(schedule, on: day, calendar: calendar) else { continue }
+                if cap > time, cap < (nearest ?? .distantFuture) {
                     nearest = cap
                 }
             }
         }
-        guard let end = nearest else { return nil }
-        let fields: Set<Calendar.Component> = [.year, .month, .day, .hour, .minute, .second]
-        return DeviceActivitySchedule(
-            intervalStart: calendar.dateComponents(fields, from: end.addingTimeInterval(-SuspendedExpiryActivity.minimumInterval)),
-            intervalEnd: calendar.dateComponents(fields, from: end),
-            repeats: false
-        )
+        return nearest.map { ScheduleMonitorRule.capSchedule(endingAt: $0, calendar: calendar) }
     }
 
     static func sameInterval(_ left: DeviceActivitySchedule, _ right: DeviceActivitySchedule) -> Bool {
