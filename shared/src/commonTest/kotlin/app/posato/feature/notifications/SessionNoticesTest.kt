@@ -7,6 +7,7 @@ import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.testIdentifier
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
@@ -14,6 +15,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class SessionNoticesTest {
     private val start = 1_790_000_000_000L
@@ -68,7 +70,7 @@ class SessionNoticesSwitchTest {
         notices.setEnabled(false)
         notices.setEnabled(true)
 
-        assertEquals(listOf("cancel", "schedule", "request", "schedule"), platform.calls)
+        assertEquals(listOf("cancel", "schedule"), platform.calls)
     }
 
     @Test
@@ -152,7 +154,63 @@ class SessionNoticesStaleEndTest {
     }
 }
 
-private class GatedTexts : SessionNoticeTexts {
+class SessionNoticesPermissionTriggerTest {
+    @Test
+    fun `given no pause started here when the switch goes off and on then the system is not asked`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = true)
+        val notices = SessionNotices(platform, FixedTexts)
+        notices.follow(flowOf(LocalSessionStatus.Inactive))
+        platform.calls.clear()
+
+        notices.setEnabled(false)
+        notices.setEnabled(true)
+
+        assertEquals(emptyList(), platform.calls.filter { it == "request" })
+    }
+
+    @Test
+    fun `given the first local pause starts while the permission read is pending then the system is still asked`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = true, holdPermission = true)
+        val statuses = MutableStateFlow<LocalSessionStatus?>(LocalSessionStatus.Inactive)
+        val start = 1_790_000_000_000L
+        val end = start + 25 * 60_000L
+        val following = launch { SessionNotices(platform, FixedTexts).follow(statuses) }
+        runCurrent()
+
+        statuses.value = LocalSessionStatus.Active(SessionRecord(SessionId(testIdentifier(1)), start, end), end - start, origin = SessionOrigin.LOCAL)
+        runCurrent()
+        platform.answerPermission(NotificationPermission.NOT_DETERMINED)
+        runCurrent()
+        following.cancel()
+
+        assertTrue("request" in platform.calls)
+    }
+
+    @Test
+    fun `given notices turned off while the started-elsewhere text loads then nothing is posted`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = true)
+        val texts = GatedTexts(holdStarted = true)
+        val notices = SessionNotices(platform, texts)
+        val statuses = Channel<LocalSessionStatus?>(Channel.UNLIMITED)
+        val start = 1_790_000_000_000L
+        val end = start + 25 * 60_000L
+        val following = launch { notices.follow(statuses.receiveAsFlow()) }
+        statuses.send(LocalSessionStatus.Inactive)
+        statuses.send(LocalSessionStatus.Active(SessionRecord(SessionId(testIdentifier(1)), start, end), end - start, origin = SessionOrigin.ADOPTED))
+        runCurrent()
+
+        notices.setEnabled(false)
+        texts.gate.complete(Unit)
+        runCurrent()
+        following.cancel()
+
+        assertEquals(emptyList(), platform.calls.filter { it == "post" })
+    }
+}
+
+private class GatedTexts(
+    private val holdStarted: Boolean = false,
+) : SessionNoticeTexts {
     val gate = CompletableDeferred<Unit>()
     var hold = false
 
@@ -164,6 +222,9 @@ private class GatedTexts : SessionNoticeTexts {
     }
 
     override suspend fun startedElsewhere(needsResume: Boolean): NoticeText {
+        if (holdStarted) {
+            gate.await()
+        }
         return NoticeText("started", "started")
     }
 }
@@ -181,7 +242,15 @@ private object FixedTexts : SessionNoticeTexts {
 private class RecordingNotificationPlatform(
     private var enabled: Boolean,
     private val holdRequest: Boolean = false,
+    private val holdPermission: Boolean = false,
 ) : SessionNotificationPlatform {
+    private var pendingPermission: ((NotificationPermission) -> Unit)? = null
+
+    fun answerPermission(permission: NotificationPermission) {
+        pendingPermission?.invoke(permission)
+        pendingPermission = null
+    }
+
     private var asked = false
     private var pendingAnswer: ((NotificationPermission) -> Unit)? = null
     val calls = mutableListOf<String>()
@@ -194,7 +263,11 @@ private class RecordingNotificationPlatform(
     override val receivedPauseNeedsResume: Boolean = false
 
     override fun permission(handler: (NotificationPermission) -> Unit) {
-        handler(NotificationPermission.NOT_DETERMINED)
+        if (holdPermission) {
+            pendingPermission = handler
+        } else {
+            handler(NotificationPermission.NOT_DETERMINED)
+        }
     }
 
     override fun requestPermission(handler: (NotificationPermission) -> Unit) {

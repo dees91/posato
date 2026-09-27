@@ -49,6 +49,13 @@
   - **O-A**: scheduling checks that the pause still ends at that time after the text loads (test; the mutation that drops the check fails it).
   - **O-B**: the record's status lines and test bullets are aligned.
 
+### Maintainer review (2026-09-27, three P2)
+
+- **Permission only after a local start.** Turning the switch on asks only during a pause started on this device and only if the system was never asked; before, it asked whenever the permission was undetermined.
+- **Opt-out during the started-elsewhere text load.** The switch is read again after the text loads, as for the end notice.
+- **Pending permission read.** The read runs beside the status collector, so a first local pause that starts while it is pending still asks.
+- Each fix has a test that failed before it (`SessionNoticesPermissionTriggerTest`, and the switch test now expects no ask for a received pause).
+
 ## Verification
 
 | Check run | Result | Evidence |

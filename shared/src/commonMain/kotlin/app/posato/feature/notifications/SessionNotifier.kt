@@ -1,6 +1,7 @@
 package app.posato.feature.notifications
 
 import app.posato.feature.session.domain.LocalSessionStatus
+import app.posato.feature.session.domain.SessionOrigin
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.notification_pause_over_body
@@ -87,11 +88,12 @@ internal class SessionNotices(
     /**
      * The permission prompt runs beside the status collector, so an unanswered prompt never holds up
      * a withdrawn or announced notice. Once the person allows notices, the running pause's end is
-     * scheduled again, because a request made before permission may not have been kept.
+     * scheduled again, because a request made before permission may not have been kept. The permission
+     * read runs beside the collector too, so a pause that starts while it is pending is still seen as new.
      */
     suspend fun follow(statuses: Flow<LocalSessionStatus?>) {
         coroutineScope {
-            refreshPermission()
+            launch { refreshPermission() }
             var previous: LocalSessionStatus? = null
             var firstObservation = true
             statuses.filterNotNull().collect { status ->
@@ -119,7 +121,8 @@ internal class SessionNotices(
         } else if (active != null) {
             perform(SessionNotificationAction.ScheduleEnd(active.record.endEpochMillis))
         }
-        if (enabled && settings.value.permission == NotificationPermission.NOT_DETERMINED) {
+        // The system is asked only once, and only after a pause started on this device.
+        if (enabled && active?.origin == SessionOrigin.LOCAL && !platform.wasPermissionAsked()) {
             askThenReschedule()
         }
     }
@@ -142,7 +145,9 @@ internal class SessionNotices(
 
             SessionNotificationAction.AnnounceStartedElsewhere -> if (platform.isEnabled()) {
                 val text = texts.startedElsewhere(platform.receivedPauseNeedsResume)
-                platform.post(text.title, text.body)
+                if (platform.isEnabled()) {
+                    platform.post(text.title, text.body)
+                }
             }
 
             SessionNotificationAction.AskPermission -> askOnce()
