@@ -154,6 +154,28 @@ class SessionNoticesStaleEndTest {
     }
 }
 
+class SessionNoticesScheduleTriggerTest {
+    @Test
+    fun `given notices on and never asked when a first schedule is saved then the system is asked once`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = true)
+        val notices = SessionNotices(platform, FixedTexts)
+
+        notices.askAfterScheduleSaved()
+        notices.askAfterScheduleSaved()
+
+        assertEquals(1, platform.calls.count { it == "request" })
+    }
+
+    @Test
+    fun `given notices turned off when a schedule is saved then the system is not asked`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = false)
+
+        SessionNotices(platform, FixedTexts).askAfterScheduleSaved()
+
+        assertEquals(emptyList(), platform.calls.filter { it == "request" })
+    }
+}
+
 class SessionNoticesPermissionTriggerTest {
     @Test
     fun `given no pause started here when the switch goes off and on then the system is not asked`() = runTest {

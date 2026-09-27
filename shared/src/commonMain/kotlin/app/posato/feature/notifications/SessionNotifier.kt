@@ -52,6 +52,15 @@ public class SessionNotifier internal constructor(
     public suspend fun refreshPermission() {
         notices.refreshPermission()
     }
+
+    internal suspend fun onScheduleSaved() {
+        notices.askAfterScheduleSaved()
+    }
+
+    /** The person asked for notices from Schedules, so the system is asked now. */
+    internal suspend fun askNow() {
+        notices.askNow()
+    }
 }
 
 internal data class NoticeText(
@@ -125,6 +134,15 @@ internal class SessionNotices(
         if (enabled && active?.origin == SessionOrigin.LOCAL && !platform.wasPermissionAsked()) {
             askThenReschedule()
         }
+    }
+
+    suspend fun askNow() {
+        askThenReschedule()
+    }
+
+    /** A schedule saved on this device asks like a first local pause: once, and only while notices are on. */
+    suspend fun askAfterScheduleSaved() {
+        askOnce()
     }
 
     suspend fun refreshPermission() {

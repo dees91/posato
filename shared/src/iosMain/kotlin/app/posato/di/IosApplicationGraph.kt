@@ -15,6 +15,8 @@ import app.posato.feature.onboarding.OnboardingDependencies
 import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.UnavailableMacHelper
 import app.posato.feature.onboarding.data.SqlLocalSetupStore
+import app.posato.feature.schedules.data.ScheduleSyncStore
+import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.IosSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SqlLocalSessionStore
@@ -27,6 +29,7 @@ import app.posato.feature.session.ui.loadSessionTargets
 import app.posato.feature.sync.bootstrap.AppleBootstrap
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.BootstrapCoordinator
+import app.posato.feature.sync.bootstrap.ScheduleSync
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
 import app.posato.feature.sync.data.IosBootstrapCloudAdapter
 import app.posato.feature.sync.data.IosBootstrapKeychainAdapter
@@ -59,7 +62,9 @@ import platform.Foundation.NSRecursiveLock
 import platform.posix.time
 
 @DependencyGraph(AppScope::class)
-internal interface IosApplicationGraph : ApplicationGraph {
+internal interface IosApplicationGraph :
+    ApplicationGraph,
+    IosScheduleBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
@@ -189,6 +194,9 @@ internal interface IosApplicationGraph : ApplicationGraph {
         @Named("database") databaseDispatcher: CoroutineDispatcher,
         policySync: LocalPolicySyncStore,
         sessions: LocalSessionSyncStore,
+        schedules: ScheduleSyncStore,
+        zone: ScheduleZone,
+        clock: SessionClock,
     ): AppleSync {
         val keys = IosBootstrapKeychainAdapter(keychainProvider)
         val crypto = IosSyncCryptoProvider(cryptoProvider)
@@ -213,6 +221,7 @@ internal interface IosApplicationGraph : ApplicationGraph {
                 // best-effort instead of failing the removal itself.
                 sessions.dropRetainedMarkersExceptCurrent()
             },
+            scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
         )
     }
 }

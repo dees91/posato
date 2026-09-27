@@ -39,6 +39,7 @@ internal enum class SyncStatus {
 internal enum class SyncAttentionReason {
     LOCAL_CAPACITY,
     SHARED_CAPACITY,
+    SCHEDULE_CAPACITY,
 }
 
 internal data class AppleSyncState(
@@ -59,6 +60,7 @@ internal class AppleSync(
     crypto: SyncCryptoProvider,
     internal val backgroundDispatcher: CoroutineDispatcher,
     private val onWorkspaceRemoved: suspend () -> Unit = {},
+    private val scheduleSync: ScheduleSync? = null,
 ) {
     internal val bootstrap = AppleBootstrap(coordinator, backgroundDispatcher)
     private val reconciler = PolicyReconciler(policySync)
@@ -249,8 +251,18 @@ internal class AppleSync(
             val sessionHalt = sessionObserver?.onExchange(active, workspace)
             if (sessionHalt != null) {
                 publish(sessionHalt)
-            } else {
-                runPolicyPhase(workspace, active, read.base)
+                return
+            }
+            // Schedules run after sessions and before policies; a halt stops the exchange like the policy phase does.
+            val schedules = scheduleSync?.pass(active, workspace) { exchange.publishPending(workspace, active) }
+            if (schedules is ScheduleSyncResult.Halted) {
+                publish(schedules.status)
+                return
+            }
+            runPolicyPhase(workspace, active, read.base)
+            // A refused schedule is reported only when the policy phase has nothing more urgent to say.
+            if ((schedules as? ScheduleSyncResult.Done)?.refused == true && mutableState.value.status == SyncStatus.COMPLETED) {
+                mutableState.update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.SCHEDULE_CAPACITY) }
             }
         }
     }

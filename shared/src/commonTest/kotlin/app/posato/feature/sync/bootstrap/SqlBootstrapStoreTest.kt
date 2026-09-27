@@ -178,6 +178,49 @@ class SqlBootstrapStoreTest {
     }
 
     @Test
+    fun `given pending schedule changes when the workspace is cleared then its schedule intents and seed go with it`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("sync-bootstrap-schedules.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val database = PosatoDatabase(driver)
+            val store = SqlBootstrapStore(database, Dispatchers.Default)
+            val workspace = establishedWorkspace(1)
+            val workspaceId = workspace.context.workspaceId.value.copyBytes()
+            val schedules = app.posato.feature.schedules.data.SqlScheduleStore(database, Dispatchers.Default)
+            val plan = app.posato.feature.schedules.domain.SchedulePlan(
+                app.posato.feature.schedules.domain.ScheduleId("000000000000400080000000000000a1"),
+                "Focus",
+                1,
+                540,
+                600,
+                true,
+            )
+            store.commitEstablished(workspace)
+            schedules.save(plan, workspaceId)
+            schedules.materialize(
+                workspaceId,
+                app.posato.feature.schedules.data.SyncedSchedules(
+                    refused = listOf(plan.copy(id = app.posato.feature.schedules.domain.ScheduleId("000000000000400080000000000000a2"))),
+                ),
+            )
+            schedules.seedOnce(
+                workspaceId,
+                app.posato.feature.schedules.data.SyncedSchedules(),
+                app.posato.feature.schedules.domain.ScheduleDate(2026, 9, 27),
+            )
+
+            assertEquals(BootstrapStoreResult.Success(Unit), store.clearEstablished(workspace))
+
+            assertEquals(emptyList(), database.scheduleQueries.selectScheduleIntents().awaitAsList())
+            assertEquals(emptyList(), database.scheduleQueries.selectSeed(workspaceId).awaitAsList())
+            assertEquals(listOf(0L, 0L), database.scheduleQueries.selectSchedules().awaitAsList().map { it.refused })
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
     fun `given a tombstone when the store is reopened then the identifier is still removed`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("sync-bootstrap-tombstone-relaunch.db")
         val driver = testDatabase.openDriver()

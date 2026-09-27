@@ -20,6 +20,12 @@ class SqlUpdateMaintenanceMigrationTest {
                 "VALUES (1, X'$IDENTIFIER_HEX', $START_MILLIS, $END_MILLIS, 0, 'local')",
         )
         seeding.executeSql("DROP TABLE local_update_maintenance")
+        seeding.executeSql("DROP TABLE local_schedule")
+        seeding.executeSql("DROP TABLE local_schedule_fact")
+        seeding.executeSql("DROP TABLE local_schedule_terminal")
+        seeding.executeSql("DROP TABLE local_schedule_pin")
+        seeding.executeSql("DROP TABLE sync_schedule_intent")
+        seeding.executeSql("DROP TABLE sync_schedule_seed")
         seeding.executeSql("PRAGMA user_version = $PREVIOUS_VERSION")
         seeding.close()
 

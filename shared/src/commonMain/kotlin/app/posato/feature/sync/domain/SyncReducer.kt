@@ -55,6 +55,7 @@ internal data class SyncProjection(
     val removedScheduleIds: Set<ScheduleSyncId> = emptySet(),
     val scheduleSkips: Set<ScheduleOccurrenceRef> = emptySet(),
     val scheduleEnds: Set<ScheduleOccurrenceRef> = emptySet(),
+    val refusedSchedules: List<SynchronizedSchedule> = emptyList(),
 ) {
     override fun toString(): String {
         return "SyncProjection(redacted)"
@@ -205,6 +206,7 @@ private class ProjectionAccumulator(
     }
     private val appliedRemoves = mutableSetOf<ScheduleSyncId>()
     private val schedules = mutableMapOf<ScheduleSyncId, SyncOperationPayload.SchedulePut>()
+    private val refusedSchedules = mutableMapOf<ScheduleSyncId, SyncOperationPayload.SchedulePut>()
     private val scheduleSkips = mutableSetOf<ScheduleOccurrenceRef>()
     private val scheduleEnds = mutableSetOf<ScheduleOccurrenceRef>()
 
@@ -269,12 +271,11 @@ private class ProjectionAccumulator(
             eligible.sortedBy(SynchronizedSessionStart::order),
             conflicted,
             auditEntries,
-            schedules = schedules.values.sortedBy { put -> put.scheduleId.value }.map { put ->
-                SynchronizedSchedule(put.scheduleId, put.name, put.weekdays, put.startMinute, put.endMinute, put.enabled)
-            },
+            schedules = schedules.values.sortedBy { put -> put.scheduleId.value }.map(SyncOperationPayload.SchedulePut::toSynchronized),
             removedScheduleIds = removedScheduleIds.toSet(),
             scheduleSkips = scheduleSkips.toSet(),
             scheduleEnds = scheduleEnds.toSet(),
+            refusedSchedules = refusedSchedules.values.sortedBy { put -> put.scheduleId.value }.map(SyncOperationPayload.SchedulePut::toSynchronized),
         )
     }
 
@@ -328,6 +329,8 @@ private class ProjectionAccumulator(
         }
 
         schedules.size >= SyncFormatLimits.MAX_SYNCHRONIZED_SCHEDULES -> {
+            // Kept, never evicting: its author sees it as refused, and it becomes live once a slot frees.
+            refusedSchedules[put.scheduleId] = put
             SyncAuditOutcome.SCHEDULE_CAPACITY
         }
 
@@ -366,4 +369,8 @@ private class ProjectionAccumulator(
     }
 
     private fun outcome(changed: Boolean): SyncAuditOutcome = if (changed) SyncAuditOutcome.APPLIED else SyncAuditOutcome.NO_OP
+}
+
+private fun SyncOperationPayload.SchedulePut.toSynchronized(): SynchronizedSchedule {
+    return SynchronizedSchedule(scheduleId, name, weekdays, startMinute, endMinute, enabled)
 }

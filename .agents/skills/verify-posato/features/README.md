@@ -74,8 +74,8 @@ handles, required state, commands, and observable proof.
 
 ## Features
 
-- [Schedules](./schedules.md) covers the inactive UI shells, editor controls,
-  device setup and return navigation.
+- [Schedules](./schedules.md) covers adding, validating, skipping, editing,
+  turning off, deleting and persisting schedules, device readiness and sync.
 
 - [Websites](./websites.md) covers adding, rejecting, editing, removing, and
   persisting exact domains on every target.

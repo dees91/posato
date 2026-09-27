@@ -46,9 +46,9 @@ import app.posato.feature.onboarding.data.SetupCompletion
 import app.posato.feature.onboarding.rememberMacHelperSetupUiState
 import app.posato.feature.onboarding.rememberOnboardingUiState
 import app.posato.feature.presence.SessionWindowRequest
-import app.posato.feature.schedules.ui.SchedulesNavigationState
-import app.posato.feature.schedules.ui.SchedulesScreen
-import app.posato.feature.schedules.ui.schedulesSetupContent
+import app.posato.feature.schedules.ScheduleDependencies
+import app.posato.feature.schedules.ui.SchedulesDestination
+import app.posato.feature.schedules.ui.SchedulesInputs
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
@@ -79,7 +79,19 @@ class PosatoApplication internal constructor(
     private val bootstrap: AppleSync,
     private val onboardingDependencies: OnboardingDependencies,
     private val notifier: SessionNotifier,
+    private val schedules: ScheduleDependencies,
 ) {
+    private val scheduleInputs = SchedulesInputs(
+        schedules.store,
+        schedules.zone,
+        clock,
+        timeFormat,
+        notifier.takeIf { it.available },
+        bootstrap,
+        applicationMappings,
+        onboardingDependencies.applicationAccess,
+    )
+
     @Composable
     fun Content(
         modifier: Modifier = Modifier,
@@ -202,7 +214,7 @@ class PosatoApplication internal constructor(
                     }
 
                     destination == ApplicationDestination.SCHEDULES -> {
-                        SchedulesScreen(navigation.schedules, device, layout, contentModifier, macSetupState?.schedulesSetupContent())
+                        SchedulesDestination(scheduleInputs, device, layout, macSetupState, contentModifier)
                     }
 
                     else -> {
@@ -308,7 +320,6 @@ class PosatoApplication internal constructor(
 public class ApplicationNavigation {
     internal val browser: TargetsBrowserState = TargetsBrowserState()
     internal var destination: ApplicationDestination by mutableStateOf(ApplicationDestination.SESSION)
-    internal val schedules: SchedulesNavigationState = SchedulesNavigationState()
     internal var informationPage: ApplicationInformationPage? by mutableStateOf(null)
 
     internal fun select(selected: ApplicationDestination) {
