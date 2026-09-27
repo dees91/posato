@@ -35,6 +35,6 @@ For one named source revision that contains every 1.2 row, a notarized macOS can
 
 ## Decisions or blockers
 
-- **Blocker (maintainer):** merging #92, #93, #94, #95 and the `SCHEDULE-002` slices; accepting the ADR 0004/0006/0009 amendments that `SCHEDULE-002` slices 1, 4 and 6 implement; unlocking the test iPhone for XCTest once, because slice 5's device acceptance and `AC-02`'s iPhone scheduled start cannot run while it answers `DEVICE_AUTOMATION_LOCKED`.
+- **Blocker (maintainer):** merging #92, #93, #94, #95 and the `SCHEDULE-002` slices;  The ADR amendments were accepted and the test iPhone was unlocked for XCTest on 2026-09-27.
 - **Blocker (maintainer):** the release key's Keychain prompt during feed signing, and the publication go.
 - **Blocker (environment):** the test iPhone must be unlocked for XCTest (`DEVICE_AUTOMATION_LOCKED` on 2026-09-27).
