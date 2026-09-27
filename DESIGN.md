@@ -720,13 +720,14 @@ The UI shell adds **Schedules** beside **Session** and **Paused items** in
 each platform's existing adaptive navigation. `SCHEDULE-002` connects its
 actions and replaces the availability notice with real readiness.
 
-- The empty state explains recurring pauses. On Mac, **Set up this Mac**
-  opens the shared setup shell; iPhone retains **Add schedule**. The future
-  verified Mac state offers **Add schedule** directly.
+- The empty state explains recurring pauses. On a Mac that is not set up,
+  **Set up this Mac** opens the shared setup shell and **Add schedule** stays
+  hidden; a verified Mac offers **Add schedule** directly. iPhone always
+  offers **Add schedule** (`SCHEDULE-002` slice 3).
 - The Mac setup screen has the same explanation and the working **Set up
-  Posato** action as onboarding. **Not now** returns without creating
-  anything. A quiet **Preview schedule editor** opens the explicitly labelled
-  form with saving inactive until `SCHEDULE-002`. There is no additional Continue-to-schedule prerequisite button.
+  Posato** action as onboarding. **Back to schedules** returns without
+  creating anything. There is no additional Continue-to-schedule
+  prerequisite button.
 - The list shows each schedule's name, weekdays, hours, enabled state and
   next run. Show local readiness or a specific problem separately from the
   enabled switch. Missing permission offers a direct setup action, such as
