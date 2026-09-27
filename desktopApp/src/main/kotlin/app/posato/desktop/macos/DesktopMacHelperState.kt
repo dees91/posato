@@ -35,6 +35,10 @@ internal class DesktopMacHelperState(
         }
     }
 
+    override suspend fun status(): MacHelperReadiness {
+        return readiness { commands.status() }
+    }
+
     override suspend fun remove(): MacHelperRemoval {
         return withContext(ioDispatcher) {
             if (runCatching { verifyHelper() }.isFailure) {

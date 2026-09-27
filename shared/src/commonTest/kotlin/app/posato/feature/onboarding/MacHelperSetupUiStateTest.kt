@@ -289,7 +289,7 @@ class MacHelperQuietReadTest {
         assertEquals(MacHelperReadiness.READY, holder.presentation().readiness)
         assertNull(holder.presentation().activity)
         assertEquals(before, holder.presentation().completedOperations)
-        assertEquals(listOf("recheck"), helper.calls)
+        assertEquals(listOf("status"), helper.calls)
     }
 
     @Test
@@ -343,6 +343,11 @@ private class RecordingMacHelper(
 
     override suspend fun enable(): MacHelperReadiness {
         calls.add("enable")
+        return gate?.await() ?: answer
+    }
+
+    override suspend fun status(): MacHelperReadiness {
+        calls.add("status")
         return gate?.await() ?: answer
     }
 

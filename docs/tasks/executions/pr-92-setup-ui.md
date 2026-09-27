@@ -110,3 +110,12 @@ owner to unlock the phone and enter the passcode for XCTest. The Simulator
 Its time-control step did not match, and it is left for `SCHEDULE-002`, which
 replaces the editor. Rerun `schedules-device.json` on the unlocked iPhone.
 
+
+## Review corrections (2026-09-27)
+
+- **P2, status-only automatic read.** `recheck()` installs a missing
+  authorization rule through Enable, which ADR 0004 reserves for a deliberate
+  action. `MacHelperPort.status()` now reads without changing anything, and
+  Session's quiet read uses it; **Check again** and **Set up Posato** keep
+  `recheck()`. A desktop test shows a rule-repair status issues no Enable, and
+  the quiet-read test expects `status`; both failed before the change.

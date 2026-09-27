@@ -60,6 +60,14 @@ public interface MacHelperPort {
 
     public suspend fun recheck(): MacHelperReadiness
 
+    /**
+     * Reads the helper's state without changing it. Unlike [recheck], it never installs a missing
+     * authorization rule, so an automatic read cannot perform what only a deliberate action may.
+     */
+    public suspend fun status(): MacHelperReadiness {
+        return recheck()
+    }
+
     public suspend fun remove(): MacHelperRemoval
 
     public fun openApprovalSettings()
