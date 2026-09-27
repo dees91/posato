@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -106,8 +107,15 @@ internal fun SessionScreen(
         macLoginItemEnabled = loginItemEnabled,
         onMacLoginItemChange = { loginItem?.setEnabled(it) },
         onMacStandingGrantChange = { macSetupState?.setStandingGrant(it, sessionBlocked = state.blocksHelperRemoval()) },
+        onMacSetUp = { macSetupState?.setUp(sessionBlocked = state.blocksHelperRemoval()) },
+        onMacSetupDismissOffer = { macSetupState?.dismissOffer() },
     )
 }
+
+private val PosatoLayout.screenInset: Dp
+    get() {
+        return if (this == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
+    }
 
 @Composable
 internal fun SessionScreen(
@@ -138,11 +146,12 @@ internal fun SessionScreen(
     macLoginItemEnabled: Boolean? = null,
     onMacLoginItemChange: (Boolean) -> Unit = {},
     onMacStandingGrantChange: (Boolean) -> Unit = {},
+    onMacSetUp: () -> Unit = {},
+    onMacSetupDismissOffer: () -> Unit = {},
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
-        val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
         Column(
-            modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
+            modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
             SessionOperationNotice(state, onRetry)
@@ -164,6 +173,7 @@ internal fun SessionScreen(
                         onMacSetupAnnouncement,
                         onMacSetupRemove,
                         onExitSetup,
+                        onMacSetUp,
                     )
                 }
 
@@ -195,6 +205,8 @@ internal fun SessionScreen(
                         macLoginItemEnabled,
                         onMacLoginItemChange,
                         onMacStandingGrantChange,
+                        onMacSetUp,
+                        onMacSetupDismissOffer,
                     )
                 }
             }

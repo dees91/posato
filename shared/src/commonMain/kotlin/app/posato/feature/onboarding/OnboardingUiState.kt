@@ -44,6 +44,7 @@ internal data class OnboardingViewState(
     val permissionRunning: Boolean,
     val websiteSaving: Boolean,
     val helperActivity: MacSetupActivity? = null,
+    val macSetup: MacSetupPresentation? = null,
 )
 
 @Stable
@@ -51,7 +52,7 @@ internal class OnboardingUiState(
     private val setupStore: LocalSetupStore,
     private val policyStore: LocalTargetPolicyStore,
     private val applicationAccess: ApplicationAccessPort,
-    private val helperSetup: MacHelperSetupUiState,
+    val helperSetup: MacHelperSetupUiState,
     private val scope: CoroutineScope,
 ) {
     var step by mutableStateOf(OnboardingStep.PURPOSE)
@@ -82,6 +83,7 @@ internal class OnboardingUiState(
             permissionRunning = permissionRunning || helperSetup.activity != null,
             websiteSaving = websiteSaving,
             helperActivity = helperSetup.activity,
+            macSetup = helperSetup.presentation(),
         )
     }
 

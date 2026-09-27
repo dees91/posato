@@ -19,7 +19,16 @@ internal class DesktopMacHelperState(
     private val openSettings: (URI) -> Unit,
     override val loginItem: MacLoginItem? = null,
     override val standingGrant: MacStandingGrant? = null,
+    private val offerFlag: MacSetupOfferFlag? = null,
 ) : MacHelperPort {
+    override fun setupOfferDismissed(): Boolean {
+        return offerFlag?.read() ?: true
+    }
+
+    override fun dismissSetupOffer() {
+        offerFlag?.write()
+    }
+
     override suspend fun enable(): MacHelperReadiness {
         return readiness { enableThenStatus() }
     }

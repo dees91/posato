@@ -270,7 +270,7 @@ For what matters.</string>
     <string name="mac_unified_action">Set up Posato</string>
     <string name="mac_unified_confirm_access">macOS may ask you to confirm access. You can review or revoke it later in This Mac settings.</string>
     <string name="mac_unified_blocking_settings">Blocking settings</string>
-    <string name="mac_unified_blocking_settings_caption">Existing helper controls remain available while unified setup is in preview.</string>
+    <string name="mac_unified_blocking_settings_caption">Check or repeat one step on its own if setup needs help.</string>
     <string name="mac_unified_defer">You can finish setup later and still edit your paused items. Blocking stays unavailable until the helper is ready.</string>
     <string name="mac_unified_offer_body">One setup for manual pauses and schedules. You can review or revoke access in This Mac settings.</string>
     <string name="notification_pause_over_title">Pause over</string>
@@ -292,7 +292,7 @@ For what matters.</string>
     <string name="mac_unified_interrupted">Setup did not finish. Posato continues where it stopped.</string>
     <string name="mac_unified_session_blocks">You can finish setup after the session ends.</string>
     <string name="mac_unified_try_again">Try again</string>
-    <string name="mac_unified_next_approval">Turn on Posato in the System Settings window that opened, then come back here.</string>
+    <string name="mac_unified_next_approval">Turn on Posato under Allow in the Background in the System Settings window that opened. macOS may ask for your password.</string>
     <string name="mac_unified_next_password">Enter your Mac password so pauses can start without asking again.</string>
     <string name="mac_unified_next_working">Setting up this Mac…</string>
 </resources>

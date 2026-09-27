@@ -83,6 +83,7 @@ internal fun OnboardingScreen(
         onSync = syncState::sync,
         onRequestAccess = holder::requestAccess,
         onEnableHelper = holder::enableHelper,
+        onSetUpMac = { holder.helperSetup.setUp(sessionBlocked = false) },
         onRecheckHelper = holder::recheckHelper,
         onOpenHelperSettings = holder::openHelperSettings,
         onSubmitWebsites = { input, submissionId -> holder.submitWebsites(input, submissionId, browser::accept) },
@@ -107,6 +108,7 @@ internal fun OnboardingScreen(
     onSync: () -> Unit = {},
     onRequestAccess: () -> Unit = {},
     onEnableHelper: () -> Unit = {},
+    onSetUpMac: () -> Unit = {},
     onRecheckHelper: () -> Unit = {},
     onOpenHelperSettings: () -> Unit = {},
     onSubmitWebsites: (String, Long) -> Unit = { _, _ -> },
@@ -144,6 +146,7 @@ internal fun OnboardingScreen(
                         onRecheckHelper,
                         onOpenHelperSettings,
                         onDefer,
+                        onSetUpMac,
                     )
                 }
 

@@ -21,6 +21,7 @@ import app.posato.core.designsystem.PosatoHero
 import app.posato.core.designsystem.PosatoIntervalArtwork
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNotice
+import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformDevice
@@ -28,6 +29,7 @@ import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperReadinessNotice
+import app.posato.feature.onboarding.MacSetupOffer
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.MacSetupSection
 import app.posato.feature.onboarding.needsSetup
@@ -63,6 +65,8 @@ internal fun SessionOverviewContent(
     macLoginItemEnabled: Boolean? = null,
     onMacLoginItemChange: (Boolean) -> Unit = {},
     onMacStandingGrantChange: (Boolean) -> Unit = {},
+    onMacSetUp: () -> Unit = {},
+    onMacSetupDismissOffer: () -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
     val needsMacSetup = macSetup?.needsSetup() == true
@@ -91,6 +95,9 @@ internal fun SessionOverviewContent(
         } else {
             SessionEndedCaption(state)
             SessionStartAction(state, needsMacSetup, hasItems, onSetup, onItems)
+            if (macSetup?.offerVisible == true) {
+                PosatoPanel { MacSetupOffer(macSetup, onMacSetUp, onMacSetupDismissOffer) }
+            }
         }
         FrozenSetCaption(state)
         SessionSelectionSummary(state, deviceLabel, onEditItems)
@@ -110,6 +117,7 @@ internal fun SessionOverviewContent(
                 loginItemEnabled = macLoginItemEnabled,
                 onLoginItemChange = onMacLoginItemChange,
                 onStandingGrantChange = onMacStandingGrantChange,
+                onSetUp = onMacSetUp,
             )
         }
     }

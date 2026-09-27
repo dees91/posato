@@ -1,8 +1,10 @@
 package app.posato.feature.onboarding
 
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -11,7 +13,7 @@ import kotlin.test.assertTrue
 
 class MacUnifiedSetupTest {
     @Test
-    fun `given a fresh Mac when set up then blocking, approval, login and password run in order and it completes`() = runTest {
+    fun `given a fresh Mac when set up then blocking then approval then login then password run in order and it completes`() = runTest {
         val port = SetupPort(
             rechecks = mutableListOf(MacHelperReadiness.NOT_ENABLED, MacHelperReadiness.APPROVAL_REQUIRED, MacHelperReadiness.READY),
             enableAnswer = MacHelperReadiness.APPROVAL_REQUIRED,
@@ -100,6 +102,110 @@ class MacUnifiedSetupTest {
     }
 }
 
+class MacUnifiedSetupGuardTest {
+    @Test
+    fun `given a session that starts during setup then the password step is not requested`() = runTest {
+        var busy = false
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), onLoginOn = { busy = true })
+        val holder = MacHelperSetupUiState(port, this, sessionBusy = { busy })
+
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+
+        assertFalse(port.calls.contains("grant on"))
+        assertFalse(holder.presentation().setupComplete)
+    }
+
+    @Test
+    fun `given setup running then check and enable and remove and the grant switch do nothing`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), gate = gate)
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.setUp(sessionBlocked = false)
+        runCurrent()
+        holder.check()
+        holder.enable()
+        holder.remove(sessionBlocked = false)
+        holder.setStandingGrant(enabled = true, sessionBlocked = false)
+        runCurrent()
+        gate.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, port.calls.count { it == "recheck" })
+        assertFalse(port.calls.contains("enable") || port.calls.contains("remove"))
+    }
+
+    @Test
+    fun `given an old daemon or an unknown grant then setup is never complete and no offer shows`() = runTest {
+        listOf(MacStandingGrantState.UNSUPPORTED, MacStandingGrantState.UNKNOWN).forEach { grant ->
+            val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), loginOn = true, grant = grant, grantAfterRequest = grant)
+            val holder = MacHelperSetupUiState(port, this)
+
+            holder.setUp(sessionBlocked = false)
+            advanceUntilIdle()
+
+            assertFalse(holder.presentation().setupComplete, "grant $grant")
+            assertFalse(holder.presentation().offerVisible, "grant $grant")
+        }
+    }
+
+    @Test
+    fun `given a login item that stays off then the login step needs attention`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), loginSticksOff = true, grant = MacStandingGrantState.ON)
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+
+        assertEquals(MacSetupStepStatus.NEEDS_ATTENTION, holder.presentation().setup?.login)
+        assertFalse(holder.presentation().setupComplete)
+    }
+
+    @Test
+    fun `given verified completion then the offer is marked as handled`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY))
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+
+        assertTrue(holder.presentation().setupComplete)
+        assertTrue(port.offerDismissed)
+    }
+
+    @Test
+    fun `given a stored grant when the run has not read it yet then this Mac is not ready`() = runTest {
+        val readGate = CompletableDeferred<Unit>()
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), grant = MacStandingGrantState.ON, readGate = readGate)
+        val holder = MacHelperSetupUiState(port, this)
+        holder.readQuietly()
+        advanceUntilIdle()
+
+        holder.setUp(sessionBlocked = false)
+        runCurrent()
+
+        assertFalse(holder.presentation().setupComplete)
+        readGate.complete(Unit)
+        advanceUntilIdle()
+        assertTrue(holder.presentation().setupComplete)
+    }
+
+    @Test
+    fun `given a finished run when Session reads quietly then the run's result stays`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY, MacHelperReadiness.NOT_ENABLED))
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+        holder.readQuietly()
+        advanceUntilIdle()
+
+        assertEquals(1, port.calls.count { it == "recheck" })
+        assertTrue(holder.presentation().setupComplete)
+    }
+}
+
 private class SetupPort(
     private val rechecks: MutableList<MacHelperReadiness>,
     private val enableAnswer: MacHelperReadiness = MacHelperReadiness.READY,
@@ -107,6 +213,10 @@ private class SetupPort(
     loginOn: Boolean = false,
     private var grant: MacStandingGrantState = MacStandingGrantState.OFF,
     private val grantAfterRequest: MacStandingGrantState = MacStandingGrantState.ON,
+    private val onLoginOn: () -> Unit = {},
+    private val loginSticksOff: Boolean = false,
+    private val gate: CompletableDeferred<Unit>? = null,
+    private val readGate: CompletableDeferred<Unit>? = null,
 ) : MacHelperPort {
     val calls = mutableListOf<String>()
     var offerDismissed = false
@@ -117,7 +227,8 @@ private class SetupPort(
 
         override fun setEnabled(enabled: Boolean) {
             calls += if (enabled) "login on" else "login off"
-            state.value = enabled
+            state.value = enabled && !loginSticksOff
+            if (enabled) onLoginOn()
         }
 
         override fun refresh() = Unit
@@ -126,6 +237,9 @@ private class SetupPort(
     override val standingGrant: MacStandingGrant = object : MacStandingGrant {
         override suspend fun read(): MacStandingGrantState {
             calls += "grant read"
+            if (calls.count { it == "grant read" } > 1) {
+                readGate?.await()
+            }
             return grant
         }
 
@@ -143,10 +257,12 @@ private class SetupPort(
 
     override suspend fun recheck(): MacHelperReadiness {
         calls += "recheck"
+        gate?.await()
         return rechecks.removeFirstOrNull() ?: steadyRecheck
     }
 
     override suspend fun remove(): MacHelperRemoval {
+        calls += "remove"
         return MacHelperRemoval.REMOVED
     }
 

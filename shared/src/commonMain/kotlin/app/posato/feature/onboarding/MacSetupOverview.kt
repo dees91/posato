@@ -21,17 +21,16 @@ import app.posato.core.designsystem.PosatoTone
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_unified_action
 import app.posato.generated.resources.mac_unified_confirm_access
+import app.posato.generated.resources.mac_unified_interrupted
+import app.posato.generated.resources.mac_unified_next_approval
+import app.posato.generated.resources.mac_unified_next_password
+import app.posato.generated.resources.mac_unified_next_working
 import app.posato.generated.resources.mac_unified_offer_body
 import app.posato.generated.resources.mac_unified_overview_block
 import app.posato.generated.resources.mac_unified_overview_label
 import app.posato.generated.resources.mac_unified_overview_login
 import app.posato.generated.resources.mac_unified_overview_password
 import app.posato.generated.resources.mac_unified_overview_schedules
-import app.posato.generated.resources.mac_unified_title
-import app.posato.generated.resources.mac_unified_interrupted
-import app.posato.generated.resources.mac_unified_next_approval
-import app.posato.generated.resources.mac_unified_next_password
-import app.posato.generated.resources.mac_unified_next_working
 import app.posato.generated.resources.mac_unified_ready
 import app.posato.generated.resources.mac_unified_running
 import app.posato.generated.resources.mac_unified_session_blocks
@@ -40,6 +39,7 @@ import app.posato.generated.resources.mac_unified_status_attention
 import app.posato.generated.resources.mac_unified_status_done
 import app.posato.generated.resources.mac_unified_status_password
 import app.posato.generated.resources.mac_unified_status_working
+import app.posato.generated.resources.mac_unified_title
 import app.posato.generated.resources.mac_unified_try_again
 import app.posato.generated.resources.onboarding_action_not_now
 import org.jetbrains.compose.resources.StringResource
@@ -89,12 +89,16 @@ internal fun MacSetupAction(
     onSetUp: () -> Unit,
     modifier: Modifier = Modifier,
     sessionBlocks: Boolean = false,
+    style: PosatoButtonStyle = PosatoButtonStyle.Primary,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         val run = presentation.setup
+        val blocked = sessionBlocks || presentation.sessionBlocked
         when {
-            presentation.setupComplete -> PosatoNotice(tone = PosatoTone.Positive) {
-                Text(stringResource(Res.string.mac_unified_ready))
+            presentation.setupComplete -> {
+                PosatoNotice(tone = PosatoTone.Positive) {
+                    Text(stringResource(Res.string.mac_unified_ready))
+                }
             }
 
             run?.running == true -> {
@@ -103,19 +107,23 @@ internal fun MacSetupAction(
             }
 
             else -> {
-                val interrupted = run != null
+                val interrupted = run != null && run.unfinished()
                 if (interrupted) {
                     PosatoCaption(stringResource(Res.string.mac_unified_interrupted))
                 }
-                if (sessionBlocks) {
+                if (blocked) {
                     PosatoCaption(stringResource(Res.string.mac_unified_session_blocks))
                 }
-                PosatoButton(onClick = onSetUp, enabled = !sessionBlocks) {
+                PosatoButton(onClick = onSetUp, style = style, enabled = !blocked) {
                     Text(stringResource(if (interrupted) Res.string.mac_unified_try_again else Res.string.mac_unified_action))
                 }
             }
         }
     }
+}
+
+private fun MacSetupRun.unfinished(): Boolean {
+    return listOf(blocking, login, password).any { it != MacSetupStepStatus.DONE }
 }
 
 private fun MacSetupRun.nextStep(): StringResource {
@@ -140,7 +148,7 @@ internal fun MacSetupOffer(
             layout = PosatoLayout.Compact,
         )
         MacSetupOverview(run = presentation.setup)
-        MacSetupAction(presentation, onSetUp)
+        MacSetupAction(presentation, onSetUp, style = PosatoButtonStyle.Secondary)
         if (presentation.setup?.running != true) {
             PosatoButton(onClick = onDismiss, style = PosatoButtonStyle.Quiet) { Text(stringResource(Res.string.onboarding_action_not_now)) }
         }
@@ -151,4 +159,9 @@ internal fun MacSetupOffer(
 @Composable
 private fun MacSetupOfferPreview() {
     PosatoTheme { MacSetupOffer(MacSetupPresentation(), onSetUp = {}, onDismiss = {}) }
+}
+
+/** A ready helper whose login or password step is still open keeps the one setup action in This Mac. */
+internal fun MacSetupPresentation.offersSetUp(): Boolean {
+    return readiness == MacHelperReadiness.READY && !setupComplete && standingGrant != MacStandingGrantState.UNSUPPORTED
 }

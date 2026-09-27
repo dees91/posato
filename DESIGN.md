@@ -669,7 +669,8 @@ offer. Advanced status, revocation and removal stay in This Mac settings.
 This supersedes the separate onboarding opt-ins and the earlier **Required for
 schedules** checklist. The existing This Mac switches describe current service
 behavior until the unified flow is implemented; they are not extra choices in
-the new primary setup flow.
+the new primary setup flow. With `ONBOARDING-004` they remain in This Mac as
+individual controls below the one setup action.
 
 The intended connected flow shows progress, names the current system action
 when approval is needed, and resumes only the missing step after interruption.
@@ -680,16 +681,35 @@ available, with one persistent notice and **Finish setup** in Session. Unknown
 state asks for a check. Do not repeatedly reopen a modal or prompt when a
 schedule is due. After completion, Start and Add schedule open their forms.
 
-PR #92 delivers UI shells first. **Set up Posato** is disabled beside a short
-preview notice; there are no new permission callbacks or simulated success.
-Onboarding exposes existing helper actions under **Blocking settings**.
-Session's setup route keeps its existing **This Mac** controls collapsed.
-Their readiness still admits the current manual-session form, including the
-menu Start route, without claiming unified setup completion or starting a
-session. Schedule saving and execution remain inactive. Upgrade eligibility,
-dismissal persistence, progress/recovery wiring and setup orchestration remain
-for implementation. Existing users and partially configured installations must
-have their migration and remaining manual-session capabilities specified there.
+`user-confirmed` (delegated night mandate, 2026-09-26; `ONBOARDING-004`):
+**Set up Posato** runs blocking, then opening at login, then starts without a
+password, skipping finished steps. While it runs, each effect line carries its
+status (working, waiting for approval in System Settings, waiting for the Mac
+password, done, not finished yet) and one caption names the single thing to do
+next. The approval caption says to turn on Posato under **Allow in the
+Background** and that macOS may ask for the password. An interrupted, declined
+or cancelled run says "Setup did not finish. Posato continues where it
+stopped." with **Try again**. **This Mac is ready.** appears only after every
+step was verified; an older helper that cannot keep the permission never
+counts as ready.
+
+- **Onboarding** shows the action with a quiet **Not now** (or **Continue**
+  when blocking already works); after completion, **Continue** is primary.
+  The individual helper controls sit collapsed under **Blocking settings**.
+- **Session** keeps **Finish setup** while blocking is missing. When blocking
+  works but opening at login or the password step is known to be missing, one
+  compact **Set up Posato on this Mac.** card appears below **Start a
+  session** with a secondary **Set up Posato** and **Not now**, so Start stays
+  the one primary action. Dismissal and verified completion are
+  remembered on this Mac, so the card appears at most until one of them.
+  Unread or unknown states never raise it.
+- **This Mac** leads with **Set up Posato** once blocking works and opening at
+  login or the password step is still missing (while blocking is missing,
+  Session's **Finish setup** carries the action); its switches, **Check
+  again** and removal stay below and are disabled while setup runs. During a session the
+  action is disabled with "You can finish setup after the session ends."
+- Check, enable, remove, the grant switch and setup never run at once, and a
+  session that starts mid-run stops setup before the password step.
 
 Do not begin password-requiring setup during a session or while enforcement
 starts or changes. Login registration alone authorizes no restrictions.
@@ -703,10 +723,10 @@ actions and replaces the availability notice with real readiness.
 - The empty state explains recurring pauses. On Mac, **Set up this Mac**
   opens the shared setup shell; iPhone retains **Add schedule**. The future
   verified Mac state offers **Add schedule** directly.
-- The Mac setup screen has the same explanation and **Set up Posato** action
-  as onboarding. **Not now** returns without creating anything. A quiet
-  **Preview schedule editor** opens the explicitly labelled form with saving
-  inactive. There is no additional Continue-to-schedule prerequisite button.
+- The Mac setup screen has the same explanation and the working **Set up
+  Posato** action as onboarding. **Not now** returns without creating
+  anything. A quiet **Preview schedule editor** opens the explicitly labelled
+  form with saving inactive until `SCHEDULE-002`. There is no additional Continue-to-schedule prerequisite button.
 - The list shows each schedule's name, weekdays, hours, enabled state and
   next run. Show local readiness or a specific problem separately from the
   enabled switch. Missing permission offers a direct setup action, such as

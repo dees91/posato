@@ -2068,3 +2068,16 @@ to scope, feasibility, or delivery.
   banner whose Allow sits in its **Options** menu, shown only under the
   pointer. `posato-control` gains `vm allow-notifications`.
 
+
+## [2026-09-27] implementation | ONBOARDING-004 connects one guided Mac setup
+
+- `observed` (Tart, macOS 26): **Set up Posato** takes a fresh Mac from
+  onboarding to ready with the helper's Login Items toggle and two
+  administrator dialogs; a later pause starts without a password and blocks.
+- `observed`: on macOS 26 the helper's background approval also asks for the
+  administrator password ("App Background Activity"), and a notification with
+  the same question stays on screen; driver loops must match the password
+  dialog, not the notification.
+- `user-confirmed` (delegated night mandate, 2026-09-26): complete means
+  blocking, login and the no-password permission are all verified; an older
+  helper is never complete; existing installations see one dismissible offer.

@@ -48,6 +48,8 @@ import app.posato.feature.onboarding.rememberOnboardingUiState
 import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.schedules.ui.SchedulesNavigationState
 import app.posato.feature.schedules.ui.SchedulesScreen
+import app.posato.feature.schedules.ui.schedulesSetupContent
+import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
@@ -90,7 +92,9 @@ class PosatoApplication internal constructor(
     ) {
         var setupDone by remember { mutableStateOf(false) }
         val syncState = rememberSyncBootstrapUiState(bootstrap)
-        val helperSetup = rememberMacHelperSetupUiState(onboardingDependencies.macHelper)
+        val helperSetup = rememberMacHelperSetupUiState(onboardingDependencies.macHelper) {
+            sessionOwner.status.value is LocalSessionStatus.Active || sessionOwner.view.value.busy
+        }
         val onboarding = rememberOnboardingUiState(
             onboardingDependencies.setupStore,
             store,
@@ -98,6 +102,7 @@ class PosatoApplication internal constructor(
             helperSetup,
         )
         LaunchedEffect(onboarding) { onboarding.loadCompletion() }
+        LaunchedEffect(helperSetup) { sessionOwner.blockingSetup().collect { helperSetup.sessionBlocked = it } }
         if (hostsSession) {
             LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
             LaunchedEffect(notifier) { notifier.run() }
@@ -196,7 +201,7 @@ class PosatoApplication internal constructor(
                     }
 
                     destination == ApplicationDestination.SCHEDULES -> {
-                        SchedulesScreen(navigation.schedules, device, layout, contentModifier)
+                        SchedulesScreen(navigation.schedules, device, layout, contentModifier, macSetupState?.schedulesSetupContent())
                     }
 
                     else -> {
