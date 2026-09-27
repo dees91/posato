@@ -2156,6 +2156,7 @@ to scope, feasibility, or delivery.
 - The app is the only writer of the App Group schedule table; the monitor
   extension writes one start record per occurrence, so the two never share a
   file. The table is Gregorian whatever calendar the phone uses.
-- `open`: device acceptance waits for the test iPhone's XCTest unlock
-  (`DEVICE_AUTOMATION_LOCKED`); repeating activities across midnight and
-  starts registered inside an interval are still `source-claim`.
+- `observed` (test iPhone, 2026-09-27): with Posato force-quit, the monitor
+  extension applied the app shield and the web filter at a scheduled start
+  and cleared both at its end. Repeating activities across midnight and
+  catch-up after a power-off are still `source-claim`.

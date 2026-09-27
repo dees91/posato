@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-002` slice 5
 
 - **Brief:** [Schedules start on their own on an iPhone](../specifications/schedule-002-slice-5-iphone-host.md)
-- **Status:** `ready-for-review` (device acceptance blocked, see Checks)
+- **Status:** `ready-for-review`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude, under the maintainer's delegated goal (2026-09-27)
 - **Reviewer:** independent agents (design and completed change)
@@ -26,4 +26,9 @@
 ## Checks
 
 - `./gradlew quality` passed: Kotlin JVM and iOS tests, the Swift tests on the iPhone 17 Simulator (17 new schedule monitor tests), and the device build of the app and the monitor extension.
-- **Blocked:** the device acceptance in `AC-02`. `posato-control find -t device --text Schedules` answers `DEVICE_AUTOMATION_LOCKED` ("iOS did not enable UI automation for the driver … ask the device owner to unlock the iPhone and, if it asks, enter the passcode for XCTest"), and the Simulator cannot enforce Screen Time. Next action: the owner unlocks the test iPhone for XCTest once; then `observe-blocking-ios.json` at a schedule 16 minutes ahead with the app force-quit, and `observe-unblocked-ios.json` after its end.
+- **Test iPhone (iOS 26.5, after the maintainer's XCTest unlock on 2026-09-27):**
+  - **Closed app, start:** a schedule saved 16 minutes ahead, Posato force-quit; after the start `observe-blocking-ios.json` showed the Calculator shield and Safari's "Website Not Allowed". The first run was hidden by the system notification prompt left from the first schedule save; it was answered with the driver and the run repeated inside the same occurrence.
+  - **Closed app, end:** Posato force-quit again; after the end `observe-unblocked-ios.json` passed (Calculator usable, `example.com` loads).
+  - **App open:** a schedule 2 minutes ahead started with the app in use (`observe-blocking-ios.json`), Session showed the scheduled pause until its end, End early asked first, and the phone was unblocked right after (`observe-unblocked-ios.json`).
+  - The test schedules were deleted afterwards so the phone is not restricted every day.
+- **Not observed on the device:** catch-up after a power-off, a repeating schedule across midnight, a manual session inside a schedule, and the extension's notices (the permission was only granted during the run). These stay `source-claim` or unit-tested.
