@@ -76,6 +76,7 @@ class Session(
             screenshots = screenshots,
             review = ReviewClient(http),
             replacement = ScreenshotReplacement(screenshots, ScreenshotUploader(JdkUploadTransport(), transcript), clock, sleeper),
+            pause = sleeper,
         )
     }
 

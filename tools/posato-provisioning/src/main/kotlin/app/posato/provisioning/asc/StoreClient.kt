@@ -73,13 +73,22 @@ class StoreClient(
         AppStoreVersionResource.serializer(),
     )
 
-    fun updateReleaseType(
+    /**
+     * Writes only the given version attributes, such as `releaseType`, or `versionString` to rename an unreleased
+     * version: App Store Connect holds one unreleased version per platform, so a release that replaces a planned one
+     * renames that version rather than creating a second.
+     */
+    fun updateVersion(
         versionId: String,
-        releaseType: String,
+        attributes: Map<String, String>,
     ): AppStoreVersionResource = documents.write(
         HttpMethod.PATCH,
         "appStoreVersions/$versionId",
-        JsonApi.resource(type = "appStoreVersions", id = versionId, attributes = buildJsonObject { put("releaseType", releaseType) }),
+        JsonApi.resource(
+            type = "appStoreVersions",
+            id = versionId,
+            attributes = buildJsonObject { attributes.forEach { (key, value) -> put(key, value) } },
+        ),
         AppStoreVersionResource.serializer(),
     )
 

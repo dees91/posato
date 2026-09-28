@@ -12,20 +12,24 @@ private const val PLATFORM = "IOS"
  * The submission states in which a submission is still open: being assembled, queued, under review, or returned by
  * App Review with unresolved issues. A rejected submission stays open and is resubmitted rather than replaced.
  */
-private val OPEN_SUBMISSION_STATES: List<String> = listOf("READY_FOR_REVIEW", "WAITING_FOR_REVIEW", "IN_REVIEW", "UNRESOLVED_ISSUES")
+val OPEN_SUBMISSION_STATES: List<String> = listOf("READY_FOR_REVIEW", "WAITING_FOR_REVIEW", "IN_REVIEW", "UNRESOLVED_ISSUES")
 
-/** The App Review submission operations: find an open submission, assemble one, and submit it. */
+/** The App Review submission operations: find an open submission, assemble one, submit it, and cancel it. */
 class ReviewClient(
     executor: AscRequestExecutor
 ) {
     private val documents = AscDocuments(executor)
 
-    fun openSubmissions(appId: String): List<ReviewSubmissionResource> = documents.list(
+    /** The app's iOS submissions in [states], by default every open one. */
+    fun submissions(
+        appId: String,
+        states: Collection<String> = OPEN_SUBMISSION_STATES,
+    ): List<ReviewSubmissionResource> = documents.list(
         "reviewSubmissions",
         listOf(
             "filter[app]" to appId,
             "filter[platform]" to PLATFORM,
-            "filter[state]" to OPEN_SUBMISSION_STATES.joinToString(","),
+            "filter[state]" to states.joinToString(","),
         ),
         ReviewSubmissionResource.serializer(),
         STORE_LISTING_HINT,
@@ -78,6 +82,17 @@ class ReviewClient(
         HttpMethod.PATCH,
         "reviewSubmissions/$submissionId",
         JsonApi.resource(type = "reviewSubmissions", id = submissionId, attributes = buildJsonObject { put("submitted", true) }),
+        ReviewSubmissionResource.serializer(),
+    )
+
+    /**
+     * Withdraws a submitted submission from App Review. App Store Connect completes the cancellation later: the
+     * submission passes through `CANCELING`, and its version stays in its review state until then.
+     */
+    fun cancel(submissionId: String): ReviewSubmissionResource = documents.write(
+        HttpMethod.PATCH,
+        "reviewSubmissions/$submissionId",
+        JsonApi.resource(type = "reviewSubmissions", id = submissionId, attributes = buildJsonObject { put("canceled", true) }),
         ReviewSubmissionResource.serializer(),
     )
 }

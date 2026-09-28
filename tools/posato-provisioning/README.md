@@ -42,8 +42,9 @@ blank value counting as absent.
 | `certificates ensure [--create]` | Reuses the certificate this Mac signs with; creates one only with `--create`. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes one App ID's development profile current and installs it. |
 | `store status [--version X.Y.Z]` | Read-only: iOS App Store versions, builds, the next build number, and one version's build, What's New, and screenshot delivery. |
-| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--screenshots <dir>]` | Creates or updates the App Store version, attaches a `VALID` build, and replaces the screenshot sets; changes only what differs. |
+| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--description <file>] [--screenshots <dir>] [--rename-from X.Y.Z]` | Creates or updates the App Store version, attaches a `VALID` build, and replaces the screenshot sets; changes only what differs. `--rename-from` renames the one unreleased version instead of creating one. |
 | `store submit --version X.Y.Z` | Submits to App Review once the build and every screenshot are ready; does nothing when already in review. |
+| `store withdraw --version X.Y.Z` | Cancels the version's review submission and waits until the version is editable; does nothing when it already is. |
 
 Global options: `--human` for a short summary, `--verbose` for a redacted
 transcript on stderr. Exit codes are `2` usage, `3` a condition to clear, `4` a
