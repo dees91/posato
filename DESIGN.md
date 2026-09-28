@@ -484,7 +484,8 @@ when its window closes and lives in the menu bar.
   by default. It appears only while the helper is ready and its daemon
   supports the grant. Turning it on asks an administrator once; turning it
   off needs no password. Supporting text: "An administrator approves this
-  once. Restrictions still apply only when you start or resume a session."
+  once. Restrictions apply only during a pause you start or a schedule you
+  set." (`SCHEDULE-002` slice 6, integration contract 5)
   The switch shows only what the helper confirms. It is disabled with "You
   can change this after the session ends." while a session is active,
   starting, or changing enforcement. When its state cannot be confirmed, it

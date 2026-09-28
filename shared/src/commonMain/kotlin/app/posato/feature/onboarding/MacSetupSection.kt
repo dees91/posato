@@ -53,6 +53,7 @@ import app.posato.generated.resources.mac_setup_unavailable
 import app.posato.generated.resources.mac_setup_uncertain_summary
 import app.posato.generated.resources.mac_setup_unchanged
 import app.posato.generated.resources.mac_setup_unchecked
+import app.posato.generated.resources.mac_unified_overview_schedules
 import app.posato.generated.resources.onboarding_permission_mac_action
 import app.posato.generated.resources.onboarding_permission_mac_check_again
 import app.posato.generated.resources.onboarding_permission_mac_open_settings
@@ -109,6 +110,8 @@ internal fun MacSetupSection(
         if (expanded) {
             PosatoCaption(stringResource(Res.string.mac_setup_description))
             if (onSetUp != null && presentation.offersSetUp()) {
+                // Set up Posato records the consent to automatic starts, so its wording is shown here too.
+                PosatoCaption(stringResource(Res.string.mac_unified_overview_schedules))
                 MacSetupAction(presentation, onSetUp, sessionBlocks = sessionBlocksRemoval)
             }
             MacSetupStateNotice(presentation, running)

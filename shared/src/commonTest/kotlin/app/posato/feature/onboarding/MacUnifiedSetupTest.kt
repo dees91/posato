@@ -4,6 +4,9 @@ import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.ui.SessionUiState
 import app.posato.feature.session.ui.showsMacSetup
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.advanceTimeBy
@@ -339,6 +342,180 @@ class MacSetupInterruptionTest {
     }
 }
 
+class MacAutomaticStartConsentTest {
+    private fun readyPort(grant: MacStandingGrantState = MacStandingGrantState.ON): SetupPort {
+        return SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), loginOn = true, grant = grant)
+    }
+
+    @Test
+    fun `given set up is pressed when it completes then the consent is recorded and the Mac is ready for schedules`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY))
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+
+        assertTrue(port.consent)
+        assertTrue(holder.presentation().setupComplete)
+        assertTrue(holder.presentation().readyForSchedules)
+    }
+
+    @Test
+    fun `given a grant turned on without the consent then the Mac is ready for pauses but not for schedules`() = runTest {
+        val port = readyPort()
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.readQuietly()
+        advanceUntilIdle()
+
+        assertTrue(holder.presentation().setupComplete)
+        assertFalse(holder.presentation().readyForSchedules)
+        assertTrue(holder.presentation().schedulesNeedConsent)
+    }
+
+    @Test
+    fun `given the Schedules card when schedules are allowed then the consent is recorded without calling the helper`() = runTest {
+        val port = readyPort()
+        val holder = MacHelperSetupUiState(port, this)
+        holder.readQuietly()
+        advanceUntilIdle()
+        val before = port.calls.toList()
+
+        holder.consent.allow(holder.presentation())
+
+        assertEquals(before, port.calls)
+        assertTrue(port.consent)
+        assertTrue(holder.presentation().readyForSchedules)
+    }
+
+    @Test
+    fun `given setup is not complete when schedules are allowed then nothing is recorded`() = runTest {
+        val port = readyPort(grant = MacStandingGrantState.OFF)
+        val holder = MacHelperSetupUiState(port, this)
+        holder.readQuietly()
+        advanceUntilIdle()
+
+        holder.consent.allow(holder.presentation())
+
+        assertFalse(port.consent)
+        assertFalse(holder.presentation().readyForSchedules)
+    }
+
+    @Test
+    fun `given a recorded consent when a read finds the grant off or unknown or unsupported then it is cleared`() = runTest {
+        listOf(MacStandingGrantState.OFF, MacStandingGrantState.UNKNOWN, MacStandingGrantState.UNSUPPORTED).forEach { grant ->
+            val port = readyPort(grant = grant).apply { consent = true }
+            val holder = MacHelperSetupUiState(port, this)
+
+            holder.readQuietly()
+            advanceUntilIdle()
+
+            assertFalse(port.consent, "grant $grant")
+            assertFalse(holder.presentation().readyForSchedules, "grant $grant")
+        }
+    }
+
+    @Test
+    fun `given a recorded consent when the helper is not ready then the consent is kept but does not count`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.APPROVAL_REQUIRED), steadyRecheck = MacHelperReadiness.APPROVAL_REQUIRED)
+            .apply { consent = true }
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.check()
+        advanceUntilIdle()
+
+        assertTrue(port.consent)
+        assertFalse(holder.presentation().readyForSchedules)
+    }
+
+    @Test
+    fun `given a recorded consent when the grant is turned off or the helper removed then it is cleared`() = runTest {
+        val switched = readyPort().apply { consent = true }
+        val switchedHolder = MacHelperSetupUiState(switched, this)
+        switchedHolder.readQuietly()
+        advanceUntilIdle()
+        switchedHolder.setStandingGrant(enabled = false, sessionBlocked = false)
+        advanceUntilIdle()
+        assertFalse(switched.consent)
+
+        val removed = readyPort().apply { consent = true }
+        val removedHolder = MacHelperSetupUiState(removed, this)
+        removedHolder.readQuietly()
+        advanceUntilIdle()
+        removedHolder.remove(sessionBlocked = false)
+        advanceUntilIdle()
+        assertFalse(removed.consent)
+    }
+
+    @Test
+    fun `given the offer when it is dismissed then no consent is recorded`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), steadyRecheck = MacHelperReadiness.READY)
+        val holder = MacHelperSetupUiState(port, this)
+        holder.readQuietly()
+        advanceUntilIdle()
+
+        holder.dismissOffer()
+
+        assertFalse(port.consent)
+    }
+
+    @Test
+    fun `given a quiet read in flight when setup starts then the read's stale grant never clears the new consent`() = runTest {
+        val firstRead = CompletableDeferred<Unit>()
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), loginOn = true, firstReadGate = firstRead)
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.readQuietly()
+        runCurrent()
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+        firstRead.complete(Unit)
+        advanceUntilIdle()
+
+        assertTrue(port.consent)
+        assertTrue(holder.presentation().readyForSchedules)
+    }
+
+    @Test
+    fun `given a setup run that does not finish then the consent it recorded is withdrawn`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), loginOn = true, grantAfterRequest = MacStandingGrantState.OFF)
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.setUp(sessionBlocked = false)
+        advanceUntilIdle()
+
+        assertFalse(port.consent)
+        assertFalse(holder.presentation().readyForSchedules)
+    }
+
+    @Test
+    fun `given a setup run cancelled with the window then the consent it recorded is withdrawn`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        val port = SetupPort(rechecks = mutableListOf(MacHelperReadiness.READY), loginOn = true, gate = gate)
+        val window = CoroutineScope(coroutineContext + Job(coroutineContext[Job]))
+        val holder = MacHelperSetupUiState(port, window)
+
+        holder.setUp(sessionBlocked = false)
+        runCurrent()
+        assertTrue(port.consent)
+        window.cancel()
+        runCurrent()
+
+        assertFalse(port.consent)
+    }
+
+    @Test
+    fun `given a recorded consent when a read finds the helper not enabled then it is cleared`() = runTest {
+        val port = SetupPort(rechecks = mutableListOf(), steadyRecheck = MacHelperReadiness.NOT_ENABLED).apply { consent = true }
+        val holder = MacHelperSetupUiState(port, this)
+
+        holder.check()
+        advanceUntilIdle()
+
+        assertFalse(port.consent)
+    }
+}
+
 private class SetupPort(
     private val rechecks: MutableList<MacHelperReadiness>,
     private val enableAnswer: MacHelperReadiness = MacHelperReadiness.READY,
@@ -351,6 +528,7 @@ private class SetupPort(
     private val gate: CompletableDeferred<Unit>? = null,
     private val readGate: CompletableDeferred<Unit>? = null,
     private val onEnable: () -> Unit = {},
+    private val firstReadGate: CompletableDeferred<Unit>? = null,
 ) : MacHelperPort {
     val calls = mutableListOf<String>()
     private var systemLogin: Boolean? = null
@@ -382,6 +560,11 @@ private class SetupPort(
             calls += "grant read"
             if (calls.count { it == "grant read" } > 1) {
                 readGate?.await()
+            } else if (firstReadGate != null) {
+                // Answers what it saw before waiting, like a reply that arrives late.
+                val seen = grant
+                firstReadGate.await()
+                return seen
             }
             return grant
         }
@@ -416,6 +599,21 @@ private class SetupPort(
 
     override fun setupOfferDismissed(): Boolean {
         return offerDismissed
+    }
+
+    private val storedConsent = MutableStateFlow(false)
+    var consent: Boolean
+        get() = storedConsent.value
+        set(value) {
+            storedConsent.value = value
+        }
+
+    override val automaticStartConsent: MacAutomaticStartConsent = object : MacAutomaticStartConsent {
+        override val given: StateFlow<Boolean> = storedConsent
+
+        override fun record(given: Boolean) {
+            storedConsent.value = given
+        }
     }
 
     override fun dismissSetupOffer() {

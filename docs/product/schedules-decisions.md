@@ -213,8 +213,9 @@ the remaining slices. Each is decided here, `user-confirmed` (delegated,
   verified. "Ready for schedules" adds a valid automatic-start consent. Mac
   schedule creation and automatic starts both read the second result; manual
   starts keep reading the first.
-- **Consent is its own record.** It is stored as a local, versioned value
-  (`automaticStartConsent = 1`), never derived from the setup-offer marker.
+- **Consent is its own record.** It is stored as a local value under a key
+  that names its wording's version (`automaticStartConsentV1`), never
+  derived from the setup-offer marker; a new wording uses a new key.
   **Set up Posato** records it when pressed, because its caption names
   automatic starts "including schedules added on your other devices"; it
   counts only while a Status confirms the grant, and it is cleared by

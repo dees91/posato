@@ -1,5 +1,6 @@
 package app.posato.desktop.macos
 
+import app.posato.feature.onboarding.MacAutomaticStartConsent
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperRemoval
@@ -20,6 +21,7 @@ internal class DesktopMacHelperState(
     override val loginItem: MacLoginItem? = null,
     override val standingGrant: MacStandingGrant? = null,
     private val offerFlag: MacSetupOfferFlag? = null,
+    override val automaticStartConsent: MacAutomaticStartConsent? = null,
 ) : MacHelperPort {
     override fun setupOfferDismissed(): Boolean {
         return offerFlag?.read() ?: true

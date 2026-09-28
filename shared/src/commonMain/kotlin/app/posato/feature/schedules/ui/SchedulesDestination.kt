@@ -44,6 +44,7 @@ internal fun SchedulesDestination(
             onSaved = { inputs.notifier?.onScheduleSaved() },
         )
     }
+    LaunchedEffect(macSetupState) { macSetupState?.readQuietly() }
     var screenTimeAllowed by remember(inputs) { mutableStateOf(true) }
     LaunchedEffect(inputs) {
         inputs.applicationMappings.invalidations.onStart { emit(Unit) }.collect {
@@ -52,7 +53,7 @@ internal fun SchedulesDestination(
     }
     val notices = inputs.notifier?.settings?.collectAsState()?.value
     val readiness = ScheduleDeviceReadiness(
-        macSetUp = macSetupState?.presentation()?.setupComplete ?: true,
+        mac = macSetupState?.presentation()?.scheduleReadiness() ?: MacScheduleReadiness.READY,
         screenTimeAllowed = screenTimeAllowed,
         offerNotices = notices?.enabled == true && notices.permission == NotificationPermission.NOT_DETERMINED,
     )
@@ -69,6 +70,7 @@ internal fun SchedulesDestination(
             }
         },
         onTurnOnNotices = { scope.launch { inputs.notifier?.askNow() } },
+        onAllowSchedules = { macSetupState?.let { it.consent.allow(it.presentation()) } },
         macSetupContent = macSetupState?.schedulesSetupContent(),
     )
 }

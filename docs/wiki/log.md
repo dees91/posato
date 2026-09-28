@@ -2126,3 +2126,13 @@ to scope, feasibility, or delivery.
   dialog; Add schedule appears only after it, as `DESIGN.md` requires.
 - `observed`: the iPhone Simulator reports Screen Time as allowed, so the
   "Allow Screen Time" card needs a real device or an isolated test.
+
+## [2026-09-27] implementation | SCHEDULE-002 slice 6: consent to automatic starts on a Mac
+
+- The consent is a local value of its own (`automaticStartConsentV1` in the
+  app's user defaults), recorded only by an action that shows its wording
+  and withdrawn by any actual answer that the grant is off, unknown or
+  unsupported, by Remove, and by an unfinished setup run.
+- `inferred` from code (slice 4 plan): the daemon reports the grant as absent
+  while another account has the console, so a host must check the console
+  before reading the grant or it would withdraw the consent.

@@ -34,7 +34,7 @@ import app.posato.feature.schedules.domain.ScheduleId
 
 /** What this device still needs before its schedules can run; saving plans never waits for it. */
 internal data class ScheduleDeviceReadiness(
-    val macSetUp: Boolean = true,
+    val mac: MacScheduleReadiness = MacScheduleReadiness.READY,
     val screenTimeAllowed: Boolean = true,
     val offerNotices: Boolean = false,
 )
@@ -52,6 +52,7 @@ internal class ScheduleActions(
     val onShowSetup: (Boolean) -> Unit = {},
     val onAllowScreenTime: () -> Unit = {},
     val onTurnOnNotices: () -> Unit = {},
+    val onAllowSchedules: () -> Unit = {},
 )
 
 @Composable
@@ -63,6 +64,7 @@ internal fun SchedulesScreen(
     modifier: Modifier = Modifier,
     onAllowScreenTime: () -> Unit = {},
     onTurnOnNotices: () -> Unit = {},
+    onAllowSchedules: () -> Unit = {},
     macSetupContent: (@Composable () -> Unit)? = null,
 ) {
     LaunchedEffect(holder) { holder.run() }
@@ -79,6 +81,7 @@ internal fun SchedulesScreen(
         onShowSetup = holder::showSetup,
         onAllowScreenTime = onAllowScreenTime,
         onTurnOnNotices = onTurnOnNotices,
+        onAllowSchedules = onAllowSchedules,
     )
     SchedulesScreen(holder.state, device, layout, readiness, actions, modifier, macSetupContent)
 }
@@ -129,7 +132,7 @@ private fun ScheduleList(
             description = "Choose the days and hours that work for you. Start with one schedule, then add another when you need it.",
         )
     }
-    if (device != PosatoDevice.Mac || readiness.macSetUp) {
+    if (device != PosatoDevice.Mac || readiness.mac == MacScheduleReadiness.READY) {
         PosatoButton(onClick = actions.onAdd, enabled = !state.atCapacity) { Text("Add schedule") }
         if (state.atCapacity) {
             PosatoCaption("You have 10 schedules, the most Posato keeps. Delete one to add another.")
@@ -151,11 +154,17 @@ private fun ScheduleReadinessCard(
     readiness: ScheduleDeviceReadiness,
     actions: ScheduleActions,
 ) {
-    if (device == PosatoDevice.Mac && !readiness.macSetUp) {
+    if (device == PosatoDevice.Mac && readiness.mac == MacScheduleReadiness.SETUP) {
         PosatoPanel(modifier = Modifier.fillMaxWidth()) {
             PosatoBody("One setup for your pauses and schedules.")
             PosatoCaption("Set up this Mac once, then add schedules here.")
             PosatoButton(onClick = { actions.onShowSetup(true) }) { Text("Set up this Mac") }
+        }
+    } else if (device == PosatoDevice.Mac && readiness.mac == MacScheduleReadiness.CONSENT) {
+        PosatoPanel(modifier = Modifier.fillMaxWidth()) {
+            PosatoBody("Schedules can't start on this Mac yet.")
+            PosatoCaption("Allow them to start on their own, including schedules added on your other devices. No password is needed.")
+            PosatoButton(onClick = actions.onAllowSchedules) { Text("Allow schedules to start on this Mac") }
         }
     } else if (device != PosatoDevice.Mac && !readiness.screenTimeAllowed) {
         PosatoPanel(modifier = Modifier.fillMaxWidth()) {
@@ -244,6 +253,12 @@ private fun SchedulesScreenMacPreview(
     @PreviewParameter(SchedulesScreenPreviewDataProvider::class) case: SchedulesPreviewCase,
 ) {
     PosatoTheme {
-        SchedulesScreen(case.state, PosatoDevice.Mac, PosatoLayout.Expanded, ScheduleDeviceReadiness(macSetUp = false), ScheduleActions())
+        SchedulesScreen(
+            case.state,
+            PosatoDevice.Mac,
+            PosatoLayout.Expanded,
+            ScheduleDeviceReadiness(mac = MacScheduleReadiness.SETUP),
+            ScheduleActions(),
+        )
     }
 }
