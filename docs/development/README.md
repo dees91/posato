@@ -5,6 +5,7 @@ is the standing authority for code quality, tests, review, dependencies,
 security and privacy applicability, local verification, CI timing, and the
 Definition of Done. Task planning and evidence follow the
 [repository task workflow](../tasks/README.md).
+Reviewers apply the [review rules](review-rules.md).
 
 PoC tool versions and module boundaries are evidence, not automatic MVP
 requirements. The first production build has been scaffolded under the
