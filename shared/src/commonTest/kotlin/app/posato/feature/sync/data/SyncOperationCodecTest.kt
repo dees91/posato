@@ -46,4 +46,16 @@ class SyncOperationCodecTest {
         assertNull(SyncOperationCodec.decode(encoded + 0))
         assertNull(SyncOperationCodec.decode(encoded.copyOf().also { bytes -> bytes[bytes.lastIndex] = 99 }))
     }
+
+    @Test
+    fun `given malformed UTF-8 in a domain when decoded then the operation is rejected rather than thrown`() {
+        val domain = checkNotNull(ExactDomain.restore("ab.example"))
+        val encoded = checkNotNull(SyncOperationCodec.encode(testOperation(20, 2, SyncOperationPayload.DomainPresent(domain))))
+        val malformed = encoded.copyOf().also { bytes ->
+            bytes[bytes.size - 10] = 0xC0.toByte()
+            bytes[bytes.size - 9] = 0x80.toByte()
+        }
+
+        assertNull(SyncOperationCodec.decode(malformed))
+    }
 }

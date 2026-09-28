@@ -178,12 +178,20 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
             writeByte(SESSION_END_TAG)
             writeOwnedBytes(payload.sessionId.value.copyBytes())
         }
+
+        is SyncOperationPayload.SchedulePut,
+        is SyncOperationPayload.ScheduleRemove,
+        is SyncOperationPayload.ScheduleSkip,
+        is SyncOperationPayload.ScheduleOccurrenceEnd,
+        is SyncOperationPayload.OptionalExtension -> {
+            return writeSchedulePayload(payload)
+        }
     }
 
     return true
 }
 
-private fun CanonicalWriter.writeString(value: String) {
+internal fun CanonicalWriter.writeString(value: String) {
     value.encodeToByteArray(throwOnInvalidSequence = true).useAndClear { bytes ->
         writeU16(bytes.size)
         writeBytes(bytes)
@@ -191,7 +199,7 @@ private fun CanonicalWriter.writeString(value: String) {
 }
 
 private fun CanonicalReader.readPayload(): SyncOperationPayload? {
-    return when (readByte()) {
+    return when (val tag = readByte()) {
         AUTHOR_REGISTER_TAG -> SyncOperationPayload.AuthorRegister
         DOMAIN_PRESENT_TAG -> readCanonicalDomain()?.let(SyncOperationPayload::DomainPresent)
         DOMAIN_ABSENT_TAG -> readCanonicalDomain()?.let(SyncOperationPayload::DomainAbsent)
@@ -199,6 +207,7 @@ private fun CanonicalReader.readPayload(): SyncOperationPayload? {
         APPLICATION_POLICY_ABSENT_TAG -> readSingletonIdentifier()?.let { SyncOperationPayload.ApplicationPolicyAbsent }
         SESSION_START_TAG -> readSessionStart()
         SESSION_END_TAG -> readUuidIdentifier()?.let(::SessionId)?.let(SyncOperationPayload::SessionEnd)
+        in SCHEDULE_TAGS, in SyncFormatLimits.OPTIONAL_KINDS -> tag?.let { kind -> readSchedulePayload(kind) }
         else -> null
     }
 }
@@ -229,19 +238,22 @@ private fun CanonicalReader.readSessionStart(): SyncOperationPayload.SessionStar
     return payload?.takeIf(SyncOperationPayload.SessionStart::hasValidBounds)
 }
 
-private fun CanonicalReader.readCanonicalString(): String? {
+internal fun CanonicalReader.readCanonicalString(): String? {
     val bytes = readU16()?.let(::readBytes)
 
     return try {
         bytes?.decodeToString(throwOnInvalidSequence = true)
     } catch (_: IllegalArgumentException) {
         null
+    } catch (_: CharacterCodingException) {
+        // The JVM reports malformed UTF-8 this way; every target must reject it rather than throw.
+        null
     }
 }
 
 private const val MAX_ASCII_CODE_POINT = 0x7F
 
-private fun CanonicalReader.readUuidIdentifier(): SyncIdentifier? {
+internal fun CanonicalReader.readUuidIdentifier(): SyncIdentifier? {
     return readBytes(SyncFormatLimits.IDENTIFIER_BYTES)?.let(SyncIdentifier::fromUuidV4Bytes)
 }
 

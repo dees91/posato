@@ -1,5 +1,8 @@
 package app.posato.feature.sync.domain
 
+import app.posato.feature.schedules.domain.ScheduleDate
+import app.posato.feature.schedules.domain.ScheduleLimits
+import app.posato.feature.sync.data.ImmutableBytes
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
 import kotlin.jvm.JvmInline
@@ -23,6 +26,8 @@ internal object SyncFormatLimits {
     const val MAX_PHYSICAL_MILLIS: Long = 4_102_444_800_000L
     const val MAX_LOGICAL_COUNTER: Int = 65_535
     const val MAX_SESSION_DURATION_MILLIS: Long = 86_400_000L
+    const val MAX_SYNCHRONIZED_SCHEDULES: Int = ScheduleLimits.MAX_SCHEDULES
+    val OPTIONAL_KINDS: IntRange = 128..255
 }
 
 internal class SyncIdentifier private constructor(
@@ -211,6 +216,90 @@ internal sealed interface SyncOperationPayload {
     data class SessionEnd(
         val sessionId: SessionId,
     ) : SyncOperationPayload
+
+    /** Kind 8: the whole schedule; the greatest total-order put per identifier wins unless it is removed. */
+    data class SchedulePut(
+        val scheduleId: ScheduleSyncId,
+        val name: String,
+        val weekdays: Int,
+        val startMinute: Int,
+        val endMinute: Int,
+        val enabled: Boolean,
+    ) : SyncOperationPayload {
+        override fun toString(): String {
+            return "SyncOperationPayload.SchedulePut(redacted)"
+        }
+    }
+
+    /** Kind 9: permanently removes the identifier, whatever the order. */
+    data class ScheduleRemove(
+        val scheduleId: ScheduleSyncId,
+    ) : SyncOperationPayload
+
+    /** Kind 10: a grow-only fact that stops one occurrence. */
+    data class ScheduleSkip(
+        val occurrence: ScheduleOccurrenceRef,
+    ) : SyncOperationPayload {
+        override fun toString(): String {
+            return "SyncOperationPayload.ScheduleSkip(redacted)"
+        }
+    }
+
+    /** Kind 11: a grow-only fact that ends one occurrence early. */
+    data class ScheduleOccurrenceEnd(
+        val occurrence: ScheduleOccurrenceRef,
+    ) : SyncOperationPayload {
+        override fun toString(): String {
+            return "SyncOperationPayload.ScheduleOccurrenceEnd(redacted)"
+        }
+    }
+
+    /**
+     * Kinds 128-255 are optional extensions: accepted, retained and ignored in projection. Decoding stays
+     * total over the range, so any later meaning can live only in projection and every replica ignores
+     * an invalid tail the same way.
+     */
+    class OptionalExtension(
+        val kind: Int,
+        val tail: ImmutableBytes,
+    ) : SyncOperationPayload {
+        init {
+            require(kind in SyncFormatLimits.OPTIONAL_KINDS)
+        }
+
+        override fun equals(other: Any?): Boolean {
+            return other is OptionalExtension && other.kind == kind && other.tail == tail
+        }
+
+        override fun hashCode(): Int {
+            return 31 * kind + tail.hashCode()
+        }
+
+        override fun toString(): String {
+            return "SyncOperationPayload.OptionalExtension(redacted)"
+        }
+    }
+}
+
+@JvmInline
+internal value class ScheduleSyncId(
+    val value: SyncIdentifier,
+) {
+    /** The engine's identifier: the 16 bytes as lowercase hexadecimal. */
+    val hex: String
+        get() {
+            return value.copyBytes().joinToString("") { byte -> (byte.toInt() and 0xFF).toString(16).padStart(2, '0') }
+        }
+}
+
+/** One occurrence as it travels in kinds 10 and 11: the schedule and the local date it starts. */
+internal data class ScheduleOccurrenceRef(
+    val scheduleId: ScheduleSyncId,
+    val date: ScheduleDate,
+) {
+    override fun toString(): String {
+        return "ScheduleOccurrenceRef(redacted)"
+    }
 }
 
 internal data class SyncOperation(
