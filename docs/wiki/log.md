@@ -2213,6 +2213,16 @@ to scope, feasibility, or delivery.
   because the maintainer chooses to retain it on the 2019 MacBook Air.
   This replaces the proposed macOS 14 target; compatibility remains open.
 
+## [2026-09-28] correction | Restore macOS browser pause-page presentation
+
+- `observed`: Apple Events grants on the responsible app and helper, correct
+  LaunchServices attribution, and main-thread AppleScript restore the local
+  pause page in Chrome and Safari, including private windows. Refused consent
+  preserves enforcement; unrelated pages and proxy cleanup remain intact.
+- MACOS-022 records the independent reviews and runtime evidence. Aggregate
+  quality and signed-package verification passed. The fix belongs to release
+  1.3.
+
 ## [2026-09-29] planning | Release 1.3 composition and waves
 
 - `user-confirmed`: release 1.3 takes the prepared `MACOS-022` and

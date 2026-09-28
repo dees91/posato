@@ -1,6 +1,6 @@
 # MACOS-022 execution
 
-- **Status:** active
+- **Status:** complete; ready for review and merge
 
 ## Plan
 
@@ -33,3 +33,40 @@ existing LaunchServices path for staged builds as well as installed candidates.
 TCC then attributed the request to Posato and explicitly rejected its missing
 Apple Events entitlement. An independent plan-extension review approved this
 conditional parent grant and the driver correction with no Required findings.
+
+
+## Result
+
+The helper now services its main run loop while a serial worker owns pipe and
+lifecycle state. Native selection and NSAppleScript run on the main thread;
+proxy denial and restore remain independent of browser presentation. Both the
+responsible app and helper carry the Apple Events grant, with exact packaging
+checks; the privileged daemon has none. Staged verification launches through
+LaunchServices, and the driver can answer Posato Automation consent.
+
+A live stack sample located the remaining hang in AppleScript on a background
+thread. Moving presentation to the main thread restored Chrome and Safari.
+
+## Verification
+
+- `./gradlew quality`: passed, including native checks, shared tests, iOS tests,
+  packaging verification, and lint.
+- Signed development package: passed `posato-control build -t desktop --verify`.
+- Tart: Chrome regular and Incognito, Safari regular and Private reached the
+  loopback pause page after consent. Denial retained blocking without repeated
+  prompts. An unrelated foreground page stayed unchanged.
+- End early restored direct access. The native picker selected and removed
+  Calculator. Parent termination removed helper processes and proxy settings.
+- Fresh-clone repeat of application revision `b01d6cd` passed: first Automation
+  consent led Chrome to the pause page. The final driver addition handles the
+  default-browser system question; `:posato-control:check` passed afterward.
+- Aggregate evidence: ignored `build/verification/runs/macos022-result/README.md`;
+  exact-revision screenshot: `build/verification/runs/macos022-final-browser/`.
+  No host Posato installation was used.
+
+## Completed-change review
+
+Independent review approved the implementation with no Critical or Required
+findings. It checked serialized lifecycle ownership, main-thread native work,
+permission scope, exact signing checks, LaunchServices arguments, and consent
+prompt attribution.

@@ -21,6 +21,7 @@ enum class GuestPrompt(
     PICKER_BYPASS("picker-bypass"),
     AUTOMATION_ALLOW("automation-allow"),
     AUTOMATION_DENY("automation-deny"),
+    KEEP_SAFARI("keep-safari"),
     ;
 
     companion object {
@@ -44,6 +45,10 @@ class VmPrompts(
     ) {
         val screen = guestScreen(context, line)
         when (prompt) {
+            GuestPrompt.KEEP_SAFARI -> {
+                keepSafari(screen, timeoutMs)
+            }
+
             GuestPrompt.ADMIN -> {
                 answerAdmin(screen, timeoutMs)
             }
@@ -257,3 +262,14 @@ internal fun guestScreen(
 }
 
 internal fun notOnScreen(text: String) = ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The guest screen shows no '$text'.")
+
+private fun keepSafari(
+    screen: GuestScreen,
+    timeoutMs: Long
+) {
+    screen.waitFor("Do you want to change your", timeoutMs)
+    screen.waitFor("default web browser", timeoutMs)
+    val button = screen.waitFor("Keep \"Safari\"", timeoutMs, exact = true).first()
+    screen.session { client -> client.click(button.centerX, button.centerY) }
+    screen.waitGone("Do you want to change your", timeoutMs)
+}
