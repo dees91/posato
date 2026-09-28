@@ -942,6 +942,30 @@ below. This queue retains idea provenance without expanding the original MVP.
     and compatibility; `SCHEDULE-004` delivers the accepted rules. Final
     release composition and task activation remain open.
 
+21. **Missing local pause page after HTTPS denial.**
+    `user-confirmed` (2026-09-28): the maintainer reports a browser tunnel
+    error instead of the Posato page during a scheduled pause on Mac.
+    `observed` in code and [ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md):
+    HTTPS denial and same-tab presentation are separate; presentation needs
+    a supported frontmost browser and Automation permission. The screenshot
+    alone establishes neither the cause nor a failed loopback listener.
+    `open`: reproduce in a fresh Tart VM and distinguish permission, browser
+    context, and adapter failures. `MACOS-022` is unassigned backlog.
+
+22. **Extending a naturally expired schedule across devices.**
+    `user-confirmed` (2026-09-28): a schedule previously ending at 18:00 on
+    iPhone was extended at about 20:00 to 23:00 on a newly installed Mac.
+    The Mac began restricting; iPhone received the edited plan but still
+    offered Start a session. The maintainer expects activation after sync.
+    `observed`: [schedule rules](../../product/schedules-decisions.md#occurrence-identity-and-convergence)
+    and `ScheduleOccurrences` prevent a local terminal occurrence from
+    restarting after an edit. `hypothesis`: the iPhone retained today's
+    expiry marker while the new Mac had none. Device reproduction is pending.
+    `open`: distinguish natural expiry from explicit Skip and End early when
+    deciding whether an extended occurrence can restart after sync.
+    `SCHEDULE-005` is unassigned backlog; intake does not revise the accepted
+    terminal-marker rule or authorize implementation.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do

@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 12 (amended 2026-09-28: blocklists and partial 1.3 composition)
+- **Revision:** 12 (amended 2026-09-28: blocklists, partial 1.3 composition, and reported behavior backlog)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-28
@@ -58,7 +58,9 @@
   schedules in release 1.3. Idea 20 and `SCHEDULE-003` now cover the remaining
   blocklist decisions, with `SCHEDULE-004` delivering the accepted
   [product scope](../product/blocklists.md). The remaining release scope and
-  final waves will be decided at a later checkpoint.
+  final waves will be decided at a later checkpoint. The same revision adds
+  `MACOS-022` and `SCHEDULE-005` from reports 21 and 22 to the unassigned
+  backlog; neither changes release 1.3 composition or authorizes a rule change.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -265,6 +267,8 @@ The idea numbers refer to the wiki idea queue.
 | `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | A decision that replaces the root daemon; ADR 0009 (`MACOS-012`) kept it |
 | `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | `QUALITY-010` `M5` defect, reproduced in a VM | Any planning checkpoint; a defect against ADR 0004 and ADR 0005 |
 | `MACOS-021` | Explain and bound the normal-user helper's CPU use during an enforced session: reproduce the transient spike, about 60% of a core for 14 minutes, that `MACOS-012` measured in a first session on a fresh Tart clone, find its cause, and keep the helper's cost bounded under heavy proxied traffic. | Sessions and enforcement | Idea 18; `MACOS-012` measurement | Any planning checkpoint; a resource defect under every process model |
+| `MACOS-022` | Reproduce the missing local pause page after HTTPS denial in supported Chrome, including fresh Mac setup; distinguish Automation permission and adapter failures, and restore presentation within ADR 0005 without weakening denial. | Sessions and enforcement | Idea 21; maintainer report, cause unconfirmed | Any planning checkpoint; reproduce and classify the presentation failure |
+| `SCHEDULE-005` | Reproduce different device behavior after extending a naturally expired schedule into the current time; decide and deliver consistent activation after synchronization, distinguishing natural expiry from explicit Skip and End early. Any change to terminal-marker rules requires acceptance first. | Schedules | Idea 22; maintainer report, local terminal-marker cause hypothesized | A planning checkpoint and an accepted revision of the expiry/edit rule if reproduction confirms current behavior |
 | `IOS-005` | Settle iOS reinstall behavior and the lifecycle of an application selection that becomes invalid. | Sessions and enforcement | `IOS-001` and iOS enforcement open questions | Evidence from support or a reproduction |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-018` | Design the portable workspace over one user-selected synchronized folder with its own key delivery and membership. | Portable synchronization | Product framing later direction | A platform beyond Apple in scope |

@@ -2202,3 +2202,7 @@ to scope, feasibility, or delivery.
   records these decisions; `SCHEDULE-003` settles remaining behavior and
   compatibility before `SCHEDULE-004` delivery. Idea 20 and the GitHub
   project follow this accepted scope.
+- `user-confirmed`: add unassigned `MACOS-022` and `SCHEDULE-005` for the
+  reported missing HTTPS pause page and inconsistent activation after a
+  naturally expired schedule is extended. Ideas 21 and 22 retain the
+  reproduction limits and distinguish a suspected cause from a rule change.
