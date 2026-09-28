@@ -38,6 +38,8 @@ For `RELEASE-004` to paste into the release; replace the verification line with 
 
 > Posato 1.2 keeps Posato ready on your Mac and adds schedules on Mac and iPhone.
 >
+> Posato for Mac 1.2 is available now. Posato for iPhone 1.2 arrives on the App Store once Apple has reviewed it.
+>
 > ## New
 >
 > - **Schedules.** Plan recurring pauses by weekday and time in the new **Schedules** section. They start and end on their own on each device you set up, also when Posato's window is closed. If your Mac starts up or you sign in during a scheduled pause, it joins the pause until its planned end. Skip the next one or end one early. On a Mac, quitting Posato stops new scheduled starts until it opens again; closing the window does not.
