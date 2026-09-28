@@ -2205,4 +2205,7 @@ to scope, feasibility, or delivery.
 - `user-confirmed`: add unassigned `MACOS-022` and `SCHEDULE-005` for the
   reported missing HTTPS pause page and inconsistent activation after a
   naturally expired schedule is extended. Ideas 21 and 22 retain the
-  reproduction limits and distinguish a suspected cause from a rule change.
+  evidence limits and distinguish inferred causes from a rule change.
+- `observed`: Tart reproduces the missing HTTPS presentation while the local
+  page works. A test-iPhone occurrence expires, then receives the Mac
+  extension without resuming; the Mac blocks. Both remain unassigned backlog.

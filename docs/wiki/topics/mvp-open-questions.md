@@ -949,8 +949,14 @@ below. This queue retains idea provenance without expanding the original MVP.
     HTTPS denial and same-tab presentation are separate; presentation needs
     a supported frontmost browser and Automation permission. The screenshot
     alone establishes neither the cause nor a failed loopback listener.
-    `open`: reproduce in a fresh Tart VM and distinguish permission, browser
-    context, and adapter failures. `MACOS-022` is unassigned backlog.
+    `observed` (2026-09-28, fresh Tart VM, macOS 26.6.2 and Chrome Stable
+    154.0.8037.58): a scheduled pause denies HTTPS with the same tunnel
+    error after reload and another navigation, while direct navigation to
+    the local `/blocked` route renders Posato. No Automation prompt appeared
+    and the Automation panel had no entries. This reproduces missing
+    presentation, not its cause or every supported browser context.
+    `open`: distinguish permission, browser context, and adapter failures.
+    `MACOS-022` is unassigned backlog; PR #106 retains verification evidence.
 
 22. **Extending a naturally expired schedule across devices.**
     `user-confirmed` (2026-09-28): a schedule previously ending at 18:00 on
@@ -959,8 +965,14 @@ below. This queue retains idea provenance without expanding the original MVP.
     offered Start a session. The maintainer expects activation after sync.
     `observed`: [schedule rules](../../product/schedules-decisions.md#occurrence-identity-and-convergence)
     and `ScheduleOccurrences` prevent a local terminal occurrence from
-    restarting after an edit. `hypothesis`: the iPhone retained today's
-    expiry marker while the new Mac had none. Device reproduction is pending.
+    restarting after an edit. `observed` (2026-09-28, test iPhone and Tart
+    VM): a 19:00-20:28 plan blocked on iPhone and naturally expired. A Mac
+    joining after expiry received it and extended the end to 21:28. The Mac
+    then blocked; iPhone received 21:28 but still offered Start a session,
+    and both Safari and Calculator stayed usable. No Skip or End early was
+    used. The Mac's schedule had zero local terminal markers.
+    `inferred`: the iPhone's retained expiry marker explains the difference;
+    its database was not inspected. PR #106 retains the reproduction evidence.
     `open`: distinguish natural expiry from explicit Skip and End early when
     deciding whether an extended occurrence can restart after sync.
     `SCHEDULE-005` is unassigned backlog; intake does not revise the accepted
