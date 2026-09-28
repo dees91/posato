@@ -70,6 +70,8 @@ class StoreWithdrawal(
             services.pause.sleep(CANCEL_POLL_INTERVAL)
             val state = StoreLookups.requireVersion(services.store, appId, version).state
             if (state in EDITABLE_VERSION_STATES) return state
+            // App Review can still approve the version before the cancellation lands; waiting cannot change that.
+            if (state !in SUBMITTED_STATES) throw approvedFirst(version, state)
         }
         throw ProvisioningException(
             ErrorCode.WITHDRAWAL_PENDING,
@@ -88,6 +90,17 @@ class StoreWithdrawal(
         "Version $version is ${state ?: "in an unknown state"}, which a withdrawal from App Review cannot change.",
         "Nothing was changed. Only a version waiting for or in review can be withdrawn; a version pending release or " +
             "released needs a new version number, or a developer removal in App Store Connect.",
+    )
+
+    private fun approvedFirst(
+        version: String,
+        state: String?,
+    ): ProvisioningException = ProvisioningException(
+        ErrorCode.VERSION_NOT_EDITABLE,
+        "The withdrawal of version $version was sent, but the version moved to ${state ?: "an unknown state"} " +
+            "instead of becoming editable, so App Review may have finished it first.",
+        "Check `store status --version $version`. A version pending release or released needs a new version number " +
+            "rather than a rename.",
     )
 
     private fun holdsOther(version: String): ProvisioningException = ProvisioningException(

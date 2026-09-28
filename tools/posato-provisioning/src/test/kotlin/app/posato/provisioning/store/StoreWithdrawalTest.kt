@@ -92,6 +92,25 @@ class StoreWithdrawalTest {
     }
 
     @Test
+    fun `stops at once when App Review finishes the version before the cancellation lands`() {
+        val harness = StoreHarness(
+            mapOf(
+                "GET apps" to listOf(APPS),
+                "GET apps/APP/appStoreVersions" to listOf(waiting, waiting, StoreFixtures.version(state = "PENDING_DEVELOPER_RELEASE")),
+                "GET reviewSubmissions" to listOf(submission("WAITING_FOR_REVIEW")),
+                "GET reviewSubmissions/SUB/items" to listOf(ITEM_FOR_VERSION),
+                "PATCH reviewSubmissions/SUB" to listOf("""{"data":{"id":"SUB","attributes":{"state":"CANCELING"}}}"""),
+            ),
+        )
+
+        val failure = assertFailsWith<ProvisioningException> { StoreWithdrawal(harness.services).withdraw("1.2.0") }
+
+        assertEquals(ErrorCode.VERSION_NOT_EDITABLE, failure.code)
+        assertTrue(failure.message.orEmpty().contains("PENDING_DEVELOPER_RELEASE"))
+        assertEquals(List(2) { Duration.ofSeconds(5) }, harness.slept)
+    }
+
+    @Test
     fun `refuses a submission that also holds an App Event, with no write`() {
         val harness = StoreHarness(
             mapOf(
