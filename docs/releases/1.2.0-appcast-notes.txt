@@ -1,0 +1,11 @@
+Posato 1.2
+
+Schedules: plan recurring pauses by weekday and time. They start and end on their own, also when Posato's window is closed. Skip the next one or end one early. Quitting Posato stops new scheduled starts until it opens again.
+
+One setup on the Mac: Set up Posato turns on blocking, opens Posato quietly at login, and lets pauses and schedules start without asking for your password each time.
+
+Menu bar: Posato stays in the menu bar when you close its window.
+
+Pause notices: Posato can tell you when a pause ends. You can turn this off in About Posato.
+
+If you use Posato on more than one device, update all of them. Once a device saves a schedule, devices still on Posato 1.1 stop syncing until they update.
