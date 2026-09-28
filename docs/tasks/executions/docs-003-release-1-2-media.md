@@ -27,6 +27,10 @@
 - **Publication gates for `RELEASE-004`.** Two public claims rest on unit and planner tests, not on an end-to-end run: schedules syncing between linked devices, and the notice when a pause starts on another device. `RELEASE-004` must observe both on linked candidates (a `primary` and `peer` Tart pair, or a VM and the test iPhone) before it publishes. If either fails, publish with the fallback copy below and file the defect.
   - Schedule sync fails: drop "and sync with your other devices when iCloud sync is on" from What's New, "and schedules" from the iCloud sentences of the description, README, and site, and "shared" wording from the release notes.
   - The started-elsewhere notice fails: replace "Posato can tell you when a pause ends or when one starts on another device." with "Posato can tell you when a pause ends." in the description, What's New, README, site, and release notes.
+- **Gates observed on development builds (2026-09-28).** Two Tart VMs (`primary`, `peer`) linked through one iCloud workspace of the test Apple Account, both built from product head `3089523`, unified setup finished on each:
+  - Schedule sync: a schedule saved on the primary was listed on the peer after **Sync now**, and it started on its own on **both** Macs (`observe`: `paused` on each). **End early** on the primary reached the peer, which was allowed again at its next host check about 20 seconds after syncing.
+  - Started-elsewhere notice: with the peer's window closed and no action on it, the peer received a manual pause started on the primary about 4.5 minutes later. It posted **Pause started** ("A pause started on another device. Open Posato to block on this Mac too."), shown as a banner (`usernoted`) and kept in Notification Center. The notice needs the device's notification permission, which Posato asks for after the first pause or schedule started on that device, as `NOTIFY-001` designed; the peer showed nothing before that.
+  - Both claims stand; `RELEASE-004` repeats the checks on the signed candidates. The workspaces were removed and both VMs destroyed.
 
 ## GitHub release notes for 1.2.0
 

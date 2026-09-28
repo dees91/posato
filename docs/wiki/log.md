@@ -2172,3 +2172,6 @@ to scope, feasibility, or delivery.
   the release version.
 - `store prepare --description` uploads the App Store description; nothing is
   published before the `RELEASE-004` go.
+- `observed` (2026-09-28, two linked Tart VMs): a Mac with its window closed
+  received a pause from another Mac about 4.5 minutes later without **Sync
+  now**, and a schedule saved on one Mac started on its own on both.
