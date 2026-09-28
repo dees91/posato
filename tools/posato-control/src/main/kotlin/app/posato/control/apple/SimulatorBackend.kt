@@ -72,7 +72,9 @@ class SimulatorSession(
 
     fun container(udid: String): Path? = simctl.appContainer(udid, IOS_BUNDLE_ID, "data")
 
-    fun isInstalled(udid: String): Boolean = simctl.appContainer(udid, IOS_BUNDLE_ID, "app") != null
+    fun isInstalled(udid: String): Boolean = installedApp(udid) != null
+
+    fun installedApp(udid: String): Path? = simctl.appContainer(udid, IOS_BUNDLE_ID, "app")
 }
 
 class SimulatorLifecycle(
@@ -178,6 +180,7 @@ class SimulatorLifecycle(
             install()
         }
         val udid = session.udid()
+        installWhenStale(udid)
         if (!session.isInstalled(
                 udid,
             )
@@ -204,6 +207,22 @@ class SimulatorLifecycle(
         )
         context.recordArtifact(stdout)
         return LaunchResult(pid = pid, udid = udid, logPath = context.layout.relativize(stdout))
+    }
+
+    /**
+     * Installs the built application when the simulator has none or runs another executable, so a launch never tests
+     * an older build left by another checkout or an earlier run (observed in `DOCS-003`).
+     */
+    private fun installWhenStale(udid: String) {
+        val built = xcodeBuild.appProduct(Target.SIMULATOR)
+        if (!built.exists()) {
+            return
+        }
+        val installed = session.installedApp(udid)
+        if (installed == null || !sameExecutable(installed, built)) {
+            context.log("The simulator's Posato differs from the build at ${context.layout.relativize(built)}; installing the build")
+            session.simctl.install(udid, built)
+        }
     }
 
     override fun terminate(): StatusResult {

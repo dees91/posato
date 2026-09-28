@@ -32,7 +32,7 @@ import kotlinx.serialization.json.put
 import java.nio.file.Files
 import java.nio.file.Path
 
-private fun singleStep(step: Step): Scenario = Scenario(launch = LaunchConfiguration(terminateExisting = false), steps = listOf(step))
+internal fun singleStep(step: Step): Scenario = Scenario(launch = LaunchConfiguration(terminateExisting = false), steps = listOf(step))
 
 private fun requireQuery(
     query: Query?,
@@ -42,7 +42,7 @@ private fun requireQuery(
 
 private fun runResultElement(result: RunResult): JsonElement = ControlJson.pretty.encodeToJsonElement(RunResult.serializer(), result)
 
-private fun failIfStepFailed(result: RunResult): RunResult {
+internal fun failIfStepFailed(result: RunResult): RunResult {
     val failed = result.steps.firstOrNull { !it.ok }?.error ?: result.error
     if (failed != null) {
         val code = ErrorCode.entries.firstOrNull { it.name == failed.code } ?: ErrorCode.COMMAND_FAILED

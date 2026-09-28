@@ -225,7 +225,8 @@ before that decision. Apply accepted fixes together with their whole class,
 run affected verification, obtain any focused local re-review needed by the
 tier, and reply with concise evidence. P2 and lower findings are advisory and
 declined by default; accepting one is an explicit maintainer scope decision.
-Declined findings and findings in the classes excluded by `AGENTS.md` receive
+Declined findings and findings in the classes excluded by the
+[review rules](../development/review-rules.md) receive
 a one-sentence reply citing the rule.
 
 Batch accepted corrections into one push where practical. Complete the

@@ -29,12 +29,14 @@ import app.posato.control.cli.StatusCommand
 import app.posato.control.cli.TapCommand
 import app.posato.control.cli.TerminateCommand
 import app.posato.control.cli.TypeCommand
+import app.posato.control.cli.UpdateConsentCommand
 import app.posato.control.cli.VmAllowNotificationsCommand
 import app.posato.control.cli.VmBootCommand
 import app.posato.control.cli.VmClickCommand
 import app.posato.control.cli.VmCommand
 import app.posato.control.cli.VmCreateCommand
 import app.posato.control.cli.VmDestroyCommand
+import app.posato.control.cli.VmDialogsCommand
 import app.posato.control.cli.VmDragCommand
 import app.posato.control.cli.VmExecCommand
 import app.posato.control.cli.VmICloudCommand
@@ -100,6 +102,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     MenuCommand(),
     CloseWindowCommand(),
     ResourcesCommand(),
+    UpdateConsentCommand(),
     VmCommand().subcommands(
         VmCreateCommand(),
         VmSyncCommand(),
@@ -119,6 +122,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
         VmTextCommand(),
         VmWaitTextCommand(),
         VmExecCommand(),
+        VmDialogsCommand(),
     ),
 )
 

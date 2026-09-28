@@ -188,18 +188,11 @@ the real application with `posato-control` and the approved targets above.
 The [engineering quality contract](docs/development/engineering-quality-contract.md#tests-and-runtime-checks)
 defines the same bar for implementation and review.
 
-## Code Review Rules
+## Code review
 
-- Report only actionable defects introduced by the reviewed diff. Map P0 to
-  `Critical` and P1 to `Required`; do not turn advisory preferences or
-  pre-existing out-of-scope work into blocking findings.
-- Apply the testing policy above. Prefer E2E proof and request isolated tests
-  only for a named important failure that existing stronger coverage misses.
-  Do not request tests for static UI rendering, copy, theme mapping, or
-  framework wiring.
-- Flag credentials, personal paths, wholesale PoC reuse, and violations of the
-  accepted product, architecture, security, privacy, or process boundaries.
-  `.research/blocker` must remain read-only evidence and an optional checkout.
+Reviewers, including hosted reviewers, apply
+[`docs/development/review-rules.md`](docs/development/review-rules.md).
+
 - Request hosted `@codex review` at most twice per pull request. The first
   pass follows implementation, applicable local verification, any required
   independent completed-change review, and any required versioned task
@@ -212,13 +205,6 @@ defines the same bar for implementation and review.
 - Treat hosted P2 or lower findings as advisory and decline them by default.
   Accepting one is an explicit maintainer scope decision; it never expands the
   task, blocks merge, or triggers another pass on its own.
-- Decline findings that need an actor with write access to the app-private
-  database file or schema or a compromised operating system (accepted limit
-  `R-02`), defensive checks that duplicate schema constraints, memory zeroing
-  beyond owned key material and plaintext buffers whose clearing removes the
-  last in-memory copy (`R-05`), and per-type `toString()` redaction reports
-  for a family already covered by the enumerated redaction test. Reply with
-  the rule reference.
 
 ## Feasibility research reference
 
