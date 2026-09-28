@@ -2114,3 +2114,15 @@ to scope, feasibility, or delivery.
 - Kinds 8-11 follow the proposed ADR 0006 amendment; removal is decided before
   capacity, so a later remove frees a slot in every delivery order (unlike the
   domain cap). Optional kinds 128-255 keep their raw tail and never change state.
+
+## [2026-09-27] implementation | SCHEDULE-002 slice 3: schedules you can save and share
+
+- Schedules live in the local database and sync through intents recorded in
+  the same transaction, like paused items. A plan the shared cap of 10
+  refuses stays visible as "Couldn't sync" and rejoins by itself when a slot
+  frees, including after the workspace is removed.
+- `observed` (Tart VM): the unified setup started from Schedules finished in
+  27 s with the driver answering the Login Items toggle and one password
+  dialog; Add schedule appears only after it, as `DESIGN.md` requires.
+- `observed`: the iPhone Simulator reports Screen Time as allowed, so the
+  "Allow Screen Time" card needs a real device or an isolated test.

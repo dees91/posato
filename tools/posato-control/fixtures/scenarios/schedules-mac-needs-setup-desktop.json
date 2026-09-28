@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {
+      "name": "open-schedules",
+      "action": "tap",
+      "query": {
+        "text": "Schedules",
+        "role": "button"
+      }
+    },
+    {
+      "name": "setup-card",
+      "action": "waitFor",
+      "query": {
+        "text": "Set up this Mac",
+        "role": "button"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "no-add",
+      "action": "assert",
+      "query": {
+        "text": "Add schedule",
+        "role": "button"
+      },
+      "state": "absent"
+    },
+    {
+      "name": "schedules-needs-setup",
+      "action": "screenshot"
+    },
+    {
+      "name": "open-setup",
+      "action": "tap",
+      "query": {
+        "text": "Set up this Mac",
+        "role": "button"
+      }
+    },
+    {
+      "name": "setup-shell",
+      "action": "waitFor",
+      "query": {
+        "text": "Set up Posato on this Mac."
+      },
+      "state": "exists"
+    },
+    {
+      "name": "schedule-setup",
+      "action": "screenshot"
+    },
+    {
+      "name": "back",
+      "action": "tap",
+      "query": {
+        "text": "Back to schedules",
+        "role": "button"
+      }
+    },
+    {
+      "name": "card-again",
+      "action": "waitFor",
+      "query": {
+        "text": "Set up this Mac",
+        "role": "button"
+      },
+      "state": "exists"
+    }
+  ]
+}

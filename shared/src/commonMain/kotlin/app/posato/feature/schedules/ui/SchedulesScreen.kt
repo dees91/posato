@@ -9,6 +9,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,26 +28,59 @@ import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
+import app.posato.core.designsystem.PosatoTone
 import app.posato.feature.onboarding.MacSetupOverview
+import app.posato.feature.schedules.domain.ScheduleId
+
+/** What this device still needs before its schedules can run; saving plans never waits for it. */
+internal data class ScheduleDeviceReadiness(
+    val macSetUp: Boolean = true,
+    val screenTimeAllowed: Boolean = true,
+    val offerNotices: Boolean = false,
+)
+
+internal class ScheduleActions(
+    val onAdd: () -> Unit = {},
+    val onEdit: (ScheduleRowModel) -> Unit = {},
+    val onSetEnabled: (ScheduleRowModel, Boolean) -> Unit = { _, _ -> },
+    val onSkipNext: (ScheduleRowModel) -> Unit = {},
+    val onConfirmDelete: (ScheduleId?) -> Unit = {},
+    val onDelete: () -> Unit = {},
+    val onUpdateDraft: (ScheduleDraft) -> Unit = {},
+    val onSave: () -> Unit = {},
+    val onCloseEditor: () -> Unit = {},
+    val onShowSetup: (Boolean) -> Unit = {},
+    val onAllowScreenTime: () -> Unit = {},
+    val onTurnOnNotices: () -> Unit = {},
+)
 
 @Composable
 internal fun SchedulesScreen(
-    holder: SchedulesNavigationState,
+    holder: SchedulesHolder,
     device: PosatoDevice,
     layout: PosatoLayout,
+    readiness: ScheduleDeviceReadiness,
     modifier: Modifier = Modifier,
+    onAllowScreenTime: () -> Unit = {},
+    onTurnOnNotices: () -> Unit = {},
     macSetupContent: (@Composable () -> Unit)? = null,
 ) {
-    SchedulesScreen(
-        macSetupContent = macSetupContent,
-        modifier = modifier,
-        state = holder.state,
-        device = device,
-        layout = layout,
-        onEdit = holder::edit,
+    LaunchedEffect(holder) { holder.run() }
+    val actions = ScheduleActions(
+        onAdd = { holder.openEditor(null) },
+        onEdit = holder::openEditor,
+        onSetEnabled = holder::setEnabled,
+        onSkipNext = holder::skipNext,
+        onConfirmDelete = holder::confirmDelete,
+        onDelete = holder::delete,
+        onUpdateDraft = holder::updateDraft,
+        onSave = holder::save,
         onCloseEditor = holder::closeEditor,
         onShowSetup = holder::showSetup,
+        onAllowScreenTime = onAllowScreenTime,
+        onTurnOnNotices = onTurnOnNotices,
     )
+    SchedulesScreen(holder.state, device, layout, readiness, actions, modifier, macSetupContent)
 }
 
 @Composable
@@ -54,9 +88,8 @@ internal fun SchedulesScreen(
     state: SchedulesUiState,
     device: PosatoDevice,
     layout: PosatoLayout,
-    onEdit: (ScheduleUiModel) -> Unit,
-    onCloseEditor: () -> Unit,
-    onShowSetup: (Boolean) -> Unit,
+    readiness: ScheduleDeviceReadiness,
+    actions: ScheduleActions,
     modifier: Modifier = Modifier,
     macSetupContent: (@Composable () -> Unit)? = null,
 ) {
@@ -65,155 +98,152 @@ internal fun SchedulesScreen(
         modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
         verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
     ) {
-        PosatoNotice { Text("Schedules are coming soon. You can explore the screens; saving and automatic starts are not available yet.") }
         val editor = state.editor
-        val activeSchedule = state.activeSchedule
         when {
-            editor != null -> {
-                key(editor.id) { ScheduleEditor(editor, layout, onCloseEditor) }
-            }
+            editor != null -> key(editor.id) { ScheduleEditor(editor, state, layout, actions) }
+            state.showingSetup -> ScheduleSetup(device, layout, actions, macSetupContent)
+            else -> ScheduleList(state, device, layout, readiness, actions)
+        }
+    }
+}
 
-            state.showingSetup -> {
-                ScheduleSetupPreview(device, layout, onBack = {
-                    onShowSetup(false)
-                }, onPreviewEditor = { onEdit(ScheduleUiModel()) }, macSetupContent)
-            }
+@Composable
+private fun ScheduleList(
+    state: SchedulesUiState,
+    device: PosatoDevice,
+    layout: PosatoLayout,
+    readiness: ScheduleDeviceReadiness,
+    actions: ScheduleActions,
+) {
+    PosatoHeading("A rhythm that gives you room.", eyebrow = "SCHEDULES", layout = layout)
+    if (state.showUpdateNote) {
+        PosatoNotice { Text("Schedules sync with your other devices. Update Posato on each of them to keep them in sync.") }
+    }
+    ScheduleReadinessCard(device, readiness, actions)
+    if (state.changeFailed) {
+        PosatoNotice(tone = PosatoTone.Caution) { Text("Couldn't save that change. Try again.") }
+    }
+    if (state.loaded && state.schedules.isEmpty()) {
+        PosatoEmptyState(
+            title = "Make time for a regular pause.",
+            description = "Choose the days and hours that work for you. Start with one schedule, then add another when you need it.",
+        )
+    }
+    if (device != PosatoDevice.Mac || readiness.macSetUp) {
+        PosatoButton(onClick = actions.onAdd, enabled = !state.atCapacity) { Text("Add schedule") }
+        if (state.atCapacity) {
+            PosatoCaption("You have 10 schedules, the most Posato keeps. Delete one to add another.")
+        }
+    }
+    state.schedules.forEach { row -> key(row.id.hex) { ScheduleRow(row, state.confirmingDelete == row.id, actions) } }
+    if (readiness.offerNotices && state.schedules.isNotEmpty()) {
+        PosatoButton(onClick = actions.onTurnOnNotices, style = PosatoButtonStyle.Quiet) { Text("Turn on pause notices") }
+        PosatoCaption("Posato can tell you when a scheduled pause starts and ends. Blocking works either way.")
+    }
+    if (state.schedules.isNotEmpty()) {
+        PosatoCaption("Times follow each device's own clock.")
+    }
+}
 
-            activeSchedule != null -> {
-                ScheduledSessionPreview(activeSchedule, layout, onCloseEditor)
-            }
-
-            else -> {
-                PosatoHeading("A rhythm that gives you room.", eyebrow = "SCHEDULES", layout = layout)
-                if (state.schedules.isEmpty()) {
-                    PosatoEmptyState(
-                        title = "Make time for a regular pause.",
-                        description = "Choose the days and hours that work for you. Start with one schedule, then add another when you need it.",
-                    )
-                }
-                if (device == PosatoDevice.Mac) {
-                    PosatoPanel(modifier = Modifier.fillMaxWidth()) {
-                        PosatoBody("One setup for your pauses and schedules.")
-                        PosatoCaption("Prepare Posato once so your schedules can start automatically after sign-in or wake.")
-                        PosatoButton(onClick = { onShowSetup(true) }) { Text("Set up this Mac") }
-                    }
-                } else {
-                    PosatoButton(onClick = { onEdit(ScheduleUiModel()) }) { Text("Add schedule") }
-                }
-                state.schedules.forEach { schedule ->
-                    key(schedule.id) { ScheduleRow(schedule, device, onEdit) { onShowSetup(true) } }
-                }
-                if (device != PosatoDevice.Mac) {
-                    PosatoButton(onClick = { onShowSetup(true) }, style = PosatoButtonStyle.Quiet) { Text("Set up this ${device.noun}") }
-                }
-            }
+@Composable
+private fun ScheduleReadinessCard(
+    device: PosatoDevice,
+    readiness: ScheduleDeviceReadiness,
+    actions: ScheduleActions,
+) {
+    if (device == PosatoDevice.Mac && !readiness.macSetUp) {
+        PosatoPanel(modifier = Modifier.fillMaxWidth()) {
+            PosatoBody("One setup for your pauses and schedules.")
+            PosatoCaption("Set up this Mac once, then add schedules here.")
+            PosatoButton(onClick = { actions.onShowSetup(true) }) { Text("Set up this Mac") }
+        }
+    } else if (device != PosatoDevice.Mac && !readiness.screenTimeAllowed) {
+        PosatoPanel(modifier = Modifier.fillMaxWidth()) {
+            PosatoBody("Allow Screen Time so schedules can pause apps and websites on this ${device.noun}.")
+            PosatoCaption("You can save schedules now; they run here once access is allowed.")
+            PosatoButton(onClick = actions.onAllowScreenTime) { Text("Allow Screen Time") }
         }
     }
 }
 
 @Composable
 private fun ScheduleRow(
-    schedule: ScheduleUiModel,
-    device: PosatoDevice,
-    onEdit: (ScheduleUiModel) -> Unit,
-    onSetup: () -> Unit,
+    row: ScheduleRowModel,
+    confirmingDelete: Boolean,
+    actions: ScheduleActions,
 ) {
     PosatoPanel(modifier = Modifier.fillMaxWidth()) {
         PosatoSelectionRow(
             modifier = Modifier.fillMaxWidth(),
-            checked = schedule.enabled,
-            onCheckedChange = {},
-            enabled = false,
-            supportingContent = { PosatoCaption("${schedule.daysLabel()} · ${schedule.hoursLabel()}") },
-        ) { Text(schedule.name) }
-        PosatoBody(
-            when {
-                !schedule.enabled -> "Turned off"
-                schedule.skipped -> "Next session skipped"
-                else -> "Next run: ${schedule.nextRunLabel}"
-            },
-        )
-        PosatoCaption("Requires setup on this ${device.noun}")
-        PosatoActionRow {
-            PosatoButton(onClick = { onEdit(schedule) }, style = PosatoButtonStyle.Secondary) { Text("Edit ${schedule.name}") }
-            PosatoButton(onClick = onSetup, style = PosatoButtonStyle.Quiet) { Text("Set up this ${device.noun}") }
-            PosatoButton(onClick = {}, style = PosatoButtonStyle.Quiet, enabled = false) {
-                Text(if (schedule.skipped) "Next session skipped" else "Skip next session")
+            checked = row.enabled,
+            onCheckedChange = { actions.onSetEnabled(row, it) },
+            enabled = !row.refused,
+            supportingContent = { PosatoCaption("${row.daysLabel} · ${row.hoursLabel}") },
+        ) { Text(row.name) }
+        when {
+            row.refused -> PosatoNotice(tone = PosatoTone.Caution) {
+                Text("Couldn't sync: 10 schedules is the most. Delete a schedule on any device and this one syncs by itself.")
             }
-            PosatoButton(onClick = {}, style = PosatoButtonStyle.Quiet, enabled = false) { Text("Remove ${schedule.name}") }
+
+            !row.enabled -> PosatoBody("Turned off")
+
+            else -> row.nextRunLabel?.let { PosatoBody(it) }
+        }
+        row.skippedLabel?.let { PosatoCaption(it) }
+        if (confirmingDelete) {
+            PosatoBody("Delete ${row.name}? It is deleted on your other devices too.")
+            PosatoActionRow {
+                PosatoButton(onClick = actions.onDelete, style = PosatoButtonStyle.Secondary) { Text("Delete") }
+                PosatoButton(onClick = { actions.onConfirmDelete(null) }, style = PosatoButtonStyle.Quiet) { Text("Keep") }
+            }
+        } else {
+            PosatoActionRow {
+                PosatoButton(onClick = { actions.onEdit(row) }, style = PosatoButtonStyle.Secondary, enabled = !row.refused) {
+                    Text("Edit ${row.name}")
+                }
+                if (row.enabled && row.canSkip) {
+                    PosatoButton(onClick = { actions.onSkipNext(row) }, style = PosatoButtonStyle.Quiet) { Text("Skip next") }
+                }
+                PosatoButton(onClick = { actions.onConfirmDelete(row.id) }, style = PosatoButtonStyle.Quiet) { Text("Delete ${row.name}") }
+            }
         }
     }
 }
 
 @Composable
-private fun ScheduleSetupPreview(
+private fun ScheduleSetup(
     device: PosatoDevice,
     layout: PosatoLayout,
-    onBack: () -> Unit,
-    onPreviewEditor: () -> Unit,
-    macSetupContent: (@Composable () -> Unit)? = null,
+    actions: ScheduleActions,
+    macSetupContent: (@Composable () -> Unit)?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
+        PosatoButton(onClick = { actions.onShowSetup(false) }, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
         PosatoHeading(
             if (device == PosatoDevice.Mac) "Set up Posato on this Mac." else "Prepare this ${device.noun} for schedules.",
-            description = if (device == PosatoDevice.Mac) {
-                "One setup to block distractions and run your schedules."
-            } else {
-                "Allow automatic blocking on this device."
-            },
+            description = "One setup to block distractions and run your schedules.",
             layout = layout,
         )
-        if (device == PosatoDevice.Mac) {
-            macSetupContent?.invoke() ?: MacSetupOverview()
-        } else {
-            PosatoBody("Allow Screen Time access so Posato can pause your chosen websites and applications on this device.")
-            PosatoButton(onClick = {}, enabled = false) { Text("Allow Screen Time access") }
-        }
-        PosatoActionRow {
-            if (device != PosatoDevice.Mac) {
-                PosatoButton(onClick = {}, enabled = false) { Text("Continue to schedule") }
-            }
-            PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Not now") }
-        }
-        PosatoButton(onClick = onPreviewEditor, style = PosatoButtonStyle.Quiet) { Text("Preview schedule editor") }
-        PosatoCaption("Explore the form without creating a schedule. Saving is unavailable in this preview.")
+        macSetupContent?.invoke() ?: MacSetupOverview()
     }
 }
 
+@Preview(name = "Schedules", widthDp = 800, heightDp = 1200)
 @Composable
-private fun ScheduledSessionPreview(
-    schedule: ScheduleUiModel,
-    layout: PosatoLayout,
-    onBack: () -> Unit
-) {
-    PosatoHeading("Room for what matters.", eyebrow = "SCHEDULED SESSION PREVIEW", layout = layout)
-    PosatoPanel(modifier = Modifier.fillMaxWidth()) {
-        Text(schedule.name)
-        PosatoBody("${schedule.daysLabel()} · ${schedule.hoursLabel()}")
-        PosatoCaption("Ends at ${timeLabel(schedule.endHour, schedule.endMinute)}")
-        PosatoNotice { Text("No restrictions are active from this preview.") }
-        PosatoButton(onClick = {}, enabled = false) { Text("End early") }
-    }
-    PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
-}
-
-@Preview(widthDp = 390, heightDp = 844)
-@Composable
-private fun SchedulesCompactPreview(
-    @PreviewParameter(SchedulesScreenPreviewDataProvider::class) case: SchedulesPreviewCase
+private fun SchedulesScreenPreview(
+    @PreviewParameter(SchedulesScreenPreviewDataProvider::class) case: SchedulesPreviewCase,
 ) {
     PosatoTheme {
-        SchedulesScreen(case.state, PosatoDevice.IPhone, PosatoLayout.Compact, {}, {}, {})
+        SchedulesScreen(case.state, PosatoDevice.IPhone, PosatoLayout.Compact, ScheduleDeviceReadiness(), ScheduleActions())
     }
 }
 
-@Preview(widthDp = 820, heightDp = 900)
+@Preview(name = "Schedules Mac", widthDp = 1000, heightDp = 1200)
 @Composable
-private fun SchedulesExpandedPreview(
-    @PreviewParameter(SchedulesScreenPreviewDataProvider::class) case: SchedulesPreviewCase
+private fun SchedulesScreenMacPreview(
+    @PreviewParameter(SchedulesScreenPreviewDataProvider::class) case: SchedulesPreviewCase,
 ) {
     PosatoTheme {
-        SchedulesScreen(case.state, PosatoDevice.Mac, PosatoLayout.Expanded, {}, {}, {})
+        SchedulesScreen(case.state, PosatoDevice.Mac, PosatoLayout.Expanded, ScheduleDeviceReadiness(macSetUp = false), ScheduleActions())
     }
 }

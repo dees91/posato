@@ -83,6 +83,19 @@ class SyncReducerScheduleTest {
     }
 
     @Test
+    fun `given a schedule refused by capacity when reduced then its latest put is kept as refused until a slot frees`() {
+        val puts = (1..11).map { index -> testOperation(index + 1, index.toLong() + 1, put(100 + index)) }
+        val renamed = testOperation(13, 13, put(111, "Renamed"))
+
+        val refused = SyncReducer.reduce(listOf(register) + puts + renamed)
+        val freed = SyncReducer.reduce(listOf(register) + puts + renamed + testOperation(14, 14, SyncOperationPayload.ScheduleRemove(id(101))))
+
+        assertEquals(listOf("Renamed"), refused.refusedSchedules.map { it.name })
+        assertEquals(emptyList(), freed.refusedSchedules)
+        assertTrue(id(111) in freed.schedules.map { it.scheduleId })
+    }
+
+    @Test
     fun `given a later remove of one of ten schedules when reduced then the eleventh fits in natural and shuffled order`() {
         val puts = (1..11).map { index -> testOperation(index + 1, index.toLong() + 1, put(100 + index)) }
         val remove = testOperation(13, 13, SyncOperationPayload.ScheduleRemove(id(101)))

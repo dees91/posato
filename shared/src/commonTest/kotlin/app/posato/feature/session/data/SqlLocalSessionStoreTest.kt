@@ -332,6 +332,12 @@ class SqlLocalSessionStoreTest {
             driver.executeSql("DROP TABLE sync_removed_workspace")
             driver.executeSql("DROP TABLE sync_session_intent")
             driver.executeSql("DROP TABLE local_update_maintenance")
+            driver.executeSql("DROP TABLE local_schedule")
+            driver.executeSql("DROP TABLE local_schedule_fact")
+            driver.executeSql("DROP TABLE local_schedule_terminal")
+            driver.executeSql("DROP TABLE local_schedule_pin")
+            driver.executeSql("DROP TABLE sync_schedule_intent")
+            driver.executeSql("DROP TABLE sync_schedule_seed")
             driver.executeSql("PRAGMA user_version = 5")
             driver.close()
 

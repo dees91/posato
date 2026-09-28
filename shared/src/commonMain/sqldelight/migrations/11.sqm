@@ -1,0 +1,76 @@
+CREATE TABLE local_schedule (
+  schedule_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  name TEXT NOT NULL CHECK (typeof(name) = 'text' AND length(CAST(name AS BLOB)) BETWEEN 1 AND 80),
+  weekdays INTEGER NOT NULL CHECK (typeof(weekdays) = 'integer' AND weekdays BETWEEN 1 AND 127),
+  start_minute INTEGER NOT NULL CHECK (typeof(start_minute) = 'integer' AND start_minute BETWEEN 0 AND 1439),
+  end_minute INTEGER NOT NULL CHECK (typeof(end_minute) = 'integer' AND end_minute BETWEEN 0 AND 1439),
+  enabled INTEGER NOT NULL CHECK (typeof(enabled) = 'integer' AND enabled IN (0, 1)),
+  refused INTEGER NOT NULL DEFAULT 0 CHECK (typeof(refused) = 'integer' AND refused IN (0, 1)),
+  CHECK (start_minute <> end_minute)
+);
+
+CREATE TABLE local_schedule_fact (
+  schedule_id BLOB NOT NULL CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  kind TEXT NOT NULL CHECK (typeof(kind) = 'text' AND kind IN ('skip', 'end')),
+  year INTEGER NOT NULL CHECK (typeof(year) = 'integer' AND year BETWEEN 2000 AND 2100),
+  month INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12),
+  day INTEGER NOT NULL CHECK (typeof(day) = 'integer' AND day BETWEEN 1 AND 31),
+  PRIMARY KEY (schedule_id, kind, year, month, day)
+);
+
+CREATE TABLE local_schedule_terminal (
+  schedule_id BLOB NOT NULL CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  year INTEGER NOT NULL CHECK (typeof(year) = 'integer' AND year BETWEEN 2000 AND 2100),
+  month INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12),
+  day INTEGER NOT NULL CHECK (typeof(day) = 'integer' AND day BETWEEN 1 AND 31),
+  PRIMARY KEY (schedule_id, year, month, day)
+);
+
+CREATE TABLE local_schedule_pin (
+  schedule_id BLOB NOT NULL CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  year INTEGER NOT NULL CHECK (typeof(year) = 'integer' AND year BETWEEN 2000 AND 2100),
+  month INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12),
+  day INTEGER NOT NULL CHECK (typeof(day) = 'integer' AND day BETWEEN 1 AND 31),
+  start_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(start_epoch_millis) = 'integer' AND start_epoch_millis BETWEEN 0 AND 4102444800000
+  ),
+  notices INTEGER NOT NULL DEFAULT 0 CHECK (typeof(notices) = 'integer' AND notices BETWEEN 0 AND 255),
+  PRIMARY KEY (schedule_id, year, month, day)
+);
+
+CREATE TABLE sync_schedule_intent (
+  sequence INTEGER NOT NULL PRIMARY KEY,
+  workspace_id BLOB NOT NULL CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16),
+  kind TEXT NOT NULL CHECK (typeof(kind) = 'text' AND kind IN ('put', 'remove', 'skip', 'end')),
+  schedule_id BLOB NOT NULL CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  name TEXT CHECK (name IS NULL OR (typeof(name) = 'text' AND length(CAST(name AS BLOB)) BETWEEN 1 AND 80)),
+  weekdays INTEGER CHECK (weekdays IS NULL OR (typeof(weekdays) = 'integer' AND weekdays BETWEEN 1 AND 127)),
+  start_minute INTEGER CHECK (start_minute IS NULL OR (typeof(start_minute) = 'integer' AND start_minute BETWEEN 0 AND 1439)),
+  end_minute INTEGER CHECK (end_minute IS NULL OR (typeof(end_minute) = 'integer' AND end_minute BETWEEN 0 AND 1439)),
+  enabled INTEGER CHECK (enabled IS NULL OR (typeof(enabled) = 'integer' AND enabled IN (0, 1))),
+  year INTEGER CHECK (year IS NULL OR (typeof(year) = 'integer' AND year BETWEEN 2000 AND 2100)),
+  month INTEGER CHECK (month IS NULL OR (typeof(month) = 'integer' AND month BETWEEN 1 AND 12)),
+  day INTEGER CHECK (day IS NULL OR (typeof(day) = 'integer' AND day BETWEEN 1 AND 31)),
+  author_year INTEGER CHECK (author_year IS NULL OR (typeof(author_year) = 'integer' AND author_year BETWEEN 2000 AND 2100)),
+  author_month INTEGER CHECK (author_month IS NULL OR (typeof(author_month) = 'integer' AND author_month BETWEEN 1 AND 12)),
+  author_day INTEGER CHECK (author_day IS NULL OR (typeof(author_day) = 'integer' AND author_day BETWEEN 1 AND 31)),
+  CHECK (
+    (
+      kind = 'put' AND name IS NOT NULL AND weekdays IS NOT NULL AND start_minute IS NOT NULL AND end_minute IS NOT NULL AND
+      enabled IS NOT NULL AND start_minute <> end_minute AND year IS NULL AND month IS NULL AND day IS NULL AND
+      author_year IS NULL AND author_month IS NULL AND author_day IS NULL
+    ) OR (
+      kind = 'remove' AND name IS NULL AND weekdays IS NULL AND start_minute IS NULL AND end_minute IS NULL AND
+      enabled IS NULL AND year IS NULL AND month IS NULL AND day IS NULL AND
+      author_year IS NULL AND author_month IS NULL AND author_day IS NULL
+    ) OR (
+      kind IN ('skip', 'end') AND name IS NULL AND weekdays IS NULL AND start_minute IS NULL AND end_minute IS NULL AND
+      enabled IS NULL AND year IS NOT NULL AND month IS NOT NULL AND day IS NOT NULL AND
+      author_year IS NOT NULL AND author_month IS NOT NULL AND author_day IS NOT NULL
+    )
+  )
+);
+
+CREATE TABLE sync_schedule_seed (
+  workspace_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16)
+);

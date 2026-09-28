@@ -12,6 +12,8 @@ import app.posato.feature.onboarding.OnboardingPermissionPlatform
 import app.posato.feature.onboarding.UnavailableApplicationAccess
 import app.posato.feature.onboarding.data.SqlLocalSetupStore
 import app.posato.feature.presence.DesktopPresence
+import app.posato.feature.schedules.data.ScheduleSyncStore
+import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.JvmSessionTimeFormat
 import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SqlLocalSessionStore
@@ -24,6 +26,7 @@ import app.posato.feature.session.ui.loadSessionTargets
 import app.posato.feature.sync.bootstrap.AppleBootstrap
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.BootstrapCoordinator
+import app.posato.feature.sync.bootstrap.ScheduleSync
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
 import app.posato.feature.sync.data.JdkSyncCryptoProvider
 import app.posato.feature.sync.data.SqlSyncReplicaStore
@@ -53,7 +56,8 @@ import kotlinx.coroutines.Dispatchers
 @DependencyGraph(AppScope::class)
 internal interface DesktopApplicationGraph :
     DesktopApplicationComponents,
-    DesktopUpdateBindings {
+    DesktopUpdateBindings,
+    DesktopScheduleBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
     val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
@@ -179,6 +183,9 @@ internal interface DesktopApplicationGraph :
         policySync: LocalPolicySyncStore,
         sessions: LocalSessionSyncStore,
         companion: MaintenanceCompanionTransport,
+        schedules: ScheduleSyncStore,
+        zone: ScheduleZone,
+        clock: SessionClock,
     ): AppleSync {
         val transport: SyncCompanionTransport = companion
         val keys = MacOsBootstrapKeychainAdapter(transport)
@@ -203,6 +210,7 @@ internal interface DesktopApplicationGraph :
                 // best-effort instead of failing the removal itself.
                 sessions.dropRetainedMarkersExceptCurrent()
             },
+            scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
         )
     }
 }

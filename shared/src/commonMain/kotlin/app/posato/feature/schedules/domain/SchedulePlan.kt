@@ -25,6 +25,10 @@ internal data class SchedulePlan(
     val endMinute: Int,
     val enabled: Boolean,
 ) {
+    override fun toString(): String {
+        return "SchedulePlan(redacted)"
+    }
+
     fun runsOn(weekday: Int): Boolean {
         return weekdays and (1 shl weekday) != 0
     }

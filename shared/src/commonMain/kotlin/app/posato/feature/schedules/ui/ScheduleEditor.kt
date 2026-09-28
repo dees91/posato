@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import app.posato.core.designsystem.PosatoActionRow
@@ -19,84 +22,106 @@ import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
+import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoNumberWheel
 import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.PosatoToggleButton
-import kotlinx.collections.immutable.toPersistentList
+import app.posato.core.designsystem.PosatoTone
+import kotlinx.collections.immutable.toPersistentSet
 
 @Composable
 internal fun ScheduleEditor(
-    schedule: ScheduleUiModel,
+    draft: ScheduleDraft,
+    state: SchedulesUiState,
     layout: PosatoLayout,
-    onBack: () -> Unit,
+    actions: ScheduleActions,
     modifier: Modifier = Modifier,
 ) {
-    val name = rememberTextFieldState(schedule.name)
-    var draft by remember(schedule) { mutableStateOf(schedule) }
+    val name = rememberTextFieldState(draft.name)
+    val current by rememberUpdatedState(draft)
+    LaunchedEffect(name) {
+        snapshotFlow { name.text.toString() }.collect { text -> if (text != current.name) actions.onUpdateDraft(current.copy(name = text)) }
+    }
     var editingStart by remember { mutableStateOf<Boolean?>(null) }
     val focus = LocalFocusManager.current
-    val close = {
-        focus.clearFocus()
-        onBack()
-    }
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
-        PosatoButton(onClick = close, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
-        PosatoHeading(if (schedule.id == 0) "Make room, regularly." else "Edit schedule", eyebrow = "EDITOR PREVIEW", layout = layout)
+        PosatoButton(onClick = {
+            focus.clearFocus()
+            actions.onCloseEditor()
+        }, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
+        PosatoHeading(if (draft.id == null) "Make room, regularly." else "Edit schedule", eyebrow = "SCHEDULE", layout = layout)
         PosatoTextField(state = name, label = "Schedule name", placeholder = "Morning focus", onSubmit = { focus.clearFocus() })
-        Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
-            PosatoCaption("Repeat on")
-            PosatoActionRow {
-                ScheduleDay.entries.forEach { day ->
-                    PosatoToggleButton(
-                        selected = day in draft.days,
-                        onClick = {
-                            val days = if (day in draft.days) draft.days - day else draft.days + day
-                            draft = draft.copy(days = days.sortedBy { it.ordinal }.toPersistentList())
-                        },
-                    ) { Text(day.label) }
-                }
-            }
-        }
+        ScheduleDays(draft, actions)
         PosatoActionRow {
             PosatoButton(onClick = {
                 focus.clearFocus()
                 editingStart = true
-            }, style = PosatoButtonStyle.Secondary) {
-                Text("Starts ${timeLabel(draft.startHour, draft.startMinute)}")
-            }
+            }, style = PosatoButtonStyle.Secondary) { Text("Starts ${timeLabel(draft.startHour, draft.startMinute)}") }
             PosatoButton(onClick = {
                 focus.clearFocus()
                 editingStart = false
             }, style = PosatoButtonStyle.Secondary) {
-                Text("Ends ${timeLabel(draft.endHour, draft.endMinute)}")
+                Text("Ends ${timeLabel(draft.endHour, draft.endMinute)}" + if (draft.endsNextDay) " next day" else "")
             }
         }
-        editingStart?.let { start ->
-            ScheduleTimeEditor(draft, start, { draft = it }, { editingStart = null })
-        }
+        editingStart?.let { start -> ScheduleTimeEditor(draft, start, actions.onUpdateDraft) { editingStart = null } }
         PosatoSelectionRow(
             modifier = Modifier.fillMaxWidth(),
             checked = draft.enabled,
-            onCheckedChange = {},
-            enabled = false,
-            supportingContent = { PosatoCaption("Automatic starts will need permission on each device.") },
-        ) { Text("Schedule enabled") }
-        PosatoCaption("Saving schedules will be available in a future update. Your changes are not saved yet.")
+            onCheckedChange = { actions.onUpdateDraft(draft.copy(enabled = it)) },
+            supportingContent = { PosatoCaption("A schedule that is off keeps its days and hours but never starts.") },
+        ) { Text("Schedule on") }
+        state.editorError?.let { error -> PosatoNotice(tone = PosatoTone.Caution) { Text(error.message()) } }
         PosatoActionRow {
-            PosatoButton(onClick = {}, enabled = false) { Text("Save schedule") }
-            PosatoButton(onClick = close, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
+            PosatoButton(onClick = {
+                focus.clearFocus()
+                actions.onSave()
+            }, enabled = !state.saving) { Text("Save schedule") }
+            PosatoButton(onClick = actions.onCloseEditor, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
         }
     }
 }
 
 @Composable
+private fun ScheduleDays(
+    draft: ScheduleDraft,
+    actions: ScheduleActions,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
+        PosatoCaption("Repeat on")
+        PosatoActionRow {
+            ScheduleDay.entries.forEach { day ->
+                PosatoToggleButton(
+                    selected = day in draft.days,
+                    onClick = {
+                        val days = if (day in draft.days) draft.days - day else draft.days + day
+                        actions.onUpdateDraft(draft.copy(days = days.toPersistentSet()))
+                    },
+                ) { Text(day.label) }
+            }
+        }
+    }
+}
+
+private fun ScheduleEditorError.message(): String {
+    return when (this) {
+        ScheduleEditorError.NAME -> "Give the schedule a name of up to 80 characters, without line breaks."
+        ScheduleEditorError.NO_DAY -> "Choose at least one day."
+        ScheduleEditorError.TOO_SHORT -> "A schedule lasts at least 15 minutes."
+        ScheduleEditorError.SAME_TIMES -> "Choose an end time different from the start."
+        ScheduleEditorError.FULL -> "You have 10 schedules, the most Posato keeps. Delete one to add another."
+        ScheduleEditorError.NOT_SAVED -> "Couldn't save. Try again."
+    }
+}
+
+@Composable
 private fun ScheduleTimeEditor(
-    schedule: ScheduleUiModel,
+    draft: ScheduleDraft,
     start: Boolean,
-    onChange: (ScheduleUiModel) -> Unit,
+    onChange: (ScheduleDraft) -> Unit,
     onDone: () -> Unit,
 ) {
     val label = if (start) "Start" else "End"
@@ -104,17 +129,17 @@ private fun ScheduleTimeEditor(
         Row(horizontalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
             PosatoNumberWheel(
                 modifier = Modifier.weight(1f),
-                value = if (start) schedule.startHour else schedule.endHour,
+                value = if (start) draft.startHour else draft.endHour,
                 range = 0..23,
                 label = "$label hours",
-                onValueChange = { onChange(if (start) schedule.copy(startHour = it) else schedule.copy(endHour = it)) },
+                onValueChange = { onChange(if (start) draft.copy(startHour = it) else draft.copy(endHour = it)) },
             )
             PosatoNumberWheel(
                 modifier = Modifier.weight(1f),
-                value = if (start) schedule.startMinute else schedule.endMinute,
+                value = if (start) draft.startMinute else draft.endMinute,
                 range = 0..59,
                 label = "$label minutes",
-                onValueChange = { onChange(if (start) schedule.copy(startMinute = it) else schedule.copy(endMinute = it)) },
+                onValueChange = { onChange(if (start) draft.copy(startMinute = it) else draft.copy(endMinute = it)) },
             )
         }
         PosatoButton(onClick = onDone, style = PosatoButtonStyle.Secondary) { Text("Done") }

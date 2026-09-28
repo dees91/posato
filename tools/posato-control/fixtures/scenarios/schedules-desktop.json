@@ -12,220 +12,383 @@
   },
   "steps": [
     {
+      "name": "open-schedules",
       "action": "tap",
       "query": {
-        "text": "Schedules"
+        "text": "Schedules",
+        "role": "button"
       }
     },
     {
+      "name": "empty-ready",
       "action": "waitFor",
-      "state": "exists",
       "query": {
-        "text": "Set up this Mac"
-      }
+        "text": "Add schedule",
+        "role": "button"
+      },
+      "state": "exists"
     },
     {
-      "action": "screenshot",
-      "name": "schedules-empty"
+      "name": "schedules-empty",
+      "action": "screenshot"
     },
     {
+      "name": "open-editor",
       "action": "tap",
       "query": {
-        "text": "Set up this Mac"
+        "text": "Add schedule",
+        "role": "button"
       }
     },
     {
+      "name": "editor-ready",
       "action": "waitFor",
-      "state": "exists",
-      "query": {
-        "text": "Set up Posato"
-      }
-    },
-    {
-      "action": "screenshot",
-      "name": "schedule-unified-setup"
-    },
-    {
-      "action": "snapshot",
-      "name": "schedule-unified-setup"
-    },
-    {
-      "action": "scrollTo",
-      "query": {
-        "text": "Preview schedule editor"
-      }
-    },
-    {
-      "action": "tap",
-      "query": {
-        "text": "Preview schedule editor"
-      }
-    },
-    {
-      "action": "waitFor",
-      "state": "exists",
       "query": {
         "role": "textField"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "name-empty-save",
+      "action": "scrollTo",
+      "query": {
+        "text": "Save schedule",
+        "role": "button"
       }
     },
     {
+      "name": "refuse-empty-name",
+      "action": "tap",
+      "query": {
+        "text": "Save schedule",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-error",
+      "action": "waitFor",
+      "query": {
+        "textContains": "Give the schedule a name"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "enter-name",
       "action": "type",
       "query": {
         "role": "textField"
       },
       "text": "Morning focus",
-      "clear": true
+      "clear": true,
+      "submit": true
     },
     {
-      "action": "screenshot",
-      "name": "schedule-editor-keyboard"
+      "name": "start-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Starts 09:00",
+        "role": "button"
+      }
     },
     {
+      "name": "start-open",
+      "action": "tap",
+      "query": {
+        "text": "Starts 09:00",
+        "role": "button"
+      }
+    },
+    {
+      "name": "start-hour-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Increase Start hours"
+      }
+    },
+    {
+      "name": "start-hour-up",
+      "action": "tap",
+      "query": {
+        "text": "Increase Start hours"
+      }
+    },
+    {
+      "name": "start-done-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Done",
+        "role": "button"
+      }
+    },
+    {
+      "name": "start-done",
+      "action": "tap",
+      "query": {
+        "text": "Done",
+        "role": "button"
+      }
+    },
+    {
+      "name": "start-changed",
+      "action": "waitFor",
+      "query": {
+        "text": "Starts 10:00",
+        "role": "button"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "schedule-editor",
+      "action": "screenshot"
+    },
+    {
+      "name": "save-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Save schedule",
+        "role": "button"
+      }
+    },
+    {
+      "name": "save",
+      "action": "tap",
+      "query": {
+        "text": "Save schedule",
+        "role": "button"
+      }
+    },
+    {
+      "name": "row-ready",
+      "action": "waitFor",
+      "query": {
+        "text": "Edit Morning focus",
+        "role": "button"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "next-run-shown",
+      "action": "waitFor",
+      "query": {
+        "textContains": "Next: "
+      },
+      "state": "exists"
+    },
+    {
+      "name": "schedule-saved",
+      "action": "screenshot"
+    },
+    {
+      "name": "skip-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Skip next",
+        "role": "button"
+      }
+    },
+    {
+      "name": "skip",
+      "action": "tap",
+      "query": {
+        "text": "Skip next",
+        "role": "button"
+      }
+    },
+    {
+      "name": "skip-shown",
+      "action": "waitFor",
+      "query": {
+        "textContains": "Skipped: "
+      },
+      "state": "exists"
+    },
+    {
+      "name": "schedule-skipped",
+      "action": "screenshot"
+    },
+    {
+      "name": "edit-open",
+      "action": "tap",
+      "query": {
+        "text": "Edit Morning focus",
+        "role": "button"
+      }
+    },
+    {
+      "name": "edit-ready",
+      "action": "waitFor",
+      "query": {
+        "text": "Edit schedule"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "rename",
       "action": "type",
       "query": {
         "role": "textField"
       },
-      "text": "",
+      "text": "Evening focus",
+      "clear": true,
       "submit": true
     },
     {
+      "name": "off-reveal",
       "action": "scrollTo",
       "query": {
-        "text": "Starts 09:00"
+        "textContains": "Schedule on,",
+        "role": "button"
       }
     },
     {
+      "name": "turn-off",
       "action": "tap",
       "query": {
-        "text": "Starts 09:00"
+        "textContains": "Schedule on,",
+        "role": "button"
       }
     },
     {
+      "name": "rename-save-reveal",
       "action": "scrollTo",
       "query": {
-        "text": "Increase Start hours"
+        "text": "Save schedule",
+        "role": "button"
       }
     },
     {
+      "name": "rename-save",
       "action": "tap",
       "query": {
-        "text": "Increase Start hours"
+        "text": "Save schedule",
+        "role": "button"
       }
     },
     {
-      "action": "scrollTo",
-      "query": {
-        "text": "Done"
-      }
-    },
-    {
-      "action": "tap",
-      "query": {
-        "text": "Done"
-      }
-    },
-    {
+      "name": "renamed",
       "action": "waitFor",
-      "state": "exists",
       "query": {
-        "text": "Starts 10:00"
-      }
+        "text": "Edit Evening focus",
+        "role": "button"
+      },
+      "state": "exists"
     },
     {
-      "action": "scrollTo",
+      "name": "turned-off",
+      "action": "waitFor",
       "query": {
-        "text": "Save schedule"
-      }
+        "text": "Turned off"
+      },
+      "state": "exists"
     },
     {
+      "name": "old-name-gone",
       "action": "assert",
-      "state": "disabled",
       "query": {
-        "text": "Save schedule"
-      }
+        "text": "Edit Morning focus",
+        "role": "button"
+      },
+      "state": "absent"
     },
     {
-      "action": "screenshot",
-      "name": "schedule-editor-inactive-save"
+      "name": "schedule-off",
+      "action": "screenshot"
     },
     {
-      "action": "snapshot",
-      "name": "schedule-editor-inactive-save"
+      "name": "relaunch",
+      "action": "relaunch"
     },
     {
+      "name": "reopen-schedules",
       "action": "tap",
       "query": {
-        "text": "Cancel"
-      }
+        "text": "Schedules",
+        "role": "button"
+      },
+      "timeoutSeconds": 60
     },
     {
+      "name": "persisted",
       "action": "waitFor",
-      "state": "exists",
       "query": {
-        "text": "Set up this Mac"
-      }
+        "text": "Edit Evening focus",
+        "role": "button"
+      },
+      "state": "exists"
     },
     {
-      "action": "assert",
-      "state": "absent",
-      "query": {
-        "text": "Morning focus"
-      }
-    },
-    {
+      "name": "delete-ask",
       "action": "tap",
       "query": {
-        "text": "Set up this Mac"
+        "text": "Delete Evening focus",
+        "role": "button"
       }
     },
     {
-      "action": "screenshot",
-      "name": "schedule-device-setup"
-    },
-    {
-      "action": "snapshot",
-      "name": "schedule-device-setup"
-    },
-    {
-      "action": "scrollTo",
-      "query": {
-        "text": "Not now"
-      }
-    },
-    {
-      "action": "tap",
-      "query": {
-        "text": "Not now"
-      }
-    },
-    {
-      "action": "tap",
-      "query": {
-        "text": "Session"
-      }
-    },
-    {
-      "action": "tap",
-      "query": {
-        "text": "Paused items"
-      }
-    },
-    {
+      "name": "delete-question",
       "action": "waitFor",
-      "state": "exists",
       "query": {
-        "text": "Search"
-      }
+        "textContains": "It is deleted on your other devices too."
+      },
+      "state": "exists"
     },
     {
+      "name": "delete-confirm-shot",
+      "action": "screenshot"
+    },
+    {
+      "name": "delete-keep",
       "action": "tap",
       "query": {
-        "text": "Schedules"
+        "text": "Keep",
+        "role": "button"
       }
     },
     {
-      "action": "screenshot",
-      "name": "schedules-final"
+      "name": "kept",
+      "action": "waitFor",
+      "query": {
+        "text": "Edit Evening focus",
+        "role": "button"
+      },
+      "state": "exists"
+    },
+    {
+      "name": "delete-ask-again",
+      "action": "tap",
+      "query": {
+        "text": "Delete Evening focus",
+        "role": "button"
+      }
+    },
+    {
+      "name": "delete-confirm",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "deleted",
+      "action": "waitFor",
+      "query": {
+        "text": "Edit Evening focus",
+        "role": "button"
+      },
+      "state": "absent"
+    },
+    {
+      "name": "empty-again",
+      "action": "waitFor",
+      "query": {
+        "text": "Make time for a regular pause."
+      },
+      "state": "exists"
+    },
+    {
+      "name": "schedules-final",
+      "action": "screenshot"
     }
   ]
 }

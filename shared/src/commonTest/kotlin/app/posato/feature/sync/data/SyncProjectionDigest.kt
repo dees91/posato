@@ -27,8 +27,11 @@ internal fun SyncProjection.canonicalDigest(cryptoProvider: SyncCryptoProvider):
         conflictedSessionIds.sortedBy { sessionId -> sessionId.value }.forEach { sessionId ->
             writer.writeOwnedBytes(sessionId.value.copyBytes())
         }
-        writer.writeU32(schedules.size.toLong())
-        schedules.sortedBy { schedule -> schedule.scheduleId.value }.forEach { schedule ->
+        writer.writeU32((schedules + refusedSchedules).size.toLong())
+        (schedules.map { it to 1 } + refusedSchedules.map { it to 0 }).sortedBy { (schedule) ->
+            schedule.scheduleId.value
+        }.forEach { (schedule, live) ->
+            writer.writeByte(live)
             writer.writeOwnedBytes(schedule.scheduleId.value.copyBytes())
             writer.writeCanonicalString(schedule.name)
             writer.writeByte(schedule.weekdays)
