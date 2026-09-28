@@ -40,7 +40,8 @@ App Store "What's New" (iPhone):
 
 ## Result
 
-- Not started.
+- Not started; the plan still waits for the merges.
+- **Before the merges (2026-09-28):** the linked-device checks passed on development builds of product head `3089523` in two Tart VMs: schedule sync, automatic start on both Macs, **End early** reaching the other Mac, and the started-elsewhere notice ([`DOCS-003` record](docs-003-release-1-2-media.md)). They do not replace step 4 on the signed candidates.
 
 ## Final
 
