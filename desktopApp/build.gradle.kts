@@ -202,7 +202,8 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         check(signature(daemon).identifier == "app.posato.macos.proxy-settings")
         check(signature(companion).identifier == "app.posato.macos.sync")
         check(signature(companionExecutable).identifier == "app.posato.macos.sync")
-        check(entitlements(helper).isEmpty())
+        check(entitlementEntries(helper).map { (key, _) -> key }.toSet() == setOf("com.apple.security.automation.apple-events"))
+        check(entitlements(helper) == mapOf("com.apple.security.automation.apple-events" to true))
         check(entitlements(daemon).isEmpty())
         verifyCompanionEntitlements(companion, signingIdentity.get())
 
@@ -247,7 +248,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         check(entitlements(application) == expectedApplicationEntitlements)
         check(entitlements(launcher) == expectedApplicationEntitlements)
         signedCode.drop(2).filterNot { code ->
-            code == companion || code == companionExecutable
+            code == companion || code == companionExecutable || code == helper
         }.forEach { code ->
             check(entitlements(code).isEmpty())
         }
@@ -562,12 +563,16 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
             listOf(0xBE, 0xBA, 0xFE, 0xCA),
         ).map { bytes -> bytes.map(Int::toByte) }
 
-        val DEVELOPMENT_APPLICATION_ENTITLEMENTS = mapOf("com.apple.security.cs.allow-jit" to true)
+        val DEVELOPMENT_APPLICATION_ENTITLEMENTS = mapOf(
+            "com.apple.security.cs.allow-jit" to true,
+            "com.apple.security.automation.apple-events" to true,
+        )
         const val DISABLE_ATTACH_MECHANISM = "-XX:+DisableAttachMechanism"
         val AD_HOC_APPLICATION_ENTITLEMENTS = mapOf(
             "com.apple.security.cs.allow-jit" to true,
             "com.apple.security.cs.allow-unsigned-executable-memory" to true,
             "com.apple.security.cs.disable-library-validation" to true,
+            "com.apple.security.automation.apple-events" to true,
         )
         val REQUIRED_UPDATER_SETTINGS = mapOf(
             "SURequireSignedFeed" to "true",
@@ -587,6 +592,12 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
 
     @get:InputFile
     abstract val developmentEntitlements: RegularFileProperty
+
+    @get:InputFile
+    abstract val adHocEntitlements: RegularFileProperty
+
+    @get:InputFile
+    abstract val helperEntitlements: RegularFileProperty
 
     @get:InputFile
     abstract val companionEntitlementsTemplate: RegularFileProperty
@@ -631,10 +642,15 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
             signCode(runtime, identity)
             machOFiles(applicationCode, recursive = false).forEach { code -> signCode(code, identity) }
             signCode(daemon, identity, identifier = "app.posato.macos.proxy-settings")
-            signCode(helper, identity, identifier = "app.posato.macos.helper")
+            signCode(
+                helper,
+                identity,
+                identifier = "app.posato.macos.helper",
+                entitlements = helperEntitlements.get().asFile,
+            )
             signCompanion(application, identity, entitlements = null)
             signSparkle(application, identity)
-            signCode(application, identity, preserveEntitlements = true)
+            signCode(application, identity, entitlements = adHocEntitlements.get().asFile)
             return
         }
 
@@ -643,7 +659,12 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         signCode(runtime, identity)
         machOFiles(applicationCode, recursive = false).forEach { code -> signCode(code, identity) }
         signCode(daemon, identity, identifier = "app.posato.macos.proxy-settings")
-        signCode(helper, identity, identifier = "app.posato.macos.helper")
+        signCode(
+            helper,
+            identity,
+            identifier = "app.posato.macos.helper",
+            entitlements = helperEntitlements.get().asFile,
+        )
         signCompanion(application, identity, entitlements = companionEntitlements())
         signSparkle(application, identity)
         signCode(
@@ -754,7 +775,6 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         identity: String,
         identifier: String? = null,
         entitlements: File? = null,
-        preserveEntitlements: Boolean = false,
     ) {
         val arguments = mutableListOf(
             "/usr/bin/codesign",
@@ -765,9 +785,6 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         )
         identifier?.let { value -> arguments += listOf("--identifier", value) }
         entitlements?.let { file -> arguments += listOf("--entitlements", file.absolutePath) }
-        if (preserveEntitlements) {
-            arguments += "--preserve-metadata=entitlements"
-        }
         arguments += listOf("--sign", identity, code.absolutePath)
         command(*arguments.toTypedArray())
     }
@@ -1346,7 +1363,11 @@ compose.desktop {
                 packageBuildVersion = posatoBuildNumber
                 iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
                 infoPlist {
-                    extraKeysRawXml = updaterInfoPlistKeys
+                    extraKeysRawXml = updaterInfoPlistKeys +
+                        """
+                        <key>NSAppleEventsUsageDescription</key>
+                        <string>Posato replaces a blocked Safari or Chrome tab with a paused-site page.</string>
+                        """.trimIndent()
                 }
             }
         }
@@ -1403,6 +1424,8 @@ val signMacOsDevelopmentPackage by tasks.registering(SignMacOsDevelopmentPackage
     dependsOn(embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
     applicationBundle.set(macOsDistributable)
     developmentEntitlements.set(layout.projectDirectory.file("Config/PosatoDevelopment.entitlements"))
+    adHocEntitlements.set(layout.projectDirectory.file("Config/PosatoAdHoc.entitlements"))
+    helperEntitlements.set(layout.projectDirectory.file("Config/PosatoHelper.entitlements"))
     companionEntitlementsTemplate.set(
         rootProject.layout.projectDirectory.file(
             "macosSyncCompanion/Resources/PosatoMacOSSync.entitlements.template",
@@ -1511,6 +1534,8 @@ val signMacOsReleasePackage by tasks.registering(SignMacOsDevelopmentPackage::cl
     dependsOn(stageMacOsReleasePackage)
     applicationBundle.set(macOsReleaseApplication)
     developmentEntitlements.set(layout.projectDirectory.file("Config/PosatoDevelopment.entitlements"))
+    adHocEntitlements.set(layout.projectDirectory.file("Config/PosatoAdHoc.entitlements"))
+    helperEntitlements.set(layout.projectDirectory.file("Config/PosatoHelper.entitlements"))
     companionEntitlementsTemplate.set(
         rootProject.layout.projectDirectory.file(
             "macosSyncCompanion/Resources/PosatoMacOSSync.entitlements.template",

@@ -138,12 +138,13 @@ enum BrowserDomainRequestHandler {
     )
   }
 
-  @MainActor
   static func handleSelectApplications(
     request: WireMessage,
     receivedAt: DispatchTime
   ) throws -> WireMessage {
-    let selection = try ApplicationSelectionService().select()
+    let selection = try DispatchQueue.main.sync {
+      try ApplicationSelectionService().select()
+    }
     return try WireMessage(
       kind: .response,
       operation: request.operation,

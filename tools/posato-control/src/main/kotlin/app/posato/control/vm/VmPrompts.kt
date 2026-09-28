@@ -19,6 +19,8 @@ enum class GuestPrompt(
     DEVICE_PASSCODE("device-passcode"),
     GATEKEEPER("gatekeeper"),
     PICKER_BYPASS("picker-bypass"),
+    AUTOMATION_ALLOW("automation-allow"),
+    AUTOMATION_DENY("automation-deny"),
     ;
 
     companion object {
@@ -82,6 +84,16 @@ class VmPrompts(
                     client.click(open.centerX, open.centerY)
                 }
                 screen.waitGone(GATEKEEPER_QUESTION, timeoutMs)
+            }
+
+            GuestPrompt.AUTOMATION_ALLOW, GuestPrompt.AUTOMATION_DENY -> {
+                val question = "wants access to control"
+                screen.waitFor(question, timeoutMs)
+                screen.waitFor("Posato replaces a blocked Safari or", timeoutMs)
+                val label = if (prompt == GuestPrompt.AUTOMATION_ALLOW) "Allow" else "Don't Allow"
+                val button = screen.waitFor(label, timeoutMs, exact = true).first()
+                screen.session { client -> client.click(button.centerX, button.centerY) }
+                screen.waitGone(question, timeoutMs)
             }
 
             GuestPrompt.PICKER_BYPASS -> {
