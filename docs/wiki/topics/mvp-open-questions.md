@@ -664,10 +664,10 @@ accepted contracts.
 ## Post-MVP feature ideas for discovery
 
 `user-confirmed` (2026-09-28): during release 1.3 planning, the maintainer
-selected `NAV-001` and tentatively favored `SYNC-020`, `MACOS-020`, and
-`MACOS-021`. The latter three remain candidates; the rest of the release
-will be considered later. The
-[release roadmap](../../tasks/release-roadmap.md#release-13-more-macs)
+selected `NAV-001` and reusable blocklists, and tentatively favored
+`SYNC-020`, `MACOS-020`, and `MACOS-021`. The latter three remain candidates;
+the rest of the release will be considered later. The
+[release roadmap](../../tasks/release-roadmap.md#release-13-blocklists-and-navigation)
 records the partial selection. Final composition and activation remain open.
 
 `user-confirmed` (2026-09-13): retain the following larger, loosely defined
@@ -926,22 +926,21 @@ below. This queue retains idea provenance without expanding the original MVP.
     remains unproven. The current Start/Resume grant does not authorize
     scheduled Apply.
 
-20. **Different websites and applications for each schedule.**
-    `user-confirmed` (2026-09-28, backlog proposal): let the person configure
-    a different selection for each schedule. Blocking social sites during
-    work and work-related sites or applications after work are examples;
-    names, selections, and purposes belong to the person, with no fixed
-    work or leisure categories. The proposal has no release assignment.
-    `observed`: the current
-    [schedule rules](../../product/schedules-decisions.md#paused-items),
-    `ScheduleHost.toRequest`, and `ScheduleMonitorTables.build` use one
-    current paused-items selection across schedules. Application choices
-    stay device-local.
-    `open`: separate selections versus reusable named sets; how overlapping
-    schedules and manual sessions combine restrictions; how edits affect a
-    running pause; migration of existing schedules; and synchronization of
-    website selections with device-local application choices. `SCHEDULE-003`
-    owns discovery before any delivery decision.
+20. **Reusable blocklists for manual sessions and schedules.**
+    `user-confirmed` (2026-09-28): release 1.3 includes named blocklists,
+    each with user-chosen websites and device-local application choices.
+    One list is selected for a manual session or schedule, with a default
+    offered for new starts and plans. Existing targets become the default
+    list and existing schedules use it. Overlapping schedules combine their
+    lists; ending one occurrence retains restrictions required by another.
+    Definitions and websites synchronize; app choices stay local per list.
+    The accepted [product scope](../../product/blocklists.md) replaces the
+    earlier preliminary idea of separate selections only for schedules.
+    `observed`: the current 1.2 rules and hosts use one current selection
+    across schedules. `SCHEDULE-003` owns the remaining decisions about
+    live edits, deletion, manual-session overlap, defaults, limits, migration,
+    and compatibility; `SCHEDULE-004` delivers the accepted rules. Final
+    release composition and task activation remain open.
 
 ## Later platform questions
 

@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 12 (amended 2026-09-28: partial 1.3 selection and schedule-target idea)
+- **Revision:** 12 (amended 2026-09-28: blocklists and partial 1.3 composition)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-28
@@ -54,10 +54,11 @@
   before `RELEASE-004` publishes them. Revision 12 records the partial
   release 1.3 selection (`user-confirmed`, 2026-09-28): `NAV-001` is included;
   `SYNC-020`, `MACOS-020`, and `MACOS-021` are tentative candidates. The
-  remaining scope and final waves will be decided at a later checkpoint. It
-  also adds `SCHEDULE-003` from idea 20: configurable websites and
-  applications per schedule, retained as a preliminary backlog proposal
-  without a release assignment.
+  maintainer also accepted reusable blocklists for manual sessions and
+  schedules in release 1.3. Idea 20 and `SCHEDULE-003` now cover the remaining
+  blocklist decisions, with `SCHEDULE-004` delivering the accepted
+  [product scope](../product/blocklists.md). The remaining release scope and
+  final waves will be decided at a later checkpoint.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -224,26 +225,28 @@ starts none of the rows.
 | `DOCS-003` | Prepare the public packaging for 1.2 without publishing it: recapture the showcase on the 1.2 applications, revise the storyboard with schedules and render the demo, walkthrough, stills, and social preview again; describe 1.2 in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.2/W5 | `ONBOARDING-004`, `NOTIFY-001`, `SCHEDULE-002` | PR-RELEASE-1-2-MEDIA |
 | `RELEASE-004` | Verify the 1.2.0 candidates including shared schedules and Mac setup, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W5 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004`, `SCHEDULE-002`, `DOCS-003` | PR-RELEASE-1-2 |
 
-## Release 1.3: more Macs
+## Release 1.3: blocklists and navigation
 
-Theme: decide and deliver the accepted Intel Mac support path. Schedule
-discovery and delivery now belong to release 1.2; `RELEASE-005` no longer
-waits for them.
+Confirmed direction: reusable named blocklists for one-time sessions and
+recurring schedules, plus system back gestures through `NAV-001`. The
+[blocklist product scope](../product/blocklists.md) records the accepted
+behavior and the decisions `SCHEDULE-003` must complete before delivery.
+Recurring schedules themselves shipped in 1.2.
 
-Planning reopened on 2026-09-28 after schedules shipped in 1.2.
-`user-confirmed`: include `NAV-001` in 1.3. `SYNC-020`, `MACOS-020`, and
-`MACOS-021` are tentative candidates and remain in the backlog until the
-maintainer confirms them. The remaining scope, final theme, and waves are
-open. Existing Intel rows are retained; this checkpoint does not settle their
-feasibility or verification environment. Complete release composition before
-activating any row.
+Planning reopened on 2026-09-28. `SYNC-020`, `MACOS-020`, and `MACOS-021`
+remain tentative candidates in the backlog. Existing Intel rows are retained
+pending the remaining scope discussion; this checkpoint does not settle their
+feasibility or verification environment. Final composition and waves remain
+open. Complete release composition before activating any row.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
 | `MACOS-015` | Decide whether Posato supports Intel Macs and macOS 14: cost of the x86-64 Compose Desktop artifact and runtime, per-architecture native libraries, universal Swift helpers, two notarized DMGs, macOS 14 API availability, the verification driver on a second architecture, and the support horizon Apple gives Intel Macs and macOS 14; propose the ADR 0003 revision for a go or no-go. | Platform coverage | discovery | R1.3/W1 | None | PR-INTEL-DECISION |
 | `MACOS-016` | Deliver the accepted Intel path from `MACOS-015`: build, sign, notarize, and publish the x86-64 release, verify it on the maintainer's 2019 MacBook Air, and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W2 | `MACOS-015` | PR-INTEL-RELEASE |
 | `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules when delivered by `SCHEDULE-002`. | Platform coverage | delivery | Pending composition | `SCHEDULE-002` (done) | PR-NAVIGATION |
-| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for every accepted architecture, and submit the iOS build to App Review when it changed. | Release readiness | delivery | R1.3/W3 | `MACOS-016`, `NAV-001` | PR-RELEASE-1-3 |
+| `SCHEDULE-003` | Complete the accepted blocklist scope for manual sessions and schedules: live edits and deletion, manual-session overlap, default ownership, limits and device readiness, migration, synchronization and older-client compatibility. Update the affected design and architecture authorities and end with accepted decisions and a delivery plan. | Target management | discovery | Pending composition | `SCHEDULE-002` (done) | PR-BLOCKLIST-DECISION |
+| `SCHEDULE-004` | Deliver reusable named blocklists on Mac and iPhone under the accepted scope: one list per manual session or schedule, a default for new starts and plans, migration of existing targets and schedules, union of overlapping scheduled lists, synchronized definitions and websites, and per-list device-local application choices. Verify migration, actual blocking and unblocking, overlap, offline execution, and cross-device convergence. High-risk. | Target management | delivery | Pending composition | `SCHEDULE-003` | PR-BLOCKLIST-DELIVERY |
+| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for every accepted architecture, and submit the iOS build to App Review when it changed. | Release readiness | delivery | R1.3/W3 | `MACOS-016`, `NAV-001`, `SCHEDULE-004` | PR-RELEASE-1-3 |
 
 ## Backlog
 
@@ -252,7 +255,6 @@ The idea numbers refer to the wiki idea queue.
 
 | Task | Outcome | Epic | Origin | What unblocks assignment |
 | --- | --- | --- | --- | --- |
-| `SCHEDULE-003` | Decide how each schedule can block user-chosen websites and applications, so different schedules can use different selections. Settle selection ownership (separate lists or reusable sets), overlapping schedules and manual sessions, edits during a running pause, migration of existing schedules, and synchronization with device-local application choices. End with a product decision and a delivery plan. Preliminary. | Schedules | Idea 20 | Acceptance of the selection and overlap rules, migration, and platform boundaries |
 | `FAMILY-001` | Decide whether a parent-and-child use case belongs in Posato: device ownership, consent, access boundaries, and privacy. | Product discovery | Idea 2 | A product decision that the personal-use model may extend |
 | `FILTER-001` | Decide whether reducing advertising belongs in Posato and which coverage is useful and feasible. | Product discovery | Idea 3 | A product decision on scope beyond blocking chosen targets |
 | `RESEARCH-001` | Compare the Focusly extension's interactions and features with Posato and list the ones worth adopting. | Product discovery | Idea 4 | Any planning checkpoint; cheap |
@@ -292,6 +294,7 @@ The idea numbers refer to the wiki idea queue.
 | Shared recurring schedules | `SCHEDULE-001`, `SCHEDULE-002` | Accepted rules and security-reviewed authorization revision; Mac VM and test-iPhone runs for start/end, offline execution of known plans, synchronization, missing permissions, skipping, early end, restart and Mac catch-up |
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
 | Public packaging for 1.2 | `DOCS-003` | Media rendered within budget from recorded captures, README and site built, store text and screenshots ready for upload |
+| Reusable blocklists for manual sessions and schedules | `SCHEDULE-003`, `SCHEDULE-004` | Accepted remaining decisions; Mac VM and test-iPhone proof of migration, per-list selections, overlap, blocking and release, offline execution, and synchronized definitions with local app choices |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
 ## Manual and physical gates
