@@ -68,6 +68,20 @@ App Store "What's New" (iPhone):
 - **macOS 1.2.0 (27)** from a clean clone of R through `generateMacOsUpdateFeed` on the release channel, previous 26, Developer ID G2: `Posato-1.2.0.dmg` SHA-256 `48ef94aaf0243f342e814222bd0f74a803d6a017d52cbe78fec3ff78f1f3d013`, notarized and stapled, Gatekeeper `accepted`; `appcast.xml` one item, build 27, 1.2.0, macOS 15.0, enclosure `releases/download/v1.2.0/Posato-1.2.0.dmg` with the DMG's length; `SHA256SUMS`. Consumed macOS build number: 27.
 - **iOS 1.2.0 (5)** archived from the same clone, exported and inspected (Apple Distribution on the app and the extension, Family Controls, the app group, CloudKit Production, `get-task-allow` false, both privacy manifests), validated, uploaded, `VALID`. Consumed iOS build number: 5.
 - **iOS store record (step 4b, 2026-09-28, maintainer confirmed the withdrawal):** `store withdraw --version 1.1.0` canceled the waiting submission (state `DEVELOPER_REJECTED`); `store prepare --version 1.2.0 --rename-from 1.1.0 ...` renamed the record, attached build 5, set What's New and the description, and replaced both screenshot sets (4 each, `COMPLETE`); release after approval. Not submitted. App Store devices stay on 1.0.0 until 1.2.0 is approved.
+- **Driver (not in R):** `vm install` dragged the topmost "Posato" label, which can be the image window's title or the desktop volume icon, and required an exact read of "/Applications", which recognition misread as "/Appligations"; it now takes the icon beside the link and tolerates two recognition errors (`6c35325`, tested). The DMG itself has the same layout as 1.1.0's.
+
+### Verification on the candidates (2026-09-28)
+
+| Check | Target | Result |
+| --- | --- | --- |
+| Install from the notarized DMG | macOS 26, `primary` and `peer` | pass: dragged to Applications, Gatekeeper `accepted`, Notarized Developer ID, 1.2.0 (27) |
+| Unified setup with iCloud, linked pair | both | pass; the peer's iCloud Keychain paused once and `vm icloud --resume` recovered it |
+| Website sync, manual pause | `primary` to `peer` | pass: website arrived; Start asked for no password; `observe` paused; End early allowed at once |
+| Update consent | both | the one-time "Check for updates automatically?" alert appears after setup and blocks the window until answered |
+| Schedule sync and automatic start | both | pass: listed on the peer; started on both with the primary's window closed, no password; "Scheduled pause started" in Notification Center |
+| End early across devices | `primary` to `peer` | pass: the peer was allowed 18 s after syncing |
+| Started-elsewhere notice | `peer`, window closed | pass: "Pause started" 37 s after the primary's start, once the peer had notification permission |
+| Test iPhone, R's product code | iOS 26.5 | pass: core flow (Calculator shield, "Website Not Allowed", early end), a schedule starting and ending with the app force-quit, early end; Safari showed a blank page in the first minute of the scheduled pause and "Website Not Allowed" a minute later |
 - **Before the merges (2026-09-28):** the linked-device checks passed on development builds of product head `3089523` in two Tart VMs: schedule sync, automatic start on both Macs, **End early** reaching the other Mac, and the started-elsewhere notice ([`DOCS-003` record](docs-003-release-1-2-media.md)). They do not replace step 4 on the signed candidates.
 
 ## Final
