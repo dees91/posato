@@ -1,5 +1,6 @@
 package app.posato.control.cli
 
+import app.posato.control.core.ErrorCode
 import app.posato.control.model.Actions
 import app.posato.control.model.Query
 import app.posato.control.model.States
@@ -32,7 +33,10 @@ class UpdateConsentCommand :
         requireDesktopInVirtualMachine(session)
         val backend = session.backend()
         val wait = Step(action = Actions.WAIT_FOR, state = States.EXISTS, query = Query(textContains = TITLE), timeoutSeconds = timeout)
-        val shown = backend.runScenario(singleStep(wait)).ok
+        val waited = backend.runScenario(singleStep(wait))
+        // Only a timed-out wait means that no alert appeared; any other failure, such as no tracked application, fails.
+        val shown = waited.steps.firstOrNull()?.error?.code != ErrorCode.WAIT_TIMEOUT.name
+        if (shown) failIfStepFailed(waited)
         if (shown) {
             val button = if (answer == ALLOW) ALLOW_BUTTON else DENY_BUTTON
             failIfStepFailed(backend.runScenario(singleStep(Step(action = Actions.TAP, query = Query(text = button)))))

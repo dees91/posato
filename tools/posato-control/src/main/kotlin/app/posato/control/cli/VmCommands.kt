@@ -50,9 +50,12 @@ class VmCreateCommand : ControlCommand("create", "Clone the line's golden VM, bo
         // later clone signing in can pause this one again, so verification resumes every clone once all have booted.
         val iCloud = GuestICloud(session.context)
         val checked = runCatching { iCloud.check(line, ICLOUD_CHECK_TIMEOUT_MS) }.getOrDefault(ICloudKeychainState.UNKNOWN)
-        val resumed = checked == ICloudKeychainState.PAUSED
-        val state = if (resumed) runCatching { iCloud.resume(line, ICLOUD_RESUME_TIMEOUT_MS) }.getOrDefault(checked) else checked
-        return JsonObject(created + ("iCloudKeychain" to JsonPrimitive(state.id)) + ("iCloudResumed" to JsonPrimitive(resumed)))
+        val resume = if (checked == ICloudKeychainState.PAUSED) runCatching { iCloud.resume(line, ICLOUD_RESUME_TIMEOUT_MS) } else null
+        val state = resume?.getOrNull() ?: checked
+        val report = created + ("iCloudKeychain" to JsonPrimitive(state.id)) +
+            ("iCloudResumed" to JsonPrimitive(resume != null && state != ICloudKeychainState.PAUSED))
+        val failure = resume?.exceptionOrNull()?.message
+        return JsonObject(if (failure == null) report else report + ("iCloudResumeError" to JsonPrimitive(failure)))
     }
 }
 

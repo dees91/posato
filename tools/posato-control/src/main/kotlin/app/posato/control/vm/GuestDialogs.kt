@@ -37,12 +37,12 @@ private val DIALOG_OWNERS = mapOf(
 private const val NOTIFICATION_OWNER = "Notification Center"
 
 /** The system dialogs and notification banners among [windows]; the Notification Center widgets sit below layer 0. */
-internal fun dialogsAmong(windows: List<GuestWindow>): List<GuestDialog> = windows.mapNotNull { window ->
+private fun dialogsAmong(windows: List<GuestWindow>): List<GuestDialog> = windows.mapNotNull { window ->
     val kind = DIALOG_OWNERS[window.owner] ?: if (window.owner == NOTIFICATION_OWNER && window.layer >= 0) "notification" else null
     kind?.let { GuestDialog(it, window.owner, window.title) }
 }
 
-internal fun parseGuestWindows(json: String): List<GuestWindow> = ControlJson.lenient.decodeFromString(ListSerializer(GuestWindow.serializer()), json)
+private fun parseGuestWindows(json: String): List<GuestWindow> = ControlJson.lenient.decodeFromString(ListSerializer(GuestWindow.serializer()), json)
 
 /** Lists the guest's system dialogs from the window server, which needs neither Automation nor text recognition. */
 class GuestDialogs(
