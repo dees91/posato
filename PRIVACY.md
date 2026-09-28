@@ -83,6 +83,13 @@ system can read. The record holds your Mac account's user number and system
 identifier and your Mac's hardware identifier. It never leaves your Mac and
 is deleted when you turn the option off or remove Posato from this Mac.
 
+## Notifications
+
+Posato can show local notices when a pause ends or starts on another device.
+They are created on your device by your device's notification system; Posato
+sends nothing to a server for them. You can turn them off in About Posato or in
+your device's settings.
+
 ## Updates on Mac
 
 Posato asks before checking for updates automatically. If you agree, it

@@ -197,6 +197,11 @@ wait up to 30 seconds for a window and continue without one.
   (`launch --env JAVA_TOOL_OPTIONS=...`) falls back to the prompt.
 - This Mac options sit below the window edge: `vm scroll --text "Selected items"`
   moves the Compose view where `scrollTo` cannot.
+- Pause notifications (`NOTIFY-001`): the first local start asks for notification
+  permission. On a Mac guest, answer the banner with `$PC vm allow-notifications`; on the
+  Simulator, tap Allow with a `springboard` scope. **Pause over** arrives at the planned end.
+  Build dev-signed: a worktree without `local.properties` builds ad hoc, and This Mac then
+  reads unavailable.
 - Removing the network service that holds the proxy settings during a session leaves a
   false "Restrictions active" and a stale record (`MACOS-020`); do not use that path as a
   cleanup step.

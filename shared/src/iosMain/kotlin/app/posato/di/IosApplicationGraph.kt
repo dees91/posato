@@ -8,6 +8,7 @@ import app.posato.feature.enforcement.IosEnforcementProvider
 import app.posato.feature.enforcement.IosSessionEnforcement
 import app.posato.feature.enforcement.IosSuspendedExpiry
 import app.posato.feature.enforcement.IosSuspendedExpiryProvider
+import app.posato.feature.notifications.SessionNotificationPlatform
 import app.posato.feature.onboarding.ApplicationAccessPort
 import app.posato.feature.onboarding.IosApplicationAccess
 import app.posato.feature.onboarding.OnboardingDependencies
@@ -75,6 +76,7 @@ internal interface IosApplicationGraph : ApplicationGraph {
             @Provides mailboxProvider: IosCloudKitMailboxProvider,
             @Provides cryptoProvider: IosCryptoProvider,
             @Provides applicationAccess: ApplicationAccessPort,
+            @Provides notifications: SessionNotificationPlatform,
         ): IosApplicationGraph
     }
 
@@ -227,6 +229,7 @@ internal fun createIosApplicationRuntime(
     suspendedExpiryProvider: IosSuspendedExpiryProvider,
     keychainProvider: IosKeychainProvider,
     mailboxProvider: IosCloudKitMailboxProvider,
+    notifications: SessionNotificationPlatform,
 ): IosApplicationRuntime {
     runtimeLock.lock()
     try {
@@ -238,6 +241,7 @@ internal fun createIosApplicationRuntime(
             suspendedExpiryProvider,
             keychainProvider,
             mailboxProvider,
+            notifications,
         ).also { processRuntime = it }
     } finally {
         runtimeLock.unlock()
@@ -251,6 +255,7 @@ private fun buildIosApplicationRuntime(
     suspendedExpiryProvider: IosSuspendedExpiryProvider,
     keychainProvider: IosKeychainProvider,
     mailboxProvider: IosCloudKitMailboxProvider,
+    notifications: SessionNotificationPlatform,
 ): IosApplicationRuntime {
     val applicationMappings = IosLocalApplicationMappings(applicationMappingsProvider)
     val enforcement = IosSessionEnforcement(
@@ -264,6 +269,7 @@ private fun buildIosApplicationRuntime(
         mailboxProvider,
         cryptoProvider,
         IosApplicationAccess(applicationMappings),
+        notifications,
     )
     return IosApplicationRuntime(graph, graph.appleSync.core)
 }

@@ -30,7 +30,8 @@ private struct ComposeRoot: UIViewControllerRepresentable {
             enforcementProvider: IosManagedSettingsEnforcer(),
             suspendedExpiryProvider: SuspendedExpiryScheduler(),
             keychainProvider: keychainProvider,
-            mailboxProvider: mailboxProvider
+            mailboxProvider: mailboxProvider,
+            notificationProvider: SessionNotificationCenter()
         )
         applicationMappingsProvider.presenter = controller
         return controller

@@ -1,5 +1,6 @@
 package app.posato.di
 
+import app.posato.feature.notifications.UnavailableSessionNotifications
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperRemoval
@@ -33,6 +34,7 @@ class DesktopBootstrapCompositionTest {
             FakeEnforcementPort(),
             databasePath,
             FakeMacHelperPort(),
+            UnavailableSessionNotifications,
         )
 
         assertSame(graph.appleBootstrap, graph.appleBootstrap)
@@ -46,6 +48,7 @@ class DesktopBootstrapCompositionTest {
             FakeEnforcementPort(),
             databasePath,
             FakeMacHelperPort(),
+            UnavailableSessionNotifications,
         )
 
         val result = runBlocking { graph.appleBootstrap.syncWithIcloud() }
@@ -61,6 +64,7 @@ class DesktopBootstrapCompositionTest {
             FakeEnforcementPort(),
             databasePath,
             FakeMacHelperPort(),
+            UnavailableSessionNotifications,
         )
 
         assertSame(Dispatchers.IO, graph.appleBootstrap.backgroundDispatcher)

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A93A953A29CC810C00F8E227 /* iosApp.swift */; };
 		B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */; };
+		D7A1000129CC810C00F8E227 /* SessionNotificationCenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A1000229CC810C00F8E227 /* SessionNotificationCenter.swift */; };
 		B300000129CC810C00F8E227 /* IosApplicationMappingsProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */; };
 		B200000129CC810C00F8E227 /* CryptoKitSyncProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */; };
 		B400000129CC810C00F8E227 /* ApplicationMappingsStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B400000229CC810C00F8E227 /* ApplicationMappingsStoreTests.swift */; };
@@ -69,6 +70,7 @@
 		A93A953729CC810C00F8E227 /* Posato.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Posato.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		A93A953A29CC810C00F8E227 /* iosApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iosApp.swift; sourceTree = "<group>"; };
 		B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoKitSyncProvider.swift; sourceTree = "<group>"; };
+		D7A1000229CC810C00F8E227 /* SessionNotificationCenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionNotificationCenter.swift; sourceTree = "<group>"; };
 		B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IosApplicationMappingsProvider.swift; sourceTree = "<group>"; };
 		B300000329CC810C00F8E227 /* Posato.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Posato.entitlements; sourceTree = "<group>"; };
 		B200000229CC810C00F8E227 /* CryptoKitSyncProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CryptoKitSyncProviderTests.swift; sourceTree = "<group>"; };
@@ -161,6 +163,7 @@
 			children = (
 				A93A953A29CC810C00F8E227 /* iosApp.swift */,
 				B100000229CC810C00F8E227 /* CryptoKitSyncProvider.swift */,
+				D7A1000229CC810C00F8E227 /* SessionNotificationCenter.swift */,
 				B300000229CC810C00F8E227 /* IosApplicationMappingsProvider.swift */,
 				B500000229CC810C00F8E227 /* SynchronizableKeychainProvider.swift */,
 				D100000229CC810C00F8E227 /* CloudKitMailboxProvider.swift */,
@@ -353,6 +356,7 @@
 			files = (
 				A93A953B29CC810C00F8E227 /* iosApp.swift in Sources */,
 				B100000129CC810C00F8E227 /* CryptoKitSyncProvider.swift in Sources */,
+				D7A1000129CC810C00F8E227 /* SessionNotificationCenter.swift in Sources */,
 				B300000129CC810C00F8E227 /* IosApplicationMappingsProvider.swift in Sources */,
 				B500000129CC810C00F8E227 /* SynchronizableKeychainProvider.swift in Sources */,
 				D100000129CC810C00F8E227 /* CloudKitMailboxProvider.swift in Sources */,
