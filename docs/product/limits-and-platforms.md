@@ -73,7 +73,7 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   again.
 - Schedule times follow each device's own clock. A schedule is at least 15
   minutes long, and on iPhone it needs Screen Time access.
-- A device still on Posato 1.1 stops syncing once another device saves a
+- A device on an earlier version of Posato stops syncing once another device saves a
   schedule. Update Posato on every device to keep them in sync.
 - Sync is best effort. Posato cannot promise when, or whether, a change reaches
   your other device, and it cannot wake a sleeping device.

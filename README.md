@@ -86,7 +86,7 @@ Choose **Sync with iCloud** on one Mac and one iPhone signed in to the same
 Apple Account to share your website list, sessions, and schedules. No QR code
 or invitation is needed. Delivery is best effort. A session started on your
 iPhone blocks on the Mac only after you resume it there. Update Posato on every
-device: once a schedule is saved, a device still on Posato 1.1 stops syncing.
+device: once a schedule is saved, a device on an earlier version stops syncing.
 
 ## Limits
 

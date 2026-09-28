@@ -51,7 +51,7 @@ For `RELEASE-004` to paste into the release; replace the verification line with 
 >
 > ## Update all your devices
 >
-> If you use Posato on more than one device, update all of them. Once a device saves a schedule, devices still on Posato 1.1 stop syncing until they update.
+> If you use Posato on more than one device, update all of them. Once a device saves a schedule, devices on an earlier version stop syncing until they update.
 >
 > ## Updating on Mac
 >
