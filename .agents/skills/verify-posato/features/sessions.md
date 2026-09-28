@@ -25,11 +25,11 @@ can require Resume restrictions and an attended administrator confirmation.
 - `session-persist` preserves the active session and its end time across relaunch.
 - `session-blocking` pauses a website and an application during a session, as a
   person meets them, and releases both after it ends.
-- `session-mac-setup` (Mac only) offers Check Mac setup inside the This Mac row below iCloud,
-  reads nothing before the press, then names the real helper state with one
-  action and a quiet Check again, except not enabled, which shows Enable on
-  this Mac alone. A state other than ready is also named once as a notice above
-  the session action while the row is collapsed.
+- `session-mac-setup` (Mac only): Session reads the helper state quietly when it
+  appears. A ready Mac shows Start a session. A state other than ready shows a
+  persistent setup notice and Finish setup in place of Start; Finish setup opens
+  the unified setup preview with the existing This Mac controls expanded (Enable
+  on this Mac, Open System Settings, Check again).
 
 ## How to get to it (user POV)
 
@@ -64,7 +64,8 @@ Preconditions:
   the session is active and the attention notice is visible.
 - **Start without confirmation (desktop, unattended):**
   `$PC run -t desktop --scenario tools/posato-control/fixtures/scenarios/session-start-action-required-desktop.json`.
-  Requires a Mac with the helper enabled. Use it when nobody confirms the administrator
+  Requires a Mac with the helper enabled (otherwise Session shows Finish setup in place
+  of Start). Use it when nobody confirms the administrator
   prompt: Start leaves the session active with the Retry notice, the run asserts it, ends
   early through the nothing-restricted confirmation, asserts Retry is gone after the clean
   end, and removes example.com. The Retry wait allows up to 240 seconds for the helper

@@ -65,25 +65,31 @@ internal fun ApplicationNavigationHeader(
 internal fun ApplicationNavigation(
     placement: PosatoNavigationPlacement,
     device: PosatoDevice,
-    showingSession: Boolean,
+    destination: ApplicationDestination,
     showingInformation: Boolean,
-    onSelect: (Boolean) -> Unit,
+    onSelect: (ApplicationDestination) -> Unit,
     onOpenAbout: () -> Unit,
 ) {
     when (placement) {
         PosatoNavigationPlacement.Bottom -> PosatoBottomNavigation {
             PosatoBottomNavigationItem(
-                selected = showingSession,
-                onClick = { onSelect(true) },
+                selected = destination == ApplicationDestination.SESSION,
+                onClick = { onSelect(ApplicationDestination.SESSION) },
                 iconContent = { PosatoIcon(PosatoIcons.Pause, null, Modifier.size(PosatoSize.LargeIcon)) },
                 modifier = Modifier.weight(1f),
             ) { Text("Session") }
             PosatoBottomNavigationItem(
-                selected = !showingSession,
-                onClick = { onSelect(false) },
+                selected = destination == ApplicationDestination.TARGETS,
+                onClick = { onSelect(ApplicationDestination.TARGETS) },
                 iconContent = { PosatoIcon(PosatoIcons.Items, null, Modifier.size(PosatoSize.LargeIcon)) },
                 modifier = Modifier.weight(1f),
             ) { Text("Paused items") }
+            PosatoBottomNavigationItem(
+                modifier = Modifier.weight(1f),
+                selected = destination == ApplicationDestination.SCHEDULES,
+                onClick = { onSelect(ApplicationDestination.SCHEDULES) },
+                iconContent = { PosatoIcon(PosatoIcons.Clock, null, Modifier.size(PosatoSize.LargeIcon)) },
+            ) { Text("Schedules") }
         }
 
         PosatoNavigationPlacement.Sidebar -> Column(
@@ -92,17 +98,23 @@ internal fun ApplicationNavigation(
         ) {
             Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
                 PosatoSidebarNavigationItem(
-                    selected = showingSession && !showingInformation,
-                    onClick = { onSelect(true) },
+                    selected = destination == ApplicationDestination.SESSION && !showingInformation,
+                    onClick = { onSelect(ApplicationDestination.SESSION) },
                     iconContent = { PosatoIcon(PosatoIcons.Pause, null) },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Session") }
                 PosatoSidebarNavigationItem(
-                    selected = !showingSession && !showingInformation,
-                    onClick = { onSelect(false) },
+                    selected = destination == ApplicationDestination.TARGETS && !showingInformation,
+                    onClick = { onSelect(ApplicationDestination.TARGETS) },
                     iconContent = { PosatoIcon(PosatoIcons.Items, null) },
                     modifier = Modifier.fillMaxWidth(),
                 ) { Text("Paused items") }
+                PosatoSidebarNavigationItem(
+                    modifier = Modifier.fillMaxWidth(),
+                    selected = destination == ApplicationDestination.SCHEDULES && !showingInformation,
+                    onClick = { onSelect(ApplicationDestination.SCHEDULES) },
+                    iconContent = { PosatoIcon(PosatoIcons.Clock, null) },
+                ) { Text("Schedules") }
             }
             val labelInset = PosatoSpace.Medium + PosatoSize.Icon + PosatoSpace.Medium
             val buttonInset = labelInset - PosatoControlDefaults.ContentPadding.calculateStartPadding(LocalLayoutDirection.current)
@@ -121,9 +133,9 @@ internal fun ApplicationNavigation(
 @Composable
 internal fun ApplicationNavigationScaffold(
     device: PosatoDevice,
-    showingSession: Boolean,
+    destination: ApplicationDestination,
     showingInformation: Boolean,
-    onSelect: (Boolean) -> Unit,
+    onSelect: (ApplicationDestination) -> Unit,
     onOpenAbout: () -> Unit,
     modifier: Modifier = Modifier,
     content: @Composable (PosatoLayout) -> Unit,
@@ -144,7 +156,7 @@ internal fun ApplicationNavigationScaffold(
         },
         navigationContent = {
             if (!hideNavigation && (placement == PosatoNavigationPlacement.Sidebar || !showingInformation)) {
-                ApplicationNavigation(placement, device, showingSession, showingInformation, onSelect, onOpenAbout)
+                ApplicationNavigation(placement, device, destination, showingInformation, onSelect, onOpenAbout)
             }
         },
         content = content,

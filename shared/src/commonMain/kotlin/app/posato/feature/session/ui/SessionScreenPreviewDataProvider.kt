@@ -77,6 +77,21 @@ internal class SessionScreenPreviewDataProvider : PreviewParameterProvider<Sessi
             macSetup = MacSetupPresentation(readiness = MacHelperReadiness.UNAVAILABLE, repeatedResult = true),
         ),
         SessionPreviewState(
+            "Finish Mac setup before duration",
+            inactiveWithItems().copy(isSettingUp = true),
+            macSetup = MacSetupPresentation(readiness = MacHelperReadiness.NOT_ENABLED),
+        ),
+        SessionPreviewState(
+            "Check Mac setup before duration",
+            inactiveWithItems().copy(isSettingUp = true),
+            macSetup = MacSetupPresentation(),
+        ),
+        SessionPreviewState(
+            "Finish Mac setup before review",
+            inactiveWithItems().copy(isReviewing = true),
+            macSetup = MacSetupPresentation(readiness = MacHelperReadiness.APPROVAL_REQUIRED),
+        ),
+        SessionPreviewState(
             "Setup",
             SessionUiState(
                 status = Inactive,

@@ -274,6 +274,66 @@ class MacHelperSetupUiStateTest {
     }
 }
 
+class MacHelperQuietReadTest {
+    @Test
+    fun `given an unread helper when Session appears then its state is read once without an announcement`() = runTest {
+        val helper = RecordingMacHelper(MacHelperReadiness.READY)
+        val holder = MacHelperSetupUiState(helper, this)
+        val before = holder.presentation().completedOperations
+
+        holder.readQuietly()
+        runCurrent()
+        holder.readQuietly()
+        runCurrent()
+
+        assertEquals(MacHelperReadiness.READY, holder.presentation().readiness)
+        assertNull(holder.presentation().activity)
+        assertEquals(before, holder.presentation().completedOperations)
+        assertEquals(listOf("status"), helper.calls)
+    }
+
+    @Test
+    fun `given a running check when Session appears then no second read starts`() = runTest {
+        val gate = CompletableDeferred<MacHelperReadiness>()
+        val helper = RecordingMacHelper(gate = gate)
+        val holder = MacHelperSetupUiState(helper, this)
+
+        holder.check()
+        runCurrent()
+        holder.readQuietly()
+        runCurrent()
+        gate.complete(MacHelperReadiness.READY)
+        runCurrent()
+
+        assertEquals(listOf("recheck"), helper.calls)
+    }
+}
+
+class MacHelperQuietReadRaceTest {
+    @Test
+    fun `given a removal that finishes during the quiet read then the older answer is dropped`() = runTest {
+        val gate = CompletableDeferred<MacHelperReadiness>()
+        val helper = RecordingMacHelper(gate = gate)
+        val holder = MacHelperSetupUiState(helper, this)
+
+        holder.readQuietly()
+        runCurrent()
+        holder.remove(sessionBlocked = false)
+        runCurrent()
+        gate.complete(MacHelperReadiness.READY)
+        runCurrent()
+
+        assertEquals(MacHelperReadiness.NOT_ENABLED, holder.presentation().readiness)
+    }
+
+    @Test
+    fun `given an unread helper then setup is not required yet`() {
+        assertEquals(false, MacSetupPresentation(readiness = null).needsSetup())
+        assertEquals(true, MacSetupPresentation(readiness = MacHelperReadiness.NOT_ENABLED).needsSetup())
+        assertEquals(false, MacSetupPresentation(readiness = MacHelperReadiness.READY).needsSetup())
+    }
+}
+
 private class RecordingMacHelper(
     var answer: MacHelperReadiness = MacHelperReadiness.UNAVAILABLE,
     private val gate: CompletableDeferred<MacHelperReadiness>? = null,
@@ -283,6 +343,11 @@ private class RecordingMacHelper(
 
     override suspend fun enable(): MacHelperReadiness {
         calls.add("enable")
+        return gate?.await() ?: answer
+    }
+
+    override suspend fun status(): MacHelperReadiness {
+        calls.add("status")
         return gate?.await() ?: answer
     }
 

@@ -88,7 +88,8 @@ or a productivity-scoring system.
 
 ### Current implementation boundary
 
-The actual app contains Session and Paused items, real local persistence,
+The actual app contains Session, Paused items and the inactive Schedules UI
+shell, real local persistence,
 native application-selection boundaries, the local session timer, one
 explicit **Sync with iCloud** control on the Session screen, and, on macOS
 only, a **This Mac** helper-setup section below it. Session-driven
@@ -96,7 +97,7 @@ enforcement is not connected to these screens. Never show the prototype's
 demo clock, invented synchronization time, mock application names, onboarding
 success, simulated permission outcome, or inspection overlay in the real app.
 
-On a first install the app opens a six-step first-run flow before the two
+On a first install the app opens a six-step first-run flow before the primary
 destinations: purpose, privacy, Sync with iCloud, this-device permission,
 first website, and a summary read back from the services. Purpose and privacy
 cannot be skipped; every service step offers a defer action that leaves the
@@ -264,11 +265,11 @@ and `MACOS-008`; supplying assets does not prove installed icon appearance.
 wordmark on iPhone and below **On this Mac** in the Mac sidebar after setup.
 The Mac device label and About text align with the primary navigation labels;
 a 4 dp gap keeps the device label and About action together.
-Session and Paused items remain the two primary destinations. About Posato
+Session, Paused items and Schedules are the primary destinations. About Posato
 opens a secondary content screen with the app's short purpose, installed
 version, and a **Licenses** disclosure. **Back** returns to the preceding
 primary destination. On iPhone, the bottom navigation gives way to this
-secondary flow. On Mac, the sidebar stays available, with neither primary
+secondary flow. On Mac, the sidebar stays available, with no primary
 destination selected.
 
 The version comes from the running application's metadata, without a second
@@ -364,7 +365,7 @@ Inactive segments retain normal onSurface text, not low-contrast disabled stylin
 Labels/counts are centered vertically and horizontally; counts are muted.
 The tray's outer edge aligns with the surrounding content.
 
-Use this component for peer choices within a destination. Session / Paused items
+Use this component for peer choices within a destination. Session / Paused items / Schedules
 uses the platform-specific primary navigation, not a second nested tab bar.
 
 ### Rows, menus, and notices
@@ -388,7 +389,7 @@ corruption, retryable failure, and saved-but-not-enabled choices stay distinct.
 
 The app fills the real device viewport, without a fake phone frame.
 Respect safe drawing and keyboard insets. The wordmark sits above content;
-Session / Paused items lives in the bottom navigation. A visible software
+Session / Paused items / Schedules lives in the bottom navigation. A visible software
 keyboard temporarily hides the wordmark and bottom navigation to make room
 for entry; Done clears focus and restores them.
 The root applies `windowInsetsPadding(WindowInsets.safeDrawing)` once; these
@@ -396,7 +397,7 @@ insets already include the keyboard. Do not append a second IME padding modifier
 
 `user-confirmed` (2026-09-22, `IOS-004`): iPad follows these rules and names
 itself **iPad** wherever the iPhone names itself. In landscape, iPad moves
-Session / Paused items into the 224 sidebar used on Mac: the wordmark on top,
+the primary destinations into the 224 sidebar used on Mac: the wordmark on top,
 then the destinations, then **On this iPad** and **About Posato**, without the
 Mac traffic-light inset. The sidebar stays visible while the keyboard is up
 and during About, as on Mac. iPad portrait and iPhone in either orientation
@@ -472,7 +473,8 @@ when its window closes and lives in the menu bar.
   first sentence appears only while restrictions are confirmed active.
   Logout, restart, and update relaunch never wait on it.
 - **Open at login.** In This Mac options, a switch **Open Posato at login**,
-  off by default. It is not offered during first-run setup. A login launch
+  off by default. The delivered flow keeps it in This Mac; `ONBOARDING-004`
+  adds the first-run offer specified below. A login launch
   keeps the window closed and never asks for approval on its own.
   **Remove from this Mac** also turns the switch off, so no login item
   remains after Posato is moved to the Trash.
@@ -623,6 +625,96 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   saved total into view. Use the existing typography, spacing, colors,
   safe-area handling, and native permission presentation.
 
+### Release 1.2 setup and schedules
+
+`user-confirmed` (2026-09-26, PR #92): accepted for `ONBOARDING-004` and
+`SCHEDULE-002`, pending delivery. The
+[product scope](docs/product/schedules-and-mac-setup.md) owns schedule
+behavior and the authorization decisions still required by `SCHEDULE-001`.
+
+`user-confirmed` (2026-09-26, latest PR #92 follow-up): use one guided
+**Set up Posato on this Mac** screen. The main action is **Set up Posato**.
+Explain its effects in one panel with plain descriptions, without switches or
+separate requirement cards:
+
+- Block chosen websites and applications.
+- Start quietly at login without opening a window. The app stays in the menu bar.
+- Start manual pauses and schedules without repeated passwords. A short caption
+  explains automatic starts on sign-in or wake during a scheduled interval.
+
+Keep the explanation compact enough to read its effects above the setup action
+at the normal desktop window size. Settings details can scroll below it.
+
+Keep the existing six-step onboarding. The setup screen is reused from
+onboarding, Session's **Finish setup**, Schedules and the dismissible upgrade
+offer. Advanced status, revocation and removal stay in This Mac settings.
+This supersedes the separate onboarding opt-ins and the earlier **Required for
+schedules** checklist. The existing This Mac switches describe current service
+behavior until the unified flow is implemented; they are not extra choices in
+the new primary setup flow.
+
+The intended connected flow shows progress, names the current system action
+when approval is needed, and resumes only the missing step after interruption.
+Re-read actual state after operations and after returning from System Settings.
+Only verified completion of every requirement may show **This Mac is ready**.
+Do not promise exactly one password entry. **Not now** leaves editing and sync
+available, with one persistent notice and **Finish setup** in Session. Unknown
+state asks for a check. Do not repeatedly reopen a modal or prompt when a
+schedule is due. After completion, Start and Add schedule open their forms.
+
+PR #92 delivers UI shells first. **Set up Posato** is disabled beside a short
+preview notice; there are no new permission callbacks or simulated success.
+Onboarding exposes existing helper actions under **Blocking settings**.
+Session's setup route keeps its existing **This Mac** controls collapsed.
+Their readiness still admits the current manual-session form, including the
+menu Start route, without claiming unified setup completion or starting a
+session. Schedule saving and execution remain inactive. Upgrade eligibility,
+dismissal persistence, progress/recovery wiring and setup orchestration remain
+for implementation. Existing users and partially configured installations must
+have their migration and remaining manual-session capabilities specified there.
+
+Do not begin password-requiring setup during a session or while enforcement
+starts or changes. Login registration alone authorizes no restrictions.
+Automatic Apply still needs the independently reviewed ADR amendment owned by
+`SCHEDULE-001`; the existing manual Start/Resume grant is not sufficient.
+
+The UI shell adds **Schedules** beside **Session** and **Paused items** in
+each platform's existing adaptive navigation. `SCHEDULE-002` connects its
+actions and replaces the availability notice with real readiness.
+
+- The empty state explains recurring pauses. On Mac, **Set up this Mac**
+  opens the shared setup shell; iPhone retains **Add schedule**. The future
+  verified Mac state offers **Add schedule** directly.
+- The Mac setup screen has the same explanation and **Set up Posato** action
+  as onboarding. **Not now** returns without creating anything. A quiet
+  **Preview schedule editor** opens the explicitly labelled form with saving
+  inactive. There is no additional Continue-to-schedule prerequisite button.
+- The list shows each schedule's name, weekdays, hours, enabled state and
+  next run. Show local readiness or a specific problem separately from the
+  enabled switch. Missing permission offers a direct setup action, such as
+  **Set up this Mac**, while keeping the plan available to other devices.
+- The editor has a name, weekday selection, start and end times, and an
+  enabled switch. Use the established form controls and validation style.
+  Mac creation requires completed local setup. iPhone may still save a plan
+  before local permission. Explain that automatic starts need consent and
+  readiness on each device before they can run.
+- **Skip next session** applies to the next occurrence. Show the skipped
+  occurrence and the resulting next run so the action is understandable.
+  An active scheduled session identifies its schedule and keeps **End
+  early** in the existing session flow. Neither action disables the plan.
+- Local Mac readiness requires the helper, login launch and explicit consent
+  to automatic blocking without a password prompt. A revoked requirement
+  shows setup required without deleting the shared plan. Never ask for an
+  administrator password when a schedule is due. Show actual local
+  restrictions independently of the timetable or another device's state.
+
+Reuse the established typography, colors, spacing and native controls.
+Weekday choices, switches and actions need accessible names and states.
+Keep schedule details and setup actions readable with large text and narrow
+windows through wrapping and scrolling under the existing reflow contract.
+`SCHEDULE-001` settles time-zone presentation, overlaps and manual-session
+conflicts before the editor and active-session details are implemented.
+
 ### Session
 
 - Inactive: NO SESSION ACTIVE, Room for what matters., one primary start action.
@@ -657,8 +749,12 @@ in PR #44. The six steps and existing service/persistence behavior remain.
   removal confirmation. When unlinked, the expanded iCloud options carry the
   full linking sentence as a caption next to the action. Setup controls are
   secondary to the Session action.
-- This Mac (macOS only, after iCloud): reads nothing before a press on
-  **Check Mac setup** inside its expanded options. This runs one status read
+- This Mac (macOS only, after iCloud): `user-confirmed` (2026-09-26, PR #92
+  unified setup, superseding the on-demand read): Session reads the helper
+  state once, quietly, when it first appears, with no progress label or
+  announcement, so a ready Mac never shows **Finish setup**. Before that
+  answer arrives nothing is gated. **Check Mac setup** inside the expanded
+  options stays available for an explicit read. It runs one status read
   when no helper request is outstanding; after a lost reply, **Check again**
   finishes that original request instead of starting a new one. The section
   then names the real helper state with one precise action: **Enable on this
@@ -728,14 +824,14 @@ in PR #44. The six steps and existing service/persistence behavior remain.
     While a failure that reached the daemon is shown, **Check again** is
     hidden. Such a failure never suggests it, because it could reinstall the
     removed rule.
-- `user-confirmed` (2026-09-11): when a helper read has returned a state other
-  than ready and no helper call is running, Session names that state once as a
-  notice beside the enforcement notice, above the session action. Expanding
-  This Mac moves the sentence into the row, the notice stays silent because
-  the row already announces, and it never blocks starting a session. Before
-  the first explicit read there is no state to name, so no notice appears, and
-  an active session that is enforcing keeps its own notice rather than showing
-  an older helper read beside it.
+- `user-confirmed` (2026-09-26, PR #92 correction): while inactive, a helper
+  read that names a state other than ready keeps a persistent setup notice and
+  **Finish setup** in place of Start, even if This Mac is expanded. The Finish
+  setup screen shows the existing This Mac controls expanded, so the needed
+  action is visible without another tap. A read that has not answered yet
+  gates nothing.
+  This supersedes the 2026-09-11 informational-only notice. Active enforcement
+  keeps its own status and recovery actions rather than an older helper read.
 
 Main navigation stays available during active sessions, and Paused items editing
 retains its existing availability. Do not add an unrelated active-session lock.

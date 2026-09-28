@@ -7,6 +7,17 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## Unified Mac setup note (PR #92)
+
+`user-confirmed` (2026-09-26, PR #92): the opt-in below becomes one effect of
+the guided **Set up Posato on this Mac** action that `ONBOARDING-004`
+delivers, instead of a separate switch the person has to find. The grant, its
+binding, its revocation, and its fail-closed rules are unchanged. The action
+still asks a fresh administrator for the standing right, and This Mac keeps a
+control to revoke it without a password. The grant still authorizes only the
+person's own start and **Resume restrictions**. Scheduled or other automatic
+Apply needs the separately reviewed `SCHEDULE-001` amendment.
+
 ## MACOS-014 standing Apply grant amendment
 
 `user-confirmed` (2026-09-26). The maintainer chose the mechanism and the

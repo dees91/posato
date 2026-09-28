@@ -16,6 +16,9 @@ import app.posato.generated.resources.application_mapping_access_restricted
 import app.posato.generated.resources.mac_setup_not_enabled
 import app.posato.generated.resources.mac_setup_recovery
 import app.posato.generated.resources.mac_setup_uncertain
+import app.posato.generated.resources.mac_unified_body
+import app.posato.generated.resources.mac_unified_defer
+import app.posato.generated.resources.mac_unified_title
 import app.posato.generated.resources.onboarding_action_continue
 import app.posato.generated.resources.onboarding_action_not_now
 import app.posato.generated.resources.onboarding_permission_check_failed
@@ -25,9 +28,7 @@ import app.posato.generated.resources.onboarding_permission_denied
 import app.posato.generated.resources.onboarding_permission_ios_action
 import app.posato.generated.resources.onboarding_permission_ios_body
 import app.posato.generated.resources.onboarding_permission_mac_action
-import app.posato.generated.resources.onboarding_permission_mac_admin
 import app.posato.generated.resources.onboarding_permission_mac_approval
-import app.posato.generated.resources.onboarding_permission_mac_body
 import app.posato.generated.resources.onboarding_permission_mac_check_again
 import app.posato.generated.resources.onboarding_permission_mac_open_settings
 import app.posato.generated.resources.onboarding_permission_mac_unavailable
@@ -132,7 +133,12 @@ internal fun PermissionStep(
     OnboardingPage(
         layout = layout,
         actions = {
-            if (ready) {
+            if (platform == OnboardingPermissionPlatform.MAC && !ready) {
+                MacSetupPreviewAction()
+                PosatoButton(onClick = onContinue, style = PosatoButtonStyle.Quiet) {
+                    Text(stringResource(Res.string.onboarding_action_not_now))
+                }
+            } else if (ready) {
                 OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
             } else {
                 OnboardingActions(layout) {
@@ -163,30 +169,29 @@ internal fun PermissionStep(
             }
         },
     ) {
-        PosatoHeading(
-            stringResource(Res.string.onboarding_permission_title),
-            description = if (platform == OnboardingPermissionPlatform.IOS) {
-                stringResource(Res.string.onboarding_permission_ios_body, deviceNoun)
-            } else {
-                stringResource(Res.string.onboarding_permission_mac_body)
-            },
-            layout = layout,
-        )
-        if (platform == OnboardingPermissionPlatform.MAC) {
-            PosatoCaption(stringResource(Res.string.onboarding_permission_mac_admin))
-        }
+        PermissionHeading(platform, deviceNoun, layout)
         PosatoNotice {
             Text(stringResource(Res.string.onboarding_permission_control))
         }
-        PermissionStatus(state, platform)
+        if (platform == OnboardingPermissionPlatform.MAC) {
+            MacPermissionContent(state, layout, onEnableHelper, onRecheckHelper, onOpenHelperSettings)
+        } else {
+            PermissionStatus(state, platform)
+        }
         if (!ready && state.accessResult != ApplicationAccessResult.Unavailable) {
-            PosatoCaption(stringResource(Res.string.onboarding_permission_defer))
+            PosatoCaption(
+                if (platform == OnboardingPermissionPlatform.MAC) {
+                    stringResource(Res.string.mac_unified_defer)
+                } else {
+                    stringResource(Res.string.onboarding_permission_defer)
+                },
+            )
         }
     }
 }
 
 @Composable
-private fun PermissionStatus(
+internal fun PermissionStatus(
     state: OnboardingViewState,
     platform: OnboardingPermissionPlatform,
 ) {
@@ -282,7 +287,7 @@ internal fun OnboardingViewState.canDeferPermission(platform: OnboardingPermissi
 }
 
 @Composable
-private fun MacPermissionActions(
+internal fun MacPermissionActions(
     state: OnboardingViewState,
     layout: PosatoLayout,
     onEnableHelper: () -> Unit,
@@ -314,4 +319,25 @@ private fun MacPermissionActions(
             )
         }
     }
+}
+
+@Composable
+private fun PermissionHeading(
+    platform: OnboardingPermissionPlatform,
+    deviceNoun: String,
+    layout: PosatoLayout,
+) {
+    PosatoHeading(
+        if (platform == OnboardingPermissionPlatform.MAC) {
+            stringResource(Res.string.mac_unified_title)
+        } else {
+            stringResource(Res.string.onboarding_permission_title)
+        },
+        description = if (platform == OnboardingPermissionPlatform.IOS) {
+            stringResource(Res.string.onboarding_permission_ios_body, deviceNoun)
+        } else {
+            stringResource(Res.string.mac_unified_body)
+        },
+        layout = layout,
+    )
 }

@@ -36,6 +36,28 @@ That evidence-only status for concrete presentation choices was superseded by
 the explicit adoption on 2026-09-07. Mock services and unimplemented product
 flows remain evidence only.
 
+## Release 1.2 UI shells
+
+`user-confirmed` (2026-09-26, PR #92): prepare the accepted schedule and Mac
+setup screens before connecting behavior. Schedules has its own navigation
+entry, an editor and a device-setup route. Saving and execution are inactive;
+list and active-session examples stay in Compose previews. Existing Mac
+settings retain their service behavior, while the new onboarding shortcuts
+are disabled. `DESIGN.md` records this temporary delivery boundary.
+
+`user-confirmed` (2026-09-26, latest PR #92 follow-up): one guided Mac setup
+covers blocking, quiet login launch and consent for starts without repeated
+passwords. It replaces separate onboarding choices and schedule requirement
+cards. Onboarding, Session and Schedules share the explanation and one setup
+action. Advanced controls remain in This Mac; deferral leaves a persistent
+notice and Finish setup. Full readiness requires verified outcomes, and one
+password entry is not promised. PR #92 keeps the new action inactive and retains
+working helper controls under disclosure. Their current manual-session
+readiness is not unified setup completion. Automatic authorization still belongs
+to the future reviewed ADR amendment. The [product scope](../../product/schedules-and-mac-setup.md)
+and [design authority](../../../DESIGN.md#release-12-setup-and-schedules) own
+these boundaries.
+
 ## macOS browser pause page
 
 `observed` (2026-09-15): DESIGN-003 applies the application's open-interval

@@ -1,0 +1,231 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {
+      "action": "tap",
+      "query": {
+        "text": "Schedules"
+      }
+    },
+    {
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Set up this Mac"
+      }
+    },
+    {
+      "action": "screenshot",
+      "name": "schedules-empty"
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Set up this Mac"
+      }
+    },
+    {
+      "action": "waitFor",
+      "state": "disabled",
+      "query": {
+        "text": "Set up Posato"
+      }
+    },
+    {
+      "action": "screenshot",
+      "name": "schedule-unified-setup"
+    },
+    {
+      "action": "snapshot",
+      "name": "schedule-unified-setup"
+    },
+    {
+      "action": "scrollTo",
+      "query": {
+        "text": "Preview schedule editor"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Preview schedule editor"
+      }
+    },
+    {
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "role": "textField"
+      }
+    },
+    {
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Morning focus",
+      "clear": true
+    },
+    {
+      "action": "screenshot",
+      "name": "schedule-editor-keyboard"
+    },
+    {
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "",
+      "submit": true
+    },
+    {
+      "action": "scrollTo",
+      "query": {
+        "text": "Starts 09:00"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Starts 09:00"
+      }
+    },
+    {
+      "action": "scrollTo",
+      "query": {
+        "text": "Increase Start hours"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Increase Start hours"
+      }
+    },
+    {
+      "action": "scrollTo",
+      "query": {
+        "text": "Done"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Done"
+      }
+    },
+    {
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Starts 10:00"
+      }
+    },
+    {
+      "action": "scrollTo",
+      "query": {
+        "text": "Save schedule"
+      }
+    },
+    {
+      "action": "assert",
+      "state": "disabled",
+      "query": {
+        "text": "Save schedule"
+      }
+    },
+    {
+      "action": "screenshot",
+      "name": "schedule-editor-inactive-save"
+    },
+    {
+      "action": "snapshot",
+      "name": "schedule-editor-inactive-save"
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Cancel"
+      }
+    },
+    {
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Set up this Mac"
+      }
+    },
+    {
+      "action": "assert",
+      "state": "absent",
+      "query": {
+        "text": "Morning focus"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Set up this Mac"
+      }
+    },
+    {
+      "action": "screenshot",
+      "name": "schedule-device-setup"
+    },
+    {
+      "action": "snapshot",
+      "name": "schedule-device-setup"
+    },
+    {
+      "action": "scrollTo",
+      "query": {
+        "text": "Not now"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Not now"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Session"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Paused items"
+      }
+    },
+    {
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Search"
+      }
+    },
+    {
+      "action": "tap",
+      "query": {
+        "text": "Schedules"
+      }
+    },
+    {
+      "action": "screenshot",
+      "name": "schedules-final"
+    }
+  ]
+}
