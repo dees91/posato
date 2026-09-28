@@ -8,6 +8,48 @@
 - **Provenance:** `user-confirmed`
 - **Owner:** `MACOS-012` decides; `MACOS-013` delivers after separate activation.
 
+## SCHEDULE-001 scheduled starts amendment
+
+Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-27 (proposed 2026-09-26, `SCHEDULE-001`, delegated night mandate; security
+review passed after fixes on 2026-09-27). This takes effect together with the
+ADR 0004 automatic scheduled Apply amendment.
+
+- **Supersedes:**
+  - "A received session is still adopted in `RESUME_REQUIRED` on the Mac and
+    needs the person's approval before blocking" now holds as a
+    user-experience rule, not a security control. A running scheduled
+    occurrence does not enforce a received manual session. When the
+    occurrence ends and that session is still active, the Mac returns to
+    `RESUME_REQUIRED` for it.
+  - "After wake, the menu shows the not-enforcing state with **Resume
+    restrictions…**" now reads: after wake, a due scheduled occurrence under
+    consent applies again; any other session shows the not-enforcing state
+    with **Resume restrictions…**.
+  - "A scheduled start meets the same administrator approval as Resume until
+    `MACOS-014` changes it…" in the `SCHEDULE-001` constraint now reads: a
+    scheduled start applies through the grant under the recorded consent. With
+    no valid consent or grant, it waits in "Setup required on this Mac" and
+    never raises an administrator dialog.
+- The rule "the menu, a login launch, and synchronization never apply
+  restrictions by themselves" gains one exception: a due occurrence of an
+  enabled schedule under the recorded automatic-start consent.
+- The resident process evaluates schedules:
+  - at every launch, including a login launch;
+  - on wake;
+  - on clock and time-zone changes;
+  - every minute.
+
+  An occurrence found inside its interval applies for the remaining time, up
+  to its original end.
+- The menu shows "Scheduled pause: <name>, until <time>" while one runs. It
+  offers **End early…**, which opens the window's confirmation as today.
+- Quit during a running or upcoming scheduled pause keeps the ADR 0009
+  confirmation and names the schedule. Quitting stops new Mac starts until
+  Posato runs again.
+- A missing grant or consent never raises a dialog at due time. It leaves
+  "Setup required on this Mac" and one notification. A console owned by
+  another account is not a missing setup and posts nothing.
+
 ## Unified Mac setup amendment (PR #92)
 
 `user-confirmed` (2026-09-26, PR #92): the maintainer replaced separate Mac

@@ -2081,3 +2081,17 @@ to scope, feasibility, or delivery.
 - `user-confirmed` (delegated night mandate, 2026-09-26): complete means
   blocking, login and the no-password permission are all verified; an older
   helper is never complete; existing installations see one dismissible offer.
+## [2026-09-26] decision | Schedule rules and automatic Mac starts (SCHEDULE-001)
+
+- Recorded the delegated [schedule rules](../product/schedules-decisions.md):
+  - each device's local wall clock;
+  - one pause at a time;
+  - occurrences identified by schedule and local date, with grow-only skip
+    and end facts;
+  - at most 10 schedules;
+  - iPhone execution through Device Activity and an on-device App Group copy.
+- Proposed ADR 0006 kinds 8-11 and optional kinds 128-255, and ADR 0004 and
+  0009 amendments for automatic scheduled Apply with unchanged daemon checks.
+- `observed`: a 1.1 device stops syncing on an unknown operation kind, so
+  every linked device must update to 1.2 once schedules exist.
+

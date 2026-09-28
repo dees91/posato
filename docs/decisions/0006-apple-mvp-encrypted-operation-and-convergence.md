@@ -7,6 +7,64 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SCHEDULE-001 schedule operations amendment
+
+Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-27 (proposed 2026-09-26, `SCHEDULE-001`, delegated night mandate; security
+review passed after fixes on 2026-09-27). `SCHEDULE-002` implements it. The product rules are in
+[schedule rules](../product/schedules-decisions.md).
+
+- **Supersedes.** "The version-1 operation kinds are closed"
+  now reads: kinds 1-11 are mandatory, and kinds 128-255 are optional
+  extensions. "Unknown versions and kinds are rejected rather than ignored"
+  now applies to unknown versions and to unknown kinds 12-127.
+- **New mandatory kinds in format 1.** The payloads are canonical as below:
+  - `8` `schedule-put`: 16-byte schedule identifier (UUIDv4); `u16` name
+    length and a 1-80 byte name without control characters, normalized to NFC
+    by the writer; `u8` weekday mask with bits 0-6 (Monday first), at least
+    one set and bit 7 clear; `u16` start minute 0-1439; `u16` end minute
+    0-1439, with start different from end and a circular duration
+    `(end - start) mod 1440` of at least 15 minutes; `u8` enabled, 0 or 1.
+    Decoders validate UTF-8 and control characters, not NFC. Cross-target
+    golden vectors pin every invariant.
+  - `9` `schedule-remove`: 16-byte schedule identifier.
+  - `10` `schedule-skip`: 16-byte schedule identifier; `u16` year 2000-2100;
+    `u8` month 1-12; `u8` valid day. Writers reject a date more than 400 days
+    after the author's local date.
+  - `11` `schedule-occurrence-end`: same payload as kind 10.
+- **Reduction.**
+  - Any `schedule-remove` permanently removes its identifier, whatever the
+    order, like `session-end`.
+  - Otherwise the greatest total-order `schedule-put` per identifier is the
+    schedule.
+  - At most 10 live schedules. A put for a new identifier at the cap gets a
+    derived `schedule-capacity` outcome without state change or eviction,
+    recomputed from scratch like the domain cap.
+  - Kinds 10 and 11 build grow-only sets of `(identifier, date)`. They are
+    ignored for a removed identifier and are never undone.
+  - Each replica also keeps a local terminal marker per `(identifier, local
+    date)` when an occurrence ends or expires, like the session marker. A
+    clock rollback or a later edit never recreates an ended occurrence. An
+    edit may extend an occurrence that is still running.
+- **Optional extension kinds.** Kinds 128-255 are optional:
+  - a receiver that does not know one validates the envelope, signature,
+    author sequence, and the format-1 byte limits before allocation as usual;
+  - it accepts and retains the operation and advances that author's
+    sequence;
+  - it ignores the operation in projection, and ignores an invalid retained
+    optional payload the same way on every replica.
+
+  Optional kinds must never carry restriction or integrity semantics, and
+  must never change state owned by a mandatory kind. Kinds 12-127 stay
+  mandatory, and an unknown one is rejected as before.
+- **Compatibility.** `observed`: a format-1 replica from release 1.1 rejects
+  kinds 8-11 as invalid operations, and its mailbox exchange stops with
+  action required. Release 1.2 accepts that a device still on 1.1 stops
+  syncing once any schedule operation exists, until it updates. A 1.1
+  installation that opens a 1.2 database holding kinds 8-11 (a downgrade)
+  fails closed at snapshot validation like any unknown kind. The supported
+  path is to install 1.2 again. The optional range prevents this for later
+  additions.
+
 ## Context
 
 ADR 0002 requires one transport-neutral application-encrypted format, signed
