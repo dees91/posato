@@ -62,7 +62,12 @@ App Store "What's New" (iPhone):
 
 ## Result
 
-- Not started; the plan still waits for the merges.
+- **Merges (2026-09-28):** the 1.2 stack #92 to #102 squash-merged in order by the agent at the maintainer's request; `main` `c988670` has the tested tree of `3089523`.
+- **Revision R** = `7b34972c3068bf4e6288483f505c20772ad99d6e` (version 1.2.0 on top of `#103` and the plan commits; the appcast notes file is in R). Clean-clone `quality` passed.
+- **Tooling (not in R):** `store withdraw` and `store prepare --rename-from` (`33af5eb`, `f019aa5`), Standard review approved; its one Recommended finding (stop at once when App Review finishes the version first) is fixed with a test.
+- **macOS 1.2.0 (27)** from a clean clone of R through `generateMacOsUpdateFeed` on the release channel, previous 26, Developer ID G2: `Posato-1.2.0.dmg` SHA-256 `48ef94aaf0243f342e814222bd0f74a803d6a017d52cbe78fec3ff78f1f3d013`, notarized and stapled, Gatekeeper `accepted`; `appcast.xml` one item, build 27, 1.2.0, macOS 15.0, enclosure `releases/download/v1.2.0/Posato-1.2.0.dmg` with the DMG's length; `SHA256SUMS`. Consumed macOS build number: 27.
+- **iOS 1.2.0 (5)** archived from the same clone, exported and inspected (Apple Distribution on the app and the extension, Family Controls, the app group, CloudKit Production, `get-task-allow` false, both privacy manifests), validated, uploaded, `VALID`. Consumed iOS build number: 5.
+- **iOS store record (step 4b, 2026-09-28, maintainer confirmed the withdrawal):** `store withdraw --version 1.1.0` canceled the waiting submission (state `DEVELOPER_REJECTED`); `store prepare --version 1.2.0 --rename-from 1.1.0 ...` renamed the record, attached build 5, set What's New and the description, and replaced both screenshot sets (4 each, `COMPLETE`); release after approval. Not submitted. App Store devices stay on 1.0.0 until 1.2.0 is approved.
 - **Before the merges (2026-09-28):** the linked-device checks passed on development builds of product head `3089523` in two Tart VMs: schedule sync, automatic start on both Macs, **End early** reaching the other Mac, and the started-elsewhere notice ([`DOCS-003` record](docs-003-release-1-2-media.md)). They do not replace step 4 on the signed candidates.
 
 ## Final
