@@ -1,7 +1,7 @@
 # Execution: `RELEASE-004`
 
 - **Brief:** [Verify the 1.2.0 candidates and publish Posato 1.2](../specifications/release-004-release-1-2.md)
-- **Status:** `in progress`: candidates verified, waiting for the publication go
+- **Status:** `done`: macOS 1.2.0 published; iOS 1.2.0 approved and released
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent plan review (revisions 1 to 3), Standard review of the tooling, and the completed-change review of step 6
@@ -99,6 +99,17 @@ Run directories are under the release worktree's ignored `build/verification/run
 | Test iPhone, R's product code | iOS 26.5 | pass: core flow (Calculator shield, "Website Not Allowed", early end), a schedule starting and ending with the app force-quit, early end; Safari showed a blank page in the first minute of the scheduled pause and "Website Not Allowed" a minute later |
 - **Before the merges (2026-09-28):** the linked-device checks passed on development builds of product head `3089523` in two Tart VMs: schedule sync, automatic start on both Macs, **End early** reaching the other Mac, and the started-elsewhere notice ([`DOCS-003` record](docs-003-release-1-2-media.md)). They do not replace step 4 on the signed candidates.
 
+### Publication (2026-09-28, maintainer go)
+
+- **Merges:** `#103` squash `542b193`, then `#96` rebased with `--onto` and squash-merged as `8b13082` with the privacy policy's effective date set to September 28, 2026.
+- **Tag rule:** `git diff --name-only R 8b13082` lists only `docs/`, `website/`, `video/`, `.github/`, `README.md`, `PRIVACY.md`, and the two tools; `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, and `Version.xcconfig` equal R. Annotated tag `v1.2.0` on `8b13082`.
+- **GitHub Release** `v1.2.0`, published 12:22 UTC as latest, with exactly the three assets; the downloaded assets were byte-identical to the verified candidates: `Posato-1.2.0.dmg` `48ef94aaf0243f342e814222bd0f74a803d6a017d52cbe78fec3ff78f1f3d013`, `appcast.xml` `9341ab28e48a2af8f1f289b6f8b0425951f9c2c884ee5ca6e6b626a9c3bcd3a0`, and `SHA256SUMS`. `releases/latest/download/appcast.xml` resolves and is byte-identical to the verified feed; the DMG URL answers 200 with the recorded length.
+- **In-app update from 1.1.0** (plan 7.4) on a macOS 26 VM prepared before the go (1.1.0 with the helper, a website, an iCloud workspace, and automatic checks allowed): About, Check for Updates offered "Posato 1.2.0 is now available, you have 1.1.0" with the 1.2 notes; Install Update downloaded it, Install and Relaunch replaced the app without any password and relaunched 1.2.0 (27); the website and the workspace were kept and the helper stayed enabled; Session offered "Finish setting up this Mac", Set up Posato asked for the administrator password once; a pause started, `observe` reported paused, and early end allowed at once. No failure criterion was met, so no rollback.
+- **iOS:** `store submit --version 1.2.0` submitted build 5; the version is `WAITING_FOR_REVIEW` with release after approval.
+- **Site and README:** posato.app shows the 1.2 page ("Plan pauses ahead", "Posato 1.2 for Mac") and the September 28 privacy policy; the walkthrough, hero video, schedules still, and `releases/latest` answer 200.
+- **Projects and milestone:** `DOCS-003` and `RELEASE-004` Done; milestone `1.2.0` closed.
+- **Maintainer, outside the repository:** upload `.github/assets/social-preview.png` under the repository's social preview setting.
+
 ## Final
 
-- **Status:** `planned`
+- **Status:** `done`. macOS 1.2.0 published. App Review approved iOS 1.2.0 (build 5); `store status` on 2026-09-30 shows `READY_FOR_DISTRIBUTION`, released after approval.

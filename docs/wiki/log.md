@@ -2176,6 +2176,19 @@ to scope, feasibility, or delivery.
   received a pause from another Mac about 4.5 minutes later without **Sync
   now**, and a schedule saved on one Mac started on its own on both.
 
+## [2026-09-28] release | RELEASE-004: Posato 1.2.0 published
+
+- `observed`: the 1.1.0 updater found, installed, and relaunched 1.2.0 from
+  the published stable feed without a password, keeping data, workspace, and
+  helper; the one-time setup offer then asked for the password once.
+- iOS 1.1.0 was withdrawn from review and its version record renamed to
+  1.2.0 with the new `store withdraw` and `store prepare --rename-from`.
+- Release builds show a modal "Check for updates automatically?" after
+  setup, which blocks the window until it is answered.
+- `observed` (2026-09-30, `store status`): App Review approved iOS 1.2.0
+  (build 5); the version is `READY_FOR_DISTRIBUTION` and released after
+  approval.
+
 ## [2026-09-28] maintenance | RELEASE-004 retrospective: driver and guardrail fixes
 
 - ktlint rule `posato:native-safe-backtick-name` rejects test names in
