@@ -56,6 +56,14 @@ public interface MacHelperPort {
             return null
         }
 
+    public fun setupOfferDismissed(): Boolean {
+        return true
+    }
+
+    public fun dismissSetupOffer() {
+        return
+    }
+
     public suspend fun enable(): MacHelperReadiness
 
     public suspend fun recheck(): MacHelperReadiness

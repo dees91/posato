@@ -71,53 +71,60 @@
       }
     },
     {
+      "name": "setup-ready",
       "action": "waitFor",
+      "state": "exists",
       "query": {
         "text": "Set up Posato on this Mac."
-      },
-      "state": "exists"
-    },
-    {
-      "action": "assert",
-      "query": {
-        "text": "Set up Posato"
-      },
-      "state": "disabled"
-    },
-    {
-      "action": "screenshot",
-      "name": "onboarding-unified-top"
-    },
-    {
-      "action": "snapshot",
-      "name": "onboarding-unified-top"
-    },
-    {
-      "action": "scrollTo",
-      "query": {
-        "text": "Enable on this Mac"
       }
     },
     {
-      "action": "waitFor",
+      "action": "screenshot",
+      "name": "onboarding-setup-before"
+    },
+    {
+      "name": "setup-start",
+      "action": "tap",
       "query": {
-        "text": "Enable on this Mac"
+        "text": "Set up Posato",
+        "role": "button"
+      }
+    },
+    {
+      "name": "setup-running",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Setting up…"
       },
-      "state": "exists"
+      "timeoutSeconds": 60
     },
     {
       "action": "screenshot",
-      "name": "onboarding-existing-controls"
+      "name": "onboarding-setup-running"
+    },
+    {
+      "name": "setup-done",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "This Mac is ready."
+      },
+      "timeoutSeconds": 400
+    },
+    {
+      "action": "screenshot",
+      "name": "onboarding-setup-ready"
     },
     {
       "action": "snapshot",
-      "name": "onboarding-existing-controls"
+      "name": "onboarding-setup-ready"
     },
     {
-      "name": "permission-defer",
+      "name": "permission-continue",
       "action": "tap",
       "query": {
-        "text": "Not now",
+        "text": "Continue",
         "role": "button"
       }
     },
@@ -173,74 +180,16 @@
       }
     },
     {
-      "action": "waitFor",
-      "query": {
-        "text": "Finish setup"
-      },
-      "state": "exists"
-    },
-    {
-      "action": "screenshot",
-      "name": "session-finish-setup"
-    },
-    {
-      "action": "snapshot",
-      "name": "session-finish-setup"
-    },
-    {
-      "action": "tap",
+      "name": "no-finish-setup",
+      "action": "assert",
+      "state": "absent",
       "query": {
         "text": "Finish setup"
       }
     },
     {
-      "action": "waitFor",
-      "query": {
-        "text": "Set up Posato"
-      },
-      "state": "disabled"
-    },
-    {
       "action": "screenshot",
-      "name": "finish-unified-top"
-    },
-    {
-      "action": "snapshot",
-      "name": "finish-unified-top"
-    },
-    {
-      "action": "waitFor",
-      "query": {
-        "text": "Enable on this Mac"
-      },
-      "state": "exists"
-    },
-    {
-      "action": "screenshot",
-      "name": "finish-existing-controls"
-    },
-    {
-      "action": "snapshot",
-      "name": "finish-existing-controls"
-    },
-    {
-      "action": "scrollTo",
-      "query": {
-        "text": "Back to Session"
-      }
-    },
-    {
-      "action": "tap",
-      "query": {
-        "text": "Back to Session"
-      }
-    },
-    {
-      "action": "waitFor",
-      "query": {
-        "text": "Finish setup"
-      },
-      "state": "exists"
+      "name": "session-after-setup"
     }
   ]
 }

@@ -3,18 +3,25 @@ package app.posato.feature.onboarding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import app.posato.generated.resources.Res
 import app.posato.generated.resources.mac_setup_checking
 import app.posato.generated.resources.mac_setup_enabling
 import app.posato.generated.resources.mac_setup_removing
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.StringResource
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
+import kotlin.time.TimeSource
 
 internal enum class MacSetupActivity {
     CHECKING,
@@ -43,12 +50,21 @@ internal data class MacSetupPresentation(
     val removal: MacHelperRemoval? = null,
     val standingGrant: MacStandingGrantState? = null,
     val standingGrantChanging: Boolean = false,
+    val setup: MacSetupRun? = null,
+    val setupComplete: Boolean = false,
+    val offerVisible: Boolean = false,
+    val sessionBlocked: Boolean = false,
+    val setupOpen: Boolean = false,
+    val reads: Int = 0,
 )
 
 @Stable
 internal class MacHelperSetupUiState(
     private val macHelper: MacHelperPort,
     private val scope: CoroutineScope,
+    private val sessionBusy: () -> Boolean = { false },
+    private val loginContext: CoroutineContext = EmptyCoroutineContext,
+    private val elapsedMillis: () -> Long = { processStart.elapsedNow().inWholeMilliseconds },
 ) {
     val loginItem: MacLoginItem? = macHelper.loginItem
     var readiness by mutableStateOf<MacHelperReadiness?>(null)
@@ -60,6 +76,19 @@ internal class MacHelperSetupUiState(
     private var standingGrant by mutableStateOf<MacStandingGrantState?>(null)
     private var standingGrantChanging by mutableStateOf(false)
     private var quietRead = false
+    private var reading = false
+    private var lastRefresh: Long? = null
+    private val trailingRead = TrailingRead(scope)
+    private var reads by mutableIntStateOf(0)
+
+    /** Whether a session is active or changing, fed by the host so every setup action can show it. */
+    var sessionBlocked by mutableStateOf(false)
+    private val runner = MacSetupRunner(macHelper, sessionBusy, loginContext)
+    private val setupRun: MacSetupRun?
+        get() {
+            return runner.run
+        }
+    private var offerDismissed by mutableStateOf(macHelper.setupOfferDismissed())
     private var completedOperations by mutableLongStateOf(0)
     private var repeatedResult by mutableStateOf(false)
 
@@ -78,8 +107,40 @@ internal class MacHelperSetupUiState(
             removal = removal,
             standingGrant = standingGrant,
             standingGrantChanging = standingGrantChanging,
+            setup = setupRun,
+            setupComplete = complete,
+            offerVisible = !offerDismissed && upgradeOffered,
+            sessionBlocked = sessionBlocked,
+            setupOpen = setupOpen,
+            reads = reads,
         )
     }
+
+    private val complete: Boolean
+        get() {
+            return setupRun?.running != true &&
+                macSetupComplete(readiness, macHelper.loginItem?.enabled?.value, macHelper.standingGrant != null, standingGrant)
+        }
+
+    /**
+     * The upgrade offer appears only when a step is known to be missing. An unread or unknown grant
+     * and an older daemon that cannot keep the permission never raise it. It stays through its own run.
+     */
+    private val upgradeOffered: Boolean
+        get() {
+            val grantUnknown = standingGrant == MacStandingGrantState.UNSUPPORTED || standingGrant == MacStandingGrantState.UNKNOWN
+            return when {
+                readiness != MacHelperReadiness.READY || grantUnknown -> false
+                setupRun != null -> !complete
+                else -> !busy && knownMissing(macHelper.loginItem?.enabled?.value, macHelper.standingGrant != null, standingGrant)
+            }
+        }
+
+    /** Check, enable, remove, the grant switch, and setup share the helper, so only one runs at a time. */
+    private val busy: Boolean
+        get() {
+            return activity != null || setupRun?.running == true || standingGrantChanging
+        }
 
     /**
      * The opt-in shares the helper with enforcement, so it is refused while a session is active or
@@ -90,7 +151,7 @@ internal class MacHelperSetupUiState(
         sessionBlocked: Boolean,
     ) {
         val grant = macHelper.standingGrant ?: return
-        if (sessionBlocked || activity != null || standingGrantChanging) {
+        if (sessionBlocked || busy) {
             return
         }
         standingGrantChanging = true
@@ -108,20 +169,77 @@ internal class MacHelperSetupUiState(
     }
 
     /**
-     * Session reads the helper once when it appears, so a ready Mac is never asked to finish setup. The
-     * read shows no progress and makes no announcement; an explicit check or a running call wins.
+     * One action makes this Mac ready: blocking, then opening at login, then starts without a
+     * password. Finished steps are skipped, so pressing it again resumes the missing one. Nothing
+     * that asks for approval or a password runs during a session.
      */
-    fun readQuietly() {
-        if (readiness != null || activity != null || quietRead) {
+    fun setUp(sessionBlocked: Boolean) {
+        if (sessionBlocked || sessionBusy() || busy) {
+            return
+        }
+        removal = null
+        runner.start()
+        scope.launch {
+            val outcome = try {
+                runner.execute()
+            } finally {
+                runner.stop()
+            }
+            outcome.readiness?.let { answer -> readiness = answer }
+            outcome.grant?.let { grant -> standingGrant = grant }
+            completedOperations += 1
+            if (complete) {
+                dismissOffer()
+            }
+        }
+    }
+
+    fun dismissOffer() {
+        offerDismissed = true
+        macHelper.dismissSetupOffer()
+    }
+
+    /** The person opened the setup screen; it stays until they leave it, even after a partial run. */
+    var setupOpen by mutableStateOf(false)
+
+    fun deferSetup() {
+        runner.requestStop()
+    }
+
+    /**
+     * Reads the actual state without progress or announcement. The first read happens once when Session
+     * appears; [refresh] reads again when the window becomes active, so a setting changed in System
+     * Settings never leaves a stale "ready".
+     */
+    fun readQuietly(
+        refresh: Boolean = false,
+        trailing: Boolean = false,
+    ) {
+        val alreadyRead = readiness != null || quietRead
+        // Each read verifies the helper's signature, so activations share one read at a time and at most one per interval.
+        val recentlyRefreshed = lastRefresh?.let { elapsedMillis() - it < REFRESH_INTERVAL_MILLIS } == true
+        val inFlight = busy || reading
+        val skipRefresh = !refresh || (recentlyRefreshed && !trailing)
+        if (inFlight || (alreadyRead && skipRefresh)) {
+            // A throttled return still reads once the interval ends, so a setting changed meanwhile is not missed.
+            trailingRead.request(refresh && !trailing, lastRefresh, elapsedMillis()) { readQuietly(refresh = true, trailing = true) }
             return
         }
         quietRead = true
+        reading = true
+        lastRefresh = elapsedMillis()
         val startedAfter = completedOperations
         scope.launch {
-            val answer = macHelper.status()
-            if (activity == null && completedOperations == startedAfter) {
-                readiness = answer
-                standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
+            try {
+                val answer = macHelper.status()
+                if (!busy && completedOperations == startedAfter) {
+                    macHelper.loginItem?.refresh()
+                    readiness = answer
+                    standingGrant = if (answer == MacHelperReadiness.READY) macHelper.standingGrant?.read() else null
+                    reads += 1
+                }
+            } finally {
+                reading = false
             }
         }
     }
@@ -135,7 +253,7 @@ internal class MacHelperSetupUiState(
     }
 
     fun remove(sessionBlocked: Boolean) {
-        if (sessionBlocked || activity != null) {
+        if (sessionBlocked || busy) {
             return
         }
         activity = MacSetupActivity.REMOVING
@@ -157,7 +275,7 @@ internal class MacHelperSetupUiState(
         next: MacSetupActivity,
         action: suspend () -> MacHelperReadiness,
     ) {
-        if (activity != null) {
+        if (busy) {
             return
         }
         activity = next
@@ -189,7 +307,40 @@ private fun MacHelperRemoval.readinessAfterRemoval(): MacHelperReadiness? {
 }
 
 @Composable
-internal fun rememberMacHelperSetupUiState(macHelper: MacHelperPort): MacHelperSetupUiState {
+internal fun rememberMacHelperSetupUiState(
+    macHelper: MacHelperPort,
+    sessionBusy: () -> Boolean = { false },
+): MacHelperSetupUiState {
     val scope = rememberCoroutineScope()
-    return remember(macHelper) { MacHelperSetupUiState(macHelper, scope) }
+    val currentBusy by rememberUpdatedState(sessionBusy)
+    return remember(macHelper) { MacHelperSetupUiState(macHelper, scope, { currentBusy() }, Dispatchers.Default) }
 }
+
+/** One deferred read at the end of the refresh interval, however many activations it absorbs. */
+private class TrailingRead(
+    private val scope: CoroutineScope,
+) {
+    private var pending = false
+
+    fun request(
+        wanted: Boolean,
+        lastRefresh: Long?,
+        now: Long,
+        read: () -> Unit,
+    ) {
+        if (!wanted || pending) {
+            return
+        }
+        pending = true
+        val wait = (REFRESH_INTERVAL_MILLIS - (now - (lastRefresh ?: now))).coerceAtLeast(TRAILING_MINIMUM_MILLIS)
+        scope.launch {
+            delay(wait)
+            pending = false
+            read()
+        }
+    }
+}
+
+private const val REFRESH_INTERVAL_MILLIS: Long = 30_000L
+private const val TRAILING_MINIMUM_MILLIS: Long = 1_000L
+private val processStart = TimeSource.Monotonic.markNow()

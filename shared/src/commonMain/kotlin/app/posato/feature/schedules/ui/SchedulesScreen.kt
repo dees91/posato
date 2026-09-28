@@ -28,7 +28,6 @@ import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.feature.onboarding.MacSetupOverview
-import app.posato.feature.onboarding.MacSetupPreviewAction
 
 @Composable
 internal fun SchedulesScreen(
@@ -36,8 +35,10 @@ internal fun SchedulesScreen(
     device: PosatoDevice,
     layout: PosatoLayout,
     modifier: Modifier = Modifier,
+    macSetupContent: (@Composable () -> Unit)? = null,
 ) {
     SchedulesScreen(
+        macSetupContent = macSetupContent,
         modifier = modifier,
         state = holder.state,
         device = device,
@@ -57,6 +58,7 @@ internal fun SchedulesScreen(
     onCloseEditor: () -> Unit,
     onShowSetup: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
+    macSetupContent: (@Composable () -> Unit)? = null,
 ) {
     val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
     Column(
@@ -72,7 +74,9 @@ internal fun SchedulesScreen(
             }
 
             state.showingSetup -> {
-                ScheduleSetupPreview(device, layout, onBack = { onShowSetup(false) }, onPreviewEditor = { onEdit(ScheduleUiModel()) })
+                ScheduleSetupPreview(device, layout, onBack = {
+                    onShowSetup(false)
+                }, onPreviewEditor = { onEdit(ScheduleUiModel()) }, macSetupContent)
             }
 
             activeSchedule != null -> {
@@ -147,6 +151,7 @@ private fun ScheduleSetupPreview(
     layout: PosatoLayout,
     onBack: () -> Unit,
     onPreviewEditor: () -> Unit,
+    macSetupContent: (@Composable () -> Unit)? = null,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
@@ -160,9 +165,7 @@ private fun ScheduleSetupPreview(
             layout = layout,
         )
         if (device == PosatoDevice.Mac) {
-            MacSetupOverview()
-            PosatoCaption("macOS may ask you to confirm access. You can review or revoke it later in This Mac settings.")
-            MacSetupPreviewAction()
+            macSetupContent?.invoke() ?: MacSetupOverview()
         } else {
             PosatoBody("Allow Screen Time access so Posato can pause your chosen websites and applications on this device.")
             PosatoButton(onClick = {}, enabled = false) { Text("Allow Screen Time access") }

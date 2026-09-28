@@ -88,8 +88,9 @@ internal fun MacSetupSection(
     loginItemEnabled: Boolean? = null,
     onLoginItemChange: (Boolean) -> Unit = {},
     onStandingGrantChange: (Boolean) -> Unit = {},
+    onSetUp: (() -> Unit)? = null,
 ) {
-    val running = presentation.activity != null
+    val running = presentation.activity != null || presentation.setup?.running == true
     MacSetupAnnouncements(presentation, onAnnouncement)
     Column(modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         PosatoDisclosureRow(
@@ -107,6 +108,9 @@ internal fun MacSetupSection(
         )
         if (expanded) {
             PosatoCaption(stringResource(Res.string.mac_setup_description))
+            if (onSetUp != null && presentation.offersSetUp()) {
+                MacSetupAction(presentation, onSetUp, sessionBlocks = sessionBlocksRemoval)
+            }
             MacSetupStateNotice(presentation, running)
             if (!running && presentation.repeatedResult && presentation.readiness.escalatesRepeat()) {
                 PosatoCaption(stringResource(Res.string.mac_setup_unchanged))
@@ -116,6 +120,7 @@ internal fun MacSetupSection(
                 PosatoSelectionRow(
                     checked = enabled,
                     onCheckedChange = onLoginItemChange,
+                    enabled = !running,
                     supportingContent = { PosatoCaption(stringResource(Res.string.presence_login_item_supporting)) },
                 ) {
                     Text(stringResource(Res.string.presence_login_item), style = MaterialTheme.typography.bodyLarge)

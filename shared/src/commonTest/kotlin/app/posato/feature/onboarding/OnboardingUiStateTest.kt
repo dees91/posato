@@ -16,10 +16,13 @@ import app.posato.feature.targets.ui.WebsiteBatchReceipt
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -592,6 +595,25 @@ private class FakeApplicationAccess(
     override suspend fun requestAuthorization(): ApplicationAccessResult {
         calls++
         return gate?.await() ?: answer
+    }
+}
+
+class OnboardingMacSetupDeferralTest {
+    @Test
+    fun `given setup waiting for approval when the person leaves the Mac step then the run stops`() = runTest {
+        val helper = FakeMacHelper(MacHelperReadiness.APPROVAL_REQUIRED)
+        val setup = MacHelperSetupUiState(helper, this)
+        val holder = OnboardingUiState(FakeSetupStore(), FakeTargetPolicyStore(), FakeApplicationAccess(), setup, this)
+        repeat(3) { holder.advance() }
+        assertEquals(OnboardingStep.PERMISSION, holder.step)
+
+        setup.setUp(sessionBlocked = false)
+        advanceTimeBy(5_000)
+        holder.advance()
+        advanceUntilIdle()
+
+        assertFalse(setup.presentation().setup?.running ?: true)
+        assertTrue(helper.calls.count { it == "recheck" } <= 4)
     }
 }
 

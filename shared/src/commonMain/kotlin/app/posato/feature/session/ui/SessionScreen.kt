@@ -17,6 +17,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
@@ -98,16 +99,15 @@ internal fun SessionScreen(
         deviceLabel = deviceLabel,
         syncState = syncState,
         macSetup = macSetupState?.presentation(),
-        onMacSetupCheck = { macSetupState?.check() },
-        onMacSetupEnable = { macSetupState?.enable() },
-        onMacSetupOpenSettings = { macSetupState?.openSettings() },
-        onMacSetupAnnouncement = onMacSetupAnnouncement,
-        onMacSetupRemove = { macSetupState?.remove(sessionBlocked = state.blocksHelperRemoval()) },
+        macActions = macSetupState?.callbacks(state.blocksHelperRemoval(), onMacSetupAnnouncement) ?: MacSetupCallbacks(),
         macLoginItemEnabled = loginItemEnabled,
-        onMacLoginItemChange = { loginItem?.setEnabled(it) },
-        onMacStandingGrantChange = { macSetupState?.setStandingGrant(it, sessionBlocked = state.blocksHelperRemoval()) },
     )
 }
+
+private val PosatoLayout.screenInset: Dp
+    get() {
+        return if (this == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
+    }
 
 @Composable
 internal fun SessionScreen(
@@ -130,19 +130,12 @@ internal fun SessionScreen(
     onEditPausedItems: (TargetsCategory) -> Unit = {},
     syncState: SyncBootstrapUiState? = null,
     macSetup: MacSetupPresentation? = null,
-    onMacSetupCheck: () -> Unit = {},
-    onMacSetupEnable: () -> Unit = {},
-    onMacSetupOpenSettings: () -> Unit = {},
-    onMacSetupAnnouncement: (String) -> Unit = {},
-    onMacSetupRemove: () -> Unit = {},
+    macActions: MacSetupCallbacks = MacSetupCallbacks(),
     macLoginItemEnabled: Boolean? = null,
-    onMacLoginItemChange: (Boolean) -> Unit = {},
-    onMacStandingGrantChange: (Boolean) -> Unit = {},
 ) {
     key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd) {
-        val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
         Column(
-            modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
+            modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
             SessionOperationNotice(state, onRetry)
@@ -154,17 +147,7 @@ internal fun SessionScreen(
                 }
 
                 macSetup != null && state.showsMacSetup(macSetup) -> {
-                    SessionMacSetup(
-                        state,
-                        macSetup,
-                        layout,
-                        onMacSetupCheck,
-                        onMacSetupEnable,
-                        onMacSetupOpenSettings,
-                        onMacSetupAnnouncement,
-                        onMacSetupRemove,
-                        onExitSetup,
-                    )
+                    SessionMacSetup(state, macSetup, layout, macActions, onExitSetup)
                 }
 
                 state.isReviewing -> {
@@ -187,14 +170,8 @@ internal fun SessionScreen(
                         onRetryEnforcement,
                         syncState,
                         macSetup,
-                        onMacSetupCheck,
-                        onMacSetupEnable,
-                        onMacSetupOpenSettings,
-                        onMacSetupAnnouncement,
-                        onMacSetupRemove,
+                        macActions,
                         macLoginItemEnabled,
-                        onMacLoginItemChange,
-                        onMacStandingGrantChange,
                     )
                 }
             }

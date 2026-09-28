@@ -128,16 +128,15 @@ internal fun PermissionStep(
     onRecheckHelper: () -> Unit,
     onOpenHelperSettings: () -> Unit,
     onContinue: () -> Unit,
+    onSetUpMac: () -> Unit = {},
 ) {
-    val ready = state.hasDeviceAccess(platform)
+    val macSetup = state.macSetup
+    val ready = macSetup?.takeIf { platform == OnboardingPermissionPlatform.MAC }?.setupComplete ?: state.hasDeviceAccess(platform)
     OnboardingPage(
         layout = layout,
         actions = {
-            if (platform == OnboardingPermissionPlatform.MAC && !ready) {
-                MacSetupPreviewAction()
-                PosatoButton(onClick = onContinue, style = PosatoButtonStyle.Quiet) {
-                    Text(stringResource(Res.string.onboarding_action_not_now))
-                }
+            if (platform == OnboardingPermissionPlatform.MAC && macSetup != null) {
+                MacSetupStepActions(state, macSetup, layout, onSetUpMac, onContinue)
             } else if (ready) {
                 OnboardingPrimaryAction(stringResource(Res.string.onboarding_action_continue), layout, onContinue)
             } else {

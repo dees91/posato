@@ -77,14 +77,17 @@ is revoked, preserve plans and explain the missing capability with one
 **Finish setup** action. Any still-usable manual-session fallback and existing
 installation migration must be specified before connecting the new flow.
 
-PR #92 provides the UI shell only. **Set up Posato** stays disabled and clearly
-labelled as a preview. Existing helper controls remain available and start
-expanded while the helper is not ready. Session reads the helper state
-quietly when it appears; only a read that names a state other than ready
-gates the existing manual-session form. That result is not presented as unified setup completion.
-**Preview schedule editor** permits unsaved form exploration. Saving, automatic
-execution, setup orchestration, upgrade eligibility and dismissal persistence
-remain unimplemented.
+`ONBOARDING-004` connects **Set up Posato** in onboarding, Session's **Finish
+setup**, Schedules, This Mac and the upgrade offer. Complete means blocking is
+ready, opening at login is on and starts without a password are allowed; an
+older helper that cannot keep that permission is not complete. Existing
+installations whose blocking already works see one dismissible offer when
+opening at login or the password permission is known to be missing; manual
+pauses keep working without it, asking for the password at each start as
+before. Session reads the helper state quietly when it appears; only a read
+that names a state other than ready gates the manual-session form.
+**Preview schedule editor** permits unsaved form exploration. Saving and
+automatic execution arrive with `SCHEDULE-002`.
 
 Login launch starts Posato in the menu bar after sign-in, without opening its
 window. Without it, a restart leaves Posato absent until manual launch. A

@@ -21,6 +21,7 @@ import app.posato.core.designsystem.PosatoHero
 import app.posato.core.designsystem.PosatoIntervalArtwork
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNotice
+import app.posato.core.designsystem.PosatoPanel
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.designsystem.platformDevice
@@ -28,6 +29,7 @@ import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
 import app.posato.feature.onboarding.MacHelperReadiness
 import app.posato.feature.onboarding.MacHelperReadinessNotice
+import app.posato.feature.onboarding.MacSetupOffer
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.MacSetupSection
 import app.posato.feature.onboarding.needsSetup
@@ -55,14 +57,8 @@ internal fun SessionOverviewContent(
     onRetryEnforcement: () -> Unit = {},
     syncState: SyncBootstrapUiState? = null,
     macSetup: MacSetupPresentation? = null,
-    onMacSetupCheck: () -> Unit = {},
-    onMacSetupEnable: () -> Unit = {},
-    onMacSetupOpenSettings: () -> Unit = {},
-    onMacSetupAnnouncement: (String) -> Unit = {},
-    onMacSetupRemove: () -> Unit = {},
+    macActions: MacSetupCallbacks = MacSetupCallbacks(),
     macLoginItemEnabled: Boolean? = null,
-    onMacLoginItemChange: (Boolean) -> Unit = {},
-    onMacStandingGrantChange: (Boolean) -> Unit = {},
 ) {
     val active = state.status is LocalSessionStatus.Active
     val needsMacSetup = macSetup?.needsSetup() == true
@@ -91,6 +87,7 @@ internal fun SessionOverviewContent(
         } else {
             SessionEndedCaption(state)
             SessionStartAction(state, needsMacSetup, hasItems, onSetup, onItems)
+            macSetup?.takeIf { it.offerVisible }?.let { SessionSetupOffer(it, macActions, onSetup) }
         }
         FrozenSetCaption(state)
         SessionSelectionSummary(state, deviceLabel, onEditItems)
@@ -101,17 +98,34 @@ internal fun SessionOverviewContent(
                 presentation,
                 expanded = macSetupExpanded,
                 onToggle = { macSetupExpanded = !macSetupExpanded },
-                onCheck = onMacSetupCheck,
-                onEnable = onMacSetupEnable,
-                onOpenSettings = onMacSetupOpenSettings,
-                onAnnouncement = onMacSetupAnnouncement,
+                onCheck = macActions.check,
+                onEnable = macActions.enable,
+                onOpenSettings = macActions.openSettings,
+                onAnnouncement = macActions.announce,
                 sessionBlocksRemoval = state.blocksHelperRemoval(),
-                onRemove = onMacSetupRemove,
+                onRemove = macActions.remove,
                 loginItemEnabled = macLoginItemEnabled,
-                onLoginItemChange = onMacLoginItemChange,
-                onStandingGrantChange = onMacStandingGrantChange,
+                onLoginItemChange = macActions.loginItemChange,
+                onStandingGrantChange = macActions.standingGrantChange,
+                onSetUp = macActions.setUp,
             )
         }
+    }
+}
+
+/** The compact invitation opens the shared setup screen and starts the run there. */
+@Composable
+private fun SessionSetupOffer(
+    macSetup: MacSetupPresentation,
+    macActions: MacSetupCallbacks,
+    onOpenSetup: () -> Unit,
+) {
+    PosatoPanel {
+        MacSetupOffer(macSetup, onSetUp = {
+            macActions.open()
+            macActions.setUp()
+            onOpenSetup()
+        }, onDismiss = macActions.dismissOffer)
     }
 }
 

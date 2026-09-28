@@ -8,6 +8,8 @@ import app.posato.desktop.macos.MacOsBrowserDomainEnforcer
 import app.posato.desktop.macos.MacOsHelperClient
 import app.posato.desktop.macos.MacOsHelperSigningVerifier
 import app.posato.desktop.macos.MacOsSystemSettings
+import app.posato.desktop.macos.MacSetupOfferFlag
+import app.posato.desktop.macos.SETUP_OFFER_DISMISSED_KEY
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
@@ -48,6 +50,10 @@ fun main() {
                 openSettings = MacOsSystemSettings::open,
                 loginItem = MacLoginItemState,
                 standingGrant = DesktopStandingGrant(enforcementClient, Dispatchers.IO),
+                offerFlag = MacSetupOfferFlag(
+                    read = { MacNotificationsNative.readFlag(SETUP_OFFER_DISMISSED_KEY) == 1 },
+                    write = { MacNotificationsNative.writeFlag(SETUP_OFFER_DISMISSED_KEY, true) },
+                ),
             )
             val applicationGraph = createDesktopApplicationGraph(
                 applicationMappings,

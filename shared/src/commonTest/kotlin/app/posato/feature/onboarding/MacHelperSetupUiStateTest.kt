@@ -101,7 +101,10 @@ class MacHelperSetupUiStateTest {
             runCurrent()
 
             assertEquals(listOf("recheck"), helper.calls, "answer $answer")
-            assertEquals(MacSetupPresentation(readiness = answer, completedOperations = 1), holder.presentation())
+            assertEquals(
+                MacSetupPresentation(readiness = answer, completedOperations = 1, setupComplete = answer == MacHelperReadiness.READY),
+                holder.presentation(),
+            )
         }
     }
 
