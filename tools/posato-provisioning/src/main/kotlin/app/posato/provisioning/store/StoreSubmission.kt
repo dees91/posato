@@ -4,14 +4,12 @@ import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningException
 import app.posato.provisioning.model.AppStoreVersionResource
 import app.posato.provisioning.model.ReviewSubmissionItemResource
-import app.posato.provisioning.model.ReviewSubmissionResource
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 private const val DRAFT_STATE = "READY_FOR_REVIEW"
 private const val UNRESOLVED_STATE = "UNRESOLVED_ISSUES"
-private val SUBMITTED_STATES = setOf("WAITING_FOR_REVIEW", "IN_REVIEW")
 private const val COMPLETE = "COMPLETE"
 
 /**
@@ -29,23 +27,11 @@ private val SUBMITTABLE_VERSION_STATES = setOf(
 
 private const val REJECTED_ITEM_STATE = "REJECTED"
 
-private class OpenSubmission(
-    val resource: ReviewSubmissionResource,
-    val items: List<ReviewSubmissionItemResource>,
-) {
-    val state: String? get() = resource.attributes.state
-
-    val versionIds: Set<String> get() = items.mapNotNull { item -> item.versionId }.toSet()
-
-    /** Whether it holds anything besides this version, including items that are not versions at all. */
-    fun holdsOtherThan(versionId: String): Boolean = items.any { item -> item.versionId != versionId }
-
-    /** The version's items App Review rejected and that are not yet marked as corrected. */
-    fun unresolvedItems(versionId: String): List<ReviewSubmissionItemResource> = items.filter { item ->
-        item.versionId == versionId &&
-            item.attributes.resolved != true &&
-            (item.attributes.state == REJECTED_ITEM_STATE || item.attributes.resolved == false)
-    }
+/** The version's items App Review rejected and that are not yet marked as corrected. */
+private fun OpenSubmission.unresolvedItems(versionId: String): List<ReviewSubmissionItemResource> = items.filter { item ->
+    item.versionId == versionId &&
+        item.attributes.resolved != true &&
+        (item.attributes.state == REJECTED_ITEM_STATE || item.attributes.resolved == false)
 }
 
 /**
@@ -65,7 +51,7 @@ class StoreSubmission(
         val store = services.store
         val app = StoreLookups.app(store)
         val resource = StoreLookups.requireVersion(store, app.id, version)
-        val open = openSubmissions(app.id)
+        val open = StoreLookups.submissions(services.review, app.id)
         val submitted = open.firstOrNull { submission -> submission.state in SUBMITTED_STATES && resource.id in submission.versionIds }
         if (submitted != null) return result(version, "already-submitted", submitted.state)
         requireReady(resource, version)
@@ -108,10 +94,6 @@ class StoreSubmission(
             )
         }
         return candidate
-    }
-
-    private fun openSubmissions(appId: String): List<OpenSubmission> = services.review.openSubmissions(appId).map { submission ->
-        OpenSubmission(submission, services.review.items(submission.id))
     }
 
     /** Refuses a version App Review would reject on arrival: no build, no screenshots, or screenshots still processing. */

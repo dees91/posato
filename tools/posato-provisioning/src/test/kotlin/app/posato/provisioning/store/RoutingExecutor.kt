@@ -69,19 +69,16 @@ class StoreHarness(
     val clock = MutableClock(Instant.parse("2026-09-25T12:00:00Z"))
     val slept = mutableListOf<Duration>()
     private val screenshots = ScreenshotClient(executor)
+    private val sleeper = Sleeper { duration ->
+        slept.add(duration)
+        clock.now = clock.now.plus(duration)
+    }
     val services = StoreServices(
         store = StoreClient(executor),
         screenshots = screenshots,
         review = ReviewClient(executor),
-        replacement = ScreenshotReplacement(
-            screenshots,
-            ScreenshotUploader(transport, Transcript { }),
-            clock,
-            Sleeper { duration ->
-                slept.add(duration)
-                clock.now = clock.now.plus(duration)
-            },
-        ),
+        replacement = ScreenshotReplacement(screenshots, ScreenshotUploader(transport, Transcript { }), clock, sleeper),
+        pause = sleeper,
     )
 }
 
@@ -102,6 +99,14 @@ object StoreFixtures {
         state: String = "PREPARE_FOR_SUBMISSION"
     ): String = """{"data":[{"id":"VER","attributes":{"platform":"IOS","versionString":"1.2.0",""" +
         """"appVersionState":"$state","releaseType":"$releaseType"}}]}"""
+
+    /** One entry of an app's version listing, for accounts that hold more than one version; wrap entries in [list]. */
+    fun versionEntry(
+        id: String,
+        versionString: String,
+        state: String,
+    ): String = """{"id":"$id","attributes":{"platform":"IOS","versionString":"$versionString",""" +
+        """"appVersionState":"$state","releaseType":"AFTER_APPROVAL"}}"""
 
     const val CREATED_VERSION = """{"data":{"id":"VER","attributes":{"versionString":"1.2.0","releaseType":"MANUAL"}}}"""
 

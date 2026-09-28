@@ -8,7 +8,7 @@
 
 The Availability, Limits, and Supported platforms sections were relocated
 verbatim from the root README as accepted in `RELEASE-001`; `RELEASE-002` and
-`RELEASE-003` updated Availability for the 1.0 and 1.1 releases; the README keeps a
+`RELEASE-003` and `RELEASE-004` updated Availability for the 1.0, 1.1, and 1.2 releases; the README keeps a
 summary and links here. The Planned platforms section records the maintainer's
 2026-09-16 direction for later releases.
 
@@ -86,15 +86,16 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - iOS 18 or later.
 
 Posato targets the current and previous major versions of macOS and iOS.
-The [platform matrix check](../tasks/executions/quality-007-platform-matrix.md)
-covers both lines:
+The [1.2 release record](../tasks/executions/release-004-release-1-2.md) and the
+earlier [platform matrix check](../tasks/executions/quality-007-platform-matrix.md)
+cover both lines:
 
 | System | What was checked |
 | --- | --- |
-| macOS 15 | Posato 1.1.0 on macOS 15.6.1 (the newest macOS 15 restore image) in a virtual machine on Apple silicon: setup with iCloud and the helper, websites and apps, blocking, relaunch, early end, expiry, and sync with a Mac on macOS 26 in both directions |
-| macOS 26 | The same flow in virtual machines on macOS 26.6, and Posato 1.1.0 installed over 1.0.0 with the saved websites, apps, and iCloud workspace kept ([1.1 release record](../tasks/executions/release-003-release-1-1.md)) |
-| iOS 18 | Posato 1.0.0 from the App Store and the 1.1.0 build from TestFlight, checked by hand on an iPhone with iOS 18: websites and apps, blocking, and early end |
-| iOS 26 | The core flow, blocking, and unblocking on a test iPhone with iOS 26.5, for 1.0 and 1.1 ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
+| macOS 15 | The notarized Posato 1.2.0 on macOS 15.6.1 (the newest macOS 15 restore image) in a virtual machine on Apple silicon: installation from the disk image, the one-time setup, a pause without a password, a schedule that started after the Mac restarted and Posato opened at login, the start notice, and early end from the menu bar |
+| macOS 26 | The notarized Posato 1.2.0 in virtual machines on macOS 26.6: the same flow on two Macs linked through iCloud, with a schedule synced to the other Mac and started on both, early end reaching the other Mac, and the notice that a pause started on another Mac; Posato 1.1.0 replaced by 1.2.0 with its websites and iCloud workspace kept, the one-time setup offer, and a device still on 1.1 pausing its sync until it updated |
+| iOS 18 | Posato 1.1.0 from TestFlight, checked by hand on an iPhone with iOS 18: websites and apps, blocking, and early end. Posato 1.2 was not checked on iOS 18 |
+| iOS 26 | Posato 1.2 on a test iPhone with iOS 26.5: the core flow, blocking, and unblocking, and a schedule that started and ended while Posato was closed; with a Mac, a schedule made on the Mac starting on the iPhone, early end reaching the Mac, and the pause notices ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
 
 Later macOS 15 updates were not checked separately.
 

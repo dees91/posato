@@ -11,6 +11,7 @@ import app.posato.provisioning.cli.StoreCommand
 import app.posato.provisioning.cli.StorePrepareCommand
 import app.posato.provisioning.cli.StoreStatusCommand
 import app.posato.provisioning.cli.StoreSubmitCommand
+import app.posato.provisioning.cli.StoreWithdrawCommand
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningJson
 import app.posato.provisioning.model.Envelope
@@ -42,7 +43,7 @@ fun buildCommand(): PosatoProvisioning = PosatoProvisioning().subcommands(
     DevicesCommand().subcommands(DevicesRegisterCommand()),
     CertificatesCommand().subcommands(CertificatesEnsureCommand()),
     ProfilesCommand().subcommands(ProfilesEnsureCommand()),
-    StoreCommand().subcommands(StoreStatusCommand(), StorePrepareCommand(), StoreSubmitCommand()),
+    StoreCommand().subcommands(StoreStatusCommand(), StorePrepareCommand(), StoreSubmitCommand(), StoreWithdrawCommand()),
 )
 
 fun run(args: Array<String>): Int {

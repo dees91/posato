@@ -11,18 +11,19 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
-private const val UNCHANGED = "unchanged"
-
 private const val WHATS_NEW = "whatsNew"
 private const val DESCRIPTION = "description"
 
-/** The version states in which App Store Connect accepts metadata, build, and screenshot changes. */
-private val EDITABLE_VERSION_STATES = setOf(
-    "PREPARE_FOR_SUBMISSION",
-    "DEVELOPER_REJECTED",
-    "REJECTED",
-    "METADATA_REJECTED",
-    "INVALID_BINARY",
+/**
+ * The version states of a version that is out of release work: live, replaced by a later release, or removed from
+ * sale. Any other state, including one this tool does not know, counts as unreleased.
+ */
+private val RELEASED_VERSION_STATES = setOf(
+    "READY_FOR_DISTRIBUTION",
+    "READY_FOR_SALE",
+    "REPLACED_WITH_NEW_VERSION",
+    "REMOVED_FROM_SALE",
+    "DEVELOPER_REMOVED_FROM_SALE",
 )
 
 class PrepareRequest(
@@ -32,6 +33,13 @@ class PrepareRequest(
     val releaseType: ReleaseType,
     val screenshots: Map<ScreenshotSlot, List<ScreenshotFile>>?,
     val description: String? = null,
+    val renameFrom: String? = null,
+)
+
+/** The version a run works on, or `null` when it is to be created, and how the run came to hold it. */
+private class LocatedVersion(
+    val resource: AppStoreVersionResource?,
+    val outcome: String,
 )
 
 /**
@@ -42,6 +50,11 @@ class PrepareRequest(
  * released) is refused before the first write. A second run with the same inputs is intended to issue only reads.
  * A new version copies its description, keywords, review details, and screenshots from the previous version; this
  * command then overwrites the What's New text and, when asked, the description and the two screenshot sets.
+ *
+ * App Store Connect holds one unreleased version per platform, so a release that replaces a planned one cannot create
+ * its own version. With [PrepareRequest.renameFrom], a missing version is instead made by renaming that planned
+ * version, but only while it is editable and the app's only unreleased version; a rerun then finds the new version
+ * string and changes nothing more.
  */
 class StorePreparation(
     private val services: StoreServices
@@ -50,12 +63,13 @@ class StorePreparation(
         val store = services.store
         val app = StoreLookups.app(store)
         val build = validBuild(store, app.id, request)
-        val existing = editableVersion(store, app.id, request.version)
+        val located = locate(store, app.id, request)
+        val existing = located.resource
         val version = existing ?: store.createVersion(app.id, request.version, request.releaseType.ascName)
         val releaseType = when {
             existing == null -> "set"
             existing.attributes.releaseType == request.releaseType.ascName -> UNCHANGED
-            else -> "updated".also { store.updateReleaseType(version.id, request.releaseType.ascName) }
+            else -> "updated".also { store.updateVersion(version.id, mapOf("releaseType" to request.releaseType.ascName)) }
         }
         val buildOutcome = if (store.attachedBuild(version.id)?.id == build.id) {
             UNCHANGED
@@ -67,7 +81,7 @@ class StorePreparation(
         val screenshots = request.screenshots?.let { sets -> replaceScreenshots(localization.id, sets) }
         return buildJsonObject {
             put("version", request.version)
-            put("appStoreVersion", if (existing == null) "created" else UNCHANGED)
+            put("appStoreVersion", located.outcome)
             put("releaseType", releaseType)
             put("build", buildOutcome)
             texts.forEach { (key, outcome) -> put(key, outcome) }
@@ -94,16 +108,57 @@ class StorePreparation(
         return wanted.associate { (key, _) -> key to if (key in changes) "updated" else UNCHANGED }
     }
 
-    /** The existing version, or `null` when there is none; a version this command may not change stops the run. */
-    private fun editableVersion(
+    /**
+     * The existing version, the renamed one, or none to create. A version this command may not change, or a rename
+     * that is not allowed, stops the run before the first write; the rename is this run's first write.
+     */
+    private fun locate(
         store: StoreClient,
         appId: String,
-        version: String,
-    ): AppStoreVersionResource? {
-        val existing = StoreLookups.version(store, appId, version)
-        if (existing != null && existing.state !in EDITABLE_VERSION_STATES) throw notEditable(version, existing.state)
-        return existing
+        request: PrepareRequest,
+    ): LocatedVersion {
+        val versions = store.versions(appId)
+        val existing = versions.firstOrNull { resource -> resource.attributes.versionString == request.version }
+        if (existing != null) {
+            if (existing.state !in EDITABLE_VERSION_STATES) throw notEditable(request.version, existing.state)
+            return LocatedVersion(existing, UNCHANGED)
+        }
+        val old = request.renameFrom ?: return LocatedVersion(null, "created")
+        val renamed = renamable(versions, old, request.version)
+        store.updateVersion(renamed.id, mapOf("versionString" to request.version))
+        return LocatedVersion(renamed, "renamed")
     }
+
+    /** Version [old] when it may become [new]: it exists, is editable, and is the app's only unreleased version. */
+    private fun renamable(
+        versions: List<AppStoreVersionResource>,
+        old: String,
+        new: String,
+    ): AppStoreVersionResource {
+        val resource = versions.firstOrNull { candidate -> candidate.attributes.versionString == old }
+            ?: throw ProvisioningException(
+                ErrorCode.VERSION_MISSING,
+                "App Store Connect has no iOS App Store version $old to rename to $new.",
+                "Nothing was changed. `store status` lists the versions; without --rename-from, `store prepare` creates $new.",
+            )
+        val other = versions.firstOrNull { candidate -> candidate.id != resource.id && candidate.state !in RELEASED_VERSION_STATES }
+        val blocker = when {
+            resource.state !in EDITABLE_VERSION_STATES -> "Version $old is ${stateOf(resource)}, which this command may not rename."
+            other != null -> "Version $old is not the only unreleased version: ${other.attributes.versionString} is ${stateOf(other)}."
+            else -> null
+        }
+        if (blocker != null) {
+            throw ProvisioningException(
+                ErrorCode.VERSION_NOT_EDITABLE,
+                blocker,
+                "Nothing was changed. A version waiting for or in review is withdrawn first with `store withdraw --version $old`; " +
+                    "`store status` shows every version's state.",
+            )
+        }
+        return resource
+    }
+
+    private fun stateOf(resource: AppStoreVersionResource): String = resource.state ?: "in an unknown state"
 
     private fun notEditable(
         version: String,

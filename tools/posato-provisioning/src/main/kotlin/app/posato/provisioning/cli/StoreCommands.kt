@@ -6,6 +6,7 @@ import app.posato.provisioning.store.ReleaseType
 import app.posato.provisioning.store.StorePreparation
 import app.posato.provisioning.store.StoreStatus
 import app.posato.provisioning.store.StoreSubmission
+import app.posato.provisioning.store.StoreWithdrawal
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
 import com.github.ajalt.clikt.parameters.options.option
@@ -18,7 +19,7 @@ import java.nio.file.Path
 
 class StoreCommand : CliktCommand(name = "store") {
     override fun help(context: Context): String =
-        "Inspect, prepare, and submit the iOS App Store version of app.posato.ios through the App Store Connect API."
+        "Inspect, prepare, submit, and withdraw the iOS App Store version of app.posato.ios through the App Store Connect API."
 
     override fun run() = Unit
 }
@@ -46,7 +47,8 @@ class StorePrepareCommand :
         "prepare",
         "Creates the iOS App Store version when absent, sets its release type and en-US What's New, attaches a VALID " +
             "build, and optionally sets the en-US description and replaces the iPhone 6.9-inch and iPad 13-inch " +
-            "screenshot sets. Changes only what differs.",
+            "screenshot sets. With --rename-from, renames the app's one unreleased version instead of creating one. " +
+            "Changes only what differs.",
     ) {
     private val version by option("--version", help = "The marketing version, such as 1.2.0.").required()
     private val build by option("--build", help = "The build number App Store Connect already processed.").int().restrictTo(min = 1).required()
@@ -62,6 +64,10 @@ class StorePrepareCommand :
         "--screenshots",
         help = "A directory with iphone-6.9/*.png and ipad-13/*.png; each set is replaced in file-name order.",
     )
+    private val renameFrom by option(
+        "--rename-from",
+        help = "When --version does not exist, rename this editable version to it, provided it is the only unreleased one.",
+    )
 
     override fun execute(session: Session): JsonElement {
         val request = PrepareRequest(
@@ -71,6 +77,7 @@ class StorePrepareCommand :
             releaseType = ReleaseType.of(release),
             screenshots = screenshots?.let { directory -> ReleaseInputs.screenshots(Path.of(directory)) },
             description = description?.let { file -> ReleaseInputs.description(Path.of(file)) },
+            renameFrom = renameFrom?.let(ReleaseInputs::version),
         )
         return StorePreparation(session.storeServices()).prepare(request)
     }
@@ -87,5 +94,19 @@ class StoreSubmitCommand :
     override fun execute(session: Session): JsonElement {
         val requested = ReleaseInputs.version(version)
         return StoreSubmission(session.storeServices()).submit(requested)
+    }
+}
+
+class StoreWithdrawCommand :
+    ProvisioningCommand(
+        "withdraw",
+        "Withdraws one iOS App Store version from App Review by canceling its review submission, then waits until the " +
+            "version is editable again. Does nothing when the version is already editable.",
+    ) {
+    private val version by option("--version", help = "The marketing version to withdraw, such as 1.1.0.").required()
+
+    override fun execute(session: Session): JsonElement {
+        val requested = ReleaseInputs.version(version)
+        return StoreWithdrawal(session.storeServices()).withdraw(requested)
     }
 }

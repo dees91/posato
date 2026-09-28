@@ -53,8 +53,9 @@ every known value redacted.
 | `certificates ensure [--create]` | Confirms this Mac signs with a certificate the account also holds. With `--create`, generates a key pair, requests a certificate, and imports it. |
 | `profiles ensure <app-id> [--platform ios\|macos] [--replace]` | Makes the development profile for one App ID current and installs it. |
 | `store status [--version X.Y.Z]` | Read-only. Lists the iOS App Store versions with state and release type, the builds with marketing version and processing state, and the next free build number; with `--version`, also that version's attached build, en-US What's New, and screenshot sets with delivery states. |
-| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--description <file>] [--screenshots <dir>]` | Brings one App Store version to the release state, changing only what differs. See [iOS App Store release](#ios-app-store-release). |
+| `store prepare --version X.Y.Z --build N --whats-new <file> --release after-approval\|manual [--description <file>] [--screenshots <dir>] [--rename-from X.Y.Z]` | Brings one App Store version to the release state, changing only what differs. With `--rename-from`, a missing version is made by renaming the app's one unreleased version. See [iOS App Store release](#ios-app-store-release). |
 | `store submit --version X.Y.Z` | Submits the version to App Review once it has a build and every screenshot is `COMPLETE`. Does nothing when it is already waiting for or in review. |
+| `store withdraw --version X.Y.Z` | Withdraws a version waiting for or in review by canceling its review submission, then waits until the version is editable again. Does nothing when it is already editable. See [Replacing a version in review](#replacing-a-version-in-review). |
 
 Use this tool, not the portal or ad hoc App Store Connect scripts, for every
 development device, certificate, and profile and for the App Store release
@@ -273,11 +274,55 @@ paths; keep every output outside the checkout or under the ignored `build/`.
 after a failure completes what the first run left undone, a rerun with the same
 inputs changes nothing, and `store submit` changes nothing once the version is
 waiting for or in review. Unit tests against recorded responses cover this, but
-no `store prepare` or `store submit` has run against App Store Connect yet. The
-label stays until the first live run of both on the next release confirms it.
+no `store prepare` or `store submit` has run against App Store Connect yet, and
+`store withdraw` and `--rename-from` have not run live either. The label stays
+until the first live run of each on the next release confirms it.
 
 The store screenshot capture recipe is in the
 [App Store listing](../store/en-US/listing.md#screenshots).
+
+### Replacing a version in review
+
+App Store Connect holds one unreleased iOS version at a time. While a version
+waits for or is in review, no later version can be created, so a release that
+replaces it withdraws it and renames that same version record:
+
+```shell
+posato-provisioning store withdraw --version <old>
+posato-provisioning store prepare --version <new> --rename-from <old> --build <build> \
+  --whats-new <whats-new.txt> --release after-approval \
+  --description <description.txt> --screenshots docs/store/en-US/screenshots
+posato-provisioning store status --version <new>
+```
+
+`store withdraw` reports `unchanged` for a version that is already editable
+(`PREPARE_FOR_SUBMISSION`, `DEVELOPER_REJECTED`, `REJECTED`,
+`METADATA_REJECTED`, or `INVALID_BINARY`). For a version `WAITING_FOR_REVIEW` or
+`IN_REVIEW`, it finds the open review submission that holds it and cancels it
+(`PATCH reviewSubmissions/<id>` with `canceled: true`). Before that write it
+refuses a submission that also holds anything else (`SUBMISSION_NOT_READY`),
+and a waiting version no submission holds (`SUBMISSION_MISSING`). App Store
+Connect completes a cancellation later, so the command then polls the version
+every 5 seconds, up to 24 times, until it is editable again, normally
+`DEVELOPER_REJECTED`. When the bound runs out it fails with
+`WITHDRAWAL_PENDING`; a rerun finds the submission `CANCELING`, sends nothing
+again, and only waits. Any other state, such as pending developer release or
+released, is refused with `VERSION_NOT_EDITABLE`. The envelope reports the
+version, the submission outcome (`canceled` or `unchanged`), and the state.
+
+`store prepare --rename-from <old>` applies only when no version `<new>`
+exists. It renames `<old>` (`PATCH appStoreVersions/<id>` with
+`versionString`) and continues the normal preparation on it, reporting
+`appStoreVersion` as `renamed`. Before the rename it refuses, with nothing
+changed, an `<old>` that does not exist (`VERSION_MISSING`), that is not
+editable, or that is not the app's only unreleased version
+(`VERSION_NOT_EDITABLE`). A version counts as released only in
+`READY_FOR_DISTRIBUTION`, `READY_FOR_SALE`, `REPLACED_WITH_NEW_VERSION`,
+`REMOVED_FROM_SALE`, or `DEVELOPER_REMOVED_FROM_SALE`; any other state,
+including one the tool does not know, counts as unreleased. A rerun finds
+`<new>` and behaves like any other `store prepare`. The build must already be
+filed under `<new>`, because the build check comes first. Without
+`--rename-from`, `store prepare` still creates a missing version.
 
 ## Idempotence and `--replace`
 
@@ -390,7 +435,14 @@ The two reports answer different questions and share no check identifiers.
   another open submission is in the way: an unresolved one, or a draft or
   unresolved submission that also holds another item.
 - **`VERSION_NOT_EDITABLE`** — `store prepare` found the version waiting for
-  or in review, pending release, or released, and changed nothing.
+  or in review, pending release, or released, or `--rename-from` named a
+  version that is not editable or not the only unreleased one; or
+  `store withdraw` found a version past review. Nothing was changed.
+- **`SUBMISSION_MISSING`** — `store withdraw` found the version waiting for or
+  in review, but no open review submission holds it. Check the version in App
+  Store Connect.
+- **`WITHDRAWAL_PENDING`** — `store withdraw` canceled the submission, but the
+  version was not editable within two minutes. Rerun later; it only waits.
 - **`UPLOAD_REFUSED`** — an upload operation failed the policy above. Nothing
   was uploaded; rerun `store prepare`, and review the tool if it repeats.
 - **`CERTIFICATE_MISSING`** — either this Mac has no usable certificate, or the
