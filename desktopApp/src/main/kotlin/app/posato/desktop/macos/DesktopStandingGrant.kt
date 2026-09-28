@@ -1,5 +1,6 @@
 package app.posato.desktop.macos
 
+import app.posato.feature.onboarding.MacHelperOperations
 import app.posato.feature.onboarding.MacStandingGrant
 import app.posato.feature.onboarding.MacStandingGrantState
 import kotlinx.coroutines.CoroutineDispatcher
@@ -18,6 +19,7 @@ internal interface MacStandingGrantCommands {
 internal class DesktopStandingGrant(
     private val commands: MacStandingGrantCommands,
     private val ioDispatcher: CoroutineDispatcher,
+    private val operations: MacHelperOperations = MacHelperOperations(),
 ) : MacStandingGrant {
     override suspend fun read(): MacStandingGrantState {
         return withContext(ioDispatcher) { commands.grantState().toSwitchState() }
@@ -28,6 +30,10 @@ internal class DesktopStandingGrant(
      * grant state back, so it shows only what the daemon confirms.
      */
     override suspend fun setEnabled(enabled: Boolean): MacStandingGrantState {
+        return operations.track { change(enabled) }
+    }
+
+    private suspend fun change(enabled: Boolean): MacStandingGrantState {
         return withContext(ioDispatcher) {
             if (enabled) {
                 if (commands.prepareGrant().outcome == HelperResult.Outcome.Success) {

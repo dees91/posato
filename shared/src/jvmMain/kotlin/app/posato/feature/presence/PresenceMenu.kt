@@ -2,6 +2,7 @@ package app.posato.feature.presence
 
 import app.posato.feature.enforcement.EnforcementActionKind
 import app.posato.feature.enforcement.EnforcementState
+import app.posato.feature.schedules.host.ScheduledPause
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.ui.EnforcementViewState
 import kotlinx.coroutines.CancellationException
@@ -14,30 +15,53 @@ public enum class PresenceState { LOADING, NO_SESSION, ENFORCING, NOT_ENFORCING,
 
 public enum class PresenceAction { START_SESSION, END_SESSION_EARLY, RESUME_RESTRICTIONS, OPEN_POSATO }
 
-public enum class QuitPrompt { NONE, CONFIRM_ENFORCING, CONFIRM_NOT_ENFORCING }
+public enum class QuitPrompt { NONE, CONFIRM_ENFORCING, CONFIRM_NOT_ENFORCING, CONFIRM_SCHEDULES }
 
 public data class PresenceMenu(
     val state: PresenceState,
     val primaryAction: PresenceAction,
     val sessionEndEpochMillis: Long?,
+    val schedulesEnabled: Boolean = false,
 )
 
 internal fun presenceMenuOf(
     status: LocalSessionStatus?,
     view: EnforcementViewState,
     maintenanceClosed: Boolean?,
+    scheduled: ScheduledPause? = null,
+    schedulesEnabled: Boolean = false,
 ): PresenceMenu {
     val active = status as? LocalSessionStatus.Active
-    val end = active?.record?.endEpochMillis
+    val scheduledEnd = scheduled?.takeIf { it.restricts }?.endEpochMillis
+    val end = listOfNotNull(active?.record?.endEpochMillis, scheduledEnd).maxOrNull()
     val enforcement = view.state
-    return when {
-        maintenanceClosed == true -> PresenceMenu(PresenceState.MAINTENANCE, PresenceAction.OPEN_POSATO, end)
-        status == null -> PresenceMenu(PresenceState.LOADING, PresenceAction.OPEN_POSATO, null)
-        active == null -> PresenceMenu(PresenceState.NO_SESSION, PresenceAction.START_SESSION, null)
-        enforcement is EnforcementState.Active -> PresenceMenu(PresenceState.ENFORCING, PresenceAction.END_SESSION_EARLY, end)
-        enforcement.isResumable() -> PresenceMenu(PresenceState.NOT_ENFORCING, PresenceAction.RESUME_RESTRICTIONS, end)
-        else -> PresenceMenu(PresenceState.NOT_ENFORCING, PresenceAction.OPEN_POSATO, end)
+    val menu = when {
+        maintenanceClosed == true -> {
+            PresenceMenu(PresenceState.MAINTENANCE, PresenceAction.OPEN_POSATO, end)
+        }
+
+        status == null -> {
+            PresenceMenu(PresenceState.LOADING, PresenceAction.OPEN_POSATO, null)
+        }
+
+        // A restricting scheduled pause is enforcing, whatever a received session still needs.
+        scheduledEnd != null || (enforcement is EnforcementState.Active && active != null) -> {
+            PresenceMenu(PresenceState.ENFORCING, PresenceAction.END_SESSION_EARLY, end)
+        }
+
+        active == null -> {
+            PresenceMenu(PresenceState.NO_SESSION, PresenceAction.START_SESSION, null)
+        }
+
+        enforcement.isResumable() -> {
+            PresenceMenu(PresenceState.NOT_ENFORCING, PresenceAction.RESUME_RESTRICTIONS, end)
+        }
+
+        else -> {
+            PresenceMenu(PresenceState.NOT_ENFORCING, PresenceAction.OPEN_POSATO, end)
+        }
     }
+    return menu.copy(schedulesEnabled = schedulesEnabled)
 }
 
 private fun EnforcementState.isResumable(): Boolean {
@@ -54,8 +78,14 @@ public fun quitPromptFor(
         nowEpochMillis - systemTerminationEpochMillis in 0..SYSTEM_TERMINATION_WINDOW_MILLIS
     return when {
         systemTerminating -> QuitPrompt.NONE
+
         menu.state == PresenceState.ENFORCING -> QuitPrompt.CONFIRM_ENFORCING
+
         menu.state == PresenceState.NOT_ENFORCING -> QuitPrompt.CONFIRM_NOT_ENFORCING
+
+        // Closing the window keeps schedules starting; quitting stops new starts until Posato opens again.
+        menu.schedulesEnabled -> QuitPrompt.CONFIRM_SCHEDULES
+
         else -> QuitPrompt.NONE
     }
 }

@@ -249,6 +249,47 @@ private class GatedTexts(
         }
         return NoticeText("started", "started")
     }
+
+    override suspend fun scheduledStarted(
+        name: String,
+        endEpochMillis: Long,
+    ): NoticeText {
+        return NoticeText("scheduled", name)
+    }
+
+    override suspend fun scheduledSetupRequired(): NoticeText {
+        return NoticeText("setup", "setup")
+    }
+}
+
+class SessionNoticesScheduledTest {
+    @Test
+    fun `given a scheduled pause that starts and one that needs setup then each is announced once and marked`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = true)
+        val key = app.posato.feature.schedules.domain.OccurrenceKey(
+            app.posato.feature.schedules.domain.ScheduleId("000000000000400080000000000000a1"),
+            app.posato.feature.schedules.domain.ScheduleDate(2026, 9, 28),
+        )
+        val marked = mutableListOf<Int>()
+        val started = app.posato.feature.schedules.host.ScheduledPause(
+            "Focus",
+            0L,
+            1_000L,
+            setOf(key),
+            app.posato.feature.schedules.host.ScheduledPauseState.APPLIED,
+            unannounced = setOf(key),
+        )
+        val setup = started.copy(
+            state = app.posato.feature.schedules.host.ScheduledPauseState.SETUP_REQUIRED,
+            unannounced = emptySet(),
+            setupUnannounced = setOf(key),
+        )
+
+        SessionNotices(platform, FixedTexts).follow(flowOf(LocalSessionStatus.Inactive), flowOf(started, setup)) { _, bit -> marked += bit }
+
+        assertEquals(listOf(1, 2), marked)
+        assertEquals(2, platform.calls.count { it.startsWith("post") })
+    }
 }
 
 private object FixedTexts : SessionNoticeTexts {
@@ -258,6 +299,17 @@ private object FixedTexts : SessionNoticeTexts {
 
     override suspend fun startedElsewhere(needsResume: Boolean): NoticeText {
         return NoticeText("started", "started")
+    }
+
+    override suspend fun scheduledStarted(
+        name: String,
+        endEpochMillis: Long,
+    ): NoticeText {
+        return NoticeText("scheduled", name)
+    }
+
+    override suspend fun scheduledSetupRequired(): NoticeText {
+        return NoticeText("setup", "setup")
     }
 }
 

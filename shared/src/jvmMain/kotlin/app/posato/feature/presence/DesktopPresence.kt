@@ -1,6 +1,7 @@
 package app.posato.feature.presence
 
 import app.posato.feature.notifications.SessionNotifier
+import app.posato.feature.schedules.host.ScheduleHost
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.update.MaintenanceAdmission
@@ -22,11 +23,18 @@ public class DesktopPresence internal constructor(
     private val sync: AppleSync,
     private val maintenance: MaintenanceAdmission,
     private val notifier: SessionNotifier,
+    private val schedules: ScheduleHost,
 ) {
     private val requests = Channel<SessionWindowRequest>(Channel.CONFLATED)
 
-    public val menu: Flow<PresenceMenu> = combine(owner.status, owner.view, maintenance.closed) { status, view, closed ->
-        presenceMenuOf(status, view, closed)
+    public val menu: Flow<PresenceMenu> = combine(
+        owner.status,
+        owner.view,
+        maintenance.closed,
+        schedules.pause,
+        schedules.anyEnabled,
+    ) { status, view, closed, scheduled, enabled ->
+        presenceMenuOf(status, view, closed, scheduled, enabled)
     }.distinctUntilChanged()
 
     public val windowRequests: Flow<SessionWindowRequest> = requests.receiveAsFlow()
@@ -36,6 +44,7 @@ public class DesktopPresence internal constructor(
         coroutineScope {
             launch { owner.runWhileHosted(idleRecheckMillis = IDLE_RECHECK_MILLIS) }
             launch { notifier.run() }
+            launch { schedules.run() }
             launch { runPeriodicExchange(exchange = sync::onForeground, intervalMillis = EXCHANGE_INTERVAL_MILLIS) }
         }
     }

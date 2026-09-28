@@ -2136,3 +2136,15 @@ to scope, feasibility, or delivery.
 - `inferred` from code (slice 4 plan): the daemon reports the grant as absent
   while another account has the console, so a host must check the console
   before reading the grant or it would withdraw the consent.
+
+## [2026-09-27] implementation | SCHEDULE-002 slice 4: schedules start on their own on a Mac
+
+- `observed` (Tart VM): a scheduled start applied through the standing grant
+  with the window closed and no dialog, caught up 2 s after a relaunch with
+  its original start, and ended on time; End early stayed ended after a
+  relaunch.
+- Manual sessions and schedules share the helper through claims that
+  remember whose request the helper holds, so a claim that only joined never
+  touches it; a failed apply would otherwise clear the other's restrictions.
+- `inferred` from code: the daemon reports the grant as absent while another
+  account has the console, so the start gate checks the console first.

@@ -2,6 +2,7 @@ package app.posato.feature.schedules.data
 
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.OccurrencePin
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
@@ -106,7 +107,7 @@ class SqlScheduleStoreTest {
     fun `given a schedule with facts when removed then its facts go and the removal is recorded`() = runTest {
         withStore("schedules-remove.db") { store ->
             store.save(plan(1), null)
-            store.skip(OccurrenceKey(id(1), today), today, null)
+            store.stop(setOf(OccurrenceKey(id(1), today)), OccurrenceStop.SKIP, today, null)
 
             store.remove(id(1), workspace)
 
@@ -121,10 +122,45 @@ class SqlScheduleStoreTest {
             store.save(plan(1), null)
             val key = OccurrenceKey(id(1), today.plusDays(1))
 
-            store.skip(key, today, workspace)
+            store.stop(setOf(key), OccurrenceStop.SKIP, today, workspace)
 
             assertEquals(setOf(key), store.snapshot().facts.skipped)
             assertEquals(listOf(ScheduleIntent.Skip(key, today)), store.intents())
+        }
+    }
+
+    @Test
+    fun `given running occurrences when the host records them then pins keep their notices and finished ones become terminal`() = runTest {
+        withStore("schedules-host.db") { store ->
+            val key = OccurrenceKey(id(1), today)
+            store.save(plan(1), null)
+
+            store.recordHost(ScheduleHostUpdate(pins = listOf(OccurrencePin(key, 1_000L))))
+            store.recordHost(ScheduleHostUpdate(notices = mapOf(key to 1)))
+            store.recordHost(ScheduleHostUpdate(pins = listOf(OccurrencePin(key, 2_000L)), notices = mapOf(key to 2)))
+            assertEquals(listOf(OccurrencePin(key, 1_000L, 3)), store.snapshot().pins)
+
+            store.recordHost(ScheduleHostUpdate(finished = setOf(key)))
+            store.recordHost(ScheduleHostUpdate(finished = setOf(key)))
+
+            assertEquals(emptyList(), store.snapshot().pins)
+            assertEquals(setOf(key), store.snapshot().facts.terminal)
+            assertEquals(emptyList(), store.intents())
+
+            store.recordHost(ScheduleHostUpdate(pins = listOf(OccurrencePin(key, 1_000L))))
+            assertEquals(emptyList(), store.snapshot().pins)
+        }
+    }
+
+    @Test
+    fun `given running occurrences when ended early while linked then each gets an end fact and one intent`() = runTest {
+        withStore("schedules-end.db") { store ->
+            val keys = setOf(OccurrenceKey(id(1), today), OccurrenceKey(id(2), today))
+
+            store.stop(keys, OccurrenceStop.END, today, workspace)
+
+            assertEquals(keys, store.snapshot().facts.ended)
+            assertEquals(keys.map { ScheduleIntent.End(it, today) }.toSet(), store.intents().toSet())
         }
     }
 
@@ -134,8 +170,8 @@ class SqlScheduleStoreTest {
             store.save(plan(1), null)
             store.save(plan(2), null)
             store.save(plan(3), null)
-            store.skip(OccurrenceKey(id(1), today.plusDays(-5)), today, null)
-            store.skip(OccurrenceKey(id(1), today), today, null)
+            store.stop(setOf(OccurrenceKey(id(1), today.plusDays(-5))), OccurrenceStop.SKIP, today, null)
+            store.stop(setOf(OccurrenceKey(id(1), today)), OccurrenceStop.SKIP, today, null)
             val synced = SyncedSchedules(live = listOf(plan(2, "Shared")), removed = setOf(id(3)))
 
             assertEquals(ScheduleResult.Success(true), store.seedOnce(workspace, synced, today))

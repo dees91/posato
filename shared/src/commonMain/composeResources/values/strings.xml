@@ -241,6 +241,7 @@ For what matters.</string>
     <string name="presence_quit_title">Quit Posato?</string>
     <string name="presence_quit_enforcing">Blocking stops on this Mac until you open Posato and resume it. The session stays active on your other devices.</string>
     <string name="presence_quit_not_enforcing">The session stays active. Posato asks you to resume restrictions when it opens again.</string>
+    <string name="presence_quit_schedules">Quit stops new scheduled starts until Posato opens again. Closing the window keeps them starting.</string>
     <string name="presence_quit_keep">Keep Posato open</string>
     <string name="presence_quit_confirm">Quit</string>
     <string name="presence_first_close_enforcing">Posato is still running. Blocking continues while Posato is in the menu bar.</string>
@@ -279,6 +280,10 @@ For what matters.</string>
     <string name="notification_pause_started_title">Pause started</string>
     <string name="notification_pause_started_body">A pause started on another device.</string>
     <string name="notification_pause_started_resume_body">A pause started on another device. Open Posato to block on this Mac too.</string>
+    <string name="notification_schedule_started_title">Scheduled pause started</string>
+    <string name="notification_schedule_started_body">%1$s, until %2$s.</string>
+    <string name="notification_schedule_setup_title">Setup required on this Mac</string>
+    <string name="notification_schedule_setup_body">A scheduled pause couldn't start on this Mac. Open Posato to finish setup.</string>
     <string name="notification_section_title">Notifications</string>
     <string name="notification_setting">Pause notifications</string>
     <string name="notification_setting_supporting">A notice when a pause ends, or when one starts on another device.</string>

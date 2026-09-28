@@ -2,6 +2,7 @@ package app.posato.di
 
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.enforcement.EnforcementPort
+import app.posato.feature.enforcement.PauseClaims
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.sync.macos.MaintenanceCompanionTransport
 import app.posato.feature.sync.macos.defaultSyncCompanionTransport
@@ -26,13 +27,20 @@ internal interface DesktopUpdateBindings {
         return MaintenanceAdmission(SqlUpdateMaintenanceStore(database, databaseDispatcher), clock::currentEpochMillis)
     }
 
+    /** Manual sessions and scheduled pauses share the gated helper through their claims. */
     @Provides
     @SingleIn(AppScope::class)
-    fun provideEnforcement(
+    fun providePauseClaims(
         @Named("helper") helper: EnforcementPort,
         admission: MaintenanceAdmission,
-    ): EnforcementPort {
-        return GatedEnforcementPort(helper, admission)
+    ): PauseClaims {
+        return PauseClaims(GatedEnforcementPort(helper, admission))
+    }
+
+    @Provides
+    @SingleIn(AppScope::class)
+    fun provideEnforcement(claims: PauseClaims): EnforcementPort {
+        return claims.manual
     }
 
     @Provides

@@ -24,6 +24,7 @@ internal class MacOsBrowserDomainEnforcer(
     fun start(
         domains: List<String>,
         sessionEndEpochMilliseconds: Long? = null,
+        grantOnly: Boolean = false,
     ): BrowserDomainEnforcementResult {
         if (domains.isEmpty() || domains.any { domain -> domain.isBlank() }) {
             return BrowserDomainEnforcementResult.Failed(
@@ -37,11 +38,14 @@ internal class MacOsBrowserDomainEnforcer(
             )
         }
         val grantedWithoutPrompt = commands.grantState() == HelperGrantState.On
+        if (grantOnly && !grantedWithoutPrompt) {
+            return BrowserDomainEnforcementResult.Failed(grantUnavailable())
+        }
         val configured = commands.configureBrowserDomains(domains, sessionEndEpochMilliseconds)
         if (configured.result.outcome != HelperResult.Outcome.Success || configured.port == 0.toUShort()) {
             return BrowserDomainEnforcementResult.Failed(configured.result)
         }
-        var applied = applyAfterPersonAction(configured.port, grantedWithoutPrompt)
+        var applied = if (grantOnly) commands.applyWithGrant(configured.port) else applyAfterPersonAction(configured.port, grantedWithoutPrompt)
         if (applied.outcome == HelperResult.Outcome.UnknownOutcome) {
             applied = commands.reconcileUnknown()
         }
@@ -71,6 +75,16 @@ internal class MacOsBrowserDomainEnforcer(
             return commands.apply(port)
         }
         return granted
+    }
+
+    private fun grantUnavailable(): HelperResult {
+        return HelperResult(
+            outcome = HelperResult.Outcome.Failure,
+            serviceState = HelperResult.State.Ready,
+            ownershipPhase = HelperResult.Phase.Idle,
+            requiredAction = HelperResult.RequiredAction.None,
+            failure = HelperResult.Failure.StandingGrantUnavailable,
+        )
     }
 
     fun clear(): HelperResult {
