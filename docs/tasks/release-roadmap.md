@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 12 (amended 2026-09-28: partial selection for release 1.3)
+- **Revision:** 12 (amended 2026-09-28: partial 1.3 selection and schedule-target idea)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-28
@@ -54,7 +54,10 @@
   before `RELEASE-004` publishes them. Revision 12 records the partial
   release 1.3 selection (`user-confirmed`, 2026-09-28): `NAV-001` is included;
   `SYNC-020`, `MACOS-020`, and `MACOS-021` are tentative candidates. The
-  remaining scope and final waves will be decided at a later checkpoint.
+  remaining scope and final waves will be decided at a later checkpoint. It
+  also adds `SCHEDULE-003` from idea 20: configurable websites and
+  applications per schedule, retained as a preliminary backlog proposal
+  without a release assignment.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -249,6 +252,7 @@ The idea numbers refer to the wiki idea queue.
 
 | Task | Outcome | Epic | Origin | What unblocks assignment |
 | --- | --- | --- | --- | --- |
+| `SCHEDULE-003` | Decide how each schedule can block user-chosen websites and applications, so different schedules can use different selections. Settle selection ownership (separate lists or reusable sets), overlapping schedules and manual sessions, edits during a running pause, migration of existing schedules, and synchronization with device-local application choices. End with a product decision and a delivery plan. Preliminary. | Schedules | Idea 20 | Acceptance of the selection and overlap rules, migration, and platform boundaries |
 | `FAMILY-001` | Decide whether a parent-and-child use case belongs in Posato: device ownership, consent, access boundaries, and privacy. | Product discovery | Idea 2 | A product decision that the personal-use model may extend |
 | `FILTER-001` | Decide whether reducing advertising belongs in Posato and which coverage is useful and feasible. | Product discovery | Idea 3 | A product decision on scope beyond blocking chosen targets |
 | `RESEARCH-001` | Compare the Focusly extension's interactions and features with Posato and list the ones worth adopting. | Product discovery | Idea 4 | Any planning checkpoint; cheap |

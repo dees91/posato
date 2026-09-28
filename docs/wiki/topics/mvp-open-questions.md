@@ -926,6 +926,23 @@ below. This queue retains idea provenance without expanding the original MVP.
     remains unproven. The current Start/Resume grant does not authorize
     scheduled Apply.
 
+20. **Different websites and applications for each schedule.**
+    `user-confirmed` (2026-09-28, backlog proposal): let the person configure
+    a different selection for each schedule. Blocking social sites during
+    work and work-related sites or applications after work are examples;
+    names, selections, and purposes belong to the person, with no fixed
+    work or leisure categories. The proposal has no release assignment.
+    `observed`: the current
+    [schedule rules](../../product/schedules-decisions.md#paused-items),
+    `ScheduleHost.toRequest`, and `ScheduleMonitorTables.build` use one
+    current paused-items selection across schedules. Application choices
+    stay device-local.
+    `open`: separate selections versus reusable named sets; how overlapping
+    schedules and manual sessions combine restrictions; how edits affect a
+    running pause; migration of existing schedules; and synchronization of
+    website selections with device-local application choices. `SCHEDULE-003`
+    owns discovery before any delivery decision.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do

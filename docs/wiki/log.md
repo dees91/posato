@@ -2190,9 +2190,12 @@ to scope, feasibility, or delivery.
   window's owning process; `update-consent` answers the modal update-consent
   alert; the verify-posato map gains an updates recipe.
 
-## [2026-09-28] planning | Partial release 1.3 selection
+## [2026-09-28] planning | Partial release 1.3 selection and schedule-target idea
 
 - `user-confirmed`: `NAV-001` belongs to release 1.3. `SYNC-020`,
   `MACOS-020`, and `MACOS-021` remain tentative candidates. The roadmap
   records the partial selection; remaining scope, final waves, and activation
   stay open for the next planning checkpoint.
+- Added idea 20 and `SCHEDULE-003` for user-configurable websites and
+  applications per schedule. Selection ownership, overlaps, migration, and
+  synchronization remain open; the proposal has no release assignment.
