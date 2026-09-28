@@ -663,6 +663,13 @@ accepted contracts.
 
 ## Post-MVP feature ideas for discovery
 
+`user-confirmed` (2026-09-28): during release 1.3 planning, the maintainer
+selected `NAV-001` and tentatively favored `SYNC-020`, `MACOS-020`, and
+`MACOS-021`. The latter three remain candidates; the rest of the release
+will be considered later. The
+[release roadmap](../../tasks/release-roadmap.md#release-13-more-macs)
+records the partial selection. Final composition and activation remain open.
+
 `user-confirmed` (2026-09-13): retain the following larger, loosely defined
 ideas for future iterations after the MVP. Unresolved choices remain `open`;
 accepted later decisions link to their product authority and roadmap owners

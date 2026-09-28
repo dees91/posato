@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 11 (amended 2026-09-27: the 1.2 public packaging row)
+- **Revision:** 12 (amended 2026-09-28: partial selection for release 1.3)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-27
+- **Last amended:** 2026-09-28
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -51,7 +51,10 @@
   Revision 11 adds `DOCS-003` to release 1.2 at the maintainer's request
   (`user-confirmed`, 2026-09-27): the showcase media, README, `posato.app`,
   App Store text and screenshots, and release notes are prepared for 1.2
-  before `RELEASE-004` publishes them.
+  before `RELEASE-004` publishes them. Revision 12 records the partial
+  release 1.3 selection (`user-confirmed`, 2026-09-28): `NAV-001` is included;
+  `SYNC-020`, `MACOS-020`, and `MACOS-021` are tentative candidates. The
+  remaining scope and final waves will be decided at a later checkpoint.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -224,11 +227,20 @@ Theme: decide and deliver the accepted Intel Mac support path. Schedule
 discovery and delivery now belong to release 1.2; `RELEASE-005` no longer
 waits for them.
 
+Planning reopened on 2026-09-28 after schedules shipped in 1.2.
+`user-confirmed`: include `NAV-001` in 1.3. `SYNC-020`, `MACOS-020`, and
+`MACOS-021` are tentative candidates and remain in the backlog until the
+maintainer confirms them. The remaining scope, final theme, and waves are
+open. Existing Intel rows are retained; this checkpoint does not settle their
+feasibility or verification environment. Complete release composition before
+activating any row.
+
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
 | `MACOS-015` | Decide whether Posato supports Intel Macs and macOS 14: cost of the x86-64 Compose Desktop artifact and runtime, per-architecture native libraries, universal Swift helpers, two notarized DMGs, macOS 14 API availability, the verification driver on a second architecture, and the support horizon Apple gives Intel Macs and macOS 14; propose the ADR 0003 revision for a go or no-go. | Platform coverage | discovery | R1.3/W1 | None | PR-INTEL-DECISION |
 | `MACOS-016` | Deliver the accepted Intel path from `MACOS-015`: build, sign, notarize, and publish the x86-64 release, verify it on the maintainer's 2019 MacBook Air, and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W2 | `MACOS-015` | PR-INTEL-RELEASE |
-| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for every accepted architecture, and submit the iOS build to App Review when it changed. | Release readiness | delivery | R1.3/W3 | `MACOS-016` | PR-RELEASE-1-3 |
+| `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules when delivered by `SCHEDULE-002`. | Platform coverage | delivery | Pending composition | `SCHEDULE-002` (done) | PR-NAVIGATION |
+| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for every accepted architecture, and submit the iOS build to App Review when it changed. | Release readiness | delivery | R1.3/W3 | `MACOS-016`, `NAV-001` | PR-RELEASE-1-3 |
 
 ## Backlog
 
@@ -259,7 +271,6 @@ The idea numbers refer to the wiki idea queue.
 | `QUALITY-011` | Decide whether to extract the Tart virtual machine layer and the iOS system-dialog driver of `posato-control` into a standalone, openly licensed tool for macOS and iOS development testing: an application descriptor instead of Posato constants, system-dialog definitions as data per macOS version and language, verification beyond one Mac and one iPhone, dependency licenses, and who maintains it; end with a decision and, if accepted, an extraction plan. Preliminary. | Verification | Idea 16; `QUALITY-010` outcome | `posato-control` stable across one release cycle and a maintainer decision to maintain a public tool |
 | `PAUSE-001` | Decide whether the pause page should offer a useful local activity, from the session's stated intention up to user-provided flashcards, within the privacy boundary, the self-contained pause page of `DESIGN-003`, and the iOS shield limits; end with a product decision and a delivery plan. The layers in idea 11 guide it: useful with no setup first, then cards from one open deck format (in-app editor, CSV and Anki import, a chatbot prompt, and a watched folder for learning agents), with spaced review only after the privacy decision. | Product discovery | Idea 11 | A product decision that the pause moment is in scope |
 | `I18N-001` | Ship Posato in Polish as the first additional language, following the system language: the whole UI of both applications with Polish plural forms, the macOS pause page, iOS permission descriptions, and date and time formatting, plus the App Store listing and screenshots and a Polish posato.app including the privacy policy. It adds a narrow `AGENTS.md` exception so the agent can author localized product resources for the maintainer's approval, and keeps verification recipes independent of English labels. | Platform coverage | Idea 12 | Any planning checkpoint; the maintainer's time to review the Polish copy |
-| `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules when delivered by `SCHEDULE-002`. | Platform coverage | Idea 13; `IOS-004` decision | Any planning checkpoint |
 | `TARGETS-007` | Decide whether and how saved websites and application choices can be exported to and imported from a file: format, encryption, what an application choice can carry across devices, merge or replace, and sync interaction; end with a product decision and a delivery plan. Preliminary. | Target management | Idea 14 | A product decision that file transfer is in scope |
 | `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
 
