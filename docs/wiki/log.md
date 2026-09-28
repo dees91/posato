@@ -2175,3 +2175,17 @@ to scope, feasibility, or delivery.
 - `observed` (2026-09-28, two linked Tart VMs): a Mac with its window closed
   received a pause from another Mac about 4.5 minutes later without **Sync
   now**, and a schedule saved on one Mac started on its own on both.
+
+## [2026-09-28] maintenance | RELEASE-004 retrospective: driver and guardrail fixes
+
+- ktlint rule `posato:native-safe-backtick-name` rejects test names in
+  `shared/` that Kotlin/Native refuses (`observed`: a comma failed only in the
+  full quality gate).
+- `launch -t sim` installs the build over a stale or missing simulator
+  install.
+- Reviewer rules moved from `AGENTS.md` to
+  `docs/development/review-rules.md`.
+- `observed` (2026-09-28, Tart VM, notarized 1.2.0): `vm dialogs` tells an
+  administrator prompt (SecurityAgent) from a Background Items notice by the
+  window's owning process; `update-consent` answers the modal update-consent
+  alert; the verify-posato map gains an updates recipe.
