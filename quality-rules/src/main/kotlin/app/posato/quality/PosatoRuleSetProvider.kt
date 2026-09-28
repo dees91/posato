@@ -10,5 +10,6 @@ public class PosatoRuleSetProvider : RuleSetProviderV3(RuleSetId(POSATO_RULE_SET
     override fun getRuleProviders(): Set<RuleProvider> = setOf(
         RuleProvider { RightHandSideOnAssignmentLineRule() },
         RuleProvider { WhenEntryArrowOnConditionLineRule() },
+        RuleProvider { NativeSafeBacktickNameRule() },
     )
 }

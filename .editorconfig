@@ -21,3 +21,8 @@ ktlint_standard_chain-method-continuation = disabled
 ktlint_standard_function-expression-body = disabled
 ktlint_standard_multiline-expression-wrapping = disabled
 ktlint_standard_trailing-comma-on-declaration-site = disabled
+# Only shared/ compiles for Kotlin/Native, whose backtick names reject more characters than the JVM's.
+ktlint_posato_native-safe-backtick-name = disabled
+
+[shared/src/**.{kt,kts}]
+ktlint_posato_native-safe-backtick-name = enabled
