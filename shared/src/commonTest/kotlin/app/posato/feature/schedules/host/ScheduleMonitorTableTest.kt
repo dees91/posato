@@ -3,6 +3,7 @@ package app.posato.feature.schedules.host
 import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.data.StoredSchedule
 import app.posato.feature.schedules.domain.CentralEuropeanZone
+import app.posato.feature.schedules.domain.OccurrenceExpiry
 import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleFacts
@@ -35,6 +36,27 @@ class ScheduleMonitorTableTest {
         assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(listOf("example.com"), null)).policy,
         LocalApplicationMappingsLoadResult.Unavailable(),
     )
+
+    @Test
+    fun `resumed monitor occurrence cannot fall back to its interval before observed expiry`() {
+        val zone = CentralEuropeanZone
+        val start = zone.instantOf(monday, 540)
+        val expiredEnd = zone.instantOf(monday, 600)
+        val newEnd = zone.instantOf(monday, 720)
+        val key = OccurrenceKey(id(1), monday)
+        val snapshot = ScheduleSnapshot(
+            schedules = listOf(StoredSchedule(plan(1).copy(endMinute = 720))),
+            facts = ScheduleFacts(expired = listOf(OccurrenceExpiry(key, start, expiredEnd, 600))),
+        )
+        val occurrence = ScheduleOccurrence(key, "Plan 1", start, newEnd)
+        val input = ScheduleMonitorInput(snapshot, listOf(occurrence), zone.instantOf(monday, 660)) { targets }
+
+        val table = ScheduleMonitorTables.build(input, zone, targets)
+
+        assertEquals(listOf(monday), table.schedules.single().stoppedDates)
+        assertEquals(expiredEnd, table.running.single().startEpochMillis)
+        assertEquals(newEnd, table.running.single().endEpochMillis)
+    }
 
     @Test
     fun `given plans and facts then only enabled accepted plans are listed with their stopped dates in the window`() {

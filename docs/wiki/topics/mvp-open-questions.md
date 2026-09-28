@@ -986,10 +986,12 @@ below. This queue retains idea provenance without expanding the original MVP.
     used. The Mac's schedule had zero local terminal markers.
     `inferred`: the iPhone's retained expiry marker explains the difference;
     its database was not inspected. PR #106 retains the reproduction evidence.
-    `open`: distinguish natural expiry from explicit Skip and End early when
-    deciding whether an extended occurrence can restart after sync.
-    Intake did not revise the accepted terminal-marker rule; PR #108 carries
-    the expiry rule revision and legacy reevaluation accepted on 2026-09-28.
+    `user-confirmed` (2026-09-28): SCHEDULE-005 is a separate fix. An extended
+    natural expiry may resume while explicit Skip and End early remain final.
+    Legacy terminal rows are reevaluated under current plans, retaining explicit
+    facts. The [schedule authority](../../product/schedules-decisions.md#legacy-expiry-migration-schedule-005)
+    records this migration and the original-start and rollback bounds.
+    Implementation is under verification.
     `user-confirmed` (2026-09-29): `SCHEDULE-005` belongs to release 1.3.
 
 ## Later platform questions

@@ -6,14 +6,11 @@ internal data class OccurrenceKey(
     val date: ScheduleDate,
 )
 
-/**
- * Grow-only facts: skips and early ends synchronized between devices, and this device's terminal
- * markers for occurrences it saw end, so a clock rollback or an edit never recreates them.
- */
 internal data class ScheduleFacts(
     val skipped: Set<OccurrenceKey> = emptySet(),
     val ended: Set<OccurrenceKey> = emptySet(),
     val terminal: Set<OccurrenceKey> = emptySet(),
+    val expired: List<OccurrenceExpiry> = emptyList(),
 ) {
     fun stops(key: OccurrenceKey): Boolean {
         return key in skipped || key in ended || key in terminal
@@ -28,6 +25,7 @@ internal data class OccurrencePin(
     val key: OccurrenceKey,
     val startEpochMillis: Long,
     val notices: Int = 0,
+    val resumedAfter: Long? = null,
 ) {
     override fun toString(): String {
         return "OccurrencePin(redacted)"
@@ -58,8 +56,14 @@ internal object ScheduleOccurrences {
         pins: List<OccurrencePin> = emptyList(),
     ): List<ScheduleOccurrence> {
         val today = zone.localAt(nowEpochMillis).date
-        val pinned = pins.mapNotNull { pin -> pinnedOccurrence(pin, plans, facts, zone) }
-        val pinnedKeys = pins.map { it.key }.toSet()
+        val expiredPins = facts.expired.filter { expiry ->
+            expiry.canResume(plans, facts, nowEpochMillis, zone)
+        }.map { it.pin() }
+        val effectivePins = pins + expiredPins.filter { expiry -> pins.none { it.key == expiry.key } }
+        val pinned = effectivePins.filter { pin ->
+            pin.resumedAfter == null || nowEpochMillis >= pin.resumedAfter
+        }.mapNotNull { pin -> pinnedOccurrence(pin, plans, facts, zone) }
+        val pinnedKeys = (pins.map { it.key } + facts.expired.map { it.key }).toSet()
         // An occurrence lasts less than a day, so one running now started today or yesterday.
         val derived = plans.filter { it.enabled }.flatMap { plan ->
             listOf(today.plusDays(-1), today).mapNotNull { date -> occurrence(plan, date, facts, zone) }
@@ -100,7 +104,7 @@ internal object ScheduleOccurrences {
      * A pinned occurrence ignores later edits to the days and the start; it ends at the plan's current
      * end time on its date, or the next day when that end is at or before the pinned start's time.
      */
-    private fun pinnedOccurrence(
+    fun pinnedOccurrence(
         pin: OccurrencePin,
         plans: List<SchedulePlan>,
         facts: ScheduleFacts,
@@ -120,7 +124,7 @@ internal object ScheduleOccurrences {
         zone: ScheduleZone,
     ): ScheduleOccurrence? {
         val key = OccurrenceKey(plan.id, date)
-        if (!plan.runsOn(date.weekday) || facts.stops(key)) {
+        if (!plan.runsOn(date.weekday) || facts.stops(key) || facts.expired.any { it.key == key }) {
             return null
         }
         val start = zone.instantOf(date, plan.startMinute)

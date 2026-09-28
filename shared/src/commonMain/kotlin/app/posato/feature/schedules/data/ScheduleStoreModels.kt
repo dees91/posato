@@ -1,5 +1,6 @@
 package app.posato.feature.schedules.data
 
+import app.posato.feature.schedules.domain.OccurrenceExpiry
 import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.OccurrencePin
 import app.posato.feature.schedules.domain.ScheduleDate
@@ -24,10 +25,11 @@ internal data class ScheduleHostUpdate(
     val pins: List<OccurrencePin> = emptyList(),
     val notices: Map<OccurrenceKey, Int> = emptyMap(),
     val finished: Set<OccurrenceKey> = emptySet(),
+    val expired: List<OccurrenceExpiry> = emptyList(),
 ) {
     val isEmpty: Boolean
         get() {
-            return pins.isEmpty() && notices.isEmpty() && finished.isEmpty()
+            return pins.isEmpty() && notices.isEmpty() && finished.isEmpty() && expired.isEmpty()
         }
 
     override fun toString(): String {

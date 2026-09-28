@@ -65,7 +65,8 @@ internal object ScheduleMonitorTables {
         val first = today.plusDays(-1)
         val last = today.plusDays(ScheduleLimits.MAX_FACT_DAYS_AHEAD.toLong())
         val facts = input.snapshot.facts
-        val stopped = (facts.skipped + facts.ended + facts.terminal).filter { it.date in first..last }
+        val expiredStops = facts.expired.map { it.key }
+        val stopped = (facts.skipped + facts.ended + facts.terminal + expiredStops).filter { it.date in first..last }
         val schedules = input.snapshot.runnable.filter { it.enabled }.map { plan ->
             MonitorSchedule(
                 id = plan.id.hex,
@@ -76,7 +77,11 @@ internal object ScheduleMonitorTables {
                 stoppedDates = stopped.filter { it.schedule == plan.id }.map { it.date }.distinct().sorted(),
             )
         }.sortedBy { it.id }
-        val running = input.running.map { MonitorRunning(it.key.schedule.hex, it.key.date, it.startEpochMillis, it.endEpochMillis) }
+        val running = input.running.map { occurrence ->
+            val expiredEnd = facts.expired.firstOrNull { it.key == occurrence.key }?.endEpochMillis
+            val start = maxOf(occurrence.startEpochMillis, expiredEnd ?: occurrence.startEpochMillis)
+            MonitorRunning(occurrence.key.schedule.hex, occurrence.key.date, start, occurrence.endEpochMillis)
+        }
         val selection = targets.scheduleSelection()
         return ScheduleMonitorTable(schedules, running, selection.domains, selection.mappingIds)
     }

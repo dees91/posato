@@ -2,6 +2,7 @@ package app.posato.feature.schedules.host
 
 import app.posato.feature.schedules.data.ScheduleHostUpdate
 import app.posato.feature.schedules.data.ScheduleSnapshot
+import app.posato.feature.schedules.domain.OccurrenceExpiry
 import app.posato.feature.schedules.domain.OccurrencePin
 import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.ScheduleOccurrences
@@ -14,11 +15,6 @@ internal data class HostStep(
 )
 
 internal object ScheduleHostPolicy {
-    /**
-     * Running occurrences with pins as the engine sees them. A running occurrence seen for the first
-     * time is pinned with its start; a pinned one that no longer runs (it ended, was turned off,
-     * deleted, skipped or ended early, or the clock went back) becomes terminal here.
-     */
     fun step(
         snapshot: ScheduleSnapshot,
         nowEpochMillis: Long,
@@ -27,10 +23,23 @@ internal object ScheduleHostPolicy {
         val running = ScheduleOccurrences.active(snapshot.runnable, snapshot.facts, nowEpochMillis, zone, snapshot.pins)
         val runningKeys = running.map { it.key }.toSet()
         val pinnedKeys = snapshot.pins.map { it.key }.toSet()
-        val newPins = running.filter { it.key !in pinnedKeys }.map { OccurrencePin(it.key, it.startEpochMillis) }
-        val finished = pinnedKeys - runningKeys
+        val newPins = running.filter { it.key !in pinnedKeys }.map { occurrence ->
+            snapshot.facts.expired.firstOrNull { it.key == occurrence.key }?.pin()
+                ?: OccurrencePin(occurrence.key, occurrence.startEpochMillis)
+        }
+        val stopped = snapshot.pins.filter { it.key !in runningKeys }
+        val expired = stopped.mapNotNull { pin ->
+            val occurrence = ScheduleOccurrences.pinnedOccurrence(pin, snapshot.runnable, snapshot.facts, zone)
+            val plan = snapshot.runnable.firstOrNull { it.id == pin.key.schedule }
+            if (occurrence != null && plan != null && nowEpochMillis >= occurrence.endEpochMillis) {
+                OccurrenceExpiry(pin.key, pin.startEpochMillis, occurrence.endEpochMillis, plan.endMinute, pin.notices)
+            } else {
+                null
+            }
+        }
+        val finished = stopped.map { it.key }.toSet() - expired.map { it.key }.toSet()
         val pins = snapshot.pins.filter { it.key in runningKeys } + newPins
-        return HostStep(running, ScheduleHostUpdate(pins = newPins, finished = finished), pins)
+        return HostStep(running, ScheduleHostUpdate(pins = newPins, finished = finished, expired = expired), pins)
     }
 
     /**

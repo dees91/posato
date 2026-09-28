@@ -35,6 +35,7 @@ CREATE TABLE local_schedule_pin (
     typeof(start_epoch_millis) = 'integer' AND start_epoch_millis BETWEEN 0 AND 4102444800000
   ),
   notices INTEGER NOT NULL DEFAULT 0 CHECK (typeof(notices) = 'integer' AND notices BETWEEN 0 AND 255),
+  resumed_after INTEGER,
   PRIMARY KEY (schedule_id, year, month, day)
 );
 
@@ -122,7 +123,7 @@ INSERT OR IGNORE INTO local_schedule_terminal(schedule_id, year, month, day)
 VALUES (:scheduleId, :year, :month, :day);
 
 selectPins:
-SELECT schedule_id, year, month, day, start_epoch_millis, notices
+SELECT schedule_id, year, month, day, start_epoch_millis, notices, resumed_after
 FROM local_schedule_pin;
 
 upsertPin:
@@ -131,11 +132,20 @@ VALUES (:scheduleId, :year, :month, :day, :startEpochMillis, :notices);
 
 -- A key that already ended here is never pinned again, even by an evaluation that read it earlier.
 insertPinIfAbsent:
-INSERT OR IGNORE INTO local_schedule_pin(schedule_id, year, month, day, start_epoch_millis, notices)
-SELECT :scheduleId, :year, :month, :day, :startEpochMillis, 0
+INSERT OR IGNORE INTO local_schedule_pin(schedule_id, year, month, day, start_epoch_millis, notices, resumed_after)
+SELECT :scheduleId, :year, :month, :day, :startEpochMillis, :notices, :resumedAfter
 WHERE NOT EXISTS (
   SELECT 1 FROM local_schedule_terminal AS terminal
   WHERE terminal.schedule_id = :scheduleId AND terminal.year = :year AND terminal.month = :month AND terminal.day = :day
+) AND (
+  (:resumedAfter IS NULL AND NOT EXISTS (
+    SELECT 1 FROM local_schedule_expiry AS expiry
+    WHERE expiry.schedule_id = :scheduleId AND expiry.year = :year AND expiry.month = :month AND expiry.day = :day
+  )) OR EXISTS (
+    SELECT 1 FROM local_schedule_expiry AS expiry
+    WHERE expiry.schedule_id = :scheduleId AND expiry.year = :year AND expiry.month = :month AND expiry.day = :day
+      AND expiry.end_epoch_millis = :resumedAfter
+  )
 );
 
 addPinNotices:

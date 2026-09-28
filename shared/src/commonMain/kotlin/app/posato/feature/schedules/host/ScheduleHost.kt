@@ -127,7 +127,13 @@ internal class ScheduleHost(
         if (!step.update.isEmpty) {
             store.recordHost(step.update)
         }
-        ports.publish(ScheduleMonitorInput(snapshot, step.running, now, ports.targets))
+        val publishedFacts = snapshot.facts.copy(
+            terminal = snapshot.facts.terminal + step.update.finished,
+            expired = (snapshot.facts.expired + step.update.expired).groupBy { it.key }.values.map { entries ->
+                entries.maxBy { it.endEpochMillis }
+            },
+        )
+        ports.publish(ScheduleMonitorInput(snapshot.copy(facts = publishedFacts, pins = step.pins), step.running, now, ports.targets))
         if (step.running.isEmpty()) {
             // Idempotent: it clears only a held claim, and retries a clear that failed.
             ports.claims.releaseSchedule()

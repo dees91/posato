@@ -152,7 +152,7 @@ class ScheduleHostTest {
 
             assertNull(fixture.host.pause.value)
             assertEquals(listOf("grant apply until ${at(10)}", "clear"), fixture.helper.calls)
-            assertEquals(setOf(mondayKey), fixture.snapshot().facts.terminal)
+            assertEquals(listOf(mondayKey), fixture.snapshot().facts.expired.map { it.key })
             assertTrue(fixture.snapshot().pins.isEmpty())
         }
     }

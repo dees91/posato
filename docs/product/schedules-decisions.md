@@ -99,12 +99,25 @@ provenance label.
 - **Local persistence.** A device remembers its local skip and end facts
   across restart and relaunch before the first sync (the product scope
   requirement), in the same local transaction as the operation it authors.
-  It also keeps a local terminal marker for every occurrence that ended or
-  expired, so a clock rollback or a later edit never recreates it.
+  It keeps permanent local markers for stops other than natural expiry.
+  Natural expiry retains the original start, observed end, and end-time value.
+  An edit that moves the computed end later may resume that occurrence when
+  the current time is at or after its observed end and before its new end.
+  The original 24-hour cap still applies. Unchanged plans, repeated sync,
+  and clock rollback alone do not revive it. This revision is
+  `user-confirmed` (2026-09-28, SCHEDULE-005).
 - **Dates.** A skip or end names a date at most 400 days ahead.
 - **Editing a schedule** that is running ends nothing by itself. The running
   occurrence follows the edited end time, which may extend it. Turning a schedule off or deleting
   it ends its running occurrence at once.
+
+### Legacy expiry migration (SCHEDULE-005)
+
+`user-confirmed` (2026-09-28): older local terminal markers do not record a
+reason or time bounds. On upgrade, discard those legacy markers and evaluate
+current plans. An interval covering now may run. Preserve all explicit Skip
+and End early facts, which still prevent that occurrence from running. New
+permanent stops retain their existing behavior after this one-time migration.
 
 ### Synchronized operations (ADR 0006 amendment)
 

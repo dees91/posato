@@ -26,6 +26,7 @@ class SqlScheduleMigrationTest {
             "local_schedule_fact",
             "local_schedule_terminal",
             "local_schedule_pin",
+            "local_schedule_expiry",
             "sync_schedule_intent",
             "sync_schedule_seed",
         ).forEach { table -> seeding.executeSql("DROP TABLE $table") }
