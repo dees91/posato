@@ -8,4 +8,4 @@ Menu bar: Posato stays in the menu bar when you close its window.
 
 Pause notices: Posato can tell you when a pause ends. You can turn this off in About Posato.
 
-If you use Posato on more than one device, update all of them. Once a device saves a schedule, devices still on Posato 1.1 stop syncing until they update.
+If you use Posato on more than one device, update all of them. Once a device saves a schedule, devices on an earlier version stop syncing until they update.

@@ -6,16 +6,17 @@
 - **Implementer:** Claude
 - **Reviewer:** independent plan review before step 1
 - **Branch:** `docs/release-004-plan`
-- **Updated:** 2026-09-27
+- **Updated:** 2026-09-28
 
 ## Plan
 
 Revision 2 after the plan review. The `RELEASE-003` route, with the 1.2 differences marked.
 
-1. Plan review (done, revision 1 `changes-required`); revision 2 is re-reviewed before step 2.
-2. **Tooling, not in R:** `posato-provisioning store withdraw --version <v>` cancels a waiting App Review submission, and `store prepare --rename-from <v>` renames the only unreleased version record, because App Store Connect holds one unreleased version at a time. Tests; no live call yet.
+1. Plan review: revision 1 `changes-required`, revision 2 approved on the condition folded in here as revision 3 (early live iOS store steps, earlier-version wording, update failure criteria).
+2. **Tooling, not in R, with its own Standard review:** `posato-provisioning store withdraw --version <v>` cancels a waiting App Review submission and waits until the version is editable again; `store prepare --rename-from <v>` renames the version record only when it is the one unreleased version, and a rerun after a rename changes nothing. Tests; the first live calls come in step 4b.
 3. **Release commit R:** `MARKETING_VERSION = 1.2.0` and the signed-feed notes file `docs/releases/1.2.0-appcast-notes.txt`, worded to stay true whatever the step 5 gates show (no schedule-sharing or started-elsewhere claims). README, limits, and site wording come from `#103`, not R. R is pinned by its full hash.
-4. **Candidates from a clean clone of R:** clean-clone `quality`; `generateMacOsUpdateFeed` on the release channel with build 27 and `-PposatoMacOsPreviousBuildNumber=26` (no macOS build at or above 27 exists; 1000 and 1001 were unkeyed `MACOS-013` test builds), one bold Keychain request to the maintainer for the release key (and the Developer ID key if macOS asks); the App Store archive and upload as build 5 (`store status`: highest is 4), `VALID` in TestFlight.
+4. **Candidates from a clean clone of R:** clean-clone `quality`; `generateMacOsUpdateFeed` on the release channel with build 27 and `-PposatoMacOsPreviousBuildNumber=26` (no macOS build at or above 27 was recorded; the `MACOS-013` update-gate builds 1000 and 1001 name no key in their record, but they ran only in destroyed VM clones, so no install holds them and the floor stays 26), one bold Keychain request to the maintainer for the release key (and the Developer ID key if macOS asks); the App Store archive and upload as build 5 (`store status`: highest is 4), `VALID` in TestFlight.
+   4b. **iOS store record, before the sitting:** once build 5 is `VALID`, `store withdraw --version 1.1.0`, then `store prepare --version 1.2.0 --rename-from 1.1.0 --build 5 --whats-new docs/store/en-US/whats-new-1.2.0.txt --description docs/store/en-US/description.txt --release after-approval --screenshots docs/store/en-US/screenshots`, then `store status --version 1.2.0` shows everything `COMPLETE`. Nothing is published; App Store devices already run 1.0.0.
 5. **Unattended verification on the notarized DMG** (`vm install --dmg`):
    - macOS 26 `primary` fresh: unified setup, a manual pause, a schedule 3 minutes ahead starting and ending on its own with the window closed, pause notices, `observe`.
    - macOS 15 `legacy` fresh: the same matrix plus a login launch (`vm shutdown`, `vm boot`); any dialog the driver cannot answer is a blocker, not a pass.
@@ -28,12 +29,19 @@ Revision 2 after the plan review. The `RELEASE-003` route, with the 1.2 differen
    1. Merge `#103`, rebase `#96` on it, merge `#96`.
    2. Tag `v1.2.0` on the final `main` head only when `git diff --name-only R HEAD` lists nothing outside `docs/`, `website/`, `video/`, `.github/`, `README.md`, `PRIVACY.md`, `tools/posato-control/`, and `tools/posato-provisioning/`; `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, and `Version.xcconfig` must match R.
    3. Draft release with exactly the three assets, byte comparison with step 4, publication with the release notes from the `DOCS-003` record (or its fallback copy).
-   4. `releases/latest/download/appcast.xml` resolves and verifies. **In-app update:** on a `primary` clone prepared before the go with 1.1.0 set up (helper, websites, linked workspace, update consent answered), About, Check for Updates, install, `launch --adopt`, state preserved, `observe`. **Rollback** if it fails: `gh release edit v1.1.0 --latest`, so the stable feed offers build 26 again, and hold iOS.
-   5. iOS: `store withdraw --version 1.1.0`, then `store prepare --version 1.2.0 --rename-from 1.1.0 --build 5 --whats-new docs/store/en-US/whats-new-1.2.0.txt --description docs/store/en-US/description.txt --release after-approval --screenshots docs/store/en-US/screenshots`, then `store submit --version 1.2.0`.
+   4. `releases/latest/download/appcast.xml` resolves and verifies. **In-app update:** on a `primary` clone prepared before the go with 1.1.0 set up (helper, websites, linked workspace, update consent answered), About, Check for Updates, install, `launch --adopt`, state preserved, `observe`. It fails when the update is not offered, the install errors, websites, applications, or the workspace are lost, the helper is not ready, or `observe` does not report blocked. **Rollback** then: `gh release edit v1.1.0 --latest`, so the stable feed offers build 26 again, and hold iOS; a fix build needs `-PposatoMacOsPreviousBuildNumber=27` or higher, because the stable feed reports 26 again. The site from `#103` stays live, which is acceptable because the 1.2.0 DMG stays public.
+   5. iOS: `store submit --version 1.2.0` (the record was prepared in step 4b).
    6. Site deploy check, Projects Done, milestone `1.2.0` closed.
 8. A follow-up PR records the App Review outcome.
 
 **Maintainer steps:** the Keychain prompt in step 4, the publication go, and nothing else unless a dialog cannot be driven.
+
+**Accepted without a run:** the next release installing over a 1.2 app kept in the menu bar with its login item and grant was exercised only on development builds 1000 to 1001 (`MACOS-013`); a candidate-channel A to B run on R is not planned.
+
+## High-risk plan review
+
+- **Revision 1:** `changes-required` with eight Required findings: no pre-publication mechanism for the in-app update from 1.1.0; feed notes signed before the copy gates; Mac and iOS release order; tag rule and merge order; `--description` availability and the iOS build number; macOS 15 coverage; iOS 18; the real 1.1.0 upgrade.
+- **Revision 2:** approved on the condition that the new store commands run live well before the sitting (N1); earlier-version wording (N2) and update failure criteria (N3) recommended. All three are folded into revision 3 above.
 
 ## Draft release notes
 
