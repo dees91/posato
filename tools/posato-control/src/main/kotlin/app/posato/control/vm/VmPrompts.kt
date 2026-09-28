@@ -119,8 +119,13 @@ class VmPrompts(
         timeoutMs: Long
     ) {
         val screen = guestScreen(context, line)
-        val source = screen.waitFor(from, timeoutMs, exact = true).sortedBy { it.y }.getOrNull(fromIndex) ?: throw notOnScreen(from)
-        val target = screen.waitFor(to, timeoutMs, exact = true).sortedBy { it.y }.getOrNull(toIndex) ?: throw notOnScreen(to)
+        val (source, target) = if (fromIndex == 0 && toIndex == 0) {
+            screen.waitForDrag(from, to, timeoutMs)
+        } else {
+            val source = screen.waitFor(from, timeoutMs, exact = true).sortedBy { it.y }.getOrNull(fromIndex) ?: throw notOnScreen(from)
+            val target = screen.waitFor(to, timeoutMs, exact = true).sortedBy { it.y }.getOrNull(toIndex) ?: throw notOnScreen(to)
+            source to target
+        }
         screen.session { client -> client.drag(source.centerX, source.centerY, target.centerX, target.centerY) }
     }
 

@@ -32,6 +32,50 @@ internal fun RecognizedLine.matches(
     exact: Boolean
 ): Boolean = if (exact) this.text.trim() == text else this.text.contains(text, ignoreCase = true)
 
+/** Whether this line reads as [text] with at most [slack] recognition errors, for a label recognition sometimes misreads. */
+internal fun RecognizedLine.resembles(
+    text: String,
+    slack: Int = RECOGNITION_SLACK,
+): Boolean = editDistance(this.text.trim(), text) <= slack
+
+/**
+ * The endpoints of a drag between two labels in one window: the target read as [to], then the [from] label on the
+ * target's row nearest to it. A window title or a desktop icon can repeat the source's name above the window, so the
+ * topmost match is not necessarily the icon beside the target.
+ */
+internal fun dragEndpoints(
+    lines: List<RecognizedLine>,
+    from: String,
+    to: String,
+): Pair<RecognizedLine, RecognizedLine>? {
+    val target = lines.filter { it.matches(to, exact = true) }.minByOrNull { it.y }
+        ?: lines.filter { it.resembles(to) }.minByOrNull { it.y }
+        ?: return null
+    val source = lines.filter { it !== target && it.matches(from, exact = true) }
+        .minWithOrNull(compareBy<RecognizedLine>({ kotlin.math.abs(it.centerY - target.centerY) }, { kotlin.math.abs(it.centerX - target.centerX) }))
+        ?: return null
+    return source to target
+}
+
+private fun editDistance(
+    left: String,
+    right: String,
+): Int {
+    var previous = IntArray(right.length + 1) { it }
+    for (i in 1..left.length) {
+        val current = IntArray(right.length + 1)
+        current[0] = i
+        for (j in 1..right.length) {
+            val substitution = previous[j - 1] + if (left[i - 1] == right[j - 1]) 0 else 1
+            current[j] = minOf(previous[j] + 1, current[j - 1] + 1, substitution)
+        }
+        previous = current
+    }
+    return previous[right.length]
+}
+
+private const val RECOGNITION_SLACK = 2
+
 internal fun parseRecognizedLines(json: String): List<RecognizedLine> =
     ControlJson.lenient.decodeFromString(ListSerializer(RecognizedLine.serializer()), json)
 
@@ -83,6 +127,25 @@ class GuestScreen(
                 throw ControlException(
                     ErrorCode.WAIT_TIMEOUT,
                     "No text '$text' appeared on the guest screen within ${timeoutMs / MILLIS_PER_SECOND} s.",
+                )
+            }
+            Thread.sleep(POLL_MS)
+        }
+    }
+
+    /** Polls until both drag labels are on screen and returns the source beside the target (see [dragEndpoints]). */
+    fun waitForDrag(
+        from: String,
+        to: String,
+        timeoutMs: Long,
+    ): Pair<RecognizedLine, RecognizedLine> {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (true) {
+            dragEndpoints(read(), from, to)?.let { return it }
+            if (System.currentTimeMillis() >= deadline) {
+                throw ControlException(
+                    ErrorCode.WAIT_TIMEOUT,
+                    "'$from' and '$to' did not appear together on the guest screen within ${timeoutMs / MILLIS_PER_SECOND} s.",
                 )
             }
             Thread.sleep(POLL_MS)
