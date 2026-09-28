@@ -26,7 +26,8 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
                 store: ManagedSettingsStore(named: ScheduleMonitor.storeName),
                 sessionStore: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
                 files: ScheduleMonitorFileStore.live(),
-                poster: UserNotificationSchedulePoster()
+                poster: UserNotificationSchedulePoster(),
+                caps: DeviceActivityCapRegistrar()
             )
             return
         }

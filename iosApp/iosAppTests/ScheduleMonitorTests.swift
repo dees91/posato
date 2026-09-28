@@ -447,6 +447,67 @@ final class ScheduleMonitorTests: XCTestCase {
         )
         XCTAssertTrue(ordinary.registered.isEmpty)
     }
+
+    /// Warsaw, 24 to 25 October 2026: B runs Saturday 04:00 to Sunday 03:15 (cap Sunday 03:00 by the
+    /// 24-hour rule), A Saturday 05:00 to Sunday 04:45 (cap 04:00). Both caps share one activity.
+    private func overlappingFallBack(bFirst: Bool) -> (file: ScheduleMonitorFile, aId: String, bCap: Date, aCap: Date) {
+        let aId = "000000000000400080000000000000a2"
+        let a = ScheduleMonitorFile.Schedule(
+            id: aId, weekdays: 1 << 5, startMinute: 5 * 60, endMinute: 4 * 60 + 45, stoppedDates: [], startTitle: "", startBody: ""
+        )
+        let b = ScheduleMonitorFile.Schedule(
+            id: focusId, weekdays: 1 << 5, startMinute: 4 * 60, endMinute: 3 * 60 + 15, stoppedDates: [], startTitle: "", startBody: ""
+        )
+        let day = 24 * 60 * 60.0
+        return (file(bFirst ? [b, a] : [a, b]), aId, local(2026, 10, 24, 4).addingTimeInterval(day), local(2026, 10, 24, 5).addingTimeInterval(day))
+    }
+
+    func testOverlappingFallBackOccurrencesChainTheirCapsInEitherTableOrder() throws {
+        for bFirst in [true, false] {
+            let setup = overlappingFallBack(bFirst: bFirst)
+            let files = try isolatedFiles()
+            try files.writeTable(setup.file)
+            let store = FakeScheduleShieldStore()
+            let caps = RecordingCapRegistrar()
+
+            ScheduleMonitorEvents.handleIntervalStart(
+                activity: ScheduleMonitor.activityName(scheduleId: setup.aId), store: store, files: files,
+                poster: FakeSchedulePoster(), caps: caps, now: { self.local(2026, 10, 24, 5) }, calendar: calendar
+            )
+            XCTAssertEqual(caps.registered.last.flatMap { calendar.date(from: $0.intervalEnd) }, setup.bCap, "bFirst \(bFirst)")
+
+            // B's cap passes while A still runs: the shields stay and A's cap is registered next.
+            ScheduleMonitorEvents.handleIntervalEnd(
+                activity: ScheduleMonitor.capActivity, store: store, sessionStore: FakeScheduleShieldStore(), files: files,
+                poster: FakeSchedulePoster(), caps: caps, now: { setup.bCap }, calendar: calendar
+            )
+            XCTAssertNotNil(store.applied, "bFirst \(bFirst)")
+            XCTAssertEqual(caps.registered.last.flatMap { calendar.date(from: $0.intervalEnd) }, setup.aCap, "bFirst \(bFirst)")
+
+            // A's cap ends the pause and registers nothing more.
+            let before = caps.registered.count
+            ScheduleMonitorEvents.handleIntervalEnd(
+                activity: ScheduleMonitor.capActivity, store: store, sessionStore: FakeScheduleShieldStore(), files: files,
+                poster: FakeSchedulePoster(), caps: caps, now: { setup.aCap }, calendar: calendar
+            )
+            XCTAssertNil(store.applied, "bFirst \(bFirst)")
+            XCTAssertEqual(caps.registered.count, before, "bFirst \(bFirst)")
+        }
+    }
+
+    func testThePublisherKeepsTheNearestCapOfOverlappingOccurrencesInEitherOrder() throws {
+        for bFirst in [true, false] {
+            let setup = overlappingFallBack(bFirst: bFirst)
+            let publisher = IosScheduleMonitorPublisher(
+                files: try isolatedFiles(), center: { FakeScheduleCenter() }, authorized: { true }, isCapable: true,
+                storedMappings: { [] }, calendar: { self.calendar }, now: { self.local(2026, 10, 24, 12) }
+            )
+
+            let cap = try XCTUnwrap(publisher.cap(for: setup.file))
+
+            XCTAssertEqual(calendar.date(from: cap.intervalEnd), setup.bCap, "bFirst \(bFirst)")
+        }
+    }
 }
 
 final class RecordingCapRegistrar: ScheduleCapRegistrar {

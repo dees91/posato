@@ -28,15 +28,7 @@ enum ScheduleMonitorEvents {
         let domains = PosatoWebDomains.domains(from: file.domains)
         guard !domains.isEmpty || !applications.isEmpty else { return }
         store.applySchedule(domains: domains, applications: applications)
-        // A fall-back occurrence would outlast 24 hours by the wall clock; its start registers the end at the cap.
-        for occurrence in running {
-            guard let caps,
-                  let schedule = file.schedules.first(where: { $0.id == occurrence.scheduleId }),
-                  let cap = ScheduleMonitorRule.overrunCap(schedule, on: calendar.startOfDay(for: occurrence.start), calendar: calendar),
-                  cap > time
-            else { continue }
-            caps.register(cap: ScheduleMonitorRule.capSchedule(endingAt: cap, calendar: calendar))
-        }
+        registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
         // A manual session ending inside this pause must not say Pause over early; the end of the
         // combined pause is announced here instead.
         if let manualEnd = file.notices.manualSessionEnd,
@@ -69,6 +61,7 @@ enum ScheduleMonitorEvents {
         sessionStore: ScheduleShieldStore,
         files: ScheduleMonitorFileStore?,
         poster: ScheduleNoticePoster,
+        caps: ScheduleCapRegistrar? = nil,
         now: () -> Date = Date.init,
         calendar: Calendar = ScheduleMonitor.calendar
     ) {
@@ -84,12 +77,38 @@ enum ScheduleMonitorEvents {
         let ownStillRuns = running.contains { $0.scheduleId == own && $0.end > time.addingTimeInterval(ScheduleMonitor.earlyCallbackMargin) }
         // Another occurrence running now keeps the shields; one that starts later reapplies them itself.
         let othersRun = running.contains { $0.scheduleId != own }
-        guard !ownStillRuns, !othersRun else { return }
+        guard !ownStillRuns, !othersRun else {
+            // The one cap activity may have just fired for an overlapping occurrence; chain the next cap.
+            registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
+            return
+        }
         let held = store.holdsAnyShield
         store.clearSchedule()
         let sessionEnded = (file.notices.manualSessionEnd ?? 0) <= Int64(time.timeIntervalSince1970)
         if held, file.notices.enabled, sessionEnded, !sessionStore.holdsAnyShield {
             poster.post(identifier: ScheduleMonitor.endNoticeIdentifier, title: file.notices.endTitle, body: file.notices.endBody)
+        }
+    }
+
+    /// Registers the nearest 24-hour cap among the running fall-back occurrences. Every cap shares one
+    /// activity name, and a registration replaces the previous one, so only the nearest is kept; its end
+    /// callback registers the next while another occurrence still runs.
+    private static func registerNextCap(
+        running: [ScheduleMonitorOccurrence],
+        file: ScheduleMonitorFile,
+        caps: ScheduleCapRegistrar?,
+        at time: Date,
+        calendar: Calendar
+    ) {
+        guard let caps else { return }
+        let next = running.compactMap { occurrence -> Date? in
+            guard let schedule = file.schedules.first(where: { $0.id == occurrence.scheduleId }) else { return nil }
+            return ScheduleMonitorRule.overrunCap(schedule, on: calendar.startOfDay(for: occurrence.start), calendar: calendar)
+        }
+        .filter { $0 > time.addingTimeInterval(ScheduleMonitor.earlyCallbackMargin) }
+        .min()
+        if let next {
+            caps.register(cap: ScheduleMonitorRule.capSchedule(endingAt: next, calendar: calendar))
         }
     }
 }

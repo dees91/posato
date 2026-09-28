@@ -390,8 +390,9 @@ struct UserNotificationSchedulePoster: ScheduleNoticePoster {
 }
 
 /// Registers the one-shot end at an occurrence's 24-hour cap. The extension
-/// registers it when a fall-back occurrence starts, so the cap holds even when
-/// Posato has not been opened for weeks.
+/// registers the nearest one when a fall-back occurrence starts and the next one
+/// when a cap passes while another still runs, so the caps hold even when Posato
+/// has not been opened for weeks.
 protocol ScheduleCapRegistrar {
     func register(cap: DeviceActivitySchedule)
 }
