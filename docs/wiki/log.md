@@ -2095,3 +2095,12 @@ to scope, feasibility, or delivery.
 - `observed`: a 1.1 device stops syncing on an unknown operation kind, so
   every linked device must update to 1.2 once schedules exist.
 
+
+## [2026-09-27] implementation | SCHEDULE-002 slice 2: the schedule occurrence engine
+
+- `observed`: the JVM caches its default time zone at first use
+  (`user.timezone`), so a long-running Mac process ignores a later system
+  time-zone change; the schedule zone reads `/etc/localtime` on each call.
+- `observed`: `java.time` shifts a skipped wall time forward by the gap length
+  (02:30 becomes 03:30); the schedule rule starts at the change itself, so the
+  port resolves gaps through the zone transition.
