@@ -1,16 +1,16 @@
 # Execution: `RELEASE-004`
 
 - **Brief:** [Verify the 1.2.0 candidates and publish Posato 1.2](../specifications/release-004-release-1-2.md)
-- **Status:** `planned` (waits for the 1.2 rows to merge)
+- **Status:** `in progress`: candidates verified, waiting for the publication go
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
-- **Reviewer:** independent plan review before step 1
+- **Reviewer:** independent plan review (revisions 1 to 3), Standard review of the tooling, and the completed-change review of step 6
 - **Branch:** `docs/release-004-plan`
 - **Updated:** 2026-09-28
 
 ## Plan
 
-Revision 2 after the plan review. The `RELEASE-003` route, with the 1.2 differences marked.
+Revision 3 after the plan reviews. The `RELEASE-003` route, with the 1.2 differences marked.
 
 1. Plan review: revision 1 `changes-required`, revision 2 approved on the condition folded in here as revision 3 (early live iOS store steps, earlier-version wording, update failure criteria).
 2. **Tooling, not in R, with its own Standard review:** `posato-provisioning store withdraw --version <v>` cancels a waiting App Review submission and waits until the version is editable again; `store prepare --rename-from <v>` renames the version record only when it is the one unreleased version, and a rerun after a rename changes nothing. Tests; the first live calls come in step 4b.
@@ -26,10 +26,10 @@ Revision 2 after the plan review. The `RELEASE-003` route, with the 1.2 differen
    - Test iPhone on iOS 26 (development build of R): core flow and a scheduled start. Mac to iPhone sync on release builds is not driven (Production CloudKit versus a development-signed iPhone); no CloudKit schema changed since `v1.1.0`.
 6. Completed-change review of R, the candidates, and the evidence.
 7. **Publication sitting (maintainer go),** in this order:
-   1. Merge `#103`, rebase `#96` on it, merge `#96`.
+   1. Merge `#103` (squash), then `git rebase --onto origin/main <#103 head>` for `#96`, set `PRIVACY.md`'s effective date to the publication date, and merge `#96`. R stays reachable through the tag's comparison note and this record even after the branch is rewritten.
    2. Tag `v1.2.0` on the final `main` head only when `git diff --name-only R HEAD` lists nothing outside `docs/`, `website/`, `video/`, `.github/`, `README.md`, `PRIVACY.md`, `tools/posato-control/`, and `tools/posato-provisioning/`; `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, and `Version.xcconfig` must match R.
    3. Draft release with exactly the three assets, byte comparison with step 4, publication with the release notes from the `DOCS-003` record (or its fallback copy).
-   4. `releases/latest/download/appcast.xml` resolves and verifies. **In-app update:** on a `primary` clone prepared before the go with 1.1.0 set up (helper, websites, linked workspace, update consent answered), About, Check for Updates, install, `launch --adopt`, state preserved, `observe`. It fails when the update is not offered, the install errors, websites, applications, or the workspace are lost, the helper is not ready, or `observe` does not report blocked. **Rollback** then: `gh release edit v1.1.0 --latest`, so the stable feed offers build 26 again, and hold iOS; a fix build needs `-PposatoMacOsPreviousBuildNumber=27` or higher, because the stable feed reports 26 again. The site from `#103` stays live, which is acceptable because the 1.2.0 DMG stays public.
+   4. `releases/latest/download/appcast.xml` resolves and verifies. **In-app update:** on a `primary` clone prepared before the go with 1.1.0 set up (helper, websites, linked workspace, update consent answered), About, Check for Updates, install, `launch --adopt`, state preserved, `observe`. It fails when the update is not offered, the install errors, websites, applications, or the workspace are lost, the helper is not ready, or `observe` does not report blocked. **Rollback** then: `gh release edit v1.1.0 --latest`, so the stable feed offers build 26 again, and hold iOS; a fix build needs `-PposatoMacOsPreviousBuildNumber=27` or higher, because the stable feed reports 26 again. The `#103` pages would then promise 1.2 while `releases/latest` serves 1.1.0, so the rollback also reverts the `#103` squash commit on `main` until a fixed 1.2 is published.
    5. iOS: `store submit --version 1.2.0` (the record was prepared in step 4b).
    6. Site deploy check, Projects Done, milestone `1.2.0` closed.
 8. A follow-up PR records the App Review outcome.
@@ -37,6 +37,14 @@ Revision 2 after the plan review. The `RELEASE-003` route, with the 1.2 differen
 **Maintainer steps:** the Keychain prompt in step 4, the publication go, and nothing else unless a dialog cannot be driven.
 
 **Accepted without a run:** the next release installing over a 1.2 app kept in the menu bar with its login item and grant was exercised only on development builds 1000 to 1001 (`MACOS-013`); a candidate-channel A to B run on R is not planned.
+
+### TB-08 and T-13 review of the release artifacts
+
+- R's product sources equal `main` `c988670`; only documentation, the website, the media, the store assets, the provisioning tool, and `Version.xcconfig` differ; no dependency, notice, or entitlement file changed since `v1.1.0`.
+- The DMG's SHA-256 matches `SHA256SUMS`; Gatekeeper accepts it as Notarized Developer ID and its ticket is stapled; every nested item is signed with the hardened runtime and passes a strict deep verification.
+- `appcast.xml` holds one item (build 27, 1.2.0, macOS 15.0, arm64, the `v1.2.0` enclosure with the DMG's length, no release-notes link, no deltas); its notes equal `docs/releases/1.2.0-appcast-notes.txt` at R; the feed and archive EdDSA signatures verify against the application's `SUPublicEDKey`, and the application reads only the stable feed.
+- Entitlements equal 1.1.0's: the app has JIT only, the helper and Sparkle none, the sync companion CloudKit Production and its keychain group. The IPA carries Apple Distribution, Family Controls, the app group, CloudKit Production, and no `get-task-allow`.
+- The release key stayed in the maintainer's Keychain; the signing prompt was answered on the Mac.
 
 ## High-risk plan review
 
@@ -71,6 +79,8 @@ App Store "What's New" (iPhone):
 - **Driver (not in R):** `vm install` dragged the topmost "Posato" label, which can be the image window's title or the desktop volume icon, and required an exact read of "/Applications", which recognition misread as "/Appligations"; it now takes the icon beside the link and tolerates two recognition errors (`6c35325`, tested). The DMG itself has the same layout as 1.1.0's.
 
 ### Verification on the candidates (2026-09-28)
+
+Run directories are under the release worktree's ignored `build/verification/runs/`: candidate installs `20260928-103316-491f` and `20260928-103355-45df` (the linked pair), `20260928-113548-b5f8` and `20260928-114014-b4be` (1.1.0), `20260928-121841-8d72` and `20260928-123349-aaba` (the replacements with 1.2.0), `20260928-123724-8bb4` (macOS 15), `20260928-130227-628f` (the 1.1.0 installation kept for the update at publication); the other runs of the day between 10:33 and 13:00 are the driven flows in the table; the iPhone runs are `20260928-105619-7184` to `20260928-112314-74ef`.
 
 | Check | Target | Result |
 | --- | --- | --- |
