@@ -991,7 +991,10 @@ below. This queue retains idea provenance without expanding the original MVP.
     Legacy terminal rows are reevaluated under current plans, retaining explicit
     facts. The [schedule authority](../../product/schedules-decisions.md#legacy-expiry-migration-schedule-005)
     records this migration and the original-start and rollback bounds.
-    Implementation is under verification.
+    `observed`: the repaired build resumes both migrated and newly expired
+    occurrences on test iPhone and Tart after remote extensions. Relaunch and
+    iPhone background expiry pass; a later End early still wins over another
+    extension. Aggregate quality and independent review passed.
     `user-confirmed` (2026-09-29): `SCHEDULE-005` belongs to release 1.3.
 
 ## Later platform questions

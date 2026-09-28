@@ -2223,6 +2223,17 @@ to scope, feasibility, or delivery.
   quality and signed-package verification passed. The fix belongs to release
   1.3.
 
+## [2026-09-28] correction | Resume extended natural schedule expiries
+
+- `user-confirmed`: a later end-time edit may resume natural expiry, with the
+  original start and cap retained. Legacy terminal rows are reevaluated under
+  current plans; explicit Skip and End early facts remain final.
+- `observed`: SCHEDULE-005 separates expiry from permanent stops and preserves
+  its lower bound in shared evaluation and the native iOS monitor. Controlled
+  rollback and stale-write regressions pass. Test iPhone and Tart resume after
+  synchronization; restart, background expiry, and End early controls pass.
+  Full quality and independent review passed. The fix belongs to release 1.3.
+
 ## [2026-09-29] planning | Release 1.3 composition and waves
 
 - `user-confirmed`: release 1.3 takes the prepared `MACOS-022` and
