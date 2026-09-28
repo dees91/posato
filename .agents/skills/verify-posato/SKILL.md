@@ -55,7 +55,10 @@ never from the Apple Developer portal. With the one-time setup in
   `background` (helper approval in Login Items), `toggle --row <text>` (privacy
   panes), `picker-bypass` (macOS 26 after screen captures), `gatekeeper`,
   `account-password`, `mac-password`, and `device-passcode` (iCloud
-  recovery). Read an unexpected dialog with `$PC vm text --line <line>` and
+  recovery). `$PC vm dialogs --line <line>` names each open system dialog
+  by its owning process; check it before answering `admin`, because a
+  Background Items notice also says "allow this". Read an unexpected dialog's
+  text with `$PC vm text --line <line>` and
   wait for one with `vm wait-text --text <text>`; take a `vm screenshot` only
   as evidence or when the layout matters. Run the prompt right after the step
   that raises it; a scenario
@@ -71,7 +74,13 @@ never from the Apple Developer portal. With the one-time setup in
   instead of using the development package; it installs by Finder drag and
   drop, answers Gatekeeper, and leaves only the candidate registered. After an
   update relaunches the app, `$PC launch -t desktop --vm <line> --adopt`
-  tracks it. See the driver README, "Notarized candidates".
+  tracks it. A release build asks "Check for updates automatically?" in a
+  modal alert after setup and on the first open of a replaced install; answer
+  it with `$PC update-consent -t desktop --vm <line> --answer allow|deny`
+  before any other tap. `vm create` resumes a paused iCloud Keychain in its
+  own clone, but a later clone can pause it again: run `vm icloud --resume`
+  on every clone once all have booted. The in-app update recipe is
+  `features/updates.md`; see also the driver README, "Notarized candidates".
 - **The test iPhone.** `-t device` as before. Screen Time consent is
   `fixtures/scenarios/screen-time-consent.json` in one run; the application
   picker is in the app's own accessibility tree.

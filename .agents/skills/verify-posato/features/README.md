@@ -97,6 +97,8 @@ handles, required state, commands, and observable proof.
   skip prelude every fresh launch needs, the upgrade row, and the degraded
   iCloud outcome.
 
+- [Updates on Mac](./updates.md) covers the update-consent alert, preparing
+  the previous release in a clone, and the in-app update to the current one.
 - [About Posato and licenses](./licenses.md) covers the installed version,
   three offline legal documents, full-text
   scrolling, and return to the preceding primary destination on both hosts.

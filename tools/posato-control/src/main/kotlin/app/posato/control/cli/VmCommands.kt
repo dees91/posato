@@ -11,6 +11,7 @@ import app.posato.control.vm.GuestICloud
 import app.posato.control.vm.GuestNotificationPrompt
 import app.posato.control.vm.GuestPrompt
 import app.posato.control.vm.GuestScroll
+import app.posato.control.vm.ICloudKeychainState
 import app.posato.control.vm.VmLifecycle
 import app.posato.control.vm.VmLine
 import app.posato.control.vm.VmPrompts
@@ -45,9 +46,13 @@ class VmCreateCommand : ControlCommand("create", "Clone the line's golden VM, bo
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
         val created = VmLifecycle(session.context).create(line)
-        // A paused iCloud Keychain only shows much later as a workspace key that never arrives, so report it now.
-        val iCloud = runCatching { GuestICloud(session.context).check(line, ICLOUD_CHECK_TIMEOUT_MS).id }.getOrDefault("unknown")
-        return JsonObject(created + ("iCloudKeychain" to JsonPrimitive(iCloud)))
+        // A paused iCloud Keychain only shows much later as a workspace key that never arrives, so repair it now. A
+        // later clone signing in can pause this one again, so verification resumes every clone once all have booted.
+        val iCloud = GuestICloud(session.context)
+        val checked = runCatching { iCloud.check(line, ICLOUD_CHECK_TIMEOUT_MS) }.getOrDefault(ICloudKeychainState.UNKNOWN)
+        val resumed = checked == ICloudKeychainState.PAUSED
+        val state = if (resumed) runCatching { iCloud.resume(line, ICLOUD_RESUME_TIMEOUT_MS) }.getOrDefault(checked) else checked
+        return JsonObject(created + ("iCloudKeychain" to JsonPrimitive(state.id)) + ("iCloudResumed" to JsonPrimitive(resumed)))
     }
 }
 
@@ -256,5 +261,6 @@ class VmScreenshotCommand : ControlCommand("screenshot", "Capture the whole gues
 
 private const val DEFAULT_TIMEOUT_SECONDS = 60L
 private const val ICLOUD_CHECK_TIMEOUT_MS = 60_000L
+private const val ICLOUD_RESUME_TIMEOUT_MS = 90_000L
 private const val INSTALL_TIMEOUT_SECONDS = 120L
 private const val MILLIS_PER_SECOND = 1_000L

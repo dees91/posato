@@ -57,7 +57,7 @@ class ResourcesCommand :
     }
 }
 
-private fun requireDesktopInVirtualMachine(session: Session) {
+internal fun requireDesktopInVirtualMachine(session: Session) {
     if (session.target() != Target.DESKTOP) {
         throw ControlException(ErrorCode.UNSUPPORTED_ON_TARGET, "This command drives the desktop target.")
     }
