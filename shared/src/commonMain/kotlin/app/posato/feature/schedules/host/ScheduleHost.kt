@@ -2,7 +2,7 @@ package app.posato.feature.schedules.host
 
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementRequest
-import app.posato.feature.enforcement.PauseClaims
+import app.posato.feature.enforcement.ScheduleClaims
 import app.posato.feature.schedules.data.LocalScheduleStore
 import app.posato.feature.schedules.data.OccurrenceStop
 import app.posato.feature.schedules.data.ScheduleHostUpdate
@@ -29,13 +29,19 @@ import kotlinx.coroutines.launch
 
 /** What the host needs besides the store; each piece is a port so the host is tested without a helper. */
 internal class ScheduleHostPorts(
-    val claims: PauseClaims,
+    val claims: ScheduleClaims,
     val gate: ScheduleStartGate,
     val hadConsent: () -> Boolean,
     val targets: suspend () -> SessionTargetsState,
     val maintenanceClosed: () -> Boolean,
     /** Paused-item changes, so a running pause restricts the current items within moments. */
     val targetChanges: Flow<Unit> = emptyFlow(),
+    /** False where another process announces starts, such as the iPhone's monitor extension. */
+    val announcesStarts: Boolean = true,
+    /** Keys whose start another process already announced. */
+    val announcedElsewhere: suspend () -> Set<OccurrenceKey> = { emptySet() },
+    /** Hands the plans, facts and running occurrences to whatever starts schedules while the app is closed. */
+    val publish: suspend (ScheduleMonitorInput) -> Unit = {},
 )
 
 /**
@@ -62,7 +68,7 @@ internal class ScheduleHost(
     /** Whether any schedule can start here; Quit asks first while one can. */
     val anyEnabled: StateFlow<Boolean> = mutableAnyEnabled.asStateFlow()
 
-    suspend fun run() {
+    override suspend fun run() {
         coroutineScope {
             launch { store.changes.collect { triggers.trySend(Unit) } }
             launch { ticks.collect { triggers.trySend(Unit) } }
@@ -79,6 +85,13 @@ internal class ScheduleHost(
                 }
             }
         }
+    }
+
+    override val ownsNotices: Boolean
+        get() = ports.announcesStarts
+
+    override fun refresh() {
+        triggers.trySend(Unit)
     }
 
     /** Ends the manual session's partner here: every occurrence running on this device, on every device that runs the same one. */
@@ -109,10 +122,12 @@ internal class ScheduleHost(
     internal suspend fun evaluate() {
         val snapshot = (store.read() as? ScheduleResult.Success)?.value ?: return
         mutableAnyEnabled.value = snapshot.runnable.any { it.enabled }
-        val step = ScheduleHostPolicy.step(snapshot, clock.currentEpochMillis(), zone)
+        val now = clock.currentEpochMillis()
+        val step = ScheduleHostPolicy.step(snapshot, now, zone)
         if (!step.update.isEmpty) {
             store.recordHost(step.update)
         }
+        ports.publish(ScheduleMonitorInput(snapshot, step.running, now, ports.targets))
         if (step.running.isEmpty()) {
             // Idempotent: it clears only a held claim, and retries a clear that failed.
             ports.claims.releaseSchedule()
@@ -120,10 +135,21 @@ internal class ScheduleHost(
             mutablePause.value = null
             return
         }
+        recordAnnouncedElsewhere(step.running.map { it.key }.toSet())
         val hadConsent = ports.hadConsent()
         // A held claim is kept current: paused items and the latest end may have changed since it was applied.
         val state = if (holdsRestrictions()) apply(step.running) else attempt(step.running)
-        mutablePause.value = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)?.withoutAnnounced(announced.value)
+        val pause = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)?.withoutAnnounced(announced.value)
+        mutablePause.value = if (ports.announcesStarts) pause else pause?.copy(unannounced = emptySet())
+    }
+
+    /** Starts another process announced are marked like the host's own, so a relaunch never announces them. */
+    private suspend fun recordAnnouncedElsewhere(running: Set<OccurrenceKey>) {
+        val elsewhere =
+            ports.announcedElsewhere().intersect(running) - announced.value.filter { it.second == ScheduleNotices.STARTED }.map { it.first }.toSet()
+        if (elsewhere.isNotEmpty()) {
+            markAnnounced(elsewhere, ScheduleNotices.STARTED)
+        }
     }
 
     /** A held claim is checked each minute; a helper that lost it, or twice gave no answer, is applied again. */
@@ -181,19 +207,31 @@ private fun ScheduledPause.withoutAnnounced(marks: Set<Pair<OccurrenceKey, Int>>
     )
 }
 
-/** The earliest-started occurrence names the request; it ends at the latest end. */
-internal fun List<ScheduleOccurrence>.toRequest(targets: SessionTargetsState): EnforcementRequest {
-    val first = first()
-    val frozen = targets.toFrozenStartSet()
+/** The paused items a scheduled pause restricts: the websites, and the apps while apps are paused. */
+internal class ScheduleSelection(
+    val domains: List<String>,
+    val mappingIds: List<String>,
+)
+
+internal fun SessionTargetsState.scheduleSelection(): ScheduleSelection {
+    val frozen = toFrozenStartSet()
     val mappingIds = if (frozen.applicationCount != null) {
-        (targets.mappings as? LocalApplicationMappingsLoadResult.Success)?.snapshot?.mappings?.map { it.id.canonicalValue }.orEmpty()
+        (mappings as? LocalApplicationMappingsLoadResult.Success)?.snapshot?.mappings?.map { it.id.canonicalValue }.orEmpty()
     } else {
         emptyList()
     }
+    return ScheduleSelection(frozen.domains, mappingIds)
+}
+
+/** The earliest-started occurrence names the request; it ends at the latest end. */
+internal fun List<ScheduleOccurrence>.toRequest(targets: SessionTargetsState): EnforcementRequest {
+    val first = first()
+    val selection = targets.scheduleSelection()
+    val date = first.key.date
     return EnforcementRequest(
-        domains = frozen.domains,
-        mappingIds = mappingIds,
-        sessionId = "schedule-${first.key.schedule.hex}-${first.key.date.year}-${first.key.date.month}-${first.key.date.day}",
+        domains = selection.domains,
+        mappingIds = selection.mappingIds,
+        sessionId = "schedule-${first.key.schedule.hex}-${date.year}-${date.month}-${date.day}",
         sessionStartEpochMillis = first.startEpochMillis,
         sessionEndEpochMillis = maxOf { it.endEpochMillis },
     )

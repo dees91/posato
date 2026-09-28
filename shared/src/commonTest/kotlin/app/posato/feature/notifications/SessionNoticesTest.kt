@@ -1,5 +1,10 @@
 package app.posato.feature.notifications
 
+import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.schedules.domain.ScheduleDate
+import app.posato.feature.schedules.domain.ScheduleId
+import app.posato.feature.schedules.host.ScheduledPause
+import app.posato.feature.schedules.host.ScheduledPauseState
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionOrigin
 import app.posato.feature.session.domain.SessionRecord
@@ -122,6 +127,28 @@ class SessionNoticesSwitchTest {
         notices.setEnabled(true)
 
         assertEquals(listOf("schedule", "request", "schedule"), platform.calls)
+    }
+
+    @Test
+    fun `given the extension announces schedules when the app sees a manual pause inside a longer schedule then it keeps no earlier end`() = runTest {
+        val platform = RecordingNotificationPlatform(enabled = true)
+        val notices = SessionNotices(platform, FixedTexts, announcesScheduled = false)
+        val start = 1_790_000_000_000L
+        val end = start + 25 * 60_000L
+        val record = SessionRecord(SessionId(testIdentifier(1)), start, end)
+        val active = LocalSessionStatus.Active(record, end - start, origin = SessionOrigin.ADOPTED)
+        val key = OccurrenceKey(ScheduleId("000000000000400080000000000000a1"), ScheduleDate(2026, 9, 28))
+        val schedule = ScheduledPause("Focus", start, end + 60 * 60_000L, setOf(key), ScheduledPauseState.APPLIED)
+
+        notices.follow(flowOf(active), flowOf(schedule))
+        assertTrue("post" !in platform.calls)
+        assertEquals("cancel", platform.calls.last())
+
+        platform.calls.clear()
+        notices.setEnabled(false)
+        notices.setEnabled(true)
+
+        assertEquals(listOf("cancel"), platform.calls)
     }
 }
 

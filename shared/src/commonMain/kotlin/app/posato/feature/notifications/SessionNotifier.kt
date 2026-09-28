@@ -51,18 +51,22 @@ public class SessionNotifier internal constructor(
     clock: SessionClock,
     timeFormat: SessionTimeFormat,
 ) {
-    private val notices = SessionNotices(platform, ResourceNoticeTexts(timeFormat, clock), clock::currentEpochMillis)
+    private val notices = SessionNotices(platform, ResourceNoticeTexts(timeFormat, clock), clock::currentEpochMillis, scheduled.ownsNotices)
 
     public val settings: StateFlow<SessionNotificationSettings> = notices.settings
 
     public val available: Boolean = platform !== UnavailableSessionNotifications
 
     public suspend fun run() {
+        // Where the monitor extension owns a scheduled pause's notices, the app still follows the pause, so it
+        // plans only a manual end that outlasts it and announces nothing about the schedule itself.
         notices.follow(owner.status, scheduled.pause, scheduled::markAnnounced)
     }
 
     public suspend fun setEnabled(enabled: Boolean) {
         notices.setEnabled(enabled)
+        // A monitor that posts while the app is closed reads the switch from the host's next table.
+        scheduled.refresh()
     }
 
     public suspend fun refreshPermission() {
@@ -143,10 +147,11 @@ internal class SessionNotices(
     private val platform: SessionNotificationPlatform,
     private val texts: SessionNoticeTexts,
     now: () -> Long = { 0L },
+    private val announcesScheduled: Boolean = true,
 ) {
     private val mutableSettings = MutableStateFlow(SessionNotificationSettings(platform.isEnabled(), permission = null))
     private var current: LocalSessionStatus? = null
-    private val ends = CombinedPauseEnds(now)
+    private val ends = CombinedPauseEnds(now, appOwnsScheduled = announcesScheduled)
 
     val settings: StateFlow<SessionNotificationSettings> = mutableSettings.asStateFlow()
 
@@ -181,7 +186,9 @@ internal class SessionNotices(
 
                     is NoticeEvent.Scheduled -> {
                         ends.onScheduled(event.pause)?.let { perform(it) }
-                        event.pause?.let { announceScheduled(it, announced) }
+                        if (announcesScheduled) {
+                            event.pause?.let { announceScheduled(it, announced) }
+                        }
                     }
                 }
             }

@@ -20,7 +20,7 @@ private fun scheduled(
 
 class CombinedPauseEndsTest {
     private var now = 0L
-    private val ends = CombinedPauseEnds { now }
+    private val ends = CombinedPauseEnds({ now })
 
     @Test
     fun `given a manual pause ending inside a schedule then the end notice moves to the schedule's end and is never withdrawn`() {
@@ -64,5 +64,35 @@ class CombinedPauseEndsTest {
     @Test
     fun `given a scheduled pause that could not start then nothing is scheduled for it`() {
         assertNull(ends.onScheduled(scheduled(end = 200, state = ScheduledPauseState.SETUP_REQUIRED)))
+    }
+
+    @Test
+    fun `given the extension announces schedules when a manual end falls inside the schedule then the app withdraws its own notice`() {
+        val iphone = CombinedPauseEnds({ now }, appOwnsScheduled = false)
+        iphone.manualEnd = 100
+        assertEquals(SessionNotificationAction.ScheduleEnd(100), iphone.onManual(SessionNotificationAction.ScheduleEnd(100)))
+
+        assertEquals(SessionNotificationAction.CancelEnd, iphone.onScheduled(scheduled(end = 200)))
+        assertNull(iphone.effectiveEnd)
+    }
+
+    @Test
+    fun `given the extension announces schedules when the app reopens during the overlap then it plans no earlier end`() {
+        val iphone = CombinedPauseEnds({ now }, appOwnsScheduled = false)
+        assertNull(iphone.onScheduled(scheduled(end = 200)))
+
+        iphone.manualEnd = 100
+        assertEquals(SessionNotificationAction.CancelEnd, iphone.onManual(SessionNotificationAction.ScheduleEnd(100)))
+        assertNull(iphone.effectiveEnd)
+    }
+
+    @Test
+    fun `given the extension announces schedules when the manual end outlasts the schedule then the app announces the manual end`() {
+        val iphone = CombinedPauseEnds({ now }, appOwnsScheduled = false)
+        iphone.onScheduled(scheduled(end = 200))
+        iphone.manualEnd = 300
+
+        assertEquals(SessionNotificationAction.ScheduleEnd(300), iphone.onManual(SessionNotificationAction.ScheduleEnd(300)))
+        assertNull(iphone.onScheduled(null))
     }
 }

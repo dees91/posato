@@ -12,7 +12,7 @@ import kotlinx.coroutines.sync.withLock
  */
 internal class PauseClaims(
     private val delegate: EnforcementPort,
-) {
+) : ScheduleClaims {
     private enum class Holder { NONE, MANUAL, SCHEDULE }
 
     private val mutex = Mutex()
@@ -30,7 +30,7 @@ internal class PauseClaims(
      * restrictions without touching the helper, because a failed apply clears what the helper holds;
      * when that manual session ends first, its clear applies this request again.
      */
-    suspend fun claimSchedule(request: EnforcementRequest): EnforcementApplyReport {
+    override suspend fun claimSchedule(request: EnforcementRequest): EnforcementApplyReport {
         return mutex.withLock {
             val joined = manualRequest != null && delegate.status() == EnforcementOutcome.APPLIED
             val report = if (joined) {
@@ -52,7 +52,7 @@ internal class PauseClaims(
      * holds one, so the change is a clear and an apply back to back.
      * A joined manual session keeps its later end. A claim not held yet is claimed.
      */
-    suspend fun updateSchedule(request: EnforcementRequest): EnforcementApplyReport {
+    override suspend fun updateSchedule(request: EnforcementRequest): EnforcementApplyReport {
         val claimed = mutex.withLock { scheduleRequest }
         if (claimed == null) {
             return claimSchedule(request)
@@ -83,7 +83,7 @@ internal class PauseClaims(
      * A manual session that outlasts the schedule gets its own request and end again when the helper
      * held the schedule's.
      */
-    suspend fun releaseSchedule(): EnforcementOutcome {
+    override suspend fun releaseSchedule(): EnforcementOutcome {
         return mutex.withLock {
             val released = scheduleRequest
             if (released == null && !clearPending) {
@@ -118,7 +118,7 @@ internal class PauseClaims(
         }
 
     /** Whether the schedule's restrictions still hold; a helper that lost them drops the claim so the next attempt applies again. */
-    suspend fun scheduleStatus(): EnforcementOutcome {
+    override suspend fun scheduleStatus(): EnforcementOutcome {
         return mutex.withLock {
             if (scheduleRequest == null) {
                 EnforcementOutcome.CLEARED
@@ -135,7 +135,7 @@ internal class PauseClaims(
     }
 
     /** Drops the claim after repeated unanswered reads without clearing, so the next attempt's apply replaces the helper's state. */
-    suspend fun forgetSchedule() {
+    override suspend fun forgetSchedule() {
         mutex.withLock { scheduleRequest = null }
     }
 

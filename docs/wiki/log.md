@@ -2148,3 +2148,15 @@ to scope, feasibility, or delivery.
   touches it; a failed apply would otherwise clear the other's restrictions.
 - `inferred` from code: the daemon reports the grant as absent while another
   account has the console, so the start gate checks the console first.
+
+## [2026-09-27] implementation | SCHEDULE-002 slice 5: schedules start on their own on an iPhone
+
+- Scheduled pauses use their own Managed Settings store; stores combine, so
+  a schedule never lifts a manual session's shields and needs no claims.
+- The app is the only writer of the App Group schedule table; the monitor
+  extension writes one start record per occurrence, so the two never share a
+  file. The table is Gregorian whatever calendar the phone uses.
+- `observed` (test iPhone, 2026-09-27): with Posato force-quit, the monitor
+  extension applied the app shield and the web filter at a scheduled start
+  and cleared both at its end. Repeating activities across midnight and
+  catch-up after a power-off are still `source-claim`.

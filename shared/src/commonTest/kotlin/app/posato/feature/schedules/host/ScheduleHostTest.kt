@@ -352,4 +352,33 @@ class ScheduleHostTest {
             assertEquals(ScheduledPauseState.APPLIED, fixture.host.pause.value?.state)
         }
     }
+
+    @Test
+    fun `given a host whose starts another process announces then it never announces and records theirs`() = runTest {
+        withHost("host-elsewhere.db") { fixture ->
+            val published = mutableListOf<Int>()
+            val host = ScheduleHost(
+                fixture.store,
+                CentralEuropeanZone,
+                { at(9, 5) },
+                ScheduleHostPorts(
+                    fixture.claims,
+                    { StartGate.READY },
+                    { false },
+                    { targets() },
+                    { false },
+                    announcesStarts = false,
+                    announcedElsewhere = { setOf(mondayKey) },
+                    publish = { input -> published += input.running.size },
+                ),
+                emptyFlow(),
+            )
+
+            host.evaluate()
+
+            assertEquals(emptySet(), host.pause.value?.unannounced)
+            assertEquals(listOf(1), published)
+            assertEquals(ScheduleNotices.STARTED, fixture.snapshot().pins.single().notices)
+        }
+    }
 }
