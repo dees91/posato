@@ -112,7 +112,10 @@ object StoreFixtures {
         """"relationships":{"preReleaseVersion":{"data":{"type":"preReleaseVersions","id":"PRV"}}}}],""" +
         """"included":[{"type":"preReleaseVersions","id":"PRV","attributes":{"version":"$marketing","platform":"IOS"}}]}"""
 
-    fun localizations(whatsNew: String): String = """{"data":[{"id":"LOC","attributes":{"locale":"en-US","whatsNew":"$whatsNew"}}]}"""
+    fun localizations(
+        whatsNew: String,
+        description: String = "Old description.",
+    ): String = """{"data":[{"id":"LOC","attributes":{"locale":"en-US","whatsNew":"$whatsNew","description":"$description"}}]}"""
 
     fun screenshot(
         id: String,

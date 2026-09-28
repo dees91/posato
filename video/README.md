@@ -1,8 +1,8 @@
 # Posato showcase media
 
 The root README uses the `Hero` composition as a looping GIF and links the
-longer `Walkthrough`; the composed `StepWebsites` and `StepDuration`
-stills are the README's step screenshots; `SocialPreview` is the repository
+longer `Walkthrough`; the composed `StepWebsites`, `StepDuration`, and
+`StepSchedules` stills are the README's step screenshots; `SocialPreview` is the repository
 card; and posato.app plays the hero as a silent looping video. Every output
 shows real Posato captures with synthetic choices inside the same generic
 device frames as the site; both videos add a synthetic cursor that names each click.
@@ -33,17 +33,18 @@ resolve a different font. Package versions are exact and locked by
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 960 x 600, 12 fps, 22 seconds, infinite loop, 8,909,899 bytes.
-- `../.github/assets/step-websites.png` and `step-duration.png`: 1920 x 1080
-  composed stills on a transparent background.
+- `../.github/assets/demo.gif`: 864 x 540, 12 fps, 26 seconds, infinite loop, 9,615,676 bytes.
+- `../.github/assets/step-websites.png`, `step-duration.png`, and
+  `step-schedules.png`: 1920 x 1080 composed stills on a transparent
+  background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 1,281,500 bytes, with a JPEG poster for the first paint and
+  faststart, 1,562,629 bytes, with a JPEG poster for the first paint and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.
-- `../website/public/media/walkthrough.mp4`: 42 seconds, silent, faststart,
+- `../website/public/media/walkthrough.mp4`: 52.6 seconds, silent, faststart,
   served at `https://posato.app/media/walkthrough.mp4` and linked from the root
   README.
 
@@ -64,34 +65,41 @@ walkthrough to posato.app on 2026-09-17 (`user-confirmed`).
 
 ## Capture provenance
 
-All captures come from the product revision `6850481` (the `main` commit the
-`DOCS-002` branch started from), driven through `posato-control` by the
-scripts in `capture/`, and reduced with FFmpeg only: Mac frames to 1272 pixels
-wide, iPhone frames to 660 pixels wide. No label, timer value, service result,
-or application UI has been reconstructed or retouched.
+All captures come from the product tree of revision `7fa8510` (the
+`SCHEDULE-002` slice 5 head the `DOCS-003` branch started from), driven
+through `posato-control` by the scripts in `capture/` without a hand on either
+device, and reduced with FFmpeg only: Mac frames to 1272 pixels wide, iPhone
+frames to 660 pixels wide. No label, timer value, service result, or
+application UI has been reconstructed or retouched. The `DOCS-002` captures
+of revision `6850481` are in Git history.
 
-- `mac-*.png`: development-signed Posato on macOS. The fixture is
-  `example.com`, `example.net`, and the built-in Chess application.
-  `capture/mac-captures.sh items` removes and re-adds `example.net` and Chess
-  to capture the empty, typed, and saved states, driving the native application
-  picker by keyboard; `capture/mac-captures.sh session` selects 45 minutes,
-  reviews, starts the pause while the maintainer confirms the administrator
-  prompt, and ends it early. The setup, review, and active frames were captured
-  within one minute so their end times agree. The Session screen shows the
-  Mac's real state: an earlier session ended early and iCloud sync needing
-  attention; the Mac's visible sync status is independent of its local
-  restriction status.
-- `iphone-*.png`: the same revision on a physical iPhone 13 mini in a fresh
-  install, driven through `posato-control` after the first-install skip
-  scenario. The two synthetic domains were added through the app; the
-  maintainer granted Screen Time access and chose one built-in application in
-  the system picker (`capture/iphone-captures.sh`). The active frame follows
-  the app reporting **Restrictions active.** iCloud was left off, so matching
-  items do not demonstrate sync.
+- `mac-*.png`: development-signed Posato in a disposable Tart VM on macOS 26
+  in Dark Mode, never on the maintainer's Mac. The fixture is `example.com`,
+  `example.net`, the built-in Chess application, and two schedules, `Deep
+  work` (weekdays 09:00 to 11:00) and `Evening reading` (daily, one hour).
+  The VM finished the unified setup first, so the session started without an
+  administrator prompt. `capture/mac-captures.sh apps` picks Chess through
+  recognized screen text, because the resident helper and the picker are two
+  processes with one name; `websites` removes and re-adds `example.net`;
+  `session` selects 45 minutes, reviews, starts, and ends early;
+  `schedules HH:MM` saves `Deep work`, captures it alone for the video's
+  Save step, then saves `Evening reading` for the still and the site; and
+  `scheduled` captures Session
+  once `Evening reading` started on its own. The duration, review, and active
+  frames were captured within one minute so their end times agree.
+- `iphone-*.png`: the same tree on the dedicated test iPhone in a fresh
+  install, in Dark Mode, after the first-install skip scenario. The two
+  synthetic domains, the Screen Time consent, one built-in application
+  (Calculator, which Posato shows only as a count), the notification
+  permission, and the `Deep work` schedule were all driven by
+  `capture/iphone-captures.sh`, which deletes the schedule again. The active
+  frame follows the app reporting **Restrictions active.** iCloud was off on
+  both devices, so matching items and the schedule on the iPhone do not
+  demonstrate sync.
 
 The timeline selects observed states; its cuts do not assert elapsed session
 time or iCloud delivery, and the native application pickers and the
-administrator prompt are elided between captures. Raw verification captures,
+time wheels are elided between captures. Raw verification captures,
 logs, and identifiers remain in ignored `build/verification/`; only these
 reviewed artwork exports are tracked.
 

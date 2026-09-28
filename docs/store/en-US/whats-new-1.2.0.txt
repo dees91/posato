@@ -1,0 +1,4 @@
+- Schedules: plan recurring pauses by weekday and time. They start and end on their own, even when Posato is closed, and sync with your other devices when iCloud sync is on.
+- Pause notices: Posato can tell you when a pause ends or when one starts on another device. Turn them off in About Posato.
+- Reopening Posato during a session no longer ends it early.
+- If you use Posato on more than one device, update all of them to keep them in sync.

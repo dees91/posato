@@ -31,6 +31,8 @@ if (( $(stat -f%z "${output}") > limit_bytes )); then
   exit 1
 fi
 
-ffmpeg -hide_banner -loglevel warning -y -ss 19.333 -i "${input}" -frames:v 1 \
-  -vf "scale=1600:1000:flags=lanczos" -q:v 4 -map_metadata -1 "${poster}"
+# The poster frame comes from the storyboard, so it follows the scene it describes.
+poster_frame="$(cd "${video_dir}" && node --import tsx -e 'import("./src/storyboard.ts").then((m) => console.log(m.POSTER_FRAME))')"
+ffmpeg -hide_banner -loglevel warning -y -i "${input}" -frames:v 1 \
+  -vf "select=eq(n\\,${poster_frame}),scale=1600:1000:flags=lanczos" -q:v 4 -map_metadata -1 "${poster}"
 echo "Wrote ${output} and ${poster} ($(stat -f%z "${poster}") bytes)."

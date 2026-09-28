@@ -10,7 +10,7 @@ attachment="${video_dir}/../website/public/media/walkthrough.mp4"
 gif="${repo_root}/.github/assets/demo.gif"
 web="${repo_root}/website/public/media/hero.mp4"
 poster="${repo_root}/website/public/media/hero-poster.jpg"
-stills=("${repo_root}/.github/assets/step-websites.png" "${repo_root}/.github/assets/step-duration.png")
+stills=("${repo_root}/.github/assets/step-websites.png" "${repo_root}/.github/assets/step-duration.png" "${repo_root}/.github/assets/step-schedules.png")
 social="${repo_root}/.github/assets/social-preview.png"
 mib=$((1024 * 1024))
 

@@ -30,7 +30,7 @@
     "export:gif": "./scripts/render-gif.sh",
     "export:web": "./scripts/render-web.sh",
     "export:attachment": "./scripts/render-attachment.sh",
-    "stills": "remotion still StepWebsites ../.github/assets/step-websites.png && remotion still StepDuration ../.github/assets/step-duration.png && remotion still SocialPreview ../.github/assets/social-preview.png",
+    "stills": "remotion still StepWebsites ../.github/assets/step-websites.png && remotion still StepDuration ../.github/assets/step-duration.png && remotion still StepSchedules ../.github/assets/step-schedules.png && remotion still SocialPreview ../.github/assets/social-preview.png",
     "verify": "./scripts/verify-output.sh",
     "media": "npm run check && npm run render:hero && npm run render:walkthrough && npm run export:gif && npm run export:web && npm run export:attachment && npm run stills && npm run verify"
   },

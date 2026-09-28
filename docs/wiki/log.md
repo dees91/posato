@@ -2160,3 +2160,18 @@ to scope, feasibility, or delivery.
   extension applied the app shield and the web filter at a scheduled start
   and cleared both at its end. Repeating activities across midnight and
   catch-up after a power-off are still `source-claim`.
+
+## [2026-09-27] release | DOCS-003: public packaging for Posato 1.2 prepared
+
+- Showcase captures now come from a Tart VM and the test iPhone without the
+  maintainer; on the Mac the app picker is driven by screen text, because the
+  resident helper and the picker are two processes with one name.
+- `observed` (2026-09-27): the iOS Simulator cannot show a Schedules store
+  screenshot from a stale install; reinstall the current build before capture.
+  About shows the build's marketing version, so store captures need a build of
+  the release version.
+- `store prepare --description` uploads the App Store description; nothing is
+  published before the `RELEASE-004` go.
+- `observed` (2026-09-28, two linked Tart VMs): a Mac with its window closed
+  received a pause from another Mac about 4.5 minutes later without **Sync
+  now**, and a schedule saved on one Mac started on its own on both.

@@ -14,7 +14,7 @@ summary and links here. The Planned platforms section records the maintainer's
 
 ## Availability
 
-Posato 1.1 for Mac is available from GitHub Releases, and Posato for iPhone from the App Store.
+Posato 1.2 for Mac is available from GitHub Releases, and Posato for iPhone from the App Store.
 
 | Platform | Channel | Availability |
 | --- | --- | --- |
@@ -41,10 +41,19 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - It does not resist a device administrator and can always be removed. Ending a
   session early is always possible.
 - On macOS, blocking works only while Posato is running. Closing its window
-  keeps it running in the menu bar. If Posato quits, or after sleep, wake, or
-  a network change, blocking stops until you resume it in Posato with
-  administrator approval. A session received from your iPhone also needs that
-  approval before the Mac blocks anything.
+  keeps it running in the menu bar, and after the one-time setup Posato opens
+  quietly at login. If Posato quits, or after sleep, wake, or a network change,
+  a pause you started yourself stops blocking until you resume it in Posato.
+  Without the setup, starting or
+  resuming needs administrator approval each time. A session received from
+  your iPhone blocks on the Mac only after you resume it there; without the
+  setup, that also needs administrator approval.
+- On macOS, schedules start only on a Mac that finished the setup and only
+  while Posato is running. If Posato opens, including at login, or the Mac
+  wakes during a scheduled pause, the pause starts again on its own, usually
+  within a minute, and still ends at its planned time; no password is asked. Quitting
+  Posato stops new scheduled starts until it opens again; closing the window
+  does not.
 - On macOS, paused apps are quit while a session is active, including apps that
   were already open when it started, so unsaved work in them can be lost.
 - On macOS, website blocking covers **Safari** and **Google Chrome Stable** for
@@ -58,13 +67,14 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 - On macOS, Posato uses a background helper that requires administrator approval
   and may ask for Automation permission to show its pause page in the current
   tab.
-- On iPhone, closing and reopening Posato during a session can end the
-  session early and lift its restrictions. Start a new session if that
-  happens; a fix is planned for Posato 1.2.
 - On iPhone, the system clears restrictions after a session ends and may keep
   them for a while past the end time. Restrictions from sessions shorter than
   15 minutes clear only when Posato is open at the end or when you open it
   again.
+- Schedule times follow each device's own clock. A schedule is at least 15
+  minutes long, and on iPhone it needs Screen Time access.
+- A device on an earlier version of Posato stops syncing once another device saves a
+  schedule. Update Posato on every device to keep them in sync.
 - Sync is best effort. Posato cannot promise when, or whether, a change reaches
   your other device, and it cannot wake a sleeping device.
 - If every copy of the workspace key is lost, synchronized data cannot be

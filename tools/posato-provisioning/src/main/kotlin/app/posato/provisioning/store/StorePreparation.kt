@@ -5,12 +5,16 @@ import app.posato.provisioning.asc.StoreClient
 import app.posato.provisioning.core.ErrorCode
 import app.posato.provisioning.core.ProvisioningException
 import app.posato.provisioning.model.AppStoreVersionResource
+import app.posato.provisioning.model.LocalizationResource
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 private const val UNCHANGED = "unchanged"
+
+private const val WHATS_NEW = "whatsNew"
+private const val DESCRIPTION = "description"
 
 /** The version states in which App Store Connect accepts metadata, build, and screenshot changes. */
 private val EDITABLE_VERSION_STATES = setOf(
@@ -27,6 +31,7 @@ class PrepareRequest(
     val whatsNew: String,
     val releaseType: ReleaseType,
     val screenshots: Map<ScreenshotSlot, List<ScreenshotFile>>?,
+    val description: String? = null,
 )
 
 /**
@@ -36,7 +41,7 @@ class PrepareRequest(
  * untouched, and an existing version outside the editable states (waiting for or in review, pending release, or
  * released) is refused before the first write. A second run with the same inputs is intended to issue only reads.
  * A new version copies its description, keywords, review details, and screenshots from the previous version; this
- * command then overwrites the What's New text and, when asked, the two screenshot sets.
+ * command then overwrites the What's New text and, when asked, the description and the two screenshot sets.
  */
 class StorePreparation(
     private val services: StoreServices
@@ -58,20 +63,35 @@ class StorePreparation(
             "attached".also { store.attachBuild(version.id, build.id) }
         }
         val localization = StoreLookups.localization(store, version.id)
-        val whatsNew = if (localization.attributes.whatsNew?.trim() == request.whatsNew) {
-            UNCHANGED
-        } else {
-            "updated".also { store.updateWhatsNew(localization.id, request.whatsNew) }
-        }
+        val texts = updateTexts(store, localization, request)
         val screenshots = request.screenshots?.let { sets -> replaceScreenshots(localization.id, sets) }
         return buildJsonObject {
             put("version", request.version)
             put("appStoreVersion", if (existing == null) "created" else UNCHANGED)
             put("releaseType", releaseType)
             put("build", buildOutcome)
-            put("whatsNew", whatsNew)
+            texts.forEach { (key, outcome) -> put(key, outcome) }
             put("screenshots", screenshots ?: buildJsonArray { })
         }
+    }
+
+    /**
+     * Writes What's New and, when requested, the description in one request, sending only the texts that differ.
+     * Returns each requested text's outcome.
+     */
+    private fun updateTexts(
+        store: StoreClient,
+        localization: LocalizationResource,
+        request: PrepareRequest,
+    ): Map<String, String> {
+        val wanted = listOfNotNull(
+            WHATS_NEW to request.whatsNew,
+            request.description?.let { DESCRIPTION to it },
+        )
+        val current = mapOf(WHATS_NEW to localization.attributes.whatsNew, DESCRIPTION to localization.attributes.description)
+        val changes = wanted.filter { (key, text) -> current[key]?.trim() != text }.toMap()
+        if (changes.isNotEmpty()) store.updateLocalization(localization.id, changes)
+        return wanted.associate { (key, _) -> key to if (key in changes) "updated" else UNCHANGED }
     }
 
     /** The existing version, or `null` when there is none; a version this command may not change stops the run. */

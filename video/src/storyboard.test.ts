@@ -6,6 +6,7 @@ import { capturePoint, CAPTURE, frameMetrics, LAYOUTS, type Layout } from "./lay
 import {
   HERO,
   MAX_QUIET_FRAMES,
+  POSTER_FRAME,
   SCENE_OVERLAP,
   sceneAssets,
   sceneDuration,
@@ -19,8 +20,8 @@ import {
 } from "./storyboard";
 
 const stories: ReadonlyArray<readonly [string, readonly StoryScene[], number, number]> = [
-  ["Hero", HERO, 20, 24],
-  ["Walkthrough", WALKTHROUGH, 35, 45],
+  ["Hero", HERO, 24, 28],
+  ["Walkthrough", WALKTHROUGH, 45, 55],
 ];
 
 const publicFile = (name: string) => resolve(process.cwd(), "public", name);
@@ -113,4 +114,13 @@ test("layouts keep every frame inside the composition", () => {
       assert.ok(corner[0] <= spec.left + spec.width && corner[1] <= spec.top + metrics.height, `${id} ${spec.device} capture mapping`);
     }
   }
+});
+
+test("the poster frame shows both devices with the active session, before the next scene fades in", () => {
+  const start = HERO.find((scene) => scene.id === "start");
+  assert.ok(start?.layoutTo && start.iphone?.enterAt !== undefined);
+  assert.ok(POSTER_FRAME >= start.start + Math.max(start.layoutTo.to, start.iphone.enterAt + 20), "iPhone still moving");
+  assert.ok(POSTER_FRAME < start.end - SCENE_OVERLAP, "the next scene is already fading in");
+  const activeFrom = (start.actions ?? []).find((action) => action.swapTo !== undefined)?.at ?? 0;
+  assert.ok(POSTER_FRAME >= start.start + activeFrom + 8, "the Mac still shows the review");
 });

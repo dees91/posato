@@ -110,16 +110,17 @@ class StoreClient(
         STORE_LISTING_HINT,
     )
 
-    fun updateWhatsNew(
+    /** Writes only the given localization attributes, such as `whatsNew` and `description`, in one request. */
+    fun updateLocalization(
         localizationId: String,
-        whatsNew: String,
+        attributes: Map<String, String>,
     ): LocalizationResource = documents.write(
         HttpMethod.PATCH,
         "appStoreVersionLocalizations/$localizationId",
         JsonApi.resource(
             type = "appStoreVersionLocalizations",
             id = localizationId,
-            attributes = buildJsonObject { put("whatsNew", whatsNew) },
+            attributes = buildJsonObject { attributes.forEach { (key, value) -> put(key, value) } },
         ),
         LocalizationResource.serializer(),
     )
