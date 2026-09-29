@@ -6,6 +6,7 @@ import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.ui.NavDisplay
 
@@ -25,11 +26,12 @@ internal fun <T : Any> PosatoNavStack(
     content: @Composable (T) -> Unit,
 ) {
     val shown = if (backEnabled) backStack else backStack.takeLast(1)
+    val clipped = modifier.clipToBounds()
     val entryProvider = { key: T -> NavEntry(key) { content(key) } }
     if (platformReducesMotion()) {
         NavDisplay(
             backStack = shown,
-            modifier = modifier,
+            modifier = clipped,
             contentAlignment = contentAlignment,
             onBack = onBack,
             transitionSpec = { noMotion() },
@@ -38,7 +40,7 @@ internal fun <T : Any> PosatoNavStack(
             entryProvider = entryProvider,
         )
     } else {
-        NavDisplay(backStack = shown, modifier = modifier, contentAlignment = contentAlignment, onBack = onBack, entryProvider = entryProvider)
+        NavDisplay(backStack = shown, modifier = clipped, contentAlignment = contentAlignment, onBack = onBack, entryProvider = entryProvider)
     }
 }
 
