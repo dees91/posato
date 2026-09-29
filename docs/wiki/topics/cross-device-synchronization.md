@@ -549,7 +549,15 @@ not claim that every other device has received the update.
 - How is a full iCloud account surfaced? `CKError.quotaExceeded` maps to
   retryable on both platforms, so the status is generic while local saves stay
   committed. `user-confirmed` (2026-09-16): disclosure only for the MVP.
-- What retry policy is appropriate without a delivery SLA?
+- What retry policy is appropriate without a delivery SLA? `observed`
+  (`SYNC-020`, 2026-09-29): a pass that ends retryable retries after 5 s,
+  15 s, 1 min, 5 min, and 15 min, then waits for the next ordinary
+  opportunity; iOS holds background time during the pass and the wait. The
+  trigger was not an interrupted upload. A session start or early end on the
+  iPhone causes a `CKAccountChanged` notification during the pass
+  (`inferred`: from Posato's own Screen Time restriction change). The
+  mailbox account guard then reports an unknown outcome while the binding is
+  unchanged. The guard stays as ADR 0007 defines it (`user-confirmed`).
 - How do portable authenticated completeness metadata and high-water marks
   distinguish rollback or deletion from incomplete first synchronization?
 - How are portable enrollment, recovery, revocation, export, import, deletion,

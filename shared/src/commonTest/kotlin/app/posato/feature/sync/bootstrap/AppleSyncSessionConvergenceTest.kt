@@ -10,7 +10,9 @@ import app.posato.feature.sync.domain.SyncWallClock
 import app.posato.feature.sync.mailbox.BundleSaveResult
 import app.posato.feature.sync.testIdentifier
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.currentTime
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -226,6 +228,87 @@ class AppleSyncSessionConvergenceTest {
         } finally {
             first.close()
             second.close()
+        }
+    }
+
+    @Test
+    fun `given a failed start publication when no other opportunity arrives then the peer adopts it at its own next sync`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-retry-first.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        val second = sessionPeer(dispatcher, "session-retry-second.db", mailbox, SyncWallClock { 200 }, SESSION_FROZEN_SECOND)
+        try {
+            first.establish()
+            second.establish()
+            advanceUntilIdle()
+
+            mailbox.saveResult = BundleSaveResult.UnknownOutcome
+            val sessionId = SessionId(testIdentifier(70))
+            first.owner.startSession(sessionId, first.clock.nowEpochMillis, SESSION_NOW + SESSION_DURATION, first.frozen)
+            runCurrent()
+            assertEquals(SyncStatus.RETRYABLE, first.status())
+
+            mailbox.saveResult = BundleSaveResult.Saved
+            advanceTimeBy(RETRY_WINDOW_MILLIS)
+            runCurrent()
+            second.harness.sync.syncNow()
+            runCurrent()
+
+            assertEquals(sessionId, assertIs<LocalSessionStatus.Active>(second.read()).record.sessionId)
+            assertEquals(1, sessionStartOperations(second, sessionId))
+            assertEquals(SyncStatus.COMPLETED, first.status())
+        } finally {
+            first.close()
+            second.close()
+        }
+    }
+
+    @Test
+    fun `given a publication that keeps failing when time passes then retries stop after a bounded spaced series`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-retry-bound.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        try {
+            first.establish()
+            advanceUntilIdle()
+
+            mailbox.saveResult = BundleSaveResult.Retryable
+            val attemptsBefore = mailbox.saveAttempts
+            val startedAt = currentTime
+            first.owner.startSession(SessionId(testIdentifier(71)), first.clock.nowEpochMillis, SESSION_NOW + SESSION_DURATION, first.frozen)
+            advanceUntilIdle()
+
+            val attempts = mailbox.saveAttempts - attemptsBefore
+            assertTrue(attempts in 3..MAX_ATTEMPTS, "attempts=$attempts")
+            assertTrue(currentTime - startedAt >= MIN_RETRY_SPAN_MILLIS, "span=${currentTime - startedAt}")
+            assertEquals(SyncStatus.RETRYABLE, first.status())
+        } finally {
+            first.close()
+        }
+    }
+
+    @Test
+    fun `given a request during a retry wait when the old wait would have ended then no extra pass runs`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val mailbox = SharedFakeMailboxPort()
+        val first = sessionPeer(dispatcher, "session-retry-request.db", mailbox, SyncWallClock { 100 }, SESSION_FROZEN_FIRST)
+        try {
+            first.establish()
+            advanceUntilIdle()
+
+            mailbox.saveResult = BundleSaveResult.Retryable
+            val attemptsBefore = mailbox.saveAttempts
+            first.owner.startSession(SessionId(testIdentifier(72)), first.clock.nowEpochMillis, SESSION_NOW + SESSION_DURATION, first.frozen)
+            runCurrent()
+            advanceTimeBy(REQUEST_DURING_WAIT_MILLIS)
+            first.harness.sync.syncNow()
+            runCurrent()
+            advanceTimeBy(PAST_OLD_WAIT_MILLIS)
+            runCurrent()
+
+            assertEquals(2, mailbox.saveAttempts - attemptsBefore)
+        } finally {
+            first.close()
         }
     }
 
@@ -588,3 +671,9 @@ class AppleSyncSessionConvergenceTest {
         }
     }
 }
+
+private const val RETRY_WINDOW_MILLIS = 60_000L
+private const val MAX_ATTEMPTS = 8
+private const val MIN_RETRY_SPAN_MILLIS = 10 * 60_000L
+private const val REQUEST_DURING_WAIT_MILLIS = 2_000L
+private const val PAST_OLD_WAIT_MILLIS = 4_000L

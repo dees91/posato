@@ -30,6 +30,7 @@ import app.posato.feature.session.ui.loadSessionTargets
 import app.posato.feature.sync.bootstrap.AppleBootstrap
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.bootstrap.BootstrapCoordinator
+import app.posato.feature.sync.bootstrap.IosSyncBackgroundTime
 import app.posato.feature.sync.bootstrap.ScheduleSync
 import app.posato.feature.sync.bootstrap.SqlBootstrapStore
 import app.posato.feature.sync.data.IosBootstrapCloudAdapter
@@ -224,6 +225,7 @@ internal interface IosApplicationGraph :
                 sessions.dropRetainedMarkersExceptCurrent()
             },
             scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
+            backgroundTime = IosSyncBackgroundTime,
         )
     }
 }

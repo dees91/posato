@@ -26,8 +26,11 @@ one active exchange can retain at most one queued opportunity.
   also converge; each receiver applies its own authorized selections. A Mac
   that needs administrator confirmation offers Resume restrictions. The timer
   alone does not prove that restrictions were applied.
-- `sync-retry`: offline or uncertain outcomes preserve pending bytes; retry on
-  **Sync now** or a later foreground. No delivery-time guarantee exists.
+- `sync-retry`: offline or uncertain outcomes preserve pending bytes. A
+  retryable pass retries on its own after 5 s, 15 s, 1 min, 5 min, and
+  15 min, then waits for **Sync now**, a foreground, a local change, or the
+  Mac's periodic exchange. iOS holds background time while a pass or a retry
+  runs. No delivery-time guarantee exists.
 - `sync-session-time`: while the host can run, accepted future starts become
   eligible without another exchange or a Session-screen subscription. Relaunch
   restores the accepted projection locally after the existing workspace/key
@@ -77,8 +80,9 @@ own golden VM line, and address them with `--vm primary|peer`.
   (`docs/development/unattended-verification.md`). "This Mac can't connect to
   iCloud" (Apple Account Settings, second click) is answered with
   `vm prompt account-password`. The key then arrives without another press.
-- A session started on the primary reaches the peer after **Sync now**; the
-  peer shows Resume restrictions and needs its own `vm prompt admin`.
+- A session started on the primary reaches the peer at the peer's next
+  exchange (`menu --open` starts one, as does **Sync now**); the peer shows
+  Resume restrictions and needs its own `vm prompt admin`.
   Application choices stay local, so only the website is paused there.
 
 ### Between a Mac VM and the test iPhone
@@ -139,11 +143,12 @@ during `MVP-001`.
    queries below; registrations are also bundles, so establish the baseline
    before adding the domain. A repeat exchange must not add accepted entries.
 5. For offline retry, disconnect the authoring target: a Mac VM clone, never
-   the host Mac. The driver has no network toggle yet (`open`); add one to
-   `posato-control` when a task needs this step instead of asking the
-   maintainer. Add a domain; the save stays local
-   while sync reports retryable. Reconnect, press **Sync now**, and verify one
-   acceptance on the peer. Never alter the host Mac's connectivity.
+   the host Mac, with `$PC vm network --line <line> --state off`. Add a
+   domain or end a session; the change stays local while sync reports
+   retryable (`sync_session_intent` or `sync_pending_bundle` is nonzero).
+   Reconnect with `--state on` and, without **Sync now**, wait for the
+   automatic retry to empty both tables; then verify one acceptance on the
+   peer. Never alter the host Mac's connectivity.
 6. For the account gate, arrange pending work offline, then sign the VM clone
    out of the test Apple Account in System Settings over `vm click` before the
    next attempt (not yet driven, `open`; extend the driver rather than asking
