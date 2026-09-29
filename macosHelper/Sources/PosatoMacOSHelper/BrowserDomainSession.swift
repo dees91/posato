@@ -7,7 +7,7 @@ final class BrowserDomainSession: @unchecked Sendable {
   private var proxy: BoundedHTTPProxy?
   private var presentation = BrowserPresentationAdapter()
   private let presentationLock = NSLock()
-  private let presentationQueue = DispatchQueue(label: "app.posato.macos.helper.presentation")
+  private let presentationQueue = DispatchQueue.main
   private let chain = ProxyChainValidator()
   private let compatibility = NetworkCompatibility(reader: SystemNetworkCompatibilityReader())
   private(set) var port: UInt16 = 0
@@ -76,7 +76,7 @@ final class BrowserDomainSession: @unchecked Sendable {
     proxy = nil
   }
 
-  /// Runs on `presentationQueue`, which serialises every use of the adapter; the lock protects
+  /// Runs on the main queue for AppKit and NSAppleScript; the lock protects
   /// only the port read, so the Apple Events round trips happen outside it.
   private func presentBlockedPage() {
     presentationLock.lock()
@@ -85,7 +85,9 @@ final class BrowserDomainSession: @unchecked Sendable {
     guard activePort != 0 else {
       return
     }
-    _ = presentation.presentBlockedPage(port: activePort, selectedHosts: Set(payload.domains))
+    autoreleasepool {
+      _ = presentation.presentBlockedPage(port: activePort, selectedHosts: Set(payload.domains))
+    }
   }
 
   private func validateCandidateChain(port: UInt16, selected: Set<String>) throws {

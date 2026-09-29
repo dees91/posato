@@ -19,6 +19,9 @@ enum class GuestPrompt(
     DEVICE_PASSCODE("device-passcode"),
     GATEKEEPER("gatekeeper"),
     PICKER_BYPASS("picker-bypass"),
+    AUTOMATION_ALLOW("automation-allow"),
+    AUTOMATION_DENY("automation-deny"),
+    KEEP_SAFARI("keep-safari"),
     ;
 
     companion object {
@@ -42,6 +45,10 @@ class VmPrompts(
     ) {
         val screen = guestScreen(context, line)
         when (prompt) {
+            GuestPrompt.KEEP_SAFARI -> {
+                keepSafari(screen, timeoutMs)
+            }
+
             GuestPrompt.ADMIN -> {
                 answerAdmin(screen, timeoutMs)
             }
@@ -82,6 +89,16 @@ class VmPrompts(
                     client.click(open.centerX, open.centerY)
                 }
                 screen.waitGone(GATEKEEPER_QUESTION, timeoutMs)
+            }
+
+            GuestPrompt.AUTOMATION_ALLOW, GuestPrompt.AUTOMATION_DENY -> {
+                val question = "wants access to control"
+                screen.waitFor(question, timeoutMs)
+                screen.waitFor("Posato replaces a blocked Safari or", timeoutMs)
+                val label = if (prompt == GuestPrompt.AUTOMATION_ALLOW) "Allow" else "Don't Allow"
+                val button = screen.waitFor(label, timeoutMs, exact = true).first()
+                screen.session { client -> client.click(button.centerX, button.centerY) }
+                screen.waitGone(question, timeoutMs)
             }
 
             GuestPrompt.PICKER_BYPASS -> {
@@ -245,3 +262,14 @@ internal fun guestScreen(
 }
 
 internal fun notOnScreen(text: String) = ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The guest screen shows no '$text'.")
+
+private fun keepSafari(
+    screen: GuestScreen,
+    timeoutMs: Long
+) {
+    screen.waitFor("Do you want to change your", timeoutMs)
+    screen.waitFor("default web browser", timeoutMs)
+    val button = screen.waitFor("Keep \"Safari\"", timeoutMs, exact = true).first()
+    screen.session { client -> client.click(button.centerX, button.centerY) }
+    screen.waitGone("Do you want to change your", timeoutMs)
+}

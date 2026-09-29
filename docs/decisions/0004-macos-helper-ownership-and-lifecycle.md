@@ -267,7 +267,11 @@ the launch and runtime routes:
   administrator prompt.
 
 The hardened runtime already blocks `DYLD_` variables and debugger
-attachment in release builds, whose only entitlement is `allow-jit`.
+attachment in release builds. The application keeps `allow-jit` for the JVM.
+The application and its unprivileged helper also carry
+`com.apple.security.automation.apple-events` for the existing ADR 0005 browser
+presentation role (`MACOS-022`); the privileged daemon carries no entitlement.
+Automation still requires a separate user decision for each browser.
 
 ### Who may request it
 

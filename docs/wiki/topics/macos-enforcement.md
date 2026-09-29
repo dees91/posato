@@ -186,11 +186,17 @@ assuming `codesign --deep` can inspect native code stored inside an archive.
 
 The Apple Development artifact requires one Apple Development authority and
 one nonempty Team ID throughout. Its application and launcher carry only
-`com.apple.security.cs.allow-jit`; nested code carries no entitlement. The
+`com.apple.security.cs.allow-jit` in that historical package. The
 credential-free artifact remains teamless and authority-free, with the three
 Compose JVM development entitlements confined to its application and launcher.
 Strict verification and isolated SQLite-backed launch passed from both mounted
 DMGs on the supported Apple silicon Mac.
+
+`observed` (2026-09-29): MACOS-022 adds
+`com.apple.security.automation.apple-events` for the existing browser
+presentation role on both paths: the application and launcher carry their
+previous set plus Apple Events, the helper carries only Apple Events, and the
+privileged daemon remains entitlement-free.
 
 `observed`: JPackage changed nested signed executables when it converted the
 verified application image into a DMG, invalidating the helper resource seal.
@@ -820,3 +826,22 @@ option variable.
   service, so every later start reported that restrictions may still apply.
   How should the helper reconcile a recorded service that no longer exists?
   Owner: `MACOS-020`.
+
+## Browser presentation threading and consent (`MACOS-022`)
+
+`observed` (2026-09-28): the reproduced Chrome HTTPS error combined missing
+Apple Events entitlements with a helper that blocked its main thread on pipe
+input and executed NSAppleScript on a background queue. A live helper sample
+showed the script waiting in the AppleScript event loop after consent.
+
+Apple documents [NSAppleScript as main-thread-only](https://developer.apple.com/library/archive/documentation/Cocoa/Conceptual/Multithreading/ThreadSafetySummary/ThreadSafetySummary.html)
+and [NSRunningApplication updates as dependent on the main run loop](https://developer.apple.com/documentation/appkit/nsrunningapplication).
+The helper now keeps that loop running, handles pipe lifecycle state serially
+on a worker, and schedules presentation and picker work on the main thread.
+Restoration and process exit do not wait for browser consent.
+
+TCC also checked the responsible parent, so both Posato and the helper need the
+[Apple Events entitlement](https://developer.apple.com/documentation/bundleresources/entitlements/com.apple.security.automation.apple-events).
+The driver now uses LaunchServices for staged builds as well as installed
+candidates; direct execution had attributed browser requests to the Tart guest
+agent. Browser consent remains distinct from effective network denial.

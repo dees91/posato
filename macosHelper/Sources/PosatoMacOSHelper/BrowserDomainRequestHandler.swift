@@ -138,12 +138,15 @@ enum BrowserDomainRequestHandler {
     )
   }
 
-  @MainActor
   static func handleSelectApplications(
     request: WireMessage,
     receivedAt: DispatchTime
   ) throws -> WireMessage {
-    let selection = try ApplicationSelectionService().select()
+    let selection = try performOnMainRunLoop {
+      try MainActor.assumeIsolated {
+        try ApplicationSelectionService().select()
+      }
+    }
     return try WireMessage(
       kind: .response,
       operation: request.operation,
@@ -157,6 +160,22 @@ enum BrowserDomainRequestHandler {
       requestIdentifier: request.requestIdentifier,
       payload: selection.encode()
     )
+  }
+
+  /// Runs the picker as a main run-loop block rather than inside `DispatchQueue.main.sync`. A modal
+  /// loop nested in a main-queue callout does not drain the main queue, and the picker's SIGTERM
+  /// source is delivered on that queue; inside `main.sync` the helper would ignore SIGTERM while
+  /// the panel is open.
+  private static func performOnMainRunLoop<T>(_ work: @escaping () throws -> T) throws -> T {
+    let finished = DispatchSemaphore(value: 0)
+    var result: Result<T, Error>?
+    CFRunLoopPerformBlock(CFRunLoopGetMain(), CFRunLoopMode.commonModes.rawValue) {
+      result = Result(catching: work)
+      finished.signal()
+    }
+    CFRunLoopWakeUp(CFRunLoopGetMain())
+    finished.wait()
+    return try result!.get()
   }
 
   /// Apply succeeded in the daemon but the effective proxy chain still contained another route, so

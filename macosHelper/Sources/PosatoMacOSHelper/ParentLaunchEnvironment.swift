@@ -8,6 +8,10 @@ enum ParentLaunchEnvironment {
     "JDK_JAVA_OPTIONS",
   ]
 
+  /// The helper calls this once from its top-level code, before the pipe queue starts: the
+  /// environment the application was launched with decides whether code could have been loaded
+  /// into it before any of Posato's own code ran, because the JVM consumes these variables and can
+  /// load an agent before the application itself runs.
   static func isCleanForParent() -> Bool {
     guard let arguments = processArguments(of: getppid()) else {
       return false

@@ -963,9 +963,13 @@ below. This queue retains idea provenance without expanding the original MVP.
     the local `/blocked` route renders Posato. No Automation prompt appeared
     and the Automation panel had no entries. This reproduces missing
     presentation, not its cause or every supported browser context.
-    `open`: distinguish permission, browser context, and adapter failures.
-    PR #106 retains verification evidence. `user-confirmed` (2026-09-29):
-    `MACOS-022` belongs to release 1.3.
+    `observed` in MACOS-022: missing Automation grants, launch attribution,
+    and background-thread AppleScript prevented presentation. The fix gives
+    the app and helper the required grant and keeps native work on the main
+    thread. Chrome regular/Incognito and Safari regular/Private reach the
+    local page after consent; denial still blocks. Independent review and
+    aggregate quality passed. PR #106 retains the reproduction evidence.
+    `user-confirmed` (2026-09-29): `MACOS-022` belongs to release 1.3.
 
 22. **Extending a naturally expired schedule across devices.**
     `user-confirmed` (2026-09-28): a schedule previously ending at 18:00 on
