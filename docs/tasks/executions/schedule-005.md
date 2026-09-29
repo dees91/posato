@@ -1,6 +1,6 @@
 # SCHEDULE-005 execution
 
-- **Status:** complete; ready for review and merge
+- **Status:** rule revision in progress (2026-09-29)
 
 ## Diagnosis
 
@@ -18,6 +18,87 @@ contain no reason, original start, or observed end.
 3. Keep shared evaluation and the native monitor's stopped dates consistent.
 4. Verify persistence, repeated sync and clock boundaries, then real-device
    enforcement and cleanup. Complete independent review and quality.
+
+## Rule revision plan (2026-09-29)
+
+The maintainer replaced the pinned-occurrence rule. The current plan now
+decides whether an occurrence runs at every edit (see the brief). The
+independent plan review approved this plan once its four Required findings
+were folded in (marked R1-R4 below).
+
+1. **One derivation.** `active()`, `next()`, the Skip next key, and the
+   monitor table share one occurrence per plan and date:
+   - the plan is enabled and runs on that weekday;
+   - the date has no Skip or End early fact;
+   - the interval comes from the current plan's times, capped at 24 hours
+     after its start;
+   - its effective start is the later of the planned start and that key's
+     latest natural end observed here.
+
+   The occurrence exists only while the effective start is before its end.
+   After an expiry, a later interval on the same date is therefore eligible,
+   including for the next run and Skip next (R2). The engine, Session, claims,
+   and pins all use the effective start.
+2. **Pins.** A pin marks only a running occurrence for notices, the update
+   gate, and stop detection. A fresh run creates a fresh pin with no notice
+   bits. The Mac host drops its in-memory notice marks for a key whose pin
+   the same evaluation deletes, so a second run is announced (R1).
+3. **Stops.** A pin that no longer runs is deleted. If now is at or after the
+   end its plan's times give for that date, that end is recorded as the key's
+   observed natural end, keeping the maximum. This ignores the on-off state,
+   weekdays, and refusal, so a later turn-off cannot erase an expiry. No local
+   stop is permanent; Skip and End early stay final through their facts. An
+   edit that stops a running pause posts no end notice on either platform:
+   the host releases its claim before it publishes the monitor table.
+4. **Storage.** Reshape the unreleased migration 12:
+   - the expiry table keeps only the key and the observed end;
+   - the pin gains no new column;
+   - `local_schedule_terminal` is dropped with its queries.
+
+   Remove that table's drops from the migration fixtures, and make fresh and
+   migrated schemas match. The test iPhone already ran the previous candidate
+   at schema 13. Reset its Posato data before the revision E2E and restore
+   its one website and one application afterwards (R3). Prune expiry rows
+   older than yesterday.
+5. **Monitor table.** Stopped dates hold Skip and End early dates. They also
+   hold expired dates whose effective start is after the planned start, and a
+   running override carries the effective start.
+6. **iOS monitor and notices (R4).**
+   - The extension announces a start it records, as now.
+   - The app host also announces a running start that the extension has not
+     recorded, and records it first, so an edit or re-enable inside the
+     interval announces exactly once.
+   - Start records stay keyed by date; publishing clears them when the
+     occurrence stops.
+   - Remove the one-shot tail, but keep `tailActivity` excluded from schedule
+     identifiers so a leftover 1.2 tail is cleaned up.
+7. **Documentation.**
+   - Rewrite section 4 and the edit and local-persistence rules in
+     `docs/product/schedules-decisions.md`, the brief, and the single wiki
+     log entry.
+   - Refused plans behave like turned-off ones.
+   - Setup notices repeat per run.
+   - The rollback bound covers only runs this device observed; a stop and
+     restart it did not observe continue without a new notice.
+8. **Tests.**
+   - Audit the tests that assert the replaced pinned-start rule before
+     revising them, listing each one's assertion and fate in this record:
+     `ScheduleOccurrencePinTest`, `ScheduleExpiryExtensionTest`,
+     `ScheduleMonitorTableTest`, `ScheduleHostTest`, and the tail and
+     pinned-occurrence tests in `iosAppTests/ScheduleMonitorTests.swift`.
+   - Write failing isolated tests only where E2E cannot reliably expose the
+     failure:
+     - the observed-end bound and clock rollback;
+     - the 24-hour cap and DST;
+     - the Skip next key after expiry;
+     - the host's second-run notice;
+     - migration schema;
+     - the Swift monitor rule.
+   - Prove edit stops, turning off and on, a later same-day run, Skip before
+     an edit, and start notices end to end on Tart and the test iPhone:
+     - include Posato terminated on the iPhone;
+     - check that the repeating activity's end clears a second run and an
+       extension after expiry.
 
 ## Accepted migration
 
