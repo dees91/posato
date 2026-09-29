@@ -663,6 +663,13 @@ accepted contracts.
 
 ## Post-MVP feature ideas for discovery
 
+`user-confirmed` (2026-09-28): during release 1.3 planning, the maintainer
+selected `NAV-001` and reusable blocklists, and tentatively favored
+`SYNC-020`, `MACOS-020`, and `MACOS-021`. The latter three remain candidates;
+the rest of the release will be considered later. The
+[release roadmap](../../tasks/release-roadmap.md#release-13-blocklists-and-navigation)
+records the partial selection. Final composition and activation remain open.
+
 `user-confirmed` (2026-09-13): retain the following larger, loosely defined
 ideas for future iterations after the MVP. Unresolved choices remain `open`;
 accepted later decisions link to their product authority and roadmap owners
@@ -710,15 +717,17 @@ below. This queue retains idea provenance without expanding the original MVP.
    closes, with launch at login as an opt-in. `MACOS-013` delivers it.
 8. **Intel Mac support, starting with a 2019 MacBook Air.** `user-confirmed`
    (2026-09-14): explore running Posato on the maintainer's 2019 Intel MacBook
-   Air. `source-claim`: Apple lists macOS Sequoia (15) for MacBook Air models
-   from 2020 or later, so that model tops out at macOS Sonoma (14). Support
-   therefore needs two changes to
-   [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md),
-   which accepts only arm64 on macOS 15 or later: an x86-64 (or universal)
-   build and a macOS 14 deployment target. Discovery must cover the bundled
-   Java runtime and native libraries per architecture, the Swift helpers,
-   packaging and notarization for both architectures, macOS 14 API
-   availability, and a physical test device in the release matrix.
+   Air. `source-claim`: Apple lists macOS Sonoma (14) as that model's newest
+   compatible system. `user-confirmed` (2026-09-29): this MacBook runs
+   macOS 13 Ventura, and the maintainer chooses to retain it. `MACOS-015`
+   therefore evaluates Intel support on Ventura, replacing the earlier
+   macOS 14 discovery target. The accepted
+   [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
+   still specifies arm64 on macOS 15 or later; no lower baseline is accepted
+   without the discovery result. Discovery must cover an x86-64 build,
+   the bundled Java runtime and native libraries, Swift helpers, packaging,
+   notarization, macOS 13 API availability, and a verification path for the
+   physical device. Feasibility and support remain open.
 9. **In-app updates for macOS.** `user-confirmed` (2026-09-14): explore
    delivering new macOS versions from inside Posato, for example with Sparkle,
    after `MACOS-008` chose a manual download of each notarized build without
@@ -918,6 +927,58 @@ below. This queue retains idea provenance without expanding the original MVP.
     inactive UI shell from verified implementation. Exact system prompt count
     remains unproven. The current Start/Resume grant does not authorize
     scheduled Apply.
+
+20. **Reusable blocklists for manual sessions and schedules.**
+    `user-confirmed` (2026-09-28): release 1.3 includes named blocklists,
+    each with user-chosen websites and device-local application choices.
+    One list is selected for a manual session or schedule, with a default
+    offered for new starts and plans. Existing targets become the default
+    list and existing schedules use it. Overlapping schedules combine their
+    lists; ending one occurrence retains restrictions required by another.
+    Definitions and websites synchronize; app choices stay local per list.
+    The accepted [product scope](../../product/blocklists.md) replaces the
+    earlier preliminary idea of separate selections only for schedules.
+    `observed`: the current 1.2 rules and hosts use one current selection
+    across schedules. `SCHEDULE-003` owns the remaining decisions about
+    live edits, deletion, manual-session overlap, defaults, limits, migration,
+    and compatibility; `SCHEDULE-004` delivers the accepted rules. Final
+    release composition and task activation remain open.
+
+21. **Missing local pause page after HTTPS denial.**
+    `user-confirmed` (2026-09-28): the maintainer reports a browser tunnel
+    error instead of the Posato page during a scheduled pause on Mac.
+    `observed` in code and [ADR 0005](../../decisions/0005-macos-browser-enforcement-and-coexistence.md):
+    HTTPS denial and same-tab presentation are separate; presentation needs
+    a supported frontmost browser and Automation permission. The screenshot
+    alone establishes neither the cause nor a failed loopback listener.
+    `observed` (2026-09-28, fresh Tart VM, macOS 26.6.2 and Chrome Stable
+    154.0.8037.58): a scheduled pause denies HTTPS with the same tunnel
+    error after reload and another navigation, while direct navigation to
+    the local `/blocked` route renders Posato. No Automation prompt appeared
+    and the Automation panel had no entries. This reproduces missing
+    presentation, not its cause or every supported browser context.
+    `open`: distinguish permission, browser context, and adapter failures.
+    `MACOS-022` is unassigned backlog; PR #106 retains verification evidence.
+
+22. **Extending a naturally expired schedule across devices.**
+    `user-confirmed` (2026-09-28): a schedule previously ending at 18:00 on
+    iPhone was extended at about 20:00 to 23:00 on a newly installed Mac.
+    The Mac began restricting; iPhone received the edited plan but still
+    offered Start a session. The maintainer expects activation after sync.
+    `observed`: [schedule rules](../../product/schedules-decisions.md#occurrence-identity-and-convergence)
+    and `ScheduleOccurrences` prevent a local terminal occurrence from
+    restarting after an edit. `observed` (2026-09-28, test iPhone and Tart
+    VM): a 19:00-20:28 plan blocked on iPhone and naturally expired. A Mac
+    joining after expiry received it and extended the end to 21:28. The Mac
+    then blocked; iPhone received 21:28 but still offered Start a session,
+    and both Safari and Calculator stayed usable. No Skip or End early was
+    used. The Mac's schedule had zero local terminal markers.
+    `inferred`: the iPhone's retained expiry marker explains the difference;
+    its database was not inspected. PR #106 retains the reproduction evidence.
+    `open`: distinguish natural expiry from explicit Skip and End early when
+    deciding whether an extended occurrence can restart after sync.
+    `SCHEDULE-005` is unassigned backlog; intake does not revise the accepted
+    terminal-marker rule or authorize implementation.
 
 ## Later platform questions
 

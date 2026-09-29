@@ -2189,3 +2189,26 @@ to scope, feasibility, or delivery.
   administrator prompt (SecurityAgent) from a Background Items notice by the
   window's owning process; `update-consent` answers the modal update-consent
   alert; the verify-posato map gains an updates recipe.
+
+## [2026-09-28] planning | Blocklists and partial release 1.3 composition
+
+- `user-confirmed`: `NAV-001` belongs to release 1.3. `SYNC-020`,
+  `MACOS-020`, and `MACOS-021` remain tentative candidates. The roadmap
+  records the partial selection; remaining scope, final waves, and activation
+  stay open for the next planning checkpoint.
+- `user-confirmed`: release 1.3 includes reusable named blocklists for
+  manual sessions and schedules, with a default, migration of existing
+  selections, and union of overlapping scheduled lists. The product scope
+  records these decisions; `SCHEDULE-003` settles remaining behavior and
+  compatibility before `SCHEDULE-004` delivery. Idea 20 and the GitHub
+  project follow this accepted scope.
+- `user-confirmed`: add unassigned `MACOS-022` and `SCHEDULE-005` for the
+  reported missing HTTPS pause page and inconsistent activation after a
+  naturally expired schedule is extended. Ideas 21 and 22 retain the
+  evidence limits and distinguish inferred causes from a rule change.
+- `observed`: Tart reproduces the missing HTTPS presentation while the local
+  page works. A test-iPhone occurrence expires, then receives the Mac
+  extension without resuming; the Mac blocks. Both remain unassigned backlog.
+- `user-confirmed` (2026-09-29): Intel discovery targets macOS 13 Ventura
+  because the maintainer chooses to retain it on the 2019 MacBook Air.
+  This replaces the proposed macOS 14 target; compatibility remains open.
