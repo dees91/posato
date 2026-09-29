@@ -191,6 +191,9 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         val applicationCode = application.resolve("Contents/app")
         val launcher = application.resolve("Contents/MacOS/Posato")
         val archivedNativeLibraries = nativeLibrariesInArchives(applicationCode)
+        val skikoArchitecture = if (intelEvaluation.get()) "x64" else "arm64"
+        val skikoLibrary = applicationCode.resolve("libskiko-macos-$skikoArchitecture.dylib")
+        check(skikoLibrary.isFile) { "The packaged $skikoArchitecture Skiko library is missing from Contents/app." }
         verifyNativeArchitecture(application, archivedNativeLibraries)
         val windowLibrary = applicationCode.resolve("resources/native/libPosatoWindow.dylib")
         check(windowLibrary.isFile) { "The packaged window chrome library is missing." }
@@ -796,6 +799,9 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
                     Files.copy(library, stagedLibrary.toPath(), StandardCopyOption.REPLACE_EXISTING)
                     signCode(stagedLibrary, identity)
                     Files.copy(stagedLibrary.toPath(), library, StandardCopyOption.REPLACE_EXISTING)
+                    if (jarPrefix.startsWith("skiko-awt-runtime-macos-")) {
+                        Files.copy(stagedLibrary.toPath(), applicationCode.resolve(libraryPath).toPath(), StandardCopyOption.REPLACE_EXISTING)
+                    }
                 }
             }
         }

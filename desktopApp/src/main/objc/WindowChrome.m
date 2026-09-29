@@ -80,6 +80,14 @@ static BOOL presenceMainWindowVisible = YES;
 static BOOL presenceLaunchedAtLogin = NO;
 static id presenceLaunchObserver;
 
+static void PresenceActivate(void) {
+    if (@available(macOS 14.0, *)) {
+        [NSApp activate];
+    } else {
+        [NSApp activateIgnoringOtherApps:YES];
+    }
+}
+
 static JNIEnv *PresenceEnvironment(void) {
     JNIEnv *environment = NULL;
     if (presenceVirtualMachine == NULL) return NULL;
@@ -333,7 +341,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_setMainWindowVi
     dispatch_async(dispatch_get_main_queue(), ^{
         presenceMainWindowVisible = shown;
         PresenceApplyPolicy(nil);
-        if (shown) [NSApp activate];
+        if (shown) PresenceActivate();
     });
 }
 
@@ -351,7 +359,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_presentAlert(
     NSString *primaryTitle = PresenceString(environment, primary);
     NSString *secondaryTitle = PresenceString(environment, secondary);
     dispatch_async(dispatch_get_main_queue(), ^{
-        [NSApp activate];
+        PresenceActivate();
         NSAlert *alert = [[NSAlert alloc] init];
         alert.messageText = alertTitle;
         alert.informativeText = alertMessage;
