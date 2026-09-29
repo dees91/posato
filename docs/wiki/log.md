@@ -2319,3 +2319,9 @@ to scope, feasibility, or delivery.
 - `user-confirmed`: backlog row `WEB-002` (idea 24) reworks the site's first
   screen, especially on phones, and replaces the product line
   **Pause. Then choose.** everywhere it appears; no release yet.
+## [2026-09-29] experiment | Intel Ventura evaluation package
+
+- `observed`: a notarized x86-64 evaluation DMG passed package signature,
+  Gatekeeper, architecture, and minimum-version checks. The build required a
+  macOS 13 activation fallback and signing the x86-64 Skiko library. Runtime
+  behavior on macOS 13 remains open; ADR 0003 is unchanged.

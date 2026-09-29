@@ -731,6 +731,14 @@ below. This queue retains idea provenance without expanding the original MVP.
    the bundled Java runtime and native libraries, Swift helpers, packaging,
    notarization, macOS 13 API availability, and a verification path for the
    physical device. Feasibility and support remain open.
+   `observed` (2026-09-29): an evaluation branch produced a notarized
+   x86-64/macOS 13 candidate with an x86-64 Temurin runtime, Compose and
+   SQLite native libraries, Swift helper, daemon, and sync companion. The
+   package scan found x86-64 in all 39 Mach-O files and no deployment target
+   above macOS 13. The macOS 13 build exposed an AppKit activation call first
+   available in macOS 14 and an unsigned x86-64 Skiko library; the evaluation
+   branch addresses both. No macOS 13 runtime flow has been observed, so the
+   support decision and ADR 0003 revision remain open.
    `user-confirmed` (2026-09-29): Intel support is part of release 1.3 as
    one `MACOS-015` delivery row, verified on the MacBook Air set up as a
    dedicated test Mac without personal Posato data.

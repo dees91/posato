@@ -10,14 +10,18 @@ val swiftScratchDirectory = layout.buildDirectory.dir("swift")
 val helperBundleDirectory = layout.buildDirectory.dir("bundle/PosatoMacOSHelper.app")
 val posatoMarketingVersion = PosatoVersion.marketingVersion(rootProject.file("Version.xcconfig"))
 val posatoBuildNumber = PosatoVersion.developmentBuildNumber(providers.gradleProperty("posatoMacOsBuildNumber").orNull)
+val intelEvaluation = providers.gradleProperty("posatoIntelEvaluation").orNull == "true"
+val macOsMinimumVersion = if (intelEvaluation) "13.0" else "15.0"
+val swiftTriple = if (intelEvaluation) "x86_64-apple-macosx13.0" else "host"
 
 val buildSwiftRelease by tasks.registering(Exec::class) {
     group = "build"
-    description = "Builds the arm64 macOS helper and proxy-settings daemon."
+    description = "Builds the macOS helper and proxy-settings daemon."
     inputs.files(fileTree("Sources"), "Package.swift")
+    inputs.property("swiftTriple", swiftTriple)
     outputs.dir(swiftScratchDirectory)
 
-    commandLine(
+    val swiftCommand = mutableListOf(
         "/usr/bin/xcrun",
         "swift",
         "build",
@@ -28,6 +32,8 @@ val buildSwiftRelease by tasks.registering(Exec::class) {
         "-Xswiftc",
         "-warnings-as-errors",
     )
+    if (intelEvaluation) swiftCommand += listOf("--triple", swiftTriple)
+    commandLine(swiftCommand)
 }
 
 val assembleHelperBundle by tasks.registering(Sync::class) {
@@ -36,6 +42,7 @@ val assembleHelperBundle by tasks.registering(Sync::class) {
     dependsOn(buildSwiftRelease)
     inputs.property("posatoMarketingVersion", posatoMarketingVersion)
     inputs.property("posatoBuildNumber", posatoBuildNumber)
+    inputs.property("macOsMinimumVersion", macOsMinimumVersion)
 
     into(helperBundleDirectory)
     from("Resources/HelperInfo.plist") {
@@ -45,6 +52,7 @@ val assembleHelperBundle by tasks.registering(Sync::class) {
             "tokens" to mapOf(
                 "POSATO_MARKETING_VERSION" to posatoMarketingVersion,
                 "POSATO_BUILD_NUMBER" to posatoBuildNumber,
+                "POSATO_MINIMUM_SYSTEM_VERSION" to macOsMinimumVersion,
             ),
         )
     }
