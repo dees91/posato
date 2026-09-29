@@ -1,8 +1,8 @@
 # `MACOS-015`: Posato on Intel Macs running macOS 13 Ventura
 
 - **Review tier:** High-risk
-- **Tier reason:** Revises the ADR 0003 platform baseline, adds a second
-  signed and notarized architecture to the release and update path, and
+- **Tier reason:** Revises the ADR 0003 platform baseline and the ADR 0008
+  update channel, adds a second signed and notarized architecture, and
   proposes an `AGENTS.md` verification exception.
 - **Dependencies:** None (release 1.3, wave 1). `DOCS-004` and `RELEASE-005`
   wait for this row.
@@ -14,54 +14,66 @@
 
 ## Outcome
 
-Posato 1.3 ships a supported, notarized x86-64 build for Intel Macs running
-macOS 13 Ventura or later, with the same blocking, setup, synchronization,
-and in-app update behavior as the arm64 build.
+Posato 1.3 can ship a notarized x86-64 build for Intel Macs running macOS 13
+Ventura or later that passes the same accepted flow as the arm64 build.
 
 ## Boundaries
 
-- Propose the ADR 0003 revision (supported architectures, minimum macOS,
-  support horizon for Intel and macOS 13) and obtain acceptance before the
-  release path changes. The arm64 default build keeps its behavior.
-- Propose a narrow `AGENTS.md` exception: the 2019 MacBook Air may run Posato
-  as a dedicated test Mac, because Tart cannot run an x86-64 guest. Rely on it
-  only after acceptance; the maintainer's own Mac stays excluded.
-- Extend `posato-control` to drive that Mac without the maintainer, as it
-  drives Tart: installation, prompts, the application UI, and evidence.
-- Publish the x86-64 distribution and update-feed entry that the accepted
-  ADR 0003 revision specifies; the update path must never offer a build to
-  the wrong architecture or system.
-- Non-goals: macOS 12 or older, universal binaries unless the ADR revision
-  chooses them, and the deferred intermittent CloudKit bootstrap timeout
-  unless it reproduces during verification.
+- **Decisions to propose and have accepted first:** an ADR 0003 revision
+  (architectures, minimum macOS, support horizon, whether arm64 on macOS 13
+  and 14 stays unsupported, and Rosetta: refuse the x86-64 build on Apple
+  silicon or support it); an ADR 0008 revision with the `TB-08`/`T-13`
+  threat-model update (a separate x86-64 feed or per-item requirements in one
+  feed, and build numbers across architectures); and a narrow `AGENTS.md`
+  exception for the dedicated MacBook Air, because Tart cannot run an x86-64
+  guest. Nothing relies on them before acceptance.
+- The feed that installed 1.1 and 1.2 arm64 clients read never offers an
+  x86-64 build, and the x86-64 channel never offers an arm64 build or one with
+  a higher minimum macOS.
+- This row delivers release tooling and verified candidates on a test feed;
+  only `RELEASE-005` publishes anything public.
+- macOS 13 compatibility stays enforced after this row: the quality gate
+  compiles the macOS 13 native parts, and later macOS rows inherit that.
+  The arm64 bundles keep their accepted minimum. The x86-64 Java runtime is
+  pinned to the arm64 Temurin version and obtainable by any contributor.
+- Setup must work from a clean state without a restart, or the missed daemon
+  submission seen in the evaluation becomes a named, disclosed risk. The
+  driver never runs `sfltool resetbtm`.
+- Non-goals: macOS 12 or older, and the deferred CloudKit bootstrap timeout
+  unless it reproduces.
 
 ## Acceptance
 
-- `AC-01` — The ADR 0003 revision and the `AGENTS.md` exception are accepted
-  by the maintainer.
-- `AC-02` — On the dedicated MacBook Air, driven by `posato-control`: setup,
-  a manual session with actual website and application blocking and release,
-  a schedule, iCloud link and sync with a Tart peer, and an in-app update
-  between two notarized x86-64 candidates.
-- `AC-03` — The arm64 candidate still passes its package checks and the
-  accepted flow in Tart, and its update feed never offers the x86-64 build.
-- `AC-04` — The availability page and release process name both builds.
+- `AC-01` — The maintainer accepts the ADR 0003 and ADR 0008 revisions and
+  the `AGENTS.md` exception.
+- `AC-02` — On the dedicated MacBook Air, driven by `posato-control` from a
+  clean state: the macOS 15 flow of the availability page (installation,
+  setup, pause, a schedule after restart with login launch, start notice,
+  early end from the menu bar), plus the pause page, the application picker,
+  sync with a Tart peer, helper removal, and an update between two x86-64
+  candidates.
+- `AC-03` — The arm64 candidate passes its package checks and the same flow
+  in Tart, feeds stay separated as stated, and the chosen Rosetta behavior is
+  shown in an arm64 Tart guest.
+- `AC-04` — The availability page shows only the verified Intel evidence and
+  any accepted limits.
 
 ## Verification
 
 <!-- Unattended by default (AGENTS.md): macOS in a Tart VM with --vm, never on the host Mac; iOS on the test iPhone. -->
 
-- Package checks for both architectures: every Mach-O architecture and
-  deployment target, signatures, notarization, Gatekeeper, and feed isolation.
-- The AC-02 flow on the MacBook Air and the AC-03 flow in Tart, with evidence
-  under ignored `build/verification/`.
+- Package checks for both architectures: Mach-O architecture and deployment
+  target, signatures, notarization, Gatekeeper, and feed contents.
+- `hypothesis` to test first: an arm64 macOS 13 Tart guest with Rosetta may
+  cover macOS 13 regressions unattended before the MacBook Air runs.
+- MacBook Air runs are the exception path, allowed only after `AC-01`.
 
 ## Decisions or blockers
 
 - The maintainer prepares the MacBook Air once as a dedicated test Mac: no
-  personal Posato data (the evaluation build and its data are removed or a
-  separate macOS account is used), the test Apple Account, remote login, and
-  screen sharing. The evaluation could not drive its UI remotely: System
-  Events timed out and port 5900 was closed.
-- The evaluation changed `Package.swift` to macOS 13 for every build; the
-  plan must keep the arm64 deployment target where ADR 0003 leaves it.
+  personal Posato data or other user sessions, the test Apple Account, SSH
+  key login, screen sharing with credentials named in `local.properties`,
+  automatic login, FileVault off or an unattended restart path, no sleep or
+  lock, and the one-time privacy grants for the driver. The evaluation could
+  not drive its UI remotely. If development-signed builds run there, it is
+  registered through `posato-provisioning`.

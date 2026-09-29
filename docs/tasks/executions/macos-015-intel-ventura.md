@@ -53,10 +53,28 @@ explicit request. They are history, not the row's plan.
   stapling, and Gatekeeper pass.
 - **Quality:** `./gradlew quality` passed after the last evaluation change.
   A fresh `:quality-rules:test` failure in `NativeSafeBacktickNameRuleTest`
-  also reproduced on unchanged `main` at the time.
+  also reproduced on unchanged `main` at the time; it must be green before
+  this branch integrates.
 - **Runtime:** launch and setup on one Intel Ventura Mac only. Blocking,
   schedules, sync with a peer, and the updater alert were not exercised.
+- **Tart smoke launch:** blocked; `vm install --line primary` returned
+  `VM_UNAVAILABLE` because the primary VM stopped at once. Recheck before AC-03.
+- **Tested revision:** `33dd5b7`, based on `b4db95d`, before `MACOS-022`
+  reworked the helper and before `SCHEDULE-005`. The rebased head has not been
+  built or verified for x86-64.
+- The helper-recovery plan review ruled that any `sfltool resetbtm` needs a
+  fresh maintainer decision and a full inventory of other applications'
+  background items; none was run.
 - Raw evidence stays under ignored `build/verification/intel-ventura-*`.
+
+## Brief review (2026-09-29)
+
+An independent review of the opened brief found no Critical and seven
+Required findings: the feed layout belongs to an ADR 0008 revision, only
+`RELEASE-005` publishes, Rosetta needs a decision, the dedicated-Mac gate and
+its unattended prerequisites were incomplete, setup from a clean state was
+missing, the flow did not match the arm64 flow, and macOS 13 compatibility
+needed a lasting gate. All are folded into the brief.
 
 ## Plan
 
