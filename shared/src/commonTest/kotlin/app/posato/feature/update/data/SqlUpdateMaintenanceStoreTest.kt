@@ -86,7 +86,7 @@ class SqlUpdateMaintenanceStoreTest {
 
             assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.SESSION_ACTIVE), store.close(FROM_BUILD, TARGET_BUILD, NOW + 1L))
 
-            schedules.recordHost(ScheduleHostUpdate(finished = setOf(key)))
+            schedules.recordHost(ScheduleHostUpdate(released = setOf(key)))
             assertEquals(MaintenanceStoreResult.Success(MaintenanceCloseOutcome.CLOSED), store.close(FROM_BUILD, TARGET_BUILD, NOW + 2L))
         } finally {
             driver.close()

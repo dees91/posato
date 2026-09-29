@@ -51,7 +51,7 @@ enum ScheduleMonitorEvents {
     }
 
     /// Clears the schedule's store unless an occurrence still runs, which also
-    /// covers overlaps, extended pins and the early callback of a restart. An
+    /// covers overlaps, resumed occurrences and the early callback of a restart. An
     /// unreadable table clears, so the phone is never left restricted. Pause
     /// over follows only shields the schedule held, and only when no manual
     /// session still holds its own; it replaces the app's planned end notice.

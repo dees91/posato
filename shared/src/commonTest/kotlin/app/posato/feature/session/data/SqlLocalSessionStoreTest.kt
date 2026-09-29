@@ -334,7 +334,7 @@ class SqlLocalSessionStoreTest {
             driver.executeSql("DROP TABLE local_update_maintenance")
             driver.executeSql("DROP TABLE local_schedule")
             driver.executeSql("DROP TABLE local_schedule_fact")
-            driver.executeSql("DROP TABLE local_schedule_terminal")
+            driver.executeSql("DROP TABLE local_schedule_expiry")
             driver.executeSql("DROP TABLE local_schedule_pin")
             driver.executeSql("DROP TABLE sync_schedule_intent")
             driver.executeSql("DROP TABLE sync_schedule_seed")

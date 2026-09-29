@@ -1,0 +1,30 @@
+CREATE TABLE local_schedule_expiry (
+  schedule_id BLOB NOT NULL CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  year INTEGER NOT NULL CHECK (typeof(year) = 'integer' AND year BETWEEN 2000 AND 2100),
+  month INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12),
+  day INTEGER NOT NULL CHECK (typeof(day) = 'integer' AND day BETWEEN 1 AND 31),
+  end_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(end_epoch_millis) = 'integer' AND end_epoch_millis BETWEEN 0 AND 4102444800000
+  ),
+  PRIMARY KEY (schedule_id, year, month, day)
+);
+
+selectExpiries:
+SELECT schedule_id, year, month, day, end_epoch_millis FROM local_schedule_expiry;
+
+-- The latest observed end wins, so a replayed or reordered write never moves it back.
+recordExpiry:
+INSERT OR REPLACE INTO local_schedule_expiry(schedule_id, year, month, day, end_epoch_millis)
+SELECT :scheduleId, :year, :month, :day, :endEpochMillis
+WHERE NOT EXISTS (
+  SELECT 1 FROM local_schedule_expiry
+  WHERE schedule_id = :scheduleId AND year = :year AND month = :month AND day = :day
+    AND end_epoch_millis >= :endEpochMillis
+);
+
+deleteExpiry:
+DELETE FROM local_schedule_expiry
+WHERE schedule_id = :scheduleId AND year = :year AND month = :month AND day = :day;
+
+deleteExpiriesForSchedule:
+DELETE FROM local_schedule_expiry WHERE schedule_id = :scheduleId;

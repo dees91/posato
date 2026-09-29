@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS local_schedule_terminal;
+
+CREATE TABLE local_schedule_expiry (
+  schedule_id BLOB NOT NULL CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  year INTEGER NOT NULL CHECK (typeof(year) = 'integer' AND year BETWEEN 2000 AND 2100),
+  month INTEGER NOT NULL CHECK (typeof(month) = 'integer' AND month BETWEEN 1 AND 12),
+  day INTEGER NOT NULL CHECK (typeof(day) = 'integer' AND day BETWEEN 1 AND 31),
+  end_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(end_epoch_millis) = 'integer' AND end_epoch_millis BETWEEN 0 AND 4102444800000
+  ),
+  PRIMARY KEY (schedule_id, year, month, day)
+);

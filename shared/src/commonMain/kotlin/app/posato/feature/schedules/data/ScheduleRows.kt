@@ -30,13 +30,13 @@ internal suspend fun PosatoDatabase.readSnapshot(): ScheduleSnapshot {
     scheduleQueries.selectFacts { id, kind, year, month, day ->
         (if (kind == FACT_SKIP) skipped else ended) += OccurrenceKey(scheduleIdOf(id), ScheduleDate(year.toInt(), month.toInt(), day.toInt()))
     }.awaitAsList()
-    val terminal = scheduleQueries.selectTerminals { id, year, month, day ->
-        OccurrenceKey(scheduleIdOf(id), ScheduleDate(year.toInt(), month.toInt(), day.toInt()))
-    }.awaitAsList().toSet()
     val pins = scheduleQueries.selectPins { id, year, month, day, start, notices ->
         OccurrencePin(OccurrenceKey(scheduleIdOf(id), ScheduleDate(year.toInt(), month.toInt(), day.toInt())), start, notices.toInt())
     }.awaitAsList()
-    return ScheduleSnapshot(schedules, ScheduleFacts(skipped, ended, terminal), pins)
+    val expired = scheduleExpiryQueries.selectExpiries { id, year, month, day, end ->
+        OccurrenceKey(scheduleIdOf(id), ScheduleDate(year.toInt(), month.toInt(), day.toInt())) to end
+    }.awaitAsList().toMap()
+    return ScheduleSnapshot(schedules, ScheduleFacts(skipped, ended, expired), pins)
 }
 
 /** Whether a scheduled pause runs on this device, so an update waits for it like for a manual session. */
@@ -69,7 +69,7 @@ internal suspend fun PosatoDatabase.deleteScheduleEverywhere(id: ScheduleId) {
     scheduleQueries.deleteSchedule(bytes)
     scheduleQueries.deleteFactsForSchedule(bytes)
     scheduleQueries.deletePinsForSchedule(bytes)
-    scheduleQueries.deleteTerminalsForSchedule(bytes)
+    scheduleExpiryQueries.deleteExpiriesForSchedule(bytes)
 }
 
 internal suspend fun PosatoDatabase.writeFact(
@@ -93,11 +93,14 @@ internal suspend fun PosatoDatabase.writeHostUpdate(update: ScheduleHostUpdate) 
     update.notices.forEach { (key, bits) ->
         scheduleQueries.addPinNotices(bits.toLong(), key.schedule.toBytes(), key.date.year.toLong(), key.date.month.toLong(), key.date.day.toLong())
     }
-    update.finished.forEach { key ->
-        val id = key.schedule.toBytes()
-        val date = key.date
-        scheduleQueries.insertTerminal(id, date.year.toLong(), date.month.toLong(), date.day.toLong())
-        scheduleQueries.deletePin(id, date.year.toLong(), date.month.toLong(), date.day.toLong())
+    update.expired.forEach { (key, end) ->
+        scheduleExpiryQueries.recordExpiry(key.schedule.toBytes(), key.date.year.toLong(), key.date.month.toLong(), key.date.day.toLong(), end)
+    }
+    update.released.forEach { key ->
+        scheduleQueries.deletePin(key.schedule.toBytes(), key.date.year.toLong(), key.date.month.toLong(), key.date.day.toLong())
+    }
+    update.forgotten.forEach { key ->
+        scheduleExpiryQueries.deleteExpiry(key.schedule.toBytes(), key.date.year.toLong(), key.date.month.toLong(), key.date.day.toLong())
     }
 }
 

@@ -152,7 +152,7 @@ class ScheduleHostTest {
 
             assertNull(fixture.host.pause.value)
             assertEquals(listOf("grant apply until ${at(10)}", "clear"), fixture.helper.calls)
-            assertEquals(setOf(mondayKey), fixture.snapshot().facts.terminal)
+            assertEquals(mapOf(mondayKey to at(10)), fixture.snapshot().facts.expired)
             assertTrue(fixture.snapshot().pins.isEmpty())
         }
     }
@@ -329,6 +329,26 @@ class ScheduleHostTest {
             host.evaluate()
 
             assertEquals(emptySet(), host.pause.value?.unannounced)
+        }
+    }
+
+    @Test
+    fun `given an announced run when an edit stops it and a later interval starts it again then the second run is announced`() = runTest {
+        withHost("host-second-run.db") { fixture ->
+            fixture.now = at(9, 5)
+            fixture.host.evaluate()
+            fixture.host.markAnnounced(setOf(mondayKey), ScheduleNotices.STARTED)
+            fixture.host.evaluate()
+            assertEquals(emptySet(), fixture.host.pause.value?.unannounced)
+
+            fixture.store.save(SchedulePlan(focusId, "Focus", 1, 9 * 60 + 30, 10 * 60, true), null)
+            fixture.now = at(9, 10)
+            fixture.host.evaluate()
+            assertNull(fixture.host.pause.value)
+
+            fixture.now = at(9, 31)
+            fixture.host.evaluate()
+            assertEquals(setOf(mondayKey), fixture.host.pause.value?.unannounced)
         }
     }
 

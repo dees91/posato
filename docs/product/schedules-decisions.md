@@ -99,12 +99,36 @@ provenance label.
 - **Local persistence.** A device remembers its local skip and end facts
   across restart and relaunch before the first sync (the product scope
   requirement), in the same local transaction as the operation it authors.
-  It also keeps a local terminal marker for every occurrence that ended or
-  expired, so a clock rollback or a later edit never recreates it.
+  It also remembers the latest natural end it observed for each occurrence:
+  that date runs again only when its current interval covers the current
+  time at or after that end. Unchanged plans, repeated sync, and clock
+  rollback therefore do not revive an expired interval, while an edit that
+  moves the interval later or extends it past the current time does. This
+  bound covers only runs this device observed and is kept for about a day,
+  as long as an occurrence can still run; a stop and restart it did not
+  observe continue without a new notice (`user-confirmed` 2026-09-28, revised
+  2026-09-29, SCHEDULE-005).
 - **Dates.** A skip or end names a date at most 400 days ahead.
-- **Editing a schedule** that is running ends nothing by itself. The running
-  occurrence follows the edited end time, which may extend it. Turning a schedule off or deleting
-  it ends its running occurrence at once.
+- **Editing a schedule** is evaluated against the edited plan at once
+  (`user-confirmed` 2026-09-29). When its days, start, end, or on-off state
+  no longer cover the current time, a running occurrence stops, and the plan
+  runs again at its new interval, even later the same day. When the edited
+  interval covers the current time, the occurrence starts at once. Turning a
+  schedule off is such an edit, and a refused plan behaves like a turned-off
+  one. Skip and End early stay final for their date. Deleting a schedule ends
+  its running occurrence at once. An edit that stops a running pause posts no
+  end notice, and every fresh start is announced again, including a second
+  run on the same date.
+
+### Legacy expiry migration (SCHEDULE-005)
+
+`user-confirmed` (2026-09-28): older local terminal markers do not record a
+reason or time bounds. On upgrade, discard those legacy markers and evaluate
+current plans. An interval covering now may run. Preserve all explicit Skip
+and End early facts, which still prevent that occurrence from running. Since
+the 2026-09-29 revision a device keeps no permanent local stops, so the
+migration removes the legacy marker table and records only observed natural
+ends from then on.
 
 ### Synchronized operations (ADR 0006 amendment)
 
@@ -242,7 +266,12 @@ the remaining slices. Each is decided here, `user-confirmed` (delegated,
 - On iPhone the extension posts only what the app planned: the app writes
   the switch's state into the App Group file with the schedule table, and the
   extension reads it before posting. Turning notices off rewrites the file
-  and removes pending requests.
+  and removes pending requests. A start that an edit or a re-enable begins
+  inside the interval gets no extension callback, so the app announces a
+  running start the extension has not recorded, recording it first; each run
+  is announced once by either (SCHEDULE-005, 2026-09-29).
+- Start and setup notices are per run: a run that stops and starts again,
+  including on the same date, is announced again.
 
 ### 3. A permission path for schedule-only use
 
@@ -253,18 +282,18 @@ the remaining slices. Each is decided here, `user-confirmed` (delegated,
   on pause notices" action while the permission is undetermined and the
   switch is on. Refusing never affects blocking or setup.
 
-### 4. A running pause survives edits and restarts
+### 4. A running pause follows its plan and survives restarts
 
-- When a host first sees an occurrence running, it **pins** it locally:
-  the occurrence key and its original start. The pin survives relaunch.
-- A pinned occurrence keeps running under edits: its end is the plan's
-  current end time on its start date (the next day when that end is at or
-  before the pinned start's time), capped at 24 hours after the original
-  start. Moving the start, removing the weekday, or a remote edit does not
-  end it; shortening the end can.
-- Turning the schedule off, deleting it, **Skip** or **End early** for that
-  key ends it; the host then writes the terminal marker and drops the pin.
-  The engine takes pins as an input (slice 2 gains it in slice 4).
+- Revised on 2026-09-29 (`user-confirmed`, SCHEDULE-005). An occurrence always
+  follows its plan as it is now; no original start is kept across edits.
+- When a host first sees an occurrence running, it **pins** it locally. The
+  pin carries the notices posted for that run, holds back an update while
+  the run lasts, and survives relaunch, so a relaunch inside the interval
+  catches up without a second notice.
+- A pin whose occurrence no longer runs is released. When the plan's times
+  for that date have ended, the host records that end as the observed
+  natural end; nothing else stops an occurrence permanently on this device.
+  Skip and End early remain final through their facts.
 
 ### 5. Promises agree with automatic starts
 

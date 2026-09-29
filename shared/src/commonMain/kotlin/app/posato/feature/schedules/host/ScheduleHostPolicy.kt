@@ -15,22 +15,30 @@ internal data class HostStep(
 
 internal object ScheduleHostPolicy {
     /**
-     * Running occurrences with pins as the engine sees them. A running occurrence seen for the first
-     * time is pinned with its start; a pinned one that no longer runs (it ended, was turned off,
-     * deleted, skipped or ended early, or the clock went back) becomes terminal here.
+     * Running occurrences with pins as the engine sees them. A run seen for the first time is pinned; a pinned
+     * one that no longer runs is released, and when its plan's times have ended it records that natural end,
+     * whatever the plan's days or on-off state, so the same interval never runs here again.
      */
     fun step(
         snapshot: ScheduleSnapshot,
         nowEpochMillis: Long,
         zone: ScheduleZone,
     ): HostStep {
-        val running = ScheduleOccurrences.active(snapshot.runnable, snapshot.facts, nowEpochMillis, zone, snapshot.pins)
+        val running = ScheduleOccurrences.active(snapshot.runnable, snapshot.facts, nowEpochMillis, zone)
         val runningKeys = running.map { it.key }.toSet()
         val pinnedKeys = snapshot.pins.map { it.key }.toSet()
         val newPins = running.filter { it.key !in pinnedKeys }.map { OccurrencePin(it.key, it.startEpochMillis) }
-        val finished = pinnedKeys - runningKeys
+        val released = pinnedKeys - runningKeys
+        val plans = snapshot.schedules.associate { it.plan.id to it.plan }
+        val expired = released.mapNotNull { key ->
+            val end = plans[key.schedule]?.let { ScheduleOccurrences.planned(it, key.date, zone) }?.endEpochMillis
+            end?.takeIf { nowEpochMillis >= it }?.let { key to it }
+        }.toMap()
+        val yesterday = zone.localAt(nowEpochMillis).date.plusDays(-1)
+        val forgotten = snapshot.facts.expired.keys.filter { it.date < yesterday }.toSet()
         val pins = snapshot.pins.filter { it.key in runningKeys } + newPins
-        return HostStep(running, ScheduleHostUpdate(pins = newPins, finished = finished), pins)
+        val update = ScheduleHostUpdate(pins = newPins, released = released, expired = expired, forgotten = forgotten)
+        return HostStep(running, update, pins)
     }
 
     /**

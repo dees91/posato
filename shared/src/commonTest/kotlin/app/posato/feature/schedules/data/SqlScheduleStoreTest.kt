@@ -130,7 +130,7 @@ class SqlScheduleStoreTest {
     }
 
     @Test
-    fun `given running occurrences when the host records them then pins keep their notices and finished ones become terminal`() = runTest {
+    fun `given host records then pins keep their notices and a released run keeps only its latest observed end`() = runTest {
         withStore("schedules-host.db") { store ->
             val key = OccurrenceKey(id(1), today)
             store.save(plan(1), null)
@@ -140,15 +140,15 @@ class SqlScheduleStoreTest {
             store.recordHost(ScheduleHostUpdate(pins = listOf(OccurrencePin(key, 2_000L)), notices = mapOf(key to 2)))
             assertEquals(listOf(OccurrencePin(key, 1_000L, 3)), store.snapshot().pins)
 
-            store.recordHost(ScheduleHostUpdate(finished = setOf(key)))
-            store.recordHost(ScheduleHostUpdate(finished = setOf(key)))
+            store.recordHost(ScheduleHostUpdate(released = setOf(key), expired = mapOf(key to 5_000L)))
+            store.recordHost(ScheduleHostUpdate(released = setOf(key), expired = mapOf(key to 4_000L)))
 
             assertEquals(emptyList(), store.snapshot().pins)
-            assertEquals(setOf(key), store.snapshot().facts.terminal)
+            assertEquals(mapOf(key to 5_000L), store.snapshot().facts.expired)
             assertEquals(emptyList(), store.intents())
 
-            store.recordHost(ScheduleHostUpdate(pins = listOf(OccurrencePin(key, 1_000L))))
-            assertEquals(emptyList(), store.snapshot().pins)
+            store.recordHost(ScheduleHostUpdate(forgotten = setOf(key)))
+            assertEquals(emptyMap(), store.snapshot().facts.expired)
         }
     }
 

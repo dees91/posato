@@ -127,14 +127,29 @@ internal class ScheduleHost(
         if (!step.update.isEmpty) {
             store.recordHost(step.update)
         }
-        ports.publish(ScheduleMonitorInput(snapshot, step.running, now, ports.targets))
+        if (step.update.released.isNotEmpty()) {
+            // A run that stopped is announced again when it starts again.
+            announced.update { marks -> marks.filterNot { it.first in step.update.released }.toSet() }
+        }
+        val observed = (snapshot.facts.expired.keys + step.update.expired.keys - step.update.forgotten).associateWith { key ->
+            maxOf(snapshot.facts.expired[key] ?: Long.MIN_VALUE, step.update.expired[key] ?: Long.MIN_VALUE)
+        }
+        val published = ScheduleMonitorInput(
+            snapshot.copy(facts = snapshot.facts.copy(expired = observed), pins = step.pins),
+            step.running,
+            now,
+            ports.targets,
+        )
         if (step.running.isEmpty()) {
-            // Idempotent: it clears only a held claim, and retries a clear that failed.
+            // Idempotent: it clears only a held claim, and retries a clear that failed. It runs before the monitor
+            // sees the new table, so a pause an edit stopped is not reported as over.
             ports.claims.releaseSchedule()
+            ports.publish(published)
             unknownReads = 0
             mutablePause.value = null
             return
         }
+        ports.publish(published)
         recordAnnouncedElsewhere(step.running.map { it.key }.toSet())
         val hadConsent = ports.hadConsent()
         // A held claim is kept current: paused items and the latest end may have changed since it was applied.

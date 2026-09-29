@@ -37,6 +37,25 @@ class ScheduleMonitorTableTest {
     )
 
     @Test
+    fun `given a date whose current interval starts before its observed natural end then only the running entry covers it`() {
+        val zone = CentralEuropeanZone
+        val expiredEnd = zone.instantOf(monday, 600)
+        val newEnd = zone.instantOf(monday, 720)
+        val key = OccurrenceKey(id(1), monday)
+        val snapshot = ScheduleSnapshot(
+            schedules = listOf(StoredSchedule(plan(1).copy(endMinute = 720))),
+            facts = ScheduleFacts(expired = mapOf(key to expiredEnd)),
+        )
+        val occurrence = ScheduleOccurrence(key, "Plan 1", expiredEnd, newEnd)
+        val input = ScheduleMonitorInput(snapshot, listOf(occurrence), zone.instantOf(monday, 660)) { targets }
+
+        val table = ScheduleMonitorTables.build(input, zone, targets)
+
+        assertEquals(listOf(monday), table.schedules.single().stoppedDates)
+        assertEquals(listOf(MonitorRunning(id(1).hex, monday, expiredEnd, newEnd)), table.running)
+    }
+
+    @Test
     fun `given plans and facts then only enabled accepted plans are listed with their stopped dates in the window`() {
         val snapshot = ScheduleSnapshot(
             schedules = listOf(
@@ -48,7 +67,7 @@ class ScheduleMonitorTableTest {
             facts = ScheduleFacts(
                 skipped = setOf(OccurrenceKey(id(1), monday.plusDays(7)), OccurrenceKey(id(1), monday.plusDays(-10))),
                 ended = setOf(OccurrenceKey(id(1), monday)),
-                terminal = setOf(OccurrenceKey(id(2), monday.plusDays(-1))),
+                expired = mapOf(OccurrenceKey(id(2), monday.plusDays(-1)) to CentralEuropeanZone.instantOf(monday.plusDays(-1), 600)),
             ),
         )
         val now = CentralEuropeanZone.instantOf(monday, 8 * 60)
@@ -64,7 +83,7 @@ class ScheduleMonitorTableTest {
     }
 
     @Test
-    fun `given a running occurrence then it is listed with its pinned start and end`() {
+    fun `given a running occurrence then it is listed with its start and end`() {
         val occurrence = ScheduleOccurrence(OccurrenceKey(id(1), monday), "Plan 1", 1_000L, 5_000L)
         val input = ScheduleMonitorInput(ScheduleSnapshot(schedules = listOf(StoredSchedule(plan(1)))), listOf(occurrence), 2_000L) { targets }
 

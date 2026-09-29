@@ -36,7 +36,7 @@ internal interface LocalScheduleStore {
         workspaceId: ByteArray?,
     ): ScheduleResult<Unit>
 
-    /** Records what the host saw; pins keep their notice bits, and a finished occurrence becomes terminal here. */
+    /** Records what the host saw: pins with their notice bits, released runs, and observed natural ends. */
     suspend fun recordHost(update: ScheduleHostUpdate): ScheduleResult<Unit>
 }
 

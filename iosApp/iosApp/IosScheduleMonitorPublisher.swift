@@ -29,16 +29,18 @@ extension DeviceActivityCenter: ScheduleActivityCenter {
     }
 }
 
-/// Writes the schedule table the monitor extension reads and keeps one
-/// repeating activity per enabled plan registered, plus a one-shot tail for a
-/// running occurrence whose end the plan no longer gives. Nothing is
-/// registered before Screen Time is approved; approval is the consent here.
+/// Writes the schedule table the monitor extension reads, keeps one repeating
+/// activity per enabled plan registered, and announces a running start the
+/// extension has not recorded, such as one an edit began inside its interval.
+/// Nothing is registered or announced before Screen Time is approved; approval
+/// is the consent here.
 final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
     private let files: ScheduleMonitorFileStore?
     private let center: () -> ScheduleActivityCenter
     private let authorized: () -> Bool
     private let isCapable: Bool
     private let storedMappings: () throws -> [StoredApplicationMapping]
+    private let poster: ScheduleNoticePoster
     private let calendar: () -> Calendar
     private let now: () -> Date
 
@@ -60,6 +62,7 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         storedMappings: @escaping () throws -> [StoredApplicationMapping] = {
             try ApplicationMappingsStore.liveMigrated().load()
         },
+        poster: ScheduleNoticePoster = UserNotificationSchedulePoster(),
         calendar: @escaping () -> Calendar = { ScheduleMonitor.calendar },
         now: @escaping () -> Date = Date.init
     ) {
@@ -68,6 +71,7 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         self.authorized = authorized
         self.isCapable = isCapable
         self.storedMappings = storedMappings
+        self.poster = poster
         self.calendar = calendar
         self.now = now
     }
@@ -105,6 +109,28 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         }
         files?.removeStarted(except: Set(file.running.map { "\($0.id):\($0.date)" }))
         reconcile(file)
+        announceStarts(file)
+    }
+
+    /// Records a start before announcing it, as the extension does, so each run is announced once by either.
+    func announceStarts(_ file: ScheduleMonitorFile) {
+        guard isCapable, authorized(), let files, !file.domains.isEmpty || !file.applicationTokens.isEmpty else { return }
+        let time = now()
+        for running in file.running where !files.hasStarted(scheduleId: running.id, date: running.date) {
+            let start = Date(timeIntervalSince1970: TimeInterval(running.startEpoch))
+            let end = Date(timeIntervalSince1970: TimeInterval(running.endEpoch))
+            guard start <= time, time < end else { continue }
+            // A start that could not be recorded is not announced, so a failing write never repeats the notice.
+            guard (try? files.recordStarted(ScheduleMonitorOccurrence(scheduleId: running.id, date: running.date, start: start, end: end), at: time)) != nil,
+                  file.notices.enabled,
+                  let schedule = file.schedules.first(where: { $0.id == running.id })
+            else { continue }
+            poster.post(
+                identifier: "\(ScheduleMonitor.startNoticePrefix)\(running.id).\(running.date)",
+                title: schedule.startTitle,
+                body: schedule.startBody
+            )
+        }
     }
 
     func startedOccurrences() -> [String] {
@@ -117,9 +143,6 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         var wanted: [DeviceActivityName: DeviceActivitySchedule] = [:]
         for schedule in file.schedules {
             wanted[ScheduleMonitor.activityName(scheduleId: schedule.id)] = Self.repeating(schedule)
-        }
-        if let tail = tail(for: file) {
-            wanted[ScheduleMonitor.tailActivity] = tail
         }
         if let cap = cap(for: file) {
             wanted[ScheduleMonitor.capActivity] = cap
@@ -140,27 +163,6 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
             intervalStart: DateComponents(hour: schedule.startMinute / 60, minute: schedule.startMinute % 60),
             intervalEnd: DateComponents(hour: schedule.endMinute / 60, minute: schedule.endMinute % 60),
             repeats: true
-        )
-    }
-
-    /// A running occurrence that no plan interval ends any more (its start or days were edited) gets a
-    /// one-shot activity ending at its pinned end, at least 15 minutes long as Device Activity requires.
-    func tail(for file: ScheduleMonitorFile) -> DeviceActivitySchedule? {
-        let calendar = calendar()
-        let time = now()
-        let orphaned = file.running.filter { pinned in
-            let end = Date(timeIntervalSince1970: TimeInterval(pinned.endEpoch))
-            guard end > time, let schedule = file.schedules.first(where: { $0.id == pinned.id }) else { return end > time }
-            let planned = ScheduleMonitorRule.active(schedule, at: time, calendar: calendar)
-            return planned?.end != end
-        }
-        guard let latest = orphaned.map({ Date(timeIntervalSince1970: TimeInterval($0.endEpoch)) }).max() else { return nil }
-        let start = min(time, latest.addingTimeInterval(-SuspendedExpiryActivity.minimumInterval))
-        let fields: Set<Calendar.Component> = [.year, .month, .day, .hour, .minute, .second]
-        return DeviceActivitySchedule(
-            intervalStart: calendar.dateComponents(fields, from: start),
-            intervalEnd: calendar.dateComponents(fields, from: latest),
-            repeats: false
         )
     }
 

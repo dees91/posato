@@ -132,15 +132,16 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(occurrence?.start, local(2026, 3, 29, 3))
     }
 
-    func testAPinnedOccurrenceKeepsRunningAfterItsPlanMoved() {
-        let moved = schedule(start: 11 * 60, end: 12 * 60)
-        let pinned = ScheduleMonitorFile.Running(
+    func testARunningOverrideRunsOnItsStoppedDateOnlyFromItsStart() {
+        let resumed = ScheduleMonitorFile.Running(
             id: focusId, date: "2026-09-28",
-            startEpoch: Int64(local(2026, 9, 28, 9).timeIntervalSince1970),
+            startEpoch: Int64(local(2026, 9, 28, 10).timeIntervalSince1970),
             endEpoch: Int64(local(2026, 9, 28, 12).timeIntervalSince1970)
         )
-        let running = ScheduleMonitorRule.running(in: file([moved], running: [pinned]), at: local(2026, 9, 28, 9, 45), calendar: calendar)
-        XCTAssertEqual(running.map(\.date), ["2026-09-28"])
+        let table = file([schedule(start: 9 * 60, end: 12 * 60, stopped: ["2026-09-28"])], running: [resumed])
+        XCTAssertTrue(ScheduleMonitorRule.running(in: table, at: local(2026, 9, 28, 9, 45), calendar: calendar).isEmpty)
+        let running = ScheduleMonitorRule.running(in: table, at: local(2026, 9, 28, 10, 30), calendar: calendar)
+        XCTAssertEqual(running.map(\.start), [local(2026, 9, 28, 10)])
     }
 
     // MARK: - Files
@@ -285,25 +286,72 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(center.stops, [[ScheduleMonitor.activityName(scheduleId: focusId)]])
     }
 
-    func testARunningOccurrenceTheEditedPlanNoLongerEndsGetsATail() throws {
-        let files = try isolatedFiles()
+    func testAnEditedPlanRegistersNoTailAndALeftoverTailIsStopped() throws {
+        let center = FakeScheduleCenter()
+        center.installed[ScheduleMonitor.tailActivity] = ScheduleMonitorRule.capSchedule(endingAt: local(2026, 9, 28, 12), calendar: calendar)
         let publisher = IosScheduleMonitorPublisher(
-            files: files, center: { FakeScheduleCenter() }, authorized: { true }, isCapable: true,
+            files: try isolatedFiles(), center: { center }, authorized: { true }, isCapable: true,
             storedMappings: { [] }, calendar: { self.calendar }, now: { self.local(2026, 9, 28, 9, 30) }
         )
-        let pinned = ScheduleMonitorFile.Running(
+        let before = ScheduleMonitorFile.Running(
             id: focusId, date: "2026-09-28",
             startEpoch: Int64(local(2026, 9, 28, 9).timeIntervalSince1970),
             endEpoch: Int64(local(2026, 9, 28, 12).timeIntervalSince1970)
         )
 
-        XCTAssertNotNil(publisher.tail(for: file([schedule(start: 11 * 60, end: 12 * 60)], running: [pinned])))
-        let unchanged = ScheduleMonitorFile.Running(
-            id: focusId, date: "2026-09-28",
-            startEpoch: Int64(local(2026, 9, 28, 9).timeIntervalSince1970),
-            endEpoch: Int64(local(2026, 9, 28, 10).timeIntervalSince1970)
+        publisher.reconcile(file([schedule(start: 11 * 60, end: 12 * 60)], running: [before]))
+
+        XCTAssertNil(center.installed[ScheduleMonitor.tailActivity])
+        XCTAssertEqual(Array(center.installed.keys), [ScheduleMonitor.activityName(scheduleId: focusId)])
+    }
+
+    func testTheAppAnnouncesARunningStartTheMonitorHasNotRecordedOnce() throws {
+        let files = try isolatedFiles()
+        let poster = FakeSchedulePoster()
+        let publisher = IosScheduleMonitorPublisher(
+            files: files, center: { FakeScheduleCenter() }, authorized: { true }, isCapable: true,
+            storedMappings: { [] }, poster: poster, calendar: { self.calendar }, now: { self.local(2026, 9, 28, 22, 5) }
         )
-        XCTAssertNil(publisher.tail(for: file([schedule()], running: [unchanged])))
+        let evening = ScheduleMonitorFile.Running(
+            id: focusId, date: "2026-09-28",
+            startEpoch: Int64(local(2026, 9, 28, 22).timeIntervalSince1970),
+            endEpoch: Int64(local(2026, 9, 28, 23).timeIntervalSince1970)
+        )
+        let table = file([schedule(start: 22 * 60, end: 23 * 60)], running: [evening])
+
+        publisher.announceStarts(table)
+        publisher.announceStarts(table)
+
+        XCTAssertEqual(poster.posted, ["\(ScheduleMonitor.startNoticePrefix)\(focusId).2026-09-28"])
+        XCTAssertTrue(files.hasStarted(scheduleId: focusId, date: "2026-09-28"))
+    }
+
+    func testTheAppLeavesAStartTheMonitorRecordedOrCannotEnforceUnannounced() throws {
+        let files = try isolatedFiles()
+        let poster = FakeSchedulePoster()
+        let evening = ScheduleMonitorFile.Running(
+            id: focusId, date: "2026-09-28",
+            startEpoch: Int64(local(2026, 9, 28, 22).timeIntervalSince1970),
+            endEpoch: Int64(local(2026, 9, 28, 23).timeIntervalSince1970)
+        )
+        let table = file([schedule(start: 22 * 60, end: 23 * 60)], running: [evening])
+        let unauthorized = IosScheduleMonitorPublisher(
+            files: files, center: { FakeScheduleCenter() }, authorized: { false }, isCapable: true,
+            storedMappings: { [] }, poster: poster, calendar: { self.calendar }, now: { self.local(2026, 9, 28, 22, 5) }
+        )
+        unauthorized.announceStarts(table)
+        XCTAssertFalse(files.hasStarted(scheduleId: focusId, date: "2026-09-28"))
+
+        try files.recordStarted(
+            ScheduleMonitorOccurrence(scheduleId: focusId, date: "2026-09-28", start: local(2026, 9, 28, 22), end: local(2026, 9, 28, 23)),
+            at: local(2026, 9, 28, 22)
+        )
+        let publisher = IosScheduleMonitorPublisher(
+            files: files, center: { FakeScheduleCenter() }, authorized: { true }, isCapable: true,
+            storedMappings: { [] }, poster: poster, calendar: { self.calendar }, now: { self.local(2026, 9, 28, 22, 5) }
+        )
+        publisher.announceStarts(table)
+        XCTAssertEqual(poster.posted, [])
     }
 
     func testEveryPublishReconcilesSoALaterScreenTimeApprovalRegistersWithoutAChangedTable() throws {

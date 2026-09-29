@@ -10,6 +10,7 @@ enum ScheduleMonitor {
     /// schedule ending never lifts a manual session's shields, and the reverse.
     static let storeName = ManagedSettingsStore.Name("app.posato.schedule")
     static let activityPrefix = "app.posato.schedule."
+    /// Registered by 1.2 for an occurrence an edit moved; it is only stopped now, never registered.
     static let tailActivity = DeviceActivityName("app.posato.schedule.tail")
     /// A one-shot end at the 24-hour cap, for an occurrence whose wall-clock end is later (a fall-back night).
     static let capActivity = DeviceActivityName("app.posato.schedule.cap")
@@ -160,8 +161,9 @@ enum ScheduleMonitorRule {
         return (start, end)
     }
 
-    /// Every occurrence the table says runs at `now`: by the rule, or pinned by
-    /// the app when it saw one start (an edit may have moved the plan since).
+    /// Every occurrence the table says runs at `now`: by the rule, or listed by
+    /// the app as running, such as a stopped date that resumed from the natural
+    /// end the app observed.
     static func running(
         in file: ScheduleMonitorFile,
         at now: Date,
@@ -169,13 +171,13 @@ enum ScheduleMonitorRule {
         leading margin: TimeInterval = 0
     ) -> [ScheduleMonitorOccurrence] {
         var found = file.schedules.compactMap { active($0, at: now, calendar: calendar, leading: margin) }
-        for pinned in file.running {
-            let start = Date(timeIntervalSince1970: TimeInterval(pinned.startEpoch))
-            let end = Date(timeIntervalSince1970: TimeInterval(pinned.endEpoch))
+        for listed in file.running {
+            let start = Date(timeIntervalSince1970: TimeInterval(listed.startEpoch))
+            let end = Date(timeIntervalSince1970: TimeInterval(listed.endEpoch))
             guard now < end, now >= start.addingTimeInterval(-margin),
-                  !found.contains(where: { $0.scheduleId == pinned.id && $0.date == pinned.date })
+                  !found.contains(where: { $0.scheduleId == listed.id && $0.date == listed.date })
             else { continue }
-            found.append(ScheduleMonitorOccurrence(scheduleId: pinned.id, date: pinned.date, start: start, end: end))
+            found.append(ScheduleMonitorOccurrence(scheduleId: listed.id, date: listed.date, start: start, end: end))
         }
         return found
     }
