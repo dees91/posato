@@ -19,7 +19,8 @@ iPhone and iPad, and keyboard and trackpad back on the Mac.
 ## Boundaries
 
 - Covers the stacks inside Session, websites and applications, Schedules,
-  onboarding, and About Posato to Licenses to a license text.
+  and About Posato to Licenses to a license text. Onboarding stays
+  forward-only and has no back (`user-confirmed`, 2026-09-29).
 - The destinations and their switching stay as `DESIGN.md` defines them;
   back never switches destination or leaves the application.
 - Explicit **Back** actions stay and behave as before. A gesture back does
@@ -55,6 +56,8 @@ iPhone and iPad, and keyboard and trackpad back on the Mac.
 
 ## Decisions or blockers
 
-- The Mac keyboard back command (proposed `⌘[`, as in Finder and Safari),
-  and whether trackpad back is feasible in Compose Desktop, are settled in
-  the implementation plan and reported to the maintainer.
+- `user-confirmed` (2026-09-29): the Mac back commands are Command-[ and
+  Escape, plus the trackpad's two-finger swipe between pages through native
+  AppKit swipe tracking. The VM drives that swipe with synthetic phased
+  scroll events, which prove completion and cancellation but not the
+  progress of a real trackpad.

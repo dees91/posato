@@ -239,8 +239,10 @@ enum Bridge {
   /// the swipe between pages; a short one is released below the threshold and cancels it.
   static func swipeBack(pid: pid_t, complete: Bool) throws {
     try requireFrontmost(pid: pid)
-    guard let window = windows(pid: pid).filter({ $0.layer == 0 }).max(by: { $0.w * $0.h < $1.w * $1.h }) else {
-      throw BridgeError(code: "DESKTOP_WINDOW_UNAVAILABLE", message: "The application shows no window to swipe.")
+    let candidates = windows(pid: pid).filter { $0.layer == 0 }
+    guard let window = candidates.max(by: { $0.w * $0.h < $1.w * $1.h }) else {
+      throw BridgeError(
+        code: "DESKTOP_WINDOW_UNAVAILABLE", message: "The application shows no window to swipe.")
     }
     let location = CGPoint(x: window.x + window.w / 2, y: window.y + window.h / 2)
     guard

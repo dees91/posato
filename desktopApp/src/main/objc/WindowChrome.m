@@ -527,6 +527,8 @@ static void BackSwipeCall(PosatoBackSwipe phase, CGFloat amount) {
 // offers Back is tracked by AppKit and reported as a back gesture with its progress.
 static void BackSwipeTrack(NSEvent *event) {
     if (!backAvailable || event.phase != NSEventPhaseBegan || ![NSEvent isSwipeTrackingFromScrollEventsEnabled]) return;
+    NSWindow *window = event.window;
+    if (window == nil || window != NSApp.mainWindow || window.attachedSheet != nil || NSApp.modalWindow != nil) return;
     if (fabs(event.scrollingDeltaX) <= fabs(event.scrollingDeltaY)) return;
     __block BOOL started = NO;
     [event trackSwipeEventWithOptions:NSEventSwipeTrackingLockDirection | NSEventSwipeTrackingClampGestureAmount

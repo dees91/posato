@@ -30,6 +30,7 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.navigation.PosatoNavStack
+import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.onboarding.MacSetupOverview
 import app.posato.feature.schedules.domain.ScheduleId
 
@@ -110,14 +111,14 @@ internal fun SchedulesScreen(
         listOfNotNull(SchedulesRoute.List, top),
         onBack = { if (top is SchedulesRoute.Editor) actions.onCloseEditor() else actions.onShowSetup(false) },
         modifier = modifier.fillMaxSize(),
-        backEnabled = !(top == SchedulesRoute.Setup && setupPromptOpen),
+        backEnabled = !(top == SchedulesRoute.Setup && setupPromptOpen) && !(top is SchedulesRoute.Editor && state.saving),
     ) { route ->
         Column(
             modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
             when (route) {
-                is SchedulesRoute.Editor -> if (editor != null) ScheduleEditor(editor, state, layout, actions)
+                is SchedulesRoute.Editor -> rememberLastPresent(editor)?.let { ScheduleEditor(it, state, layout, actions) }
                 SchedulesRoute.Setup -> ScheduleSetup(device, layout, actions, macSetupContent)
                 SchedulesRoute.List -> ScheduleList(state, device, layout, readiness, actions)
             }

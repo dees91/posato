@@ -29,6 +29,7 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.navigation.PosatoNavStack
+import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
@@ -120,7 +121,7 @@ internal fun TargetsScreen(
         ) { route ->
             when (route) {
                 TargetsRoute.WebsiteEditor -> Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-                    state.editingDomain?.let { domain ->
+                    rememberLastPresent(state.editingDomain)?.let { domain ->
                         WebsiteEditor(state, browser.editorDraft(state.domainEditorSession, domain), onSubmitDomain, onCancelDomainEdit)
                     }
                 }

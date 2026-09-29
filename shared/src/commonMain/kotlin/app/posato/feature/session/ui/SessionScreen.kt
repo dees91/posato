@@ -33,6 +33,7 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.navigation.PosatoNavStack
+import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.MacSetupPresentation
 import app.posato.feature.onboarding.promptInProgress
@@ -296,9 +297,7 @@ private fun SessionRouteContent(
 ) {
     when (route) {
         SessionRoute.ScheduledEarlyEnd -> {
-            if (scheduled != null) {
-                ScheduledEarlyEndContent(scheduled, layout, scheduledEnd.onConfirm, scheduledEnd.onCancel)
-            }
+            rememberLastPresent(scheduled)?.let { ScheduledEarlyEndContent(it, layout, scheduledEnd.onConfirm, scheduledEnd.onCancel) }
         }
 
         SessionRoute.EarlyEnd -> {
