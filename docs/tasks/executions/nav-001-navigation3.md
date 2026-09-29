@@ -1,7 +1,7 @@
 # Execution: `NAV-001`
 
 - **Brief:** [nav-001-navigation3.md](../specifications/nav-001-navigation3.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `standard`
 - **Implementer:** Claude Code agent
 - **Reviewer:** independent Claude Code agent (completed-change review)
@@ -67,7 +67,7 @@
 | Tart: back while System Settings approval is pending, control, schedule editor | pass | `mac-setup.log` |
 | Tart: duration, review, early end after setup | pass, 53 steps | `mac-session.log` |
 | iPad Pro 11-inch Simulator, landscape sidebar and portrait, `8c31e4a` | pass, 44 steps | `ipad-swipe.json`, run `20260929-214759-dc13` |
-| Test iPhone (`-t device`) | pending | |
+| Test iPhone (`-t device`), `8c31e4a`: About/Licenses, schedule editor, website editor, root | pass, 36 steps | `iphone-swipe.json`, run `20260929-220627-4576` |
 
 Each Tart matrix drives Command-[ and Escape over VNC, `swipe-back` complete
 and `--cancel`, and the explicit Back actions, asserting the screen before
