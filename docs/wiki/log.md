@@ -2212,3 +2212,17 @@ to scope, feasibility, or delivery.
 - `user-confirmed` (2026-09-29): Intel discovery targets macOS 13 Ventura
   because the maintainer chooses to retain it on the 2019 MacBook Air.
   This replaces the proposed macOS 14 target; compatibility remains open.
+
+## [2026-09-29] planning | Release 1.3 composition and waves
+
+- `user-confirmed`: release 1.3 takes the prepared `MACOS-022` and
+  `SCHEDULE-005` fixes (PRs #107 and #108) in its first wave instead of a
+  1.2.1 patch, and adds `SYNC-020`, `MACOS-020`, and `MACOS-021`.
+- `user-confirmed`: Intel support on macOS 13 Ventura is a release gate.
+  `MACOS-016` merges into `MACOS-015` as one High-risk delivery row that
+  continues from PR #109; the 2019 MacBook Air becomes a dedicated test Mac
+  driven by `posato-control`, under a narrow `AGENTS.md` exception the row
+  proposes.
+- `user-confirmed`: `MACOS-017` becomes a Firefox discovery row with PR #110
+  as its spike; delivery stays in the backlog as `MACOS-023`. `DOCS-004`
+  prepares the 1.3 packaging, and `NAV-001` precedes `SCHEDULE-004`.

@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 12 (amended 2026-09-29: blocklists, partial 1.3 composition, and reported behavior backlog)
+- **Revision:** 13 (amended 2026-09-29: release 1.3 composition and waves)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-29
@@ -64,6 +64,18 @@
   The 2026-09-29 clarification targets Intel discovery at macOS 13 Ventura,
   which the maintainer uses on the 2019 MacBook Air and chooses to retain.
   Compatibility and any ADR 0003 baseline revision remain to be established.
+  Revision 13 completes the release 1.3 composition (`user-confirmed`,
+  2026-09-29). `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, and
+  `MACOS-021` move from the backlog into release 1.3; the two fixes already
+  prepared in PRs #107 and #108 join its first wave instead of a patch
+  release. Intel support is a release gate: `MACOS-016` is deleted and
+  merged into `MACOS-015`, which becomes one High-risk delivery row that
+  proposes the ADR 0003 revision, continues from the evaluation build in
+  PR #109, and verifies on the 2019 MacBook Air as a dedicated test Mac.
+  `MACOS-017` becomes a release 1.3 discovery row for Firefox, with PR #110
+  as its spike; delivery stays in the backlog as `MACOS-023`. `DOCS-004`
+  prepares the 1.3 public packaging. `NAV-001` precedes `SCHEDULE-004` so
+  that blocklist screens are built on Navigation 3.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -183,7 +195,7 @@ dependencies of release 1.1, not rows of this roadmap:
   update download recorded as an accepted risk under `TB-08`/`T-13`
   (`MACOS-010`, `MACOS-011`); the unverified macOS 15 and iOS 18 matrix
   (`QUALITY-007`); the iPhone-only copy shown on iPad (`IOS-004`); and the
-  Intel exclusion in ADR 0003 (`MACOS-015`, `MACOS-016`).
+  Intel exclusion in ADR 0003 (`MACOS-015`).
 
 ## Release 1.1: everyday use and the update path
 
@@ -230,28 +242,46 @@ starts none of the rows.
 | `DOCS-003` | Prepare the public packaging for 1.2 without publishing it: recapture the showcase on the 1.2 applications, revise the storyboard with schedules and render the demo, walkthrough, stills, and social preview again; describe 1.2 in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.2/W5 | `ONBOARDING-004`, `NOTIFY-001`, `SCHEDULE-002` | PR-RELEASE-1-2-MEDIA |
 | `RELEASE-004` | Verify the 1.2.0 candidates including shared schedules and Mac setup, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W5 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004`, `SCHEDULE-002`, `DOCS-003` | PR-RELEASE-1-2 |
 
-## Release 1.3: blocklists and navigation
+## Release 1.3: blocklists, navigation, and Intel Macs
 
-Confirmed direction: reusable named blocklists for one-time sessions and
-recurring schedules, plus system back gestures through `NAV-001`. The
-[blocklist product scope](../product/blocklists.md) records the accepted
-behavior and the decisions `SCHEDULE-003` must complete before delivery.
-Recurring schedules themselves shipped in 1.2.
+Theme: reusable named blocklists for one-time sessions and recurring
+schedules, system back gestures through `NAV-001`, and Posato on Intel Macs
+running macOS 13 Ventura. The [blocklist product scope](../product/blocklists.md)
+records the accepted behavior and the decisions `SCHEDULE-003` must complete
+before delivery. The release also carries reported defects in enforcement,
+schedules, and synchronization, and a Firefox discovery.
 
-Planning reopened on 2026-09-28. `SYNC-020`, `MACOS-020`, and `MACOS-021`
-remain tentative candidates in the backlog. Existing Intel rows are retained
-pending the remaining scope discussion; this checkpoint does not settle their
-feasibility or verification environment. Final composition and waves remain
-open. Complete release composition before activating any row.
+The composition was completed on 2026-09-29 and freezes when its first row
+starts. Ordering within the waves:
+
+- `MACOS-022` and `SCHEDULE-005` are prepared in PRs #107 and #108 and merge
+  first. `MACOS-020`, `MACOS-021`, and `MACOS-017` touch the same helper and
+  proxy surface as `MACOS-022` and start from it. `SCHEDULE-003` decides on
+  top of the natural-expiry state that `SCHEDULE-005` introduces.
+- `NAV-001` merges before `SCHEDULE-004` so that the blocklist screens are
+  built on Navigation 3 rather than migrated later.
+- `MACOS-015` continues from the evaluation build in PR #109. The 2019
+  MacBook Air is a dedicated test Mac that holds no personal Posato data, and
+  `posato-control` drives it without the maintainer. Tart cannot run an
+  x86-64 guest, so the row proposes the narrow `AGENTS.md` exception for
+  this physical Mac and names that reason in its brief before relying on it.
+- `MACOS-017` ends with a decision; it changes no binary and is not a
+  dependency of `RELEASE-005`.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
-| `MACOS-015` | Decide whether Posato supports Intel Macs and macOS 13 Ventura: cost of the x86-64 Compose Desktop artifact and runtime, per-architecture native libraries, universal Swift helpers, two notarized DMGs, macOS 13 Ventura API availability, the verification driver on a second architecture, and the support horizon Apple gives Intel Macs and macOS 13 Ventura; propose the ADR 0003 revision for a go or no-go. | Platform coverage | discovery | R1.3/W1 | None | PR-INTEL-DECISION |
-| `MACOS-016` | Deliver the accepted Intel path from `MACOS-015`: build, sign, notarize, and publish the x86-64 release, verify compatibility with macOS 13 Ventura on the maintainer's 2019 MacBook Air, and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W2 | `MACOS-015` | PR-INTEL-RELEASE |
-| `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules when delivered by `SCHEDULE-002`. | Platform coverage | delivery | Pending composition | `SCHEDULE-002` (done) | PR-NAVIGATION |
-| `SCHEDULE-003` | Complete the accepted blocklist scope for manual sessions and schedules: live edits and deletion, manual-session overlap, default ownership, limits and device readiness, migration, synchronization and older-client compatibility. Update the affected design and architecture authorities and end with accepted decisions and a delivery plan. | Target management | discovery | Pending composition | `SCHEDULE-002` (done) | PR-BLOCKLIST-DECISION |
-| `SCHEDULE-004` | Deliver reusable named blocklists on Mac and iPhone under the accepted scope: one list per manual session or schedule, a default for new starts and plans, migration of existing targets and schedules, union of overlapping scheduled lists, synchronized definitions and websites, and per-list device-local application choices. Verify migration, actual blocking and unblocking, overlap, offline execution, and cross-device convergence. High-risk. | Target management | delivery | Pending composition | `SCHEDULE-003` | PR-BLOCKLIST-DELIVERY |
-| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for every accepted architecture, and submit the iOS build to App Review when it changed. | Release readiness | delivery | R1.3/W3 | `MACOS-016`, `NAV-001`, `SCHEDULE-004` | PR-RELEASE-1-3 |
+| `MACOS-022` | Restore the local pause page after HTTPS denial in Chrome and Safari within ADR 0005 without weakening denial: request Automation consent per browser, keep network blocking when it is refused, and deliver browser and picker calls from the helper's main run loop. | Sessions and enforcement | delivery | R1.3/W1 | None | PR-MAC-PAUSE-PRESENTATION |
+| `SCHEDULE-005` | Resume naturally expired schedules after synchronization extends them into the current interval; preserve explicit Skip and End early, original start, clock rollback protection, and the 24-hour cap. Legacy reevaluation is accepted. | Schedules | delivery | R1.3/W1 | None | PR-SCHEDULE-EXTENSION |
+| `SYNC-020` | Publish a session start or early end reliably from the device that made it: first reproduce, without the maintainer, that an iPhone-started session reaches iCloud only after a manual **Sync now**; then retry an interrupted or failed publication automatically with backoff and give iOS time to finish it in the background, so the peer adopts the session at its next own sync. Remote push to wake the peer is out of scope. | Sessions and enforcement | delivery | R1.3/W1 | None | PR-SESSION-PUBLISH |
+| `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | delivery | R1.3/W1 | `MACOS-022` | PR-MAC-PROXY-RECOVERY |
+| `MACOS-021` | Explain and bound the normal-user helper's CPU use during an enforced session: reproduce the transient spike, about 60% of a core for 14 minutes, that `MACOS-012` measured in a first session on a fresh Tart clone, find its cause, and keep the helper's cost bounded under heavy proxied traffic. | Sessions and enforcement | delivery | R1.3/W1 | `MACOS-022` | PR-MAC-HELPER-CPU |
+| `MACOS-015` | Support Intel Macs on macOS 13 Ventura: propose and obtain acceptance of the ADR 0003 baseline revision, covering the support horizon Apple gives Intel Macs and macOS 13; build the x86-64 Compose Desktop artifact, runtime, native libraries, and Swift helpers for macOS 13; sign, notarize, and publish a second DMG and update feed entry; extend `posato-control` to drive the dedicated 2019 MacBook Air; verify setup, actual website and application blocking, synchronization, and the in-app update there; and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W1 | None | PR-INTEL-RELEASE |
+| `MACOS-017` | Decide whether Posato supports Firefox on macOS under a revised ADR 0005 browser promise: presentation through a Posato extension, its signing and distribution through addons.mozilla.org, the fixed loopback rendezvous port against the current per-session port and its fail-closed conflict, This Mac setup guidance, and verification in Tart; end with the proposed ADR 0005 revision and a delivery plan for `MACOS-023`. | Sessions and enforcement | discovery | R1.3/W1 | `MACOS-022` | PR-FIREFOX-DECISION |
+| `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules. | Platform coverage | delivery | R1.3/W1 | None | PR-NAVIGATION |
+| `SCHEDULE-003` | Complete the accepted blocklist scope for manual sessions and schedules: live edits and deletion, manual-session overlap, default ownership, limits and device readiness, migration, synchronization and older-client compatibility. Update the affected design and architecture authorities and end with accepted decisions and a delivery plan. | Target management | discovery | R1.3/W1 | `SCHEDULE-005` | PR-BLOCKLIST-DECISION |
+| `SCHEDULE-004` | Deliver reusable named blocklists on Mac and iPhone under the accepted scope: one list per manual session or schedule, a default for new starts and plans, migration of existing targets and schedules, union of overlapping scheduled lists, synchronized definitions and websites, and per-list device-local application choices. Verify migration, actual blocking and unblocking, overlap, offline execution, and cross-device convergence. High-risk. | Target management | delivery | R1.3/W2 | `SCHEDULE-003`, `NAV-001` | PR-BLOCKLIST-DELIVERY |
+| `DOCS-004` | Prepare the public packaging for 1.3 without publishing it: recapture the showcase with blocklists and render the media again; describe 1.3, blocklists, and Intel support in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.3/W3 | `SCHEDULE-004`, `MACOS-015` | PR-RELEASE-1-3-MEDIA |
+| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for arm64 and x86-64 through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.3/W4 | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-015`, `NAV-001`, `SCHEDULE-004`, `DOCS-004` | PR-RELEASE-1-3 |
 
 ## Backlog
 
@@ -265,18 +295,13 @@ The idea numbers refer to the wiki idea queue.
 | `RESEARCH-001` | Compare the Focusly extension's interactions and features with Posato and list the ones worth adopting. | Product discovery | Idea 4 | Any planning checkpoint; cheap |
 | `FILTER-002` | Decide how to reduce distractions within YouTube, such as Shorts and recommendations, and on which surfaces. | Product discovery | Idea 5 | `FILTER-001` or a separate product decision |
 | `FILTER-003` | Decide whether a session can silence notifications from chosen applications and websites while the applications stay usable, on iOS and macOS: establish what the platforms allow a third party, including whether a Screen Time shield silences notifications and how browser web push can be reached; end with a product decision and, if feasible, a delivery plan. Preliminary. | Product discovery | Idea 17 | A feasibility result showing a supported mechanism on at least one platform |
-| `MACOS-017` | Extend macOS browser coverage beyond Safari and Chrome Stable, starting with Firefox, under a revised ADR 0005 support contract. | Sessions and enforcement | macOS enforcement follow-up | A maintainer decision to widen the support promise |
 | `MACOS-018` | Detect or disclose iCloud Private Relay before a session applies proxy settings. | Sessions and enforcement | Open question in the macOS enforcement topic | A supported detection route or a decision to disclose only |
 | `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | A decision that replaces the root daemon; ADR 0009 (`MACOS-012`) kept it |
-| `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | `QUALITY-010` `M5` defect, reproduced in a VM | Any planning checkpoint; a defect against ADR 0004 and ADR 0005 |
-| `MACOS-021` | Explain and bound the normal-user helper's CPU use during an enforced session: reproduce the transient spike, about 60% of a core for 14 minutes, that `MACOS-012` measured in a first session on a fresh Tart clone, find its cause, and keep the helper's cost bounded under heavy proxied traffic. | Sessions and enforcement | Idea 18; `MACOS-012` measurement | Any planning checkpoint; a resource defect under every process model |
-| `MACOS-022` | Resolve the missing local pause page after HTTPS denial reproduced in Chrome on a fresh Tart Mac; distinguish Automation permission and adapter failures, and restore presentation within ADR 0005 without weakening denial. | Sessions and enforcement | Idea 21; maintainer report reproduced in Tart, cause unconfirmed | Any planning checkpoint; classify the reproduced presentation failure |
-| `SCHEDULE-005` | Resolve different device behavior reproduced on iPhone and Tart after extending a naturally expired schedule into the current time; decide and deliver consistent activation after synchronization, distinguishing natural expiry from explicit Skip and End early. Any change to terminal-marker rules requires acceptance first. | Schedules | Idea 22; report reproduced on test iPhone and Tart, terminal-marker cause inferred | A planning checkpoint and an accepted revision of the expiry/edit rule for the reproduced behavior |
+| `MACOS-023` | Deliver Firefox support on macOS under the ADR 0005 revision and delivery plan accepted in `MACOS-017`, continuing from the PR #110 spike. | Sessions and enforcement | `MACOS-017` | An accepted `MACOS-017` decision and a planning checkpoint |
 | `IOS-005` | Settle iOS reinstall behavior and the lifecycle of an application selection that becomes invalid. | Sessions and enforcement | `IOS-001` and iOS enforcement open questions | Evidence from support or a reproduction |
 | `SESSION-005` | Add stronger, deliberately slower early-end friction as an optional setting. | Sessions and enforcement | MVP scope Later | A product decision with the accepted friction model |
 | `SYNC-018` | Design the portable workspace over one user-selected synchronized folder with its own key delivery and membership. | Portable synchronization | Product framing later direction | A platform beyond Apple in scope |
 | `SYNC-019` | Offer recovery after all workspace keys are lost, without a product account. | Portable synchronization | MVP scope Later | `SYNC-018` or an Apple-only recovery design |
-| `SYNC-020` | Publish a session start or early end reliably from the device that made it: first reproduce, without the maintainer, that an iPhone-started session reaches iCloud only after a manual **Sync now**; then retry an interrupted or failed publication automatically with backoff and give iOS time to finish it in the background, so the peer adopts the session at its next own sync. Remote push to wake the peer is out of scope. | Sessions and enforcement | `QUALITY-010` observation (`ac05-repro`), cause inferred from code | Any planning checkpoint; a reliability defect within the best-effort sync limit |
 | `PLATFORM-001` | Decide the order, enforcement mechanisms, privilege models, and shared UI for Android, Linux, and Windows. | Platform coverage | Availability page planned platforms | A product decision to leave the Apple-only release train |
 | `QUALITY-008` | Decide whether golden or automated UI tests join the quality gate now that the interface is stable, and with which tool. | Verification | Engineering quality contract post-MVP decision | Two releases of interface stability |
 | `QUALITY-009` | Decide whether hosted CI returns for pull requests and whether external contributions are accepted, with the Actions budget and review load that implies. | Verification | First-release readiness policy | Maintainer capacity decision |
@@ -297,10 +322,13 @@ The idea numbers refer to the wiki idea queue.
 | Session without the main window and without repeated prompts | `MACOS-012`, `MACOS-013`, `MACOS-014` | Accepted ADR 0003 and ADR 0004 revisions, physical menu bar start, end, relaunch, login, and revocation evidence |
 | One guided Mac setup | `ONBOARDING-004` | In a Tart clone: setup from onboarding, Finish setup, and the upgrade offer; resume after interruption; verified completion; revocation in This Mac |
 | Session notifications | `NOTIFY-001` | Physical permission flow, start and end notifications on both platforms |
-| Intel Macs | `MACOS-015`, `MACOS-016` | Accepted ADR 0003 revision, notarized x86-64 candidate verified on the 2019 MacBook Air running macOS 13 Ventura |
+| Intel Macs | `MACOS-015` | Accepted ADR 0003 revision, notarized x86-64 candidate verified by `posato-control` on the dedicated 2019 MacBook Air running macOS 13 Ventura |
 | Shared recurring schedules | `SCHEDULE-001`, `SCHEDULE-002` | Accepted rules and security-reviewed authorization revision; Mac VM and test-iPhone runs for start/end, offline execution of known plans, synchronization, missing permissions, skipping, early end, restart and Mac catch-up |
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
 | Public packaging for 1.2 | `DOCS-003` | Media rendered within budget from recorded captures, README and site built, store text and screenshots ready for upload |
+| Reported enforcement, schedule, and publication defects | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021` | Tart and test-iPhone runs that reproduce each defect before the fix and show the corrected behavior after it |
+| Firefox decision | `MACOS-017` | Proposed ADR 0005 revision accepted or rejected, with a `MACOS-023` delivery plan when accepted |
+| Public packaging for 1.3 | `DOCS-004` | Media rendered from recorded captures, README and site built, store text and screenshots ready for upload |
 | Reusable blocklists for manual sessions and schedules | `SCHEDULE-003`, `SCHEDULE-004` | Accepted remaining decisions; Mac VM and test-iPhone proof of migration, per-list selections, overlap, blocking and release, offline execution, and synchronized definitions with local app choices |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
@@ -313,7 +341,7 @@ The idea numbers refer to the wiki idea queue.
 | macOS 15 virtual machine and iOS 18 iPhone | `QUALITY-007` | The maintainer provides the virtual machine image and the iOS 18 device, or the row records the gap on the availability page. |
 | Persistent authorization security review | `MACOS-014` | An independent review of the ADR 0004 revision passes before implementation. |
 | Automatic scheduled Apply security review | `SCHEDULE-001` | An independent review of the explicit-consent and automatic-start amendments passes, and the maintainer accepts them, before `SCHEDULE-002` implements them. |
-| 2019 MacBook Air | `MACOS-016` | The notarized x86-64 candidate passes the accepted flow on the maintainer's device running macOS 13 Ventura. |
+| 2019 MacBook Air | `MACOS-015` | The maintainer sets the MacBook Air up once as a dedicated test Mac on macOS 13 Ventura with no personal Posato data; the notarized x86-64 candidate then passes the accepted flow driven by `posato-control` without the maintainer. |
 | App Review per iOS release | `RELEASE-003`–`RELEASE-005` | The submitted build is approved or the row records the rejection and its clearing condition. |
 
 No credential, signing identity, update signing key, provisioning profile,
