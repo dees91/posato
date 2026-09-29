@@ -161,12 +161,20 @@ extension BoundedProxyRequestParser {
       let destination = BoundedProxyAuthority.parseAuthority(input.hostValue, defaultPort: 80),
       BoundedProxyAuthority.isLoopback(destination.host),
       destination.port == input.listenerPort,
-      input.target == "/blocked",
       input.body.isEmpty
     else {
       return nil
     }
-    return .localBlockedPage
+    switch input.target {
+    case "/blocked":
+      return .localBlockedPage
+    case "/firefox-extension-ping":
+      return .firefoxExtensionPing
+    case "/firefox-extension-status":
+      return .firefoxExtensionStatus
+    default:
+      return nil
+    }
   }
 
   private static func absoluteFormRoute(_ input: AbsoluteRouteInput) -> BoundedProxyRoute? {

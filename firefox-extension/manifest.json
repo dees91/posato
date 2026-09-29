@@ -1,0 +1,16 @@
+{
+  "manifest_version": 2,
+  "name": "Posato Pause Page",
+  "version": "1.0",
+  "description": "Shows the Posato pause page when Posato pauses a site in Firefox.",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "posato@posato.app"
+    }
+  },
+  "permissions": ["webRequest", "<all_urls>", "tabs", "proxy"],
+  "background": {
+    "scripts": ["background.js"],
+    "persistent": true
+  }
+}

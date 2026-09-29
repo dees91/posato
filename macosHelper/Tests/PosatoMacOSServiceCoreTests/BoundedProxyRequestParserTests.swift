@@ -210,6 +210,78 @@ private let listenerPort: UInt16 = 17_769
   )
 }
 
+@Test func givenFirefoxExtensionRoutesWhenRoutedThenOnlyTheExactRoutesAreServed() {
+  #expect(
+    BoundedProxyRequestParser.route(
+      requestData: Data(
+        "GET /firefox-extension-ping HTTP/1.1\r\nHost: 127.0.0.1:17769\r\n\r\n".utf8
+      ),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == .firefoxExtensionPing
+  )
+  #expect(
+    BoundedProxyRequestParser.route(
+      requestData: Data(
+        "GET /firefox-extension-status HTTP/1.1\r\nHost: 127.0.0.1:17769\r\n\r\n".utf8
+      ),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == .firefoxExtensionStatus
+  )
+  #expect(
+    BoundedProxyRequestParser.route(
+      requestData: Data(
+        "GET /firefox-extension-ping?x=1 HTTP/1.1\r\nHost: 127.0.0.1:17769\r\n\r\n".utf8
+      ),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == nil
+  )
+}
+
+@Test func givenNonExactFirefoxExtensionVariantsWhenRoutedThenTheyAreRejected() {
+  #expect(
+    BoundedProxyRequestParser.route(
+      requestData: Data(
+        ("POST /firefox-extension-ping HTTP/1.1\r\nHost: 127.0.0.1:17769\r\nContent-Length: 1\r\n\r\nx")
+          .utf8
+      ),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == nil
+  )
+  #expect(
+    BoundedProxyRequestParser.route(
+      requestData: Data(
+        ("GET /firefox-extension-status HTTP/1.1\r\nHost: 127.0.0.1:17769\r\nContent-Length: 1\r\n\r\nx")
+          .utf8
+      ),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == nil
+  )
+  #expect(
+    BoundedProxyRequestParser.route(
+      requestData: Data(
+        ("GET http://127.0.0.1:17769/firefox-extension-ping HTTP/1.1\r\nHost: 127.0.0.1:17769\r\n\r\n")
+          .utf8
+      ),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == nil
+  )
+  #expect(
+    BoundedProxyRequestParser.route(
+      requestData: Data(
+        "GET /firefox-extension-ping HTTP/1.1\r\nHost: 127.0.0.1:9999\r\n\r\n".utf8
+      ),
+      selectedHosts: selected,
+      listenerPort: listenerPort
+    ) == nil
+  )
+}
+
 @Test func givenNonExactBlockedPageVariantsWhenRoutedThenTheyAreRejected() {
   #expect(
     BoundedProxyRequestParser.route(

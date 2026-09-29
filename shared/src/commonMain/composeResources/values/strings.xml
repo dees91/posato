@@ -199,6 +199,10 @@ For what matters.</string>
     <string name="setup_hide_options">Hide options</string>
     <string name="mac_setup_description">Pausing websites on this Mac needs a background helper.</string>
     <string name="mac_setup_check">Check Mac setup</string>
+    <string name="firefox_extension_body">Firefox is installed. Install the Posato extension to see the pause page in Firefox. Without it, paused sites stay blocked but show the browser error page.</string>
+    <string name="firefox_extension_install">Install Firefox extension</string>
+    <string name="firefox_extension_active">Firefox extension is active.</string>
+    <string name="firefox_extension_unverified">Not seen yet. After installing, start a pause and check again.</string>
     <string name="mac_setup_checking">Checking Mac setup…</string>
     <string name="mac_setup_enabling">Enabling the background helper…</string>
     <string name="mac_setup_not_enabled">The background helper is not enabled on this Mac.</string>

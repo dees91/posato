@@ -12,6 +12,11 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   static let idleConnectionTimeout: TimeInterval = 30
   static let defaultHeaderTimeout: TimeInterval = 5
   static let receiveChunkLength = 16_384
+  // Fixed production port so the Firefox extension can reach the pause page and report its
+  // presence without a rendezvous channel. Loopback-only; a conflict fails closed through the
+  // listener path. Tests stay ephemeral; only the session binds this port.
+  // Keep in sync with POSATO_PORT in firefox-extension/background.js.
+  static let firefoxLoopbackPort: NWEndpoint.Port = 48_151
 
   let selectedHosts: Set<String>
   let sessionEndEpochMilliseconds: UInt64?
@@ -27,6 +32,8 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   var requestTimeouts: [ObjectIdentifier: DispatchWorkItem] = [:]
   var blockedRequestHandler: (@Sendable () -> Void)?
   var boundPortStorage: UInt16?
+  let firefoxExtensionSeenLock = NSLock()
+  var firefoxExtensionSeenEpochMilliseconds: UInt64?
 
   init(
     selectedHosts: Set<String>,
@@ -54,11 +61,29 @@ final class BoundedHTTPProxy: @unchecked Sendable {
     blockedRequestHandlerLock.unlock()
   }
 
-  func start(timeout: TimeInterval = 3) throws -> UInt16 {
+  func recordFirefoxExtensionSeen() {
+    firefoxExtensionSeenLock.lock()
+    firefoxExtensionSeenEpochMilliseconds = UInt64(Date().timeIntervalSince1970 * 1_000)
+    firefoxExtensionSeenLock.unlock()
+  }
+
+  func firefoxExtensionSeen() -> UInt64? {
+    firefoxExtensionSeenLock.lock()
+    defer { firefoxExtensionSeenLock.unlock() }
+    return firefoxExtensionSeenEpochMilliseconds
+  }
+
+  private func clearFirefoxExtensionSeen() {
+    firefoxExtensionSeenLock.lock()
+    firefoxExtensionSeenEpochMilliseconds = nil
+    firefoxExtensionSeenLock.unlock()
+  }
+
+  func start(port: NWEndpoint.Port? = nil, timeout: TimeInterval = 3) throws -> UInt16 {
     if let existing = takeExistingPort() {
       return existing
     }
-    let listener = try buildListener()
+    let listener = try buildListener(port: port)
     self.listener = listener
     attachHandlers(listener: listener)
     listener.start(queue: queue)
@@ -66,6 +91,7 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   }
 
   func stop() {
+    clearFirefoxExtensionSeen()
     queue.sync {
       listener?.cancel()
       listener = nil
@@ -134,9 +160,9 @@ final class BoundedHTTPProxy: @unchecked Sendable {
     return nil
   }
 
-  private func buildListener() throws -> NWListener {
+  private func buildListener(port: NWEndpoint.Port?) throws -> NWListener {
     let parameters = NWParameters.tcp
-    parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
+    parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: port ?? .any)
     do {
       return try NWListener(using: parameters)
     } catch {

@@ -19,6 +19,7 @@ import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.bundling.Zip
 import org.gradle.process.ExecOperations
 import org.jetbrains.compose.desktop.application.tasks.AbstractJPackageTask
 import org.jetbrains.compose.desktop.application.tasks.AbstractNativeMacApplicationPackageDmgTask
@@ -1379,6 +1380,31 @@ val embedMacOsSyncCompanion by tasks.registering(Sync::class) {
     )
 }
 
+val firefoxExtensionPackage by tasks.registering(Zip::class) {
+    group = "build"
+    description = "Packages the Firefox pause-page extension."
+    from(rootProject.layout.projectDirectory.dir("firefox-extension")) {
+        include("manifest.json", "background.js")
+    }
+    archiveFileName.set("PosatoFirefoxExtension.xpi")
+    destinationDirectory.set(layout.buildDirectory.dir("firefox-extension"))
+    isPreserveFileTimestamps = false
+    isReproducibleFileOrder = true
+}
+
+val embedFirefoxExtension by tasks.registering(Copy::class) {
+    group = "build"
+    description = "Embeds the Firefox pause-page extension in the distributable."
+    dependsOn(firefoxExtensionPackage, "createDistributable")
+
+    from(firefoxExtensionPackage.map { it.archiveFile })
+    into(
+        macOsDistributable.map { app ->
+            app.dir("Contents/Resources")
+        },
+    )
+}
+
 val embedSparkleFramework by tasks.registering(Exec::class) {
     group = "build"
     description = "Embeds the pinned Sparkle framework without its sandbox XPC services."
@@ -1400,7 +1426,7 @@ val embedSparkleFramework by tasks.registering(Exec::class) {
 val signMacOsDevelopmentPackage by tasks.registering(SignMacOsDevelopmentPackage::class) {
     group = "build"
     description = "Signs the generated macOS application and its nested code inside-out."
-    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
+    dependsOn(embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework, embedFirefoxExtension)
     applicationBundle.set(macOsDistributable)
     developmentEntitlements.set(layout.projectDirectory.file("Config/PosatoDevelopment.entitlements"))
     companionEntitlementsTemplate.set(
@@ -1497,7 +1523,7 @@ val checkMacOsUpdateChannel by tasks.registering {
 val stageMacOsReleasePackage by tasks.registering(StageMacOsApplication::class) {
     group = "distribution"
     description = "Stages the embedded macOS application for Developer ID signing."
-    dependsOn(checkMacOsUpdateChannel, embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework)
+    dependsOn(checkMacOsUpdateChannel, embedMacOsHelper, embedMacOsSyncCompanion, embedSparkleFramework, embedFirefoxExtension)
     mustRunAfter(signMacOsDevelopmentPackage, stageMacOsDevelopmentPackage)
     val releaseBuildNumber = requestedReleaseBuildNumber
     inputs.property("posatoReleaseBuildNumber", providers.provider { PosatoVersion.releaseBuildNumber(releaseBuildNumber) })

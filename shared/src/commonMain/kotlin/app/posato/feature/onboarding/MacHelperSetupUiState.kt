@@ -59,6 +59,7 @@ internal data class MacSetupPresentation(
     val reads: Int = 0,
     val readyForSchedules: Boolean = false,
     val schedulesNeedConsent: Boolean = false,
+    val firefox: MacFirefoxUi? = null,
 )
 
 @Stable
@@ -97,6 +98,7 @@ internal class MacHelperSetupUiState(
     val consent: MacConsentKeeper = MacConsentKeeper(macHelper.automaticStartConsent)
     private var completedOperations by mutableLongStateOf(0)
     private var repeatedResult by mutableStateOf(false)
+    val firefoxSetup = MacFirefoxSetupUiState(macHelper, scope)
 
     /**
      * Answers already reported since the helper was last ready. A failing Enable alternates between
@@ -121,6 +123,7 @@ internal class MacHelperSetupUiState(
             reads = reads,
             readyForSchedules = macReadyForSchedules(complete, standingGrant, consent.given),
             schedulesNeedConsent = complete && standingGrant == MacStandingGrantState.ON && !consent.given,
+            firefox = firefoxSetup.presentation(),
         )
     }
 
@@ -269,6 +272,7 @@ internal class MacHelperSetupUiState(
                         consent.settle(grant)
                         reads += 1
                     }
+                    firefoxSetup.refresh(current)
                 }
             } finally {
                 reading = false

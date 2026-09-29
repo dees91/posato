@@ -90,6 +90,8 @@ internal fun MacSetupSection(
     onLoginItemChange: (Boolean) -> Unit = {},
     onStandingGrantChange: (Boolean) -> Unit = {},
     onSetUp: (() -> Unit)? = null,
+    onFirefoxInstall: () -> Unit = {},
+    onFirefoxRecheck: () -> Unit = {},
 ) {
     val running = presentation.activity != null || presentation.setup?.running == true
     MacSetupAnnouncements(presentation, onAnnouncement)
@@ -132,6 +134,7 @@ internal fun MacSetupSection(
             if (presentation.readiness == MacHelperReadiness.READY) {
                 StandingGrantRow(presentation, running, sessionBlocksRemoval, onStandingGrantChange)
             }
+            FirefoxExtensionRow(presentation.firefox, onFirefoxInstall, onFirefoxRecheck)
             if (presentation.readiness in removableReadiness) {
                 RemoveFromMacAction(running, sessionBlocksRemoval, onRemove)
             }

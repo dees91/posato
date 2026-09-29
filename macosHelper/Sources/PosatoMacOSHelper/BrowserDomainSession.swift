@@ -34,7 +34,7 @@ final class BrowserDomainSession: @unchecked Sendable {
         session.presentationQueue.async { session.presentBlockedPage() }
       }
     )
-    let port = try proxy.start()
+    let port = try proxy.start(port: BoundedHTTPProxy.firefoxLoopbackPort)
     self.proxy = proxy
     self.port = port
     do {

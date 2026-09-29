@@ -129,6 +129,14 @@ extension BoundedHTTPProxy {
         BlockedPage.httpResponse(sessionEndEpochMilliseconds: sessionEndEpochMilliseconds),
         on: connection
       )
+    case .firefoxExtensionPing:
+      recordFirefoxExtensionSeen()
+      sendAndFinish(FirefoxExtensionStatus.pingResponse(), on: connection)
+    case .firefoxExtensionStatus:
+      sendAndFinish(
+        FirefoxExtensionStatus.statusResponse(seenEpochMilliseconds: firefoxExtensionSeen()),
+        on: connection
+      )
     case .tunnel(let host, let port, let initialData):
       forward(client: connection, host: host, port: port, initialData: initialData, isTunnel: true)
     case .forward(let host, let port, let initialData):

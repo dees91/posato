@@ -60,6 +60,25 @@ public fun interface MacConsole {
     public fun isOurs(): Boolean?
 }
 
+public data class MacFirefoxDetection(
+    val installed: Boolean,
+    val applicationName: String? = null,
+)
+
+/**
+ * The Firefox pause-page extension. Detection names an installed Firefox; install opens the
+ * bundled extension package in it for the person to confirm; verified reports whether the
+ * extension announced itself during an active session. Absence never blocks anything: without
+ * the extension a paused site in Firefox stays blocked and shows the browser's error page.
+ */
+public interface MacFirefoxExtension {
+    public suspend fun detect(): MacFirefoxDetection
+
+    public suspend fun install(): Boolean
+
+    public suspend fun verified(): Boolean
+}
+
 public interface MacHelperPort {
     public val loginItem: MacLoginItem?
         get() {
@@ -92,6 +111,12 @@ public interface MacHelperPort {
 
     /** Operations in flight that an automatic start must wait for; null where none are tracked. */
     public val operations: MacHelperOperations?
+        get() {
+            return null
+        }
+
+    /** The Firefox extension surface; null where Firefox guidance does not exist. */
+    public val firefoxExtension: MacFirefoxExtension?
         get() {
             return null
         }

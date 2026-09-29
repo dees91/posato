@@ -5,6 +5,7 @@ import app.posato.desktop.macos.AUTOMATIC_START_CONSENT_KEY
 import app.posato.desktop.macos.DesktopMacHelperState
 import app.posato.desktop.macos.DesktopStandingGrant
 import app.posato.desktop.macos.MacAutomaticStartConsentFlag
+import app.posato.desktop.macos.MacFirefoxExtensionState
 import app.posato.desktop.macos.MacOsApplicationEnforcer
 import app.posato.desktop.macos.MacOsBrowserDomainEnforcer
 import app.posato.desktop.macos.MacOsHelperClient
@@ -65,6 +66,7 @@ fun main() {
                     read = { MacNotificationsNative.readFlag(AUTOMATIC_START_CONSENT_KEY) == 1 },
                     write = { given -> MacNotificationsNative.writeFlag(AUTOMATIC_START_CONSENT_KEY, given) },
                 ),
+                firefoxExtension = MacFirefoxExtensionState(Dispatchers.IO),
             )
             val applicationGraph = createDesktopApplicationGraph(
                 applicationMappings,

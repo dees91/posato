@@ -13,7 +13,7 @@ import Testing
   let denied = try await sendLoopbackRequest(
     port: port,
     request:
-      "GET http://example.com/private-canary?query-canary HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"
+      "GET http://example.com/private-canary?query-canary HTTP/1.1\r\nHost: example.com\r\n\r\n"
   )
   #expect(denied.hasPrefix("HTTP/1.1 200 OK\r\n"))
   #expect(denied.contains("Cache-Control: no-store"))
@@ -62,6 +62,55 @@ import Testing
   #expect(page.contains("This site is paused"))
 }
 
+@Test func givenFirefoxExtensionPingWhenRequestedThenStatusReportsSeen() async throws {
+  let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"])
+  let port = try await runBlockingTestOperation { try proxy.start() }
+  defer { proxy.stop() }
+
+  let before = try await sendLoopbackRequest(
+    port: port,
+    request: "GET /firefox-extension-status HTTP/1.1\r\nHost: 127.0.0.1:\(port)\r\n\r\n"
+  )
+  #expect(before.hasPrefix("HTTP/1.1 200 OK\r\n"))
+  #expect(before.hasSuffix("unseen"))
+
+  let ping = try await sendLoopbackRequest(
+    port: port,
+    request: "GET /firefox-extension-ping HTTP/1.1\r\nHost: 127.0.0.1:\(port)\r\n\r\n"
+  )
+  #expect(ping.hasPrefix("HTTP/1.1 200 OK\r\n"))
+  #expect(ping.hasSuffix("ok"))
+
+  let after = try await sendLoopbackRequest(
+    port: port,
+    request: "GET /firefox-extension-status HTTP/1.1\r\nHost: 127.0.0.1:\(port)\r\n\r\n"
+  )
+  #expect(after.hasPrefix("HTTP/1.1 200 OK\r\n"))
+  #expect(after.contains("Cache-Control: no-store"))
+  #expect(after.contains("Connection: close"))
+  let seenBody = after.components(separatedBy: "\r\n\r\n").last ?? ""
+  #expect(seenBody.hasPrefix("seen:"))
+  #expect(seenBody.dropFirst("seen:".count).allSatisfy { $0.isNumber })
+}
+
+@Test func givenStoppedProxyWhenRestartedThenFirefoxExtensionSeenIsCleared() async throws {
+  let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"])
+  let port = try await runBlockingTestOperation { try proxy.start() }
+  _ = try await sendLoopbackRequest(
+    port: port,
+    request: "GET /firefox-extension-ping HTTP/1.1\r\nHost: 127.0.0.1:\(port)\r\n\r\n"
+  )
+  try await runBlockingTestOperation { proxy.stop() }
+  let restarted = try await runBlockingTestOperation { try proxy.start() }
+  defer { proxy.stop() }
+
+  let status = try await sendLoopbackRequest(
+    port: restarted,
+    request: "GET /firefox-extension-status HTTP/1.1\r\nHost: 127.0.0.1:\(restarted)\r\n\r\n"
+  )
+  #expect(status.hasSuffix("unseen"))
+}
+
 @Test func givenAllowedHTTPWhenProxiedThenTheControlOriginReceivesOneRequest() async throws {
   let origin = try await LocalHTTPOrigin()
   defer { origin.stop() }
@@ -77,7 +126,7 @@ import Testing
   let response = try await sendLoopbackRequest(
     port: proxyPort,
     request:
-      "GET http://example.org/allowed HTTP/1.1\r\nHost: example.org\r\nConnection: close\r\n\r\n"
+      "GET http://example.org/allowed HTTP/1.1\r\nHost: example.org\r\n\r\n"
   )
   #expect(response.hasPrefix("HTTP/1.1 200 OK\r\n"))
   #expect(response.hasSuffix("allowed-control"))
@@ -99,7 +148,7 @@ import Testing
   let descriptor = try await connectedLoopbackSocket(port: proxyPort)
   defer { Darwin.close(descriptor) }
   try await send(
-    "GET http://example.org/allowed HTTP/1.1\r\nHost: example.org\r\nConnection: close\r\n\r\n",
+    "GET http://example.org/allowed HTTP/1.1\r\nHost: example.org\r\n\r\n",
     to: descriptor
   )
   let first = try await receiveToEnd(from: descriptor)
@@ -108,9 +157,9 @@ import Testing
   let secondDescriptor = try await connectedLoopbackSocket(port: proxyPort)
   defer { Darwin.close(secondDescriptor) }
   let pipelinedFirst =
-    "GET http://example.org/first HTTP/1.1\r\nHost: example.org\r\nConnection: close\r\n\r\n"
+    "GET http://example.org/first HTTP/1.1\r\nHost: example.org\r\n\r\n"
   let pipelinedSecond =
-    "GET http://example.com/second HTTP/1.1\r\nHost: example.com\r\nConnection: close\r\n\r\n"
+    "GET http://example.com/second HTTP/1.1\r\nHost: example.com\r\n\r\n"
   try await send(pipelinedFirst + pipelinedSecond, to: secondDescriptor)
   _ = try? await receiveToEnd(from: secondDescriptor)
   #expect(!origin.receivedHosts().contains("example.com"))

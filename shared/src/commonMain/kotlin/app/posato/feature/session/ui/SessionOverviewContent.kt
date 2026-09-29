@@ -105,6 +105,8 @@ internal fun SessionOverviewContent(
                 onLoginItemChange = macActions.loginItemChange,
                 onStandingGrantChange = macActions.standingGrantChange,
                 onSetUp = macActions.setUp,
+                onFirefoxInstall = macActions.firefoxInstall,
+                onFirefoxRecheck = macActions.firefoxRecheck,
             )
         }
     }

@@ -4,6 +4,8 @@ enum BoundedProxyRoute: Equatable {
   case blockedHTTP
   case blockedConnect
   case localBlockedPage
+  case firefoxExtensionPing
+  case firefoxExtensionStatus
   case tunnel(host: String, port: UInt16, initialData: Data)
   case forward(host: String, port: UInt16, initialData: Data)
 }

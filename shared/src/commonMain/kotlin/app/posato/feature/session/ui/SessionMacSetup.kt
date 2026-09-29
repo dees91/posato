@@ -49,6 +49,8 @@ internal class MacSetupCallbacks(
     val open: () -> Unit = {},
     val leave: () -> Unit = {},
     val allowSchedules: () -> Unit = {},
+    val firefoxInstall: () -> Unit = {},
+    val firefoxRecheck: () -> Unit = {},
 )
 
 internal fun MacHelperSetupUiState.callbacks(
@@ -67,6 +69,8 @@ internal fun MacHelperSetupUiState.callbacks(
         dismissOffer = ::dismissOffer,
         open = { setupOpen = true },
         allowSchedules = { consent.allow(presentation()) },
+        firefoxInstall = { firefoxSetup.install() },
+        firefoxRecheck = { firefoxSetup.recheck() },
         leave = {
             deferSetup()
             setupOpen = false
@@ -114,6 +118,8 @@ internal fun SessionMacSetup(
             onAnnouncement = actions.announce,
             sessionBlocksRemoval = state.blocksHelperRemoval(),
             onRemove = actions.remove,
+            onFirefoxInstall = actions.firefoxInstall,
+            onFirefoxRecheck = actions.firefoxRecheck,
         )
         PosatoButton(onClick = {
             actions.leave()

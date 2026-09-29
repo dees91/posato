@@ -2,6 +2,7 @@ package app.posato.desktop.macos
 
 import app.posato.feature.onboarding.MacAutomaticStartConsent
 import app.posato.feature.onboarding.MacConsole
+import app.posato.feature.onboarding.MacFirefoxExtension
 import app.posato.feature.onboarding.MacHelperOperations
 import app.posato.feature.onboarding.MacHelperPort
 import app.posato.feature.onboarding.MacHelperReadiness
@@ -26,6 +27,7 @@ internal class DesktopMacHelperState(
     override val automaticStartConsent: MacAutomaticStartConsent? = null,
     override val operations: MacHelperOperations = MacHelperOperations(),
     override val console: MacConsole? = null,
+    override val firefoxExtension: MacFirefoxExtension? = null,
 ) : MacHelperPort {
     override fun setupOfferDismissed(): Boolean {
         return offerFlag?.read() ?: true
