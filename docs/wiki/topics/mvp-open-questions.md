@@ -717,15 +717,17 @@ below. This queue retains idea provenance without expanding the original MVP.
    closes, with launch at login as an opt-in. `MACOS-013` delivers it.
 8. **Intel Mac support, starting with a 2019 MacBook Air.** `user-confirmed`
    (2026-09-14): explore running Posato on the maintainer's 2019 Intel MacBook
-   Air. `source-claim`: Apple lists macOS Sequoia (15) for MacBook Air models
-   from 2020 or later, so that model tops out at macOS Sonoma (14). Support
-   therefore needs two changes to
-   [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md),
-   which accepts only arm64 on macOS 15 or later: an x86-64 (or universal)
-   build and a macOS 14 deployment target. Discovery must cover the bundled
-   Java runtime and native libraries per architecture, the Swift helpers,
-   packaging and notarization for both architectures, macOS 14 API
-   availability, and a physical test device in the release matrix.
+   Air. `source-claim`: Apple lists macOS Sonoma (14) as that model's newest
+   compatible system. `user-confirmed` (2026-09-29): this MacBook runs
+   macOS 13 Ventura, and the maintainer chooses to retain it. `MACOS-015`
+   therefore evaluates Intel support on Ventura, replacing the earlier
+   macOS 14 discovery target. The accepted
+   [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
+   still specifies arm64 on macOS 15 or later; no lower baseline is accepted
+   without the discovery result. Discovery must cover an x86-64 build,
+   the bundled Java runtime and native libraries, Swift helpers, packaging,
+   notarization, macOS 13 API availability, and a verification path for the
+   physical device. Feasibility and support remain open.
 9. **In-app updates for macOS.** `user-confirmed` (2026-09-14): explore
    delivering new macOS versions from inside Posato, for example with Sparkle,
    after `MACOS-008` chose a manual download of each notarized build without

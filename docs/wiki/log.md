@@ -2209,3 +2209,6 @@ to scope, feasibility, or delivery.
 - `observed`: Tart reproduces the missing HTTPS presentation while the local
   page works. A test-iPhone occurrence expires, then receives the Mac
   extension without resuming; the Mac blocks. Both remain unassigned backlog.
+- `user-confirmed` (2026-09-29): Intel discovery targets macOS 13 Ventura
+  because the maintainer chooses to retain it on the 2019 MacBook Air.
+  This replaces the proposed macOS 14 target; compatibility remains open.

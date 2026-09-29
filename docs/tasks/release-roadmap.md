@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 12 (amended 2026-09-28: blocklists, partial 1.3 composition, and reported behavior backlog)
+- **Revision:** 12 (amended 2026-09-29: blocklists, partial 1.3 composition, and reported behavior backlog)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-28
+- **Last amended:** 2026-09-29
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -61,6 +61,9 @@
   final waves will be decided at a later checkpoint. The same revision adds
   `MACOS-022` and `SCHEDULE-005` from reports 21 and 22 to the unassigned
   backlog; neither changes release 1.3 composition or authorizes a rule change.
+  The 2026-09-29 clarification targets Intel discovery at macOS 13 Ventura,
+  which the maintainer uses on the 2019 MacBook Air and chooses to retain.
+  Compatibility and any ADR 0003 baseline revision remain to be established.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -243,8 +246,8 @@ open. Complete release composition before activating any row.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
-| `MACOS-015` | Decide whether Posato supports Intel Macs and macOS 14: cost of the x86-64 Compose Desktop artifact and runtime, per-architecture native libraries, universal Swift helpers, two notarized DMGs, macOS 14 API availability, the verification driver on a second architecture, and the support horizon Apple gives Intel Macs and macOS 14; propose the ADR 0003 revision for a go or no-go. | Platform coverage | discovery | R1.3/W1 | None | PR-INTEL-DECISION |
-| `MACOS-016` | Deliver the accepted Intel path from `MACOS-015`: build, sign, notarize, and publish the x86-64 release, verify it on the maintainer's 2019 MacBook Air, and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W2 | `MACOS-015` | PR-INTEL-RELEASE |
+| `MACOS-015` | Decide whether Posato supports Intel Macs and macOS 13 Ventura: cost of the x86-64 Compose Desktop artifact and runtime, per-architecture native libraries, universal Swift helpers, two notarized DMGs, macOS 13 Ventura API availability, the verification driver on a second architecture, and the support horizon Apple gives Intel Macs and macOS 13 Ventura; propose the ADR 0003 revision for a go or no-go. | Platform coverage | discovery | R1.3/W1 | None | PR-INTEL-DECISION |
+| `MACOS-016` | Deliver the accepted Intel path from `MACOS-015`: build, sign, notarize, and publish the x86-64 release, verify compatibility with macOS 13 Ventura on the maintainer's 2019 MacBook Air, and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W2 | `MACOS-015` | PR-INTEL-RELEASE |
 | `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules when delivered by `SCHEDULE-002`. | Platform coverage | delivery | Pending composition | `SCHEDULE-002` (done) | PR-NAVIGATION |
 | `SCHEDULE-003` | Complete the accepted blocklist scope for manual sessions and schedules: live edits and deletion, manual-session overlap, default ownership, limits and device readiness, migration, synchronization and older-client compatibility. Update the affected design and architecture authorities and end with accepted decisions and a delivery plan. | Target management | discovery | Pending composition | `SCHEDULE-002` (done) | PR-BLOCKLIST-DECISION |
 | `SCHEDULE-004` | Deliver reusable named blocklists on Mac and iPhone under the accepted scope: one list per manual session or schedule, a default for new starts and plans, migration of existing targets and schedules, union of overlapping scheduled lists, synchronized definitions and websites, and per-list device-local application choices. Verify migration, actual blocking and unblocking, overlap, offline execution, and cross-device convergence. High-risk. | Target management | delivery | Pending composition | `SCHEDULE-003` | PR-BLOCKLIST-DELIVERY |
@@ -294,7 +297,7 @@ The idea numbers refer to the wiki idea queue.
 | Session without the main window and without repeated prompts | `MACOS-012`, `MACOS-013`, `MACOS-014` | Accepted ADR 0003 and ADR 0004 revisions, physical menu bar start, end, relaunch, login, and revocation evidence |
 | One guided Mac setup | `ONBOARDING-004` | In a Tart clone: setup from onboarding, Finish setup, and the upgrade offer; resume after interruption; verified completion; revocation in This Mac |
 | Session notifications | `NOTIFY-001` | Physical permission flow, start and end notifications on both platforms |
-| Intel Macs | `MACOS-015`, `MACOS-016` | Accepted ADR 0003 revision, notarized x86-64 candidate verified on the 2019 MacBook Air |
+| Intel Macs | `MACOS-015`, `MACOS-016` | Accepted ADR 0003 revision, notarized x86-64 candidate verified on the 2019 MacBook Air running macOS 13 Ventura |
 | Shared recurring schedules | `SCHEDULE-001`, `SCHEDULE-002` | Accepted rules and security-reviewed authorization revision; Mac VM and test-iPhone runs for start/end, offline execution of known plans, synchronization, missing permissions, skipping, early end, restart and Mac catch-up |
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
 | Public packaging for 1.2 | `DOCS-003` | Media rendered within budget from recorded captures, README and site built, store text and screenshots ready for upload |
@@ -310,7 +313,7 @@ The idea numbers refer to the wiki idea queue.
 | macOS 15 virtual machine and iOS 18 iPhone | `QUALITY-007` | The maintainer provides the virtual machine image and the iOS 18 device, or the row records the gap on the availability page. |
 | Persistent authorization security review | `MACOS-014` | An independent review of the ADR 0004 revision passes before implementation. |
 | Automatic scheduled Apply security review | `SCHEDULE-001` | An independent review of the explicit-consent and automatic-start amendments passes, and the maintainer accepts them, before `SCHEDULE-002` implements them. |
-| 2019 MacBook Air | `MACOS-016` | The notarized x86-64 candidate passes the accepted flow on the maintainer's device. |
+| 2019 MacBook Air | `MACOS-016` | The notarized x86-64 candidate passes the accepted flow on the maintainer's device running macOS 13 Ventura. |
 | App Review per iOS release | `RELEASE-003`–`RELEASE-005` | The submitted build is approved or the row records the rejection and its clearing condition. |
 
 No credential, signing identity, update signing key, provisioning profile,
