@@ -6,7 +6,7 @@ This list covers runtime components that ship inside the applications; build
 and verification tools are listed separately. Binary distributions must carry
 the full license texts and notices of the components they include.
 
-The list reflects the dependencies resolved on 2026-09-23 and must be updated
+The list reflects the dependencies resolved on 2026-09-29 and must be updated
 whenever a runtime dependency changes.
 
 ## Runtime components
@@ -14,8 +14,8 @@ whenever a runtime dependency changes.
 | Component | Used by | License |
 | --- | --- | --- |
 | Kotlin standard library, kotlinx.coroutines, kotlinx.serialization, kotlinx.datetime, kotlinx.collections.immutable, atomicfu (JetBrains) | macOS, iOS | Apache-2.0 |
-| Compose Multiplatform runtime, foundation, UI, Material 3, resources, and lifecycle (JetBrains) | macOS, iOS | Apache-2.0 |
-| AndroidX lifecycle, navigation event, annotation, and collection libraries (Google) | macOS, iOS | Apache-2.0 |
+| Compose Multiplatform runtime, foundation, UI, Material 3, resources, lifecycle, and Navigation 3 (JetBrains) | macOS, iOS | Apache-2.0 |
+| AndroidX lifecycle, navigation event, Navigation 3 runtime, saved state, annotation, and collection libraries (Google) | macOS, iOS | Apache-2.0 |
 | Skiko (JetBrains) | macOS, iOS | Apache-2.0 |
 | Skia graphics library (Google), bundled in Skiko native libraries | macOS, iOS | BSD-3-Clause |
 | SQLDelight runtime and drivers (Cash App) | macOS, iOS | Apache-2.0 |
