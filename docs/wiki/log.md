@@ -2321,7 +2321,20 @@ to scope, feasibility, or delivery.
   **Pause. Then choose.** everywhere it appears; no release yet.
 ## [2026-09-29] experiment | Intel Ventura evaluation package
 
-- `observed`: a notarized x86-64 evaluation DMG passed package signature,
-  Gatekeeper, architecture, and minimum-version checks. The build required a
-  macOS 13 activation fallback and signing the x86-64 Skiko library. Runtime
-  behavior on macOS 13 remains open; ADR 0003 is unchanged.
+## [2026-09-29] correction | Intel Ventura application launch
+
+- `observed`: physical macOS 13.7.8 launch exposed a missing top-level x86-64
+  Skiko library, then a macOS 14-only AppKit activation call. The corrected
+  signed diagnostic app stayed running and displayed a window on the Intel
+  MacBook Air. The final notarized DMG was installed and launched there with
+  the window visible. After the approved background-service registration did
+  not reach `launchd`, a Mac restart submitted the daemon; the maintainer then
+  completed setup with the expected administrator dialog. Broader Ventura
+  support remains open under `MACOS-015`. Three later CloudKit bootstrap attempts
+  reached a zone fetch that Posato cancelled at its 30-second deadline. A signed
+  120-second diagnostic was installed but could not be exercised through the
+  available remote UI connection, so the previous app and source deadline were
+  restored. The cancelled zone requests had default, discretionary CloudKit
+  priority and zero recorded request and response bytes. A later manual attempt
+  succeeded on the restored 30-second build. The cause remains open, and further
+  iCloud investigation is deferred at the maintainer's request.

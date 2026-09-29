@@ -1,7 +1,7 @@
 # Execution: Intel Ventura evaluation build
 
 - **Brief:** [intel-ventura-evaluation-build.md](../specifications/intel-ventura-evaluation-build.md)
-- **Status:** `complete` for the evaluation artifact; Ventura runtime proof remains open
+- **Status:** `done`; the first artifact was superseded after physical evaluation
 - **Review tier:** `high-risk`
 - **Implementer:** Codex
 - **Reviewer:** Independent plan and completed-change review completed
@@ -48,11 +48,11 @@
 
 ## Blockers and accepted risks
 
-- Ventura runtime behavior remains unverified until the candidate is evaluated on the Intel MacBook Air running macOS 13. No Posato build was run or installed on the maintainer's host Mac by this task.
+- Physical evaluation later found that this artifact exited before showing a window. The launch faults and replacement artifact are recorded in [intel-ventura-skiko-launch-fix.md](intel-ventura-skiko-launch-fix.md). No Posato build was run or installed on the maintainer's host Mac during this initial task.
 - The Tart primary VM stopped immediately after creation and again after boot. Its environment must be repaired before an unattended smoke run can proceed.
 - The fresh quality-rule test failure also reproduces on unchanged main. It is outside the Intel packaging change and must be repaired before integrating this branch.
 
 ## Final
 
-- **Status:** `complete` for the requested local evaluation artifact
-- **Outcome:** Signed, notarized x86-64/macOS 13 evaluation DMG delivered; macOS 13 runtime compatibility and production support remain open under `MACOS-015`.
+- **Status:** `done`
+- **Outcome:** The initial notarized x86-64/macOS 13 DMG established packaging feasibility but failed at runtime and was superseded by the launch correction. Production support remains open under `MACOS-015`.
