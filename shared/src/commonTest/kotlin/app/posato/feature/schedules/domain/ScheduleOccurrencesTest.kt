@@ -60,13 +60,12 @@ class ScheduleOccurrencesTest {
     }
 
     @Test
-    fun `given a skipped or ended or terminal occurrence then it does not run and the plan keeps repeating`() {
+    fun `given a skipped or ended occurrence then it does not run and the plan keeps repeating`() {
         val daily = plan("c", EVERY_DAY, 9 * 60, 10 * 60)
         val today = OccurrenceKey(daily.id, ScheduleDate(2026, 9, 28))
         listOf(
             ScheduleFacts(skipped = setOf(today)),
             ScheduleFacts(ended = setOf(today)),
-            ScheduleFacts(terminal = setOf(today)),
         ).forEach { facts ->
             assertTrue(ScheduleOccurrences.active(listOf(daily), facts, summer(28, 9, 30), zone).isEmpty(), "$facts")
             assertEquals(1, ScheduleOccurrences.active(listOf(daily), facts, summer(29, 9, 30), zone).size, "$facts")

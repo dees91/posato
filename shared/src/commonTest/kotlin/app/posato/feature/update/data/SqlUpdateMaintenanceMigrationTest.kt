@@ -22,7 +22,6 @@ class SqlUpdateMaintenanceMigrationTest {
         seeding.executeSql("DROP TABLE local_update_maintenance")
         seeding.executeSql("DROP TABLE local_schedule")
         seeding.executeSql("DROP TABLE local_schedule_fact")
-        seeding.executeSql("DROP TABLE local_schedule_terminal")
         seeding.executeSql("DROP TABLE local_schedule_expiry")
         seeding.executeSql("DROP TABLE local_schedule_pin")
         seeding.executeSql("DROP TABLE sync_schedule_intent")

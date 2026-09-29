@@ -4,6 +4,7 @@ import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleLimits
 import app.posato.feature.schedules.domain.ScheduleOccurrence
+import app.posato.feature.schedules.domain.ScheduleOccurrences
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.ui.SessionTargetsState
 
@@ -53,8 +54,9 @@ internal data class ScheduleMonitorTable(
 
 internal object ScheduleMonitorTables {
     /**
-     * Only enabled plans the workspace accepted are listed. A date is stopped by a skip, an early end or
-     * an occurrence that already ended here, from yesterday until the furthest date a fact may name.
+     * Only enabled plans the workspace accepted are listed. A date is stopped by a skip or an early end, and by
+     * a natural end observed here that its current interval starts before, from yesterday until the furthest
+     * date a fact may name. A running occurrence carries its own start, which may be that observed end.
      */
     fun build(
         input: ScheduleMonitorInput,
@@ -65,22 +67,22 @@ internal object ScheduleMonitorTables {
         val first = today.plusDays(-1)
         val last = today.plusDays(ScheduleLimits.MAX_FACT_DAYS_AHEAD.toLong())
         val facts = input.snapshot.facts
-        val expiredStops = facts.expired.map { it.key }
-        val stopped = (facts.skipped + facts.ended + facts.terminal + expiredStops).filter { it.date in first..last }
         val schedules = input.snapshot.runnable.filter { it.enabled }.map { plan ->
+            val cutShort = facts.expired.filter { (key, end) ->
+                key.schedule == plan.id && (ScheduleOccurrences.planned(plan, key.date, zone)?.let { it.startEpochMillis < end } ?: false)
+            }.keys
+            val stopped = (facts.skipped + facts.ended + cutShort).filter { it.schedule == plan.id && it.date in first..last }
             MonitorSchedule(
                 id = plan.id.hex,
                 name = plan.name,
                 weekdays = plan.weekdays,
                 startMinute = plan.startMinute,
                 endMinute = plan.endMinute,
-                stoppedDates = stopped.filter { it.schedule == plan.id }.map { it.date }.distinct().sorted(),
+                stoppedDates = stopped.map { it.date }.distinct().sorted(),
             )
         }.sortedBy { it.id }
         val running = input.running.map { occurrence ->
-            val expiredEnd = facts.expired.firstOrNull { it.key == occurrence.key }?.endEpochMillis
-            val start = maxOf(occurrence.startEpochMillis, expiredEnd ?: occurrence.startEpochMillis)
-            MonitorRunning(occurrence.key.schedule.hex, occurrence.key.date, start, occurrence.endEpochMillis)
+            MonitorRunning(occurrence.key.schedule.hex, occurrence.key.date, occurrence.startEpochMillis, occurrence.endEpochMillis)
         }
         val selection = targets.scheduleSelection()
         return ScheduleMonitorTable(schedules, running, selection.domains, selection.mappingIds)

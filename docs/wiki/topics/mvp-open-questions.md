@@ -990,7 +990,12 @@ below. This queue retains idea provenance without expanding the original MVP.
     natural expiry may resume while explicit Skip and End early remain final.
     Legacy terminal rows are reevaluated under current plans, retaining explicit
     facts. The [schedule authority](../../product/schedules-decisions.md#legacy-expiry-migration-schedule-005)
-    records this migration and the original-start and rollback bounds.
+    records this migration and the rollback bound.
+    `user-confirmed` (2026-09-29): schedule edits are evaluated against the
+    current plan. An edit that no longer covers now stops a running pause,
+    which runs again at its new interval, even the same day. Turning a plan
+    off is such an edit, Skip and End early stay final, and every fresh start
+    is announced. No original start is kept.
     `observed`: the repaired build resumes both migrated and newly expired
     occurrences on test iPhone and Tart after remote extensions. Relaunch and
     iPhone background expiry pass; a later End early still wins over another

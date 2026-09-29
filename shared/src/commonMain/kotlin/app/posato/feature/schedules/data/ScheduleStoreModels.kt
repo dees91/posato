@@ -1,6 +1,5 @@
 package app.posato.feature.schedules.data
 
-import app.posato.feature.schedules.domain.OccurrenceExpiry
 import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.OccurrencePin
 import app.posato.feature.schedules.domain.ScheduleDate
@@ -20,16 +19,20 @@ internal enum class OccurrenceStop {
     END,
 }
 
-/** What a host saw: occurrences it saw start, notice bits it posted, and occurrences that ended here. */
+/**
+ * What a host saw: runs it saw start, notice bits it posted, runs that stopped, the natural ends it observed,
+ * and observed ends too old to matter.
+ */
 internal data class ScheduleHostUpdate(
     val pins: List<OccurrencePin> = emptyList(),
     val notices: Map<OccurrenceKey, Int> = emptyMap(),
-    val finished: Set<OccurrenceKey> = emptySet(),
-    val expired: List<OccurrenceExpiry> = emptyList(),
+    val released: Set<OccurrenceKey> = emptySet(),
+    val expired: Map<OccurrenceKey, Long> = emptyMap(),
+    val forgotten: Set<OccurrenceKey> = emptySet(),
 ) {
     val isEmpty: Boolean
         get() {
-            return pins.isEmpty() && notices.isEmpty() && finished.isEmpty() && expired.isEmpty()
+            return pins.isEmpty() && notices.isEmpty() && released.isEmpty() && expired.isEmpty() && forgotten.isEmpty()
         }
 
     override fun toString(): String {
