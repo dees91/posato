@@ -49,7 +49,8 @@ internal interface IosScheduleBindings : ScheduleBindings {
             hadConsent = { false },
             targets = { loadSessionTargets(policyStore, applicationMappings) },
             maintenanceClosed = { false },
-            // The monitor extension announces starts, including while the app is closed.
+            // The monitor extension announces starts, including while the app is closed; the Swift publisher
+            // announces a running start it has not recorded, such as one an edit began.
             announcesStarts = false,
             announcedElsewhere = { publisher.startedOccurrences() },
             publish = publisher::publish,

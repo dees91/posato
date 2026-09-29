@@ -120,8 +120,11 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
             let start = Date(timeIntervalSince1970: TimeInterval(running.startEpoch))
             let end = Date(timeIntervalSince1970: TimeInterval(running.endEpoch))
             guard start <= time, time < end else { continue }
-            try? files.recordStarted(ScheduleMonitorOccurrence(scheduleId: running.id, date: running.date, start: start, end: end), at: time)
-            guard file.notices.enabled, let schedule = file.schedules.first(where: { $0.id == running.id }) else { continue }
+            // A start that could not be recorded is not announced, so a failing write never repeats the notice.
+            guard (try? files.recordStarted(ScheduleMonitorOccurrence(scheduleId: running.id, date: running.date, start: start, end: end), at: time)) != nil,
+                  file.notices.enabled,
+                  let schedule = file.schedules.first(where: { $0.id == running.id })
+            else { continue }
             poster.post(
                 identifier: "\(ScheduleMonitor.startNoticePrefix)\(running.id).\(running.date)",
                 title: schedule.startTitle,

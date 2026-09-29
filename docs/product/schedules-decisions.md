@@ -104,7 +104,8 @@ provenance label.
   time at or after that end. Unchanged plans, repeated sync, and clock
   rollback therefore do not revive an expired interval, while an edit that
   moves the interval later or extends it past the current time does. This
-  bound covers only runs this device observed; a stop and restart it did not
+  bound covers only runs this device observed and is kept for about a day,
+  as long as an occurrence can still run; a stop and restart it did not
   observe continue without a new notice (`user-confirmed` 2026-09-28, revised
   2026-09-29, SCHEDULE-005).
 - **Dates.** A skip or end names a date at most 400 days ahead.
@@ -265,7 +266,12 @@ the remaining slices. Each is decided here, `user-confirmed` (delegated,
 - On iPhone the extension posts only what the app planned: the app writes
   the switch's state into the App Group file with the schedule table, and the
   extension reads it before posting. Turning notices off rewrites the file
-  and removes pending requests.
+  and removes pending requests. A start that an edit or a re-enable begins
+  inside the interval gets no extension callback, so the app announces a
+  running start the extension has not recorded, recording it first; each run
+  is announced once by either (SCHEDULE-005, 2026-09-29).
+- Start and setup notices are per run: a run that stops and starts again,
+  including on the same date, is announced again.
 
 ### 3. A permission path for schedule-only use
 

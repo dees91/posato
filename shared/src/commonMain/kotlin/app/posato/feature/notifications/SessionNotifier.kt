@@ -195,7 +195,7 @@ internal class SessionNotices(
         }
     }
 
-    /** A scheduled start is announced once the restrictions hold; a setup notice once per occurrence. */
+    /** A scheduled start is announced once the restrictions hold; a setup notice once per run. */
     private suspend fun announceScheduled(
         pause: ScheduledPause,
         announced: suspend (Set<OccurrenceKey>, Int) -> Unit,
