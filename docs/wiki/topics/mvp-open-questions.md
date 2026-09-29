@@ -727,7 +727,7 @@ below. This queue retains idea provenance without expanding the original MVP.
    macOS 14 discovery target. The accepted
    [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
    still specifies arm64 on macOS 15 or later; no lower baseline is accepted
-   without the discovery result. Discovery must cover an x86-64 build,
+   without the delivery row's accepted revision. It must cover an x86-64 build,
    the bundled Java runtime and native libraries, Swift helpers, packaging,
    notarization, macOS 13 API availability, and a verification path for the
    physical device. Feasibility and support remain open.
@@ -984,7 +984,8 @@ below. This queue retains idea provenance without expanding the original MVP.
     its database was not inspected. PR #106 retains the reproduction evidence.
     `open`: distinguish natural expiry from explicit Skip and End early when
     deciding whether an extended occurrence can restart after sync.
-    Intake did not revise the accepted terminal-marker rule.
+    Intake did not revise the accepted terminal-marker rule; PR #108 carries
+    the expiry rule revision and legacy reevaluation accepted on 2026-09-28.
     `user-confirmed` (2026-09-29): `SCHEDULE-005` belongs to release 1.3.
 
 ## Later platform questions
