@@ -742,6 +742,10 @@ below. This queue retains idea provenance without expanding the original MVP.
    `user-confirmed` (2026-09-29): Intel support is part of release 1.3 as
    one `MACOS-015` delivery row, verified on the MacBook Air set up as a
    dedicated test Mac without personal Posato data.
+   `user-confirmed` (2026-09-29): the maintainer accepted in advance the
+   decisions the ADR 0003, ADR 0008, and `AGENTS.md` changes must state; the
+   [`MACOS-015` brief](../../tasks/specifications/macos-015-intel-ventura.md)
+   lists them.
 9. **In-app updates for macOS.** `user-confirmed` (2026-09-14): explore
    delivering new macOS versions from inside Posato, for example with Sparkle,
    after `MACOS-008` chose a manual download of each notarized build without

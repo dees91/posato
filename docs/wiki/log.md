@@ -2333,4 +2333,11 @@ to scope, feasibility, or delivery.
   succeeded (`user-confirmed`). The cause is `open` and deferred.
 - `MACOS-015` continues from this evaluation; the
   [execution record](../tasks/executions/macos-015-intel-ventura.md) keeps
-  the evidence limits. ADR 0003 is unchanged until its revision is accepted.
+  the evidence limits.
+- `user-confirmed`: the maintainer accepted the direction of the ADR 0003,
+  ADR 0008, and `AGENTS.md` changes in advance: the x86-64 build refuses
+  Rosetta, arm64 also drops to macOS 13 as supported without separate
+  verification, Intel stays while the toolchain allows, a separate
+  `appcast-intel.xml` with a shared build number, and the dedicated MacBook
+  Air as the one physical Mac allowed outside Tart. The
+  [brief](../tasks/specifications/macos-015-intel-ventura.md) lists them.
