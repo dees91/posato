@@ -665,10 +665,13 @@ accepted contracts.
 
 `user-confirmed` (2026-09-28): during release 1.3 planning, the maintainer
 selected `NAV-001` and reusable blocklists, and tentatively favored
-`SYNC-020`, `MACOS-020`, and `MACOS-021`. The latter three remain candidates;
-the rest of the release will be considered later. The
-[release roadmap](../../tasks/release-roadmap.md#release-13-blocklists-and-navigation)
-records the partial selection. Final composition and activation remain open.
+`SYNC-020`, `MACOS-020`, and `MACOS-021`. `user-confirmed` (2026-09-29):
+the composition is complete. Release 1.3 also takes those three candidates,
+the prepared `MACOS-022` and `SCHEDULE-005` fixes, Intel support on
+macOS 13 Ventura as one `MACOS-015` delivery row, a Firefox discovery in
+`MACOS-017`, and the `DOCS-004` packaging. The
+[release roadmap](../../tasks/release-roadmap.md#release-13-blocklists-navigation-and-intel-macs)
+records the rows and waves; each row still starts only when named.
 
 `user-confirmed` (2026-09-13): retain the following larger, loosely defined
 ideas for future iterations after the MVP. Unresolved choices remain `open`;
@@ -724,10 +727,13 @@ below. This queue retains idea provenance without expanding the original MVP.
    macOS 14 discovery target. The accepted
    [ADR 0003](../../decisions/0003-mvp-application-architecture-baseline.md)
    still specifies arm64 on macOS 15 or later; no lower baseline is accepted
-   without the discovery result. Discovery must cover an x86-64 build,
+   without the delivery row's accepted revision. It must cover an x86-64 build,
    the bundled Java runtime and native libraries, Swift helpers, packaging,
    notarization, macOS 13 API availability, and a verification path for the
    physical device. Feasibility and support remain open.
+   `user-confirmed` (2026-09-29): Intel support is part of release 1.3 as
+   one `MACOS-015` delivery row, verified on the MacBook Air set up as a
+   dedicated test Mac without personal Posato data.
 9. **In-app updates for macOS.** `user-confirmed` (2026-09-14): explore
    delivering new macOS versions from inside Posato, for example with Sparkle,
    after `MACOS-008` chose a manual download of each notarized build without
@@ -958,7 +964,8 @@ below. This queue retains idea provenance without expanding the original MVP.
     and the Automation panel had no entries. This reproduces missing
     presentation, not its cause or every supported browser context.
     `open`: distinguish permission, browser context, and adapter failures.
-    `MACOS-022` is unassigned backlog; PR #106 retains verification evidence.
+    PR #106 retains verification evidence. `user-confirmed` (2026-09-29):
+    `MACOS-022` belongs to release 1.3.
 
 22. **Extending a naturally expired schedule across devices.**
     `user-confirmed` (2026-09-28): a schedule previously ending at 18:00 on
@@ -977,8 +984,9 @@ below. This queue retains idea provenance without expanding the original MVP.
     its database was not inspected. PR #106 retains the reproduction evidence.
     `open`: distinguish natural expiry from explicit Skip and End early when
     deciding whether an extended occurrence can restart after sync.
-    `SCHEDULE-005` is unassigned backlog; intake does not revise the accepted
-    terminal-marker rule or authorize implementation.
+    Intake did not revise the accepted terminal-marker rule; PR #108 carries
+    the expiry rule revision and legacy reevaluation accepted on 2026-09-28.
+    `user-confirmed` (2026-09-29): `SCHEDULE-005` belongs to release 1.3.
 
 ## Later platform questions
 

@@ -227,8 +227,8 @@ before treating a passing test as evidence.
 - `open`: a guest network toggle and an Apple Account sign-out in a VM for the
   offline-retry and account-gate sync steps.
 - `user-confirmed` 2026-09-25: the interrupted post-start upload on iOS is
-  backlog row `SYNC-020` (reproduce, then automatic retry and background
-  time); a push path to the Mac is not part of it.
+  row `SYNC-020` (reproduce, then automatic retry and background time), in
+  release 1.3 since 2026-09-29; a push path to the Mac is not part of it.
 - `observed` answer to the packaging question: `posato-control` treats a VM as a
   location of the desktop target (`--vm primary|peer`) with `vm create`,
   `sync`, `destroy`, and `prompt`; the one-time setup is in
