@@ -179,7 +179,8 @@ private fun PosatoWindow(
     onCloseRequest: () -> Unit,
 ) {
     var highContrast by remember { mutableStateOf(false) }
-    Window(onCloseRequest = onCloseRequest, title = "Posato", state = state) {
+    val backInput = remember { MacBackInput() }
+    Window(onCloseRequest = onCloseRequest, title = "Posato", state = state, onPreviewKeyEvent = backInput::onKeyEvent) {
         SideEffect {
             this.window.rootPane.putClientProperty("apple.awt.fullWindowContent", true)
             this.window.rootPane.putClientProperty("apple.awt.transparentTitleBar", true)
@@ -187,6 +188,7 @@ private fun PosatoWindow(
             this.window.minimumSize = Dimension(MINIMUM_WINDOW_WIDTH, 0)
         }
         WindowChrome(this.window, state.placement == WindowPlacement.Fullscreen, onContrastChange = { highContrast = it })
+        MacBackInputEffect(backInput)
         graph.application.Content(
             highContrast = highContrast,
             onAnnouncement = MacWindow::announce,

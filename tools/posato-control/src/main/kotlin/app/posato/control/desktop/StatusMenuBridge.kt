@@ -9,3 +9,10 @@ internal fun AxBridge.statusMenu(
 internal fun AxBridge.closeWindow(pid: Long) {
     invoke("close-window", pid.toString())
 }
+
+internal fun AxBridge.swipeBack(
+    pid: Long,
+    complete: Boolean
+) {
+    invoke("swipe-back", pid.toString(), if (complete) "1" else "0")
+}

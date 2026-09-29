@@ -234,6 +234,45 @@ enum Bridge {
     }
   }
 
+  /// A two-finger swipe to the right over the main window, as the trackpad reports it: phased,
+  /// continuous scroll events that AppKit's swipe tracking follows. A long first movement completes
+  /// the swipe between pages; a short one is released below the threshold and cancels it.
+  static func swipeBack(pid: pid_t, complete: Bool) throws {
+    try requireFrontmost(pid: pid)
+    guard let window = windows(pid: pid).filter({ $0.layer == 0 }).max(by: { $0.w * $0.h < $1.w * $1.h }) else {
+      throw BridgeError(code: "DESKTOP_WINDOW_UNAVAILABLE", message: "The application shows no window to swipe.")
+    }
+    let location = CGPoint(x: window.x + window.w / 2, y: window.y + window.h / 2)
+    guard
+      let movement = CGEvent(
+        mouseEventSource: nil, mouseType: .mouseMoved, mouseCursorPosition: location,
+        mouseButton: .left)
+    else {
+      throw BridgeError(code: "AX_ERROR", message: "Could not create a pointer event.")
+    }
+    movement.post(tap: .cghidEventTap)
+    let step: Int32 = complete ? 700 : 40
+    let phases: [(Int32, Int64, Int64)] =
+      [(0, 128, 0), (step, 1, 0)] + Array(repeating: (step / 10, 2, 0), count: 10) + [(0, 4, 0)]
+      + Array(repeating: (step / 20, 0, 2), count: 8) + [(0, 0, 3)]
+    for (delta, phase, momentum) in phases {
+      guard
+        let event = CGEvent(
+          scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 2, wheel1: 0, wheel2: delta,
+          wheel3: 0)
+      else {
+        throw BridgeError(code: "AX_ERROR", message: "Could not create a scrolling event.")
+      }
+      event.location = location
+      event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+      event.setIntegerValueField(.scrollWheelEventScrollPhase, value: phase)
+      event.setIntegerValueField(.scrollWheelEventMomentumPhase, value: momentum)
+      event.post(tap: .cghidEventTap)
+      usleep(16_000)
+    }
+    RunLoop.current.run(until: Date().addingTimeInterval(0.8))
+  }
+
   static func scroll(pid: pid_t, path: String, forward: Bool) throws {
     try requireFrontmost(pid: pid)
     let element = try resolve(pid: pid, path: path)
@@ -708,6 +747,11 @@ do {
   case "close-window":
     try requireAccessibilityTrust()
     try StatusMenu.closeWindow(pid: try pidArgument(2))
+    emit(["ok": true])
+  case "swipe-back":
+    try requireAccessibilityTrust()
+    let pid = try pidArgument(2)
+    try Bridge.swipeBack(pid: pid, complete: (try argument(3, "complete")) == "1")
     emit(["ok": true])
   default:
     throw BridgeError(code: "USAGE", message: "Unknown command '\(command)'.")

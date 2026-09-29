@@ -18,6 +18,7 @@ final class ScenarioExecutor {
   private static let extraDeletes = 3
   private static let rowWeight: CGFloat = 3
   private static let scrollSettle: TimeInterval = 0.5
+  private static let edgeInset: CGFloat = 2
   private static let minDragViewportHeight: CGFloat = 80
   private static let screenSwipeCoverage: CGFloat = 0.9
   private static let orientations: [String: UIDeviceOrientation] = [
@@ -170,6 +171,8 @@ final class ScenarioExecutor {
       try openURL(step)
     case "pressKeys":
       try pressKeys(step, timeout: timeout)
+    case "swipeBack":
+      swipeBack()
     case "terminate":
       app.terminate()
     case "relaunch":
@@ -450,6 +453,16 @@ final class ScenarioExecutor {
     let frame = element.frame
     let centre = CGPoint(x: frame.midX, y: frame.midY)
     return window.contains(centre)
+  }
+
+  /// The system back gesture: a drag that starts at the leading screen edge and follows the finger
+  /// most of the way across, as a person swipes back in a navigation stack.
+  private func swipeBack() {
+    let edge = app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0.5))
+      .withOffset(CGVector(dx: Self.edgeInset, dy: 0))
+    let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.85, dy: 0.5))
+    edge.press(forDuration: 0.05, thenDragTo: end)
+    Thread.sleep(forTimeInterval: Self.scrollSettle)
   }
 
   private func pan(in container: XCUIElement, forward: Bool, screenSwipe: Bool) {

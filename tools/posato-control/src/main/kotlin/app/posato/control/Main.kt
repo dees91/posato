@@ -4,6 +4,7 @@ import app.posato.control.cli.ArtifactsCommand
 import app.posato.control.cli.BuildCommand
 import app.posato.control.cli.CleanupCommand
 import app.posato.control.cli.CloseWindowCommand
+import app.posato.control.cli.SwipeBackCommand
 import app.posato.control.cli.DbCommand
 import app.posato.control.cli.DbPathCommand
 import app.posato.control.cli.DbQueryCommand
@@ -102,6 +103,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ObserveCommand(),
     MenuCommand(),
     CloseWindowCommand(),
+    SwipeBackCommand(),
     ResourcesCommand(),
     UpdateConsentCommand(),
     VmCommand().subcommands(

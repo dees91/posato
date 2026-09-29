@@ -1181,6 +1181,7 @@ dependencies {
     implementation(project(":shared"))
     implementation(libs.compose.desktop.macos.arm64)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.navigationevent.compose)
     implementation(libs.sqldelight.sqlite.driver)
     testImplementation(kotlin("test"))
     testImplementation(libs.kotlinx.coroutines.test)

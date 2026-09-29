@@ -29,6 +29,7 @@ import app.posato.core.designsystem.PosatoSelectionRow
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.navigation.PosatoNavStack
 import app.posato.feature.onboarding.MacSetupOverview
 import app.posato.feature.schedules.domain.ScheduleId
 
@@ -66,6 +67,7 @@ internal fun SchedulesScreen(
     onTurnOnNotices: () -> Unit = {},
     onAllowSchedules: () -> Unit = {},
     macSetupContent: (@Composable () -> Unit)? = null,
+    setupPromptOpen: Boolean = false,
 ) {
     LaunchedEffect(holder) { holder.run() }
     val actions = ScheduleActions(
@@ -83,7 +85,7 @@ internal fun SchedulesScreen(
         onTurnOnNotices = onTurnOnNotices,
         onAllowSchedules = onAllowSchedules,
     )
-    SchedulesScreen(holder.state, device, layout, readiness, actions, modifier, macSetupContent)
+    SchedulesScreen(holder.state, device, layout, readiness, actions, modifier, macSetupContent, setupPromptOpen)
 }
 
 @Composable
@@ -95,19 +97,43 @@ internal fun SchedulesScreen(
     actions: ScheduleActions,
     modifier: Modifier = Modifier,
     macSetupContent: (@Composable () -> Unit)? = null,
+    setupPromptOpen: Boolean = false,
 ) {
     val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
-    Column(
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
-        verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
-    ) {
-        val editor = state.editor
-        when {
-            editor != null -> key(editor.id) { ScheduleEditor(editor, state, layout, actions) }
-            state.showingSetup -> ScheduleSetup(device, layout, actions, macSetupContent)
-            else -> ScheduleList(state, device, layout, readiness, actions)
+    val editor = state.editor
+    val top = when {
+        editor != null -> SchedulesRoute.Editor(editor.id)
+        state.showingSetup -> SchedulesRoute.Setup
+        else -> null
+    }
+    PosatoNavStack(
+        listOfNotNull(SchedulesRoute.List, top),
+        onBack = { if (top is SchedulesRoute.Editor) actions.onCloseEditor() else actions.onShowSetup(false) },
+        modifier = modifier.fillMaxSize(),
+        backEnabled = !(top == SchedulesRoute.Setup && setupPromptOpen),
+    ) { route ->
+        Column(
+            modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(inset),
+            verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
+        ) {
+            when (route) {
+                is SchedulesRoute.Editor -> if (editor != null) ScheduleEditor(editor, state, layout, actions)
+                SchedulesRoute.Setup -> ScheduleSetup(device, layout, actions, macSetupContent)
+                SchedulesRoute.List -> ScheduleList(state, device, layout, readiness, actions)
+            }
         }
     }
+}
+
+/** Schedules' screens: the list, with the editor or this Mac's setup above it. */
+private sealed interface SchedulesRoute {
+    data object List : SchedulesRoute
+
+    data object Setup : SchedulesRoute
+
+    data class Editor(
+        val id: ScheduleId?
+    ) : SchedulesRoute
 }
 
 @Composable

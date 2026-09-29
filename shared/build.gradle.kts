@@ -63,6 +63,7 @@ kotlin {
             implementation(libs.compose.ui.tooling.preview)
             implementation(libs.kuri)
             implementation(libs.markdown)
+            implementation(libs.navigation3.ui)
             implementation(libs.kotlinx.collections.immutable)
             implementation(libs.kotlinx.coroutines.core)
             implementation(libs.lifecycle.viewmodel.compose)

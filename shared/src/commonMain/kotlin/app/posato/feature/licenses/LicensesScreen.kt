@@ -35,13 +35,15 @@ import kotlinx.coroutines.CancellationException
 
 @Composable
 internal fun LicensesScreen(
+    document: LicenseDocument?,
+    onSelect: (LicenseDocument) -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var state by remember { mutableStateOf(LicensesUiState()) }
+    var state by remember(document) { mutableStateOf(LicensesUiState(document = document)) }
     var loadAttempt by remember { mutableIntStateOf(0) }
-    LaunchedEffect(state.document, loadAttempt) {
-        val document = state.document ?: return@LaunchedEffect
+    LaunchedEffect(document, loadAttempt) {
+        if (document == null) return@LaunchedEffect
         state = LicensesUiState(document = document)
         state = try {
             LicensesUiState(document = document, text = Res.readBytes(document.resourcePath).decodeToString())
@@ -54,8 +56,8 @@ internal fun LicensesScreen(
     LicensesScreen(
         modifier = modifier,
         state = state,
-        onSelect = { state = LicensesUiState(document = it) },
-        onBack = { if (state.document == null) onBack() else state = LicensesUiState() },
+        onSelect = onSelect,
+        onBack = onBack,
         onRetry = { loadAttempt++ },
     )
 }
