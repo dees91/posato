@@ -1,6 +1,6 @@
 # SCHEDULE-005 execution
 
-- **Status:** rule revision in progress (2026-09-29)
+- **Status:** complete; ready for review and merge
 
 ## Diagnosis
 
@@ -104,98 +104,123 @@ were folded in (marked R1-R4 below).
 
 Legacy terminal rows cannot distinguish natural expiry from other local stops.
 The maintainer accepted reevaluating them under current plans while preserving
-explicit Skip and End early facts (2026-09-28). Migration removes only legacy
-local terminal markers.
+explicit Skip and End early facts (2026-09-28). Since the 2026-09-29 revision,
+migration 12 drops that table: no local stop is permanent any more.
 
+## First implementation (superseded 2026-09-29)
 
-## Plan review and regression
+The first implementation resumed an expired occurrence from its pinned
+original start after an end-time extension. It passed plan review,
+completed-change review, quality, and the iPhone and Tart matrix at `5eda62d`
+(`build/verification/runs/schedule005-e2e/README.md`). Pull request review then
+found a clock-rollback defect and an undo defect, which were corrected in
+`44c0f9a` (`build/verification/runs/schedule005-review/README.md`). The same
+review asked whether the kept original start was intended. The maintainer
+replaced the rule instead, which removes pinned starts, resumed-pin bounds, and
+permanent local stops altogether.
 
-Independent High-risk plan review approved the approach with no Critical or
-Required findings. It requires monotonic expiry bounds, stale pin/write guards,
-and consistent monitor projection from each evaluation.
+## Revision test audit
 
-Before repair, `:shared:jvmTest --tests '*ScheduleExpiryExtensionTest*' fails
-with expected one running occurrence but actual zero after materializing the
-extended plan. The test uses the real SQLite store and existing calendar seam.
+| Test | Assertion before | Fate |
+| --- | --- | --- |
+| `ScheduleOccurrencePinTest` (8 tests) | A pin keeps its original start through start, weekday, and remote edits; its end follows the plan. | Deleted. The edit contracts moved to `ScheduleEditRuleTest`. Overnight, fall-back cap, Skip/End/off, and the pause name and end stay covered by `ScheduleOccurrencesTest`. |
+| `ScheduleExpiryExtensionTest` | An extension resumes from the original start; notice bits merge into the expiry. | Revised: a synchronized extension resumes from the observed end. Replay and rollback stay covered. The notice-merge part was removed, because every fresh run now announces. |
+| `ScheduleMonitorTableTest` (resumed, stopped dates, running) | The table clamps a running start to the expiry, and terminal markers stop dates. | Revised: an expired date whose interval starts before its observed end is stopped, and the running entry carries the engine's start. |
+| `ScheduleHostTest` expiry assertion | Natural expiry is recorded by key. | Revised to assert the observed end. |
+| `SqlScheduleStoreTest` host records | Finished runs become terminal. | Revised: released runs keep only their latest observed end, and old ends are pruned. |
+| `ScheduleOccurrencesTest` terminal case | Terminal markers stop an occurrence. | The terminal case was removed with the concept. |
+| Six migration fixtures | They drop the terminal table from the fresh schema. | Those lines were removed, because the fresh schema no longer has it. |
+| `testAPinnedOccurrenceKeepsRunningAfterItsPlanMoved` (Swift) | A pinned entry outlives a moved plan. | Revised: a listed entry runs on its stopped date only from its start. |
+| `testARunningOccurrenceTheEditedPlanNoLongerEndsGetsATail` (Swift) | An edited running occurrence registers a tail. | Replaced: no tail is registered, and a leftover tail is stopped. |
 
+## Revision regressions
 
-## Review corrections
+Before the implementation, the new tests failed for their intended reasons:
 
-The independent completed-change review found that a persisted resumed pin
-bypassed the observed-expiry lower bound. A new post-persistence rollback
-assertion failed before correction; the engine now checks that bound for every
-resumed pin. The reviewer accepted the correction.
+- **`ScheduleEditRuleTest`:** five tests failed, covering the start moved
+  later, the weekday removed, off and on, a later run after expiry, and the
+  resume from the observed end. The rollback and Skip/End controls passed, as
+  intended.
+- **Host second-run test:** the old host kept the run.
+- **Version-12 migration test:** failed in a temporary worktree at `2d18ae6`,
+  because the old migration kept the terminal table.
+- **Swift tail and app-announcement tests:** failed behaviourally once only
+  the poster seam was added.
 
-Inspection of the native monitor found the same risk through derived intervals.
-A failing monitor regression preceded its correction: expired dates remain
-stopped, and only a running override bounded by the observed expiry can resume
-them. The original date and capped end remain unchanged. Independent review
-approved this projection without a wire-format change.
+The logs are `revision-red.log`, `migration-red.log`, and `swift-red.log` under
+`build/verification/runs/schedule005-review/`. All of these tests passed after
+the implementation: 897 JVM tests and 172 Swift tests.
 
-## Local checks
+## Revision review
 
-Focused JVM, Detekt, and ktlint checks passed. Migration fixtures now remove the
-new table when reconstructing older schemas. The existing host test expects a
-natural-expiry record rather than a permanent stop. SQLDelight found a column
-order mismatch between fresh and migrated schemas; the fresh schema now follows
-the appended-column order. Full `./gradlew quality` passed after these corrections.
+The independent plan review had no Critical findings and four Required
+findings, R1-R4, all folded into the plan above. The independent
+completed-change review found no Critical or Required code issue. Its two
+Recommended items were fixed:
 
+- an iPhone start is announced only after its start record is written;
+- the product document now describes the app's start notice and per-run
+  notices.
 
-## Real-device result
+Its Optional wording and rollback-window notes were also applied. Its three
+Required closeout items are this record, the log entry, and the E2E below.
 
-Production revision `5eda62d` passed on the dedicated iPhone and Tart VM:
+## Revision real-device result
 
-- An occurrence created in the pre-fix iPhone build expired naturally. The
-  signed candidate preserved the plan, selection, consent, and workspace.
-  Extending it on the Mac from 22:00 to 22:15 resumed the iPhone after sync.
-- Both Safari and Calculator were blocked; the active pause and enforcement
-  survived relaunch.
-- At 22:15 both devices released restrictions. iPhone expiry passed with
-  Posato terminated. Mac storage showed zero pins, one natural-expiry record,
-  and zero permanent terminal markers.
-- A further extension to 23:15 resumed both devices, including enforcement.
-  The Mac pin retained its original start and the observed-expiry lower bound.
-- End early on iPhone synchronized to Mac. Extending to 23:30 afterward left
-  both inactive and both access checks passed.
+Revision `4c107de` ran on a disposable Tart primary clone and the dedicated
+test iPhone.
 
-Aggregate evidence: ignored `build/verification/runs/schedule005-e2e/README.md`,
-with exact scenarios and individual run directories. Test/build logs remain
-under `build/verification/runs/schedule005-regression/`. Safari's initial blank
-loading view and one runner socket disconnect required retries; the assertions
-passed afterward. A VM staged before the signed build needed `vm sync` before
-setup. No host Posato installation was touched.
+**Tart:**
 
-## Final checks and review
+- **Start moved later.** A running plan's start was moved three minutes later.
+  The pause stopped at once, with 0 pins, no expiry record, and example.com
+  allowed. At the new start it ran again, blocked, and announced.
+- **Off and on.** Turning the plan off inside its interval allowed access and
+  released the pin. Turning it on blocked again, and the start was announced
+  again.
+- **Later run after expiry.** After a natural expiry at 17:59, the plan was
+  moved to 18:02. The row showed "Next: Tue, 6:02 PM", and at 18:02 it blocked
+  with a fresh announcement.
+- **Skip, then a later move.** After Skip next for today, the move kept today
+  skipped, and access stayed allowed at the new time.
 
-`./gradlew quality`, signed Mac package verification, and device build passed.
-Independent plan review and completed-change review approved the final code;
-the Required rollback finding and the subsequent native projection correction
-both have failing-before-repair regressions. No Critical or Required findings
-remain. No synchronization wire-format change or suppression was introduced.
+**Test iPhone:**
 
-## Pull request review corrections
+- **Reset and restore.** Posato was reset, and Screen Time consent,
+  example.com, and Calculator were restored.
+- **Start moved later.** A running plan's start moved later lifted both
+  shields. With Posato terminated, the new start shielded Calculator and
+  Safari.
+- **Off and on.** Turning the plan off and on inside its interval lifted and
+  reapplied both shields. The app's "Scheduled pause started" banner appeared
+  after the re-enable.
+- **Later run after expiry, Posato closed.** Natural expiry lifted both
+  shields. A same-day later interval showed "Next: Tue, 18:33". At 18:33 the
+  extension shielded both, and the banner "Scheduled pause started / Phone
+  check, until 18:53" appeared for this second run of the date.
 
-The pull request review found three defects, each with a regression that
-failed before its repair:
+Safari's blank first loading view needed one retry twice; both retries passed
+without opening Posato.
 
-- **Required:** a host evaluation while the clock was before a resumed pin's
-  observed-expiry bound stored a permanent stop. Such a pin now waits
-  unchanged.
-- **Recommended:** moving the end back to or before the observed expiry left
-  the resumed pin counted as running, which held back the Mac update. Removal
-  now compares with the stored expiry end.
-- **Optional (from the correction review):** that removal dropped notice bits
-  gained after resumption. They now merge into the expiry record.
+**Evidence:** the scenarios and times are in
+`build/verification/runs/schedule005-revision/`, and the individual runs are
+the `s005v-*` directories. No host Posato installation was touched.
 
-The independent review found no Critical or Required issue, and full
-`./gradlew quality` passed. On a signed Tart build, the Mac kept the pin with
-no stop while its clock was rolled back. It resumed the original occurrence
-and blocked again once the clock returned. After the end was moved back, it
-held no pin and allowed access. Evidence:
-`build/verification/runs/schedule005-review/README.md`.
+## Checks
+
+The final revision passed:
+
+- `./gradlew quality iosSwiftTest`;
+- signed Mac package verification;
+- the device build.
+
+It introduced no wire-format change and no suppression.
 
 ## Cleanup
 
-The synthetic schedule was removed and the test workspace unlinked on both
-devices. The iPhone retained its original one website and one application, with
-no schedules. The disposable Tart VM was destroyed after unlinking.
+- **Tart:** both disposable VMs were destroyed, and no iCloud link was made.
+- **iPhone:** the test schedule was deleted, and access was verified as
+  restored. The phone keeps its one website (example.com) and one application
+  (Calculator) with Screen Time consent, and has no schedules.
+- **Earlier runs:** the synthetic schedules and the test workspace were removed
+  on both devices.

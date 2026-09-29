@@ -2223,16 +2223,18 @@ to scope, feasibility, or delivery.
   quality and signed-package verification passed. The fix belongs to release
   1.3.
 
-## [2026-09-28] correction | Resume extended natural schedule expiries
+## [2026-09-29] correction | Evaluate schedule edits against the current plan
 
-- `user-confirmed`: a later end-time edit may resume natural expiry, with the
-  original start and cap retained. Legacy terminal rows are reevaluated under
-  current plans; explicit Skip and End early facts remain final.
-- `observed`: SCHEDULE-005 separates expiry from permanent stops and preserves
-  its lower bound in shared evaluation and the native iOS monitor. Controlled
-  rollback and stale-write regressions pass. Test iPhone and Tart resume after
-  synchronization; restart, background expiry, and End early controls pass.
-  Full quality and independent review passed. The fix belongs to release 1.3.
+- `user-confirmed`: a schedule edit is evaluated against the current plan. An
+  edit that no longer covers now stops a running pause, and the plan runs
+  again at its new interval, even the same day. Turning off is such an edit.
+  Skip and End early stay final, and every fresh start is announced. This
+  replaces the 2026-09-28 resume-from-original-start rule; legacy terminal
+  rows are reevaluated.
+- `observed`: SCHEDULE-005 keeps only observed natural ends, which bound a
+  date's later runs against rollback and replays. Tart and the test iPhone
+  pass edit stops, off and on, and a later same-day run with Posato closed,
+  including its start notice. Quality and independent reviews passed.
 
 ## [2026-09-29] planning | Release 1.3 composition and waves
 

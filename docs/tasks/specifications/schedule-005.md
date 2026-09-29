@@ -1,6 +1,6 @@
 # SCHEDULE-005 — Resume a naturally expired schedule after extension
 
-- **Status:** Rule revised on 2026-09-29; revision in progress. The separate fix was authorized on 2026-09-28.
+- **Status:** Implemented and verified; rule revised on 2026-09-29. The separate fix was authorized on 2026-09-28.
 - **Review tier:** High-risk: persistent occurrence stopping and migration.
 - **Dependencies:** Accepted schedule rules; reproduced report in PR #106.
 - **Integration:** Separate fix PR based on PR #106; release unassigned.

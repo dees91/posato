@@ -995,7 +995,9 @@ below. This queue retains idea provenance without expanding the original MVP.
     current plan. An edit that no longer covers now stops a running pause,
     which runs again at its new interval, even the same day. Turning a plan
     off is such an edit, Skip and End early stay final, and every fresh start
-    is announced. No original start is kept.
+    is announced. No original start is kept. `observed`: the revised build
+    passes edit stops, off and on, and a later same-day run on Tart and the
+    test iPhone, including with Posato closed.
     `observed`: the repaired build resumes both migrated and newly expired
     occurrences on test iPhone and Tart after remote extensions. Relaunch and
     iPhone background expiry pass; a later End early still wins over another
