@@ -2321,20 +2321,16 @@ to scope, feasibility, or delivery.
   **Pause. Then choose.** everywhere it appears; no release yet.
 ## [2026-09-29] experiment | Intel Ventura evaluation package
 
-## [2026-09-29] correction | Intel Ventura application launch
+## [2026-09-29] experiment | Intel Ventura evaluation
 
-- `observed`: physical macOS 13.7.8 launch exposed a missing top-level x86-64
-  Skiko library, then a macOS 14-only AppKit activation call. The corrected
-  signed diagnostic app stayed running and displayed a window on the Intel
-  MacBook Air. The final notarized DMG was installed and launched there with
-  the window visible. After the approved background-service registration did
-  not reach `launchd`, a Mac restart submitted the daemon; the maintainer then
-  completed setup with the expected administrator dialog. Broader Ventura
-  support remains open under `MACOS-015`. Three later CloudKit bootstrap attempts
-  reached a zone fetch that Posato cancelled at its 30-second deadline. A signed
-  120-second diagnostic was installed but could not be exercised through the
-  available remote UI connection, so the previous app and source deadline were
-  restored. The cancelled zone requests had default, discretionary CloudKit
-  priority and zero recorded request and response bytes. A later manual attempt
-  succeeded on the restored 30-second build. The cause remains open, and further
-  iCloud investigation is deferred at the maintainer's request.
+- `observed`: an opt-in notarized x86-64/macOS 13 candidate passes package,
+  signature, notarization, and Gatekeeper checks. On the 2019 MacBook Air
+  with macOS 13.7.8 it needed the top-level x86-64 Skiko library and a pre-14
+  AppKit activation fallback; it then launched, and setup completed after a
+  restart let Service Management submit the daemon.
+- `observed`: three CloudKit bootstrap attempts were cancelled at Posato's
+  30-second deadline with default discretionary QoS; a later manual sync
+  succeeded (`user-confirmed`). The cause is `open` and deferred.
+- `MACOS-015` continues from this evaluation; the
+  [execution record](../tasks/executions/macos-015-intel-ventura.md) keeps
+  the evidence limits. ADR 0003 is unchanged until its revision is accepted.

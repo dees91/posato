@@ -333,7 +333,7 @@ installed and launched, but its sync action could not be driven through the
 available remote UI connection. The previous app and deadline were restored.
 Whether the zone request would complete with more time, or whether another
 CloudKit or network issue causes the delay, remains `open`. The
-[execution record](../../tasks/executions/intel-ventura-cloudkit-bootstrap.md)
+[`MACOS-015` execution record](../../tasks/executions/macos-015-intel-ventura.md)
 summarizes the evidence limits; raw logs remain under ignored
 `build/verification/`.
 

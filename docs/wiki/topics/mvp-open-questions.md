@@ -732,39 +732,13 @@ below. This queue retains idea provenance without expanding the original MVP.
    notarization, macOS 13 API availability, and a verification path for the
    physical device. Feasibility and support remain open.
    `observed` (2026-09-29): an evaluation branch produced a notarized
-   x86-64/macOS 13 candidate with an x86-64 Temurin runtime, Compose and
-   SQLite native libraries, Swift helper, daemon, and sync companion. The
-   package scan found x86-64 in all 39 Mach-O files and no deployment target
-   above macOS 13. The macOS 13 build exposed an AppKit activation call first
-   available in macOS 14 and the need to sign packaged x86-64 Skiko native
-   code; the evaluation branch addresses both. `observed` (2026-09-29): the
-   first physical Ventura launch exited because the Compose package omitted
-   the top-level x86-64 Skiko
-   library. After adding it, the GUI launch crashed on the macOS 14-only
-   `NSApplication.activate` selector in the native window library. A corrected,
-   signed diagnostic build remained running on the Intel MacBook Air with
-   macOS 13.7.8, and the maintainer confirmed its window was visible. The
-   same availability fallback now covers the updater alert path. `observed`:
-   the final notarized DMG passed Gatekeeper on the MacBook, and the installed
-   app stayed running after launch; `user-confirmed`: its window was visible.
-   `observed` (2026-09-29): unified setup did not complete on Ventura. The
-   system received the person's daemon approval. Background Task Management
-   initially marked the daemon disallowed, then changed it to enabled and
-   allowed, while reporting no container item; `launchd` still had no Mach
-   service for it. A maintainer-approved restart then caused Service
-   Management to submit the exact daemon to `launchd`; it exited successfully
-   when idle. `user-confirmed`: **Finish** then completed setup after the
-   expected macOS administrator dialog. The Apply and standing-Apply rights
-   were present, and HTTP/HTTPS proxies remained disabled while idle. No
-   global Background Items reset was needed. The app and daemon pass
-   strict code-signing verification; all network services have both web proxy
-   types disabled and the Posato ownership record is absent. The cause and a
-   safe recovery remain open. Other user flows, including the updater alert,
-   still need observation; the support decision and ADR 0003 revision remain
-   open.
-   available in macOS 14 and an unsigned x86-64 Skiko library; the evaluation
-   branch addresses both. No macOS 13 runtime flow has been observed, so the
-   support decision and ADR 0003 revision remain open.
+   x86-64/macOS 13 candidate that launched on the MacBook Air after two
+   fixes (the top-level x86-64 Skiko library and a pre-14 AppKit activation
+   fallback). Setup completed after a restart let Service Management submit
+   the daemon. Blocking, schedules, sync with a peer, and the updater alert
+   were not exercised; the
+   [`MACOS-015` record](../../tasks/executions/macos-015-intel-ventura.md)
+   keeps the evidence limits.
    `user-confirmed` (2026-09-29): Intel support is part of release 1.3 as
    one `MACOS-015` delivery row, verified on the MacBook Air set up as a
    dedicated test Mac without personal Posato data.
