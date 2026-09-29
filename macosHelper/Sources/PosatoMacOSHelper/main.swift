@@ -21,6 +21,7 @@ guard CommandLine.arguments.count == 1,
 else {
   exit(EXIT_FAILURE)
 }
+// Read once here, before the pipe queue starts; ParentLaunchEnvironment.isCleanForParent says why.
 private let parentLaunchEnvironmentIsClean = ParentLaunchEnvironment.isCleanForParent()
 DispatchQueue(label: "app.posato.macos.helper.pipe").async {
   let service = SMAppService.daemon(plistName: ServiceContract.daemonPlistName)
@@ -383,12 +384,11 @@ DispatchQueue(label: "app.posato.macos.helper.pipe").async {
     applications.stop()
     if let request = activeRequest, let daemon {
       leaseRenewer?.cancelAndWait()
-      let restore = try? restoreMessage(
+      if let restore = try? restoreMessage(
         after: request,
         deadlineMilliseconds: WireLimits.fallbackRestoreDeadlineMilliseconds,
         requestIdentifier: Data(repeating: 0, count: WireLimits.identifierBytes)
-      )
-      if let restore {
+      ) {
         _ = try? daemon.perform(restore)
       }
     }

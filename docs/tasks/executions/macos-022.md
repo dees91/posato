@@ -70,3 +70,21 @@ Independent review approved the implementation with no Critical or Required
 findings. It checked serialized lifecycle ownership, main-thread native work,
 permission scope, exact signing checks, LaunchServices arguments, and consent
 prompt attribution.
+
+## Review corrections
+
+Maintainer review found that running the picker inside `DispatchQueue.main.sync`
+left its main-queue SIGTERM source undrained, so the helper ignored SIGTERM
+while the panel was open. The picker now runs as a main run-loop block. The
+correction also restores the LaunchServices and startup-environment rationale
+and states the credential-free entitlement sets in the wiki.
+
+- Regression first, at `63bd61f` in Tart: with the panel open, the picker
+  helper was still alive 3 s after SIGTERM.
+- After the correction: SIGTERM ended the open-picker helper in about 11 ms,
+  SIGTERM to Posato with the panel open ended it in about 13 ms, and removing
+  then re-choosing Safari persisted one mapping.
+- `./gradlew quality` passed after the last correction.
+- Evidence: ignored `build/verification/runs/macos022-review-corrections/README.md`.
+- Independent completed-change review approved the corrections with no
+  Critical or Required findings; its Optional wiki-dating note was applied.

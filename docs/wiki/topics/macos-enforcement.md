@@ -186,13 +186,17 @@ assuming `codesign --deep` can inspect native code stored inside an archive.
 
 The Apple Development artifact requires one Apple Development authority and
 one nonempty Team ID throughout. Its application and launcher carry only
-`com.apple.security.cs.allow-jit` in that historical package; MACOS-022 adds
-the Apple Events entitlement to the application and helper for their existing
-browser presentation role. The privileged daemon remains entitlement-free. The
+`com.apple.security.cs.allow-jit` in that historical package. The
 credential-free artifact remains teamless and authority-free, with the three
 Compose JVM development entitlements confined to its application and launcher.
 Strict verification and isolated SQLite-backed launch passed from both mounted
 DMGs on the supported Apple silicon Mac.
+
+`observed` (2026-09-29): MACOS-022 adds
+`com.apple.security.automation.apple-events` for the existing browser
+presentation role on both paths: the application and launcher carry their
+previous set plus Apple Events, the helper carries only Apple Events, and the
+privileged daemon remains entitlement-free.
 
 `observed`: JPackage changed nested signed executables when it converted the
 verified application image into a DMG, invalidating the helper resource seal.

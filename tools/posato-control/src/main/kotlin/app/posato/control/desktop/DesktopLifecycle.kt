@@ -77,6 +77,13 @@ class DesktopLifecycle(
         return LaunchResult(pid = pid, logPath = context.layout.relativize(logPath), windowId = windowId)
     }
 
+    /**
+     * Opens Posato through LaunchServices, as Finder does, so that the application rather than the guest agent is
+     * responsible for it. Privacy decisions then apply to the application: for an installed candidate, a denied App
+     * Management decision recorded for the agent makes Sparkle ask for an administrator for every later update
+     * (`observed` 2026-09-25); for a staged build, the Automation prompt for Safari or Chrome is attributed to the
+     * agent instead of Posato when the executable is started directly (`observed` in MACOS-022).
+     */
     private fun launchThroughLaunchServices(
         options: LaunchOptions,
         logPath: Path,
