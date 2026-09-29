@@ -6,11 +6,14 @@ import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
 import app.posato.feature.schedules.host.ScheduleHostPolicy
+import app.posato.feature.schedules.host.ScheduleNotices
+import app.posato.feature.schedules.host.ScheduledPauseState
 import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
@@ -43,12 +46,53 @@ class ScheduleExpiryExtensionTest {
                 assertEquals(zone.instantOf(date, 540), resumed.running.single().startEpochMillis)
                 assertEquals(zone.instantOf(date, 720), resumed.running.single().endEpochMillis)
                 store.recordHost(resumed.update)
-                assertTrue(ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 570), zone).running.isEmpty())
+                val rollback = ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 570), zone)
+                assertTrue(rollback.running.isEmpty())
+                store.recordHost(rollback.update)
+                val returned = ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 660), zone)
+                assertEquals(zone.instantOf(date, 540), returned.running.single().startEpochMillis)
                 store.recordHost(expired.update)
                 store.materialize(workspace, SyncedSchedules(live = listOf(extended)))
                 assertEquals(1, ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 660), zone).running.size)
                 store.stop(setOf(resumed.running.single().key), OccurrenceStop.END, date, workspace)
                 assertTrue(ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 660), zone).running.isEmpty())
+            } finally {
+                driver.close()
+                fixture.delete()
+            }
+        }
+    }
+
+    @Test
+    fun `given an announced resumed occurrence when its end is undone then its pin is released and its notice kept`() {
+        runTest {
+            val fixture = createLocalPolicyTestDatabase("schedule-expiry-undo.db")
+            val driver = fixture.openDriver()
+            try {
+                val database = PosatoDatabase(driver)
+                val store = SqlScheduleStore(database, Dispatchers.Default)
+                val date = ScheduleDate(2026, 9, 28)
+                val zone = CentralEuropeanZone
+                val plan = SchedulePlan(ScheduleId("000000000000400080000000000000a2"), "Focus", 1, 540, 600, true)
+                val workspace = ByteArray(16) { 9 }
+                store.save(plan, null)
+                store.recordHost(ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 570), zone).update)
+                store.recordHost(ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 600), zone).update)
+                store.materialize(workspace, SyncedSchedules(live = listOf(plan.copy(endMinute = 720))))
+                val resumed = ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 660), zone)
+                assertEquals(1, resumed.running.size)
+                store.recordHost(resumed.update)
+                store.recordHost(ScheduleHostUpdate(notices = mapOf(resumed.running.single().key to ScheduleNotices.STARTED)))
+                store.materialize(workspace, SyncedSchedules(live = listOf(plan)))
+                val undone = ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 675), zone)
+                assertTrue(undone.running.isEmpty())
+                store.recordHost(undone.update)
+                assertFalse(database.hasRunningSchedule(zone.instantOf(date, 680)))
+                assertTrue(ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 680), zone).update.isEmpty)
+                store.materialize(workspace, SyncedSchedules(live = listOf(plan.copy(endMinute = 750))))
+                val again = ScheduleHostPolicy.step(store.snapshot(), zone.instantOf(date, 690), zone)
+                val pause = ScheduleHostPolicy.pause(again.running, again.pins, ScheduledPauseState.APPLIED, hadConsent = true)
+                assertEquals(emptySet(), pause?.unannounced)
             } finally {
                 driver.close()
                 fixture.delete()

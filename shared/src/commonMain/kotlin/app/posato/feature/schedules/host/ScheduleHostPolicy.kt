@@ -15,6 +15,13 @@ internal data class HostStep(
 )
 
 internal object ScheduleHostPolicy {
+    /**
+     * Running occurrences with pins as the engine sees them. A running occurrence seen for the first
+     * time is pinned with its start; a pinned one that reached its end becomes a natural expiry, which a
+     * later end-time extension may resume. One turned off, deleted, skipped, or ended early becomes
+     * terminal, and so does one the clock went back before. A resumed pin instead waits unchanged while
+     * the clock is before its observed expiry.
+     */
     fun step(
         snapshot: ScheduleSnapshot,
         nowEpochMillis: Long,
@@ -27,7 +34,11 @@ internal object ScheduleHostPolicy {
             snapshot.facts.expired.firstOrNull { it.key == occurrence.key }?.pin()
                 ?: OccurrencePin(occurrence.key, occurrence.startEpochMillis)
         }
-        val stopped = snapshot.pins.filter { it.key !in runningKeys }
+        val waiting = snapshot.pins.filter { pin ->
+            pin.key !in runningKeys && pin.resumedAfter != null && nowEpochMillis < pin.resumedAfter &&
+                ScheduleOccurrences.pinnedOccurrence(pin, snapshot.runnable, snapshot.facts, zone) != null
+        }
+        val stopped = snapshot.pins.filter { it.key !in runningKeys } - waiting.toSet()
         val expired = stopped.mapNotNull { pin ->
             val occurrence = ScheduleOccurrences.pinnedOccurrence(pin, snapshot.runnable, snapshot.facts, zone)
             val plan = snapshot.runnable.firstOrNull { it.id == pin.key.schedule }
@@ -38,7 +49,7 @@ internal object ScheduleHostPolicy {
             }
         }
         val finished = stopped.map { it.key }.toSet() - expired.map { it.key }.toSet()
-        val pins = snapshot.pins.filter { it.key in runningKeys } + newPins
+        val pins = snapshot.pins.filter { it.key in runningKeys } + waiting + newPins
         return HostStep(running, ScheduleHostUpdate(pins = newPins, finished = finished, expired = expired), pins)
     }
 

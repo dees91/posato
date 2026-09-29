@@ -22,10 +22,17 @@ WHERE NOT EXISTS (
     AND end_epoch_millis >= :endEpochMillis
 );
 
+addExpiryNotices:
+UPDATE local_schedule_expiry SET notices = notices | :bits
+WHERE schedule_id = :scheduleId AND year = :year AND month = :month AND day = :day;
+
 deleteExpiredPin:
 DELETE FROM local_schedule_pin
 WHERE schedule_id = :scheduleId AND year = :year AND month = :month AND day = :day
-  AND (resumed_after IS NULL OR resumed_after < :endEpochMillis);
+  AND (resumed_after IS NULL OR resumed_after <= (
+    SELECT expiry.end_epoch_millis FROM local_schedule_expiry AS expiry
+    WHERE expiry.schedule_id = :scheduleId AND expiry.year = :year AND expiry.month = :month AND expiry.day = :day
+  ));
 
 deleteExpiriesForSchedule:
 DELETE FROM local_schedule_expiry WHERE schedule_id = :scheduleId;

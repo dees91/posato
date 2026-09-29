@@ -92,6 +92,27 @@ the Required rollback finding and the subsequent native projection correction
 both have failing-before-repair regressions. No Critical or Required findings
 remain. No synchronization wire-format change or suppression was introduced.
 
+## Pull request review corrections
+
+The pull request review found three defects, each with a regression that
+failed before its repair:
+
+- **Required:** a host evaluation while the clock was before a resumed pin's
+  observed-expiry bound stored a permanent stop. Such a pin now waits
+  unchanged.
+- **Recommended:** moving the end back to or before the observed expiry left
+  the resumed pin counted as running, which held back the Mac update. Removal
+  now compares with the stored expiry end.
+- **Optional (from the correction review):** that removal dropped notice bits
+  gained after resumption. They now merge into the expiry record.
+
+The independent review found no Critical or Required issue, and full
+`./gradlew quality` passed. On a signed Tart build, the Mac kept the pin with
+no stop while its clock was rolled back. It resumed the original occurrence
+and blocked again once the clock returned. After the end was moved back, it
+held no pin and allowed access. Evidence:
+`build/verification/runs/schedule005-review/README.md`.
+
 ## Cleanup
 
 The synthetic schedule was removed and the test workspace unlinked on both

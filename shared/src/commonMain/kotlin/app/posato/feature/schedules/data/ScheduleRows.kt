@@ -119,7 +119,8 @@ internal suspend fun PosatoDatabase.writeHostUpdate(update: ScheduleHostUpdate) 
             expiry.endMinute.toLong(),
             expiry.notices.toLong(),
         )
-        scheduleExpiryQueries.deleteExpiredPin(id, date.year.toLong(), date.month.toLong(), date.day.toLong(), expiry.endEpochMillis)
+        scheduleExpiryQueries.addExpiryNotices(expiry.notices.toLong(), id, date.year.toLong(), date.month.toLong(), date.day.toLong())
+        scheduleExpiryQueries.deleteExpiredPin(id, date.year.toLong(), date.month.toLong(), date.day.toLong())
     }
     update.finished.forEach { key ->
         val id = key.schedule.toBytes()

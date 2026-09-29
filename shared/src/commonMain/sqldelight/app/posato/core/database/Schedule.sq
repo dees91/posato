@@ -130,7 +130,8 @@ upsertPin:
 INSERT OR REPLACE INTO local_schedule_pin(schedule_id, year, month, day, start_epoch_millis, notices)
 VALUES (:scheduleId, :year, :month, :day, :startEpochMillis, :notices);
 
--- A key that already ended here is never pinned again, even by an evaluation that read it earlier.
+-- A permanently stopped key is never pinned again, even by an evaluation that read it earlier. A
+-- naturally expired key is pinned again only as a resumption of its latest observed expiry.
 insertPinIfAbsent:
 INSERT OR IGNORE INTO local_schedule_pin(schedule_id, year, month, day, start_epoch_millis, notices, resumed_after)
 SELECT :scheduleId, :year, :month, :day, :startEpochMillis, :notices, :resumedAfter
@@ -152,7 +153,8 @@ addPinNotices:
 UPDATE local_schedule_pin SET notices = notices | :bits
 WHERE schedule_id = :scheduleId AND year = :year AND month = :month AND day = :day;
 
--- A pin lives while its occurrence runs; one left by a quit ends within a day.
+-- A pin lives while its occurrence runs or a resumed one waits out a clock rollback; one left by a
+-- quit ends within a day.
 countRunningPins:
 SELECT count(*) FROM local_schedule_pin
 WHERE start_epoch_millis <= :nowEpochMillis AND start_epoch_millis > :nowEpochMillis - 86400000;

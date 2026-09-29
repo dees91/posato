@@ -6,10 +6,15 @@ internal data class OccurrenceKey(
     val date: ScheduleDate,
 )
 
+/**
+ * Grow-only facts: skips and early ends synchronized between devices, and this device's terminal
+ * markers for occurrences it saw stop permanently, so a clock rollback or an edit never recreates them.
+ */
 internal data class ScheduleFacts(
     val skipped: Set<OccurrenceKey> = emptySet(),
     val ended: Set<OccurrenceKey> = emptySet(),
     val terminal: Set<OccurrenceKey> = emptySet(),
+    /** Occurrences this device saw reach their end; only a later end-time extension resumes one. */
     val expired: List<OccurrenceExpiry> = emptyList(),
 ) {
     fun stops(key: OccurrenceKey): Boolean {
@@ -25,6 +30,7 @@ internal data class OccurrencePin(
     val key: OccurrenceKey,
     val startEpochMillis: Long,
     val notices: Int = 0,
+    /** The observed expiry a resumed pin continues from; it does not run while the clock is before it. */
     val resumedAfter: Long? = null,
 ) {
     override fun toString(): String {
