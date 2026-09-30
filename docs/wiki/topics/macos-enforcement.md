@@ -838,7 +838,10 @@ option variable.
   and no `Setup:` proxy entity in the dynamic store.
 - `observed` in configd `SCNetworkServiceCopy` (open source, 2026-09-30):
   `kSCStatusNoKey` is not proof of absence; it is also returned for a service
-  without an `Interface` entity and for PPTP services.
+  without an `Interface` entity and for PPTP services. Likewise a `NULL`
+  from `SCDynamicStoreCopyValue` or `SCPreferencesPathGetValue` means a
+  missing key only when `SCError()` is `kSCStatusNoKey`; IPC and
+  deserialization failures also return `NULL`.
 - `observed` (2026-09-30): with the fix the session shows **Restrictions need
   attention** with Retry, the daemon exits idle, ending clears cleanly, and
   the next session blocks.

@@ -130,7 +130,9 @@ engine; no Kotlin change is planned.
   read failure still surfaces. `SystemProxyConfiguration` confirms absence
   from the raw preferences under the lock and from the dynamic store, stricter
   than the plan: any `Setup:` proxy entity for the service, not only the
-  applied tuple, keeps the record.
+  applied tuple, keeps the record. After PR review, a read counts as missing
+  only when `SCError()` is `kSCStatusNoKey`; any other empty read throws and
+  keeps the record.
 - No Kotlin change: the existing poll turns the daemon's `idle` into
   **Restrictions need attention** with Retry.
 - `posato-control vm network` gained `--service <name> --action
@@ -165,6 +167,7 @@ engine; no Kotlin change is planned.
 | `AC-03` on the fix: end without Retry, then a new session | pass | no clear failure, `scutil --proxy` without HTTP(S) proxies, site `loaded`; the next session showed **Restrictions active** and `observe` returned `paused` |
 | `AC-04`: single-service start, block, end, and Retry after a service change | pass | start and end three times, Retry twice, each with the matching `observe` result |
 | Final build after review corrections: full `M5` drive, end without Retry, next session (fresh restart of the same guest) | pass | same results as above; the daemon had exited idle after the removal (run `20260930-115347-248e`) |
+| PR review P2 (a failed read returned as a missing key): regression `givenReadFailureWithoutValueWhenCheckedThenAbsenceIsNotConfirmed` failed first, then the fix | pass | `swift test` 203 tests; full `M5` drive on a fresh clone passed as before (run `20260930-142352-1ada`); a later line wrap changed no behavior |
 | `./gradlew quality` after the last correction | pass | first runs caught SwiftLint length limits and ktlint wrapping, fixed in source |
 
 ## Blockers and accepted risks

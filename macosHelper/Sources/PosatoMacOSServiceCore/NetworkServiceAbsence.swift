@@ -18,7 +18,11 @@ enum NetworkServiceAbsence {
     defer { SCPreferencesUnlock(preferences) }
     SCPreferencesSynchronize(preferences)
     let servicePath = "/\(kSCPrefNetworkServices)/\(serviceIdentifier)" as CFString
-    guard SCPreferencesPathGetValue(preferences, servicePath) == nil,
+    // Preferences that failed to load also read as missing keys; the Sets check below, which
+    // treats missing sets as a link, is what keeps that case from confirming absence.
+    let serviceValue = SCPreferencesPathGetValue(preferences, servicePath)
+    let serviceMissing = try isMissing(serviceValue, status: Int(SCError()))
+    guard serviceMissing,
       !anySetLinks(
         serviceIdentifier: serviceIdentifier,
         sets: SCPreferencesGetValue(preferences, kSCPrefSets)
@@ -35,7 +39,20 @@ enum NetworkServiceAbsence {
       serviceIdentifier as CFString,
       kSCEntNetProxies
     )
-    return SCDynamicStoreCopyValue(store, proxiesKey) == nil
+    return try isMissing(SCDynamicStoreCopyValue(store, proxiesKey), status: Int(SCError()))
+  }
+
+  /// Whether a SystemConfiguration read found no value, from the value it returned and the
+  /// `SCError()` status that read left behind. A read that returns no value without
+  /// `kSCStatusNoKey` failed; it never counts as absence.
+  static func isMissing(_ value: CFPropertyList?, status: Int) throws -> Bool {
+    guard value == nil else {
+      return false
+    }
+    guard status == kSCStatusNoKey else {
+      throw SystemProxyConfigurationFailure.preferences
+    }
+    return true
   }
 
   /// Any set whose `Network/Service` dictionary still names the service, or sets that are missing
