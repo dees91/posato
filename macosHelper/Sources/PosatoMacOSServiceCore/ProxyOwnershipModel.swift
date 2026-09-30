@@ -113,7 +113,7 @@ public struct OwnedExceptions: Codable, Equatable, Sendable {
   static func applying(
     to baseline: ProxyExceptions
   ) -> (owned: OwnedExceptions, target: ProxyExceptionsTarget)? {
-    guard let entries = baseline.entries else {
+    guard let entries = baseline.entries, entries.count <= ProxyExceptions.maximumEntries else {
       return nil
     }
     let appended = ProxyExceptions.missingLoopbackEntries(in: entries)

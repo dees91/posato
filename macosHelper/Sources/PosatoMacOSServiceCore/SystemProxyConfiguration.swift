@@ -282,7 +282,7 @@ extension SystemProxyConfiguration {
     guard let value else {
       return .absent
     }
-    if let entries = value as? [Any], entries.count <= ProxyExceptions.maximumEntries {
+    if let entries = value as? [Any], entries.count <= ProxyExceptions.maximumReadableEntries {
       let strings = entries.compactMap { $0 as? String }
       let bounded = strings.allSatisfy { $0.utf8.count <= ProxyExceptions.maximumEntryBytes }
       if strings.count == entries.count, bounded {

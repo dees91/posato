@@ -11,10 +11,13 @@ public enum ProxyExceptions: Equatable, Sendable {
   /// that compare-and-swap still detects a change, and it never equals a recorded list.
   case unreadable(Data)
 
+  /// The D4 bound on a baseline list that Apply accepts.
   public static let maximumEntries = 256
   public static let maximumEntryBytes = 2_048
   /// The entries Posato adds while its proxy is applied, in this order.
   public static let loopbackEntries = ["localhost", "127.0.0.1", "::1"]
+  /// A list Posato itself applied to a baseline at the D4 bound must still read back as a list.
+  public static let maximumReadableEntries = maximumEntries + loopbackEntries.count
 
   public static func == (lhs: ProxyExceptions, rhs: ProxyExceptions) -> Bool {
     switch (lhs, rhs) {

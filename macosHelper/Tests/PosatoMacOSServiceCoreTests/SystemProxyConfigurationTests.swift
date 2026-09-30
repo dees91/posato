@@ -69,7 +69,7 @@ import Testing
 // D4 bounds: a value outside them must read as unreadable, never throw (R4) and never pass as a list.
 @Test func givenExceptionsValuesWhenReadThenOnlyBoundedStringArraysAreLists() {
   let longest = String(repeating: "a", count: ProxyExceptions.maximumEntryBytes)
-  let bounded = Array(repeating: "a.example", count: ProxyExceptions.maximumEntries)
+  let bounded = Array(repeating: "a.example", count: ProxyExceptions.maximumReadableEntries)
 
   #expect(SystemProxyConfiguration.exceptions(nil) == .absent)
   #expect(SystemProxyConfiguration.exceptions([longest]) == .list([longest]))

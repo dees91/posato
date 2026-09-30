@@ -241,3 +241,72 @@ private func legacyRecord(phase: OwnershipPhase, applied: ProxyTuple) -> Ownersh
     exceptions: nil
   )
 }
+
+@Test func givenBaselineAtTheEntryLimitWhenAppliedAndRestoredThenItReturnsExactly() throws {
+  let baseline = (0..<ProxyExceptions.maximumEntries).map { "host\($0).example" }
+  let persistence = MemoryOwnershipPersistence()
+  let configuration = BoundedReadConfiguration(exceptions: .list(baseline))
+  let engine = ProxyOwnershipEngine(persistence: persistence, configuration: configuration)
+
+  #expect(try applyExceptionsSession(engine) == .applied)
+  #expect(try engine.restore() == .idle)
+
+  #expect(configuration.snapshotValue.exceptions == .list(baseline))
+  #expect(persistence.record == nil)
+}
+
+/// Reads the list back through the production reader, as `SystemProxyConfiguration` does after every write.
+private final class BoundedReadConfiguration: ProxyConfigurationAccess, @unchecked Sendable {
+  private let memory: MemoryProxyConfiguration
+
+  init(exceptions: ProxyExceptions) {
+    memory = MemoryProxyConfiguration(exceptions: exceptions)
+  }
+
+  var snapshotValue: ProxySnapshot { memory.snapshotValue }
+
+  func currentPrimaryServiceIdentifier() throws -> String {
+    return try memory.currentPrimaryServiceIdentifier()
+  }
+
+  func snapshot(serviceIdentifier: String) throws -> ProxySnapshot {
+    return reread(try memory.snapshot(serviceIdentifier: serviceIdentifier))
+  }
+
+  func serviceIsConfirmedAbsent(serviceIdentifier: String) throws -> Bool {
+    return try memory.serviceIsConfirmedAbsent(serviceIdentifier: serviceIdentifier)
+  }
+
+  func replaceTuples(
+    expected: ProxySnapshot,
+    http: ProxyTuple,
+    https: ProxyTuple,
+    exceptions: ProxyExceptionsTarget,
+    requirePrimaryService: Bool
+  ) throws -> ProxySnapshot {
+    memory.snapshotValue = try memory.snapshot(serviceIdentifier: expected.serviceIdentifier)
+    guard reread(memory.snapshotValue) == expected else {
+      throw ProxyOwnershipFailure.conflict
+    }
+    return reread(
+      try memory.replaceTuples(
+        expected: memory.snapshotValue,
+        http: http,
+        https: https,
+        exceptions: exceptions,
+        requirePrimaryService: requirePrimaryService
+      )
+    )
+  }
+
+  private func reread(_ value: ProxySnapshot) -> ProxySnapshot {
+    let raw: Any? = value.exceptions == .absent ? nil : value.exceptions.entries
+    return ProxySnapshot(
+      serviceIdentifier: value.serviceIdentifier,
+      http: value.http,
+      https: value.https,
+      additionalProxyEnabled: value.additionalProxyEnabled,
+      exceptions: SystemProxyConfiguration.exceptions(raw)
+    )
+  }
+}
