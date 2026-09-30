@@ -40,12 +40,6 @@ internal sealed interface LocalSyncMutation {
         val domain: ExactDomain,
     ) : LocalSyncMutation
 
-    data class PresentApplicationPolicy(
-        val name: ApplicationPolicyName,
-    ) : LocalSyncMutation
-
-    data object RemoveApplicationPolicy : LocalSyncMutation
-
     data class StartSession(
         val sessionId: SessionId,
         val startEpochMillis: Long,
@@ -650,14 +644,6 @@ internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
 
         is LocalSyncMutation.RemoveDomain -> {
             SyncOperationPayload.DomainAbsent(domain)
-        }
-
-        is LocalSyncMutation.PresentApplicationPolicy -> {
-            SyncOperationPayload.ApplicationPolicyPresent(name)
-        }
-
-        LocalSyncMutation.RemoveApplicationPolicy -> {
-            SyncOperationPayload.ApplicationPolicyAbsent
         }
 
         is LocalSyncMutation.StartSession -> {

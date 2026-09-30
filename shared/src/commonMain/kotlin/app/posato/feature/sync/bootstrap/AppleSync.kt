@@ -279,19 +279,13 @@ internal class AppleSync(
         if (!seedAndDrainOrHalt(base, reconciler, authoring, workspace, writer, ::publish)) {
             return
         }
-        val group = reconciler.decideGroup(writer, writer.projection())
-        if (group is GroupOutcome.Failed) {
-            publish(group.status)
-            return
-        }
         val republished = exchange.publishPending(workspace, writer)
         if (republished != null) {
             publish(republished)
             return
         }
-        // A name authored by decideGroup is published above, so apply reads a
-        // fresh projection; otherwise the base would lag the authored name and
-        // a later local rename would be clobbered as a remote change (D4).
+        // What the drain authored is published above, so apply reads a fresh projection and the
+        // base never lags a local change that would then look remote.
         mutableState.publishOutcome(reconciler.apply(writer.projection(), base))
     }
 

@@ -7,13 +7,28 @@ CREATE TABLE local_policy_metadata (
 
 INSERT INTO local_policy_metadata(singleton, revision) VALUES (1, 0);
 
-CREATE TABLE exact_domain_policy (
-  canonical_domain TEXT NOT NULL PRIMARY KEY CHECK (
+CREATE TABLE local_pause_set (
+  set_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  name TEXT CHECK (name IS NULL OR (typeof(name) = 'text' AND length(CAST(name AS BLOB)) BETWEEN 1 AND 80)),
+  refused INTEGER NOT NULL DEFAULT 0 CHECK (typeof(refused) = 'integer' AND refused IN (0, 1))
+);
+INSERT INTO local_pause_set(set_id, name, refused) VALUES (zeroblob(16), NULL, 0);
+
+CREATE TABLE local_pause_set_default (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16)
+);
+CREATE TABLE local_pause_set_domain (
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  canonical_domain TEXT NOT NULL CHECK (
     typeof(canonical_domain) = 'text' AND
     length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
-  )
+  ),
+  PRIMARY KEY (set_id, canonical_domain)
 );
-
+CREATE TABLE local_pause_set_upgrade (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
+);
 CREATE TABLE application_policy (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
   canonical_name TEXT NOT NULL CHECK (
@@ -29,7 +44,8 @@ WHERE singleton = 1;
 
 selectDomains:
 SELECT canonical_domain
-FROM exact_domain_policy
+FROM local_pause_set_domain
+WHERE set_id = zeroblob(16)
 ORDER BY canonical_domain
 LIMIT :maximum_row_count;
 
@@ -45,11 +61,11 @@ SET revision = :next_revision
 WHERE singleton = 1 AND revision = :expected_revision;
 
 deleteDomains:
-DELETE FROM exact_domain_policy;
+DELETE FROM local_pause_set_domain;
 
 insertDomain:
-INSERT INTO exact_domain_policy(canonical_domain)
-VALUES (:canonical_domain);
+INSERT INTO local_pause_set_domain(set_id, canonical_domain)
+VALUES (zeroblob(16), :canonical_domain);
 
 deleteApplicationPolicy:
 DELETE FROM application_policy;

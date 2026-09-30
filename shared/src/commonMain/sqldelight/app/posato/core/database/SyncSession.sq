@@ -15,6 +15,7 @@ CREATE TABLE sync_session_intent (
       typeof(end_epoch_millis) = 'integer' AND end_epoch_millis BETWEEN 0 AND 4102444800000
     )
   ),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
   CHECK (
     (
       kind = 'session_start' AND
@@ -35,8 +36,8 @@ FROM sync_session_intent
 ORDER BY sequence;
 
 insertSessionIntent:
-INSERT INTO sync_session_intent(workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis)
-VALUES (:workspaceId, :kind, :sessionId, :startEpochMillis, :endEpochMillis);
+INSERT INTO sync_session_intent(workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis, set_id)
+VALUES (:workspaceId, :kind, :sessionId, :startEpochMillis, :endEpochMillis, zeroblob(16));
 
 deleteSessionIntent:
 DELETE FROM sync_session_intent

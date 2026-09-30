@@ -145,7 +145,7 @@ class LocalExactDomainPolicyStoreContractTest {
         assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
 
         assertFails {
-            driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES (x'626c6f622e6578616d706c65')")
+            driver.executeSql("INSERT INTO local_pause_set_domain(set_id, canonical_domain) VALUES (zeroblob(16), x'626c6f622e6578616d706c65')")
         }
         assertState(store.read(), revision = 1, domains = policy.canonicalValues())
     }
@@ -172,7 +172,7 @@ class LocalExactDomainPolicyStoreContractTest {
 
         assertFails {
             driver.executeSql(
-                "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('aa.bb' || char(0) || printf('%.*c', 248, 'x'))",
+                "INSERT INTO local_pause_set_domain(set_id, canonical_domain) VALUES (zeroblob(16), 'aa.bb' || char(0) || printf('%.*c', 248, 'x'))",
             )
         }
         assertState(store.read(), revision = 1, domains = policy.canonicalValues())
@@ -185,7 +185,7 @@ class LocalExactDomainPolicyStoreContractTest {
         driver.executeSql(
             """
             CREATE TRIGGER fail_policy_insert
-            BEFORE INSERT ON exact_domain_policy
+            BEFORE INSERT ON local_pause_set_domain
             WHEN NEW.canonical_domain = 'blocked.example'
             BEGIN
               SELECT RAISE(ABORT, 'synthetic insert failure');
@@ -253,7 +253,7 @@ class LocalExactDomainPolicyStoreContractTest {
     fun `given a noncanonical stored domain when reading or replacing then corruption is returned without disclosure`() =
         withStore("invalid-domain.db") { store, driver ->
             driver.executeSql(
-                "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('Private.Example')",
+                "INSERT INTO local_pause_set_domain(set_id, canonical_domain) VALUES (zeroblob(16), 'Private.Example')",
             )
 
             val readFailure = assertFailure(store.read())
@@ -271,7 +271,7 @@ class LocalExactDomainPolicyStoreContractTest {
     @Test
     fun `given a malformed IDNA A-label in storage when read then corruption is returned`() = withStore("invalid-a-label.db") { store, driver ->
         driver.executeSql(
-            "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('xn--0.example')",
+            "INSERT INTO local_pause_set_domain(set_id, canonical_domain) VALUES (zeroblob(16), 'xn--0.example')",
         )
 
         val failure = assertFailure(store.read())

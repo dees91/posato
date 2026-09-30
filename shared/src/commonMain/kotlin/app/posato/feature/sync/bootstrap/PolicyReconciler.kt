@@ -20,16 +20,6 @@ import app.posato.feature.targets.domain.StoredPolicyIntent
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 
-internal sealed interface GroupOutcome {
-    data object Settled : GroupOutcome
-
-    data object Authored : GroupOutcome
-
-    data class Failed(
-        val status: SyncStatus
-    ) : GroupOutcome
-}
-
 internal sealed interface ReconcileOutcome {
     data object AppliedClean : ReconcileOutcome
 
@@ -61,57 +51,17 @@ internal class PolicyReconciler(
                 when (val intent = row.intent) {
                     is StoredPolicyIntent.PresentDomain -> intent.domain
                     is StoredPolicyIntent.RemoveDomain -> intent.domain
-                    is StoredPolicyIntent.PresentApplicationPolicy -> null
                 }
             }.toSet()
             val seeds = local.domains
                 .filter { domain -> domain !in pendingDomains }
                 .map { domain -> StoredPolicyIntent.PresentDomain(domain) }
-            val pendingName = pending.mapNotNull { row -> (row.intent as? StoredPolicyIntent.PresentApplicationPolicy)?.name }.lastOrNull()
-            val groupSeed = local.applicationPolicyName
-                ?.takeIf { name -> pendingName == null }
-                ?.let { name -> StoredPolicyIntent.PresentApplicationPolicy(name) }
-            val intents = seeds + listOfNotNull(groupSeed)
-            if (intents.isEmpty()) {
+            if (seeds.isEmpty()) {
                 LocalPolicyResult.Success(Unit)
             } else {
-                policies.recordIntents(PolicySyncWrite(workspaceId, intents))
+                policies.recordIntents(PolicySyncWrite(workspaceId, seeds))
             }
         }
-    }
-
-    suspend fun decideGroup(
-        writer: SyncWriter,
-        projection: SyncProjection,
-    ): GroupOutcome {
-        return when (val read = policies.readIntents()) {
-            is LocalPolicyResult.Failure -> GroupOutcome.Failed(read.reason.toSyncStatus())
-            is LocalPolicyResult.Success -> resolveGroup(writer, projection, groupNames(read.value))
-        }
-    }
-
-    private suspend fun resolveGroup(
-        writer: SyncWriter,
-        projection: SyncProjection,
-        names: List<Pair<Long, ApplicationPolicyName>>,
-    ): GroupOutcome {
-        if (names.isEmpty()) {
-            return GroupOutcome.Settled
-        }
-        if (projection.applicationPolicyName != null) {
-            return if (discardGroupRows(policies, names)) GroupOutcome.Settled else GroupOutcome.Failed(SyncStatus.ACTION_REQUIRED)
-        }
-        return authorGroupName(writer, names)
-    }
-
-    private suspend fun authorGroupName(
-        writer: SyncWriter,
-        names: List<Pair<Long, ApplicationPolicyName>>,
-    ): GroupOutcome {
-        if (writer.mutate(LocalSyncMutation.PresentApplicationPolicy(names.last().second)) is LocalMutationResult.Failure) {
-            return GroupOutcome.Failed(SyncStatus.ACTION_REQUIRED)
-        }
-        return if (discardGroupRows(policies, names)) GroupOutcome.Authored else GroupOutcome.Failed(SyncStatus.ACTION_REQUIRED)
     }
 
     suspend fun apply(
@@ -245,24 +195,6 @@ internal class PolicyReconciler(
     }
 }
 
-private fun groupNames(rows: List<SequencedPolicyIntent>): List<Pair<Long, ApplicationPolicyName>> {
-    return rows.mapNotNull { row ->
-        (row.intent as? StoredPolicyIntent.PresentApplicationPolicy)?.let { intent -> row.sequence to intent.name }
-    }
-}
-
-private suspend fun discardGroupRows(
-    policies: LocalPolicySyncStore,
-    names: List<Pair<Long, ApplicationPolicyName>>,
-): Boolean {
-    names.forEach { (sequence, _) ->
-        if (policies.deleteIntent(sequence) is LocalPolicyResult.Failure) {
-            return false
-        }
-    }
-    return true
-}
-
 private data class UnboundedPolicy(
     val domains: Set<ExactDomain>,
     val name: ApplicationPolicyName?,
@@ -293,20 +225,9 @@ private fun mergePolicy(
         when (intent) {
             is StoredPolicyIntent.PresentDomain -> domains.add(intent.domain)
             is StoredPolicyIntent.RemoveDomain -> domains.remove(intent.domain)
-            is StoredPolicyIntent.PresentApplicationPolicy -> Unit
         }
     }
-    val remoteName = if (base == null) {
-        projected.name ?: local.applicationPolicyName
-    } else if (projected.name == base.applicationPolicyName) {
-        local.applicationPolicyName
-    } else {
-        projected.name
-    }
-    val pendingName = pending.mapNotNull { intent ->
-        (intent as? StoredPolicyIntent.PresentApplicationPolicy)?.name
-    }.lastOrNull()
-    return UnboundedPolicy(domains, pendingName ?: remoteName)
+    return UnboundedPolicy(domains, local.applicationPolicyName)
 }
 
 private fun mergeEstablished(
@@ -326,7 +247,7 @@ private fun mergeEstablished(
 }
 
 private fun projectionPolicy(projection: SyncProjection): UnboundedPolicy {
-    return UnboundedPolicy(projection.domains.toSet(), projection.applicationPolicyName)
+    return UnboundedPolicy(projection.domains.toSet(), null)
 }
 
 private fun SyncProjection.isWorkspaceFull(): Boolean {

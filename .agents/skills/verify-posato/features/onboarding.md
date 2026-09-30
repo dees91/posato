@@ -55,7 +55,7 @@ Preconditions:
   It declines iCloud, takes the unavailable permission answer, adds
   `example.com`, waits for `1 website saved` on the summary, captures a screenshot
   and a snapshot, and lands on Session. Confirm the side effects with
-  `$PC db query -t sim --sql "select canonical_domain from exact_domain_policy"`
+  `$PC db query -t sim --sql "select canonical_domain from local_pause_set_domain"`
   (one row) and zero `sync_bootstrap_state` rows.
 - **Continuous entry:** on the website step, submit two websites one at a
   time with Return and no tap in between. After each submission the field

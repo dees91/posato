@@ -174,8 +174,8 @@ class SqlLocalSessionStoreTest {
         val driver = testDatabase.openDriver()
         try {
             driver.executeSql(
-                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin)" +
-                    " VALUES (1, X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM}, 0, 'local')",
+                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin, set_id)" +
+                    " VALUES (1, X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM}, 0, 'local', zeroblob(16))",
             )
             val database = PosatoDatabase(driver)
             val store = SqlLocalSessionStore(database, Dispatchers.Default)
@@ -199,8 +199,8 @@ class SqlLocalSessionStoreTest {
         try {
             val identifier = testIdentifier(71).copyBytes()
             driver.executeSql(
-                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin)" +
-                    " VALUES (1, X'${identifier.toHexString()}', ${NOW + MINIMUM}, $NOW, 0, 'local')",
+                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin, set_id)" +
+                    " VALUES (1, X'${identifier.toHexString()}', ${NOW + MINIMUM}, $NOW, 0, 'local', zeroblob(16))",
             )
             val database = PosatoDatabase(driver)
             val store = SqlLocalSessionStore(database, Dispatchers.Default)
@@ -355,8 +355,8 @@ class SqlLocalSessionStoreTest {
             val identifier = testIdentifier(95).copyBytes()
             driver.executeSql(
                 "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early," +
-                    " frozen_domains, frozen_application_count, origin)" +
-                    " VALUES (1, X'${identifier.toHexString()}', $NOW, ${NOW + MINIMUM}, 0, 'ab', NULL, 'local')",
+                    " frozen_domains, frozen_application_count, origin, set_id)" +
+                    " VALUES (1, X'${identifier.toHexString()}', $NOW, ${NOW + MINIMUM}, 0, 'ab', NULL, 'local', zeroblob(16))",
             )
             val store = SqlLocalSessionStore(PosatoDatabase(driver), Dispatchers.Default)
             val result = store.read(NOW)
@@ -636,8 +636,8 @@ class SqlLocalSessionStoreTest {
         try {
             val workspaceHex = testIdentifier(113).copyBytes().toHexString()
             driver.executeSql(
-                "INSERT INTO sync_session_intent(workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis)" +
-                    " VALUES (X'$workspaceHex', 'session_start', X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM})",
+                "INSERT INTO sync_session_intent(workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis, set_id)" +
+                    " VALUES (X'$workspaceHex', 'session_start', X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM}, zeroblob(16))",
             )
             val store = SqlLocalSessionStore(PosatoDatabase(driver), Dispatchers.Default)
             val result = store.readIntents()

@@ -55,7 +55,6 @@ internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
                     workspaceId = write.workspaceId,
                     kind = INTENT_DOMAIN_PRESENT,
                     canonicalDomain = intent.domain.canonicalValue,
-                    canonicalName = null,
                 )
             }
 
@@ -64,16 +63,6 @@ internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
                     workspaceId = write.workspaceId,
                     kind = INTENT_DOMAIN_ABSENT,
                     canonicalDomain = intent.domain.canonicalValue,
-                    canonicalName = null,
-                )
-            }
-
-            is StoredPolicyIntent.PresentApplicationPolicy -> {
-                syncLocalPolicyQueries.insertIntent(
-                    workspaceId = write.workspaceId,
-                    kind = INTENT_APPLICATION_PRESENT,
-                    canonicalDomain = null,
-                    canonicalName = intent.name.canonicalValue,
                 )
             }
         }
@@ -89,10 +78,6 @@ internal suspend fun PosatoDatabase.readIntentsOrThrow(): List<SequencedPolicyIn
 
             INTENT_DOMAIN_ABSENT -> {
                 StoredPolicyIntent.RemoveDomain(restoreDomain(row.canonical_domain))
-            }
-
-            INTENT_APPLICATION_PRESENT -> {
-                StoredPolicyIntent.PresentApplicationPolicy(restorePolicyName(row.canonical_name))
             }
 
             else -> {
@@ -192,4 +177,3 @@ internal fun fail(reason: LocalPolicyFailure): Nothing {
 
 private const val INTENT_DOMAIN_PRESENT = "domain_present"
 private const val INTENT_DOMAIN_ABSENT = "domain_absent"
-private const val INTENT_APPLICATION_PRESENT = "application_present"

@@ -107,8 +107,7 @@ internal class AppleSyncAuthoring(
         val mutation = when (val intent = row.intent) {
             is StoredPolicyIntent.PresentDomain -> LocalSyncMutation.PresentDomain(intent.domain)
             is StoredPolicyIntent.RemoveDomain -> LocalSyncMutation.RemoveDomain(intent.domain)
-            is StoredPolicyIntent.PresentApplicationPolicy -> null
-        } ?: return DrainStep.Continue
+        }
         if (writer.mutate(mutation) is LocalMutationResult.Failure) {
             return DrainStep.Halt(fail())
         }
@@ -142,6 +141,5 @@ private fun isSkipped(
     return when (val intent = row.intent) {
         is StoredPolicyIntent.PresentDomain -> projection.domains.any { domain -> domain == intent.domain }
         is StoredPolicyIntent.RemoveDomain -> projection.domains.none { domain -> domain == intent.domain }
-        is StoredPolicyIntent.PresentApplicationPolicy -> false
     }
 }

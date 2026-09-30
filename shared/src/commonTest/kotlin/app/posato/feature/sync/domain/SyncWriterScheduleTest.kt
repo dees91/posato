@@ -39,7 +39,7 @@ class SyncWriterScheduleTest {
 
             assertEquals(LocalMutationFailure.INVALID_MUTATION, assertIs<LocalMutationResult.Failure>(writer.mutate(invalid)).reason)
             assertEquals(before, store.current)
-            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))))
         }
     }
 

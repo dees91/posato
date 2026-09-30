@@ -8,10 +8,6 @@ internal sealed interface StoredPolicyIntent {
     data class RemoveDomain(
         val domain: ExactDomain,
     ) : StoredPolicyIntent
-
-    data class PresentApplicationPolicy(
-        val name: ApplicationPolicyName,
-    ) : StoredPolicyIntent
 }
 
 internal data class PolicySyncWrite(

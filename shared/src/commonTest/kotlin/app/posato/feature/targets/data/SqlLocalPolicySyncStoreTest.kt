@@ -41,7 +41,6 @@ class SqlLocalPolicySyncStoreTest {
                 intents = listOf(
                     StoredPolicyIntent.RemoveDomain(removed),
                     StoredPolicyIntent.PresentDomain(added),
-                    StoredPolicyIntent.PresentApplicationPolicy(testGroupName()),
                 ),
             )
             val replaced = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replace(0, policy, write))
@@ -107,28 +106,8 @@ class SqlLocalPolicySyncStoreTest {
             val database = PosatoDatabase(driver)
             val store = SqlLocalTargetPolicyStore(database, testDispatcher())
             driver.executeSql(
-                "INSERT INTO sync_policy_intent(workspace_id, kind, canonical_domain, canonical_name) " +
-                    "VALUES (X'000102030405060708090A0B0C0D0E0F', 'domain_present', 'a..b', NULL)",
-            )
-            val result = store.readIntents()
-            assertIs<LocalPolicyResult.Failure>(result)
-            assertEquals(LocalPolicyFailure.CORRUPTION, result.reason)
-        } finally {
-            driver.close()
-            testDatabase.delete()
-        }
-    }
-
-    @Test
-    fun `given a non-canonical name row when reading intents then corruption is reported`() = runTest {
-        val testDatabase = createLocalPolicyTestDatabase("policy-sync-corrupt-name.db")
-        val driver = testDatabase.openDriver()
-        try {
-            val database = PosatoDatabase(driver)
-            val store = SqlLocalTargetPolicyStore(database, testDispatcher())
-            driver.executeSql(
-                "INSERT INTO sync_policy_intent(workspace_id, kind, canonical_domain, canonical_name) " +
-                    "VALUES (X'000102030405060708090A0B0C0D0E0F', 'application_present', NULL, ' Untrimmed ')",
+                "INSERT INTO sync_policy_intent(workspace_id, kind, set_id, canonical_domain, set_name) " +
+                    "VALUES (X'000102030405060708090A0B0C0D0E0F', 'domain_present', zeroblob(16), 'a..b', NULL)",
             )
             val result = store.readIntents()
             assertIs<LocalPolicyResult.Failure>(result)
@@ -179,7 +158,7 @@ class SqlLocalPolicySyncStoreTest {
         try {
             val store = SqlLocalTargetPolicyStore(PosatoDatabase(driver), testDispatcher())
             driver.executeSql("INSERT INTO sync_policy_base(singleton) VALUES (1)")
-            driver.executeSql("INSERT INTO sync_policy_base_domain(canonical_domain) VALUES ('orphan.example')")
+            driver.executeSql("INSERT INTO sync_policy_base_domain(set_id, canonical_domain) VALUES (zeroblob(16), 'orphan.example')")
             val result = store.readBase()
             assertIs<LocalPolicyResult.Failure>(result)
             assertEquals(LocalPolicyFailure.CORRUPTION, result.reason)
