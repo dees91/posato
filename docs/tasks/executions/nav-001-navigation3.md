@@ -60,6 +60,11 @@
   outgoing editors from their last state; block back during a schedule save;
   limit the trackpad swipe to the main window without a sheet or modal
   window; state the onboarding decision in the brief. All in `8c31e4a`.
+- **Maintainer review of PR #113 (P2, accepted 2026-09-30):** Escape in a
+  focused editor field left the editor and discarded the draft. The first
+  Escape in a Posato text or search field now only leaves the field; the
+  next goes back. Tart: `mac-esc.log` (30 steps), the schedule name check in
+  `mac-setup.log`, and every earlier Mac matrix rerun.
 - **Advisory, not taken:** completion from AppKit's end phase instead of the
   gesture amount; a momentum Begin phase in the synthetic swipe.
 
@@ -80,7 +85,3 @@ Each Tart matrix drives Command-[ and Escape over VNC, `swipe-back` complete
 and `--cancel`, and the explicit Back actions, asserting the screen before
 and after. Back on a stack's first screen changes nothing.
 
-## Follow-up
-
-- Escape in a focused editor field now leaves the editor and discards the
-  draft, as its Cancel does; noted for the pull request.

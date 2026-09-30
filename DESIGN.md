@@ -373,7 +373,9 @@ stack, and the platform's back returns one screen exactly as that screen's
 explicit **Back**, **Cancel**, or **Back to …** action does: the interactive
 edge swipe on iPhone and iPad; Command-[, Escape, and the trackpad's two-finger
 swipe between pages on the Mac. Search's **Back to adding** is part of the
-same stack. Back never switches destination or leaves the application, and it
+same stack. In a focused text field the first Escape only leaves the field and
+keeps what was typed; the next Escape goes back (`user-confirmed`,
+2026-09-30). Back never switches destination or leaves the application, and it
 is unavailable while a start, end, save, or system approval or password prompt
 is in progress. On iOS the screen slides with the finger and settles without a
 slide under Reduce Motion. The Mac changes screens without a transition; the

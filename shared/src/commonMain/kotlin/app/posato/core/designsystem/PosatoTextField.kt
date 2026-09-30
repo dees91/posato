@@ -13,6 +13,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.error
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.Preview
@@ -32,9 +33,10 @@ internal fun PosatoTextField(
     trailingContent: (@Composable () -> Unit)? = null,
     inputModifier: Modifier = Modifier,
 ) {
+    val focus = LocalFocusManager.current
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(PosatoSpace.Small)) {
         OutlinedTextField(
-            modifier = inputModifier.fillMaxWidth().semantics { errorMessage?.let { error(it) } },
+            modifier = inputModifier.fillMaxWidth().escapeLeavesField(focus).semantics { errorMessage?.let { error(it) } },
             state = state,
             enabled = enabled,
             label = { Text(label) },
