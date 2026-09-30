@@ -31,13 +31,13 @@ CREATE TABLE sync_session_intent (
 );
 
 selectSessionIntents:
-SELECT sequence, workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis
+SELECT sequence, workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis, set_id
 FROM sync_session_intent
 ORDER BY sequence;
 
 insertSessionIntent:
 INSERT INTO sync_session_intent(workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis, set_id)
-VALUES (:workspaceId, :kind, :sessionId, :startEpochMillis, :endEpochMillis, zeroblob(16));
+VALUES (:workspaceId, :kind, :sessionId, :startEpochMillis, :endEpochMillis, :setId);
 
 deleteSessionIntent:
 DELETE FROM sync_session_intent

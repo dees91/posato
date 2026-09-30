@@ -1,5 +1,6 @@
 package app.posato.feature.session.domain
 
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncFormatLimits
 
@@ -7,6 +8,7 @@ internal data class SessionRecord(
     val sessionId: SessionId,
     val startEpochMillis: Long,
     val endEpochMillis: Long,
+    val setId: PauseSetId = PauseSetId.FIRST,
 ) {
     init {
         require(startEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS)

@@ -11,6 +11,8 @@ import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
 import app.posato.feature.schedules.domain.scheduleIdOf
 import app.posato.feature.schedules.domain.toBytes
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.domain.SyncIdentifier
 
 internal const val FACT_SKIP: String = "skip"
 internal const val FACT_END: String = "end"
@@ -22,8 +24,9 @@ internal class ScheduleStoreException(
 ) : Exception()
 
 internal suspend fun PosatoDatabase.readSnapshot(): ScheduleSnapshot {
-    val schedules = scheduleQueries.selectSchedules { id, name, weekdays, start, end, enabled, refused ->
-        StoredSchedule(SchedulePlan(scheduleIdOf(id), name, weekdays.toInt(), start.toInt(), end.toInt(), enabled == 1L), refused == 1L)
+    val schedules = scheduleQueries.selectSchedules { id, name, weekdays, start, end, enabled, refused, setId ->
+        val plan = SchedulePlan(scheduleIdOf(id), name, weekdays.toInt(), start.toInt(), end.toInt(), enabled == 1L, pauseSetIdOf(setId))
+        StoredSchedule(plan, refused == 1L)
     }.awaitAsList()
     val skipped = mutableSetOf<OccurrenceKey>()
     val ended = mutableSetOf<OccurrenceKey>()
@@ -60,6 +63,7 @@ internal suspend fun PosatoDatabase.writeSchedule(
         plan.endMinute.toLong(),
         if (plan.enabled) 1L else 0L,
         if (refused) 1L else 0L,
+        plan.setId.value.copyBytes(),
     )
 }
 
@@ -129,6 +133,7 @@ internal suspend fun PosatoDatabase.writeIntent(
         authorYear = author?.year?.toLong(),
         authorMonth = author?.month?.toLong(),
         authorDay = author?.day?.toLong(),
+        setId = (plan?.setId ?: PauseSetId.FIRST).value.copyBytes(),
     )
 }
 
@@ -149,6 +154,7 @@ internal suspend fun PosatoDatabase.readIntentRows(): List<SequencedScheduleInte
         authorYear,
         authorMonth,
         authorDay,
+        setId,
         ->
         val scheduleId = scheduleIdOf(id)
         val date = if (year != null && month != null && day != null) ScheduleDate(year.toInt(), month.toInt(), day.toInt()) else null
@@ -166,6 +172,7 @@ internal suspend fun PosatoDatabase.readIntentRows(): List<SequencedScheduleInte
                     checkNotNull(start).toInt(),
                     checkNotNull(end).toInt(),
                     enabled == 1L,
+                    pauseSetIdOf(setId),
                 ),
             )
 
@@ -177,6 +184,11 @@ internal suspend fun PosatoDatabase.readIntentRows(): List<SequencedScheduleInte
         }
         SequencedScheduleIntent(sequence, workspace, intent)
     }.awaitAsList()
+}
+
+/** A stored set identifier; a malformed one is corruption, which the store reports as it does any bad row. */
+internal fun pauseSetIdOf(bytes: ByteArray): PauseSetId {
+    return checkNotNull(SyncIdentifier.fromExactBytes(bytes)?.let(PauseSetId::of))
 }
 
 private fun ScheduleIntent.kind(): String {

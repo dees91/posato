@@ -73,7 +73,7 @@ CREATE TABLE sync_schedule_seed (
 );
 
 selectSchedules:
-SELECT schedule_id, name, weekdays, start_minute, end_minute, enabled, refused
+SELECT schedule_id, name, weekdays, start_minute, end_minute, enabled, refused, set_id
 FROM local_schedule
 ORDER BY schedule_id;
 
@@ -82,7 +82,7 @@ SELECT count(*) FROM local_schedule WHERE refused = 0;
 
 upsertSchedule:
 INSERT OR REPLACE INTO local_schedule(schedule_id, name, weekdays, start_minute, end_minute, enabled, refused, set_id)
-VALUES (:scheduleId, :name, :weekdays, :startMinute, :endMinute, :enabled, :refused, zeroblob(16));
+VALUES (:scheduleId, :name, :weekdays, :startMinute, :endMinute, :enabled, :refused, :setId);
 
 -- Without a shared workspace no cap refuses anything, so refused plans rejoin up to the local cap of 10.
 promoteRefusedSchedules:
@@ -137,7 +137,7 @@ WHERE schedule_id = :scheduleId AND year = :year AND month = :month AND day = :d
 
 selectScheduleIntents:
 SELECT sequence, workspace_id, kind, schedule_id, name, weekdays, start_minute, end_minute, enabled, year, month, day,
-  author_year, author_month, author_day
+  author_year, author_month, author_day, set_id
 FROM sync_schedule_intent
 ORDER BY sequence;
 
@@ -148,7 +148,7 @@ INSERT INTO sync_schedule_intent(
 )
 VALUES (
   :workspaceId, :kind, :scheduleId, :name, :weekdays, :startMinute, :endMinute, :enabled, :year, :month, :day,
-  :authorYear, :authorMonth, :authorDay, zeroblob(16)
+  :authorYear, :authorMonth, :authorDay, :setId
 );
 
 deleteScheduleIntent:

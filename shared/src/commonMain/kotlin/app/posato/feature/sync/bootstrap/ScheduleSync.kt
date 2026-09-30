@@ -109,7 +109,7 @@ internal fun SyncProjection.toSynced(): SyncedSchedules {
 }
 
 private fun SynchronizedSchedule.toPlan(): SchedulePlan {
-    return SchedulePlan(scheduleId.toScheduleId(), name, weekdays, startMinute, endMinute, enabled)
+    return SchedulePlan(scheduleId.toScheduleId(), name, weekdays, startMinute, endMinute, enabled, setId)
 }
 
 private fun ScheduleOccurrenceRef.toKey(): OccurrenceKey {

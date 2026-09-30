@@ -6,6 +6,8 @@ import app.posato.feature.schedules.domain.OccurrencePin
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
@@ -54,6 +56,18 @@ private suspend fun SqlScheduleStore.intents(): List<ScheduleIntent> {
 }
 
 class SqlScheduleStoreTest {
+    @Test
+    fun `given a plan in another set when saved while linked then the plan and its intent keep the set`() = runTest {
+        withStore("schedules-set.db") { store ->
+            val planInSet = plan(3).copy(setId = checkNotNull(PauseSetId.of(testIdentifier(80))))
+
+            store.save(planInSet, workspace)
+
+            assertEquals(listOf(planInSet), store.snapshot().schedules.map { it.plan })
+            assertEquals(listOf(ScheduleIntent.Put(planInSet)), store.intents())
+        }
+    }
+
     @Test
     fun `given a save when unlinked then no intent is recorded and when linked exactly one is`() = runTest {
         withStore("schedules-save.db") { store ->

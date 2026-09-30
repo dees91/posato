@@ -159,7 +159,12 @@ internal class SessionReconciler(
                 } else if (projection.knows(status.record.sessionId) || status.record.sessionId in queuedStarts) {
                     null
                 } else {
-                    StoredSessionIntent.StartSession(status.record.sessionId, status.record.startEpochMillis, status.record.endEpochMillis)
+                    StoredSessionIntent.StartSession(
+                        status.record.sessionId,
+                        status.record.startEpochMillis,
+                        status.record.endEpochMillis,
+                        status.record.setId,
+                    )
                 }
             }
 

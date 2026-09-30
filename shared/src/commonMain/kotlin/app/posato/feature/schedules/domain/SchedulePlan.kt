@@ -1,5 +1,7 @@
 package app.posato.feature.schedules.domain
 
+import app.posato.feature.sync.domain.PauseSetId
+
 /** The 16-byte schedule identifier as lowercase hexadecimal. */
 internal data class ScheduleId(
     val hex: String,
@@ -24,6 +26,7 @@ internal data class SchedulePlan(
     val startMinute: Int,
     val endMinute: Int,
     val enabled: Boolean,
+    val setId: PauseSetId = PauseSetId.FIRST,
 ) {
     override fun toString(): String {
         return "SchedulePlan(redacted)"

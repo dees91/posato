@@ -11,6 +11,7 @@ import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.session.domain.SessionOrigin
 import app.posato.feature.session.domain.SessionSyncWrite
 import app.posato.feature.session.domain.StoredSessionIntent
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalPolicyResult
@@ -363,6 +364,26 @@ class SqlLocalSessionStoreTest {
 
             assertIs<LocalSessionResult.Failure>(result)
             assertEquals(LocalSessionFailure.CORRUPTION, result.reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a linked start in another set when read back then the session and its intent keep the set`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("session-set.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val store = SqlLocalSessionStore(PosatoDatabase(driver), Dispatchers.Default)
+            val work = checkNotNull(PauseSetId.of(testIdentifier(80)))
+            store.start(SessionId(testIdentifier(103)), NOW, NOW + MINIMUM, NOW, START_SET, testIdentifier(101).copyBytes(), work)
+
+            val active = assertIs<LocalSessionStatus.Active>(assertIs<LocalSessionResult.Success<LocalSessionStatus>>(store.read(NOW)).value)
+            val intents = assertIs<LocalSessionResult.Success<List<SequencedSessionIntent>>>(store.readIntents()).value
+
+            assertEquals(work, active.record.setId)
+            assertEquals(StoredSessionIntent.StartSession(SessionId(testIdentifier(103)), NOW, NOW + MINIMUM, work), intents.single().intent)
         } finally {
             driver.close()
             testDatabase.delete()

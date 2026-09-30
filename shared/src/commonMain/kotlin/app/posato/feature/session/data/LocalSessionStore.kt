@@ -4,6 +4,7 @@ import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SequencedSessionIntent
 import app.posato.feature.session.domain.SessionSyncWrite
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 
 internal enum class LocalSessionFailure {
@@ -38,6 +39,7 @@ internal interface LocalSessionStore {
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
         workspaceId: ByteArray? = null,
+        setId: PauseSetId = PauseSetId.FIRST,
     ): LocalSessionResult<LocalSessionStatus>
 
     suspend fun endEarly(
@@ -51,6 +53,7 @@ internal interface LocalSessionStore {
         endEpochMillis: Long,
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
+        setId: PauseSetId = PauseSetId.FIRST,
     ): LocalSessionResult<LocalSessionStatus>
 
     /**
