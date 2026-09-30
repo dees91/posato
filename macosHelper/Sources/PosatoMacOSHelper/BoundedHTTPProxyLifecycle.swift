@@ -21,6 +21,8 @@ extension BoundedHTTPProxy {
     upstream.cancel()
     connections.removeValue(forKey: ObjectIdentifier(client))
     directConnections.removeValue(forKey: ObjectIdentifier(upstream))
+    loopbackUpstreams.remove(ObjectIdentifier(upstream))
+    establishedLoopbackUpstreams.remove(ObjectIdentifier(upstream))
   }
 
   func cancelRequestTimeout(for connection: NWConnection) {
@@ -38,6 +40,9 @@ extension BoundedHTTPProxy {
   ) {
     cancelRequestTimeout(for: client)
     cancelRequestTimeout(for: upstream)
+    guard !establishedLoopbackUpstreams.contains(ObjectIdentifier(upstream)) else {
+      return
+    }
     let timeout = DispatchWorkItem { [weak self, weak client, weak upstream] in
       guard let self, let client, let upstream else {
         return

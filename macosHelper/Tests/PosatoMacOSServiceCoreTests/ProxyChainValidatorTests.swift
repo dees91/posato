@@ -41,3 +41,13 @@ private final class StubResolver: ProxyChainResolving {
     return hopsToReturn
   }
 }
+
+// MACOS-024: the pre-Apply check must see the exceptions Apply will add, so that a selected domain one of them would
+// cover fails before any system change instead of only after it.
+@Test func givenLiveExceptionsWhenOverlaidThenMissingLoopbackEntriesAreAppendedOnce() {
+  let live = ["ExceptionsList": ["*.local", "127.0.0.1"]] as CFDictionary
+
+  let overlay = ProxyChainValidator().overlayLoopbackSettings(live, port: 17_769) as NSDictionary
+
+  #expect(overlay["ExceptionsList"] as? [String] == ["*.local", "127.0.0.1", "localhost", "::1"])
+}

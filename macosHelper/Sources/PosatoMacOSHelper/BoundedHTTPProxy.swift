@@ -9,6 +9,9 @@ enum BoundedHTTPProxyError: Error, Equatable, Sendable {
 
 final class BoundedHTTPProxy: @unchecked Sendable {
   static let maximumTrackedConnections = 128
+  /// Loopback relays (ADR 0005, MACOS-024) have their own cap inside the tracked limit, so stuck local streams
+  /// cannot starve browser traffic.
+  static let maximumLoopbackRelays = 32
   static let idleConnectionTimeout: TimeInterval = 30
   static let defaultHeaderTimeout: TimeInterval = 5
   static let receiveChunkLength = 16_384
@@ -17,6 +20,7 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   let sessionEndEpochMilliseconds: UInt64?
   let resolveUpstream: (String, UInt16) -> (String, UInt16)
   let headerTimeout: TimeInterval
+  let idleTimeout: TimeInterval
   let blockedRequestHandlerLock = NSLock()
   let queue = DispatchQueue(label: "app.posato.macos.helper.proxy")
   let startupCondition = NSCondition()
@@ -25,6 +29,9 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   var connections: [ObjectIdentifier: NWConnection] = [:]
   var directConnections: [ObjectIdentifier: DirectTCPConnection] = [:]
   var requestTimeouts: [ObjectIdentifier: DispatchWorkItem] = [:]
+  /// Upstreams of loopback relays, and those that are established and so no longer idle-limited.
+  var loopbackUpstreams: Set<ObjectIdentifier> = []
+  var establishedLoopbackUpstreams: Set<ObjectIdentifier> = []
   var blockedRequestHandler: (@Sendable () -> Void)?
   var boundPortStorage: UInt16?
 
@@ -35,12 +42,14 @@ final class BoundedHTTPProxy: @unchecked Sendable {
       (host, port)
     },
     headerTimeout: TimeInterval = BoundedHTTPProxy.defaultHeaderTimeout,
+    idleTimeout: TimeInterval = BoundedHTTPProxy.idleConnectionTimeout,
     blockedRequestHandler: (@Sendable () -> Void)? = nil
   ) {
     self.selectedHosts = selectedHosts
     self.sessionEndEpochMilliseconds = sessionEndEpochMilliseconds
     self.resolveUpstream = resolveUpstream
     self.headerTimeout = headerTimeout
+    self.idleTimeout = idleTimeout
     self.blockedRequestHandler = blockedRequestHandler
   }
 
@@ -77,6 +86,8 @@ final class BoundedHTTPProxy: @unchecked Sendable {
         connection.cancel()
       }
       directConnections.removeAll()
+      loopbackUpstreams.removeAll()
+      establishedLoopbackUpstreams.removeAll()
       for timeout in requestTimeouts.values {
         timeout.cancel()
       }
@@ -135,7 +146,9 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   }
 
   private func buildListener() throws -> NWListener {
-    let parameters = NWParameters.tcp
+    let tcp = NWProtocolTCP.Options()
+    tcp.enableKeepalive = true
+    let parameters = NWParameters(tls: nil, tcp: tcp)
     parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
     do {
       return try NWListener(using: parameters)

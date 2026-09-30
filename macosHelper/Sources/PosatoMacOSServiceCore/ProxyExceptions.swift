@@ -53,7 +53,7 @@ public enum ProxyExceptions: Equatable, Sendable {
   }
 
   /// The loopback entries a baseline lacks, compared by exact bytes, in the fixed order.
-  static func missingLoopbackEntries(in entries: [String]) -> [String] {
+  public static func missingLoopbackEntries(in entries: [String]) -> [String] {
     let present = Set(entries.map { Array($0.utf8) })
     return loopbackEntries.filter { !present.contains(Array($0.utf8)) }
   }
