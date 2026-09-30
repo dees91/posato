@@ -33,11 +33,15 @@ class VmNetworkCommand :
         .choice("create", "enable", "disable", "remove", SHOW_BYPASS)
     private val bypassDomains by option("--bypass-domains", help = "Comma-separated proxy bypass domains to set on --service, in order.")
     private val bypassEmpty by option("--bypass-empty", help = "Clear the proxy bypass domains of --service.").flag()
+    private val bypassAbsent by option(
+        "--bypass-absent",
+        help = "Remove the ExceptionsList key of --service entirely, which --bypass-empty cannot do.",
+    ).flag()
     private val device by option("--device", help = "Hardware port a created service uses.").default("en0")
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)
-        val request = networkRequest(state, service, action, bypassChange(bypassDomains, bypassEmpty), device)
+        val request = networkRequest(state, service, action, bypassChange(bypassDomains, bypassEmpty, bypassAbsent), device)
         val script = "sudo -S -p '' /bin/sh -c ${shellQuote(request.script())}"
         val output = Tart(session.context).exec(line.cloneName, script, stdin = vmAdminPassword(session.context) + "\n")
         if (!output.succeeded || !request.reached(output.stdout)) {
@@ -54,22 +58,36 @@ class VmNetworkCommand :
     }
 }
 
-/** The requested bypass list: null when none is requested, empty for --bypass-empty. */
+/** The requested bypass change: null when none is requested. */
 private fun bypassChange(
     domains: String?,
-    empty: Boolean
-): List<String>? {
-    if (domains != null && empty) {
-        throw ControlException(ErrorCode.USAGE, "Pass either --bypass-domains or --bypass-empty, not both.")
+    empty: Boolean,
+    absent: Boolean
+): BypassChange? {
+    if (listOf(domains != null, empty, absent).count { requested -> requested } > 1) {
+        throw ControlException(ErrorCode.USAGE, "Pass only one of --bypass-domains, --bypass-empty, and --bypass-absent.")
     }
-    return domains?.split(',')?.map(String::trim)?.filter(String::isNotEmpty) ?: emptyList<String>().takeIf { empty }
+    return when {
+        absent -> BypassChange.Absent
+        empty -> BypassChange.Domains(emptyList())
+        domains != null -> BypassChange.Domains(domains.split(',').map(String::trim).filter(String::isNotEmpty))
+        else -> null
+    }
+}
+
+private sealed interface BypassChange {
+    data class Domains(
+        val domains: List<String>
+    ) : BypassChange
+
+    data object Absent : BypassChange
 }
 
 private fun networkRequest(
     state: String?,
     service: String?,
     action: String?,
-    bypass: List<String>?,
+    bypass: BypassChange?,
     device: String
 ): NetworkRequest {
     val name = service?.takeIf(String::isNotBlank)
@@ -83,7 +101,7 @@ private fun networkRequest(
     }
     return request ?: throw ControlException(
         ErrorCode.USAGE,
-        "vm network needs either --state, or --service with --action, --bypass-domains, or --bypass-empty.",
+        "vm network needs either --state, or --service with --action, --bypass-domains, --bypass-empty, or --bypass-absent.",
     )
 }
 
@@ -186,22 +204,37 @@ private sealed interface NetworkRequest {
         }
     }
 
-    /** Reads, or sets and then reads, one service's proxy bypass domains; `domains` null only reads them. */
+    /** Reads, or changes and then reads, one service's proxy bypass domains; `change` null only reads them. */
     data class Bypass(
         val name: String,
-        val domains: List<String>?
+        val change: BypassChange?
     ) : NetworkRequest {
-        override val description = if (domains == null) "Reading the bypass domains of \"$name\"" else "Setting the bypass domains of \"$name\""
+        override val description = if (change == null) "Reading the bypass domains of \"$name\"" else "Changing the bypass domains of \"$name\""
 
         override fun script(): String {
             val quoted = shellQuote(name)
             val read = "networksetup -getproxybypassdomains $quoted"
-            if (domains == null) return read
-            val values = if (domains.isEmpty()) "Empty" else domains.joinToString(" ") { domain -> shellQuote(domain) }
-            return "networksetup -setproxybypassdomains $quoted $values || exit 1; $read"
+            return when (change) {
+                null -> {
+                    read
+                }
+
+                BypassChange.Absent -> {
+                    REMOVE_EXCEPTIONS_KEY.replace(SERVICE_PLACEHOLDER, quoted) + " || exit 1; $read"
+                }
+
+                is BypassChange.Domains -> {
+                    val values = if (change.domains.isEmpty()) "Empty" else change.domains.joinToString(" ") { shellQuote(it) }
+                    "networksetup -setproxybypassdomains $quoted $values || exit 1; $read"
+                }
+            }
         }
 
-        override fun reached(stdout: String): Boolean = domains == null || parseBypassDomains(stdout) == domains
+        override fun reached(stdout: String): Boolean = when (change) {
+            null -> true
+            BypassChange.Absent -> parseBypassDomains(stdout).isEmpty()
+            is BypassChange.Domains -> parseBypassDomains(stdout) == change.domains
+        }
 
         override fun describe(
             result: JsonObjectBuilder,
@@ -214,6 +247,23 @@ private sealed interface NetworkRequest {
 }
 
 private const val SHOW_BYPASS = "show-bypass"
+
+private const val SERVICE_PLACEHOLDER = "@SERVICE@"
+
+/**
+ * Removes `ExceptionsList` from the named service's stored proxies with `scutil --prefs`, which `networksetup` cannot
+ * do, and fails unless the key is gone afterwards.
+ */
+private val REMOVE_EXCEPTIONS_KEY = """
+    id=''
+    for path in ${'$'}(printf 'list /NetworkServices\n' | scutil --prefs | awk '{print ${'$'}4}'); do
+      name=${'$'}(printf 'get %s\nd.show\n' "${'$'}path" | scutil --prefs | sed -n 's/^  UserDefinedName : //p')
+      if [ "${'$'}name" = @SERVICE@ ]; then id="${'$'}path"; fi
+    done
+    [ -n "${'$'}id" ] || exit 1
+    printf 'lock\nget %s/Proxies\nd.remove ExceptionsList\nset %s/Proxies\ncommit\napply\nunlock\nquit\n' "${'$'}id" "${'$'}id" | scutil --prefs || exit 1
+    ! printf 'get %s/Proxies\nd.show\n' "${'$'}id" | scutil --prefs | grep -q ExceptionsList
+""".trimIndent()
 
 private const val LIST_SERVICES = "networksetup -listallnetworkservices"
 
