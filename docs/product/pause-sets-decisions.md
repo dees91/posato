@@ -1,9 +1,9 @@
 # Release 1.3: pause set rules (`SCHEDULE-003`)
 
-- **Status:** Proposed. The product decisions are `user-confirmed`
+- **Status:** Accepted. The product decisions are `user-confirmed`
   (2026-09-29 and 2026-09-30). The ADR 0006 amendment they need passed an
-  independent security review after fixes (2026-09-30) and awaits the
-  maintainer's acceptance.
+  independent security review after fixes and was accepted by the
+  maintainer on 2026-09-30 (`user-confirmed`).
 - **Owner:** `SCHEDULE-003` decides; `SCHEDULE-004` delivers.
 - **Authorities:** [product scope](pause-sets.md),
   [`DESIGN.md`](../../DESIGN.md#release-13-pause-sets),

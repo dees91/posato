@@ -772,7 +772,8 @@ conflicts before the editor and active-session details are implemented.
 
 ### Release 1.3 pause sets
 
-Proposed by `SCHEDULE-003` (2026-09-30) for `SCHEDULE-004`; the
+Accepted with `SCHEDULE-003` (`user-confirmed`, 2026-09-30) for
+`SCHEDULE-004`; the
 [pause set rules](docs/product/pause-sets-decisions.md) own the behavior.
 On delivery this section supersedes the **Paused items** destination name
 and the single-selection wording in Session, Paused items, onboarding, and

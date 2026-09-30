@@ -2284,7 +2284,7 @@ to scope, feasibility, or delivery.
 - `observed`: NAV-001 passes on Tart, the iPad Simulator, and the test
   iPhone; see its execution record.
 
-## [2026-09-30] decision | Pause set rules and the proposed ADR 0006 amendment
+## [2026-09-30] decision | Pause set rules and the ADR 0006 amendment
 
 - `user-confirmed`: blocklists are named **Pause sets**; a set missing on a
   device is empty, a running part never releases an item early, manual
@@ -2294,6 +2294,7 @@ to scope, feasibility, or delivery.
   resolves current state, the Mac helper keeps the last request, and a 1.2
   replica stops on an unknown kind; the rules retire the group and plan a
   composed Mac request.
-- Proposed: ADR 0006 kinds 12-19 with the all-zero first set as the
-  duplicate-free migration identity and local per-part retention;
+- `user-confirmed`: the ADR 0006 amendment is accepted after its security
+  review: kinds 12-19 with the all-zero first set as the duplicate-free
+  migration identity and local per-part retention bounded by host limits;
   `PRIVACY.md` edits ship with the release.

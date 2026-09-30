@@ -1,7 +1,7 @@
 # Release 1.3: pause sets
 
 - **Status:** Accepted product scope; implementation pending
-- **Accepted:** 2026-09-28; renamed 2026-09-29 (`SCHEDULE-003`)
+- **Accepted:** 2026-09-28; renamed 2026-09-29 and completed 2026-09-30 (`SCHEDULE-003`)
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`, release 1.3 planning and `SCHEDULE-003`
 - **Owners:** `SCHEDULE-003` completes the decisions; `SCHEDULE-004` delivers
@@ -37,15 +37,15 @@ replaces the working name "blocklist" in product, design, and roadmap text.
   configured separately for each set. A shared set does not make an iPhone
   application selection portable to a Mac or another iPhone.
 
-## Remaining decisions
+## Completed decisions
 
-The questions this scope left open are proposed in the
+The questions this scope left open are decided in the
 [pause set rules](pause-sets-decisions.md): live edits and deletion, overlap
 with a manual session, the synchronized default, limits and readiness,
 migration identity, synchronization, and older-app compatibility. The
-product choices there are `user-confirmed`; the proposed
+product choices there are `user-confirmed`; the accepted
 [ADR 0006 amendment](../decisions/0006-apple-mvp-encrypted-operation-and-convergence.md#schedule-003-pause-set-operations-amendment)
-awaiting the maintainer's acceptance defines the operations, and
+(2026-09-30) defines the operations, and
 [`DESIGN.md`](../../DESIGN.md#release-13-pause-sets) the screens.
 
 The current [1.2 schedule rules](schedules-decisions.md) remain the shipped

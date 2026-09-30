@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-003`
 
 - **Brief:** [Decide pause sets for manual sessions and schedules](../specifications/schedule-003-pause-sets.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude
 - **Reviewer:** independent agent (security review of the amendment and
@@ -91,11 +91,16 @@
 
 ## Blockers and accepted risks
 
-- The maintainer accepts or rejects the ADR 0006 amendment (`AC-02`).
+- The maintainer accepted the ADR 0006 amendment on 2026-09-30
+  (`user-confirmed`, `AC-02`); threat model `A-01` and `A-03` now name pause
+  sets.
 - Accepted for 1.3 (`user-confirmed` 2026-09-29): a linked device still on
   1.2 stops receiving once another device migrates, until it updates.
 
 ## Final
 
-- **Status:** `active`
-- **Outcome:** pending review and acceptance.
+- **Status:** `done`
+- **Outcome:** met. `AC-01` the name and decisions are stated across the
+  scope, rules, `DESIGN.md`, and roadmap; `AC-02` the amendment passed the
+  security review and is accepted; `AC-03` the `SCHEDULE-004` plan names
+  its migration, Tart and test-iPhone verification, and maintainer gates.

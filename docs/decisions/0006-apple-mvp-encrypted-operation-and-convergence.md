@@ -9,9 +9,9 @@
 
 ## SCHEDULE-003 pause set operations amendment
 
-Proposed: 2026-09-30 (`SCHEDULE-003`); the independent security review
-passed after fixes on 2026-09-30. It needs the maintainer's acceptance
-before `SCHEDULE-004` starts. The
+Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-30
+(proposed 2026-09-30, `SCHEDULE-003`; security review passed after fixes on
+2026-09-30). `SCHEDULE-004` implements it. The
 product rules are in [pause set rules](../product/pause-sets-decisions.md).
 
 - **Supersedes.**
@@ -145,8 +145,8 @@ product rules are in [pause set rules](../product/pause-sets-decisions.md).
   and its host-limit rule prevents an overflow from clearing enforcement.
   An unknown, refused, or removed set starts nothing new; it cannot widen a
   restriction to items the person did not put in the named set.
-- **On acceptance.** Threat model asset `A-01` adds set names and set
-  identifiers, which stay out of diagnostics.
+- **Threat model.** Asset `A-01` includes set names, identifiers, and the
+  default, which stay out of diagnostics; `A-03` mappings are per set.
 
 ## SCHEDULE-001 schedule operations amendment
 
