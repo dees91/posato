@@ -1,6 +1,7 @@
 package app.posato.feature.targets.data
 
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import app.posato.core.database.createDesktopDatabaseDriver
 import java.nio.file.Files
 import java.nio.file.Path
@@ -19,6 +20,10 @@ private class JvmLocalPolicyTestDatabase(
 
     override fun openDriver(): SqlDriver {
         return createDesktopDatabaseDriver(path.toString())
+    }
+
+    override fun openDriverAt(version: Long): SqlDriver {
+        return JdbcSqliteDriver(url = "jdbc:sqlite:$path", schema = PosatoSchemaHistory(version))
     }
 
     override fun writeInvalidDatabase() {

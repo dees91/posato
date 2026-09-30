@@ -50,23 +50,8 @@ class SqlSyncLocalPolicyMigrationTest {
         testDatabase: LocalPolicyTestDatabase,
         vararg seeds: String,
     ) {
-        val driver = testDatabase.openDriver()
+        val driver = testDatabase.openDriverAt(PREVIOUS_VERSION.toLong())
         seeds.forEach { seed -> driver.executeSql(seed) }
-        driver.executeSql("DROP TABLE sync_policy_intent")
-        driver.executeSql("DROP TABLE sync_policy_base")
-        driver.executeSql("DROP TABLE sync_policy_base_domain")
-        driver.executeSql("DROP TABLE sync_policy_base_application")
-        driver.executeSql("DROP TABLE sync_removed_workspace")
-        driver.executeSql("DROP TABLE sync_session_intent")
-        driver.executeSql("DROP TABLE local_update_maintenance")
-        driver.executeSql("DROP TABLE local_schedule")
-        driver.executeSql("DROP TABLE local_schedule_fact")
-        driver.executeSql("DROP TABLE local_schedule_expiry")
-        driver.executeSql("DROP TABLE local_schedule_pin")
-        driver.executeSql("DROP TABLE sync_schedule_intent")
-        driver.executeSql("DROP TABLE sync_schedule_seed")
-        driver.executeSql("ALTER TABLE local_session DROP COLUMN origin")
-        driver.executeSql("PRAGMA user_version = $PREVIOUS_VERSION")
         driver.close()
     }
 

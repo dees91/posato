@@ -7,6 +7,9 @@ internal expect fun createLocalPolicyTestDatabase(name: String): LocalPolicyTest
 internal interface LocalPolicyTestDatabase {
     fun openDriver(): SqlDriver
 
+    /** Creates the database as [PosatoSchemaHistory] builds it at [version]; a later [openDriver] migrates it to today. */
+    fun openDriverAt(version: Long): SqlDriver
+
     fun writeInvalidDatabase()
 
     fun invalidDatabaseMarkerIsPresent(): Boolean

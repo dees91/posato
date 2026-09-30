@@ -304,7 +304,7 @@ class SqlLocalSessionStoreTest {
     @Test
     fun `given a version five database when reopened then migration preserves rows and falls back without a frozen set`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("session-frozen-migration.db")
-        var driver = testDatabase.openDriver()
+        var driver = testDatabase.openDriverAt(5)
         try {
             val sessionHex = testIdentifier(91).copyBytes().toHexString()
             val workspaceHex = testIdentifier(92).copyBytes().toHexString()
@@ -313,32 +313,14 @@ class SqlLocalSessionStoreTest {
             driver.executeSql("UPDATE local_policy_metadata SET revision = 7 WHERE singleton = 1")
             driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
             driver.executeSql(
-                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin)" +
-                    " VALUES (1, X'$sessionHex', $NOW, ${NOW + MINIMUM}, 0, 'local')",
+                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early)" +
+                    " VALUES (1, X'$sessionHex', $NOW, ${NOW + MINIMUM}, 0)",
             )
             driver.executeSql(
                 "INSERT INTO sync_replica_state(singleton, workspace_id, transport_epoch_id, key_epoch_id," +
                     " revision, hlc_physical, hlc_logical, hlc_exhausted, transport_progress)" +
                     " VALUES (1, X'$workspaceHex', X'$transportHex', X'$keyHex', 0, 0, 0, 0, NULL)",
             )
-            driver.executeSql("ALTER TABLE local_session DROP COLUMN frozen_domains")
-            driver.executeSql("ALTER TABLE local_session DROP COLUMN frozen_application_count")
-            driver.executeSql("ALTER TABLE local_session DROP COLUMN origin")
-            driver.executeSql("DROP TABLE local_setup_state")
-            driver.executeSql("DROP TABLE sync_policy_intent")
-            driver.executeSql("DROP TABLE sync_policy_base")
-            driver.executeSql("DROP TABLE sync_policy_base_domain")
-            driver.executeSql("DROP TABLE sync_policy_base_application")
-            driver.executeSql("DROP TABLE sync_removed_workspace")
-            driver.executeSql("DROP TABLE sync_session_intent")
-            driver.executeSql("DROP TABLE local_update_maintenance")
-            driver.executeSql("DROP TABLE local_schedule")
-            driver.executeSql("DROP TABLE local_schedule_fact")
-            driver.executeSql("DROP TABLE local_schedule_expiry")
-            driver.executeSql("DROP TABLE local_schedule_pin")
-            driver.executeSql("DROP TABLE sync_schedule_intent")
-            driver.executeSql("DROP TABLE sync_schedule_seed")
-            driver.executeSql("PRAGMA user_version = 5")
             driver.close()
 
             driver = testDatabase.openDriver()

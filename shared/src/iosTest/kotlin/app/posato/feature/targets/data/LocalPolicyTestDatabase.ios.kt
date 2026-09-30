@@ -1,6 +1,7 @@
 package app.posato.feature.targets.data
 
 import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.native.NativeSqliteDriver
 import app.posato.core.database.createIosDatabaseDriver
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
@@ -33,6 +34,17 @@ private class IosLocalPolicyTestDatabase(
         return createIosDatabaseDriver(
             databaseName = name,
             directory = directory,
+        )
+    }
+
+    override fun openDriverAt(version: Long): SqlDriver {
+        ensureDirectory()
+        return NativeSqliteDriver(
+            schema = PosatoSchemaHistory(version),
+            name = name,
+            onConfiguration = { configuration ->
+                configuration.copy(extendedConfig = configuration.extendedConfig.copy(basePath = directory))
+            },
         )
     }
 
