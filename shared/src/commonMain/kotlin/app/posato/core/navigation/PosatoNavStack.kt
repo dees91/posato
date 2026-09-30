@@ -3,6 +3,10 @@ package app.posato.core.navigation
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
@@ -17,7 +21,8 @@ import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
 /**
  * One destination's screen stack on Navigation 3. The stack is derived from the screen's own state, and
  * [onBack] is the top screen's explicit Back action, so the system back gesture, the Mac back command,
- * and the visible Back button share one path. While [backEnabled] is false the stack's back dispatcher
+ * and the visible Back button share one path. Each screen is opaque, so a sliding screen never shows another
+ * through it. While [backEnabled] is false the stack's back dispatcher
  * is off, so no back reaches it and the stack stays as it is.
  */
 @Composable
@@ -30,7 +35,12 @@ internal fun <T : Any> PosatoNavStack(
     content: @Composable (T) -> Unit,
 ) {
     val clipped = modifier.clipToBounds()
-    val entryProvider = { key: T -> NavEntry(key) { content(key) } }
+    val surface = MaterialTheme.colorScheme.surface
+    val entryProvider = { key: T ->
+        NavEntry(key) {
+            Box(Modifier.fillMaxSize().background(surface), contentAlignment = contentAlignment) { content(key) }
+        }
+    }
     val dispatcher = rememberNavigationEventDispatcherOwner(enabled = backEnabled)
     CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides dispatcher) {
         PosatoNavDisplay(backStack, onBack, contentAlignment, entryProvider, clipped)
