@@ -39,8 +39,9 @@ internal fun RecognizedLine.resembles(
 ): Boolean = editDistance(this.text.trim(), text) <= slack
 
 /**
- * The endpoints of a drag between two labels in one window: the target read as [to], then the [from] label on the
- * target's row nearest to it. A window title or a desktop icon can repeat the source's name above the window, so the
+ * The endpoints of a drag between two labels in one window: the target read as [to], then the [from] label on
+ * the target's row nearest to it, read exactly or with a few recognition errors. A window title or a desktop
+ * icon can repeat the source's name above the window, so the
  * topmost match is not necessarily the icon beside the target.
  */
 internal fun dragEndpoints(
@@ -51,7 +52,7 @@ internal fun dragEndpoints(
     val target = lines.filter { it.matches(to, exact = true) }.minByOrNull { it.y }
         ?: lines.filter { it.resembles(to) }.minByOrNull { it.y }
         ?: return null
-    val source = lines.filter { it !== target && it.matches(from, exact = true) }
+    val source = lines.filter { it !== target && (it.matches(from, exact = true) || it.resembles(from)) }
         .minWithOrNull(compareBy<RecognizedLine>({ kotlin.math.abs(it.centerY - target.centerY) }, { kotlin.math.abs(it.centerX - target.centerX) }))
         ?: return null
     return source to target
