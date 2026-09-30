@@ -5,9 +5,9 @@
   migration on linked devices, and older-client compatibility (ADR 0006).
 - **Dependencies:** `SCHEDULE-005` (merged in #108); release 1.3, wave 2.
   `SCHEDULE-004` delivers what this row decides.
-- **Integration group:** PR-BLOCKLIST-DECISION
+- **Integration group:** PR-PAUSE-SET-DECISION
 - **Authority:** [Release roadmap](../release-roadmap.md) revision 13, row
-  `SCHEDULE-003`; [accepted product scope](../../product/blocklists.md);
+  `SCHEDULE-003`; [accepted product scope](../../product/pause-sets.md);
   maintainer named the row on 2026-09-29.
 
 ## Outcome

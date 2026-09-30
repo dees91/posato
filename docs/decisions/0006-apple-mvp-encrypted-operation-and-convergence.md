@@ -7,6 +7,147 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## SCHEDULE-003 pause set operations amendment
+
+Proposed: 2026-09-30 (`SCHEDULE-003`); the independent security review
+passed after fixes on 2026-09-30. It needs the maintainer's acceptance
+before `SCHEDULE-004` starts. The
+product rules are in [pause set rules](../product/pause-sets-decisions.md).
+
+- **Supersedes.**
+  - "kinds 1-11 are mandatory" and "unknown kinds 12-127" now read: kinds
+    1-19 are mandatory, and unknown kinds 20-127 are rejected.
+  - "The all-zero singleton application-policy identifier is the only
+    exception" now reads: the all-zero value is also the identifier of the
+    **first set**, and neither use is interpreted as a UUID.
+  - "Policy resolution during a session remains current-state based" now
+    reads: a session or schedule occurrence resolves the current state of
+    its set, plus the local retention below. No operation embeds a snapshot.
+  - The Bounds row "at most 2,048 present domains" now counts unique domains
+    across live sets.
+  - "A later removal does not retroactively apply an earlier capacity
+    outcome" keeps its meaning for `domain-absent`. A `set-remove` removes
+    its set's domain operations from the reduction whatever the order, so a
+    domain refused earlier in another set can become present.
+  - "Replicas with that projection, the same evaluation instant `t`, and the
+    same local terminal-expiry facts" now also requires the same local
+    retention records.
+- **Set identifiers.** A set identifier is a UUIDv4 or the all-zero first
+  set. Kinds 2, 3, 6, and 8 refer to the first set. Every set identifier in
+  kinds 12-18 is validated as one of the two.
+- **New mandatory kinds in format 1.** The payloads are canonical as below:
+  - `12` `set-put`: 16-byte set identifier; `u16` name length and a 1-80
+    byte name without control characters, normalized to NFC by the writer.
+    Decoders validate UTF-8 and control characters, not NFC.
+  - `13` `set-remove`: 16-byte set identifier.
+  - `14` `set-domain-present`: 16-byte set identifier, then the kind 2
+    domain payload.
+  - `15` `set-domain-absent`: 16-byte set identifier, then the kind 3
+    domain payload.
+  - `16` `set-default`: 16-byte set identifier.
+  - `17` `schedule-set-put`: the complete kind 8 payload, then a 16-byte set
+    identifier.
+  - `18` `session-set-start`: the complete kind 6 payload, then a 16-byte
+    set identifier.
+  - `19` `pause-sets-enabled`: empty payload.
+
+  Writers from release 1.3 author kinds 14, 15, 17, and 18, including for
+  the first set, and no longer author kinds 2, 3, 4, 6, and 8. Kinds 4 and
+  5 stay valid and reduce as before, but no product state reads the
+  application-policy singleton from 1.3 on.
+- **Reduction.**
+  - **Liveness first.** Set liveness is computed from the complete
+    applicable operation set before any domain is reduced. The first set is
+    live unless removed and holds one of the 10 slots from the start. A
+    UUIDv4 set is live when the set holds a `set-put` for it, no
+    `set-remove`, and it is not refused at the cap. Any `set-remove`
+    permanently removes its identifier, whatever the order, like
+    `schedule-remove`. The greatest total-order `set-put` names a set; the
+    first set without a put has no synchronized name.
+  - **Set cap.** At most 10 live sets. Puts are processed in total order; a
+    put for a new identifier at the cap gets a derived `set-capacity`
+    outcome without state change or eviction, recomputed from scratch like
+    the schedule cap.
+  - **Domains.** Domain operations are keyed by `(set, domain)`; kinds 2
+    and 3 use the first set. They are reduced from scratch in total order
+    with the existing domain rules, counting only live sets. Operations for
+    a set that is not live are left out of the projection and the cap. The
+    2,048-domain cap counts unique domains across live sets: a present that
+    would add a domain held by no live set at the cap gets
+    `domain-capacity`.
+  - **Default.** The greatest total-order `set-default` names the default.
+    When that set is not live, or no `set-default` exists, the default is
+    the first set if live, otherwise the live set whose earliest `set-put`
+    is first in total order. With no live set there is no default.
+  - **Schedules.** Kinds 8 and 17 are puts in the same register per
+    schedule identifier, with the existing removal, cap, and fact rules;
+    kind 8 names the first set.
+  - **Sessions.** Kinds 6 and 18 are starts grouped by session identifier
+    with the existing conflict, end, and expiry rules; kind 6 names the
+    first set. Two distinct starts of either kind conflict.
+  - **References.** A schedule or session that names a set which is not
+    live resolves to no domains and no local applications. The projection
+    exposes whether the set is removed, refused at the cap, or unknown.
+  - **Kind 19** projects only its presence. Duplicates are harmless; a
+    replica authors it at most once per local database.
+- **Local retention.** Each replica records, per running part (a session
+  identifier or an occurrence key), every domain and local application
+  mapping it hands to an enforcement host for that part. An item is
+  recorded no later than the request that includes it; recording an item
+  that is then not applied is harmless. A host that applies items while
+  the app is closed (the iPhone monitor extension) records them itself.
+  - A part's restriction is its set's current resolution plus that record,
+    so a removal, a set change, or a remote `set-remove` never releases an
+    enforced item before the part ends.
+  - The current and retained items of all running parts together must fit
+    the host's limits (on the Mac the helper's 1,024 domains, and each
+    device's application limit). A change that would exceed them, an edit
+    or a new part, applies none of its new items, which are shown as not
+    paused yet; the configuration already applied stays in place and is
+    never cleared because of it.
+  - Retention only adds items while the part is active and never extends
+    it. The record is deleted when the part stops being active for any
+    reason under the existing rules, including deletion, refusal, or a
+    conflicting start of its schedule or session, an edit that stops the
+    occurrence, and workspace removal.
+  - Parts running at migration get a record of what they enforce at that
+    moment.
+  - The record is local like the terminal markers, never synchronized or
+    diagnosed.
+- **Application choices** stay device-local per set; no operation carries
+  them, their count, or their presence.
+- **Migration identity.** No migration operation copies data. Existing
+  history reduces into the first set, existing schedules and sessions name
+  it, and each replica assigns its local application mappings to it. Two
+  replicas that migrate concurrently therefore cannot duplicate it. In a
+  linked workspace each replica authors one `pause-sets-enabled` when it
+  migrates or first links. It never authors `set-put` or `set-default`
+  during migration, so a late migration cannot overwrite a name or default
+  chosen elsewhere. At first link it authors no name for the first set and
+  no `set-default`; it authors `set-put` only for its other sets. `user-confirmed` known limit (2026-09-30): a replica
+  that migrates or links after the first set was removed loses the first
+  set's local websites and application choices.
+- **Compatibility.** `observed` (release 1.2, `AppleSync.exchangeLegsOrHalt`
+  and `AppleMailboxExchange.acceptPage`): an unknown mandatory kind is
+  rejected as `invalid-operation` and stops receiving, but a pass still
+  publishes local changes before it fetches. Release 1.3 accepts that a
+  device still on 1.2 stops receiving once any replica in the workspace
+  migrates, until it updates. Its later website edits and session starts
+  still arrive and apply to the first set, and are dropped once the first
+  set is removed. A 1.2 installation that opens a 1.3 database holding kinds
+  12-19 fails closed at snapshot validation; `SCHEDULE-004` decides the
+  local-only downgrade, whose database holds none. The optional range is
+  not used, because these kinds change restrictions.
+- **Security notes.** Workspace-key holders can already author any
+  operation (`R-01`); these kinds add no capability beyond domain removal
+  and session end, which exist today. Retention bounds what a remote
+  removal, set change, or set deletion can release during a running part,
+  and its host-limit rule prevents an overflow from clearing enforcement.
+  An unknown, refused, or removed set starts nothing new; it cannot widen a
+  restriction to items the person did not put in the named set.
+- **On acceptance.** Threat model asset `A-01` adds set names and set
+  identifiers, which stay out of diagnostics.
+
 ## SCHEDULE-001 schedule operations amendment
 
 Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-27 (proposed 2026-09-26, `SCHEDULE-001`, delegated night mandate; security

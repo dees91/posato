@@ -49,9 +49,10 @@ provenance rather than a parallel public brand.
 
 ## Product and architecture
 
-- [../product/blocklists.md](../product/blocklists.md) records the accepted
-  release 1.3 blocklist scope for manual sessions and schedules, with the
-  remaining behavior and compatibility decisions owned by `SCHEDULE-003`.
+- [../product/pause-sets.md](../product/pause-sets.md) records the accepted
+  release 1.3 pause set scope for manual sessions and schedules, and
+  [../product/pause-sets-decisions.md](../product/pause-sets-decisions.md)
+  the `SCHEDULE-003` rules, operations, and `SCHEDULE-004` plan.
 
 - [../product/schedules-and-mac-setup.md](../product/schedules-and-mac-setup.md)
   records the accepted release 1.2 schedules and Mac setup scope, with the

@@ -770,6 +770,66 @@ windows through wrapping and scrolling under the existing reflow contract.
 `SCHEDULE-001` settles time-zone presentation, overlaps and manual-session
 conflicts before the editor and active-session details are implemented.
 
+### Release 1.3 pause sets
+
+Proposed by `SCHEDULE-003` (2026-09-30) for `SCHEDULE-004`; the
+[pause set rules](docs/product/pause-sets-decisions.md) own the behavior.
+On delivery this section supersedes the **Paused items** destination name
+and the single-selection wording in Session, Paused items, onboarding, and
+the **Sync with iCloud** sentence above. Planned Polish term: "zestaw".
+
+- **Destination.** `user-confirmed` (2026-09-30): **Pause sets** replaces
+  **Paused items** in the bottom navigation and the sidebar. Its root is a
+  list, even with one set: each row shows the name, a **Default** badge,
+  the website count and "Apps on this Mac: 3" (or iPhone, iPad; "none
+  chosen"), and the schedules that use it. **New set** is the primary
+  action; at 10 sets it is disabled with "You can have up to 10 pause
+  sets."
+- **Set screen.** Opening a set pushes today's Websites / Apps screen onto
+  the destination's stack, titled with the set's name, with **Back to pause
+  sets**. Website entry, search, editing, limits, and the app picker keep
+  their current rules; the app caption says the choice is for this set on
+  this device. The row menu and the set screen's ellipsis offer **Rename**,
+  **Make default**, and **Delete**.
+- **New set and Rename** use one name field with **Save** and **Cancel**;
+  empty names and more than 80 bytes are refused inline. A new set opens on
+  its Websites tab. The first set shows as "My set" until renamed.
+- **Delete.** A destructive confirmation names the set. When schedules use
+  it, the dialog lists them and offers **Change their set**, a set choice,
+  then deletes; while a running pause uses it, Delete is disabled with "You
+  can delete this set after the pause ends." The default set offers no
+  Delete; its caption says "Make another set the default to delete this
+  one."
+- **Choosing a set.** A **Pause set** row opens a list of sets with their
+  counts; the default is preselected and marked.
+  - Session setup shows it above the duration presets. Review names "Set:
+    Work" with the set's websites and this device's apps.
+  - The schedule editor shows it below the name. Schedule rows add "Set:
+    Work".
+- **Readiness.** With websites but no apps chosen here, Review and the
+  schedule row say "Apps aren't chosen for this set on this Mac. The pause
+  includes its websites." with **Choose apps**, and Start stays available.
+  With neither, Start is replaced by **Add websites or apps**, which opens
+  the set, and a schedule shows "Nothing to pause on this Mac". A missing
+  set shows "This schedule's set was deleted. Choose a set.", "This set is
+  over the limit of 10. Delete a set to use it.", or "Waiting for this set
+  from your other devices." An addition beyond this device's limits during
+  a pause says it is not paused yet; nothing already paused is released.
+- **Running pause.** The active summary names each part: "Set: Work, until
+  17:00" and "Evening (schedule), Set: Leisure, until 22:00". **End early**
+  keeps one meaning and ends every part. Copy near edits of a set in use
+  says "Added items pause now. Removed items stay paused until the pause
+  using this set ends."
+- **Sync.** The linking sentence, in Session and in onboarding, becomes
+  "Linking combines the pause sets and websites saved on your devices and
+  shares an active session. App choices stay on each device." The first Pause sets screen on a linked
+  workspace says once: "Update Posato on your other devices to keep them in
+  sync."
+
+Rows, menus, dialogs, and the set choice reuse the existing item, menu,
+selection, and notice components. Names and counts wrap under large text;
+badges and counts have accessible labels.
+
 ### Session
 
 - Inactive: NO SESSION ACTIVE, Room for what matters., one primary start action.
