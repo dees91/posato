@@ -137,7 +137,10 @@ received yet.
   upgrades from 1.2, after the first set was deleted on another device
   loses its old websites and app choices from that set. No extra rule
   covers this. It is recorded only in internal documents, not in the
-  README, on `posato.app`, or on the limits page.
+  README, on `posato.app`, or on the limits page. Likewise
+  (`user-confirmed` 2026-09-30), a device that creates a new workspace
+  does not publish its first set's name or its default at first link, so
+  they return to "My set" and the first set.
 
 ### Synchronized operations (ADR 0006 amendment)
 
