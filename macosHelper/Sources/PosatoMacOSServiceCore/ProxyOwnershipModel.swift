@@ -150,6 +150,10 @@ public protocol OwnershipPersistence: Sendable {
 public protocol ProxyConfigurationAccess: Sendable {
   func currentPrimaryServiceIdentifier() throws -> String
   func snapshot(serviceIdentifier: String) throws -> ProxySnapshot
+  /// True only when the service is confirmed gone: no service entry or set link in the
+  /// preferences, read under their exclusive lock, and no proxy entity left for it in the dynamic
+  /// store. A service that exists but cannot be read is never absent.
+  func serviceIsConfirmedAbsent(serviceIdentifier: String) throws -> Bool
   func replaceTuples(
     expected: ProxySnapshot,
     http: ProxyTuple,
