@@ -231,3 +231,63 @@ a brief amendment.
   had already turned on. The line needs no `posato-provisioning`
   registration: it runs only notarized candidates and has no Apple Account.
 
+- **Steps 1-7 (2026-09-30):** ADR 0003, ADR 0008, and threat-model
+  amendments; `posatoMacOsArchitecture` with a macOS 13.0 minimum for both
+  builds; the x86-64 Temurin 21.0.12.1 pinned by SHA-256 in `buildSrc`
+  `PosatoTemurin` (not beside Sparkle's pin in the build script); thinned
+  Sparkle, exact-architecture and deployment-target package checks; the
+  Rosetta refusal in a separate `MacTranslationNative` object (detekt's
+  function limit on `MacPresenceNative`); per-architecture feeds with
+  failing contract cases first (the appcast contract now also runs at
+  configuration); `checkIntelNativeLeaves` and `swiftBuildIntel` in
+  `quality`. `./gradlew quality` passed. Departures: no
+  `build -t desktop --arch` in `posato-control`, because every Intel run
+  uses notarized candidates; native leaves go to the neutral `macos/`
+  resource directory through a `Sync` that no longer keeps stale
+  per-architecture directories.
+- **Daemon submission on macOS 13 (`observed`, fixed):** from a clean
+  state, approving the helper in Login Items left launchd without the daemon
+  (`smd`: "Update operation returned error: 3"), so setup ended in
+  "Blocking could not be turned on" until a restart (run
+  `20260930-174117-c18f`). A resubmission on `enable` alone did not help,
+  because the application reads `status` after approval. The helper now
+  registers the enabled service once more per process when a `status` or
+  `enable` read finds the daemon unreachable; `smd` then submits it.
+  Setup passed from a clean state without a restart twice (runs
+  `20260930-181850-77fe`, `20260930-192946-af15`).
+- **Driver:** `allow-notifications` answers every Posato banner (Ventura
+  showed the helper's and the application's, and allowing only the first
+  left Posato's notices off); the drag in `vm install` accepts a misread
+  icon label (`Posato (` at 1x), with a failing regression test first.
+  Open driver gaps: `vm prompt toggle` always waits for a password, which
+  macOS 13 does not ask for Accessibility or notifications;
+  `automation-allow` does not match Ventura's line breaks; `menu --choose`
+  finds the status items only while the menu is open on macOS 13.
+- **`AC-02` (`ventura`, x86-64 candidates 9001 and 9002 under Rosetta):**
+  installation with Gatekeeper accepted, setup without a restart, the picker
+  (Safari), a pause without a password blocking `example.com` with the pause
+  page and ending Safari, early end from the menu bar, a schedule that started
+  after a restart with Posato opened at login (`UIElement`), the start notice
+  "Scheduled pause started" (second schedule, after the notification fix),
+  early end from the menu bar, helper removal with proxy settings restored,
+  and the in-app update 9001 → 9002 from the loopback Intel feed with
+  websites and the helper kept and blocking afterwards. Sync (`C1`): the
+  x86-64 9001 under Rosetta on `legacy` (macOS 15.6.1) and the arm64 9001 on
+  `peer` exchanged a website each way through Production CloudKit; both
+  workspaces removed.
+- **`AC-03`:** the arm64 candidate 9001 passed its package checks and, on
+  `primary`, setup, the picker, a pause, early end from the menu bar, a
+  schedule after a restart with login launch and the start notice, and helper
+  removal. The x86-64 release build 9003 (stable Intel feed, no switch) showed
+  "This version is for Intel Macs" under Rosetta on `ventura`; Quit left no
+  process, daemon, or data; Download quit too (the opened page was not read).
+- **`AC-04`:** the availability page lists Intel on macOS 13 with its
+  evidence and limits, arm64 from macOS 13 under the exception, and the last
+  macOS 13 security update (13.7.8, 20 August 2025, `observed` on Apple's
+  security releases page).
+- **Observations outside this row:** a menu **End session early…** while the
+  window was already open showed the window without the confirmation; Apple's
+  current major macOS is 27, so the previous-version line is now 26.
+- Evidence under ignored `build/verification/runs/` and
+  `build/verification/macos-015/candidates/`. Tested head `e0b0ed8` plus the
+  documentation in this commit.

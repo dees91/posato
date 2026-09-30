@@ -82,8 +82,16 @@ Posato adds deliberate friction; it is not a lock you cannot open.
 
 ## Supported platforms
 
-- macOS 15 or later on Apple silicon.
+- Posato 1.2 for Mac: macOS 15 or later on Apple silicon.
+- From Posato 1.3 for Mac: macOS 13 or later on Apple silicon, and macOS 13
+  or later on Intel Macs through a separate Intel download. The Intel build
+  refuses to open on Apple silicon and points to the Apple silicon download.
 - iOS 18 or later.
+
+Apple's last security update for macOS 13 Ventura was 13.7.8, released on
+20 August 2025. Posato keeps supporting Intel Macs on macOS 13 while its
+build tools still produce and run that version, which is checked for every
+release; ending that support is announced one release ahead.
 
 Posato targets the current and previous major versions of macOS and iOS.
 The [1.2 release record](../tasks/executions/release-004-release-1-2.md) and the
@@ -94,10 +102,17 @@ cover both lines:
 | --- | --- |
 | macOS 15 | The notarized Posato 1.2.0 on macOS 15.6.1 (the newest macOS 15 restore image) in a virtual machine on Apple silicon: installation from the disk image, the one-time setup, a pause without a password, a schedule that started after the Mac restarted and Posato opened at login, the start notice, and early end from the menu bar |
 | macOS 26 | The notarized Posato 1.2.0 in virtual machines on macOS 26.6: the same flow on two Macs linked through iCloud, with a schedule synced to the other Mac and started on both, early end reaching the other Mac, and the notice that a pause started on another Mac; Posato 1.1.0 replaced by 1.2.0 with its websites and iCloud workspace kept, the one-time setup offer, and a device still on 1.1 pausing its sync until it updated |
+| macOS 13 (Intel build) | Candidates of Posato 1.3 for Intel Macs, run under Rosetta in a macOS 13.6 virtual machine on Apple silicon, not on an Intel Mac: installation from the disk image, the one-time setup without a restart, a pause without a password, the pause page and the application picker, a schedule that started after the Mac restarted and Posato opened at login, the start notice, early end from the menu bar, removal of the background helper, and an in-app update between two Intel candidates. Sync with another Mac was checked for the same Intel build under Rosetta on macOS 15.6.1, because a macOS 13 virtual machine cannot sign in to an Apple Account |
+| macOS 13 and 14 (Apple silicon) | Not checked separately; supported by the maintainer's decision on the strength of the macOS 13 build target and the checks on macOS 15 and 26 |
 | iOS 18 | Posato 1.1.0 from TestFlight, checked by hand on an iPhone with iOS 18: websites and apps, blocking, and early end. Posato 1.2 was not checked on iOS 18 |
 | iOS 26 | Posato 1.2 on a test iPhone with iOS 26.5: the core flow, blocking, and unblocking, and a schedule that started and ended while Posato was closed; with a Mac, a schedule made on the Mac starting on the iPhone, early end reaching the Mac, and the pause notices ([unattended verification](../tasks/executions/quality-010-unattended-verification.md)) |
 
 Later macOS 15 updates were not checked separately.
+
+Not verified for the Intel build: behavior that differs between Rosetta and
+a real Intel processor, including the check that recognizes a native Intel
+Mac; sync on macOS 13; and whether **Download** in the Apple silicon notice
+opens the download page.
 
 The core flow was [verified end to end on one Mac and one iPhone](../tasks/executions/mvp-001-end-to-end-acceptance.md),
 including blocking, early end from either device, expiry, relaunch, and a
@@ -107,11 +122,11 @@ device that was offline during a session.
 
 | Platform | Status |
 | --- | --- |
-| Intel Macs (x86-64) | Planned for a later release |
 | Android | Planned for a later release |
 | Linux desktop | Planned for a later release |
 | Windows desktop | Planned for a later release |
 
-No dates are committed. The current release covers only the two platforms
-above; the [MVP scope](mvp-scope.md#platform-order-and-support-baseline)
+No dates are committed. Intel Macs on macOS 13 or later are supported from
+Posato 1.3 (see Supported platforms). The current release covers only the
+platforms above; the [MVP scope](mvp-scope.md#platform-order-and-support-baseline)
 records that these platforms follow later and do not gate it.
