@@ -283,7 +283,7 @@ class LocalExactDomainPolicyStoreContractTest {
         val database = PosatoDatabase(driver)
         database.transaction {
             repeat(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT + 1) { index ->
-                database.localExactDomainPolicyQueries.insertDomain("a$index.example")
+                database.localExactDomainPolicyQueries.insertSetDomain(ByteArray(16), "a$index.example")
             }
         }
 

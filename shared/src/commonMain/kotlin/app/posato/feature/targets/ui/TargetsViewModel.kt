@@ -2,6 +2,7 @@ package app.posato.feature.targets.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyStore
@@ -161,7 +162,13 @@ internal class TargetsViewModel(
             domainEditorState.update { it.copy(batchReceipt = WebsiteBatchReceipt(submissionId, saved = false)) }
             return
         }
-        when (val submission = createWebsiteBatchSubmission(input, state.domains)) {
+        when (
+            val submission = createWebsiteBatchSubmission(
+                input,
+                state.domains,
+                policyState.value.snapshot?.domainsOutside(PauseSetId.FIRST).orEmpty(),
+            )
+        ) {
             WebsiteBatchSubmission.TooLong -> {
                 domainEditorState.update { it.copy(batchReceipt = WebsiteBatchReceipt(submissionId, saved = false, tooLong = true)) }
             }

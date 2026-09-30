@@ -28,12 +28,14 @@ internal fun websiteBatchEntries(input: String): List<String> {
 
 internal fun createWebsiteBatchSubmission(
     input: String,
-    existingDomains: List<String>
+    existingDomains: List<String>,
+    otherSetsDomains: Set<String> = emptySet(),
 ): WebsiteBatchSubmission {
     if (input.length > MAX_WEBSITE_BATCH_LENGTH) {
         return WebsiteBatchSubmission.TooLong
     }
     val domains = existingDomains.toMutableSet()
+    var uniqueCount = (domains + otherSetsDomains).size
     val rejectedIndices = mutableListOf<Int>()
     var duplicateCount = 0
     var addedCount = 0
@@ -48,11 +50,14 @@ internal fun createWebsiteBatchSubmission(
                 duplicateCount++
             }
 
-            domains.size >= ExactDomainPolicyLimits.MAX_DOMAIN_COUNT -> {
+            domain !in otherSetsDomains && uniqueCount >= ExactDomainPolicyLimits.MAX_DOMAIN_COUNT -> {
                 rejectedIndices.add(index)
             }
 
             else -> {
+                if (domain !in otherSetsDomains) {
+                    uniqueCount++
+                }
                 domains.add(domain)
                 addedCount++
             }

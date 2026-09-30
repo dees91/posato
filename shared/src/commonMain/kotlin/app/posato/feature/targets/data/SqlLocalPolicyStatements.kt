@@ -2,9 +2,13 @@ package app.posato.feature.targets.data
 
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.domain.SyncIdentifier
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
 import app.posato.feature.targets.domain.ExactDomainPolicyLimits
+import app.posato.feature.targets.domain.LocalPauseSet
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.SequencedPolicyIntent
@@ -23,15 +27,17 @@ internal suspend fun PosatoDatabase.advanceRevisionOrThrow(expectedRevision: Lon
     }
 }
 
+/** Replaces the first set's websites and the local group name; the other sets must still fit the unique limit. */
 internal suspend fun PosatoDatabase.writePolicyRows(policy: TargetPolicy) {
-    localExactDomainPolicyQueries.deleteDomains()
-    policy.domains.forEach { domain ->
-        localExactDomainPolicyQueries.insertDomain(domain.canonicalValue)
-    }
+    val current = readStateOrThrow().sets
+    val sets = current.withDomains(PauseSetId.FIRST, policy.domains) ?: fail(LocalPolicyFailure.CAPACITY)
+    writeSetRows(sets)
+    writeApplicationPolicyName(policy.applicationPolicyName)
+}
+
+private suspend fun PosatoDatabase.writeApplicationPolicyName(name: ApplicationPolicyName?) {
     localExactDomainPolicyQueries.deleteApplicationPolicy()
-    policy.applicationPolicyName?.let { name ->
-        localExactDomainPolicyQueries.insertApplicationPolicy(name.canonicalValue)
-    }
+    name?.let { value -> localExactDomainPolicyQueries.insertApplicationPolicy(value.canonicalValue) }
 }
 
 internal suspend fun PosatoDatabase.writeBaseRows(base: TargetPolicy) {
@@ -124,39 +130,7 @@ internal suspend fun PosatoDatabase.readStateOrThrow(): LocalTargetPolicyState {
     if (revisions.size != 1 || revisions.single() < 0) {
         fail(LocalPolicyFailure.CORRUPTION)
     }
-    val canonicalDomains = localExactDomainPolicyQueries
-        .selectDomains(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT.toLong() + 1)
-        .awaitAsList()
-    if (canonicalDomains.size > ExactDomainPolicyLimits.MAX_DOMAIN_COUNT) {
-        fail(LocalPolicyFailure.CORRUPTION)
-    }
-    val applicationPolicyNameBytes = localExactDomainPolicyQueries
-        .selectApplicationPolicyNameBytes()
-        .awaitAsList()
-    if (applicationPolicyNameBytes.size > 1) {
-        fail(LocalPolicyFailure.CORRUPTION)
-    }
-    val applicationPolicyName = try {
-        applicationPolicyNameBytes.singleOrNull()?.decodeToString(throwOnInvalidSequence = true)
-    } catch (_: Exception) {
-        fail(LocalPolicyFailure.CORRUPTION)
-    }
-    val policy = when (
-        val validation = TargetPolicy.fromStoredValues(
-            canonicalDomains = canonicalDomains,
-            applicationPolicyName = applicationPolicyName,
-        )
-    ) {
-        is TargetPolicyValidationResult.Success -> {
-            validation.policy
-        }
-
-        is TargetPolicyValidationResult.Failure -> {
-            fail(LocalPolicyFailure.CORRUPTION)
-        }
-    }
-
-    return LocalTargetPolicyState(revisions.single(), policy)
+    return LocalTargetPolicyState(revisions.single(), readSetsOrThrow(), readApplicationPolicyNameOrThrow())
 }
 
 internal fun restoreDomain(canonicalDomain: String?): ExactDomain {

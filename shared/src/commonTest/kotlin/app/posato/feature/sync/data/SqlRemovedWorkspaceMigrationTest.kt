@@ -28,7 +28,7 @@ class SqlRemovedWorkspaceMigrationTest {
             assertEquals(1, database.syncBootstrapQueries.selectBootstrapState().awaitAsList().size)
             assertEquals(
                 listOf("example.com"),
-                database.localExactDomainPolicyQueries.selectDomains(MAXIMUM_ROWS).awaitAsList(),
+                database.localExactDomainPolicyQueries.selectSetDomains(MAXIMUM_ROWS).awaitAsList().map { row -> row.canonical_domain },
             )
             assertEquals(0L, database.syncBootstrapQueries.countRemovedWorkspaces().awaitAsList().single())
             assertTrue(database.syncLocalPolicyQueries.selectIntents().awaitAsList().isEmpty())

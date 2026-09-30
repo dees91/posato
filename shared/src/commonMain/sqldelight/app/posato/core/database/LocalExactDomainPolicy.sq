@@ -42,12 +42,22 @@ SELECT revision
 FROM local_policy_metadata
 WHERE singleton = 1;
 
-selectDomains:
-SELECT canonical_domain
-FROM local_pause_set_domain
-WHERE set_id = zeroblob(16)
-ORDER BY canonical_domain
+selectSets:
+SELECT set_id, name, refused
+FROM local_pause_set
+ORDER BY set_id
 LIMIT :maximum_row_count;
+
+selectSetDomains:
+SELECT set_id, canonical_domain
+FROM local_pause_set_domain
+ORDER BY set_id, canonical_domain
+LIMIT :maximum_row_count;
+
+selectDefault:
+SELECT set_id
+FROM local_pause_set_default
+WHERE singleton = 1;
 
 selectApplicationPolicyNameBytes:
 SELECT CAST(canonical_name AS BLOB) AS canonical_name_bytes
@@ -60,12 +70,30 @@ UPDATE local_policy_metadata
 SET revision = :next_revision
 WHERE singleton = 1 AND revision = :expected_revision;
 
-deleteDomains:
+deleteSetDomains:
+DELETE FROM local_pause_set_domain
+WHERE set_id = :set_id;
+
+deleteAllSetDomains:
 DELETE FROM local_pause_set_domain;
 
-insertDomain:
+insertSetDomain:
 INSERT INTO local_pause_set_domain(set_id, canonical_domain)
-VALUES (zeroblob(16), :canonical_domain);
+VALUES (:set_id, :canonical_domain);
+
+deleteSets:
+DELETE FROM local_pause_set;
+
+insertSet:
+INSERT INTO local_pause_set(set_id, name, refused)
+VALUES (:set_id, :name, :refused);
+
+deleteDefault:
+DELETE FROM local_pause_set_default;
+
+insertDefault:
+INSERT INTO local_pause_set_default(singleton, set_id)
+VALUES (1, :set_id);
 
 deleteApplicationPolicy:
 DELETE FROM application_policy;

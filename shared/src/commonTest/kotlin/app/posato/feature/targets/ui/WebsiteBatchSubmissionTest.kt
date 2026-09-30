@@ -85,6 +85,20 @@ class WebsiteBatchSubmissionTest {
         assertEquals(1, result.addedCount)
         assertEquals(1, result.duplicateCount)
     }
+
+    @Test
+    fun `given the limit reached across sets when a website of another set and a new one are added then only the shared one fits`() {
+        val setDomains = (0 until 24).map { index -> "own$index.example" }
+        val otherSets = (0 until 1_000).mapTo(mutableSetOf()) { index -> "other$index.example" }
+
+        val result = assertIs<WebsiteBatchSubmission.Ready>(
+            createWebsiteBatchSubmission("other5.example, new.example", setDomains, otherSets),
+        )
+
+        assertEquals(1, result.addedCount)
+        assertEquals(listOf(1), result.rejectedIndices)
+        assertEquals((setDomains + "other5.example").sorted(), result.canonicalDomains)
+    }
 }
 
 private fun ready(

@@ -24,7 +24,7 @@ class SqlSyncLocalPolicyMigrationTest {
             val database = PosatoDatabase(driver)
             assertEquals(
                 listOf("example.com"),
-                database.localExactDomainPolicyQueries.selectDomains(MAXIMUM_ROWS).awaitAsList(),
+                database.localExactDomainPolicyQueries.selectSetDomains(MAXIMUM_ROWS).awaitAsList().map { row -> row.canonical_domain },
             )
             assertEquals(
                 listOf("Example group"),

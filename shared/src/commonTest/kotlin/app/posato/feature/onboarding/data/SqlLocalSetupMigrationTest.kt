@@ -37,7 +37,7 @@ class SqlLocalSetupMigrationTest {
             assertEquals(1, setupRowCount(driver))
             assertEquals(
                 listOf("example.com"),
-                database.localExactDomainPolicyQueries.selectDomains(MAXIMUM_ROWS).awaitAsList(),
+                database.localExactDomainPolicyQueries.selectSetDomains(MAXIMUM_ROWS).awaitAsList().map { row -> row.canonical_domain },
             )
         } finally {
             driver.close()
