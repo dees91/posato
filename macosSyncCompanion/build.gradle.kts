@@ -118,6 +118,27 @@ tasks.register<Exec>("swiftTest") {
     )
 }
 
+tasks.register<Exec>("swiftBuildIntel") {
+    group = "verification"
+    description = "Compiles the synchronization companion for x86-64 on the macOS minimum."
+    inputs.files(fileTree("Sources"), "Package.swift")
+    outputs.dir(layout.buildDirectory.dir("swift-x86_64"))
+
+    commandLine(
+        "/usr/bin/xcrun",
+        "swift",
+        "build",
+        "--configuration",
+        "release",
+        "--scratch-path",
+        layout.buildDirectory.dir("swift-x86_64").get().asFile.absolutePath,
+        "--triple",
+        PosatoMacOsArchitecture.X86_64.swiftTriple,
+        "-Xswiftc",
+        "-warnings-as-errors",
+    )
+}
+
 tasks.named("check") {
-    dependsOn("swiftFormatCheck", "swiftLintCheck", "swiftTest")
+    dependsOn("swiftFormatCheck", "swiftLintCheck", "swiftTest", "swiftBuildIntel")
 }

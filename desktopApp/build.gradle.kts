@@ -1061,6 +1061,9 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
     abstract val marketingVersion: Property<String>
 
     @get:Input
+    abstract val architecture: Property<PosatoMacOsArchitecture>
+
+    @get:Input
     @get:Optional
     abstract val previousBuildNumber: Property<String>
 
@@ -1087,14 +1090,21 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
             ?: throw GradleException("An update feed needs -PposatoMacOsReleaseNotes=<plain-text .txt file>.")
         check(notes.extension == "txt") { "Release notes must be a plain-text .txt file." }
         val staged = applicationBundle.get().file("Contents/Info.plist").asFile
-        val (feedUrl, publicKey, buildNumber) = publishedApplicationValues(diskImage)
+        val published = publishedApplication(diskImage)
+        val (feedUrl, publicKey, buildNumber) = published.updateValues
+        check(published.architectures == listOf(architecture.get().machOName)) {
+            "The DMG's application is ${published.architectures.joinToString(" ")}, not only ${architecture.get().machOName}."
+        }
+        check(!(updateChannel == UpdateChannel.RELEASE && published.allowsRosetta)) {
+            "The DMG's application carries the verification-only Rosetta switch and cannot be released."
+        }
         check(listOf(feedUrl, publicKey, buildNumber) == UPDATE_KEYS.map { key -> plistValue(staged, key) }) {
             "The DMG does not contain the application this release staged."
         }
         val explicitPrevious = previousBuildNumber.orNull?.takeIf(String::isNotBlank)
         val (prefix, previous) = when (updateChannel) {
             UpdateChannel.RELEASE -> {
-                check(feedUrl == PosatoUpdateFeed.STABLE_FEED_URL && publicKey == PosatoUpdateFeed.STABLE_PUBLIC_KEY) {
+                check(feedUrl == PosatoUpdateFeed.stableFeedUrl(architecture.get()) && publicKey == PosatoUpdateFeed.STABLE_PUBLIC_KEY) {
                     "This build does not read the stable feed with the tracked key, so it cannot be released."
                 }
                 PosatoUpdateFeed.releaseDownloadPrefix(marketingVersion.get()) to releaseFloor(buildNumber, explicitPrevious)
@@ -1105,9 +1115,13 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
                 PosatoUpdateFeed.candidateDownloadPrefix(candidateDownloadPrefix.orNull) to explicitPrevious
             }
         }
+        val intelSuffix = if (architecture.get() == PosatoMacOsArchitecture.X86_64) "-intel" else ""
         val assetName = when (updateChannel) {
-            UpdateChannel.RELEASE -> "Posato-${marketingVersion.get()}.dmg"
-            UpdateChannel.CANDIDATE -> "Posato-${marketingVersion.get()}-$buildNumber-test.dmg"
+            UpdateChannel.RELEASE -> "Posato-${marketingVersion.get()}$intelSuffix.dmg"
+            UpdateChannel.CANDIDATE -> "Posato-${marketingVersion.get()}-$buildNumber$intelSuffix-test.dmg"
+        }
+        if (updateChannel == UpdateChannel.RELEASE && architecture.get() == PosatoMacOsArchitecture.X86_64) {
+            requirePairedArm64Release(buildNumber)
         }
         val output = feedDirectory.get().asFile
         output.deleteRecursively()
@@ -1116,7 +1130,7 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         diskImage.copyTo(asset)
         val stagedNotes = output.resolve(asset.nameWithoutExtension + ".txt")
         notes.copyTo(stagedNotes)
-        val feed = output.resolve(updateChannel.feedFileName)
+        val feed = output.resolve(updateChannel.feedFileName(architecture.get()))
         val generator = sparkleDistribution.get().file("bin/generate_appcast").asFile.absolutePath
         val result = execOperations.exec {
             commandLine(
@@ -1139,7 +1153,7 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         val archive = asset.readBytes()
         val problems = PosatoUpdateFeed.appcastProblems(
             feed.readBytes(),
-            AppcastExpectation(feedUrl, publicKey, buildNumber, previous, prefix + assetName, archive),
+            AppcastExpectation(architecture.get(), feedUrl, publicKey, buildNumber, previous, prefix + assetName, archive),
         )
         if (problems.isNotEmpty()) {
             throw GradleException("The update feed may not be published:\n" + problems.joinToString("\n"))
@@ -1155,7 +1169,10 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         buildNumber: String,
         explicitPrevious: String?,
     ): String {
-        val published = PosatoPublishedFeed.publishedBuildNumber(PosatoUpdateFeed.STABLE_FEED_URL)
+        val published = listOfNotNull(
+            PosatoPublishedFeed.publishedBuildNumber(PosatoUpdateFeed.STABLE_FEED_URL),
+            PosatoPublishedFeed.publishedBuildNumber(PosatoUpdateFeed.STABLE_INTEL_FEED_URL),
+        ).maxOrNull()
         return when (val decision = PosatoPublishedFeed.releaseFloor(buildNumber, published, explicitPrevious)) {
             is ReleaseFloor.Refused -> {
                 throw GradleException(decision.reason)
@@ -1168,8 +1185,25 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         }
     }
 
-    /** The feed URL, key, and build number of the application inside the DMG that will be published. */
-    private fun publishedApplicationValues(diskImage: java.io.File): List<String> {
+    /** Both builds of a release share one CFBundleVersion: the x86-64 feed follows the arm64 feed generated beside it. */
+    private fun requirePairedArm64Release(buildNumber: String) {
+        val arm64Feed = feedDirectory.get().asFile.resolveSibling(PosatoMacOsArchitecture.ARM64.propertyValue)
+            .resolve(UpdateChannel.RELEASE.feedFileName(PosatoMacOsArchitecture.ARM64))
+        check(arm64Feed.isFile) { "Generate the arm64 release feed first; the x86-64 release shares its build number." }
+        val arm64Build = PosatoPublishedFeed.feedBuildNumber(arm64Feed.readBytes())
+        check(arm64Build == buildNumber.toLongOrNull()) {
+            "The x86-64 release build $buildNumber differs from the arm64 release build $arm64Build generated beside it."
+        }
+    }
+
+    private class PublishedApplication(
+        val updateValues: List<String>,
+        val architectures: List<String>,
+        val allowsRosetta: Boolean,
+    )
+
+    /** The feed URL, key, build number, architectures, and Rosetta switch of the application inside the DMG. */
+    private fun publishedApplication(diskImage: java.io.File): PublishedApplication {
         val mountPoint = temporaryDir.resolve("published")
         mountPoint.deleteRecursively()
         mountPoint.mkdirs()
@@ -1190,7 +1224,23 @@ abstract class GenerateMacOsUpdateFeed : DefaultTask() {
         if (attach.exitValue != 0) throw GradleException("Could not mount ${diskImage.name} to read its application.")
         try {
             val information = mountPoint.resolve("Posato.app/Contents/Info.plist")
-            return UPDATE_KEYS.map { key -> plistValue(information, key) }
+            val executable = mountPoint.resolve("Posato.app/Contents/MacOS/Posato")
+            val architectures = ByteArrayOutputStream()
+            execOperations.exec {
+                commandLine("/usr/bin/lipo", "-archs", executable.absolutePath)
+                standardOutput = architectures
+            }
+            val rosettaSwitch = execOperations.exec {
+                commandLine("/usr/bin/plutil", "-extract", "PosatoAllowsRosetta", "raw", "-o", "-", information.absolutePath)
+                standardOutput = ByteArrayOutputStream()
+                errorOutput = ByteArrayOutputStream()
+                isIgnoreExitValue = true
+            }.exitValue == 0
+            return PublishedApplication(
+                UPDATE_KEYS.map { key -> plistValue(information, key) },
+                architectures.toString(Charsets.UTF_8).trim().split(Regex("\\s+")),
+                rosettaSwitch,
+            )
         } finally {
             val detach = execOperations.exec {
                 commandLine("/usr/bin/hdiutil", "detach", mountPoint.absolutePath)
@@ -1300,7 +1350,7 @@ val posatoJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFo
     vendor.set(JvmVendorSpec.ADOPTIUM)
 }
 val posatoJavaHome = if (macOsArchitecture == PosatoMacOsArchitecture.X86_64) {
-    PosatoTemurin.x86_64Home(gradle.gradleUserHomeDir, posatoJavaLauncher.get().metadata.installationPath.asFile)
+    PosatoTemurin.intelHome(gradle.gradleUserHomeDir, posatoJavaLauncher.get().metadata.installationPath.asFile)
 } else {
     posatoJavaLauncher.get().metadata.installationPath.asFile
 }
@@ -1413,6 +1463,33 @@ val compileUpdater = tasks.register<Exec>("compileUpdater") {
     )
 }
 
+val checkIntelNativeLeaves by tasks.registering(Exec::class) {
+    group = "verification"
+    description = "Compiles the AppKit leaves for x86-64 on the macOS minimum without packaging them."
+    val sources = listOf("src/main/objc/WindowChrome.m", "src/main/objc/Updater.m").map { path -> layout.projectDirectory.file(path).asFile }
+    val headers = posatoJavaLauncher.get().metadata.installationPath.asFile
+    val sparkleFrameworks = sparkleDistribution.get().asFile
+    dependsOn(extractSparkle)
+    inputs.files(sources)
+    outputs.upToDateWhen { false }
+    commandLine(
+        listOf(
+            "xcrun",
+            "clang",
+            "-fsyntax-only",
+            "-fobjc-arc",
+            "-Wall",
+            "-Werror",
+            "-Wunguarded-availability-new",
+            "-target",
+            PosatoMacOsArchitecture.X86_64.clangTarget,
+            "-F${sparkleFrameworks.absolutePath}",
+            "-I${headers.absolutePath}/include",
+            "-I${headers.absolutePath}/include/darwin",
+        ) + sources.map(File::getAbsolutePath),
+    )
+}
+
 val nativeLeafResources = layout.buildDirectory.dir("generated/native-leaves")
 val assembleNativeLeaves = tasks.register<Sync>("assembleNativeLeaves") {
     into(nativeLeafResources)
@@ -1436,6 +1513,7 @@ val updateFeed = PosatoUpdateFeed.resolve(
     providers.gradleProperty("posatoMacOsUpdateChannel").orNull?.takeIf(String::isNotBlank),
     providers.gradleProperty("posatoMacOsUpdateFeedUrl").orNull?.takeIf(String::isNotBlank),
     providers.gradleProperty("posatoMacOsUpdatePublicKey").orNull?.takeIf(String::isNotBlank),
+    macOsArchitecture,
 )
 val updateFeedUrl = updateFeed.feedUrl
 val macOsAllowsRosetta = providers.gradleProperty("posatoMacOsAllowRosetta").orNull == "true"
@@ -1740,11 +1818,12 @@ tasks.register<GenerateMacOsUpdateFeed>("generateMacOsUpdateFeed") {
     providers.gradleProperty("posatoMacOsReleaseNotes").orNull?.let { notes -> releaseNotes.set(file(PosatoPaths.expandHome(notes))) }
     sparkleDistribution.set(layout.buildDirectory.dir("sparkle/$pinnedSparkleVersion"))
     channel.set(releaseUpdateChannel.orEmpty())
+    architecture.set(macOsArchitecture)
     marketingVersion.set(posatoMarketingVersion)
     previousBuildNumber.set(providers.gradleProperty("posatoMacOsPreviousBuildNumber"))
     candidateDownloadPrefix.set(providers.gradleProperty("posatoMacOsUpdateDownloadPrefix"))
     keyAccount.set(providers.gradleProperty("posatoMacOsUpdateKeyAccount").orElse("posato-release"))
-    feedDirectory.set(layout.buildDirectory.dir("compose/binaries/main/release-feed"))
+    feedDirectory.set(layout.buildDirectory.dir("compose/binaries/main/release-feed/${macOsArchitecture.propertyValue}"))
     outputs.upToDateWhen { false }
 }
 

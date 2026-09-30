@@ -64,6 +64,11 @@ object PosatoPublishedFeed {
         return decide(buildNumber, published, explicitPrevious)
     }
 
+    /** The highest build number of a feed generated locally, such as the arm64 feed an x86-64 release must match. */
+    fun feedBuildNumber(feed: ByteArray): Long? {
+        return highestBuildNumber(feed)
+    }
+
     /** The highest positive integer sparkle:version among the feed's items; null when any item lacks one or the feed is malformed. */
     internal fun highestBuildNumber(feed: ByteArray): Long? {
         val items = PosatoUpdateFeed.parse(feed)?.getElementsByTagName("item") ?: return null

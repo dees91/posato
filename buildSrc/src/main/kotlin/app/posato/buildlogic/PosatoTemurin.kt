@@ -13,7 +13,7 @@ object PosatoTemurin {
     private const val X86_64_ARCHIVE = "OpenJDK21U-jdk_x64_mac_hotspot_21.0.12.1_1.tar.gz"
     private const val X86_64_SHA256 = "44db0f08196daf19a47f90d13388b0c943b67663cb537f998fe29e836fa842ce"
 
-    fun x86_64Home(
+    fun intelHome(
         gradleUserHome: File,
         arm64Home: File,
     ): File {

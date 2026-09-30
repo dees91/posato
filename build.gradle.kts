@@ -158,6 +158,7 @@ tasks.register("quality") {
         iosHostBuildCheck,
         ":desktopApp:createDistributable",
         ":desktopApp:verifyMacOsDevelopmentPackaging",
+        ":desktopApp:checkIntelNativeLeaves",
         ":desktopApp:detekt",
         ":desktopApp:ktlintCheck",
         ":desktopApp:test",

@@ -14,10 +14,16 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 enum class UpdateChannel(
     val propertyValue: String,
-    val feedFileName: String,
+    private val arm64FeedFileName: String,
+    private val intelFeedFileName: String,
 ) {
-    RELEASE("release", "appcast.xml"),
-    CANDIDATE("candidate", "appcast-test.xml"),
+    RELEASE("release", "appcast.xml", "appcast-intel.xml"),
+    CANDIDATE("candidate", "appcast-test.xml", "appcast-intel-test.xml"),
+    ;
+
+    fun feedFileName(architecture: PosatoMacOsArchitecture): String {
+        return if (architecture == PosatoMacOsArchitecture.ARM64) arm64FeedFileName else intelFeedFileName
+    }
 }
 
 data class UpdateFeedConfiguration(
@@ -27,6 +33,7 @@ data class UpdateFeedConfiguration(
 )
 
 data class AppcastExpectation(
+    val architecture: PosatoMacOsArchitecture,
     val feedUrl: String,
     val publicKey: String,
     val buildNumber: String,
@@ -37,10 +44,11 @@ data class AppcastExpectation(
 
 object PosatoUpdateFeed {
     const val STABLE_FEED_URL = "https://github.com/dees91/posato/releases/latest/download/appcast.xml"
+    const val STABLE_INTEL_FEED_URL = "https://github.com/dees91/posato/releases/latest/download/appcast-intel.xml"
     const val STABLE_PUBLIC_KEY = "AFui5Ws+53G4l9RpIjPVwRoKGROvBWt0raf8YtGUgTM="
     const val RELEASE_DOWNLOAD_PREFIX = "https://github.com/dees91/posato/releases/download/"
-    const val MINIMUM_SYSTEM_VERSION = "15.0"
-    const val HARDWARE_REQUIREMENTS = "arm64"
+    const val MINIMUM_SYSTEM_VERSION = PosatoMacOsArchitecture.MINIMUM_SYSTEM_VERSION
+    private const val ARM64_HARDWARE_REQUIREMENTS = "arm64"
 
     internal const val SPARKLE_NAMESPACE = "http://www.andymatuschak.org/xml-namespaces/sparkle"
     private const val SIGNATURE_BLOCK = "<!-- sparkle-signatures:"
@@ -52,22 +60,27 @@ object PosatoUpdateFeed {
     private val loopbackFeed = Regex("""http://127\.0\.0\.1:[0-9]{1,5}/[A-Za-z0-9._/-]+""")
     private val httpsFeed = Regex("""https://[A-Za-z0-9.-]+/[A-Za-z0-9._/-]+""")
     private val buildNumberValue = Regex("""[1-9][0-9]{0,8}""")
-    private const val CANDIDATE_FEED_SUFFIX = "/appcast-test.xml"
     private const val STABLE_RELEASES_PREFIX = "https://github.com/dees91/posato/releases/latest/"
 
     fun resolve(
         channel: String?,
         feedUrl: String?,
         publicKey: String?,
+        architecture: PosatoMacOsArchitecture,
     ): UpdateFeedConfiguration {
         verifyContract()
+        verifyAppcastContract()
         PosatoPublishedFeed.verifyContract()
         return when (channel) {
             null -> development(feedUrl, publicKey)
-            UpdateChannel.RELEASE.propertyValue -> release(feedUrl, publicKey)
-            UpdateChannel.CANDIDATE.propertyValue -> candidate(feedUrl, publicKey)
+            UpdateChannel.RELEASE.propertyValue -> release(feedUrl, publicKey, architecture)
+            UpdateChannel.CANDIDATE.propertyValue -> candidate(feedUrl, publicKey, architecture)
             else -> throw GradleException("posatoMacOsUpdateChannel must be release or candidate.")
         }
+    }
+
+    fun stableFeedUrl(architecture: PosatoMacOsArchitecture): String {
+        return if (architecture == PosatoMacOsArchitecture.ARM64) STABLE_FEED_URL else STABLE_INTEL_FEED_URL
     }
 
     fun releaseDownloadPrefix(marketingVersion: String): String = "${RELEASE_DOWNLOAD_PREFIX}v$marketingVersion/"
@@ -97,8 +110,12 @@ object PosatoUpdateFeed {
         expectation: AppcastExpectation,
     ): List<String> {
         val problems = mutableListOf<String>()
-        if (expectation.feedUrl == STABLE_FEED_URL && expectation.publicKey != STABLE_PUBLIC_KEY) {
+        if (expectation.feedUrl in setOf(STABLE_FEED_URL, STABLE_INTEL_FEED_URL) && expectation.publicKey != STABLE_PUBLIC_KEY) {
             problems += "The application reads the stable feed with a key other than the tracked release key."
+        }
+        val feedNames = UpdateChannel.entries.map { channel -> channel.feedFileName(expectation.architecture) }
+        if (feedNames.none { name -> expectation.feedUrl.endsWith("/$name") }) {
+            problems += "The ${expectation.architecture.machOName} application reads ${expectation.feedUrl}, not a feed of its architecture."
         }
         val text = appcast.toString(Charsets.UTF_8)
         val marker = text.lastIndexOf(SIGNATURE_BLOCK)
@@ -132,7 +149,13 @@ object PosatoUpdateFeed {
             add("sparkle:version $version is not above $previous.")
         }
         if (sparkleText(item, "minimumSystemVersion") != MINIMUM_SYSTEM_VERSION) add("sparkle:minimumSystemVersion is not $MINIMUM_SYSTEM_VERSION.")
-        if (sparkleText(item, "hardwareRequirements") != HARDWARE_REQUIREMENTS) add("sparkle:hardwareRequirements is not $HARDWARE_REQUIREMENTS.")
+        val hardware = sparkleText(item, "hardwareRequirements")
+        if (expectation.architecture == PosatoMacOsArchitecture.ARM64 && hardware != ARM64_HARDWARE_REQUIREMENTS) {
+            add("sparkle:hardwareRequirements is not $ARM64_HARDWARE_REQUIREMENTS.")
+        }
+        if (expectation.architecture == PosatoMacOsArchitecture.X86_64 && hardware != null) {
+            add("The x86-64 item must not declare sparkle:hardwareRequirements $hardware.")
+        }
         if (sparkleText(item, "releaseNotesLink") != null || sparkleText(item, "fullReleaseNotesLink") != null) {
             add("Release notes must be embedded, not linked.")
         }
@@ -166,22 +189,26 @@ object PosatoUpdateFeed {
     private fun release(
         feedUrl: String?,
         publicKey: String?,
+        architecture: PosatoMacOsArchitecture,
     ): UpdateFeedConfiguration {
-        if (feedUrl != null && feedUrl != STABLE_FEED_URL) throw GradleException("A release reads only the stable feed $STABLE_FEED_URL.")
+        val stableFeed = stableFeedUrl(architecture)
+        if (feedUrl != null && feedUrl != stableFeed) throw GradleException("A release reads only the stable feed $stableFeed.")
         if (publicKey != null && publicKey != STABLE_PUBLIC_KEY) throw GradleException("A release embeds only the tracked release key.")
-        return UpdateFeedConfiguration(UpdateChannel.RELEASE, STABLE_FEED_URL, STABLE_PUBLIC_KEY)
+        return UpdateFeedConfiguration(UpdateChannel.RELEASE, stableFeed, STABLE_PUBLIC_KEY)
     }
 
     private fun candidate(
         feedUrl: String?,
         publicKey: String?,
+        architecture: PosatoMacOsArchitecture,
     ): UpdateFeedConfiguration {
         if (feedUrl == null || publicKey == null) {
             throw GradleException("A candidate needs posatoMacOsUpdateFeedUrl and posatoMacOsUpdatePublicKey for its test feed.")
         }
         if (readsStableFeed(feedUrl)) throw GradleException("A candidate must never read the stable feed.")
         requireFeedUrl(feedUrl)
-        if (!feedUrl.endsWith(CANDIDATE_FEED_SUFFIX)) throw GradleException("A candidate's feed URL must end in $CANDIDATE_FEED_SUFFIX.")
+        val candidateFeed = "/" + UpdateChannel.CANDIDATE.feedFileName(architecture)
+        if (!feedUrl.endsWith(candidateFeed)) throw GradleException("A ${architecture.machOName} candidate's feed URL must end in $candidateFeed.")
         return UpdateFeedConfiguration(UpdateChannel.CANDIDATE, feedUrl, publicKey)
     }
 
@@ -253,6 +280,7 @@ object PosatoUpdateFeed {
         }
         val archive = "posato".toByteArray()
         val expectation = AppcastExpectation(
+            architecture = PosatoMacOsArchitecture.ARM64,
             feedUrl = "https://example.invalid/appcast-test.xml",
             publicKey = Base64.getEncoder().encodeToString(hex(RFC_PUBLIC_KEY)),
             buildNumber = "20",
@@ -260,21 +288,35 @@ object PosatoUpdateFeed {
             downloadUrl = "https://example.invalid/Posato.dmg",
             archive = archive,
         )
-        val feed = { version: String, extra: String, archiveSignature: String ->
+        val feedWith = { version: String, extra: String, archiveSignature: String, minimum: String, hardware: String ->
             val body = """<?xml version="1.0" standalone="yes"?><rss xmlns:sparkle="$SPARKLE_NAMESPACE" version="2.0"><channel><item>""" +
-                "<sparkle:version>$version</sparkle:version><sparkle:minimumSystemVersion>$MINIMUM_SYSTEM_VERSION</sparkle:minimumSystemVersion>" +
-                "<sparkle:hardwareRequirements>$HARDWARE_REQUIREMENTS</sparkle:hardwareRequirements>$extra" +
+                "<sparkle:version>$version</sparkle:version><sparkle:minimumSystemVersion>$minimum</sparkle:minimumSystemVersion>" +
+                hardware + extra +
                 """<description sparkle:format="plain-text">Notes</description>""" +
                 """<enclosure url="${expectation.downloadUrl}" length="${archive.size}" sparkle:edSignature="$archiveSignature"/>""" +
                 "</item></channel></rss>"
             val bytes = body.toByteArray()
             (body + "$SIGNATURE_BLOCK\nedSignature: ${sign(bytes)}\nlength: ${bytes.size}\n-->").toByteArray()
         }
+        val arm64Hardware = "<sparkle:hardwareRequirements>arm64</sparkle:hardwareRequirements>"
+        val feed = { version: String, extra: String, archiveSignature: String ->
+            feedWith(version, extra, archiveSignature, "13.0", arm64Hardware)
+        }
         val goodArchiveSignature = sign(archive)
         val valid = feed("20", "", goodArchiveSignature)
         val tamperedFeed = valid.copyOf().also { it[it.indexOf('N'.code.toByte())] = 'M'.code.toByte() }
+        val intel = expectation.copy(architecture = PosatoMacOsArchitecture.X86_64, feedUrl = "https://example.invalid/appcast-intel-test.xml")
+        val intelFeed = feedWith("20", "", goodArchiveSignature, "13.0", "")
         val cases = listOf(
             problemsOf(valid, expectation).isEmpty(),
+            problemsOf(intelFeed, intel).isEmpty(),
+            problemsOf(valid, intel).isNotEmpty(),
+            problemsOf(intelFeed, expectation).isNotEmpty(),
+            problemsOf(feedWith("20", "", goodArchiveSignature, "14.0", ""), intel).isNotEmpty(),
+            problemsOf(feedWith("20", "", goodArchiveSignature, "15.0", arm64Hardware), expectation).isNotEmpty(),
+            problemsOf(intelFeed, intel.copy(feedUrl = "https://example.invalid/appcast-test.xml")).isNotEmpty(),
+            problemsOf(valid, expectation.copy(feedUrl = "https://example.invalid/appcast-intel-test.xml")).isNotEmpty(),
+            problemsOf(intelFeed, intel.copy(feedUrl = STABLE_INTEL_FEED_URL)).isNotEmpty(),
             problemsOf(tamperedFeed, expectation).isNotEmpty(),
             problemsOf(valid, expectation.copy(archive = "posatO".toByteArray())).isNotEmpty(),
             problemsOf(feed("19", "", goodArchiveSignature), expectation.copy(buildNumber = "19")).isNotEmpty(),

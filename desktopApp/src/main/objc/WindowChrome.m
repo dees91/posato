@@ -208,19 +208,19 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_installLaunchPr
 }
 
 // True only when the kernel reports that this process runs under Rosetta translation; any error means native.
-JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresenceNative_runsTranslated(JNIEnv *environment, jclass receiver) {
+JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacTranslationNative_runsTranslated(JNIEnv *environment, jclass receiver) {
     int translated = 0;
     size_t size = sizeof(translated);
     if (sysctlbyname("sysctl.proc_translated", &translated, &size, NULL, 0) != 0) return JNI_FALSE;
     return translated == 1 ? JNI_TRUE : JNI_FALSE;
 }
 
-JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacPresenceNative_allowsTranslation(JNIEnv *environment, jclass receiver) {
+JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacTranslationNative_allowsTranslation(JNIEnv *environment, jclass receiver) {
     return [[NSBundle.mainBundle objectForInfoDictionaryKey:@"PosatoAllowsRosetta"] boolValue] ? JNI_TRUE : JNI_FALSE;
 }
 
 // Shows the refusal before the application starts and opens the download page when the person chooses it.
-JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_refuseTranslation(
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacTranslationNative_refuseTranslation(
     JNIEnv *environment,
     jclass receiver,
     jstring title,

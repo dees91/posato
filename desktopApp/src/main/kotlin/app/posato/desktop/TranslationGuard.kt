@@ -1,5 +1,7 @@
 package app.posato.desktop
 
+import java.io.File
+
 internal object TranslationGuard {
     private const val TITLE = "This version is for Intel Macs"
     private const val MESSAGE = "This Mac has Apple silicon. Download Posato for Apple silicon."
@@ -8,12 +10,34 @@ internal object TranslationGuard {
     private const val DOWNLOAD_URL = "https://github.com/dees91/posato/releases/latest"
 
     fun permitsLaunch(): Boolean {
-        if (!MacPresenceNative.runsTranslated()) return true
-        if (MacPresenceNative.allowsTranslation()) {
+        if (!MacTranslationNative.runsTranslated()) return true
+        if (MacTranslationNative.allowsTranslation()) {
             System.err.println("Posato runs under Rosetta translation in a verification build.")
             return true
         }
-        MacPresenceNative.refuseTranslation(TITLE, MESSAGE, DOWNLOAD, QUIT, DOWNLOAD_URL)
+        MacTranslationNative.refuseTranslation(TITLE, MESSAGE, DOWNLOAD, QUIT, DOWNLOAD_URL)
         return false
     }
+}
+
+internal object MacTranslationNative {
+    init {
+        val resourcesDirectory = checkNotNull(System.getProperty("compose.application.resources.dir"))
+        System.load(File(resourcesDirectory, "native/libPosatoWindow.dylib").absolutePath)
+    }
+
+    @JvmStatic
+    external fun runsTranslated(): Boolean
+
+    @JvmStatic
+    external fun allowsTranslation(): Boolean
+
+    @JvmStatic
+    external fun refuseTranslation(
+        title: String,
+        message: String,
+        download: String,
+        quit: String,
+        downloadUrl: String,
+    )
 }
