@@ -6,7 +6,7 @@
 - **Implementer:** Claude Code agent
 - **Reviewer:** independent Claude Code agent (completed-change review)
 - **Branch:** `feat/nav-001-navigation3`
-- **Updated:** 2026-09-29
+- **Updated:** 2026-09-30
 
 ## Plan
 
@@ -36,6 +36,13 @@
   two-finger swipe between pages through AppKit swipe tracking in the main
   window only (`user-confirmed` 2026-09-29). iOS keeps Navigation 3's slide
   and settles without it under Reduce Motion; the Mac has no transition.
+- After maintainer testing through the Tart window with a real trackpad
+  (`user-confirmed` 2026-09-30): the swipe first navigated only after
+  AppKit's settling animation, which felt late. A gesture-driven slide and a
+  fixed 0.5 lift threshold were tried and rejected; the chosen version
+  navigates on AppKit's first settling frame, following its decision,
+  including speed. Each stacked screen is opaque, after a recording showed a
+  transparent screen sliding over another on the iPhone.
 - `posato-control`: iOS scenario step `swipeBack`; desktop `swipe-back
   [--cancel]` for a VM. A spike showed that synthetic phased scroll events
   drive AppKit swipe tracking to completion or cancellation, but report the

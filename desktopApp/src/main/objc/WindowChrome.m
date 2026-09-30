@@ -531,18 +531,33 @@ static void BackSwipeTrack(NSEvent *event) {
     if (window == nil || window != NSApp.mainWindow || window.attachedSheet != nil || NSApp.modalWindow != nil) return;
     if (fabs(event.scrollingDeltaX) <= fabs(event.scrollingDeltaY)) return;
     __block BOOL started = NO;
+    __block BOOL decided = NO;
+    __block BOOL lifted = NO;
+    __block CGFloat liftedAmount = 0;
     [event trackSwipeEventWithOptions:NSEventSwipeTrackingLockDirection | NSEventSwipeTrackingClampGestureAmount
              dampenAmountThresholdMin:0
                                   max:1
                          usingHandler:^(CGFloat gestureAmount, NSEventPhase phase, BOOL isComplete, BOOL *stop) {
+        if (decided) return;
         if (!started) {
             started = YES;
             BackSwipeCall(PosatoBackSwipeStarted, gestureAmount);
-        } else if (!isComplete) {
-            BackSwipeCall(PosatoBackSwipeChanged, gestureAmount);
         }
-        if (isComplete) {
-            BackSwipeCall(gestureAmount >= 1.0 ? PosatoBackSwipeCompleted : PosatoBackSwipeCancelled, gestureAmount);
+        // After the fingers lift AppKit settles toward 1 when the swipe counts, speed included, and
+        // toward 0 when it does not. The screen changes on that first settling frame instead of after
+        // the settling, which has nothing on screen to move.
+        BOOL settledTowardBack = lifted && gestureAmount > liftedAmount;
+        BOOL settledAway = lifted && gestureAmount < liftedAmount;
+        if (isComplete || settledTowardBack || settledAway || phase == NSEventPhaseCancelled) {
+            decided = YES;
+            BOOL back = isComplete ? gestureAmount >= 1.0 : settledTowardBack;
+            BackSwipeCall(back ? PosatoBackSwipeCompleted : PosatoBackSwipeCancelled, gestureAmount);
+        } else {
+            if (phase == NSEventPhaseEnded) {
+                lifted = YES;
+                liftedAmount = gestureAmount;
+            }
+            BackSwipeCall(PosatoBackSwipeChanged, gestureAmount);
         }
     }];
 }

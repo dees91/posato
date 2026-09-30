@@ -376,7 +376,9 @@ swipe between pages on the Mac. Search's **Back to adding** is part of the
 same stack. Back never switches destination or leaves the application, and it
 is unavailable while a start, end, save, or system approval or password prompt
 is in progress. On iOS the screen slides with the finger and settles without a
-slide under Reduce Motion; the Mac changes screens without a transition.
+slide under Reduce Motion. The Mac changes screens without a transition; the
+trackpad swipe changes the screen as the fingers lift, once macOS counts the
+swipe.
 Onboarding stays forward-only.
 
 ### Rows, menus, and notices
