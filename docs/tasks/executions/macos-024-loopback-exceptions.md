@@ -198,7 +198,30 @@
 
 ## Result
 
-- Pending.
+- Driver: `vm push`, `vm kill --process helper|daemon`, and `vm network`
+  `--action show-bypass`, `--bypass-domains`, `--bypass-empty`, and
+  `--bypass-absent`.
+- Daemon: `ExceptionsList` is a third owned group (`ProxyExceptions`,
+  `OwnedExceptions`, schema 2 with version 1 still valid);
+  `SystemProxyConfiguration` reads it without throwing and writes a set,
+  remove, or untouched target from the locked re-read.
+- Helper: the pre-Apply overlay adds the loopback entries; the router relays
+  `localhost`, `127.0.0.1`, and `[::1]` on any port but its own; the relay
+  connects to literal addresses with keepalive, caps loopback pairs at 32,
+  and drops the idle timeout once established. `BoundedHTTPProxy` gained an
+  `idleTimeout` parameter beside `headerTimeout` so the idle rule is tested
+  in half a second instead of thirty.
+- Deviation: after the first engine test, the engine was implemented before
+  the remaining engine tests were written, against the test-first rule.
+  Each of those tests was then shown to fail against a targeted mutation of
+  the logic it guards (nine mutations, each caught by its intended test);
+  two crash-window tests that caught nothing beyond existing coverage were
+  dropped. Router, relay, overlay, and configuration tests were written
+  first, and were also mutation-checked.
+- Observed limitation, not changed: a D4 or other incompatible-network
+  failure shows the generic **Restrictions need attention**, and a
+  preserved changed list shows **Restrictions may still apply** without
+  naming the exceptions list; the app has no incompatible-network copy.
 
 ## Completed-change review
 
@@ -214,6 +237,12 @@
 | `AC-01` control: loopback entries already in the list | pass: still fails | With `*.local, 169.254/16, localhost, 127.0.0.1, ::1` set through `vm network --bypass-domains` during the session, the probe fails the same way; it ignores the list, as Codex does. |
 | CFNetwork observation | `observed` | `NSData dataWithContentsOfURL` through JXA reaches all three loopback URLs during the session with the baseline list, classified `direct` by the server: CFNetwork bypasses loopback by itself. Python `urllib` (host source) honors the list and proxies `127.0.0.1` unless it is listed, so the exceptions still serve such clients. |
 | Driver: `networksetup -setproxybypassdomains <service> Empty` | `observed` | Writes an empty `ExceptionsList` array, not an absent key; the absent-key baseline needs a root `SCPreferences` edit. |
+| `swift test` in `macosHelper` | pass | 224 tests. |
+| `posato-control` ktlint, detekt, tests | pass | Includes the bypass parser test. |
+| `AC-02` (change build 13a361f, helper and daemon SHA-256 matched in the guest) | pass | During a session (`20260930-172418-f2a6`): the probe reached `127.0.0.1`, `localhost`, and `[::1]` and posted 6,000 bytes, all classified `proxy` with the original `Host`; a stream with a 45-second gap survived; the listener's own port stayed refused; `NSURLSession` went direct; `observe` reported example.com `paused` and example.org `loaded`; Safari showed the HTTP pause page and replaced an HTTPS tab with `127.0.0.1` and the pause page. The list read `*.local, 169.254/16, localhost, 127.0.0.1, ::1`. |
+| `AC-03` exact restore | pass | Baseline `*.local, 169.254/16` returned after a killed daemon (launchd restarted it; Retry reapplied), a killed helper, and early end (`20260930-173240-a8a2`); an absent-key baseline read `localhost, 127.0.0.1, ::1` during the session and no key after natural expiry (`20260930-173254-62e4`). |
+| `D2`/`D1` | pass | Adding `example.com` to the list during a session ended enforcement, restored the tuples, and kept the changed list; Retry showed **Restrictions may still apply**; after the list was set back to the baseline, Retry showed **Restrictions active**. |
+| `D4` | pass | A 257-entry list: the session started with **Restrictions need attention**, no proxy was applied, and the list stayed unchanged. |
 
 ## Blockers and accepted risks
 

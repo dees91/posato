@@ -883,6 +883,36 @@ option variable.
   enabled proxy is present. ADR 0004 forbids touching a service Posato does
   not own, and 1.2 behaved the same.
 
+## Loopback during a session (`MACOS-024`)
+
+- `observed` (2026-09-30, Tart, 1.2 code): with the session proxy applied, a
+  reqwest 0.12.28 and hyper-util 0.1.20 client (the stack of Codex 0.159.2)
+  got `connection closed before message completed` from a loopback server
+  on a non-80 port, even with `localhost`, `127.0.0.1`, and `::1` already in
+  the exceptions list. The listener forwarded HTTP only to port 80 and
+  `CONNECT` only to 443.
+- `observed`: Codex imports only the HTTP and HTTPS proxy keys of
+  `SCDynamicStoreCopyProxies`, and hyper-util reads no exceptions list on
+  macOS; `NO_PROXY` is its only bypass. CFNetwork (`NSURLSession`, Safari)
+  bypasses loopback by itself. Python `urllib` honors the exceptions list and
+  proxies `127.0.0.1` unless it is listed.
+- `user-confirmed` (2026-09-30, ADR 0004 and ADR 0005 amendments): while the
+  proxy is applied Posato appends the missing loopback entries to the owned
+  service's exceptions and restores the exact list, keeping only digests in
+  state; the listener relays the three exact loopback hosts on any port but
+  its own over literal addresses, capped at 32 pairs, without an idle timeout
+  once established.
+- `observed` (2026-09-30, Tart, change build): the probe reached all three
+  hosts through the relay with the original `Host`, a 45-second stream
+  survived, the listener's own port stayed refused, the HTTP and HTTPS pause
+  pages still appeared in Safari, and the exact list (or absent key) returned
+  after early end, natural expiry, a killed helper, and a killed daemon. A
+  list changed during a session ended enforcement and kept the change; the
+  app shows **Restrictions may still apply** until the list is back to the
+  baseline.
+- `observed`: `networksetup -setproxybypassdomains <service> Empty` stores an
+  empty array; only `scutil --prefs` removes the key.
+
 ## Browser presentation threading and consent (`MACOS-022`)
 
 `observed` (2026-09-28): the reproduced Chrome HTTPS error combined missing

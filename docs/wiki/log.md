@@ -2350,3 +2350,11 @@ to scope, feasibility, or delivery.
   submission failure is fixed by one re-registration; the availability page
   lists Intel from Posato 1.3. Topics updated: macOS enforcement, unattended
   verification, MVP open questions.
+
+## [2026-09-30] implementation | Keep loopback connections working during a session
+
+- `observed`: Codex's HTTP stack ignores the macOS proxy exceptions list, so
+  `MACOS-024` adds a loopback-only relay in the listener besides the owned
+  loopback exceptions; see `topics/macos-enforcement.md`.
+- `user-confirmed`: the ADR 0004 and ADR 0005 amendments with decisions D1
+  to D7.
