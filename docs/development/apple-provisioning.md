@@ -187,10 +187,10 @@ It also writes `SHA256SUMS`.
 
 A release carries both builds with one build number. Generate the arm64 feed first; the x86-64 release feed then requires the arm64 feed beside it with the same `sparkle:version`, and the release floor is the highest build in either published feed. Every stable release from 1.3 on carries both feeds (ADR 0008, `MACOS-015` amendment).
 
-Publish `Posato-<version>.dmg`, `appcast.xml`, and `SHA256SUMS` together, and for 1.3 on also `Posato-<version>-intel.dmg`, `appcast-intel.xml`, and their `SHA256SUMS` line (`RELEASE-003` owns publication):
+Publish `Posato-<version>.dmg`, `appcast.xml`, and `SHA256SUMS` together, and for 1.3 on also `Posato-<version>-intel.dmg` and `appcast-intel.xml`. Each architecture's run writes its own `SHA256SUMS`; merge the two into one `SHA256SUMS` with both DMG lines before uploading (`RELEASE-003` owns publication):
 
-1. Upload all three to a draft release and publish it only when it is complete.
-2. After publishing, confirm that `https://github.com/dees91/posato/releases/latest/download/appcast.xml` resolves and that the downloaded feed still verifies.
+1. Upload all of them (three assets, or five from 1.3 on) to a draft release and publish it only when it is complete.
+2. After publishing, confirm that `https://github.com/dees91/posato/releases/latest/download/appcast.xml` (and `appcast-intel.xml` from 1.3 on) resolves and that the downloaded feed still verifies.
 3. Publish any release without a macOS feed with `--latest=false`, so the stable feed keeps resolving.
 
 The task reads the feed URL, key, and build number from the application inside the DMG and requires that they match the staged application. A candidate feed uses `-PposatoMacOsUpdateChannel=candidate` and `-PposatoMacOsUpdateDownloadPrefix=<HTTPS or loopback URL ending in />`, and writes `Posato-<version>-<build>-test.dmg` with `appcast-test.xml`. `-PposatoMacOsUpdateKeyAccount` selects another Keychain account, for example a throwaway test key.

@@ -818,11 +818,12 @@ option variable.
   silent" and never submitted it; a restart did. Registering the already
   enabled `SMAppService` daemon again makes `smd` submit it at once, so the
   helper does that once per process when a `status` or `enable` read finds
-  the daemon unreachable. Setup then completed from a clean state without a
-  restart.
+  the daemon unreachable; macOS 14 and later keep the previous behavior. Setup
+  then completed from a clean state without a restart.
 - `observed`: the x86-64 build runs under Rosetta in arm64 guests on macOS 13
   and 15: Skiko rendering, the helper's open panel, the proxy, application
-  blocking, Sparkle updates, and CloudKit sync. Rosetta does not prove paths
+  blocking, and Sparkle updates on macOS 13, and CloudKit sync on macOS 15
+  only. Rosetta does not prove paths
   that differ on a real Intel processor.
 - `user-confirmed` (2026-09-29): the x86-64 build refuses Rosetta through
   `sysctl.proc_translated`; any error from the call means native, so a real

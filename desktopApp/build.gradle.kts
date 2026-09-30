@@ -1350,7 +1350,11 @@ val posatoJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFo
     vendor.set(JvmVendorSpec.ADOPTIUM)
 }
 val posatoJavaHome = if (macOsArchitecture == PosatoMacOsArchitecture.X86_64) {
-    PosatoTemurin.intelHome(gradle.gradleUserHomeDir, posatoJavaLauncher.get().metadata.installationPath.asFile)
+    PosatoTemurin.intelHome(gradle.gradleUserHomeDir, posatoJavaLauncher.get().metadata.installationPath.asFile) { archive, destination ->
+        providers.exec {
+            commandLine("/usr/bin/tar", "-xzf", archive.absolutePath, "-C", destination.absolutePath, "--strip-components", "1")
+        }.result.get().assertNormalExitValue()
+    }
 } else {
     posatoJavaLauncher.get().metadata.installationPath.asFile
 }

@@ -92,7 +92,10 @@ version from Apple's update server. The driver can prepare it without a person:
    on the Tart bridge address, and run the script in the guest's Terminal
    with `sudo`. The script performs step 4 (install the agent in
    `/usr/local/bin` and load its LaunchAgent) and turns off sleep and
-   automatic update checks. After that, continue with `tart exec` as in
+   automatic update checks. It also installs Rosetta
+   (`softwareupdate --install-rosetta --agree-to-license`), which the x86-64
+   sync check needs; an existing golden VM gets it by booting under the
+   clone's name and running that command with `sudo`. After that, continue with `tart exec` as in
    steps 5-8.
 4. For the two-factor code, answer the sign-in alert on the test iPhone with a
    `-t device` scenario scoped to `springboard`, read the code from its

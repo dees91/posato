@@ -291,3 +291,18 @@ a brief amendment.
 - Evidence under ignored `build/verification/runs/` and
   `build/verification/macos-015/candidates/`. Tested head `e0b0ed8` plus the
   documentation in this commit.
+
+## Completed-change review (2026-09-30)
+
+An independent review approved the change with no Critical or Required
+findings. Folded: the helper resubmission runs only on macOS 13, and a
+`status` read whose retry fails answers as before instead of ending the
+helper; the x86-64 runtime cache is staged, marked complete, moved into place,
+downloads with timeouts, and extracts through `providers.exec` (a plain
+process at configuration broke the configuration cache on a first
+download); the roadmap row says `RELEASE-005` publishes; the two
+`SHA256SUMS` files are merged; the `legacy` golden VM recipe installs Rosetta;
+the wiki no longer implies sync on macOS 13. The runtime pin check runs at
+configuration for any x86-64 invocation, not only packaging, and arm64 builds
+never reach it.
+

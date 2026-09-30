@@ -76,29 +76,6 @@ func enableOutcomePayload(
   return WireLifecyclePolicy.failedEnableResponse(serviceState: state)
 }
 
-/// The daemon's code requirement and its registration. macOS 13 can record the approval of the
-/// daemon without submitting it to launchd until the next restart; registering the enabled service
-/// again submits it, so setup reads do that once per helper process before they report recovery.
-final class DaemonEndpoint {
-  let requirement: String
-  private let register: () throws -> Void
-  private var resubmitted = false
-
-  init(requirement: String, register: @escaping () throws -> Void) {
-    self.requirement = requirement
-    self.register = register
-  }
-
-  func resubmitOnce() -> Bool {
-    guard !resubmitted else {
-      return false
-    }
-    resubmitted = true
-    try? register()
-    return true
-  }
-}
-
 func performDaemonLifecycleRequest(
   request: WireMessage,
   receivedAt: DispatchTime,
@@ -106,35 +83,44 @@ func performDaemonLifecycleRequest(
   reconcilePayload: WireReconcilePayload?,
   daemon: inout DaemonConnection?
 ) throws -> WireMessage {
-  let resubmits = [.status, .enable].contains(
-    WireLifecyclePolicy.effectiveOperation(
-      requestOperation: request.operation,
-      reconcilePayload: reconcilePayload
-    )
+  let operation = WireLifecyclePolicy.effectiveOperation(
+    requestOperation: request.operation,
+    reconcilePayload: reconcilePayload
   )
-  while true {
+  do {
+    return try forwardDaemonLifecycleRequest(
+      request: request,
+      receivedAt: receivedAt,
+      daemonRequirement: endpoint.requirement,
+      daemon: &daemon
+    )
+  } catch {
+    guard
+      let payload = recoveredSetupPayload(
+        requestOperation: request.operation,
+        reconcilePayload: reconcilePayload,
+        error: error
+      )
+    else {
+      throw error
+    }
+    daemon?.invalidate()
+    daemon = nil
+    guard [.status, .enable].contains(operation), endpoint.resubmitOnce() else {
+      return try localResponse(request: request, payload: payload)
+    }
     do {
-      return try forwardDaemonLifecycleRequest(
+      return try retryAfterResubmission(
         request: request,
         receivedAt: receivedAt,
-        daemonRequirement: endpoint.requirement,
+        endpoint: endpoint,
+        firstPayload: payload,
         daemon: &daemon
       )
-    } catch {
-      guard
-        let payload = recoveredSetupPayload(
-          requestOperation: request.operation,
-          reconcilePayload: reconcilePayload,
-          error: error
-        )
-      else {
-        throw error
-      }
+    } catch  where operation == .status {
+      // A read never ends the helper because of the resubmission.
       daemon?.invalidate()
       daemon = nil
-      if resubmits && endpoint.resubmitOnce() {
-        continue
-      }
       return try localResponse(request: request, payload: payload)
     }
   }
