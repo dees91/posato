@@ -284,3 +284,18 @@ Production were not exercised on this build.
   from backup?
 - Which native APIs can move into `iosMain` without making the boundary harder
   to build, test, or maintain?
+
+## Web filter capacity (`SCHEDULE-004` measurement)
+
+`observed` (2026-09-30, test iPhone on iOS 26.5, build of `ca08247`, whose
+iOS enforcement equals release 1.2): a manual session applies each website
+with its `www` counterpart, so one website is two `WebDomain` values in
+`webContent.blockedByFilter = .specific(...)`. With 25 websites (50 domains)
+Safari shows "Website Not Allowed" for every probed website. With 26
+websites (52 domains), and with 60, no probed website is blocked, including
+those blocked at 25: past 50 domains the filter is dropped as a whole, not
+truncated. Apple documents the same 50-domain bound for `.specific(_:)` and
+a 50-token bound for `shield.applications` (`source-claim`); the app shield
+bound was not measured, and Posato 1.2 accepts up to 64 app choices.
+`open`: whether the bound applies per named store or to the union of the
+manual and schedule stores.

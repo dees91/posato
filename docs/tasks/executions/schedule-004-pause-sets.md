@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-004`
 
 - **Brief:** [Deliver pause sets on Mac and iPhone](../specifications/schedule-004-pause-sets.md)
-- **Status:** `active` (slice 1 done; measurements next); **Updated:** 2026-09-30
+- **Status:** `active` (`blocked`: iPhone web filter capacity); **Updated:** 2026-09-30
 - **Review tier:** `high-risk`; **Implementer:** Claude; **Reviewer:** independent agent
 - **Branch:** `feat/schedule-004-pause-sets` (slice 1); later slices stack on it
 
@@ -86,32 +86,34 @@ union and retention.
   N1 stale merge point; N2 iPhone tokens in the backed-up SQL store; a
   migration test starting at version 13.
 - **Maintainer decision** (`user-confirmed` 2026-09-30): a new workspace's
-  first-set name and default are not published at first link; an
-  internal known limit, no ADR change.
+  first-set name and default stay unpublished at first link (known limit).
 
 ## Result
 
 - **Slice 1** (`1f96769` and its review correction): as planned.
-  Deviation: the new `LocalSyncMutation` variants move to slice 3, their
-  first consumer. Slice 1 must not ship alone: `ScheduleSync.toSynced`
+  The `LocalSyncMutation` variants move to slice 3, their first consumer.
+  Slice 1 must not ship alone: `ScheduleSync.toSynced`
   and `toPlan` drop the set, kind 18 starts still enforce the first set,
   a removed first set empties `projection.domains`, and `isWorkspaceFull`
   counts the first set only. Slices 3 and 5 close these.
 
 ## Completed-change review
 
-- **Slice 1:** `changes-required`, then corrected. Required: a domain
-  leaving its only set did not provably free cap space (a mutation
-  survived); a failing-first-under-mutation case now covers it.
-  Recommended kind 3 and RFC-variant checks added.
+- **Slice 1:** `changes-required`, then corrected: a domain leaving its
+  only set did not provably free cap space; a case failing under that
+  mutation now covers it.
 
 ## Verification
 
-| Check run | Result | Evidence |
-| --- | --- | --- |
-| `:shared:jvmTest`, `:shared:iosSimulatorArm64Test` sync suites | pass | 25 new tests failed first against stubs |
-| Mutation checks | pass | 11 mutations of the new rules each fail a test |
-| `quality` | pass | after the last slice 1 correction |
+- Slice 1: the sync suites on JVM and iOS pass (new tests failed first
+  against stubs), 11 mutations each fail a test, and `quality` passes
+  after the last correction.
+
+## Blockers and accepted risks
+
+- **iPhone web filter capacity** (wiki `ios-enforcement`): over 25 websites
+  disable all website blocking on iPhone, already in 1.2; waits for a
+  maintainer decision on the limit and a 1.2 fix.
 
 ## Final
 
