@@ -61,6 +61,7 @@ internal class AppleSync(
     internal val backgroundDispatcher: CoroutineDispatcher,
     private val onWorkspaceRemoved: suspend () -> Unit = {},
     private val scheduleSync: ScheduleSync? = null,
+    private val backgroundTime: SyncBackgroundTime = SyncBackgroundTime.None,
 ) {
     internal val bootstrap = AppleBootstrap(coordinator, backgroundDispatcher)
     private val reconciler = PolicyReconciler(policySync)
@@ -106,7 +107,8 @@ internal class AppleSync(
     internal var sessionObserver: SessionExchangeObserver? = null
     private val joinFlight = Mutex()
     private val worker = scope.launch(start = CoroutineStart.LAZY) {
-        for (ignored in opportunities) {
+        ExchangeLoop(opportunities, backgroundTime).run {
+            var outcome = SyncStatus.RETRYABLE
             guarded {
                 mutableState.refreshLinked(coordinator)
                 val writer = writers.open()
@@ -114,7 +116,9 @@ internal class AppleSync(
                     sessionObserver?.onReplicaSnapshot(writer.sessionSnapshot)
                     runExchange()
                 }
+                outcome = mutableState.value.status
             }
+            outcome
         }
     }
     val state = mutableState.asStateFlow()

@@ -224,11 +224,17 @@ before treating a passing test as evidence.
 
 - `open`: approving a two-factor sign-in request on the test iPhone through
   SpringBoard, and how often the automation-mode passcode returns over days.
-- `open`: a guest network toggle and an Apple Account sign-out in a VM for the
-  offline-retry and account-gate sync steps.
-- `user-confirmed` 2026-09-25: the interrupted post-start upload on iOS is
-  row `SYNC-020` (reproduce, then automatic retry and background time), in
-  release 1.3 since 2026-09-29; a push path to the Mac is not part of it.
+- `open`: an Apple Account sign-out in a VM for the account-gate sync step.
+- `observed` (`SYNC-020`, 2026-09-29): `vm network --state off|on` disables
+  and enables every guest network service; `tart exec` keeps working while
+  the guest is offline. The iOS driver terminates and relaunches a
+  backgrounded Posato when a later run activates it, so a run that needs the
+  same process after leaving it must read `launch --capture-logs` output
+  instead of driving it again.
+- `user-confirmed` 2026-09-25: the missed post-start publication on iOS is
+  row `SYNC-020`; its observed cause and the retry are in
+  [cross-device synchronization](cross-device-synchronization.md). A push
+  path to the Mac is not part of it.
 - `observed` answer to the packaging question: `posato-control` treats a VM as a
   location of the desktop target (`--vm primary|peer`) with `vm create`,
   `sync`, `destroy`, and `prompt`; the one-time setup is in

@@ -464,12 +464,14 @@ internal class SharedFakeMailboxPort : MailboxPort {
     val cursors = mutableListOf<MailboxCursor>()
     val resumeResets = mutableListOf<ByteArray>()
     var saveResult: BundleSaveResult = BundleSaveResult.Saved
+    var saveAttempts = 0
 
     override suspend fun saveBundle(
         expectedBinding: AccountBinding,
         identifier: ByteArray,
         payload: ByteArray,
     ): BundleSaveResult {
+        saveAttempts++
         if (saveResult != BundleSaveResult.Saved && saveResult != BundleSaveResult.Identical) {
             return saveResult
         }

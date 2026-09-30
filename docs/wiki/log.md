@@ -2262,3 +2262,13 @@ to scope, feasibility, or delivery.
 - `user-confirmed`: `MACOS-017` becomes a Firefox discovery row with PR #110
   as its spike; delivery stays in the backlog as `MACOS-023`. `DOCS-004`
   prepares the 1.3 packaging, and `NAV-001` precedes `SCHEDULE-004`.
+
+## [2026-09-29] correction | Retry session publication after a retryable exchange
+
+- `observed`: an iPhone session start or early end reached iCloud only after
+  **Sync now** because a `CKAccountChanged` notification during the following
+  pass made the account guard report an unknown outcome, and nothing
+  retried. `SYNC-020` adds a bounded automatic retry on both platforms and
+  iOS background time; the guard is unchanged (`user-confirmed`).
+- `observed`: `posato-control vm network` makes the offline sync step
+  unattended.
