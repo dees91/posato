@@ -10,90 +10,131 @@
 
 ## Cause
 
-`observed` in code at `main` 3e19215:
+`observed` at `main` 3e19215 and on the host's Codex 0.159.2:
 
 - `ProxyOwnershipEngine` and `SystemProxyConfiguration` own only the HTTP
-  and HTTPS tuples. `ExceptionsList` is neither read, compared, recorded,
-  nor written, so a session leaves it as it was.
-- With Posato's proxy applied, a client that follows the system proxy
-  settings sends loopback requests to the listener. ADR 0005 rejects every
-  loopback authority except the pause page, so the client gets an empty
+  and HTTPS tuples; `ExceptionsList` is neither read, compared, recorded,
+  nor written.
+- The listener forwards absolute-form HTTP only to port 80 and tunnels
+  `CONNECT` only to port 443 (`BoundedProxyRouter.swift`), so a request to a
+  loopback server on any other port is refused and the client sees an empty
   response. `user-confirmed` (2026-09-30): Codex MCP failed with
-  `codex_tui failed to start`, and a direct connection or `NO_PROXY` worked.
+  `codex_tui failed to start`; a direct connection or `NO_PROXY` worked.
+- Codex imports only `kSCPropNetProxiesHTTP*` and `kSCPropNetProxiesHTTPS*`
+  with `SCDynamicStoreCopyProxies` (`nm -u`), and hyper-util 0.1.20, which the
+  binary links, reads no exceptions list on macOS. Exceptions alone therefore
+  cannot fix the reported case; the listener must relay loopback.
 
 ## Decisions
 
-`user-confirmed` on 2026-09-30, recorded in the
-[ADR 0004 amendment](../../decisions/0004-macos-helper-ownership-and-lifecycle.md#macos-024-loopback-proxy-exceptions-amendment):
+`user-confirmed` on 2026-09-30:
 
 - **D1.** An exceptions list changed out of band during a session is
   preserved on restore and the state becomes `recoveryRequired`, as for the
-  tuples.
+  tuples; a list equal to the baseline is not a conflict (plan review R1).
 - **D2.** An exceptions mismatch during an active session ends the
   active-enforcement claim and starts restoration, like a tuple mismatch.
 - **D3.** The state schema becomes version 2; a version 1 record is read as
   owning no exceptions change; the file path stays.
 - **D4.** A baseline list over 256 entries, with an entry over 2,048 UTF-8
   bytes, or with a non-string entry fails before mutation.
+- **D5.** Version 2 stores digests and the appended suffix instead of the
+  list, which keeps the ADR 0004 privacy rule and fits the 64 KiB state file
+  (plan review R2, R3).
+- **D6.** Both directions ship: the exceptions (A) and a loopback relay in
+  the listener (B), chosen after the Codex finding. End-to-end proof uses a
+  small probe built on the host with Codex's HTTP stack (reqwest with system
+  proxy support) instead of Codex itself.
 
 ## Plan
 
-1. **Reproduce on `main` (`AC-01`).** In a fresh `primary` Tart clone with a
-   `main` build: start a loopback HTTP server in the guest on `127.0.0.1`
-   and `::1`, find a client that follows the system proxy settings and the
-   exceptions list (first probe: `NSURLSession` through JXA; the probe is
-   recorded because CFNetwork may bypass loopback by itself), confirm the
-   request succeeds without a session, then start a session that blocks one
-   website and assert the loopback request fails. Record `scutil --proxy`
-   before and during the session.
-2. **Failing regressions first.** Swift Testing with the existing in-memory
-   configuration and persistence. Isolated coverage is kept only for
-   failures E2E cannot produce reliably:
-   - applied-list construction: order kept, only missing entries appended in
-     the fixed order, no duplicates, absent key created, all-present baseline
-     yields no owned change. A regression here silently rewrites a person's
-     list, and a VM run exercises one or two list shapes only;
-   - bounds (`D4`): oversized or non-string baselines fail before any write
-     or record save;
-   - a version 1 record written by the previous daemon restores the tuples
-     and leaves the exceptions untouched (`D3`); E2E cannot produce a
-     record from an older daemon during a session;
-   - a crash after `prepared` with the exceptions already written or not
-     yet written reconciles to the baseline; E2E cannot stop the daemon
-     between those two points;
-   - `SystemProxyConfiguration.replacingTuples` removes `ExceptionsList`
-     when the baseline had none and keeps `ExcludeSimpleHostnames`.
-   Restore, conflict (`D1`), and maintain mismatch (`D2`) are proved by E2E
-   in step 5.
-3. **Implement.** `ProxySnapshot` gains the exceptions presence and value;
-   `SystemProxyConfiguration` reads and writes it under the existing lock
-   and verifies the whole resulting dictionary; `OwnershipRecord` schema 2
-   adds `baselineExceptions` and `appliedExceptions` with version 1 decoding;
-   `ProxyOwnershipEngine` computes, compares, and restores the group per
-   `D1`/`D2`. No Kotlin, wire, or helper change is expected: the chain check
-   and the listener stay as they are.
-4. **Local checks.** `swift test` in `macosHelper`, the aggregate quality
-   gate, and the package build that `posato-control build` uses.
-5. **E2E after the change (`AC-02`, `AC-03`).** Same VM setup with a
+1. **Probe and reproduction (`AC-01`).** Build the probe outside the
+   repository as a one-off verification artifact: a reqwest client with system proxy support that
+   requests a URL and, optionally, holds a streamed response open for 45
+   seconds. In a fresh `primary` Tart clone with a `main` build, one
+   `vm exec` script starts a loopback HTTP server on `127.0.0.1` and `::1`
+   (built with the probe), runs the probe against `127.0.0.1`, `localhost`,
+   and `[::1]` on a non-80 port, and stops the server. Without a session all
+   succeed; during a session that blocks one website they fail. Also record
+   `scutil --proxy` and one `NSURLSession` request through JXA, to learn
+   whether CFNetwork already bypasses loopback.
+2. **`posato-control` extension (plan review R6).** `vm network --service
+   <name> --bypass-domains <list> | --bypass-empty` and a per-service read of
+   the bypass list, using the guest administrator password like the existing
+   actions, with driver tests. Record what `networksetup -setproxybypassdomains
+   <service> Empty` writes; if it cannot remove the key, the no-key baseline
+   is covered only by the unit tests. A daemon kill during a session is added
+   to the driver if no existing command can do it.
+3. **Failing regressions first.** Swift Testing with the in-memory
+   configuration and persistence, only where E2E cannot reliably expose the
+   failure:
+   - applied-list construction: order kept, exact case-sensitive matching,
+     only missing entries appended in the fixed order, absent key created,
+     all-present baseline yields no owned change;
+   - bounds (`D4`): oversized, non-string, and non-array baselines fail with
+     the incompatible-network outcome before any record save or write;
+   - a version 1 record restores the tuples and leaves the exceptions
+     untouched, and stays version 1 semantics through phase rewrites;
+   - crash windows: `prepared` with nothing written and with everything
+     written, and a restore that committed before the record was removed,
+     which must reach Idle without `recoveryRequired` (R1);
+   - an unreadable or out-of-bounds current list during restore and maintain
+     still restores the tuples and ends `recoveryRequired` (R4);
+   - record bounds: the applied digest and suffix are consistent, and the
+     worst-case version 2 record fits the 64 KiB file;
+   - router: loopback absolute-form and `CONNECT` on a non-80/443 port route
+     to a relay, the own listener port and `*.localhost` stay refused,
+     `localhost` never resolves through DNS, and a selected host still
+     blocks; the existing `SystemProxyConfigurationTests` assertion that
+     `ExceptionsList` passes through unchanged is updated, not dropped.
+4. **Implement.** Daemon: `ProxySnapshot` gains an exceptions value with an
+   opaque unreadable case; `SystemProxyConfiguration` reads and writes it
+   under the existing lock, with a leave-untouched target, and verifies the
+   whole dictionary; `OwnershipRecord` schema 2 per `D5`;
+   `ProxyOwnershipEngine` applies `D1`, `D2`, and the prepared-baseline
+   comparison. Helper: the chain-check overlay adds the three entries, and
+   the router and relay implement the loopback relay without idle timeout.
+   Map the `D4` failure to the existing incompatible-network copy and check
+   it in the app.
+5. **Local checks.** `swift test` in `macosHelper`, the driver tests, the
+   aggregate quality gate, and the package build `posato-control build`
+   uses.
+6. **E2E after the change (`AC-02`, `AC-03`).** Same VM setup with a
    baseline list containing `*.local` and `169.254/16`:
-   - during a session: requests to `127.0.0.1`, `localhost`, and `[::1]`
-     succeed; the selected website shows the pause page in Safari; an
-     unrelated website loads; `scutil --proxy` shows the baseline entries in
-     order followed by the three loopback entries;
-   - the exact baseline list returns after early end, natural end, and after
-     the session helper is killed during a session (lease-driven restore);
-   - a baseline without `ExceptionsList` returns without the key;
-   - `D2`/`D1`: changing the bypass list with `networksetup` during a session
-     ends active enforcement, keeps the changed list, and reports
-     `recoveryRequired`, with the tuples restored.
-6. **Amendment acceptance (`AC-04`),** completed-change review, closeout of
+   - during a session: the reqwest probe, which ignores the exceptions
+     list like Codex and so goes through the listener, reaches
+     `127.0.0.1`, `localhost`, and `[::1]` on a non-80 port and keeps the
+     45-second stream (relay); the `NSURLSession` request reaches them
+     directly if CFNetwork honors the list (exceptions); the selected
+     website shows the pause page in Safari; an unrelated website loads;
+     the per-service list shows the baseline entries in order followed by
+     the three loopback entries;
+   - the exact baseline list returns after early end, natural end, a killed
+     session helper, and a killed daemon during a session;
+   - a baseline without `ExceptionsList` returns without the key, if step 2
+     can produce it;
+   - `D2`/`D1`: changing the bypass list during a session ends active
+     enforcement, keeps the changed list, and reports `recoveryRequired`,
+     with the tuples restored.
+7. **Amendment acceptance (`AC-04`),** a second independent plan review of
+   this revised plan before step 3, the completed-change review, closeout of
    this record, and one wiki-log entry.
 
 ## High-risk plan review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `changes-required` (first pass, 2026-09-30, independent
+  agent)
+- **Critical or Required findings:** R1 restore treated a baseline-equal
+  list as a conflict; R2 `D4` bounds exceed the 64 KiB state file; R3 storing
+  the list breaks the ADR 0004 privacy rule; R4 an unreadable current list
+  blocks tuple restore; R5 the planned client probably cannot reproduce the
+  failure and the reported client ignores exceptions; R6 E2E needs a
+  `posato-control` extension.
+- **Resolution:** R1 and R4 folded into the amendment and step 3; R2 and R3
+  by `D5`; R5 by `D6` and step 1; R6 by step 2. Recommended items folded:
+  applied-list record check, chain-check overlay, ADR 0005 wording, exact
+  matching, updated existing test, daemon-kill run, `D4` error mapping.
+  Second pass pending.
 
 ## Result
 

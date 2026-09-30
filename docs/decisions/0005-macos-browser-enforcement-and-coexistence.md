@@ -7,24 +7,43 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
-## MACOS-024 loopback exceptions amendment
+## MACOS-024 loopback amendment
 
 Proposed on 2026-09-30 by `MACOS-024`; awaits maintainer acceptance
-(`AC-04`). Ownership and restoration are specified in the
+(`AC-04`). Exceptions ownership and restoration are specified in the
 [ADR 0004 amendment](0004-macos-helper-ownership-and-lifecycle.md#macos-024-loopback-proxy-exceptions-amendment).
 
-While Posato's proxy is applied, connections to `localhost`, `127.0.0.1`, and
-`::1` go directly instead of through the loopback listener. The listener's
-rejection of every loopback authority other than the pause page is
-unchanged; it now protects only clients that ignore the exceptions list.
+`user-confirmed` report (2026-09-30): during a session, a local Codex MCP
+connection received an empty response. `observed`: Codex 0.159.2 reads only
+the HTTP and HTTPS tuples of the system proxy settings and not the
+exceptions list, and the listener forwards cleartext HTTP only to port 80
+and tunnels `CONNECT` only to port 443, so a loopback server on any other
+port is refused.
 
-A selected website can never become an exception: `ExactDomain` accepts no
-IP literal or single-label host, and Posato adds only the three fixed
-entries. The pre-Apply and post-Apply chain checks still require that every
-selected exact domain resolves to exactly the Posato loopback route, so a
-pre-existing exception that covers a selected domain remains unsupported.
-Other private ranges, `*.local`, and per-application bypass remain out of
-scope.
+Two changes keep local traffic working during a session (D6):
+
+- **Exceptions.** While Posato's proxy is applied, `localhost`, `127.0.0.1`,
+  and `::1` are in the proxy exceptions, so clients that honor the list
+  connect directly.
+- **Loopback relay.** For clients that ignore the list, the listener relays
+  an absolute-form HTTP request or a `CONNECT` whose destination is exactly
+  `localhost`, `127.0.0.1`, or `::1`, on any port other than its own
+  listener port. `localhost` connects only to `127.0.0.1` or `::1` and is
+  never resolved through DNS or the hosts file. These relays have no idle
+  timeout, so long-lived local streams survive; they still count toward the
+  connection limit and still fail closed on malformed input. The pause-page
+  exception and the refusal of the listener's own port are unchanged. Other
+  loopback addresses, other private ranges, `*.localhost`, and `*.local`
+  keep today's policy.
+
+A selected website can never become an exception or a loopback relay:
+`ExactDomain` accepts no IP literal or single-label host, selected-host
+matching runs before the loopback rule, and Posato adds only the three
+fixed entries. The pre-Apply chain check simulates the applied exceptions,
+and the post-Apply check still requires that every selected exact domain
+resolves to exactly the Posato loopback route. A selected domain that an
+exception would cover, such as a `*.localhost` name, therefore fails before
+mutation. Per-application bypass remains out of scope.
 
 ## TARGETS-006 www-equivalence clarification
 
