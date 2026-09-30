@@ -210,7 +210,10 @@
 
 | Check run | Result | Evidence |
 | --- | --- | --- |
-| Pending | | |
+| `AC-01` on `main` code (582169b, docs-only diff), fresh `primary` clone, Mac setup with the standing grant, session blocking example.com (`session-start-desktop.json`) | pass: reproduced | Probe on reqwest 0.12.28 and hyper-util 0.1.20 (pinned from the Codex 0.159.2 binary) to a guest loopback server on port 18765: without a session `127.0.0.1`, `localhost`, `[::1]`, and a 6,000-byte POST succeed directly; during the session all four fail with `connection closed before message completed` and the server receives nothing. Runs `20260930-165909-b558` (setup), `20260930-170107-8571` (start), `20260930-170238-2d74` (early end). |
+| `AC-01` control: loopback entries already in the list | pass: still fails | With `*.local, 169.254/16, localhost, 127.0.0.1, ::1` set through `vm network --bypass-domains` during the session, the probe fails the same way; it ignores the list, as Codex does. |
+| CFNetwork observation | `observed` | `NSData dataWithContentsOfURL` through JXA reaches all three loopback URLs during the session with the baseline list, classified `direct` by the server: CFNetwork bypasses loopback by itself. Python `urllib` (host source) honors the list and proxies `127.0.0.1` unless it is listed, so the exceptions still serve such clients. |
+| Driver: `networksetup -setproxybypassdomains <service> Empty` | `observed` | Writes an empty `ExceptionsList` array, not an absent key; the absent-key baseline needs a root `SCPreferences` edit. |
 
 ## Blockers and accepted risks
 
