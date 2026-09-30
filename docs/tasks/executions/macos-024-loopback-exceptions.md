@@ -261,8 +261,9 @@
 
 ## Blockers and accepted risks
 
-- Test-first deviation described under Result: needs the maintainer's
-  explicit acceptance or a request to redo those tests.
+- Test-first deviation described under Result: accepted by the maintainer
+  for this change only (`user-confirmed`, 2026-09-30); the mutation-checked
+  tests stay.
 - An absent-key or empty exceptions list and `*.localhost` names behave as
   recorded; a client that half-closes its side after an absolute-form
   request to a loopback relay loses the relay, which reqwest, hyper, and
@@ -270,6 +271,5 @@
 
 ## Final
 
-- **Status:** `done` pending the maintainer's decision on the test-first
-  deviation
+- **Status:** `done`
 - **Outcome:** `AC-01` to `AC-04` met.

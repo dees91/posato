@@ -62,7 +62,8 @@ Posato adds deliberate friction; it is not a lock you cannot open.
   proxy are not covered. Visiting a paused site by its IP address is not
   blocked, and iCloud Private Relay can bypass blocking without being detected.
   A session does not start blocking while a VPN or a manually configured proxy
-  is active. Pages already loaded, cached, or downloaded are not erased, and the
+  is active. Connections to servers on the Mac itself (`localhost`,
+  `127.0.0.1`, and `::1`) keep working during a session. Pages already loaded, cached, or downloaded are not erased, and the
   pause page may occasionally not appear even though the site stays blocked.
 - On macOS, Posato uses a background helper that requires administrator approval
   and may ask for Automation permission to show its pause page in the current
