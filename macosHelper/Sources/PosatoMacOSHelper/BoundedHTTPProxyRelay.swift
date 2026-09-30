@@ -284,8 +284,28 @@ extension BoundedHTTPProxy {
           upstream: upstream
         )
         self.relay(from: upstream, to: client)
+        if self.loopbackUpstreams.contains(ObjectIdentifier(upstream)) {
+          self.finishWhenClientCloses(client: client, upstream: upstream)
+        }
       }
     }
+  }
+
+  /// An absolute-form loopback relay reads nothing more from its client, so without this an established relay
+  /// would keep its capped slot after the client leaves (ADR 0005, MACOS-024). Any further byte is refused too.
+  private func finishWhenClientCloses(client: NWConnection, upstream: DirectTCPConnection) {
+    client.receive(
+      minimumIncompleteLength: 1,
+      maximumLength: 1,
+      completion: { [weak self, weak client, weak upstream] _, _, _, _ in
+        guard let self, let client, let upstream else {
+          return
+        }
+        self.queue.async {
+          self.finish(client, upstream)
+        }
+      }
+    )
   }
 
   private func finishOrContinueEmpty(

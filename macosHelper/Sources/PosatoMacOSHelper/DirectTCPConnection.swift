@@ -278,8 +278,10 @@ extension DirectTCPConnection {
       connecting: {
         let descriptor = try Self.connectSocket(literalAddresses: literalAddresses, port: port)
         var enabled: Int32 = 1
-        _ = Darwin.setsockopt(
-          descriptor, SOL_SOCKET, SO_KEEPALIVE, &enabled, socklen_t(MemoryLayout<Int32>.size))
+        var idle = Int32(BoundedHTTPProxy.keepaliveIdleSeconds)
+        let size = socklen_t(MemoryLayout<Int32>.size)
+        _ = Darwin.setsockopt(descriptor, SOL_SOCKET, SO_KEEPALIVE, &enabled, size)
+        _ = Darwin.setsockopt(descriptor, IPPROTO_TCP, TCP_KEEPALIVE, &idle, size)
         return descriptor
       },
       completion: completion

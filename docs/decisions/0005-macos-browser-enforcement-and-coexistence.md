@@ -59,9 +59,9 @@ matching runs before the loopback rule, and Posato adds only the three
 fixed entries. The pre-Apply chain check simulates the applied exceptions,
 and the post-Apply check still requires that every selected exact domain
 resolves to exactly the Posato loopback route, so a selected domain that
-an exception would cover fails before mutation. Whether CFNetwork applies
-the `localhost` entry to subdomains is `open` until `MACOS-024` observes
-it.
+an exception would cover fails before mutation. `observed` (2026-09-30,
+`MACOS-024`): CFNetwork applies the `localhost` entry to `localhost` only,
+not to `*.localhost`, which still resolves to the Posato route.
 
 Residual: relayed connections originate from the session helper, and any
 local process can reach the listener. A loopback service that trusts its

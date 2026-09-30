@@ -86,7 +86,7 @@ func givenThirtyTwoLoopbackTunnelsWhenAnotherOpensThenOnlyItIsRefused() async th
 /// Accepts TCP connections into the backlog and never reads or writes.
 private final class SilentLoopbackListener: @unchecked Sendable {
   let port: UInt16
-  private let descriptor: Int32
+  let descriptor: Int32
 
   init() throws {
     let listening = Darwin.socket(AF_INET, SOCK_STREAM, 0)
@@ -115,5 +115,66 @@ private final class SilentLoopbackListener: @unchecked Sendable {
 
   func stop() {
     Darwin.close(descriptor)
+  }
+}
+
+@Test func givenClosedLoopbackStreamsWhenNewOnesOpenThenTheirSlotsAreFree() async throws {
+  let origin = try HeadersThenSilentOrigin()
+  defer { origin.stop() }
+  let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"])
+  let proxyPort = try await runBlockingTestOperation { try proxy.start() }
+  defer { proxy.stop() }
+  let request =
+    "GET http://127.0.0.1:\(origin.port)/events HTTP/1.1\r\nHost: 127.0.0.1:\(origin.port)\r\n\r\n"
+
+  for _ in 0..<BoundedHTTPProxy.maximumLoopbackRelays {
+    let descriptor = try await connectedLoopbackSocket(port: proxyPort)
+    try await send(request, to: descriptor)
+    #expect(try await receiveLine(from: descriptor) == "HTTP/1.1 200 OK\r\n")
+    Darwin.close(descriptor)
+  }
+  try await runBlockingTestOperation { Thread.sleep(forTimeInterval: 0.5) }
+
+  let fresh = try await connectedLoopbackSocket(port: proxyPort)
+  defer { Darwin.close(fresh) }
+  try await send(request, to: fresh)
+  #expect(try await receiveLine(from: fresh) == "HTTP/1.1 200 OK\r\n")
+}
+
+/// Answers each connection with response headers and one event, then stays silent with the connection open.
+private final class HeadersThenSilentOrigin: @unchecked Sendable {
+  let port: UInt16
+  private let listening: SilentLoopbackListener
+  private let lock = NSLock()
+  private var accepted: [Int32] = []
+  private var stopped = false
+
+  init() throws {
+    listening = try SilentLoopbackListener()
+    port = listening.port
+    let descriptor = listening.descriptor
+    Thread.detachNewThread { [weak self] in
+      while true {
+        let client = Darwin.accept(descriptor, nil, nil)
+        guard client >= 0, let self else {
+          return
+        }
+        var buffer = [UInt8](repeating: 0, count: 4_096)
+        _ = Darwin.read(client, &buffer, buffer.count)
+        let reply = Array(
+          "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\n\r\ndata: first\n\n".utf8)
+        _ = Darwin.write(client, reply, reply.count)
+        self.lock.withLock { self.accepted.append(client) }
+      }
+    }
+  }
+
+  func stop() {
+    listening.stop()
+    lock.withLock {
+      for descriptor in accepted {
+        Darwin.close(descriptor)
+      }
+    }
   }
 }

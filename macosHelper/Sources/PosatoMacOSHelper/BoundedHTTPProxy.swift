@@ -12,6 +12,8 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   /// Loopback relays (ADR 0005, MACOS-024) have their own cap inside the tracked limit, so stuck local streams
   /// cannot starve browser traffic.
   static let maximumLoopbackRelays = 32
+  /// Keepalive probes start after a minute of silence rather than the system's two hours.
+  static let keepaliveIdleSeconds = 60
   static let idleConnectionTimeout: TimeInterval = 30
   static let defaultHeaderTimeout: TimeInterval = 5
   static let receiveChunkLength = 16_384
@@ -148,6 +150,7 @@ final class BoundedHTTPProxy: @unchecked Sendable {
   private func buildListener() throws -> NWListener {
     let tcp = NWProtocolTCP.Options()
     tcp.enableKeepalive = true
+    tcp.keepaliveIdle = Self.keepaliveIdleSeconds
     let parameters = NWParameters(tls: nil, tcp: tcp)
     parameters.requiredLocalEndpoint = .hostPort(host: "127.0.0.1", port: .any)
     do {

@@ -211,13 +211,15 @@
   and drops the idle timeout once established. `BoundedHTTPProxy` gained an
   `idleTimeout` parameter beside `headerTimeout` so the idle rule is tested
   in half a second instead of thirty.
-- Deviation: after the first engine test, the engine was implemented before
-  the remaining engine tests were written, against the test-first rule.
-  Each of those tests was then shown to fail against a targeted mutation of
-  the logic it guards (nine mutations, each caught by its intended test);
-  two crash-window tests that caught nothing beyond existing coverage were
-  dropped. Router, relay, overlay, and configuration tests were written
-  first, and were also mutation-checked.
+- Deviation: only the first engine test, the overlay test, the router
+  matrix, the relay cap and idle tests, and the two completed-change review
+  regressions demonstrably failed before their implementation. The rest of
+  the engine, `SystemProxyConfiguration`, and the version 2 validity rules
+  were written before their tests, or committed together with them, against
+  the test-first rule. Each of those tests was then shown to fail against a
+  targeted mutation of the logic it guards (21 mutations, each caught by its
+  intended test); two crash-window tests that caught nothing beyond existing
+  coverage were dropped.
 - Observed limitation, not changed: a D4 or other incompatible-network
   failure shows the generic **Restrictions need attention**, and a
   preserved changed list shows **Restrictions may still apply** without
@@ -242,11 +244,18 @@
 | `AC-02` (change build 13a361f, helper and daemon SHA-256 matched in the guest) | pass | During a session (`20260930-172418-f2a6`): the probe reached `127.0.0.1`, `localhost`, and `[::1]` and posted 6,000 bytes, all classified `proxy` with the original `Host`; a stream with a 45-second gap survived; the listener's own port stayed refused; `NSURLSession` went direct; `observe` reported example.com `paused` and example.org `loaded`; Safari showed the HTTP pause page and replaced an HTTPS tab with `127.0.0.1` and the pause page. The list read `*.local, 169.254/16, localhost, 127.0.0.1, ::1`. |
 | `AC-03` exact restore | pass | Baseline `*.local, 169.254/16` returned after a killed daemon (launchd restarted it; Retry reapplied), a killed helper, and early end (`20260930-173240-a8a2`); an absent-key baseline read `localhost, 127.0.0.1, ::1` during the session and no key after natural expiry (`20260930-173254-62e4`). |
 | `D2`/`D1` | pass | Adding `example.com` to the list during a session ended enforcement, restored the tuples, and kept the changed list; Retry showed **Restrictions may still apply**; after the list was set back to the baseline, Retry showed **Restrictions active**. |
+| Completed-change review fixes | pass | R1: a 256-entry baseline now applies and restores exactly (reader bound 259, Apply bound 256); R2: an established absolute-form loopback relay is finished when its client closes, freeing its slot. Both regressions failed first. |
+| `CFNetworkCopyProxiesForURL` with synthetic settings on the host (no system change) | `observed` | With `localhost` in `ExceptionsList`, `http://localhost:8080/` is direct and `http://app.localhost/` and `https://app.localhost/` still use the proxy. |
 | `D4` | pass | A 257-entry list: the session started with **Restrictions need attention**, no proxy was applied, and the list stayed unchanged. |
 
 ## Blockers and accepted risks
 
-- None yet.
+- Test-first deviation described under Result: needs the maintainer's
+  explicit acceptance or a request to redo those tests.
+- An absent-key or empty exceptions list and `*.localhost` names behave as
+  recorded; a client that half-closes its side after an absolute-form
+  request to a loopback relay loses the relay, which reqwest, hyper, and
+  curl do not do.
 
 ## Final
 

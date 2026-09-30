@@ -77,6 +77,8 @@ extension BoundedHTTPProxy {
     for connection in directConnections.values {
       connection.cancel()
     }
+    loopbackUpstreams.removeAll()
+    establishedLoopbackUpstreams.removeAll()
     directConnections.removeAll()
     startupCondition.withLock {
       boundPortStorage = nil

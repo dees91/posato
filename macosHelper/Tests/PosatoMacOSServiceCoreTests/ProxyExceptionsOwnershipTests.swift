@@ -310,3 +310,50 @@ private final class BoundedReadConfiguration: ProxyConfigurationAccess, @uncheck
     )
   }
 }
+
+// A root-only state file can still be corrupted; an inconsistent version 2 record must never pass as owning a list.
+@Test func givenInconsistentVersionTwoExceptionsWhenValidatedThenTheRecordIsRejected() {
+  let digest = ProxyExceptions.digest(["*.local"])
+  let other = ProxyExceptions.digest(["*.local", "localhost"])
+  let invalid = [
+    OwnedExceptions(
+      baselinePresent: false, baselineDigest: nil, appliedDigest: other, appended: ["localhost"]),
+    OwnedExceptions(
+      baselinePresent: true, baselineDigest: digest, appliedDigest: other,
+      appended: ["localhost", "localhost"]),
+    OwnedExceptions(
+      baselinePresent: true, baselineDigest: digest, appliedDigest: other,
+      appended: ["::1", "localhost"]),
+    OwnedExceptions(
+      baselinePresent: true, baselineDigest: digest, appliedDigest: Data(other.prefix(31)),
+      appended: ["localhost"]),
+    OwnedExceptions(
+      baselinePresent: true, baselineDigest: digest, appliedDigest: other, appended: []),
+    OwnedExceptions(
+      baselinePresent: false, baselineDigest: digest, appliedDigest: other,
+      appended: ProxyExceptions.loopbackEntries),
+  ]
+  let valid = OwnedExceptions(
+    baselinePresent: true, baselineDigest: digest, appliedDigest: other, appended: ["localhost"])
+
+  #expect(versionTwoRecord(valid).hasValidBounds)
+  for exceptions in invalid {
+    #expect(!versionTwoRecord(exceptions).hasValidBounds, "\(exceptions)")
+  }
+}
+
+private func versionTwoRecord(_ exceptions: OwnedExceptions) -> OwnershipRecord {
+  let applied = ProxyTuple(enabled: .integer(1), host: .string("127.0.0.1"), port: .integer(17_769))
+  return OwnershipRecord(
+    sessionIdentifier: sessionIdentifier,
+    requestIdentifier: requestIdentifier,
+    canonicalInputDigest: canonicalDigest,
+    serviceIdentifier: "synthetic-service",
+    phase: .applied,
+    baselineHTTP: emptyTuple,
+    baselineHTTPS: emptyTuple,
+    appliedHTTP: applied,
+    appliedHTTPS: applied,
+    exceptions: exceptions
+  )
+}

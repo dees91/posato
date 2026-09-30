@@ -912,6 +912,8 @@ option variable.
   baseline.
 - `observed`: `networksetup -setproxybypassdomains <service> Empty` stores an
   empty array; only `scutil --prefs` removes the key.
+- `observed`: CFNetwork applies a `localhost` exception to `localhost` only;
+  `*.localhost` names still use the proxy.
 
 ## Browser presentation threading and consent (`MACOS-022`)
 
