@@ -47,7 +47,7 @@ variable, which wins). `doctor` reports presence and source, never values.
 | `posato.control.simulator` | `POSATO_CONTROL_SIMULATOR` | Simulator name or UDID to use instead of the booted one. |
 | `posato.control.device` | `POSATO_CONTROL_DEVICE` | Device name or UDID to use instead of the first connected iPhone. |
 | `posato.control.devicePasscodeKeychainService` / `...Account` | `POSATO_CONTROL_DEVICE_PASSCODE_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test iPhone passcode that `pressKeys` types. |
-| `posato.vm.primaryGolden` / `posato.vm.peerGolden` / `posato.vm.legacyGolden` | `POSATO_VM_PRIMARY_GOLDEN` / `POSATO_VM_PEER_GOLDEN` / `POSATO_VM_LEGACY_GOLDEN` | Tart golden VMs of the primary, peer, and legacy (previous macOS version) lines. |
+| `posato.vm.primaryGolden` / `posato.vm.peerGolden` / `posato.vm.legacyGolden` / `posato.vm.venturaGolden` | `POSATO_VM_PRIMARY_GOLDEN` / `POSATO_VM_PEER_GOLDEN` / `POSATO_VM_LEGACY_GOLDEN` / `POSATO_VM_VENTURA_GOLDEN` | Tart golden VMs of the primary, peer, legacy (previous macOS version), and ventura (macOS 13 with Rosetta, for the x86-64 build) lines. |
 | `posato.vm.adminKeychainService` / `...Account` | `POSATO_VM_ADMIN_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the guest administrator password. |
 | `posato.vm.accountKeychainService` / `...Account` | `POSATO_VM_ACCOUNT_KEYCHAIN_SERVICE` / `..._ACCOUNT` | Login Keychain item holding the test Apple Account password. |
 | `posato.vm.accountPhoneKeychainService` | `POSATO_VM_ACCOUNT_PHONE_KEYCHAIN_SERVICE` | Login Keychain item (same account as above) holding the test account's trusted phone number, for iCloud re-verification. |
@@ -77,7 +77,7 @@ alias) plus the common options `--udid`, `--run-id`, `--artifacts`,
 The desktop target never drives the application on the host Mac, whose
 installed Posato is the maintainer's real copy: outside a virtual machine
 (`kern.hv_vmm_present` is 0) every desktop command except `build`, `doctor`,
-and `artifacts` fails with `DESKTOP_HOST_REFUSED`. Add `--vm primary|peer|legacy`
+and `artifacts` fails with `DESKTOP_HOST_REFUSED`. Add `--vm primary|peer|legacy|ventura`
 ([Tart VMs](#tart-vms)).
 
 ```json
@@ -175,7 +175,7 @@ grants a permission.
 | `swipe-back [--cancel]` | desktop in a VM | Swipes right with two fingers over the Posato window, as the trackpad's swipe between pages does: phased scroll events that AppKit's swipe tracking follows. A long first movement completes the swipe; `--cancel` releases it below the threshold. Synthetic events report the whole movement at the start, so progress does not grow as a real trackpad's does. |
 | `resources [--seconds N]` | desktop in a VM | Samples the application and its helper for N seconds (default 600): physical footprint, CPU seconds used, and idle wakeups per second from `top`. |
 | `update-consent --answer allow\|deny [--timeout-seconds N]` | desktop in a VM | Answer a release build's modal "Check for updates automatically?" alert, which appears once setup completes and on the first open of a replaced install and blocks every click behind it. Waits up to N seconds (default 10) and reports `answered: false` when no alert appears. |
-| `vm create\|sync\|destroy [--line primary\|peer\|legacy]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. `create` also reports `iCloudKeychain` and, when the clone's keychain was paused, resumes it and reports `iCloudResumed: true` once it syncs again, or `iCloudResumeError` when the resume failed (a later clone can pause it again, so resume every clone once all have booted); `destroy` refuses a running guest whose database shows a linked iCloud workspace (`WORKSPACE_LINKED`) unless `--keep-workspace`; a stopped guest or an unreadable database is not checked. See [Tart VMs](#tart-vms). |
+| `vm create\|sync\|destroy [--line primary\|peer\|legacy\|ventura]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. `create` also reports `iCloudKeychain` and, when the clone's keychain was paused, resumes it and reports `iCloudResumed: true` once it syncs again, or `iCloudResumeError` when the resume failed (a later clone can pause it again, so resume every clone once all have booted); `destroy` refuses a running guest whose database shows a linked iCloud workspace (`WORKSPACE_LINKED`) unless `--keep-workspace`; a stopped guest or an unreadable database is not checked. See [Tart VMs](#tart-vms). |
 | `vm icloud [--line] [--resume]` | desktop in a VM | Read iCloud Keychain's state from System Settings (`syncing`, `unknown`; exit 3 `ICLOUD_KEYCHAIN_PAUSED` when paused or signed out); `--resume` runs Resume Data Sync and answers its dialogs. |
 | `vm dialogs [--line]` | desktop in a VM | List the open system dialogs by the process that owns each window, which recognized text cannot tell apart: `admin` (SecurityAgent), `gatekeeper`, `system-alert`, `accessibility`, and `notification` banners. Check it before answering an administrator prompt; a Background Items notice also says "allow this". |
 | `vm prompt <kind> [--line] [--row text]` | desktop in a VM | Answer a system dialog over VNC: `admin`, `background`, `toggle`, `account-password`, `mac-password`, `device-passcode`, `gatekeeper`, `picker-bypass`, `automation-allow`, `automation-deny`, `keep-safari`. |
@@ -379,7 +379,7 @@ and its feature map for exact setup, native picker limits, and cleanup.
 
 ## Tart VMs
 
-`-t desktop --vm primary|peer|legacy` runs a desktop command inside a Tart guest: the
+`-t desktop --vm primary|peer|legacy|ventura` runs a desktop command inside a Tart guest: the
 host forwards it to the guest's own copy of the driver through `tart exec`,
 which runs in the logged-in user's Aqua session, sends a scenario file (or,
 for `--scenario -`, the host's own standard input) on standard input, and copies the guest's run directory to

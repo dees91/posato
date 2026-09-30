@@ -23,6 +23,7 @@ enum class VmLine(
     PRIMARY("primary", ConfigurationKey.VM_PRIMARY_GOLDEN),
     PEER("peer", ConfigurationKey.VM_PEER_GOLDEN),
     LEGACY("legacy", ConfigurationKey.VM_LEGACY_GOLDEN),
+    VENTURA("ventura", ConfigurationKey.VM_VENTURA_GOLDEN),
     ;
 
     val cloneName: String
@@ -30,7 +31,7 @@ enum class VmLine(
 
     companion object {
         fun parse(value: String): VmLine = entries.firstOrNull { it.id == value }
-            ?: throw ControlException(ErrorCode.USAGE, "Unknown VM line '$value'.", "Use primary, peer, or legacy.")
+            ?: throw ControlException(ErrorCode.USAGE, "Unknown VM line '$value'.", "Use primary, peer, legacy, or ventura.")
     }
 }
 
@@ -83,6 +84,7 @@ class VmLifecycle(
             "tools/posato-control/native",
             "tools/posato-control/fixtures",
             layout.relativize(layout.accessibilityBridgeBinary),
+            layout.relativize(layout.accessibilityBridgeCommand),
         )
         val paths = if (candidateInstalled) driver else driver + layout.relativize(layout.stagedDesktopApplication)
         tart.pipe(

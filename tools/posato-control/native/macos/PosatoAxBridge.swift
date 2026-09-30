@@ -334,7 +334,11 @@ enum Bridge {
     guard let target = NSRunningApplication(processIdentifier: pid) else { return }
     let application = NSApplication.shared
     application.setActivationPolicy(.accessory)
-    application.activate()
+    if #available(macOS 14, *) {
+      application.activate()
+    } else {
+      application.activate(ignoringOtherApps: true)
+    }
     RunLoop.current.run(until: Date().addingTimeInterval(activationInterval))
     target.activate(options: [.activateAllWindows])
     for _ in 0..<activationAttempts where frontmostPid() != pid {

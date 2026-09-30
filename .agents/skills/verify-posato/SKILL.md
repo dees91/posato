@@ -47,8 +47,9 @@ never from the Apple Developer portal. With the one-time setup in
 
 - **macOS in Tart VMs.** `$PC build -t desktop`, then
   `$PC vm create --line primary` (and `--line peer` for Mac-to-Mac sync, or
-  `--line legacy` for the previous macOS major version).
-  Every desktop command takes `--vm primary|peer|legacy` and runs inside the guest;
+  `--line legacy` for the previous macOS major version, or `--line ventura`
+  for the x86-64 build under Rosetta on macOS 13, which has no Apple Account).
+  Every desktop command takes `--vm primary|peer|legacy|ventura` and runs inside the guest;
   evidence lands in `build/verification/runs/<run>/guest/`. System dialogs
   are answered with `$PC vm prompt <kind> --line <line>`:
   `admin` (SecurityAgent at session start and Resume restrictions),

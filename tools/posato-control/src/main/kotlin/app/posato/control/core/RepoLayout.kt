@@ -19,6 +19,7 @@ class RepoLayout(
     val toolDirectory: Path = root.resolve("tools").resolve("posato-control")
     val accessibilityBridgeSource: Path = toolDirectory.resolve("native").resolve("macos").resolve("PosatoAxBridge.swift")
     val accessibilityBridgeBinary: Path = nativeDirectory.resolve("posato-ax-bridge")
+    val accessibilityBridgeCommand: Path = nativeDirectory.resolve("posato-ax-bridge.command")
     val iosProject: Path = root.resolve("iosApp").resolve("iosApp.xcodeproj")
     val driverProject: Path = toolDirectory.resolve("ios-driver").resolve("PosatoDriver.xcodeproj")
     val stagedDesktopApplication: Path = root

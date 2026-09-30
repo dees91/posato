@@ -19,7 +19,7 @@ class VmTextCommand :
         "text",
         "Print the text recognized on the guest screen, top to bottom, instead of a screenshot.",
     ) {
-    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
     private val contains by option("--contains", help = "Keep only lines that contain this text (case-insensitive).")
 
     override fun execute(session: Session): JsonElement {
@@ -33,7 +33,7 @@ class VmWaitTextCommand :
         "wait-text",
         "Wait until text appears on the guest screen (or disappears with --absent), polling text recognition.",
     ) {
-    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
     private val text by option("--text", help = "Text to wait for; a line containing it matches.").required()
     private val exact by option("--exact", help = "Match only a line equal to the text.").flag()
     private val absent by option("--absent", help = "Wait until no line contains the text.").flag()

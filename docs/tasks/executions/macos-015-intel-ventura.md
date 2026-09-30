@@ -208,3 +208,26 @@ a brief amendment.
   Apple silicon. Download Posato for Apple silicon." with **Download** and
   **Quit**.
 - `D3`: no arm64 run on `ventura`; the macOS 13 exception stays strict.
+
+## Progress
+
+- **Step 0 feasibility (2026-09-30): passed** (`observed`). A macOS 13.6
+  (22G120) guest was created from Apple's last Ventura restore image for
+  virtual Macs and prepared by the driver with no person present. Rosetta,
+  `tart-guest-agent` 0.15.0 (its Mach-O says macOS 26.0, yet it runs), and
+  both privacy grants work. The notarized x86-64 evaluation DMG installed
+  through `vm install` with Gatekeeper accepted, launched under Rosetta,
+  rendered its window with Skiko, and answered an accessibility snapshot;
+  `jwebserver` from the shared JDK served a file on guest loopback.
+  Evidence: `build/verification/runs/20260930-163920-bbc2` (install),
+  `20260930-164358-1d0f` (snapshot), `20260930-164404-36f7` (window).
+- Findings folded into step 8: macOS 13 renders a Tart display at 1x, so
+  the line uses `--display 1440x900px`, which also keeps the System
+  Settings toggle geometry of the other lines; the accessibility bridge is
+  built for `arm64-apple-macos13.0` with a pre-14 activation fallback and a
+  flag stamp that travels with it; Setup Assistant clicks sometimes need
+  keyboard input; enabling Accessibility on macOS 13 did not ask for the
+  administrator password, so `vm prompt toggle` timed out after the switch
+  had already turned on. The line needs no `posato-provisioning`
+  registration: it runs only notarized candidates and has no Apple Account.
+

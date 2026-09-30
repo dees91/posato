@@ -22,7 +22,7 @@ class VmNetworkCommand :
         "Turn every network service in the guest off or on, or create, enable, disable, or remove one named " +
             "service, for offline, reconnection, and service-change runs; never touches the host.",
     ) {
-    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
     private val state by option("--state", help = "off disables every network service; on enables them all.").choice("off", "on")
     private val service by option("--service", help = "Name of the one network service --action changes.")
     private val action by option("--action", help = "What to do with --service.").choice("create", "enable", "disable", "remove")
