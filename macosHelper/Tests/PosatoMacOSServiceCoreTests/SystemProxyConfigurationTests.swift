@@ -42,10 +42,19 @@ import Testing
   let resulting = SystemProxyConfiguration.replacingTuples(
     in: original,
     http: applied,
-    https: applied
+    https: applied,
+    exceptions: .set(["localhost", "*.invalid", "127.0.0.1", "::1"])
+  )
+  let restored = SystemProxyConfiguration.replacingTuples(
+    in: resulting,
+    http: emptyTuple,
+    https: emptyTuple,
+    exceptions: .remove
   )
 
-  #expect(resulting["ExceptionsList"] as? [String] == ["localhost", "*.invalid"])
+  #expect(resulting["ExceptionsList"] as? [String] == ["localhost", "*.invalid", "127.0.0.1", "::1"])
+  #expect(restored["ExceptionsList"] == nil)
+  #expect(restored["NestedSyntheticValue"] != nil)
   #expect(
     NSDictionary(dictionary: resulting["NestedSyntheticValue"] as? [String: Any] ?? [:])
       .isEqual(to: ["Mode": "preserve", "Enabled": true])
@@ -54,4 +63,21 @@ import Testing
   var altered = resulting
   altered["NestedSyntheticValue"] = ["Mode": "changed", "Enabled": true]
   #expect(!SystemProxyConfiguration.dictionariesEqual(resulting, altered))
+}
+
+// D4 bounds: a value outside them must read as unreadable, never throw (R4) and never pass as a list.
+@Test func givenExceptionsValuesWhenReadThenOnlyBoundedStringArraysAreLists() {
+  let longest = String(repeating: "a", count: ProxyExceptions.maximumEntryBytes)
+  let bounded = Array(repeating: "a.example", count: ProxyExceptions.maximumEntries)
+
+  #expect(SystemProxyConfiguration.exceptions(nil) == .absent)
+  #expect(SystemProxyConfiguration.exceptions([longest]) == .list([longest]))
+  #expect(SystemProxyConfiguration.exceptions(bounded) == .list(bounded))
+  for value: Any in [[longest + "a"], bounded + ["b.example"], ["a.example", 7], "a.example"] {
+    guard case .unreadable = SystemProxyConfiguration.exceptions(value) else {
+      Issue.record("\(value) must be unreadable")
+      continue
+    }
+  }
+  #expect(SystemProxyConfiguration.exceptions(["a", 1]) != SystemProxyConfiguration.exceptions(["a", 2]))
 }
