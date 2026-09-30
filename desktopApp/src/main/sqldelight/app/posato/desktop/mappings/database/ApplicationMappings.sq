@@ -1,25 +1,37 @@
 CREATE TABLE localApplicationMapping (
-    mappingId BLOB NOT NULL PRIMARY KEY,
+    setId BLOB NOT NULL,
+    mappingId BLOB NOT NULL,
     displayName BLOB NOT NULL,
-    designatedRequirement BLOB NOT NULL
+    designatedRequirement BLOB NOT NULL,
+    PRIMARY KEY (setId, mappingId)
 );
 
-selectAll:
+selectForSet:
 SELECT mappingId, displayName, designatedRequirement
 FROM localApplicationMapping
+WHERE setId = ?
 ORDER BY displayName, mappingId;
 
+selectRequirements:
+SELECT DISTINCT mappingId, designatedRequirement
+FROM localApplicationMapping;
+
+selectSetIds:
+SELECT DISTINCT setId
+FROM localApplicationMapping;
+
 insertOrIgnore:
-INSERT OR IGNORE INTO localApplicationMapping(mappingId, displayName, designatedRequirement)
-VALUES (?, ?, ?);
+INSERT OR IGNORE INTO localApplicationMapping(setId, mappingId, displayName, designatedRequirement)
+VALUES (?, ?, ?, ?);
 
 removeById:
 DELETE FROM localApplicationMapping
-WHERE mappingId = ?;
+WHERE setId = ? AND mappingId = ?;
 
-removeAll:
-DELETE FROM localApplicationMapping;
+removeSet:
+DELETE FROM localApplicationMapping
+WHERE setId = ?;
 
-countAll:
-SELECT COUNT(*)
+countUnique:
+SELECT COUNT(DISTINCT mappingId)
 FROM localApplicationMapping;

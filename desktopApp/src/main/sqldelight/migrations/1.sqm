@@ -1,0 +1,14 @@
+CREATE TABLE localApplicationMapping_v2 (
+    setId BLOB NOT NULL,
+    mappingId BLOB NOT NULL,
+    displayName BLOB NOT NULL,
+    designatedRequirement BLOB NOT NULL,
+    PRIMARY KEY (setId, mappingId)
+);
+
+INSERT INTO localApplicationMapping_v2(setId, mappingId, displayName, designatedRequirement)
+SELECT zeroblob(16), mappingId, displayName, designatedRequirement FROM localApplicationMapping;
+
+DROP TABLE localApplicationMapping;
+
+ALTER TABLE localApplicationMapping_v2 RENAME TO localApplicationMapping;

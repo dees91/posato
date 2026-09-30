@@ -278,29 +278,98 @@ enum ApplicationMappingsStoreError: Error {
     case migrationFailed
 }
 
+/// This device's app choices per pause set, in the App Group directory the extension also reads. The first
+/// set keeps the original `mappings-v1.json`, so a 1.2 file is used as it is; other sets get their own file.
+struct ApplicationMappingSets {
+    static let firstSet = String(repeating: "0", count: 32)
+    /// New choices may bring the unique applications across sets to at most 50, the system shield bound.
+    static let maximumChosenApplications = 50
+    private static let setFilePrefix = "mappings-set-"
+
+    let directory: URL
+
+    static func liveMigrated() throws -> ApplicationMappingSets {
+        ApplicationMappingSets(directory: try ApplicationMappingsStore.liveMigrated().fileURL.deletingLastPathComponent())
+    }
+
+    func store(for set: String) throws -> ApplicationMappingsStore {
+        guard set.count == 32, set.allSatisfy({ $0.isHexDigit && !$0.isUppercase }) else {
+            throw ApplicationMappingsStoreError.corruption
+        }
+        let name = set == Self.firstSet ? "mappings-v1.json" : "\(Self.setFilePrefix)\(set).json"
+        return ApplicationMappingsStore(fileURL: directory.appendingPathComponent(name))
+    }
+
+    /// Every set's choices together, each application once, which is what enforcement resolves identifiers in.
+    func loadAllSets() throws -> [StoredApplicationMapping] {
+        var seen = Set<Data>()
+        return try ([Self.firstSet] + otherSetsOnDisk()).flatMap { set in try store(for: set).load() }
+            .filter { mapping in seen.insert(mapping.token).inserted }
+    }
+
+    /// Whether [selection] may replace [set]'s choices: always when it only drops choices, otherwise when
+    /// the unique applications of every set stay within the limit.
+    func admits(_ selection: [Data], into set: String) throws -> Bool {
+        let current = Set(try store(for: set).load().map(\.token))
+        if Set(selection).isSubset(of: current) {
+            return true
+        }
+        let others = try ([Self.firstSet] + otherSetsOnDisk()).filter { $0 != set }
+            .flatMap { other in try store(for: other).load().map(\.token) }
+        return Set(others).union(selection).count <= Self.maximumChosenApplications
+    }
+
+    /// Deletes the files of sets not in [sets]; the first set's file is only emptied, never removed.
+    func retainOnly(_ sets: [String]) throws {
+        for set in try otherSetsOnDisk() where !sets.contains(set) {
+            try FileManager.default.removeItem(at: try store(for: set).fileURL)
+        }
+        if !sets.contains(Self.firstSet) {
+            try store(for: Self.firstSet).save([])
+        }
+    }
+
+    private func otherSetsOnDisk() throws -> [String] {
+        guard FileManager.default.fileExists(atPath: directory.path) else {
+            return []
+        }
+        return try FileManager.default.contentsOfDirectory(atPath: directory.path)
+            .filter { $0.hasPrefix(Self.setFilePrefix) && $0.hasSuffix(".json") }
+            .map { String($0.dropFirst(Self.setFilePrefix.count).dropLast(".json".count)) }
+            .filter { $0.count == 32 && $0.allSatisfy({ character in character.isHexDigit && !character.isUppercase }) }
+            .sorted()
+    }
+}
+
 final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicationMappingsProvider {
     weak var presenter: UIViewController?
 
-    private let storeFactory: () throws -> ApplicationMappingsStore
+    private let setsFactory: () throws -> ApplicationMappingSets
+    private var chooseSet = ApplicationMappingSets.firstSet
     private let chooseSession = ApplicationMappingsChooseSession()
     private var pickerController: UIViewController?
     private var pickerGeneration: UInt64 = 0
 
     init(
-        storeFactory: @escaping () throws -> ApplicationMappingsStore = { try ApplicationMappingsStore.liveMigrated() }
+        setsFactory: @escaping () throws -> ApplicationMappingSets = { try ApplicationMappingSets.liveMigrated() }
     ) {
-        self.storeFactory = storeFactory
+        self.setsFactory = setsFactory
     }
 
-    func load(completion: @escaping (IosApplicationMappingsResponse) -> Void) {
+    private func store(_ set: String) throws -> ApplicationMappingsStore {
+        try setsFactory().store(for: set)
+    }
+
+    func load(set: String, completion: @escaping (IosApplicationMappingsResponse) -> Void) {
         performOnMain {
-            completion(self.loadResponse())
+            completion(self.loadResponse(set: set))
         }
     }
 
-    func choose(completion: @escaping (IosApplicationMappingsResponse) -> Void) -> IosApplicationMappingsOperation {
+    func choose(set: String, completion: @escaping (IosApplicationMappingsResponse) -> Void) -> IosApplicationMappingsOperation {
         let operation = ApplicationMappingsOperation()
         performOnMain {
+            self.chooseSet = set
             self.beginChoose(operation: operation, completion: completion)
         }
         return operation
@@ -316,11 +385,12 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
 
     func remove(
         identifier: String,
+        set: String,
         completion: @escaping (IosApplicationMappingsResponse) -> Void
     ) {
         performOnMain {
             do {
-                let store = try self.storeFactory()
+                let store = try self.store(set)
                 let current = try self.validatedMappings(try store.load())
                 let retained = current.filter { self.identifier(for: $0.token) != identifier }
                 try store.save(retained)
@@ -333,10 +403,21 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         }
     }
 
-    func clear(completion: @escaping (IosApplicationMappingsResponse) -> Void) {
+    func clear(set: String, completion: @escaping (IosApplicationMappingsResponse) -> Void) {
         performOnMain {
             do {
-                try self.storeFactory().save([])
+                try self.store(set).save([])
+                completion(self.response(outcome: .success))
+            } catch {
+                completion(self.response(outcome: .storageFailure))
+            }
+        }
+    }
+
+    func retainOnly(sets: [String], completion: @escaping (IosApplicationMappingsResponse) -> Void) {
+        performOnMain {
+            do {
+                try self.setsFactory().retainOnly(sets)
                 completion(self.response(outcome: .success))
             } catch {
                 completion(self.response(outcome: .storageFailure))
@@ -452,7 +533,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         }
         let initialTokens: Set<ApplicationToken>
         do {
-            let mappings = try validatedMappings(try storeFactory().load())
+            let mappings = try validatedMappings(try store(chooseSet).load())
             initialTokens = Set(try mappings.map { mapping in
                 try JSONDecoder().decode(ApplicationToken.self, from: mapping.token)
             })
@@ -505,9 +586,12 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             return
         }
         do {
-            let store = try storeFactory()
-            let current = try store.load()
-            let updated = try reconcile(tokens: tokens, into: current)
+            let sets = try setsFactory()
+            let store = try sets.store(for: chooseSet)
+            let updated = try reconcile(tokens: tokens, into: try store.load())
+            guard try sets.admits(updated.map(\.token), into: chooseSet) else {
+                throw ApplicationMappingsProviderError.capacity
+            }
             try store.save(updated)
             completeChoose(generation, with: response(outcome: .success, mappings: updated), dismissPicker: true)
         } catch ApplicationMappingsStoreError.corruption {
@@ -536,18 +620,15 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
             .filter { token in !existingTokens.contains(token) }
             .map { token in try encoder.encode(token) }
             .sorted { identifier(for: $0) < identifier(for: $1) }
-        guard updated.count + newData.count <= ApplicationMappingsStore.maximumMappings else {
-            throw ApplicationMappingsProviderError.capacity
-        }
         for tokenData in newData {
             updated.append(StoredApplicationMapping(token: tokenData))
         }
         return updated.sorted { identifier(for: $0.token) < identifier(for: $1.token) }
     }
 
-    private func loadResponse() -> IosApplicationMappingsResponse {
+    private func loadResponse(set: String) -> IosApplicationMappingsResponse {
         do {
-            let mappings = try validatedMappings(try storeFactory().load())
+            let mappings = try validatedMappings(try store(set).load())
 #if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
             return response(outcome: .unavailable, access: .unavailable, mappings: mappings)
 #else
@@ -607,7 +688,7 @@ final class IosFamilyControlsApplicationMappingsProvider: NSObject, IosApplicati
         access: IosApplicationMappingsAccess
     ) -> IosApplicationMappingsResponse {
         do {
-            let mappings = try validatedMappings(try storeFactory().load())
+            let mappings = try validatedMappings(try store(chooseSet).load())
             return response(outcome: outcome, access: access, mappings: mappings)
         } catch ApplicationMappingsStoreError.corruption {
             return response(outcome: .corruption)

@@ -17,6 +17,58 @@ final class ApplicationMappingsStoreTests: XCTestCase {
         try? FileManager.default.removeItem(at: directory)
     }
 
+    func testFirstSetKeepsTheLegacyFileAndOtherSetsGetTheirOwn() throws {
+        let sets = ApplicationMappingSets(directory: directory)
+        let first = [StoredApplicationMapping(token: Data([1]))]
+        let work = [StoredApplicationMapping(token: Data([2])), StoredApplicationMapping(token: Data([1]))]
+        try ApplicationMappingsStore(fileURL: directory.appendingPathComponent("mappings-v1.json")).save(first)
+
+        try sets.store(for: Self.workSet).save(work)
+
+        XCTAssertEqual(try sets.store(for: ApplicationMappingSets.firstSet).load(), first)
+        XCTAssertEqual(try sets.store(for: Self.workSet).load(), work)
+        XCTAssertEqual(Set(try sets.loadAllSets().map(\.token)), [Data([1]), Data([2])])
+        XCTAssertEqual(try sets.loadAllSets().count, 2)
+    }
+
+    func testLegacyFileWithSixtyChoicesStillLoads() throws {
+        let sets = ApplicationMappingSets(directory: directory)
+        let sixty = (0..<60).map { StoredApplicationMapping(token: Data([UInt8($0), 9])) }
+        try ApplicationMappingsStore(fileURL: directory.appendingPathComponent("mappings-v1.json")).save(sixty)
+
+        XCTAssertEqual(try sets.store(for: ApplicationMappingSets.firstSet).load().count, 60)
+    }
+
+    func testNewChoicesCountUniqueApplicationsAcrossSetsUpToFifty() throws {
+        let sets = ApplicationMappingSets(directory: directory)
+        try sets.store(for: ApplicationMappingSets.firstSet).save((0..<49).map { StoredApplicationMapping(token: Data([UInt8($0)])) })
+
+        XCTAssertTrue(try sets.admits([Data([3]), Data([200])], into: Self.workSet))
+        XCTAssertFalse(try sets.admits([Data([200]), Data([201])], into: Self.workSet))
+    }
+
+    func testRemovingChoicesIsAllowedEvenAboveFifty() throws {
+        let sets = ApplicationMappingSets(directory: directory)
+        let sixty = (0..<60).map { Data([UInt8($0), 9]) }
+        try sets.store(for: ApplicationMappingSets.firstSet).save(sixty.map { StoredApplicationMapping(token: $0) })
+
+        XCTAssertTrue(try sets.admits(Array(sixty.prefix(55)), into: ApplicationMappingSets.firstSet))
+        XCTAssertFalse(try sets.admits(Array(sixty.prefix(55)) + [Data([250])], into: ApplicationMappingSets.firstSet))
+    }
+
+    func testSetsNotRetainedLoseTheirFilesAndTheFirstSetStays() throws {
+        let sets = ApplicationMappingSets(directory: directory)
+        try sets.store(for: ApplicationMappingSets.firstSet).save([StoredApplicationMapping(token: Data([1]))])
+        try sets.store(for: Self.workSet).save([StoredApplicationMapping(token: Data([2]))])
+
+        try sets.retainOnly([ApplicationMappingSets.firstSet])
+
+        XCTAssertEqual(try sets.store(for: Self.workSet).load(), [])
+        XCTAssertEqual(try sets.store(for: ApplicationMappingSets.firstSet).load().count, 1)
+    }
+
+    private static let workSet = "00000000000040008000000000000050"
+
     func testMissingFileLoadsEmptyAndSavedMappingsRoundTrip() throws {
         let store = ApplicationMappingsStore(fileURL: directory.appendingPathComponent("mappings.json"))
         XCTAssertEqual(try store.load(), [])
@@ -209,21 +261,22 @@ final class ApplicationMappingsStoreTests: XCTestCase {
     }
 
     func testProviderClearRecoversCorruptStore() throws {
-        let fileURL = directory.appendingPathComponent("mappings.json")
+        let fileURL = directory.appendingPathComponent("mappings-v1.json")
         try Data("not-json".utf8).write(to: fileURL)
-        let store = ApplicationMappingsStore(fileURL: fileURL)
-        let provider = IosFamilyControlsApplicationMappingsProvider(storeFactory: { store })
+        let sets = ApplicationMappingSets(directory: directory)
+        let provider = IosFamilyControlsApplicationMappingsProvider(setsFactory: { sets })
+        let first = ApplicationMappingSets.firstSet
 
         var loadOutcome: IosApplicationMappingsOutcome?
-        provider.load { loadOutcome = $0.outcome }
+        provider.load(set: first) { loadOutcome = $0.outcome }
         XCTAssertEqual(loadOutcome, .corruption)
 
         var clearOutcome: IosApplicationMappingsOutcome?
-        provider.clear { clearOutcome = $0.outcome }
+        provider.clear(set: first) { clearOutcome = $0.outcome }
         XCTAssertEqual(clearOutcome, .success)
 
         var recovered: IosApplicationMappingsResponse?
-        provider.load { recovered = $0 }
+        provider.load(set: first) { recovered = $0 }
         XCTAssertNotEqual(recovered?.outcome, .corruption)
         XCTAssertEqual(recovered?.mappings.count, 0)
     }

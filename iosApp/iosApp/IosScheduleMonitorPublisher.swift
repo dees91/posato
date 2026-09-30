@@ -60,7 +60,7 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         },
         isCapable: Bool = defaultCapable,
         storedMappings: @escaping () throws -> [StoredApplicationMapping] = {
-            try ApplicationMappingsStore.liveMigrated().load()
+            try ApplicationMappingSets.liveMigrated().loadAllSets()
         },
         poster: ScheduleNoticePoster = UserNotificationSchedulePoster(),
         calendar: @escaping () -> Calendar = { ScheduleMonitor.calendar },

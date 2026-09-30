@@ -212,33 +212,67 @@ public sealed interface LocalApplicationRemovalResult {
     ) : LocalApplicationRemovalResult
 }
 
+/** The pause set whose app choices an operation reads or changes: its 16-byte identifier as lowercase hex. */
+@JvmInline
+public value class ApplicationChoiceSet private constructor(
+    public val hex: String,
+) {
+    public companion object {
+        public val FIRST: ApplicationChoiceSet = ApplicationChoiceSet("0".repeat(SET_HEX_LENGTH))
+
+        public fun restore(hex: String): ApplicationChoiceSet? {
+            return hex.takeIf { value -> value.length == SET_HEX_LENGTH && value.all { character -> character in '0'..'9' || character in 'a'..'f' } }
+                ?.let(::ApplicationChoiceSet)
+        }
+
+        private const val SET_HEX_LENGTH: Int = 32
+    }
+}
+
+/**
+ * This device's app choices, kept per pause set. The limits count unique applications across all sets, so
+ * an application chosen for two sets counts once.
+ */
 public interface LocalApplicationMappings {
     public val invalidations: Flow<Unit>
         get() = emptyFlow()
 
-    public suspend fun load(): LocalApplicationMappingsLoadResult
+    public suspend fun load(set: ApplicationChoiceSet = ApplicationChoiceSet.FIRST): LocalApplicationMappingsLoadResult
 
-    public suspend fun chooseApplications(): LocalApplicationSelectionResult
+    public suspend fun chooseApplications(set: ApplicationChoiceSet = ApplicationChoiceSet.FIRST): LocalApplicationSelectionResult
 
-    public suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult
+    public suspend fun remove(
+        mappingId: LocalApplicationMappingId,
+        set: ApplicationChoiceSet = ApplicationChoiceSet.FIRST,
+    ): LocalApplicationRemovalResult
 
-    public suspend fun clear(): LocalApplicationRemovalResult
+    public suspend fun clear(set: ApplicationChoiceSet = ApplicationChoiceSet.FIRST): LocalApplicationRemovalResult
+
+    /** Deletes the choices of every set not in [sets], such as one another device removed. */
+    public suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult
 }
 
 internal object UnavailableLocalApplicationMappings : LocalApplicationMappings {
-    override suspend fun load(): LocalApplicationMappingsLoadResult {
+    override suspend fun load(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
         return LocalApplicationMappingsLoadResult.Unavailable()
     }
 
-    override suspend fun chooseApplications(): LocalApplicationSelectionResult {
+    override suspend fun chooseApplications(set: ApplicationChoiceSet): LocalApplicationSelectionResult {
         return LocalApplicationSelectionResult.Unavailable
     }
 
-    override suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult {
+    override suspend fun remove(
+        mappingId: LocalApplicationMappingId,
+        set: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
         return LocalApplicationRemovalResult.Unavailable
     }
 
-    override suspend fun clear(): LocalApplicationRemovalResult {
+    override suspend fun clear(set: ApplicationChoiceSet): LocalApplicationRemovalResult {
+        return LocalApplicationRemovalResult.Unavailable
+    }
+
+    override suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult {
         return LocalApplicationRemovalResult.Unavailable
     }
 }

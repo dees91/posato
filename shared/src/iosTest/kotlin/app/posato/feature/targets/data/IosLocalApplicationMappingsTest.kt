@@ -213,11 +213,17 @@ private class FakeIosApplicationMappingsProvider(
     var observationCancelled = false
         private set
 
-    override fun load(completion: (IosApplicationMappingsResponse) -> Unit) {
+    override fun load(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
         completion(loadResponse)
     }
 
-    override fun choose(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation {
+    override fun choose(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ): IosApplicationMappingsOperation {
         completion(selectionResponse)
         return object : IosApplicationMappingsOperation {
             override fun cancel() = Unit
@@ -233,12 +239,23 @@ private class FakeIosApplicationMappingsProvider(
 
     override fun remove(
         identifier: String,
+        set: String,
         completion: (IosApplicationMappingsResponse) -> Unit
     ) {
         completion(loadResponse)
     }
 
-    override fun clear(completion: (IosApplicationMappingsResponse) -> Unit) {
+    override fun retainOnly(
+        sets: List<String>,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
+        completion(loadResponse)
+    }
+
+    override fun clear(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
         completion(loadResponse)
     }
 
