@@ -933,3 +933,16 @@ TCC also checked the responsible parent, so both Posato and the helper need the
 The driver now uses LaunchServices for staged builds as well as installed
 candidates; direct execution had attributed browser requests to the Tart guest
 agent. Browser consent remains distinct from effective network denial.
+
+## Clear-then-apply gap (`SCHEDULE-004` measurement)
+
+`observed` (2026-09-30, Tart VM on the primary macOS line, development build
+of `ca08247`, whose Mac enforcement equals release 1.2): during a running
+schedule, website edits reach the helper as a clear followed by an apply
+about once a minute, several edits coalescing into one. A guest loop polling
+`scutil --proxy` and `http://example.com/` through it every ~0.1 s saw two
+such changes; each left the system proxy off for about 0.2-0.25 s, and a
+request in that window loaded the blocked page. A browser request at that
+moment is therefore not blocked. Pause sets make such changes more frequent
+(additions, part ends); whether the helper should accept a replacement
+atomically is an ADR 0004 question.
