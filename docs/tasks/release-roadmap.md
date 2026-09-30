@@ -86,6 +86,8 @@
   (`user-confirmed`, 2026-09-30, idea 23): a session's system proxy must not
   capture loopback connections such as local MCP servers. It revises the
   frozen composition by the maintainer's decision.
+  The 2026-09-30 backlog addition `WEB-002` (idea 24, `user-confirmed`)
+  changes no release.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -330,6 +332,7 @@ The idea numbers refer to the wiki idea queue.
 | `I18N-001` | Ship Posato in Polish as the first additional language, following the system language: the whole UI of both applications with Polish plural forms, the macOS pause page, iOS permission descriptions, and date and time formatting, plus the App Store listing and screenshots and a Polish posato.app including the privacy policy. It adds a narrow `AGENTS.md` exception so the agent can author localized product resources for the maintainer's approval, and keeps verification recipes independent of English labels. | Platform coverage | Idea 12 | Any planning checkpoint; the maintainer's time to review the Polish copy |
 | `TARGETS-007` | Decide whether and how saved websites and application choices can be exported to and imported from a file: format, encryption, what an application choice can carry across devices, merge or replace, and sync interaction; end with a product decision and a delivery plan. Preliminary. | Target management | Idea 14 | A product decision that file transfer is in scope |
 | `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
+| `WEB-002` | Make the first screen of `posato.app` show at a glance what Posato does, especially on a phone, and replace the product line **Pause. Then choose.** with a stronger one wherever it appears (`DESIGN.md`, the site title and hero, the README, and the App Store subtitle): propose layouts and lines for the maintainer to choose, then deliver them with the clarity review and no em dash in public copy. | Release readiness | Idea 24 | Any planning checkpoint; the maintainer's choice of line and layout |
 
 ## Coverage matrix
 

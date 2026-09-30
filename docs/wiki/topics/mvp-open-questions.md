@@ -1021,6 +1021,18 @@ below. This queue retains idea provenance without expanding the original MVP.
     previous list afterwards. `user-confirmed` (2026-09-30): `MACOS-024` in
     release 1.3.
 
+24. **A more inviting first screen and product line on posato.app.**
+    `user-confirmed` (2026-09-30): the top of the site does not invite
+    enough, especially on a phone, and **Pause. Then choose.** is only
+    average; the maintainer wants to work on both. `observed` on the
+    maintainer's screenshots: on a phone the first screen holds the header,
+    an eyebrow, the heading, two paragraphs, and the two download badges,
+    with no picture of the product; the demo starts below it. On a wide
+    screen the demo frame showed as an empty dark box, cause `open`. The line
+    is the accepted product line in `DESIGN.md` and appears in the site title
+    and hero, the README, and the App Store subtitle, so changing it revises
+    `DESIGN.md`. Owner: backlog row `WEB-002`.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do
