@@ -1,10 +1,10 @@
 # Execution: `MACOS-024`
 
 - **Brief:** [`macos-024-loopback-exceptions.md`](../specifications/macos-024-loopback-exceptions.md)
-- **Status:** `active`
+- **Status:** `done`
 - **Review tier:** `high-risk`
 - **Implementer:** Claude Code
-- **Reviewer:** pending (independent agent for the plan and the completed change)
+- **Reviewer:** independent Claude Code agents (plan, three passes; completed change, two passes)
 - **Branch:** `fix/macos-024-loopback-exceptions`
 - **Updated:** 2026-09-30
 
@@ -227,9 +227,18 @@
 
 ## Completed-change review
 
-- **Verdict:** `pending`
-- **Critical or Required findings:** pending
-- **Resolution:** pending
+- **Verdict:** `approved` (independent agent, second pass on d393ebb)
+- **Critical or Required findings:** R1 a baseline of 254 to 256 entries
+  could not be read back after Apply and kept the loopback entries for good;
+  R2 an established absolute-form loopback relay kept its capped slot after
+  the client closed.
+- **Resolution:** reader bound 259 with the Apply bound 256, and a client
+  close watcher on absolute-form loopback relays, each with a regression
+  that failed first; `./gradlew quality` passes.
+- **Advisory findings:** the deviation wording, the `*.localhost`
+  observation, and a version 2 validity test were folded; keepalive idle and
+  listener-failure cleanup were added; a canonical digest for a dictionary
+  `ExceptionsList` value was not changed.
 
 ## Verification
 
@@ -246,6 +255,8 @@
 | `D2`/`D1` | pass | Adding `example.com` to the list during a session ended enforcement, restored the tuples, and kept the changed list; Retry showed **Restrictions may still apply**; after the list was set back to the baseline, Retry showed **Restrictions active**. |
 | Completed-change review fixes | pass | R1: a 256-entry baseline now applies and restores exactly (reader bound 259, Apply bound 256); R2: an established absolute-form loopback relay is finished when its client closes, freeing its slot. Both regressions failed first. |
 | `CFNetworkCopyProxiesForURL` with synthetic settings on the host (no system change) | `observed` | With `localhost` in `ExceptionsList`, `http://localhost:8080/` is direct and `http://app.localhost/` and `https://app.localhost/` still use the proxy. |
+| Final rerun on d393ebb (helper and daemon SHA-256 matched in the guest) | pass | `20260930-175757-eeb2` to `20260930-175903-bc56`: list with the loopback entries during the session, the probe through the relay including the 45-second stream and the 6,000-byte POST, own port refused, `NSURLSession` direct, example.com `paused`, and `*.local, 169.254/16` with no proxy after early end. |
+| `./gradlew quality` on d393ebb | pass | 227 Swift tests, driver checks, and the aggregate gate. |
 | `D4` | pass | A 257-entry list: the session started with **Restrictions need attention**, no proxy was applied, and the list stayed unchanged. |
 
 ## Blockers and accepted risks
@@ -259,5 +270,6 @@
 
 ## Final
 
-- **Status:** pending
-- **Outcome:** pending
+- **Status:** `done` pending the maintainer's decision on the test-first
+  deviation
+- **Outcome:** `AC-01` to `AC-04` met.
