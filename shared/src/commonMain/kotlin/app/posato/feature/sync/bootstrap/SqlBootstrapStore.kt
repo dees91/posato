@@ -93,6 +93,7 @@ internal class SqlBootstrapStore(
             database.syncSessionQueries.deleteSessionIntents()
             database.scheduleQueries.deleteAllScheduleIntents()
             database.scheduleQueries.deleteAllSeeds()
+            database.scheduleQueries.deleteAllPauseSetsEnabled()
             database.scheduleQueries.promoteRefusedSchedules()
             database.syncLocalPolicyQueries.deleteBaseMarker()
             database.syncLocalPolicyQueries.deleteBaseDomains()

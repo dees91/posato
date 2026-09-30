@@ -1,5 +1,6 @@
 package app.posato.feature.targets.data
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.domain.ExactDomain
@@ -83,6 +84,25 @@ internal class SqlLocalTargetPolicyStore(
                     }
                 }
             }
+        }
+    }
+
+    override suspend fun enablePauseSetsOnce(
+        workspaceId: ByteArray,
+        author: suspend () -> Boolean,
+    ): LocalPolicyResult<Boolean> {
+        val recorded = transactResult(databaseDispatcher, database) {
+            scheduleQueries.selectPauseSetsEnabled(workspaceId).awaitAsList().isNotEmpty()
+        }
+        if (recorded !is LocalPolicyResult.Success || recorded.value) {
+            return recorded
+        }
+        if (!author()) {
+            return LocalPolicyResult.Success(false)
+        }
+        return when (val marked = transact(databaseDispatcher, database) { scheduleQueries.insertPauseSetsEnabled(workspaceId) }) {
+            is LocalPolicyResult.Success -> LocalPolicyResult.Success(true)
+            is LocalPolicyResult.Failure -> marked
         }
     }
 

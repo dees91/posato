@@ -96,6 +96,15 @@ internal interface LocalTargetPolicyStore {
 }
 
 internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
+    /**
+     * Runs [author] unless this database already authored kind 19 for [workspaceId], and records it once
+     * [author] succeeds, so a replica authors it once per workspace. The result says whether it is recorded.
+     */
+    suspend fun enablePauseSetsOnce(
+        workspaceId: ByteArray,
+        author: suspend () -> Boolean,
+    ): LocalPolicyResult<Boolean>
+
     suspend fun replaceSets(
         expectedRevision: Long,
         sets: PauseSets,

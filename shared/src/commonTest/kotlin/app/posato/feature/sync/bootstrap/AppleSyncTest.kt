@@ -326,6 +326,9 @@ class AppleSyncTest {
                 keyEpochId = KeyEpochId(testIdentifier(13)),
             )
             second.store.commitEstablished(EstablishedWorkspace(foreignContext, bindingA))
+            second.driver.execute(null, "INSERT INTO sync_pause_sets_enabled(workspace_id) VALUES (?)", 1) {
+                bindBytes(0, foreignContext.workspaceId.value.copyBytes())
+            }.value
             second.cloud.zoneExists = true
             second.cloud.storedAnchor = WorkspaceAnchor(foreignContext.workspaceId, foreignContext.transportEpochId, foreignContext.keyEpochId)
             val account = checkNotNull(BootstrapEncoding.identifierToAccountText(foreignContext.workspaceId.value))

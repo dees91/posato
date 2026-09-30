@@ -32,16 +32,24 @@ internal class AppleSyncAuthoring(
         }
     }
 
-    suspend fun drain(writer: SyncWriter): Boolean {
+    /**
+     * Authors this device's queued changes. Set removals wait for [setRemovals], which the policy phase runs
+     * after schedules have moved away from the set.
+     */
+    suspend fun drain(
+        writer: SyncWriter,
+        setRemovals: Boolean = false,
+    ): Boolean {
         return when (val captured = captureWorkspace()) {
             is BootstrapStoreResult.Failure -> fail()
-            is BootstrapStoreResult.Success -> drainEstablished(writer, captured.value)
+            is BootstrapStoreResult.Success -> drainEstablished(writer, captured.value, setRemovals)
         }
     }
 
     private suspend fun drainEstablished(
         writer: SyncWriter,
         workspace: EstablishedWorkspace?,
+        setRemovals: Boolean,
     ): Boolean {
         if (workspace == null) {
             return clearOrFail()
@@ -49,7 +57,7 @@ internal class AppleSyncAuthoring(
         val workspaceId = workspace.context.workspaceId.value.copyBytes()
         var step: DrainStep = DrainStep.Continue
         while (step is DrainStep.Continue) {
-            step = nextStep(writer, workspaceId)
+            step = nextStep(writer, workspaceId, setRemovals)
         }
         return (step as DrainStep.Halt).ok
     }
@@ -57,10 +65,19 @@ internal class AppleSyncAuthoring(
     private suspend fun nextStep(
         writer: SyncWriter,
         workspaceId: ByteArray,
+        setRemovals: Boolean,
     ): DrainStep {
         return when (val read = intents.readIntents()) {
             is LocalPolicyResult.Failure -> DrainStep.Halt(failWith(read.reason))
-            is LocalPolicyResult.Success -> stepForRow(writer, workspaceId, read.value)
+
+            is LocalPolicyResult.Success -> stepForRow(
+                writer,
+                workspaceId,
+                read.value.filter { row ->
+                    (row.intent is StoredPolicyIntent.RemoveSet) ==
+                        setRemovals
+                },
+            )
         }
     }
 
@@ -69,8 +86,7 @@ internal class AppleSyncAuthoring(
         workspaceId: ByteArray,
         rows: List<SequencedPolicyIntent>,
     ): DrainStep {
-        // Set removals wait for the policy phase, after schedules have moved away from the set.
-        val row = rows.firstOrNull { it.intent !is StoredPolicyIntent.RemoveSet }
+        val row = rows.firstOrNull()
         return if (row == null) {
             DrainStep.Halt(true)
         } else if (!row.workspaceId.contentEquals(workspaceId)) {

@@ -168,3 +168,15 @@ DELETE FROM sync_schedule_seed;
 
 deletePinsForSchedule:
 DELETE FROM local_schedule_pin WHERE schedule_id = :scheduleId;
+
+selectPauseSetsEnabled:
+SELECT workspace_id
+FROM sync_pause_sets_enabled
+WHERE workspace_id = :workspaceId;
+
+insertPauseSetsEnabled:
+INSERT OR IGNORE INTO sync_pause_sets_enabled(workspace_id)
+VALUES (:workspaceId);
+
+deleteAllPauseSetsEnabled:
+DELETE FROM sync_pause_sets_enabled;

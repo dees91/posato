@@ -133,7 +133,10 @@ class AppleSyncQueueTest {
             val snapshot = assertIs<SyncStoreResult.Success<SyncReplicaSnapshot>>(
                 harness.replica.read(checkNotNull(workspace).context),
             ).value
-            val operations = snapshot.acceptedBundles.values.map { it.operation }.sortedBy { it.authorSequence }
+            val authored = snapshot.acceptedBundles.values.map { it.operation }.sortedBy { it.authorSequence }
+            // The new workspace gets this replica's own kind 19 as well, once.
+            assertEquals(1, authored.count { operation -> operation.payload == SyncOperationPayload.PauseSetsEnabled })
+            val operations = authored.filterNot { operation -> operation.payload == SyncOperationPayload.PauseSetsEnabled }
             assertEquals(2, operations.size)
             assertIs<SyncOperationPayload.DomainPresent>(operations.last().payload)
             assertEquals(0, intentRowCount(harness))

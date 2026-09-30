@@ -4,6 +4,8 @@ import app.posato.feature.session.data.SessionExchangeObserver
 import app.posato.feature.session.data.SessionSyncTriggers
 import app.posato.feature.session.data.SessionWorkspaceCapture
 import app.posato.feature.sync.data.SyncCryptoProvider
+import app.posato.feature.sync.domain.LocalMutationResult
+import app.posato.feature.sync.domain.LocalSyncMutation
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWriter
 import app.posato.feature.sync.mailbox.MailboxPort
@@ -247,7 +249,7 @@ internal class AppleSync(
         // A policy-capacity failure later in this pass must not suppress an accepted
         // session end, which is committed and cleared inside the session phase.
         val workspace = checkNotNull(check.workspace)
-        val read = readBaseOrHalt(policySync, ::publish)
+        val read = if (enablePauseSetsOrHalt(policySync, workspace, active, ::publish)) readBaseOrHalt(policySync, ::publish) else BaseRead.Halted
         if (read is BaseRead.Ready && exchangeLegsOrHalt(read.base, authoring, exchange, workspace, active, ::publish) {
                 sessionObserver?.onReplicaSnapshot(active.sessionSnapshot)
             }
@@ -277,6 +279,10 @@ internal class AppleSync(
         base: PolicySyncBase?,
     ) {
         if (!seedAndDrainOrHalt(base, reconciler, authoring, workspace, writer, ::publish)) {
+            return
+        }
+        // Schedules left a removed set in the schedule phase, so the removal follows their moves.
+        if (!authoring.drain(writer, setRemovals = true)) {
             return
         }
         val republished = exchange.publishPending(workspace, writer)
@@ -352,6 +358,22 @@ private suspend fun exchangeLegsOrHalt(
         publish(consumed)
     }
     return consumed == SyncStatus.COMPLETED
+}
+
+/** A migrated replica marks the workspace once, so devices still on 1.2 stop receiving now rather than at a later edit. */
+private suspend fun enablePauseSetsOrHalt(
+    policies: LocalPolicySyncStore,
+    workspace: EstablishedWorkspace,
+    writer: SyncWriter,
+    publish: (SyncStatus) -> Unit,
+): Boolean {
+    val result = policies.enablePauseSetsOnce(workspace.context.workspaceId.value.copyBytes()) {
+        writer.mutate(LocalSyncMutation.EnablePauseSets) is LocalMutationResult.Success
+    }
+    return when (result) {
+        is LocalPolicyResult.Success -> result.value.also { recorded -> if (!recorded) publish(SyncStatus.ACTION_REQUIRED) }
+        is LocalPolicyResult.Failure -> false.also { publish(result.reason.toSyncStatus()) }
+    }
 }
 
 private suspend fun seedAndDrainOrHalt(

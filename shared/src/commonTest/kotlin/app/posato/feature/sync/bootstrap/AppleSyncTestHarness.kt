@@ -1,6 +1,8 @@
 package app.posato.feature.sync.bootstrap
 
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.schedules.data.SqlScheduleStore
+import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.sync.FakeSyncCryptoProvider
 import app.posato.feature.sync.data.SqlSyncReplicaStore
 import app.posato.feature.sync.data.SyncReplicaSnapshot
@@ -35,10 +37,21 @@ internal class AppleSyncTestHarness(
     mailboxPort: MailboxPort? = null,
     wallClock: SyncWallClock = SyncWallClock { 100 },
     cryptoProvider: FakeSyncCryptoProvider? = null,
+    withSchedules: Boolean = false,
+    pauseSetsAlreadyEnabled: Boolean = true,
     private val testDatabase: LocalPolicyTestDatabase = createLocalPolicyTestDatabase(name),
 ) {
     val driver = testDatabase.openDriver()
-    val database = PosatoDatabase(driver)
+    val database = PosatoDatabase(driver).also { database ->
+        // Most tests start from a replica that already marked the test workspace (kind 19); its own tests opt out.
+        if (pauseSetsAlreadyEnabled) {
+            driver.execute(
+                identifier = null,
+                sql = "INSERT OR IGNORE INTO sync_pause_sets_enabled(workspace_id) VALUES (?)",
+                parameters = 1,
+            ) { bindBytes(0, testContext.workspaceId.value.copyBytes()) }.value
+        }
+    }
     val store = bootstrapStore ?: SqlBootstrapStore(database, dispatcher)
     val replica = SqlSyncReplicaStore(database, dispatcher)
     val account = FakeBootstrapAccountPort()
@@ -47,6 +60,7 @@ internal class AppleSyncTestHarness(
     val mailbox = FakeMailboxPort()
     val crypto = cryptoProvider ?: FakeSyncCryptoProvider()
     val sqlPolicy = SqlLocalTargetPolicyStore(database, dispatcher)
+    val schedules = SqlScheduleStore(database, dispatcher)
     val sync = AppleSync(
         BootstrapCoordinator(account, cloud, keys, store, crypto, mailboxPort ?: mailbox),
         SyncOperationCore(replica, crypto, wallClock),
@@ -56,6 +70,7 @@ internal class AppleSyncTestHarness(
         sqlPolicy,
         crypto,
         dispatcher,
+        scheduleSync = if (withSchedules) ScheduleSync(schedules) { ScheduleDate(2026, 9, 30) } else null,
     )
     val syncPolicy = SyncTargetPolicyStore(sqlPolicy, sync)
 
