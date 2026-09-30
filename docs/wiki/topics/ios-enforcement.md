@@ -297,5 +297,7 @@ those blocked at 25: past 50 domains the filter is dropped as a whole, not
 truncated. Apple documents the same 50-domain bound for `.specific(_:)` and
 a 50-token bound for `shield.applications` (`source-claim`); the app shield
 bound was not measured, and Posato 1.2 accepts up to 64 app choices.
-`open`: whether the bound applies per named store or to the union of the
-manual and schedule stores.
+`observed` (same day, throwaway build splitting one session's domains over
+two named stores): 20 + 20 domains block both groups, so named stores
+compose; 26 + 26 domains block nothing, so the 50-domain bound counts the
+union of the stores, and splitting cannot raise it.
