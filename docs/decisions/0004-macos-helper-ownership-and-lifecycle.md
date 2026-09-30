@@ -25,9 +25,9 @@ configuration: the presence and value of `ExceptionsList`.
   `127.0.0.1`, and `::1` that is not already present appended in that order.
   "Present" means an exact, case-sensitive string match; `127.0.0.0/8` or
   `[::1]` does not count. Existing entries and their order are kept and no
-  duplicate is added. When the baseline already holds all three, Posato owns
-  no change to the list. `ExcludeSimpleHostnames` and every other key stay
-  untouched.
+  duplicate is added. When the baseline already holds all three, Posato
+  writes no change to the list, but the list is still compared like any
+  owned group. `ExcludeSimpleHostnames` and every other key stay untouched.
 - **Compare-and-swap.** The locked re-read, comparison, single resulting
   dictionary, commit, apply, and full verification described under
   [Durable ownership and atomic proxy mutation](#durable-ownership-and-atomic-proxy-mutation)
@@ -41,9 +41,10 @@ configuration: the presence and value of `ExceptionsList`.
   `recoveryRequired`, and each tuple is still restored only if it remains
   exactly Posato-owned. No hybrid list is written. A preserved list may still
   contain the loopback entries.
-- **Active ownership check (D2).** A list that no longer equals the applied
-  list is an owned-group mismatch, like a tuple mismatch: it ends the
-  active-enforcement claim and starts restoration.
+- **Active ownership check (D2).** Every version 2 record compares the list.
+  A list that no longer equals the applied list, including a changed list
+  when nothing was appended, is an owned-group mismatch, like a tuple
+  mismatch: it ends the active-enforcement claim and starts restoration.
 - **Durable state (D3, D5).** The state schema becomes version 2. The list
   itself is never stored. Version 2 adds only the baseline presence of the
   key, a SHA-256 digest of the baseline list, a SHA-256 digest of the applied
@@ -54,6 +55,19 @@ configuration: the presence and value of `ExceptionsList`.
   every rewrite of it keeps that meaning. An older daemon treats a version 2
   record as an unknown schema, which is `recoveryRequired`, never empty. The
   state file path is unchanged.
+- **Digest and validity rules.** A list digest is SHA-256 over the entry
+  count and, for each entry in order, a length prefix and the entry's raw
+  UTF-8 bytes, without Unicode normalization; lists are compared by these
+  bytes, never by string equivalence. An absent key has no baseline digest.
+  Before writing a restore, the daemon recomputes the digest of the locked,
+  re-read current list without the appended suffix and requires it to equal
+  the baseline digest; otherwise the outcome is `recoveryRequired`. A
+  version 2 record is valid only when both present digests are 32 bytes,
+  the appended entries are an ordered subsequence of `localhost`,
+  `127.0.0.1`, `::1`, an absent baseline key means all three were appended,
+  and no appended entries means equal digests. A version 1 record has none
+  of these fields. The resulting dictionary, including a leave-untouched
+  exceptions target, is always built from the locked re-read.
 - **Bounds (D4).** A baseline list with more than 256 entries, an entry
   longer than 2,048 UTF-8 bytes, a non-string entry, or a non-array value
   fails Apply before any record or system change, with the same
