@@ -2368,3 +2368,10 @@ to scope, feasibility, or delivery.
   held records in the App Group). Findings in `ios-enforcement` and
   `macos-enforcement` ("Composed pauses"); AC-02 and AC-03 ran unattended,
   AC-04 was checked by the maintainer (`user-confirmed`).
+
+## [2026-09-30] maintenance | Test iPhone Auto-Lock for unattended runs
+
+- `observed`: the test iPhone locked itself between driver runs during the
+  `SCHEDULE-004` measurements and every run failed with
+  `DEVICE_AUTOMATION_LOCKED`; the unattended setup now asks for Auto-Lock
+  Never.
