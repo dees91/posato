@@ -93,7 +93,8 @@
   switch; the `AGENTS.md` exception and the MacBook Air gate are dropped,
   and the row also carries the ADR 0008 update-channel revision.
   The 2026-09-30 backlog addition `WEB-002` (idea 24, `user-confirmed`)
-  changes no release.
+  changes no release. Neither does `MACOS-025` (idea 25, `user-confirmed`,
+  2026-09-30), found by the `SCHEDULE-004` measurements.
   The 2026-09-30 clarification from `MACOS-024` adds a loopback-only relay in
   the listener to its outcome (`user-confirmed`, 2026-09-30), because Codex
   reads no proxy exceptions list; the release and wave do not change.
@@ -340,6 +341,7 @@ The idea numbers refer to the wiki idea queue.
 | `I18N-001` | Ship Posato in Polish as the first additional language, following the system language: the whole UI of both applications with Polish plural forms, the macOS pause page, iOS permission descriptions, and date and time formatting, plus the App Store listing and screenshots and a Polish posato.app including the privacy policy. It adds a narrow `AGENTS.md` exception so the agent can author localized product resources for the maintainer's approval, and keeps verification recipes independent of English labels. | Platform coverage | Idea 12 | Any planning checkpoint; the maintainer's time to review the Polish copy |
 | `TARGETS-007` | Decide whether and how saved websites and application choices can be exported to and imported from a file: format, encryption, what an application choice can carry across devices, merge or replace, and sync interaction; end with a product decision and a delivery plan. Preliminary. | Target management | Idea 14 | A product decision that file transfer is in scope |
 | `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
+| `MACOS-025` | Let the macOS helper take a new configuration during a running pause without clearing it first, so no browser request passes between the clear and the apply: amend ADR 0004 with an atomic replacement over the existing grant, with its own security review, and prove it with the `SCHEDULE-004` probe that saw a 0.2-0.25 s gap. | Sessions and enforcement | Idea 25; `SCHEDULE-004` measurement | A planning checkpoint; the accepted 1.3 known limit makes it non-urgent |
 | `WEB-002` | Make the first screen of `posato.app` show at a glance what Posato does, especially on a phone, and replace the product line **Pause. Then choose.** with a stronger one wherever it appears (`DESIGN.md`, the site title and hero, the README, and the App Store subtitle): propose layouts and lines for the maintainer to choose, then deliver them with the clarity review and no em dash in public copy. | Release readiness | Idea 24 | Any planning checkpoint; the maintainer's choice of line and layout |
 
 ## Coverage matrix

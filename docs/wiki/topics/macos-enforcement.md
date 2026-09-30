@@ -944,5 +944,6 @@ about once a minute, several edits coalescing into one. A guest loop polling
 such changes; each left the system proxy off for about 0.2-0.25 s, and a
 request in that window loaded the blocked page. A browser request at that
 moment is therefore not blocked. Pause sets make such changes more frequent
-(additions, part ends); whether the helper should accept a replacement
-atomically is an ADR 0004 question.
+(additions, part ends). `user-confirmed` (2026-09-30): accepted for 1.3 as an
+internal known limit; an atomic replacement is backlog row `MACOS-025`, which
+needs an ADR 0004 amendment.

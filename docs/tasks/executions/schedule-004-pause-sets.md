@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-004`
 
 - **Brief:** [Deliver pause sets on Mac and iPhone](../specifications/schedule-004-pause-sets.md)
-- **Status:** `active` (slice 1 done; Mac measurement next); **Updated:** 2026-09-30
+- **Status:** `active` (slice 1 and measurements done; slice 3 next); **Updated:** 2026-09-30
 - **Review tier:** `high-risk`; **Implementer:** Claude; **Reviewer:** independent agent
 - **Branch:** `feat/schedule-004-pause-sets` (slice 1); later slices stack on it
 
@@ -19,11 +19,8 @@ union and retention.
    codec and reducer; kinds 14, 15, 17 and 18 are the existing payloads
    with an optional set, so every `as? SessionStart` path keeps working.
    `SyncProjection.domains` stays the first set's domains until slice 3.
-2. **Measurements** (throwaway builds, nothing committed): the iPhone
-   manual and schedule store union, the shield and web-filter limits for a
-   large union, and the Mac clear-then-apply gap in a Tart VM. A result
-   that contradicts a rule stops the task for a maintainer decision (the
-   Mac gap becomes an ADR 0004 question).
+2. **Measurements** (done, nothing committed): the iPhone filter bound and
+   store union, and the Mac clear-then-apply gap; results under Blockers.
 3. **Migration and storage.**
    - `13.sqm`: set table; a set column on local websites, policy intents,
      `sync_policy_base_domain`, `sync_schedule_intent`, `sync_session_intent`,
@@ -114,6 +111,8 @@ union and retention.
   turn off all website blocking on iPhone, already in 1.2. Decided
   (`user-confirmed` 2026-09-30): fixed in 1.3 here, no 1.2 patch; a new
   part pauses what fits and names the rest; iPhone apps capped at 50.
+- **Mac clear-then-apply gap** (wiki `macos-enforcement`): about 0.2-0.25 s
+  unblocked per change; accepted for 1.3, backlog row `MACOS-025`.
 
 ## Final
 

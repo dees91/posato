@@ -226,9 +226,10 @@ and changes from a device that has not updated yet still apply.
   retained items, and the latest end. A part ending recomposes it.
 - `observed`: a change is a helper clear followed by an apply, inside one
   app lock. Sets make such changes more frequent (additions, part ends).
-  `open`: whether the helper leaves a measurable unblocked moment between
-  the two; `SCHEDULE-004` measures it in a Tart VM, and a gap becomes an
-  ADR 0004 question rather than a silent change.
+  `observed` (2026-09-30, Tart VM): each clear and apply left the proxy
+  off for about 0.2-0.25 s, and a blocked page loaded in that moment.
+  `user-confirmed` (2026-09-30): accepted for 1.3 as an internal known
+  limit; the atomic replacement is backlog row `MACOS-025`.
 - App choices gain a set column in the Mac's app-choice database; the
   existing rows move to the first set.
 
