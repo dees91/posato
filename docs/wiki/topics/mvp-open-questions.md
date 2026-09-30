@@ -747,6 +747,12 @@ below. This queue retains idea provenance without expanding the original MVP.
    decisions the ADR 0003, ADR 0008, and `AGENTS.md` changes must state; the
    [`MACOS-015` brief](../../tasks/specifications/macos-015-intel-ventura.md)
    lists them.
+   `observed` (2026-09-30): x86-64 candidates passed the macOS 15 flow,
+   the pause page, the picker, helper removal, and an update in a macOS 13.6
+   guest under Rosetta, and synced with an arm64 Mac from a macOS 15 guest;
+   the release build refuses Rosetta. The
+   [`MACOS-015` record](../../tasks/executions/macos-015-intel-ventura.md)
+   has the evidence and limits.
 9. **In-app updates for macOS.** `user-confirmed` (2026-09-14): explore
    delivering new macOS versions from inside Posato, for example with Sparkle,
    after `MACOS-008` chose a manual download of each notarized build without

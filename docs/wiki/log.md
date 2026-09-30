@@ -2345,3 +2345,8 @@ to scope, feasibility, or delivery.
   arm64 macOS 13 Tart guest running the x86-64 build under Rosetta through a
   verification-only switch; no physical Intel Mac and no `AGENTS.md`
   exception.
+- `observed` (2026-09-30): delivered and verified under Rosetta in Tart
+  (macOS 13.6 `ventura` line, sync on macOS 15.6.1); the macOS 13 daemon
+  submission failure is fixed by one re-registration; the availability page
+  lists Intel from Posato 1.3. Topics updated: macOS enforcement, unattended
+  verification, MVP open questions.

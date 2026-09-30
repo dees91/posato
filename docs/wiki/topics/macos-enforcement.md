@@ -810,6 +810,28 @@ option variable.
   because the accessibility tree has no scroll area. The guests scroll
   naturally, so the wheel-up button reveals content further down.
 
+## Intel build and macOS 13 (`MACOS-015`)
+
+- `observed` (2026-09-30, macOS 13.6 Tart guest): approving the helper's
+  daemon in Login Items left launchd without the job. `smd` logged "Update
+  operation returned error: 3, but no reply expected so error will be
+  silent" and never submitted it; a restart did. Registering the already
+  enabled `SMAppService` daemon again makes `smd` submit it at once, so the
+  helper does that once per process when a `status` or `enable` read finds
+  the daemon unreachable. Setup then completed from a clean state without a
+  restart.
+- `observed`: the x86-64 build runs under Rosetta in arm64 guests on macOS 13
+  and 15: Skiko rendering, the helper's open panel, the proxy, application
+  blocking, Sparkle updates, and CloudKit sync. Rosetta does not prove paths
+  that differ on a real Intel processor.
+- `user-confirmed` (2026-09-29): the x86-64 build refuses Rosetta through
+  `sysctl.proc_translated`; any error from the call means native, so a real
+  Intel Mac is never refused. Only a verification candidate may run
+  translated (ADR 0003 amendment).
+- `observed`: a first notification request that a restart dismisses leaves
+  Posato's notifications off, and Posato does not ask again; turn them on in
+  System Settings.
+
 ## Open questions
 
 - Does the full MACOS-004 matrix pass on the release versions and on the
