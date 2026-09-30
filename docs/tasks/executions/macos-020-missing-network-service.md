@@ -171,7 +171,8 @@ engine; no Kotlin change is planned.
 
 - A Mac already stuck on 1.2 recovers only once the fixed daemon runs, which
   needs a restart; in-app update from that state is likely refused
-  (`inferred`). Guidance for existing installs is a maintainer decision.
+  (`inferred`). `user-confirmed` (2026-09-30): the 1.3 release notes
+  (`DOCS-004`) carry a manual-download-and-restart hint; no code change.
 
 ## Final
 

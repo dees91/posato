@@ -848,7 +848,9 @@ option variable.
 - `inferred` from `MaintenanceCleanup`: the stuck daemon's stale `applied`
   status makes in-app update admission refuse with a foreign lease, so a
   stuck 1.2 Mac likely needs a manual install of the fixed build and a
-  restart. `open` whether release notes or support guidance should say so.
+  restart. `user-confirmed` (2026-09-30): the 1.3 release notes (`DOCS-004`)
+  say that if the update does not start, download the release manually and
+  restart the Mac; no code change.
 - `open` edge case: macOS **Duplicate Service** copies proxy settings. If the
   owned service is duplicated and the original deleted, the loopback proxy
   stays on the copy with no record, and the next Apply refuses because an
