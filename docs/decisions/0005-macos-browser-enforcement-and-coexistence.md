@@ -28,14 +28,15 @@ Two changes keep local traffic working during a session (D6):
 - **Loopback relay.** For clients that ignore the list, the listener relays
   an absolute-form HTTP request or a `CONNECT` whose destination is one of
   three exact hosts on any port other than its own listener port. The hosts
-  match ASCII case-insensitively with one optional trailing dot:
-  `localhost`, `127.0.0.1`, and `::1`, the last only in brackets.
+  match ASCII case-insensitively: `localhost` and `127.0.0.1`, each with
+  one optional trailing dot, and `::1`, only as `[::1]`.
   `[0:0:0:0:0:0:0:1]`, `[::ffff:127.0.0.1]`, `127.1`, `127.0.0.2`,
   `0.0.0.0`, other private ranges, `*.localhost`, and `*.local` stay under
   the port 80 and 443 rule below. The relay connects to literal socket
   addresses only: `localhost` tries `127.0.0.1` and then `::1` and never
-  reaches DNS or the hosts file. It forwards the client's original `Host`
-  authority.
+  reaches DNS or the hosts file. It sends the request-target authority as
+  `Host`, unchanged by the literal-address connect, so `localhost` is never
+  rewritten to an address.
 - **Relay bounds.** Loopback relays have their own cap of 32 client and
   upstream pairs inside the listener's connection limit, so they cannot
   starve browser traffic. The header and connect timeouts still apply; the

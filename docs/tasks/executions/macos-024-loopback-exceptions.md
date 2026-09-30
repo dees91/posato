@@ -108,7 +108,7 @@
      proxy left at 127.0.0.1; the driver cannot write such a value;
    - *router matrix:* the three hosts (case, trailing dot, brackets) on a
      non-80/443 port route to a loopback relay with literal addresses and
-     the original `Host`; the listener's own port, `0.0.0.0`, `127.0.0.2`,
+     the request-target authority as `Host`; the listener's own port, `0.0.0.0`, `127.0.0.2`,
      `[::ffff:127.0.0.1]`, `[0:0:0:0:0:0:0:1]`, `127.1`, and `*.localhost`
      stay under the 80/443 rule; an origin-form `Host: localhost:N` stays
      refused; a selected host still blocks. Credible failure: a widened
@@ -122,11 +122,12 @@
 4. **Implement.** Daemon: `ProxySnapshot` gains an exceptions value with an
    opaque unreadable case; `SystemProxyConfiguration` reads and writes it
    under the existing lock, with a leave-untouched target, and verifies the
-   whole dictionary; `OwnershipRecord` schema 2 per `D5`;
+   whole dictionary; `OwnershipRecord` schema 2 per `D5`, with validity accepting schema 1
+   and 2;
    `ProxyOwnershipEngine` applies `D1`, `D2`, and the prepared-baseline
    comparison. Helper: the chain-check overlay adds the three entries, and
    the router and relay implement the loopback relay with its cap, literal
-   addresses, original `Host`, keepalive, and the post-first-byte idle rule.
+   addresses, request-target `Host`, keepalive, and the post-first-byte idle rule.
    Map the `D4` failure to the existing incompatible-network copy and check
    it in the app.
 5. **Local checks.** `swift test` in `macosHelper`, the driver tests, the
@@ -184,8 +185,11 @@
   timeout rule are the implementer's choice from Req-3. Recommended items
   folded: literal addresses and original `Host`, the refusal matrix, the
   conditional `*.localhost` claim, the peer-identity residual, the locked
-  re-read for the leave-untouched target, and a posted body. A
-  focused confirmation pass checks the resolution before implementation.
+  re-read for the leave-untouched target, and a posted body. 
+- **Verdict:** `approved` (confirmation pass, 2026-09-30, independent
+  agent): Req-1 to Req-8 and R1 to R6 resolved, no new Critical or Required
+  finding. Advisory wording on `Host`, the trailing dot, and schema 1
+  acceptance folded.
 
 ## Result
 
