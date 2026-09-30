@@ -28,7 +28,8 @@ internal class ExchangeLoop(
             opportunities.receive()
             return true
         }
-        return backgroundTime.begin().use {
+        val hold = if (retryDelayMillis <= HELD_WAIT_LIMIT_MILLIS) backgroundTime else SyncBackgroundTime.None
+        return hold.begin().use {
             withTimeoutOrNull(retryDelayMillis) { opportunities.receive() } != null
         }
     }
@@ -37,3 +38,7 @@ internal class ExchangeLoop(
 // A retryable pass retries on its own, then waits for a local change,
 // foreground, Sync now, or the Mac's periodic exchange to start a new series.
 private val RETRY_DELAYS_MILLIS = longArrayOf(5_000L, 15_000L, 60_000L, 300_000L, 900_000L)
+
+// iOS grants a backgrounded app about 30 s in total, so only waits that can
+// end inside that grant keep it awake.
+private const val HELD_WAIT_LIMIT_MILLIS = 15_000L

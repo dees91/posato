@@ -552,7 +552,13 @@ not claim that every other device has received the update.
 - What retry policy is appropriate without a delivery SLA? `observed`
   (`SYNC-020`, 2026-09-29): a pass that ends retryable retries after 5 s,
   15 s, 1 min, 5 min, and 15 min, then waits for the next ordinary
-  opportunity; iOS holds background time during the pass and the wait. The
+  opportunity. iOS holds background time during a pass and during a retry
+  wait of up to 15 s, because a backgrounded app gets about 30 s in total
+  (`source-claim`), so longer waits could not be reached anyway
+  (`inferred`). Reconnection is not an opportunity: after a longer outage
+  delivery follows the next ordinary opportunity, at the latest the Mac's
+  periodic exchange or the iPhone's next foreground (`user-confirmed`
+  narrowing of `SYNC-020` `AC-04`). The
   trigger was not an interrupted upload. A session start or early end on the
   iPhone causes a `CKAccountChanged` notification during the pass
   (`inferred`: from Posato's own Screen Time restriction change). The

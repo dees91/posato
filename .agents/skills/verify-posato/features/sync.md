@@ -29,8 +29,9 @@ one active exchange can retain at most one queued opportunity.
 - `sync-retry`: offline or uncertain outcomes preserve pending bytes. A
   retryable pass retries on its own after 5 s, 15 s, 1 min, 5 min, and
   15 min, then waits for **Sync now**, a foreground, a local change, or the
-  Mac's periodic exchange. iOS holds background time while a pass or a retry
-  runs. No delivery-time guarantee exists.
+  Mac's periodic exchange. Reconnection alone starts no exchange. iOS holds
+  background time during a pass and during a retry wait of up to 15 s. No
+  delivery-time guarantee exists.
 - `sync-session-time`: while the host can run, accepted future starts become
   eligible without another exchange or a Session-screen subscription. Relaunch
   restores the accepted projection locally after the existing workspace/key

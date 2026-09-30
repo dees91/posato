@@ -46,8 +46,11 @@
   change, foreground, **Sync now**, or the Mac's periodic exchange) runs a
   pass and starts a new series; another outcome ends it. Publication still
   reuses the same immutable bundle (ADR 0006).
-- `SyncBackgroundTime` holds a named iOS background task while a pass runs or
-  a retry waits; the expiration handler releases it. The Mac uses no hold.
+- `SyncBackgroundTime` holds a named iOS background task while a pass runs
+  or waits up to 15 s for a retry. Longer waits take no hold: iOS grants a
+  backgrounded app about 30 s in total (`source-claim`), so a hold could
+  not reach them (`inferred`; no device run covers this limit). The expiration handler releases
+  the hold. The Mac uses no hold.
 - `posato-control vm network --line <line> --state off|on` disables or
   enables every guest network service through the guest administrator
   password; the host is never touched.
@@ -73,7 +76,7 @@
 | New `AppleSyncSessionConvergenceTest` retry and bound cases on the base | fail as expected | peer `Inactive`; one save attempt |
 | Review regression: request during a retry wait, before the correction | fail as expected | 3 save attempts instead of 2 |
 | `:shared:jvmTest --tests '*AppleSync*'` after the correction | pass | 85 tests |
-| `./gradlew quality` after the last source change | pass | one earlier run hit the unrelated timing test `MaintenanceCompanionTransportTest`, which passed three isolated reruns and the full rerun |
+| `./gradlew quality` after the last source change | pass | rerun after the 2026-09-30 hold limit; one earlier run hit the unrelated timing test `MaintenanceCompanionTransportTest`, which passed three isolated reruns and the full rerun |
 | `AC-01`: iPhone start, leave, peer exchanges (base build) | reproduced | runs `20260929-201358-af96`, `-201605-c845`, `-201839-b7c5` |
 | Diagnosis: start with Posato in the foreground | account guard fired | console logs in runs `20260929-203300-ab88`, `-203557-a6e7` |
 | `AC-02`: iPhone start, leave, peer's own exchange (menu open) | pass | `20260929-213616-654e`; peer adopted, `observe` paused `example.com` (`-214022-8663`) |
@@ -81,14 +84,19 @@
 | `AC-03`: Mac start, iPhone's own exchange | pass | `20260929-214942-2f01`; iPhone blocked Calculator and the website (`-215237-69e3`) |
 | `AC-04`: Mac early end offline, reconnect without **Sync now** | pass | intent kept offline, published about 20 s after `vm network --state on`; iPhone ended and released both |
 | `AC-04`: iPhone terminated right after start, relaunch | pass | `20260929-215930-2075`; peer gained one registration and one start, one active session |
+| `AC-04` after an outage longer than the retry series | not run | outside the narrowed criterion; delivery then follows the next ordinary opportunity |
 | After the correction: `AC-02` and the `AC-04` Mac offline end | pass | `20260929-222212-cd7f`, `-222407-c9cd`; end published 20 s after reconnect, iPhone released both (`-222607-b254` retry after a Safari timeout) |
 
 ## Blockers and accepted risks
 
-- A retry series stops after about 21 minutes; later delivery waits for the
-  next ordinary opportunity. No delivery-time guarantee is added.
-- iOS may suspend Posato before a later retry fires; the hold covers the
-  first retries only as long as iOS grants background time.
+- `AC-04` narrowed (`user-confirmed`, 2026-09-30): reconnection is not an
+  opportunity. After an outage longer than the retry series (about
+  21 minutes), the next ordinary opportunity publishes: on an untouched Mac
+  its periodic exchange, up to 30 minutes after reconnecting; on an iPhone
+  its next foreground or local change. Only a Mac reconnection inside the
+  series was verified.
+- In the background, iOS may suspend Posato before even the 5 s or 15 s
+  retry fires; the next foreground then starts a new series.
 
 ## Final
 

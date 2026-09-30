@@ -40,6 +40,10 @@ sync.
   behave the same way.
 - `AC-04` — A publication interrupted by loss of network or by termination
   is retried after relaunch or reconnection and converges to one session.
+  Narrowed 2026-09-30 (`user-confirmed`): reconnection itself starts
+  nothing; a pending publication is retried by the retry series after
+  reconnection (on the iPhone only while Posato runs), and after a longer
+  outage the next ordinary opportunity publishes.
 
 ## Verification
 
