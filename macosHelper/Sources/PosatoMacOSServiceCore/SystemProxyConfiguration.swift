@@ -35,6 +35,17 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     return try snapshot(preferences: preferences, serviceIdentifier: serviceIdentifier)
   }
 
+  public func serviceIsConfirmedAbsent(serviceIdentifier: String) throws -> Bool {
+    guard geteuid() == 0 else {
+      throw SystemProxyConfigurationFailure.mutation
+    }
+    return try NetworkServiceAbsence.isConfirmed(
+      serviceIdentifier: serviceIdentifier,
+      preferences: createPreferences(),
+      storeName: preferenceName
+    )
+  }
+
   public func replaceTuples(
     expected: ProxySnapshot,
     http: ProxyTuple,

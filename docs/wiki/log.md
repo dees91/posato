@@ -2298,3 +2298,11 @@ to scope, feasibility, or delivery.
   review: kinds 12-19 with the all-zero first set as the duplicate-free
   migration identity and local per-part retention bounded by host limits;
   `PRIVACY.md` edits ship with the release.
+
+## [2026-09-30] implementation | Clear ownership of a removed network service
+
+- `observed`: MACOS-020 reproduced the stale **Restrictions active** after
+  the owned network service disappeared, and fixed it in the daemon's
+  ownership engine; see `topics/macos-enforcement.md`.
+- `user-confirmed`: ADR 0004 now says a confirmed-absent recorded service
+  holds no Posato-owned tuple.

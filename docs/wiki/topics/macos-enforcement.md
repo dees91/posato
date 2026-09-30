@@ -819,13 +819,46 @@ option variable.
 - How are signed installation, notarization, supported removal, public
   support disclosure, and manual recovery verified for the selected release
   channel? (`MACOS-011` verified the in-app update path.)
-- `observed` (2026-09-24, `QUALITY-010` `M5`, macOS 26 guest): after Retry
-  applied the proxy to a second network service, deleting that service and
-  re-enabling the original one left **Restrictions active** with no proxy and
-  no application termination. The ownership record still named the deleted
-  service, so every later start reported that restrictions may still apply.
-  How should the helper reconcile a recorded service that no longer exists?
-  Owner: `MACOS-020`.
+- `superseded` question, answered by `MACOS-020` below: how should the
+  helper reconcile a recorded service that no longer exists?
+
+## Removed network service (`MACOS-020`)
+
+- `observed` (2026-09-24, `QUALITY-010` `M5`, reproduced 2026-09-30 on 1.2
+  code in Tart): after Retry applied the proxy to a second network service,
+  deleting that service and re-enabling the original left **Restrictions
+  active** with no proxy, and every later start reported that restrictions
+  may still apply. Cause: reading the deleted service threw before any phase
+  was written, so the record stayed `applied`, `status` answered from it, and
+  the daemon's lease loop retried the failing restore every second.
+- `user-confirmed` (2026-09-30, ADR 0004 clarification): a recorded service
+  confirmed absent holds no Posato-owned tuple, and its record is deleted
+  without restoring anything elsewhere. Absence means no
+  `/NetworkServices/<id>` entry and no set link under the preferences lock,
+  and no `Setup:` proxy entity in the dynamic store.
+- `observed` in configd `SCNetworkServiceCopy` (open source, 2026-09-30):
+  `kSCStatusNoKey` is not proof of absence; it is also returned for a service
+  without an `Interface` entity and for PPTP services. Likewise a `NULL`
+  from `SCDynamicStoreCopyValue` or `SCPreferencesPathGetValue` means a
+  missing key only when `SCError()` is `kSCStatusNoKey`; IPC and
+  deserialization failures also return `NULL`.
+- `observed` (2026-09-30): with the fix the session shows **Restrictions need
+  attention** with Retry, the daemon exits idle, ending clears cleanly, and
+  the next session blocks.
+- `observed` (2026-09-30): on a Mac stuck on 1.2 code, replacing the app
+  left the stuck daemon running; after a restart the fixed daemon cleared the
+  record at start and **Resume restrictions** applied and blocked again.
+- `inferred` from `MaintenanceCleanup`: the stuck daemon's stale `applied`
+  status makes in-app update admission refuse with a foreign lease, so a
+  stuck 1.2 Mac likely needs a manual install of the fixed build and a
+  restart. `user-confirmed` (2026-09-30): the 1.3 release notes (`DOCS-004`)
+  say that if the update does not start, download the release manually and
+  restart the Mac; no code change.
+- `open` edge case: macOS **Duplicate Service** copies proxy settings. If the
+  owned service is duplicated and the original deleted, the loopback proxy
+  stays on the copy with no record, and the next Apply refuses because an
+  enabled proxy is present. ADR 0004 forbids touching a service Posato does
+  not own, and 1.2 behaved the same.
 
 ## Browser presentation threading and consent (`MACOS-022`)
 

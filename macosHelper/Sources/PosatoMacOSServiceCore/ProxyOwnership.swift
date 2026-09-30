@@ -90,9 +90,9 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     guard record.hasValidBounds else {
       throw ProxyOwnershipFailure.recoveryRequired
     }
-    let current = try configuration.snapshot(
-      serviceIdentifier: record.serviceIdentifier
-    )
+    guard let current = try recordedServiceSnapshot(record: record) else {
+      return try releaseRemovedService()
+    }
     let unchangedPreparedBaseline =
       record.phase == .prepared
       && current.http == record.baselineHTTP
@@ -128,9 +128,9 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     guard record.hasValidBounds else {
       throw ProxyOwnershipFailure.recoveryRequired
     }
-    let current = try configuration.snapshot(
-      serviceIdentifier: record.serviceIdentifier
-    )
+    guard let current = try recordedServiceSnapshot(record: record) else {
+      return try releaseRemovedService()
+    }
     return try restore(record: record, current: current)
   }
 
@@ -166,7 +166,9 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
       throw ProxyOwnershipFailure.recoveryRequired
     }
     let primaryService = try configuration.currentPrimaryServiceIdentifier()
-    let current = try configuration.snapshot(serviceIdentifier: record.serviceIdentifier)
+    guard let current = try recordedServiceSnapshot(record: record) else {
+      return try releaseRemovedService()
+    }
     guard primaryService == record.serviceIdentifier,
       current.http == record.appliedHTTP,
       current.https == record.appliedHTTPS
@@ -256,5 +258,29 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
       throw ProxyOwnershipFailure.conflict
     }
     return existing
+  }
+}
+
+extension ProxyOwnershipEngine {
+  /// The recorded service's current tuples, or nil once that service is confirmed gone. A removed
+  /// service holds no Posato-owned tuple, so there is nothing to restore and no other service is
+  /// touched in its place (ADR 0004).
+  private func recordedServiceSnapshot(record: OwnershipRecord) throws -> ProxySnapshot? {
+    do {
+      return try configuration.snapshot(serviceIdentifier: record.serviceIdentifier)
+    } catch {
+      guard
+        (try? configuration.serviceIsConfirmedAbsent(serviceIdentifier: record.serviceIdentifier))
+          == true
+      else {
+        throw error
+      }
+      return nil
+    }
+  }
+
+  private func releaseRemovedService() throws -> OwnershipPhase {
+    try persistence.remove()
+    return .idle
   }
 }

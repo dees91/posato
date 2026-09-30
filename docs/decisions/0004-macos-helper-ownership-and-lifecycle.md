@@ -761,6 +761,13 @@ later transition is written atomically. State is deleted only after independent
 verification that no Posato-owned tuple remains. Unknown or corrupt schemas are
 `recoveryRequired`; they are never treated as empty or deleted to make progress.
 
+`user-confirmed` clarification (2026-09-30, `MACOS-020`): a recorded service
+that the SystemConfiguration preferences, read under their exclusive lock,
+confirm absent, with no set link and no proxy entity left for it in the
+dynamic store, holds no Posato-owned tuple. Its state is deleted without
+restoring a baseline to any other service. A service that exists but cannot
+be read keeps its state.
+
 Posato owns two atomic groups rather than six independent fields:
 
 ```text
