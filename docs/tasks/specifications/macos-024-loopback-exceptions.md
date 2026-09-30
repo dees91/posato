@@ -1,4 +1,4 @@
-# `MACOS-024`: Keep loopback connections off the session proxy
+# `MACOS-024`: Keep loopback connections working during a session
 
 - **Review tier:** High-risk
 - **Tier reason:** Changes what the privileged daemon writes to and restores
