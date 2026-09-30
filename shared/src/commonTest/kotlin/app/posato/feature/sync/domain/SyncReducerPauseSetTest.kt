@@ -127,6 +127,31 @@ class SyncReducerPauseSetTest {
     }
 
     @Test
+    fun `given the domain cap when a domain leaves its only set then a new domain fits but not when another set still holds it`() {
+        val fill = (0 until SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS).map { index ->
+            SyncOperationPayload.DomainPresent(domain("d$index"), if (index % 2 == 0) first else set(80))
+        }
+        val base = listOf(
+            SyncOperationPayload.PauseSetPut(set(80), "Work"),
+            *fill.toTypedArray(),
+            SyncOperationPayload.DomainPresent(domain("d0"), set(80)),
+        )
+        val freed = ops(
+            *base.toTypedArray(),
+            SyncOperationPayload.DomainAbsent(domain("d1"), set(80)),
+            SyncOperationPayload.DomainPresent(domain("new")),
+        )
+        val stillHeld = ops(
+            *base.toTypedArray(),
+            SyncOperationPayload.DomainAbsent(domain("d0"), set(80)),
+            SyncOperationPayload.DomainPresent(domain("new")),
+        )
+
+        assertEquals(SyncAuditOutcome.APPLIED, SyncReducer.reduce(freed).outcomeOf(freed.last()))
+        assertEquals(SyncAuditOutcome.DOMAIN_CAPACITY, SyncReducer.reduce(stillHeld).outcomeOf(stillHeld.last()))
+    }
+
+    @Test
     fun `given a domain refused at the cap when an earlier or later set remove frees space then the domain becomes present`() {
         val fill = (0 until SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS).map { index ->
             SyncOperationPayload.DomainPresent(domain("d$index"), set(81))
@@ -183,6 +208,7 @@ class SyncReducerPauseSetTest {
             *puts.toTypedArray(),
             SyncOperationPayload.PauseSetRemove(first),
             SyncOperationPayload.DomainPresent(domain("b")),
+            SyncOperationPayload.DomainAbsent(domain("a")),
             SyncOperationPayload.SessionStart(sessionId, 1_000, 2_000),
             legacySchedule,
         )
@@ -191,6 +217,8 @@ class SyncReducerPauseSetTest {
 
         assertEquals((101..110).map(::set), projection.pauseSets.map(SynchronizedPauseSet::setId))
         assertEquals(PauseSetStatus.REMOVED, projection.pauseSetStatus(first))
+        assertEquals(SyncAuditOutcome.NO_OP, projection.outcomeOf(operations[13]))
+        assertEquals(SyncAuditOutcome.NO_OP, projection.outcomeOf(operations[14]))
         assertEquals(emptyList(), projection.domains)
         assertEquals(emptyList(), projection.domainsOf(first))
         assertEquals(first, projection.schedules.single().setId)

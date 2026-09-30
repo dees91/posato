@@ -74,6 +74,7 @@ class PauseSetOperationCodecTest {
     @Test
     fun `given a set identifier that is neither a UUIDv4 nor all zero when decoded then every kind carrying it is rejected`() {
         val versionOne = identifier(80).also { bytes -> bytes[6] = 0x10 }
+        val wrongVariant = identifier(80).also { bytes -> bytes[8] = 0xC0.toByte() }
         listOf<(ByteArray) -> ByteArray>(
             { set -> byteArrayOf(12) + set + u16(4) + "Work".encodeToByteArray() },
             { set -> byteArrayOf(13) + set },
@@ -87,6 +88,7 @@ class PauseSetOperationCodecTest {
             assertNotNull(SyncOperationCodec.decode(header(71, 2) + payload(identifier(80))), "kind $kind with a UUIDv4")
             assertNotNull(SyncOperationCodec.decode(header(71, 2) + payload(firstSetBytes)), "kind $kind with the first set")
             assertNull(SyncOperationCodec.decode(header(71, 2) + payload(versionOne)), "kind $kind with a version 1 identifier")
+            assertNull(SyncOperationCodec.decode(header(71, 2) + payload(wrongVariant)), "kind $kind with a non-RFC variant")
         }
     }
 

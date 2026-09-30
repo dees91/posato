@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-004`
 
 - **Brief:** [Deliver pause sets on Mac and iPhone](../specifications/schedule-004-pause-sets.md)
-- **Status:** `active` (plan approved; slice 1 next); **Updated:** 2026-09-30
+- **Status:** `active` (slice 1 done; measurements next); **Updated:** 2026-09-30
 - **Review tier:** `high-risk`; **Implementer:** Claude; **Reviewer:** independent agent
 - **Branch:** `feat/schedule-004-pause-sets` (slice 1); later slices stack on it
 
@@ -15,32 +15,10 @@ after slice 5 (`user-confirmed` 2026-09-30): slice 3 alone would publish kinds
 14 and 19 from `main`, and slice 4 alone would pause several sets without
 union and retention.
 
-1. **Model and sync** (`shared/.../feature/sync`).
-   - `PauseSetId` (UUIDv4 or the all-zero first set). Kinds 17 and 18 are
-     the existing `SchedulePut` and `SessionStart` with an optional set id
-     (absent means kind 8 or 6), so snapshot validation, terminal expiry
-     and every `as? SessionStart` path keep working; new payloads only for
-     12-16 and 19. A `PauseSetOperationCodec` beside
-     `ScheduleOperationCodec`; `readPayload` rejects 20-127.
-   - Reducer: set liveness from the whole operation set first, the 10-set
-     cap with a derived `SET_CAPACITY` outcome, domains keyed by
-     `(set, domain)` with kinds 2 and 3 as the first set and the 2,048 cap
-     over unique domains of live sets, the default fallback, kinds 8/17 in
-     one schedule register and 6/18 in one session group, set reference
-     status (live, removed, refused, unknown), and kind 19 presence.
-     `SyncProjection.domains` stays the first set's domains for the code
-     slice 1 leaves unchanged. The test-only `SyncProjectionDigest` gains
-     the new fields and a `SET_CAPACITY` tag.
-   - `LocalSyncMutation` gains the new mutations; authoring stays on kinds
-     2-4, 6 and 8 until slice 3.
-   - Failing-first `commonTest` (JVM and iOS): golden vectors and
-     non-canonical inputs for every payload; reducer cases for delivery
-     permutations, remove racing put, a domain racing its set's removal or
-     freed by it, cap edges, a removed first set (slot freed, kinds 2, 3, 6
-     and 8 dropped), kind 8 after kind 17, kind 6 against kind 18,
-     references to removed, refused and unknown sets, per-set kind 15,
-     duplicate kind 19, and default fallback; a kind 18 session's expiry
-     fact and snapshot.
+1. **Model and sync** (`shared/.../feature/sync`, done): kinds 12-19 in the
+   codec and reducer; kinds 14, 15, 17 and 18 are the existing payloads
+   with an optional set, so every `as? SessionStart` path keeps working.
+   `SyncProjection.domains` stays the first set's domains until slice 3.
 2. **Measurements** (throwaway builds, nothing committed): the iPhone
    manual and schedule store union, the shield and web-filter limits for a
    large union, and the Mac clear-then-apply gap in a Tart VM. A result
@@ -113,7 +91,27 @@ union and retention.
 
 ## Result
 
-- Pending; review and checks follow each slice.
+- **Slice 1** (`1f96769` and its review correction): as planned.
+  Deviation: the new `LocalSyncMutation` variants move to slice 3, their
+  first consumer. Slice 1 must not ship alone: `ScheduleSync.toSynced`
+  and `toPlan` drop the set, kind 18 starts still enforce the first set,
+  a removed first set empties `projection.domains`, and `isWorkspaceFull`
+  counts the first set only. Slices 3 and 5 close these.
+
+## Completed-change review
+
+- **Slice 1:** `changes-required`, then corrected. Required: a domain
+  leaving its only set did not provably free cap space (a mutation
+  survived); a failing-first-under-mutation case now covers it.
+  Recommended kind 3 and RFC-variant checks added.
+
+## Verification
+
+| Check run | Result | Evidence |
+| --- | --- | --- |
+| `:shared:jvmTest`, `:shared:iosSimulatorArm64Test` sync suites | pass | 25 new tests failed first against stubs |
+| Mutation checks | pass | 11 mutations of the new rules each fail a test |
+| `quality` | pass | after the last slice 1 correction |
 
 ## Final
 
