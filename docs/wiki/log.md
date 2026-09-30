@@ -2313,3 +2313,9 @@ to scope, feasibility, or delivery.
   session's system proxy captured local Codex MCP connections, which failed
   with an empty response; the row adds loopback exceptions while the proxy is
   applied and restores the previous exceptions afterwards.
+
+## [2026-09-30] planning | posato.app first screen and product line
+
+- `user-confirmed`: backlog row `WEB-002` (idea 24) reworks the site's first
+  screen, especially on phones, and replaces the product line
+  **Pause. Then choose.** everywhere it appears; no release yet.
