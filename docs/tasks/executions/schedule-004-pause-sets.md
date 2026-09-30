@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-004`
 
 - **Brief:** [Deliver pause sets on Mac and iPhone](../specifications/schedule-004-pause-sets.md)
-- **Status:** `active` (`blocked`: iPhone web filter capacity); **Updated:** 2026-09-30
+- **Status:** `active` (slice 1 done; Mac measurement next); **Updated:** 2026-09-30
 - **Review tier:** `high-risk`; **Implementer:** Claude; **Reviewer:** independent agent
 - **Branch:** `feat/schedule-004-pause-sets` (slice 1); later slices stack on it
 
@@ -99,9 +99,8 @@ union and retention.
 
 ## Completed-change review
 
-- **Slice 1:** `changes-required`, then corrected: a domain leaving its
-  only set did not provably free cap space; a case failing under that
-  mutation now covers it.
+- **Slice 1:** `changes-required`, then corrected: a missing case for a
+  domain leaving its only set now fails under that mutation.
 
 ## Verification
 
@@ -112,8 +111,9 @@ union and retention.
 ## Blockers and accepted risks
 
 - **iPhone web filter capacity** (wiki `ios-enforcement`): over 25 websites
-  disable all website blocking on iPhone, already in 1.2; waits for a
-  maintainer decision on the limit and a 1.2 fix.
+  turn off all website blocking on iPhone, already in 1.2. Decided
+  (`user-confirmed` 2026-09-30): fixed in 1.3 here, no 1.2 patch; a new
+  part pauses what fits and names the rest; iPhone apps capped at 50.
 
 ## Final
 

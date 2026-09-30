@@ -100,11 +100,14 @@ product rules are in [pause set rules](../product/pause-sets-decisions.md).
     so a removal, a set change, or a remote `set-remove` never releases an
     enforced item before the part ends.
   - The current and retained items of all running parts together must fit
-    the host's limits (on the Mac the helper's 1,024 domains, and each
-    device's application limit). A change that would exceed them, an edit
-    or a new part, applies none of its new items, which are shown as not
-    paused yet; the configuration already applied stays in place and is
-    never cleared because of it.
+    the host's limits (on the Mac the helper's 1,024 domains, on iPhone and
+    iPad 50 web domains across all named stores, and each device's
+    application limit). An edit that would exceed them applies none of its
+    new items, which are shown as not paused yet. A new part applies as
+    many of its new items as still fit and shows the rest as not paused
+    (`user-confirmed` 2026-09-30, after the iPhone web filter was observed
+    to drop entirely past 50 domains). The configuration already applied
+    stays in place and is never cleared because of it.
   - Retention only adds items while the part is active and never extends
     it. The record is deleted when the part stops being active for any
     reason under the existing rules, including deletion, refusal, or a

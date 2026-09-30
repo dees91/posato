@@ -63,10 +63,15 @@ occurrence. Each part uses one set.
   start pausing it after its removal. A part that is running when the
   device upgrades keeps what it paused at that moment.
 - **Device limits.** Everything all running parts pause together,
-  including what they keep, must fit the device's limits (1,024 websites on
-  the Mac, and the app limit on each device). An edit or a new part that
-  would go beyond them pauses none of its new items and says they are not
-  paused yet; what is already paused stays.
+  including what they keep, must fit the device's limits: 1,024 websites
+  and 64 apps on the Mac; on iPhone and iPad 50 web domains, which is 25
+  websites with their `www` counterparts, and 50 apps (see Execution,
+  iPhone). An edit that would go beyond them pauses none of its new items
+  and says they are not paused yet; what is already paused stays.
+  `user-confirmed` (2026-09-30): a new part pauses as many of its new
+  items as still fit and says how many are not paused; it never leaves
+  the whole website filter off. Websites are taken in alphabetical order
+  (`inferred`: a fixed order every device computes alike).
 - **Overlap** (`user-confirmed` 2026-09-29). A manual session and scheduled
   occurrences with different sets pause the union of their sets, as
   overlapping schedules do. When one part ends, only items no remaining part
@@ -201,14 +206,16 @@ and changes from a device that has not updated yet still apply.
   a version-2 table exists, an unreadable one clears as today and never
   falls back to version 1.
 - The manual session keeps its own named store and the schedules share
-  theirs; iOS combines named stores. `hypothesis`: the system union of the
-  two stores is the most restrictive of both; `SCHEDULE-004` verifies it on
-  the test iPhone with different sets in each.
-- App choices move from one file to one file per set, with the existing
-  64-token ceiling applying to unique tokens across sets on the device.
-  `open`: whether a union that large fits the system shield limit, and
-  the website limit of the web content filter; `SCHEDULE-004` measures
-  both before choosing lower caps.
+  theirs. `observed` (2026-09-30, test iPhone): named stores compose, and
+  the web filter's 50-domain bound counts their union; past it iOS drops
+  the whole website filter, so nothing is blocked (wiki
+  `ios-enforcement`). Release 1.2 has this defect for more than 25
+  websites; `user-confirmed` (2026-09-30): it is fixed in 1.3 by this
+  row, not in a 1.2 patch.
+- App choices move from one file to one file per set. `user-confirmed`
+  (2026-09-30): the ceiling drops from 64 to 50 tokens, Apple's
+  documented shield bound (`source-claim`, not measured), counted over
+  unique tokens across sets on the device.
 
 ### Mac
 
