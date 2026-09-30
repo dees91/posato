@@ -1,6 +1,8 @@
 import app.posato.buildlogic.AppcastExpectation
+import app.posato.buildlogic.PosatoMacOsArchitecture
 import app.posato.buildlogic.PosatoPaths
 import app.posato.buildlogic.PosatoPublishedFeed
+import app.posato.buildlogic.PosatoTemurin
 import app.posato.buildlogic.PosatoUpdateFeed
 import app.posato.buildlogic.PosatoVersion
 import app.posato.buildlogic.ReleaseFloor
@@ -165,10 +167,10 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
     abstract val sparkleVersion: Property<String>
 
     @get:Input
-    abstract val intelEvaluation: Property<Boolean>
+    abstract val architecture: Property<PosatoMacOsArchitecture>
 
     @get:Input
-    abstract val expectedArchitecture: Property<String>
+    abstract val allowsRosetta: Property<Boolean>
 
     @get:Input
     abstract val minimumSystemVersion: Property<String>
@@ -191,7 +193,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         val applicationCode = application.resolve("Contents/app")
         val launcher = application.resolve("Contents/MacOS/Posato")
         val archivedNativeLibraries = nativeLibrariesInArchives(applicationCode)
-        val skikoArchitecture = if (intelEvaluation.get()) "x64" else "arm64"
+        val skikoArchitecture = architecture.get().skikoName
         val skikoLibrary = applicationCode.resolve("libskiko-macos-$skikoArchitecture.dylib")
         check(skikoLibrary.isFile) { "The packaged $skikoArchitecture Skiko library is missing from Contents/app." }
         verifyNativeArchitecture(application, archivedNativeLibraries)
@@ -286,6 +288,19 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
     private fun verifyUpdaterSettings(info: File) {
         REQUIRED_UPDATER_SETTINGS.forEach { (key, value) ->
             check(plistValue(info, key) == value) { "The application Info.plist does not set $key to $value." }
+        }
+        val rosettaSwitch = execOperations.exec {
+            commandLine("/usr/libexec/PlistBuddy", "-c", "Print :$ROSETTA_SWITCH_KEY", info.absolutePath)
+            standardOutput = ByteArrayOutputStream()
+            errorOutput = ByteArrayOutputStream()
+            isIgnoreExitValue = true
+        }.exitValue == 0
+        check(rosettaSwitch == allowsRosetta.get()) {
+            if (rosettaSwitch) {
+                "The package carries the verification-only $ROSETTA_SWITCH_KEY switch."
+            } else {
+                "The verification package lacks $ROSETTA_SWITCH_KEY."
+            }
         }
     }
 
@@ -430,8 +445,36 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         check(bundledBinaries.isNotEmpty()) { "The macOS package contains no native binaries." }
         bundledBinaries.forEach { binary ->
             val architectures = command("/usr/bin/lipo", "-archs", binary.absolutePath).trim().split(Regex("\\s+"))
-            check(expectedArchitecture.get() in architectures) { "The packaged ${binary.name} lacks ${expectedArchitecture.get()}." }
+            check(architectures == listOf(architecture.get().machOName)) {
+                "The packaged ${binary.name} has ${architectures.joinToString(" ")} instead of only ${architecture.get().machOName}."
+            }
+            val minimum = deploymentTarget(binary)
+            check(minimum != null && compareVersions(minimum, minimumSystemVersion.get()) <= 0) {
+                "The packaged ${binary.name} requires macOS ${minimum ?: "(no deployment target)"}, above ${minimumSystemVersion.get()}."
+            }
         }
+    }
+
+    private fun deploymentTarget(binary: File): String? {
+        val loadCommands = command("/usr/bin/otool", "-l", binary.absolutePath).lines().map(String::trim)
+        return loadCommands.withIndex().firstNotNullOfOrNull { (index, line) ->
+            when (line) {
+                "cmd LC_BUILD_VERSION" -> loadCommands.drop(index).firstOrNull { it.startsWith("minos ") }
+                "cmd LC_VERSION_MIN_MACOSX" -> loadCommands.drop(index).firstOrNull { it.startsWith("version ") }
+                else -> null
+            }?.substringAfter(' ')?.trim()
+        }
+    }
+
+    private fun compareVersions(
+        left: String,
+        right: String,
+    ): Int {
+        val leftParts = left.split('.').map(String::toInt)
+        val rightParts = right.split('.').map(String::toInt)
+        return (0 until maxOf(leftParts.size, rightParts.size))
+            .map { index -> leftParts.getOrElse(index) { 0 }.compareTo(rightParts.getOrElse(index) { 0 }) }
+            .firstOrNull { comparison -> comparison != 0 } ?: 0
     }
 
     private fun extractEntry(
@@ -599,6 +642,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
             "com.apple.security.automation.apple-events" to true,
         )
         const val DISABLE_ATTACH_MECHANISM = "-XX:+DisableAttachMechanism"
+        const val ROSETTA_SWITCH_KEY = "PosatoAllowsRosetta"
         val AD_HOC_APPLICATION_ENTITLEMENTS = mapOf(
             "com.apple.security.cs.allow-jit" to true,
             "com.apple.security.cs.allow-unsigned-executable-memory" to true,
@@ -616,7 +660,7 @@ abstract class VerifyMacOsDevelopmentPackaging : DefaultTask() {
         )
     }
 
-    private fun sqliteLibraryPath(): String = "org/sqlite/native/Mac/${if (intelEvaluation.get()) "x86_64" else "aarch64"}/libsqlitejdbc.dylib"
+    private fun sqliteLibraryPath(): String = "org/sqlite/native/Mac/${architecture.get().sqliteDirectory}/libsqlitejdbc.dylib"
 }
 
 abstract class SignMacOsDevelopmentPackage : DefaultTask() {
@@ -646,7 +690,7 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
     abstract val release: Property<Boolean>
 
     @get:Input
-    abstract val intelEvaluation: Property<Boolean>
+    abstract val architecture: Property<PosatoMacOsArchitecture>
 
     @get:Inject
     abstract val execOperations: ExecOperations
@@ -776,10 +820,10 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
         applicationCode: File,
         identity: String,
     ) {
-        val architecture = if (intelEvaluation.get()) "x64" else "arm64"
+        val skikoArchitecture = architecture.get().skikoName
         val libraries = listOf(
             "sqlite-jdbc-" to sqliteLibraryPath(),
-            "skiko-awt-runtime-macos-$architecture-" to "libskiko-macos-$architecture.dylib",
+            "skiko-awt-runtime-macos-$skikoArchitecture-" to "libskiko-macos-$skikoArchitecture.dylib",
         )
         libraries.forEach { (jarPrefix, libraryPath) ->
             val jar = applicationCode.listFiles()
@@ -872,12 +916,11 @@ abstract class SignMacOsDevelopmentPackage : DefaultTask() {
             "    <key>com.apple.developer.icloud-container-environment</key>\n    <string>Production</string>\n"
     }
 
-    private fun sqliteLibraryPath(): String = "org/sqlite/native/Mac/${if (intelEvaluation.get()) "x86_64" else "aarch64"}/libsqlitejdbc.dylib"
+    private fun sqliteLibraryPath(): String = "org/sqlite/native/Mac/${architecture.get().sqliteDirectory}/libsqlitejdbc.dylib"
 
-    private fun foreignNativeLibraryPaths(): List<String> = if (intelEvaluation.get()) {
-        listOf("libskiko-macos-arm64.dylib", "org/sqlite/native/Mac/aarch64/libsqlitejdbc.dylib")
-    } else {
-        listOf("libskiko-macos-x64.dylib", "org/sqlite/native/Mac/x86_64/libsqlitejdbc.dylib")
+    private fun foreignNativeLibraryPaths(): List<String> {
+        val foreign = architecture.get().foreign
+        return listOf("libskiko-macos-${foreign.skikoName}.dylib", "org/sqlite/native/Mac/${foreign.sqliteDirectory}/libsqlitejdbc.dylib")
     }
 }
 
@@ -1206,14 +1249,9 @@ val macOsHelperApplication = macOsDistributable.get().dir(
 val macOsApplication = macOsDistributable.get().asFile.absolutePath
 val posatoMarketingVersion = PosatoVersion.marketingVersion(rootProject.file("Version.xcconfig"))
 val posatoBuildNumber = PosatoVersion.developmentBuildNumber(providers.gradleProperty("posatoMacOsBuildNumber").orNull)
-val isIntelEvaluation = providers.gradleProperty("posatoIntelEvaluation").orNull == "true"
-val composeResourceHostArchitecture = when (System.getProperty("os.arch")) {
-    "aarch64", "arm64" -> "arm64"
-    "x86_64", "amd64" -> "x64"
-    else -> throw GradleException("Unsupported macOS build-host architecture.")
-}
-val macOsMinimumVersion = if (isIntelEvaluation) "13.0" else "15.0"
-val macOsNativeTarget = if (isIntelEvaluation) "x86_64-apple-macos13.0" else "arm64-apple-macos15.0"
+val macOsArchitecture = PosatoMacOsArchitecture.resolve(providers.gradleProperty(PosatoMacOsArchitecture.PROPERTY).orNull)
+val macOsMinimumVersion = PosatoMacOsArchitecture.MINIMUM_SYSTEM_VERSION
+val macOsNativeTarget = macOsArchitecture.clangTarget
 
 plugins {
     alias(libs.plugins.compose.compiler)
@@ -1238,7 +1276,7 @@ java {
 
 dependencies {
     implementation(project(":shared"))
-    implementation(if (isIntelEvaluation) libs.compose.desktop.macos.x64 else libs.compose.desktop.macos.arm64)
+    implementation(if (macOsArchitecture == PosatoMacOsArchitecture.X86_64) libs.compose.desktop.macos.x64 else libs.compose.desktop.macos.arm64)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.navigationevent.compose)
     implementation(libs.sqldelight.sqlite.driver)
@@ -1256,14 +1294,13 @@ sqldelight {
 }
 
 val windowChromeResources = layout.buildDirectory.dir("generated/window-chrome")
-val windowChromeLibrary = windowChromeResources.map { it.file("macos-$composeResourceHostArchitecture/native/libPosatoWindow.dylib") }
+val windowChromeLibrary = windowChromeResources.map { it.file("macos/native/libPosatoWindow.dylib") }
 val posatoJavaLauncher = extensions.getByType<JavaToolchainService>().launcherFor {
     languageVersion.set(JavaLanguageVersion.of(21))
     vendor.set(JvmVendorSpec.ADOPTIUM)
 }
-val posatoJavaHome = if (isIntelEvaluation) {
-    providers.gradleProperty("posatoMacOsJavaHome").orNull?.let(rootProject::file)
-        ?: throw GradleException("Intel evaluation requires -PposatoMacOsJavaHome=<x86-64 Temurin 21 home>.")
+val posatoJavaHome = if (macOsArchitecture == PosatoMacOsArchitecture.X86_64) {
+    PosatoTemurin.x86_64Home(gradle.gradleUserHomeDir, posatoJavaLauncher.get().metadata.installationPath.asFile)
 } else {
     posatoJavaLauncher.get().metadata.installationPath.asFile
 }
@@ -1283,6 +1320,7 @@ val compileWindowChrome = tasks.register<Exec>("compileWindowChrome") {
         "-fobjc-arc",
         "-Wall",
         "-Werror",
+        "-Wunguarded-availability-new",
         "-target",
         macOsNativeTarget,
         "-framework",
@@ -1336,7 +1374,7 @@ val extractSparkle = tasks.register<Exec>("extractSparkle") {
 }
 
 val updaterResources = layout.buildDirectory.dir("generated/updater")
-val updaterLibrary = updaterResources.map { it.file("macos-$composeResourceHostArchitecture/native/libPosatoUpdater.dylib") }
+val updaterLibrary = updaterResources.map { it.file("macos/native/libPosatoUpdater.dylib") }
 val compileUpdater = tasks.register<Exec>("compileUpdater") {
     val source = layout.projectDirectory.file("src/main/objc/Updater.m")
     val javaInstallation = posatoJavaHome
@@ -1356,6 +1394,7 @@ val compileUpdater = tasks.register<Exec>("compileUpdater") {
         "-fobjc-arc",
         "-Wall",
         "-Werror",
+        "-Wunguarded-availability-new",
         "-target",
         macOsNativeTarget,
         "-framework",
@@ -1376,9 +1415,11 @@ val compileUpdater = tasks.register<Exec>("compileUpdater") {
 
 val nativeLeafResources = layout.buildDirectory.dir("generated/native-leaves")
 val assembleNativeLeaves = tasks.register<Sync>("assembleNativeLeaves") {
-    from(compileWindowChrome.map { windowChromeResources.get() })
-    from(compileUpdater.map { updaterResources.get() })
     into(nativeLeafResources)
+    into("macos/native") {
+        from(compileWindowChrome.map { windowChromeLibrary.get() })
+        from(compileUpdater.map { updaterLibrary.get() })
+    }
 }
 
 tasks.withType<AbstractJPackageTask>().configureEach {
@@ -1397,6 +1438,13 @@ val updateFeed = PosatoUpdateFeed.resolve(
     providers.gradleProperty("posatoMacOsUpdatePublicKey").orNull?.takeIf(String::isNotBlank),
 )
 val updateFeedUrl = updateFeed.feedUrl
+val macOsAllowsRosetta = providers.gradleProperty("posatoMacOsAllowRosetta").orNull == "true"
+if (macOsAllowsRosetta && macOsArchitecture != PosatoMacOsArchitecture.X86_64) {
+    throw GradleException("-PposatoMacOsAllowRosetta applies only to -P${PosatoMacOsArchitecture.PROPERTY}=x86_64.")
+}
+if (macOsAllowsRosetta && updateFeed.channel == UpdateChannel.RELEASE) {
+    throw GradleException("-PposatoMacOsAllowRosetta is for verification builds and refuses the release channel.")
+}
 val updatePublicKey = updateFeed.publicKey
 val updaterInfoPlistKeys = buildString {
     append("<key>SURequireSignedFeed</key><true/>")
@@ -1406,6 +1454,7 @@ val updaterInfoPlistKeys = buildString {
     append("<key>SUAllowsAutomaticUpdates</key><false/>")
     append("<key>SUEnableSystemProfiling</key><false/>")
     append("<key>SUEnableAutomaticChecks</key><false/>")
+    if (macOsAllowsRosetta) append("<key>PosatoAllowsRosetta</key><true/>")
     if (updateFeedUrl != null && updatePublicKey != null) {
         append("<key>SUFeedURL</key><string>$updateFeedUrl</string>")
         append("<key>SUPublicEDKey</key><string>$updatePublicKey</string>")
@@ -1445,7 +1494,7 @@ compose.desktop {
 }
 
 tasks.matching { it.name == "createRuntimeImage" }.configureEach {
-    inputs.property("posatoMacOsJavaHome", posatoJavaHome.absolutePath)
+    inputs.property("posatoMacOsRuntimeHome", posatoJavaHome.absolutePath)
     inputs.file(posatoJavaHome.resolve("release"))
 }
 
@@ -1486,7 +1535,8 @@ val embedSparkleFramework by tasks.registering(Exec::class) {
         embedded.deleteRecursively()
         frameworks.mkdirs()
     }
-    commandLine("/usr/bin/ditto", source.absolutePath, embedded.absolutePath)
+    inputs.property("architecture", macOsArchitecture.machOName)
+    commandLine("/usr/bin/ditto", "--arch", macOsArchitecture.machOName, source.absolutePath, embedded.absolutePath)
     doLast {
         embedded.resolve("XPCServices").delete()
         embedded.resolve("Versions/B/XPCServices").deleteRecursively()
@@ -1512,7 +1562,7 @@ val signMacOsDevelopmentPackage by tasks.registering(SignMacOsDevelopmentPackage
     }
     signingIdentity.set(macOsSigningIdentity)
     release.set(false)
-    intelEvaluation.set(isIntelEvaluation)
+    architecture.set(macOsArchitecture)
     outputs.upToDateWhen { false }
 }
 
@@ -1551,13 +1601,13 @@ val verifyMacOsDevelopmentPackaging by tasks.registering(VerifyMacOsDevelopmentP
     applicationBundle.set(macOsDevelopmentApplication)
     signingIdentity.set(macOsSigningIdentity)
     release.set(false)
-    intelEvaluation.set(isIntelEvaluation)
+    architecture.set(macOsArchitecture)
+    allowsRosetta.set(macOsAllowsRosetta)
     marketingVersion.set(posatoMarketingVersion)
     buildNumber.set(posatoBuildNumber)
     iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
     noticeFiles.from(rootProject.files("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"))
     sparkleVersion.set(pinnedSparkleVersion)
-    expectedArchitecture.set(if (isIntelEvaluation) "x86_64" else "arm64")
     minimumSystemVersion.set(macOsMinimumVersion)
 }
 
@@ -1627,7 +1677,7 @@ val signMacOsReleasePackage by tasks.registering(SignMacOsDevelopmentPackage::cl
     }
     signingIdentity.set(macOsReleaseSigningIdentity)
     release.set(true)
-    intelEvaluation.set(isIntelEvaluation)
+    architecture.set(macOsArchitecture)
     outputs.upToDateWhen { false }
 }
 
@@ -1638,13 +1688,13 @@ val verifyMacOsReleasePackaging by tasks.registering(VerifyMacOsDevelopmentPacka
     applicationBundle.set(macOsReleaseApplication)
     signingIdentity.set(macOsReleaseSigningIdentity)
     release.set(true)
-    intelEvaluation.set(isIntelEvaluation)
+    architecture.set(macOsArchitecture)
+    allowsRosetta.set(macOsAllowsRosetta)
     marketingVersion.set(posatoMarketingVersion)
     buildNumber.set(posatoBuildNumber)
     iconFile.set(layout.projectDirectory.file("Config/Posato.icns"))
     noticeFiles.from(rootProject.files("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"))
     sparkleVersion.set(pinnedSparkleVersion)
-    expectedArchitecture.set(if (isIntelEvaluation) "x86_64" else "arm64")
     minimumSystemVersion.set(macOsMinimumVersion)
     runtimeSourceRelease.set(posatoJavaHome.resolve("release"))
 }

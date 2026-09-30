@@ -29,6 +29,9 @@ import kotlinx.coroutines.runBlocking
 import kotlin.system.exitProcess
 
 fun main() {
+    if (!TranslationGuard.permitsLaunch()) {
+        exitProcess(0)
+    }
     MacPresenceNative.installLaunchProbe()
     val instanceLock = openInstanceLock()
     if (!instanceLock.acquireShared()) {

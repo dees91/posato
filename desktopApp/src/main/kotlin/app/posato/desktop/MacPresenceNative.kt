@@ -22,6 +22,21 @@ internal object MacPresenceNative {
     external fun installLaunchProbe()
 
     @JvmStatic
+    external fun runsTranslated(): Boolean
+
+    @JvmStatic
+    external fun allowsTranslation(): Boolean
+
+    @JvmStatic
+    external fun refuseTranslation(
+        title: String,
+        message: String,
+        download: String,
+        quit: String,
+        downloadUrl: String,
+    )
+
+    @JvmStatic
     external fun launchedAtLogin(): Boolean
 
     /** 1 when this account has the console, 0 when another account does, -1 when unknown. */

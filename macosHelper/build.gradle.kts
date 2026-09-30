@@ -1,3 +1,4 @@
+import app.posato.buildlogic.PosatoMacOsArchitecture
 import app.posato.buildlogic.PosatoVersion
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.tasks.Sync
@@ -10,9 +11,9 @@ val swiftScratchDirectory = layout.buildDirectory.dir("swift")
 val helperBundleDirectory = layout.buildDirectory.dir("bundle/PosatoMacOSHelper.app")
 val posatoMarketingVersion = PosatoVersion.marketingVersion(rootProject.file("Version.xcconfig"))
 val posatoBuildNumber = PosatoVersion.developmentBuildNumber(providers.gradleProperty("posatoMacOsBuildNumber").orNull)
-val intelEvaluation = providers.gradleProperty("posatoIntelEvaluation").orNull == "true"
-val macOsMinimumVersion = if (intelEvaluation) "13.0" else "15.0"
-val swiftTriple = if (intelEvaluation) "x86_64-apple-macosx13.0" else "host"
+val macOsArchitecture = PosatoMacOsArchitecture.resolve(providers.gradleProperty(PosatoMacOsArchitecture.PROPERTY).orNull)
+val macOsMinimumVersion = PosatoMacOsArchitecture.MINIMUM_SYSTEM_VERSION
+val swiftTriple = macOsArchitecture.swiftTriple
 
 val buildSwiftRelease by tasks.registering(Exec::class) {
     group = "build"
@@ -21,7 +22,7 @@ val buildSwiftRelease by tasks.registering(Exec::class) {
     inputs.property("swiftTriple", swiftTriple)
     outputs.dir(swiftScratchDirectory)
 
-    val swiftCommand = mutableListOf(
+    val swiftCommand = listOf(
         "/usr/bin/xcrun",
         "swift",
         "build",
@@ -31,8 +32,9 @@ val buildSwiftRelease by tasks.registering(Exec::class) {
         swiftScratchDirectory.get().asFile.absolutePath,
         "-Xswiftc",
         "-warnings-as-errors",
+        "--triple",
+        swiftTriple,
     )
-    if (intelEvaluation) swiftCommand += listOf("--triple", swiftTriple)
     commandLine(swiftCommand)
 }
 
