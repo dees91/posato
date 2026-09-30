@@ -1008,6 +1008,19 @@ below. This queue retains idea provenance without expanding the original MVP.
     extension. Aggregate quality and independent review passed.
     `user-confirmed` (2026-09-29): `SCHEDULE-005` belongs to release 1.3.
 
+23. **Loopback connections captured by the session proxy.**
+    `user-confirmed` (2026-09-30): during a session, local Codex MCP
+    connections reached Posato's proxy and ended with an empty response and
+    `codex_tui failed to start`; a direct connection worked, and `NO_PROXY`
+    removed the problem. `observed` in code: the helper leaves the proxy
+    exceptions untouched, and ADR 0005 rejects every loopback authority
+    other than the local pause page. `inferred`: clients that follow the
+    system proxy without their own loopback bypass fail the same way. The
+    requested fix adds `localhost`, `127.0.0.1`, and `::1` as exceptions while
+    the proxy is applied, keeps existing exceptions, and restores the
+    previous list afterwards. `user-confirmed` (2026-09-30): `MACOS-024` in
+    release 1.3.
+
 ## Later platform questions
 
 Android and Linux remain in the accepted portable-folder direction, but they do
