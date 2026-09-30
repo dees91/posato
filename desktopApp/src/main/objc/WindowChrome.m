@@ -496,3 +496,98 @@ JNIEXPORT jint JNICALL Java_app_posato_desktop_MacNotificationsNative_readFlag(J
 JNIEXPORT void JNICALL Java_app_posato_desktop_MacNotificationsNative_writeFlag(JNIEnv *environment, jclass receiver, jstring key, jboolean value) {
     [NSUserDefaults.standardUserDefaults setBool:(value == JNI_TRUE) forKey:PresenceString(environment, key)];
 }
+
+static JavaVM *backVirtualMachine;
+static jclass backClass;
+static jmethodID backSwipe;
+static volatile BOOL backAvailable = NO;
+static id backMonitor;
+
+typedef NS_ENUM(jint, PosatoBackSwipe) {
+    PosatoBackSwipeStarted = 0,
+    PosatoBackSwipeChanged = 1,
+    PosatoBackSwipeCompleted = 2,
+    PosatoBackSwipeCancelled = 3,
+};
+
+static void BackSwipeCall(PosatoBackSwipe phase, CGFloat amount) {
+    JNIEnv *environment = NULL;
+    if (backVirtualMachine == NULL || backClass == NULL || backSwipe == NULL) return;
+    jint state = (*backVirtualMachine)->GetEnv(backVirtualMachine, (void **)&environment, JNI_VERSION_1_8);
+    if (state == JNI_EDETACHED) {
+        if ((*backVirtualMachine)->AttachCurrentThreadAsDaemon(backVirtualMachine, (void **)&environment, NULL) != JNI_OK) return;
+    } else if (state != JNI_OK) {
+        return;
+    }
+    (*environment)->CallStaticVoidMethod(environment, backClass, backSwipe, phase, (jfloat)amount);
+    if ((*environment)->ExceptionCheck(environment)) (*environment)->ExceptionClear(environment);
+}
+
+// Swipe between pages, as in Safari: a horizontal two-finger scroll that begins while a screen
+// offers Back is tracked by AppKit and reported as a back gesture with its progress.
+static void BackSwipeTrack(NSEvent *event) {
+    if (!backAvailable || event.phase != NSEventPhaseBegan || ![NSEvent isSwipeTrackingFromScrollEventsEnabled]) return;
+    NSWindow *window = event.window;
+    if (window == nil || window != NSApp.mainWindow || window.attachedSheet != nil || NSApp.modalWindow != nil) return;
+    if (fabs(event.scrollingDeltaX) <= fabs(event.scrollingDeltaY)) return;
+    __block BOOL started = NO;
+    __block BOOL decided = NO;
+    __block BOOL lifted = NO;
+    __block CGFloat liftedAmount = 0;
+    [event trackSwipeEventWithOptions:NSEventSwipeTrackingLockDirection | NSEventSwipeTrackingClampGestureAmount
+             dampenAmountThresholdMin:0
+                                  max:1
+                         usingHandler:^(CGFloat gestureAmount, NSEventPhase phase, BOOL isComplete, BOOL *stop) {
+        if (decided) return;
+        if (!started) {
+            started = YES;
+            BackSwipeCall(PosatoBackSwipeStarted, gestureAmount);
+        }
+        // After the fingers lift AppKit settles toward 1 when the swipe counts, speed included, and
+        // toward 0 when it does not. The screen changes on that first settling frame instead of after
+        // the settling, which has nothing on screen to move.
+        BOOL settledTowardBack = lifted && gestureAmount > liftedAmount;
+        BOOL settledAway = lifted && gestureAmount < liftedAmount;
+        if (isComplete || settledTowardBack || settledAway || phase == NSEventPhaseCancelled) {
+            decided = YES;
+            BOOL back = isComplete ? gestureAmount >= 1.0 : settledTowardBack;
+            BackSwipeCall(back ? PosatoBackSwipeCompleted : PosatoBackSwipeCancelled, gestureAmount);
+        } else {
+            if (phase == NSEventPhaseEnded) {
+                lifted = YES;
+                liftedAmount = gestureAmount;
+            }
+            BackSwipeCall(PosatoBackSwipeChanged, gestureAmount);
+        }
+    }];
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacBackGesture_install(JNIEnv *environment, jobject receiver) {
+    if (backClass == NULL) {
+        if ((*environment)->GetJavaVM(environment, &backVirtualMachine) != JNI_OK) return;
+        jclass gesture = (*environment)->FindClass(environment, "app/posato/desktop/MacBackGesture");
+        if (gesture == NULL) {
+            if ((*environment)->ExceptionCheck(environment)) (*environment)->ExceptionClear(environment);
+            return;
+        }
+        backSwipe = (*environment)->GetStaticMethodID(environment, gesture, "onSwipe", "(IF)V");
+        if (backSwipe == NULL) {
+            if ((*environment)->ExceptionCheck(environment)) (*environment)->ExceptionClear(environment);
+            (*environment)->DeleteLocalRef(environment, gesture);
+            return;
+        }
+        backClass = (*environment)->NewGlobalRef(environment, gesture);
+        (*environment)->DeleteLocalRef(environment, gesture);
+    }
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (backMonitor != nil) return;
+        backMonitor = [NSEvent addLocalMonitorForEventsMatchingMask:NSEventMaskScrollWheel handler:^NSEvent *(NSEvent *event) {
+            BackSwipeTrack(event);
+            return event;
+        }];
+    });
+}
+
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacBackGesture_setAvailable(JNIEnv *environment, jobject receiver, jboolean available) {
+    backAvailable = available == JNI_TRUE;
+}

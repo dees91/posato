@@ -2272,3 +2272,14 @@ to scope, feasibility, or delivery.
   iOS background time; the guard is unchanged (`user-confirmed`).
 - `observed`: `posato-control vm network` makes the offline sync step
   unattended.
+
+## [2026-09-29] implementation | Screen stacks on Navigation 3 with system back
+
+- `user-confirmed`: back on the Mac is Command-[, Escape, and the trackpad's
+  two-finger swipe between pages; onboarding stays forward-only.
+- `observed`: Navigation 3 `1.1.2` pulls Compose runtime 1.11 and crashes
+  with Compose UI 1.10.3 at launch; `1.1.1` with navigationevent `1.0.1`
+  works on the Mac and iOS. Compose Desktop dispatches Escape as back, and
+  synthetic phased scroll events drive AppKit swipe tracking in Tart.
+- `observed`: NAV-001 passes on Tart, the iPad Simulator, and the test
+  iPhone; see its execution record.

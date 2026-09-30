@@ -14,6 +14,7 @@ import app.posato.core.designsystem.PosatoLayout
 import app.posato.feature.notifications.NotificationPermission
 import app.posato.feature.notifications.SessionNotifier
 import app.posato.feature.onboarding.MacHelperSetupUiState
+import app.posato.feature.onboarding.promptInProgress
 import app.posato.feature.schedules.data.LocalScheduleStore
 import app.posato.feature.schedules.domain.RandomScheduleIdGenerator
 import app.posato.feature.schedules.domain.ScheduleZone
@@ -72,5 +73,6 @@ internal fun SchedulesDestination(
         onTurnOnNotices = { scope.launch { inputs.notifier?.askNow() } },
         onAllowSchedules = { macSetupState?.let { it.consent.allow(it.presentation()) } },
         macSetupContent = macSetupState?.schedulesSetupContent(),
+        setupPromptOpen = macSetupState?.presentation()?.promptInProgress() == true,
     )
 }

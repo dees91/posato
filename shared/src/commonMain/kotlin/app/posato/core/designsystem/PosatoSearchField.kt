@@ -25,7 +25,7 @@ internal fun PosatoSearchField(
 ) {
     val focus = LocalFocusManager.current
     OutlinedTextField(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().escapeLeavesField(focus),
         state = state,
         label = { Text(label) },
         leadingIcon = { PosatoIcon(PosatoIcons.Search, null) },

@@ -368,6 +368,21 @@ The tray's outer edge aligns with the surrounding content.
 Use this component for peer choices within a destination. Session / Paused items / Schedules
 uses the platform-specific primary navigation, not a second nested tab bar.
 
+`user-confirmed` (2026-09-29, `NAV-001`): screens inside a destination form a
+stack, and the platform's back returns one screen exactly as that screen's
+explicit **Back**, **Cancel**, or **Back to …** action does: the interactive
+edge swipe on iPhone and iPad; Command-[, Escape, and the trackpad's two-finger
+swipe between pages on the Mac. Search's **Back to adding** is part of the
+same stack. In a focused text field the first Escape only leaves the field and
+keeps what was typed; the next Escape goes back (`user-confirmed`,
+2026-09-30). Back never switches destination or leaves the application, and it
+is unavailable while a start, end, save, or system approval or password prompt
+is in progress. On iOS the screen slides with the finger and settles without a
+slide under Reduce Motion. The Mac changes screens without a transition; the
+trackpad swipe changes the screen as the fingers lift, once macOS counts the
+swipe.
+Onboarding stays forward-only.
+
 ### Rows, menus, and notices
 
 Rows align a 36 symbol surface, readable title/supporting text, and trailing

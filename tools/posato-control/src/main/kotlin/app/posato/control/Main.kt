@@ -26,6 +26,7 @@ import app.posato.control.cli.RunCommand
 import app.posato.control.cli.ScreenshotCommand
 import app.posato.control.cli.SnapshotCommand
 import app.posato.control.cli.StatusCommand
+import app.posato.control.cli.SwipeBackCommand
 import app.posato.control.cli.TapCommand
 import app.posato.control.cli.TerminateCommand
 import app.posato.control.cli.TypeCommand
@@ -102,6 +103,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     ObserveCommand(),
     MenuCommand(),
     CloseWindowCommand(),
+    SwipeBackCommand(),
     ResourcesCommand(),
     UpdateConsentCommand(),
     VmCommand().subcommands(

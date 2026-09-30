@@ -37,6 +37,10 @@ class DesktopPresenceDriver(
         bridge.closeWindow(applicationPid())
     }
 
+    fun swipeBack(complete: Boolean) {
+        bridge.swipeBack(applicationPid(), complete)
+    }
+
     fun resources(seconds: Int): ResourceSample {
         val targets = buildList {
             add("Posato" to applicationPid())

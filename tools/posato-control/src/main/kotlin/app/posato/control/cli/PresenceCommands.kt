@@ -42,6 +42,21 @@ class CloseWindowCommand :
     }
 }
 
+class SwipeBackCommand :
+    ControlCommand(
+        "swipe-back",
+        "Desktop in a VM: swipe right with two fingers over the window, as the trackpad's swipe between pages does; " +
+            "--cancel swipes too short to go back.",
+    ) {
+    private val cancel by option("--cancel", help = "Release the swipe early, so the application stays on its screen.").flag()
+
+    override fun execute(session: Session): JsonElement? {
+        requireDesktopInVirtualMachine(session)
+        DesktopPresenceDriver(session.context).swipeBack(complete = !cancel)
+        return null
+    }
+}
+
 class ResourcesCommand :
     ControlCommand("resources", "Desktop in a VM: sample footprint, CPU time, and idle wakeups of the application and its helper.") {
     private val seconds by option("--seconds", help = "Sample length.").int().default(DEFAULT_SECONDS)

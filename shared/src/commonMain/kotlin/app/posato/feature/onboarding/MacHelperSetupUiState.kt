@@ -38,6 +38,14 @@ internal fun MacSetupActivity.label(): StringResource {
     }
 }
 
+/** A system approval or password prompt may be open, so a back gesture must not leave the screen under it. */
+internal fun MacSetupPresentation.promptInProgress(): Boolean {
+    val waiting = setOf(MacSetupStepStatus.WAITING_FOR_APPROVAL, MacSetupStepStatus.WAITING_FOR_PASSWORD)
+    val run = setup
+    val runWaiting = run != null && (run.blocking in waiting || run.login in waiting || run.password in waiting)
+    return runWaiting || activity == MacSetupActivity.ENABLING || activity == MacSetupActivity.REMOVING || standingGrantChanging
+}
+
 internal fun MacSetupPresentation.needsSetup(): Boolean {
     val known = readiness ?: return false
     return known != MacHelperReadiness.READY

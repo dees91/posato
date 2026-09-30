@@ -32,8 +32,11 @@ import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
+import app.posato.core.navigation.PosatoNavStack
+import app.posato.core.navigation.rememberLastPresent
 import app.posato.feature.onboarding.MacHelperSetupUiState
 import app.posato.feature.onboarding.MacSetupPresentation
+import app.posato.feature.onboarding.promptInProgress
 import app.posato.feature.presence.SessionWindowRequest
 import app.posato.feature.schedules.host.ScheduledPauses
 import app.posato.feature.session.domain.LocalSessionStatus
@@ -219,55 +222,185 @@ internal fun SessionScreen(
     scheduled: ScheduledPauseView? = null,
     scheduledEnd: ScheduledEndActions = ScheduledEndActions(),
 ) {
-    key(state.isSettingUp, state.isReviewing, state.confirmingEarlyEnd, scheduledEnd.confirming) {
+    val showsMacSetup = macSetup != null && state.showsMacSetup(macSetup)
+    val stack = sessionStack(state, showsMacSetup, scheduled != null && scheduledEnd.confirming)
+    PosatoNavStack(
+        stack,
+        onBack = {
+            stack.last().back(scheduledEnd.onCancel, onCancelEarlyEnd, onExitReview, onExitSetup) {
+                macActions.leave()
+                onExitSetup()
+            }
+        },
+        modifier = modifier.fillMaxSize(),
+        backEnabled = !state.isStarting && !state.isEnding && !(showsMacSetup && macSetup.promptInProgress()),
+    ) { route ->
         Column(
-            modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(layout.screenInset),
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
             SessionOperationNotice(state, onRetry)
-            when {
-                state.status == null -> {}
+            SessionRouteContent(
+                route = route,
+                state = state,
+                layout = layout,
+                deviceLabel = deviceLabel,
+                onEnterSetup = onEnterSetup,
+                onExitSetup = onExitSetup,
+                onSetDuration = onSetDuration,
+                onEnterReview = onEnterReview,
+                onExitReview = onExitReview,
+                onStartSession = onStartSession,
+                onRequestEarlyEnd = onRequestEarlyEnd,
+                onCancelEarlyEnd = onCancelEarlyEnd,
+                onConfirmEarlyEnd = onConfirmEarlyEnd,
+                onRetry = onRetry,
+                onRetryEnforcement = onRetryEnforcement,
+                onOpenPausedItems = onOpenPausedItems,
+                onEditPausedItems = onEditPausedItems,
+                syncState = syncState,
+                macSetup = macSetup,
+                macActions = macActions,
+                macLoginItemEnabled = macLoginItemEnabled,
+                scheduled = scheduled,
+                scheduledEnd = scheduledEnd,
+            )
+        }
+    }
+}
 
-                scheduled != null && scheduledEnd.confirming -> {
-                    ScheduledEarlyEndContent(scheduled, layout, scheduledEnd.onConfirm, scheduledEnd.onCancel)
-                }
+@Composable
+private fun SessionRouteContent(
+    route: SessionRoute,
+    state: SessionUiState,
+    layout: PosatoLayout,
+    deviceLabel: String,
+    onEnterSetup: () -> Unit,
+    onExitSetup: () -> Unit,
+    onSetDuration: (Int) -> Unit,
+    onEnterReview: () -> Unit,
+    onExitReview: () -> Unit,
+    onStartSession: () -> Unit,
+    onRequestEarlyEnd: () -> Unit,
+    onCancelEarlyEnd: () -> Unit,
+    onConfirmEarlyEnd: () -> Unit,
+    onRetry: () -> Unit,
+    onRetryEnforcement: () -> Unit,
+    onOpenPausedItems: () -> Unit,
+    onEditPausedItems: (TargetsCategory) -> Unit,
+    syncState: SyncBootstrapUiState?,
+    macSetup: MacSetupPresentation?,
+    macActions: MacSetupCallbacks,
+    macLoginItemEnabled: Boolean?,
+    scheduled: ScheduledPauseView?,
+    scheduledEnd: ScheduledEndActions,
+) {
+    when (route) {
+        SessionRoute.ScheduledEarlyEnd -> {
+            rememberLastPresent(scheduled)?.let { ScheduledEarlyEndContent(it, layout, scheduledEnd.onConfirm, scheduledEnd.onCancel) }
+        }
 
-                state.confirmingEarlyEnd -> {
-                    SessionEarlyEndContent(state, layout, onConfirmEarlyEnd, onCancelEarlyEnd)
-                }
+        SessionRoute.EarlyEnd -> {
+            SessionEarlyEndContent(state, layout, onConfirmEarlyEnd, onCancelEarlyEnd)
+        }
 
-                macSetup != null && state.showsMacSetup(macSetup) -> {
-                    SessionMacSetup(state, macSetup, layout, macActions, onExitSetup)
-                }
-
-                state.isReviewing -> {
-                    SessionReviewContent(state, layout, deviceLabel, onStartSession, onExitReview, onOpenPausedItems, onEditPausedItems, onRetry)
-                }
-
-                state.isSettingUp -> {
-                    SessionDurationContent(state, layout, onSetDuration, onEnterReview, onExitSetup)
-                }
-
-                else -> {
-                    SessionOverviewContent(
-                        state,
-                        layout,
-                        deviceLabel,
-                        onEnterSetup,
-                        onRequestEarlyEnd,
-                        onOpenPausedItems,
-                        onEditPausedItems,
-                        onRetryEnforcement,
-                        syncState,
-                        macSetup,
-                        macActions,
-                        macLoginItemEnabled,
-                        scheduled,
-                        scheduledEnd.onRequest,
-                    )
-                }
+        SessionRoute.MacSetup -> {
+            if (macSetup != null) {
+                SessionMacSetup(state, macSetup, layout, macActions, onExitSetup)
             }
         }
+
+        SessionRoute.Review -> {
+            SessionReviewContent(state, layout, deviceLabel, onStartSession, onExitReview, onOpenPausedItems, onEditPausedItems, onRetry)
+        }
+
+        SessionRoute.Duration -> {
+            SessionDurationContent(state, layout, onSetDuration, onEnterReview, onExitSetup)
+        }
+
+        SessionRoute.Overview -> {
+            if (state.status != null) {
+                SessionOverviewContent(
+                    state,
+                    layout,
+                    deviceLabel,
+                    onEnterSetup,
+                    onRequestEarlyEnd,
+                    onOpenPausedItems,
+                    onEditPausedItems,
+                    onRetryEnforcement,
+                    syncState,
+                    macSetup,
+                    macActions,
+                    macLoginItemEnabled,
+                    scheduled,
+                    scheduledEnd.onRequest,
+                )
+            }
+        }
+    }
+}
+
+/** Session's screens: the overview, a confirmation or setup flow above it, and review above duration. */
+private enum class SessionRoute {
+    Overview,
+    Duration,
+    Review,
+    MacSetup,
+    EarlyEnd,
+    ScheduledEarlyEnd,
+}
+
+private fun SessionRoute.back(
+    onCancelScheduledEnd: () -> Unit,
+    onCancelEarlyEnd: () -> Unit,
+    onExitReview: () -> Unit,
+    onExitSetup: () -> Unit,
+    onLeaveMacSetup: () -> Unit,
+) {
+    when (this) {
+        SessionRoute.ScheduledEarlyEnd -> {
+            onCancelScheduledEnd()
+        }
+
+        SessionRoute.EarlyEnd -> {
+            onCancelEarlyEnd()
+        }
+
+        SessionRoute.MacSetup -> {
+            onLeaveMacSetup()
+        }
+
+        SessionRoute.Review -> {
+            onExitReview()
+        }
+
+        SessionRoute.Duration -> {
+            onExitSetup()
+        }
+
+        SessionRoute.Overview -> {}
+    }
+}
+
+private fun sessionStack(
+    state: SessionUiState,
+    showsMacSetup: Boolean,
+    confirmingScheduledEnd: Boolean,
+): List<SessionRoute> {
+    val top = when {
+        state.status == null -> null
+        confirmingScheduledEnd -> SessionRoute.ScheduledEarlyEnd
+        state.confirmingEarlyEnd -> SessionRoute.EarlyEnd
+        showsMacSetup -> SessionRoute.MacSetup
+        state.isReviewing -> SessionRoute.Review
+        state.isSettingUp -> SessionRoute.Duration
+        else -> null
+    }
+    return when (top) {
+        null -> listOf(SessionRoute.Overview)
+        SessionRoute.Review -> listOf(SessionRoute.Overview, SessionRoute.Duration, SessionRoute.Review)
+        else -> listOf(SessionRoute.Overview, top)
     }
 }
 

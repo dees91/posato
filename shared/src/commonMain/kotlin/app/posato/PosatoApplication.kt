@@ -24,6 +24,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import app.posato.core.designsystem.PosatoDevice
@@ -32,8 +33,10 @@ import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.platformDevice
+import app.posato.core.navigation.PosatoNavStack
 import app.posato.feature.about.AboutScreen
 import app.posato.feature.about.ApplicationUpdates
+import app.posato.feature.licenses.LicenseDocument
 import app.posato.feature.licenses.LicensesScreen
 import app.posato.feature.notifications.SessionNotifier
 import app.posato.feature.onboarding.MacHelperSetupUiState
@@ -130,12 +133,7 @@ class PosatoApplication internal constructor(
         }
         val device = remember { platformDevice() }
         PosatoTheme(highContrast = highContrast) {
-            // Session reconciliation runs on every foreground, even when the
-            // Session screen is not subscribed: subscriptions do not own the work.
-            LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = sessionOwner::onForeground)
-            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { helperSetup.readQuietly(refresh = true) }
-            // A schedule that came due while the app was away is caught up on return.
-            LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = scheduledPauses::refresh)
+            ForegroundEffects(helperSetup)
             SyncAnnouncements(syncState, onAnnouncement)
             val completion = onboarding.completion
             if (completion == null) {
@@ -170,6 +168,16 @@ class PosatoApplication internal constructor(
     }
 
     @Composable
+    private fun ForegroundEffects(helperSetup: MacHelperSetupUiState) {
+        // Session reconciliation runs on every foreground, even when the
+        // Session screen is not subscribed: subscriptions do not own the work.
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = sessionOwner::onForeground)
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { helperSetup.readQuietly(refresh = true) }
+        // A schedule that came due while the app was away is caught up on return.
+        LifecycleEventEffect(Lifecycle.Event.ON_RESUME, onEvent = scheduledPauses::refresh)
+    }
+
+    @Composable
     private fun DestinationsHost(
         syncState: SyncBootstrapUiState,
         macSetupState: MacHelperSetupUiState?,
@@ -180,66 +188,119 @@ class PosatoApplication internal constructor(
         windowRequests: Flow<SessionWindowRequest>,
         modifier: Modifier = Modifier,
     ) {
-        val browser = navigation.browser
-        var destination by navigation::destination
-        var informationPage by navigation::informationPage
         var pendingRequest by remember { mutableStateOf<SessionWindowRequest?>(null) }
         WindowRequestsEffect(windowRequests, navigation) { pendingRequest = it }
         val deviceLabel = "On this ${device.noun} only"
         ApplicationNavigationScaffold(
             device = device,
-            destination = destination,
-            showingInformation = informationPage != null,
+            destination = navigation.destination,
+            showingInformation = navigation.informationPage != null,
             onSelect = navigation::select,
-            onOpenAbout = { informationPage = ApplicationInformationPage.ABOUT },
+            onOpenAbout = { navigation.showInformation(ApplicationInformationPage.ABOUT) },
             modifier = modifier,
         ) { layout ->
-            val inset = if (layout == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
                 val contentModifier = Modifier.widthIn(max = PosatoSize.Content).fillMaxWidth()
-                val currentInformationPage = informationPage
-                when {
-                    currentInformationPage != null -> {
-                        ApplicationInformationHost(currentInformationPage, { informationPage = it }, updates, contentModifier.padding(inset))
-                    }
+                PosatoNavStack(
+                    navigation.shellStack(),
+                    onBack = navigation::back,
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter,
+                ) { route ->
+                    when (route) {
+                        ShellRoute.Destinations -> {
+                            DestinationContent(
+                                navigation = navigation,
+                                layout = layout,
+                                deviceLabel = deviceLabel,
+                                syncState = syncState,
+                                macSetupState = macSetupState,
+                                onMacSetupAnnouncement = onMacSetupAnnouncement,
+                                windowRequest = pendingRequest,
+                                onConsumeWindowRequest = { pendingRequest = null },
+                                device = device,
+                                modifier = contentModifier,
+                            )
+                        }
 
-                    destination == ApplicationDestination.SESSION -> {
-                        SessionScreen(
-                            store,
-                            applicationMappings,
-                            sessionIds,
-                            clock,
-                            timeFormat,
-                            sessionOwner,
-                            onOpenPausedItems = { destination = ApplicationDestination.TARGETS },
-                            onEditPausedItems = browser.editRoute { destination = ApplicationDestination.TARGETS },
-                            modifier = contentModifier,
-                            layout = layout,
-                            deviceLabel = deviceLabel,
-                            syncState = syncState,
-                            macSetupState = macSetupState,
-                            onMacSetupAnnouncement = onMacSetupAnnouncement,
-                            windowRequest = pendingRequest,
-                            onConsumeWindowRequest = { pendingRequest = null },
-                            scheduledPauses = scheduledPauses,
-                        )
-                    }
-
-                    destination == ApplicationDestination.SCHEDULES -> {
-                        SchedulesDestination(scheduleInputs, device, layout, macSetupState, contentModifier)
-                    }
-
-                    else -> {
-                        TargetsScreen(
-                            store,
-                            applicationMappings,
-                            contentModifier.padding(horizontal = inset, vertical = PosatoSpace.Medium),
-                            browser,
-                            deviceLabel,
-                        )
+                        ShellRoute.About, ShellRoute.Licenses, is ShellRoute.License -> {
+                            InformationContent(route, navigation, updates, contentModifier.padding(layout.inset))
+                        }
                     }
                 }
             }
+        }
+    }
+
+    @Composable
+    private fun DestinationContent(
+        navigation: ApplicationNavigation,
+        layout: PosatoLayout,
+        deviceLabel: String,
+        syncState: SyncBootstrapUiState,
+        macSetupState: MacHelperSetupUiState?,
+        onMacSetupAnnouncement: (String) -> Unit,
+        windowRequest: SessionWindowRequest?,
+        onConsumeWindowRequest: () -> Unit,
+        device: PosatoDevice,
+        modifier: Modifier = Modifier,
+    ) {
+        var destination by navigation::destination
+        when (destination) {
+            ApplicationDestination.SESSION -> SessionScreen(
+                store,
+                applicationMappings,
+                sessionIds,
+                clock,
+                timeFormat,
+                sessionOwner,
+                onOpenPausedItems = { destination = ApplicationDestination.TARGETS },
+                onEditPausedItems = navigation.browser.editRoute { destination = ApplicationDestination.TARGETS },
+                modifier = modifier,
+                layout = layout,
+                deviceLabel = deviceLabel,
+                syncState = syncState,
+                macSetupState = macSetupState,
+                onMacSetupAnnouncement = onMacSetupAnnouncement,
+                windowRequest = windowRequest,
+                onConsumeWindowRequest = onConsumeWindowRequest,
+                scheduledPauses = scheduledPauses,
+            )
+
+            ApplicationDestination.SCHEDULES -> SchedulesDestination(scheduleInputs, device, layout, macSetupState, modifier)
+
+            ApplicationDestination.TARGETS -> TargetsScreen(
+                store,
+                applicationMappings,
+                modifier.padding(horizontal = layout.inset, vertical = PosatoSpace.Medium),
+                navigation.browser,
+                deviceLabel,
+            )
+        }
+    }
+
+    @Composable
+    private fun InformationContent(
+        route: ShellRoute,
+        navigation: ApplicationNavigation,
+        updates: ApplicationUpdates?,
+        modifier: Modifier = Modifier,
+    ) {
+        if (route == ShellRoute.About) {
+            AboutScreen(
+                onOpenLicenses = { navigation.showInformation(ApplicationInformationPage.LICENSES) },
+                onBack = navigation::back,
+                modifier = modifier,
+                updates = updates,
+                notifications = notifier.takeIf { it.available },
+            )
+        } else {
+            LicensesScreen(
+                document = (route as? ShellRoute.License)?.document,
+                onSelect = { navigation.licenseDocument = it },
+                onBack = navigation::back,
+                modifier = modifier,
+            )
         }
     }
 
@@ -253,7 +314,7 @@ class PosatoApplication internal constructor(
         LaunchedEffect(windowRequests) {
             windowRequests.collect { request ->
                 navigation.destination = ApplicationDestination.SESSION
-                navigation.informationPage = null
+                navigation.showInformation(null)
                 latestOnRequest(request)
             }
         }
@@ -303,29 +364,6 @@ class PosatoApplication internal constructor(
             }
         }
     }
-
-    @Composable
-    private fun ApplicationInformationHost(
-        page: ApplicationInformationPage,
-        onNavigate: (ApplicationInformationPage?) -> Unit,
-        updates: ApplicationUpdates?,
-        modifier: Modifier = Modifier,
-    ) {
-        when (page) {
-            ApplicationInformationPage.ABOUT -> AboutScreen(
-                onOpenLicenses = { onNavigate(ApplicationInformationPage.LICENSES) },
-                onBack = { onNavigate(null) },
-                modifier = modifier,
-                updates = updates,
-                notifications = notifier.takeIf { it.available },
-            )
-
-            ApplicationInformationPage.LICENSES -> LicensesScreen(
-                onBack = { onNavigate(ApplicationInformationPage.ABOUT) },
-                modifier = modifier,
-            )
-        }
-    }
 }
 
 @Stable
@@ -333,13 +371,55 @@ public class ApplicationNavigation {
     internal val browser: TargetsBrowserState = TargetsBrowserState()
     internal var destination: ApplicationDestination by mutableStateOf(ApplicationDestination.SESSION)
     internal var informationPage: ApplicationInformationPage? by mutableStateOf(null)
+        private set
+    internal var licenseDocument: LicenseDocument? by mutableStateOf(null)
 
     internal fun select(selected: ApplicationDestination) {
         destination = selected
-        informationPage = null
+        showInformation(null)
         if (selected == ApplicationDestination.TARGETS) browser.showingWebsiteEditor = true
     }
+
+    internal fun showInformation(page: ApplicationInformationPage?) {
+        informationPage = page
+        licenseDocument = null
+    }
+
+    internal fun shellStack(): List<ShellRoute> {
+        return buildList {
+            add(ShellRoute.Destinations)
+            if (informationPage != null) add(ShellRoute.About)
+            if (informationPage == ApplicationInformationPage.LICENSES) add(ShellRoute.Licenses)
+            licenseDocument?.let { add(ShellRoute.License(it)) }
+        }
+    }
+
+    internal fun back() {
+        when {
+            licenseDocument != null -> licenseDocument = null
+            informationPage == ApplicationInformationPage.LICENSES -> showInformation(ApplicationInformationPage.ABOUT)
+            else -> showInformation(null)
+        }
+    }
 }
+
+/** The shell stack: the selected destination, with About Posato, Licenses, and a license text above it. */
+internal sealed interface ShellRoute {
+    data object Destinations : ShellRoute
+
+    data object About : ShellRoute
+
+    data object Licenses : ShellRoute
+
+    data class License(
+        val document: LicenseDocument
+    ) : ShellRoute
+}
+
+private val PosatoLayout.inset: Dp
+    get() {
+        return if (this == PosatoLayout.Compact) PosatoSpace.Section else PosatoSpace.Canvas
+    }
 
 internal enum class ApplicationDestination {
     SESSION,
