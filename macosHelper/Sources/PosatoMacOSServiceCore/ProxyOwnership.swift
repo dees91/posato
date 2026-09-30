@@ -41,18 +41,11 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     }
     let serviceIdentifier = try configuration.currentPrimaryServiceIdentifier()
     let baseline = try configuration.snapshot(serviceIdentifier: serviceIdentifier)
-    guard !baseline.hasEnabledProxy, let baselineEntries = baseline.exceptions.entries else {
+    guard !baseline.hasEnabledProxy, let owning = OwnedExceptions.applying(to: baseline.exceptions)
+    else {
       throw ProxyOwnershipFailure.unavailable
     }
     let applied = appliedTuple(port: port)
-    let appended = ProxyExceptions.missingLoopbackEntries(in: baselineEntries)
-    let appliedEntries = baselineEntries + appended
-    let exceptions = OwnedExceptions(
-      baselinePresent: baseline.exceptions != .absent,
-      baselineDigest: baseline.exceptions == .absent ? nil : ProxyExceptions.digest(baselineEntries),
-      appliedDigest: ProxyExceptions.digest(appliedEntries),
-      appended: appended
-    )
     var record = OwnershipRecord(
       sessionIdentifier: sessionIdentifier,
       requestIdentifier: requestIdentifier,
@@ -63,18 +56,18 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
       baselineHTTPS: baseline.https,
       appliedHTTP: applied,
       appliedHTTPS: applied,
-      exceptions: exceptions
+      exceptions: owning.owned
     )
     try persistence.save(record)
     let resulting = try configuration.replaceTuples(
       expected: baseline,
       http: applied,
       https: applied,
-      exceptions: appended.isEmpty ? .untouched : .set(appliedEntries),
+      exceptions: owning.target,
       requirePrimaryService: true
     )
     guard resulting.http == applied, resulting.https == applied,
-      exceptions.isApplied(resulting.exceptions)
+      owning.owned.isApplied(resulting.exceptions)
     else {
       throw ProxyOwnershipFailure.recoveryRequired
     }
@@ -199,49 +192,6 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     return try reconcile()
   }
 
-  private func restore(
-    record original: OwnershipRecord,
-    current: ProxySnapshot
-  ) throws -> OwnershipPhase {
-    var record = original
-    record.phase = .restorePending
-    try persistence.save(record)
-    let httpConflict =
-      current.http != record.appliedHTTP
-      && current.http != record.baselineHTTP
-    let httpsConflict =
-      current.https != record.appliedHTTPS
-      && current.https != record.baselineHTTPS
-    let targetHTTP =
-      current.http == record.appliedHTTP
-      ? record.baselineHTTP : current.http
-    let targetHTTPS =
-      current.https == record.appliedHTTPS
-      ? record.baselineHTTPS : current.https
-    let exceptions = Self.exceptionsRestore(record: record, current: current.exceptions)
-    let resulting = try configuration.replaceTuples(
-      expected: current,
-      http: targetHTTP,
-      https: targetHTTPS,
-      exceptions: exceptions.target,
-      requirePrimaryService: false
-    )
-    guard resulting.http == targetHTTP, resulting.https == targetHTTPS,
-      exceptions.reached(resulting.exceptions)
-    else {
-      record.phase = .recoveryRequired
-      try persistence.save(record)
-      throw ProxyOwnershipFailure.recoveryRequired
-    }
-    if httpConflict || httpsConflict || exceptions.conflict {
-      record.phase = .recoveryRequired
-      try persistence.save(record)
-      return .recoveryRequired
-    }
-    try persistence.remove()
-    return .idle
-  }
-
   private func appliedTuple(port: UInt16) -> ProxyTuple {
     return ProxyTuple(
       enabled: .integer(1),
@@ -297,23 +247,72 @@ extension ProxyOwnershipEngine {
     }
   }
 
+  private func restore(
+    record original: OwnershipRecord,
+    current: ProxySnapshot
+  ) throws -> OwnershipPhase {
+    var record = original
+    record.phase = .restorePending
+    try persistence.save(record)
+    let httpConflict =
+      current.http != record.appliedHTTP
+      && current.http != record.baselineHTTP
+    let httpsConflict =
+      current.https != record.appliedHTTPS
+      && current.https != record.baselineHTTPS
+    let targetHTTP =
+      current.http == record.appliedHTTP
+      ? record.baselineHTTP : current.http
+    let targetHTTPS =
+      current.https == record.appliedHTTPS
+      ? record.baselineHTTPS : current.https
+    let exceptions = Self.exceptionsRestore(record: record, current: current.exceptions)
+    let resulting = try configuration.replaceTuples(
+      expected: current,
+      http: targetHTTP,
+      https: targetHTTPS,
+      exceptions: exceptions.target,
+      requirePrimaryService: false
+    )
+    guard resulting.http == targetHTTP, resulting.https == targetHTTPS,
+      exceptions.reached(resulting.exceptions)
+    else {
+      record.phase = .recoveryRequired
+      try persistence.save(record)
+      throw ProxyOwnershipFailure.recoveryRequired
+    }
+    if httpConflict || httpsConflict || exceptions.conflict {
+      record.phase = .recoveryRequired
+      try persistence.save(record)
+      return .recoveryRequired
+    }
+    try persistence.remove()
+    return .idle
+  }
+
   /// Restores an applied list to its baseline, keeps a baseline list, and leaves any other list untouched as a
   /// conflict (ADR 0004, MACOS-024 amendment D1). A version 1 record owns no exceptions change.
   private static func exceptionsRestore(
     record: OwnershipRecord,
     current: ProxyExceptions
-  ) -> (target: ProxyExceptionsTarget, conflict: Bool, reached: (ProxyExceptions) -> Bool) {
+  ) -> ExceptionsRestore {
     guard let owned = record.exceptions, !owned.isBaseline(current) else {
-      return (.untouched, false, { $0 == current })
+      return ExceptionsRestore(target: .untouched, conflict: false) { $0 == current }
     }
     guard let target = owned.restoreTarget(from: current) else {
-      return (.untouched, true, { $0 == current })
+      return ExceptionsRestore(target: .untouched, conflict: true) { $0 == current }
     }
-    return (target, false, owned.isBaseline)
+    return ExceptionsRestore(target: target, conflict: false, reached: owned.isBaseline)
   }
 
   private func releaseRemovedService() throws -> OwnershipPhase {
     try persistence.remove()
     return .idle
   }
+}
+
+private struct ExceptionsRestore {
+  let target: ProxyExceptionsTarget
+  let conflict: Bool
+  let reached: (ProxyExceptions) -> Bool
 }

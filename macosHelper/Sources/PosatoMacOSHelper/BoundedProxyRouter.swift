@@ -202,32 +202,20 @@ extension BoundedProxyRequestParser {
     if isOwnListener {
       return nil
     }
+    let initialData = forwardedRequest(
+      method: input.method,
+      target: input.target,
+      parsed: input.parsed,
+      destination: destination,
+      body: input.body
+    )
     if let addresses = BoundedProxyAuthority.relayLoopbackAddresses(destination.host) {
       return .loopbackForward(
-        addresses: addresses,
-        port: destination.port,
-        initialData: forwardedRequest(
-          method: input.method,
-          target: input.target,
-          parsed: input.parsed,
-          destination: destination,
-          body: input.body
-        )
-      )
+        addresses: addresses, port: destination.port, initialData: initialData)
     }
     guard destination.port == 80 else {
       return nil
     }
-    return .forward(
-      host: destination.host,
-      port: destination.port,
-      initialData: forwardedRequest(
-        method: input.method,
-        target: input.target,
-        parsed: input.parsed,
-        destination: destination,
-        body: input.body
-      )
-    )
+    return .forward(host: destination.host, port: destination.port, initialData: initialData)
   }
 }

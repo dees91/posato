@@ -37,14 +37,17 @@ private func route(_ request: String) -> BoundedProxyRoute? {
   )
 }
 
-@Test func givenAbsoluteFormToLocalhostOnAnyPortWhenRoutedThenItForwardsWithTheOriginalHost() throws {
-  let routed = route("POST http://localhost:18765/mcp HTTP/1.1\r\nHost: localhost:18765\r\nContent-Length: 2\r\n\r\n{}")
+@Test func givenAbsoluteFormToLocalhostWhenRoutedThenItForwardsWithTheOriginalHost() throws {
+  let routed = route(
+    "POST http://localhost:18765/mcp HTTP/1.1\r\nHost: localhost:18765\r\n"
+      + "Content-Length: 2\r\n\r\n{}"
+  )
 
   guard case .loopbackForward(let addresses, let port, let initialData) = routed else {
     Issue.record("expected a loopback forward, got \(String(describing: routed))")
     return
   }
-  let forwarded = String(decoding: initialData, as: UTF8.self)
+  let forwarded = try #require(String(bytes: initialData, encoding: .utf8))
   #expect(addresses == ["127.0.0.1", "::1"])
   #expect(port == 18_765)
   #expect(forwarded.contains("\r\nHost: localhost:18765\r\n"))
@@ -58,7 +61,9 @@ private func route(_ request: String) -> BoundedProxyRoute? {
     "127.1:18765", "app.localhost:18765",
   ]
   for authority in refusedAuthorities {
-    #expect(route("CONNECT \(authority) HTTP/1.1\r\nHost: \(authority)\r\n\r\n") == nil, "CONNECT \(authority)")
+    #expect(
+      route("CONNECT \(authority) HTTP/1.1\r\nHost: \(authority)\r\n\r\n") == nil,
+      "CONNECT \(authority)")
     #expect(
       route("GET http://\(authority)/ HTTP/1.1\r\nHost: \(authority)\r\n\r\n") == nil,
       "GET http://\(authority)/"

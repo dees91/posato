@@ -92,10 +92,23 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     else {
       throw SystemProxyConfigurationFailure.mutation
     }
+    return try verifiedSnapshot(
+      preferences: preferences,
+      serviceIdentifier: expected.serviceIdentifier,
+      expectedValues: expectedValues
+    )
+  }
+
+  /// Re-reads the committed configuration and requires it to equal the dictionary that was written.
+  private func verifiedSnapshot(
+    preferences: SCPreferences,
+    serviceIdentifier: String,
+    expectedValues: [String: Any]
+  ) throws -> ProxySnapshot {
     SCPreferencesSynchronize(preferences)
     let resultingProtocol = try proxyProtocol(
       preferences: preferences,
-      serviceIdentifier: expected.serviceIdentifier
+      serviceIdentifier: serviceIdentifier
     )
     let resultingValues = try configuration(protocolValue: resultingProtocol)
     guard Self.dictionariesEqual(resultingValues, expectedValues) else {
@@ -103,7 +116,7 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     }
     return try snapshot(
       protocolValue: resultingProtocol,
-      serviceIdentifier: expected.serviceIdentifier
+      serviceIdentifier: serviceIdentifier
     )
   }
 
@@ -191,26 +204,6 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     throw SystemProxyConfigurationFailure.protocolConfiguration
   }
 
-  static let exceptionsKey = "ExceptionsList"
-
-  /// Reads `ExceptionsList` without throwing, so that an out-of-band value never blocks tuple restoration.
-  static func exceptions(_ value: Any?) -> ProxyExceptions {
-    guard let value else {
-      return .absent
-    }
-    if let entries = value as? [Any], entries.count <= ProxyExceptions.maximumEntries {
-      let strings = entries.compactMap { $0 as? String }
-      let bounded = strings.allSatisfy { $0.utf8.count <= ProxyExceptions.maximumEntryBytes }
-      if strings.count == entries.count, bounded {
-        return .list(strings)
-      }
-    }
-    let raw =
-      (try? PropertyListSerialization.data(fromPropertyList: value, format: .binary, options: 0))
-      ?? Data(String(describing: value).utf8)
-    return .unreadable(Data(SHA256.hash(data: raw)))
-  }
-
   static func additionalProxyEnabled(values: [String: Any]) throws -> Bool {
     return try enabledFlag(values["SOCKSEnable"])
       || enabledFlag(values["ProxyAutoConfigEnable"])
@@ -278,5 +271,27 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     case nil:
       values.removeValue(forKey: key)
     }
+  }
+}
+
+extension SystemProxyConfiguration {
+  static let exceptionsKey = "ExceptionsList"
+
+  /// Reads `ExceptionsList` without throwing, so that an out-of-band value never blocks tuple restoration.
+  static func exceptions(_ value: Any?) -> ProxyExceptions {
+    guard let value else {
+      return .absent
+    }
+    if let entries = value as? [Any], entries.count <= ProxyExceptions.maximumEntries {
+      let strings = entries.compactMap { $0 as? String }
+      let bounded = strings.allSatisfy { $0.utf8.count <= ProxyExceptions.maximumEntryBytes }
+      if strings.count == entries.count, bounded {
+        return .list(strings)
+      }
+    }
+    let raw =
+      (try? PropertyListSerialization.data(fromPropertyList: value, format: .binary, options: 0))
+      ?? Data(String(describing: value).utf8)
+    return .unreadable(Data(SHA256.hash(data: raw)))
   }
 }

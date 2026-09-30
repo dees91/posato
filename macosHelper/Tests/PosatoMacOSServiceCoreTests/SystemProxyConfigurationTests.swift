@@ -52,7 +52,8 @@ import Testing
     exceptions: .remove
   )
 
-  #expect(resulting["ExceptionsList"] as? [String] == ["localhost", "*.invalid", "127.0.0.1", "::1"])
+  #expect(
+    resulting["ExceptionsList"] as? [String] == ["localhost", "*.invalid", "127.0.0.1", "::1"])
   #expect(restored["ExceptionsList"] == nil)
   #expect(restored["NestedSyntheticValue"] != nil)
   #expect(
@@ -79,5 +80,6 @@ import Testing
       continue
     }
   }
-  #expect(SystemProxyConfiguration.exceptions(["a", 1]) != SystemProxyConfiguration.exceptions(["a", 2]))
+  #expect(
+    SystemProxyConfiguration.exceptions(["a", 1]) != SystemProxyConfiguration.exceptions(["a", 2]))
 }

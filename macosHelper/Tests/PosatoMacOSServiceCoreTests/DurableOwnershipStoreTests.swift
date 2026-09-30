@@ -100,14 +100,89 @@ private func syntheticRecord(
 // load it as owning no exceptions change; a regression here strands an update or a manual replace that meets a
 // running session, which no VM run produces.
 private let versionOneRecordXML = """
-<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>appliedHTTP</key><dict><key>enabled</key><dict><key>integer</key><dict><key>_0</key><integer>1</integer></dict></dict><key>host</key><dict><key>string</key><dict><key>_0</key><string>127.0.0.1</string></dict></dict><key>port</key><dict><key>integer</key><dict><key>_0</key><integer>17769</integer></dict></dict></dict><key>appliedHTTPS</key><dict><key>enabled</key><dict><key>integer</key><dict><key>_0</key><integer>1</integer></dict></dict><key>host</key><dict><key>string</key><dict><key>_0</key><string>127.0.0.1</string></dict></dict><key>port</key><dict><key>integer</key><dict><key>_0</key><integer>17769</integer></dict></dict></dict><key>baselineHTTP</key><dict/><key>baselineHTTPS</key><dict/><key>canonicalInputDigest</key><data>
-	AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=
-	</data><key>phase</key><integer>3</integer><key>requestIdentifier</key><data>
-	AgICAgICAgICAgICAgICAg==
-	</data><key>schema</key><integer>1</integer><key>serviceIdentifier</key><string>synthetic-service</string><key>sessionIdentifier</key><data>
-	AQEBAQEBAQEBAQEBAQEBAQ==
-	</data></dict></plist>
-"""
+  <?xml version="1.0" encoding="UTF-8"?>
+  <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+  <plist version="1.0">
+  <dict>
+    <key>appliedHTTP</key>
+    <dict>
+      <key>enabled</key>
+      <dict>
+        <key>integer</key>
+        <dict>
+          <key>_0</key>
+          <integer>1</integer>
+        </dict>
+      </dict>
+      <key>host</key>
+      <dict>
+        <key>string</key>
+        <dict>
+          <key>_0</key>
+          <string>127.0.0.1</string>
+        </dict>
+      </dict>
+      <key>port</key>
+      <dict>
+        <key>integer</key>
+        <dict>
+          <key>_0</key>
+          <integer>17769</integer>
+        </dict>
+      </dict>
+    </dict>
+    <key>appliedHTTPS</key>
+    <dict>
+      <key>enabled</key>
+      <dict>
+        <key>integer</key>
+        <dict>
+          <key>_0</key>
+          <integer>1</integer>
+        </dict>
+      </dict>
+      <key>host</key>
+      <dict>
+        <key>string</key>
+        <dict>
+          <key>_0</key>
+          <string>127.0.0.1</string>
+        </dict>
+      </dict>
+      <key>port</key>
+      <dict>
+        <key>integer</key>
+        <dict>
+          <key>_0</key>
+          <integer>17769</integer>
+        </dict>
+      </dict>
+    </dict>
+    <key>baselineHTTP</key>
+    <dict/>
+    <key>baselineHTTPS</key>
+    <dict/>
+    <key>canonicalInputDigest</key>
+    <data>
+    AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwM=
+    </data>
+    <key>phase</key>
+    <integer>3</integer>
+    <key>requestIdentifier</key>
+    <data>
+    AgICAgICAgICAgICAgICAg==
+    </data>
+    <key>schema</key>
+    <integer>1</integer>
+    <key>serviceIdentifier</key>
+    <string>synthetic-service</string>
+    <key>sessionIdentifier</key>
+    <data>
+    AQEBAQEBAQEBAQEBAQEBAQ==
+    </data>
+  </dict>
+  </plist>
+  """
 
 @Test func givenRecordWrittenByVersionOneDaemonWhenLoadedThenItOwnsNoExceptionsChange() throws {
   let directory = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)

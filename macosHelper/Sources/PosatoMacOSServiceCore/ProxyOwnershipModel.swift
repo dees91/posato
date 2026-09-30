@@ -97,16 +97,40 @@ public struct OwnedExceptions: Codable, Equatable, Sendable {
   public let appliedDigest: Data
   public let appended: [String]
 
-  public init(baselinePresent: Bool, baselineDigest: Data?, appliedDigest: Data, appended: [String]) {
+  public init(
+    baselinePresent: Bool,
+    baselineDigest: Data?,
+    appliedDigest: Data,
+    appended: [String]
+  ) {
     self.baselinePresent = baselinePresent
     self.baselineDigest = baselineDigest
     self.appliedDigest = appliedDigest
     self.appended = appended
   }
 
+  /// What Apply owns and writes for a baseline list, or nil when the baseline is unreadable (D4).
+  static func applying(
+    to baseline: ProxyExceptions
+  ) -> (owned: OwnedExceptions, target: ProxyExceptionsTarget)? {
+    guard let entries = baseline.entries else {
+      return nil
+    }
+    let appended = ProxyExceptions.missingLoopbackEntries(in: entries)
+    let applied = entries + appended
+    let owned = OwnedExceptions(
+      baselinePresent: baseline != .absent,
+      baselineDigest: baseline == .absent ? nil : ProxyExceptions.digest(entries),
+      appliedDigest: ProxyExceptions.digest(applied),
+      appended: appended
+    )
+    return (owned, appended.isEmpty ? .untouched : .set(applied))
+  }
+
   var hasValidBounds: Bool {
     let fixed = ProxyExceptions.loopbackEntries
-    let orderedSubsequence = appended.allSatisfy(fixed.contains)
+    let orderedSubsequence =
+      appended.allSatisfy(fixed.contains)
       && appended == fixed.filter(appended.contains)
     let baselineShape =
       baselinePresent
@@ -198,7 +222,8 @@ public struct OwnershipRecord: Codable, Equatable, Sendable {
   }
 
   public var hasValidBounds: Bool {
-    let schemaMatches = schema == (exceptions == nil ? Self.legacySchemaVersion : Self.schemaVersion)
+    let schemaMatches =
+      schema == (exceptions == nil ? Self.legacySchemaVersion : Self.schemaVersion)
     return schemaMatches
       && exceptions?.hasValidBounds ?? true
       && sessionIdentifier.count == WireLimits.identifierBytes

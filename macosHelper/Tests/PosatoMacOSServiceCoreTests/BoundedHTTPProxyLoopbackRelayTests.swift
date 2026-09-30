@@ -8,9 +8,8 @@ import Testing
 // 32 pairs so stuck local streams cannot starve browser traffic. A VM run cannot hold 32 streams or a silent upstream
 // reliably.
 
-@Test func givenThirtyTwoOpenLoopbackTunnelsWhenAnotherOpensThenItIsRefusedWhileBrowserTrafficStillFlows()
-  async throws
-{
+@Test
+func givenThirtyTwoLoopbackTunnelsWhenAnotherOpensThenOnlyItIsRefused() async throws {
   let origin = try await LocalHTTPOrigin()
   defer { origin.stop() }
   let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"]) { host, port in
@@ -18,10 +17,15 @@ import Testing
   }
   let proxyPort = try await runBlockingTestOperation { try proxy.start() }
   defer { proxy.stop() }
-  let connect = "CONNECT 127.0.0.1:\(origin.port) HTTP/1.1\r\nHost: 127.0.0.1:\(origin.port)\r\n\r\n"
+  let connect =
+    "CONNECT 127.0.0.1:\(origin.port) HTTP/1.1\r\nHost: 127.0.0.1:\(origin.port)\r\n\r\n"
 
   var tunnels: [Int32] = []
-  defer { tunnels.forEach { Darwin.close($0) } }
+  defer {
+    for tunnel in tunnels {
+      Darwin.close(tunnel)
+    }
+  }
   for _ in 0..<BoundedHTTPProxy.maximumLoopbackRelays {
     let descriptor = try await connectedLoopbackSocket(port: proxyPort)
     tunnels.append(descriptor)
@@ -58,7 +62,7 @@ import Testing
   #expect(Date().timeIntervalSince(started) < 5)
 }
 
-@Test func givenEstablishedLoopbackStreamWhenIdleLongerThanTheTimeoutThenItStaysOpen() async throws {
+@Test func givenEstablishedLoopbackStreamWhenIdlePastTheTimeoutThenItStaysOpen() async throws {
   let origin = try await LocalHTTPOrigin()
   defer { origin.stop() }
   let proxy = BoundedHTTPProxy(selectedHosts: ["example.com"], idleTimeout: 0.5)
@@ -67,11 +71,14 @@ import Testing
 
   let descriptor = try await connectedLoopbackSocket(port: proxyPort)
   defer { Darwin.close(descriptor) }
-  try await send("CONNECT 127.0.0.1:\(origin.port) HTTP/1.1\r\nHost: 127.0.0.1:\(origin.port)\r\n\r\n", to: descriptor)
+  try await send(
+    "CONNECT 127.0.0.1:\(origin.port) HTTP/1.1\r\nHost: 127.0.0.1:\(origin.port)\r\n\r\n",
+    to: descriptor)
   #expect(try await receiveLine(from: descriptor) == "HTTP/1.1 200 Connection Established\r\n")
   _ = try await receiveLine(from: descriptor)
   try await runBlockingTestOperation { Thread.sleep(forTimeInterval: 1.5) }
-  try await send("GET /late HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n", to: descriptor)
+  try await send(
+    "GET /late HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n", to: descriptor)
 
   #expect(try await receiveToEnd(from: descriptor).hasPrefix("HTTP/1.1 200 OK\r\n"))
 }
@@ -98,7 +105,9 @@ private final class SilentLoopbackListener: @unchecked Sendable {
     }
     var length = socklen_t(MemoryLayout<sockaddr_in>.size)
     _ = withUnsafeMutablePointer(to: &address) {
-      $0.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.getsockname(listening, $0, &length) }
+      $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+        Darwin.getsockname(listening, $0, &length)
+      }
     }
     descriptor = listening
     port = UInt16(bigEndian: address.sin_port)

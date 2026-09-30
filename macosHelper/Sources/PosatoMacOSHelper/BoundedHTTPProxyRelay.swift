@@ -74,7 +74,8 @@ extension BoundedHTTPProxy {
   /// from then on it has no idle timeout (ADR 0005, MACOS-024 amendment).
   private func markEstablishedIfLoopback(client: NWConnection, upstream: DirectTCPConnection) {
     let identifier = ObjectIdentifier(upstream)
-    guard loopbackUpstreams.contains(identifier), !establishedLoopbackUpstreams.contains(identifier) else {
+    guard loopbackUpstreams.contains(identifier), !establishedLoopbackUpstreams.contains(identifier)
+    else {
       return
     }
     establishedLoopbackUpstreams.insert(identifier)

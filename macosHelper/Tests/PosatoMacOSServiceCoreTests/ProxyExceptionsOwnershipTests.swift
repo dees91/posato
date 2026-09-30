@@ -6,7 +6,7 @@ import Testing
 // MACOS-024 (ADR 0004 amendment): the exceptions list is a third owned group. A VM run covers one or two list
 // shapes; these cases guard a person's list against silent rewriting, duplication, or loss.
 
-@Test func givenBaselineWithOneLoopbackEntryWhenAppliedAndRestoredThenOnlyMissingEntriesComeAndGo() throws {
+@Test func givenOneLoopbackEntryWhenAppliedAndRestoredThenOnlyMissingOnesComeAndGo() throws {
   let baseline = ["*.local", "127.0.0.1", "169.254/16"]
   let persistence = MemoryOwnershipPersistence()
   let configuration = MemoryProxyConfiguration(exceptions: .list(baseline))
@@ -37,14 +37,17 @@ import Testing
 
 @Test func givenDifferentlyCasedEntryWhenAppliedThenTheExactEntryIsStillAppended() throws {
   let configuration = MemoryProxyConfiguration(exceptions: .list(["LOCALHOST"]))
-  let engine = ProxyOwnershipEngine(persistence: MemoryOwnershipPersistence(), configuration: configuration)
+  let engine = ProxyOwnershipEngine(
+    persistence: MemoryOwnershipPersistence(), configuration: configuration)
 
   _ = try applyExceptionsSession(engine)
 
-  #expect(configuration.snapshotValue.exceptions == .list(["LOCALHOST", "localhost", "127.0.0.1", "::1"]))
+  #expect(
+    configuration.snapshotValue.exceptions == .list(["LOCALHOST", "localhost", "127.0.0.1", "::1"]))
 }
 
-@Test func givenAllLoopbackEntriesPresentWhenListChangesDuringSessionThenEnforcementEndsAndChangeIsKept() throws {
+@Test
+func givenAllLoopbackEntriesPresentWhenListChangesThenEnforcementEnds() throws {
   let baseline = ["localhost", "127.0.0.1", "::1"]
   let persistence = MemoryOwnershipPersistence()
   let configuration = MemoryProxyConfiguration(exceptions: .list(baseline))
@@ -62,7 +65,7 @@ import Testing
   #expect(persistence.record?.phase == .recoveryRequired)
 }
 
-@Test func givenAppliedListChangedDuringSessionWhenMaintainedThenTuplesRestoreAndChangeIsKept() throws {
+@Test func givenAppliedListChangedWhenMaintainedThenTuplesRestoreAndChangeIsKept() throws {
   let persistence = MemoryOwnershipPersistence()
   let configuration = MemoryProxyConfiguration(exceptions: .list(["*.local"]))
   let engine = ProxyOwnershipEngine(persistence: persistence, configuration: configuration)
@@ -112,7 +115,8 @@ import Testing
   let persistence = MemoryOwnershipPersistence()
   persistence.record = legacyRecord(phase: .applied, applied: applied)
   persistence.failAfterSavingPhase = .restorePending
-  let configuration = MemoryProxyConfiguration(http: applied, https: applied, exceptions: .list(["x.example"]))
+  let configuration = MemoryProxyConfiguration(
+    http: applied, https: applied, exceptions: .list(["x.example"]))
   let engine = ProxyOwnershipEngine(persistence: persistence, configuration: configuration)
 
   #expect(throws: ProxyOwnershipFailure.unavailable) { try engine.restore() }
@@ -122,7 +126,7 @@ import Testing
   #expect(persistence.record?.hasValidBounds == true)
 }
 
-@Test func givenRestoreCommittedBeforeRecordRemovalWhenReconciledThenIdleWithoutRecoveryPrompt() throws {
+@Test func givenRestoreCommittedBeforeRecordRemovalWhenReconciledThenIdle() throws {
   let persistence = MemoryOwnershipPersistence()
   let configuration = MemoryProxyConfiguration(exceptions: .list(["*.local"]))
   let engine = ProxyOwnershipEngine(persistence: persistence, configuration: configuration)
@@ -139,7 +143,7 @@ import Testing
   #expect(configuration.snapshotValue.exceptions == .list(["*.local"]))
 }
 
-@Test func givenUnreadableListDuringSessionWhenRestoredThenTuplesReturnAndStateNeedsRecovery() throws {
+@Test func givenUnreadableListWhenRestoredThenTuplesReturnAndStateNeedsRecovery() throws {
   let persistence = MemoryOwnershipPersistence()
   let configuration = MemoryProxyConfiguration(exceptions: .list(["*.local"]))
   let engine = ProxyOwnershipEngine(persistence: persistence, configuration: configuration)
@@ -170,7 +174,7 @@ import Testing
   #expect(configuration.snapshotValue.exceptions == swapped)
 }
 
-@Test func givenAppliedDigestWhoseBaselinePrefixDoesNotMatchWhenRestoredThenNothingIsRewritten() throws {
+@Test func givenBaselinePrefixDigestMismatchWhenRestoredThenNothingIsRewritten() throws {
   let applied = ProxyTuple(enabled: .integer(1), host: .string("127.0.0.1"), port: .integer(17_769))
   let current = ["other.example"] + ProxyExceptions.loopbackEntries
   let persistence = MemoryOwnershipPersistence()
@@ -191,7 +195,8 @@ import Testing
       appended: ProxyExceptions.loopbackEntries
     )
   )
-  let configuration = MemoryProxyConfiguration(http: applied, https: applied, exceptions: .list(current))
+  let configuration = MemoryProxyConfiguration(
+    http: applied, https: applied, exceptions: .list(current))
   let engine = ProxyOwnershipEngine(persistence: persistence, configuration: configuration)
 
   #expect(try engine.restore() == .recoveryRequired)

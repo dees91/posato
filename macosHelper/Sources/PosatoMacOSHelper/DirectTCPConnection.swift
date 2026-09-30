@@ -28,25 +28,6 @@ final class DirectTCPConnection: @unchecked Sendable {
     start(connecting: { try Self.connectSocket(host: host, port: port) }, completion: completion)
   }
 
-  /// Connects to numeric addresses only, in order, with TCP keepalive: no resolver, no hosts file, and no
-  /// `AI_ADDRCONFIG` that could drop `::1` (ADR 0005, MACOS-024 amendment).
-  func start(
-    literalAddresses: [String],
-    port: UInt16,
-    completion: @escaping @Sendable (Error?) -> Void
-  ) {
-    start(
-      connecting: {
-        let descriptor = try Self.connectSocket(literalAddresses: literalAddresses, port: port)
-        var enabled: Int32 = 1
-        _ = Darwin.setsockopt(
-          descriptor, SOL_SOCKET, SO_KEEPALIVE, &enabled, socklen_t(MemoryLayout<Int32>.size))
-        return descriptor
-      },
-      completion: completion
-    )
-  }
-
   private func start(
     connecting: @escaping @Sendable () throws -> Int32,
     completion: @escaping @Sendable (Error?) -> Void
@@ -183,19 +164,11 @@ final class DirectTCPConnection: @unchecked Sendable {
     }
   }
 
-  private static func connectSocket(literalAddresses: [String], port: UInt16) throws -> Int32 {
-    var lastError: Error = POSIXError(.EHOSTUNREACH)
-    for address in literalAddresses {
-      do {
-        return try connectSocket(host: address, port: port, flags: AI_NUMERICHOST)
-      } catch {
-        lastError = error
-      }
-    }
-    throw lastError
-  }
-
-  private static func connectSocket(host: String, port: UInt16, flags: Int32 = AI_ADDRCONFIG) throws -> Int32 {
+  private static func connectSocket(
+    host: String,
+    port: UInt16,
+    flags: Int32 = AI_ADDRCONFIG
+  ) throws -> Int32 {
     var hints = addrinfo()
     hints.ai_flags = flags
     hints.ai_family = AF_UNSPEC
@@ -290,5 +263,38 @@ final class DirectTCPConnection: @unchecked Sendable {
 
   private static func posixError(_ code: Int32) -> POSIXError {
     POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+  }
+}
+
+extension DirectTCPConnection {
+  /// Connects to numeric addresses only, in order, with TCP keepalive: no resolver, no hosts file, and no
+  /// `AI_ADDRCONFIG` that could drop `::1` (ADR 0005, MACOS-024 amendment).
+  func start(
+    literalAddresses: [String],
+    port: UInt16,
+    completion: @escaping @Sendable (Error?) -> Void
+  ) {
+    start(
+      connecting: {
+        let descriptor = try Self.connectSocket(literalAddresses: literalAddresses, port: port)
+        var enabled: Int32 = 1
+        _ = Darwin.setsockopt(
+          descriptor, SOL_SOCKET, SO_KEEPALIVE, &enabled, socklen_t(MemoryLayout<Int32>.size))
+        return descriptor
+      },
+      completion: completion
+    )
+  }
+
+  fileprivate static func connectSocket(literalAddresses: [String], port: UInt16) throws -> Int32 {
+    var lastError: Error = POSIXError(.EHOSTUNREACH)
+    for address in literalAddresses {
+      do {
+        return try connectSocket(host: address, port: port, flags: AI_NUMERICHOST)
+      } catch {
+        lastError = error
+      }
+    }
+    throw lastError
   }
 }
