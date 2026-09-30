@@ -38,13 +38,15 @@ final class MemoryProxyConfiguration: ProxyConfigurationAccess, @unchecked Senda
   init(
     http: ProxyTuple = emptyTuple,
     https: ProxyTuple = emptyTuple,
-    additionalProxyEnabled: Bool = false
+    additionalProxyEnabled: Bool = false,
+    exceptions: ProxyExceptions = .absent
   ) {
     snapshotValue = ProxySnapshot(
       serviceIdentifier: serviceIdentifier,
       http: http,
       https: https,
-      additionalProxyEnabled: additionalProxyEnabled
+      additionalProxyEnabled: additionalProxyEnabled,
+      exceptions: exceptions
     )
   }
 
@@ -70,16 +72,27 @@ final class MemoryProxyConfiguration: ProxyConfigurationAccess, @unchecked Senda
     expected: ProxySnapshot,
     http: ProxyTuple,
     https: ProxyTuple,
+    exceptions: ProxyExceptionsTarget,
     requirePrimaryService: Bool
   ) throws -> ProxySnapshot {
     guard expected == snapshotValue else {
       throw ProxyOwnershipFailure.conflict
     }
+    let resultingExceptions: ProxyExceptions
+    switch exceptions {
+    case .untouched:
+      resultingExceptions = snapshotValue.exceptions
+    case .set(let entries):
+      resultingExceptions = .list(entries)
+    case .remove:
+      resultingExceptions = .absent
+    }
     snapshotValue = ProxySnapshot(
       serviceIdentifier: serviceIdentifier,
       http: http,
       https: https,
-      additionalProxyEnabled: snapshotValue.additionalProxyEnabled
+      additionalProxyEnabled: snapshotValue.additionalProxyEnabled,
+      exceptions: resultingExceptions
     )
     return snapshotValue
   }

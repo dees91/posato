@@ -25,7 +25,8 @@ private func recordedOwnership(
     baselineHTTP: emptyTuple,
     baselineHTTPS: emptyTuple,
     appliedHTTP: applied,
-    appliedHTTPS: applied
+    appliedHTTPS: applied,
+    exceptions: nil
   )
 }
 

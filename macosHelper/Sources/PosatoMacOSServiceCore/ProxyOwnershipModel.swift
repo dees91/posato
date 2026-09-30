@@ -68,17 +68,20 @@ public struct ProxySnapshot: Equatable, Sendable {
   public let http: ProxyTuple
   public let https: ProxyTuple
   public let additionalProxyEnabled: Bool
+  public let exceptions: ProxyExceptions
 
   public init(
     serviceIdentifier: String,
     http: ProxyTuple,
     https: ProxyTuple,
-    additionalProxyEnabled: Bool = false
+    additionalProxyEnabled: Bool = false,
+    exceptions: ProxyExceptions = .absent
   ) {
     self.serviceIdentifier = serviceIdentifier
     self.http = http
     self.https = https
     self.additionalProxyEnabled = additionalProxyEnabled
+    self.exceptions = exceptions
   }
 
   var hasEnabledProxy: Bool {
@@ -86,8 +89,75 @@ public struct ProxySnapshot: Equatable, Sendable {
   }
 }
 
+/// The exceptions group a version 2 record owns: digests and the appended suffix, never the list (ADR 0004,
+/// MACOS-024 amendment).
+public struct OwnedExceptions: Codable, Equatable, Sendable {
+  public let baselinePresent: Bool
+  public let baselineDigest: Data?
+  public let appliedDigest: Data
+  public let appended: [String]
+
+  public init(baselinePresent: Bool, baselineDigest: Data?, appliedDigest: Data, appended: [String]) {
+    self.baselinePresent = baselinePresent
+    self.baselineDigest = baselineDigest
+    self.appliedDigest = appliedDigest
+    self.appended = appended
+  }
+
+  var hasValidBounds: Bool {
+    let fixed = ProxyExceptions.loopbackEntries
+    let orderedSubsequence = appended.allSatisfy(fixed.contains)
+      && appended == fixed.filter(appended.contains)
+    let baselineShape =
+      baselinePresent
+      ? baselineDigest?.count == 32
+        && (!appended.isEmpty || baselineDigest == appliedDigest)
+      : baselineDigest == nil && appended == fixed
+    return appliedDigest.count == 32 && orderedSubsequence && baselineShape
+  }
+
+  /// Whether `exceptions` is exactly the list Posato applied.
+  func isApplied(_ exceptions: ProxyExceptions) -> Bool {
+    guard case .list(let entries) = exceptions else {
+      return false
+    }
+    return ProxyExceptions.digest(entries) == appliedDigest
+  }
+
+  /// Whether `exceptions` is exactly the baseline presence and list.
+  func isBaseline(_ exceptions: ProxyExceptions) -> Bool {
+    switch exceptions {
+    case .absent:
+      return !baselinePresent
+    case .list(let entries):
+      return baselinePresent && ProxyExceptions.digest(entries) == baselineDigest
+    case .unreadable:
+      return false
+    }
+  }
+
+  /// The write that returns an applied list to its baseline, or nil when the list without the appended suffix does
+  /// not match the baseline digest.
+  func restoreTarget(from exceptions: ProxyExceptions) -> ProxyExceptionsTarget? {
+    guard isApplied(exceptions), case .list(let entries) = exceptions,
+      entries.count >= appended.count
+    else {
+      return nil
+    }
+    guard baselinePresent else {
+      return .remove
+    }
+    let baseline = Array(entries.dropLast(appended.count))
+    guard ProxyExceptions.digest(baseline) == baselineDigest else {
+      return nil
+    }
+    return appended.isEmpty ? .untouched : .set(baseline)
+  }
+}
+
 public struct OwnershipRecord: Codable, Equatable, Sendable {
-  public static let schemaVersion = 1
+  public static let schemaVersion = 2
+  static let legacySchemaVersion = 1
 
   public let schema: Int
   public let sessionIdentifier: Data
@@ -99,6 +169,8 @@ public struct OwnershipRecord: Codable, Equatable, Sendable {
   public let baselineHTTPS: ProxyTuple
   public let appliedHTTP: ProxyTuple
   public let appliedHTTPS: ProxyTuple
+  /// Nil in a version 1 record, which owns no exceptions change; every rewrite keeps that meaning.
+  public let exceptions: OwnedExceptions?
 
   public init(
     sessionIdentifier: Data,
@@ -109,9 +181,10 @@ public struct OwnershipRecord: Codable, Equatable, Sendable {
     baselineHTTP: ProxyTuple,
     baselineHTTPS: ProxyTuple,
     appliedHTTP: ProxyTuple,
-    appliedHTTPS: ProxyTuple
+    appliedHTTPS: ProxyTuple,
+    exceptions: OwnedExceptions?
   ) {
-    schema = Self.schemaVersion
+    schema = exceptions == nil ? Self.legacySchemaVersion : Self.schemaVersion
     self.sessionIdentifier = sessionIdentifier
     self.requestIdentifier = requestIdentifier
     self.canonicalInputDigest = canonicalInputDigest
@@ -121,10 +194,13 @@ public struct OwnershipRecord: Codable, Equatable, Sendable {
     self.baselineHTTPS = baselineHTTPS
     self.appliedHTTP = appliedHTTP
     self.appliedHTTPS = appliedHTTPS
+    self.exceptions = exceptions
   }
 
   public var hasValidBounds: Bool {
-    return schema == Self.schemaVersion
+    let schemaMatches = schema == (exceptions == nil ? Self.legacySchemaVersion : Self.schemaVersion)
+    return schemaMatches
+      && exceptions?.hasValidBounds ?? true
       && sessionIdentifier.count == WireLimits.identifierBytes
       && sessionIdentifier.contains { $0 != 0 }
       && requestIdentifier.count == WireLimits.identifierBytes
@@ -158,6 +234,7 @@ public protocol ProxyConfigurationAccess: Sendable {
     expected: ProxySnapshot,
     http: ProxyTuple,
     https: ProxyTuple,
+    exceptions: ProxyExceptionsTarget,
     requirePrimaryService: Bool
   ) throws -> ProxySnapshot
 }
