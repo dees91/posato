@@ -49,6 +49,7 @@ import app.posato.feature.targets.data.IosLocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.data.PauseSetPreparation
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
 import dev.zacsweers.metro.AppScope
@@ -68,6 +69,7 @@ internal interface IosApplicationGraph :
     ApplicationGraph,
     IosScheduleBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
+    val pauseSetPreparation: PauseSetPreparation
     val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
         get() {
@@ -233,6 +235,7 @@ internal interface IosApplicationGraph :
 internal data class IosApplicationRuntime(
     val applicationGraph: ApplicationGraph,
     val syncOperationCore: SyncOperationCore,
+    val pauseSetPreparation: PauseSetPreparation,
 )
 
 internal fun createIosApplicationRuntime(
@@ -288,7 +291,7 @@ private fun buildIosApplicationRuntime(
         notifications,
         schedules,
     )
-    return IosApplicationRuntime(graph, graph.appleSync.core)
+    return IosApplicationRuntime(graph, graph.appleSync.core, graph.pauseSetPreparation)
 }
 
 private const val MILLIS_PER_SECOND = 1_000

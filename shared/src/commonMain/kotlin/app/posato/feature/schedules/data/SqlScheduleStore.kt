@@ -7,6 +7,7 @@ import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.ScheduleLimits
 import app.posato.feature.schedules.domain.SchedulePlan
 import app.posato.feature.schedules.domain.toSync
+import app.posato.feature.session.data.sweepRetention
 import app.posato.feature.sync.domain.ScheduleWireRules
 import app.posato.feature.targets.domain.normalizeApplicationPolicyNameNfc
 import kotlinx.coroutines.CancellationException
@@ -117,7 +118,7 @@ internal class SqlScheduleStore(
     ): ScheduleResult<T> {
         val result: ScheduleResult<T> = withContext(databaseDispatcher) {
             try {
-                ScheduleResult.Success(database.transactionWithResult<T> { database.block() })
+                ScheduleResult.Success(database.transactionWithResult<T> { database.block().also { database.sweepRetention() } })
             } catch (expectedCancellation: CancellationException) {
                 throw expectedCancellation
             } catch (failure: ScheduleStoreException) {

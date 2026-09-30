@@ -101,3 +101,10 @@ DELETE FROM application_policy;
 insertApplicationPolicy:
 INSERT INTO application_policy(singleton, canonical_name)
 VALUES (1, :canonical_name);
+
+selectUpgradePending:
+SELECT singleton
+FROM local_pause_set_upgrade;
+
+deleteUpgradePending:
+DELETE FROM local_pause_set_upgrade;

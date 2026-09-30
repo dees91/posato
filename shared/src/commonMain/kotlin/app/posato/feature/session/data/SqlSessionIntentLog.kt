@@ -140,7 +140,7 @@ internal class SqlSessionIntentLog(
 internal suspend fun <T> PosatoDatabase.localSessionTransact(block: suspend () -> LocalSessionResult<T>): LocalSessionResult<T> {
     return try {
         transactionWithResult {
-            block()
+            block().also { sweepRetention() }
         }
     } catch (expectedCancellation: CancellationException) {
         throw expectedCancellation

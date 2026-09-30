@@ -96,3 +96,35 @@ WHERE session_id = :session_id;
 
 deleteAllExpiryMarkers:
 DELETE FROM local_session_expiry;
+
+insertRetainedDomain:
+INSERT OR IGNORE INTO local_retained_domain(part_kind, part_id, year, month, day, canonical_domain)
+VALUES (:partKind, :partId, :year, :month, :day, :canonicalDomain);
+
+insertRetainedApplication:
+INSERT OR IGNORE INTO local_retained_application(
+  part_kind, part_id, year, month, day, mapping_id, display_name, designated_requirement
+)
+VALUES (:partKind, :partId, :year, :month, :day, :mappingId, :displayName, :designatedRequirement);
+
+deleteStaleRetainedDomains:
+DELETE FROM local_retained_domain
+WHERE (part_kind = 'session' AND part_id NOT IN (
+    SELECT session_id FROM local_session
+    WHERE ended_early = 0 AND session_id NOT IN (SELECT session_id FROM local_session_expiry)
+  ))
+  OR (part_kind = 'occurrence' AND NOT EXISTS (
+    SELECT 1 FROM local_schedule_pin AS pin
+    WHERE pin.schedule_id = local_retained_domain.part_id AND pin.year = local_retained_domain.year AND pin.month = local_retained_domain.month AND pin.day = local_retained_domain.day
+  ));
+
+deleteStaleRetainedApplications:
+DELETE FROM local_retained_application
+WHERE (part_kind = 'session' AND part_id NOT IN (
+    SELECT session_id FROM local_session
+    WHERE ended_early = 0 AND session_id NOT IN (SELECT session_id FROM local_session_expiry)
+  ))
+  OR (part_kind = 'occurrence' AND NOT EXISTS (
+    SELECT 1 FROM local_schedule_pin AS pin
+    WHERE pin.schedule_id = local_retained_application.part_id AND pin.year = local_retained_application.year AND pin.month = local_retained_application.month AND pin.day = local_retained_application.day
+  ));

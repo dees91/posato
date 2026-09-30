@@ -13,6 +13,7 @@ import app.posato.feature.sync.data.IosCryptoProvider
 import app.posato.feature.sync.data.IosKeychainProvider
 import app.posato.feature.sync.data.UnavailableIosKeychainProvider
 import app.posato.feature.targets.data.IosApplicationMappingsProvider
+import kotlinx.coroutines.runBlocking
 import platform.UIKit.UIViewController
 
 fun mainViewController(
@@ -37,6 +38,8 @@ fun mainViewController(
         IosScheduleBridge(IosEnforcement(scheduleEnforcementProvider), scheduleMonitorProvider),
     )
 
+    // The one-time pause set upgrade runs before any host starts; a failure stays pending for the next launch.
+    runCatching { runBlocking { runtime.pauseSetPreparation.prepare { emptyList() } } }
     return ComposeUIViewController {
         runtime.applicationGraph.application.Content()
     }

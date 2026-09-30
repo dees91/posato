@@ -13,10 +13,12 @@ import app.posato.desktop.macos.MacOsSystemSettings
 import app.posato.desktop.macos.MacSetupOfferFlag
 import app.posato.desktop.macos.SETUP_OFFER_DISMISSED_KEY
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
+import app.posato.desktop.mappings.keptApplications
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
 import app.posato.desktop.session.MacOsBrowserEnforcementLink
 import app.posato.desktop.update.createUpdaterController
 import app.posato.desktop.update.openInstanceLock
+import app.posato.di.DesktopApplicationComponents
 import app.posato.di.createDesktopApplicationGraph
 import app.posato.feature.enforcement.JvmSessionEnforcement
 import app.posato.feature.onboarding.MacConsole
@@ -75,6 +77,7 @@ fun main() {
                 helperState,
                 notifications = MacSessionNotifications,
             )
+            preparePauseSets(applicationGraph, applicationMappings)
             val updaterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val updater = createUpdaterController(enforcementClient, applicationGraph.updateMaintenance, instanceLock, updaterScope)
             runBlocking { updater.start() }
@@ -94,5 +97,17 @@ private val consoleOfThisAccount = MacConsole {
         1 -> true
         0 -> false
         else -> null
+    }
+}
+
+/** Before any host or window starts: the one-time pause set upgrade, then removal of choices for sets that are gone. */
+private fun preparePauseSets(
+    graph: DesktopApplicationComponents,
+    mappings: DesktopLocalApplicationMappings,
+) {
+    try {
+        runBlocking { graph.pauseSetPreparation.prepare { mappings.keptApplications() } }
+    } catch (_: Exception) {
+        // A failed step stays pending and runs again at the next launch.
     }
 }

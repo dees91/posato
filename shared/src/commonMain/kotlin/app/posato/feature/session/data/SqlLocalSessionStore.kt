@@ -163,6 +163,7 @@ internal class SqlLocalSessionStore(
                     origin = SessionOrigin.ADOPTED.storageValue,
                     set_id = setId.value.copyBytes(),
                 )
+                database.retain(RetainedPart(PART_SESSION, sessionId.value.copyBytes()), frozenStartSet.domains)
                 LocalSessionResult.Success(
                     LocalSessionStatus.Active(
                         record,
@@ -220,6 +221,7 @@ internal class SqlLocalSessionStore(
                         origin = SessionOrigin.LOCAL.storageValue,
                         set_id = setId.value.copyBytes(),
                     )
+                    database.retain(RetainedPart(PART_SESSION, sessionId.value.copyBytes()), frozenStartSet.domains)
                     if (workspaceId != null) {
                         intents.insertIntent(
                             workspaceId,

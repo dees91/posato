@@ -180,3 +180,7 @@ VALUES (:workspaceId);
 
 deleteAllPauseSetsEnabled:
 DELETE FROM sync_pause_sets_enabled;
+
+selectPinsRunningAt:
+SELECT schedule_id, year, month, day FROM local_schedule_pin
+WHERE start_epoch_millis <= :nowEpochMillis AND start_epoch_millis > :nowEpochMillis - 86400000;

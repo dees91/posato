@@ -7,6 +7,7 @@ import app.posato.desktop.macos.MacOsHelperClient
 import app.posato.desktop.macos.SelectedMacOsApplication
 import app.posato.desktop.mappings.database.MacOsApplicationMappingsDatabase
 import app.posato.feature.targets.data.ApplicationChoiceSet
+import app.posato.feature.targets.data.KeptApplication
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.data.LocalApplicationMappingId
@@ -252,6 +253,16 @@ private fun restoreStoredMapping(
     }
 
     return LocalApplicationMapping.restore(restoredId, restoredName) ?: corruptApplicationMappings()
+}
+
+/** The first set's choices with their requirements, which parts running at the pause set upgrade keep. */
+internal suspend fun DesktopLocalApplicationMappings.keptApplications(): List<KeptApplication> {
+    val mappings = (load(ApplicationChoiceSet.FIRST) as? LocalApplicationMappingsLoadResult.Success)?.snapshot?.mappings.orEmpty()
+    val requirements = designatedRequirements(mappings.map(LocalApplicationMapping::id))
+    return mappings.zip(requirements).map { (mapping, requirement) ->
+        val name = (mapping.display as? LocalApplicationMappingDisplay.Named)?.value.orEmpty()
+        KeptApplication(mapping.id.canonicalValue.hexToByteArray(), name.encodeToByteArray(), requirement)
+    }
 }
 
 private class StoredApplicationCandidate(
