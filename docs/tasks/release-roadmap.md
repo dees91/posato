@@ -6,7 +6,7 @@
 - **Revision:** 13 (amended 2026-09-29: release 1.3 composition and waves)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-29
+- **Last amended:** 2026-09-30
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -57,7 +57,7 @@
   maintainer also accepted reusable blocklists for manual sessions and
   schedules in release 1.3. Idea 20 and `SCHEDULE-003` now cover the remaining
   blocklist decisions, with `SCHEDULE-004` delivering the accepted
-  [product scope](../product/blocklists.md). The remaining release scope and
+  [product scope](../product/pause-sets.md). The remaining release scope and
   final waves will be decided at a later checkpoint. The same revision adds
   `MACOS-022` and `SCHEDULE-005` from reports 21 and 22 to the unassigned
   backlog; neither changes release 1.3 composition or authorizes a rule change.
@@ -75,10 +75,13 @@
   `MACOS-017` becomes a release 1.3 discovery row for Firefox, with PR #110
   as its spike; delivery stays in the backlog as `MACOS-023`. `DOCS-004`
   prepares the 1.3 public packaging. `NAV-001` precedes `SCHEDULE-004` so
-  that blocklist screens are built on Navigation 3. `MACOS-022` and
+  that the pause set screens are built on Navigation 3. `MACOS-022` and
   `SCHEDULE-005` started on 2026-09-28 as separately authorized fixes, and
   PRs #109 and #110 began before the composition; the composition therefore
-  freezes when this revision is accepted.
+  freezes when this revision is accepted. The 2026-09-30 clarification from
+  `SCHEDULE-003` renames blocklists to **pause sets** (`user-confirmed`,
+  2026-09-29) in the release theme and rows; outcomes and boundaries do not
+  change.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -246,11 +249,11 @@ starts none of the rows.
 | `DOCS-003` | Prepare the public packaging for 1.2 without publishing it: recapture the showcase on the 1.2 applications, revise the storyboard with schedules and render the demo, walkthrough, stills, and social preview again; describe 1.2 in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.2/W5 | `ONBOARDING-004`, `NOTIFY-001`, `SCHEDULE-002` | PR-RELEASE-1-2-MEDIA |
 | `RELEASE-004` | Verify the 1.2.0 candidates including shared schedules and Mac setup, publish the macOS release through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.2/W5 | `MACOS-013`, `MACOS-014`, `NOTIFY-001`, `IOS-006`, `ONBOARDING-004`, `SCHEDULE-002`, `DOCS-003` | PR-RELEASE-1-2 |
 
-## Release 1.3: blocklists, navigation, and Intel Macs
+## Release 1.3: pause sets, navigation, and Intel Macs
 
-Theme: reusable named blocklists for one-time sessions and recurring
+Theme: reusable named pause sets for one-time sessions and recurring
 schedules, system back gestures through `NAV-001`, and Posato on Intel Macs
-running macOS 13 Ventura. The [blocklist product scope](../product/blocklists.md)
+running macOS 13 Ventura. The [pause set product scope](../product/pause-sets.md)
 records the accepted behavior and the decisions `SCHEDULE-003` must complete
 before delivery. The release also carries reported defects in enforcement,
 schedules, and synchronization, and a Firefox discovery.
@@ -265,7 +268,7 @@ Ordering across the waves:
   proxy surface as `MACOS-022` and start from it in the next wave.
   `SCHEDULE-003` decides on top of the natural-expiry state that
   `SCHEDULE-005` introduces.
-- `NAV-001` merges before `SCHEDULE-004` so that the blocklist screens are
+- `NAV-001` merges before `SCHEDULE-004` so that the pause set screens are
   built on Navigation 3 rather than migrated later.
 - `MACOS-015` continues from the evaluation build in PR #109. The 2019
   MacBook Air is a dedicated test Mac that holds no personal Posato data, and
@@ -287,9 +290,9 @@ Ordering across the waves:
 | `MACOS-015` | Support Intel Macs on macOS 13 Ventura: propose and obtain acceptance of the ADR 0003 baseline revision, covering the support horizon Apple gives Intel Macs and macOS 13, and of a narrow `AGENTS.md` exception for the dedicated test Mac; build the x86-64 Compose Desktop artifact, runtime, native libraries, and Swift helpers for macOS 13; sign, notarize, and publish the x86-64 distribution and update feed entry that the accepted ADR 0003 revision specifies; extend `posato-control` to drive the dedicated 2019 MacBook Air; verify setup, actual website and application blocking, synchronization, and the in-app update there; and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W1 | None | PR-INTEL-RELEASE |
 | `MACOS-017` | Decide whether Posato supports Firefox on macOS under a revised ADR 0005 browser promise: presentation through a Posato extension, its signing and distribution through addons.mozilla.org, the fixed loopback rendezvous port against the current per-session port and its fail-closed conflict, This Mac setup guidance, and verification in Tart; end with the proposed ADR 0005 revision and a delivery plan for `MACOS-023`. | Sessions and enforcement | discovery | R1.3/W2 | `MACOS-022` | PR-FIREFOX-DECISION |
 | `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules. | Platform coverage | delivery | R1.3/W1 | None | PR-NAVIGATION |
-| `SCHEDULE-003` | Complete the accepted blocklist scope for manual sessions and schedules: live edits and deletion, manual-session overlap, default ownership, limits and device readiness, migration, synchronization and older-client compatibility. Update the affected design and architecture authorities and end with accepted decisions and a delivery plan. | Target management | discovery | R1.3/W2 | `SCHEDULE-005` | PR-BLOCKLIST-DECISION |
-| `SCHEDULE-004` | Deliver reusable named blocklists on Mac and iPhone under the accepted scope: one list per manual session or schedule, a default for new starts and plans, migration of existing targets and schedules, union of overlapping scheduled lists, synchronized definitions and websites, and per-list device-local application choices. Verify migration, actual blocking and unblocking, overlap, offline execution, and cross-device convergence. High-risk. | Target management | delivery | R1.3/W3 | `SCHEDULE-003`, `NAV-001` | PR-BLOCKLIST-DELIVERY |
-| `DOCS-004` | Prepare the public packaging for 1.3 without publishing it: recapture the showcase with blocklists and render the media again; describe 1.3, blocklists, and Intel support in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.3/W4 | `SCHEDULE-004`, `MACOS-015`, `SYNC-020`, `MACOS-020`, `MACOS-021` | PR-RELEASE-1-3-MEDIA |
+| `SCHEDULE-003` | Complete the accepted pause set scope for manual sessions and schedules: live edits and deletion, manual-session overlap, default ownership, limits and device readiness, migration, synchronization and older-client compatibility. Update the affected design and architecture authorities and end with accepted decisions and a delivery plan. | Target management | discovery | R1.3/W2 | `SCHEDULE-005` | PR-PAUSE-SET-DECISION |
+| `SCHEDULE-004` | Deliver reusable named pause sets on Mac and iPhone under the accepted scope: one set per manual session or schedule, a default for new starts and plans, migration of existing targets and schedules, union of overlapping sets, synchronized definitions and websites, and per-set device-local application choices. Verify migration, actual blocking and unblocking, overlap, offline execution, and cross-device convergence. High-risk. | Target management | delivery | R1.3/W3 | `SCHEDULE-003`, `NAV-001` | PR-PAUSE-SET-DELIVERY |
+| `DOCS-004` | Prepare the public packaging for 1.3 without publishing it: recapture the showcase with pause sets and render the media again; describe 1.3, pause sets, and Intel support in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.3/W4 | `SCHEDULE-004`, `MACOS-015`, `SYNC-020`, `MACOS-020`, `MACOS-021` | PR-RELEASE-1-3-MEDIA |
 | `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for arm64 and x86-64 through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.3/W5 | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-015`, `NAV-001`, `SCHEDULE-004`, `DOCS-004` | PR-RELEASE-1-3 |
 
 ## Backlog
@@ -339,7 +342,7 @@ The idea numbers refer to the wiki idea queue.
 | Reported enforcement, schedule, and publication defects | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021` | Tart and test-iPhone runs that reproduce each defect before the fix and show the corrected behavior after it |
 | Firefox decision | `MACOS-017` | Proposed ADR 0005 revision accepted or rejected, with a `MACOS-023` delivery plan when accepted |
 | Public packaging for 1.3 | `DOCS-004` | Media rendered from recorded captures, README and site built, store text and screenshots ready for upload |
-| Reusable blocklists for manual sessions and schedules | `SCHEDULE-003`, `SCHEDULE-004` | Accepted remaining decisions; Mac VM and test-iPhone proof of migration, per-list selections, overlap, blocking and release, offline execution, and synchronized definitions with local app choices |
+| Reusable pause sets for manual sessions and schedules | `SCHEDULE-003`, `SCHEDULE-004` | Accepted remaining decisions; Mac VM and test-iPhone proof of migration, per-set selections, overlap, blocking and release, offline execution, and synchronized definitions with local app choices |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005` | GitHub Release with checksums, App Review outcome, availability page and site updated |
 
 ## Manual and physical gates

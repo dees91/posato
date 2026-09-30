@@ -670,7 +670,7 @@ the composition is complete. Release 1.3 also takes those three candidates,
 the prepared `MACOS-022` and `SCHEDULE-005` fixes, Intel support on
 macOS 13 Ventura as one `MACOS-015` delivery row, a Firefox discovery in
 `MACOS-017`, and the `DOCS-004` packaging. The
-[release roadmap](../../tasks/release-roadmap.md#release-13-blocklists-navigation-and-intel-macs)
+[release roadmap](../../tasks/release-roadmap.md#release-13-pause-sets-navigation-and-intel-macs)
 records the rows and waves; each row still starts only when named.
 
 `user-confirmed` (2026-09-13): retain the following larger, loosely defined
@@ -934,7 +934,7 @@ below. This queue retains idea provenance without expanding the original MVP.
     remains unproven. The current Start/Resume grant does not authorize
     scheduled Apply.
 
-20. **Reusable blocklists for manual sessions and schedules.**
+20. **Reusable pause sets (formerly blocklists) for manual sessions and schedules.**
     `user-confirmed` (2026-09-28): release 1.3 includes named blocklists,
     each with user-chosen websites and device-local application choices.
     One list is selected for a manual session or schedule, with a default
@@ -942,13 +942,17 @@ below. This queue retains idea provenance without expanding the original MVP.
     list and existing schedules use it. Overlapping schedules combine their
     lists; ending one occurrence retains restrictions required by another.
     Definitions and websites synchronize; app choices stay local per list.
-    The accepted [product scope](../../product/blocklists.md) replaces the
+    The accepted [product scope](../../product/pause-sets.md) replaces the
     earlier preliminary idea of separate selections only for schedules.
     `observed`: the current 1.2 rules and hosts use one current selection
     across schedules. `SCHEDULE-003` owns the remaining decisions about
     live edits, deletion, manual-session overlap, defaults, limits, migration,
-    and compatibility; `SCHEDULE-004` delivers the accepted rules. Final
-    release composition and task activation remain open.
+    and compatibility; `SCHEDULE-004` delivers the accepted rules.
+    `user-confirmed` (2026-09-29): the feature is named **Pause sets**.
+    `SCHEDULE-003` records its decisions in the
+    [pause set rules](../../product/pause-sets-decisions.md); a running part
+    never releases an item early, and a missing set is treated as empty
+    (`user-confirmed`, 2026-09-30).
 
 21. **Missing local pause page after HTTPS denial.**
     `user-confirmed` (2026-09-28): the maintainer reports a browser tunnel
