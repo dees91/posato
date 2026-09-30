@@ -9,10 +9,9 @@
 
 ## MACOS-024 loopback proxy exceptions amendment
 
-Proposed on 2026-09-30 by `MACOS-024`. Decisions D1 to D6 are
-`user-confirmed` (2026-09-30) in the
-[`MACOS-024` execution record](../tasks/executions/macos-024-loopback-exceptions.md);
-the amendment text awaits maintainer acceptance (`AC-04`). The listener
+`user-confirmed`: proposed and accepted by the maintainer on 2026-09-30
+(`MACOS-024`, `AC-04`), with decisions D1 to D7 recorded in the
+[`MACOS-024` execution record](../tasks/executions/macos-024-loopback-exceptions.md). The listener
 change that serves clients which ignore the exceptions list is in the
 [ADR 0005 amendment](0005-macos-browser-enforcement-and-coexistence.md#macos-024-loopback-amendment).
 

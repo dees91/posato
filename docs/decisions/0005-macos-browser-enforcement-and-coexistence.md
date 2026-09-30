@@ -9,8 +9,8 @@
 
 ## MACOS-024 loopback amendment
 
-Proposed on 2026-09-30 by `MACOS-024`; awaits maintainer acceptance
-(`AC-04`). Exceptions ownership and restoration are specified in the
+`user-confirmed`: proposed and accepted by the maintainer on 2026-09-30
+(`MACOS-024`, `AC-04`). Exceptions ownership and restoration are specified in the
 [ADR 0004 amendment](0004-macos-helper-ownership-and-lifecycle.md#macos-024-loopback-proxy-exceptions-amendment).
 
 `user-confirmed` report (2026-09-30): during a session, a local Codex MCP

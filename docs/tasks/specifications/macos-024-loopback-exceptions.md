@@ -74,6 +74,6 @@ the session's proxy is restored.
 
 ## Decisions or blockers
 
-- Decisions D1 to D6 are recorded in the
+- Decisions D1 to D7 are recorded in the
   [execution record](../executions/macos-024-loopback-exceptions.md);
-  the amendment awaits `AC-04`.
+  the amendment was accepted on 2026-09-30 (`AC-04`).

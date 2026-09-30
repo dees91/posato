@@ -45,6 +45,11 @@
   the listener (B), chosen after the Codex finding. End-to-end proof uses a
   small probe built on the host with Codex's HTTP stack (reqwest with system
   proxy support) instead of Codex itself.
+- **D7.** Loopback relays are capped at 32 client and upstream pairs, and
+  their idle timeout is dropped only after the first response byte or
+  `200 Connection Established` (plan review Req-3).
+- **AC-04 met:** the maintainer accepted the ADR 0004 and ADR 0005
+  amendment text on 2026-09-30.
 
 ## Plan
 
