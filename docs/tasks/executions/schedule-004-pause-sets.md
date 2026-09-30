@@ -29,28 +29,19 @@ union and retention.
      on the Mac, each kept app's requirement, so a kept item stays
      enforceable after its set loses it. iPhone kept-app tokens stay in the
      backup-excluded App Group store that the extension also writes.
-   - Retention for parts running at upgrade is written once by app code
-     after the migration, with an injected clock, before the first
-     enforcement update or edit; it replaces `frozen_domains` as the
-     running session's source.
-   - Unique-domain counting for the local 1,024 limit
-     (`SqlLocalPolicyStatements`, `WebsiteBatchSubmission`,
-     `PolicyReconciler`) and `isWorkspaceFull`; `seedLocalExtras` per set.
+   - Upgrade retention written once by app code with an injected clock
+     before any enforcement; it replaces `frozen_domains`. Unique-domain
+     counting for the 1,024 limit and `isWorkspaceFull`; per-set seeding.
    - The Mac app-choice database gains its first migration (set column);
-     iPhone app choices move to one file per set, the 64-token ceiling
-     over unique tokens.
+     iPhone app choices move to one file per set, 50 new choices over
+     unique tokens, 64 still readable.
    - Authoring switches to kinds 14, 15, 17 and 18 and stops kind 4; kind
      19 once per database on first open in a linked workspace and at first
      link, which publishes `set-put` for non-first sets only.
-   - Failing-first migration tests from earlier schemas built from tracked
-     history (shared version 12, Mac app-choice version 1) with synthetic
-     rows, migrated to the current version, including a running session and
-     schedule pins; no 1.2-produced database is checked in (`user-confirmed`
-     2026-09-30). Real 1.2 data is proven by the AC-02 and AC-03 upgrade runs;
-     the capture confirms the 1.2 app-choice file reports schema version 1.
-     The local-only downgrade is decided by running 1.2 against a migrated
-     database before `13.sqm` is final; failing closed without data loss is
-     acceptable.
+   - Failing-first migration tests from schemas built from tracked history
+     with synthetic rows (no 1.2 database checked in, `user-confirmed`);
+     real 1.2 data is proven by the AC-02 and AC-03 upgrade runs, and a 1.2
+     build run against a migrated database decides the downgrade.
 4. **Pause sets UI** per `DESIGN.md` "Release 1.3 pause sets": destination,
    set list and editor, New set and Rename, Make default, Delete with
    **Change their set** (schedule moves written before `set-remove`), set
@@ -84,6 +75,15 @@ union and retention.
   migration test starting at version 13.
 - **Maintainer decision** (`user-confirmed` 2026-09-30): a new workspace's
   first-set name and default stay unpublished at first link (known limit).
+
+- **Slice 3 design review:** `changes-required`, folded in: the Mac
+  migration is already transactional; retention exists only for the active
+  session or a live pin, including after expiry markers and workspace
+  removal; a deleted set's app choices are cleared. The maintainer kept
+  kept-app requirements in the policy database, overriding the reviewer's
+  A-03 finding (threat model exception), and chose the current first set as
+  upgrade retention (ADR amended); a 1.2 iPhone with 51-64 apps keeps them
+  and refuses additions; an iPhone downgrade crash counts as failing closed.
 
 ## Result
 

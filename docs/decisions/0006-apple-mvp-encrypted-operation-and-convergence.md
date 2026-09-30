@@ -113,8 +113,10 @@ product rules are in [pause set rules](../product/pause-sets-decisions.md).
     reason under the existing rules, including deletion, refusal, or a
     conflicting start of its schedule or session, an edit that stops the
     occurrence, and workspace removal.
-  - Parts running at migration get a record of what they enforce at that
-    moment.
+  - Parts running at migration get a record of their set's current
+    resolution at that moment (`user-confirmed` 2026-09-30, `SCHEDULE-004`:
+    a release 1.2 session's start-time list is not added, accepting that an
+    item removed during that session may be released at the upgrade).
   - The record is local like the terminal markers, never synchronized or
     diagnosed.
 - **Application choices** stay device-local per set; no operation carries

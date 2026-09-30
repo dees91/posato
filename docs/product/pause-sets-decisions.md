@@ -61,7 +61,9 @@ occurrence. Each part uses one set.
   relaunch, and forgets it when the part stops for any reason. It is not
   synchronized: a device that never paused an item for a part does not
   start pausing it after its removal. A part that is running when the
-  device upgrades keeps what it paused at that moment.
+  device upgrades keeps the first set's items at that moment
+  (`user-confirmed` 2026-09-30: a 1.2 session's start-time list is not
+  kept, so an item removed during that session may be released then).
 - **Device limits.** Everything all running parts pause together,
   including what they keep, must fit the device's limits: 1,024 websites
   and 64 apps on the Mac; on iPhone and iPad 50 web domains, which is 25
@@ -273,9 +275,10 @@ Slices, stacked, each proven before the next:
 2. **Migration and storage.** SQLDelight migration 13 (sets, per-part
    retention), the Mac app-choice migration, the iPhone per-set app files,
    retention for parts running at migration, and kind 19 on first open in a
-   linked workspace. Migration tests seeded from databases that a released
-   1.2 build produced with synthetic content in a Tart VM or on the test
-   iPhone, including a running session and schedule pins.
+   linked workspace. Migration tests from earlier schemas built from
+   tracked history with synthetic rows, including a running session and
+   schedule pins (`user-confirmed` 2026-09-30; supersedes seeding from
+   1.2-produced databases).
 3. **Pause sets UI.** The destination, set editor, Make default, Delete
    with **Change their set**, the set choice in Session and the schedule
    editor, readiness copy, and the 10-set cap. Proven by E2E.

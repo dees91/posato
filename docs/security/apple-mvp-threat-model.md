@@ -118,7 +118,11 @@ sent to the root daemon, or exposed through IPC outcomes or diagnostics.
 Browser-owned history and runtime copies remain outside Posato control. Raw
 opaque platform values are outside the shared, synchronized, diagnostic, and
 public models; `A-03` permits only the minimum local protected selection or
-mapping required for enforcement. An owning task must update this authority
+mapping required for enforcement. Exception (`user-confirmed` 2026-09-30,
+`SCHEDULE-004`): on the Mac, the local policy database keeps the display
+name and designated requirement of an application a running pause still
+holds after it left its set, only until that pause ends; it is never
+synchronized or diagnosed. An owning task must update this authority
 before collecting, retaining, or adding another processing exception for any
 excluded class.
 
