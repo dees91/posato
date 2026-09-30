@@ -184,9 +184,8 @@
   timeout rule are the implementer's choice from Req-3. Recommended items
   folded: literal addresses and original `Host`, the refusal matrix, the
   conditional `*.localhost` claim, the peer-identity residual, the locked
-  re-read for the leave-untouched target, and a posted body. The
-  implementer judges the corrected plan ready; no third pass is planned
-  unless the maintainer asks.
+  re-read for the leave-untouched target, and a posted body. A
+  focused confirmation pass checks the resolution before implementation.
 
 ## Result
 
