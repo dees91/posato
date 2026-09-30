@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-004`
 
 - **Brief:** [Deliver pause sets on Mac and iPhone](../specifications/schedule-004-pause-sets.md)
-- **Status:** `active` (slice 1 and measurements done; slice 3 next); **Updated:** 2026-09-30
+- **Status:** `active` (slices 1 and 3 and measurements done; slice 4 next); **Updated:** 2026-09-30
 - **Review tier:** `high-risk`; **Implementer:** Claude; **Reviewer:** independent agent
 - **Branch:** `feat/schedule-004-pause-sets` (slice 1); later slices stack on it
 
@@ -15,33 +15,17 @@ after slice 5 (`user-confirmed` 2026-09-30): slice 3 alone would publish kinds
 14 and 19 from `main`, and slice 4 alone would pause several sets without
 union and retention.
 
-1. **Model and sync** (`shared/.../feature/sync`, done): kinds 12-19 in the
-   codec and reducer; kinds 14, 15, 17 and 18 are the existing payloads
-   with an optional set, so every `as? SessionStart` path keeps working.
-   `SyncProjection.domains` stays the first set's domains until slice 3.
+1. **Model and sync** (done): kinds 12-19 in the codec and reducer; kinds
+   14, 15, 17 and 18 are the existing payloads with an optional set.
 2. **Measurements** (done, nothing committed): the iPhone filter bound and
    store union, and the Mac clear-then-apply gap; results under Blockers.
-3. **Migration and storage.**
-   - `13.sqm`: set table; a set column on local websites, policy intents,
-     `sync_policy_base_domain`, `sync_schedule_intent`, `sync_session_intent`,
-     schedules and the local session; queued set intents for kinds 12, 13
-     and 16; a kind 19 marker; a per-part retention table for domains and,
-     on the Mac, each kept app's requirement, so a kept item stays
-     enforceable after its set loses it. iPhone kept-app tokens stay in the
-     backup-excluded App Group store that the extension also writes.
-   - Upgrade retention written once by app code with an injected clock
-     before any enforcement; it replaces `frozen_domains`. Unique-domain
-     counting for the 1,024 limit and `isWorkspaceFull`; per-set seeding.
-   - The Mac app-choice database gains its first migration (set column);
-     iPhone app choices move to one file per set, 50 new choices over
-     unique tokens, 64 still readable.
-   - Authoring switches to kinds 14, 15, 17 and 18 and stops kind 4; kind
-     19 once per database on first open in a linked workspace and at first
-     link, which publishes `set-put` for non-first sets only.
-   - Failing-first migration tests from schemas built from tracked history
-     with synthetic rows (no 1.2 database checked in, `user-confirmed`);
-     real 1.2 data is proven by the AC-02 and AC-03 upgrade runs, and a 1.2
-     build run against a migrated database decides the downgrade.
+3. **Migration and storage** (done, PR #123): `13.sqm` puts websites,
+   intents, sync bases, schedules and the session in sets, with kind 19 and
+   upgrade markers and per-part retention of domains and kept Mac apps;
+   the Mac app-choice database gains its first migration and iPhone app
+   choices one file per set; authoring moves to kinds 12-19 and stops kind
+   4. Migration tests build earlier schemas from tracked history with
+   synthetic rows (`user-confirmed`); a 1.2 build decides the downgrade.
 4. **Pause sets UI** per `DESIGN.md` "Release 1.3 pause sets": destination,
    set list and editor, New set and Rename, Make default, Delete with
    **Change their set** (schedule moves written before `set-remove`), set
@@ -93,17 +77,34 @@ union and retention.
   and `toPlan` drop the set, kind 18 starts still enforce the first set,
   a removed first set empties `projection.domains`, and `isWorkspaceFull`
   counts the first set only. Slices 3 and 5 close these.
+- **Slice 3** (`fee6e5e`..`aff62eb`, sub-steps 3.0-3.6): as planned, except
+  set-scoped target loading for sessions and schedules moves to slice 5
+  (its first consumer is the union), the set-capacity refusal copy moves
+  to slice 4, and the test harness pre-marks kind 19 so existing bundle
+  counts stay exact. The per-set reconciler tests were written after a
+  compiler-forced rewrite (a deviation from failing-first); seven
+  mutations each fail one of them.
 
 ## Completed-change review
 
 - **Slice 1:** `changes-required`, then corrected: a missing case for a
   domain leaving its only set now fails under that mutation.
+- **Slice 3:** `changes-required`, then corrected: an unreadable Mac
+  app-choice store no longer completes the upgrade with no kept apps; it
+  stays pending (regression failed first). Declined: comparing CHECK
+  clauses in the schema-parity test (Recommended).
 
 ## Verification
 
 - Slice 1: the sync suites on JVM and iOS pass (new tests failed first
   against stubs), 11 mutations each fail a test, and `quality` passes
   after the last correction.
+- Slice 3: new tests failed first (except the reconciler tests above);
+  `quality` passes at every sub-step and after the review correction. Mac upgrade and downgrade on a Tart VM
+  with data from the notarized 1.2.0 DMG (policy user_version 12,
+  app-choice 1): 1.3 migrates both (14 and 2) and shows the same two
+  websites in the first set; 1.2 reinstalled on that data starts, shows no
+  websites and leaves the database unchanged, which fails closed.
 
 ## Blockers and accepted risks
 

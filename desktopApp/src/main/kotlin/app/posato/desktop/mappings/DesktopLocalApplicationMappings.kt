@@ -255,9 +255,25 @@ private fun restoreStoredMapping(
     return LocalApplicationMapping.restore(restoredId, restoredName) ?: corruptApplicationMappings()
 }
 
-/** The first set's choices with their requirements, which parts running at the pause set upgrade keep. */
+/**
+ * The first set's choices with their requirements, which parts running at the pause set upgrade keep. A store
+ * that cannot be read now throws, so the upgrade stays pending; a corrupt one has no choices it could enforce.
+ */
 internal suspend fun DesktopLocalApplicationMappings.keptApplications(): List<KeptApplication> {
-    val mappings = (load(ApplicationChoiceSet.FIRST) as? LocalApplicationMappingsLoadResult.Success)?.snapshot?.mappings.orEmpty()
+    val mappings = when (val loaded = load(ApplicationChoiceSet.FIRST)) {
+        is LocalApplicationMappingsLoadResult.Success -> {
+            loaded.snapshot.mappings
+        }
+
+        is LocalApplicationMappingsLoadResult.Unavailable -> {
+            loaded.snapshot.mappings
+        }
+
+        is LocalApplicationMappingsLoadResult.Failure -> {
+            check(loaded.reason == LocalApplicationMappingsLoadFailure.CORRUPTION) { "application choices unreadable" }
+            emptyList()
+        }
+    }
     val requirements = designatedRequirements(mappings.map(LocalApplicationMapping::id))
     return mappings.zip(requirements).map { (mapping, requirement) ->
         val name = (mapping.display as? LocalApplicationMappingDisplay.Named)?.value.orEmpty()

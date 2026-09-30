@@ -276,6 +276,20 @@ class DesktopLocalApplicationMappingsTest {
         }
     }
 
+    @Test
+    fun `an unreadable store fails the upgrade's kept apps instead of keeping none`() {
+        val root = createTempDirectory("posato-mappings")
+        val files = FailingApplicationMappingFiles(MacOsApplicationMappingFiles(root.resolve("data/mappings.db"), Files.getOwner(root)))
+        files.failAfterSuccessfulSecureCalls = 0
+        try {
+            createStore(files, MacOsApplicationPicker { MacOsApplicationPickerResult.Cancelled }).use { store ->
+                assertFailsWith<IllegalStateException> { runBlocking { store.keptApplications() } }
+            }
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
     private fun withStore(
         pickerResult: MacOsApplicationPickerResult,
         block: (DesktopLocalApplicationMappings, java.nio.file.Path) -> Unit,
