@@ -7,6 +7,25 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-024 loopback exceptions amendment
+
+Proposed on 2026-09-30 by `MACOS-024`; awaits maintainer acceptance
+(`AC-04`). Ownership and restoration are specified in the
+[ADR 0004 amendment](0004-macos-helper-ownership-and-lifecycle.md#macos-024-loopback-proxy-exceptions-amendment).
+
+While Posato's proxy is applied, connections to `localhost`, `127.0.0.1`, and
+`::1` go directly instead of through the loopback listener. The listener's
+rejection of every loopback authority other than the pause page is
+unchanged; it now protects only clients that ignore the exceptions list.
+
+A selected website can never become an exception: `ExactDomain` accepts no
+IP literal or single-label host, and Posato adds only the three fixed
+entries. The pre-Apply and post-Apply chain checks still require that every
+selected exact domain resolves to exactly the Posato loopback route, so a
+pre-existing exception that covers a selected domain remains unsupported.
+Other private ranges, `*.local`, and per-application bypass remain out of
+scope.
+
 ## TARGETS-006 www-equivalence clarification
 
 `user-confirmed` (2026-09-18): one stored exact host is what the person typed.

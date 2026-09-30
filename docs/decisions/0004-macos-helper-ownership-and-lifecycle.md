@@ -7,6 +7,56 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-024 loopback proxy exceptions amendment
+
+Proposed on 2026-09-30 by `MACOS-024`. Decisions D1 to D4 are
+`user-confirmed` (2026-09-30) in the
+[`MACOS-024` execution record](../tasks/executions/macos-024-loopback-exceptions.md);
+the amendment text awaits maintainer acceptance (`AC-04`).
+
+`user-confirmed` report (2026-09-30): during a session, local Codex MCP
+connections to loopback received an empty response because the system proxy
+also captured them. The helper rejects every loopback authority except the
+pause page (ADR 0005).
+
+### What changes
+
+Posato owns a third atomic group in the recorded service's proxy
+configuration: the presence and value of `ExceptionsList`.
+
+- **Apply.** The applied list is the baseline list with each of `localhost`,
+  `127.0.0.1`, and `::1` that is not already present appended in that order.
+  Existing entries and their order are kept and no duplicate is added. When
+  the baseline already holds all three, the applied list equals the baseline
+  and Posato owns no change to it. `ExcludeSimpleHostnames` and every other
+  key stay untouched.
+- **Compare-and-swap.** The locked re-read, comparison, single resulting
+  dictionary, commit, apply, and full verification described under
+  [Durable ownership and atomic proxy mutation](#durable-ownership-and-atomic-proxy-mutation)
+  cover the exceptions group together with both tuples.
+- **Restore (D1).** A list that exactly equals the applied list returns to its
+  baseline presence and value. Any other list is an out-of-band change: it is
+  preserved and verified, the state becomes durably `recoveryRequired`, and
+  each tuple is still restored only if it remains exactly Posato-owned. No
+  hybrid list is written.
+- **Active ownership check (D2).** An exceptions list that no longer equals
+  the applied list is an owned-group mismatch, like a tuple mismatch: it ends
+  the active-enforcement claim and starts restoration.
+- **Durable state (D3).** The state schema becomes version 2 and additionally
+  holds the baseline presence and value of the exceptions list and the
+  applied list. A version 1 record remains readable and means that Posato
+  owns no exceptions change; it is restored as before. An older daemon treats
+  a version 2 record as an unknown schema, which is `recoveryRequired`, never
+  empty. The state file path is unchanged.
+- **Bounds (D4).** A baseline list with more than 256 entries, an entry
+  longer than 2,048 UTF-8 bytes, or a non-string entry fails before mutation.
+- A confirmed-absent service (`MACOS-020`) still holds nothing Posato-owned,
+  including the exceptions group.
+
+Update and maintenance readiness requires that no Posato-owned group remains,
+including the exceptions group. The allowlist of fixed proxy values is
+extended only by the three loopback entries.
+
 ## SCHEDULE-001 automatic scheduled Apply amendment
 
 Accepted: `user-confirmed`: accepted by the maintainer on 2026-09-27 (proposed 2026-09-26, `SCHEDULE-001`, delegated night mandate). An
