@@ -11,6 +11,25 @@ internal enum class SyncAuditOutcome {
     SEQUENCE_GAP,
     SESSION_CONFLICT,
     SCHEDULE_CAPACITY,
+    SET_CAPACITY,
+}
+
+internal enum class PauseSetStatus {
+    LIVE,
+    REMOVED,
+    REFUSED,
+    UNKNOWN,
+}
+
+/** A live set: its synchronized name, absent for the first set until someone names it, and its domains. */
+internal data class SynchronizedPauseSet(
+    val setId: PauseSetId,
+    val name: String?,
+    val domains: List<ExactDomain>,
+) {
+    override fun toString(): String {
+        return "SynchronizedPauseSet(redacted)"
+    }
 }
 
 /** The effective schedule for one identifier: its greatest total-order put. */
@@ -21,6 +40,7 @@ internal data class SynchronizedSchedule(
     val startMinute: Int,
     val endMinute: Int,
     val enabled: Boolean,
+    val setId: PauseSetId = PauseSetId.FIRST,
 ) {
     override fun toString(): String {
         return "SynchronizedSchedule(redacted)"
@@ -39,6 +59,7 @@ internal data class SynchronizedSessionStart(
     val mandatoryEndEpochMillis: Long,
     val order: OperationOrder,
     val isEnded: Boolean,
+    val setId: PauseSetId = PauseSetId.FIRST,
 ) {
     override fun toString(): String {
         return "SynchronizedSessionStart(redacted)"
@@ -56,7 +77,26 @@ internal data class SyncProjection(
     val scheduleSkips: Set<ScheduleOccurrenceRef> = emptySet(),
     val scheduleEnds: Set<ScheduleOccurrenceRef> = emptySet(),
     val refusedSchedules: List<SynchronizedSchedule> = emptyList(),
+    val pauseSets: List<SynchronizedPauseSet> = emptyList(),
+    val removedPauseSetIds: Set<PauseSetId> = emptySet(),
+    val refusedPauseSetIds: Set<PauseSetId> = emptySet(),
+    val defaultPauseSetId: PauseSetId? = null,
+    val pauseSetsEnabled: Boolean = false,
 ) {
+    fun pauseSetStatus(setId: PauseSetId): PauseSetStatus {
+        return when {
+            pauseSets.any { set -> set.setId == setId } -> PauseSetStatus.LIVE
+            setId in removedPauseSetIds -> PauseSetStatus.REMOVED
+            setId in refusedPauseSetIds -> PauseSetStatus.REFUSED
+            else -> PauseSetStatus.UNKNOWN
+        }
+    }
+
+    /** A set that is not live resolves to no domains. */
+    fun pauseSetDomains(setId: PauseSetId): List<ExactDomain> {
+        return pauseSets.firstOrNull { set -> set.setId == setId }?.domains.orEmpty()
+    }
+
     override fun toString(): String {
         return "SyncProjection(redacted)"
     }
@@ -195,7 +235,12 @@ private class ProjectionAccumulator(
     applicable: List<SyncOperation>,
 ) {
     private val audit = uniqueOperations.associateTo(linkedMapOf()) { it.operationId to SyncAuditOutcome.SEQUENCE_GAP }
-    private val domains = linkedSetOf<ExactDomain>()
+    private val sets = PauseSetLiveness(applicable)
+    private val setDomains = sets.liveIds.associateWith { linkedSetOf<ExactDomain>() }
+    private val domainHolders = mutableMapOf<ExactDomain, Int>()
+    private val appliedSetRemoves = mutableSetOf<PauseSetId>()
+    private var chosenDefault: PauseSetId? = null
+    private var pauseSetsEnabled = false
     private var applicationPolicyName: ApplicationPolicyName? = null
     private val sessionStarts = mutableListOf<Pair<SyncOperation, SyncOperationPayload.SessionStart>>()
     private val endedSessionIds = mutableSetOf<SessionId>()
@@ -223,11 +268,11 @@ private class ProjectionAccumulator(
             }
 
             is SyncOperationPayload.DomainPresent -> {
-                applyDomainPresent(payload.domain)
+                applyDomainPresent(payload.setId ?: PauseSetId.FIRST, payload.domain)
             }
 
             is SyncOperationPayload.DomainAbsent -> {
-                outcome(domains.remove(payload.domain))
+                applyDomainAbsent(payload.setId ?: PauseSetId.FIRST, payload.domain)
             }
 
             is SyncOperationPayload.ApplicationPolicyPresent -> {
@@ -255,6 +300,32 @@ private class ProjectionAccumulator(
             is SyncOperationPayload.OptionalExtension -> {
                 applySchedule(payload)
             }
+
+            is SyncOperationPayload.PauseSetPut,
+            is SyncOperationPayload.PauseSetRemove,
+            is SyncOperationPayload.PauseSetDefault,
+            SyncOperationPayload.PauseSetsEnabled -> {
+                applyPauseSet(operation)
+            }
+        }
+    }
+
+    private fun applyPauseSet(operation: SyncOperation): SyncAuditOutcome = when (val payload = operation.payload) {
+        is SyncOperationPayload.PauseSetRemove -> {
+            outcome(appliedSetRemoves.add(payload.setId))
+        }
+
+        is SyncOperationPayload.PauseSetDefault -> {
+            chosenDefault = payload.setId
+            SyncAuditOutcome.APPLIED
+        }
+
+        SyncOperationPayload.PauseSetsEnabled -> {
+            outcome(!pauseSetsEnabled).also { pauseSetsEnabled = true }
+        }
+
+        else -> {
+            sets.putOutcome(operation.operationId)
         }
     }
 
@@ -265,8 +336,11 @@ private class ProjectionAccumulator(
         val auditEntries = uniqueOperations.sortedBy(SyncOperation::order).map { operation ->
             SyncAuditEntry(operation.operationId, checkNotNull(audit[operation.operationId]))
         }
+        val pauseSets = sets.liveIds.sortedBy(PauseSetId::value).map { setId ->
+            SynchronizedPauseSet(setId, sets.nameOf(setId), setDomains.getValue(setId).sortedBy(ExactDomain::canonicalValue))
+        }
         return SyncProjection(
-            domains.sortedBy(ExactDomain::canonicalValue),
+            pauseSets.firstOrNull { set -> set.setId == PauseSetId.FIRST }?.domains.orEmpty(),
             applicationPolicyName,
             eligible.sortedBy(SynchronizedSessionStart::order),
             conflicted,
@@ -276,22 +350,47 @@ private class ProjectionAccumulator(
             scheduleSkips = scheduleSkips.toSet(),
             scheduleEnds = scheduleEnds.toSet(),
             refusedSchedules = refusedSchedules.values.sortedBy { put -> put.scheduleId.value }.map(SyncOperationPayload.SchedulePut::toSynchronized),
+            pauseSets = pauseSets,
+            removedPauseSetIds = sets.removedIds,
+            refusedPauseSetIds = sets.refusedIds.toSet(),
+            defaultPauseSetId = sets.defaultFor(chosenDefault),
+            pauseSetsEnabled = pauseSetsEnabled,
         )
     }
 
-    private fun applyDomainPresent(domain: ExactDomain): SyncAuditOutcome = when {
-        domain in domains -> {
-            SyncAuditOutcome.NO_OP
-        }
+    /** Operations for a set that is not live are left out; the cap counts unique domains across live sets. */
+    private fun applyDomainPresent(
+        setId: PauseSetId,
+        domain: ExactDomain,
+    ): SyncAuditOutcome {
+        val domains = setDomains[setId]
+        return when {
+            domains == null || domain in domains -> {
+                SyncAuditOutcome.NO_OP
+            }
 
-        domains.size >= SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS -> {
-            SyncAuditOutcome.DOMAIN_CAPACITY
-        }
+            domain !in domainHolders && domainHolders.size >= SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS -> {
+                SyncAuditOutcome.DOMAIN_CAPACITY
+            }
 
-        else -> {
-            domains += domain
-            SyncAuditOutcome.APPLIED
+            else -> {
+                domains += domain
+                domainHolders[domain] = domainHolders.getOrElse(domain) { 0 } + 1
+                SyncAuditOutcome.APPLIED
+            }
         }
+    }
+
+    private fun applyDomainAbsent(
+        setId: PauseSetId,
+        domain: ExactDomain,
+    ): SyncAuditOutcome {
+        val removed = setDomains[setId]?.remove(domain) == true
+        if (removed) {
+            val holders = domainHolders.getValue(domain) - 1
+            if (holders == 0) domainHolders.remove(domain) else domainHolders[domain] = holders
+        }
+        return outcome(removed)
     }
 
     private fun applySchedule(payload: SyncOperationPayload): SyncAuditOutcome = when (payload) {
@@ -364,6 +463,7 @@ private class ProjectionAccumulator(
                 payload.mandatoryEndEpochMillis,
                 operation.order(),
                 sessionId in endedSessionIds,
+                payload.setId ?: PauseSetId.FIRST,
             ),
         )
     }
@@ -372,5 +472,79 @@ private class ProjectionAccumulator(
 }
 
 private fun SyncOperationPayload.SchedulePut.toSynchronized(): SynchronizedSchedule {
-    return SynchronizedSchedule(scheduleId, name, weekdays, startMinute, endMinute, enabled)
+    return SynchronizedSchedule(scheduleId, name, weekdays, startMinute, endMinute, enabled, setId ?: PauseSetId.FIRST)
+}
+
+/**
+ * Set liveness from the complete applicable operation set, decided before any domain is reduced. A remove
+ * wins whatever the order, the first set holds a slot unless removed, and a put for a new set at the cap is
+ * refused without eviction. Removed sets never take a slot, so a set refused here stays refused.
+ */
+private class PauseSetLiveness(
+    applicable: List<SyncOperation>,
+) {
+    val removedIds: Set<PauseSetId> = applicable.mapNotNullTo(mutableSetOf()) { operation ->
+        (operation.payload as? SyncOperationPayload.PauseSetRemove)?.setId
+    }
+    val refusedIds = mutableSetOf<PauseSetId>()
+    private val names = linkedMapOf<PauseSetId, String?>()
+    private val firstPuts = mutableMapOf<PauseSetId, OperationOrder>()
+    private val putOutcomes = mutableMapOf<BundleId, SyncAuditOutcome>()
+
+    val liveIds: Set<PauseSetId>
+        get() {
+            return names.keys
+        }
+
+    init {
+        if (PauseSetId.FIRST !in removedIds) {
+            names[PauseSetId.FIRST] = null
+        }
+        applicable
+            .filter { operation -> operation.payload is SyncOperationPayload.PauseSetPut }
+            .sortedBy(SyncOperation::order)
+            .forEach { operation -> putOutcomes[operation.operationId] = applyPut(operation) }
+    }
+
+    fun putOutcome(operationId: BundleId): SyncAuditOutcome {
+        return putOutcomes.getValue(operationId)
+    }
+
+    fun nameOf(setId: PauseSetId): String? {
+        return names[setId]
+    }
+
+    /** The chosen default when it is live, otherwise the first set, otherwise the live set whose earliest put is first. */
+    fun defaultFor(chosen: PauseSetId?): PauseSetId? {
+        return when {
+            chosen != null && chosen in names -> chosen
+            PauseSetId.FIRST in names -> PauseSetId.FIRST
+            else -> firstPuts.filterKeys { setId -> setId in names }.minByOrNull { (_, order) -> order }?.key
+        }
+    }
+
+    private fun applyPut(operation: SyncOperation): SyncAuditOutcome {
+        val put = operation.payload as SyncOperationPayload.PauseSetPut
+        return when {
+            put.setId in removedIds -> {
+                SyncAuditOutcome.NO_OP
+            }
+
+            put.setId in names -> {
+                names[put.setId] = put.name
+                SyncAuditOutcome.APPLIED
+            }
+
+            names.size >= SyncFormatLimits.MAX_PAUSE_SETS -> {
+                refusedIds += put.setId
+                SyncAuditOutcome.SET_CAPACITY
+            }
+
+            else -> {
+                names[put.setId] = put.name
+                firstPuts[put.setId] = operation.order()
+                SyncAuditOutcome.APPLIED
+            }
+        }
+    }
 }

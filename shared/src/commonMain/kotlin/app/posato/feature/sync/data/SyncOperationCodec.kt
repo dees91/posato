@@ -42,7 +42,9 @@ internal object SyncOperationCodec {
             writer.writeLong(operation.clock.physicalMillis)
             writer.writeU16(operation.clock.logicalCounter)
 
-            if (writer.writePayload(operation.payload)) {
+            val payload = operation.payload
+            val written = if (payload.isPauseSetKind()) writer.writePauseSetPayload(payload) else writer.writePayload(payload)
+            if (written) {
                 val encodedOperation = writer.consumeBytes()
                 if (encodedOperation.size <= SyncFormatLimits.PLAINTEXT_BYTES) {
                     encodedOperation
@@ -179,6 +181,10 @@ private fun CanonicalWriter.writePayload(payload: SyncOperationPayload): Boolean
             writeOwnedBytes(payload.sessionId.value.copyBytes())
         }
 
+        is SyncOperationPayload.PauseSetPut,
+        is SyncOperationPayload.PauseSetRemove,
+        is SyncOperationPayload.PauseSetDefault,
+        SyncOperationPayload.PauseSetsEnabled,
         is SyncOperationPayload.SchedulePut,
         is SyncOperationPayload.ScheduleRemove,
         is SyncOperationPayload.ScheduleSkip,
@@ -208,11 +214,12 @@ private fun CanonicalReader.readPayload(): SyncOperationPayload? {
         SESSION_START_TAG -> readSessionStart()
         SESSION_END_TAG -> readUuidIdentifier()?.let(::SessionId)?.let(SyncOperationPayload::SessionEnd)
         in SCHEDULE_TAGS, in SyncFormatLimits.OPTIONAL_KINDS -> tag?.let { kind -> readSchedulePayload(kind) }
+        in PAUSE_SET_TAGS -> tag?.let { kind -> readPauseSetPayload(kind) }
         else -> null
     }
 }
 
-private fun CanonicalReader.readCanonicalDomain(): ExactDomain? {
+internal fun CanonicalReader.readCanonicalDomain(): ExactDomain? {
     return readCanonicalString()
         ?.takeIf { value -> value.all { character -> character.code <= MAX_ASCII_CODE_POINT } }
         ?.let(ExactDomain::restore)
@@ -225,7 +232,7 @@ private fun CanonicalReader.readApplicationPolicyPresent(): SyncOperationPayload
     return name?.takeIf { singleton != null }?.let(SyncOperationPayload::ApplicationPolicyPresent)
 }
 
-private fun CanonicalReader.readSessionStart(): SyncOperationPayload.SessionStart? {
+internal fun CanonicalReader.readSessionStart(): SyncOperationPayload.SessionStart? {
     val sessionId = readUuidIdentifier()?.let(::SessionId)
     val startEpochMillis = readLong()
     val mandatoryEndEpochMillis = readLong()
@@ -263,7 +270,7 @@ private fun CanonicalReader.readSingletonIdentifier(): SyncIdentifier? {
         ?.takeIf(SyncIdentifier::isZero)
 }
 
-private fun SyncOperationPayload.SessionStart.hasValidBounds(): Boolean {
+internal fun SyncOperationPayload.SessionStart.hasValidBounds(): Boolean {
     val validInstants = startEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS &&
         mandatoryEndEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS
     val duration = mandatoryEndEpochMillis - startEpochMillis
