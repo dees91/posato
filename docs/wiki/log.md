@@ -2319,7 +2319,6 @@ to scope, feasibility, or delivery.
 - `user-confirmed`: backlog row `WEB-002` (idea 24) reworks the site's first
   screen, especially on phones, and replaces the product line
   **Pause. Then choose.** everywhere it appears; no release yet.
-## [2026-09-29] experiment | Intel Ventura evaluation package
 
 ## [2026-09-29] experiment | Intel Ventura evaluation
 
@@ -2338,6 +2337,11 @@ to scope, feasibility, or delivery.
   ADR 0008, and `AGENTS.md` changes in advance: the x86-64 build refuses
   Rosetta, arm64 also drops to macOS 13 as supported without separate
   verification, Intel stays while the toolchain allows, a separate
-  `appcast-intel.xml` with a shared build number, and the dedicated MacBook
-  Air as the one physical Mac allowed outside Tart. The
+  `appcast-intel.xml` with a shared build number. The
   [brief](../tasks/specifications/macos-015-intel-ventura.md) lists them.
+- `user-confirmed` (2026-09-30): the MacBook Air is shared with another
+  person's account, so it cannot be a dedicated test Mac: Posato's daemon,
+  proxy settings, and background items are system-wide. Verification uses an
+  arm64 macOS 13 Tart guest running the x86-64 build under Rosetta through a
+  verification-only switch; no physical Intel Mac and no `AGENTS.md`
+  exception.

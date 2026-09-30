@@ -740,8 +740,9 @@ below. This queue retains idea provenance without expanding the original MVP.
    [`MACOS-015` record](../../tasks/executions/macos-015-intel-ventura.md)
    keeps the evidence limits.
    `user-confirmed` (2026-09-29): Intel support is part of release 1.3 as
-   one `MACOS-015` delivery row, verified on the MacBook Air set up as a
-   dedicated test Mac without personal Posato data.
+   one `MACOS-015` delivery row. `user-confirmed` (2026-09-30): it is
+   verified in an arm64 macOS 13 Tart guest under Rosetta, not on the shared
+   MacBook Air.
    `user-confirmed` (2026-09-29): the maintainer accepted in advance the
    decisions the ADR 0003, ADR 0008, and `AGENTS.md` changes must state; the
    [`MACOS-015` brief](../../tasks/specifications/macos-015-intel-ventura.md)

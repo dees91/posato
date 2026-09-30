@@ -2,8 +2,7 @@
 
 - **Review tier:** High-risk
 - **Tier reason:** Revises the ADR 0003 platform baseline and the ADR 0008
-  update channel, adds a second signed and notarized architecture, and
-  adds an `AGENTS.md` verification exception.
+  update channel and adds a second signed and notarized architecture.
 - **Dependencies:** None (release 1.3, wave 1). `DOCS-004` and `RELEASE-005`
   wait for this row.
 - **Integration group:** PR-INTEL-RELEASE
@@ -35,10 +34,11 @@ Ventura or later that passes the same accepted flow as the arm64 build.
     `appcast-intel.xml` for the x86-64 build in the same GitHub Release;
     `appcast.xml` stays arm64-only; both builds of a release share one
     `CFBundleVersion`.
-  - `AGENTS.md`: only the dedicated 2019 MacBook Air may run Posato outside
-    Tart, driven by `posato-control` without the maintainer, for Intel work
-    and every later release, with development and notarized builds; it is
-    registered through `posato-provisioning`.
+  - Verification (2026-09-30): the 2019 MacBook Air is shared with another
+    person's account, so it is not a test Mac. The x86-64 build is verified
+    under Rosetta in an arm64 macOS 13 Tart guest. A verification-only build
+    switch lifts the Rosetta refusal; release builds never carry it. No
+    physical Intel Mac and no `AGENTS.md` exception are used.
 - The feed that installed 1.1 and 1.2 arm64 clients read never offers an
   x86-64 build, and the x86-64 channel never offers an arm64 build or one with
   a higher minimum macOS.
@@ -46,8 +46,10 @@ Ventura or later that passes the same accepted flow as the arm64 build.
   only `RELEASE-005` publishes anything public.
 - macOS 13 compatibility stays enforced after this row: the quality gate
   compiles the macOS 13 native parts, and later macOS rows inherit that.
-  The x86-64 Java runtime is
-  pinned to the arm64 Temurin version and obtainable by any contributor.
+  The x86-64 Java runtime is pinned to the arm64 Temurin version and
+  obtainable by any contributor.
+- `posato-control` gains a macOS 13 VM line, like the macOS 15 legacy line,
+  with Rosetta installed in the guest.
 - Setup must work from a clean state without a restart, or the missed daemon
   submission seen in the evaluation becomes a named, disclosed risk. The
   driver never runs `sfltool resetbtm`.
@@ -56,19 +58,20 @@ Ventura or later that passes the same accepted flow as the arm64 build.
 
 ## Acceptance
 
-- `AC-01` — The ADR 0003 and ADR 0008 revisions and the `AGENTS.md`
-  exception state the accepted decisions above.
-- `AC-02` — On the dedicated MacBook Air, driven by `posato-control` from a
-  clean state: the macOS 15 flow of the availability page (installation,
-  setup, pause, a schedule after restart with login launch, start notice,
-  early end from the menu bar), plus the pause page, the application picker,
-  sync with a Tart peer, helper removal, and an update between two x86-64
-  candidates.
+- `AC-01` — The ADR 0003 and ADR 0008 revisions state the accepted
+  decisions above.
+- `AC-02` — In an arm64 macOS 13 Tart guest, driven by `posato-control` from a
+  clean state, the x86-64 verification build under Rosetta passes the macOS 15
+  flow of the availability page (installation, setup, pause, a schedule after
+  restart with login launch, start notice, early end from the menu bar), plus
+  the pause page, the application picker, sync with a Tart peer, helper
+  removal, and an update between two x86-64 candidates on the Intel feed.
 - `AC-03` — The arm64 candidate passes its package checks and the same flow
   in Tart, feeds stay separated as stated, and the x86-64 build refuses to
   run under Rosetta in an arm64 Tart guest.
-- `AC-04` — The availability page lists Intel on macOS 13 with its verified
-  evidence and accepted limits, and arm64 from macOS 13 as supported.
+- `AC-04` — The availability page lists Intel on macOS 13 with its evidence
+  (verified under Rosetta, not on Intel hardware) and arm64 from macOS 13 as
+  supported.
 
 ## Verification
 
@@ -76,17 +79,14 @@ Ventura or later that passes the same accepted flow as the arm64 build.
 
 - Package checks for both architectures: Mach-O architecture and deployment
   target, signatures, notarization, Gatekeeper, and feed contents.
-- `hypothesis` to test first: an arm64 macOS 13 Tart guest with Rosetta may
-  cover macOS 13 regressions unattended before the MacBook Air runs.
-- MacBook Air runs use the accepted `AGENTS.md` exception once it is in
-  `AGENTS.md`.
+- The verification-only switch differs from the release build only in the
+  Rosetta refusal; a package check proves the release build refuses Rosetta
+  and the verification build does not ship.
 
 ## Decisions or blockers
 
-- The maintainer prepares the MacBook Air once as a dedicated test Mac: no
-  personal Posato data or other user sessions, the test Apple Account, SSH
-  key login, screen sharing with credentials named in `local.properties`,
-  automatic login, FileVault off or an unattended restart path, no sleep or
-  lock, and the one-time privacy grants for the driver. The evaluation could
-  not drive its UI remotely. If development-signed builds run there, it is
-  registered through `posato-provisioning`.
+- Accepted limit (`user-confirmed`, 2026-09-30): no run on Intel hardware. Code paths that differ between
+  Rosetta and a real Intel CPU stay unverified and are named on the
+  availability page.
+- The evaluation build and its helper are still registered on the shared
+  MacBook Air; the maintainer removes them with **Remove from this Mac**.
