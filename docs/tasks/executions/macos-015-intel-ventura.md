@@ -1,7 +1,7 @@
 # Execution: MACOS-015 Posato on Intel Macs running macOS 13 Ventura
 
 - **Brief:** [macos-015-intel-ventura.md](../specifications/macos-015-intel-ventura.md)
-- **Status:** `active`; the evaluation below precedes the row's plan
+- **Status:** `done`, ready for maintainer review; the evaluation below precedes the row's plan
 - **Review tier:** High-risk
 - **Branch:** `feat/macos-intel-ventura`
 
