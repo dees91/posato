@@ -167,17 +167,18 @@ further implementation. Steps run in order; each code step ends with
 9. **Candidates.** Build and notarize: arm64 candidate, x86-64 candidates N
    and N+1 with the switch on the Intel test feed, and the x86-64 release
    build (no switch) for the refusal check and package checks. The test
-   feed is served per `D1`.
+   feed is served per `D1`, which also needs Rosetta on the `legacy`
+   golden VM for `C1`.
 10. **Verification (`AC-02`, `AC-03`).** On a fresh `ventura` clone, from a
     clean state: the macOS 15 flow of the availability page, the pause page,
-    the application picker, sync with a `peer` clone, helper removal, and
-    the update N to N+1. Setup runs without a restart; if the daemon
-    submission is missed again, investigate without `sfltool resetbtm` and,
-    if unresolved, record it as a named risk for the availability page. The
-    arm64 candidate runs the same flow on the `primary` line and, per `D3`,
-    installation and setup on `ventura`. The x86-64
-    release build shows the refusal and exits on `ventura`. Package checks
-    and feed contents for both architectures.
+    the application picker, helper removal, and the update N to N+1. Setup
+    runs without a restart; if the daemon submission is missed again,
+    investigate without `sfltool resetbtm` and, if unresolved, record it as
+    a named risk for the availability page. The sync check runs on a
+    `legacy` clone with Rosetta against a `peer` clone (`C1`). The arm64
+    candidate runs the same flow on the `primary` line only (`D3`). The
+    x86-64 release build shows the refusal and exits on `ventura`. Package
+    checks and feed contents for both architectures.
 11. **Availability page (`AC-04`)** and closeout: Intel on macOS 13 with
     evidence "under Rosetta in a virtual machine, not on Intel hardware",
     arm64 from macOS 13 under the exception, the end of Apple's macOS 13
@@ -195,23 +196,15 @@ Recommended findings. R1-R8 and the Recommended alert, load-command,
 build-host, horizon, and cross-install items are folded above; `C1` needs
 a brief amendment.
 
-### Open decisions for the maintainer
+### Maintainer decisions (`user-confirmed`, 2026-09-30)
 
-- `C1` `AC-02` requires sync with a Tart peer, but the `ventura` guest
-  cannot sign in to an Apple Account (`source-claim`, Apple Support 120468:
-  guests need macOS 15 or later). Proposed amendment: the x86-64
-  verification build runs the sync check under Rosetta on the `legacy`
-  line (macOS 15.6.1) against a `peer` clone; everything else runs on
-  `ventura`; sync on macOS 13 is named unverified on the availability page.
-
-- `D1` Intel test feed hosting. Recommended: serve it inside the guest on
-  `127.0.0.1` with `jwebserver` from the driver's shared JDK, so nothing is
-  published; the candidate then carries `NSAllowsLocalNetworking`, as the
-  MACOS-011 loopback candidates did. Alternative: a temporary public GitHub
-  prerelease, never latest, deleted afterwards (MACOS-011 `D1`).
-- `D2` Refusal copy: title "This version is for Intel Macs", body "This Mac
-  has Apple silicon. Download Posato for Apple silicon.", buttons **Download** and **Quit**.
-- `D3` Whether the arm64 candidate also gets an install-and-launch smoke on
-  `ventura`. Recommended: yes, through setup with helper registration,
-  where the evaluation failed on macOS 13; it does not replace the
-  exception.
+- `C1`: sync runs the x86-64 verification build under Rosetta on the
+  `legacy` line (macOS 15.6.1) against a `peer` clone; everything else on
+  `ventura`; sync on macOS 13 is named unverified. The brief's `AC-02` is
+  amended.
+- `D1`: the Intel test feed is served with `jwebserver` on `127.0.0.1`
+  inside the guest; nothing is published.
+- `D2`: the refusal reads "This version is for Intel Macs" / "This Mac has
+  Apple silicon. Download Posato for Apple silicon." with **Download** and
+  **Quit**.
+- `D3`: no arm64 run on `ventura`; the macOS 13 exception stays strict.

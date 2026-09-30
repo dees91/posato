@@ -64,8 +64,11 @@ Ventura or later that passes the same accepted flow as the arm64 build.
   clean state, the x86-64 verification build under Rosetta passes the macOS 15
   flow of the availability page (installation, setup, pause, a schedule after
   restart with login launch, start notice, early end from the menu bar), plus
-  the pause page, the application picker, sync with a Tart peer, helper
-  removal, and an update between two x86-64 candidates on the Intel feed.
+  the pause page, the application picker, helper removal, and an update
+  between two x86-64 candidates on the Intel feed. Sync with a Tart peer
+  runs the same x86-64 verification build under Rosetta in a macOS 15
+  (`legacy`) guest, because an Apple Account needs macOS 15 or later in a
+  guest (`user-confirmed`, 2026-09-30).
 - `AC-03` — The arm64 candidate passes its package checks and the same flow
   in Tart, feeds stay separated as stated, and the x86-64 build refuses to
   run under Rosetta in an arm64 Tart guest.
@@ -87,6 +90,12 @@ Ventura or later that passes the same accepted flow as the arm64 build.
 
 - Accepted limit (`user-confirmed`, 2026-09-30): no run on Intel hardware. Code paths that differ between
   Rosetta and a real Intel CPU stay unverified and are named on the
-  availability page.
+  availability page. Sync on macOS 13 is one of them.
+- Accepted (`user-confirmed`, 2026-09-30): the Intel test feed is served on
+  loopback inside the guest and nothing is published; the Rosetta refusal
+  reads "This version is for Intel Macs" / "This Mac has Apple silicon.
+  Download Posato for Apple silicon." with **Download** and **Quit**; the
+  arm64 candidate runs only on the `primary` line, keeping the macOS 13
+  exception strict.
 - The evaluation build and its helper are still registered on the shared
   MacBook Air; the maintainer removes them with **Remove from this Mac**.
