@@ -254,7 +254,8 @@ private const val SERVICE_PLACEHOLDER = "@SERVICE@"
  * Removes `ExceptionsList` from the named service's stored proxies with `scutil --prefs`, which `networksetup` cannot
  * do, and fails unless the key is gone afterwards.
  */
-private val REMOVE_EXCEPTIONS_KEY = """
+private val REMOVE_EXCEPTIONS_KEY =
+    """
     id=''
     for path in ${'$'}(printf 'list /NetworkServices\n' | scutil --prefs | awk '{print ${'$'}4}'); do
       name=${'$'}(printf 'get %s\nd.show\n' "${'$'}path" | scutil --prefs | sed -n 's/^  UserDefinedName : //p')
@@ -263,7 +264,7 @@ private val REMOVE_EXCEPTIONS_KEY = """
     [ -n "${'$'}id" ] || exit 1
     printf 'lock\nget %s/Proxies\nd.remove ExceptionsList\nset %s/Proxies\ncommit\napply\nunlock\nquit\n' "${'$'}id" "${'$'}id" | scutil --prefs || exit 1
     ! printf 'get %s/Proxies\nd.show\n' "${'$'}id" | scutil --prefs | grep -q ExceptionsList
-""".trimIndent()
+    """.trimIndent()
 
 private const val LIST_SERVICES = "networksetup -listallnetworkservices"
 
