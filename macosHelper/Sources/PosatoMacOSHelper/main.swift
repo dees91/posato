@@ -25,6 +25,7 @@ else {
 private let parentLaunchEnvironmentIsClean = ParentLaunchEnvironment.isCleanForParent()
 DispatchQueue(label: "app.posato.macos.helper.pipe").async {
   let service = SMAppService.daemon(plistName: ServiceContract.daemonPlistName)
+  let endpoint = DaemonEndpoint(requirement: daemonRequirement, register: service.register)
   var daemon: DaemonConnection?
   var sequenceValidator = WireSequenceValidator()
   var connectionIdentifier: Data?
@@ -267,33 +268,18 @@ DispatchQueue(label: "app.posato.macos.helper.pipe").async {
             )
           )
         case .enable:
-          var registrationFailed = false
-          if service.status != .enabled {
-            do {
-              try service.register()
-            } catch {
-              // SMAppService throws when approval is now required or the item
-              // already exists; the status read below is the setup outcome. A
-              // status that did not move keeps this as a registration failure.
-              registrationFailed = true
-            }
-          }
-          if service.status != .enabled {
-            response = try localResponse(
-              request: request,
-              payload: enableOutcomePayload(
-                serviceState: serviceState(service.status),
-                registrationFailed: registrationFailed
-              )
-            )
-            break
-          }
-          fallthrough
+          response = try performEnableRequest(
+            request: request,
+            receivedAt: receivedAt,
+            service: service,
+            endpoint: endpoint,
+            daemon: &daemon
+          )
         default:
           response = try performDaemonLifecycleRequest(
             request: request,
             receivedAt: receivedAt,
-            daemonRequirement: daemonRequirement,
+            endpoint: endpoint,
             reconcilePayload: reconcilePayload,
             daemon: &daemon
           )

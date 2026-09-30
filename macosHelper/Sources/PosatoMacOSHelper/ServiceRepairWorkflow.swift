@@ -1,5 +1,6 @@
 import Foundation
 import PosatoMacOSServiceCore
+import ServiceManagement
 
 struct ServiceRecoveryOperations {
   let remainingMilliseconds: () throws -> UInt32
@@ -75,34 +76,104 @@ func enableOutcomePayload(
   return WireLifecyclePolicy.failedEnableResponse(serviceState: state)
 }
 
+/// The daemon's code requirement and its registration. macOS 13 can record the approval of the
+/// daemon without submitting it to launchd until the next restart; registering the enabled service
+/// again submits it, so setup reads do that once per helper process before they report recovery.
+final class DaemonEndpoint {
+  let requirement: String
+  private let register: () throws -> Void
+  private var resubmitted = false
+
+  init(requirement: String, register: @escaping () throws -> Void) {
+    self.requirement = requirement
+    self.register = register
+  }
+
+  func resubmitOnce() -> Bool {
+    guard !resubmitted else {
+      return false
+    }
+    resubmitted = true
+    try? register()
+    return true
+  }
+}
+
 func performDaemonLifecycleRequest(
   request: WireMessage,
   receivedAt: DispatchTime,
-  daemonRequirement: String,
+  endpoint: DaemonEndpoint,
   reconcilePayload: WireReconcilePayload?,
   daemon: inout DaemonConnection?
 ) throws -> WireMessage {
-  do {
-    return try forwardDaemonLifecycleRequest(
-      request: request,
-      receivedAt: receivedAt,
-      daemonRequirement: daemonRequirement,
-      daemon: &daemon
+  let resubmits = [.status, .enable].contains(
+    WireLifecyclePolicy.effectiveOperation(
+      requestOperation: request.operation,
+      reconcilePayload: reconcilePayload
     )
-  } catch {
-    guard
-      let payload = recoveredSetupPayload(
-        requestOperation: request.operation,
-        reconcilePayload: reconcilePayload,
-        error: error
+  )
+  while true {
+    do {
+      return try forwardDaemonLifecycleRequest(
+        request: request,
+        receivedAt: receivedAt,
+        daemonRequirement: endpoint.requirement,
+        daemon: &daemon
       )
-    else {
-      throw error
+    } catch {
+      guard
+        let payload = recoveredSetupPayload(
+          requestOperation: request.operation,
+          reconcilePayload: reconcilePayload,
+          error: error
+        )
+      else {
+        throw error
+      }
+      daemon?.invalidate()
+      daemon = nil
+      if resubmits && endpoint.resubmitOnce() {
+        continue
+      }
+      return try localResponse(request: request, payload: payload)
     }
-    daemon?.invalidate()
-    daemon = nil
-    return try localResponse(request: request, payload: payload)
   }
+}
+
+func performEnableRequest(
+  request: WireMessage,
+  receivedAt: DispatchTime,
+  service: SMAppService,
+  endpoint: DaemonEndpoint,
+  daemon: inout DaemonConnection?
+) throws -> WireMessage {
+  var registrationFailed = false
+  if service.status != .enabled {
+    do {
+      try service.register()
+    } catch {
+      // SMAppService throws when approval is now required or the item
+      // already exists; the status read below is the setup outcome. A
+      // status that did not move keeps this as a registration failure.
+      registrationFailed = true
+    }
+  }
+  guard service.status == .enabled else {
+    return try localResponse(
+      request: request,
+      payload: enableOutcomePayload(
+        serviceState: serviceState(service.status),
+        registrationFailed: registrationFailed
+      )
+    )
+  }
+  return try performDaemonLifecycleRequest(
+    request: request,
+    receivedAt: receivedAt,
+    endpoint: endpoint,
+    reconcilePayload: nil,
+    daemon: &daemon
+  )
 }
 
 func forwardDaemonLifecycleRequest(
