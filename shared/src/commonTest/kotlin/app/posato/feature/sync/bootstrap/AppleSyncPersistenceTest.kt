@@ -1,6 +1,7 @@
 package app.posato.feature.sync.bootstrap
 
 import app.posato.feature.sync.FakeSyncCryptoProvider
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.sync.domain.SyncReducer
 import app.posato.feature.sync.mailbox.BundleSaveResult
@@ -80,7 +81,7 @@ class AppleSyncPersistenceTest {
             val applied = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(destination.sqlPolicy.read()).value
             assertEquals(listOf("one.example"), applied.policy.domains.map { it.canonicalValue })
             val base = assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(destination.sqlPolicy.readBase()).value
-            assertEquals(listOf("one.example"), checkNotNull(base).policy.domains.map { it.canonicalValue })
+            assertEquals(listOf("one.example"), checkNotNull(base).domains[PauseSetId.FIRST].orEmpty().map { it.canonicalValue })
             assertEquals(SyncStatus.COMPLETED, destination.sync.state.value.status)
         } finally {
             source.close()
@@ -101,7 +102,7 @@ class AppleSyncPersistenceTest {
             first.recordDomainChanges(testPolicy(), testPolicy("lost-removal.example"))
             advanceUntilIdle()
             val baseBeforeClose = assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(first.sqlPolicy.readBase()).value
-            assertEquals(emptyList(), checkNotNull(baseBeforeClose).policy.domains)
+            assertEquals(emptyList(), checkNotNull(baseBeforeClose).domains[PauseSetId.FIRST].orEmpty())
             first.recordDomainChanges(testPolicy("lost-removal.example"), testPolicy())
             assertEquals(1, intentRowCount(first))
             first.closeKeepingDatabase()
@@ -123,7 +124,7 @@ class AppleSyncPersistenceTest {
                 val local = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(second.sqlPolicy.read()).value.policy
                 assertEquals(emptyList(), local.domains)
                 val operations = second.snapshot().acceptedBundles.values.map { it.operation }
-                assertEquals(emptyList(), SyncReducer.reduce(operations).domains)
+                assertEquals(emptyList(), SyncReducer.reduce(operations).pauseSetDomains(PauseSetId.FIRST))
                 assertEquals(
                     1,
                     operations.count { operation ->

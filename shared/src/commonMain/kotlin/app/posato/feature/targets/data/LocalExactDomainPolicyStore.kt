@@ -114,7 +114,7 @@ internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
 
     suspend fun replaceWithBase(
         expectedRevision: Long,
-        policy: TargetPolicy,
-        base: TargetPolicy,
+        sets: PauseSets,
+        base: Map<PauseSetId, List<ExactDomain>>,
     ): LocalPolicyResult<LocalTargetPolicyState>
 }

@@ -1,5 +1,7 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.sync.mailbox.BundleSaveResult
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
@@ -147,6 +149,29 @@ class AppleSyncAuthoringTest {
         } finally {
             gate.complete(Unit)
             advanceUntilIdle()
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a website saved after the upgrade when synced then it is authored as kind 14 naming the first set`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val harness = AppleSyncTestHarness(dispatcher)
+        try {
+            harness.establish()
+            harness.sync.onForeground()
+            advanceUntilIdle()
+            val local = harness.syncPolicy
+            val initial = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.read()).value
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.replace(initial.revision, testPolicy("tagged.example")))
+            advanceUntilIdle()
+
+            val domainPayloads = harness.snapshot().acceptedBundles.values
+                .map { stored -> stored.operation.payload }
+                .filterIsInstance<SyncOperationPayload.DomainPresent>()
+
+            assertEquals(listOf(PauseSetId.FIRST), domainPayloads.map { payload -> payload.setId })
+        } finally {
             harness.close()
         }
     }

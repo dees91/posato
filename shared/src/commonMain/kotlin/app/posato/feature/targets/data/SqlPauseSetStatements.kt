@@ -8,6 +8,7 @@ import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomainPolicyLimits
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
+import app.posato.feature.targets.domain.StoredPolicyIntent
 
 internal suspend fun PosatoDatabase.writeSetRows(sets: PauseSets) {
     localExactDomainPolicyQueries.deleteSets()
@@ -42,7 +43,7 @@ internal suspend fun PosatoDatabase.readSetsOrThrow(): PauseSets {
     return PauseSets.of(sets, defaults.singleOrNull()?.let(::restoreSetId)) ?: fail(LocalPolicyFailure.CORRUPTION)
 }
 
-private fun restoreSetId(bytes: ByteArray): PauseSetId {
+internal fun restoreSetId(bytes: ByteArray): PauseSetId {
     return SyncIdentifier.fromExactBytes(bytes)?.let(PauseSetId::of) ?: fail(LocalPolicyFailure.CORRUPTION)
 }
 
@@ -63,4 +64,14 @@ internal suspend fun PosatoDatabase.readApplicationPolicyNameOrThrow(): Applicat
         fail(LocalPolicyFailure.CORRUPTION)
     }
     return applicationPolicyName?.let(::restorePolicyName)
+}
+
+internal fun StoredPolicyIntent.setIdOf(): PauseSetId {
+    return when (this) {
+        is StoredPolicyIntent.PresentDomain -> setId
+        is StoredPolicyIntent.RemoveDomain -> setId
+        is StoredPolicyIntent.PutSet -> setId
+        is StoredPolicyIntent.RemoveSet -> setId
+        is StoredPolicyIntent.ChooseDefault -> setId
+    }
 }

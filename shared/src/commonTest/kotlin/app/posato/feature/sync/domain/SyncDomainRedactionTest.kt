@@ -88,7 +88,7 @@ class SyncDomainRedactionTest {
         )
         assertEquals(
             "LocalSyncMutation.StartSession(redacted)",
-            LocalSyncMutation.StartSession(sessionId, startEpochMillis, mandatoryEndEpochMillis).toString(),
+            LocalSyncMutation.StartSession(sessionId, startEpochMillis, mandatoryEndEpochMillis, PauseSetId.FIRST).toString(),
         )
         assertEquals(
             "SynchronizedSessionStart(redacted)",
@@ -116,7 +116,7 @@ class SyncDomainRedactionTest {
             SyncOperationPayload.ScheduleSkip(ref),
             SyncOperationPayload.ScheduleOccurrenceEnd(ref),
             SyncOperationPayload.OptionalExtension(200, app.posato.feature.sync.data.ImmutableBytes(byteArrayOf(1))),
-            LocalSyncMutation.PutSchedule(id, "Private name", 1, 540, 720, true),
+            LocalSyncMutation.PutSchedule(id, "Private name", 1, 540, 720, true, PauseSetId.FIRST),
             LocalSyncMutation.SkipOccurrence(ref, ref.date),
             LocalSyncMutation.EndOccurrence(ref, ref.date),
             SynchronizedSchedule(id, "Private name", 1, 540, 720, true),

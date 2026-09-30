@@ -151,7 +151,7 @@ class SyncReducerScheduleTest {
 
         val projection = SyncReducer.reduce(operations)
 
-        assertEquals(listOf(first, second), projection.domains)
+        assertEquals(listOf(first, second), projection.pauseSetDomains(PauseSetId.FIRST))
         assertEquals(SyncAuditOutcome.NO_OP, projection.audit.single { it.operationId == optional.operationId }.outcome)
     }
 

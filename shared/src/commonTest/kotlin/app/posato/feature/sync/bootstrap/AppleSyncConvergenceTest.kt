@@ -12,6 +12,7 @@ import app.posato.feature.sync.data.useAndClear
 import app.posato.feature.sync.domain.AuthorId
 import app.posato.feature.sync.domain.BundleId
 import app.posato.feature.sync.domain.HybridLogicalClock
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncIdentifier
@@ -266,7 +267,7 @@ class AppleSyncConvergenceTest {
             advanceUntilIdle()
 
             val projection = SyncReducer.reduce(first.snapshot().acceptedBundles.values.map { it.operation })
-            assertEquals(emptyList(), projection.domains)
+            assertEquals(emptyList(), projection.pauseSetDomains(PauseSetId.FIRST))
             assertEquals(0, intentRowCount(first))
             assertEquals(SyncStatus.COMPLETED, first.sync.state.value.status)
             assertEquals(localPolicy(second), localPolicy(first))
@@ -319,7 +320,7 @@ class AppleSyncConvergenceTest {
             advanceUntilIdle()
 
             val projection = SyncReducer.reduce(first.snapshot().acceptedBundles.values.map { it.operation })
-            assertEquals(listOf("contested.example"), projection.domains.map { it.canonicalValue })
+            assertEquals(listOf("contested.example"), projection.pauseSetDomains(PauseSetId.FIRST).map { it.canonicalValue })
             assertEquals(0, intentRowCount(first))
             assertEquals(SyncStatus.COMPLETED, first.sync.state.value.status)
             assertEquals(SyncStatus.COMPLETED, second.sync.state.value.status)

@@ -2,10 +2,12 @@ package app.posato.feature.sync.bootstrap
 
 import app.posato.feature.sync.domain.LocalMutationResult
 import app.posato.feature.sync.domain.LocalSyncMutation
+import app.posato.feature.sync.domain.PauseSetStatus
 import app.posato.feature.sync.domain.SyncWriter
 import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalPolicySyncStore
+import app.posato.feature.targets.data.setIdOf
 import app.posato.feature.targets.domain.SequencedPolicyIntent
 import app.posato.feature.targets.domain.StoredPolicyIntent
 import kotlinx.coroutines.CancellationException
@@ -67,7 +69,8 @@ internal class AppleSyncAuthoring(
         workspaceId: ByteArray,
         rows: List<SequencedPolicyIntent>,
     ): DrainStep {
-        val row = rows.firstOrNull { it.intent is StoredPolicyIntent.PresentDomain || it.intent is StoredPolicyIntent.RemoveDomain }
+        // Set removals wait for the policy phase, after schedules have moved away from the set.
+        val row = rows.firstOrNull { it.intent !is StoredPolicyIntent.RemoveSet }
         return if (row == null) {
             DrainStep.Halt(true)
         } else if (!row.workspaceId.contentEquals(workspaceId)) {
@@ -105,8 +108,11 @@ internal class AppleSyncAuthoring(
         row: SequencedPolicyIntent,
     ): DrainStep {
         val mutation = when (val intent = row.intent) {
-            is StoredPolicyIntent.PresentDomain -> LocalSyncMutation.PresentDomain(intent.domain)
-            is StoredPolicyIntent.RemoveDomain -> LocalSyncMutation.RemoveDomain(intent.domain)
+            is StoredPolicyIntent.PresentDomain -> LocalSyncMutation.PresentDomain(intent.domain, intent.setId)
+            is StoredPolicyIntent.RemoveDomain -> LocalSyncMutation.RemoveDomain(intent.domain, intent.setId)
+            is StoredPolicyIntent.PutSet -> LocalSyncMutation.PutPauseSet(intent.setId, intent.name)
+            is StoredPolicyIntent.RemoveSet -> LocalSyncMutation.RemovePauseSet(intent.setId)
+            is StoredPolicyIntent.ChooseDefault -> LocalSyncMutation.ChoosePauseSetDefault(intent.setId)
         }
         if (writer.mutate(mutation) is LocalMutationResult.Failure) {
             return DrainStep.Halt(fail())
@@ -138,8 +144,16 @@ private fun isSkipped(
     row: SequencedPolicyIntent,
 ): Boolean {
     val projection = writer.projection()
-    return when (val intent = row.intent) {
-        is StoredPolicyIntent.PresentDomain -> projection.domains.any { domain -> domain == intent.domain }
-        is StoredPolicyIntent.RemoveDomain -> projection.domains.none { domain -> domain == intent.domain }
+    val intent = row.intent
+    // A change to a set another device removed can never apply, so it is discarded rather than authored.
+    if (projection.pauseSetStatus(intent.setIdOf()) == PauseSetStatus.REMOVED) {
+        return true
+    }
+    return when (intent) {
+        is StoredPolicyIntent.PresentDomain -> intent.domain in projection.pauseSetDomains(intent.setId)
+        is StoredPolicyIntent.RemoveDomain -> intent.domain !in projection.pauseSetDomains(intent.setId)
+        is StoredPolicyIntent.PutSet -> projection.pauseSets.any { set -> set.setId == intent.setId && set.name == intent.name }
+        is StoredPolicyIntent.RemoveSet -> false
+        is StoredPolicyIntent.ChooseDefault -> projection.defaultPauseSetId == intent.setId
     }
 }

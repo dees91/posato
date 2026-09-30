@@ -365,7 +365,7 @@ private suspend fun seedAndDrainOrHalt(
     if (base != null) {
         return true
     }
-    val seeded = reconciler.seedLocalExtras(workspace.context.workspaceId.value.copyBytes())
+    val seeded = reconciler.seedLocalExtras(workspace.context.workspaceId.value.copyBytes(), writer.projection())
     if (seeded is LocalPolicyResult.Failure) {
         publish(seeded.reason.toSyncStatus())
         return false
@@ -387,7 +387,7 @@ private fun MutableStateFlow<AppleSyncState>.publishOutcome(outcome: ReconcileOu
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.LOCAL_CAPACITY) }
         }
 
-        ReconcileOutcome.Corrupt -> {
+        ReconcileOutcome.Corrupt, ReconcileOutcome.RefusedSetCapacity -> {
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = null) }
         }
 

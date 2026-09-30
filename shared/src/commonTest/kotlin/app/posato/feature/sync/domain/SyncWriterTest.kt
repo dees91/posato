@@ -103,7 +103,7 @@ class SyncWriterOpenTest {
             assertEquals(OpenSyncWriterFailure.ALREADY_OPEN, assertIs<OpenSyncWriterResult.Failure>(result).reason)
             assertFalse(activeKey.isClosed)
             assertIs<LocalMutationResult.Success>(
-                writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("alias.example")))),
+                writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("alias.example")), PauseSetId.FIRST)),
             )
         } finally {
             writer.close()
@@ -168,7 +168,7 @@ class SyncWriterCancellationTest {
         val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, activeTransportKey)).writer
         val mutationJob = launch {
             writer.mutate(
-                LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("close.example"))),
+                LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("close.example")), PauseSetId.FIRST),
             )
         }
         mutationCommitted.await()
@@ -249,7 +249,7 @@ class SyncWriterCancellationTest {
             SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
         ).writer
         val mutationJob = launch {
-            writer.mutate(LocalSyncMutation.PresentDomain(domain))
+            writer.mutate(LocalSyncMutation.PresentDomain(domain, PauseSetId.FIRST))
         }
         commitCompleted.await()
 
@@ -257,7 +257,7 @@ class SyncWriterCancellationTest {
         mutationJob.join()
 
         assertTrue(mutationJob.isCancelled)
-        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(listOf(domain), writer.projection().pauseSetDomains(PauseSetId.FIRST))
         assertEquals(2, writer.pendingBundles.size)
         assertEquals(
             LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
@@ -292,7 +292,7 @@ class SyncWriterCancellationTest {
         acceptanceJob.join()
 
         assertTrue(acceptanceJob.isCancelled)
-        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(listOf(domain), writer.projection().pauseSetDomains(PauseSetId.FIRST))
         assertIs<RemoteAcceptanceResult.Duplicate>(
             writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false)),
         )
@@ -559,7 +559,7 @@ class SyncWriterTest {
         val opened = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey()))
 
         val result = assertIs<LocalMutationResult.Success>(
-            opened.writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("stable.example")))),
+            opened.writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("stable.example")), PauseSetId.FIRST)),
         )
 
         assertEquals(2, result.pendingBundles.size)
@@ -571,11 +571,12 @@ class SyncWriterTest {
     @Test
     fun `given an invalid session mutation when retried then the writer remains usable`() = runTest {
         val invalidSessions = listOf(
-            LocalSyncMutation.StartSession(SessionId(testIdentifier(20)), 100, 100),
+            LocalSyncMutation.StartSession(SessionId(testIdentifier(20)), 100, 100, PauseSetId.FIRST),
             LocalSyncMutation.StartSession(
                 SessionId(testIdentifier(21)),
                 100,
                 100 + SyncFormatLimits.MAX_SESSION_DURATION_MILLIS + 1,
+                PauseSetId.FIRST,
             ),
         )
 
@@ -764,7 +765,7 @@ class SyncWriterTest {
         )
 
         assertIs<RemoteAcceptanceResult.Accepted>(result)
-        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(listOf(domain), writer.projection().pauseSetDomains(PauseSetId.FIRST))
         assertEquals(emptyMap(), store.current.stagedBundles)
         assertEquals(testTransportProgress(2), store.current.transportProgress)
     }
@@ -1031,7 +1032,7 @@ class SyncWriterTest {
                 RemoteTransportReceipt(null, false),
             ),
         )
-        assertEquals(emptyList(), writer.projection().domains)
+        assertEquals(emptyList(), writer.projection().pauseSetDomains(PauseSetId.FIRST))
     }
 
     @Test

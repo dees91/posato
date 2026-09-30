@@ -8,8 +8,6 @@ internal fun SyncProjection.canonicalDigest(cryptoProvider: SyncCryptoProvider):
     val writer = CanonicalWriter()
     return try {
         writer.writeOwnedBytes("PSP1".encodeToByteArray())
-        writer.writeU32(domains.size.toLong())
-        domains.forEach { domain -> writer.writeCanonicalString(domain.canonicalValue) }
         if (applicationPolicyName == null) {
             writer.writeByte(0)
         } else {

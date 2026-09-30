@@ -40,7 +40,9 @@ class PolicyReconcilerSeedTest {
                     return store.recordIntents(write)
                 }
             }
-            val seed = backgroundScope.launch { PolicyReconciler(stalled).seedLocalExtras(workspaceId) }
+            val seed = backgroundScope.launch {
+                PolicyReconciler(stalled).seedLocalExtras(workspaceId, app.posato.feature.sync.domain.SyncReducer.reduce(emptyList()))
+            }
             entered.await()
             val removal = async {
                 store.withWriteGate {

@@ -25,10 +25,10 @@ class SyncWriterScheduleTest {
     @Test
     fun `given invalid schedule mutations when mutated then each is refused and the writer stays usable`() = runTest {
         listOf(
-            LocalSyncMutation.PutSchedule(scheduleId, "   ", 1, 540, 720, true),
-            LocalSyncMutation.PutSchedule(scheduleId, "Focus", 0, 540, 720, true),
-            LocalSyncMutation.PutSchedule(scheduleId, "Focus", 1, 540, 545, true),
-            LocalSyncMutation.PutSchedule(scheduleId, "Focus\u0000", 1, 540, 720, true),
+            LocalSyncMutation.PutSchedule(scheduleId, "   ", 1, 540, 720, true, PauseSetId.FIRST),
+            LocalSyncMutation.PutSchedule(scheduleId, "Focus", 0, 540, 720, true, PauseSetId.FIRST),
+            LocalSyncMutation.PutSchedule(scheduleId, "Focus", 1, 540, 545, true, PauseSetId.FIRST),
+            LocalSyncMutation.PutSchedule(scheduleId, "Focus\u0000", 1, 540, 720, true, PauseSetId.FIRST),
             LocalSyncMutation.SkipOccurrence(ScheduleOccurrenceRef(scheduleId, today.plusDays(401)), today),
             LocalSyncMutation.EndOccurrence(ScheduleOccurrenceRef(scheduleId, ScheduleDate(2023, 2, 29)), today),
             LocalSyncMutation.RemoveSchedule(ScheduleSyncId(checkNotNull(SyncIdentifier.fromExactBytes(ByteArray(16) { 1 })))),
@@ -57,7 +57,7 @@ class SyncWriterScheduleTest {
         val store = FakeSyncReplicaStore(snapshot())
 
         assertIs<LocalMutationResult.Success>(
-            openWriter(store).mutate(LocalSyncMutation.PutSchedule(scheduleId, "  Café ", 1, 540, 720, true)),
+            openWriter(store).mutate(LocalSyncMutation.PutSchedule(scheduleId, "  Café ", 1, 540, 720, true, PauseSetId.FIRST)),
         )
 
         val authored = store.current.acceptedBundles.values.map { it.operation.payload }.filterIsInstance<SyncOperationPayload.SchedulePut>()
@@ -80,7 +80,7 @@ class SyncWriterScheduleTest {
             writer.acceptRemote(remoteBundle(provider, optional).copyBytes(), RemoteTransportReceipt(testTransportProgress(2), false)),
         )
 
-        assertEquals(before.domains, writer.projection().domains)
+        assertEquals(before.pauseSetDomains(PauseSetId.FIRST), writer.projection().pauseSetDomains(PauseSetId.FIRST))
         assertEquals(before.schedules, writer.projection().schedules)
         assertIs<OpenSyncWriterResult.Success>(
             SyncOperationCore(FakeSyncReplicaStore(acceptedSnapshot(provider, listOf(registration, optional))), provider, SyncWallClock { 100 })

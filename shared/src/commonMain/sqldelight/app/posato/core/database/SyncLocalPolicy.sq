@@ -43,14 +43,13 @@ CREATE TABLE sync_policy_base_application (
 );
 
 selectIntents:
-SELECT sequence, workspace_id, kind, canonical_domain
+SELECT sequence, workspace_id, kind, set_id, canonical_domain, set_name
 FROM sync_policy_intent
-WHERE set_id = zeroblob(16) AND kind IN ('domain_present', 'domain_absent')
 ORDER BY sequence;
 
 insertIntent:
 INSERT INTO sync_policy_intent(workspace_id, kind, set_id, canonical_domain, set_name)
-VALUES (:workspaceId, :kind, zeroblob(16), :canonicalDomain, NULL);
+VALUES (:workspaceId, :kind, :setId, :canonicalDomain, :setName);
 
 deleteIntent:
 DELETE FROM sync_policy_intent
@@ -72,14 +71,13 @@ deleteBaseMarker:
 DELETE FROM sync_policy_base;
 
 selectBaseDomains:
-SELECT canonical_domain
+SELECT set_id, canonical_domain
 FROM sync_policy_base_domain
-WHERE set_id = zeroblob(16)
-ORDER BY canonical_domain;
+ORDER BY set_id, canonical_domain;
 
 insertBaseDomain:
 INSERT INTO sync_policy_base_domain(set_id, canonical_domain)
-VALUES (zeroblob(16), :canonicalDomain);
+VALUES (:setId, :canonicalDomain);
 
 deleteBaseDomains:
 DELETE FROM sync_policy_base_domain;

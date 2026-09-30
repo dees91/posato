@@ -1,6 +1,8 @@
 package app.posato.feature.targets.data
 
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.domain.ExactDomain
 import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.PolicySyncWrite
@@ -116,8 +118,8 @@ internal class SqlLocalTargetPolicyStore(
 
     override suspend fun replaceWithBase(
         expectedRevision: Long,
-        policy: TargetPolicy,
-        base: TargetPolicy,
+        sets: PauseSets,
+        base: Map<PauseSetId, List<ExactDomain>>,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         return withContext(databaseDispatcher) {
             when {
@@ -130,7 +132,7 @@ internal class SqlLocalTargetPolicyStore(
                 }
 
                 else -> {
-                    replaceValidRevisionWithBase(database, expectedRevision, policy, base).also { result ->
+                    replaceValidRevisionWithBase(database, expectedRevision, sets, base).also { result ->
                         if (result is LocalPolicyResult.Success) {
                             changes.tryEmit(Unit)
                         }
@@ -253,13 +255,13 @@ private suspend fun replaceValidSets(
 private suspend fun replaceValidRevisionWithBase(
     database: PosatoDatabase,
     expectedRevision: Long,
-    policy: TargetPolicy,
-    base: TargetPolicy,
+    sets: PauseSets,
+    base: Map<PauseSetId, List<ExactDomain>>,
 ): LocalPolicyResult<LocalTargetPolicyState> {
     return try {
         val state = database.transactionWithResult {
             database.advanceRevisionOrThrow(expectedRevision)
-            database.writePolicyRows(policy)
+            database.writeSetRows(sets)
             database.writeBaseRows(base)
             database.readStateOrThrow()
         }

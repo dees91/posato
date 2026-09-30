@@ -3,15 +3,18 @@ package app.posato.feature.sync.bootstrap
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.sync.domain.BundleId
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SyncAuditEntry
 import app.posato.feature.sync.domain.SyncAuditOutcome
 import app.posato.feature.sync.domain.SyncProjection
+import app.posato.feature.sync.domain.SynchronizedPauseSet
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
@@ -29,11 +32,8 @@ class PolicyReconcilerCapacityTest {
         val driver = database.openDriver()
         try {
             val store = SqlLocalTargetPolicyStore(PosatoDatabase(driver), StandardTestDispatcher(testScheduler))
-            val projection = SyncProjection(
+            val projection = firstSetProjection(
                 (1..1025).map { checkNotNull(ExactDomain.restore("site$it.example")) },
-                null,
-                emptyList(),
-                emptySet(),
                 emptyList(),
             )
             assertEquals(ReconcileOutcome.RefusedLocalCap, PolicyReconciler(store).apply(projection, null))
@@ -56,11 +56,8 @@ class PolicyReconcilerCapacityTest {
                 TargetPolicy.fromStoredValues(listOf("local.example"), null),
             ).policy
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replace(0, local))
-            val projection = SyncProjection(
+            val projection = firstSetProjection(
                 (1..1024).map { checkNotNull(ExactDomain.restore("site$it.example")) },
-                null,
-                emptyList(),
-                emptySet(),
                 emptyList(),
             )
             assertEquals(ReconcileOutcome.RefusedLocalCap, PolicyReconciler(store).apply(projection, null))
@@ -83,20 +80,19 @@ class PolicyReconcilerCapacityTest {
             val converged = assertIs<TargetPolicyValidationResult.Success>(
                 TargetPolicy.fromStoredValues((1..1024).map { "site$it.example" }, null),
             ).policy
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, converged, converged))
-            val projection = SyncProjection(
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(
+                store.replaceWithBase(0, PauseSets.firstSetOnly(converged.domains), mapOf(PauseSetId.FIRST to converged.domains)),
+            )
+            val projection = firstSetProjection(
                 (1..2048).map { checkNotNull(ExactDomain.restore("site$it.example")) },
-                null,
-                emptyList(),
-                emptySet(),
                 listOf(SyncAuditEntry(BundleId(testIdentifier(7)), SyncAuditOutcome.DOMAIN_CAPACITY)),
             )
             assertEquals(
                 ReconcileOutcome.RefusedWorkspaceFull,
-                PolicyReconciler(store).apply(projection, PolicySyncBase(converged)),
+                PolicyReconciler(store).apply(projection, PolicySyncBase(mapOf(PauseSetId.FIRST to converged.domains))),
             )
             assertEquals(1024, localDomains(store).size)
-            assertEquals(1024, assertIs<PolicySyncBase>(localBase(store)).policy.domains.size)
+            assertEquals(1024, assertIs<PolicySyncBase>(localBase(store)).domains.getValue(PauseSetId.FIRST).size)
             assertEquals(1, localRevision(store))
         } finally {
             driver.close()
@@ -115,25 +111,19 @@ class PolicyReconcilerCapacityTest {
                 TargetPolicy.fromStoredValues(listOf("local.example"), null),
             ).policy
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replace(0, local))
-            val over = SyncProjection(
+            val over = firstSetProjection(
                 (1..1024).map { checkNotNull(ExactDomain.restore("site$it.example")) },
-                null,
-                emptyList(),
-                emptySet(),
                 emptyList(),
             )
             assertEquals(ReconcileOutcome.RefusedLocalCap, PolicyReconciler(store).apply(over, null))
-            val under = SyncProjection(
+            val under = firstSetProjection(
                 listOf(checkNotNull(ExactDomain.restore("local.example"))) +
                     (1..9).map { checkNotNull(ExactDomain.restore("site$it.example")) },
-                null,
-                emptyList(),
-                emptySet(),
                 emptyList(),
             )
             assertEquals(ReconcileOutcome.AppliedClean, PolicyReconciler(store).apply(under, null))
             assertEquals(10, localDomains(store).size)
-            assertEquals(10, assertIs<PolicySyncBase>(localBase(store)).policy.domains.size)
+            assertEquals(10, assertIs<PolicySyncBase>(localBase(store)).domains.getValue(PauseSetId.FIRST).size)
             assertEquals(2, localRevision(store))
         } finally {
             driver.close()
@@ -163,4 +153,18 @@ class PolicyReconcilerCapacityTest {
             parameters = 0,
         ).value
     }
+}
+
+private fun firstSetProjection(
+    domains: List<ExactDomain>,
+    audit: List<SyncAuditEntry>,
+): SyncProjection {
+    return SyncProjection(
+        applicationPolicyName = null,
+        eligibleSessionStarts = emptyList(),
+        conflictedSessionIds = emptySet(),
+        audit = audit,
+        pauseSets = listOf(SynchronizedPauseSet(PauseSetId.FIRST, null, domains)),
+        defaultPauseSetId = PauseSetId.FIRST,
+    )
 }

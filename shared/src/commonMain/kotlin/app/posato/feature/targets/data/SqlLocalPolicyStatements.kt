@@ -3,6 +3,8 @@ package app.posato.feature.targets.data
 import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.domain.ScheduleWireRules
+import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncIdentifier
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ExactDomain
@@ -40,55 +42,47 @@ private suspend fun PosatoDatabase.writeApplicationPolicyName(name: ApplicationP
     name?.let { value -> localExactDomainPolicyQueries.insertApplicationPolicy(value.canonicalValue) }
 }
 
-internal suspend fun PosatoDatabase.writeBaseRows(base: TargetPolicy) {
+internal suspend fun PosatoDatabase.writeBaseRows(base: Map<PauseSetId, List<ExactDomain>>) {
     syncLocalPolicyQueries.deleteBaseMarker()
     syncLocalPolicyQueries.deleteBaseDomains()
     syncLocalPolicyQueries.deleteBaseApplication()
     syncLocalPolicyQueries.insertBaseMarker()
-    base.domains.forEach { domain ->
-        syncLocalPolicyQueries.insertBaseDomain(domain.canonicalValue)
-    }
-    base.applicationPolicyName?.let { name ->
-        syncLocalPolicyQueries.insertBaseApplication(name.canonicalValue)
+    base.forEach { (setId, domains) ->
+        domains.forEach { domain -> syncLocalPolicyQueries.insertBaseDomain(setId.value.copyBytes(), domain.canonicalValue) }
     }
 }
 
 internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
     write.intents.forEach { intent ->
-        when (intent) {
-            is StoredPolicyIntent.PresentDomain -> {
-                syncLocalPolicyQueries.insertIntent(
-                    workspaceId = write.workspaceId,
-                    kind = INTENT_DOMAIN_PRESENT,
-                    canonicalDomain = intent.domain.canonicalValue,
-                )
-            }
-
-            is StoredPolicyIntent.RemoveDomain -> {
-                syncLocalPolicyQueries.insertIntent(
-                    workspaceId = write.workspaceId,
-                    kind = INTENT_DOMAIN_ABSENT,
-                    canonicalDomain = intent.domain.canonicalValue,
-                )
-            }
+        val (kind, domain, name) = when (intent) {
+            is StoredPolicyIntent.PresentDomain -> Triple(INTENT_DOMAIN_PRESENT, intent.domain.canonicalValue, null)
+            is StoredPolicyIntent.RemoveDomain -> Triple(INTENT_DOMAIN_ABSENT, intent.domain.canonicalValue, null)
+            is StoredPolicyIntent.PutSet -> Triple(INTENT_SET_PUT, null, intent.name)
+            is StoredPolicyIntent.RemoveSet -> Triple(INTENT_SET_REMOVE, null, null)
+            is StoredPolicyIntent.ChooseDefault -> Triple(INTENT_SET_DEFAULT, null, null)
         }
+        syncLocalPolicyQueries.insertIntent(write.workspaceId, kind, intent.setIdOf().value.copyBytes(), domain, name)
     }
 }
 
 internal suspend fun PosatoDatabase.readIntentsOrThrow(): List<SequencedPolicyIntent> {
     return syncLocalPolicyQueries.selectIntents().awaitAsList().map { row ->
+        val setId = restoreSetId(row.set_id)
         val intent = when (row.kind) {
-            INTENT_DOMAIN_PRESENT -> {
-                StoredPolicyIntent.PresentDomain(restoreDomain(row.canonical_domain))
-            }
+            INTENT_DOMAIN_PRESENT -> StoredPolicyIntent.PresentDomain(restoreDomain(row.canonical_domain), setId)
 
-            INTENT_DOMAIN_ABSENT -> {
-                StoredPolicyIntent.RemoveDomain(restoreDomain(row.canonical_domain))
-            }
+            INTENT_DOMAIN_ABSENT -> StoredPolicyIntent.RemoveDomain(restoreDomain(row.canonical_domain), setId)
 
-            else -> {
-                fail(LocalPolicyFailure.CORRUPTION)
-            }
+            INTENT_SET_PUT -> StoredPolicyIntent.PutSet(
+                setId,
+                row.set_name?.takeIf(ScheduleWireRules::isValidName) ?: fail(LocalPolicyFailure.CORRUPTION),
+            )
+
+            INTENT_SET_REMOVE -> StoredPolicyIntent.RemoveSet(setId)
+
+            INTENT_SET_DEFAULT -> StoredPolicyIntent.ChooseDefault(setId)
+
+            else -> fail(LocalPolicyFailure.CORRUPTION)
         }
         SequencedPolicyIntent(row.sequence, row.workspace_id, intent)
     }
@@ -105,22 +99,14 @@ internal suspend fun PosatoDatabase.readBaseOrThrow(): PolicySyncBase? {
     if (syncReplicaQueries.selectSyncReplicaState().awaitAsList().isEmpty()) {
         fail(LocalPolicyFailure.CORRUPTION)
     }
-    val domains = syncLocalPolicyQueries.selectBaseDomains().awaitAsList()
-    val names = syncLocalPolicyQueries.selectBaseApplicationName().awaitAsList()
-    if (names.size > 1) {
+    val domains = syncLocalPolicyQueries.selectBaseDomains().awaitAsList().groupBy(
+        keySelector = { row -> restoreSetId(row.set_id) },
+        valueTransform = { row -> restoreDomain(row.canonical_domain) },
+    )
+    if (domains.values.flatten().toSet().size > SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS) {
         fail(LocalPolicyFailure.CORRUPTION)
     }
-    return when (
-        val validation = TargetPolicy.fromStoredValues(domains, names.singleOrNull())
-    ) {
-        is TargetPolicyValidationResult.Success -> {
-            PolicySyncBase(validation.policy)
-        }
-
-        is TargetPolicyValidationResult.Failure -> {
-            fail(LocalPolicyFailure.CORRUPTION)
-        }
-    }
+    return PolicySyncBase(domains)
 }
 
 internal suspend fun PosatoDatabase.readStateOrThrow(): LocalTargetPolicyState {
@@ -151,3 +137,6 @@ internal fun fail(reason: LocalPolicyFailure): Nothing {
 
 private const val INTENT_DOMAIN_PRESENT = "domain_present"
 private const val INTENT_DOMAIN_ABSENT = "domain_absent"
+private const val INTENT_SET_PUT = "set_put"
+private const val INTENT_SET_REMOVE = "set_remove"
+private const val INTENT_SET_DEFAULT = "set_default"

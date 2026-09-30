@@ -2,9 +2,11 @@ package app.posato.feature.targets.data
 
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ApplicationPolicyNameResult
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.SequencedPolicyIntent
@@ -140,11 +142,11 @@ class SqlLocalPolicySyncStoreTest {
             seedReplicaState(driver)
             val store = SqlLocalTargetPolicyStore(PosatoDatabase(driver), testDispatcher())
             val policy = testPolicy("applied.example", groupName = "Example group")
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, policy, policy))
-            assertEquals(policy, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.policy)
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, policy.asSets(), policy.asBase()))
+            assertEquals(policy.domains, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.domains?.get(PauseSetId.FIRST))
             val next = testPolicy("next.example")
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(1, next, next))
-            assertEquals(next, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.policy)
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(1, next.asSets(), next.asBase()))
+            assertEquals(next.domains, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.domains?.get(PauseSetId.FIRST))
         } finally {
             driver.close()
             testDatabase.delete()
@@ -176,13 +178,13 @@ class SqlLocalPolicySyncStoreTest {
             seedReplicaState(driver)
             val store = SqlLocalTargetPolicyStore(PosatoDatabase(driver), testDispatcher())
             val kept = testPolicy("kept.example")
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, kept, kept))
-            val conflicted = store.replaceWithBase(7, testPolicy("lost.example"), testPolicy("lost.example"))
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, kept.asSets(), kept.asBase()))
+            val conflicted = store.replaceWithBase(7, testPolicy("lost.example").asSets(), testPolicy("lost.example").asBase())
             assertIs<LocalPolicyResult.Failure>(conflicted)
             assertEquals(LocalPolicyFailure.REVISION_CONFLICT, conflicted.reason)
             val current = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.read()).value
             assertEquals(kept, current.policy)
-            assertEquals(kept, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.policy)
+            assertEquals(kept.domains, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.domains?.get(PauseSetId.FIRST))
         } finally {
             driver.close()
             testDatabase.delete()
@@ -265,7 +267,7 @@ class SqlLocalPolicySyncStoreTest {
             }
             runCurrent()
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(
-                store.replaceWithBase(0, testPolicy("signalled.example"), testPolicy("signalled.example")),
+                store.replaceWithBase(0, testPolicy("signalled.example").asSets(), testPolicy("signalled.example").asBase()),
             )
             runCurrent()
             assertEquals(1, received.size)
@@ -332,4 +334,12 @@ private fun SqlDriver.executeSql(sql: String) {
         sql = sql,
         parameters = 0,
     ).value
+}
+
+private fun TargetPolicy.asSets(): PauseSets {
+    return PauseSets.firstSetOnly(domains)
+}
+
+private fun TargetPolicy.asBase(): Map<PauseSetId, List<ExactDomain>> {
+    return mapOf(PauseSetId.FIRST to domains)
 }
