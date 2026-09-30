@@ -2306,3 +2306,10 @@ to scope, feasibility, or delivery.
   ownership engine; see `topics/macos-enforcement.md`.
 - `user-confirmed`: ADR 0004 now says a confirmed-absent recorded service
   holds no Posato-owned tuple.
+
+## [2026-09-30] planning | Loopback proxy exceptions in release 1.3
+
+- `user-confirmed`: `MACOS-024` joins release 1.3 wave 2 (idea 23). A
+  session's system proxy captured local Codex MCP connections, which failed
+  with an empty response; the row adds loopback exceptions while the proxy is
+  applied and restores the previous exceptions afterwards.
