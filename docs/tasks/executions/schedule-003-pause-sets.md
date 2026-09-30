@@ -80,6 +80,13 @@
   plan review.
 - **Optional, folded:** kind 19 once per database; precise `PauseClaims`
   wording; per-part edit copy.
+- **Maintainer review (PR #115, 2026-09-30):** one P1, accepted. The 1.3
+  iPhone extension can run before the app writes a version-2 table; it now
+  reads a valid version-1 table as the first set instead of clearing, and
+  the plan adds an upgrade-without-opening-the-app run on the test iPhone.
+  The correction's Standard review added one Required rule, folded: the
+  app deletes the version-1 table with its first version-2 commit, and a
+  version-2 table that is unreadable never falls back to version 1.
 
 ## Verification
 

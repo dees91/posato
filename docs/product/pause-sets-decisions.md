@@ -186,7 +186,17 @@ and changes from a device that has not updated yet still apply.
   paused. The extension applies, at `intervalDidStart`, the union of the
   running occurrences' sets plus what they already hold, and, at
   `intervalDidEnd`, keeps what another running part still needs. An
-  unreadable or version-1 table clears, as today.
+  unreadable table clears, as today.
+- **Upgrade before the app opens.** An App Store update does not open
+  Posato, and the extension's callbacks run on their own. Until the app
+  commits a version-2 table, the 1.3 extension keeps reading a valid
+  version-1 table as the first set: its global items belong to the first
+  set, every schedule in it uses the first set, and its running entries
+  keep what they paused. Existing schedules therefore keep starting, and an
+  earlier occurrence ending never releases a later one. The app deletes
+  the version-1 table in the same step as its first version-2 commit. Once
+  a version-2 table exists, an unreadable one clears as today and never
+  falls back to version 1.
 - The manual session keeps its own named store and the schedules share
   theirs; iOS combines named stores. `hypothesis`: the system union of the
   two stores is the most restrictive of both; `SCHEDULE-004` verifies it on
@@ -284,6 +294,12 @@ Verification, unattended (`AGENTS.md`):
   consent, per-set app choice, websites-only start, overlap of a manual
   session and a schedule with different sets, and extension start and end
   with Posato closed.
+- **Upgrade without opening the app** (test iPhone): install a 1.2 build
+  with two overlapping schedules, update to 1.3 while the earlier
+  occurrence runs, and do not open Posato. When the earlier one ends, the
+  later one stays blocked; a start after that still applies; opening
+  Posato afterwards writes the version-2 table without a gap and the
+  version-1 table is gone.
 - **Cross-device:** a set created on the Mac appears on the iPhone with no
   apps chosen there, and a schedule using it starts with its websites.
 
