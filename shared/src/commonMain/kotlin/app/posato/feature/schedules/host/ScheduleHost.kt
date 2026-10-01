@@ -74,6 +74,7 @@ internal class ScheduleHost(
     private val triggers = Channel<Unit>(Channel.CONFLATED)
     private val announced = MutableStateFlow<Set<Pair<OccurrenceKey, Int>>>(emptySet())
     private var unknownReads = 0
+    private var notPausedYet = 0
 
     private val mutableAnyEnabled = MutableStateFlow(false)
 
@@ -168,7 +169,13 @@ internal class ScheduleHost(
         val hadConsent = ports.hadConsent()
         // A held claim is kept current: paused items and the latest end may have changed since it was applied.
         val state = if (holdsRestrictions()) apply(step.running, snapshot) else attempt(step.running, snapshot)
-        val pause = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)?.withoutAnnounced(announced.value)
+        val parts = step.running.map { occurrence ->
+            val plan = snapshot.schedules.firstOrNull { stored -> stored.plan.id == occurrence.key.schedule }?.plan
+            ScheduledPart(occurrence.name, plan?.setId, occurrence.endEpochMillis)
+        }
+        val pause = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)
+            ?.copy(parts = parts, notPausedYet = notPausedYet)
+            ?.withoutAnnounced(announced.value)
         mutablePause.value = if (ports.announcesStarts) pause else pause?.copy(unannounced = emptySet())
     }
 
@@ -209,7 +216,9 @@ internal class ScheduleHost(
         running: List<ScheduleOccurrence>,
         snapshot: ScheduleSnapshot,
     ): ScheduledPauseState {
-        val request = composeScheduledRequest(running, snapshot, ports)
+        val composed = composeScheduledRequest(running, snapshot, ports)
+        notPausedYet = composed.notPausedYet
+        val request = composed.request
         if (!ports.claimsCompose && request.domains.isEmpty() && request.mappingIds.isEmpty()) {
             ports.claims.releaseSchedule()
             return ScheduledPauseState.APPLIED

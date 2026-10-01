@@ -11,6 +11,12 @@ import app.posato.feature.session.data.PART_OCCURRENCE
 import app.posato.feature.session.data.RetainedItems
 import app.posato.feature.session.data.RetainedPart
 
+/** The request for the running occurrences and how many of their added items wait for room. */
+internal class ScheduledComposition(
+    val request: EnforcementRequest,
+    val notPausedYet: Int,
+)
+
 /**
  * The request for the running occurrences: each pauses its own schedule's set and what it already holds, all
  * together until the latest end, within the device's limits. What each occurrence now pauses is kept before the
@@ -20,7 +26,7 @@ internal suspend fun composeScheduledRequest(
     running: List<ScheduleOccurrence>,
     snapshot: ScheduleSnapshot,
     ports: ScheduleHostPorts,
-): EnforcementRequest {
+): ScheduledComposition {
     val parts = running.map { occurrence ->
         val setId = snapshot.schedules.firstOrNull { stored -> stored.plan.id == occurrence.key.schedule }?.plan?.setId
         val selection = ports.targets(setId).scheduleSelection()
@@ -41,13 +47,14 @@ internal suspend fun composeScheduledRequest(
     }
     val first = running.minBy(ScheduleOccurrence::startEpochMillis)
     val date = first.key.date
-    return EnforcementRequest(
+    val request = EnforcementRequest(
         domains = plan.items.domains.sorted(),
         mappingIds = plan.items.appIds.sorted(),
         sessionId = "schedule-${first.key.schedule.hex}-${date.year}-${date.month}-${date.day}",
         sessionStartEpochMillis = first.startEpochMillis,
         sessionEndEpochMillis = plan.endEpochMillis,
     )
+    return ScheduledComposition(request, plan.deferred.values.sum())
 }
 
 internal fun ScheduleOccurrence.retainedPart(): RetainedPart {

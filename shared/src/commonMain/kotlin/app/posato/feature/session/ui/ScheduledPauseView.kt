@@ -21,6 +21,9 @@ internal data class ScheduledPauseView(
     val name: String,
     val until: String,
     val state: ScheduledPauseState,
+    /** Each running part: "Set: Work, until 17:00" for a manual session, "Evening (schedule), Set: Leisure, until 22:00". */
+    val parts: List<String> = emptyList(),
+    val notPausedYet: Int = 0,
 ) {
     val restricts: Boolean
         get() {
@@ -39,6 +42,7 @@ internal fun ScheduledPauseRunning(
     onEnd: () -> Unit,
 ) {
     PosatoEndTime("Until ${view.until}", supportingText = "${view.name} is running on this device.")
+    view.parts.forEach { part -> PosatoCaption(part) }
     PosatoButton(onEnd, style = PosatoButtonStyle.Quiet) { Text("End early") }
 }
 
@@ -102,4 +106,10 @@ internal fun ScheduledEarlyEndContent(
         PosatoButton(onConfirm) { Text("End pause") }
         PosatoButton(onCancel, style = PosatoButtonStyle.Quiet) { Text("Keep pausing") }
     }
+}
+
+/** Added items that this device's limits leave unpaused for now. */
+@Composable
+internal fun NotPausedYetNotice(notice: String?) {
+    notice?.let { text -> PosatoNotice(tone = PosatoTone.Caution) { Text(text) } }
 }

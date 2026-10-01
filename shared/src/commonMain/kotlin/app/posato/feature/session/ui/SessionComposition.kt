@@ -27,6 +27,9 @@ import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
 import dev.zacsweers.metro.SingleIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * The manual session as one running part: its set's websites now plus every website it already paused,
@@ -53,6 +56,10 @@ internal class SessionComposition(
     )
 
     private var last: Pair<SessionId, List<String>>? = null
+    private val mutableNotPausedYet = MutableStateFlow(0)
+
+    /** How many items an edit added that this device's limits leave unpaused for now; each compose tries again. */
+    val notPausedYet: StateFlow<Int> = mutableNotPausedYet.asStateFlow()
 
     /** Whether the session's composition changed since it was last applied, such as after a set edit. */
     suspend fun differs(record: SessionRecord): Boolean {
@@ -85,6 +92,7 @@ internal class SessionComposition(
             limits,
         )
         retention?.hold(part, RetainedItems(plan.items.domains, keep(plan.items.appIds - keptIds)))
+        mutableNotPausedYet.value = plan.deferred[PART_SESSION] ?: 0
         val domains = plan.items.domains.sorted()
         last = record.sessionId to domains
         val composed = TargetPolicy.fromStoredValues(domains, policy.applicationPolicyName?.canonicalValue)
@@ -109,6 +117,17 @@ private fun ByteArray.toHex(): String {
 
 private const val BYTE_MASK: Int = 0xFF
 private const val HEX_RADIX: Int = 16
+
+/** Says how many added items wait for room under this device's limits, and that they pause once it frees up. */
+internal fun notPausedYetText(
+    count: Int,
+    deviceNoun: String,
+    limits: PauseLimits = devicePauseLimits,
+): String {
+    val capacity = if (limits === PauseLimits.MAC) "1,024 websites and 64 apps" else "25 websites and 50 apps"
+    val subject = if (count == 1) "1 added item isn't" else "$count added items aren't"
+    return "$subject paused yet: this $deviceNoun pauses up to $capacity at once. They pause once there's room."
+}
 
 /** The session's targets: composed with what it already paused when a composition is set, else its set's. */
 internal suspend fun SessionComposition?.targetsFor(

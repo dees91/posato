@@ -289,6 +289,8 @@ class PosatoApplication internal constructor(
                 windowRequest = windowRequest,
                 onConsumeWindowRequest = onConsumeWindowRequest,
                 scheduledPauses = scheduledPauses,
+                notPausedYet = sessionComposition.notPausedYet,
+                deviceNoun = device.noun,
             )
 
             ApplicationDestination.SCHEDULES -> SchedulesDestination(scheduleInputs, device, layout, macSetupState, modifier)
