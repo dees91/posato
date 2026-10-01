@@ -25,8 +25,8 @@ the next, and the stack merges only after slice 5 (`user-confirmed`
    4. Migration tests build earlier schemas from tracked history with
    synthetic rows (`user-confirmed`); a 1.2 build decides the downgrade.
 4. **Pause sets UI** (done, PR #124) per `DESIGN.md` "Release 1.3 pause
-   sets", proven by E2E on a Tart VM and the test iPhone; screenshots go
-   to the maintainer gate.
+   sets", proven by E2E on a Tart VM and the test iPhone; screenshots
+   accepted at the maintainer gate (`user-confirmed` 2026-10-01).
 5. **Hosts.** Mac `PauseClaims` composes one request from all running
    parts (union plus retention, latest end) and checks limits before any
    clear; iPhone App Group table version 2 with the extension union and
