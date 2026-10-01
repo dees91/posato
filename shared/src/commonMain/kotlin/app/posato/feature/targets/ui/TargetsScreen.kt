@@ -2,6 +2,7 @@ package app.posato.feature.targets.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
@@ -13,6 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,6 +25,7 @@ import androidx.navigationevent.compose.NavigationBackHandler
 import androidx.navigationevent.compose.rememberNavigationEventState
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
+import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoNotice
 import app.posato.core.designsystem.PosatoSectionHeader
 import app.posato.core.designsystem.PosatoSpace
@@ -30,9 +33,11 @@ import app.posato.core.designsystem.PosatoTheme
 import app.posato.core.designsystem.PosatoTone
 import app.posato.core.navigation.PosatoNavStack
 import app.posato.core.navigation.rememberLastPresent
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.data.choiceSet
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import org.jetbrains.compose.resources.stringResource
@@ -44,13 +49,16 @@ internal fun TargetsScreen(
     modifier: Modifier = Modifier,
     browser: TargetsBrowserState = remember { TargetsBrowserState() },
     deviceLabel: String = "On this device only",
-    viewModel: TargetsViewModel = viewModel { TargetsViewModel(store, applicationMappings) },
+    setId: PauseSetId = PauseSetId.FIRST,
+    header: TargetsHeader = TargetsHeader(),
+    viewModel: TargetsViewModel = viewModel(key = setId.choiceSet().hex) { TargetsViewModel(store, applicationMappings, setId) },
 ) {
     val state by viewModel.uiState.collectAsState()
     TargetsScreen(
         state = state,
         browser = browser,
         deviceLabel = deviceLabel,
+        header = header,
         onSubmitWebsites = { input, id -> viewModel.submitWebsites(input, id, preserveEditingDomain = !browser.showingWebsiteEditor) },
         onSubmitDomain = viewModel::submitDomain,
         onEditDomain = { domain ->
@@ -75,6 +83,7 @@ internal fun TargetsScreen(
     modifier: Modifier = Modifier,
     browser: TargetsBrowserState = remember { TargetsBrowserState() },
     deviceLabel: String = "On this device only",
+    header: TargetsHeader = TargetsHeader(),
     onSubmitWebsites: (String, Long) -> Unit = { _, _ -> },
     onSubmitDomain: (String) -> Unit = {},
     onEditDomain: (String) -> Unit = {},
@@ -95,12 +104,14 @@ internal fun TargetsScreen(
         }
     }
     Column(modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(PosatoSpace.Medium)) {
-        PosatoSectionHeader(
-            titleContent = { Text("Paused items", style = MaterialTheme.typography.headlineSmall) },
-            actionContent = {
-                PosatoButton(onClick = { focus.clearFocus() }, style = PosatoButtonStyle.Quiet) { Text("Done") }
-            },
-        )
+        TargetsHeaderContent(header) { focus.clearFocus() }
+        if (state.setMissing) {
+            PosatoNotice { Text("This set was deleted on another device.") }
+            return@Column
+        }
+        if (header.inUse) {
+            PosatoCaption("Added items pause now. Removed items stay paused until the pause using this set ends.")
+        }
         if (state.isLoading && !state.hasLoaded) {
             CircularProgressIndicator()
             return@Column
@@ -144,6 +155,33 @@ internal fun TargetsScreen(
         }
     }
 }
+
+@Composable
+private fun TargetsHeaderContent(
+    header: TargetsHeader,
+    onDone: () -> Unit,
+) {
+    header.onBack?.let { onBack ->
+        PosatoButton(onClick = onBack, style = PosatoButtonStyle.Quiet) { Text("Back to pause sets") }
+    }
+    PosatoSectionHeader(
+        titleContent = { Text(header.title, style = MaterialTheme.typography.headlineSmall) },
+        actionContent = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                PosatoButton(onClick = onDone, style = PosatoButtonStyle.Quiet) { Text("Done") }
+                header.menuContent?.invoke()
+            }
+        },
+    )
+}
+
+/** What the set screen shows above its tabs: the set's name, a way back to the list, and its actions. */
+internal class TargetsHeader(
+    val title: String = "Paused items",
+    val onBack: (() -> Unit)? = null,
+    val inUse: Boolean = false,
+    val menuContent: (@Composable () -> Unit)? = null,
+)
 
 /** Paused items' screens: the browser, with a saved website's editor above it. */
 private enum class TargetsRoute {

@@ -47,6 +47,7 @@ internal data class SessionUiState(
     val enforcement: EnforcementState = EnforcementState.Inactive,
     val enforced: EnforcedSet = EnforcedSet(),
     val enforcementBusy: Boolean = false,
+    val setId: PauseSetId? = null,
 ) {
     override fun toString(): String {
         return "SessionUiState(redacted)"
@@ -178,6 +179,7 @@ internal fun createSessionUiState(
         enforcement = enforcementView.state,
         enforced = enforcementView.enforced,
         enforcementBusy = enforcementView.busy,
+        setId = active?.record?.setId ?: targets.setId,
     )
 }
 

@@ -43,6 +43,7 @@ import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
@@ -60,8 +61,8 @@ internal fun SessionScreen(
     clock: SessionClock,
     timeFormat: SessionTimeFormat,
     owner: SessionTransitionOwner,
-    onOpenPausedItems: () -> Unit,
-    onEditPausedItems: (TargetsCategory) -> Unit,
+    onOpenPausedItems: (PauseSetId?) -> Unit,
+    onEditPausedItems: (PauseSetId?, TargetsCategory) -> Unit,
     modifier: Modifier = Modifier,
     layout: PosatoLayout = PosatoLayout.Compact,
     deviceLabel: String = "On this device",
@@ -127,8 +128,8 @@ internal fun SessionScreen(
         onConfirmEarlyEnd = viewModel::confirmEarlyEnd,
         onRetry = viewModel::retry,
         onRetryEnforcement = viewModel::retryEnforcement,
-        onOpenPausedItems = onOpenPausedItems,
-        onEditPausedItems = onEditPausedItems,
+        onOpenPausedItems = { onOpenPausedItems(state.setId) },
+        onEditPausedItems = { category -> onEditPausedItems(state.setId, category) },
         modifier = modifier,
         layout = layout,
         deviceLabel = deviceLabel,

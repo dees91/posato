@@ -290,8 +290,9 @@ owns a real window while exposing no accessibility server. Consequences:
   "onFailure": { "screenshot": true, "snapshot": true },
   "continueOnFailure": false,
   "steps": [
-    { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Paused items", "role": "button" }, "timeoutSeconds": 30 },
-    { "name": "open-paused-items", "action": "tap", "query": { "text": "Paused items", "role": "button" } },
+    { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Pause sets", "role": "button" }, "timeoutSeconds": 30 },
+    { "name": "open-pause-sets", "action": "tap", "query": { "text": "Pause sets", "role": "button" } },
+    { "name": "open-first-set", "action": "tap", "query": { "textContains": "My set", "role": "button" } },
     { "name": "targets-ready", "action": "waitFor", "state": "exists", "query": { "text": "Search" }, "timeoutSeconds": 30 },
     { "name": "enter-domain", "action": "type", "query": { "role": "textField" }, "text": "example.com", "clear": true, "submit": true },
     { "name": "finish-adding", "action": "tap", "query": { "text": "Done", "role": "button" } },

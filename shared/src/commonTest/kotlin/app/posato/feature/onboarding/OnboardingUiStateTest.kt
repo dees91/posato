@@ -516,6 +516,14 @@ private class FakeSetupStore(
         completed++
         return LocalSetupResult.Success(Unit)
     }
+
+    override suspend fun readPauseSetNoticeShown(): LocalSetupResult<Boolean> {
+        return LocalSetupResult.Success(false)
+    }
+
+    override suspend fun markPauseSetNoticeShown(): LocalSetupResult<Unit> {
+        return LocalSetupResult.Success(Unit)
+    }
 }
 
 private class FailingSetupStore : LocalSetupStore {
@@ -524,6 +532,14 @@ private class FailingSetupStore : LocalSetupStore {
     }
 
     override suspend fun markComplete(): LocalSetupResult<Unit> {
+        return LocalSetupResult.Failure(LocalSetupFailure.STORAGE_FAILURE)
+    }
+
+    override suspend fun readPauseSetNoticeShown(): LocalSetupResult<Boolean> {
+        return LocalSetupResult.Failure(LocalSetupFailure.STORAGE_FAILURE)
+    }
+
+    override suspend fun markPauseSetNoticeShown(): LocalSetupResult<Unit> {
         return LocalSetupResult.Failure(LocalSetupFailure.STORAGE_FAILURE)
     }
 }

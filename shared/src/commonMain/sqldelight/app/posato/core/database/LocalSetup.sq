@@ -2,10 +2,22 @@ CREATE TABLE local_setup_state (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
 );
 
+CREATE TABLE local_pause_set_notice (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
+);
+
 selectSetupState:
 SELECT singleton
 FROM local_setup_state;
 
 markSetupComplete:
 INSERT OR REPLACE INTO local_setup_state(singleton)
+VALUES (1);
+
+selectPauseSetNotice:
+SELECT singleton
+FROM local_pause_set_notice;
+
+markPauseSetNoticeShown:
+INSERT OR REPLACE INTO local_pause_set_notice(singleton)
 VALUES (1);

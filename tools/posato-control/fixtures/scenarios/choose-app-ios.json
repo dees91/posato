@@ -4,7 +4,8 @@
   "defaults": { "timeoutSeconds": 20 },
   "onFailure": { "screenshot": true, "snapshot": true },
   "steps": [
-    { "name": "open-paused-items", "action": "tap", "query": { "text": "Paused items", "role": "button" } },
+    { "name": "open-paused-items", "action": "tap", "query": { "text": "Pause sets", "role": "button" } },
+    { "name": "open-first-set", "action": "tap", "query": { "textContains": "My set", "role": "button" } },
     { "name": "apps-tab", "action": "tap", "query": { "textContains": "Apps", "role": "button" } },
     { "name": "choose", "action": "tap", "query": { "text": "Choose apps", "role": "button" } },
     { "name": "search-ready", "action": "waitFor", "state": "exists", "query": { "text": "Search" } },

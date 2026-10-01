@@ -1,5 +1,6 @@
 package app.posato.feature.targets.ui
 
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
 import app.posato.feature.targets.data.LocalPolicyFailure
@@ -75,10 +76,13 @@ internal fun MutableStateFlow<ApplicationPolicyEditorState>.resetApplicationEdit
     update { state -> ApplicationPolicyEditorState(session = state.session + 1) }
 }
 
-internal fun MutableStateFlow<ExactDomainEditorState>.reconcileDomainEditorWith(snapshot: LocalTargetPolicyState) {
+internal fun MutableStateFlow<ExactDomainEditorState>.reconcileDomainEditorWith(
+    snapshot: LocalTargetPolicyState,
+    setId: PauseSetId,
+) {
     update { state ->
         val editingDomain = state.editingDomain
-        val remainsPresent = editingDomain == null || snapshot.policy.domains.any { domain -> domain.canonicalValue == editingDomain }
+        val remainsPresent = editingDomain == null || snapshot.sets.domainsOf(setId).any { domain -> domain.canonicalValue == editingDomain }
         if (remainsPresent) state else ExactDomainEditorState(session = state.session + 1)
     }
 }
@@ -91,6 +95,7 @@ internal fun MutableStateFlow<ApplicationPolicyEditorState>.reconcileApplication
 }
 
 internal fun createUiState(
+    setId: PauseSetId,
     policyState: TargetsPolicyState,
     domainEditorState: ExactDomainEditorState,
     applicationEditorState: ApplicationPolicyEditorState,
@@ -98,9 +103,10 @@ internal fun createUiState(
     applicationMappingsState: ApplicationMappingsState,
 ): TargetsUiState {
     val policy = policyState.snapshot?.policy
+    val domains = policyState.snapshot?.sets?.domainsOf(setId).orEmpty()
 
     return TargetsUiState(
-        domains = policy?.domains.orEmpty().map { domain -> domain.canonicalValue }.toPersistentList(),
+        domains = domains.map { domain -> domain.canonicalValue }.toPersistentList(),
         domainEditorSession = domainEditorState.session,
         editingDomain = domainEditorState.editingDomain,
         domainInputFailure = domainEditorState.failure,
@@ -120,6 +126,7 @@ internal fun createUiState(
         applicationMappingsAccess = applicationMappingsState.access,
         isLoading = policyState.isLoading,
         hasLoaded = policyState.snapshot != null,
+        setMissing = policyState.snapshot?.sets?.sets?.none { set -> set.id == setId } == true,
     )
 }
 
@@ -144,6 +151,6 @@ internal fun LocalPolicyFailure.toSaveFailure(): TargetsOperationFailure {
 }
 
 internal fun TargetsUiState.canMutatePolicy(): Boolean {
-    return hasLoaded && !isLoading && !isSaving && !isMutatingApplicationMappings &&
+    return hasLoaded && !setMissing && !isLoading && !isSaving && !isMutatingApplicationMappings &&
         (operationFailure == null || operationFailure == TargetsOperationFailure.SAVE_FAILED)
 }

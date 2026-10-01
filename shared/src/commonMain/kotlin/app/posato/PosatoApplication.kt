@@ -65,9 +65,9 @@ import app.posato.feature.sync.ui.SyncBootstrapUiState
 import app.posato.feature.sync.ui.rememberSyncBootstrapUiState
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
-import app.posato.feature.targets.ui.TargetsBrowserState
-import app.posato.feature.targets.ui.TargetsCategory
-import app.posato.feature.targets.ui.TargetsScreen
+import app.posato.feature.targets.ui.PauseSetsDestination
+import app.posato.feature.targets.ui.PauseSetsInputs
+import app.posato.feature.targets.ui.PauseSetsNavigation
 import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
@@ -96,6 +96,15 @@ class PosatoApplication internal constructor(
         bootstrap,
         applicationMappings,
         onboardingDependencies.applicationAccess,
+    )
+    private val pauseSetsInputs = PauseSetsInputs(
+        store = store,
+        applicationMappings = applicationMappings,
+        schedules = schedules.store,
+        sessionStatus = sessionOwner.status,
+        scheduledPause = scheduledPauses.pause,
+        setupStore = onboardingDependencies.setupStore,
+        linked = { bootstrap.state.value.linked },
     )
 
     @Composable
@@ -254,8 +263,14 @@ class PosatoApplication internal constructor(
                 clock,
                 timeFormat,
                 sessionOwner,
-                onOpenPausedItems = { destination = ApplicationDestination.TARGETS },
-                onEditPausedItems = navigation.browser.editRoute { destination = ApplicationDestination.TARGETS },
+                onOpenPausedItems = { setId ->
+                    destination = ApplicationDestination.TARGETS
+                    setId?.let(navigation.pauseSets::open)
+                },
+                onEditPausedItems = { setId, category ->
+                    destination = ApplicationDestination.TARGETS
+                    setId?.let { navigation.pauseSets.open(it, category) }
+                },
                 modifier = modifier,
                 layout = layout,
                 deviceLabel = deviceLabel,
@@ -269,12 +284,11 @@ class PosatoApplication internal constructor(
 
             ApplicationDestination.SCHEDULES -> SchedulesDestination(scheduleInputs, device, layout, macSetupState, modifier)
 
-            ApplicationDestination.TARGETS -> TargetsScreen(
-                store,
-                applicationMappings,
+            ApplicationDestination.TARGETS -> PauseSetsDestination(
+                pauseSetsInputs,
+                navigation.pauseSets,
+                device.noun,
                 modifier.padding(horizontal = layout.inset, vertical = PosatoSpace.Medium),
-                navigation.browser,
-                deviceLabel,
             )
         }
     }
@@ -320,17 +334,6 @@ class PosatoApplication internal constructor(
         }
     }
 
-    private fun TargetsBrowserState.editRoute(onOpen: () -> Unit): (TargetsCategory) -> Unit {
-        return { category ->
-            this.category = category
-            if (category == TargetsCategory.WEBSITES) {
-                searching = false
-                showingWebsiteEditor = false
-            }
-            onOpen()
-        }
-    }
-
     @Composable
     private fun OnboardingHost(
         onboarding: OnboardingUiState,
@@ -368,7 +371,7 @@ class PosatoApplication internal constructor(
 
 @Stable
 public class ApplicationNavigation {
-    internal val browser: TargetsBrowserState = TargetsBrowserState()
+    internal val pauseSets: PauseSetsNavigation = PauseSetsNavigation()
     internal var destination: ApplicationDestination by mutableStateOf(ApplicationDestination.SESSION)
     internal var informationPage: ApplicationInformationPage? by mutableStateOf(null)
         private set
@@ -377,7 +380,7 @@ public class ApplicationNavigation {
     internal fun select(selected: ApplicationDestination) {
         destination = selected
         showInformation(null)
-        if (selected == ApplicationDestination.TARGETS) browser.showingWebsiteEditor = true
+        if (selected == ApplicationDestination.TARGETS) pauseSets.openSet?.let { pauseSets.browserFor(it).showingWebsiteEditor = true }
     }
 
     internal fun showInformation(page: ApplicationInformationPage?) {

@@ -31,6 +31,11 @@ internal interface LocalSetupStore {
     suspend fun read(): LocalSetupResult<SetupCompletion>
 
     suspend fun markComplete(): LocalSetupResult<Unit>
+
+    /** Whether this device already told a linked workspace to update its other devices for pause sets. */
+    suspend fun readPauseSetNoticeShown(): LocalSetupResult<Boolean>
+
+    suspend fun markPauseSetNoticeShown(): LocalSetupResult<Unit>
 }
 
 internal class SqlLocalSetupStore(
@@ -54,6 +59,18 @@ internal class SqlLocalSetupStore(
     override suspend fun markComplete(): LocalSetupResult<Unit> {
         return databaseCall {
             database.localSetupQueries.markSetupComplete()
+        }
+    }
+
+    override suspend fun readPauseSetNoticeShown(): LocalSetupResult<Boolean> {
+        return databaseCall {
+            database.localSetupQueries.selectPauseSetNotice().awaitAsList().isNotEmpty()
+        }
+    }
+
+    override suspend fun markPauseSetNoticeShown(): LocalSetupResult<Unit> {
+        return databaseCall {
+            database.localSetupQueries.markPauseSetNoticeShown()
         }
     }
 

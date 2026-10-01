@@ -920,6 +920,10 @@ private class FakeTargetPolicyStore(
         syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         replaceCalls++
+        if (cancelNextReplace) {
+            cancelNextReplace = false
+            throw CancellationException("synthetic cancellation")
+        }
         if (expectedRevision != state.revision) {
             return LocalPolicyResult.Failure(LocalPolicyFailure.REVISION_CONFLICT)
         }
