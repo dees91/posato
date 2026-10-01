@@ -12,6 +12,7 @@ enum ScheduleMonitorEvents {
     static func handleIntervalStart(
         activity: DeviceActivityName,
         store: ScheduleShieldStore,
+        sessionStore: ScheduleShieldStore? = nil,
         files: ScheduleMonitorFileStore?,
         poster: ScheduleNoticePoster,
         caps: ScheduleCapRegistrar? = nil,
@@ -24,10 +25,10 @@ enum ScheduleMonitorEvents {
             in: file, at: time, calendar: calendar, leading: ScheduleMonitor.earlyCallbackMargin
         )
         guard !running.isEmpty else { return }
-        let applications = Set(file.applicationTokens.compactMap { try? JSONDecoder().decode(ApplicationToken.self, from: $0) })
-        let domains = PosatoWebDomains.domains(from: file.domains)
-        guard !domains.isEmpty || !applications.isEmpty else { return }
-        store.applySchedule(domains: domains, applications: applications)
+        let applied = files.withComposeLock {
+            applyComposed(running: running, file: file, files: files, store: store, sessionStore: sessionStore)
+        }
+        guard applied else { return }
         registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
         // A manual session ending inside this pause must not say Pause over early; the end of the
         // combined pause is announced here instead.
@@ -48,6 +49,47 @@ enum ScheduleMonitorEvents {
                 body: schedule.startBody
             )
         }
+    }
+
+    /// Composes the running occurrences, each with its own set and what it already holds, within what the
+    /// manual session's store leaves of the device's limits; applies the union and records what each now holds.
+    /// Returns false when there is nothing to pause.
+    @discardableResult
+    static func applyComposed(
+        running: [ScheduleMonitorOccurrence],
+        file: ScheduleMonitorFile,
+        files: ScheduleMonitorFileStore,
+        store: ScheduleShieldStore,
+        sessionStore: ScheduleShieldStore?
+    ) -> Bool {
+        let parts = running.map { occurrence -> PausePlanner.Part in
+            let items = file.setItems(scheduleId: occurrence.scheduleId)
+            let tableHeld = file.heldItems(scheduleId: occurrence.scheduleId, date: occurrence.date)
+            let ownHeld = files.held(scheduleId: occurrence.scheduleId, date: occurrence.date)
+            return PausePlanner.Part(
+                id: "\(occurrence.scheduleId):\(occurrence.date)",
+                start: occurrence.start,
+                currentDomains: Set(items.domains),
+                currentTokens: Set(items.tokens),
+                heldDomains: Set(tableHeld.domains).union(ownHeld?.domains ?? []),
+                heldTokens: Set(tableHeld.tokens).union(ownHeld?.tokens ?? [])
+            )
+        }
+        let encoder = JSONEncoder()
+        let occupiedTokens = Set((sessionStore?.shieldedTokens ?? []).compactMap { try? encoder.encode($0) })
+        let plan = PausePlanner.plan(parts, occupiedDomains: Set(sessionStore?.shieldedHosts ?? []), occupiedTokens: occupiedTokens)
+        let applications = Set(plan.tokens.compactMap { try? JSONDecoder().decode(ApplicationToken.self, from: $0) })
+        guard !plan.domains.isEmpty || !applications.isEmpty else { return false }
+        store.applySchedule(domains: PosatoWebDomains.domains(from: Array(plan.domains)), applications: applications)
+        for occurrence in running {
+            let id = "\(occurrence.scheduleId):\(occurrence.date)"
+            try? files.recordHeld(
+                occurrence,
+                domains: (plan.heldDomains[id] ?? []).sorted(),
+                tokens: Array(plan.heldTokens[id] ?? [])
+            )
+        }
+        return true
     }
 
     /// Clears the schedule's store unless an occurrence still runs, which also
@@ -77,7 +119,16 @@ enum ScheduleMonitorEvents {
         let ownStillRuns = running.contains { $0.scheduleId == own && $0.end > time.addingTimeInterval(ScheduleMonitor.earlyCallbackMargin) }
         // Another occurrence running now keeps the shields; one that starts later reapplies them itself.
         let othersRun = running.contains { $0.scheduleId != own }
-        guard !ownStillRuns, !othersRun else {
+        if ownStillRuns {
+            registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
+            return
+        }
+        if othersRun {
+            // Only items no remaining occurrence needs are released: the rest compose again without this one.
+            let remaining = running.filter { $0.scheduleId != own }
+            files.withComposeLock {
+                applyComposed(running: remaining, file: file, files: files, store: store, sessionStore: sessionStore)
+            }
             // The one cap activity may have just fired for an overlapping occurrence; chain the next cap.
             registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)
             return
