@@ -85,3 +85,36 @@ internal sealed interface PauseSetDialog {
         val row: PauseSetRow,
     ) : PauseSetDialog
 }
+
+/**
+ * How lists order sets: the first set on top, then by name with numbers compared as numbers, so "Set 2"
+ * comes before "Set 10".
+ */
+internal val pauseSetRowOrder: Comparator<PauseSetRow> = compareByDescending<PauseSetRow> { row -> row.id == PauseSetId.FIRST }
+    .then { left, right -> compareNaturally(left.name.lowercase(), right.name.lowercase()) }
+
+private fun compareNaturally(
+    left: String,
+    right: String,
+): Int {
+    val leftParts = NATURAL_PARTS.findAll(left).map(MatchResult::value).toList()
+    val rightParts = NATURAL_PARTS.findAll(right).map(MatchResult::value).toList()
+    leftParts.zip(rightParts).forEach { (a, b) ->
+        val order = if (a.first().isDigit() && b.first().isDigit()) compareNumbers(a, b) else a.compareTo(b)
+        if (order != 0) {
+            return order
+        }
+    }
+    return leftParts.size.compareTo(rightParts.size)
+}
+
+private fun compareNumbers(
+    left: String,
+    right: String,
+): Int {
+    val a = left.trimStart('0')
+    val b = right.trimStart('0')
+    return compareValuesBy(a, b, String::length, { it })
+}
+
+private val NATURAL_PARTS: Regex = Regex("\\d+|\\D+")

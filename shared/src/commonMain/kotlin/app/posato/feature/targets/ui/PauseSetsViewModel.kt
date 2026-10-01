@@ -203,7 +203,7 @@ internal class PauseSetsViewModel(
                 refused = set.refused,
                 inUse = set.id in running,
             )
-        }.sortedWith(compareByDescending<PauseSetRow> { row -> row.id == PauseSetId.FIRST }.thenBy { row -> row.name.lowercase() })
+        }.sortedWith(pauseSetRowOrder)
         state.update { current ->
             current.copy(
                 rows = rows.toPersistentList(),
@@ -263,5 +263,5 @@ internal suspend fun loadPauseSetRows(
             set.refused,
             inUse = false,
         )
-    }
+    }.sortedWith(pauseSetRowOrder)
 }

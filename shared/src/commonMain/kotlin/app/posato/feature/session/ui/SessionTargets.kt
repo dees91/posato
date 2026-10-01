@@ -14,6 +14,7 @@ import app.posato.feature.targets.data.choiceSet
 import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.ui.PauseSetRow
 import app.posato.feature.targets.ui.displayNameOf
+import app.posato.feature.targets.ui.pauseSetRowOrder
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
@@ -79,7 +80,7 @@ internal fun PauseSets?.choices(): PersistentList<PauseSetRow> {
     val defaultId = sets.resolvedDefault()
     return sets.sets.filterNot { set -> set.refused }.map { set ->
         PauseSetRow(set.id, displayNameOf(set.name), set.id == defaultId, set.domains.size, null, persistentListOf(), refused = false, inUse = false)
-    }.toPersistentList()
+    }.sortedWith(pauseSetRowOrder).toPersistentList()
 }
 
 /** The name [setId] shows, or null when this device does not hold that set. */

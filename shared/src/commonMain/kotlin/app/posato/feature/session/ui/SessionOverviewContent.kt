@@ -81,7 +81,7 @@ internal fun SessionOverviewContent(
             ScheduledPauseRunning(scheduled, onEndSchedule)
         } else if (active) {
             PosatoEndTime("Until ${state.formattedActiveEnd.orEmpty()}", supportingText = state.remainingMillis?.let { remainingText(it) })
-            state.setName?.let { name -> PosatoCaption("Set: $name, until ${state.formattedActiveEnd.orEmpty()}") }
+            state.setName?.let { name -> PosatoCaption("Set: $name") }
             PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, enabled = state.canRequestEarlyEnd()) { Text("End session early") }
         } else {
             SessionEndedCaption(state)
