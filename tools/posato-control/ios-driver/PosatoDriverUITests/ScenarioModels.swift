@@ -41,6 +41,8 @@ struct LaunchConfiguration: Codable {
   var fresh = false
   var arguments: [String] = []
   var environment: [String: String] = [:]
+  /// Leaves Posato as it is, closed included, for a scenario that drives only other applications.
+  var skip = false
 
   init() {}
 
@@ -52,6 +54,7 @@ struct LaunchConfiguration: Codable {
     arguments = try container.decodeIfPresent([String].self, forKey: .arguments) ?? []
     environment =
       try container.decodeIfPresent([String: String].self, forKey: .environment) ?? [:]
+    skip = try container.decodeIfPresent(Bool.self, forKey: .skip) ?? false
   }
 }
 

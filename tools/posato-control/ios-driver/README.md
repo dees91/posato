@@ -67,7 +67,10 @@ times, so a control on the anchor's own row wins over the neighbouring row;
 Compose list rows on iOS expose no container, so `near` is the way to address
 a row's button).
 If `terminateExisting` is `false` and the application is already running, the
-driver activates the running instance instead of relaunching it.
+driver activates the running instance instead of relaunching it. `skip: true`
+leaves the application untouched, so a scenario that drives only other
+applications, such as a shield check, proves what happens while Posato stays
+closed.
 
 ## Attachment names
 

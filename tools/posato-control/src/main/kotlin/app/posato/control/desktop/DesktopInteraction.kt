@@ -56,7 +56,7 @@ class DesktopInteraction(
 
     override fun runScenario(scenario: Scenario): RunResult {
         val running = processes.isTracked(stateStore.load().desktop)
-        if (scenario.launch.terminateExisting || !running) {
+        if (!scenario.launch.skip && (scenario.launch.terminateExisting || !running)) {
             lifecycle.launch(
                 LaunchOptions(fresh = scenario.launch.fresh, arguments = scenario.launch.arguments, environment = scenario.launch.environment),
             )

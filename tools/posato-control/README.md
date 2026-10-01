@@ -285,7 +285,7 @@ owns a real window while exposing no accessibility server. Consequences:
 ```json
 {
   "version": 1,
-  "launch": { "terminateExisting": true, "fresh": false, "arguments": [], "environment": {} },
+  "launch": { "terminateExisting": true, "fresh": false, "arguments": [], "environment": {}, "skip": false },
   "defaults": { "timeoutSeconds": 10 },
   "onFailure": { "screenshot": true, "snapshot": true },
   "continueOnFailure": false,
@@ -323,6 +323,11 @@ paths such as a Face ID retry. On iOS a pending system sheet belongs to the
 running app, and activating the app for a new driver run dismisses it, so a
 consent flow must stay inside one scenario (see
 `fixtures/scenarios/screen-time-consent.json`).
+
+A scenario starts or activates Posato before its first step unless
+`launch.skip` is `true`. A check of what a closed Posato leaves in force, such
+as a scheduled pause the monitor extension started, sets it and drives only
+other applications.
 
 `scrollTo` performs native scrolling on both hosts, not an existence check.
 It chooses the largest visible scroll area in the requested scope, moves

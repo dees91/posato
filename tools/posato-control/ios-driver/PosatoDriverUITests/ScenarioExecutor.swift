@@ -49,7 +49,7 @@ final class ScenarioExecutor {
   }
 
   func run() -> ScenarioResult {
-    if let error = launch() {
+    if !scenario.launch.skip, let error = launch() {
       return ScenarioResult(ok: false, steps: [], error: error)
     }
     var results: [StepResult] = []
