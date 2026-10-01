@@ -58,6 +58,10 @@ WHERE sequence = :sequence;
 deleteIntents:
 DELETE FROM sync_policy_intent;
 
+deleteIntentsOfSet:
+DELETE FROM sync_policy_intent
+WHERE set_id = :setId;
+
 selectBaseMarker:
 SELECT singleton
 FROM sync_policy_base

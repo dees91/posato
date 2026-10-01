@@ -29,9 +29,10 @@ internal fun seedsFor(
 }
 
 /**
- * Each set is merged on its own. A set the workspace removed disappears here, one it refused at the cap is
- * kept and marked, one it does not know yet stays as it is, and a live one merges its websites three ways
- * against the last synchronized base, with this device's queued changes applied last.
+ * Each set is merged on its own. A set the workspace removed, or this device removed and has not authored
+ * yet, disappears here; one the workspace refused at the cap is kept and marked, one it does not know yet
+ * stays as it is, and a live one merges its websites three ways against the last synchronized base, with
+ * this device's queued changes applied last.
  */
 internal fun mergeSets(
     local: PauseSets,
@@ -43,11 +44,13 @@ internal fun mergeSets(
     return ids.mapNotNull { setId ->
         val localSet = local.sets.firstOrNull { set -> set.id == setId }
         val pendingForSet = pending.filter { intent -> intent.setIdOf() == setId }
-        when (projection.pauseSetStatus(setId)) {
-            PauseSetStatus.REMOVED -> null
-            PauseSetStatus.LIVE -> mergeLive(setId, localSet, base, projection, pendingForSet)
-            PauseSetStatus.REFUSED -> localSet?.copy(domains = applyPending(localSet.domains.toMutableSet(), pendingForSet), refused = true)
-            PauseSetStatus.UNKNOWN -> localSet?.copy(domains = applyPending(localSet.domains.toMutableSet(), pendingForSet), refused = false)
+        val status = projection.pauseSetStatus(setId)
+        when {
+            pendingForSet.any { intent -> intent is StoredPolicyIntent.RemoveSet } -> null
+            status == PauseSetStatus.REMOVED -> null
+            status == PauseSetStatus.LIVE -> mergeLive(setId, localSet, base, projection, pendingForSet)
+            status == PauseSetStatus.REFUSED -> localSet?.copy(domains = applyPending(localSet.domains.toMutableSet(), pendingForSet), refused = true)
+            else -> localSet?.copy(domains = applyPending(localSet.domains.toMutableSet(), pendingForSet), refused = false)
         }
     }
 }

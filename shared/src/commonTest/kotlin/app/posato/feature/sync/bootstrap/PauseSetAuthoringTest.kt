@@ -3,12 +3,16 @@ package app.posato.feature.sync.bootstrap
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SyncOperation
 import app.posato.feature.sync.domain.SyncOperationPayload
+import app.posato.feature.sync.testContext
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.domain.ExactDomain
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
+import app.posato.feature.targets.domain.PolicySyncWrite
+import app.posato.feature.targets.domain.SequencedPolicyIntent
+import app.posato.feature.targets.domain.StoredPolicyIntent
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -78,6 +82,26 @@ class PauseSetAuthoringTest {
                 ),
                 harness.authoredSetChanges().drop(2),
             )
+        }
+    }
+
+    @Test
+    fun `given queued changes of a set when the set is deleted then only its removal stays queued`() = runTest {
+        withLinkedHarness("set-authoring-purge.db") { harness ->
+            save(harness, first(), LocalPauseSet(work, "Work", emptyList()))
+            val workspaceId = testContext.workspaceId.value.copyBytes()
+            harness.sqlPolicy.recordIntents(
+                PolicySyncWrite(workspaceId, listOf(StoredPolicyIntent.PutSet(work, "Later"), StoredPolicyIntent.PresentDomain(domain("q"), work))),
+            )
+            val current = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(harness.sqlPolicy.read()).value
+            val removed = checkNotNull(PauseSets.of(listOf(first()), null))
+
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(
+                harness.sqlPolicy.replaceSets(current.revision, removed, PolicySyncWrite(workspaceId, listOf(StoredPolicyIntent.RemoveSet(work)))),
+            )
+
+            val queued = assertIs<LocalPolicyResult.Success<List<SequencedPolicyIntent>>>(harness.sqlPolicy.readIntents()).value
+            assertEquals(listOf<StoredPolicyIntent>(StoredPolicyIntent.RemoveSet(work)), queued.map(SequencedPolicyIntent::intent))
         }
     }
 

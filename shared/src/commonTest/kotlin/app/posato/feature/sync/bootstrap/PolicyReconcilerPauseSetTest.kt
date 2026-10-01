@@ -81,6 +81,19 @@ class PolicyReconcilerPauseSetTest {
     }
 
     @Test
+    fun `given a set deleted here but still live in the workspace when applied then it does not come back`() = runTest {
+        withStore("pause-set-deleted-here.db") { store ->
+            store.replaceLocal(LocalPauseSet(PauseSetId.FIRST, null, emptyList()))
+            store.recordIntents(PolicySyncWrite(workspaceId, listOf(StoredPolicyIntent.RemoveSet(work))))
+            val projection = reduce(SyncOperationPayload.PauseSetPut(work, "Work"), SyncOperationPayload.DomainPresent(domain("b"), work))
+
+            PolicyReconciler(store).apply(projection, null)
+
+            assertEquals(listOf(PauseSetId.FIRST), store.local().sets.sets.map(LocalPauseSet::id))
+        }
+    }
+
+    @Test
     fun `given a local set the workspace refused at the cap when applied then it is kept and marked refused`() = runTest {
         withStore("pause-set-refused.db") { store ->
             store.replaceLocal(LocalPauseSet(PauseSetId.FIRST, null, emptyList()), LocalPauseSet(work, "Work", domains("b")))

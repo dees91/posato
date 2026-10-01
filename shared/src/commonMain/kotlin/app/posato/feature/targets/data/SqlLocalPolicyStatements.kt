@@ -52,8 +52,12 @@ internal suspend fun PosatoDatabase.writeBaseRows(base: Map<PauseSetId, List<Exa
     }
 }
 
+/** Records [write]'s intents; a set removal first drops that set's queued changes, which it makes moot. */
 internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
     write.intents.forEach { intent ->
+        if (intent is StoredPolicyIntent.RemoveSet) {
+            syncLocalPolicyQueries.deleteIntentsOfSet(intent.setId.value.copyBytes())
+        }
         val (kind, domain, name) = when (intent) {
             is StoredPolicyIntent.PresentDomain -> Triple(INTENT_DOMAIN_PRESENT, intent.domain.canonicalValue, null)
             is StoredPolicyIntent.RemoveDomain -> Triple(INTENT_DOMAIN_ABSENT, intent.domain.canonicalValue, null)
