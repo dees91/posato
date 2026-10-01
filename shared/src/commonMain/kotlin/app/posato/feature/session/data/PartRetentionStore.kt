@@ -1,8 +1,12 @@
 package app.posato.feature.session.data
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
 import app.posato.feature.targets.data.KeptApplication
-import app.cash.sqldelight.async.coroutines.awaitAsList
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.Named
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 
@@ -29,9 +33,11 @@ internal interface PartRetentionStore {
     )
 }
 
+@Inject
+@SingleIn(AppScope::class)
 internal class SqlPartRetentionStore(
     private val database: PosatoDatabase,
-    private val dispatcher: CoroutineDispatcher,
+    @Named("database") private val dispatcher: CoroutineDispatcher,
 ) : PartRetentionStore {
     override suspend fun read(part: RetainedPart): RetainedItems {
         return withContext(dispatcher) {

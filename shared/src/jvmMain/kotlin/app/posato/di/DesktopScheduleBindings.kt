@@ -9,6 +9,7 @@ import app.posato.feature.schedules.host.MacScheduleStartGate
 import app.posato.feature.schedules.host.ScheduleHost
 import app.posato.feature.schedules.host.ScheduleHostPorts
 import app.posato.feature.schedules.host.ScheduledPauses
+import app.posato.feature.session.data.SqlPartRetentionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.ui.loadSessionTargets
 import app.posato.feature.targets.data.LocalApplicationMappings
@@ -36,13 +37,15 @@ internal interface DesktopScheduleBindings : ScheduleBindings {
         macHelper: MacHelperPort,
         policyStore: LocalTargetPolicyStore,
         applicationMappings: LocalApplicationMappings,
+        retention: SqlPartRetentionStore,
         admission: MaintenanceAdmission,
     ): ScheduleHost {
         val ports = ScheduleHostPorts(
             claims = claims,
             gate = MacScheduleStartGate(macHelper) { macHelper.console?.isOurs() },
             hadConsent = { macHelper.automaticStartConsent?.given?.value == true },
-            targets = { loadSessionTargets(policyStore, applicationMappings) },
+            targets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
+            retention = retention,
             maintenanceClosed = { admission.closed.value == true },
             targetChanges = merge(policyStore.policyChanges, applicationMappings.invalidations),
         )

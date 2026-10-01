@@ -14,7 +14,11 @@ import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.ScheduleDate
 import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.SchedulePlan
+import app.posato.feature.session.data.PartRetentionStore
+import app.posato.feature.session.data.SqlPartRetentionStore
 import app.posato.feature.session.ui.SessionTargetsState
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import app.posato.feature.targets.domain.TargetPolicy
@@ -34,6 +38,9 @@ import kotlin.test.assertTrue
 private val focusId = ScheduleId("000000000000400080000000000000a1")
 private val monday = ScheduleDate(2026, 9, 28)
 private val mondayKey = OccurrenceKey(focusId, monday)
+private val eveningId = ScheduleId("000000000000400080000000000000b2")
+private val workSet = checkNotNull(PauseSetId.of(testIdentifier(80)))
+private val leisureSet = checkNotNull(PauseSetId.of(testIdentifier(81)))
 
 private fun at(
     hour: Int,
@@ -74,7 +81,9 @@ private class HostFixture(
     val store: SqlScheduleStore,
     val helper: Helper = Helper(),
     ticks: kotlinx.coroutines.flow.Flow<Unit> = emptyFlow(),
+    val retention: PartRetentionStore? = null,
 ) {
+    var setDomains: Map<PauseSetId, List<String>> = emptyMap()
     var now = at(8)
     var gate = StartGate.READY
     var consent = true
@@ -93,11 +102,13 @@ private class HostFixture(
                 gate
             },
             hadConsent = { consent },
-            targets = {
-                val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(domains, null)).policy
+            targets = { setId ->
+                val chosen = setId?.let(setDomains::get) ?: domains
+                val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(chosen, null)).policy
                 SessionTargetsState(policy, LocalApplicationMappingsLoadResult.Unavailable())
             },
             maintenanceClosed = { maintenanceClosed },
+            retention = retention,
         ),
         ticks = ticks,
     )
@@ -120,9 +131,10 @@ class ScheduleHostTest {
         val testDatabase = createLocalPolicyTestDatabase(name)
         val driver = testDatabase.openDriver()
         try {
-            val store = SqlScheduleStore(PosatoDatabase(driver), Dispatchers.Default)
+            val database = PosatoDatabase(driver)
+            val store = SqlScheduleStore(database, Dispatchers.Default)
             store.save(SchedulePlan(focusId, "Focus", 1, 9 * 60, 10 * 60, true), null)
-            block(HostFixture(store))
+            block(HostFixture(store, retention = SqlPartRetentionStore(database, Dispatchers.Default)))
         } finally {
             driver.close()
             testDatabase.delete()
@@ -399,6 +411,36 @@ class ScheduleHostTest {
             assertEquals(emptySet(), host.pause.value?.unannounced)
             assertEquals(listOf(1), published)
             assertEquals(ScheduleNotices.STARTED, fixture.snapshot().pins.single().notices)
+        }
+    }
+
+    @Test
+    fun `given two schedules on different sets running together then both sets are paused`() = runTest {
+        withHost("host-two-sets.db") { fixture ->
+            fixture.store.save(SchedulePlan(focusId, "Focus", 1, 9 * 60, 10 * 60, true, workSet), null)
+            fixture.store.save(SchedulePlan(eveningId, "Evening", 1, 9 * 60, 11 * 60, true, leisureSet), null)
+            fixture.setDomains = mapOf(workSet to listOf("work.example"), leisureSet to listOf("leisure.example"))
+
+            fixture.now = at(9, 1)
+            fixture.host.evaluate()
+
+            assertEquals(setOf("leisure.example", "work.example"), fixture.helper.lastDomains.toSet())
+        }
+    }
+
+    @Test
+    fun `given a website removed from a running occurrence's set then it stays paused until the occurrence ends`() = runTest {
+        withHost("host-retained.db") { fixture ->
+            fixture.store.save(SchedulePlan(focusId, "Focus", 1, 9 * 60, 10 * 60, true, workSet), null)
+            fixture.setDomains = mapOf(workSet to listOf("kept.example", "work.example"))
+            fixture.now = at(9, 1)
+            fixture.host.evaluate()
+
+            fixture.setDomains = mapOf(workSet to listOf("work.example"))
+            fixture.now = at(9, 2)
+            fixture.host.evaluate()
+
+            assertEquals(setOf("kept.example", "work.example"), fixture.helper.lastDomains.toSet())
         }
     }
 }

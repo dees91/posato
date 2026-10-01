@@ -2,17 +2,21 @@ package app.posato.feature.schedules.host
 
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementRequest
+import app.posato.feature.enforcement.PauseLimits
 import app.posato.feature.enforcement.ScheduleClaims
 import app.posato.feature.schedules.data.LocalScheduleStore
 import app.posato.feature.schedules.data.OccurrenceStop
 import app.posato.feature.schedules.data.ScheduleHostUpdate
 import app.posato.feature.schedules.data.ScheduleResult
+import app.posato.feature.schedules.data.ScheduleSnapshot
 import app.posato.feature.schedules.domain.OccurrenceKey
 import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.ScheduleZone
+import app.posato.feature.session.data.PartRetentionStore
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.ui.SessionTargetsState
 import app.posato.feature.session.ui.toFrozenStartSet
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -32,7 +36,8 @@ internal class ScheduleHostPorts(
     val claims: ScheduleClaims,
     val gate: ScheduleStartGate,
     val hadConsent: () -> Boolean,
-    val targets: suspend () -> SessionTargetsState,
+    /** The websites and this device's apps of a set; null is the default set. */
+    val targets: suspend (PauseSetId?) -> SessionTargetsState,
     val maintenanceClosed: () -> Boolean,
     /** Paused-item changes, so a running pause restricts the current items within moments. */
     val targetChanges: Flow<Unit> = emptyFlow(),
@@ -40,6 +45,10 @@ internal class ScheduleHostPorts(
     val announcesStarts: Boolean = true,
     /** Keys whose start another process already announced. */
     val announcedElsewhere: suspend () -> Set<OccurrenceKey> = { emptySet() },
+    /** How much this device can pause at once. */
+    val limits: PauseLimits = PauseLimits.MAC,
+    /** What each running occurrence has paused on this device; null keeps no retention. */
+    val retention: PartRetentionStore? = null,
     /** Hands the plans, facts and running occurrences to whatever starts schedules while the app is closed. */
     val publish: suspend (ScheduleMonitorInput) -> Unit = {},
 )
@@ -138,7 +147,7 @@ internal class ScheduleHost(
             snapshot.copy(facts = snapshot.facts.copy(expired = observed), pins = step.pins),
             step.running,
             now,
-            ports.targets,
+            { ports.targets(null) },
         )
         if (step.running.isEmpty()) {
             // Idempotent: it clears only a held claim, and retries a clear that failed. It runs before the monitor
@@ -153,7 +162,7 @@ internal class ScheduleHost(
         recordAnnouncedElsewhere(step.running.map { it.key }.toSet())
         val hadConsent = ports.hadConsent()
         // A held claim is kept current: paused items and the latest end may have changed since it was applied.
-        val state = if (holdsRestrictions()) apply(step.running) else attempt(step.running)
+        val state = if (holdsRestrictions()) apply(step.running, snapshot) else attempt(step.running, snapshot)
         val pause = ScheduleHostPolicy.pause(step.running, step.pins, state, hadConsent)?.withoutAnnounced(announced.value)
         mutablePause.value = if (ports.announcesStarts) pause else pause?.copy(unannounced = emptySet())
     }
@@ -180,16 +189,22 @@ internal class ScheduleHost(
         return status == EnforcementOutcome.APPLIED || status == EnforcementOutcome.UNKNOWN
     }
 
-    private suspend fun attempt(running: List<ScheduleOccurrence>): ScheduledPauseState {
+    private suspend fun attempt(
+        running: List<ScheduleOccurrence>,
+        snapshot: ScheduleSnapshot,
+    ): ScheduledPauseState {
         if (ports.maintenanceClosed()) {
             return ScheduledPauseState.WAITING
         }
         val gate = ports.gate.check()
-        return if (gate == StartGate.READY) apply(running) else gate.toState()
+        return if (gate == StartGate.READY) apply(running, snapshot) else gate.toState()
     }
 
-    private suspend fun apply(running: List<ScheduleOccurrence>): ScheduledPauseState {
-        val request = running.toRequest(ports.targets())
+    private suspend fun apply(
+        running: List<ScheduleOccurrence>,
+        snapshot: ScheduleSnapshot,
+    ): ScheduledPauseState {
+        val request = composeScheduledRequest(running, snapshot, ports)
         if (request.domains.isEmpty() && request.mappingIds.isEmpty()) {
             ports.claims.releaseSchedule()
             return ScheduledPauseState.APPLIED

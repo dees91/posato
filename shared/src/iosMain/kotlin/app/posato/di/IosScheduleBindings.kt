@@ -1,5 +1,6 @@
 package app.posato.di
 
+import app.posato.feature.enforcement.PauseLimits
 import app.posato.feature.notifications.SessionNotificationPlatform
 import app.posato.feature.schedules.IosScheduleBridge
 import app.posato.feature.schedules.IosScheduleClaims
@@ -11,6 +12,7 @@ import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.schedules.host.ScheduleHost
 import app.posato.feature.schedules.host.ScheduleHostPorts
 import app.posato.feature.schedules.host.ScheduledPauses
+import app.posato.feature.session.data.SqlPartRetentionStore
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.ui.SessionTransitionOwner
@@ -37,6 +39,7 @@ internal interface IosScheduleBindings : ScheduleBindings {
         bridge: IosScheduleBridge,
         policyStore: LocalTargetPolicyStore,
         applicationMappings: LocalApplicationMappings,
+        retention: SqlPartRetentionStore,
         notifications: SessionNotificationPlatform,
         sessions: SessionTransitionOwner,
     ): ScheduleHost {
@@ -47,7 +50,9 @@ internal interface IosScheduleBindings : ScheduleBindings {
             gate = IosScheduleStartGate(bridge.enforcement),
             // Screen Time authorization is the consent here, and the Schedules screen asks for it.
             hadConsent = { false },
-            targets = { loadSessionTargets(policyStore, applicationMappings) },
+            targets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
+            retention = retention,
+            limits = PauseLimits.IPHONE,
             maintenanceClosed = { false },
             // The monitor extension announces starts, including while the app is closed; the Swift publisher
             // announces a running start it has not recorded, such as one an edit began.
