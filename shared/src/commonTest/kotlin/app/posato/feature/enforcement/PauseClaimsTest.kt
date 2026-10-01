@@ -251,4 +251,64 @@ class PauseClaimsTest {
         assertEquals(listOf("apply 300", "clear", "apply grant 300"), helper.calls)
         assertEquals(listOf("example.com", "example.org"), helper.lastDomains)
     }
+
+    @Test
+    fun `given a manual session on one set when a schedule on another set claims then the helper pauses both`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+
+        assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
+        assertEquals("apply grant 300", helper.calls.last())
+    }
+
+    @Test
+    fun `given a schedule on one set when a manual session on another set starts then the helper pauses both until the later end`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
+        assertEquals("apply grant 300", helper.calls.last())
+    }
+
+    @Test
+    fun `given both sets paused when the manual session ends then only the schedule's set stays paused`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        claims.manual.clear()
+
+        assertEquals(listOf("leisure.example"), helper.lastDomains)
+        assertEquals("apply grant 200", helper.calls.last())
+    }
+
+    @Test
+    fun `given both sets paused when the schedule ends then only the manual session's set stays paused`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+
+        claims.releaseSchedule()
+
+        assertEquals(listOf("work.example"), helper.lastDomains)
+    }
+
+    @Test
+    fun `given the same items in another order when the schedule is updated then the helper is not touched`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200, listOf("a.example", "b.example")))
+
+        claims.updateSchedule(request(200, listOf("b.example", "a.example")))
+
+        assertEquals(listOf("apply grant 200"), helper.calls)
+    }
 }

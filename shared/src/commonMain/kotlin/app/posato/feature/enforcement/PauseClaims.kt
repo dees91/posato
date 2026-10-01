@@ -32,11 +32,17 @@ internal class PauseClaims(
      */
     override suspend fun claimSchedule(request: EnforcementRequest): EnforcementApplyReport {
         return mutex.withLock {
-            val joined = manualRequest != null && delegate.status() == EnforcementOutcome.APPLIED
-            val report = if (joined) {
-                EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
-            } else {
-                send(request.withGrantOnly(), Holder.SCHEDULE)
+            val manual = manualRequest
+            val joined = manual != null && delegate.status() == EnforcementOutcome.APPLIED
+            val combined = manual?.unionWith(request)
+            val report = when {
+                !joined || combined == null -> send(request.withGrantOnly(), Holder.SCHEDULE)
+                held?.sameTargets(combined) == true -> EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
+                else -> replace(combined.withGrantOnly(), Holder.MANUAL)
+            }
+            if (joined && report.outcome != EnforcementOutcome.APPLIED) {
+                // A failed apply cleared the helper; the manual owner sees that through its status.
+                manualRequest = null
             }
             scheduleRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
             if (scheduleRequest != null) {
@@ -58,8 +64,7 @@ internal class PauseClaims(
             return claimSchedule(request)
         }
         return mutex.withLock {
-            val manualEnd = manualRequest?.sessionEndEpochMillis ?: 0L
-            val effective = request.withEnd(maxOf(request.sessionEndEpochMillis, manualEnd))
+            val effective = manualRequest?.let(request::unionWith) ?: request
             // Compared with what the helper enforces, whoever applied it, so a joined manual session's
             // later end or changed paused items are never hidden behind an unchanged schedule request.
             if (held?.sameEffect(effective) == true) {
@@ -96,7 +101,7 @@ internal class PauseClaims(
                     clearHelper()
                 }
 
-                holder == Holder.SCHEDULE -> {
+                holder == Holder.SCHEDULE || held?.sameTargets(manual) == false -> {
                     val report = send(manual.withGrantOnly(), Holder.MANUAL)
                     if (report.outcome != EnforcementOutcome.APPLIED) {
                         manualRequest = null
@@ -186,19 +191,21 @@ internal class PauseClaims(
          */
         override suspend fun apply(request: EnforcementRequest): EnforcementApplyReport {
             return mutex.withLock {
-                val joined = scheduleRequest != null && delegate.status() == EnforcementOutcome.APPLIED
+                val schedule = scheduleRequest
+                val joined = schedule != null && delegate.status() == EnforcementOutcome.APPLIED
+                val combined = schedule?.let(request::unionWith) ?: request
                 val current = held
                 val report = when {
                     !joined -> {
                         send(request, Holder.MANUAL)
                     }
 
-                    current != null && current.sameTargets(request) && current.sessionEndEpochMillis >= request.sessionEndEpochMillis -> {
+                    current != null && current.sameTargets(combined) && current.sessionEndEpochMillis >= request.sessionEndEpochMillis -> {
                         EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
                     }
 
                     else -> {
-                        replace(request.withGrantOnly(), Holder.MANUAL)
+                        replace(combined.withGrantOnly(), Holder.MANUAL)
                     }
                 }
                 manualRequest = request.takeIf { report.outcome == EnforcementOutcome.APPLIED }
@@ -223,7 +230,7 @@ internal class PauseClaims(
                         clearHelper()
                     }
 
-                    holder == Holder.MANUAL -> {
+                    holder == Holder.MANUAL || held?.sameTargets(schedule) == false -> {
                         val report = send(schedule.withGrantOnly(), Holder.SCHEDULE)
                         if (report.outcome != EnforcementOutcome.APPLIED) {
                             scheduleRequest = null
@@ -264,7 +271,22 @@ internal class PauseClaims(
 }
 
 private fun EnforcementRequest.sameTargets(other: EnforcementRequest): Boolean {
-    return domains == other.domains && mappingIds == other.mappingIds
+    return domains.toSet() == other.domains.toSet() && mappingIds.toSet() == other.mappingIds.toSet()
+}
+
+/**
+ * Both claims' items until the later end, named by this request, so the helper's held session stays the one
+ * this request's owner reconciles. Items are sorted so the same union always compares equal.
+ */
+private fun EnforcementRequest.unionWith(other: EnforcementRequest): EnforcementRequest {
+    return EnforcementRequest(
+        (domains + other.domains).distinct().sorted(),
+        (mappingIds + other.mappingIds).distinct().sorted(),
+        sessionId,
+        sessionStartEpochMillis,
+        maxOf(sessionEndEpochMillis, other.sessionEndEpochMillis),
+        grantOnly,
+    )
 }
 
 private fun EnforcementRequest.sameEffect(other: EnforcementRequest): Boolean {
