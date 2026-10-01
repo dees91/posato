@@ -2427,3 +2427,9 @@ to scope, feasibility, or delivery.
   now removes both table versions, so the app reports a platform failure (a
   retrying scheduled pause) and the monitor extension starts nothing.
   `flow schedule` now scrolls to the time buttons on small iPhones.
+## [2026-10-01] experiment | Local bolder website proposal
+
+- Prepared a local-only homepage variant with larger typography, wider product
+  imagery, a visible mobile poster, and the provisional line "A little space.
+  For what matters." from the existing onboarding. This explores backlog
+  `WEB-002`; it does not accept a new product line or activate a release row.

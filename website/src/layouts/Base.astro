@@ -6,9 +6,10 @@ interface Props {
   title?: string;
   description: string;
   indexable?: boolean;
+  pageClass?: string;
 }
 
-const { title, description, indexable = true } = Astro.props;
+const { title, description, indexable = true, pageClass } = Astro.props;
 const pageTitle = title ? `${title} - Posato` : "Posato - Pause. Then choose.";
 const canonical = new URL(Astro.url.pathname, Astro.site);
 ---
@@ -24,7 +25,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site);
     {indexable ? <link rel="canonical" href={canonical} /> : <meta name="robots" content="noindex" />}
     <link rel="icon" href={iconUrl} type="image/svg+xml" />
   </head>
-  <body>
+  <body class={pageClass}>
     <header class="site-header">
       <a class="identity" href="/"><span class="mark" aria-hidden="true"></span>posato</a>
       <nav aria-label="Site">

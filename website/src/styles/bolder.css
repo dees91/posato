@@ -1,0 +1,220 @@
+/* Local design experiment. Keep the shared information pages unchanged. */
+.bolder {
+  --content-max: 76rem;
+}
+
+.bolder ::selection {
+  color: var(--surface);
+  background: var(--ink);
+}
+
+.bolder .site-header {
+  padding-block: 1.5rem;
+}
+
+.bolder main {
+  padding-top: 0;
+}
+
+.bolder .hero {
+  padding-block: 3.5rem 5rem;
+  gap: 3rem;
+}
+
+.bolder .hero-copy {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  align-items: center;
+  gap: 3rem;
+}
+
+.bolder .hero h1 {
+  margin: 0;
+  font-size: clamp(3.5rem, 6.7vw, 6rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  text-wrap: initial;
+}
+
+.bolder .hero h1 span {
+  color: var(--primary);
+}
+
+.bolder .lead {
+  color: var(--ink);
+  font-size: 1.125rem;
+}
+
+.bolder .hero-details > .muted {
+  max-width: 34ch;
+}
+
+.bolder .download {
+  gap: 0.75rem;
+}
+
+.bolder .platforms {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.bolder .hero-demo {
+  border: 0;
+  border-radius: 0.875rem;
+}
+
+.bolder .step:has(.shots) {
+  display: grid;
+  grid-template-columns: 1fr 1.65fr;
+  align-items: center;
+  gap: 2.5rem 4rem;
+  padding-block: 5rem;
+}
+
+.bolder .step h2,
+.bolder .privacy-section h2 {
+  margin-top: 0;
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.bolder .shots {
+  margin: 0;
+  gap: 1rem;
+}
+
+.bolder .step > .muted {
+  grid-column: 2;
+  margin: -1rem 0 0;
+  font-size: 0.875rem;
+}
+
+.bolder .step[aria-labelledby="sync"] {
+  display: grid;
+  grid-template-columns: 1fr 1.65fr;
+  gap: 4rem;
+  padding-block: 4rem;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+.bolder section[aria-labelledby="limits"] {
+  max-width: 52rem;
+  margin: 4rem auto;
+}
+
+.bolder section[aria-labelledby="limits"] .prose {
+  max-width: none;
+}
+
+.bolder .privacy-section {
+  display: grid;
+  grid-template-columns: 1fr 1.65fr;
+  gap: 4rem;
+  padding: 3rem;
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: 0.875rem;
+}
+
+.bolder .privacy-section a {
+  color: inherit;
+}
+
+.bolder .privacy-section a:focus-visible {
+  outline-color: currentColor;
+}
+
+.bolder .privacy-section p {
+  margin-bottom: 0;
+}
+
+.bolder .note {
+  padding: 2.5rem 0 0;
+  background: none;
+  border-radius: 0;
+}
+
+@media (max-width: 1000px) {
+  .bolder .hero-copy {
+    grid-template-columns: 1.1fr 1fr;
+    gap: 2rem;
+  }
+
+  .bolder .step:has(.shots),
+  .bolder .step[aria-labelledby="sync"],
+  .bolder .privacy-section {
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .bolder .site-header nav {
+    gap: 0.75rem;
+  }
+
+  .bolder .hero {
+    padding-block: 1.5rem 3rem;
+    gap: 2rem;
+  }
+
+  .bolder .hero-copy,
+  .bolder .step:has(.shots),
+  .bolder .step[aria-labelledby="sync"],
+  .bolder .privacy-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .bolder .hero h1 {
+    font-size: clamp(3rem, 11.8vw, 5rem);
+    max-width: 12ch;
+  }
+
+  .bolder .hero .lead {
+    font-size: 1rem;
+  }
+
+  .bolder .hero-details > .muted {
+    max-width: none;
+    font-size: 0.875rem;
+  }
+
+  .bolder .download {
+    flex-wrap: nowrap;
+  }
+
+  .bolder .download a {
+    min-width: 0;
+  }
+
+  .bolder .download img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .bolder .hero-demo,
+  .bolder .hero-poster {
+    display: block;
+  }
+
+  .bolder .hero-video {
+    display: none;
+  }
+
+  .bolder .step:has(.shots),
+  .bolder .step[aria-labelledby="sync"] {
+    padding-block: 3rem;
+  }
+
+  .bolder .step > .muted {
+    grid-column: 1;
+    margin: 0;
+  }
+
+  .bolder .privacy-section {
+    padding: 2rem 1.5rem;
+  }
+}

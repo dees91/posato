@@ -1,6 +1,7 @@
 ---
 import { Image } from "astro:assets";
 import Base from "../layouts/Base.astro";
+import "../styles/bolder.css";
 import iphoneDuration from "../../../video/public/iphone-duration-45.png";
 import iphoneSchedules from "../../../video/public/iphone-schedules.png";
 import iphoneWebsites from "../../../video/public/iphone-websites.png";
@@ -9,11 +10,11 @@ import macSchedules from "../../../video/public/mac-schedules.png";
 import macWebsites from "../../../video/public/mac-websites.png";
 ---
 
-<Base description="Posato blocks the websites and apps you choose for a timed pause on your Mac or iPhone, now or on a schedule. No Posato account, no analytics, and no Posato-operated server.">
+<Base title="A little space. For what matters." pageClass="bolder" description="Posato blocks the websites and apps you choose for a timed pause on your Mac or iPhone, now or on a schedule. No Posato account, no analytics, and no Posato-operated server.">
   <section class="hero">
-    <div>
-      <p class="eyebrow">Posato for Mac and iPhone</p>
-      <h1>Pause. Then choose.</h1>
+    <div class="hero-copy">
+      <h1>A little space.<br /><span>For what matters.</span></h1>
+      <div class="hero-details">
       <p class="lead">
         Posato blocks the websites and apps you choose for a timed pause on your Mac or iPhone,
         now or on a schedule, within the <a href="#limits">limits</a> below.
@@ -23,6 +24,8 @@ import macWebsites from "../../../video/public/mac-websites.png";
         <a href="https://github.com/dees91/posato/releases/latest"><img src="/badges/download-for-mac.svg" width="186" height="56" alt="Download Posato for Mac" /></a>
         <a href="https://apps.apple.com/app/posato/id6812237585"><img src="/badges/download-on-the-app-store.svg" width="186" height="56" alt="Download Posato on the App Store" /></a>
       </p>
+      <p class="platforms">Posato for Mac and iPhone</p>
+      </div>
     </div>
     <div class="hero-demo">
       <video
@@ -45,17 +48,19 @@ import macWebsites from "../../../video/public/mac-websites.png";
         width="1600"
         height="1000"
         alt="Posato on a Mac and an iPhone, both showing an active session with two websites and one app paused"
-        loading="lazy"
+        fetchpriority="high"
       />
     </div>
 </section>
 
   <section class="step" aria-labelledby="choose">
+    <div class="step-copy">
     <h2 id="choose">Choose what to pause</h2>
     <p class="prose">
       Add exact website domains, then choose apps separately on each device. App choices stay on that
       device; only the shared app group's name syncs.
     </p>
+    </div>
     <div class="shots">
       <div class="device device-mac shot-mac">
         <div class="device-screen">
@@ -81,6 +86,7 @@ import macWebsites from "../../../video/public/mac-websites.png";
   </section>
 
   <section class="step" aria-labelledby="start">
+    <div class="step-copy">
     <h2 id="start">Start a timed pause</h2>
     <p class="prose">
       Set a duration from <strong>5 minutes to 24 hours</strong>, review your choices, and start the
@@ -88,6 +94,7 @@ import macWebsites from "../../../video/public/mac-websites.png";
       it early. On iPhone, restrictions can linger after the session ends. On a Mac, a one-time setup
       lets pauses and schedules start without asking for your password each time.
     </p>
+    </div>
     <div class="shots">
       <div class="device device-mac shot-mac">
         <div class="device-screen">
@@ -113,6 +120,7 @@ import macWebsites from "../../../video/public/mac-websites.png";
   </section>
 
   <section class="step" aria-labelledby="schedules">
+    <div class="step-copy">
     <h2 id="schedules">Plan pauses ahead</h2>
     <p class="prose">
       Add a schedule with a name, weekdays, and hours, such as weekday mornings from 9 to 11. It starts
@@ -120,6 +128,7 @@ import macWebsites from "../../../video/public/mac-websites.png";
       closed. Skip the next one or end one early when plans change. Posato can tell you when a pause
       ends or when one starts on another device.
     </p>
+    </div>
     <div class="shots">
       <div class="device device-mac shot-mac">
         <div class="device-screen">
@@ -181,7 +190,7 @@ import macWebsites from "../../../video/public/mac-websites.png";
     </p>
   </section>
 
-  <section aria-labelledby="privacy">
+  <section class="privacy-section" aria-labelledby="privacy">
     <h2 id="privacy">Privacy</h2>
     <p class="prose">
       Posato's developer does not receive your data. Your websites, app choices, sessions, and schedules stay on
