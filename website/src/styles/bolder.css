@@ -8,10 +8,6 @@
   background: var(--ink);
 }
 
-.bolder .site-header {
-  padding-block: 1.5rem;
-}
-
 .bolder main {
   padding-top: 0;
 }
@@ -52,12 +48,35 @@
 
 .bolder .download {
   gap: 0.75rem;
+  flex-wrap: nowrap;
+}
+
+.bolder .download a {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 2.75rem;
+}
+
+.bolder .download img {
+  max-width: 100%;
+  height: auto;
+}
+
+.bolder .download a:hover {
+  outline: 1px solid var(--primary);
+  outline-offset: 3px;
 }
 
 .bolder .platforms {
   margin: 1rem 0 0;
   color: var(--muted);
   font-size: 0.875rem;
+}
+
+.bolder .hero-video:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -4px;
 }
 
 .bolder .hero-demo {
@@ -73,8 +92,7 @@
   padding-block: 5rem;
 }
 
-.bolder .step h2,
-.bolder .privacy-section h2 {
+.bolder main > section h2 {
   margin-top: 0;
   font-size: clamp(2rem, 3.2vw, 2.75rem);
   line-height: 1.12;
@@ -132,6 +150,7 @@
 }
 
 .bolder .note {
+  border-top: 1px solid var(--outline-variant);
   padding: 2.5rem 0 0;
   background: none;
   border-radius: 0;
@@ -180,19 +199,6 @@
   .bolder .hero-details > .muted {
     max-width: none;
     font-size: 0.875rem;
-  }
-
-  .bolder .download {
-    flex-wrap: nowrap;
-  }
-
-  .bolder .download a {
-    min-width: 0;
-  }
-
-  .bolder .download img {
-    max-width: 100%;
-    height: auto;
   }
 
   .bolder .hero-demo,

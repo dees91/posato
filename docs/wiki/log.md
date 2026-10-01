@@ -2433,3 +2433,9 @@ to scope, feasibility, or delivery.
   imagery, a visible mobile poster, and the provisional line "A little space.
   For what matters." from the existing onboarding. This explores backlog
   `WEB-002`; it does not accept a new product line or activate a release row.
+
+## [2026-10-01] experiment | Polish the local website proposal
+
+- Refined the homepage proposal with consistent section headings, responsive
+  download badges with 44-pixel minimum hit areas, and native demo playback
+  controls. The provisional motto and local-only experiment boundary remain.
