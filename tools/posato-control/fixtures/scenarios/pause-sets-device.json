@@ -46,6 +46,11 @@
       }
     },
     {
+      "name": "list-before-settle",
+      "action": "sleep",
+      "seconds": 1
+    },
+    {
       "name": "list-before",
       "action": "screenshot"
     },
@@ -102,6 +107,11 @@
       }
     },
     {
+      "name": "set-screen-settle",
+      "action": "sleep",
+      "seconds": 1
+    },
+    {
       "name": "set-screen",
       "action": "screenshot"
     },
@@ -121,6 +131,11 @@
         "textContains": "Work",
         "role": "button"
       }
+    },
+    {
+      "name": "list-two-settle",
+      "action": "sleep",
+      "seconds": 1
     },
     {
       "name": "list-two",
@@ -206,6 +221,11 @@
       "query": {
         "text": "Set: Work"
       }
+    },
+    {
+      "name": "review-work-settle",
+      "action": "sleep",
+      "seconds": 1
     },
     {
       "name": "review-work",
