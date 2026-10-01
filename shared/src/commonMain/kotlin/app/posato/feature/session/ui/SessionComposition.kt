@@ -49,23 +49,28 @@ internal class SessionComposition(
         policyStore: LocalTargetPolicyStore,
         applicationMappings: LocalApplicationMappings,
     ) : this(
-        retention,
+        // On iPhone the manual store itself is what the session holds; a record of planned items there would
+        // also keep items the monitor's budget never paused.
+        retention.takeIf { devicePauseLimits === PauseLimits.MAC },
         devicePauseLimits,
         { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
         applicationMappings::keptApplications,
     )
 
-    private var last: Pair<SessionId, List<String>>? = null
+    private var last: Pair<SessionId, PauseItems>? = null
+
+    /** What the other running parts pause now; the session counts it toward the device's limits. */
+    var occupied: () -> PauseItems = { PauseItems() }
     private val mutableNotPausedYet = MutableStateFlow(0)
 
     /** How many items an edit added that this device's limits leave unpaused for now; each compose tries again. */
     val notPausedYet: StateFlow<Int> = mutableNotPausedYet.asStateFlow()
 
-    /** Whether the session's composition changed since it was last applied, such as after a set edit. */
+    /** Whether the session's websites or apps changed since it was last applied, such as after a set edit. */
     suspend fun differs(record: SessionRecord): Boolean {
         val previous = last ?: return false
-        val now = compose(record).policy?.domains?.map { domain -> domain.canonicalValue }.orEmpty()
-        return previous.first != record.sessionId || previous.second != now
+        compose(record)
+        return previous != last
     }
 
     suspend fun compose(record: SessionRecord): SessionTargetsState {
@@ -90,11 +95,13 @@ internal class SessionComposition(
                 ),
             ),
             limits,
+            occupied(),
         )
         retention?.hold(part, RetainedItems(plan.items.domains, keep(plan.items.appIds - keptIds)))
-        mutableNotPausedYet.value = plan.deferred[PART_SESSION] ?: 0
+        // The iPhone's monitor applies its own budget, so only the Mac knows what waits for room.
+        mutableNotPausedYet.value = if (limits === PauseLimits.MAC) plan.deferred[PART_SESSION] ?: 0 else 0
         val domains = plan.items.domains.sorted()
-        last = record.sessionId to domains
+        last = record.sessionId to plan.items
         val composed = TargetPolicy.fromStoredValues(domains, policy.applicationPolicyName?.canonicalValue)
         val applications = chosen.filter { mapping -> mapping.id.canonicalValue in plan.items.appIds } +
             retained.applications.filter { kept -> kept.mappingId.toHex() !in chosen.map { mapping -> mapping.id.canonicalValue } }

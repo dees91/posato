@@ -2,6 +2,7 @@ package app.posato.feature.schedules.host
 
 import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementRequest
+import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.PauseLimits
 import app.posato.feature.enforcement.ScheduleClaims
 import app.posato.feature.schedules.data.LocalScheduleStore
@@ -50,6 +51,8 @@ internal class ScheduleHostPorts(
     val limits: PauseLimits = PauseLimits.MAC,
     /** What a running occurrence needs to keep pausing chosen apps after they leave every set (Mac only). */
     val keptApplications: suspend (Set<String>) -> List<KeptApplication> = { emptyList() },
+    /** What a manual session pauses now, which the occurrences count toward the device's limits (Mac). */
+    val occupied: () -> PauseItems = { PauseItems() },
     /** What each running occurrence has paused on this device; null keeps no retention. */
     val retention: PartRetentionStore? = null,
     /** True where the claims compose what each occurrence already holds themselves, so an empty request reaches them. */
@@ -139,8 +142,9 @@ internal class ScheduleHost(
         mutableAnyEnabled.value = snapshot.runnable.any { it.enabled }
         val now = clock.currentEpochMillis()
         val step = ScheduleHostPolicy.step(snapshot, now, zone)
-        if (!step.update.isEmpty) {
-            store.recordHost(step.update)
+        // A pin that could not be written must not be swept with the retention the next compose holds for it.
+        if (!step.update.isEmpty && store.recordHost(step.update) !is ScheduleResult.Success) {
+            return
         }
         if (step.update.released.isNotEmpty()) {
             // A run that stopped is announced again when it starts again.
@@ -217,7 +221,8 @@ internal class ScheduleHost(
         snapshot: ScheduleSnapshot,
     ): ScheduledPauseState {
         val composed = composeScheduledRequest(running, snapshot, ports)
-        notPausedYet = composed.notPausedYet
+        // Where the claims compose themselves (the iPhone's monitor), only they know what waits for room.
+        notPausedYet = if (ports.claimsCompose) 0 else composed.notPausedYet
         val request = composed.request
         if (!ports.claimsCompose && request.domains.isEmpty() && request.mappingIds.isEmpty()) {
             ports.claims.releaseSchedule()

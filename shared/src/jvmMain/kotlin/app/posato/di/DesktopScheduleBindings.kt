@@ -47,6 +47,7 @@ internal interface DesktopScheduleBindings : ScheduleBindings {
             targets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
             retention = retention,
             keptApplications = applicationMappings::keptApplications,
+            occupied = claims::manualItems,
             maintenanceClosed = { admission.closed.value == true },
             targetChanges = merge(policyStore.policyChanges, applicationMappings.invalidations),
         )

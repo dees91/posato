@@ -351,6 +351,23 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["leisure.example"]))
     }
 
+    func testAnEndWhoseRemainingOccurrencesPauseNothingClearsTheStore() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(setsFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
+            sets: [.init(id: workSet, domains: ["work.example"], tokenIndexes: []), .init(id: leisureSet, domains: [], tokenIndexes: [])]
+        ))
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example"]), applications: [])
+
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 10, 0) }, calendar: calendar
+        )
+
+        XCTAssertNil(store.applied)
+    }
+
     func testAWebsiteTheOccurrenceHeldStaysAfterItLeftTheSet() throws {
         let files = try isolatedFiles()
         try files.writeTable(setsFile(

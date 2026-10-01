@@ -125,8 +125,12 @@ enum ScheduleMonitorEvents {
         if othersRun {
             // Only items no remaining occurrence needs are released: the rest compose again without this one.
             let remaining = running.filter { $0.scheduleId != own }
-            files.withComposeLock {
+            let applied = files.withComposeLock {
                 applyComposed(running: remaining, file: file, files: files, store: store, sessionStore: sessionStore)
+            }
+            // The remaining occurrences pause nothing, such as when their set is empty: nothing stays paused.
+            if !applied {
+                store.clearSchedule()
             }
             // The one cap activity may have just fired for an overlapping occurrence; chain the next cap.
             registerNextCap(running: running, file: file, caps: caps, at: time, calendar: calendar)

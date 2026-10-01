@@ -1,6 +1,7 @@
 package app.posato.feature.session.ui
 
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.enforcement.PauseItems
 import app.posato.feature.enforcement.PauseLimits
 import app.posato.feature.session.data.PART_SESSION
 import app.posato.feature.session.data.RetainedPart
@@ -25,6 +26,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 /** A running manual session pauses its set's current items and keeps everything it already paused. */
 class SessionCompositionTest {
@@ -71,6 +73,30 @@ class SessionCompositionTest {
         }
     }
 
+    @Test
+    fun `given an app added to the running session's set when checked then the session is applied again`() = runTest {
+        withComposition("session-composition-app-added.db") { composition ->
+            setDomains = listOf("work.example")
+            composition.compose(record)
+
+            setApps = listOf(mail)
+
+            assertTrue(composition.differs(record))
+        }
+    }
+
+    @Test
+    fun `given a schedule pausing items when the session joins past the limit then it pauses only what still fits`() = runTest {
+        withComposition("session-composition-occupied.db", PauseLimits(maxDomainCost = 3, maxApps = 2) { it.size }) { composition ->
+            composition.occupied = { PauseItems(setOf("evening1.example", "evening2.example")) }
+            setDomains = listOf("b.example", "a.example")
+
+            val composed = composition.compose(record)
+
+            assertEquals(listOf("a.example"), composed.policy?.domains?.map { it.canonicalValue })
+        }
+    }
+
     private var setDomains: List<String> = emptyList()
     private var setApps: List<LocalApplicationMapping> = emptyList()
     private val mail = checkNotNull(LocalApplicationMapping.restore(checkNotNull(LocalApplicationMappingId.restore("ab".repeat(32))), "Mail"))
@@ -83,6 +109,7 @@ class SessionCompositionTest {
 
     private suspend fun withComposition(
         name: String,
+        limits: PauseLimits = PauseLimits.MAC,
         block: suspend (SessionComposition) -> Unit,
     ) {
         val testDatabase = createLocalPolicyTestDatabase(name)
@@ -94,7 +121,7 @@ class SessionCompositionTest {
             block(
                 SessionComposition(
                     SqlPartRetentionStore(database, Dispatchers.Default),
-                    PauseLimits.MAC,
+                    limits,
                     { targetsOf(setDomains) },
                     { ids ->
                         listOf(KeptApplication("ab".repeat(32).hexToByteArray(), "Mail".encodeToByteArray(), byteArrayOf(9))).takeIf {

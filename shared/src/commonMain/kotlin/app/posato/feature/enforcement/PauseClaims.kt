@@ -26,9 +26,9 @@ internal class PauseClaims(
     val manual: EnforcementPort = ManualView()
 
     /**
-     * Restricts for the running occurrences through the standing grant only. It joins applied manual
-     * restrictions without touching the helper, because a failed apply clears what the helper holds;
-     * when that manual session ends first, its clear applies this request again.
+     * Restricts for the running occurrences through the standing grant only. Joining applied manual
+     * restrictions replaces the helper's request with the union until the later end; when that manual
+     * session ends first, its clear hands the helper this request again.
      */
     override suspend fun claimSchedule(request: EnforcementRequest): EnforcementApplyReport {
         return mutex.withLock {
@@ -36,7 +36,7 @@ internal class PauseClaims(
             val joined = manual != null && delegate.status() == EnforcementOutcome.APPLIED
             val combined = manual?.unionWith(request)
             val report = when {
-                !joined || combined == null -> send(request.withGrantOnly(), Holder.SCHEDULE)
+                !joined || combined == null -> take(request.withGrantOnly(), Holder.SCHEDULE)
                 held?.sameTargets(combined) == true -> EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
                 else -> replace(combined.withGrantOnly(), Holder.MANUAL)
             }
@@ -116,6 +116,16 @@ internal class PauseClaims(
         }
     }
 
+    /** What the manual session pauses now; a schedule's composition counts it toward the device's limits. */
+    fun manualItems(): PauseItems {
+        return manualRequest.items()
+    }
+
+    /** What the running occurrences pause now; the manual session's composition counts it toward the limits. */
+    fun scheduleItems(): PauseItems {
+        return scheduleRequest.items()
+    }
+
     /** Whether a failed clear still waits; the host retries it each minute. */
     val hasPendingClear: Boolean
         get() {
@@ -174,8 +184,21 @@ internal class PauseClaims(
         request: EnforcementRequest,
         applying: Holder,
     ): EnforcementApplyReport {
-        delegate.clear()
+        if (delegate.clear() != EnforcementOutcome.CLEARED) {
+            // The helper keeps its earlier request in force; the next apply replaces it again.
+            return EnforcementApplyReport(EnforcementOutcome.FAILED, false, false)
+        }
+        holder = Holder.NONE
+        held = null
         return send(request, applying)
+    }
+
+    /** Applies [request] on an idle helper, or replaces what the helper still holds. */
+    private suspend fun take(
+        request: EnforcementRequest,
+        applying: Holder,
+    ): EnforcementApplyReport {
+        return if (holder == Holder.NONE) send(request, applying) else replace(request, applying)
     }
 
     private inner class ManualView : EnforcementPort {
@@ -199,7 +222,7 @@ internal class PauseClaims(
                     // A running session applied again, such as after a set edit, finds the helper holding its
                     // earlier request; the helper refuses a new configuration until that one is cleared.
                     !joined -> {
-                        if (holder == Holder.NONE) send(request, Holder.MANUAL) else replace(request, Holder.MANUAL)
+                        take(request, Holder.MANUAL)
                     }
 
                     current != null && current.sameTargets(combined) && current.sessionEndEpochMillis >= request.sessionEndEpochMillis -> {
@@ -282,6 +305,10 @@ internal class PauseClaims(
             return delegate.displacedSuspendedExpiry(currentSessionId)
         }
     }
+}
+
+private fun EnforcementRequest?.items(): PauseItems {
+    return this?.let { request -> PauseItems(request.domains.toSet(), request.mappingIds.toSet()) } ?: PauseItems()
 }
 
 private fun EnforcementRequest.sameTargets(other: EnforcementRequest): Boolean {

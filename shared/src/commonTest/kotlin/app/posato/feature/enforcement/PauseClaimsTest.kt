@@ -348,6 +348,21 @@ class PauseClaimsTest {
     }
 
     @Test
+    fun `given a clear that failed during a replace when the session is applied again then the new items reach the helper`() = runTest {
+        val helper = HelperDouble(refusesWhileHolding = true)
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+        helper.clearOutcome = EnforcementOutcome.FAILED
+        claims.manual.apply(request(300, listOf("added.example", "work.example")))
+        helper.clearOutcome = EnforcementOutcome.CLEARED
+
+        val report = claims.manual.apply(request(300, listOf("added.example", "work.example")))
+
+        assertEquals(EnforcementOutcome.APPLIED, report.outcome)
+        assertEquals(listOf("added.example", "work.example"), helper.lastDomains)
+    }
+
+    @Test
     fun `given the same items in another order when the schedule is updated then the helper is not touched`() = runTest {
         val helper = HelperDouble()
         val claims = PauseClaims(helper)

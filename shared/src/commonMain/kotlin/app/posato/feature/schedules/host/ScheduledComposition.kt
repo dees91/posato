@@ -39,7 +39,7 @@ internal suspend fun composeScheduledRequest(
             retained = PauseItems(retained.domains, retained.applications.map { kept -> kept.mappingId.toHex() }.toSet()),
         )
     }
-    val plan = planPause(parts, ports.limits)
+    val plan = planPause(parts, ports.limits, ports.occupied())
     parts.forEach { part ->
         val held = plan.held[part.partId] ?: return@forEach
         val occurrence = running.first { candidate -> candidate.partId() == part.partId }
