@@ -196,8 +196,10 @@ internal class PauseClaims(
                 val combined = schedule?.let(request::unionWith) ?: request
                 val current = held
                 val report = when {
+                    // A running session applied again, such as after a set edit, finds the helper holding its
+                    // earlier request; the helper refuses a new configuration until that one is cleared.
                     !joined -> {
-                        send(request, Holder.MANUAL)
+                        if (holder == Holder.NONE) send(request, Holder.MANUAL) else replace(request, Holder.MANUAL)
                     }
 
                     current != null && current.sameTargets(combined) && current.sessionEndEpochMillis >= request.sessionEndEpochMillis -> {

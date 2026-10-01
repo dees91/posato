@@ -338,6 +338,19 @@ class PauseClaimsTest {
         }
 
     @Test
+    fun `given a helper that refuses while holding when a running manual session is applied again with new items then the helper takes them`() =
+        runTest {
+            val helper = HelperDouble(refusesWhileHolding = true)
+            val claims = PauseClaims(helper)
+            claims.manual.apply(request(300, listOf("work.example")))
+
+            val report = claims.manual.apply(request(300, listOf("added.example", "work.example")))
+
+            assertEquals(EnforcementOutcome.APPLIED, report.outcome)
+            assertEquals(listOf("added.example", "work.example"), helper.lastDomains)
+        }
+
+    @Test
     fun `given the same items in another order when the schedule is updated then the helper is not touched`() = runTest {
         val helper = HelperDouble()
         val claims = PauseClaims(helper)
