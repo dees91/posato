@@ -17,7 +17,7 @@ can require Resume restrictions and an attended administrator confirmation.
   Start this pause, and Change duration.
 - `session-details` opens read-only website/app lists in an iOS sheet or Mac
   dialog, with category tabs, a website filter, an editing route, and Close list.
-- `session-edit-route` opens the corresponding Paused items category from
+- `session-edit-route` opens the corresponding Pause sets category from
   the Session summary or selected-items list.
 - `session-active` shows SESSION ACTIVE, remaining time, and End session early.
 - `session-early-end` asks Ready to return? with End session and Keep this pause.
@@ -38,9 +38,9 @@ can require Resume restrictions and an attended administrator confirmation.
 - Choose Start a session, adjust duration, Review session, then Start this pause.
 - Open a summary disclosure to inspect a long list without editing it.
 - Use Add or edit websites or Manage apps in the summary to reach the matching
-  Paused items category in one action. The selected-items list offers the same
+  Pause sets category in one action. The selected-items list offers the same
   route. Filter list reveals the website-only filter when needed.
-- End session early opens its own confirmation surface. Paused items remains
+- End session early opens its own confirmation surface. Pause sets remains
   editable during an active session.
 - Expand iCloud to reach sync and workspace-removal controls. Expanding the row
   never starts an exchange.
@@ -109,15 +109,15 @@ Preconditions:
   then `$PC tap -t <target> --text "Close list" --role button`.
   List rows have no inline edit or remove action.
 - **Edit route:** From Session, `$PC tap -t <target> --text "Add or edit websites" --role button`.
-  A snapshot shows the Paused items heading and Add websites field. Return to
+  A snapshot shows the Pause sets heading and Add websites field. Return to
   Session, then `$PC tap -t <target> --text "Manage apps" --role button`;
-  the Paused items Apps tab and its Choose apps action are visible. Repeat each
+  the Pause sets Apps tab and its Choose apps action are visible. Repeat each
   route from the matching category inside Selected items.
 - **Filter:** Open the website count, tap Filter list, then `$PC type -t <target> --role textField --input absent.example --clear`.
   A snapshot shows Filters this list only, the filtered count, and No websites
   match this filter. Clear the field and confirm the original list returns.
 - **Unfinished edit:** Start editing a saved website without submitting, return
-  to Session, then use Add or edit websites. Paused items shows Add websites and
+  to Session, then use Add or edit websites. Pause sets shows Add websites and
   Resume website edit. Add a different website, resume, and verify the original
   unsaved Website domain text remains. Other website row actions stay disabled
   until the edit is resumed and finished or canceled.
@@ -137,7 +137,7 @@ Preconditions:
   `reset -t desktop`, launch, and drive the first-install flow to the permission
   step with the `first-install-skip.json` steps (Not now on the permission
   step), then finish to Session. `pgrep -f PosatoMacOSHelper` is empty; switch
-  to Paused items and back to Session and it stays empty. `$PC snapshot -t
+  to Pause sets and back to Session and it stays empty. `$PC snapshot -t
   desktop --format text` shows the This Mac row. Expand it with `$PC tap -t desktop --text-contains
   "This Mac," --role button`; `pgrep` stays empty and Check Mac setup is now
   visible. `$PC tap -t desktop --text
@@ -220,11 +220,11 @@ wait up to 30 seconds for a window and continue without one.
 - Actual load/authorization failures remain visible. A saved native selection
   without group metadata is not an effective application target.
 - Expiry needs a real five-minute wait; do not alter the database or clock.
-- Restart returns to Session, so re-enter Paused items before website cleanup.
+- Restart returns to Session, so re-enter Pause sets before website cleanup.
   A fresh database shows the first-install flow instead; run
   `first-install-skip.json` first (see [First install](./onboarding.md)).
 - iCloud and This Mac start collapsed whenever Session is recreated. Expand
-  the relevant row after returning from Paused items or relaunching. If an
+  the relevant row after returning from Pause sets or relaunching. If an
   expanded action is offscreen, use scenario `scrollTo` before tapping it;
   `find` and `wait` do not scroll.
 - An ad-hoc restaged package (what `./gradlew quality` leaves behind) cannot

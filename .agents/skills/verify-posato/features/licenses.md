@@ -8,7 +8,7 @@ available offline. Each document has its full selectable text and a return path.
 
 - `about-version` opens About Posato and shows the installed application version.
 - `licenses-documents` opens every document and reaches its final paragraph.
-- `licenses-return` returns to the preceding Session or Paused items destination.
+- `licenses-return` returns to the preceding Session or Pause sets destination.
 
 ## How to get to it (user POV)
 
@@ -32,7 +32,7 @@ Preconditions:
   The recipe enters About Posato from Session, reads the version, opens and
   scrolls every document, captures
   the content and accessibility tree, returns to Session, then proves the
-  Paused items return path.
+  Pause sets return path.
 - **Installed version:** compare the About snapshot with `CFBundleShortVersionString`
   in the iOS app bundle or `jpackage.app-version` in the staged Mac launcher.
   An unpackaged development run may say Version unavailable.

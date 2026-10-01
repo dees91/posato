@@ -12,14 +12,16 @@ feature file as the recipe.
   needed), `desktop` (only in a Tart VM clone with `--vm primary|peer`, never
   on the host Mac; see the skill's unattended section), or `device` (connected, unlocked iPhone and
   `posato.apple.developmentTeam` in the ignored `local.properties`).
-- Launch through the CLI (`launch -t <target>`), wait for the `Paused items`
-  button (`wait --for exists --text "Paused items" --role button`), and
+- Launch through the CLI (`launch -t <target>`), wait for the `Pause sets`
+  button (`wait --for exists --text "Pause sets" --role button`), and
   require `doctor -t <target>` to report `ok: true`. The app opens on the
   `Session` destination after every launch and relaunch, except on a fresh
   database, which shows the [first-install flow](./onboarding.md) first; run
   `first-install-skip.json` after every `--fresh` launch or `reset`.
 - Before a Websites or Applications recipe, switch destination with `tap
-  --text "Paused items" --role button` and wait for `Search`; the
+  --text "Pause sets" --role button`, open the set with `tap --text-contains
+  "My set" --role button` (or the set the recipe names), and wait for
+  `Search`; the
   Sessions recipe starts on `Session` and needs at least one website first.
 - Start recipes from a state with no website named `example.com` and no
   active session; the Simulator can start from `launch --fresh` and a desktop
@@ -74,6 +76,9 @@ handles, required state, commands, and observable proof.
 
 ## Features
 
+- [Pause sets](./pause-sets.md) covers the set list, creating, renaming,
+  choosing the default, deleting with Change their set, and the set choice in
+  Session and schedules.
 - [Schedules](./schedules.md) covers adding, validating, skipping, editing,
   turning off, deleting and persisting schedules, device readiness and sync.
 

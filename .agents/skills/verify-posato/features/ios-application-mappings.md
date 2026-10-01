@@ -19,7 +19,7 @@ this capability as unavailable.
 
 ## How to get to it (user POV)
 
-- Open Paused items from the bottom navigation and select Apps.
+- Open Pause sets from the bottom navigation, open a set, and select Apps.
 - Read On this iPhone only and the real access state, then tap Choose apps.
 - Allow Screen Time access if requested, choose individual applications, and
   Save. Cancel keeps the previous selection.
@@ -33,7 +33,7 @@ Preconditions:
   in ignored local.properties. Require doctor to pass and a Debug iphoneos build.
 - Record existing choices. No manual group creation or token injection is needed.
 
-- **Open Apps:** `$PC tap -t device --text "Paused items" --role button`, then
+- **Open Apps:** `$PC tap -t device --text "Pause sets" --role button`, `$PC tap -t device --text-contains "My set" --role button`, then
   `$PC tap -t device --text-contains Apps --role button`.
 - **Open picker:** Put `{"action":"tap","query":{"text":"Choose apps","role":"button"}}`
   and a screenshot in the same scenario. With undetermined authorization,
