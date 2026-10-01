@@ -66,9 +66,10 @@ internal fun PosatoNumberWheel(
     }
     Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         PosatoCaption(label)
-        WheelArrow(label = "Increase $label", increasing = true, enabled = value < range.last, onClick = { change(value + 1) })
+        // An accessibility action can still press a disabled arrow, so the step stays within the range.
+        WheelArrow(label = "Increase $label", increasing = true, enabled = value < range.last, onClick = { if (value < range.last) change(value + 1) })
         NumberWheelValues(value, range, label, wheel.scroll, change)
-        WheelArrow(label = "Decrease $label", increasing = false, enabled = value > range.first, onClick = { change(value - 1) })
+        WheelArrow(label = "Decrease $label", increasing = false, enabled = value > range.first, onClick = { if (value > range.first) change(value - 1) })
     }
 }
 
