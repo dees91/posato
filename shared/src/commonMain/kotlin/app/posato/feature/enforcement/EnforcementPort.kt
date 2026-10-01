@@ -86,6 +86,13 @@ public interface EnforcementPort {
         return false
     }
 
+    /**
+     * Records [request] as what this caller's restrictions already are, after a relaunch found the helper
+     * holding them; nothing is applied. A port that keeps no state ignores it.
+     */
+    public suspend fun adopt(request: EnforcementRequest) {
+    }
+
     public suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
         return false
     }

@@ -311,4 +311,16 @@ class PauseClaimsTest {
 
         assertEquals(listOf("apply grant 200"), helper.calls)
     }
+
+    @Test
+    fun `given a relaunch adopted the held manual session when a schedule on another set claims then the helper pauses both`() = runTest {
+        val helper = HelperDouble()
+        helper.applied = true
+        val claims = PauseClaims(helper)
+        claims.manual.adopt(request(300, listOf("work.example")))
+
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+
+        assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
+    }
 }

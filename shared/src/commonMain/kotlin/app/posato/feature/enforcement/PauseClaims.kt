@@ -256,6 +256,17 @@ internal class PauseClaims(
             return delegate.holdsSession(sessionId)
         }
 
+        /** After a relaunch the helper still holds the manual session; a schedule that joins then adds to it. */
+        override suspend fun adopt(request: EnforcementRequest) {
+            mutex.withLock {
+                manualRequest = request
+                if (holder == Holder.NONE) {
+                    holder = Holder.MANUAL
+                    held = request
+                }
+            }
+        }
+
         override suspend fun peekSuspendedExpiry(sessionId: String): Boolean {
             return delegate.peekSuspendedExpiry(sessionId)
         }

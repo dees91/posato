@@ -110,6 +110,14 @@ private fun ByteArray.toHex(): String {
 private const val BYTE_MASK: Int = 0xFF
 private const val HEX_RADIX: Int = 16
 
+/** The session's targets: composed with what it already paused when a composition is set, else its set's. */
+internal suspend fun SessionComposition?.targetsFor(
+    record: SessionRecord,
+    loadTargets: suspend (PauseSetId) -> SessionTargetsState,
+): SessionTargetsState {
+    return this?.compose(record) ?: loadTargets(record.setId)
+}
+
 /** Applies the running session again when a set edit changed what it pauses; an unchanged edit touches nothing. */
 internal suspend fun SessionTransitionOwner.recompose(composition: SessionComposition) {
     val active = status.value as? LocalSessionStatus.Active ?: return

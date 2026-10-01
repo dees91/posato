@@ -432,7 +432,7 @@ internal class SessionTransitionOwner(
         val entering = mutableView.value.state
         mutableView.update { view -> view.copy(busy = true) }
         try {
-            val targets = composition?.compose(record) ?: loadTargets(record.setId)
+            val targets = composition.targetsFor(record, loadTargets)
             val frozen = targets.toFrozenStartSet()
             frozenStartSet = frozen
             if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
@@ -516,7 +516,7 @@ internal class SessionTransitionOwner(
             actionTag = null
             mutableView.update { view -> view.copy(state = EnforcementState.Active(false)) }
         } else if (held) {
-            adoptHeld(tag, frozen.orLoaded(record.setId, loadTargets))
+            adoptHeld(tag, enforcement.adoptSession(record, frozen, composition.targetsFor(record, loadTargets)))
         } else if (enforcement.reapplyRequiresPrompt) {
             actionTag = tag
             mutableView.update { view ->
@@ -559,7 +559,7 @@ internal class SessionTransitionOwner(
         if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
             return
         }
-        val targets = composition?.compose(record) ?: loadTargets(record.setId)
+        val targets = composition.targetsFor(record, loadTargets)
         val requested = targets.toEnforcedSet()
         portMutex.withLock {
             if (!prepareApply(record, tag, clear = true)) {
