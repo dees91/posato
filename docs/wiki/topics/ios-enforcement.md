@@ -301,3 +301,21 @@ bound was not measured, and Posato 1.2 accepts up to 64 app choices.
 two named stores): 20 + 20 domains block both groups, so named stores
 compose; 26 + 26 domains block nothing, so the 50-domain bound counts the
 union of the stores, and splitting cannot raise it.
+
+## Composed pauses (`SCHEDULE-004` hosts)
+
+`observed` (2026-10-01, test iPhone, PR #125): one Swift composer decides
+what the schedule's named store pauses, called by the app and by the monitor
+extension under a `flock` in the App Group, so the two never apply over each
+other. It reads the version-2 table (each plan's set, every set once with
+deduplicated app tokens), the held record each running occurrence keeps in
+the App Group, and the manual store's current items as the share already
+taken from the 50 web domains and 50 apps. The manual enforcer applies the
+same rule with the schedule store as its share and its own store as what it
+holds. The app keeps no SQL record of what an iPhone part holds; the stores
+and held records are that record. An unreadable version-2 table clears and
+never falls back to version 1, which is read as the first set until the app
+writes version 2. A 1.2 schedule kept blocking across an App Store-style
+install of 1.3 that was never opened, including the end of an overlapping
+occurrence. A session shorter than 15 minutes still ends only when Posato is
+open at its end (`limits-and-platforms.md`).
