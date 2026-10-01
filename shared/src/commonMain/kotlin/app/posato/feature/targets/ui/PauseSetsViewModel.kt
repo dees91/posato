@@ -120,6 +120,10 @@ internal class PauseSetsViewModel(
         if (id in inputs.runningSets(schedules)) {
             return PauseSetsFailure.IN_USE
         }
+        val sets = (inputs.store.read() as? LocalPolicyResult.Success)?.value?.sets ?: return PauseSetsFailure.SAVE_FAILED
+        if (sets.resolvedDefault() == id) {
+            return PauseSetsFailure.SAVE_FAILED
+        }
         val users = schedules.schedules.filter { stored -> stored.plan.setId == id }
         if (users.isNotEmpty() && (moveTo == null || moveTo == id)) {
             return PauseSetsFailure.SAVE_FAILED

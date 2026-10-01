@@ -46,6 +46,7 @@ private fun ScheduleRowModel.withSet(
         set == null -> "This schedule's set was deleted. Choose a set."
         set.refused -> "This set is over the limit of 10. Delete a set to use it."
         set.websiteCount == 0 && (set.applicationCount ?: 0) == 0 -> "Nothing to pause on this ${sets.deviceNoun}"
+        set.applicationCount == 0 -> "Apps aren't chosen for this set on this ${sets.deviceNoun}. The pause includes its websites."
         else -> null
     }
     return copy(setLabel = set?.let { "Set: ${it.name}" }, setProblem = problem)

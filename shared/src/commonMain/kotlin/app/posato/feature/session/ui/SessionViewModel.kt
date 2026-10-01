@@ -54,6 +54,9 @@ internal class SessionViewModel(
     private val confirmingSession = MutableStateFlow<SessionId?>(null)
     private val ownerStatuses: Flow<Unit> = owner.status.transform { status ->
         sessionLoad.update { SessionLoadState(status = status) }
+        if (shownSetIdOf(sessionLoad.value, setupDraft.value) != targetsState.value.setId) {
+            targetsRefreshRequests.tryEmit(Unit)
+        }
         emit(Unit)
     }
     private val ticker = observeSessionTicks(clock)
@@ -62,7 +65,7 @@ internal class SessionViewModel(
         policyStore.policyChanges,
     ).transform {
         emit(Unit)
-        targetsState.update { loadSessionTargets(policyStore, applicationMappings, setupDraft.value.setId) }
+        targetsState.update { loadSessionTargets(policyStore, applicationMappings, shownSetIdOf(sessionLoad.value, setupDraft.value)) }
     }
 
     val uiState: StateFlow<SessionUiState> = combine(
@@ -106,6 +109,7 @@ internal class SessionViewModel(
             setupDraft.update { draft -> draft.copy(isSettingUp = true, failure = null) }
         } else {
             setupDraft.update { SessionSetupDraft() }
+            targetsRefreshRequests.tryEmit(Unit)
         }
     }
 
@@ -297,6 +301,14 @@ internal class SessionViewModel(
     fun retryEnforcement() {
         owner.retry()
     }
+}
+
+/** The set the screen shows: a running session's own set, else the one being chosen, else the default. */
+private fun shownSetIdOf(
+    load: SessionLoadState,
+    draft: SessionSetupDraft,
+): PauseSetId? {
+    return (load.status as? Active)?.record?.setId ?: draft.setId
 }
 
 private fun CoroutineScope.refreshSession(

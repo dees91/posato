@@ -29,11 +29,16 @@ internal suspend fun PosatoDatabase.advanceRevisionOrThrow(expectedRevision: Lon
     }
 }
 
-/** Replaces the first set's websites and the local group name; the other sets must still fit the unique limit. */
+/**
+ * Replaces the first set's websites and the local group name; the other sets must still fit the unique limit.
+ * Once the first set is deleted only the name changes, so naming the group never needs that set.
+ */
 internal suspend fun PosatoDatabase.writePolicyRows(policy: TargetPolicy) {
     val current = readStateOrThrow().sets
-    val sets = current.withDomains(PauseSetId.FIRST, policy.domains) ?: fail(LocalPolicyFailure.CAPACITY)
-    writeSetRows(sets)
+    val firstSetDeleted = current.sets.none { set -> set.id == PauseSetId.FIRST }
+    if (!(firstSetDeleted && policy.domains.isEmpty())) {
+        writeSetRows(current.withDomains(PauseSetId.FIRST, policy.domains) ?: fail(LocalPolicyFailure.CAPACITY))
+    }
     writeApplicationPolicyName(policy.applicationPolicyName)
 }
 

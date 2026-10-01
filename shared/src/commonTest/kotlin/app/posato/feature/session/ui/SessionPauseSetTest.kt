@@ -62,6 +62,23 @@ class SessionPauseSetTest {
     }
 
     @Test
+    fun `given a session running on a set other than the default when the screen reloads then it shows that set`() = runTest(dispatcher) {
+        val viewModel = viewModelOf(FakeLocalSessionStore(), FakeEnforcementPort(), defaultSetId = null)
+        viewModel.setSetupVisible(true)
+        scheduler.runCurrent()
+        viewModel.choosePauseSet(work)
+        viewModel.setReviewVisible(true)
+        scheduler.runCurrent()
+        viewModel.startSession()
+        scheduler.runCurrent()
+
+        viewModel.onScreenEntered()
+        scheduler.runCurrent()
+
+        assertEquals(listOf("work.example"), viewModel.uiState.value.review.domains)
+    }
+
+    @Test
     fun `given no choice when reviewing then the default set is reviewed`() = runTest(dispatcher) {
         val viewModel = viewModelOf(FakeLocalSessionStore(), FakeEnforcementPort(), defaultSetId = work)
 
