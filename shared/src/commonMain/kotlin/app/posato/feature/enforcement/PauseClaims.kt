@@ -86,7 +86,7 @@ internal class PauseClaims(
      * Lifts the schedule's claim; nothing happens when it holds none and no clear is pending. The helper
      * is cleared only when no manual claim remains, and a clear that failed is retried on the next call.
      * A manual session that outlasts the schedule gets its own request and end again when the helper
-     * held the schedule's.
+     * held the schedule's or the union; the helper still holds that one, so it is replaced.
      */
     override suspend fun releaseSchedule(): EnforcementOutcome {
         return mutex.withLock {
@@ -102,7 +102,7 @@ internal class PauseClaims(
                 }
 
                 holder == Holder.SCHEDULE || held?.sameTargets(manual) == false -> {
-                    val report = send(manual.withGrantOnly(), Holder.MANUAL)
+                    val report = replace(manual.withGrantOnly(), Holder.MANUAL)
                     if (report.outcome != EnforcementOutcome.APPLIED) {
                         manualRequest = null
                     }
@@ -219,7 +219,8 @@ internal class PauseClaims(
 
         /**
          * Ending a manual session inside a schedule hands the helper back to the schedule's own request
-         * and end when it held the manual one; if that fails, it is cleared and the host applies again.
+         * and end when it held the manual one or the union, which it still holds until the later end, so
+         * it is replaced; if that fails, it is cleared and the host applies again.
          */
         override suspend fun clear(): EnforcementOutcome {
             return mutex.withLock {
@@ -231,7 +232,7 @@ internal class PauseClaims(
                     }
 
                     holder == Holder.MANUAL || held?.sameTargets(schedule) == false -> {
-                        val report = send(schedule.withGrantOnly(), Holder.SCHEDULE)
+                        val report = replace(schedule.withGrantOnly(), Holder.SCHEDULE)
                         if (report.outcome != EnforcementOutcome.APPLIED) {
                             scheduleRequest = null
                             clearHelper()
