@@ -146,6 +146,13 @@ extension BoundedProxyRequestParser {
     if ExactHostPolicy.matches(host: destination.host, selectedHosts: input.selectedHosts) {
       return .blockedConnect
     }
+    if let addresses = BoundedProxyAuthority.relayLoopbackAddresses(destination.host) {
+      return .loopbackTunnel(
+        addresses: addresses,
+        port: destination.port,
+        initialData: Data(input.requestData[input.parsed.headerEnd...])
+      )
+    }
     guard destination.port == 443 else {
       return nil
     }
@@ -195,19 +202,20 @@ extension BoundedProxyRequestParser {
     if isOwnListener {
       return nil
     }
+    let initialData = forwardedRequest(
+      method: input.method,
+      target: input.target,
+      parsed: input.parsed,
+      destination: destination,
+      body: input.body
+    )
+    if let addresses = BoundedProxyAuthority.relayLoopbackAddresses(destination.host) {
+      return .loopbackForward(
+        addresses: addresses, port: destination.port, initialData: initialData)
+    }
     guard destination.port == 80 else {
       return nil
     }
-    return .forward(
-      host: destination.host,
-      port: destination.port,
-      initialData: forwardedRequest(
-        method: input.method,
-        target: input.target,
-        parsed: input.parsed,
-        destination: destination,
-        body: input.body
-      )
-    )
+    return .forward(host: destination.host, port: destination.port, initialData: initialData)
   }
 }

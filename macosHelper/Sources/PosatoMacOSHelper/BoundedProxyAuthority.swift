@@ -66,6 +66,26 @@ enum BoundedProxyAuthority {
     return String(host.dropFirst().dropLast())
   }
 
+  /// The literal addresses a relay to `host` may connect to, or nil unless `host` is exactly `localhost` or
+  /// `127.0.0.1` (ASCII case-insensitive, one optional trailing dot) or `::1` (parsed from brackets). `localhost` never
+  /// reaches DNS or the hosts file (ADR 0005, MACOS-024 amendment).
+  static func relayLoopbackAddresses(_ host: String) -> [String]? {
+    if host == "::1" {
+      return ["::1"]
+    }
+    guard !host.contains(":") else {
+      return nil
+    }
+    switch ExactHostPolicy.normalizedHost(host) {
+    case "localhost":
+      return ["127.0.0.1", "::1"]
+    case "127.0.0.1":
+      return ["127.0.0.1"]
+    default:
+      return nil
+    }
+  }
+
   static func isLoopback(_ host: String) -> Bool {
     let normalized = ExactHostPolicy.normalizedHost(host)
     return normalized == "127.0.0.1" || normalized == "localhost" || normalized == "::1"

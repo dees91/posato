@@ -133,6 +133,14 @@ extension BoundedHTTPProxy {
       forward(client: connection, host: host, port: port, initialData: initialData, isTunnel: true)
     case .forward(let host, let port, let initialData):
       forward(client: connection, host: host, port: port, initialData: initialData, isTunnel: false)
+    case .loopbackTunnel(let addresses, let port, let initialData):
+      forwardToLoopback(
+        client: connection, addresses: addresses, port: port, initialData: initialData,
+        isTunnel: true)
+    case .loopbackForward(let addresses, let port, let initialData):
+      forwardToLoopback(
+        client: connection, addresses: addresses, port: port, initialData: initialData,
+        isTunnel: false)
     }
   }
 }

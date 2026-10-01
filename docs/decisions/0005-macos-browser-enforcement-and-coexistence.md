@@ -7,6 +7,67 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-024 loopback amendment
+
+`user-confirmed`: proposed and accepted by the maintainer on 2026-09-30
+(`MACOS-024`, `AC-04`). Exceptions ownership and restoration are specified in the
+[ADR 0004 amendment](0004-macos-helper-ownership-and-lifecycle.md#macos-024-loopback-proxy-exceptions-amendment).
+
+`user-confirmed` report (2026-09-30): during a session, a local Codex MCP
+connection received an empty response. `observed`: Codex 0.159.2 reads only
+the HTTP and HTTPS tuples of the system proxy settings and not the
+exceptions list, and the listener forwards cleartext HTTP only to port 80
+and tunnels `CONNECT` only to port 443, so a loopback server on any other
+port is refused.
+
+Two changes keep local traffic working during a session (D6):
+
+- **Exceptions.** While Posato's proxy is applied, `localhost`, `127.0.0.1`,
+  and `::1` are in the proxy exceptions, so clients that honor the list
+  connect directly.
+- **Loopback relay.** For clients that ignore the list, the listener relays
+  an absolute-form HTTP request or a `CONNECT` whose destination is one of
+  three exact hosts on any port other than its own listener port. The hosts
+  match ASCII case-insensitively: `localhost` and `127.0.0.1`, each with
+  one optional trailing dot, and `::1`, only as `[::1]`.
+  `[0:0:0:0:0:0:0:1]`, `[::ffff:127.0.0.1]`, `127.1`, `127.0.0.2`,
+  `0.0.0.0`, other private ranges, `*.localhost`, and `*.local` stay under
+  the port 80 and 443 rule below. The relay connects to literal socket
+  addresses only: `localhost` tries `127.0.0.1` and then `::1` and never
+  reaches DNS or the hosts file. It sends the request-target authority as
+  `Host`, unchanged by the literal-address connect, so `localhost` is never
+  rewritten to an address.
+- **Relay bounds.** Loopback relays have their own cap of 32 client and
+  upstream pairs inside the listener's connection limit, so they cannot
+  starve browser traffic. The header and connect timeouts still apply; the
+  idle timeout is dropped only after the upstream's first response byte, or
+  after `200 Connection Established` for `CONNECT`, and both sockets use TCP
+  keepalive. The inherited request limits stay: one request per client
+  connection with `Connection: close`, no pipelined bytes, a 64 KiB
+  request, and refusal of request `Transfer-Encoding` and `Upgrade`.
+
+For those three hosts only, this replaces three base-text statements: that
+an unselected destination on any other port is rejected (Network denial and
+its limits), that every other loopback authority and port is rejected
+(Fixed presentation), and that only ports 80 and 443 are supported
+(Consequences). The pause-page exception and the refusal of the listener's
+own port are unchanged.
+
+A selected website can never become an exception or a loopback relay:
+`ExactDomain` accepts no IP literal or single-label host, selected-host
+matching runs before the loopback rule, and Posato adds only the three
+fixed entries. The pre-Apply chain check simulates the applied exceptions,
+and the post-Apply check still requires that every selected exact domain
+resolves to exactly the Posato loopback route, so a selected domain that
+an exception would cover fails before mutation. `observed` (2026-09-30,
+`MACOS-024`): CFNetwork applies the `localhost` entry to `localhost` only,
+not to `*.localhost`, which still resolves to the Posato route.
+
+Residual: relayed connections originate from the session helper, and any
+local process can reach the listener. A loopback service that trusts its
+peer by process identity sees Posato as that peer. Per-application bypass
+remains out of scope.
+
 ## TARGETS-006 www-equivalence clarification
 
 `user-confirmed` (2026-09-18): one stored exact host is what the person typed.

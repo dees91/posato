@@ -41,7 +41,8 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     }
     let serviceIdentifier = try configuration.currentPrimaryServiceIdentifier()
     let baseline = try configuration.snapshot(serviceIdentifier: serviceIdentifier)
-    guard !baseline.hasEnabledProxy else {
+    guard !baseline.hasEnabledProxy, let owning = OwnedExceptions.applying(to: baseline.exceptions)
+    else {
       throw ProxyOwnershipFailure.unavailable
     }
     let applied = appliedTuple(port: port)
@@ -54,16 +55,20 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
       baselineHTTP: baseline.http,
       baselineHTTPS: baseline.https,
       appliedHTTP: applied,
-      appliedHTTPS: applied
+      appliedHTTPS: applied,
+      exceptions: owning.owned
     )
     try persistence.save(record)
     let resulting = try configuration.replaceTuples(
       expected: baseline,
       http: applied,
       https: applied,
+      exceptions: owning.target,
       requirePrimaryService: true
     )
-    guard resulting.http == applied, resulting.https == applied else {
+    guard resulting.http == applied, resulting.https == applied,
+      owning.owned.isApplied(resulting.exceptions)
+    else {
       throw ProxyOwnershipFailure.recoveryRequired
     }
     record.phase = .applied
@@ -97,6 +102,7 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
       record.phase == .prepared
       && current.http == record.baselineHTTP
       && current.https == record.baselineHTTPS
+      && record.exceptions?.isBaseline(current.exceptions) ?? true
     if unchangedPreparedBaseline {
       try persistence.remove()
       return .idle
@@ -171,7 +177,8 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
     }
     guard primaryService == record.serviceIdentifier,
       current.http == record.appliedHTTP,
-      current.https == record.appliedHTTPS
+      current.https == record.appliedHTTPS,
+      record.exceptions?.isApplied(current.exceptions) ?? true
     else {
       return try restore(record: record, current: current)
     }
@@ -183,45 +190,6 @@ public final class ProxyOwnershipEngine: @unchecked Sendable {
       return try maintain(record: record)
     }
     return try reconcile()
-  }
-
-  private func restore(
-    record original: OwnershipRecord,
-    current: ProxySnapshot
-  ) throws -> OwnershipPhase {
-    var record = original
-    record.phase = .restorePending
-    try persistence.save(record)
-    let httpConflict =
-      current.http != record.appliedHTTP
-      && current.http != record.baselineHTTP
-    let httpsConflict =
-      current.https != record.appliedHTTPS
-      && current.https != record.baselineHTTPS
-    let targetHTTP =
-      current.http == record.appliedHTTP
-      ? record.baselineHTTP : current.http
-    let targetHTTPS =
-      current.https == record.appliedHTTPS
-      ? record.baselineHTTPS : current.https
-    let resulting = try configuration.replaceTuples(
-      expected: current,
-      http: targetHTTP,
-      https: targetHTTPS,
-      requirePrimaryService: false
-    )
-    guard resulting.http == targetHTTP, resulting.https == targetHTTPS else {
-      record.phase = .recoveryRequired
-      try persistence.save(record)
-      throw ProxyOwnershipFailure.recoveryRequired
-    }
-    if httpConflict || httpsConflict {
-      record.phase = .recoveryRequired
-      try persistence.save(record)
-      return .recoveryRequired
-    }
-    try persistence.remove()
-    return .idle
   }
 
   private func appliedTuple(port: UInt16) -> ProxyTuple {
@@ -279,8 +247,72 @@ extension ProxyOwnershipEngine {
     }
   }
 
+  private func restore(
+    record original: OwnershipRecord,
+    current: ProxySnapshot
+  ) throws -> OwnershipPhase {
+    var record = original
+    record.phase = .restorePending
+    try persistence.save(record)
+    let httpConflict =
+      current.http != record.appliedHTTP
+      && current.http != record.baselineHTTP
+    let httpsConflict =
+      current.https != record.appliedHTTPS
+      && current.https != record.baselineHTTPS
+    let targetHTTP =
+      current.http == record.appliedHTTP
+      ? record.baselineHTTP : current.http
+    let targetHTTPS =
+      current.https == record.appliedHTTPS
+      ? record.baselineHTTPS : current.https
+    let exceptions = Self.exceptionsRestore(record: record, current: current.exceptions)
+    let resulting = try configuration.replaceTuples(
+      expected: current,
+      http: targetHTTP,
+      https: targetHTTPS,
+      exceptions: exceptions.target,
+      requirePrimaryService: false
+    )
+    guard resulting.http == targetHTTP, resulting.https == targetHTTPS,
+      exceptions.reached(resulting.exceptions)
+    else {
+      record.phase = .recoveryRequired
+      try persistence.save(record)
+      throw ProxyOwnershipFailure.recoveryRequired
+    }
+    if httpConflict || httpsConflict || exceptions.conflict {
+      record.phase = .recoveryRequired
+      try persistence.save(record)
+      return .recoveryRequired
+    }
+    try persistence.remove()
+    return .idle
+  }
+
+  /// Restores an applied list to its baseline, keeps a baseline list, and leaves any other list untouched as a
+  /// conflict (ADR 0004, MACOS-024 amendment D1). A version 1 record owns no exceptions change.
+  private static func exceptionsRestore(
+    record: OwnershipRecord,
+    current: ProxyExceptions
+  ) -> ExceptionsRestore {
+    guard let owned = record.exceptions, !owned.isBaseline(current) else {
+      return ExceptionsRestore(target: .untouched, conflict: false) { $0 == current }
+    }
+    guard let target = owned.restoreTarget(from: current) else {
+      return ExceptionsRestore(target: .untouched, conflict: true) { $0 == current }
+    }
+    return ExceptionsRestore(target: target, conflict: false, reached: owned.isBaseline)
+  }
+
   private func releaseRemovedService() throws -> OwnershipPhase {
     try persistence.remove()
     return .idle
   }
+}
+
+private struct ExceptionsRestore {
+  let target: ProxyExceptionsTarget
+  let conflict: Bool
+  let reached: (ProxyExceptions) -> Bool
 }

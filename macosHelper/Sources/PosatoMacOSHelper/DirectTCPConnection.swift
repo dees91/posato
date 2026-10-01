@@ -25,9 +25,16 @@ final class DirectTCPConnection: @unchecked Sendable {
     port: UInt16,
     completion: @escaping @Sendable (Error?) -> Void
   ) {
+    start(connecting: { try Self.connectSocket(host: host, port: port) }, completion: completion)
+  }
+
+  private func start(
+    connecting: @escaping @Sendable () throws -> Int32,
+    completion: @escaping @Sendable (Error?) -> Void
+  ) {
     let callbackQueue = queue
     DispatchQueue.global(qos: .utility).async { [weak self] in
-      let result = Result { try Self.connectSocket(host: host, port: port) }
+      let result = Result { try connecting() }
       callbackQueue.async { [weak self] in
         guard let self else {
           if case .success(let descriptor) = result {
@@ -157,9 +164,13 @@ final class DirectTCPConnection: @unchecked Sendable {
     }
   }
 
-  private static func connectSocket(host: String, port: UInt16) throws -> Int32 {
+  private static func connectSocket(
+    host: String,
+    port: UInt16,
+    flags: Int32 = AI_ADDRCONFIG
+  ) throws -> Int32 {
     var hints = addrinfo()
-    hints.ai_flags = AI_ADDRCONFIG
+    hints.ai_flags = flags
     hints.ai_family = AF_UNSPEC
     hints.ai_socktype = SOCK_STREAM
     hints.ai_protocol = IPPROTO_TCP
@@ -252,5 +263,40 @@ final class DirectTCPConnection: @unchecked Sendable {
 
   private static func posixError(_ code: Int32) -> POSIXError {
     POSIXError(POSIXErrorCode(rawValue: code) ?? .EIO)
+  }
+}
+
+extension DirectTCPConnection {
+  /// Connects to numeric addresses only, in order, with TCP keepalive: no resolver, no hosts file, and no
+  /// `AI_ADDRCONFIG` that could drop `::1` (ADR 0005, MACOS-024 amendment).
+  func start(
+    literalAddresses: [String],
+    port: UInt16,
+    completion: @escaping @Sendable (Error?) -> Void
+  ) {
+    start(
+      connecting: {
+        let descriptor = try Self.connectSocket(literalAddresses: literalAddresses, port: port)
+        var enabled: Int32 = 1
+        var idle = Int32(BoundedHTTPProxy.keepaliveIdleSeconds)
+        let size = socklen_t(MemoryLayout<Int32>.size)
+        _ = Darwin.setsockopt(descriptor, SOL_SOCKET, SO_KEEPALIVE, &enabled, size)
+        _ = Darwin.setsockopt(descriptor, IPPROTO_TCP, TCP_KEEPALIVE, &idle, size)
+        return descriptor
+      },
+      completion: completion
+    )
+  }
+
+  fileprivate static func connectSocket(literalAddresses: [String], port: UInt16) throws -> Int32 {
+    var lastError: Error = POSIXError(.EHOSTUNREACH)
+    for address in literalAddresses {
+      do {
+        return try connectSocket(host: address, port: port, flags: AI_NUMERICHOST)
+      } catch {
+        lastError = error
+      }
+    }
+    throw lastError
   }
 }

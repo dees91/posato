@@ -16,7 +16,7 @@ extension BoundedHTTPProxy {
     let upstream = DirectTCPConnection(queue: queue)
     directConnections[ObjectIdentifier(upstream)] = upstream
     let resolved = resolveUpstream(host, port)
-    scheduleTimeout(after: Self.idleConnectionTimeout, client: client, upstream: upstream)
+    scheduleTimeout(after: idleTimeout, client: client, upstream: upstream)
     upstream.start(
       host: resolved.0,
       port: resolved.1,
@@ -35,8 +35,56 @@ extension BoundedHTTPProxy {
     )
   }
 
+  func forwardToLoopback(
+    client: NWConnection,
+    addresses: [String],
+    port: UInt16,
+    initialData: Data,
+    isTunnel: Bool
+  ) {
+    guard connections.count + directConnections.count < Self.maximumTrackedConnections,
+      loopbackUpstreams.count < Self.maximumLoopbackRelays
+    else {
+      finish(client)
+      return
+    }
+    let upstream = DirectTCPConnection(queue: queue)
+    directConnections[ObjectIdentifier(upstream)] = upstream
+    loopbackUpstreams.insert(ObjectIdentifier(upstream))
+    scheduleTimeout(after: idleTimeout, client: client, upstream: upstream)
+    upstream.start(
+      literalAddresses: addresses,
+      port: port,
+      completion: { [weak self, weak client, weak upstream] error in
+        guard let self, let client, let upstream else {
+          return
+        }
+        self.handleUpstreamReady(
+          client: client,
+          upstream: upstream,
+          error: error,
+          initialData: initialData,
+          isTunnel: isTunnel
+        )
+      }
+    )
+  }
+
+  /// A loopback relay is established once the tunnel is confirmed or the upstream's first response byte arrives;
+  /// from then on it has no idle timeout (ADR 0005, MACOS-024 amendment).
+  private func markEstablishedIfLoopback(client: NWConnection, upstream: DirectTCPConnection) {
+    let identifier = ObjectIdentifier(upstream)
+    guard loopbackUpstreams.contains(identifier), !establishedLoopbackUpstreams.contains(identifier)
+    else {
+      return
+    }
+    establishedLoopbackUpstreams.insert(identifier)
+    cancelRequestTimeout(for: client)
+    cancelRequestTimeout(for: upstream)
+  }
+
   func beginTunnelRelay(client: NWConnection, upstream: DirectTCPConnection) {
-    scheduleTimeout(after: Self.idleConnectionTimeout, client: client, upstream: upstream)
+    scheduleTimeout(after: idleTimeout, client: client, upstream: upstream)
     relay(from: client, to: upstream)
     relay(from: upstream, to: client)
   }
@@ -123,6 +171,7 @@ extension BoundedHTTPProxy {
       )
       return
     }
+    markEstablishedIfLoopback(client: client, upstream: upstream)
     client.send(
       content: data,
       completion: .contentProcessed { sendError in
@@ -206,6 +255,7 @@ extension BoundedHTTPProxy {
       finish(client, upstream)
       return
     }
+    markEstablishedIfLoopback(client: client, upstream: upstream)
     guard !initialData.isEmpty else {
       beginTunnelRelay(client: client, upstream: upstream)
       return
@@ -229,13 +279,33 @@ extension BoundedHTTPProxy {
         self.finish(client, upstream)
       } else {
         self.scheduleTimeout(
-          after: Self.idleConnectionTimeout,
+          after: self.idleTimeout,
           client: client,
           upstream: upstream
         )
         self.relay(from: upstream, to: client)
+        if self.loopbackUpstreams.contains(ObjectIdentifier(upstream)) {
+          self.finishWhenClientCloses(client: client, upstream: upstream)
+        }
       }
     }
+  }
+
+  /// An absolute-form loopback relay reads nothing more from its client, so without this an established relay
+  /// would keep its capped slot after the client leaves (ADR 0005, MACOS-024). Any further byte is refused too.
+  private func finishWhenClientCloses(client: NWConnection, upstream: DirectTCPConnection) {
+    client.receive(
+      minimumIncompleteLength: 1,
+      maximumLength: 1,
+      completion: { [weak self, weak client, weak upstream] _, _, _, _ in
+        guard let self, let client, let upstream else {
+          return
+        }
+        self.queue.async {
+          self.finish(client, upstream)
+        }
+      }
+    )
   }
 
   private func finishOrContinueEmpty(
@@ -250,14 +320,14 @@ extension BoundedHTTPProxy {
       if isComplete || error != nil {
         finish(client, upstream)
       } else {
-        scheduleTimeout(after: Self.idleConnectionTimeout, client: client, upstream: upstream)
+        scheduleTimeout(after: idleTimeout, client: client, upstream: upstream)
         relay(from: client, to: upstream)
       }
     case .upstreamToClient:
       if isComplete || error != nil {
         finish(client, upstream)
       } else {
-        scheduleTimeout(after: Self.idleConnectionTimeout, client: client, upstream: upstream)
+        scheduleTimeout(after: idleTimeout, client: client, upstream: upstream)
         relay(from: upstream, to: client)
       }
     }
@@ -273,7 +343,7 @@ extension BoundedHTTPProxy {
     if sendError != nil || isComplete || error != nil {
       finish(client, upstream)
     } else {
-      scheduleTimeout(after: Self.idleConnectionTimeout, client: client, upstream: upstream)
+      scheduleTimeout(after: idleTimeout, client: client, upstream: upstream)
       relay(from: client, to: upstream)
     }
   }
@@ -288,7 +358,7 @@ extension BoundedHTTPProxy {
     if sendError != nil || isComplete || error != nil {
       finish(client, upstream)
     } else {
-      scheduleTimeout(after: Self.idleConnectionTimeout, client: client, upstream: upstream)
+      scheduleTimeout(after: idleTimeout, client: client, upstream: upstream)
       relay(from: upstream, to: client)
     }
   }

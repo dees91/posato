@@ -1,5 +1,6 @@
 import CoreFoundation
 import Foundation
+import PosatoMacOSServiceCore
 
 enum ProxyChainHop: Equatable {
   case loopback(port: UInt16)
@@ -70,6 +71,13 @@ struct ProxyChainValidator {
     mutable["SOCKSEnable"] = 0
     mutable["ProxyAutoConfigEnable"] = 0
     mutable["ProxyAutoDiscoveryEnable"] = 0
+    // Apply adds the loopback exceptions (ADR 0004, MACOS-024); an unreadable list fails Apply itself.
+    let current = mutable["ExceptionsList"]
+    let exceptions = current == nil ? [] : current as? [String]
+    if let exceptions {
+      let missing = ProxyExceptions.missingLoopbackEntries(in: exceptions)
+      mutable["ExceptionsList"] = exceptions + missing
+    }
     return mutable
   }
 }

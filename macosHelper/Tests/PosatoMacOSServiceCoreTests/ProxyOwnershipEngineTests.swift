@@ -181,7 +181,8 @@ private let canonicalDigest = Data(repeating: 3, count: 32)
     baselineHTTP: emptyTuple,
     baselineHTTPS: emptyTuple,
     appliedHTTP: applied,
-    appliedHTTPS: applied
+    appliedHTTPS: applied,
+    exceptions: nil
   )
   let engine = ProxyOwnershipEngine(
     persistence: persistence,
@@ -209,7 +210,8 @@ private let canonicalDigest = Data(repeating: 3, count: 32)
     baselineHTTP: emptyTuple,
     baselineHTTPS: emptyTuple,
     appliedHTTP: applied,
-    appliedHTTPS: applied
+    appliedHTTPS: applied,
+    exceptions: nil
   )
   persistence.record = original
   let engine = ProxyOwnershipEngine(

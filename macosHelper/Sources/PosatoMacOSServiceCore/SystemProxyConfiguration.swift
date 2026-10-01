@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 import SystemConfiguration
 
@@ -50,6 +51,7 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     expected: ProxySnapshot,
     http: ProxyTuple,
     https: ProxyTuple,
+    exceptions: ProxyExceptionsTarget,
     requirePrimaryService: Bool
   ) throws -> ProxySnapshot {
     guard geteuid() == 0 else {
@@ -78,17 +80,35 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
       throw ProxyOwnershipFailure.conflict
     }
     let values = try configuration(protocolValue: protocolValue)
-    let expectedValues = Self.replacingTuples(in: values, http: http, https: https)
+    let expectedValues = Self.replacingTuples(
+      in: values,
+      http: http,
+      https: https,
+      exceptions: exceptions
+    )
     guard SCNetworkProtocolSetConfiguration(protocolValue, expectedValues as CFDictionary),
       SCPreferencesCommitChanges(preferences),
       SCPreferencesApplyChanges(preferences)
     else {
       throw SystemProxyConfigurationFailure.mutation
     }
+    return try verifiedSnapshot(
+      preferences: preferences,
+      serviceIdentifier: expected.serviceIdentifier,
+      expectedValues: expectedValues
+    )
+  }
+
+  /// Re-reads the committed configuration and requires it to equal the dictionary that was written.
+  private func verifiedSnapshot(
+    preferences: SCPreferences,
+    serviceIdentifier: String,
+    expectedValues: [String: Any]
+  ) throws -> ProxySnapshot {
     SCPreferencesSynchronize(preferences)
     let resultingProtocol = try proxyProtocol(
       preferences: preferences,
-      serviceIdentifier: expected.serviceIdentifier
+      serviceIdentifier: serviceIdentifier
     )
     let resultingValues = try configuration(protocolValue: resultingProtocol)
     guard Self.dictionariesEqual(resultingValues, expectedValues) else {
@@ -96,7 +116,7 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     }
     return try snapshot(
       protocolValue: resultingProtocol,
-      serviceIdentifier: expected.serviceIdentifier
+      serviceIdentifier: serviceIdentifier
     )
   }
 
@@ -130,7 +150,8 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
       serviceIdentifier: serviceIdentifier,
       http: try tuple(prefix: "HTTP", values: values),
       https: try tuple(prefix: "HTTPS", values: values),
-      additionalProxyEnabled: try Self.additionalProxyEnabled(values: values)
+      additionalProxyEnabled: try Self.additionalProxyEnabled(values: values),
+      exceptions: Self.exceptions(values[Self.exceptionsKey])
     )
   }
 
@@ -212,12 +233,21 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
   static func replacingTuples(
     in original: [String: Any],
     http: ProxyTuple,
-    https: ProxyTuple
+    https: ProxyTuple,
+    exceptions: ProxyExceptionsTarget = .untouched
   ) -> [String: Any] {
     var values = original
     let configuration = SystemProxyConfiguration()
     configuration.set(tuple: http, prefix: "HTTP", values: &values)
     configuration.set(tuple: https, prefix: "HTTPS", values: &values)
+    switch exceptions {
+    case .untouched:
+      break
+    case .set(let entries):
+      values[exceptionsKey] = entries
+    case .remove:
+      values.removeValue(forKey: exceptionsKey)
+    }
     return values
   }
 
@@ -241,5 +271,27 @@ public final class SystemProxyConfiguration: ProxyConfigurationAccess, @unchecke
     case nil:
       values.removeValue(forKey: key)
     }
+  }
+}
+
+extension SystemProxyConfiguration {
+  static let exceptionsKey = "ExceptionsList"
+
+  /// Reads `ExceptionsList` without throwing, so that an out-of-band value never blocks tuple restoration.
+  static func exceptions(_ value: Any?) -> ProxyExceptions {
+    guard let value else {
+      return .absent
+    }
+    if let entries = value as? [Any], entries.count <= ProxyExceptions.maximumReadableEntries {
+      let strings = entries.compactMap { $0 as? String }
+      let bounded = strings.allSatisfy { $0.utf8.count <= ProxyExceptions.maximumEntryBytes }
+      if strings.count == entries.count, bounded {
+        return .list(strings)
+      }
+    }
+    let raw =
+      (try? PropertyListSerialization.data(fromPropertyList: value, format: .binary, options: 0))
+      ?? Data(String(describing: value).utf8)
+    return .unreadable(Data(SHA256.hash(data: raw)))
   }
 }

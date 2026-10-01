@@ -6,6 +6,10 @@ enum BoundedProxyRoute: Equatable {
   case localBlockedPage
   case tunnel(host: String, port: UInt16, initialData: Data)
   case forward(host: String, port: UInt16, initialData: Data)
+  /// A relay to one of the three exact loopback hosts on any port but the listener's own (ADR 0005, MACOS-024),
+  /// connecting only to the literal addresses in order.
+  case loopbackTunnel(addresses: [String], port: UInt16, initialData: Data)
+  case loopbackForward(addresses: [String], port: UInt16, initialData: Data)
 }
 
 enum BoundedProxyRequestFraming: Equatable {
