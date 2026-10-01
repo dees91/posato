@@ -33,7 +33,7 @@ internal class SqlScheduleStore(
     }
 
     override suspend fun read(): ScheduleResult<ScheduleSnapshot> {
-        return transact(changed = false) { readSnapshot() }
+        return transact(changed = false, writes = false) { readSnapshot() }
     }
 
     override suspend fun save(
@@ -90,7 +90,7 @@ internal class SqlScheduleStore(
     }
 
     override suspend fun readIntents(): ScheduleResult<List<SequencedScheduleIntent>> {
-        return transact(changed = false) { readIntentRows() }
+        return transact(changed = false, writes = false) { readIntentRows() }
     }
 
     override suspend fun deleteIntent(sequence: Long): ScheduleResult<Unit> {
@@ -114,11 +114,16 @@ internal class SqlScheduleStore(
 
     private suspend fun <T> transact(
         changed: Boolean = true,
+        writes: Boolean = true,
         block: suspend PosatoDatabase.() -> T,
     ): ScheduleResult<T> {
         val result: ScheduleResult<T> = withContext(databaseDispatcher) {
             try {
-                ScheduleResult.Success(database.transactionWithResult<T> { database.block().also { database.sweepRetention() } })
+                // Only a write sweeps what ended parts kept: a read that also wrote would fail while another
+                // connection writes.
+                ScheduleResult.Success(
+                    database.transactionWithResult<T> { database.block().also { if (writes) database.sweepRetention() } },
+                )
             } catch (expectedCancellation: CancellationException) {
                 throw expectedCancellation
             } catch (failure: ScheduleStoreException) {
