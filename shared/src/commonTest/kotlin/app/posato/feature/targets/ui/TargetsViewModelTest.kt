@@ -17,6 +17,7 @@ import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.ExactDomainPolicyLimits
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
@@ -910,6 +911,19 @@ private class FakeTargetPolicyStore(
             return LocalPolicyResult.Failure(LocalPolicyFailure.REVISION_CONFLICT)
         }
         state = LocalTargetPolicyState(expectedRevision + 1, policy)
+        return LocalPolicyResult.Success(state)
+    }
+
+    override suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
+        syncWrite: PolicySyncWrite?,
+    ): LocalPolicyResult<LocalTargetPolicyState> {
+        replaceCalls++
+        if (expectedRevision != state.revision) {
+            return LocalPolicyResult.Failure(LocalPolicyFailure.REVISION_CONFLICT)
+        }
+        state = LocalTargetPolicyState(expectedRevision + 1, sets, state.applicationPolicyName)
         return LocalPolicyResult.Success(state)
     }
 }

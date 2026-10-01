@@ -93,6 +93,12 @@ internal interface LocalTargetPolicyStore {
         policy: TargetPolicy,
         syncWrite: PolicySyncWrite? = null,
     ): LocalPolicyResult<LocalTargetPolicyState>
+
+    suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
+        syncWrite: PolicySyncWrite? = null,
+    ): LocalPolicyResult<LocalTargetPolicyState>
 }
 
 internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
@@ -104,12 +110,6 @@ internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
         workspaceId: ByteArray,
         author: suspend () -> Boolean,
     ): LocalPolicyResult<Boolean>
-
-    suspend fun replaceSets(
-        expectedRevision: Long,
-        sets: PauseSets,
-        syncWrite: PolicySyncWrite? = null,
-    ): LocalPolicyResult<LocalTargetPolicyState>
 
     suspend fun recordIntents(write: PolicySyncWrite): LocalPolicyResult<Unit>
 

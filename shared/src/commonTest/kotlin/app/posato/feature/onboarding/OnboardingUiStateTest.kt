@@ -9,6 +9,7 @@ import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
@@ -566,6 +567,14 @@ private class FakeTargetPolicyStore : LocalTargetPolicyStore {
         this.policy = policy
         return LocalPolicyResult.Success(LocalTargetPolicyState(revision, policy))
     }
+
+    override suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
+        syncWrite: PolicySyncWrite?,
+    ): LocalPolicyResult<LocalTargetPolicyState> {
+        return LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
+    }
 }
 
 private class FailingTargetPolicyStore : LocalTargetPolicyStore {
@@ -580,6 +589,14 @@ private class FailingTargetPolicyStore : LocalTargetPolicyStore {
     override suspend fun replace(
         expectedRevision: Long,
         policy: TargetPolicy,
+        syncWrite: PolicySyncWrite?,
+    ): LocalPolicyResult<LocalTargetPolicyState> {
+        return LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
+    }
+
+    override suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
         syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         return LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)

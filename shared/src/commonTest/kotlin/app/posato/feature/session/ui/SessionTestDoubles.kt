@@ -22,6 +22,7 @@ import app.posato.feature.targets.data.LocalApplicationSelectionResult
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.TargetPolicy
 import kotlinx.coroutines.CompletableDeferred
@@ -64,6 +65,14 @@ internal class FakeSessionPolicyStore(
     override suspend fun replace(
         expectedRevision: Long,
         policy: TargetPolicy,
+        syncWrite: PolicySyncWrite?,
+    ): LocalPolicyResult<LocalTargetPolicyState> {
+        throw UnsupportedOperationException()
+    }
+
+    override suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
         syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         throw UnsupportedOperationException()
