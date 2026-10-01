@@ -46,6 +46,7 @@ internal interface DesktopScheduleBindings : ScheduleBindings {
             hadConsent = { macHelper.automaticStartConsent?.given?.value == true },
             targets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
             retention = retention,
+            keptApplications = applicationMappings::keptApplications,
             maintenanceClosed = { admission.closed.value == true },
             targetChanges = merge(policyStore.policyChanges, applicationMappings.invalidations),
         )

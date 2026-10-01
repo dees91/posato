@@ -34,9 +34,10 @@ internal suspend fun composeScheduledRequest(
         )
     }
     val plan = planPause(parts, ports.limits)
-    running.forEach { occurrence ->
-        val held = plan.held[occurrence.partId()] ?: return@forEach
-        ports.retention?.hold(occurrence.retainedPart(), RetainedItems(held.domains))
+    parts.forEach { part ->
+        val held = plan.held[part.partId] ?: return@forEach
+        val occurrence = running.first { candidate -> candidate.partId() == part.partId }
+        ports.retention?.hold(occurrence.retainedPart(), RetainedItems(held.domains, ports.keptApplications(held.appIds - part.retained.appIds)))
     }
     val first = running.minBy(ScheduleOccurrence::startEpochMillis)
     val date = first.key.date

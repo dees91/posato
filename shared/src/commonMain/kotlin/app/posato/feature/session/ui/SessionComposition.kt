@@ -15,8 +15,12 @@ import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionRecord
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
+import app.posato.feature.targets.data.KeptApplication
+import app.posato.feature.targets.data.LocalApplicationMapping
+import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
+import app.posato.feature.targets.data.LocalApplicationMappingsSnapshot
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
@@ -34,13 +38,19 @@ internal class SessionComposition(
     private val retention: PartRetentionStore?,
     private val limits: PauseLimits,
     private val loadTargets: suspend (PauseSetId) -> SessionTargetsState,
+    private val keep: suspend (Set<String>) -> List<KeptApplication> = { emptyList() },
 ) {
     @Inject
     constructor(
         retention: SqlPartRetentionStore,
         policyStore: LocalTargetPolicyStore,
         applicationMappings: LocalApplicationMappings,
-    ) : this(retention, devicePauseLimits, { setId -> loadSessionTargets(policyStore, applicationMappings, setId) })
+    ) : this(
+        retention,
+        devicePauseLimits,
+        { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
+        applicationMappings::keptApplications,
+    )
 
     private var last: Pair<SessionId, List<String>>? = null
 
@@ -56,27 +66,49 @@ internal class SessionComposition(
         val policy = targets.policy ?: return targets
         val part = RetainedPart(PART_SESSION, record.sessionId.value.copyBytes())
         val retained = retention?.read(part) ?: RetainedItems()
-        val mappingIds = (targets.mappings as? LocalApplicationMappingsLoadResult.Success)?.snapshot?.mappings.orEmpty()
-            .mapTo(mutableSetOf()) { mapping -> mapping.id.canonicalValue }
+        val loaded = targets.mappings as? LocalApplicationMappingsLoadResult.Success
+        val chosen = loaded?.snapshot?.mappings.orEmpty()
+        val keptIds = retained.applications.mapTo(mutableSetOf()) { kept -> kept.mappingId.toHex() }
         val plan = planPause(
             listOf(
                 RunningPartItems(
                     partId = PART_SESSION,
                     startEpochMillis = record.startEpochMillis,
                     endEpochMillis = record.endEpochMillis,
-                    current = PauseItems(policy.domains.mapTo(mutableSetOf()) { domain -> domain.canonicalValue }, mappingIds),
-                    retained = PauseItems(retained.domains),
+                    current = PauseItems(
+                        policy.domains.mapTo(mutableSetOf()) { domain -> domain.canonicalValue },
+                        chosen.mapTo(mutableSetOf()) { mapping -> mapping.id.canonicalValue },
+                    ),
+                    retained = PauseItems(retained.domains, keptIds),
                 ),
             ),
             limits,
         )
-        retention?.hold(part, RetainedItems(plan.items.domains))
+        retention?.hold(part, RetainedItems(plan.items.domains, keep(plan.items.appIds - keptIds)))
         val domains = plan.items.domains.sorted()
         last = record.sessionId to domains
         val composed = TargetPolicy.fromStoredValues(domains, policy.applicationPolicyName?.canonicalValue)
-        return targets.copy(policy = (composed as? TargetPolicyValidationResult.Success)?.policy ?: policy)
+        val applications = chosen.filter { mapping -> mapping.id.canonicalValue in plan.items.appIds } +
+            retained.applications.filter { kept -> kept.mappingId.toHex() !in chosen.map { mapping -> mapping.id.canonicalValue } }
+                .mapNotNull(KeptApplication::toMapping)
+        val mappings = loaded?.let { result ->
+            LocalApplicationMappingsSnapshot.restore(applications)?.let { snapshot -> result.copy(snapshot = snapshot) }
+        } ?: targets.mappings
+        return targets.copy(policy = (composed as? TargetPolicyValidationResult.Success)?.policy ?: policy, mappings = mappings)
     }
 }
+
+private fun KeptApplication.toMapping(): LocalApplicationMapping? {
+    val id = LocalApplicationMappingId.restore(mappingId.toHex()) ?: return null
+    return LocalApplicationMapping.restore(id, displayName.decodeToString())
+}
+
+private fun ByteArray.toHex(): String {
+    return joinToString("") { byte -> (byte.toInt() and BYTE_MASK).toString(HEX_RADIX).padStart(2, '0') }
+}
+
+private const val BYTE_MASK: Int = 0xFF
+private const val HEX_RADIX: Int = 16
 
 /** Applies the running session again when a set edit changed what it pauses; an unchanged edit touches nothing. */
 internal suspend fun SessionTransitionOwner.recompose(composition: SessionComposition) {

@@ -15,6 +15,7 @@ import app.posato.feature.presence.DesktopPresence
 import app.posato.feature.schedules.data.ScheduleSyncStore
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.JvmSessionTimeFormat
+import app.posato.feature.session.data.KeptApplicationRequirements
 import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.data.SqlLocalSessionStore
 import app.posato.feature.session.domain.RandomSessionIdGenerator
@@ -253,6 +254,7 @@ interface DesktopApplicationComponents : ApplicationGraph {
     val updateMaintenance: DesktopUpdateMaintenance
     val presence: DesktopPresence
     val pauseSetPreparation: PauseSetPreparation
+    val keptApplicationRequirements: KeptApplicationRequirements
 }
 
 private val desktopGraphLock = Any()

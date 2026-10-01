@@ -61,3 +61,33 @@ internal class SqlPartRetentionStore(
         }
     }
 }
+
+/**
+ * The designated requirements running parts kept for apps, by canonical identifier, so an app removed from
+ * every set while a part pauses it can still be enforced on the Mac.
+ */
+@Inject
+@SingleIn(AppScope::class)
+public class KeptApplicationRequirements internal constructor(
+    private val database: PosatoDatabase,
+    @Named("database") private val dispatcher: CoroutineDispatcher,
+) {
+    public suspend fun of(mappingIds: Set<String>): Map<String, ByteArray> {
+        if (mappingIds.isEmpty()) {
+            return emptyMap()
+        }
+        return withContext(dispatcher) {
+            val ids = mappingIds.mapNotNull { id ->
+                id.takeIf { it.length == MAPPING_HEX_LENGTH }?.chunked(2)?.map { it.toInt(HEX_RADIX).toByte() }?.toByteArray()
+            }
+            database.localSessionQueries.selectRetainedRequirements(ids).awaitAsList().associate { row ->
+                row.mapping_id.joinToString("") { byte -> (byte.toInt() and BYTE_MASK).toString(HEX_RADIX).padStart(2, '0') } to
+                    row.designated_requirement
+            }
+        }
+    }
+}
+
+private const val MAPPING_HEX_LENGTH: Int = 64
+private const val HEX_RADIX: Int = 16
+private const val BYTE_MASK: Int = 0xFF

@@ -17,6 +17,7 @@ import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.ui.SessionTargetsState
 import app.posato.feature.session.ui.toFrozenStartSet
 import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.data.KeptApplication
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -47,6 +48,8 @@ internal class ScheduleHostPorts(
     val announcedElsewhere: suspend () -> Set<OccurrenceKey> = { emptySet() },
     /** How much this device can pause at once. */
     val limits: PauseLimits = PauseLimits.MAC,
+    /** What a running occurrence needs to keep pausing chosen apps after they leave every set (Mac only). */
+    val keptApplications: suspend (Set<String>) -> List<KeptApplication> = { emptyList() },
     /** What each running occurrence has paused on this device; null keeps no retention. */
     val retention: PartRetentionStore? = null,
     /** Hands the plans, facts and running occurrences to whatever starts schedules while the app is closed. */

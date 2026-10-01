@@ -290,6 +290,37 @@ class DesktopLocalApplicationMappingsTest {
         }
     }
 
+    @Test
+    fun `given an app a running pause kept after it left every set when resolved then its kept requirement is used`() {
+        withStore(MacOsApplicationPickerResult.Success(listOf(application("Mail", 7)))) { store, _ ->
+            val chosen = assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications() })
+            val id = chosen.snapshot.mappings.single().id
+            val requirement = runBlocking { store.designatedRequirements(listOf(id)) }.single()
+            assertIs<LocalApplicationRemovalResult.Success>(runBlocking { store.remove(id) })
+            val requirements = ApplicationRequirements(store) { ids ->
+                if (id.canonicalValue in
+                    ids
+                ) {
+                    mapOf(id.canonicalValue to requirement)
+                } else {
+                    emptyMap()
+                }
+            }
+
+            assertEquals(requirement.toList(), runBlocking { requirements.resolve(listOf(id)) }.single().toList())
+        }
+    }
+
+    @Test
+    fun `given an app neither chosen nor kept when resolved then resolution fails`() {
+        withStore(MacOsApplicationPickerResult.Cancelled) { store, _ ->
+            val unknown = checkNotNull(LocalApplicationMappingId.restore("ab".repeat(32)))
+            val requirements = ApplicationRequirements(store) { emptyMap() }
+
+            assertFailsWith<IllegalArgumentException> { runBlocking { requirements.resolve(listOf(unknown)) } }
+        }
+    }
+
     private fun withStore(
         pickerResult: MacOsApplicationPickerResult,
         block: (DesktopLocalApplicationMappings, java.nio.file.Path) -> Unit,

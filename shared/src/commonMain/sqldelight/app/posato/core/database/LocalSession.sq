@@ -119,6 +119,11 @@ FROM local_retained_application
 WHERE part_kind = :partKind AND part_id = :partId AND year = :year AND month = :month AND day = :day
 ORDER BY mapping_id;
 
+selectRetainedRequirements:
+SELECT mapping_id, designated_requirement
+FROM local_retained_application
+WHERE mapping_id IN ?;
+
 deleteStaleRetainedDomains:
 DELETE FROM local_retained_domain
 WHERE (part_kind = 'session' AND part_id NOT IN (
