@@ -96,6 +96,7 @@ class PosatoApplication internal constructor(
         bootstrap,
         applicationMappings,
         onboardingDependencies.applicationAccess,
+        store,
     )
     private val pauseSetsInputs = PauseSetsInputs(
         store = store,

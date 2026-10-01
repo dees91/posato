@@ -8,6 +8,7 @@ import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.targets.data.LocalApplicationMappings
+import app.posato.feature.targets.data.LocalTargetPolicyStore
 
 /** What the Schedules destination needs from the application graph. */
 internal class SchedulesInputs(
@@ -19,4 +20,5 @@ internal class SchedulesInputs(
     val sync: AppleSync,
     val applicationMappings: LocalApplicationMappings,
     val applicationAccess: ApplicationAccessPort,
+    val policies: LocalTargetPolicyStore? = null,
 )

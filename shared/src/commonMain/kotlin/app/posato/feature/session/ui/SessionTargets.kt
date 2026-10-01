@@ -2,6 +2,7 @@ package app.posato.feature.session.ui
 
 import app.posato.feature.enforcement.EnforcedSet
 import app.posato.feature.session.domain.FrozenStartSet
+import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.ApplicationChoiceSet
 import app.posato.feature.targets.data.LocalApplicationMappings
@@ -10,6 +11,10 @@ import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.choiceSet
+import app.posato.feature.targets.domain.PauseSets
+import app.posato.feature.targets.ui.PauseSetRow
+import app.posato.feature.targets.ui.displayNameOf
+import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
@@ -66,4 +71,23 @@ internal suspend fun FrozenStartSet?.orLoaded(
     loadTargets: suspend (PauseSetId) -> SessionTargetsState,
 ): EnforcedSet {
     return this?.toEnforcedSet() ?: loadTargets(setId).toEnforcedSet()
+}
+
+/** The live sets a pause can use, as the set choice lists them: the default marked, with website counts. */
+internal fun PauseSets?.choices(): PersistentList<PauseSetRow> {
+    val sets = this ?: return persistentListOf()
+    val defaultId = sets.resolvedDefault()
+    return sets.sets.filterNot { set -> set.refused }.map { set ->
+        PauseSetRow(set.id, displayNameOf(set.name), set.id == defaultId, set.domains.size, null, persistentListOf(), refused = false, inUse = false)
+    }.toPersistentList()
+}
+
+/** The name [setId] shows, or null when this device does not hold that set. */
+internal fun SessionTargetsState.nameOf(setId: PauseSetId?): String? {
+    return sets?.sets?.firstOrNull { set -> set.id == setId }?.let { set -> displayNameOf(set.name) }
+}
+
+/** The set the screen is about: the running session's own set, else the one being chosen. */
+internal fun SessionTargetsState.partSet(active: LocalSessionStatus.Active?): PauseSetId? {
+    return active?.record?.setId ?: setId
 }

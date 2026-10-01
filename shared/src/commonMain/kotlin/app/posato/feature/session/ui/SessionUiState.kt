@@ -17,6 +17,7 @@ import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.TargetPolicy
+import app.posato.feature.targets.ui.PauseSetRow
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
@@ -48,6 +49,8 @@ internal data class SessionUiState(
     val enforced: EnforcedSet = EnforcedSet(),
     val enforcementBusy: Boolean = false,
     val setId: PauseSetId? = null,
+    val setName: String? = null,
+    val pauseSets: PersistentList<PauseSetRow> = persistentListOf(),
 ) {
     override fun toString(): String {
         return "SessionUiState(redacted)"
@@ -179,7 +182,9 @@ internal fun createSessionUiState(
         enforcement = enforcementView.state,
         enforced = enforcementView.enforced,
         enforcementBusy = enforcementView.busy,
-        setId = active?.record?.setId ?: targets.setId,
+        setId = targets.partSet(active),
+        setName = targets.nameOf(targets.partSet(active)),
+        pauseSets = targets.sets.choices(),
     )
 }
 

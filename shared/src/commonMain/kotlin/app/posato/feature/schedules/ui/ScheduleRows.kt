@@ -8,6 +8,8 @@ import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.ScheduleOccurrences
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.ui.PauseSetRow
 
 private val WEEKDAY_SHORT = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 
@@ -17,8 +19,36 @@ internal fun buildScheduleRows(
     nowEpochMillis: Long,
     zone: ScheduleZone,
     timeFormat: SessionTimeFormat,
+    sets: ScheduleSetContext = ScheduleSetContext(),
 ): List<ScheduleRowModel> {
-    return snapshot.schedules.map { stored -> stored.toRow(snapshot.facts, nowEpochMillis, zone, timeFormat) }
+    return snapshot.schedules.map { stored ->
+        stored.toRow(snapshot.facts, nowEpochMillis, zone, timeFormat).withSet(stored.plan.setId, sets)
+    }
+}
+
+/** What a schedule row says about its set: the sets this device holds, whether it is linked, and its noun. */
+internal class ScheduleSetContext(
+    val rows: List<PauseSetRow> = emptyList(),
+    val linked: Boolean = false,
+    val deviceNoun: String = "device",
+)
+
+private fun ScheduleRowModel.withSet(
+    setId: PauseSetId,
+    sets: ScheduleSetContext,
+): ScheduleRowModel {
+    if (sets.rows.isEmpty()) {
+        return this
+    }
+    val set = sets.rows.firstOrNull { row -> row.id == setId }
+    val problem = when {
+        set == null && sets.linked -> "Waiting for this set from your other devices."
+        set == null -> "This schedule's set was deleted. Choose a set."
+        set.refused -> "This set is over the limit of 10. Delete a set to use it."
+        set.websiteCount == 0 && (set.applicationCount ?: 0) == 0 -> "Nothing to pause on this ${sets.deviceNoun}"
+        else -> null
+    }
+    return copy(setLabel = set?.let { "Set: ${it.name}" }, setProblem = problem)
 }
 
 private fun StoredSchedule.toRow(

@@ -214,8 +214,9 @@ private fun ScheduleRow(
             checked = row.enabled,
             onCheckedChange = { actions.onSetEnabled(row, it) },
             enabled = !row.refused,
-            supportingContent = { PosatoCaption("${row.daysLabel} · ${row.hoursLabel}") },
+            supportingContent = { PosatoCaption(listOfNotNull("${row.daysLabel} · ${row.hoursLabel}", row.setLabel).joinToString(" · ")) },
         ) { Text(row.name) }
+        row.setProblem?.let { problem -> PosatoNotice(tone = PosatoTone.Caution) { Text(problem) } }
         when {
             row.refused -> PosatoNotice(tone = PosatoTone.Caution) {
                 Text("Couldn't sync: 10 schedules is the most. Delete a schedule on any device and this one syncs by itself.")

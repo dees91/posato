@@ -18,6 +18,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.choiceSet
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
@@ -238,4 +239,25 @@ private fun PauseSetsInputs.runningSets(schedules: ScheduleSnapshot): Set<PauseS
         schedules.schedules.firstOrNull { stored -> stored.plan.id == key.schedule }?.plan?.setId
     }
     return setOfNotNull(session) + occurrences
+}
+
+/** Every set this device holds as a row with its counts, without schedules or running parts. */
+internal suspend fun loadPauseSetRows(
+    store: LocalTargetPolicyStore,
+    applicationMappings: LocalApplicationMappings,
+): List<PauseSetRow> {
+    val sets = (store.read() as? LocalPolicyResult.Success)?.value?.sets ?: return emptyList()
+    val defaultId = sets.resolvedDefault()
+    return sets.sets.map { set ->
+        PauseSetRow(
+            set.id,
+            displayNameOf(set.name),
+            set.id == defaultId,
+            set.domains.size,
+            applicationMappings.applicationCountOf(set.id),
+            persistentListOf(),
+            set.refused,
+            inUse = false,
+        )
+    }
 }

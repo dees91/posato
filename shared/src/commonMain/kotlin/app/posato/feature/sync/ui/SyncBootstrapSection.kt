@@ -50,6 +50,7 @@ import app.posato.generated.resources.setup_show_options
 import app.posato.generated.resources.sync_action_required
 import app.posato.generated.resources.sync_action_required_local_capacity
 import app.posato.generated.resources.sync_action_required_schedule_capacity
+import app.posato.generated.resources.sync_action_required_set_capacity
 import app.posato.generated.resources.sync_action_required_shared_capacity
 import app.posato.generated.resources.sync_cancel_removal
 import app.posato.generated.resources.sync_checking_key
@@ -193,6 +194,7 @@ internal fun SyncStatus.message(
                 SyncAttentionReason.LOCAL_CAPACITY -> Res.string.sync_action_required_local_capacity
                 SyncAttentionReason.SHARED_CAPACITY -> Res.string.sync_action_required_shared_capacity
                 SyncAttentionReason.SCHEDULE_CAPACITY -> Res.string.sync_action_required_schedule_capacity
+                SyncAttentionReason.SET_CAPACITY -> Res.string.sync_action_required_set_capacity
                 null -> Res.string.sync_action_required
             }
         }

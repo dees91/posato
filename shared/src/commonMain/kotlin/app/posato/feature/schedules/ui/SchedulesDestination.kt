@@ -21,6 +21,8 @@ import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.bootstrap.AppleSync
+import app.posato.feature.targets.ui.loadPauseSetRows
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
@@ -43,6 +45,7 @@ internal fun SchedulesDestination(
             scope,
             linked = { inputs.sync.state.value.linked },
             onSaved = { inputs.notifier?.onScheduleSaved() },
+            pauseSets = inputs.pauseSetSource(device.noun),
         )
     }
     LaunchedEffect(macSetupState) { macSetupState?.readQuietly() }
@@ -75,4 +78,11 @@ internal fun SchedulesDestination(
         macSetupContent = macSetupState?.schedulesSetupContent(),
         setupPromptOpen = macSetupState?.presentation()?.promptInProgress() == true,
     )
+}
+
+private fun SchedulesInputs.pauseSetSource(deviceNoun: String): PauseSetSource {
+    val policies = policies ?: return PauseSetSource(deviceNoun = deviceNoun)
+    return PauseSetSource(merge(policies.policyChanges, applicationMappings.invalidations), deviceNoun) {
+        loadPauseSetRows(policies, applicationMappings)
+    }
 }

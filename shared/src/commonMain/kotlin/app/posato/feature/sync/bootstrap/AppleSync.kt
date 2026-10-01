@@ -43,6 +43,7 @@ internal enum class SyncAttentionReason {
     LOCAL_CAPACITY,
     SHARED_CAPACITY,
     SCHEDULE_CAPACITY,
+    SET_CAPACITY,
 }
 
 internal data class AppleSyncState(
@@ -412,7 +413,11 @@ private fun MutableStateFlow<AppleSyncState>.publishOutcome(outcome: ReconcileOu
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.LOCAL_CAPACITY) }
         }
 
-        ReconcileOutcome.Corrupt, ReconcileOutcome.RefusedSetCapacity -> {
+        ReconcileOutcome.RefusedSetCapacity -> {
+            update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.SET_CAPACITY) }
+        }
+
+        ReconcileOutcome.Corrupt -> {
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = null) }
         }
 

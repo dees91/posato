@@ -105,14 +105,7 @@ internal fun SessionScreen(
         consumeWindowRequest()
     }
     val scheduledView = scheduledPauseView(scheduledPauses, state, timeFormat, clock)
-    val scheduledRestricts = scheduledView?.restricts == true
-    // A manual start is not offered during a scheduled pause, so a duration or review screen left open
-    // when one starts is closed instead of starting a second pause from a stale form.
-    LaunchedEffect(scheduledRestricts) {
-        if (scheduledRestricts) {
-            viewModel.setSetupVisible(false)
-        }
-    }
+    CloseSetupDuringScheduledPause(scheduledView?.restricts == true) { viewModel.setSetupVisible(false) }
     SessionScreen(
         state = state,
         scheduled = scheduledView,
@@ -120,6 +113,7 @@ internal fun SessionScreen(
         onEnterSetup = { viewModel.setSetupVisible(true) },
         onExitSetup = { viewModel.setSetupVisible(false) },
         onSetDuration = viewModel::setDurationMinutes,
+        onChoosePauseSet = viewModel::choosePauseSet,
         onEnterReview = { viewModel.setReviewVisible(true) },
         onExitReview = { viewModel.setReviewVisible(false) },
         onStartSession = viewModel::startSession,
@@ -206,6 +200,7 @@ internal fun SessionScreen(
     onEnterSetup: () -> Unit = {},
     onExitSetup: () -> Unit = {},
     onSetDuration: (Int) -> Unit = {},
+    onChoosePauseSet: (PauseSetId) -> Unit = {},
     onEnterReview: () -> Unit = {},
     onExitReview: () -> Unit = {},
     onStartSession: () -> Unit = {},
@@ -249,6 +244,7 @@ internal fun SessionScreen(
                 onEnterSetup = onEnterSetup,
                 onExitSetup = onExitSetup,
                 onSetDuration = onSetDuration,
+                onChoosePauseSet = onChoosePauseSet,
                 onEnterReview = onEnterReview,
                 onExitReview = onExitReview,
                 onStartSession = onStartSession,
@@ -279,6 +275,7 @@ private fun SessionRouteContent(
     onEnterSetup: () -> Unit,
     onExitSetup: () -> Unit,
     onSetDuration: (Int) -> Unit,
+    onChoosePauseSet: (PauseSetId) -> Unit,
     onEnterReview: () -> Unit,
     onExitReview: () -> Unit,
     onStartSession: () -> Unit,
@@ -316,7 +313,7 @@ private fun SessionRouteContent(
         }
 
         SessionRoute.Duration -> {
-            SessionDurationContent(state, layout, onSetDuration, onEnterReview, onExitSetup)
+            SessionDurationContent(state, layout, onSetDuration, onEnterReview, onExitSetup, onChoosePauseSet)
         }
 
         SessionRoute.Overview -> {
@@ -461,4 +458,21 @@ private fun SessionDesktopPreview(
     @PreviewParameter(SessionScreenPreviewDataProvider::class) previewState: SessionScreenPreviewDataProvider.SessionPreviewState,
 ) {
     PosatoTheme { SessionScreen(previewState.state, layout = PosatoLayout.Expanded, macSetup = previewState.macSetup) }
+}
+
+/**
+ * A manual start is not offered during a scheduled pause, so a duration or review screen left open when one
+ * starts is closed instead of starting a second pause from a stale form.
+ */
+@Composable
+private fun CloseSetupDuringScheduledPause(
+    scheduledRestricts: Boolean,
+    onClose: () -> Unit,
+) {
+    val close by rememberUpdatedState(onClose)
+    LaunchedEffect(scheduledRestricts) {
+        if (scheduledRestricts) {
+            close()
+        }
+    }
 }

@@ -260,3 +260,19 @@ internal fun PauseSetChoiceList(
         }
     }
 }
+
+/** The set choice Session and the schedule editor open: every live set with its count, the default marked. */
+@Composable
+internal fun PauseSetChoiceDialog(
+    rows: List<PauseSetRow>,
+    selected: PauseSetId?,
+    onDismiss: () -> Unit,
+    onChoose: (PauseSetId) -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Pause set") },
+        text = { PauseSetChoiceList(rows, selected, onChoose) },
+        confirmButton = { PosatoButton(onClick = onDismiss, style = PosatoButtonStyle.Quiet) { Text("Cancel") } },
+    )
+}

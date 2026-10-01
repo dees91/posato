@@ -589,7 +589,14 @@ private class FakeTargetPolicyStore : LocalTargetPolicyStore {
         sets: PauseSets,
         syncWrite: PolicySyncWrite?,
     ): LocalPolicyResult<LocalTargetPolicyState> {
-        return LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
+        if (replaceFailure) {
+            return LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
+        }
+        val state = LocalTargetPolicyState(expectedRevision + 1, sets, policy.applicationPolicyName)
+        replaced.add(state.policy)
+        revision = state.revision
+        policy = state.policy
+        return LocalPolicyResult.Success(state)
     }
 }
 

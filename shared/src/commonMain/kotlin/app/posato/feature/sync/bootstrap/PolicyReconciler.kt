@@ -26,7 +26,7 @@ internal sealed interface ReconcileOutcome {
 
     data object RefusedLocalCap : ReconcileOutcome
 
-    /** More than ten live sets would result on this device; slice 4 gives it its own copy. */
+    /** More than ten live sets would result on this device. */
     data object RefusedSetCapacity : ReconcileOutcome
 
     data object Corrupt : ReconcileOutcome
