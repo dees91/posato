@@ -12,7 +12,6 @@ import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.schedules.host.ScheduleHost
 import app.posato.feature.schedules.host.ScheduleHostPorts
 import app.posato.feature.schedules.host.ScheduledPauses
-import app.posato.feature.session.data.SqlPartRetentionStore
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.ui.SessionTransitionOwner
@@ -39,20 +38,21 @@ internal interface IosScheduleBindings : ScheduleBindings {
         bridge: IosScheduleBridge,
         policyStore: LocalTargetPolicyStore,
         applicationMappings: LocalApplicationMappings,
-        retention: SqlPartRetentionStore,
         notifications: SessionNotificationPlatform,
         sessions: SessionTransitionOwner,
     ): ScheduleHost {
         val manualEnd = { (sessions.status.value as? LocalSessionStatus.Active)?.record?.endEpochMillis }
         val publisher = IosScheduleMonitorPublisher(bridge.monitor, schedules.zone, notifications, manualEnd)
         val ports = ScheduleHostPorts(
-            claims = IosScheduleClaims(bridge.enforcement),
+            claims = IosScheduleClaims(bridge.enforcement, bridge.monitor),
             gate = IosScheduleStartGate(bridge.enforcement),
             // Screen Time authorization is the consent here, and the Schedules screen asks for it.
             hadConsent = { false },
             targets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
-            retention = retention,
             limits = PauseLimits.IPHONE,
+            // The monitor's composer, in the app and in the extension, records what each occurrence holds in the
+            // App Group, so an empty request still goes to it and never releases what an occurrence holds.
+            claimsCompose = true,
             maintenanceClosed = { false },
             // The monitor extension announces starts, including while the app is closed; the Swift publisher
             // announces a running start it has not recorded, such as one an edit began.

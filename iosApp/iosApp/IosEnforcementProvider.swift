@@ -103,6 +103,8 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
     private let authorization: () -> EnforcementAuthorization
     private let isCapable: Bool
     private let storedMappings: () throws -> [StoredApplicationMapping]
+    private let scheduleStore: () -> ScheduleShieldStore?
+    private let composeLock: ScheduleMonitorFileStore?
 
     private static var defaultCapable: Bool {
 #if targetEnvironment(simulator) || !POSATO_FAMILY_CONTROLS
@@ -122,12 +124,16 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
         isCapable: Bool = defaultCapable,
         storedMappings: @escaping () throws -> [StoredApplicationMapping] = {
             try ApplicationMappingSets.liveMigrated().loadAllSets()
-        }
+        },
+        scheduleStore: @escaping () -> ScheduleShieldStore? = { nil },
+        composeLock: ScheduleMonitorFileStore? = nil
     ) {
         self.storeFactory = storeFactory
         self.authorization = authorization
         self.isCapable = isCapable
         self.storedMappings = storedMappings
+        self.scheduleStore = scheduleStore
+        self.composeLock = composeLock
     }
 
     func apply(
@@ -196,10 +202,18 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
         } catch {
             return .platformFailure
         }
-        let expectedFilter: WebContentSettings.FilterPolicy? =
-            request.domains.isEmpty ? nil : .specific(webDomains(from: request.domains))
-        let expectedApplications: Set<ApplicationToken>? = tokens.isEmpty ? nil : tokens
         let store = storeFactory()
+        if let lock = composeLock {
+            return lock.withComposeLock { write(domains: request.domains, tokens: tokens, to: store) }
+        }
+        return write(domains: request.domains, tokens: tokens, to: store)
+    }
+
+    private func write(domains: [String], tokens: Set<ApplicationToken>, to store: IosEnforcementSettingsStore) -> IosEnforcementOutcome {
+        let share = withinShare(domains: domains, tokens: tokens, store: store)
+        let expectedFilter: WebContentSettings.FilterPolicy? =
+            share.domains.isEmpty ? nil : .specific(webDomains(from: share.domains))
+        let expectedApplications: Set<ApplicationToken>? = share.tokens.isEmpty ? nil : share.tokens
         store.blockedWebFilter = expectedFilter
         store.shieldedApplications = expectedApplications
         guard store.blockedWebFilter == expectedFilter,
@@ -209,6 +223,37 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
             return .platformFailure
         }
         return .applied
+    }
+
+    /// What the session may pause beside a scheduled pause, with the monitor's rule: what the store already pauses
+    /// stays, a session that pauses nothing yet takes what fits in alphabetical order, and additions come all
+    /// together or wait for room. Without a schedule store, the request as it is.
+    private func withinShare(
+        domains: [String],
+        tokens: Set<ApplicationToken>,
+        store: IosEnforcementSettingsStore
+    ) -> (domains: [String], tokens: Set<ApplicationToken>) {
+        guard let schedule = scheduleStore() else { return (domains, tokens) }
+        let encoder = JSONEncoder()
+        let pausedTokens = store.shieldedApplications ?? []
+        var byData: [Data: ApplicationToken] = [:]
+        for token in tokens.union(pausedTokens) {
+            if let data = try? encoder.encode(token) {
+                byData[data] = token
+            }
+        }
+        let encoded = { (set: Set<ApplicationToken>) in Set(set.compactMap { try? encoder.encode($0) }) }
+        var pausedHosts = Set<String>()
+        if case let .specific(current) = store.blockedWebFilter {
+            pausedHosts = Set(current.compactMap(\.domain))
+        }
+        let part = PausePlanner.Part(
+            id: "session", start: .distantPast,
+            currentDomains: Set(domains), currentTokens: encoded(tokens),
+            heldDomains: pausedHosts, heldTokens: encoded(pausedTokens)
+        )
+        let plan = PausePlanner.plan([part], occupiedDomains: Set(schedule.shieldedHosts), occupiedTokens: encoded(schedule.shieldedTokens))
+        return (plan.domains.sorted(), Set(plan.tokens.compactMap { byData[$0] }))
     }
 
     private func authorizationRefusal() -> IosEnforcementOutcome? {

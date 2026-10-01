@@ -7,13 +7,16 @@ import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.ScheduleOccurrences
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.ui.SessionTargetsState
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.data.choiceSet
 
 /** What an evaluation hands to the process that starts schedules while the app is closed. */
 internal class ScheduleMonitorInput(
     val snapshot: ScheduleSnapshot,
     val running: List<ScheduleOccurrence>,
     val nowEpochMillis: Long,
-    val targets: suspend () -> SessionTargetsState,
+    /** A set's websites and this device's apps; null is the default set. */
+    val targets: suspend (PauseSetId?) -> SessionTargetsState,
 ) {
     override fun toString(): String {
         return "ScheduleMonitorInput(redacted)"
@@ -27,6 +30,7 @@ internal data class MonitorSchedule(
     val startMinute: Int,
     val endMinute: Int,
     val stoppedDates: List<ScheduleDate>,
+    val setId: String = PauseSetId.FIRST.hexId(),
 ) {
     override fun toString(): String {
         return "MonitorSchedule(redacted)"
@@ -40,12 +44,22 @@ internal data class MonitorRunning(
     val endEpochMillis: Long,
 )
 
-/** The schedule table a monitor reads: enabled plans with their stopped dates, running occurrences, and the paused items. */
+/** A set a listed schedule or a running occurrence uses: its websites and this device's app choices. */
+internal data class MonitorSet(
+    val id: String,
+    val domains: List<String>,
+    val mappingIds: List<String>,
+) {
+    override fun toString(): String {
+        return "MonitorSet(redacted)"
+    }
+}
+
+/** The schedule table a monitor reads: enabled plans with their stopped dates and sets, running occurrences, and those sets. */
 internal data class ScheduleMonitorTable(
     val schedules: List<MonitorSchedule>,
     val running: List<MonitorRunning>,
-    val domains: List<String>,
-    val mappingIds: List<String>,
+    val sets: List<MonitorSet>,
 ) {
     override fun toString(): String {
         return "ScheduleMonitorTable(redacted)"
@@ -58,10 +72,9 @@ internal object ScheduleMonitorTables {
      * a natural end observed here that its current interval starts before, from yesterday until the furthest
      * date a fact may name. A running occurrence carries its own start, which may be that observed end.
      */
-    fun build(
+    suspend fun build(
         input: ScheduleMonitorInput,
         zone: ScheduleZone,
-        targets: SessionTargetsState,
     ): ScheduleMonitorTable {
         val today = zone.localAt(input.nowEpochMillis).date
         val first = today.plusDays(-1)
@@ -79,12 +92,23 @@ internal object ScheduleMonitorTables {
                 startMinute = plan.startMinute,
                 endMinute = plan.endMinute,
                 stoppedDates = stopped.map { it.date }.distinct().sorted(),
+                setId = plan.setId.hexId(),
             )
         }.sortedBy { it.id }
         val running = input.running.map { occurrence ->
             MonitorRunning(occurrence.key.schedule.hex, occurrence.key.date, occurrence.startEpochMillis, occurrence.endEpochMillis)
         }
-        val selection = targets.scheduleSelection()
-        return ScheduleMonitorTable(schedules, running, selection.domains, selection.mappingIds)
+        val plans = input.snapshot.schedules.map { it.plan }
+        val runningSets = input.running.mapNotNull { occurrence -> plans.firstOrNull { it.id == occurrence.key.schedule }?.setId }
+        val sets = (input.snapshot.runnable.filter { it.enabled }.map { it.setId } + runningSets).distinct().map { setId ->
+            val selection = input.targets(setId).scheduleSelection()
+            MonitorSet(setId.hexId(), selection.domains, selection.mappingIds)
+        }
+        return ScheduleMonitorTable(schedules, running, sets)
     }
+}
+
+/** A set's identifier as the monitor names it: the sixteen bytes as lowercase hex. */
+internal fun PauseSetId.hexId(): String {
+    return choiceSet().hex
 }

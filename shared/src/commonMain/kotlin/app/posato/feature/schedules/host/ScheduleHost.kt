@@ -52,6 +52,8 @@ internal class ScheduleHostPorts(
     val keptApplications: suspend (Set<String>) -> List<KeptApplication> = { emptyList() },
     /** What each running occurrence has paused on this device; null keeps no retention. */
     val retention: PartRetentionStore? = null,
+    /** True where the claims compose what each occurrence already holds themselves, so an empty request reaches them. */
+    val claimsCompose: Boolean = false,
     /** Hands the plans, facts and running occurrences to whatever starts schedules while the app is closed. */
     val publish: suspend (ScheduleMonitorInput) -> Unit = {},
 )
@@ -150,7 +152,7 @@ internal class ScheduleHost(
             snapshot.copy(facts = snapshot.facts.copy(expired = observed), pins = step.pins),
             step.running,
             now,
-            { ports.targets(null) },
+            ports.targets,
         )
         if (step.running.isEmpty()) {
             // Idempotent: it clears only a held claim, and retries a clear that failed. It runs before the monitor
@@ -208,7 +210,7 @@ internal class ScheduleHost(
         snapshot: ScheduleSnapshot,
     ): ScheduledPauseState {
         val request = composeScheduledRequest(running, snapshot, ports)
-        if (request.domains.isEmpty() && request.mappingIds.isEmpty()) {
+        if (!ports.claimsCompose && request.domains.isEmpty() && request.mappingIds.isEmpty()) {
             ports.claims.releaseSchedule()
             return ScheduledPauseState.APPLIED
         }

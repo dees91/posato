@@ -36,6 +36,21 @@ private class ScheduleStoreProvider(
     }
 }
 
+/** The monitor's composer: it applies to the same store the claims read and clear. */
+private class ComposingMonitor(
+    private val store: ScheduleStoreProvider,
+) : IosScheduleMonitorProvider {
+    override fun publish(table: IosScheduleMonitorTable): Unit = Unit
+
+    override fun startedOccurrences(): List<String> {
+        return emptyList()
+    }
+
+    override fun applySchedule(handler: (IosEnforcementOutcome) -> Unit) {
+        store.apply(IosEnforcementRequest(listOf("example.com"), emptyList()), handler)
+    }
+}
+
 class IosScheduleHostTest {
     @Test
     fun givenScreenTimeStatesThenOnlyAnApprovedPhoneMayStartAndAFailureIsRetried() = runTest {
@@ -57,7 +72,7 @@ class IosScheduleHostTest {
     @Test
     fun givenTheScheduleStoreWhenClaimedAndReleasedThenOnlyAnAppliedStoreIsCleared() = runTest {
         val provider = ScheduleStoreProvider()
-        val claims = IosScheduleClaims(IosEnforcement(provider))
+        val claims = IosScheduleClaims(IosEnforcement(provider), ComposingMonitor(provider))
 
         assertEquals(EnforcementOutcome.CLEARED, claims.releaseSchedule())
         assertEquals(

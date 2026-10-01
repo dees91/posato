@@ -28,7 +28,10 @@ private struct ComposeRoot: UIViewControllerRepresentable {
         let controller = MainViewControllerKt.mainViewController(
             cryptoProvider: CryptoKitSyncProvider(),
             applicationMappingsProvider: applicationMappingsProvider,
-            enforcementProvider: IosManagedSettingsEnforcer(),
+            enforcementProvider: IosManagedSettingsEnforcer(
+                scheduleStore: { ManagedSettingsStore(named: ScheduleMonitor.storeName) },
+                composeLock: .live()
+            ),
             suspendedExpiryProvider: SuspendedExpiryScheduler(),
             keychainProvider: keychainProvider,
             mailboxProvider: mailboxProvider,

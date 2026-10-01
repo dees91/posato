@@ -73,14 +73,6 @@ struct ScheduleMonitorFile: Codable, Equatable {
         let tokenIndexes: [Int]
     }
 
-    /// What the app recorded a running occurrence already pauses on this device, kept until it ends.
-    struct Held: Codable, Equatable {
-        let id: String
-        let date: String
-        let domains: [String]
-        let tokenIndexes: [Int]
-    }
-
     struct Running: Codable, Equatable {
         let id: String
         let date: String
@@ -101,26 +93,25 @@ struct ScheduleMonitorFile: Codable, Equatable {
     let running: [Running]
     /// Version 1: the paused websites. Version 2: unused, every set lists its own.
     let domains: [String]
-    /// Version 1: the paused apps. Version 2: every token the sets and held items name, each once.
+    /// Version 1: the paused apps. Version 2: every token the sets name, each once.
     let applicationTokens: [Data]
     let notices: Notices
     var sets: [PauseSet]?
-    var held: [Held]?
 }
 
 extension ScheduleMonitorFile {
+    /// Whether any plan here could pause something: a version-2 set with items, or a version-1 table's own items.
+    var pausesAnything: Bool {
+        guard let sets else { return !domains.isEmpty || !applicationTokens.isEmpty }
+        return sets.contains { !$0.domains.isEmpty || !$0.tokenIndexes.isEmpty }
+    }
+
     /// The websites and app tokens of the set `scheduleId` uses: in a version-1 table, the table's own items.
     func setItems(scheduleId: String) -> (domains: [String], tokens: [Data]) {
         guard let sets else { return (domains, applicationTokens) }
         let setId = schedules.first { $0.id == scheduleId }?.setId ?? ScheduleMonitor.firstSetId
         guard let set = sets.first(where: { $0.id == setId }) else { return ([], []) }
         return (set.domains, set.tokenIndexes.compactMap { applicationTokens.indices.contains($0) ? applicationTokens[$0] : nil })
-    }
-
-    /// What the app recorded the occurrence already pauses.
-    func heldItems(scheduleId: String, date: String) -> (domains: [String], tokens: [Data]) {
-        guard let entry = held?.first(where: { $0.id == scheduleId && $0.date == date }) else { return ([], []) }
-        return (entry.domains, entry.tokenIndexes.compactMap { applicationTokens.indices.contains($0) ? applicationTokens[$0] : nil })
     }
 }
 
@@ -331,7 +322,7 @@ struct ScheduleMonitorFileStore {
         }
     }
 
-    /// What the extension paused for an occurrence, kept until it ends; the app folds it into its own record.
+    /// What the composer paused for an occurrence, in the app or the extension, kept until the occurrence ends.
     struct HeldRecord: Codable, Equatable {
         let version: Int
         let id: String
@@ -351,14 +342,6 @@ struct ScheduleMonitorFileStore {
               record.version == Self.heldRecordVersion
         else { return nil }
         return record
-    }
-
-    /// Every held record, for the app to fold into what each occurrence keeps.
-    func allHeld() -> [HeldRecord] {
-        heldNames().compactMap { name in
-            guard let data = read(name, limit: Self.maximumHeldBytes) else { return nil }
-            return try? JSONDecoder().decode(HeldRecord.self, from: data)
-        }
     }
 
     func removeHeld(except keep: Set<String>) {

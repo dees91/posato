@@ -385,6 +385,46 @@ final class IosEnforcementTests: XCTestCase {
         return try XCTUnwrap(result)
     }
 
+    // MARK: - Sharing the 50 web domains with scheduled pauses
+
+    private func hosts(_ prefix: String, _ range: ClosedRange<Int>) -> [String] {
+        range.map { String(format: "%@%02d.example", prefix, $0) }
+    }
+
+    private func sharingEnforcer(store: FakeEnforcementSettingsStore, schedule: FakeScheduleShieldStore) -> IosManagedSettingsEnforcer {
+        IosManagedSettingsEnforcer(
+            storeFactory: { store },
+            authorization: { .approved },
+            isCapable: true,
+            storedMappings: { [] },
+            scheduleStore: { schedule }
+        )
+    }
+
+    func testANewSessionTakesWhatAScheduledPauseLeavesInAlphabeticalOrder() throws {
+        let store = FakeEnforcementSettingsStore()
+        let schedule = FakeScheduleShieldStore()
+        schedule.applySchedule(domains: PosatoWebDomains.domains(from: hosts("sched", 1 ... 20)), applications: [])
+
+        XCTAssertEqual(try apply(domains: hosts("manual", 1 ... 10).reversed(), enforcer: sharingEnforcer(store: store, schedule: schedule)), .applied)
+
+        XCTAssertEqual(store.storedFilter, .specific(PosatoWebDomains.domains(from: hosts("manual", 1 ... 5))))
+    }
+
+    func testAnAdditionThatDoesNotFitWaitsWhileTheSessionKeepsWhatItPauses() throws {
+        let store = FakeEnforcementSettingsStore()
+        store.storedFilter = .specific(PosatoWebDomains.domains(from: ["held.example"]))
+        let schedule = FakeScheduleShieldStore()
+        schedule.applySchedule(domains: PosatoWebDomains.domains(from: hosts("sched", 1 ... 23)), applications: [])
+
+        XCTAssertEqual(
+            try apply(domains: ["held.example"] + hosts("added", 1 ... 2), enforcer: sharingEnforcer(store: store, schedule: schedule)),
+            .applied
+        )
+
+        XCTAssertEqual(store.storedFilter, .specific(PosatoWebDomains.domains(from: ["held.example"])))
+    }
+
     func testStatusReadsLiveStoreState() throws {
         let store = FakeEnforcementSettingsStore()
         let enforcer = capableEnforcer(store: store)

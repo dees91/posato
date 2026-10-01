@@ -64,15 +64,14 @@ enum ScheduleMonitorEvents {
     ) -> Bool {
         let parts = running.map { occurrence -> PausePlanner.Part in
             let items = file.setItems(scheduleId: occurrence.scheduleId)
-            let tableHeld = file.heldItems(scheduleId: occurrence.scheduleId, date: occurrence.date)
-            let ownHeld = files.held(scheduleId: occurrence.scheduleId, date: occurrence.date)
+            let held = files.held(scheduleId: occurrence.scheduleId, date: occurrence.date)
             return PausePlanner.Part(
                 id: "\(occurrence.scheduleId):\(occurrence.date)",
                 start: occurrence.start,
                 currentDomains: Set(items.domains),
                 currentTokens: Set(items.tokens),
-                heldDomains: Set(tableHeld.domains).union(ownHeld?.domains ?? []),
-                heldTokens: Set(tableHeld.tokens).union(ownHeld?.tokens ?? [])
+                heldDomains: Set(held?.domains ?? []),
+                heldTokens: Set(held?.tokens ?? [])
             )
         }
         let encoder = JSONEncoder()

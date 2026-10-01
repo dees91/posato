@@ -5,7 +5,6 @@ import app.posato.feature.enforcement.EnforcementOutcome
 import app.posato.feature.enforcement.EnforcementRequest
 import app.posato.feature.enforcement.IosEnforcement
 import app.posato.feature.enforcement.IosEnforcementOutcome
-import app.posato.feature.enforcement.IosEnforcementRequest
 import app.posato.feature.enforcement.ScheduleClaims
 import app.posato.feature.notifications.SessionNotificationPlatform
 import app.posato.feature.schedules.domain.OccurrenceKey
@@ -24,27 +23,28 @@ import app.posato.generated.resources.notification_pause_over_title
 import app.posato.generated.resources.notification_schedule_started_body
 import app.posato.generated.resources.notification_schedule_started_title
 import org.jetbrains.compose.resources.getString
+import kotlin.coroutines.resume
+import kotlin.coroutines.suspendCoroutine
 
-/** The schedule's own Managed Settings store; stores combine, so it never lifts a manual session's shields. */
+/**
+ * The schedule's own Managed Settings store; stores combine, so it never lifts a manual session's shields. The
+ * monitor's composer decides what it pauses, from the published table and what each occurrence already holds,
+ * as the extension does while the app is closed; the request only says that occurrences run.
+ */
 internal class IosScheduleClaims(
     private val enforcement: IosEnforcement,
+    private val monitor: IosScheduleMonitorProvider,
 ) : ScheduleClaims {
-    private var applied: IosEnforcementRequest? = null
-
     override suspend fun claimSchedule(request: EnforcementRequest): EnforcementApplyReport {
-        val wanted = IosEnforcementRequest(request.domains, request.mappingIds)
-        val outcome = enforcement.apply(wanted).toOutcome()
-        applied = wanted.takeIf { outcome == EnforcementOutcome.APPLIED }
-        return EnforcementApplyReport(outcome, false, false)
+        val outcome = suspendCoroutine { continuation -> monitor.applySchedule { outcome -> continuation.resume(outcome) } }
+        // Nothing to pause: the composer cleared the store, which is what the running occurrences ask for.
+        val applied = if (outcome == IosEnforcementOutcome.NOTHING_TO_ENFORCE) EnforcementOutcome.APPLIED else outcome.toOutcome()
+        return EnforcementApplyReport(applied, false, false)
     }
 
-    /** The store holds items, not a deadline, so only a change of paused items is written again. */
+    /** Composed again every time: a deferred item may fit now, and the composer writes the store only on a change. */
     override suspend fun updateSchedule(request: EnforcementRequest): EnforcementApplyReport {
-        return if (applied == IosEnforcementRequest(request.domains, request.mappingIds)) {
-            EnforcementApplyReport(EnforcementOutcome.APPLIED, false, false)
-        } else {
-            claimSchedule(request)
-        }
+        return claimSchedule(request)
     }
 
     /** Clears what the store holds, including shields the monitor applied while the app was closed. */
@@ -111,7 +111,7 @@ internal class IosScheduleMonitorPublisher(
     private val manualEnd: () -> Long?,
 ) {
     suspend fun publish(input: ScheduleMonitorInput) {
-        val table = ScheduleMonitorTables.build(input, zone, input.targets())
+        val table = ScheduleMonitorTables.build(input, zone)
         val bridged = IosScheduleMonitorTable(
             schedules = table.schedules.map { schedule ->
                 IosMonitorSchedule(
@@ -122,15 +122,15 @@ internal class IosScheduleMonitorPublisher(
                     stoppedDates = schedule.stoppedDates.map { it.text() },
                     startTitle = getString(Res.string.notification_schedule_started_title),
                     startBody = getString(Res.string.notification_schedule_started_body, schedule.name, minuteLabel(schedule.endMinute)),
+                    setId = schedule.setId,
                 )
             },
             running = table.running.map { IosMonitorRunning(it.id, it.date.text(), it.startEpochMillis / MILLIS, it.endEpochMillis / MILLIS) },
-            domains = table.domains,
-            mappingIds = table.mappingIds,
             noticesEnabled = notifications.isEnabled(),
             endTitle = getString(Res.string.notification_pause_over_title),
             endBody = getString(Res.string.notification_pause_over_body),
             manualSessionEndEpochSeconds = manualEnd()?.let { it / MILLIS } ?: 0L,
+            sets = table.sets.map { set -> IosMonitorSet(set.id, set.domains, set.mappingIds) },
         )
         provider.publish(bridged)
     }
