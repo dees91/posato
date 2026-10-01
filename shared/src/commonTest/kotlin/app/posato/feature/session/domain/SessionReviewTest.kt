@@ -14,7 +14,7 @@ import kotlin.test.assertNull
 
 class SessionReviewTest {
     @Test
-    fun `given retained mappings without group metadata then applications are not effective items`() {
+    fun `given apps chosen for the set without group metadata when derived then they are paused items`() {
         val review = SessionReviewDerivation.derive(
             policyOf(emptyList()),
             LocalApplicationMappingsLoadResult.Success(
@@ -23,9 +23,8 @@ class SessionReviewTest {
             ),
         )
 
-        assertEquals(SessionActionRequired.NO_EFFECTIVE_ITEMS, review.actionRequired)
+        assertNull(review.actionRequired)
         assertEquals(1, review.selectedMappingCount)
-        assertNull(review.applicationGroupName)
     }
 
     @Test
@@ -50,9 +49,9 @@ class SessionReviewTest {
     }
 
     @Test
-    fun `given a group without chosen applications when derived then mappings are required`() {
+    fun `given websites and no apps chosen for the set when derived then apps are reported as not chosen`() {
         val review = SessionReviewDerivation.derive(
-            policyOf(listOf("stable.example"), "Social feeds"),
+            policyOf(listOf("stable.example")),
             LocalApplicationMappingsLoadResult.Success(
                 LocalApplicationMappingsSnapshot.empty(),
                 LocalApplicationMappingsAccess.READY,
@@ -63,9 +62,9 @@ class SessionReviewTest {
     }
 
     @Test
-    fun `given a group without access when derived then access is required`() {
+    fun `given websites and no app access when derived then access is required`() {
         val review = SessionReviewDerivation.derive(
-            policyOf(listOf("stable.example"), "Social feeds"),
+            policyOf(listOf("stable.example")),
             LocalApplicationMappingsLoadResult.Success(
                 LocalApplicationMappingsSnapshot.empty(),
                 LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED,
@@ -76,9 +75,9 @@ class SessionReviewTest {
     }
 
     @Test
-    fun `given no effective items with a group when derived then missing items win`() {
+    fun `given no websites and no apps without access when derived then missing items win`() {
         val review = SessionReviewDerivation.derive(
-            policyOf(emptyList(), "Social feeds"),
+            policyOf(emptyList()),
             LocalApplicationMappingsLoadResult.Success(
                 LocalApplicationMappingsSnapshot.empty(),
                 LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED,
@@ -91,7 +90,7 @@ class SessionReviewTest {
     @Test
     fun `given chosen applications when derived then no action is required`() {
         val review = SessionReviewDerivation.derive(
-            policyOf(emptyList(), "Social feeds"),
+            policyOf(emptyList()),
             LocalApplicationMappingsLoadResult.Success(
                 snapshotOf(mapping("Example", "a")),
                 LocalApplicationMappingsAccess.READY,

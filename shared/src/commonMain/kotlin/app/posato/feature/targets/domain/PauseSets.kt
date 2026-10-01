@@ -29,6 +29,17 @@ internal class PauseSets private constructor(
         return sets.firstOrNull { set -> set.id == setId }?.domains.orEmpty()
     }
 
+    /**
+     * The set a new pause uses unless another is chosen: the stored default while it is live here, else the
+     * first set, else any live set. Null when this device has no live set.
+     */
+    fun resolvedDefault(): PauseSetId? {
+        val live = sets.filter { set -> !set.refused }
+        return live.firstOrNull { set -> set.id == defaultSetId }?.id
+            ?: live.firstOrNull { set -> set.id == PauseSetId.FIRST }?.id
+            ?: live.firstOrNull()?.id
+    }
+
     fun uniqueDomains(): Set<ExactDomain> {
         return sets.flatMapTo(linkedSetOf(), LocalPauseSet::domains)
     }

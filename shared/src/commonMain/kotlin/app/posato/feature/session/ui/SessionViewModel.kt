@@ -13,6 +13,7 @@ import app.posato.feature.session.domain.SessionSetup
 import app.posato.feature.session.domain.SessionSetupFailure
 import app.posato.feature.session.domain.SessionSetupResult
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
@@ -61,7 +62,7 @@ internal class SessionViewModel(
         policyStore.policyChanges,
     ).transform {
         emit(Unit)
-        targetsState.update { loadSessionTargets(policyStore, applicationMappings) }
+        targetsState.update { loadSessionTargets(policyStore, applicationMappings, setupDraft.value.setId) }
     }
 
     val uiState: StateFlow<SessionUiState> = combine(
@@ -108,11 +109,9 @@ internal class SessionViewModel(
         }
     }
 
-    fun adjustDuration(deltaMinutes: Int) {
-        setupDraft.update { draft ->
-            val adjusted = (draft.durationMinutes + deltaMinutes).coerceIn(SessionLimits.MIN_DURATION_MINUTES, SessionLimits.MAX_DURATION_MINUTES)
-            draft.copy(durationMinutes = adjusted, failure = null)
-        }
+    fun choosePauseSet(setId: PauseSetId) {
+        setupDraft.update { draft -> draft.copy(setId = setId) }
+        targetsRefreshRequests.tryEmit(Unit)
     }
 
     fun setDurationMinutes(minutes: Int) {
@@ -196,12 +195,13 @@ internal class SessionViewModel(
         command.update { SessionCommand.STARTING }
         viewModelScope.launch {
             try {
-                val targets = loadSessionTargets(policyStore, applicationMappings)
+                val targets = loadSessionTargets(policyStore, applicationMappings, draft.setId)
                 targetsState.update { targets }
-                if (isStartBlocked(targets)) {
+                val setId = targets.setId
+                if (setId == null || isStartBlocked(targets)) {
                     return@launch
                 }
-                when (val result = owner.startSession(sessionIds.create(), now, end, targets.toFrozenStartSet())) {
+                when (val result = owner.startSession(sessionIds.create(), now, end, targets.toFrozenStartSet(), setId)) {
                     is LocalSessionResult.Success -> {
                         sessionLoad.update { SessionLoadState(status = result.value) }
                         setupDraft.update { SessionSetupDraft() }

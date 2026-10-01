@@ -25,14 +25,17 @@ import app.posato.feature.sync.bootstrap.SessionReconciler
 import app.posato.feature.sync.bootstrap.SessionSyncAuthoring
 import app.posato.feature.sync.bootstrap.SyncStatus
 import app.posato.feature.sync.bootstrap.reconcileSessionTime
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SessionReplicaSnapshot
 import app.posato.feature.sync.domain.SyncWriter
+import app.posato.feature.targets.data.ApplicationChoiceSet
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.data.choiceSet
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
@@ -63,7 +66,7 @@ internal class SessionTransitionOwner(
     private val store: LocalSessionSyncStore,
     private val clock: SessionClock,
     private val enforcement: EnforcementPort,
-    private val loadTargets: suspend () -> SessionTargetsState,
+    private val loadTargets: suspend (PauseSetId) -> SessionTargetsState,
     private val triggers: SessionSyncTriggers,
 ) : SessionExchangeObserver {
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
@@ -186,11 +189,12 @@ internal class SessionTransitionOwner(
         startEpochMillis: Long,
         endEpochMillis: Long,
         frozen: FrozenStartSet,
+        setId: PauseSetId = PauseSetId.FIRST,
     ): LocalSessionResult<LocalSessionStatus> {
         val capture = stateMutex.withLock { triggers.captureWorkspace() }
         val workspaceId = (capture as? SessionWorkspaceCapture.Linked)?.workspaceId?.copyOf()
         val committed = stateMutex.withLock {
-            store.start(sessionId, startEpochMillis, endEpochMillis, startEpochMillis, frozen, workspaceId)
+            store.start(sessionId, startEpochMillis, endEpochMillis, startEpochMillis, frozen, workspaceId, setId)
         }
         if (committed is LocalSessionResult.Failure) {
             return committed
@@ -304,8 +308,8 @@ internal class SessionTransitionOwner(
         }
     }
 
-    suspend fun captureFrozen(): FrozenStartSet {
-        return loadTargets().toFrozenStartSet()
+    suspend fun captureFrozen(setId: PauseSetId): FrozenStartSet {
+        return loadTargets(setId).toFrozenStartSet()
     }
 
     suspend fun close() {
@@ -431,7 +435,7 @@ internal class SessionTransitionOwner(
         val entering = mutableView.value.state
         mutableView.update { view -> view.copy(busy = true) }
         try {
-            val targets = loadTargets()
+            val targets = loadTargets(record.setId)
             val frozen = targets.toFrozenStartSet()
             frozenStartSet = frozen
             if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
@@ -458,7 +462,7 @@ internal class SessionTransitionOwner(
                         EnforcementActionKind.APPLY_FAILED,
                         enforcement.reapplyRequiresPrompt,
                     ),
-                    enforced = loadTargets().toEnforcedSet(),
+                    enforced = loadTargets(record.setId).toEnforcedSet(),
                 )
             }
         } finally {
@@ -515,7 +519,7 @@ internal class SessionTransitionOwner(
             actionTag = null
             mutableView.update { view -> view.copy(state = EnforcementState.Active(false)) }
         } else if (held) {
-            adoptHeld(tag, frozen)
+            adoptHeld(tag, frozen.orLoaded(record.setId, loadTargets))
         } else if (enforcement.reapplyRequiresPrompt) {
             actionTag = tag
             mutableView.update { view ->
@@ -540,11 +544,10 @@ internal class SessionTransitionOwner(
         return status to enforcement.holdsSession(sessionId)
     }
 
-    private suspend fun adoptHeld(
+    private fun adoptHeld(
         tag: SessionTag,
-        frozen: FrozenStartSet?,
+        displayed: EnforcedSet,
     ) {
-        val displayed = frozen?.toEnforcedSet() ?: loadTargets().toEnforcedSet()
         unknownStreak = 0
         enforcedIdentity = tag
         actionTag = null
@@ -559,7 +562,7 @@ internal class SessionTransitionOwner(
         if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
             return
         }
-        val targets = loadTargets()
+        val targets = loadTargets(record.setId)
         val requested = targets.toEnforcedSet()
         portMutex.withLock {
             if (!prepareApply(record, tag, clear = true)) {
@@ -724,42 +727,6 @@ internal data class SessionTag(
     override fun toString(): String {
         return "SessionTag(redacted)"
     }
-}
-
-internal suspend fun loadSessionTargets(
-    policyStore: LocalTargetPolicyStore,
-    applicationMappings: LocalApplicationMappings,
-): SessionTargetsState {
-    val policy = when (val result = policyStore.read()) {
-        is LocalPolicyResult.Success -> result.value.policy
-        is LocalPolicyResult.Failure -> null
-    }
-    val mappings = try {
-        applicationMappings.load()
-    } catch (expectedCancellation: CancellationException) {
-        throw expectedCancellation
-    } catch (_: Exception) {
-        LocalApplicationMappingsLoadResult.Failure(LocalApplicationMappingsLoadFailure.STORAGE)
-    }
-    return SessionTargetsState(policy, mappings)
-}
-
-internal fun SessionTargetsState.toEnforcedSet(): EnforcedSet {
-    val policy = this.policy ?: return EnforcedSet()
-    val mappings = (mappings as? LocalApplicationMappingsLoadResult.Success)?.snapshot?.mappings
-    return EnforcedSet(
-        domains = policy.domains.map { domain -> domain.canonicalValue }.toPersistentList(),
-        applicationCount = mappings?.size,
-    )
-}
-
-internal fun SessionTargetsState.toFrozenStartSet(): FrozenStartSet {
-    val policy = this.policy ?: return FrozenStartSet(persistentListOf(), null)
-    val mappings = (mappings as? LocalApplicationMappingsLoadResult.Success)?.snapshot?.mappings
-    return FrozenStartSet(
-        domains = policy.domains.map { domain -> domain.canonicalValue }.toPersistentList(),
-        applicationCount = mappings?.size,
-    )
 }
 
 internal fun FrozenStartSet.toEnforcedSet(): EnforcedSet {

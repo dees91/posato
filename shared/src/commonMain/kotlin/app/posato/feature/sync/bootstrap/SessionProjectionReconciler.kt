@@ -5,6 +5,7 @@ import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionEndKind
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionCandidate
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncProjection
@@ -21,7 +22,7 @@ internal class SessionProjectionReconciler(
         retained: Set<SessionId>,
         status: LocalSessionStatus,
         nowEpochMillis: Long,
-        captureFrozen: suspend () -> FrozenStartSet,
+        captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
     ): SessionReconcileResult {
         // Pending local commands are not overwritten before authoring: an intent
         // recorded mid-pass converges on the next pass instead of being transiently
@@ -74,7 +75,7 @@ internal class SessionProjectionReconciler(
         retained: Set<SessionId>,
         status: LocalSessionStatus.Ended,
         nowEpochMillis: Long,
-        captureFrozen: suspend () -> FrozenStartSet,
+        captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
     ): SessionReconcileResult {
         val banked = bankIfExpired(bankExpiry, projection, status)
         val current = candidate as? SessionCandidate.Current
@@ -104,7 +105,7 @@ internal class SessionProjectionReconciler(
         start: SynchronizedSessionStart,
         retained: Set<SessionId>,
         nowEpochMillis: Long,
-        captureFrozen: suspend () -> FrozenStartSet,
+        captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
     ): SessionReconcileResult {
         if (start.sessionId in retained) {
             // A locally retained terminal fact bars adoption of that identity
@@ -121,7 +122,7 @@ internal class SessionProjectionReconciler(
                 start.startEpochMillis,
                 start.mandatoryEndEpochMillis,
                 nowEpochMillis,
-                captureFrozen(),
+                captureFrozen(start.setId),
                 start.setId,
             )
         ) {
@@ -137,7 +138,7 @@ internal class SessionProjectionReconciler(
         retained: Set<SessionId>,
         status: LocalSessionStatus.Active,
         nowEpochMillis: Long,
-        captureFrozen: suspend () -> FrozenStartSet,
+        captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
     ): SessionReconcileResult {
         return when (candidate) {
             is SessionCandidate.Current -> {

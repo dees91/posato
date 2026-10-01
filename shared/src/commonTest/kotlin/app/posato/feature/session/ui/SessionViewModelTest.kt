@@ -99,19 +99,6 @@ class SessionViewModelTest {
     }
 
     @Test
-    fun `given setup when adjusting beyond bounds then the duration clamps`() = runTest(dispatcher) {
-        val viewModel = collectedViewModel()
-        viewModel.setSetupVisible(true)
-
-        viewModel.adjustDuration(-1_000)
-        scheduler.runCurrent()
-        assertEquals(5, viewModel.uiState.value.durationMinutes)
-        viewModel.adjustDuration(2_000)
-        scheduler.runCurrent()
-        assertEquals(1_440, viewModel.uiState.value.durationMinutes)
-    }
-
-    @Test
     fun `given setup when submitting invalid minutes then the prior value stays with a failure`() = runTest(dispatcher) {
         val viewModel = collectedViewModel()
         viewModel.setSetupVisible(true)

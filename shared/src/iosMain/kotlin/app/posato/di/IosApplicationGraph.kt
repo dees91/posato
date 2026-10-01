@@ -165,7 +165,7 @@ internal interface IosApplicationGraph :
             store = sessions,
             clock = clock,
             enforcement = enforcement,
-            loadTargets = { loadSessionTargets(policyStore, applicationMappings) },
+            loadTargets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
             triggers = sync.sessionTriggers,
         )
         sync.sessionObserver = owner

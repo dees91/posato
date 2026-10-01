@@ -11,9 +11,11 @@ import app.posato.feature.session.domain.SessionReview
 import app.posato.feature.session.domain.SessionReviewDerivation
 import app.posato.feature.session.domain.SessionSetupFailure
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.TargetPolicy
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
@@ -105,11 +107,14 @@ internal data class SessionSetupDraft(
     val isSettingUp: Boolean = false,
     val isReviewing: Boolean = false,
     val resolvedReviewEnd: Long? = null,
+    val setId: PauseSetId? = null,
 )
 
 internal data class SessionTargetsState(
     val policy: TargetPolicy? = null,
     val mappings: LocalApplicationMappingsLoadResult? = null,
+    val setId: PauseSetId? = null,
+    val sets: PauseSets? = null,
 ) {
     override fun toString(): String {
         return "SessionTargetsState(redacted)"

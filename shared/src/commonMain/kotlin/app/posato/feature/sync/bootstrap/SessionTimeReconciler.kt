@@ -5,6 +5,7 @@ import app.posato.feature.session.data.LocalSessionSyncStore
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionOrigin
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionCandidate
 import app.posato.feature.sync.domain.SessionConclusionKind
 import app.posato.feature.sync.domain.SessionReplicaSnapshot
@@ -14,7 +15,7 @@ internal suspend fun reconcileSessionTime(
     sessions: LocalSessionSyncStore,
     snapshot: SessionReplicaSnapshot,
     now: Long,
-    captureFrozen: suspend () -> FrozenStartSet,
+    captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
 ): SessionReconcileResult {
     val initial = when (val read = sessions.read(now)) {
         is LocalSessionResult.Failure -> return SessionReconcileResult.Halted(read.reason.toSyncStatus())
@@ -35,7 +36,7 @@ private suspend fun bankAndReconcileSessionTime(
     sessions: LocalSessionSyncStore,
     snapshot: SessionReplicaSnapshot,
     now: Long,
-    captureFrozen: suspend () -> FrozenStartSet,
+    captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
 ): SessionReconcileResult {
     var markers = when (val read = sessions.retainedExpiryMarkers()) {
         is LocalSessionResult.Failure -> return SessionReconcileResult.Halted(read.reason.toSyncStatus())

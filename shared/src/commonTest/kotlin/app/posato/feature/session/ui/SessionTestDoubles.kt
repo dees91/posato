@@ -178,7 +178,7 @@ internal fun sessionOwnerOf(
         store = store,
         clock = clock,
         enforcement = enforcement,
-        loadTargets = { loadSessionTargets(policyStore, mappings) },
+        loadTargets = { setId -> loadSessionTargets(policyStore, mappings, setId) },
         triggers = triggers,
     )
 }
