@@ -92,7 +92,10 @@ version from Apple's update server. The driver can prepare it without a person:
    on the Tart bridge address, and run the script in the guest's Terminal
    with `sudo`. The script performs step 4 (install the agent in
    `/usr/local/bin` and load its LaunchAgent) and turns off sleep and
-   automatic update checks. After that, continue with `tart exec` as in
+   automatic update checks. It also installs Rosetta
+   (`softwareupdate --install-rosetta --agree-to-license`), which the x86-64
+   sync check needs; an existing golden VM gets it by booting under the
+   clone's name and running that command with `sudo`. After that, continue with `tart exec` as in
    steps 5-8.
 4. For the two-factor code, answer the sign-in alert on the test iPhone with a
    `-t device` scenario scoped to `springboard`, read the code from its
@@ -110,6 +113,29 @@ the golden VM itself, not only a clone: boot it under the clone's name
 (`tart rename`, `vm boot`), run `vm icloud --resume`, `vm shutdown`, and
 rename it back. If Apple asks for the trusted phone number, type it with
 `vm type --secret phone` from the optional phone item above.
+
+The `ventura` line holds a macOS 13 golden VM that runs the x86-64 build under
+Rosetta. A guest older than macOS 15 cannot sign in to an Apple Account, so
+this line has none, and it runs only notarized candidates.
+
+1. Create it from the newest Ventura restore image for virtual Macs (13.6,
+   `UniversalMac_13.6_22G120_Restore.ipsw`), as `posato-run-ventura`, and
+   set `--display 1440x900px`: macOS 13 renders a Tart display at 1x, and
+   the pixel size keeps text readable and the System Settings layout the
+   same as on the other lines.
+2. Walk Setup Assistant as for the legacy line, and skip the Apple Account.
+   Where a text click does not register, use `vm press` (Tab, Space,
+   Return).
+3. Run the setup script of the legacy line, with
+   `softwareupdate --install-rosetta --agree-to-license` added. Set the time
+   zone and automatic login through `tart exec` and `sudo -S`.
+4. Grant Screen Recording (run `screencapture` through `tart exec`, then
+   `vm prompt toggle --row tart-guest-agent`) and Accessibility (call
+   `AXIsProcessTrustedWithOptions` with the prompt option through
+   `tart exec osascript -l JavaScript`, then toggle the same row).
+5. Quit System Settings and Terminal, `vm shutdown --line ventura`, and
+   `tart rename posato-run-ventura <ventura-golden>`; set
+   `posato.vm.venturaGolden` to that name.
 
 ## Register the VMs for development signing
 

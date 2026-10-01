@@ -14,7 +14,7 @@ class VmExecCommand :
         "exec",
         "Run a /bin/sh script as the logged-in user in the guest and print its exit code and output.",
     ) {
-    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
     private val script by option("--script", help = "The /bin/sh script to run in the guest.").required()
 
     override fun execute(session: Session): JsonElement {

@@ -49,7 +49,11 @@ struct AppKitApplicationChooser: ApplicationChoosing {
   func choose() -> ApplicationChoice {
     let application = NSApplication.shared
     application.setActivationPolicy(.accessory)
-    application.activate()
+    if #available(macOS 14, *) {
+      application.activate()
+    } else {
+      application.activate(ignoringOtherApps: true)
+    }
     let panel = NSOpenPanel()
     panel.title = "Choose applications"
     panel.prompt = "Choose"

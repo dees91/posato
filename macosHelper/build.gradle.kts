@@ -1,3 +1,4 @@
+import app.posato.buildlogic.PosatoMacOsArchitecture
 import app.posato.buildlogic.PosatoVersion
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.gradle.api.tasks.Sync
@@ -10,14 +11,18 @@ val swiftScratchDirectory = layout.buildDirectory.dir("swift")
 val helperBundleDirectory = layout.buildDirectory.dir("bundle/PosatoMacOSHelper.app")
 val posatoMarketingVersion = PosatoVersion.marketingVersion(rootProject.file("Version.xcconfig"))
 val posatoBuildNumber = PosatoVersion.developmentBuildNumber(providers.gradleProperty("posatoMacOsBuildNumber").orNull)
+val macOsArchitecture = PosatoMacOsArchitecture.resolve(providers.gradleProperty(PosatoMacOsArchitecture.PROPERTY).orNull)
+val macOsMinimumVersion = PosatoMacOsArchitecture.MINIMUM_SYSTEM_VERSION
+val swiftTriple = macOsArchitecture.swiftTriple
 
 val buildSwiftRelease by tasks.registering(Exec::class) {
     group = "build"
-    description = "Builds the arm64 macOS helper and proxy-settings daemon."
+    description = "Builds the macOS helper and proxy-settings daemon."
     inputs.files(fileTree("Sources"), "Package.swift")
+    inputs.property("swiftTriple", swiftTriple)
     outputs.dir(swiftScratchDirectory)
 
-    commandLine(
+    val swiftCommand = listOf(
         "/usr/bin/xcrun",
         "swift",
         "build",
@@ -27,7 +32,10 @@ val buildSwiftRelease by tasks.registering(Exec::class) {
         swiftScratchDirectory.get().asFile.absolutePath,
         "-Xswiftc",
         "-warnings-as-errors",
+        "--triple",
+        swiftTriple,
     )
+    commandLine(swiftCommand)
 }
 
 val assembleHelperBundle by tasks.registering(Sync::class) {
@@ -36,6 +44,7 @@ val assembleHelperBundle by tasks.registering(Sync::class) {
     dependsOn(buildSwiftRelease)
     inputs.property("posatoMarketingVersion", posatoMarketingVersion)
     inputs.property("posatoBuildNumber", posatoBuildNumber)
+    inputs.property("macOsMinimumVersion", macOsMinimumVersion)
 
     into(helperBundleDirectory)
     from("Resources/HelperInfo.plist") {
@@ -45,6 +54,7 @@ val assembleHelperBundle by tasks.registering(Sync::class) {
             "tokens" to mapOf(
                 "POSATO_MARKETING_VERSION" to posatoMarketingVersion,
                 "POSATO_BUILD_NUMBER" to posatoBuildNumber,
+                "POSATO_MINIMUM_SYSTEM_VERSION" to macOsMinimumVersion,
             ),
         )
     }
@@ -115,6 +125,27 @@ tasks.register<Exec>("swiftTest") {
     )
 }
 
+tasks.register<Exec>("swiftBuildIntel") {
+    group = "verification"
+    description = "Compiles the helper for x86-64 on the macOS minimum."
+    inputs.files(fileTree("Sources"), "Package.swift")
+    outputs.dir(layout.buildDirectory.dir("swift-x86_64"))
+
+    commandLine(
+        "/usr/bin/xcrun",
+        "swift",
+        "build",
+        "--configuration",
+        "release",
+        "--scratch-path",
+        layout.buildDirectory.dir("swift-x86_64").get().asFile.absolutePath,
+        "--triple",
+        PosatoMacOsArchitecture.X86_64.swiftTriple,
+        "-Xswiftc",
+        "-warnings-as-errors",
+    )
+}
+
 tasks.named("check") {
-    dependsOn("swiftFormatCheck", "swiftLintCheck", "swiftTest")
+    dependsOn("swiftFormatCheck", "swiftLintCheck", "swiftTest", "swiftBuildIntel")
 }

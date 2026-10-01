@@ -9,7 +9,7 @@ let swiftLintPlugins = Package.Dependency.package(
 
 let package = Package(
   name: "PosatoMacOSHelper",
-  platforms: [.macOS(.v15)],
+  platforms: [.macOS(.v13)],
   products: [
     .executable(name: "PosatoMacOSHelper", targets: ["PosatoMacOSHelper"]),
     .executable(

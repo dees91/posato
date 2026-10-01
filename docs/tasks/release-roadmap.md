@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 14 (amended 2026-09-30: loopback proxy exceptions in release 1.3)
+- **Revision:** 15 (amended 2026-09-30: Intel verification without a physical Mac)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-09-30
@@ -86,6 +86,12 @@
   (`user-confirmed`, 2026-09-30, idea 23): a session's system proxy must not
   capture loopback connections such as local MCP servers. It revises the
   frozen composition by the maintainer's decision.
+  Revision 15 changes how `MACOS-015` verifies (`user-confirmed`,
+  2026-09-30): the 2019 MacBook Air is shared with another person's account,
+  so it cannot be a dedicated test Mac. The x86-64 build is verified under
+  Rosetta in an arm64 macOS 13 Tart guest through a verification-only
+  switch; the `AGENTS.md` exception and the MacBook Air gate are dropped,
+  and the row also carries the ADR 0008 update-channel revision.
   The 2026-09-30 backlog addition `WEB-002` (idea 24, `user-confirmed`)
   changes no release.
 
@@ -278,12 +284,11 @@ Ordering across the waves:
   `SCHEDULE-005` introduces.
 - `NAV-001` merges before `SCHEDULE-004` so that the pause set screens are
   built on Navigation 3 rather than migrated later.
-- `MACOS-015` continues from the evaluation build in PR #109. The 2019
-  MacBook Air is a dedicated test Mac that holds no personal Posato data, and
-  `posato-control` drives it without the maintainer. Tart cannot run an
-  x86-64 guest, so the row proposes a narrow `AGENTS.md` exception for this
-  dedicated physical Mac and relies on it only after the maintainer accepts
-  it.
+- `MACOS-015` continues from the evaluation build in PR #109. Tart cannot
+  run an x86-64 guest, and the 2019 MacBook Air is shared with another
+  person's account, so the row verifies the x86-64 build in an arm64 macOS 13
+  Tart guest under Rosetta through a verification-only switch
+  (`user-confirmed`, 2026-09-30). No physical Intel Mac is used.
 - `MACOS-017` ends with a decision; it changes no binary and is not a
   dependency of `RELEASE-005`. PR #110 stays unmerged spike evidence under
   `MACOS-017`; only `MACOS-023` may deliver its code.
@@ -295,8 +300,8 @@ Ordering across the waves:
 | `SYNC-020` | Publish a session start or early end reliably from the device that made it: first reproduce, without the maintainer, that an iPhone-started session reaches iCloud only after a manual **Sync now**; then retry an interrupted or failed publication automatically with backoff and give iOS time to finish it in the background, so the peer adopts the session at its next own sync. Remote push to wake the peer is out of scope. | Sessions and enforcement | delivery | R1.3/W1 | None | PR-SESSION-PUBLISH |
 | `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | delivery | R1.3/W2 | `MACOS-022` | PR-MAC-PROXY-RECOVERY |
 | `MACOS-021` | Explain and bound the normal-user helper's CPU use during an enforced session: reproduce the transient spike, about 60% of a core for 14 minutes, that `MACOS-012` measured in a first session on a fresh Tart clone, find its cause, and keep the helper's cost bounded under heavy proxied traffic. | Sessions and enforcement | delivery | R1.3/W2 | `MACOS-022` | PR-MAC-HELPER-CPU |
+| `MACOS-015` | Support Intel Macs on macOS 13 Ventura: propose and obtain acceptance of the ADR 0003 baseline revision, covering the support horizon Apple gives Intel Macs and macOS 13, and of the ADR 0008 update-channel revision; build the x86-64 Compose Desktop artifact, runtime, native libraries, and Swift helpers for macOS 13; sign and notarize verified x86-64 candidates and the update feed entry that the accepted ADR 0003 and ADR 0008 revisions specify, which `RELEASE-005` publishes; verify setup, actual website and application blocking, synchronization, and the in-app update in an arm64 macOS 13 Tart guest running the x86-64 build under Rosetta through a verification-only switch; and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W1 | None | PR-INTEL-RELEASE |
 | `MACOS-024` | Keep loopback connections off the session proxy on macOS: while a session's proxy is applied, add `localhost`, `127.0.0.1`, and `::1` to the proxy exceptions of each service Posato applies to, keep the existing exceptions, and restore the recorded exceptions exactly when the proxy is restored, under an ADR 0004 and ADR 0005 amendment. Reported: local Codex MCP connections received an empty response and `codex_tui failed to start` during a session, while a direct connection and `NO_PROXY` worked. High-risk. | Sessions and enforcement | delivery | R1.3/W2 | `MACOS-022` | PR-MAC-LOOPBACK-EXCEPTIONS |
-| `MACOS-015` | Support Intel Macs on macOS 13 Ventura: propose and obtain acceptance of the ADR 0003 baseline revision, covering the support horizon Apple gives Intel Macs and macOS 13, and of a narrow `AGENTS.md` exception for the dedicated test Mac; build the x86-64 Compose Desktop artifact, runtime, native libraries, and Swift helpers for macOS 13; sign, notarize, and publish the x86-64 distribution and update feed entry that the accepted ADR 0003 revision specifies; extend `posato-control` to drive the dedicated 2019 MacBook Air; verify setup, actual website and application blocking, synchronization, and the in-app update there; and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W1 | None | PR-INTEL-RELEASE |
 | `MACOS-017` | Decide whether Posato supports Firefox on macOS under a revised ADR 0005 browser promise: presentation through a Posato extension, its signing and distribution through addons.mozilla.org, the fixed loopback rendezvous port against the current per-session port and its fail-closed conflict, This Mac setup guidance, and verification in Tart; end with the proposed ADR 0005 revision and a delivery plan for `MACOS-023`. | Sessions and enforcement | discovery | R1.3/W2 | `MACOS-022` | PR-FIREFOX-DECISION |
 | `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules. | Platform coverage | delivery | R1.3/W1 | None | PR-NAVIGATION |
 | `SCHEDULE-003` | Complete the accepted pause set scope for manual sessions and schedules: live edits and deletion, manual-session overlap, default ownership, limits and device readiness, migration, synchronization and older-client compatibility. Update the affected design and architecture authorities and end with accepted decisions and a delivery plan. | Target management | discovery | R1.3/W2 | `SCHEDULE-005` | PR-PAUSE-SET-DECISION |
@@ -344,7 +349,7 @@ The idea numbers refer to the wiki idea queue.
 | Session without the main window and without repeated prompts | `MACOS-012`, `MACOS-013`, `MACOS-014` | Accepted ADR 0003 and ADR 0004 revisions, physical menu bar start, end, relaunch, login, and revocation evidence |
 | One guided Mac setup | `ONBOARDING-004` | In a Tart clone: setup from onboarding, Finish setup, and the upgrade offer; resume after interruption; verified completion; revocation in This Mac |
 | Session notifications | `NOTIFY-001` | Physical permission flow, start and end notifications on both platforms |
-| Intel Macs | `MACOS-015` | Accepted ADR 0003 revision, notarized x86-64 candidate verified by `posato-control` on the dedicated 2019 MacBook Air running macOS 13 Ventura |
+| Intel Macs | `MACOS-015` | Accepted ADR 0003 and ADR 0008 revisions, notarized x86-64 candidate verified by `posato-control` under Rosetta in an arm64 macOS 13 Tart guest |
 | Shared recurring schedules | `SCHEDULE-001`, `SCHEDULE-002` | Accepted rules and security-reviewed authorization revision; Mac VM and test-iPhone runs for start/end, offline execution of known plans, synchronization, missing permissions, skipping, early end, restart and Mac catch-up |
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
 | Public packaging for 1.2 | `DOCS-003` | Media rendered within budget from recorded captures, README and site built, store text and screenshots ready for upload |
@@ -364,7 +369,6 @@ The idea numbers refer to the wiki idea queue.
 | macOS 15 virtual machine and iOS 18 iPhone | `QUALITY-007` | The maintainer provides the virtual machine image and the iOS 18 device, or the row records the gap on the availability page. |
 | Persistent authorization security review | `MACOS-014` | An independent review of the ADR 0004 revision passes before implementation. |
 | Automatic scheduled Apply security review | `SCHEDULE-001` | An independent review of the explicit-consent and automatic-start amendments passes, and the maintainer accepts them, before `SCHEDULE-002` implements them. |
-| 2019 MacBook Air | `MACOS-015` | The maintainer accepts the `AGENTS.md` exception that `MACOS-015` proposes and sets the MacBook Air up once as a dedicated test Mac on macOS 13 Ventura with no personal Posato data; the notarized x86-64 candidate then passes the accepted flow driven by `posato-control` without the maintainer. |
 | App Review per iOS release | `RELEASE-003`–`RELEASE-005` | The submitted build is approved or the row records the rejection and its clearing condition. |
 
 No credential, signing identity, update signing key, provisioning profile,

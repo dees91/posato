@@ -224,7 +224,7 @@ tools/posato-control/build/install/posato-control/bin/posato-control doctor
 ```
 
 Every command prints one JSON envelope and takes `--target desktop|simulator|device`.
-The desktop target runs only inside a Tart VM (`--vm primary|peer`) and never
+The desktop target runs only inside a Tart VM (`--vm primary|peer|legacy|ventura`) and never
 drives the application on the host Mac, where the installed Posato is the
 maintainer's real copy; the physical iPhone needs
 `posato.apple.developmentTeam` in the ignored `local.properties` file. All

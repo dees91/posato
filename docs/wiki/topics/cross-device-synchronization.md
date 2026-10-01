@@ -323,6 +323,36 @@ freezes the Apple MVP bootstrap and provider contract:
 `user-confirmed`: macOS uses the distinct `app.posato.macos.sync` short-lived
 Swift companion rather than the enforcement helper. Kotlin owns bootstrap and
 semantic outcomes; the native process owns only CloudKit and Keychain mechanics.
+
+`observed` (2026-09-29): on a signed Intel macOS 13 candidate, three physical
+bootstrap attempts reached CloudKit container lookup, then the private zone
+fetch remained pending until Posato's 30-second companion deadline ended the
+client process. CloudKit logged cancellation after that exit, rather than an
+earlier server error. A signed 120-second deadline diagnostic candidate was
+installed and launched, but its sync action could not be driven through the
+available remote UI connection. The previous app and deadline were restored.
+Whether the zone request would complete with more time, or whether another
+CloudKit or network issue causes the delay, remains `open`. The
+[`MACOS-015` execution record](../../tasks/executions/macos-015-intel-ventura.md)
+summarizes the evidence limits; raw logs remain under ignored
+`build/verification/`.
+
+`observed` (2026-09-29): all three cancelled zone requests had Utility QoS,
+inferred discretionary scheduling, and zero recorded request and response
+bytes. The macOS backend leaves the CloudKit operation QoS at its default.
+`source-claim`: [Apple's CloudKit documentation](https://developer.apple.com/documentation/cloudkit/ckoperation)
+says default-priority operations are discretionary; its
+[configuration guidance](https://developer.apple.com/documentation/cloudkit/ckdatabase)
+shows `.userInitiated` for a requested result. `hypothesis`: foreground
+bootstrap may be deferred inside CloudKit until Posato cancels it. Test the
+user-triggered bootstrap with foreground QoS and the existing 30-second
+deadline before considering a longer deadline. The physical cause remains
+`open` until that comparison completes.
+
+`user-confirmed` (2026-09-29): a later manual **Sync with iCloud** attempt
+succeeded on the same Intel Ventura build with its original 30-second deadline.
+The earlier intermittent failure remains unexplained; further investigation
+is deferred at the maintainer's request.
 Implementation and physical evidence remain with `SYNC-004` through `SYNC-010`.
 
 `observed` (2026-09-03): `SYNC-004` implemented the one-workspace bootstrap

@@ -16,7 +16,7 @@ class VmDialogsCommand :
         "dialogs",
         "List the guest's open system dialogs by owning process: admin, gatekeeper, system-alert, accessibility, notification.",
     ) {
-    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
 
     override fun execute(session: Session): JsonElement {
         val line = VmLine.parse(lineOption)

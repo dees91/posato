@@ -18,7 +18,7 @@ class VmICloudCommand :
         "icloud",
         "Report whether iCloud Keychain syncs in the guest (exit 3 when paused); --resume repairs a paused keychain.",
     ) {
-    private val lineOption by option("--line", help = "VM line: primary, peer, or legacy.").default(VmLine.PRIMARY.id)
+    private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
     private val resume by option("--resume", help = "Run Resume Data Sync and answer its account, Mac password, and passcode dialogs.").flag()
     private val timeoutSeconds by option("--timeout-seconds", help = "How long each step may take.").long().default(ICLOUD_TIMEOUT_SECONDS)
 

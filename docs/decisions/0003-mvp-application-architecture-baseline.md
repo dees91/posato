@@ -7,6 +7,53 @@
 - **Decision owner:** Project maintainer
 - **Provenance:** `user-confirmed`
 
+## MACOS-015 platform amendment
+
+`user-confirmed` (2026-09-29, verification revised 2026-09-30); applied by
+`MACOS-015` together with the
+[ADR 0008 update-channel amendment](0008-macos-update-delivery.md#macos-015-update-channel-amendment).
+
+Posato for Mac ships two builds of the same version:
+
+- **arm64** for Apple silicon, with a minimum of macOS 13.0.
+- **x86-64** for Intel Macs, with a minimum of macOS 13.0. Its native
+  leaves, Swift helper, root daemon, synchronization companion, and Java
+  runtime are all x86-64. The runtime is the x86-64 Temurin build of the
+  exact version the arm64 build embeds.
+
+The x86-64 build refuses to run under Rosetta on Apple silicon. Before the
+instance lock, the helper client, or the dependency graph start, the desktop
+application reads `sysctl.proc_translated`. When the call succeeds and
+reports translation, the application shows one alert that points to the
+Apple silicon download and quits. Any error from that call, as on a real
+Intel processor, lets the application run. The helper, daemon, and
+companion do not check, because only the application starts them. After an
+x86-64 installation over an arm64 one on Apple silicon, the application's
+login item shows the refusal at each login until **Download** leads to the
+Apple silicon build.
+
+A verification-only build switch lets the x86-64 application continue under
+Rosetta and log the detected translation, so that an agent can verify it in
+an arm64 macOS guest. Release-channel builds never carry it: configuration
+refuses it with the release channel, and the package verifier and update feed
+generation reject it in a release package.
+
+Evidence rule exception (`user-confirmed`, 2026-09-29): the availability
+page normally claims a macOS version only with verification evidence on it.
+The maintainer accepts the arm64 minimum of macOS 13 as fully supported
+without separate macOS 13 or 14 verification of the arm64 build. The
+x86-64 build is verified under Rosetta in an arm64 macOS 13 virtual machine,
+not on Intel hardware, and the availability page names the code paths that
+this leaves unverified.
+
+Support horizon: Intel Macs on macOS 13 stay supported while the toolchain
+(Xcode, Compose Multiplatform, and the JDK) still builds and runs that
+target. Every release checks this. Removing Intel or macOS 13 support is
+announced one release ahead, and the availability page states when Apple's
+security updates for macOS 13 ended. The quality gate keeps compiling the
+native macOS parts for macOS 13 so that later changes cannot raise the
+minimum silently.
+
 ## MACOS-013 application-presence amendment
 
 `user-confirmed` (2026-09-26, [ADR 0009](0009-macos-menu-bar-presence.md));
@@ -322,7 +369,9 @@ decisions for the first slice that needs them.
 
 - The iOS deployment target is 18.0.
 - The macOS deployment target is 15.0 on arm64 only. Adding x86-64 requires a
-  separate acceptance decision.
+  separate acceptance decision. `superseded` by the
+  [MACOS-015 platform amendment](#macos-015-platform-amendment): 13.0 on
+  arm64 and x86-64.
 - Both deployment targets are rechecked against the release support policy
   before the first release; this decision does not claim future store
   eligibility.
@@ -414,7 +463,8 @@ semantics.
 - Native process and extension lifecycle risks remain visible and must be
   resolved in their named enforcement slices.
 - The arm64-only macOS baseline narrows the first compatibility matrix and
-  deliberately excludes Intel Macs.
+  deliberately excludes Intel Macs. `superseded` by the
+  [MACOS-015 platform amendment](#macos-015-platform-amendment).
 - Tool versions remain unpinned until PR #1 verifies them together; the
   generator's displayed versions are not silently treated as production
   authority.

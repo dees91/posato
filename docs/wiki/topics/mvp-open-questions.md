@@ -731,9 +731,28 @@ below. This queue retains idea provenance without expanding the original MVP.
    the bundled Java runtime and native libraries, Swift helpers, packaging,
    notarization, macOS 13 API availability, and a verification path for the
    physical device. Feasibility and support remain open.
+   `observed` (2026-09-29): an evaluation branch produced a notarized
+   x86-64/macOS 13 candidate that launched on the MacBook Air after two
+   fixes (the top-level x86-64 Skiko library and a pre-14 AppKit activation
+   fallback). Setup completed after a restart let Service Management submit
+   the daemon. Blocking, schedules, sync with a peer, and the updater alert
+   were not exercised; the
+   [`MACOS-015` record](../../tasks/executions/macos-015-intel-ventura.md)
+   keeps the evidence limits.
    `user-confirmed` (2026-09-29): Intel support is part of release 1.3 as
-   one `MACOS-015` delivery row, verified on the MacBook Air set up as a
-   dedicated test Mac without personal Posato data.
+   one `MACOS-015` delivery row. `user-confirmed` (2026-09-30): it is
+   verified in an arm64 macOS 13 Tart guest under Rosetta, not on the shared
+   MacBook Air.
+   `user-confirmed` (2026-09-29): the maintainer accepted in advance the
+   decisions the ADR 0003, ADR 0008, and `AGENTS.md` changes must state; the
+   [`MACOS-015` brief](../../tasks/specifications/macos-015-intel-ventura.md)
+   lists them.
+   `observed` (2026-09-30): x86-64 candidates passed the macOS 15 flow,
+   the pause page, the picker, helper removal, and an update in a macOS 13.6
+   guest under Rosetta, and synced with an arm64 Mac from a macOS 15 guest;
+   the release build refuses Rosetta. The
+   [`MACOS-015` record](../../tasks/executions/macos-015-intel-ventura.md)
+   has the evidence and limits.
 9. **In-app updates for macOS.** `user-confirmed` (2026-09-14): explore
    delivering new macOS versions from inside Posato, for example with Sparkle,
    after `MACOS-008` chose a manual download of each notarized build without

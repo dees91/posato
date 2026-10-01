@@ -2319,3 +2319,34 @@ to scope, feasibility, or delivery.
 - `user-confirmed`: backlog row `WEB-002` (idea 24) reworks the site's first
   screen, especially on phones, and replaces the product line
   **Pause. Then choose.** everywhere it appears; no release yet.
+
+## [2026-09-29] experiment | Intel Ventura evaluation
+
+- `observed`: an opt-in notarized x86-64/macOS 13 candidate passes package,
+  signature, notarization, and Gatekeeper checks. On the 2019 MacBook Air
+  with macOS 13.7.8 it needed the top-level x86-64 Skiko library and a pre-14
+  AppKit activation fallback; it then launched, and setup completed after a
+  restart let Service Management submit the daemon.
+- `observed`: three CloudKit bootstrap attempts were cancelled at Posato's
+  30-second deadline with default discretionary QoS; a later manual sync
+  succeeded (`user-confirmed`). The cause is `open` and deferred.
+- `MACOS-015` continues from this evaluation; the
+  [execution record](../tasks/executions/macos-015-intel-ventura.md) keeps
+  the evidence limits.
+- `user-confirmed`: the maintainer accepted the direction of the ADR 0003,
+  ADR 0008, and `AGENTS.md` changes in advance: the x86-64 build refuses
+  Rosetta, arm64 also drops to macOS 13 as supported without separate
+  verification, Intel stays while the toolchain allows, a separate
+  `appcast-intel.xml` with a shared build number. The
+  [brief](../tasks/specifications/macos-015-intel-ventura.md) lists them.
+- `user-confirmed` (2026-09-30): the MacBook Air is shared with another
+  person's account, so it cannot be a dedicated test Mac: Posato's daemon,
+  proxy settings, and background items are system-wide. Verification uses an
+  arm64 macOS 13 Tart guest running the x86-64 build under Rosetta through a
+  verification-only switch; no physical Intel Mac and no `AGENTS.md`
+  exception.
+- `observed` (2026-09-30): delivered and verified under Rosetta in Tart
+  (macOS 13.6 `ventura` line, sync on macOS 15.6.1); the macOS 13 daemon
+  submission failure is fixed by one re-registration; the availability page
+  lists Intel from Posato 1.3. Topics updated: macOS enforcement, unattended
+  verification, MVP open questions.

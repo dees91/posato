@@ -1,5 +1,6 @@
 import Foundation
 import PosatoMacOSServiceCore
+import ServiceManagement
 
 struct ServiceRecoveryOperations {
   let remainingMilliseconds: () throws -> UInt32
@@ -78,15 +79,19 @@ func enableOutcomePayload(
 func performDaemonLifecycleRequest(
   request: WireMessage,
   receivedAt: DispatchTime,
-  daemonRequirement: String,
+  endpoint: DaemonEndpoint,
   reconcilePayload: WireReconcilePayload?,
   daemon: inout DaemonConnection?
 ) throws -> WireMessage {
+  let operation = WireLifecyclePolicy.effectiveOperation(
+    requestOperation: request.operation,
+    reconcilePayload: reconcilePayload
+  )
   do {
     return try forwardDaemonLifecycleRequest(
       request: request,
       receivedAt: receivedAt,
-      daemonRequirement: daemonRequirement,
+      daemonRequirement: endpoint.requirement,
       daemon: &daemon
     )
   } catch {
@@ -101,8 +106,60 @@ func performDaemonLifecycleRequest(
     }
     daemon?.invalidate()
     daemon = nil
-    return try localResponse(request: request, payload: payload)
+    guard [.status, .enable].contains(operation), endpoint.resubmitOnce() else {
+      return try localResponse(request: request, payload: payload)
+    }
+    do {
+      return try retryAfterResubmission(
+        request: request,
+        receivedAt: receivedAt,
+        endpoint: endpoint,
+        firstPayload: payload,
+        daemon: &daemon
+      )
+    } catch  where operation == .status {
+      // A read never ends the helper because of the resubmission.
+      daemon?.invalidate()
+      daemon = nil
+      return try localResponse(request: request, payload: payload)
+    }
   }
+}
+
+func performEnableRequest(
+  request: WireMessage,
+  receivedAt: DispatchTime,
+  service: SMAppService,
+  endpoint: DaemonEndpoint,
+  daemon: inout DaemonConnection?
+) throws -> WireMessage {
+  var registrationFailed = false
+  if service.status != .enabled {
+    do {
+      try service.register()
+    } catch {
+      // SMAppService throws when approval is now required or the item
+      // already exists; the status read below is the setup outcome. A
+      // status that did not move keeps this as a registration failure.
+      registrationFailed = true
+    }
+  }
+  guard service.status == .enabled else {
+    return try localResponse(
+      request: request,
+      payload: enableOutcomePayload(
+        serviceState: serviceState(service.status),
+        registrationFailed: registrationFailed
+      )
+    )
+  }
+  return try performDaemonLifecycleRequest(
+    request: request,
+    receivedAt: receivedAt,
+    endpoint: endpoint,
+    reconcilePayload: nil,
+    daemon: &daemon
+  )
 }
 
 func forwardDaemonLifecycleRequest(

@@ -164,6 +164,25 @@ before treating a passing test as evidence.
 - `vm install`, LaunchServices launch, the helper, enforcement, and iCloud sync all work on macOS 15.6.1. Cross-device sync with a macOS 26 guest works in both directions.
 - When a new device signs in to the test account, the existing golden VMs can report "Some iCloud Data Isn't Syncing". iCloud Keychain items then stop reaching them, and Posato waits for the workspace key. Resume Data Sync with the account and guest passwords restores them. `superseded` (2026-09-25, `RELEASE-003`): a fix in a clone does not carry over to the golden VM; later clones were paused again until the golden VM itself was repaired. `vm create` now reports the state, and `vm icloud --resume` repairs it.
 
+### macOS 13 line (`MACOS-015`)
+
+- `observed` (2026-09-30): Apple's last Ventura restore image for virtual
+  Macs is 13.6 (22G120); it creates a guest on a macOS 26 host. The guest has
+  no Apple Account (guests below macOS 15 cannot sign in), so sync checks use
+  the `legacy` line.
+- `observed`: macOS 13 renders a Tart display at 1x (2880x1800 with tiny
+  text, poor OCR); `tart set --display 1440x900px` gives readable text and
+  the same System Settings geometry as the other lines. OCR still misreads
+  some labels at 1x (`Posato (`, `conuinue`).
+- `observed`: `tart-guest-agent` 0.15.0 runs on macOS 13 although its
+  Mach-O names macOS 26.0; the driver's accessibility bridge must be built
+  for `arm64-apple-macos13.0`. Rosetta installs with
+  `softwareupdate --install-rosetta --agree-to-license`.
+- `observed`: Setup Assistant ignored some text clicks; Tab, Space, and
+  Return reached every control. Enabling Accessibility or notifications for
+  an app asks for no password on macOS 13, and the status menu exposes its
+  items only while open.
+
 ### Restart, login, and sleep
 
 `observed` (2026-09-26, `MACOS-013`):

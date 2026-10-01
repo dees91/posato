@@ -133,12 +133,30 @@ The chain works in this order:
 
 A rejected submission leaves the notarization log under the task's `build/tmp` directory. The first signing run may raise a keychain prompt asking `codesign` to use the Developer ID key.
 
+### Intel builds
+
+`MACOS-015` adds an x86-64 build for Intel Macs. `-PposatoMacOsArchitecture=x86_64`
+builds every native part for `x86_64-apple-macos13.0`; the default is `arm64`, with the same macOS 13.0 minimum.
+The x86-64 build embeds the x86-64 Temurin runtime of exactly the version the arm64 toolchain resolves. Gradle
+downloads it once, checks its pinned SHA-256 (in `buildSrc` `PosatoTemurin`), and keeps it under
+`~/.gradle/caches/posato-temurin/`. When the arm64 toolchain moves to another version, the x86-64 build stops and
+names the pin to update. Its `jlink` and `jpackage` run under Rosetta, so the build Mac needs Rosetta
+(`softwareupdate --install-rosetta`).
+
+The x86-64 application refuses to open under Rosetta. `-PposatoMacOsAllowRosetta=true` builds a verification
+candidate that opens anyway, for an arm64 macOS virtual machine; the release channel refuses it, and the package
+check and the release feed reject a package that carries it.
+
+Every release builds, notarizes, and package-checks the x86-64 build next to the arm64 one. When the toolchain
+(Xcode, Compose Multiplatform, or the JDK) can no longer build or run it for macOS 13, the release announces the end
+of Intel support one release ahead (ADR 0003, `MACOS-015` amendment).
+
 ### Update feed and channels
 
 `MACOS-011` adds Sparkle updates. Every Developer ID build names its update channel:
 
-- `-PposatoMacOsUpdateChannel=release` embeds the stable feed `https://github.com/dees91/posato/releases/latest/download/appcast.xml` and the tracked release key. Any other feed or key fails the build.
-- `-PposatoMacOsUpdateChannel=candidate` builds a test candidate. It needs its own `-PposatoMacOsUpdateFeedUrl`, an HTTPS or `http://127.0.0.1:<port>/` URL ending in `/appcast-test.xml`, and `-PposatoMacOsUpdatePublicKey`. It may never read the stable feed, and the release feed refuses a candidate build.
+- `-PposatoMacOsUpdateChannel=release` embeds the stable feed `https://github.com/dees91/posato/releases/latest/download/appcast.xml` (`appcast-intel.xml` for x86-64) and the tracked release key. Any other feed or key fails the build.
+- `-PposatoMacOsUpdateChannel=candidate` builds a test candidate. It needs its own `-PposatoMacOsUpdateFeedUrl`, an HTTPS or `http://127.0.0.1:<port>/` URL ending in `/appcast-test.xml` (`/appcast-intel-test.xml` for x86-64), and `-PposatoMacOsUpdatePublicKey`. It may never read the stable feed, and the release feed refuses a candidate build.
 
 A development package takes no channel and embeds a feed only when both `posatoMacOsUpdateFeedUrl` and `posatoMacOsUpdatePublicKey` are passed.
 
@@ -157,19 +175,22 @@ To build a release together with its signed feed:
   -PposatoMacOsSyncDeveloperIdProfile=~/Library/Developer/Posato/Posato_macOS_Sync_Developer_ID.provisionprofile
 ```
 
-The task runs the whole notarized chain above, then copies the stapled DMG as `Posato-<version>.dmg` into a clean `build/compose/binaries/main/release-feed/`. It runs Sparkle's `generate_appcast` with the Keychain key, embedded plain-text notes, and no deltas. Signing raises a Keychain prompt for the release key. The task then checks the result against the DMG and the key embedded in the application, and refuses to finish unless all of the following hold:
+The task runs the whole notarized chain above, then copies the stapled DMG as `Posato-<version>.dmg` (`Posato-<version>-intel.dmg` for x86-64) into a clean `build/compose/binaries/main/release-feed/<architecture>/`. It runs Sparkle's `generate_appcast` with the Keychain key, embedded plain-text notes, and no deltas. Signing raises a Keychain prompt for the release key. The task then checks the result against the DMG and the key embedded in the application, and refuses to finish unless all of the following hold:
 
 - both the feed signature and the archive signature verify;
 - the feed has exactly one item, whose `sparkle:version` equals `CFBundleVersion` and exceeds the release floor above;
-- the item requires macOS 15.0 and arm64 and carries no release-notes link or deltas;
+- the item requires macOS 13.0, requires arm64 only in an arm64 feed, and carries no release-notes link or deltas;
+- the application inside the DMG is exactly the feed's architecture, and a release feed refuses the Rosetta switch;
 - the enclosure points to `releases/download/v<version>/Posato-<version>.dmg` and its length matches the DMG.
 
 It also writes `SHA256SUMS`.
 
-Publish `Posato-<version>.dmg`, `appcast.xml`, and `SHA256SUMS` together (`RELEASE-003` owns publication):
+A release carries both builds with one build number. Generate the arm64 feed first; the x86-64 release feed then requires the arm64 feed beside it with the same `sparkle:version`, and the release floor is the highest build in either published feed. Every stable release from 1.3 on carries both feeds (ADR 0008, `MACOS-015` amendment).
 
-1. Upload all three to a draft release and publish it only when it is complete.
-2. After publishing, confirm that `https://github.com/dees91/posato/releases/latest/download/appcast.xml` resolves and that the downloaded feed still verifies.
+Publish `Posato-<version>.dmg`, `appcast.xml`, and `SHA256SUMS` together, and for 1.3 on also `Posato-<version>-intel.dmg` and `appcast-intel.xml`. Each architecture's run writes its own `SHA256SUMS`; merge the two into one `SHA256SUMS` with both DMG lines before uploading (`RELEASE-003` owns publication):
+
+1. Upload all of them (three assets, or five from 1.3 on) to a draft release and publish it only when it is complete.
+2. After publishing, confirm that `https://github.com/dees91/posato/releases/latest/download/appcast.xml` (and `appcast-intel.xml` from 1.3 on) resolves and that the downloaded feed still verifies.
 3. Publish any release without a macOS feed with `--latest=false`, so the stable feed keeps resolving.
 
 The task reads the feed URL, key, and build number from the application inside the DMG and requires that they match the staged application. A candidate feed uses `-PposatoMacOsUpdateChannel=candidate` and `-PposatoMacOsUpdateDownloadPrefix=<HTTPS or loopback URL ending in />`, and writes `Posato-<version>-<build>-test.dmg` with `appcast-test.xml`. `-PposatoMacOsUpdateKeyAccount` selects another Keychain account, for example a throwaway test key.

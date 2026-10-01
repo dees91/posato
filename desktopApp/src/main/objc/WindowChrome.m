@@ -3,6 +3,7 @@
 #import <ServiceManagement/ServiceManagement.h>
 #import <UserNotifications/UserNotifications.h>
 #include <jni.h>
+#include <sys/sysctl.h>
 
 JNIEXPORT void JNICALL Java_app_posato_desktop_MacWindow_announce(
     JNIEnv *environment,
@@ -79,6 +80,14 @@ static id presenceMenuTarget;
 static BOOL presenceMainWindowVisible = YES;
 static BOOL presenceLaunchedAtLogin = NO;
 static id presenceLaunchObserver;
+
+static void PresenceActivate(void) {
+    if (@available(macOS 14.0, *)) {
+        [NSApp activate];
+    } else {
+        [NSApp activateIgnoringOtherApps:YES];
+    }
+}
 
 static JNIEnv *PresenceEnvironment(void) {
     JNIEnv *environment = NULL;
@@ -196,6 +205,53 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_installLaunchPr
                     NSAppleEventDescriptor *property = [event paramDescriptorForKeyword:keyAEPropData];
                     presenceLaunchedAtLogin = event.eventID == kAEOpenApplication && property.enumCodeValue == keyAELaunchedAsLogInItem;
                 }];
+}
+
+// True only when the kernel reports that this process runs under Rosetta translation; any error means native.
+JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacTranslationNative_runsTranslated(JNIEnv *environment, jclass receiver) {
+    int translated = 0;
+    size_t size = sizeof(translated);
+    if (sysctlbyname("sysctl.proc_translated", &translated, &size, NULL, 0) != 0) return JNI_FALSE;
+    return translated == 1 ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jboolean JNICALL Java_app_posato_desktop_MacTranslationNative_allowsTranslation(JNIEnv *environment, jclass receiver) {
+    return [[NSBundle.mainBundle objectForInfoDictionaryKey:@"PosatoAllowsRosetta"] boolValue] ? JNI_TRUE : JNI_FALSE;
+}
+
+// Shows the refusal before the application starts and opens the download page when the person chooses it.
+JNIEXPORT void JNICALL Java_app_posato_desktop_MacTranslationNative_refuseTranslation(
+    JNIEnv *environment,
+    jclass receiver,
+    jstring title,
+    jstring message,
+    jstring download,
+    jstring quit,
+    jstring downloadUrl
+) {
+    NSString *titleText = PresenceString(environment, title);
+    NSString *messageText = PresenceString(environment, message);
+    NSString *downloadText = PresenceString(environment, download);
+    NSString *quitText = PresenceString(environment, quit);
+    NSURL *url = [NSURL URLWithString:PresenceString(environment, downloadUrl)];
+    dispatch_sync(dispatch_get_main_queue(), ^{
+        NSApplication *application = NSApplication.sharedApplication;
+        [application setActivationPolicy:NSApplicationActivationPolicyRegular];
+        if (@available(macOS 14.0, *)) {
+            [application activate];
+        } else {
+            [application activateIgnoringOtherApps:YES];
+        }
+        NSAlert *alert = [[NSAlert alloc] init];
+        alert.alertStyle = NSAlertStyleCritical;
+        alert.messageText = titleText;
+        alert.informativeText = messageText;
+        [alert addButtonWithTitle:downloadText];
+        [alert addButtonWithTitle:quitText];
+        if ([alert runModal] == NSAlertFirstButtonReturn && url != nil) {
+            [NSWorkspace.sharedWorkspace openURL:url];
+        }
+    });
 }
 
 // 1 when this account has the console, 0 when another account does, -1 when unknown.
@@ -333,7 +389,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_setMainWindowVi
     dispatch_async(dispatch_get_main_queue(), ^{
         presenceMainWindowVisible = shown;
         PresenceApplyPolicy(nil);
-        if (shown) [NSApp activate];
+        if (shown) PresenceActivate();
     });
 }
 
@@ -351,7 +407,7 @@ JNIEXPORT void JNICALL Java_app_posato_desktop_MacPresenceNative_presentAlert(
     NSString *primaryTitle = PresenceString(environment, primary);
     NSString *secondaryTitle = PresenceString(environment, secondary);
     dispatch_async(dispatch_get_main_queue(), ^{
-        [NSApp activate];
+        PresenceActivate();
         NSAlert *alert = [[NSAlert alloc] init];
         alert.messageText = alertTitle;
         alert.informativeText = alertMessage;

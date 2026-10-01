@@ -34,6 +34,17 @@ class GuestScreenTest {
     }
 
     @Test
+    fun `given a 1x display that misreads the icon label when the drag looks beside the target then it still takes the icon`() {
+        val title = RecognizedLine("Posato", 1.0, 610, 30, 60, 14)
+        val icon = RecognizedLine("Posato (", 1.0, 479, 198, 42, 10)
+        val applications = RecognizedLine("/Applications", 1.0, 736, 196, 77, 15)
+
+        val endpoints = dragEndpoints(listOf(title, icon, applications), "Posato", "/Applications")
+
+        assertEquals(icon to applications, endpoints)
+    }
+
+    @Test
     fun `given a label read with more than two errors then the drag finds no target`() {
         val icon = RecognizedLine("Posato", 1.0, 960, 410, 80, 24)
 

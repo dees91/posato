@@ -62,7 +62,11 @@ static NSWindow *PosatoAlertWindow(void) {
 static void PosatoPresentAlert(NSAlert *alert, void (^completion)(NSModalResponse)) {
     NSWindow *window = PosatoAlertWindow();
     if (window == nil) {
-        [NSApp activate];
+        if (@available(macOS 14.0, *)) {
+            [NSApp activate];
+        } else {
+            [NSApp activateIgnoringOtherApps:YES];
+        }
         completion([alert runModal]);
         return;
     }

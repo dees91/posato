@@ -23,6 +23,34 @@ published the first updater-capable release, 1.1.0 (build 26), with the
 public wording below; the stable feed resolves, and an installed 1.1.0 reports
 that it is up to date. Moving from 1.0 to 1.1 remains a manual download.
 
+## MACOS-015 update-channel amendment
+
+`user-confirmed` (2026-09-29); applied by `MACOS-015` with the
+[ADR 0003 platform amendment](0003-mvp-application-architecture-baseline.md#macos-015-platform-amendment).
+Both builds are distributed and updated as follows:
+
+- The x86-64 build reads its own feed, `appcast-intel.xml`, at
+  `https://github.com/dees91/posato/releases/latest/download/appcast-intel.xml`.
+  Its DMG is `Posato-<version>-intel.dmg` in the same GitHub Release as the
+  arm64 DMG and `appcast.xml`.
+- `appcast.xml` stays arm64-only and keeps the `arm64` hardware requirement,
+  so the installed 1.1 and 1.2 clients that read it are never offered an
+  x86-64 build. The x86-64 feed never offers an arm64 build or a build with
+  a higher minimum macOS than 13.0. The feed generation task checks the
+  mounted application's architecture, the minimum system version, and the
+  feed name against the build's embedded `SUFeedURL`.
+- Both builds of a release share one `CFBundleVersion`. Both feeds are
+  generated from the draft release before either is published, and the
+  second feed is generated only for the build number of the first.
+- Every stable release from 1.3 on carries both feeds; a release missing
+  either must not become latest. When Intel support ends, as announced one
+  release ahead, every later stable release keeps carrying an
+  `appcast-intel.xml` whose single item is the last x86-64 release, so that
+  Intel installations keep a valid signed feed instead of a missing one.
+- Candidates use `appcast-test.xml` (arm64) and `appcast-intel-test.xml`
+  (x86-64). The trust model is unchanged: one EdDSA key signs both feeds and
+  all archives.
+
 ## Context and evidence
 
 `observed`: the public [1.0.0 release](https://github.com/dees91/posato/releases/tag/v1.0.0)
