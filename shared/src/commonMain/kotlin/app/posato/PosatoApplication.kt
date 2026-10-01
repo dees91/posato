@@ -57,8 +57,10 @@ import app.posato.feature.session.domain.LocalSessionStatus
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.session.ui.SessionComposition
 import app.posato.feature.session.ui.SessionScreen
 import app.posato.feature.session.ui.SessionTransitionOwner
+import app.posato.feature.session.ui.recompose
 import app.posato.feature.sync.bootstrap.AppleSync
 import app.posato.feature.sync.ui.SyncAnnouncements
 import app.posato.feature.sync.ui.SyncBootstrapUiState
@@ -72,6 +74,7 @@ import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.merge
 
 @Inject
 class PosatoApplication internal constructor(
@@ -86,6 +89,7 @@ class PosatoApplication internal constructor(
     private val notifier: SessionNotifier,
     private val schedules: ScheduleDependencies,
     private val scheduledPauses: ScheduledPauses,
+    private val sessionComposition: SessionComposition,
 ) {
     private val scheduleInputs = SchedulesInputs(
         schedules.store,
@@ -137,6 +141,10 @@ class PosatoApplication internal constructor(
         }
         if (hostsSession) {
             LaunchedEffect(sessionOwner) { sessionOwner.runWhileHosted() }
+            // An edit to a set a running session uses pauses its additions at once.
+            LaunchedEffect(sessionOwner) {
+                merge(store.policyChanges, applicationMappings.invalidations).collect { sessionOwner.recompose(sessionComposition) }
+            }
             LaunchedEffect(notifier) { notifier.run() }
             // A process that hosts sessions also starts schedules; the Mac's resident process does both itself.
             LaunchedEffect(scheduledPauses) { scheduledPauses.run() }

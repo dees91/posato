@@ -21,6 +21,7 @@ import app.posato.feature.session.domain.RandomSessionIdGenerator
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.session.ui.SessionComposition
 import app.posato.feature.session.ui.SessionTransitionOwner
 import app.posato.feature.session.ui.loadSessionTargets
 import app.posato.feature.sync.bootstrap.AppleBootstrap
@@ -131,6 +132,7 @@ internal interface DesktopApplicationGraph :
         policyStore: LocalTargetPolicyStore,
         applicationMappings: LocalApplicationMappings,
         @Named("database") databaseDispatcher: CoroutineDispatcher,
+        composition: SessionComposition,
     ): SessionTransitionOwner {
         val owner = SessionTransitionOwner(
             backgroundDispatcher = databaseDispatcher,
@@ -139,6 +141,7 @@ internal interface DesktopApplicationGraph :
             enforcement = enforcement,
             loadTargets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
             triggers = sync.sessionTriggers,
+            composition = composition,
         )
         sync.sessionObserver = owner
         return owner
