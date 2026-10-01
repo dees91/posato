@@ -323,4 +323,17 @@ class PauseClaimsTest {
 
         assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
     }
+
+    @Test
+    fun `given a resumed manual session when a schedule on another set starts through update then the helper pauses both`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+        claims.manual.clear()
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        claims.updateSchedule(request(200, listOf("leisure.example")))
+
+        assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
+    }
 }
