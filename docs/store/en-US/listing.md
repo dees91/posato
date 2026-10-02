@@ -46,8 +46,10 @@ accepted About Posato entry. The maintainer accepted the three-screen set on
 recaptured the same three screens for 1.1.0 on 2026-09-25, because the
 website list now names the included `www` variant and About shows the new
 version. `DOCS-003` recaptured the set for 1.2.0 on 2026-09-27 and added
-Schedules as the third screen, which moved About Posato to fourth; it awaits
-the maintainer's acceptance.
+Schedules as the third screen, which moved About Posato to fourth. `DOCS-004`
+recaptured both sets for 1.3.0 on 2026-10-02: the first screen now shows the
+pause set Focus with its websites, and Session and Schedules show the set; it
+awaits the maintainer's acceptance.
 
 The captures show session setup, paused websites, and About Posato without private
 account, application, or device labels. Simulator captures must not imply that Screen
@@ -74,9 +76,9 @@ Simulator with `--udid <udid>`.
 1. Run `xcrun simctl ui <udid> appearance dark`.
 2. Install fresh with `launch -t sim --fresh`, then run
    `tools/posato-control/fixtures/scenarios/first-install-skip.json`.
-3. Add the synthetic websites `news.example`, `social.example`, and
-   `video.example`, then add a schedule named `Deep work` with the default
-   weekdays and hours.
+3. In **Pause sets**, rename the first set to `Focus` and add the synthetic
+   websites `news.example`, `social.example`, and `video.example` to it, then
+   add a schedule named `Deep work` with the default set, weekdays, and hours.
    The About screen shows the build's `MARKETING_VERSION`; capture from a build
    of the release version, even when `Version.xcconfig` is bumped only for the
    capture.
@@ -86,7 +88,7 @@ Simulator with `--udid <udid>`.
    selected. Before capturing, run
    `xcrun simctl status_bar <udid> override --time <HH:MM now> --batteryState discharging --batteryLevel 100 --wifiBars 3`,
    so the status bar matches the "Ends at" time.
-6. Capture About Posato, the paused items, and Schedules with the same
+6. Capture About Posato, the Focus set, and Schedules with the same
    status-bar time. The About screen hides the tab bar, so go Back before
    switching tabs.
 7. Capture each screen with `xcrun simctl io <udid> screenshot raw.png`. Then
