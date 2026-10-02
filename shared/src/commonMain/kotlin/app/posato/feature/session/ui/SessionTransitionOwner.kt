@@ -68,6 +68,7 @@ internal class SessionTransitionOwner(
     private val enforcement: EnforcementPort,
     private val loadTargets: suspend (PauseSetId) -> SessionTargetsState,
     private val triggers: SessionSyncTriggers,
+    private val composition: SessionComposition? = null,
 ) : SessionExchangeObserver {
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
     private val stateMutex = Mutex()
@@ -238,7 +239,11 @@ internal class SessionTransitionOwner(
         }
     }
 
-    fun retry() {
+    /**
+     * Applies the running session again. [clearFirst] false keeps what the platform holds while the new
+     * request replaces it, which a set edit needs: on iPhone that store is the record of what the session holds.
+     */
+    fun retry(clearFirst: Boolean = true) {
         if (mutableView.value.busy) {
             return
         }
@@ -253,7 +258,7 @@ internal class SessionTransitionOwner(
                 if (active != null && pendingNativeExpiry == SessionTag(active.record)) {
                     reconcile(SessionTag(active.record), active.record, frozenStartSet)
                 } else if (active != null) {
-                    reapplyCurrent(active.record, SessionTag(active.record), frozenStartSet)
+                    reapplyCurrent(active.record, SessionTag(active.record), frozenStartSet, clearFirst)
                 } else {
                     clearAfterEnd(tagOf(fresh))
                 }
@@ -300,12 +305,8 @@ internal class SessionTransitionOwner(
     }
 
     fun pollNow(record: SessionRecord) {
-        if (mutableView.value.busy || mutableView.value.state !is EnforcementState.Active) {
-            return
-        }
-        scope.launch {
-            onTickSecond(record, SessionTag(record))
-        }
+        if (mutableView.value.busy || mutableView.value.state !is EnforcementState.Active) return
+        scope.launch { onTickSecond(record, SessionTag(record)) }
     }
 
     suspend fun captureFrozen(setId: PauseSetId): FrozenStartSet {
@@ -435,7 +436,7 @@ internal class SessionTransitionOwner(
         val entering = mutableView.value.state
         mutableView.update { view -> view.copy(busy = true) }
         try {
-            val targets = loadTargets(record.setId)
+            val targets = composition.targetsFor(record, loadTargets)
             val frozen = targets.toFrozenStartSet()
             frozenStartSet = frozen
             if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
@@ -519,7 +520,7 @@ internal class SessionTransitionOwner(
             actionTag = null
             mutableView.update { view -> view.copy(state = EnforcementState.Active(false)) }
         } else if (held) {
-            adoptHeld(tag, frozen.orLoaded(record.setId, loadTargets))
+            adoptHeld(tag, enforcement.adoptSession(record, frozen, composition.targetsFor(record, loadTargets)))
         } else if (enforcement.reapplyRequiresPrompt) {
             actionTag = tag
             mutableView.update { view ->
@@ -558,14 +559,15 @@ internal class SessionTransitionOwner(
         record: SessionRecord,
         tag: SessionTag,
         frozen: FrozenStartSet?,
+        clearFirst: Boolean = true,
     ) {
         if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
             return
         }
-        val targets = loadTargets(record.setId)
+        val targets = composition.targetsFor(record, loadTargets)
         val requested = targets.toEnforcedSet()
         portMutex.withLock {
-            if (!prepareApply(record, tag, clear = true)) {
+            if (!prepareApply(record, tag, clear = clearFirst)) {
                 null
             } else {
                 confirmedClear = false

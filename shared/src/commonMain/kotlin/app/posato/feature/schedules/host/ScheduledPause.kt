@@ -1,6 +1,7 @@
 package app.posato.feature.schedules.host
 
 import app.posato.feature.schedules.domain.OccurrenceKey
+import app.posato.feature.sync.domain.PauseSetId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,7 +21,21 @@ internal enum class ScheduledPauseState {
     RETRYING,
 }
 
-/** The one scheduled pause this device shows: the earliest-started name and the latest end. */
+/** One running occurrence as the pause summary names it: its schedule, its set, and its own end. */
+internal data class ScheduledPart(
+    val name: String,
+    val setId: PauseSetId?,
+    val endEpochMillis: Long,
+) {
+    override fun toString(): String {
+        return "ScheduledPart(redacted)"
+    }
+}
+
+/**
+ * The one scheduled pause this device shows: the earliest-started name and the latest end, each running
+ * occurrence, and how many items an edit added that the device's limits leave unpaused for now.
+ */
 internal data class ScheduledPause(
     val name: String,
     val startEpochMillis: Long,
@@ -29,6 +44,8 @@ internal data class ScheduledPause(
     val state: ScheduledPauseState,
     val unannounced: Set<OccurrenceKey> = emptySet(),
     val setupUnannounced: Set<OccurrenceKey> = emptySet(),
+    val parts: List<ScheduledPart> = emptyList(),
+    val notPausedYet: Int = 0,
 ) {
     val restricts: Boolean
         get() {

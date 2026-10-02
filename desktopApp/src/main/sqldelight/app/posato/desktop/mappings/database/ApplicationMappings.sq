@@ -16,6 +16,10 @@ selectRequirements:
 SELECT DISTINCT mappingId, designatedRequirement
 FROM localApplicationMapping;
 
+selectKept:
+SELECT DISTINCT mappingId, displayName, designatedRequirement
+FROM localApplicationMapping;
+
 selectSetIds:
 SELECT DISTINCT setId
 FROM localApplicationMapping;

@@ -10,9 +10,12 @@ import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.ScheduleOccurrence
 import app.posato.feature.schedules.domain.SchedulePlan
 import app.posato.feature.session.ui.SessionTargetsState
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -37,7 +40,7 @@ class ScheduleMonitorTableTest {
     )
 
     @Test
-    fun `given a date whose current interval starts before its observed natural end then only the running entry covers it`() {
+    fun `given a date whose current interval starts before its observed natural end then only the running entry covers it`() = runTest {
         val zone = CentralEuropeanZone
         val expiredEnd = zone.instantOf(monday, 600)
         val newEnd = zone.instantOf(monday, 720)
@@ -47,16 +50,16 @@ class ScheduleMonitorTableTest {
             facts = ScheduleFacts(expired = mapOf(key to expiredEnd)),
         )
         val occurrence = ScheduleOccurrence(key, "Plan 1", expiredEnd, newEnd)
-        val input = ScheduleMonitorInput(snapshot, listOf(occurrence), zone.instantOf(monday, 660)) { targets }
+        val input = ScheduleMonitorInput(snapshot, listOf(occurrence), zone.instantOf(monday, 660), targets = { targets })
 
-        val table = ScheduleMonitorTables.build(input, zone, targets)
+        val table = ScheduleMonitorTables.build(input, zone)
 
         assertEquals(listOf(monday), table.schedules.single().stoppedDates)
         assertEquals(listOf(MonitorRunning(id(1).hex, monday, expiredEnd, newEnd)), table.running)
     }
 
     @Test
-    fun `given plans and facts then only enabled accepted plans are listed with their stopped dates in the window`() {
+    fun `given plans and facts then only enabled accepted plans are listed with their stopped dates in the window`() = runTest {
         val snapshot = ScheduleSnapshot(
             schedules = listOf(
                 StoredSchedule(plan(2)),
@@ -71,24 +74,53 @@ class ScheduleMonitorTableTest {
             ),
         )
         val now = CentralEuropeanZone.instantOf(monday, 8 * 60)
-        val input = ScheduleMonitorInput(snapshot, emptyList(), now) { targets }
+        val input = ScheduleMonitorInput(snapshot, emptyList(), now, targets = { targets })
 
-        val table = ScheduleMonitorTables.build(input, CentralEuropeanZone, targets)
+        val table = ScheduleMonitorTables.build(input, CentralEuropeanZone)
 
         assertEquals(listOf(id(1).hex, id(2).hex), table.schedules.map { it.id })
         assertEquals(listOf(monday, monday.plusDays(7)), table.schedules[0].stoppedDates)
         assertEquals(listOf(monday.plusDays(-1)), table.schedules[1].stoppedDates)
-        assertEquals(listOf("example.com"), table.domains)
-        assertEquals(emptyList(), table.mappingIds)
+        assertEquals(listOf(MonitorSet(PauseSetId.FIRST.hexId(), listOf("example.com"), emptyList())), table.sets)
     }
 
     @Test
-    fun `given a running occurrence then it is listed with its start and end`() {
+    fun `given a running occurrence then it is listed with its start and end`() = runTest {
         val occurrence = ScheduleOccurrence(OccurrenceKey(id(1), monday), "Plan 1", 1_000L, 5_000L)
-        val input = ScheduleMonitorInput(ScheduleSnapshot(schedules = listOf(StoredSchedule(plan(1)))), listOf(occurrence), 2_000L) { targets }
+        val input =
+            ScheduleMonitorInput(ScheduleSnapshot(schedules = listOf(StoredSchedule(plan(1)))), listOf(occurrence), 2_000L, targets = { targets })
 
-        val table = ScheduleMonitorTables.build(input, CentralEuropeanZone, targets)
+        val table = ScheduleMonitorTables.build(input, CentralEuropeanZone)
 
         assertEquals(listOf(MonitorRunning(id(1).hex, monday, 1_000L, 5_000L)), table.running)
+    }
+
+    @Test
+    fun `given plans on two sets then the table names each plan's set and lists each set once`() = runTest {
+        val work = checkNotNull(PauseSetId.of(testIdentifier(80)))
+        val leisure = checkNotNull(PauseSetId.of(testIdentifier(81)))
+        val snapshot = ScheduleSnapshot(schedules = listOf(StoredSchedule(plan(1).copy(setId = work)), StoredSchedule(plan(2).copy(setId = leisure))))
+        val key = OccurrenceKey(id(1), monday)
+        val running = ScheduleOccurrence(key, "Plan 1", CentralEuropeanZone.instantOf(monday, 540), CentralEuropeanZone.instantOf(monday, 600))
+        val input = ScheduleMonitorInput(
+            snapshot,
+            listOf(running),
+            CentralEuropeanZone.instantOf(monday, 550),
+        ) { setId -> targetsOf(if (setId == work) "work.example" else "leisure.example") }
+
+        val table = ScheduleMonitorTables.build(input, CentralEuropeanZone)
+
+        assertEquals(listOf(work.hexId(), leisure.hexId()), table.schedules.map { it.setId })
+        assertEquals(
+            setOf(MonitorSet(work.hexId(), listOf("work.example"), emptyList()), MonitorSet(leisure.hexId(), listOf("leisure.example"), emptyList())),
+            table.sets.toSet(),
+        )
+    }
+
+    private fun targetsOf(domain: String): SessionTargetsState {
+        return SessionTargetsState(
+            assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(listOf(domain), null)).policy,
+            LocalApplicationMappingsLoadResult.Unavailable(),
+        )
     }
 }

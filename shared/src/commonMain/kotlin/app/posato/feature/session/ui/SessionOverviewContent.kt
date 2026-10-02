@@ -62,6 +62,7 @@ internal fun SessionOverviewContent(
     macLoginItemEnabled: Boolean? = null,
     scheduled: ScheduledPauseView? = null,
     onEndSchedule: () -> Unit = {},
+    pauseNotice: String? = null,
 ) {
     val scheduledRestricts = scheduled?.restricts == true
     val active = state.status is LocalSessionStatus.Active || scheduledRestricts
@@ -87,6 +88,7 @@ internal fun SessionOverviewContent(
             SessionStartAction(state, needsMacSetup, hasItems, onSetup, onItems)
             macSetup?.takeIf { it.offerVisible }?.let { SessionSetupOffer(it, macActions, onSetup) }
         }
+        NotPausedYetNotice(pauseNotice.takeIf { active })
         FrozenSetCaption(state)
         SessionSelectionSummary(state, deviceLabel, onEditItems)
         PosatoCaption("Saved on this device. Restrictions apply only during a pause you start or a schedule you set.")

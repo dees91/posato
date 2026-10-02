@@ -21,6 +21,14 @@ final class FakeScheduleShieldStore: ScheduleShieldStore {
     var holdsAnyShield: Bool {
         applied != nil
     }
+
+    var shieldedHosts: [String] {
+        (applied?.domains ?? []).compactMap(\.domain)
+    }
+
+    var shieldedTokens: Set<ApplicationToken> {
+        applied?.applications ?? []
+    }
 }
 
 final class FakeSchedulePoster: ScheduleNoticePoster {
@@ -153,7 +161,7 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(files.readTable(), table)
 
         let other = ScheduleMonitorFile(
-            version: 2, schedules: [], running: [], domains: [], applicationTokens: [],
+            version: ScheduleMonitor.fileVersion + 1, schedules: [], running: [], domains: [], applicationTokens: [],
             notices: ScheduleMonitorFile.Notices(enabled: false, endTitle: "", endBody: "")
         )
         try files.writeTable(other)
@@ -262,6 +270,209 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(store.clears, 1)
     }
 
+    // MARK: - Pause sets (version 2)
+
+    private let workSet = "000000000000400080000000000000b1"
+    private let leisureSet = "000000000000400080000000000000b2"
+    private let eveningId = "000000000000400080000000000000a2"
+
+    private func setsFile(
+        _ schedules: [ScheduleMonitorFile.Schedule],
+        sets: [(id: String, domains: [String])]
+    ) -> ScheduleMonitorFile {
+        var domains: [String] = []
+        let indexed = sets.map { set in
+            ScheduleMonitorFile.PauseSet(
+                id: set.id,
+                domainIndexes: set.domains.map { domain in
+                    if let index = domains.firstIndex(of: domain) { return index }
+                    domains.append(domain)
+                    return domains.count - 1
+                },
+                tokenIndexes: []
+            )
+        }
+        var file = ScheduleMonitorFile(
+            version: ScheduleMonitor.fileVersion, schedules: schedules, running: [], domains: domains, applicationTokens: [],
+            notices: ScheduleMonitorFile.Notices(enabled: false, endTitle: "", endBody: "")
+        )
+        file.sets = indexed
+        return file
+    }
+
+    private func plan(_ id: String, set: String, start: Int = 9 * 60, end: Int = 10 * 60) -> ScheduleMonitorFile.Schedule {
+        var plan = ScheduleMonitorFile.Schedule(
+            id: id, weekdays: 0b0011111, startMinute: start, endMinute: end, stoppedDates: [], startTitle: "", startBody: ""
+        )
+        plan.setId = set
+        return plan
+    }
+
+    private func hosts(_ prefix: String, _ range: ClosedRange<Int>) -> [String] {
+        range.map { String(format: "%@%02d.example", prefix, $0) }
+    }
+
+    func testTwoRunningOccurrencesOnDifferentSetsPauseBothSets() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(setsFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
+            sets: [(workSet, ["work.example"]), (leisureSet, ["leisure.example"])]
+        ))
+        let store = FakeScheduleShieldStore()
+
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: eveningId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 9, 5) }, calendar: calendar
+        )
+
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["work.example", "leisure.example"]))
+    }
+
+    func testOneOccurrenceEndingKeepsOnlyWhatTheOtherNeeds() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(setsFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
+            sets: [(workSet, ["work.example"]), (leisureSet, ["leisure.example"])]
+        ))
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example", "leisure.example"]), applications: [])
+
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 10) }, calendar: calendar
+        )
+
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["leisure.example"]))
+    }
+
+    func testAnEndCallbackWithinTheMarginReleasesTheEndingOccurrencesSet() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(setsFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
+            sets: [(workSet, ["work.example"]), (leisureSet, ["leisure.example"])]
+        ))
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example", "leisure.example"]), applications: [])
+        let justBeforeTheEnd = local(2026, 9, 28, 9, 59).addingTimeInterval(30)
+
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { justBeforeTheEnd }, calendar: calendar
+        )
+
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["leisure.example"]))
+    }
+
+    func testAnEndWhoseRemainingOccurrencesPauseNothingClearsTheStore() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(setsFile(
+            [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
+            sets: [(workSet, ["work.example"]), (leisureSet, [])]
+        ))
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example"]), applications: [])
+
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 10, 0) }, calendar: calendar
+        )
+
+        XCTAssertNil(store.applied)
+    }
+
+    func testAWebsiteTheOccurrenceHeldStaysAfterItLeftTheSet() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(setsFile(
+            [plan(focusId, set: workSet)],
+            sets: [(workSet, ["work.example"])]
+        ))
+        let occurrence = ScheduleMonitorOccurrence(
+            scheduleId: focusId, date: "2026-09-28", start: local(2026, 9, 28, 9, 0), end: local(2026, 9, 28, 10, 0)
+        )
+        try files.recordHeld(occurrence, domains: ["kept.example", "work.example"], tokens: [])
+        let store = FakeScheduleShieldStore()
+
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 9, 5) }, calendar: calendar
+        )
+
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["kept.example", "work.example"]))
+    }
+
+    func testTheManualSessionsWebsitesTakeTheirShareOfTheFiftyDomains() throws {
+        let files = try isolatedFiles()
+        try files.writeTable(setsFile([plan(focusId, set: workSet)], sets: [(workSet, hosts("sched", 1 ... 10))]))
+        let session = FakeScheduleShieldStore()
+        session.applySchedule(domains: PosatoWebDomains.domains(from: hosts("manual", 1 ... 20)), applications: [])
+        let store = FakeScheduleShieldStore()
+
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: session,
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 9, 5) }, calendar: calendar
+        )
+
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: hosts("sched", 1 ... 5)))
+    }
+
+    func testAnUnreadableVersionTwoTableClearsAndNeverFallsBackToVersionOne() throws {
+        let files = try isolatedFiles()
+        try files.writeLegacyTable(legacyFile())
+        try files.writeTable(setsFile([plan(focusId, set: workSet)], sets: []))
+        try Data("not json".utf8).write(to: files.directoryURL.appendingPathComponent("table-v2.json"))
+        try files.writeLegacyTable(legacyFile())
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["example.com"]), applications: [])
+
+        ScheduleMonitorEvents.handleIntervalEnd(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 9, 30) }, calendar: calendar
+        )
+
+        XCTAssertNil(files.readTable())
+        XCTAssertEqual(store.clears, 1)
+    }
+
+    func testAVersionOneTableIsReadAsTheFirstSetUntilVersionTwoIsWritten() throws {
+        let files = try isolatedFiles()
+        try files.writeLegacyTable(legacyFile())
+        let store = FakeScheduleShieldStore()
+
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, sessionStore: FakeScheduleShieldStore(),
+            files: files, poster: FakeSchedulePoster(), now: { self.local(2026, 9, 28, 9, 5) }, calendar: calendar
+        )
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["example.com"]))
+
+        try files.writeTable(setsFile([plan(focusId, set: workSet)], sets: [(workSet, ["work.example"])]))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: files.directoryURL.appendingPathComponent("table-v1.json").path))
+        XCTAssertEqual(files.readTable()?.setItems(setId: workSet).domains, ["work.example"])
+    }
+
+    /// Repeated from PauseCompositionTest in Kotlin: the app and the extension admit the same websites.
+    func testPlannerVectorsMatchTheApp() {
+        let first = PausePlanner.plan(
+            [.init(id: "session", start: Date(timeIntervalSince1970: 10), currentDomains: Set(hosts("site", 1 ... 26) + ["www.site01.example"]), heldDomains: [])],
+            occupiedDomains: []
+        )
+        XCTAssertEqual(first.domains, Set(hosts("site", 1 ... 25) + ["www.site01.example"]))
+        XCTAssertEqual(first.deferred["session"], 1)
+
+        let second = PausePlanner.plan(
+            [.init(id: "evening", start: Date(timeIntervalSince1970: 10), currentDomains: Set(hosts("sched", 1 ... 10)), heldDomains: [])],
+            occupiedDomains: Set(hosts("manual", 1 ... 20))
+        )
+        XCTAssertEqual(second.domains, Set(hosts("sched", 1 ... 5)))
+        XCTAssertEqual(second.deferred["evening"], 5)
+    }
+
+    private func legacyFile() -> ScheduleMonitorFile {
+        ScheduleMonitorFile(
+            version: ScheduleMonitor.legacyFileVersion, schedules: [schedule()], running: [], domains: ["example.com"], applicationTokens: [],
+            notices: ScheduleMonitorFile.Notices(enabled: false, endTitle: "", endBody: "")
+        )
+    }
+
     // MARK: - Registration
 
     func testRegistrationWaitsForScreenTimeThenKeepsOneActivityPerPlanAndStopsRemovedOnes() throws {
@@ -365,10 +576,11 @@ final class ScheduleMonitorTests: XCTestCase {
         let table = IosScheduleMonitorTable(
             schedules: [IosMonitorSchedule(
                 id: focusId, weekdays: 0b0011111, startMinute: 540, endMinute: 600,
-                stoppedDates: ["2026-09-28"], startTitle: "Scheduled pause started", startBody: "Focus, until 10:00."
+                stoppedDates: ["2026-09-28"], startTitle: "Scheduled pause started", startBody: "Focus, until 10:00.",
+                setId: ScheduleMonitor.firstSetId
             )],
-            running: [], domains: ["example.com"], mappingIds: [], noticesEnabled: true,
-            endTitle: "Pause over", endBody: "Available again.", manualSessionEndEpochSeconds: 0
+            running: [], noticesEnabled: true, endTitle: "Pause over", endBody: "Available again.", manualSessionEndEpochSeconds: 0,
+            sets: [IosMonitorSet(id: ScheduleMonitor.firstSetId, domains: ["example.com"], mappingIds: [])]
         )
 
         publisher.publish(table: table)
@@ -378,6 +590,128 @@ final class ScheduleMonitorTests: XCTestCase {
         approved = true
         publisher.publish(table: table)
         XCTAssertEqual(center.starts, [ScheduleMonitor.activityName(scheduleId: focusId)])
+    }
+
+    // MARK: - The app's side of pause sets
+
+    private func setsTable(sets: [IosMonitorSet]) -> IosScheduleMonitorTable {
+        IosScheduleMonitorTable(
+            schedules: [
+                IosMonitorSchedule(
+                    id: focusId, weekdays: 0b0011111, startMinute: 540, endMinute: 600,
+                    stoppedDates: [], startTitle: "", startBody: "", setId: workSet
+                ),
+                IosMonitorSchedule(
+                    id: eveningId, weekdays: 0b0011111, startMinute: 1_200, endMinute: 1_320,
+                    stoppedDates: [], startTitle: "", startBody: "", setId: leisureSet
+                ),
+            ],
+            running: [], noticesEnabled: false, endTitle: "", endBody: "", manualSessionEndEpochSeconds: 0, sets: sets
+        )
+    }
+
+    private func composingPublisher(
+        files: ScheduleMonitorFileStore,
+        store: FakeScheduleShieldStore,
+        session: FakeScheduleShieldStore = FakeScheduleShieldStore(),
+        authorized: Bool = true,
+        mappings: [StoredApplicationMapping] = [],
+        at time: Date
+    ) -> IosScheduleMonitorPublisher {
+        IosScheduleMonitorPublisher(
+            files: files, center: { FakeScheduleCenter() }, authorized: { authorized }, isCapable: true,
+            storedMappings: { mappings }, scheduleStore: { store }, sessionStore: { session },
+            calendar: { self.calendar }, now: { time }
+        )
+    }
+
+    private func applySchedule(_ publisher: IosScheduleMonitorPublisher) throws -> IosEnforcementOutcome {
+        var result: IosEnforcementOutcome?
+        publisher.applySchedule { result = $0 }
+        return try XCTUnwrap(result)
+    }
+
+    func testThePublishedTableNamesEachPlansSetAndListsEachAppOnce() throws {
+        let files = try isolatedFiles()
+        let shared = Data("shared-token".utf8)
+        let mapping = StoredApplicationMapping(token: shared)
+        let mappingId = ApplicationTokenIdentity.identifier(for: shared)
+        let publisher = composingPublisher(files: files, store: FakeScheduleShieldStore(), mappings: [mapping], at: local(2026, 9, 28, 8))
+
+        publisher.publish(table: setsTable(sets: [
+            IosMonitorSet(id: workSet, domains: ["work.example"], mappingIds: [mappingId]),
+            IosMonitorSet(id: leisureSet, domains: ["leisure.example"], mappingIds: [mappingId]),
+        ]))
+
+        let table = try XCTUnwrap(files.readTable())
+        XCTAssertEqual(table.version, ScheduleMonitor.fileVersion)
+        XCTAssertEqual(table.schedules.map(\.setId), [workSet, leisureSet])
+        XCTAssertEqual(table.applicationTokens, [shared])
+        XCTAssertEqual(table.sets?.map(\.tokenIndexes), [[0], [0]])
+        XCTAssertEqual(table.setItems(scheduleId: eveningId).domains, ["leisure.example"])
+    }
+
+    func testTenSetsSharingTheirWebsitesFitTheTable() throws {
+        let files = try isolatedFiles()
+        let publisher = composingPublisher(files: files, store: FakeScheduleShieldStore(), at: local(2026, 9, 28, 8))
+        let sites = (0 ..< 1024).map { String(format: "site%04d.ordinary-example.test", $0) }
+        let sets = (1 ... 10).map { IosMonitorSet(id: String(format: "%032x", $0), domains: sites, mappingIds: []) }
+
+        publisher.publish(table: IosScheduleMonitorTable(
+            schedules: [], running: [], noticesEnabled: false, endTitle: "", endBody: "", manualSessionEndEpochSeconds: 0, sets: sets
+        ))
+
+        let table = try XCTUnwrap(files.readTable())
+        XCTAssertEqual(table.sets?.count, 10)
+        XCTAssertEqual(table.setItems(setId: String(format: "%032x", 10)).domains, sites)
+    }
+
+    func testTheAppComposesLikeTheMonitorWithinTheManualSessionsShareAndRecordsWhatTheOccurrenceHolds() throws {
+        let files = try isolatedFiles()
+        let store = FakeScheduleShieldStore()
+        let session = FakeScheduleShieldStore()
+        session.applySchedule(domains: PosatoWebDomains.domains(from: hosts("manual", 1 ... 20)), applications: [])
+        let time = local(2026, 9, 28, 9, 5)
+        let publisher = composingPublisher(files: files, store: store, session: session, at: time)
+        publisher.publish(table: setsTable(sets: [IosMonitorSet(id: workSet, domains: hosts("sched", 1 ... 10), mappingIds: [])]))
+
+        XCTAssertEqual(try applySchedule(publisher), .applied)
+
+        // Twenty manual hosts cost 40 of the 50 web domains, so the starting occurrence takes five hosts.
+        XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: hosts("sched", 1 ... 5)))
+        XCTAssertEqual(files.held(scheduleId: focusId, date: "2026-09-28")?.domains, hosts("sched", 1 ... 5))
+    }
+
+    func testTheAppClearsTheScheduleStoreWhenNothingIsLeftToPause() throws {
+        let files = try isolatedFiles()
+        let store = FakeScheduleShieldStore()
+        store.applySchedule(domains: PosatoWebDomains.domains(from: ["old.example"]), applications: [])
+        let publisher = composingPublisher(files: files, store: store, at: local(2026, 9, 28, 9, 5))
+        publisher.publish(table: setsTable(sets: [IosMonitorSet(id: workSet, domains: [], mappingIds: [])]))
+
+        XCTAssertEqual(try applySchedule(publisher), .nothingToEnforce)
+        XCTAssertNil(store.applied)
+    }
+
+    func testTheAppComposesNothingBeforeScreenTimeIsApproved() throws {
+        let files = try isolatedFiles()
+        let store = FakeScheduleShieldStore()
+        let publisher = composingPublisher(files: files, store: store, authorized: false, at: local(2026, 9, 28, 9, 5))
+        publisher.publish(table: setsTable(sets: [IosMonitorSet(id: workSet, domains: ["work.example"], mappingIds: [])]))
+
+        XCTAssertEqual(try applySchedule(publisher), .authorizationRequired)
+        XCTAssertNil(store.applied)
+    }
+
+    func testAPublishForgetsWhatEndedOccurrencesHeld() throws {
+        let files = try isolatedFiles()
+        let ended = ScheduleMonitorOccurrence(scheduleId: focusId, date: "2026-09-27", start: local(2026, 9, 27, 9), end: local(2026, 9, 27, 10))
+        try files.recordHeld(ended, domains: ["kept.example"], tokens: [])
+        let publisher = composingPublisher(files: files, store: FakeScheduleShieldStore(), at: local(2026, 9, 28, 8))
+
+        publisher.publish(table: setsTable(sets: []))
+
+        XCTAssertNil(files.held(scheduleId: focusId, date: "2026-09-27"))
     }
 
     func testTheExtensionReadsDatesInTheGregorianCalendarWhateverTheDeviceUses() {
@@ -564,4 +898,5 @@ final class RecordingCapRegistrar: ScheduleCapRegistrar {
     func register(cap: DeviceActivitySchedule) {
         registered.append(cap)
     }
+
 }

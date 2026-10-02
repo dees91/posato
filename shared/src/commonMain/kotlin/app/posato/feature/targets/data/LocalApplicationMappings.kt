@@ -251,6 +251,14 @@ public interface LocalApplicationMappings {
 
     /** Deletes the choices of every set not in [sets], such as one another device removed. */
     public suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult
+
+    /**
+     * What a running part needs to keep pausing these chosen apps after they leave every set: each one's
+     * identifier, name and designated requirement. Only the Mac keeps them this way.
+     */
+    public suspend fun keptApplications(mappingIds: Set<String>): List<KeptApplication> {
+        return emptyList()
+    }
 }
 
 internal object UnavailableLocalApplicationMappings : LocalApplicationMappings {

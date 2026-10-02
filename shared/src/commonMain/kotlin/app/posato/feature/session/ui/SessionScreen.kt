@@ -49,6 +49,7 @@ import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.ui.TargetsCategory
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
@@ -72,6 +73,8 @@ internal fun SessionScreen(
     windowRequest: SessionWindowRequest? = null,
     onConsumeWindowRequest: () -> Unit = {},
     scheduledPauses: ScheduledPauses? = null,
+    notPausedYet: StateFlow<Int>? = null,
+    deviceNoun: String = "device",
     viewModel: SessionViewModel = viewModel {
         SessionViewModel(policyStore, applicationMappings, sessionIds, clock, timeFormat, owner)
     },
@@ -105,11 +108,14 @@ internal fun SessionScreen(
         consumeWindowRequest()
     }
     val scheduledView = scheduledPauseView(scheduledPauses, state, timeFormat, clock)
+    val manualNotPaused = notPausedYet?.collectAsState()?.value?.takeIf { state.status is LocalSessionStatus.Active } ?: 0
+    val waiting = manualNotPaused + (scheduledView?.takeIf { it.restricts }?.notPausedYet ?: 0)
     CloseSetupDuringScheduledPause(scheduledView?.restricts == true) { viewModel.setSetupVisible(false) }
     SessionScreen(
         state = state,
         scheduled = scheduledView,
         scheduledEnd = scheduledEnd.actions(scheduledView?.restricts == true),
+        pauseNotice = waiting.takeIf { it > 0 }?.let { count -> notPausedYetText(count, deviceNoun) },
         onEnterSetup = { viewModel.setSetupVisible(true) },
         onExitSetup = { viewModel.setSetupVisible(false) },
         onSetDuration = viewModel::setDurationMinutes,
@@ -142,9 +148,16 @@ private fun scheduledPauseView(
     clock: SessionClock,
 ): ScheduledPauseView? {
     val scheduled = scheduledPauses?.pause?.collectAsState()?.value ?: return null
+    val now = clock.currentEpochMillis()
     val manualEnd = (state.status as? LocalSessionStatus.Active)?.record?.endEpochMillis ?: 0L
-    val until = timeFormat.formatTime(maxOf(scheduled.endEpochMillis, manualEnd), clock.currentEpochMillis())
-    return ScheduledPauseView(scheduled.name, until, scheduled.state)
+    val until = timeFormat.formatTime(maxOf(scheduled.endEpochMillis, manualEnd), now)
+    val setName = { setId: PauseSetId? -> state.pauseSets.firstOrNull { row -> row.id == setId }?.name }
+    val manual = state.setName?.takeIf { manualEnd > 0 }?.let { name -> listOf("Set: $name, until ${timeFormat.formatTime(manualEnd, now)}") }
+    val parts = manual.orEmpty() + scheduled.parts.map { part ->
+        val set = setName(part.setId)?.let { name -> ", Set: $name" }.orEmpty()
+        "${part.name} (schedule)$set, until ${timeFormat.formatTime(part.endEpochMillis, now)}"
+    }
+    return ScheduledPauseView(scheduled.name, until, scheduled.state, parts, scheduled.notPausedYet)
 }
 
 /** Asks before ending a scheduled pause; the menu's End early opens the same question. */
@@ -217,6 +230,7 @@ internal fun SessionScreen(
     macLoginItemEnabled: Boolean? = null,
     scheduled: ScheduledPauseView? = null,
     scheduledEnd: ScheduledEndActions = ScheduledEndActions(),
+    pauseNotice: String? = null,
 ) {
     val showsMacSetup = macSetup != null && state.showsMacSetup(macSetup)
     val stack = sessionStack(state, showsMacSetup, scheduled != null && scheduledEnd.confirming)
@@ -261,6 +275,7 @@ internal fun SessionScreen(
                 macLoginItemEnabled = macLoginItemEnabled,
                 scheduled = scheduled,
                 scheduledEnd = scheduledEnd,
+                pauseNotice = pauseNotice,
             )
         }
     }
@@ -292,6 +307,7 @@ private fun SessionRouteContent(
     macLoginItemEnabled: Boolean?,
     scheduled: ScheduledPauseView?,
     scheduledEnd: ScheduledEndActions,
+    pauseNotice: String?,
 ) {
     when (route) {
         SessionRoute.ScheduledEarlyEnd -> {
@@ -333,6 +349,7 @@ private fun SessionRouteContent(
                     macLoginItemEnabled,
                     scheduled,
                     scheduledEnd.onRequest,
+                    pauseNotice,
                 )
             }
         }

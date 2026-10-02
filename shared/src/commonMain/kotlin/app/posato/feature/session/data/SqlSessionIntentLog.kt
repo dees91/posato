@@ -137,10 +137,14 @@ internal class SqlSessionIntentLog(
     }
 }
 
-internal suspend fun <T> PosatoDatabase.localSessionTransact(block: suspend () -> LocalSessionResult<T>): LocalSessionResult<T> {
+/** Runs [block] in one transaction; a write also sweeps what ended parts kept, which a pure read must not do. */
+internal suspend fun <T> PosatoDatabase.localSessionTransact(
+    writes: Boolean = true,
+    block: suspend () -> LocalSessionResult<T>,
+): LocalSessionResult<T> {
     return try {
         transactionWithResult {
-            block().also { sweepRetention() }
+            block().also { if (writes) sweepRetention() }
         }
     } catch (expectedCancellation: CancellationException) {
         throw expectedCancellation

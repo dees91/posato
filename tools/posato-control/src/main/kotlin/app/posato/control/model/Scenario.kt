@@ -8,6 +8,8 @@ data class LaunchConfiguration(
     val fresh: Boolean = false,
     val arguments: List<String> = emptyList(),
     val environment: Map<String, String> = emptyMap(),
+    /** Neither starts nor activates Posato, so a scenario that drives only other apps proves what happens while it stays closed. */
+    val skip: Boolean = false,
 )
 
 @Serializable

@@ -172,6 +172,7 @@ internal fun sessionOwnerOf(
     mappings: LocalApplicationMappings,
     triggers: FakeSessionSyncTriggers = FakeSessionSyncTriggers(),
     dispatcher: CoroutineDispatcher,
+    composition: SessionComposition? = null,
 ): SessionTransitionOwner {
     return SessionTransitionOwner(
         backgroundDispatcher = dispatcher,
@@ -180,6 +181,7 @@ internal fun sessionOwnerOf(
         enforcement = enforcement,
         loadTargets = { setId -> loadSessionTargets(policyStore, mappings, setId) },
         triggers = triggers,
+        composition = composition,
     )
 }
 

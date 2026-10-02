@@ -947,3 +947,20 @@ moment is therefore not blocked. Pause sets make such changes more frequent
 (additions, part ends). `user-confirmed` (2026-09-30): accepted for 1.3 as an
 internal known limit; an atomic replacement is backlog row `MACOS-025`, which
 needs an ADR 0004 amendment.
+
+## Composed pauses (`SCHEDULE-004` hosts)
+
+`observed` (2026-10-01, Tart VMs, PR #125): the helper refuses a new
+configuration while it holds one, so every hand-over between the manual
+session and the occurrences, and every re-apply of a running session after a
+set edit, must clear and apply (`PauseClaims.replace`); a bare apply failed
+and cleared all restrictions until the next minute. The two claims count each
+other's items toward 1,024 websites and 64 apps, since retention lets their
+union pass a single set's cap. The policy database is opened through JDBC
+with one connection per database thread: a transaction that reads and then
+writes fails at once while another connection writes, so pure reads must not
+write (retention sweeps run only in writes). An in-place update leaves the
+Mac unblocked for about 25 s while Posato is down, as quitting has since 1.0.
+`vm network --state off` disables every service, after which the helper has
+no proxy target; an offline check keeps the service with an unroutable
+address.

@@ -1,6 +1,7 @@
 import DeviceActivity
 import FamilyControls
 import Foundation
+import ManagedSettings
 import PosatoShared
 
 /// Narrow seam over Device Activity monitoring for scheduled pauses.
@@ -32,14 +33,18 @@ extension DeviceActivityCenter: ScheduleActivityCenter {
 /// Writes the schedule table the monitor extension reads, keeps one repeating
 /// activity per enabled plan registered, and announces a running start the
 /// extension has not recorded, such as one an edit began inside its interval.
-/// Nothing is registered or announced before Screen Time is approved; approval
-/// is the consent here.
+/// It also composes and applies the schedule's store for the app with the
+/// extension's rule, so both record what each occurrence holds the same way.
+/// Nothing is registered, announced or applied before Screen Time is approved;
+/// approval is the consent here.
 final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
     private let files: ScheduleMonitorFileStore?
     private let center: () -> ScheduleActivityCenter
     private let authorized: () -> Bool
     private let isCapable: Bool
     private let storedMappings: () throws -> [StoredApplicationMapping]
+    private let scheduleStore: () -> ScheduleShieldStore
+    private let sessionStore: () -> ScheduleShieldStore
     private let poster: ScheduleNoticePoster
     private let calendar: () -> Calendar
     private let now: () -> Date
@@ -62,6 +67,8 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         storedMappings: @escaping () throws -> [StoredApplicationMapping] = {
             try ApplicationMappingSets.liveMigrated().loadAllSets()
         },
+        scheduleStore: @escaping () -> ScheduleShieldStore = { ManagedSettingsStore(named: ScheduleMonitor.storeName) },
+        sessionStore: @escaping () -> ScheduleShieldStore = { ManagedSettingsStore(named: PosatoManagedSettingsStore.name) },
         poster: ScheduleNoticePoster = UserNotificationSchedulePoster(),
         calendar: @escaping () -> Calendar = { ScheduleMonitor.calendar },
         now: @escaping () -> Date = Date.init
@@ -71,12 +78,23 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         self.authorized = authorized
         self.isCapable = isCapable
         self.storedMappings = storedMappings
+        self.scheduleStore = scheduleStore
+        self.sessionStore = sessionStore
         self.poster = poster
         self.calendar = calendar
         self.now = now
     }
 
     func publish(table: IosScheduleMonitorTable) {
+        var tokenIndex = TokenIndex(mappings: table.sets.isEmpty ? [] : (try? storedMappings()) ?? [])
+        var domainIndex = ListIndex<String>()
+        let sets = table.sets.map {
+            ScheduleMonitorFile.PauseSet(
+                id: $0.id,
+                domainIndexes: domainIndex.indexes(for: $0.domains),
+                tokenIndexes: tokenIndex.indexes(for: $0.mappingIds)
+            )
+        }
         let file = ScheduleMonitorFile(
             version: ScheduleMonitor.fileVersion,
             schedules: table.schedules.map {
@@ -87,34 +105,65 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
                     endMinute: Int($0.endMinute),
                     stoppedDates: $0.stoppedDates,
                     startTitle: $0.startTitle,
-                    startBody: $0.startBody
+                    startBody: $0.startBody,
+                    setId: $0.setId
                 )
             },
             running: table.running.map {
                 ScheduleMonitorFile.Running(id: $0.id, date: $0.date, startEpoch: $0.startEpochSeconds, endEpoch: $0.endEpochSeconds)
             },
-            domains: table.domains,
-            applicationTokens: tokens(for: table.mappingIds),
+            domains: domainIndex.items,
+            applicationTokens: tokenIndex.tokens,
             notices: ScheduleMonitorFile.Notices(
                 enabled: table.noticesEnabled,
                 endTitle: table.endTitle,
                 endBody: table.endBody,
                 manualSessionEnd: table.manualSessionEndEpochSeconds > 0 ? table.manualSessionEndEpochSeconds : nil
-            )
+            ),
+            sets: sets
         )
         // The table is written before any registration, so a callback always reads the plans it belongs to.
         // It is rewritten only when it changed; registrations are reconciled every time.
-        if files?.readTable() != file {
-            try? files?.writeTable(file)
+        // A table that could not be written leaves the registrations as they are, so no plan starts with
+        // the previous table's items.
+        if let files, files.readTable() != file {
+            do {
+                try files.writeTable(file)
+            } catch {
+                return
+            }
         }
-        files?.removeStarted(except: Set(file.running.map { "\($0.id):\($0.date)" }))
+        let running = Set(file.running.map { "\($0.id):\($0.date)" })
+        files?.removeStarted(except: running)
+        // What an occurrence holds is kept while it runs, including one the extension started just before its time.
+        let started = ScheduleMonitorRule.running(in: file, at: now(), calendar: calendar(), leading: ScheduleMonitor.earlyCallbackMargin)
+        files?.removeHeld(except: running.union(started.map { "\($0.scheduleId):\($0.date)" }))
         reconcile(file)
         announceStarts(file)
     }
 
+    /// Composes the occurrences the published table says run now and applies them, under the lock the extension
+    /// takes, so the two never apply over each other. Nothing left to pause clears the schedule's store.
+    func applySchedule(handler: @escaping (IosEnforcementOutcome) -> Void) {
+        performOnMain {
+            guard self.isCapable else { return handler(.unavailable) }
+            guard self.authorized() else { return handler(.authorizationRequired) }
+            guard let files = self.files, let file = files.readTable() else { return handler(.platformFailure) }
+            let store = self.scheduleStore()
+            let running = ScheduleMonitorRule.running(in: file, at: self.now(), calendar: self.calendar())
+            let applied = files.withComposeLock {
+                ScheduleMonitorEvents.applyComposed(running: running, file: file, files: files, store: store, sessionStore: self.sessionStore())
+            }
+            if !applied {
+                store.clearSchedule()
+            }
+            handler(applied ? .applied : .nothingToEnforce)
+        }
+    }
+
     /// Records a start before announcing it, as the extension does, so each run is announced once by either.
     func announceStarts(_ file: ScheduleMonitorFile) {
-        guard isCapable, authorized(), let files, !file.domains.isEmpty || !file.applicationTokens.isEmpty else { return }
+        guard isCapable, authorized(), let files, file.pausesAnything else { return }
         let time = now()
         for running in file.running where !files.hasStarted(scheduleId: running.id, date: running.date) {
             let start = Date(timeIntervalSince1970: TimeInterval(running.startEpoch))
@@ -196,8 +245,49 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         return left.repeats == right.repeats && matches(left.intervalStart, right.intervalStart) && matches(left.intervalEnd, right.intervalEnd)
     }
 
-    private func tokens(for mappingIds: [String]) -> [Data] {
-        guard !mappingIds.isEmpty, let mappings = try? storedMappings() else { return [] }
-        return mappingIds.compactMap { ApplicationTokenIdentity.token(matching: $0, in: mappings) }
+    private func performOnMain(_ action: @escaping () -> Void) {
+        if Thread.isMainThread {
+            action()
+        } else {
+            DispatchQueue.main.async(execute: action)
+        }
+    }
+}
+
+/// Values listed once, in first-seen order, and the indexes a set names them by.
+private struct ListIndex<Item: Hashable> {
+    private(set) var items: [Item] = []
+    private var positions: [Item: Int] = [:]
+
+    mutating func indexes(for values: [Item]) -> [Int] {
+        values.map { value in
+            if let index = positions[value] {
+                return index
+            }
+            items.append(value)
+            positions[value] = items.count - 1
+            return items.count - 1
+        }
+    }
+}
+
+/// The table's app tokens, each once, and the indexes a set names them by.
+private struct TokenIndex {
+    let mappings: [StoredApplicationMapping]
+    private(set) var tokens: [Data] = []
+
+    init(mappings: [StoredApplicationMapping]) {
+        self.mappings = mappings
+    }
+
+    mutating func indexes(for mappingIds: [String]) -> [Int] {
+        mappingIds.compactMap { identifier in
+            guard let token = ApplicationTokenIdentity.token(matching: identifier, in: mappings) else { return nil }
+            if let index = tokens.firstIndex(of: token) {
+                return index
+            }
+            tokens.append(token)
+            return tokens.count - 1
+        }
     }
 }

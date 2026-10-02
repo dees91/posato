@@ -17,6 +17,7 @@ import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -176,7 +177,7 @@ class ScheduleEditRuleTest {
     private fun monitorTable(
         snapshot: ScheduleSnapshot,
         now: Long,
-    ) = ScheduleMonitorTables.build(ScheduleMonitorInput(snapshot, emptyList(), now) { targets() }, zone, targets())
+    ) = runBlocking { ScheduleMonitorTables.build(ScheduleMonitorInput(snapshot, emptyList(), now, targets = { targets() }), zone) }
 
     private fun targets(): SessionTargetsState {
         val policy = assertIs<TargetPolicyValidationResult.Success>(TargetPolicy.fromStoredValues(listOf("example.com"), null)).policy

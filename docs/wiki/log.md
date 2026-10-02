@@ -2358,3 +2358,13 @@ to scope, feasibility, or delivery.
   loopback exceptions; see `topics/macos-enforcement.md`.
 - `user-confirmed`: the ADR 0004 and ADR 0005 amendments with decisions D1
   to D7.
+
+## [2026-10-02] implementation | Pause sets compose every running part
+
+- `observed`: SCHEDULE-004 slice 5 composes the manual session and each
+  scheduled occurrence, each with its own set, into one pause with what each
+  part already holds, the latest end and the device limits; the iPhone uses
+  one Swift composer for the app and the monitor extension (table version 2,
+  held records in the App Group). Findings in `ios-enforcement` and
+  `macos-enforcement` ("Composed pauses"); AC-02 and AC-03 ran unattended,
+  AC-04 was checked by the maintainer (`user-confirmed`).

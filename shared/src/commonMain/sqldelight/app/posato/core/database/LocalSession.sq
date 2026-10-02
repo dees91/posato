@@ -107,6 +107,23 @@ INSERT OR IGNORE INTO local_retained_application(
 )
 VALUES (:partKind, :partId, :year, :month, :day, :mappingId, :displayName, :designatedRequirement);
 
+selectRetainedDomains:
+SELECT canonical_domain
+FROM local_retained_domain
+WHERE part_kind = :partKind AND part_id = :partId AND year = :year AND month = :month AND day = :day
+ORDER BY canonical_domain;
+
+selectRetainedApplications:
+SELECT mapping_id, display_name, designated_requirement
+FROM local_retained_application
+WHERE part_kind = :partKind AND part_id = :partId AND year = :year AND month = :month AND day = :day
+ORDER BY mapping_id;
+
+selectRetainedRequirements:
+SELECT mapping_id, designated_requirement
+FROM local_retained_application
+WHERE mapping_id IN ?;
+
 deleteStaleRetainedDomains:
 DELETE FROM local_retained_domain
 WHERE (part_kind = 'session' AND part_id NOT IN (

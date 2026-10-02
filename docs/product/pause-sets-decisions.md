@@ -74,6 +74,13 @@ occurrence. Each part uses one set.
   items as still fit and says how many are not paused; it never leaves
   the whole website filter off. Websites are taken in alphabetical order
   (`inferred`: a fixed order every device computes alike).
+  `user-confirmed` (2026-10-01): items an edit could not pause are tried
+  again whenever the pause is recomposed and are paused once they fit.
+- **Mac expiry while Posato is quit** (`user-confirmed` 2026-10-01, known
+  limit). The helper holds one request with the latest end of all parts,
+  so a manual session that ends while Posato is quit keeps its own items
+  paused until the latest running part ends or Posato opens and
+  recomposes.
 - **Overlap** (`user-confirmed` 2026-09-29). A manual session and scheduled
   occurrences with different sets pause the union of their sets, as
   overlapping schedules do. When one part ends, only items no remaining part

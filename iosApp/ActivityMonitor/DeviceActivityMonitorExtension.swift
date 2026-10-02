@@ -13,6 +13,7 @@ final class DeviceActivityMonitorExtension: DeviceActivityMonitor {
         ScheduleMonitorEvents.handleIntervalStart(
             activity: activity,
             store: ManagedSettingsStore(named: ScheduleMonitor.storeName),
+            sessionStore: ManagedSettingsStore(named: PosatoManagedSettingsStore.name),
             files: ScheduleMonitorFileStore.live(),
             poster: UserNotificationSchedulePoster(),
             caps: DeviceActivityCapRegistrar()

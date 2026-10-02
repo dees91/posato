@@ -14,6 +14,8 @@ private fun request(
 
 private class HelperDouble(
     var applyOutcome: EnforcementOutcome = EnforcementOutcome.APPLIED,
+    /** The real helper takes a new configuration only when idle and refuses one while it holds another. */
+    val refusesWhileHolding: Boolean = false,
 ) : EnforcementPort {
     val calls = mutableListOf<String>()
     var applied = false
@@ -23,6 +25,10 @@ private class HelperDouble(
     override val reapplyRequiresPrompt: Boolean = true
 
     override suspend fun apply(request: EnforcementRequest): EnforcementApplyReport {
+        if (refusesWhileHolding && applied) {
+            calls += "refused"
+            return EnforcementApplyReport(EnforcementOutcome.FAILED, false, false)
+        }
         calls += if (request.grantOnly) "apply grant ${request.sessionEndEpochMillis}" else "apply ${request.sessionEndEpochMillis}"
         applied = applyOutcome == EnforcementOutcome.APPLIED
         lastDomains = request.domains
@@ -157,7 +163,7 @@ class PauseClaimsTest {
 
             claims.manual.clear()
 
-            assertEquals(listOf("apply 100", "apply grant 200", "clear"), helper.calls)
+            assertEquals(listOf("apply 100", "clear", "apply grant 200", "clear"), helper.calls)
             assertEquals(EnforcementOutcome.CLEARED, claims.scheduleStatus())
         }
 
@@ -250,5 +256,145 @@ class PauseClaimsTest {
 
         assertEquals(listOf("apply 300", "clear", "apply grant 300"), helper.calls)
         assertEquals(listOf("example.com", "example.org"), helper.lastDomains)
+    }
+
+    @Test
+    fun `given a manual session on one set when a schedule on another set claims then the helper pauses both`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+
+        assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
+        assertEquals("apply grant 300", helper.calls.last())
+    }
+
+    @Test
+    fun `given a schedule on one set when a manual session on another set starts then the helper pauses both until the later end`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
+        assertEquals("apply grant 300", helper.calls.last())
+    }
+
+    @Test
+    fun `given both sets paused when the manual session ends then only the schedule's set stays paused`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        claims.manual.clear()
+
+        assertEquals(listOf("leisure.example"), helper.lastDomains)
+        assertEquals("apply grant 200", helper.calls.last())
+    }
+
+    @Test
+    fun `given both sets paused when the schedule ends then only the manual session's set stays paused`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+
+        claims.releaseSchedule()
+
+        assertEquals(listOf("work.example"), helper.lastDomains)
+    }
+
+    @Test
+    fun `given a refusing helper when the manual session ends inside the schedule then the schedule's set stays paused`() = runTest {
+        val helper = HelperDouble(refusesWhileHolding = true)
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        claims.manual.clear()
+
+        assertTrue(helper.applied)
+        assertEquals(listOf("leisure.example"), helper.lastDomains)
+        assertEquals(EnforcementOutcome.APPLIED, claims.scheduleStatus())
+    }
+
+    @Test
+    fun `given a refusing helper when the schedule ends inside the manual session then the session's set stays paused`() = runTest {
+        val helper = HelperDouble(refusesWhileHolding = true)
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        claims.releaseSchedule()
+
+        assertTrue(helper.applied)
+        assertEquals(listOf("work.example"), helper.lastDomains)
+        assertEquals(EnforcementOutcome.APPLIED, claims.manual.status())
+    }
+
+    @Test
+    fun `given a refusing helper when a running manual session gets new items then the helper takes them`() = runTest {
+        val helper = HelperDouble(refusesWhileHolding = true)
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        val report = claims.manual.apply(request(300, listOf("added.example", "work.example")))
+
+        assertEquals(EnforcementOutcome.APPLIED, report.outcome)
+        assertEquals(listOf("added.example", "work.example"), helper.lastDomains)
+    }
+
+    @Test
+    fun `given a clear that failed during a replace when the session is applied again then the new items reach the helper`() = runTest {
+        val helper = HelperDouble(refusesWhileHolding = true)
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+        helper.clearOutcome = EnforcementOutcome.FAILED
+        claims.manual.apply(request(300, listOf("added.example", "work.example")))
+        helper.clearOutcome = EnforcementOutcome.CLEARED
+
+        val report = claims.manual.apply(request(300, listOf("added.example", "work.example")))
+
+        assertEquals(EnforcementOutcome.APPLIED, report.outcome)
+        assertEquals(listOf("added.example", "work.example"), helper.lastDomains)
+    }
+
+    @Test
+    fun `given the same items in another order when the schedule is updated then the helper is not touched`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.claimSchedule(request(200, listOf("a.example", "b.example")))
+
+        claims.updateSchedule(request(200, listOf("b.example", "a.example")))
+
+        assertEquals(listOf("apply grant 200"), helper.calls)
+    }
+
+    @Test
+    fun `given a relaunch adopted the held manual session when a schedule on another set claims then the helper pauses both`() = runTest {
+        val helper = HelperDouble()
+        helper.applied = true
+        val claims = PauseClaims(helper)
+        claims.manual.adopt(request(300, listOf("work.example")))
+
+        claims.claimSchedule(request(200, listOf("leisure.example")))
+
+        assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
+    }
+
+    @Test
+    fun `given a resumed manual session when a schedule on another set starts through update then the helper pauses both`() = runTest {
+        val helper = HelperDouble()
+        val claims = PauseClaims(helper)
+        claims.manual.apply(request(300, listOf("work.example")))
+        claims.manual.clear()
+        claims.manual.apply(request(300, listOf("work.example")))
+
+        claims.updateSchedule(request(200, listOf("leisure.example")))
+
+        assertEquals(listOf("leisure.example", "work.example"), helper.lastDomains)
     }
 }

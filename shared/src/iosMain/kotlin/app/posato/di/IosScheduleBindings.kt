@@ -1,5 +1,6 @@
 package app.posato.di
 
+import app.posato.feature.enforcement.PauseLimits
 import app.posato.feature.notifications.SessionNotificationPlatform
 import app.posato.feature.schedules.IosScheduleBridge
 import app.posato.feature.schedules.IosScheduleClaims
@@ -43,11 +44,15 @@ internal interface IosScheduleBindings : ScheduleBindings {
         val manualEnd = { (sessions.status.value as? LocalSessionStatus.Active)?.record?.endEpochMillis }
         val publisher = IosScheduleMonitorPublisher(bridge.monitor, schedules.zone, notifications, manualEnd)
         val ports = ScheduleHostPorts(
-            claims = IosScheduleClaims(bridge.enforcement),
+            claims = IosScheduleClaims(bridge.enforcement, bridge.monitor),
             gate = IosScheduleStartGate(bridge.enforcement),
             // Screen Time authorization is the consent here, and the Schedules screen asks for it.
             hadConsent = { false },
-            targets = { loadSessionTargets(policyStore, applicationMappings) },
+            targets = { setId -> loadSessionTargets(policyStore, applicationMappings, setId) },
+            limits = PauseLimits.IPHONE,
+            // The monitor's composer, in the app and in the extension, records what each occurrence holds in the
+            // App Group, so an empty request still goes to it and never releases what an occurrence holds.
+            claimsCompose = true,
             maintenanceClosed = { false },
             // The monitor extension announces starts, including while the app is closed; the Swift publisher
             // announces a running start it has not recorded, such as one an edit began.

@@ -30,7 +30,9 @@ internal class SqlLocalSessionStore(
 
     override suspend fun read(nowEpochMillis: Long): LocalSessionResult<LocalSessionStatus> {
         return withContext(databaseDispatcher) {
-            database.localSessionTransact {
+            // A read writes only when it commits an expiry; then it also sweeps. A read that wrote every time
+            // would fail at once while another connection writes.
+            database.localSessionTransact(writes = false) {
                 val evaluated = database.evaluateStoredLocalSession(nowEpochMillis)
                 when (val evaluation = evaluated.evaluation) {
                     is SessionEvaluation.NoSession -> {
@@ -55,7 +57,7 @@ internal class SqlLocalSessionStore(
                     }
 
                     is SessionEvaluation.CommitExpiry -> {
-                        commitExpiry(evaluation.record, evaluated.originOrThrow())
+                        commitExpiry(evaluation.record, evaluated.originOrThrow()).also { database.sweepRetention() }
                     }
                 }
             }

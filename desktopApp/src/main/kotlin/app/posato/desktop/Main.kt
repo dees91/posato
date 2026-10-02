@@ -12,6 +12,7 @@ import app.posato.desktop.macos.MacOsHelperSigningVerifier
 import app.posato.desktop.macos.MacOsSystemSettings
 import app.posato.desktop.macos.MacSetupOfferFlag
 import app.posato.desktop.macos.SETUP_OFFER_DISMISSED_KEY
+import app.posato.desktop.mappings.ApplicationRequirements
 import app.posato.desktop.mappings.DesktopLocalApplicationMappings
 import app.posato.desktop.mappings.keptApplications
 import app.posato.desktop.session.MacOsApplicationEnforcementLink
@@ -24,6 +25,7 @@ import app.posato.feature.enforcement.JvmSessionEnforcement
 import app.posato.feature.onboarding.MacConsole
 import app.posato.feature.onboarding.MacHelperOperations
 import app.posato.feature.presence.loadPresenceCopy
+import app.posato.feature.session.data.KeptApplicationRequirements
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -42,10 +44,13 @@ fun main() {
     MacOsHelperClient().use { enforcementClient ->
         DesktopLocalApplicationMappings().use { applicationMappings ->
             Runtime.getRuntime().addShutdownHook(Thread(applicationMappings::close, "application-mappings-shutdown"))
+            // The graph that reads what running parts kept is built after enforcement, which it depends on.
+            var keptRequirements: KeptApplicationRequirements? = null
+            val requirements = ApplicationRequirements(applicationMappings) { ids -> keptRequirements?.of(ids).orEmpty() }
             val enforcement = JvmSessionEnforcement(
                 MacOsBrowserEnforcementLink(MacOsBrowserDomainEnforcer(enforcementClient), enforcementClient),
                 MacOsApplicationEnforcementLink(
-                    MacOsApplicationEnforcer(enforcementClient, applicationMappings::designatedRequirements),
+                    MacOsApplicationEnforcer(enforcementClient, requirements::resolve),
                     applicationMappings,
                     enforcementClient,
                 ),
@@ -77,6 +82,7 @@ fun main() {
                 helperState,
                 notifications = MacSessionNotifications,
             )
+            keptRequirements = applicationGraph.keptApplicationRequirements
             preparePauseSets(applicationGraph, applicationMappings)
             val updaterScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
             val updater = createUpdaterController(enforcementClient, applicationGraph.updateMaintenance, instanceLock, updaterScope)

@@ -138,7 +138,24 @@ internal class DesktopLocalApplicationMappings(
         database = null
     }
 
-    internal suspend fun designatedRequirements(ids: List<LocalApplicationMappingId>): List<ByteArray> {
+    override suspend fun keptApplications(mappingIds: Set<String>): List<KeptApplication> {
+        if (mappingIds.isEmpty()) {
+            return emptyList()
+        }
+        return withContext(ioDispatcher) {
+            operationMutex.withLock {
+                val kept = openDatabase().applicationMappingsQueries.selectKept().executeAsList()
+                    .filter { row -> row.mappingId.toHex() in mappingIds }
+                    .distinctBy { row -> row.mappingId.toHex() }
+                    .map { row -> KeptApplication(row.mappingId.copyOf(), row.displayName.copyOf(), row.designatedRequirement.copyOf()) }
+                files.secureDatabaseArtifacts()
+                kept
+            }
+        }
+    }
+
+    /** Every chosen app's designated requirement by its canonical identifier, across all sets. */
+    internal suspend fun storedRequirements(): Map<String, ByteArray> {
         return withContext(ioDispatcher) {
             operationMutex.withLock {
                 val currentDatabase = openDatabase()
@@ -146,9 +163,7 @@ internal class DesktopLocalApplicationMappings(
                     mappingId.toHex() to designatedRequirement.copyOf()
                 }.executeAsList().toMap()
                 files.secureDatabaseArtifacts()
-                ids.map { id ->
-                    stored[id.canonicalValue] ?: throw IllegalArgumentException("Unknown application mapping")
-                }
+                stored
             }
         }
     }
@@ -186,18 +201,6 @@ internal class DesktopLocalApplicationMappings(
         } catch (_: Exception) {
             failure(LocalApplicationSelectionFailure.STORAGE)
         }
-    }
-
-    private fun restoreCandidate(application: SelectedMacOsApplication): StoredApplicationCandidate {
-        if (application.designatedRequirement.isEmpty() || application.designatedRequirement.size > MAXIMUM_REQUIREMENT_BYTES) {
-            corruptApplicationMappings()
-        }
-        val mappingId = LocalApplicationMappingId.restore(application.designatedRequirement.sha256().toHex())
-            ?: corruptApplicationMappings()
-        val mapping = LocalApplicationMapping.restore(mappingId, application.displayName)
-            ?: corruptApplicationMappings()
-
-        return StoredApplicationCandidate(mapping, application.designatedRequirement.copyOf())
     }
 
     private fun openDatabase(): MacOsApplicationMappingsDatabase {
@@ -279,6 +282,23 @@ internal suspend fun DesktopLocalApplicationMappings.keptApplications(): List<Ke
         val name = (mapping.display as? LocalApplicationMappingDisplay.Named)?.value.orEmpty()
         KeptApplication(mapping.id.canonicalValue.hexToByteArray(), name.encodeToByteArray(), requirement)
     }
+}
+
+internal suspend fun DesktopLocalApplicationMappings.designatedRequirements(ids: List<LocalApplicationMappingId>): List<ByteArray> {
+    val stored = storedRequirements()
+    return ids.map { id -> stored[id.canonicalValue] ?: throw IllegalArgumentException("Unknown application mapping") }
+}
+
+private fun restoreCandidate(application: SelectedMacOsApplication): StoredApplicationCandidate {
+    if (application.designatedRequirement.isEmpty() || application.designatedRequirement.size > MAXIMUM_REQUIREMENT_BYTES) {
+        corruptApplicationMappings()
+    }
+    val mappingId = LocalApplicationMappingId.restore(application.designatedRequirement.sha256().toHex())
+        ?: corruptApplicationMappings()
+    val mapping = LocalApplicationMapping.restore(mappingId, application.displayName)
+        ?: corruptApplicationMappings()
+
+    return StoredApplicationCandidate(mapping, application.designatedRequirement.copyOf())
 }
 
 private class StoredApplicationCandidate(

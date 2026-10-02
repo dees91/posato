@@ -1,8 +1,10 @@
 package app.posato.feature.session.ui
 
 import app.posato.feature.enforcement.EnforcedSet
+import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.session.domain.FrozenStartSet
 import app.posato.feature.session.domain.LocalSessionStatus
+import app.posato.feature.session.domain.SessionRecord
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.ApplicationChoiceSet
 import app.posato.feature.targets.data.LocalApplicationMappings
@@ -108,4 +110,18 @@ internal fun SessionTargetsState.partSet(active: LocalSessionStatus.Active?): Pa
 internal fun SessionUiState.hasPausableItems(): Boolean {
     return displayDomains().isNotEmpty() || (displayApplicationCount() ?: 0) > 0 ||
         pauseSets.any { set -> set.websiteCount > 0 || (set.applicationCount ?: 0) > 0 }
+}
+
+/**
+ * A relaunch found the helper holding this session: the claim learns its items again, without applying, so a
+ * schedule that joins later adds to them. Returns what the session shows: its stored start set, or [targets].
+ */
+internal suspend fun EnforcementPort.adoptSession(
+    record: SessionRecord,
+    frozen: FrozenStartSet?,
+    targets: SessionTargetsState,
+): EnforcedSet {
+    val current = targets.toEnforcedSet()
+    adopt(record.toEnforcementRequest(current, targets))
+    return frozen?.toEnforcedSet() ?: current
 }

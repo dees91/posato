@@ -4,6 +4,7 @@ import app.posato.core.database.PosatoDatabase
 import app.posato.feature.enforcement.EnforcementPort
 import app.posato.feature.enforcement.PauseClaims
 import app.posato.feature.session.domain.SessionClock
+import app.posato.feature.session.ui.SessionComposition
 import app.posato.feature.sync.macos.MaintenanceCompanionTransport
 import app.posato.feature.sync.macos.defaultSyncCompanionTransport
 import app.posato.feature.update.DesktopUpdateMaintenance
@@ -39,7 +40,12 @@ internal interface DesktopUpdateBindings {
 
     @Provides
     @SingleIn(AppScope::class)
-    fun provideEnforcement(claims: PauseClaims): EnforcementPort {
+    fun provideEnforcement(
+        claims: PauseClaims,
+        composition: SessionComposition,
+    ): EnforcementPort {
+        // The session and the occurrences each count what the other pauses toward the Mac's limits.
+        composition.occupied = claims::scheduleItems
         return claims.manual
     }
 
