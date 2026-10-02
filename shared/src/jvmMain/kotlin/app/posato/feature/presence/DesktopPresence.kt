@@ -2,8 +2,12 @@ package app.posato.feature.presence
 
 import app.posato.feature.notifications.SessionNotifier
 import app.posato.feature.schedules.host.ScheduleHost
+import app.posato.feature.session.ui.SessionComposition
 import app.posato.feature.session.ui.SessionTransitionOwner
+import app.posato.feature.session.ui.recompose
 import app.posato.feature.sync.bootstrap.AppleSync
+import app.posato.feature.targets.data.LocalApplicationMappings
+import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.update.MaintenanceAdmission
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.Inject
@@ -13,6 +17,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 
@@ -24,6 +29,9 @@ public class DesktopPresence internal constructor(
     private val maintenance: MaintenanceAdmission,
     private val notifier: SessionNotifier,
     private val schedules: ScheduleHost,
+    private val composition: SessionComposition,
+    private val policies: LocalTargetPolicyStore,
+    private val applicationMappings: LocalApplicationMappings,
 ) {
     private val requests = Channel<SessionWindowRequest>(Channel.CONFLATED)
 
@@ -43,6 +51,8 @@ public class DesktopPresence internal constructor(
         maintenance.closedGate()
         coroutineScope {
             launch { owner.runWhileHosted(idleRecheckMillis = IDLE_RECHECK_MILLIS) }
+            // An edit to a set the running session uses, here or received, pauses its additions at once.
+            launch { merge(policies.policyChanges, applicationMappings.invalidations).collect { owner.recompose(composition) } }
             launch { notifier.run() }
             launch { schedules.run() }
             launch { runPeriodicExchange(exchange = sync::onForeground, intervalMillis = EXCHANGE_INTERVAL_MILLIS) }
