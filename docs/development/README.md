@@ -196,8 +196,14 @@ future restoration. No automatic restoration date is defined.
 
 Before merge:
 
-1. Run `./gradlew quality` locally after the last correction, including native
-   iOS Swift tests. Resolve failures rather than treating disabled CI as a waiver.
+1. Rebase the branch onto the current `main` (a stack: every branch, bottom
+   up), then run `./gradlew quality` on its tip after the last correction,
+   including native iOS Swift tests. Two changes that each pass can fail
+   together, as a method that crossed its length limit did after
+   `SCHEDULE-004` met `MACOS-015`. Resolve failures rather than treating
+   disabled CI as a waiver. Between corrections, `./gradlew qualityLint` runs
+   only formatting and static analysis, so most findings appear before the
+   full gate.
 2. Complete the task's required review and applicable native/device verification.
 3. Record the tested revision and result in the PR, and confirm that the merged
    source still matches the reviewed and verified change. Rerun affected checks

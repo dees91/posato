@@ -149,6 +149,26 @@ val iosHostBuildCheck by tasks.registering(Exec::class) {
     commandLine("bash", "tools/quality/ios-host-build-check.sh")
 }
 
+tasks.register("qualityLint") {
+    group = "verification"
+    description = "Runs only Posato's formatting and static analysis, in about a minute, before a commit; quality still gates the push."
+    dependsOn(
+        "ktlintCheck",
+        ":desktopApp:detekt",
+        ":desktopApp:ktlintCheck",
+        ":quality-rules:detekt",
+        ":quality-rules:ktlintCheck",
+        ":shared:detekt",
+        ":shared:ktlintCheck",
+        ":posato-control:detekt",
+        ":posato-control:ktlintCheck",
+        ":posato-provisioning:detekt",
+        ":posato-provisioning:ktlintCheck",
+        ":posato-control:swiftFormatCheck",
+        verifyApprovedQualityExceptions,
+    )
+}
+
 tasks.register("quality") {
     group = "verification"
     description = "Runs Posato's formatting, analysis, test, compilation, packaging, and report checks."

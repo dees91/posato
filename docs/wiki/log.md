@@ -2392,3 +2392,15 @@ to scope, feasibility, or delivery.
   release 1.3 before `DOCS-004`; `MACOS-021` narrows to a short measurement;
   `MACOS-017` returns to the backlog, with PRs #110 and #114 closed as
   reusable material.
+
+## [2026-10-02] tooling | Faster verification after the SCHEDULE-004 retro
+
+- `observed`: the `SCHEDULE-004` acceptance runs spent most of their time
+  waiting on wall-clock schedules and CloudKit, rebuilding VM onboarding and
+  editor paths by hand, and rerunning the full quality gate for formatting.
+- `posato-control` gains `vm onboard` (about 1.5 minutes instead of up to
+  half an hour), `flow schedule|set|session` for the desktop in a VM and iOS,
+  and `flow icloud` for the desktop in a VM; `observe` takes several
+  websites. Gradle gains `qualityLint`, and the merge checklist asks for a
+  rebase onto the current `main` with `quality` on the tip. A test time
+  control is backlog row `QUALITY-012` (idea 26).
