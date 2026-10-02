@@ -124,8 +124,8 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         )
         // The table is written before any registration, so a callback always reads the plans it belongs to.
         // It is rewritten only when it changed; registrations are reconciled every time.
-        // A table that could not be written leaves the registrations as they are, so no plan starts with
-        // the previous table's items.
+        // A table that could not be written is removed and leaves the registrations as they are: no plan
+        // starts with the previous table's items, and applying the schedule reports a platform failure.
         if let files, files.readTable() != file {
             do {
                 try files.writeTable(file)

@@ -249,7 +249,9 @@ struct ScheduleMonitorFileStore {
     private static let directoryName = "ScheduleMonitor"
     private static let tableFileName = "table-v2.json"
     private static let legacyTableFileName = "table-v1.json"
-    private static let maximumTableBytes = 256 * 1024
+    /// Fits the largest supported configuration, about 0.4 MiB: 1,024 websites of 253 characters shared by ten
+    /// sets, 64 apps with tokens of up to 1 KiB, and ten plans with every stoppable date listed.
+    private static let maximumTableBytes = 1024 * 1024
     private static let maximumRecordBytes = 4096
 
     let directoryURL: URL
@@ -273,11 +275,18 @@ struct ScheduleMonitorFileStore {
     }
 
     /// Writes the version-2 table, then deletes the version-1 table in the same step. A crash between the
-    /// two leaves both, and the version-2 table wins.
+    /// two leaves both, and the version-2 table wins. A table that cannot be written removes both, so neither
+    /// the app nor the monitor keeps applying plans the app no longer has.
     func writeTable(_ file: ScheduleMonitorFile) throws {
-        let data = try JSONEncoder().encode(file)
-        guard data.count <= Self.maximumTableBytes else { throw CocoaError(.fileWriteOutOfSpace) }
-        try write(data, fileName: Self.tableFileName)
+        do {
+            let data = try JSONEncoder().encode(file)
+            guard data.count <= Self.maximumTableBytes else { throw CocoaError(.fileWriteOutOfSpace) }
+            try write(data, fileName: Self.tableFileName)
+        } catch {
+            try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.tableFileName))
+            try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.legacyTableFileName))
+            throw error
+        }
         try? fileManager.removeItem(at: directoryURL.appendingPathComponent(Self.legacyTableFileName))
     }
 
