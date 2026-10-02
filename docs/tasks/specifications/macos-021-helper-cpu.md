@@ -12,34 +12,33 @@
 
 ## Outcome
 
-The helper's CPU use during an enforced session is explained and stays
-bounded, including in the first session of a freshly set-up Mac and under
-heavy proxied traffic.
+A short measurement shows whether the helper's CPU spike in a first enforced
+session recurs. If it does not, the row closes with that result; a reproduced
+cause is named, fixed, and bounded.
 
 ## Boundaries
 
 - `observed` in `MACOS-012` (Tart clone): the first enforced session in a
   fresh clone kept the normal-user helper at about 60% of one core for about
-  14 minutes, then idle; a later session used 0.2%. System traffic through
-  the loopback proxy after boot is a `hypothesis`.
-- Reproduce first and name the cause with a profile. Fix only what the
-  evidence shows; if the cost is legitimate traffic, bound it rather than
-  hide it.
-- `MACOS-022` since moved the pipe loop to a serial worker and native work to
-  the main run loop; measure on current `main`, not the `MACOS-012` build.
+  14 minutes, then idle; a later session used 0.2%.
+- `user-confirmed` (2026-10-02, roadmap revision 16): the maintainer suspects
+  a one-off load from parallel machine-learning work on the host, so the row
+  is a short measurement, not an investigation.
+- Measure on current `main`, which since moved the helper's pipe loop
+  (`MACOS-022`) and its proxy handling (`MACOS-020`, `MACOS-024`).
 - Keep denial, the exact-domain contract (ADR 0005), and lease renewal
   (ADR 0004) unchanged. No telemetry: measurements stay in local evidence.
-- Non-goals: the Compose desktop process's own resource use, and iOS.
+- Non-goals: profiling without a reproduction, the Compose desktop process,
+  and iOS.
 
 ## Acceptance
 
-- `AC-01` — A first enforced session in a fresh Tart clone is measured on
-  `main`; the spike is reproduced with a named cause, or its absence over
-  repeated fresh clones is recorded.
-- `AC-02` — With a fix, the same first session stays below an agreed CPU
-  bound across its first 15 minutes.
-- `AC-03` — A heavy proxied-traffic run keeps the helper within that bound
-  while blocking and relaying as before.
+- `AC-01` — One or two fresh Tart clones on a quiet host: the helper's CPU in
+  the first 15 minutes of a first enforced session is recorded, with a blocked
+  and an unrelated site checked in the same session.
+- `AC-02` — Without a recurrence, the record states the result and the row
+  closes. With one, the cause is named and a fix keeps the helper bounded in
+  the same run.
 
 ## Verification
 
@@ -51,5 +50,4 @@ heavy proxied traffic.
 
 ## Decisions or blockers
 
-- The CPU bound for `AC-02` and `AC-03` is proposed with the measurements and
-  accepted by the maintainer.
+- None.
