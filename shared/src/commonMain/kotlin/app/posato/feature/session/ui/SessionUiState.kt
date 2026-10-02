@@ -119,6 +119,8 @@ internal data class SessionTargetsState(
     val mappings: LocalApplicationMappingsLoadResult? = null,
     val setId: PauseSetId? = null,
     val sets: PauseSets? = null,
+    /** How many apps each set has chosen on this device; null where the choices could not be read. */
+    val applicationCounts: Map<PauseSetId, Int?> = emptyMap(),
 ) {
     override fun toString(): String {
         return "SessionTargetsState(redacted)"
@@ -184,7 +186,7 @@ internal fun createSessionUiState(
         enforcementBusy = enforcementView.busy,
         setId = targets.partSet(active),
         setName = targets.nameOf(targets.partSet(active)),
-        pauseSets = targets.sets.choices(),
+        pauseSets = targets.sets.choices(targets.applicationCounts),
     )
 }
 

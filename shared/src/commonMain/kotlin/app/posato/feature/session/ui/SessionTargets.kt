@@ -13,6 +13,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.choiceSet
 import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.ui.PauseSetRow
+import app.posato.feature.targets.ui.applicationCountOf
 import app.posato.feature.targets.ui.displayNameOf
 import app.posato.feature.targets.ui.pauseSetRowOrder
 import kotlinx.collections.immutable.PersistentList
@@ -33,9 +34,10 @@ internal suspend fun loadSessionTargets(
         is LocalPolicyResult.Success -> result.value
         is LocalPolicyResult.Failure -> return SessionTargetsState(mappings = applicationMappings.loadOrFailure(ApplicationChoiceSet.FIRST))
     }
-    val chosen = setId ?: state.sets.resolvedDefault() ?: return SessionTargetsState(sets = state.sets)
-    val policy = state.policyOf(chosen) ?: return SessionTargetsState(sets = state.sets, setId = chosen)
-    return SessionTargetsState(policy, applicationMappings.loadOrFailure(chosen.choiceSet()), chosen, state.sets)
+    val counts = state.sets.sets.associate { set -> set.id to applicationMappings.applicationCountOf(set.id) }
+    val chosen = setId ?: state.sets.resolvedDefault() ?: return SessionTargetsState(sets = state.sets, applicationCounts = counts)
+    val policy = state.policyOf(chosen) ?: return SessionTargetsState(sets = state.sets, setId = chosen, applicationCounts = counts)
+    return SessionTargetsState(policy, applicationMappings.loadOrFailure(chosen.choiceSet()), chosen, state.sets, counts)
 }
 
 private suspend fun LocalApplicationMappings.loadOrFailure(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
@@ -75,11 +77,20 @@ internal suspend fun FrozenStartSet?.orLoaded(
 }
 
 /** The live sets a pause can use, as the set choice lists them: the default marked, with website counts. */
-internal fun PauseSets?.choices(): PersistentList<PauseSetRow> {
+internal fun PauseSets?.choices(applicationCounts: Map<PauseSetId, Int?> = emptyMap()): PersistentList<PauseSetRow> {
     val sets = this ?: return persistentListOf()
     val defaultId = sets.resolvedDefault()
     return sets.sets.filterNot { set -> set.refused }.map { set ->
-        PauseSetRow(set.id, displayNameOf(set.name), set.id == defaultId, set.domains.size, null, persistentListOf(), refused = false, inUse = false)
+        PauseSetRow(
+            set.id,
+            displayNameOf(set.name),
+            set.id == defaultId,
+            set.domains.size,
+            applicationCounts[set.id],
+            persistentListOf(),
+            refused = false,
+            inUse = false,
+        )
     }.sortedWith(pauseSetRowOrder).toPersistentList()
 }
 

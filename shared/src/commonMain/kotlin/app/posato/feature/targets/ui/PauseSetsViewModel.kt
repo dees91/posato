@@ -231,7 +231,8 @@ internal class PauseSetsViewModel(
     }
 }
 
-private suspend fun LocalApplicationMappings.applicationCountOf(id: PauseSetId): Int? {
+/** How many apps [id] has chosen on this device, or null when its choices cannot be read. */
+internal suspend fun LocalApplicationMappings.applicationCountOf(id: PauseSetId): Int? {
     return when (val loaded = load(id.choiceSet())) {
         is LocalApplicationMappingsLoadResult.Success -> loaded.snapshot.mappings.size
         else -> null

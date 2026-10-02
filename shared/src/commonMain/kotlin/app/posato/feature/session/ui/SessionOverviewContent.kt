@@ -66,9 +66,9 @@ internal fun SessionOverviewContent(
     val scheduledRestricts = scheduled?.restricts == true
     val active = state.status is LocalSessionStatus.Active || scheduledRestricts
     val needsMacSetup = macSetup?.needsSetup() == true
-    // Setup can choose any set, so Start is offered when any set has websites, not only the default.
+    // Setup can choose any set, so Start is offered when any set has websites or apps, not only the default.
     val hasItems = state.displayDomains().isNotEmpty() || (state.displayApplicationCount() ?: 0) > 0 ||
-        state.pauseSets.any { set -> set.websiteCount > 0 }
+        state.pauseSets.any { set -> set.websiteCount > 0 || (set.applicationCount ?: 0) > 0 }
     var macSetupExpanded by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         SessionHero(layout, overviewDescription(active, scheduledRestricts, needsMacSetup, hasItems), active, scheduledRestricts)
