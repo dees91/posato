@@ -36,6 +36,7 @@ internal class SchedulesHolder(
     private val ids: ScheduleIdGenerator,
     private val scope: CoroutineScope,
     private val linked: () -> Boolean = { false },
+    private val removedSets: () -> Set<PauseSetId> = { emptySet() },
     private val onSaved: suspend () -> Unit = {},
     private val pauseSets: PauseSetSource = PauseSetSource(),
 ) {
@@ -125,7 +126,7 @@ internal class SchedulesHolder(
         val read = store.read() as? ScheduleResult.Success ?: return
         snapshot = read.value
         val sets = pauseSets.load()
-        val context = ScheduleSetContext(sets, linked(), pauseSets.deviceNoun)
+        val context = ScheduleSetContext(sets, linked(), pauseSets.deviceNoun, removedSets())
         val rows = buildScheduleRows(snapshot, clock.currentEpochMillis(), zone, timeFormat, context)
         state = state.copy(
             loaded = true,

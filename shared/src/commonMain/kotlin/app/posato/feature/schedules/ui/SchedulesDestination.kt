@@ -44,6 +44,7 @@ internal fun SchedulesDestination(
             RandomScheduleIdGenerator,
             scope,
             linked = { inputs.sync.state.value.linked },
+            removedSets = { inputs.sync.state.value.removedPauseSets },
             onSaved = { inputs.notifier?.onScheduleSaved() },
             pauseSets = inputs.pauseSetSource(device.noun),
         )

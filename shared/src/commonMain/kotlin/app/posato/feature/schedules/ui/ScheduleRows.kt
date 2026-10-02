@@ -26,11 +26,15 @@ internal fun buildScheduleRows(
     }
 }
 
-/** What a schedule row says about its set: the sets this device holds, whether it is linked, and its noun. */
+/**
+ * What a schedule row says about its set: the sets this device holds, whether it is linked, the sets the
+ * workspace removed, and the device noun.
+ */
 internal class ScheduleSetContext(
     val rows: List<PauseSetRow> = emptyList(),
     val linked: Boolean = false,
     val deviceNoun: String = "device",
+    val removed: Set<PauseSetId> = emptySet(),
 )
 
 private fun ScheduleRowModel.withSet(
@@ -42,7 +46,7 @@ private fun ScheduleRowModel.withSet(
     }
     val set = sets.rows.firstOrNull { row -> row.id == setId }
     val problem = when {
-        set == null && sets.linked -> "Waiting for this set from your other devices."
+        set == null && sets.linked && setId !in sets.removed -> "Waiting for this set from your other devices."
         set == null -> "This schedule's set was deleted. Choose a set."
         set.refused -> "This set is over the limit of 10. Delete a set to use it."
         set.websiteCount == 0 && (set.applicationCount ?: 0) == 0 -> "Nothing to pause on this ${sets.deviceNoun}"
