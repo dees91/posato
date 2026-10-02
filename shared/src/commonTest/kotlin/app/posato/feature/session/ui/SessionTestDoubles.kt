@@ -201,7 +201,11 @@ internal class FakeSessionMappings(
         return LocalApplicationRemovalResult.Unavailable
     }
 
+    /** The sets each retainOnly call kept, so a test sees whether app choices were pruned. */
+    val retained = mutableListOf<Set<ApplicationChoiceSet>>()
+
     override suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult {
+        retained += sets
         return LocalApplicationRemovalResult.Unavailable
     }
 

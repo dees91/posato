@@ -18,12 +18,15 @@ import app.posato.feature.session.ui.FakeSessionMappings
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.testIdentifier
+import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
+import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.createLocalPolicyTestDatabase
 import app.posato.feature.targets.domain.LocalPauseSet
 import app.posato.feature.targets.domain.PauseSets
+import app.posato.feature.targets.domain.PolicySyncWrite
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -107,14 +110,32 @@ class PauseSetDeletionTest {
         }
     }
 
+    @Test
+    fun `given the policy cannot be read after a deletion then no set's app choices are deleted`() = runTest(dispatcher) {
+        withStores("delete-read-fails.db") { policies, schedules ->
+            schedules.remove(focus.id, workspaceId = null)
+            val mappings = FakeSessionMappings()
+            val store = UnreadableAfterWrite(policies)
+            val viewModel = PauseSetsViewModel(inputsOf(store, schedules, mappings = mappings))
+            advanceUntilIdle()
+
+            viewModel.delete(work, moveTo = null)
+            advanceUntilIdle()
+
+            assertEquals(listOf(PauseSetId.FIRST), policies.setIds())
+            assertEquals(emptyList(), mappings.retained)
+        }
+    }
+
     private fun inputsOf(
-        policies: SqlLocalTargetPolicyStore,
+        policies: LocalTargetPolicyStore,
         schedules: LocalScheduleStore,
         session: MutableStateFlow<LocalSessionStatus?> = MutableStateFlow(LocalSessionStatus.Inactive),
+        mappings: FakeSessionMappings = FakeSessionMappings(),
     ): PauseSetsInputs {
         return PauseSetsInputs(
             store = policies,
-            applicationMappings = FakeSessionMappings(),
+            applicationMappings = mappings,
             schedules = schedules,
             sessionStatus = session,
             scheduledPause = MutableStateFlow<ScheduledPause?>(null),
@@ -180,5 +201,24 @@ private object NoticeShown : LocalSetupStore {
 
     override suspend fun markPauseSetNoticeShown(): LocalSetupResult<Unit> {
         return LocalSetupResult.Success(Unit)
+    }
+}
+
+/** Reads fail once a set write has succeeded, as a storage hiccup right after a deletion would. */
+private class UnreadableAfterWrite(
+    private val inner: LocalTargetPolicyStore,
+) : LocalTargetPolicyStore by inner {
+    private var wrote = false
+
+    override suspend fun read(): LocalPolicyResult<LocalTargetPolicyState> {
+        return if (wrote) LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE) else inner.read()
+    }
+
+    override suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
+        syncWrite: PolicySyncWrite?,
+    ): LocalPolicyResult<LocalTargetPolicyState> {
+        return inner.replaceSets(expectedRevision, sets, syncWrite).also { result -> wrote = result is LocalPolicyResult.Success }
     }
 }
