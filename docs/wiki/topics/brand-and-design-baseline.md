@@ -173,7 +173,10 @@ administrator security, or a productivity-scoring system.
 ### Promise and working line
 
 - **Brand promise:** a quiet pause between impulse and action.
-- **Working product line:** **Pause. Then choose.**
+- **Product line:** **A little space. For what matters.** `user-confirmed`
+  (2026-10-02, `WEB-002`); it replaced the earlier working line **Pause.
+  Then choose.** `superseded`, which the PR #1 contract below still names as
+  history.
 
 The product does not promise perfect prevention. It promises a clear,
 respectful interruption and truthful state across the devices it supports.

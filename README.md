@@ -1,6 +1,6 @@
 # Posato
 
-**Pause. Then choose.**
+**A little space. For what matters.**
 
 Posato blocks the websites and apps you choose for a timed pause on your Mac
 or iPhone, now or on a schedule, within the [limits](#limits) below.

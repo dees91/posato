@@ -82,7 +82,7 @@ account. It is not parental control, employee monitoring, administrator security
 or a productivity-scoring system.
 
 - Brand promise: **a quiet pause between impulse and action.**
-- Product line: **Pause. Then choose.**
+- Product line: **A little space. For what matters.**
 - Character: calm, respectful, candid, precise, composed.
 - Avoid shame, urgency, streaks, scores, gamification, and claims of perfect prevention.
 

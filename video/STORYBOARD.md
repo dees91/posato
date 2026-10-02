@@ -22,7 +22,7 @@ Show, without sound and at 960 pixels wide, that Posato is a pause you set up yo
 
 | # | Scene | Frames | Layout | Intent |
 | --- | --- | --- | --- | --- |
-| 1 | `open` | 0-66 | title | State the promise: Pause. Then choose. |
+| 1 | `open` | 0-66 | title | State the promise: A little space. For what matters. |
 | 2 | `websites` | 60-216 | Mac | Show a domain being added: click the field, click Add. |
 | 3 | `apps-iphone` | 210-360 | iPhone leads, Mac beside | Show apps chosen on the iPhone; the Mac already shows Chess. |
 | 4 | `duration` | 354-486 | Mac | Pick 45 minutes, open the review. |

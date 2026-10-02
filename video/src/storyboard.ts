@@ -66,7 +66,7 @@ export const IPHONE_TARGETS = {
 
 const OPEN_COPY = {
   eyebrow: "Posato for Mac and iPhone",
-  headline: "Pause. Then choose.",
+  headline: "A little space.\nFor what matters.",
   support: "Pause the websites and apps you choose, now or on a schedule.",
 } as const;
 

@@ -1064,7 +1064,9 @@ below. This queue retains idea provenance without expanding the original MVP.
     `DESIGN.md`. Owner: `WEB-002`. `user-confirmed` (2026-10-02): it joins
     release 1.3 and continues from the homepage experiment in PR #126, whose
     provisional line is "A little space. For what matters."; `DOCS-004`
-    packages the result.
+    packages the result. `user-confirmed` (2026-10-02): the maintainer chose
+    that line and kept the experiment's layout; on a phone the poster moves
+    under the lead so a small screen shows the product first.
 25. **An unblocked moment when the Mac helper takes a new configuration.**
     `observed` (2026-09-30, `SCHEDULE-004` measurement in a Tart VM): a
     change during a running pause is a helper clear followed by an apply,
