@@ -28,13 +28,15 @@ Open source under the [Apache License 2.0](LICENSE).
 
 - **Mac:** download the signed and notarized DMG from
   [GitHub Releases](https://github.com/dees91/posato/releases/latest), open it, and move Posato to your Applications folder.
+  Choose `Posato-<version>.dmg` for Apple silicon or `Posato-<version>-intel.dmg`
+  for an Intel Mac.
   Posato 1.1 and later can check for updates after you agree; to move from 1.0,
   quit Posato and replace it with the new version.
 - **iPhone:** install Posato from the [App Store](https://apps.apple.com/app/posato/id6812237585).
 
-Posato targets **macOS 15 or later on Apple silicon** and **iOS 18 or later**;
-the [platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
-records what was checked on each of them. Intel Macs, Android, Linux, and Windows are
+Posato targets **macOS 13 or later on Apple silicon and Intel Macs** and
+**iOS 18 or later**; the [platform matrix](docs/product/limits-and-platforms.md#supported-platforms)
+records what was checked on each of them. Android, Linux, and Windows are
 [planned for later releases](docs/product/limits-and-platforms.md#planned-platforms).
 
 To build it yourself, follow the [build instructions](docs/development/README.md#build-from-source).
@@ -45,17 +47,19 @@ Development signing. The iOS Simulator cannot use Screen Time controls.
 
 ### Choose what to pause
 
-Add exact website domains, then choose apps on each device. App choices stay
-on that device; only the shared app group name synchronizes.
+Group what you want to pause into pause sets, such as one for work and one
+for evenings. A set holds exact website domains and, on each device, the apps
+you choose there. One set is the default; pick another when you start a pause
+or plan a schedule. App choices stay on the device where you made them.
 
 <p align="center">
-  <a href=".github/assets/step-websites.png"><img src=".github/assets/step-websites.png" width="960" alt="Paused items on a Mac and an iPhone, side by side, showing the sample domains example.com and example.net"></a>
+  <a href=".github/assets/step-websites.png"><img src=".github/assets/step-websites.png" width="960" alt="The pause set Focus on a Mac and an iPhone, side by side, showing the sample domains example.com and example.net"></a>
 </p>
 
 ### Start a timed pause
 
-Set a duration from **5 minutes to 24 hours**, review your choices, and start
-the session. Posato blocks your chosen websites and apps on that device,
+Choose a pause set and a duration from **5 minutes to 24 hours**, review your
+choices, and start the session. Posato blocks your chosen websites and apps on that device,
 within the [limits](#limits) below. The session ends at the selected time or
 when you deliberately end it early. On iPhone, restrictions can linger after it
 ends. On a Mac, a one-time setup lets pauses and schedules start without asking
@@ -70,10 +74,12 @@ Screenshots and the demo show synthetic choices in the real apps; see the
 
 ### Plan pauses ahead
 
-Add a schedule with a name, weekdays, and hours, such as weekday mornings from
-9 to 11. It starts and ends on its own on each device you set up, even with
+Add a schedule with a name, a pause set, weekdays, and hours, such as weekday
+mornings from 9 to 11. It starts and ends on its own on each device you set up, even with
 Posato's window closed or the iPhone app closed. Skip the next one or end one
-early when plans change. Posato can tell you when a pause ends or when one
+early when plans change. When pauses overlap, Posato pauses everything in
+their sets, and each item stays paused until the last pause that includes it
+ends. Posato can tell you when a pause ends or when one
 starts on another device.
 
 <p align="center">
@@ -83,10 +89,11 @@ starts on another device.
 ### Share the session with iCloud
 
 Choose **Sync with iCloud** on one Mac and one iPhone signed in to the same
-Apple Account to share your website list, sessions, and schedules. No QR code
-or invitation is needed. Delivery is best effort. A session started on your
-iPhone blocks on the Mac only after you resume it there. Update Posato on every
-device: once a schedule is saved, a device on an earlier version stops syncing.
+Apple Account to share your pause sets with their websites, sessions, and
+schedules. No QR code or invitation is needed. Delivery is best effort. A
+session started on your iPhone blocks on the Mac only after you resume it there.
+Update Posato on every device: once one device runs Posato 1.3, devices on an
+earlier version stop syncing until they update.
 
 ## Limits
 
@@ -110,8 +117,8 @@ and data recovery boundaries.
 
 ## Privacy
 
-Posato does not collect your data. Your websites, app choices, sessions, and
-schedules stay on your devices; with iCloud sync on, changes are encrypted on your device
+Posato does not collect your data. Your pause sets, websites, app choices,
+sessions, and schedules stay on your devices; with iCloud sync on, changes are encrypted on your device
 before they are stored in your private iCloud database. On Mac, update checks go
 to GitHub Releases only after you agree. See the [privacy policy](PRIVACY.md).
 

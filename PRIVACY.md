@@ -2,8 +2,8 @@
 
 Effective September 28, 2026.
 
-Posato does not send your website list, app choices, sessions, or iCloud
-workspace data to its developer. There is no Posato account, no analytics,
+Posato does not send your pause sets, website list, app choices, sessions, or
+iCloud workspace data to its developer. There is no Posato account, no analytics,
 no advertising, and no Posato-operated server. Optional iCloud sync and
 macOS update requests are described below.
 
@@ -11,12 +11,15 @@ macOS update requests are described below.
 
 To work, Posato stores on each device:
 
-- the website domains you choose to pause;
-- the apps you choose to pause on that device, stored as system-provided
-  selections that Posato cannot read as app names on iPhone;
-- your sessions: when they start and end, and whether they ended early;
-- your schedules: their names, the weekdays and times they repeat, whether
-  each is on, and which scheduled pauses you skipped or ended early;
+- your pause sets: their names, which set is the default, which website
+  domains each contains, and which apps you chose for each on that device,
+  stored as system-provided selections that Posato cannot read as app names
+  on iPhone;
+- your sessions: when they start and end, which pause set each used, and
+  whether they ended early;
+- your schedules: their names, their pause sets, the weekdays and times they
+  repeat, whether each is on, and which scheduled pauses you skipped or ended
+  early;
 - settings such as whether iCloud sync and the macOS helper are enabled.
 
 This data stays in Posato's private storage on the device until you change or
@@ -26,11 +29,13 @@ settings. On Mac, moving Posato to the Trash does not delete this data; it
 remains in Posato's application data folder until you remove it.
 
 When iCloud sync is on, Posato also keeps the history of synchronized changes
-in its private storage on each linked device: every website added or removed,
-changes to the shared app group name, and when each change was made, including
-when past sessions started, when they were scheduled to end, and whether they
-were ended early. Changing or removing a website does not erase its earlier
-entries from this history. The history stays until **Remove workspace**
+in its private storage on each linked device: every pause set created,
+renamed, or deleted, every website added to or removed from a set, which set
+is the default and which set each session and schedule used, and when each
+change was made, including when past sessions started, when they were scheduled to end, and whether they
+were ended early. Entries from before Posato 1.3 also record changes to the
+shared app group name it used then. Changing or removing a website or a set
+does not erase its earlier entries from this history. The history stays until **Remove workspace**
 completes on that device or Posato's data is removed from it, and it can be
 included in device backups like the data above.
 
@@ -41,8 +46,9 @@ blocked, how often you open apps, usage scores, or any other activity record.
 
 iCloud sync is optional and off until you choose **Sync with iCloud**.
 
-- Your website list, shared app group name, session start and end, and your
-  schedules, including skipped and ended scheduled pauses, are encrypted on
+- Your pause sets (their names, their websites, and which is the default),
+  session start and end, and your schedules, including skipped and ended
+  scheduled pauses, are encrypted on
   your device before they are stored in the private CloudKit
   database of your own iCloud account. Posato's developer cannot read or access
   them.
@@ -59,9 +65,10 @@ iCloud sync is optional and off until you choose **Sync with iCloud**.
 **Remove workspace** deletes Posato's synchronized records from your iCloud
 database, its history of synchronized changes on the device where you remove it,
 and the workspace key from iCloud Keychain, so your other devices lose access to
-the workspace too; their own copies of your website list, sessions, and change
-history stay on those devices until you remove the workspace there. Websites
-saved on the device where you remove the workspace stay on that device. Apple
+the workspace too; their own copies of your pause sets, sessions, and change
+history stay on those devices until you remove the workspace there. Pause
+sets and websites saved on the device where you remove the workspace stay on
+that device. Apple
 may retain backups for a period under its own policies. If every copy of the
 key is lost, synchronized data cannot be recovered.
 
@@ -71,10 +78,10 @@ On iPhone, Posato uses Apple's Screen Time framework to block the websites and
 apps you choose. Your app choices are opaque system selections that stay on the
 device; Posato does not receive app names or usage from Screen Time. So that
 a schedule can start while Posato is closed, Posato keeps a copy of your
-schedules and pause choices in storage shared only with its own Screen Time
-extension on the same iPhone. It never leaves the device, except in device
-backups like the data above, and it is deleted when Posato's data or the
-workspace is removed.
+schedules and each pause set's websites and app choices in storage shared
+only with its own Screen Time extension on the same iPhone. It never leaves
+the device, is excluded from device backups, and is deleted when Posato's data
+or the workspace is removed.
 
 ## Blocking on Mac
 

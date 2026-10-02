@@ -4,7 +4,8 @@ Status: maintainer accepted, 2026-09-14; copy edited with Clarity as requested.
 Uploaded to App Store Connect by `RELEASE-002` on 2026-09-17 with the iPad set
 below and submitted to App Review for version 1.0.0 (3). `DOCS-003` prepared
 the 1.2 description, What's New, and screenshots on 2026-09-27 for
-`RELEASE-004`; nothing was uploaded.
+`RELEASE-004`; nothing was uploaded. `DOCS-004` prepared the 1.3 subtitle,
+description, What's New, and screenshots on 2026-10-02 for `RELEASE-005`.
 
 ## Name
 
@@ -12,14 +13,19 @@ Posato
 
 ## Subtitle
 
-Pause. Then choose.
+Space for what matters.
+
+The product line "A little space. For what matters." (`WEB-002`) has 33
+characters, over the subtitle's 30; the maintainer chose this shorter form on
+2026-10-02.
 
 ## Description
 
 The description is [description.txt](description.txt), the exact text
 `posato-provisioning store prepare --description` uploads. Since 1.2 it adds
 schedules, schedule sync, the one-time Mac setup, and the advice to update
-every device; the 1.0 and 1.1 text is in Git history.
+every device; 1.3 adds pause sets and Intel Macs. Earlier text is in Git
+history.
 
 ## Keywords
 
@@ -92,10 +98,14 @@ Simulator with `--udid <udid>`.
 uploads both sets in file-name order; see the
 [iOS App Store release](../../development/apple-provisioning.md#ios-app-store-release).
 
+## What's New in 1.3.0
+
+[whats-new-1.3.0.txt](whats-new-1.3.0.txt) is the text for
+`store prepare --whats-new`.
+
 ## What's New in 1.2.0
 
-[whats-new-1.2.0.txt](whats-new-1.2.0.txt) is the text for
-`store prepare --whats-new`.
+[whats-new-1.2.0.txt](whats-new-1.2.0.txt) was the 1.2.0 text.
 
 ## What's New in 1.1.0
 
