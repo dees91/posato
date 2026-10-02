@@ -32,14 +32,17 @@ class GuestOnboarding(
         val recipe = recipe()
         val split = recipe.steps.indexOfFirst { it.name == SETUP_READY }
         val done = recipe.steps.indexOfFirst { it.name == SETUP_DONE }
-        if (split < 0 || done < 0) throw ControlException(ErrorCode.COMMAND_FAILED, "The onboarding recipe lacks $SETUP_READY or $SETUP_DONE.")
+        val final = recipe.steps.indexOfFirst { it.name == NO_FINISH_SETUP }
+        if (split < 0 || done < 0 || final <= done) {
+            throw ControlException(ErrorCode.COMMAND_FAILED, "The onboarding recipe lacks $SETUP_READY, $SETUP_DONE or $NO_FINISH_SETUP.")
+        }
         VmLifecycle(context).requireRunning(line)
         guest(line, listOf("launch", "-t", "desktop"))
         guestScenario(line, recipe.copy(steps = recipe.steps.subList(0, split + 1)))
         guest(line, listOf("tap", "-t", "desktop", "--text", SET_UP, "--role", "button"))
         answerUntilReady(line, timeoutMs)
-        val rest = recipe.steps.subList(done + 2, recipe.steps.size)
-        guestScenario(line, recipe.copy(launch = recipe.launch.copy(terminateExisting = false), steps = rest))
+        val resumed = recipe.launch.copy(terminateExisting = false)
+        guestScenario(line, recipe.copy(launch = resumed, steps = recipe.steps.subList(done + 2, final)))
         // A Login Items approval can lag the window's "ready": finish it the same way while the overview asks for it.
         if (found(line, BACKGROUND_NEEDED)) {
             guest(line, listOf("tap", "-t", "desktop", "--text", FINISH_SETUP, "--role", "button"))
@@ -47,13 +50,11 @@ class GuestOnboarding(
             answerUntilReady(line, timeoutMs)
             guest(line, listOf("tap", "-t", "desktop", "--text", "Back to Session", "--role", "button"))
         }
-        if (found(
-                line,
-                BACKGROUND_NEEDED,
-            )
-        ) {
+        if (found(line, BACKGROUND_NEEDED)) {
             throw ControlException(ErrorCode.ASSERTION_FAILED, "Setup finished, but This Mac still needs background approval.")
         }
+        // The recipe's final readiness assertion runs only after the late approval had its chance.
+        guestScenario(line, recipe.copy(launch = resumed, steps = recipe.steps.subList(final, recipe.steps.size)))
         return ControlJson.pretty.parseToJsonElement("""{"line":"${line.id}","ready":true}""").jsonObject
     }
 
@@ -130,6 +131,7 @@ class GuestOnboarding(
         const val RECIPE = "mac-unified-onboarding-desktop.json"
         const val SETUP_READY = "setup-ready"
         const val SETUP_DONE = "setup-done"
+        const val NO_FINISH_SETUP = "no-finish-setup"
         const val SET_UP = "Set up Posato"
         const val READY = "This Mac is ready."
         const val TRY_AGAIN = "Try again"

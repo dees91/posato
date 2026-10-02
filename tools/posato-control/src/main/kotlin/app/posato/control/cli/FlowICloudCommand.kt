@@ -39,27 +39,17 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         deadline: Long,
     ): Int {
         expand(backend)
-        if (linked(FlowSteps.labels(backend))) return 0
-        FlowSteps.run(backend, listOf(FlowSteps.reveal(button(SYNC_WITH_ICLOUD)), FlowSteps.tap(button(SYNC_WITH_ICLOUD))))
-        var presses = 1
+        var presses = 0
         while (System.currentTimeMillis() < deadline) {
-            Thread.sleep(POLL_MILLIS)
             val labels = FlowSteps.labels(backend)
-            when {
-                linked(labels) -> {
-                    return presses
-                }
-
-                CHECK_AGAIN in labels -> {
-                    FlowSteps.run(backend, listOf(FlowSteps.tap(button(CHECK_AGAIN))))
-                    presses++
-                }
-
-                SYNC_WITH_ICLOUD in labels -> {
-                    FlowSteps.run(backend, listOf(FlowSteps.tap(button(SYNC_WITH_ICLOUD))))
-                    presses++
-                }
+            if (linked(labels)) return presses
+            // A join already pending, also from a run that timed out, offers Check again instead of Sync with iCloud.
+            val next = listOf(CHECK_AGAIN, SYNC_WITH_ICLOUD).firstOrNull { it in labels }
+            if (next != null) {
+                FlowSteps.run(backend, listOf(FlowSteps.reveal(button(next)), FlowSteps.tap(button(next))))
+                presses++
             }
+            Thread.sleep(POLL_MILLIS)
         }
         throw timedOut("link")
     }
