@@ -162,12 +162,16 @@ private fun isSkipped(
     val projection = writer.projection()
     val intent = row.intent
     // A change to a set another device removed can never apply, so it is discarded rather than authored.
-    if (projection.pauseSetStatus(intent.setIdOf()) == PauseSetStatus.REMOVED) {
+    val status = projection.pauseSetStatus(intent.setIdOf())
+    if (status == PauseSetStatus.REMOVED) {
         return true
     }
+    // Only a live set shows its websites; a refused or not yet received set shows none, so its changes are
+    // authored and apply once it becomes live.
+    val live = status == PauseSetStatus.LIVE
     return when (intent) {
-        is StoredPolicyIntent.PresentDomain -> intent.domain in projection.pauseSetDomains(intent.setId)
-        is StoredPolicyIntent.RemoveDomain -> intent.domain !in projection.pauseSetDomains(intent.setId)
+        is StoredPolicyIntent.PresentDomain -> live && intent.domain in projection.pauseSetDomains(intent.setId)
+        is StoredPolicyIntent.RemoveDomain -> live && intent.domain !in projection.pauseSetDomains(intent.setId)
         is StoredPolicyIntent.PutSet -> projection.pauseSets.any { set -> set.setId == intent.setId && set.name == intent.name }
         is StoredPolicyIntent.RemoveSet -> false
         is StoredPolicyIntent.ChooseDefault -> projection.defaultPauseSetId == intent.setId
