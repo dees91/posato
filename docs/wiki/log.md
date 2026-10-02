@@ -2439,3 +2439,15 @@ to scope, feasibility, or delivery.
 - Refined the homepage proposal with consistent section headings, responsive
   download badges with 44-pixel minimum hit areas, and native demo playback
   controls. The provisional motto and local-only experiment boundary remain.
+
+## [2026-10-01] experiment | Short bolder hero video proposal
+
+- Added a separate 13-second hero concept with real Mac capture crops,
+  a deliberate Start click, a longer active-state hold and the open-interval
+  mark. This draft uses the existing reported active state instead of a new
+  browser-blocking capture. Original showcase outputs remain unchanged.
+- The opening shows saved websites. Eased crop movement, masked transitions
+  and a matching loop boundary replace hard cuts. Duration shares the Start
+  heading for 1.4 seconds; the active state arrives at 5.6 seconds.
+- Captures have a 36-pixel inset and more separation from their headings.
+  The opening composition sits lower to reduce unused space below it.

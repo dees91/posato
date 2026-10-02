@@ -372,3 +372,17 @@ export function sceneEvents(scene: StoryScene): number[] {
 export function sceneAssets(scene: StoryScene): string[] {
   return [...(scene.mac?.captures ?? []), ...(scene.iphone?.captures ?? [])];
 }
+
+// Local website concept. The original Hero and Walkthrough remain reproducible.
+export const BOLDER_HERO = {
+  frames: 390,
+  posterFrame: 240,
+  transitionFrames: 20,
+  closeTransitionFrames: 28,
+  loopTransitionFrames: 24,
+  choice: { start: 0, end: 72, capture: "mac-websites.png", headline: "Choose what\nto pause.", crop: [328, 300], pose: [770, 370, 720, 420, 1.35], title: [430, 96] },
+  duration: { start: 72, end: 114, capture: "mac-duration-45.png", headline: "Start your pause.", crop: [300, 80], pose: [250, 320, 1100, 600, 1.1], title: [150, 96] },
+  start: { start: 114, end: 168, capture: "mac-review-45.png", headline: "Start your pause.", crop: [300, 150], pose: [250, 320, 1100, 600, 1.1], title: [150, 96], click: 156 },
+  active: { start: 168, end: 300, capture: "mac-active-45.png", headline: "A little space.", crop: [300, 40], pose: [250, 320, 1100, 560, 1.1], title: [150, 96] },
+  close: { start: 300, end: 390, headline: "A little space.\nFor what matters." },
+} as const;

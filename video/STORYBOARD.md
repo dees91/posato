@@ -81,3 +81,38 @@ Names are the files in `public/`; provenance is in `README.md`.
 2. Refresh only the captures whose state changed, through `capture/`.
 3. Calibrate targets in Remotion Studio, then `npm run media`.
 4. Review a contact sheet, the GIF's first and last frames, and the site hero.
+
+
+## Local bolder proposal (2026-10-01)
+
+`BolderHero` is a separate 390-frame, 13-second website experiment. It uses
+real Mac captures, the existing palette and open-interval mark, large editorial
+crops, a deliberate Start click, and a long quiet active-state hold.
+
+| Frames | Content |
+| --- | --- |
+| 0–72 | Tight crop of the saved websites, "Choose what to pause." |
+| 72–114 | Brief duration selection under "Start your pause."; time remains only in the UI |
+| 114–168 | Review and Start; the heading holds steady, click at frame 156 |
+| 168–300 | Restrictions active, end time and early-end action; shared crop settles |
+| 300–390 | "A little space. For what matters." and the open-interval mark |
+
+This quick proposal uses the existing active-session capture in place of the
+proposed browser-blocking shot. It demonstrates the reported application state,
+not a newly recorded enforcement attempt. It makes no cross-device activation
+claim. The existing Hero, walkthrough, README GIF and social image are unchanged.
+The poster uses frame 240. Reproduce the proposal with `npm run render:bolder`.
+Adjacent captures share an animated crop with 20-frame eased masked transitions.
+Headings preserve their line breaks and fade out before the next text enters.
+The closing composition enters over 28 frames, and the final 24 frames use a matching mask to return
+to the exact opening composition so the loop boundary has no cut.
+The first crop excludes the empty input and feedback from the earlier add action.
+
+The duration and review form one action under a continuous heading. The selected
+time is an example in the application, not a marketing claim. The active state
+arrives at 5.6 seconds and holds for 4.4 seconds before the closing line.
+
+Every capture has a 36-pixel outer inset, including during masked transitions.
+The opening pair sits lower in the canvas to balance the space below it.
+The action scenes leave 70 pixels between the headline line box and capture;
+review retains space above its introductory line and below the final item row.

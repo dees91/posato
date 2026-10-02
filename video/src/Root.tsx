@@ -1,3 +1,5 @@
+import { BolderHero } from "./BolderHero";
+import { BOLDER_HERO } from "./storyboard";
 import { Composition, Still } from "remotion";
 import { SocialPreview } from "./SocialPreview";
 import { StepStill } from "./StepStill";
@@ -6,6 +8,7 @@ import { HERO, SOCIAL_PREVIEW, STILLS, totalFrames, VIDEO, WALKTHROUGH } from ".
 
 export const RemotionRoot = () => (
   <>
+    <Composition id="BolderHero" component={BolderHero} durationInFrames={BOLDER_HERO.frames} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
     <Composition id="Hero" component={Hero} durationInFrames={totalFrames(HERO)} fps={VIDEO.fps} width={VIDEO.width} height={VIDEO.height} />
     <Composition
       id="Walkthrough"
