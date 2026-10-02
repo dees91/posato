@@ -2427,35 +2427,15 @@ to scope, feasibility, or delivery.
   now removes both table versions, so the app reports a platform failure (a
   retrying scheduled pause) and the monitor extension starts nothing.
   `flow schedule` now scrolls to the time buttons on small iPhones.
-## [2026-10-01] experiment | Local bolder website proposal
 
-- Prepared a local-only homepage variant with larger typography, wider product
-  imagery, a visible mobile poster, and the provisional line "A little space.
-  For what matters." from the existing onboarding. This explores backlog
-  `WEB-002`; it does not accept a new product line or activate a release row.
+## [2026-10-02] delivery | New homepage and product line (WEB-002)
 
-## [2026-10-01] experiment | Polish the local website proposal
-
-- Refined the homepage proposal with consistent section headings, responsive
-  download badges with 44-pixel minimum hit areas, and native demo playback
-  controls. The provisional motto and local-only experiment boundary remain.
-
-## [2026-10-01] experiment | Short bolder hero video proposal
-
-- Added a separate 13-second hero concept with real Mac capture crops,
-  a deliberate Start click, a longer active-state hold and the open-interval
-  mark. This draft uses the existing reported active state instead of a new
-  browser-blocking capture. Original showcase outputs remain unchanged.
-- The opening shows saved websites. Eased crop movement, masked transitions
-  and a matching loop boundary replace hard cuts. Duration shares the Start
-  heading for 1.4 seconds; the active state arrives at 5.6 seconds.
-- Captures have a 36-pixel inset and more separation from their headings.
-  The opening composition sits lower to reduce unused space below it.
-
-## [2026-10-02] experiment | Explain private cross-device sync in the hero
-
-- Extended the homepage film to 24 seconds with existing Mac and iPhone
-  website captures and a separate privacy scene. Copy describes shared websites,
-  sessions and schedules through iCloud, on-device encryption, private iCloud
-  storage, and the absence of a Posato account or server, following PRIVACY.md.
-  Paired captures illustrate the feature without demonstrating delivery latency.
+- `user-confirmed`: **A little space. For what matters.** replaces **Pause.
+  Then choose.** in `DESIGN.md`, the site, the README, and About Posato; the
+  App Store subtitle follows in `DOCS-004`. The homepage keeps the bolder
+  experiment's layout; on a phone the poster sits under the lead, so even a
+  375 x 667 screen shows the product first.
+- A 24-second hero of real Mac captures, then sync and privacy scenes,
+  replaces the old `Hero` composition as the site video and the README GIF.
+  It shows the reported active state, not a recorded blocking attempt, and
+  its paired captures do not demonstrate delivery latency.
