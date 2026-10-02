@@ -151,6 +151,6 @@ internal suspend fun SessionTransitionOwner.recompose(composition: SessionCompos
         return
     }
     if (composition.differs(active.record)) {
-        retry()
+        retry(clearFirst = false)
     }
 }

@@ -239,7 +239,11 @@ internal class SessionTransitionOwner(
         }
     }
 
-    fun retry() {
+    /**
+     * Applies the running session again. [clearFirst] false keeps what the platform holds while the new
+     * request replaces it, which a set edit needs: on iPhone that store is the record of what the session holds.
+     */
+    fun retry(clearFirst: Boolean = true) {
         if (mutableView.value.busy) {
             return
         }
@@ -254,7 +258,7 @@ internal class SessionTransitionOwner(
                 if (active != null && pendingNativeExpiry == SessionTag(active.record)) {
                     reconcile(SessionTag(active.record), active.record, frozenStartSet)
                 } else if (active != null) {
-                    reapplyCurrent(active.record, SessionTag(active.record), frozenStartSet)
+                    reapplyCurrent(active.record, SessionTag(active.record), frozenStartSet, clearFirst)
                 } else {
                     clearAfterEnd(tagOf(fresh))
                 }
@@ -555,6 +559,7 @@ internal class SessionTransitionOwner(
         record: SessionRecord,
         tag: SessionTag,
         frozen: FrozenStartSet?,
+        clearFirst: Boolean = true,
     ) {
         if (!ensureApplicableBeforeApply(stateMutex, store, clock, tag, record, ::settleForTag)) {
             return
@@ -562,7 +567,7 @@ internal class SessionTransitionOwner(
         val targets = composition.targetsFor(record, loadTargets)
         val requested = targets.toEnforcedSet()
         portMutex.withLock {
-            if (!prepareApply(record, tag, clear = true)) {
+            if (!prepareApply(record, tag, clear = clearFirst)) {
                 null
             } else {
                 confirmedClear = false
