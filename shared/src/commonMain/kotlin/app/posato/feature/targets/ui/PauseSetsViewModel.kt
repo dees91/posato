@@ -140,11 +140,17 @@ internal class PauseSetsViewModel(
         if (!removed) {
             return PauseSetsFailure.SAVE_FAILED
         }
-        // A failed read is not an empty workspace: the choices of the surviving sets stay, and launch
-        // preparation removes the deleted set's choices later.
-        val remaining = (inputs.store.read() as? LocalPolicyResult.Success)?.value?.sets?.sets ?: return null
-        inputs.applicationMappings.retainOnly(remaining.mapTo(mutableSetOf()) { set -> set.id.choiceSet() })
+        keepSurvivingChoices()
         return null
+    }
+
+    /**
+     * Keeps app choices for the sets left after a deletion. A failed read is not an empty workspace: the
+     * choices stay, and launch preparation removes the deleted set's choices later.
+     */
+    private suspend fun keepSurvivingChoices() {
+        val remaining = (inputs.store.read() as? LocalPolicyResult.Success)?.value?.sets?.sets ?: return
+        inputs.applicationMappings.retainOnly(remaining.mapTo(mutableSetOf()) { set -> set.id.choiceSet() })
     }
 
     private fun mutate(

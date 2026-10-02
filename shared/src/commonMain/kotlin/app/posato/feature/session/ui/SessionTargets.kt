@@ -103,3 +103,9 @@ internal fun SessionTargetsState.nameOf(setId: PauseSetId?): String? {
 internal fun SessionTargetsState.partSet(active: LocalSessionStatus.Active?): PauseSetId? {
     return active?.record?.setId ?: setId
 }
+
+/** Setup can choose any set, so Start is offered when any set has websites or apps, not only the default. */
+internal fun SessionUiState.hasPausableItems(): Boolean {
+    return displayDomains().isNotEmpty() || (displayApplicationCount() ?: 0) > 0 ||
+        pauseSets.any { set -> set.websiteCount > 0 || (set.applicationCount ?: 0) > 0 }
+}
