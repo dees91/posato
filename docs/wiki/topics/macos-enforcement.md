@@ -762,9 +762,13 @@ perform.
     about 74 wakeups a second and about 95 MB more than releasing it.
     `MACOS-013` releases the window on close and hoists navigation and window
     state.
-- **Helper CPU.** The first enforced session in a fresh clone once kept the
-  helper at about 60% CPU for 14 minutes. The cause is `open` (idea 18,
-  `MACOS-021`).
+- **Helper CPU.** `observed` (2026-10-02, `MACOS-021`): through 1.2.0 the
+  helper spins one core while any proxied upstream connection is open.
+  `DirectTCPConnection` kept its dispatch read and write sources resumed, and
+  a connected socket is always writable. System services open such tunnels
+  in the first session of a fresh clone, which explains the 14-minute spike
+  in `MACOS-012`. A Mac with long-lived browser connections stays at 100%.
+  The fix runs each source only while a read or write is pending.
 
 ## Standing Apply grant
 

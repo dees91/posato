@@ -12,6 +12,10 @@ final class DirectTCPConnection: @unchecked Sendable {
   private var descriptor: Int32 = -1
   private var readSource: DispatchSourceRead?
   private var writeSource: DispatchSourceWrite?
+  // A connected socket stays writable and unread bytes stay readable, so a resumed source fires again at once
+  // after a handler that does nothing. Each source runs only while there is work for it (MACOS-021).
+  private var readSourceSuspended = false
+  private var writeSourceSuspended = false
   private var pendingRead: (maximumLength: Int, completion: (Data?, Bool, Error?) -> Void)?
   private var pendingWrites: [PendingWrite] = []
   private var cancelled = false
@@ -87,8 +91,19 @@ final class DirectTCPConnection: @unchecked Sendable {
     cancelled = true
     pendingRead = nil
     pendingWrites.removeAll()
-    readSource?.cancel()
-    writeSource?.cancel()
+    // Releasing a suspended source is a libdispatch crash, so resume it before cancelling.
+    if let readSource {
+      if readSourceSuspended {
+        readSource.resume()
+      }
+      readSource.cancel()
+    }
+    if let writeSource {
+      if writeSourceSuspended {
+        writeSource.resume()
+      }
+      writeSource.cancel()
+    }
     readSource = nil
     writeSource = nil
     if descriptor >= 0 {
@@ -112,9 +127,44 @@ final class DirectTCPConnection: @unchecked Sendable {
     self.writeSource = writeSource
     readSource.resume()
     writeSource.resume()
+    updateReadInterest()
+    updateWriteInterest()
+  }
+
+  private func updateReadInterest() {
+    guard !cancelled, let readSource else {
+      return
+    }
+    let wanted = pendingRead != nil
+    guard readSourceSuspended == wanted else {
+      return
+    }
+    if wanted {
+      readSource.resume()
+    } else {
+      readSource.suspend()
+    }
+    readSourceSuspended = !wanted
+  }
+
+  private func updateWriteInterest() {
+    guard !cancelled, let writeSource else {
+      return
+    }
+    let wanted = !pendingWrites.isEmpty
+    guard writeSourceSuspended == wanted else {
+      return
+    }
+    if wanted {
+      writeSource.resume()
+    } else {
+      writeSource.suspend()
+    }
+    writeSourceSuspended = !wanted
   }
 
   private func handleReadable() {
+    defer { updateReadInterest() }
     guard let pendingRead, !cancelled, descriptor >= 0 else {
       return
     }
@@ -133,6 +183,7 @@ final class DirectTCPConnection: @unchecked Sendable {
   }
 
   private func handleWritable() {
+    defer { updateWriteInterest() }
     guard !cancelled, descriptor >= 0 else {
       return
     }
@@ -163,7 +214,9 @@ final class DirectTCPConnection: @unchecked Sendable {
       }
     }
   }
+}
 
+extension DirectTCPConnection {
   private static func connectSocket(
     host: String,
     port: UInt16,

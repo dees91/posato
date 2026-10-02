@@ -2404,3 +2404,14 @@ to scope, feasibility, or delivery.
   websites. Gradle gains `qualityLint`, and the merge checklist asks for a
   rebase onto the current `main` with `quality` on the tip. A test time
   control is backlog row `QUALITY-012` (idea 26).
+
+## [2026-10-02] implementation | Helper CPU spin on open proxied connections
+
+- `observed` (`MACOS-021`): the first-session helper CPU spike from
+  `MACOS-012` recurs, including on a Mac running 1.2.0, where the helper held
+  one core for the whole session. `DirectTCPConnection` never suspended its
+  dispatch sources, so every open upstream connection spun the proxy queue.
+  System services open such connections in a fresh clone's first session.
+- The fix runs each source only while a read or write is pending; a fresh
+  clone's first session dropped from 100% of a core to under 1%. It ships in
+  1.3 (`user-confirmed`).

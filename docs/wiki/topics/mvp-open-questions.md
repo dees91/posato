@@ -946,6 +946,11 @@ below. This queue retains idea provenance without expanding the original MVP.
     `user-confirmed` (2026-10-02): the maintainer suspects a one-off load from
     parallel machine-learning work on the host; `MACOS-021` takes a short
     measurement on a quiet host and closes if the spike does not recur.
+    `observed` (2026-10-02, `MACOS-021`): the spike recurs, including on the
+    maintainer's Mac on 1.2.0. The cause is dispatch sources that
+    `DirectTCPConnection` never suspends, so every open proxied connection
+    spins the helper. Fixed for 1.3; see
+    [macOS enforcement](macos-enforcement.md).
 19. **One guided Mac setup for sessions and schedules.**
     `user-confirmed` (2026-09-26, latest PR #92 follow-up): replace separate
     onboarding switches with one setup action that explains blocking, quiet
