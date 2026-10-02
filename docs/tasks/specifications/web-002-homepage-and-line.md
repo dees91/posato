@@ -1,8 +1,8 @@
 # `WEB-002`: A more inviting homepage and product line
 
 - **Review tier:** Standard
-- **Tier reason:** Public site, copy, and media only; no application code,
-  privacy boundary, or release operation changes.
+- **Tier reason:** Public site, copy, and media, plus one line of copy on
+  About Posato; no privacy boundary or release operation changes.
 - **Dependencies:** None (release 1.3, wave 4). `DOCS-004` waits for this row.
 - **Integration group:** PR-WEB-HOMEPAGE
 - **Authority:** [Release roadmap](../release-roadmap.md) revision 16, row
@@ -21,8 +21,12 @@ everywhere it appears.
   motion, a contrasting privacy section, and the provisional line "A little
   space. For what matters."
 - The maintainer chooses the final line and layout from proposals; the line
-  then changes in `DESIGN.md`, the site title and hero, and the README. The
-  App Store subtitle changes with the 1.3 store record in `DOCS-004`.
+  then changes in `DESIGN.md`, the site title and hero, the README, and the
+  About Posato screen. The App Store subtitle changes with the 1.3 store
+  record in `DOCS-004`.
+- The new hero replaces the old `Hero` composition entirely: it is the
+  site video and the source of the README GIF. The walkthrough, stills, and
+  social preview stay for `DOCS-004`.
 - Public copy passes the clarity review, uses no em dash, and stays within
   `PRIVACY.md` and the availability page; the hero shows only behavior the
   captures prove.
@@ -39,7 +43,7 @@ everywhere it appears.
 - `AC-03` — On a wide screen the hero plays, and the poster appears with
   reduced motion or before playback; no empty frame shows.
 - `AC-04` — The chosen line is the only product line in `DESIGN.md`, the
-  site, and the README.
+  site, the README and its GIF, and About Posato.
 
 ## Verification
 
@@ -47,11 +51,17 @@ everywhere it appears.
 
 - The Astro production build, and the built site checked at phone and wide
   widths with reduced motion on and off.
+- The media checks (`npm run check`, `npm run verify`) after rendering the
+  hero, its GIF, and the site video.
+- About Posato driven through `posato-control` in a Tart VM and on the test
+  iPhone.
 
 ## Decisions or blockers
 
-- Merging deploys `posato.app`, because Cloudflare Pages builds `website/`
-  from `main`; the maintainer decides whether it merges before or with
-  `RELEASE-005`.
+- `user-confirmed` (2026-10-02): the line "A little space. For what
+  matters." and the experiment's layout; About Posato changes here; the old
+  hero is removed and the new one also feeds the README GIF; the PR merges
+  right after review instead of waiting for `RELEASE-005`, so merging
+  deploys `posato.app` (Cloudflare Pages builds `website/` from `main`).
 - The four experiment entries in `docs/wiki/log.md` fold into one entry at
   closeout.
