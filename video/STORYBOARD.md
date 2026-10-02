@@ -1,19 +1,19 @@
 # Posato showcase storyboard
 
-- **Revision:** 3 (2026-10-02, `WEB-002`: the new hero and product line)
+- **Revision:** 4 (2026-10-02, `DOCS-004`: pause sets in Posato 1.3)
 - **Format:** `Hero` 24 seconds and `Walkthrough` 52.6 seconds, 1600 x 1000, 30 fps, silent. The hero loops seamlessly as the README GIF and the posato.app hero video; the walkthrough is the GitHub attachment.
 - **Audience:** someone meeting Posato on GitHub or posato.app who has ten seconds to decide whether it is for them.
 - **Executable projection:** `src/storyboard.ts`. Copy, frame numbers, targets, and captures live there; `src/storyboard.test.ts` enforces this document's rules.
 
 ## Purpose
 
-Show, without sound and at 960 pixels wide, that Posato is a pause you set up yourself: choose exact websites, choose apps per device, pick a duration, start, and see restrictions active on a Mac and an iPhone; or plan pauses ahead with a schedule that starts on its own. Every step is a visible click or tap on a real capture; nothing is implied by a caption alone. The hero is the short version: choose, start, restrictions active, then optional sync and private iCloud storage.
+Show, without sound and at 960 pixels wide, that Posato is a pause you set up yourself: keep exact websites and per-device apps in a pause set, pick a duration, start, and see restrictions active on a Mac and an iPhone; or plan pauses ahead with a schedule that starts on its own. Every step is a visible click or tap on a real capture; nothing is implied by a caption alone. The hero is the short version: choose, start, restrictions active, then optional sync and private iCloud storage.
 
 ## Rules
 
 The first rule covers every output. The rest govern the walkthrough and the stills; the hero section below states how the hero differs.
 
-- Real captures with synthetic choices only: `example.com`, `example.net`, the built-in Chess application on the Mac, one unnamed built-in app on the iPhone, and two schedules with neutral names (`Deep work`, `Evening reading`). No account, notification, real domain, device name, or home path may appear.
+- Real captures with synthetic choices only: two pause sets with neutral names (`Focus`, the default, and `Evening`), `example.com`, `example.net`, the built-in Chess application on the Mac, one unnamed built-in app on the iPhone, and two schedules with neutral names (`Deep work`, `Evening reading`). No account, notification, real domain, device name, or home path may appear.
 - Mac and iPhone captures sit in the same generic bezels as posato.app: a graphite display bezel on a moss-to-sage wallpaper for the Mac, a rounded graphite phone bezel for the iPhone, each with a one-pixel outline. No Apple artwork, base, or shadow.
 - Actions are shown by a springy arrow cursor with a click ring on the Mac and a fingertip dot with one ring on the iPhone. Captures crossfade over eight frames at the click; native pickers and the time wheels are elided. Since 1.2, a set-up Mac starts a pause without an administrator prompt, so none is elided.
 - A callout pill names each action while it happens. No stretch longer than 90 frames passes without a visible change.
@@ -63,7 +63,7 @@ review retains space above its introductory line and below the final item row.
 | # | Scene | Frames | Layout | Intent |
 | --- | --- | --- | --- | --- |
 | 1 | `open` | 0-90 | title | The promise plus the three steps. |
-| 2 | `websites` | 84-354 | Mac | From Session to Paused items; add a domain. |
+| 2 | `websites` | 84-354 | Mac | From Session to Pause sets; open Focus; add a domain. |
 | 3 | `apps-mac` | 348-528 | Mac | Apps tab, Choose apps, Chess appears. |
 | 4 | `apps-iphone` | 522-672 | iPhone leads | The same choice on the iPhone. |
 | 5 | `duration` | 666-876 | Mac | Start a session, pick 45 minutes, review. |
@@ -80,26 +80,28 @@ Names are the files in `public/`; provenance is in `README.md`.
 | Capture | State |
 | --- | --- |
 | `mac-session-inactive` | Session with no active session, the two websites and one application counted; also the state after ending early |
-| `mac-websites-empty` | Paused items, Websites, only example.com, empty field |
+| `mac-pause-sets` | Pause sets: Focus (default) and Evening, each with its schedule |
+| `mac-websites-empty` | Focus, Websites, only example.com, empty field |
 | `mac-websites-typed` | example.net typed, Add enabled |
 | `mac-websites-added` | both domains saved, with the added-count hint after Add |
 | `mac-websites` | both domains saved, field at rest (stills and the site) |
 | `mac-apps-empty` | Apps tab, Make room beyond the browser. |
 | `mac-apps` | Chess chosen |
-| `mac-duration` | setup with the 25-minute default |
+| `mac-duration` | setup with the default set Focus and the 25-minute default |
 | `mac-duration-45` | 45 minutes selected |
-| `mac-review-45` | One last look with the end time |
-| `mac-active-45` | Session active, Restrictions active. |
+| `mac-review-45` | One last look with the end time and Set: Focus |
+| `mac-active-45` | Session active, Restrictions active., Set: Focus |
 | `mac-end-confirm` | Ready to return? |
 | `mac-schedules-empty` | Schedules with no plan yet |
-| `mac-schedule-editor` | a new schedule named Deep work, weekdays 09:00 to 11:00 |
+| `mac-schedule-editor` | a new schedule named Deep work with the set Focus, weekdays 09:00 to 11:00 |
 | `mac-schedules-one` | Deep work saved, alone, with its next run (the video's Save result) |
-| `mac-schedules` | Deep work and Evening reading saved, each with its next run (the still and the site) |
-| `mac-scheduled-active` | Session during Evening reading: a scheduled pause is running |
-| `iphone-websites` | Paused items, Websites, both domains |
+| `mac-schedules` | Deep work (Set: Focus) and Evening reading (Set: Evening) saved, each with its next run (the still and the site) |
+| `mac-scheduled-active` | Session during Evening reading: a scheduled pause is running with Set: Evening |
+| `iphone-websites` | Focus, Websites, both domains |
+| `iphone-pause-sets` | Pause sets: Focus (default) and Evening |
 | `iphone-apps-empty` | Apps tab, nothing chosen |
 | `iphone-apps` | one application chosen |
-| `iphone-duration-45` | setup with 45 minutes selected |
+| `iphone-duration-45` | setup with the set Focus and 45 minutes selected |
 | `iphone-active-45` | Session active |
 | `iphone-schedules` | Schedules with Deep work saved |
 

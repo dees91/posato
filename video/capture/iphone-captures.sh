@@ -3,12 +3,13 @@
 # and captures the states the storyboard needs, without a hand on the phone.
 # Run from the repository root after `build -t device --driver`, a fresh
 # `install -t device`, `launch -t device`, and `first-install-skip.json`, with
-# the phone in Dark Mode. The fixture is the two synthetic domains, one
-# built-in application (Calculator, which Posato shows only as a count), and
-# one schedule named Deep work, which `schedules` deletes again so the phone
-# is not restricted on weekday mornings.
+# the phone in Dark Mode. The fixture is two pause sets, Focus (the first set,
+# renamed, with the two synthetic domains and one built-in application:
+# Calculator, which Posato shows only as a count) and Evening (example.net),
+# and one schedule named Deep work, which `schedules` deletes again so the
+# phone is not restricted on weekday mornings.
 #
-#   video/capture/iphone-captures.sh websites    # Paused items with both domains
+#   video/capture/iphone-captures.sh websites    # Focus with both domains, then the Pause sets list
 #   video/capture/iphone-captures.sh apps        # Screen Time access, Apps tab: empty, then one application
 #   video/capture/iphone-captures.sh session     # 45 minutes selected, active session, ended early
 #   video/capture/iphone-captures.sh schedules   # Schedules with Deep work, then deleted
@@ -19,7 +20,27 @@ SCENARIOS="tools/posato-control/fixtures/scenarios"
 pc() { "${PC}" "$1" -t device "${@:2}"; }
 ok() { python3 -c 'import json,sys; d=json.load(sys.stdin); print(d["artifacts"] or d["ok"]); sys.exit(0 if d["ok"] else 1)'; }
 shot() { echo "capture ${1}"; pc screenshot --name "$1" | ok; }
-ready() { pc wait --for exists --text "Paused items" --role button --timeout-seconds 60 | ok; }
+ready() { pc wait --for exists --text "Pause sets" --role button --timeout-seconds 60 | ok; }
+open_sets() {
+  pc tap --text "Pause sets" --role button | ok
+  pc wait --for exists --text "New set" --role button --timeout-seconds 60 | ok
+}
+open_focus() {
+  open_sets
+  pc tap --text-contains "Focus, Default" --role button | ok
+  pc wait --for exists --text "Back to pause sets" --role button --timeout-seconds 60 | ok
+}
+# Adds domains in the open set; Done closes the entry and the keyboard.
+# The keyboard covers later rows, so the domains are checked after Done.
+add_domains() {
+  for domain in "$@"; do
+    pc type --role textField --input "${domain}" --clear --submit | ok
+  done
+  pc tap --text "Done" --role button | ok
+  for domain in "$@"; do
+    pc wait --for exists --text-contains "${domain}" --role text --timeout-seconds 30 | ok
+  done
+}
 # Runs scenario steps given as JSON, for steps the single commands lack (scroll, system scopes).
 steps() {
   printf '{"version":1,"launch":{"terminateExisting":false},"defaults":{"timeoutSeconds":30},"steps":%s}' "$1" | pc run --scenario - | ok
@@ -33,27 +54,35 @@ allow_notices() {
 
 websites() {
   ready
-  pc tap --text "Paused items" --role button | ok
-  pc wait --for exists --text-contains "Websites" --role button --timeout-seconds 60 | ok
-  pc tap --text-contains "Websites" --role button | ok
-  for domain in example.com example.net; do
-    pc type --role textField --input "${domain}" --clear --submit | ok
-    pc wait --for exists --text-contains "${domain}" --role text --timeout-seconds 30 | ok
-  done
-  # Done closes the entry and the keyboard, which covers the tab bar.
-  pc tap --text "Done" --role button | ok
-  pc tap --text "Session" --role button | ok
-  pc tap --text "Paused items" --role button | ok
+  open_sets
+  pc tap --text "More actions for My set" --role button | ok
+  pc tap --text "Rename" --role button | ok
+  pc type --role textField --input "Focus" --clear | ok
+  pc tap --text "Save" --role button | ok
+  pc wait --for exists --text-contains "Focus, Default" --role button --timeout-seconds 60 | ok
+  pc tap --text-contains "Focus, Default" --role button | ok
+  pc wait --for exists --text "Back to pause sets" --role button --timeout-seconds 60 | ok
+  add_domains example.com example.net
+  pc tap --text "Back to pause sets" --role button | ok
+  pc tap --text-contains "Focus, Default" --role button | ok
   pc wait --for exists --text-contains "example.net" --role text --timeout-seconds 30 | ok
   shot iphone-websites
+  pc tap --text "Back to pause sets" --role button | ok
+  pc tap --text "New set" --role button | ok
+  pc type --role textField --input "Evening" --clear | ok
+  pc tap --text "Save" --role button | ok
+  pc wait --for exists --text "Back to pause sets" --role button --timeout-seconds 60 | ok
+  add_domains example.net
+  pc tap --text "Back to pause sets" --role button | ok
+  pc wait --for exists --text-contains "Evening, " --role button --timeout-seconds 60 | ok
+  shot iphone-pause-sets
   pc tap --text "Session" --role button | ok
 }
 
 apps() {
   ready
-  pc tap --text "Paused items" --role button | ok
-  pc wait --for exists --text-contains "Apps" --role button --timeout-seconds 60 | ok
-  pc tap --text-contains "Apps" --role button | ok
+  open_focus
+  pc tap --text-contains "Apps," --role button | ok
   if pc find --text-contains "Allow Screen Time access" | python3 -c 'import json,sys; sys.exit(0 if json.load(sys.stdin)["result"] else 1)'; then
     # Choose apps asks for Screen Time first; the system dialog closes if the
     # driver starts a new run, so the request and the answers share one run.
@@ -62,6 +91,10 @@ import json, sys
 scenario = json.load(open(sys.argv[1]))
 scenario["steps"][0] = {"name": "request", "action": "tap", "query": {"text": "Choose apps", "role": "button"}}
 scenario["steps"] = [s for s in scenario["steps"] if s["name"] not in ("allowed", "allowed-shot")]
+# Face ID can approve without the passcode keypad.
+for step in scenario["steps"]:
+    if step["name"] == "passcode":
+        step["optional"] = True
 print(json.dumps(scenario))
 PY
     # The picker opens after consent; close it to capture the empty tab first.
@@ -76,6 +109,7 @@ PY
     {"name":"save","action":"tap","query":{"text":"Save","role":"button"}},
     {"name":"chosen","action":"waitFor","state":"exists","query":{"textContains":"Apps, 1","role":"button"}}]'
   shot iphone-apps
+  pc tap --text "Back to pause sets" --role button | ok
   pc tap --text "Session" --role button | ok
 }
 
@@ -84,10 +118,12 @@ session() {
   pc tap --text "Session" --role button | ok
   pc wait --for exists --text "Start a session" --role button --timeout-seconds 60 | ok
   pc tap --text "Start a session" --role button | ok
-  pc wait --for exists --text "Review session" --role button --timeout-seconds 60 | ok
+  # The Pause set row pushes Review session below the fold on a phone.
+  pc wait --for exists --text "45 min" --role button --timeout-seconds 60 | ok
   pc tap --text "45 min" --role button | ok
   shot iphone-duration-45
-  pc tap --text "Review session" --role button | ok
+  steps '[{"name":"review-reveal","action":"scrollTo","query":{"text":"Review session","role":"button"}},
+    {"name":"review","action":"tap","query":{"text":"Review session","role":"button"}}]'
   pc wait --for exists --text "Start this pause" --role button --timeout-seconds 60 | ok
   pc tap --text "Start this pause" --role button | ok
   allow_notices

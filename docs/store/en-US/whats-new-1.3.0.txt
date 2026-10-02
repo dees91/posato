@@ -1,0 +1,6 @@
+- Pause sets: keep websites and apps in named sets, such as one for work and one for evenings, and choose a set for each session or schedule. Your current choices become your first set.
+- When pauses overlap, Posato pauses everything in their sets, within each device's limits, and each item stays paused until the last pause that includes it ends.
+- Swipe from the left edge to go back.
+- A schedule you change follows its new times on every device, also after it ended earlier that day.
+- A session you start or end on your iPhone reaches your other devices without Sync now.
+- If you use Posato on more than one device, update all of them: devices on an earlier version stop syncing until they update.
