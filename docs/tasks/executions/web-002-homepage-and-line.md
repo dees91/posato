@@ -56,9 +56,13 @@
 - Astro production build with no inline styles. The built site was checked
   at 375 x 667, 390 x 844, and 1440 x 900 with reduced motion on and off.
   Support keeps its styles from `main`.
-- About Posato through `posato-control`:
-  - Tart VM: the `licenses` scenario passed.
-  - Test iPhone: About showed the new line in three runs. Each run then
-    stopped at a different later step (36, 24, 12) while scrolling a long
-    license document. That is device-driver flakiness, not an app defect;
-    the maintainer chose to leave it unrecorded.
+- About Posato through `posato-control` at `862a66b`, with a one-off
+  scenario that opens About from Session and asserts that the text "A little
+  space. For what matters." exists, that "Pause. Then choose." is absent, and
+  that Back leaves About:
+  - Tart VM (`--vm primary`, after `first-install-skip.json`): passed, run
+    `20261002-154540-fe05`.
+  - Test iPhone (`-t device`): passed, run `20261002-154613-c553`.
+  - An earlier `licenses` scenario run on the iPhone showed the new line, but
+    it stopped later while scrolling a long license document, at a different
+    step each time. That is device-driver flakiness, unrelated to this change.
