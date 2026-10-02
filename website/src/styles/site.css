@@ -9,7 +9,7 @@
   --outline-variant: #dedfd5;
   --outline: #a3afa2;
   --bezel: #0f1411;
-  --content-max: 51.25rem;
+  --content-max: 76rem;
   font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   color: var(--ink);
   background: var(--surface);
@@ -48,6 +48,11 @@ body {
   display: flex;
   flex-direction: column;
   overflow-wrap: break-word;
+}
+
+::selection {
+  color: var(--surface);
+  background: var(--ink);
 }
 
 a {
@@ -399,4 +404,53 @@ code {
 
 .repository:hover {
   color: var(--primary);
+}
+
+/* Information pages share the site frame while keeping body copy readable. */
+main:has(> .prose) {
+  padding-top: 3.5rem;
+  padding-bottom: 5rem;
+}
+
+main > .prose {
+  max-width: none;
+}
+
+main > .prose > :not(h1) {
+  max-width: 72ch;
+}
+
+main > .prose h1 {
+  max-width: 22ch;
+  margin-bottom: 2.5rem;
+  font-size: clamp(3rem, 5.5vw, 5rem);
+  font-weight: 600;
+  line-height: 1.06;
+  letter-spacing: -0.04em;
+}
+
+main > .prose h2 {
+  margin-top: 3.5rem;
+  font-size: clamp(1.625rem, 2.5vw, 2rem);
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+@media (max-width: 700px) {
+  .site-header nav {
+    gap: 0.75rem;
+  }
+
+  main:has(> .prose) {
+    padding-block: 1.5rem 3rem;
+  }
+
+  main > .prose h1 {
+    margin-bottom: 2rem;
+    font-size: clamp(2.75rem, 10vw, 4rem);
+  }
+
+  main > .prose h2 {
+    margin-top: 2.5rem;
+  }
 }

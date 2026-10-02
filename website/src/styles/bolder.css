@@ -1,13 +1,4 @@
-/* Local design experiment. Keep the shared information pages unchanged. */
-.bolder {
-  --content-max: 76rem;
-}
-
-.bolder ::selection {
-  color: var(--surface);
-  background: var(--ink);
-}
-
+/* Homepage composition; the shared site frame lives in site.css. */
 .bolder main {
   padding-top: 0;
 }
@@ -170,10 +161,6 @@
 }
 
 @media (max-width: 700px) {
-  .bolder .site-header nav {
-    gap: 0.75rem;
-  }
-
   .bolder .hero {
     padding-block: 1.5rem 3rem;
     gap: 2rem;
