@@ -176,6 +176,10 @@ posato.control.devicePasscodeKeychainAccount=<any-label>
 On the test iPhone, enable Settings → Developer → Enable UI Automation. The
 first driver run after that, and the first after each restart, shows a
 passcode request for XCTest on the phone; its owner enters it once.
+Also set Settings → Display & Brightness → Auto-Lock to Never: a locked
+screen makes every driver run fail with `DEVICE_AUTOMATION_LOCKED`, and a
+phone that locks during a pause between runs stops an unattended
+verification until someone unlocks it.
 
 ## Running a verification
 
