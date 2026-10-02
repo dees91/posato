@@ -1069,6 +1069,17 @@ below. This queue retains idea provenance without expanding the original MVP.
     `user-confirmed` (2026-09-30): accepted for 1.3 as an internal known
     limit; an atomic replacement in the helper needs an ADR 0004
     amendment. Owner: backlog row `MACOS-025`.
+26. **Test time for scheduled and synchronized runs.**
+    `observed` (2026-10-01, `SCHEDULE-004` retro): most of a day of
+    verification was wall-clock waiting. A schedule lasts at least 15
+    minutes, hosts evaluate once a minute, a session shorter than 15 minutes
+    ends on iPhone only while Posato is open, and CloudKit delivered between
+    Tart guests in 6-10 minutes. A development-only time control, such as a
+    clock offset or shortened minimums behind a launch argument that release
+    builds ignore, could turn hour-long acceptance runs into minutes. It is a
+    seam in product code, so it needs a decision on scope, safety, and what
+    the runs still prove. `user-confirmed` (2026-10-02): a backlog row.
+    Owner: backlog row `QUALITY-012`.
 
 ## Later platform questions
 
