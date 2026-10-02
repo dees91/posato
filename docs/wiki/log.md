@@ -2375,3 +2375,12 @@ to scope, feasibility, or delivery.
   `SCHEDULE-004` measurements and every run failed with
   `DEVICE_AUTOMATION_LOCKED`; the unattended setup now asks for Auto-Lock
   Never.
+
+## [2026-10-02] maintenance | Restore the quality gate on main
+
+- `observed`: `quality` failed on `main` after the `MACOS-015` and
+  `SCHEDULE-004` merges: detekt `LongMethod` in the desktop `main()` (62 of
+  60 lines), and two `NativeSafeBacktickNameRuleTest` cases that a cached
+  result had hidden since #105. The test's engine read the repository
+  `.editorconfig`, which enables the rule only under `shared/src`, so the
+  rule never ran there; the test now enables it explicitly.

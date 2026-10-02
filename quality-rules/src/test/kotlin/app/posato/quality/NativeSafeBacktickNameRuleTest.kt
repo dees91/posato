@@ -1,9 +1,12 @@
 package app.posato.quality
 
 import com.pinterest.ktlint.rule.engine.api.Code
+import com.pinterest.ktlint.rule.engine.api.EditorConfigOverride
 import com.pinterest.ktlint.rule.engine.api.KtLintRuleEngine
 import com.pinterest.ktlint.rule.engine.api.LintError
 import com.pinterest.ktlint.rule.engine.core.api.RuleProvider
+import com.pinterest.ktlint.rule.engine.core.api.editorconfig.RuleExecution
+import com.pinterest.ktlint.rule.engine.core.api.editorconfig.createRuleExecutionEditorConfigProperty
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -47,7 +50,10 @@ class NativeSafeBacktickNameRuleTest {
         assertEquals(emptyList(), errors)
     }
 
+    // The repository's .editorconfig enables this rule only under shared/src, and a snippet resolves outside it.
     private fun lint(code: String): List<LintError> = buildList {
-        KtLintRuleEngine(ruleProviders = setOf(RuleProvider { NativeSafeBacktickNameRule() })).lint(Code.fromSnippet(code), ::add)
+        val rule = NativeSafeBacktickNameRule()
+        val enabled = EditorConfigOverride.from(rule.ruleId.createRuleExecutionEditorConfigProperty() to RuleExecution.enabled)
+        KtLintRuleEngine(ruleProviders = setOf(RuleProvider { rule }), editorConfigOverride = enabled).lint(Code.fromSnippet(code), ::add)
     }
 }

@@ -55,31 +55,10 @@ fun main() {
                     enforcementClient,
                 ),
             )
-            val helperOperations = MacHelperOperations()
-            val helperState = DesktopMacHelperState(
-                commands = enforcementClient,
-                verifyHelper = {
-                    MacOsHelperSigningVerifier.verify(MacOsHelperSigningVerifier.installedHelperPath())
-                },
-                ioDispatcher = Dispatchers.IO,
-                openSettings = MacOsSystemSettings::open,
-                loginItem = MacLoginItemState,
-                standingGrant = DesktopStandingGrant(enforcementClient, Dispatchers.IO, helperOperations),
-                offerFlag = MacSetupOfferFlag(
-                    read = { MacNotificationsNative.readFlag(SETUP_OFFER_DISMISSED_KEY) == 1 },
-                    write = { MacNotificationsNative.writeFlag(SETUP_OFFER_DISMISSED_KEY, true) },
-                ),
-                operations = helperOperations,
-                console = consoleOfThisAccount,
-                automaticStartConsent = MacAutomaticStartConsentFlag(
-                    read = { MacNotificationsNative.readFlag(AUTOMATIC_START_CONSENT_KEY) == 1 },
-                    write = { given -> MacNotificationsNative.writeFlag(AUTOMATIC_START_CONSENT_KEY, given) },
-                ),
-            )
             val applicationGraph = createDesktopApplicationGraph(
                 applicationMappings,
                 enforcement,
-                helperState,
+                createHelperState(enforcementClient),
                 notifications = MacSessionNotifications,
             )
             keptRequirements = applicationGraph.keptApplicationRequirements
@@ -104,6 +83,30 @@ private val consoleOfThisAccount = MacConsole {
         0 -> false
         else -> null
     }
+}
+
+private fun createHelperState(enforcementClient: MacOsHelperClient): DesktopMacHelperState {
+    val helperOperations = MacHelperOperations()
+    return DesktopMacHelperState(
+        commands = enforcementClient,
+        verifyHelper = {
+            MacOsHelperSigningVerifier.verify(MacOsHelperSigningVerifier.installedHelperPath())
+        },
+        ioDispatcher = Dispatchers.IO,
+        openSettings = MacOsSystemSettings::open,
+        loginItem = MacLoginItemState,
+        standingGrant = DesktopStandingGrant(enforcementClient, Dispatchers.IO, helperOperations),
+        offerFlag = MacSetupOfferFlag(
+            read = { MacNotificationsNative.readFlag(SETUP_OFFER_DISMISSED_KEY) == 1 },
+            write = { MacNotificationsNative.writeFlag(SETUP_OFFER_DISMISSED_KEY, true) },
+        ),
+        operations = helperOperations,
+        console = consoleOfThisAccount,
+        automaticStartConsent = MacAutomaticStartConsentFlag(
+            read = { MacNotificationsNative.readFlag(AUTOMATIC_START_CONSENT_KEY) == 1 },
+            write = { given -> MacNotificationsNative.writeFlag(AUTOMATIC_START_CONSENT_KEY, given) },
+        ),
+    )
 }
 
 /** Before any host or window starts: the one-time pause set upgrade, then removal of choices for sets that are gone. */
