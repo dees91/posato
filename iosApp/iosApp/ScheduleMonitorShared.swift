@@ -66,10 +66,11 @@ struct ScheduleMonitorFile: Codable, Equatable {
         var setId: String?
     }
 
-    /// One pause set a schedule or a running occurrence uses: its websites and indexes into the table's tokens.
+    /// One pause set a schedule or a running occurrence uses, as indexes into the table's websites and tokens,
+    /// so websites several sets share are stored once.
     struct PauseSet: Codable, Equatable {
         let id: String
-        let domains: [String]
+        let domainIndexes: [Int]
         let tokenIndexes: [Int]
     }
 
@@ -91,7 +92,7 @@ struct ScheduleMonitorFile: Codable, Equatable {
     let version: Int
     let schedules: [Schedule]
     let running: [Running]
-    /// Version 1: the paused websites. Version 2: unused, every set lists its own.
+    /// Version 1: the paused websites. Version 2: every website the sets name, each once.
     let domains: [String]
     /// Version 1: the paused apps. Version 2: every token the sets name, each once.
     let applicationTokens: [Data]
@@ -103,15 +104,22 @@ extension ScheduleMonitorFile {
     /// Whether any plan here could pause something: a version-2 set with items, or a version-1 table's own items.
     var pausesAnything: Bool {
         guard let sets else { return !domains.isEmpty || !applicationTokens.isEmpty }
-        return sets.contains { !$0.domains.isEmpty || !$0.tokenIndexes.isEmpty }
+        return sets.contains { !$0.domainIndexes.isEmpty || !$0.tokenIndexes.isEmpty }
     }
 
     /// The websites and app tokens of the set `scheduleId` uses: in a version-1 table, the table's own items.
     func setItems(scheduleId: String) -> (domains: [String], tokens: [Data]) {
-        guard let sets else { return (domains, applicationTokens) }
-        let setId = schedules.first { $0.id == scheduleId }?.setId ?? ScheduleMonitor.firstSetId
-        guard let set = sets.first(where: { $0.id == setId }) else { return ([], []) }
-        return (set.domains, set.tokenIndexes.compactMap { applicationTokens.indices.contains($0) ? applicationTokens[$0] : nil })
+        guard sets != nil else { return (domains, applicationTokens) }
+        return setItems(setId: schedules.first { $0.id == scheduleId }?.setId ?? ScheduleMonitor.firstSetId)
+    }
+
+    /// The websites and app tokens of the set `setId`; nothing when the table does not list it.
+    func setItems(setId: String) -> (domains: [String], tokens: [Data]) {
+        guard let set = sets?.first(where: { $0.id == setId }) else { return ([], []) }
+        return (
+            set.domainIndexes.compactMap { domains.indices.contains($0) ? domains[$0] : nil },
+            set.tokenIndexes.compactMap { applicationTokens.indices.contains($0) ? applicationTokens[$0] : nil }
+        )
     }
 }
 

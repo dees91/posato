@@ -278,13 +278,25 @@ final class ScheduleMonitorTests: XCTestCase {
 
     private func setsFile(
         _ schedules: [ScheduleMonitorFile.Schedule],
-        sets: [ScheduleMonitorFile.PauseSet]
+        sets: [(id: String, domains: [String])]
     ) -> ScheduleMonitorFile {
+        var domains: [String] = []
+        let indexed = sets.map { set in
+            ScheduleMonitorFile.PauseSet(
+                id: set.id,
+                domainIndexes: set.domains.map { domain in
+                    if let index = domains.firstIndex(of: domain) { return index }
+                    domains.append(domain)
+                    return domains.count - 1
+                },
+                tokenIndexes: []
+            )
+        }
         var file = ScheduleMonitorFile(
-            version: ScheduleMonitor.fileVersion, schedules: schedules, running: [], domains: [], applicationTokens: [],
+            version: ScheduleMonitor.fileVersion, schedules: schedules, running: [], domains: domains, applicationTokens: [],
             notices: ScheduleMonitorFile.Notices(enabled: false, endTitle: "", endBody: "")
         )
-        file.sets = sets
+        file.sets = indexed
         return file
     }
 
@@ -304,7 +316,7 @@ final class ScheduleMonitorTests: XCTestCase {
         let files = try isolatedFiles()
         try files.writeTable(setsFile(
             [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
-            sets: [.init(id: workSet, domains: ["work.example"], tokenIndexes: []), .init(id: leisureSet, domains: ["leisure.example"], tokenIndexes: [])]
+            sets: [(workSet, ["work.example"]), (leisureSet, ["leisure.example"])]
         ))
         let store = FakeScheduleShieldStore()
 
@@ -320,7 +332,7 @@ final class ScheduleMonitorTests: XCTestCase {
         let files = try isolatedFiles()
         try files.writeTable(setsFile(
             [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
-            sets: [.init(id: workSet, domains: ["work.example"], tokenIndexes: []), .init(id: leisureSet, domains: ["leisure.example"], tokenIndexes: [])]
+            sets: [(workSet, ["work.example"]), (leisureSet, ["leisure.example"])]
         ))
         let store = FakeScheduleShieldStore()
         store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example", "leisure.example"]), applications: [])
@@ -337,7 +349,7 @@ final class ScheduleMonitorTests: XCTestCase {
         let files = try isolatedFiles()
         try files.writeTable(setsFile(
             [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
-            sets: [.init(id: workSet, domains: ["work.example"], tokenIndexes: []), .init(id: leisureSet, domains: ["leisure.example"], tokenIndexes: [])]
+            sets: [(workSet, ["work.example"]), (leisureSet, ["leisure.example"])]
         ))
         let store = FakeScheduleShieldStore()
         store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example", "leisure.example"]), applications: [])
@@ -355,7 +367,7 @@ final class ScheduleMonitorTests: XCTestCase {
         let files = try isolatedFiles()
         try files.writeTable(setsFile(
             [plan(focusId, set: workSet), plan(eveningId, set: leisureSet, end: 11 * 60)],
-            sets: [.init(id: workSet, domains: ["work.example"], tokenIndexes: []), .init(id: leisureSet, domains: [], tokenIndexes: [])]
+            sets: [(workSet, ["work.example"]), (leisureSet, [])]
         ))
         let store = FakeScheduleShieldStore()
         store.applySchedule(domains: PosatoWebDomains.domains(from: ["work.example"]), applications: [])
@@ -372,7 +384,7 @@ final class ScheduleMonitorTests: XCTestCase {
         let files = try isolatedFiles()
         try files.writeTable(setsFile(
             [plan(focusId, set: workSet)],
-            sets: [.init(id: workSet, domains: ["work.example"], tokenIndexes: [])]
+            sets: [(workSet, ["work.example"])]
         ))
         let occurrence = ScheduleMonitorOccurrence(
             scheduleId: focusId, date: "2026-09-28", start: local(2026, 9, 28, 9, 0), end: local(2026, 9, 28, 10, 0)
@@ -390,7 +402,7 @@ final class ScheduleMonitorTests: XCTestCase {
 
     func testTheManualSessionsWebsitesTakeTheirShareOfTheFiftyDomains() throws {
         let files = try isolatedFiles()
-        try files.writeTable(setsFile([plan(focusId, set: workSet)], sets: [.init(id: workSet, domains: hosts("sched", 1 ... 10), tokenIndexes: [])]))
+        try files.writeTable(setsFile([plan(focusId, set: workSet)], sets: [(workSet, hosts("sched", 1 ... 10))]))
         let session = FakeScheduleShieldStore()
         session.applySchedule(domains: PosatoWebDomains.domains(from: hosts("manual", 1 ... 20)), applications: [])
         let store = FakeScheduleShieldStore()
@@ -432,9 +444,9 @@ final class ScheduleMonitorTests: XCTestCase {
         )
         XCTAssertEqual(store.applied?.domains, PosatoWebDomains.domains(from: ["example.com"]))
 
-        try files.writeTable(setsFile([plan(focusId, set: workSet)], sets: [.init(id: workSet, domains: ["work.example"], tokenIndexes: [])]))
+        try files.writeTable(setsFile([plan(focusId, set: workSet)], sets: [(workSet, ["work.example"])]))
         XCTAssertFalse(FileManager.default.fileExists(atPath: files.directoryURL.appendingPathComponent("table-v1.json").path))
-        XCTAssertEqual(files.readTable()?.sets?.first?.domains, ["work.example"])
+        XCTAssertEqual(files.readTable()?.setItems(setId: workSet).domains, ["work.example"])
     }
 
     /// Repeated from PauseCompositionTest in Kotlin: the app and the extension admit the same websites.
@@ -637,6 +649,21 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(table.applicationTokens, [shared])
         XCTAssertEqual(table.sets?.map(\.tokenIndexes), [[0], [0]])
         XCTAssertEqual(table.setItems(scheduleId: eveningId).domains, ["leisure.example"])
+    }
+
+    func testTenSetsSharingTheirWebsitesFitTheTable() throws {
+        let files = try isolatedFiles()
+        let publisher = composingPublisher(files: files, store: FakeScheduleShieldStore(), at: local(2026, 9, 28, 8))
+        let sites = (0 ..< 1024).map { String(format: "site%04d.ordinary-example.test", $0) }
+        let sets = (1 ... 10).map { IosMonitorSet(id: String(format: "%032x", $0), domains: sites, mappingIds: []) }
+
+        publisher.publish(table: IosScheduleMonitorTable(
+            schedules: [], running: [], noticesEnabled: false, endTitle: "", endBody: "", manualSessionEndEpochSeconds: 0, sets: sets
+        ))
+
+        let table = try XCTUnwrap(files.readTable())
+        XCTAssertEqual(table.sets?.count, 10)
+        XCTAssertEqual(table.setItems(setId: String(format: "%032x", 10)).domains, sites)
     }
 
     func testTheAppComposesLikeTheMonitorWithinTheManualSessionsShareAndRecordsWhatTheOccurrenceHolds() throws {

@@ -87,8 +87,13 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
 
     func publish(table: IosScheduleMonitorTable) {
         var tokenIndex = TokenIndex(mappings: table.sets.isEmpty ? [] : (try? storedMappings()) ?? [])
+        var domainIndex = ListIndex<String>()
         let sets = table.sets.map {
-            ScheduleMonitorFile.PauseSet(id: $0.id, domains: $0.domains, tokenIndexes: tokenIndex.indexes(for: $0.mappingIds))
+            ScheduleMonitorFile.PauseSet(
+                id: $0.id,
+                domainIndexes: domainIndex.indexes(for: $0.domains),
+                tokenIndexes: tokenIndex.indexes(for: $0.mappingIds)
+            )
         }
         let file = ScheduleMonitorFile(
             version: ScheduleMonitor.fileVersion,
@@ -107,7 +112,7 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
             running: table.running.map {
                 ScheduleMonitorFile.Running(id: $0.id, date: $0.date, startEpoch: $0.startEpochSeconds, endEpoch: $0.endEpochSeconds)
             },
-            domains: [],
+            domains: domainIndex.items,
             applicationTokens: tokenIndex.tokens,
             notices: ScheduleMonitorFile.Notices(
                 enabled: table.noticesEnabled,
@@ -119,8 +124,14 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
         )
         // The table is written before any registration, so a callback always reads the plans it belongs to.
         // It is rewritten only when it changed; registrations are reconciled every time.
-        if files?.readTable() != file {
-            try? files?.writeTable(file)
+        // A table that could not be written leaves the registrations as they are, so no plan starts with
+        // the previous table's items.
+        if let files, files.readTable() != file {
+            do {
+                try files.writeTable(file)
+            } catch {
+                return
+            }
         }
         let running = Set(file.running.map { "\($0.id):\($0.date)" })
         files?.removeStarted(except: running)
@@ -239,6 +250,23 @@ final class IosScheduleMonitorPublisher: NSObject, IosScheduleMonitorProvider {
             action()
         } else {
             DispatchQueue.main.async(execute: action)
+        }
+    }
+}
+
+/// Values listed once, in first-seen order, and the indexes a set names them by.
+private struct ListIndex<Item: Hashable> {
+    private(set) var items: [Item] = []
+    private var positions: [Item: Int] = [:]
+
+    mutating func indexes(for values: [Item]) -> [Int] {
+        values.map { value in
+            if let index = positions[value] {
+                return index
+            }
+            items.append(value)
+            positions[value] = items.count - 1
+            return items.count - 1
         }
     }
 }
