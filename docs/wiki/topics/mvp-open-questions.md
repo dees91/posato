@@ -672,6 +672,9 @@ macOS 13 Ventura as one `MACOS-015` delivery row, a Firefox discovery in
 `MACOS-017`, and the `DOCS-004` packaging. The
 [release roadmap](../../tasks/release-roadmap.md#release-13-pause-sets-navigation-and-intel-macs)
 records the rows and waves; each row still starts only when named.
+`user-confirmed` (2026-10-02): before packaging, `WEB-002` and the minimal
+`SCHEDULE-006` fix join the release, `MACOS-021` narrows to a short
+measurement, and `MACOS-017` returns to the backlog.
 
 `user-confirmed` (2026-09-13): retain the following larger, loosely defined
 ideas for future iterations after the MVP. Unresolved choices remain `open`;
@@ -940,6 +943,9 @@ below. This queue retains idea provenance without expanding the original MVP.
     0.2%. The cause is `open`; system traffic through the loopback proxy after
     boot is a `hypothesis`. Reproduce it, find the cause, and bound the
     helper's cost under heavy proxied traffic.
+    `user-confirmed` (2026-10-02): the maintainer suspects a one-off load from
+    parallel machine-learning work on the host; `MACOS-021` takes a short
+    measurement on a quiet host and closes if the spike does not recur.
 19. **One guided Mac setup for sessions and schedules.**
     `user-confirmed` (2026-09-26, latest PR #92 follow-up): replace separate
     onboarding switches with one setup action that explains blocking, quiet
@@ -1050,7 +1056,10 @@ below. This queue retains idea provenance without expanding the original MVP.
     screen the demo frame showed as an empty dark box, cause `open`. The line
     is the accepted product line in `DESIGN.md` and appears in the site title
     and hero, the README, and the App Store subtitle, so changing it revises
-    `DESIGN.md`. Owner: backlog row `WEB-002`.
+    `DESIGN.md`. Owner: `WEB-002`. `user-confirmed` (2026-10-02): it joins
+    release 1.3 and continues from the homepage experiment in PR #126, whose
+    provisional line is "A little space. For what matters."; `DOCS-004`
+    packages the result.
 25. **An unblocked moment when the Mac helper takes a new configuration.**
     `observed` (2026-09-30, `SCHEDULE-004` measurement in a Tart VM): a
     change during a running pause is a helper clear followed by an apply,

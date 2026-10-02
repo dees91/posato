@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 15 (amended 2026-09-30: Intel verification without a physical Mac)
+- **Revision:** 16 (amended 2026-10-02: release 1.3 scope before packaging)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-09-30
+- **Last amended:** 2026-10-02
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -98,6 +98,14 @@
   The 2026-09-30 clarification from `MACOS-024` adds a loopback-only relay in
   the listener to its outcome (`user-confirmed`, 2026-09-30), because Codex
   reads no proxy exceptions list; the release and wave do not change.
+  Revision 16 adjusts release 1.3 before its packaging (`user-confirmed`,
+  2026-10-02). `WEB-002` joins the release, continuing from the homepage
+  experiment in PR #126, so that `DOCS-004` packages the new site, product
+  line, and assets. `SCHEDULE-006` adds a minimal fix for the iPhone schedule
+  table size found in the `SCHEDULE-004` review. `MACOS-021` narrows to a
+  short measurement, because the maintainer suspects a one-off load on the
+  host. `MACOS-017` returns to the backlog for a later release; PRs #110 and
+  #114 are closed and kept as material to reuse.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -280,7 +288,7 @@ evaluation and spike work in PRs #109 and #110 began before composition.
 Ordering across the waves:
 
 - `MACOS-022` and `SCHEDULE-005` are prepared in PRs #107 and #108 and merge
-  first. `MACOS-020`, `MACOS-021`, `MACOS-024`, and `MACOS-017` touch the
+  first. `MACOS-020`, `MACOS-021`, and `MACOS-024` touch the
   same helper and proxy surface as `MACOS-022` and start from it in the next
   wave; `MACOS-020` and `MACOS-024` both change proxy apply and restore, so
   they are implemented one after the other.
@@ -293,9 +301,8 @@ Ordering across the waves:
   person's account, so the row verifies the x86-64 build in an arm64 macOS 13
   Tart guest under Rosetta through a verification-only switch
   (`user-confirmed`, 2026-09-30). No physical Intel Mac is used.
-- `MACOS-017` ends with a decision; it changes no binary and is not a
-  dependency of `RELEASE-005`. PR #110 stays unmerged spike evidence under
-  `MACOS-017`; only `MACOS-023` may deliver its code.
+- `WEB-002` and `SCHEDULE-006` precede `DOCS-004`, which packages the new
+  product line, site, and media.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -303,15 +310,16 @@ Ordering across the waves:
 | `SCHEDULE-005` | Resume naturally expired schedules after synchronization extends them into the current interval; preserve explicit Skip and End early, original start, clock rollback protection, and the 24-hour cap, under the expiry rule revision and legacy reevaluation accepted on 2026-09-28 (`user-confirmed`, PR #108); see the [brief](specifications/schedule-005.md). High-risk. | Schedules | delivery | R1.3/W1 | None | PR-SCHEDULE-EXTENSION |
 | `SYNC-020` | Publish a session start or early end reliably from the device that made it: first reproduce, without the maintainer, that an iPhone-started session reaches iCloud only after a manual **Sync now**; then retry an interrupted or failed publication automatically with backoff and give iOS time to finish it in the background, so the peer adopts the session at its next own sync. Remote push to wake the peer is out of scope. | Sessions and enforcement | delivery | R1.3/W1 | None | PR-SESSION-PUBLISH |
 | `MACOS-020` | Keep a session truthful and recoverable when the network service that holds Posato's proxy settings disappears during it: report that restrictions need attention instead of **Restrictions active**, and clear or reconcile the stale ownership record so later sessions can apply again. | Sessions and enforcement | delivery | R1.3/W2 | `MACOS-022` | PR-MAC-PROXY-RECOVERY |
-| `MACOS-021` | Explain and bound the normal-user helper's CPU use during an enforced session: reproduce the transient spike, about 60% of a core for 14 minutes, that `MACOS-012` measured in a first session on a fresh Tart clone, find its cause, and keep the helper's cost bounded under heavy proxied traffic. | Sessions and enforcement | delivery | R1.3/W2 | `MACOS-022` | PR-MAC-HELPER-CPU |
+| `MACOS-021` | Measure the normal-user helper's CPU use in the first enforced session of one or two fresh Tart clones on a quiet host, where `MACOS-012` once saw about 60% of a core for 14 minutes. The maintainer suspects a one-off load from other work on the host (`user-confirmed`, 2026-10-02): if the spike does not recur, the row closes with that result; a reproduced cause is fixed and bounded. | Sessions and enforcement | delivery | R1.3/W2 | `MACOS-022` | PR-MAC-HELPER-CPU |
 | `MACOS-015` | Support Intel Macs on macOS 13 Ventura: propose and obtain acceptance of the ADR 0003 baseline revision, covering the support horizon Apple gives Intel Macs and macOS 13, and of the ADR 0008 update-channel revision; build the x86-64 Compose Desktop artifact, runtime, native libraries, and Swift helpers for macOS 13; sign and notarize verified x86-64 candidates and the update feed entry that the accepted ADR 0003 and ADR 0008 revisions specify, which `RELEASE-005` publishes; verify setup, actual website and application blocking, synchronization, and the in-app update in an arm64 macOS 13 Tart guest running the x86-64 build under Rosetta through a verification-only switch; and update the availability page. High-risk. | Platform coverage | delivery | R1.3/W1 | None | PR-INTEL-RELEASE |
 | `MACOS-024` | Keep loopback connections working during a macOS session: while a session's proxy is applied, add `localhost`, `127.0.0.1`, and `::1` to the proxy exceptions of the service Posato applies to, keep the existing exceptions, and restore them exactly when the proxy is restored; relay requests to those three hosts on any port through the listener for clients that ignore the exceptions, under an ADR 0004 and ADR 0005 amendment. Reported: local Codex MCP connections received an empty response and `codex_tui failed to start` during a session, while a direct connection and `NO_PROXY` worked. High-risk. | Sessions and enforcement | delivery | R1.3/W2 | `MACOS-022` | PR-MAC-LOOPBACK-EXCEPTIONS |
-| `MACOS-017` | Decide whether Posato supports Firefox on macOS under a revised ADR 0005 browser promise: presentation through a Posato extension, its signing and distribution through addons.mozilla.org, the fixed loopback rendezvous port against the current per-session port and its fail-closed conflict, This Mac setup guidance, and verification in Tart; end with the proposed ADR 0005 revision and a delivery plan for `MACOS-023`. | Sessions and enforcement | discovery | R1.3/W2 | `MACOS-022` | PR-FIREFOX-DECISION |
 | `NAV-001` | Move the screen stacks within each destination to Navigation 3 and support system back gestures: the interactive edge swipe on iPhone and iPad, and keyboard and trackpad back on the Mac. It keeps the explicit **Back** actions and the destinations accepted in `DESIGN.md`, including Schedules. | Platform coverage | delivery | R1.3/W1 | None | PR-NAVIGATION |
 | `SCHEDULE-003` | Complete the accepted pause set scope for manual sessions and schedules: live edits and deletion, manual-session overlap, default ownership, limits and device readiness, migration, synchronization and older-client compatibility. Update the affected design and architecture authorities and end with accepted decisions and a delivery plan. | Target management | discovery | R1.3/W2 | `SCHEDULE-005` | PR-PAUSE-SET-DECISION |
 | `SCHEDULE-004` | Deliver reusable named pause sets on Mac and iPhone under the accepted scope: one set per manual session or schedule, a default for new starts and plans, migration of existing targets and schedules, union of overlapping sets, synchronized definitions and websites, and per-set device-local application choices. Verify migration, actual blocking and unblocking, overlap, offline execution, and cross-device convergence. High-risk. | Target management | delivery | R1.3/W3 | `SCHEDULE-003`, `NAV-001` | PR-PAUSE-SET-DELIVERY |
-| `DOCS-004` | Prepare the public packaging for 1.3 without publishing it: recapture the showcase with pause sets and render the media again; describe 1.3, pause sets, and Intel support in the README and on `posato.app`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.3/W4 | `SCHEDULE-004`, `MACOS-015`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024` | PR-RELEASE-1-3-MEDIA |
-| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for arm64 and x86-64 through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.3/W5 | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `MACOS-015`, `NAV-001`, `SCHEDULE-004`, `DOCS-004` | PR-RELEASE-1-3 |
+| `WEB-002` | Make the first screen of `posato.app` show at a glance what Posato does, especially on a phone, and replace the product line **Pause. Then choose.** with a stronger one wherever it appears (`DESIGN.md`, the site title and hero, the README, and the App Store subtitle). Continue from the homepage experiment in PR #126 (a bolder layout, an animated hero with a static poster on phones and for reduced motion, and the provisional line "A little space. For what matters."), with the maintainer choosing the final line and layout, the clarity review, and no em dash in public copy. | Release readiness | delivery | R1.3/W4 | None | PR-WEB-HOMEPAGE |
+| `SCHEDULE-006` | Keep the iPhone version-2 schedule table within its storage bound for every supported configuration, including 1,024 long websites shared by ten sets, and report a failed publication instead of silently keeping the previous table: the minimal change, with no new limits. | Schedules | delivery | R1.3/W4 | `SCHEDULE-004` | PR-SCHEDULE-TABLE-BOUND |
+| `DOCS-004` | Prepare the public packaging for 1.3 without publishing it: recapture the showcase with pause sets and render the media again; describe 1.3, pause sets, and Intel support in the README and on `posato.app` with the new product line and homepage from `WEB-002`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.3/W5 | `SCHEDULE-004`, `MACOS-015`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `WEB-002`, `SCHEDULE-006` | PR-RELEASE-1-3-MEDIA |
+| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for arm64 and x86-64 through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.3/W6 | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `MACOS-015`, `NAV-001`, `SCHEDULE-004`, `SCHEDULE-006`, `WEB-002`, `DOCS-004` | PR-RELEASE-1-3 |
 
 ## Backlog
 
@@ -325,6 +333,7 @@ The idea numbers refer to the wiki idea queue.
 | `RESEARCH-001` | Compare the Focusly extension's interactions and features with Posato and list the ones worth adopting. | Product discovery | Idea 4 | Any planning checkpoint; cheap |
 | `FILTER-002` | Decide how to reduce distractions within YouTube, such as Shorts and recommendations, and on which surfaces. | Product discovery | Idea 5 | `FILTER-001` or a separate product decision |
 | `FILTER-003` | Decide whether a session can silence notifications from chosen applications and websites while the applications stay usable, on iOS and macOS: establish what the platforms allow a third party, including whether a Screen Time shield silences notifications and how browser web push can be reached; end with a product decision and, if feasible, a delivery plan. Preliminary. | Product discovery | Idea 17 | A feasibility result showing a supported mechanism on at least one platform |
+| `MACOS-017` | Decide whether Posato supports Firefox on macOS under a revised ADR 0005 browser promise: presentation through a Posato extension, its signing and distribution through addons.mozilla.org, the fixed loopback rendezvous port against the current per-session port and its fail-closed conflict, This Mac setup guidance, and verification in Tart; end with the proposed ADR 0005 revision and a delivery plan for `MACOS-023`. | Sessions and enforcement | macOS enforcement follow-up; PRs #110 and #114 closed as reusable material | A planning checkpoint for a later release (`user-confirmed`, 2026-10-02) |
 | `MACOS-018` | Detect or disclose iCloud Private Relay before a session applies proxy settings. | Sessions and enforcement | Open question in the macOS enforcement topic | A supported detection route or a decision to disclose only |
 | `MACOS-019` | Re-evaluate App Sandbox for the macOS application if a later decision replaces the root daemon and Authorization Services mechanism. | Sessions and enforcement | ADR 0004 deferred decision | A decision that replaces the root daemon; ADR 0009 (`MACOS-012`) kept it |
 | `MACOS-023` | Deliver Firefox support on macOS under the ADR 0005 revision and delivery plan accepted in `MACOS-017`, continuing from the PR #110 spike. | Sessions and enforcement | `MACOS-017` | An accepted `MACOS-017` decision and a planning checkpoint |
@@ -342,7 +351,6 @@ The idea numbers refer to the wiki idea queue.
 | `TARGETS-007` | Decide whether and how saved websites and application choices can be exported to and imported from a file: format, encryption, what an application choice can carry across devices, merge or replace, and sync interaction; end with a product decision and a delivery plan. Preliminary. | Target management | Idea 14 | A product decision that file transfer is in scope |
 | `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
 | `MACOS-025` | Let the macOS helper take a new configuration during a running pause without clearing it first, so no browser request passes between the clear and the apply: amend ADR 0004 with an atomic replacement over the existing grant, with its own security review, and prove it with the `SCHEDULE-004` probe that saw a 0.2-0.25 s gap. | Sessions and enforcement | Idea 25; `SCHEDULE-004` measurement | A planning checkpoint; the accepted 1.3 known limit makes it non-urgent |
-| `WEB-002` | Make the first screen of `posato.app` show at a glance what Posato does, especially on a phone, and replace the product line **Pause. Then choose.** with a stronger one wherever it appears (`DESIGN.md`, the site title and hero, the README, and the App Store subtitle): propose layouts and lines for the maintainer to choose, then deliver them with the clarity review and no em dash in public copy. | Release readiness | Idea 24 | Any planning checkpoint; the maintainer's choice of line and layout |
 
 ## Coverage matrix
 
@@ -359,8 +367,8 @@ The idea numbers refer to the wiki idea queue.
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
 | Public packaging for 1.2 | `DOCS-003` | Media rendered within budget from recorded captures, README and site built, store text and screenshots ready for upload |
 | System back gestures | `NAV-001` | Test-iPhone and iPad edge-swipe back and Mac keyboard and trackpad back in Tart, with the explicit **Back** actions kept |
-| Reported enforcement, schedule, and publication defects | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024` | Tart and test-iPhone runs that reproduce each defect before the fix and show the corrected behavior after it |
-| Firefox decision | `MACOS-017` | Proposed ADR 0005 revision accepted or rejected, with a `MACOS-023` delivery plan when accepted |
+| Reported enforcement, schedule, and publication defects | `MACOS-022`, `SCHEDULE-005`, `SCHEDULE-006`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024` | Tart and test-iPhone runs that reproduce each defect before the fix and show the corrected behavior after it |
+| New homepage and product line | `WEB-002` | The chosen line in `DESIGN.md`, the site, README, and App Store subtitle; the site built and checked on a phone and a wide screen |
 | Public packaging for 1.3 | `DOCS-004` | Media rendered from recorded captures, README and site built, store text and screenshots ready for upload |
 | Reusable pause sets for manual sessions and schedules | `SCHEDULE-003`, `SCHEDULE-004` | Accepted remaining decisions; Mac VM and test-iPhone proof of migration, per-set selections, overlap, blocking and release, offline execution, and synchronized definitions with local app choices |
 | Published releases | `RELEASE-003`, `RELEASE-004`, `RELEASE-005` | GitHub Release with checksums, App Review outcome, availability page and site updated |
