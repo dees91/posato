@@ -2384,3 +2384,11 @@ to scope, feasibility, or delivery.
   result had hidden since #105. The test's engine read the repository
   `.editorconfig`, which enables the rule only under `shared/src`, so the
   rule never ran there; the test now enables it explicitly.
+
+## [2026-10-02] planning | Release 1.3 scope before packaging
+
+- `user-confirmed`: `WEB-002` (new homepage and product line, from PR #126)
+  and `SCHEDULE-006` (minimal fix for the iPhone schedule table size) join
+  release 1.3 before `DOCS-004`; `MACOS-021` narrows to a short measurement;
+  `MACOS-017` returns to the backlog, with PRs #110 and #114 closed as
+  reusable material.
