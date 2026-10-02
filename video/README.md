@@ -4,8 +4,10 @@ The root README uses the `Hero` composition as a looping GIF and links the
 longer `Walkthrough`; the composed `StepWebsites`, `StepDuration`, and
 `StepSchedules` stills are the README's step screenshots; `SocialPreview` is the repository
 card; and posato.app plays the hero as a silent looping video. Every output
-shows real Posato captures with synthetic choices inside the same generic
-device frames as the site; both videos add a synthetic cursor that names each click.
+shows real Posato captures with synthetic choices. The walkthrough and the
+stills place them in the same generic device frames as the site, and the
+walkthrough names each click with a synthetic cursor; the hero crops the Mac
+captures directly and shows its one click, Start, the same way.
 [STORYBOARD.md](STORYBOARD.md) is the human contract and
 `src/storyboard.ts` its executable projection; `src/storyboard.test.ts`
 enforces the storyboard rules. This is documentation artwork, not a test of
@@ -33,14 +35,14 @@ resolve a different font. Package versions are exact and locked by
 
 Outputs:
 
-- `../.github/assets/demo.gif`: 864 x 540, 12 fps, 26 seconds, infinite loop, 9,615,676 bytes.
+- `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 1,534,542 bytes.
 - `../.github/assets/step-websites.png`, `step-duration.png`, and
   `step-schedules.png`: 1920 x 1080 composed stills on a transparent
   background.
 - `../.github/assets/social-preview.png`: 1280 x 640 repository card; upload it
   under the repository's social preview setting by hand.
 - `../website/public/media/hero.mp4` and `hero-poster.jpg`: 1600 x 1000, 30 fps H.264, silent,
-  faststart, 1,562,629 bytes, with a JPEG poster for the first paint and
+  faststart, 506,442 bytes, with a JPEG poster for the first paint, phones, and
   Reduce Motion.
 - `out/hero-master.mp4` and `out/walkthrough-master.mp4`: 1600 x 1000, 30 fps,
   ignored intermediates.

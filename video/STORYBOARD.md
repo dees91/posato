@@ -1,34 +1,62 @@
 # Posato showcase storyboard
 
-- **Revision:** 2 (2026-09-27, Posato 1.2: schedules and the one-time Mac setup)
-- **Format:** `Hero` 26 seconds and `Walkthrough` 52.6 seconds, 1600 x 1000, 30 fps, silent. The hero loops seamlessly as the README GIF and the posato.app hero video; the walkthrough is the GitHub attachment.
+- **Revision:** 3 (2026-10-02, `WEB-002`: the new hero and product line)
+- **Format:** `Hero` 24 seconds and `Walkthrough` 52.6 seconds, 1600 x 1000, 30 fps, silent. The hero loops seamlessly as the README GIF and the posato.app hero video; the walkthrough is the GitHub attachment.
 - **Audience:** someone meeting Posato on GitHub or posato.app who has ten seconds to decide whether it is for them.
 - **Executable projection:** `src/storyboard.ts`. Copy, frame numbers, targets, and captures live there; `src/storyboard.test.ts` enforces this document's rules.
 
 ## Purpose
 
-Show, without sound and at 960 pixels wide, that Posato is a pause you set up yourself: choose exact websites, choose apps per device, pick a duration, start, and see restrictions active on a Mac and an iPhone; or plan pauses ahead with a schedule that starts on its own. Every step is a visible click or tap on a real capture; nothing is implied by a caption alone.
+Show, without sound and at 960 pixels wide, that Posato is a pause you set up yourself: choose exact websites, choose apps per device, pick a duration, start, and see restrictions active on a Mac and an iPhone; or plan pauses ahead with a schedule that starts on its own. Every step is a visible click or tap on a real capture; nothing is implied by a caption alone. The hero is the short version: choose, start, restrictions active, then optional sync and private iCloud storage.
 
 ## Rules
+
+The first rule covers every output. The rest govern the walkthrough and the stills; the hero section below states how the hero differs.
 
 - Real captures with synthetic choices only: `example.com`, `example.net`, the built-in Chess application on the Mac, one unnamed built-in app on the iPhone, and two schedules with neutral names (`Deep work`, `Evening reading`). No account, notification, real domain, device name, or home path may appear.
 - Mac and iPhone captures sit in the same generic bezels as posato.app: a graphite display bezel on a moss-to-sage wallpaper for the Mac, a rounded graphite phone bezel for the iPhone, each with a one-pixel outline. No Apple artwork, base, or shadow.
 - Actions are shown by a springy arrow cursor with a click ring on the Mac and a fingertip dot with one ring on the iPhone. Captures crossfade over eight frames at the click; native pickers and the time wheels are elided. Since 1.2, a set-up Mac starts a pause without an administrator prompt, so none is elided.
 - A callout pill names each action while it happens. No stretch longer than 90 frames passes without a visible change.
 - Zoom is gated to actions (at most 1.06x) and scenes overlap by six frames. Title cards use the product's dark tokens and the system font stack; no web fonts, music, stock footage, or particles.
-- The closing card fades fully to the canvas so the loop has no flash.
+- The walkthrough's closing card fades fully to the canvas. The hero instead wipes back to its exact opening composition, so its loop has no cut.
 
-## Hero (780 frames)
+## Hero (720 frames)
 
-| # | Scene | Frames | Layout | Intent |
-| --- | --- | --- | --- | --- |
-| 1 | `open` | 0-66 | title | State the promise: Pause. Then choose. |
-| 2 | `websites` | 60-216 | Mac | Show a domain being added: click the field, click Add. |
-| 3 | `apps-iphone` | 210-360 | iPhone leads, Mac beside | Show apps chosen on the iPhone; the Mac already shows Chess. |
-| 4 | `duration` | 354-486 | Mac | Pick 45 minutes, open the review. |
-| 5 | `start` | 480-576 | Mac, then Mac and iPhone | Start the pause; both devices show the active session. |
-| 6 | `schedule` | 570-720 | Mac | Plan it ahead: add a weekday schedule and save it. |
-| 7 | `close` | 714-780 | title | Land the line and fade to the canvas. |
+The hero follows the walkthrough's real Mac captures through large editorial
+crops, a deliberate Start click, and a long quiet active-state hold, then the
+sync and privacy scenes. It does not use the walkthrough's device bezels,
+callout pills, or title cards.
+
+| Frames | Content |
+| --- | --- |
+| 0–72 | Tight crop of the saved websites, "Choose what to pause." |
+| 72–114 | Brief duration selection under "Start your pause."; time remains only in the UI |
+| 114–168 | Review and Start; the heading holds steady, click at frame 156 |
+| 168–300 | Restrictions active, end time and early-end action; shared crop settles |
+| 300–450 | Mac and iPhone website captures; "Your devices. Connected." |
+| 450–630 | "Your iCloud. Your data."; on-device encryption and private iCloud storage |
+| 630–720 | "A little space. For what matters." and the open-interval mark |
+
+The hero uses the existing active-session capture in place of the
+proposed browser-blocking shot. It demonstrates the reported application state,
+not a newly recorded enforcement attempt. The paired website captures illustrate shared choices, not measured delivery
+latency or simultaneous activation. Sync is optional and best effort; device-local
+app selections are not presented as shared. Privacy copy follows `PRIVACY.md`.
+The site poster uses frame 240 (`POSTER_FRAME`).
+Adjacent captures share an animated crop with 20-frame eased masked transitions.
+Headings preserve their line breaks and fade out before the next text enters.
+The closing composition enters over 28 frames, and the final 24 frames use a matching mask to return
+to the exact opening composition so the loop boundary has no cut.
+The first crop excludes the empty input and feedback from the earlier add action.
+
+The duration and review form one action under a continuous heading. The selected
+time is an example in the application, not a marketing claim. The active state
+arrives at 5.6 seconds and holds for 4.4 seconds before the closing line.
+
+Every capture has a 36-pixel outer inset, including during masked transitions.
+The opening pair sits lower in the canvas to balance the space below it.
+The action scenes leave 70 pixels between the headline line box and capture;
+review retains space above its introductory line and below the final item row.
 
 ## Walkthrough (1578 frames)
 

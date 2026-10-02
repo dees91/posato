@@ -2427,3 +2427,15 @@ to scope, feasibility, or delivery.
   now removes both table versions, so the app reports a platform failure (a
   retrying scheduled pause) and the monitor extension starts nothing.
   `flow schedule` now scrolls to the time buttons on small iPhones.
+
+## [2026-10-02] delivery | New homepage and product line (WEB-002)
+
+- `user-confirmed`: **A little space. For what matters.** replaces **Pause.
+  Then choose.** in `DESIGN.md`, the site, the README, and About Posato; the
+  App Store subtitle follows in `DOCS-004`. The homepage keeps the bolder
+  experiment's layout; on a phone the poster sits under the lead, so even a
+  375 x 667 screen shows the product first.
+- A 24-second hero of real Mac captures, then sync and privacy scenes,
+  replaces the old `Hero` composition as the site video and the README GIF.
+  It shows the reported active state, not a recorded blocking attempt, and
+  its paired captures do not demonstrate delivery latency.

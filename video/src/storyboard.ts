@@ -66,7 +66,7 @@ export const IPHONE_TARGETS = {
 
 const OPEN_COPY = {
   eyebrow: "Posato for Mac and iPhone",
-  headline: "Pause. Then choose.",
+  headline: "A little space.\nFor what matters.",
   support: "Pause the websites and apps you choose, now or on a schedule.",
 } as const;
 
@@ -75,11 +75,6 @@ const CLOSE_COPY = {
   headline: "A little room. Just for you.",
   footer: "Mac · iPhone · No account · No analytics · Apache 2.0",
 } as const;
-
-const websitesActions = (offset: number): readonly Action[] => [
-  { device: "mac", kind: "click", target: MAC_TARGETS.addField, at: offset, label: "Add websites field", swapTo: 1 },
-  { device: "mac", kind: "click", target: MAC_TARGETS.addButton, at: offset + 56, label: "Add", swapTo: 2 },
-];
 
 const iphoneAppsScene = (start: number, end: number): StoryScene => ({
   id: "apps-iphone",
@@ -143,46 +138,6 @@ const scheduleScene = (start: number, end: number, first: string, lead: number):
   ],
   copy: {},
 });
-
-export const HERO: readonly StoryScene[] = [
-  { id: "open", start: 0, end: 66, kind: "title", copy: OPEN_COPY },
-  {
-    id: "websites",
-    start: 60,
-    end: 216,
-    kind: "capture",
-    layout: "macSolo",
-    mac: { captures: ["mac-websites-empty.png", "mac-websites-typed.png", "mac-websites-added.png"] },
-    actions: websitesActions(36),
-    pointerExit: { from: 120, to: 140 },
-    callouts: [
-      { text: "Add exact domains.", from: 10, to: 88 },
-      { text: "One at a time, or paste a list.", from: 92, to: 150 },
-    ],
-    copy: {},
-  },
-  iphoneAppsScene(210, 360),
-  {
-    id: "duration",
-    start: 354,
-    end: 486,
-    kind: "capture",
-    layout: "macSolo",
-    mac: { captures: ["mac-duration.png", "mac-duration-45.png", "mac-review-45.png"] },
-    actions: [
-      { device: "mac", kind: "click", target: MAC_TARGETS.fortyFive, at: 34, label: "45 min", swapTo: 1 },
-      { device: "mac", kind: "click", target: MAC_TARGETS.reviewSession, at: 90, label: "Review session", swapTo: 2 },
-    ],
-    callouts: [
-      { text: "5 minutes to 24 hours.", from: 6, to: 94 },
-      { text: "One last look.", from: 98, to: 126 },
-    ],
-    copy: {},
-  },
-  startScene(480, 576),
-  scheduleScene(570, 720, "mac-schedules-empty.png", 0),
-  { id: "close", start: 714, end: 780, kind: "title", fadeOutAt: 44, copy: CLOSE_COPY },
-];
 
 export const WALKTHROUGH: readonly StoryScene[] = [
   {
@@ -291,19 +246,6 @@ export const WALKTHROUGH: readonly StoryScene[] = [
   { id: "close", start: 1506, end: 1578, kind: "title", fadeOutAt: 56, copy: CLOSE_COPY },
 ];
 
-/**
- * The site's poster frame, shown before the hero loads and under Reduce Motion: the hero's start scene once the
- * iPhone has settled beside the Mac, both showing the active session, and before the next scene fades in.
- */
-export const POSTER_FRAME: number = (() => {
-  const scene = HERO.find((candidate) => candidate.id === "start");
-  if (!scene?.layoutTo || scene.iphone?.enterAt === undefined) {
-    throw new Error("The hero start scene no longer brings in the iPhone");
-  }
-  const settled = Math.max(scene.layoutTo.to, scene.iphone.enterAt + 20);
-  return scene.start + Math.min(settled + 16, sceneDuration(scene) - SCENE_OVERLAP - 1);
-})();
-
 export const STILLS = {
   StepWebsites: { mac: "mac-websites.png", iphone: "iphone-websites.png" },
   StepDuration: { mac: "mac-duration-45.png", iphone: "iphone-duration-45.png" },
@@ -372,3 +314,25 @@ export function sceneEvents(scene: StoryScene): number[] {
 export function sceneAssets(scene: StoryScene): string[] {
   return [...(scene.mac?.captures ?? []), ...(scene.iphone?.captures ?? [])];
 }
+
+/**
+ * The hero for posato.app and the README GIF: a shared crop moves across real Mac captures, then the sync and privacy
+ * scenes, and the last frames wipe back to the first so the loop has no seam.
+ */
+export const HERO = {
+  frames: 720,
+  posterFrame: 240,
+  transitionFrames: 20,
+  closeTransitionFrames: 28,
+  loopTransitionFrames: 24,
+  choice: { start: 0, end: 72, capture: "mac-websites.png", headline: "Choose what\nto pause.", crop: [328, 300], pose: [770, 370, 720, 420, 1.35], title: [430, 96] },
+  duration: { start: 72, end: 114, capture: "mac-duration-45.png", headline: "Start your pause.", crop: [300, 80], pose: [250, 320, 1100, 600, 1.1], title: [150, 96] },
+  start: { start: 114, end: 168, capture: "mac-review-45.png", headline: "Start your pause.", crop: [300, 150], pose: [250, 320, 1100, 600, 1.1], title: [150, 96], click: 156 },
+  active: { start: 168, end: 300, capture: "mac-active-45.png", headline: "A little space.", crop: [300, 40], pose: [250, 320, 1100, 560, 1.1], title: [150, 96] },
+  sync: { start: 300, end: 450, headline: "Your devices.\nConnected." },
+  privacy: { start: 450, end: 630, headline: "Your iCloud.\nYour data." },
+  close: { start: 630, end: 720, headline: "A little space.\nFor what matters." },
+} as const;
+
+/** The poster frame, shown before the hero loads and under Reduce Motion: restrictions active on the Mac. */
+export const POSTER_FRAME: number = HERO.posterFrame;
