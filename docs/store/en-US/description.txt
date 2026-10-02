@@ -6,7 +6,7 @@ Pick a pause set and a duration from 5 minutes to 24 hours. Posato uses Apple's 
 
 PAUSE SETS
 
-Keep a set for each kind of pause, such as one for work and one for evenings. Each set has its own websites and apps, and one is the default. When pauses overlap, Posato pauses everything in their sets until the last one that includes an item ends.
+Keep a set for each kind of pause, such as one for work and one for evenings. Each set has its own websites and apps, and one is the default. When pauses overlap, Posato pauses everything in their sets, within each device's limits, until the last one that includes an item ends.
 
 SCHEDULES
 
