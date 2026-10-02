@@ -651,19 +651,63 @@ final class ScheduleMonitorTests: XCTestCase {
         XCTAssertEqual(table.setItems(scheduleId: eveningId).domains, ["leisure.example"])
     }
 
-    func testTenSetsSharingTheirWebsitesFitTheTable() throws {
+    /// The largest supported table: 1,024 websites of the longest valid length shared by ten sets, 64 apps in
+    /// every set, and ten plans, each with every date from yesterday to the furthest a fact may name stopped.
+    func testTheLargestSupportedConfigurationFitsTheTable() throws {
         let files = try isolatedFiles()
-        let publisher = composingPublisher(files: files, store: FakeScheduleShieldStore(), at: local(2026, 9, 28, 8))
-        let sites = (0 ..< 1024).map { String(format: "site%04d.ordinary-example.test", $0) }
-        let sets = (1 ... 10).map { IosMonitorSet(id: String(format: "%032x", $0), domains: sites, mappingIds: []) }
+        // Tokens are opaque system data; 1 KiB each is several times what Screen Time hands out.
+        let tokens = (0 ..< 64).map { Data(repeating: UInt8($0), count: 1_024) }
+        let publisher = composingPublisher(
+            files: files, store: FakeScheduleShieldStore(), mappings: tokens.map { StoredApplicationMapping(token: $0) }, at: local(2026, 9, 28, 8)
+        )
+        // 253 characters with labels of at most 63: the longest hosts the website policy accepts.
+        let sites = (0 ..< 1024).map {
+            String(format: "site%04d", $0) + String(repeating: "a", count: 55) + "." + String(repeating: "b", count: 63) + "."
+                + String(repeating: "c", count: 63) + "." + String(repeating: "d", count: 53) + ".example"
+        }
+        XCTAssertEqual(sites[0].count, 253)
+        let mappingIds = tokens.map { ApplicationTokenIdentity.identifier(for: $0) }
+        let sets = (1 ... 10).map { IosMonitorSet(id: String(format: "%032x", $0), domains: sites, mappingIds: mappingIds) }
+        let stopped = (-1 ... 400).map { ScheduleMonitorRule.dateText(local(2026, 9, 28 + $0, 0), calendar: calendar) }
+        let title = String(repeating: "t", count: 160)
+        let schedules = (1 ... 10).map {
+            IosMonitorSchedule(
+                id: String(format: "%032x", 0x100 + $0), weekdays: 0b1111111, startMinute: 540, endMinute: 600,
+                stoppedDates: stopped, startTitle: title, startBody: title, setId: String(format: "%032x", $0)
+            )
+        }
 
         publisher.publish(table: IosScheduleMonitorTable(
-            schedules: [], running: [], noticesEnabled: false, endTitle: "", endBody: "", manualSessionEndEpochSeconds: 0, sets: sets
+            schedules: schedules, running: [], noticesEnabled: true, endTitle: title, endBody: title, manualSessionEndEpochSeconds: 0, sets: sets
         ))
 
         let table = try XCTUnwrap(files.readTable())
         XCTAssertEqual(table.sets?.count, 10)
-        XCTAssertEqual(table.setItems(setId: String(format: "%032x", 10)).domains, sites)
+        XCTAssertEqual(table.schedules.last?.stoppedDates.count, 402)
+        let items = table.setItems(scheduleId: String(format: "%032x", 0x10a))
+        XCTAssertEqual(items.domains, sites)
+        XCTAssertEqual(items.tokens, tokens)
+    }
+
+    /// A table that cannot be written must not leave the previous one in force: the app reports a failure, and
+    /// the monitor starts nothing while the app is closed.
+    func testATableThatCannotBeWrittenIsReportedInsteadOfKeepingThePreviousOne() throws {
+        let files = try isolatedFiles()
+        let store = FakeScheduleShieldStore()
+        let time = local(2026, 9, 28, 9, 5)
+        let publisher = composingPublisher(files: files, store: store, at: time)
+        publisher.publish(table: setsTable(sets: [IosMonitorSet(id: workSet, domains: ["previous.example"], mappingIds: [])]))
+
+        // Beyond any supported configuration, so the write is refused.
+        let oversized = (0 ..< 8_192).map { String(format: "site%04d", $0) + String(repeating: "a", count: 240) + ".example" }
+        publisher.publish(table: setsTable(sets: [IosMonitorSet(id: workSet, domains: oversized, mappingIds: [])]))
+
+        XCTAssertEqual(try applySchedule(publisher), .platformFailure)
+        ScheduleMonitorEvents.handleIntervalStart(
+            activity: ScheduleMonitor.activityName(scheduleId: focusId), store: store, files: files, poster: FakeSchedulePoster(),
+            now: { time }, calendar: calendar
+        )
+        XCTAssertNil(store.applied)
     }
 
     func testTheAppComposesLikeTheMonitorWithinTheManualSessionsShareAndRecordsWhatTheOccurrenceHolds() throws {

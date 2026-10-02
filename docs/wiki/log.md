@@ -2415,3 +2415,15 @@ to scope, feasibility, or delivery.
 - The fix runs each source only while a read or write is pending; a fresh
   clone's first session dropped from 100% of a core to under 1%. It ships in
   1.3 (`user-confirmed`).
+
+## [2026-10-02] fix | iPhone schedule table bound
+
+- `observed`: the iPhone's version-2 schedule table bound (256 KiB) was
+  smaller than the largest supported configuration, which is about 450 KB:
+  1,024 websites of 253 characters shared by ten sets, 64 apps, and ten
+  plans with every stoppable date. A failed write also left the previous
+  table in force without notice.
+- `SCHEDULE-006` raises the bound to 1 MiB. A table that cannot be written
+  now removes both table versions, so the app reports a platform failure (a
+  retrying scheduled pause) and the monitor extension starts nothing.
+  `flow schedule` now scrolls to the time buttons on small iPhones.
