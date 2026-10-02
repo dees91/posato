@@ -52,6 +52,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.PauseSetPreparation
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
+import app.posato.feature.targets.data.retainSets
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -202,6 +203,7 @@ internal interface IosApplicationGraph :
         schedules: ScheduleSyncStore,
         zone: ScheduleZone,
         clock: SessionClock,
+        applicationMappings: LocalApplicationMappings,
     ): AppleSync {
         val keys = IosBootstrapKeychainAdapter(keychainProvider)
         val crypto = IosSyncCryptoProvider(cryptoProvider)
@@ -228,6 +230,7 @@ internal interface IosApplicationGraph :
             },
             scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
             backgroundTime = IosSyncBackgroundTime,
+            onSetsRemoved = applicationMappings::retainSets,
         )
     }
 }

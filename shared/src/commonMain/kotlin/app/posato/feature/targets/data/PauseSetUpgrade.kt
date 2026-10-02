@@ -86,8 +86,13 @@ public class PauseSetPreparation internal constructor(
     public suspend fun prepare(keptApplications: suspend () -> List<KeptApplication>) {
         PauseSetUpgrade(database, dispatcher, clock::currentEpochMillis, keptApplications).complete()
         val sets = (policies.read() as? LocalPolicyResult.Success)?.value?.sets?.sets ?: return
-        mappings.retainOnly(sets.mapNotNullTo(mutableSetOf()) { set -> ApplicationChoiceSet.restore(set.id.hex()) })
+        mappings.retainSets(sets.mapTo(mutableSetOf()) { set -> set.id })
     }
+}
+
+/** Keeps this device's app choices for [sets] only, such as after another device removed a set. */
+internal suspend fun LocalApplicationMappings.retainSets(sets: Set<app.posato.feature.sync.domain.PauseSetId>) {
+    retainOnly(sets.mapNotNullTo(mutableSetOf()) { id -> ApplicationChoiceSet.restore(id.hex()) })
 }
 
 private fun app.posato.feature.sync.domain.PauseSetId.hex(): String {

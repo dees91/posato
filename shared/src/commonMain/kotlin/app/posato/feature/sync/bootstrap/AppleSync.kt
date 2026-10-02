@@ -6,6 +6,7 @@ import app.posato.feature.session.data.SessionWorkspaceCapture
 import app.posato.feature.sync.data.SyncCryptoProvider
 import app.posato.feature.sync.domain.LocalMutationResult
 import app.posato.feature.sync.domain.LocalSyncMutation
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWriter
 import app.posato.feature.sync.mailbox.MailboxPort
@@ -64,9 +65,11 @@ internal class AppleSync(
     private val onWorkspaceRemoved: suspend () -> Unit = {},
     private val scheduleSync: ScheduleSync? = null,
     private val backgroundTime: SyncBackgroundTime = SyncBackgroundTime.None,
+    /** Keeps this device's app choices to the surviving sets when a received change removed others. */
+    onSetsRemoved: suspend (Set<PauseSetId>) -> Unit = {},
 ) {
     internal val bootstrap = AppleBootstrap(coordinator, backgroundDispatcher)
-    private val reconciler = PolicyReconciler(policySync)
+    private val reconciler = PolicyReconciler(policySync, onSetsRemoved)
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
     private val opportunities = Channel<Unit>(Channel.CONFLATED)
     private val writers = AppleSyncWriter(coordinator, core, ::publish)

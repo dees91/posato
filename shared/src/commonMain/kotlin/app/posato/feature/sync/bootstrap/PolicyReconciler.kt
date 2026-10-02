@@ -38,6 +38,8 @@ internal sealed interface ReconcileOutcome {
 
 internal class PolicyReconciler(
     private val policies: LocalPolicySyncStore,
+    /** Told the sets that survive when an applied change removed some, so app choices can follow at once. */
+    private val onSetsRemoved: suspend (Set<PauseSetId>) -> Unit = {},
 ) {
     /**
      * At first link, queues what this device holds and the workspace may not: every website of a set the
@@ -123,12 +125,20 @@ internal class PolicyReconciler(
             return projection.toReconcileOutcome()
         }
         return when (val replaced = policies.replaceWithBase(local.revision, merged, projectedBase)) {
-            is LocalPolicyResult.Success -> projection.toReconcileOutcome()
+            is LocalPolicyResult.Success -> {
+                val surviving = merged.sets.mapTo(mutableSetOf()) { set -> set.id }
+                if (local.sets.sets.any { set -> set.id !in surviving }) {
+                    onSetsRemoved(surviving)
+                }
+                projection.toReconcileOutcome()
+            }
 
-            is LocalPolicyResult.Failure -> when {
-                replaced.reason == LocalPolicyFailure.REVISION_CONFLICT && !retrying -> applyOnce(projection, base, retrying = true)
-                replaced.reason == LocalPolicyFailure.REVISION_CONFLICT -> ReconcileOutcome.Conflict
-                else -> ReconcileOutcome.StorageFailure
+            is LocalPolicyResult.Failure -> {
+                when {
+                    replaced.reason == LocalPolicyFailure.REVISION_CONFLICT && !retrying -> applyOnce(projection, base, retrying = true)
+                    replaced.reason == LocalPolicyFailure.REVISION_CONFLICT -> ReconcileOutcome.Conflict
+                    else -> ReconcileOutcome.StorageFailure
+                }
             }
         }
     }

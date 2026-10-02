@@ -68,6 +68,19 @@ class PolicyReconcilerPauseSetTest {
     }
 
     @Test
+    fun `given a set the workspace removed when applied then this device's app choices keep only the surviving sets`() = runTest {
+        withStore("pause-set-removed-apps.db") { store ->
+            store.replaceLocal(LocalPauseSet(PauseSetId.FIRST, null, domains("a")), LocalPauseSet(work, "Work", domains("b")))
+            val projection = reduce(SyncOperationPayload.PauseSetPut(work, "Work"), SyncOperationPayload.PauseSetRemove(work))
+            var kept: Set<PauseSetId>? = null
+
+            PolicyReconciler(store) { surviving -> kept = surviving }.apply(projection, null)
+
+            assertEquals(setOf(PauseSetId.FIRST), kept)
+        }
+    }
+
+    @Test
     fun `given a local set the workspace refused at the cap when applied then it is kept and marked refused`() = runTest {
         withStore("pause-set-refused.db") { store ->
             store.replaceLocal(LocalPauseSet(PauseSetId.FIRST, null, emptyList()), LocalPauseSet(work, "Work", domains("b")))

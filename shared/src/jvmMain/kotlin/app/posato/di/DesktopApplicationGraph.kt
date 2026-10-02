@@ -43,6 +43,7 @@ import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.PauseSetPreparation
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
+import app.posato.feature.targets.data.retainSets
 import app.posato.feature.update.DesktopUpdateMaintenance
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
@@ -187,6 +188,7 @@ internal interface DesktopApplicationGraph :
         schedules: ScheduleSyncStore,
         zone: ScheduleZone,
         clock: SessionClock,
+        applicationMappings: LocalApplicationMappings,
     ): AppleSync {
         val transport: SyncCompanionTransport = companion
         val keys = MacOsBootstrapKeychainAdapter(transport)
@@ -212,6 +214,7 @@ internal interface DesktopApplicationGraph :
                 sessions.dropRetainedMarkersExceptCurrent()
             },
             scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
+            onSetsRemoved = applicationMappings::retainSets,
         )
     }
 }
