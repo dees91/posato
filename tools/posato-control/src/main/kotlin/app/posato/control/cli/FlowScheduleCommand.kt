@@ -73,11 +73,14 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         target: WheelTime,
     ) {
         repeat(MAX_ROUNDS) {
+            // A small iPhone keeps the time buttons below the fold, where they carry no label.
+            FlowSteps.run(backend, listOf(kind.reveal()))
             val current = kind.read(FlowSteps.labels(backend))
                 ?: throw ControlException(ErrorCode.ELEMENT_NOT_FOUND, "The editor shows no ${kind.label} time.")
             if (current == target) return
             FlowSteps.run(backend, kind.round(current, target))
         }
+        FlowSteps.run(backend, listOf(kind.reveal()))
         val reached = kind.read(FlowSteps.labels(backend))
         if (reached != target) {
             throw ControlException(ErrorCode.ASSERTION_FAILED, "${kind.label} stayed at ${reached?.text} instead of ${target.text}.")
@@ -132,17 +135,21 @@ internal enum class WheelKind(
     END("End", "Ends"),
     ;
 
+    private val button: Query
+        get() = Query(textContains = "$prefix ", role = FlowSteps.ROLE_BUTTON)
+
     fun read(labels: List<String>): WheelTime? {
         val pattern = Regex("""^$prefix (\d{2}):(\d{2})""")
         return labels.firstNotNullOfOrNull { label -> pattern.find(label) }
             ?.let { match -> WheelTime(match.groupValues[1].toInt(), match.groupValues[2].toInt()) }
     }
 
+    fun reveal(): Step = FlowSteps.reveal(button)
+
     fun round(
         current: WheelTime,
         target: WheelTime,
     ): List<Step> {
-        val button = Query(textContains = "$prefix ", role = FlowSteps.ROLE_BUTTON)
         val steps = mutableListOf(FlowSteps.reveal(button), FlowSteps.tap(button), FlowSteps.sleep(WHEEL_SETTLE_SECONDS))
         steps += arrows("hours", target.hour - current.hour)
         steps += arrows("minutes", target.minute - current.minute)
