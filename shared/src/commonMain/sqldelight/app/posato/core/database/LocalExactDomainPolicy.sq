@@ -7,13 +7,28 @@ CREATE TABLE local_policy_metadata (
 
 INSERT INTO local_policy_metadata(singleton, revision) VALUES (1, 0);
 
-CREATE TABLE exact_domain_policy (
-  canonical_domain TEXT NOT NULL PRIMARY KEY CHECK (
+CREATE TABLE local_pause_set (
+  set_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  name TEXT CHECK (name IS NULL OR (typeof(name) = 'text' AND length(CAST(name AS BLOB)) BETWEEN 1 AND 80)),
+  refused INTEGER NOT NULL DEFAULT 0 CHECK (typeof(refused) = 'integer' AND refused IN (0, 1))
+);
+INSERT INTO local_pause_set(set_id, name, refused) VALUES (zeroblob(16), NULL, 0);
+
+CREATE TABLE local_pause_set_default (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16)
+);
+CREATE TABLE local_pause_set_domain (
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  canonical_domain TEXT NOT NULL CHECK (
     typeof(canonical_domain) = 'text' AND
     length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
-  )
+  ),
+  PRIMARY KEY (set_id, canonical_domain)
 );
-
+CREATE TABLE local_pause_set_upgrade (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
+);
 CREATE TABLE application_policy (
   singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
   canonical_name TEXT NOT NULL CHECK (
@@ -27,11 +42,22 @@ SELECT revision
 FROM local_policy_metadata
 WHERE singleton = 1;
 
-selectDomains:
-SELECT canonical_domain
-FROM exact_domain_policy
-ORDER BY canonical_domain
+selectSets:
+SELECT set_id, name, refused
+FROM local_pause_set
+ORDER BY set_id
 LIMIT :maximum_row_count;
+
+selectSetDomains:
+SELECT set_id, canonical_domain
+FROM local_pause_set_domain
+ORDER BY set_id, canonical_domain
+LIMIT :maximum_row_count;
+
+selectDefault:
+SELECT set_id
+FROM local_pause_set_default
+WHERE singleton = 1;
 
 selectApplicationPolicyNameBytes:
 SELECT CAST(canonical_name AS BLOB) AS canonical_name_bytes
@@ -44,12 +70,30 @@ UPDATE local_policy_metadata
 SET revision = :next_revision
 WHERE singleton = 1 AND revision = :expected_revision;
 
-deleteDomains:
-DELETE FROM exact_domain_policy;
+deleteSetDomains:
+DELETE FROM local_pause_set_domain
+WHERE set_id = :set_id;
 
-insertDomain:
-INSERT INTO exact_domain_policy(canonical_domain)
-VALUES (:canonical_domain);
+deleteAllSetDomains:
+DELETE FROM local_pause_set_domain;
+
+insertSetDomain:
+INSERT INTO local_pause_set_domain(set_id, canonical_domain)
+VALUES (:set_id, :canonical_domain);
+
+deleteSets:
+DELETE FROM local_pause_set;
+
+insertSet:
+INSERT INTO local_pause_set(set_id, name, refused)
+VALUES (:set_id, :name, :refused);
+
+deleteDefault:
+DELETE FROM local_pause_set_default;
+
+insertDefault:
+INSERT INTO local_pause_set_default(singleton, set_id)
+VALUES (1, :set_id);
 
 deleteApplicationPolicy:
 DELETE FROM application_policy;
@@ -57,3 +101,10 @@ DELETE FROM application_policy;
 insertApplicationPolicy:
 INSERT INTO application_policy(singleton, canonical_name)
 VALUES (1, :canonical_name);
+
+selectUpgradePending:
+SELECT singleton
+FROM local_pause_set_upgrade;
+
+deleteUpgradePending:
+DELETE FROM local_pause_set_upgrade;

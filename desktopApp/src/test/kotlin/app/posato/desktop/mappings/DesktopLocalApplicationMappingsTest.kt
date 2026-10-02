@@ -3,6 +3,7 @@ package app.posato.desktop.mappings
 import app.posato.desktop.macos.MacOsApplicationPicker
 import app.posato.desktop.macos.MacOsApplicationPickerResult
 import app.posato.desktop.macos.SelectedMacOsApplication
+import app.posato.feature.targets.data.ApplicationChoiceSet
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
@@ -22,6 +23,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+
+private val workSet = checkNotNull(ApplicationChoiceSet.restore("00000000000040008000000000000050"))
+
+private fun app.posato.feature.targets.data.LocalApplicationMappingsSnapshot.names(): List<String> {
+    return mappings.map { mapping -> (mapping.display as LocalApplicationMappingDisplay.Named).value }
+}
+
+private fun DesktopLocalApplicationMappings.namesIn(set: ApplicationChoiceSet): List<String> {
+    return assertIs<LocalApplicationMappingsLoadResult.Success>(runBlocking { load(set) }).snapshot.names()
+}
 
 class DesktopLocalApplicationMappingsTest {
     @Test
@@ -193,6 +204,87 @@ class DesktopLocalApplicationMappingsTest {
             val reopened = createStore(path, MacOsApplicationPickerResult.Cancelled)
             assertEquals(1, assertIs<LocalApplicationMappingsLoadResult.Success>(runBlocking { reopened.load() }).snapshot.mappings.size)
             reopened.close()
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `a file written before pause sets keeps its choices in the first set`() {
+        val root = createTempDirectory("posato-mappings")
+        val path = root.resolve("data/mappings.db")
+        try {
+            Files.createDirectories(path.parent)
+            Files.setPosixFilePermissions(path.parent, PosixFilePermissions.fromString("rwx------"))
+            val requirement = byteArrayOf(7)
+            DriverManager.getConnection("jdbc:sqlite:$path").use { connection ->
+                connection.createStatement().use { statement ->
+                    statement.execute(
+                        "CREATE TABLE localApplicationMapping (mappingId BLOB NOT NULL PRIMARY KEY, " +
+                            "displayName BLOB NOT NULL, designatedRequirement BLOB NOT NULL)",
+                    )
+                    statement.execute("PRAGMA user_version = 1")
+                }
+                connection.prepareStatement("INSERT INTO localApplicationMapping VALUES (?, ?, ?)").use { insert ->
+                    insert.setBytes(1, java.security.MessageDigest.getInstance("SHA-256").digest(requirement))
+                    insert.setBytes(2, "Legacy".encodeToByteArray())
+                    insert.setBytes(3, requirement)
+                    insert.executeUpdate()
+                }
+            }
+
+            createStore(path, MacOsApplicationPickerResult.Success(listOf(application("Work app", 9)))).use { store ->
+                val first = assertIs<LocalApplicationMappingsLoadResult.Success>(runBlocking { store.load(ApplicationChoiceSet.FIRST) })
+                assertEquals(listOf("Legacy"), first.snapshot.names())
+                assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications(workSet) })
+                assertEquals(listOf("Legacy"), store.namesIn(ApplicationChoiceSet.FIRST))
+                assertEquals(listOf("Work app"), store.namesIn(workSet))
+            }
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `an application chosen in two sets counts once toward the limit of 64`() {
+        val sixtyFour = (1..64).map { value -> application("App $value", value) }
+        withStore(MacOsApplicationPickerResult.Success(sixtyFour)) { store, path ->
+            assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications(ApplicationChoiceSet.FIRST) })
+            store.close()
+
+            createStore(path, MacOsApplicationPickerResult.Success(listOf(application("App 5", 5)))).use { shared ->
+                assertIs<LocalApplicationSelectionResult.Success>(runBlocking { shared.chooseApplications(workSet) })
+            }
+            createStore(path, MacOsApplicationPickerResult.Success(listOf(application("App 65", 65)))).use { extra ->
+                val refused = assertIs<LocalApplicationSelectionResult.Rejected>(runBlocking { extra.chooseApplications(workSet) })
+                assertEquals(LocalApplicationSelectionRejection.CAPACITY, refused.reason)
+            }
+        }
+    }
+
+    @Test
+    fun `choices of sets that no longer exist are removed and requirements resolve across sets`() {
+        withStore(MacOsApplicationPickerResult.Success(listOf(application("Work app", 9)))) { store, _ ->
+            val chosen = assertIs<LocalApplicationSelectionResult.Success>(runBlocking { store.chooseApplications(workSet) })
+            val id = chosen.snapshot.mappings.single().id
+
+            assertEquals(1, runBlocking { store.designatedRequirements(listOf(id)) }.size)
+
+            runBlocking { store.retainOnly(setOf(ApplicationChoiceSet.FIRST)) }
+
+            assertTrue(assertIs<LocalApplicationMappingsLoadResult.Success>(runBlocking { store.load(workSet) }).snapshot.mappings.isEmpty())
+        }
+    }
+
+    @Test
+    fun `an unreadable store fails the upgrade's kept apps instead of keeping none`() {
+        val root = createTempDirectory("posato-mappings")
+        val files = FailingApplicationMappingFiles(MacOsApplicationMappingFiles(root.resolve("data/mappings.db"), Files.getOwner(root)))
+        files.failAfterSuccessfulSecureCalls = 0
+        try {
+            createStore(files, MacOsApplicationPicker { MacOsApplicationPickerResult.Cancelled }).use { store ->
+                assertFailsWith<IllegalStateException> { runBlocking { store.keptApplications() } }
+            }
         } finally {
             root.toFile().deleteRecursively()
         }

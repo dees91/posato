@@ -11,6 +11,7 @@ import app.posato.feature.session.domain.SessionLimits
 import app.posato.feature.session.domain.SessionOrigin
 import app.posato.feature.session.domain.SessionSyncWrite
 import app.posato.feature.session.domain.StoredSessionIntent
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalPolicyResult
@@ -174,8 +175,8 @@ class SqlLocalSessionStoreTest {
         val driver = testDatabase.openDriver()
         try {
             driver.executeSql(
-                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin)" +
-                    " VALUES (1, X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM}, 0, 'local')",
+                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin, set_id)" +
+                    " VALUES (1, X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM}, 0, 'local', zeroblob(16))",
             )
             val database = PosatoDatabase(driver)
             val store = SqlLocalSessionStore(database, Dispatchers.Default)
@@ -199,8 +200,8 @@ class SqlLocalSessionStoreTest {
         try {
             val identifier = testIdentifier(71).copyBytes()
             driver.executeSql(
-                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin)" +
-                    " VALUES (1, X'${identifier.toHexString()}', ${NOW + MINIMUM}, $NOW, 0, 'local')",
+                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin, set_id)" +
+                    " VALUES (1, X'${identifier.toHexString()}', ${NOW + MINIMUM}, $NOW, 0, 'local', zeroblob(16))",
             )
             val database = PosatoDatabase(driver)
             val store = SqlLocalSessionStore(database, Dispatchers.Default)
@@ -304,7 +305,7 @@ class SqlLocalSessionStoreTest {
     @Test
     fun `given a version five database when reopened then migration preserves rows and falls back without a frozen set`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("session-frozen-migration.db")
-        var driver = testDatabase.openDriver()
+        var driver = testDatabase.openDriverAt(5)
         try {
             val sessionHex = testIdentifier(91).copyBytes().toHexString()
             val workspaceHex = testIdentifier(92).copyBytes().toHexString()
@@ -313,32 +314,14 @@ class SqlLocalSessionStoreTest {
             driver.executeSql("UPDATE local_policy_metadata SET revision = 7 WHERE singleton = 1")
             driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
             driver.executeSql(
-                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin)" +
-                    " VALUES (1, X'$sessionHex', $NOW, ${NOW + MINIMUM}, 0, 'local')",
+                "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early)" +
+                    " VALUES (1, X'$sessionHex', $NOW, ${NOW + MINIMUM}, 0)",
             )
             driver.executeSql(
                 "INSERT INTO sync_replica_state(singleton, workspace_id, transport_epoch_id, key_epoch_id," +
                     " revision, hlc_physical, hlc_logical, hlc_exhausted, transport_progress)" +
                     " VALUES (1, X'$workspaceHex', X'$transportHex', X'$keyHex', 0, 0, 0, 0, NULL)",
             )
-            driver.executeSql("ALTER TABLE local_session DROP COLUMN frozen_domains")
-            driver.executeSql("ALTER TABLE local_session DROP COLUMN frozen_application_count")
-            driver.executeSql("ALTER TABLE local_session DROP COLUMN origin")
-            driver.executeSql("DROP TABLE local_setup_state")
-            driver.executeSql("DROP TABLE sync_policy_intent")
-            driver.executeSql("DROP TABLE sync_policy_base")
-            driver.executeSql("DROP TABLE sync_policy_base_domain")
-            driver.executeSql("DROP TABLE sync_policy_base_application")
-            driver.executeSql("DROP TABLE sync_removed_workspace")
-            driver.executeSql("DROP TABLE sync_session_intent")
-            driver.executeSql("DROP TABLE local_update_maintenance")
-            driver.executeSql("DROP TABLE local_schedule")
-            driver.executeSql("DROP TABLE local_schedule_fact")
-            driver.executeSql("DROP TABLE local_schedule_expiry")
-            driver.executeSql("DROP TABLE local_schedule_pin")
-            driver.executeSql("DROP TABLE sync_schedule_intent")
-            driver.executeSql("DROP TABLE sync_schedule_seed")
-            driver.executeSql("PRAGMA user_version = 5")
             driver.close()
 
             driver = testDatabase.openDriver()
@@ -373,14 +356,34 @@ class SqlLocalSessionStoreTest {
             val identifier = testIdentifier(95).copyBytes()
             driver.executeSql(
                 "INSERT INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early," +
-                    " frozen_domains, frozen_application_count, origin)" +
-                    " VALUES (1, X'${identifier.toHexString()}', $NOW, ${NOW + MINIMUM}, 0, 'ab', NULL, 'local')",
+                    " frozen_domains, frozen_application_count, origin, set_id)" +
+                    " VALUES (1, X'${identifier.toHexString()}', $NOW, ${NOW + MINIMUM}, 0, 'ab', NULL, 'local', zeroblob(16))",
             )
             val store = SqlLocalSessionStore(PosatoDatabase(driver), Dispatchers.Default)
             val result = store.read(NOW)
 
             assertIs<LocalSessionResult.Failure>(result)
             assertEquals(LocalSessionFailure.CORRUPTION, result.reason)
+        } finally {
+            driver.close()
+            testDatabase.delete()
+        }
+    }
+
+    @Test
+    fun `given a linked start in another set when read back then the session and its intent keep the set`() = runTest {
+        val testDatabase = createLocalPolicyTestDatabase("session-set.db")
+        val driver = testDatabase.openDriver()
+        try {
+            val store = SqlLocalSessionStore(PosatoDatabase(driver), Dispatchers.Default)
+            val work = checkNotNull(PauseSetId.of(testIdentifier(80)))
+            store.start(SessionId(testIdentifier(103)), NOW, NOW + MINIMUM, NOW, START_SET, testIdentifier(101).copyBytes(), work)
+
+            val active = assertIs<LocalSessionStatus.Active>(assertIs<LocalSessionResult.Success<LocalSessionStatus>>(store.read(NOW)).value)
+            val intents = assertIs<LocalSessionResult.Success<List<SequencedSessionIntent>>>(store.readIntents()).value
+
+            assertEquals(work, active.record.setId)
+            assertEquals(StoredSessionIntent.StartSession(SessionId(testIdentifier(103)), NOW, NOW + MINIMUM, work), intents.single().intent)
         } finally {
             driver.close()
             testDatabase.delete()
@@ -654,8 +657,8 @@ class SqlLocalSessionStoreTest {
         try {
             val workspaceHex = testIdentifier(113).copyBytes().toHexString()
             driver.executeSql(
-                "INSERT INTO sync_session_intent(workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis)" +
-                    " VALUES (X'$workspaceHex', 'session_start', X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM})",
+                "INSERT INTO sync_session_intent(workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis, set_id)" +
+                    " VALUES (X'$workspaceHex', 'session_start', X'11111111111111111111111111111111', $NOW, ${NOW + MINIMUM}, zeroblob(16))",
             )
             val store = SqlLocalSessionStore(PosatoDatabase(driver), Dispatchers.Default)
             val result = store.readIntents()

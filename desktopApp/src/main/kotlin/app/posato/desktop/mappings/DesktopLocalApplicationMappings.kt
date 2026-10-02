@@ -6,6 +6,8 @@ import app.posato.desktop.macos.MacOsApplicationPickerResult
 import app.posato.desktop.macos.MacOsHelperClient
 import app.posato.desktop.macos.SelectedMacOsApplication
 import app.posato.desktop.mappings.database.MacOsApplicationMappingsDatabase
+import app.posato.feature.targets.data.ApplicationChoiceSet
+import app.posato.feature.targets.data.KeptApplication
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingDisplay
 import app.posato.feature.targets.data.LocalApplicationMappingId
@@ -38,11 +40,11 @@ internal class DesktopLocalApplicationMappings(
     private var driver: JdbcSqliteDriver? = null
     private var database: MacOsApplicationMappingsDatabase? = null
 
-    override suspend fun load(): LocalApplicationMappingsLoadResult {
+    override suspend fun load(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
         return withContext(ioDispatcher) {
             operationMutex.withLock {
                 try {
-                    LocalApplicationMappingsLoadResult.Success(readSnapshot(openDatabase()))
+                    LocalApplicationMappingsLoadResult.Success(readSnapshot(openDatabase(), set))
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
                 } catch (_: CorruptApplicationMappingsException) {
@@ -54,11 +56,11 @@ internal class DesktopLocalApplicationMappings(
         }
     }
 
-    override suspend fun chooseApplications(): LocalApplicationSelectionResult {
+    override suspend fun chooseApplications(set: ApplicationChoiceSet): LocalApplicationSelectionResult {
         return withContext(ioDispatcher) {
             operationMutex.withLock {
                 when (val result = picker.selectApplications()) {
-                    is MacOsApplicationPickerResult.Success -> persistSelection(result.applications)
+                    is MacOsApplicationPickerResult.Success -> persistSelection(result.applications, set)
                     MacOsApplicationPickerResult.Cancelled -> LocalApplicationSelectionResult.Cancelled
                     MacOsApplicationPickerResult.SelfSelection -> rejected(LocalApplicationSelectionRejection.SELF)
                     MacOsApplicationPickerResult.InvalidOrUnsigned -> rejected(LocalApplicationSelectionRejection.INVALID_OR_UNSIGNED)
@@ -70,14 +72,17 @@ internal class DesktopLocalApplicationMappings(
         }
     }
 
-    override suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult {
+    override suspend fun remove(
+        mappingId: LocalApplicationMappingId,
+        set: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
         return withContext(ioDispatcher) {
             operationMutex.withLock {
                 try {
                     val currentDatabase = openDatabase()
                     val snapshot = currentDatabase.transactionWithResult {
-                        currentDatabase.applicationMappingsQueries.removeById(mappingId.canonicalValue.hexToByteArray())
-                        readSnapshot(currentDatabase)
+                        currentDatabase.applicationMappingsQueries.removeById(set.hex.hexToByteArray(), mappingId.canonicalValue.hexToByteArray())
+                        readSnapshot(currentDatabase, set)
                     }
                     LocalApplicationRemovalResult.Success(snapshot)
                 } catch (cancellationException: CancellationException) {
@@ -89,12 +94,33 @@ internal class DesktopLocalApplicationMappings(
         }
     }
 
-    override suspend fun clear(): LocalApplicationRemovalResult {
+    override suspend fun clear(set: ApplicationChoiceSet): LocalApplicationRemovalResult {
         return withContext(ioDispatcher) {
             operationMutex.withLock {
                 try {
                     val currentDatabase = openDatabase()
-                    currentDatabase.applicationMappingsQueries.removeAll()
+                    currentDatabase.applicationMappingsQueries.removeSet(set.hex.hexToByteArray())
+                    LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty())
+                } catch (cancellationException: CancellationException) {
+                    throw cancellationException
+                } catch (_: Exception) {
+                    LocalApplicationRemovalResult.Failure(LocalApplicationRemovalFailure.STORAGE)
+                }
+            }
+        }
+    }
+
+    override suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult {
+        return withContext(ioDispatcher) {
+            operationMutex.withLock {
+                try {
+                    val currentDatabase = openDatabase()
+                    currentDatabase.transaction {
+                        currentDatabase.applicationMappingsQueries.selectSetIds().executeAsList()
+                            .filter { setId -> sets.none { kept -> kept.hex == setId.toHex() } }
+                            .forEach { setId -> currentDatabase.applicationMappingsQueries.removeSet(setId) }
+                    }
+                    files.secureDatabaseArtifacts()
                     LocalApplicationRemovalResult.Success(LocalApplicationMappingsSnapshot.empty())
                 } catch (cancellationException: CancellationException) {
                     throw cancellationException
@@ -116,7 +142,7 @@ internal class DesktopLocalApplicationMappings(
         return withContext(ioDispatcher) {
             operationMutex.withLock {
                 val currentDatabase = openDatabase()
-                val stored = currentDatabase.applicationMappingsQueries.selectAll { mappingId, _, designatedRequirement ->
+                val stored = currentDatabase.applicationMappingsQueries.selectRequirements { mappingId, designatedRequirement ->
                     mappingId.toHex() to designatedRequirement.copyOf()
                 }.executeAsList().toMap()
                 files.secureDatabaseArtifacts()
@@ -127,7 +153,10 @@ internal class DesktopLocalApplicationMappings(
         }
     }
 
-    private fun persistSelection(applications: List<SelectedMacOsApplication>): LocalApplicationSelectionResult {
+    private fun persistSelection(
+        applications: List<SelectedMacOsApplication>,
+        set: ApplicationChoiceSet,
+    ): LocalApplicationSelectionResult {
         return try {
             val candidates = applications.map(::restoreCandidate).distinctBy { candidate -> candidate.mapping.id }
             val currentDatabase = openDatabase()
@@ -136,15 +165,16 @@ internal class DesktopLocalApplicationMappings(
                     val display = candidate.mapping.display as? LocalApplicationMappingDisplay.Named
                         ?: corruptApplicationMappings()
                     currentDatabase.applicationMappingsQueries.insertOrIgnore(
+                        setId = set.hex.hexToByteArray(),
                         mappingId = candidate.mapping.id.canonicalValue.hexToByteArray(),
                         displayName = display.value.encodeToByteArray(),
                         designatedRequirement = candidate.designatedRequirement,
                     )
                 }
-                if (currentDatabase.applicationMappingsQueries.countAll().executeAsOne() > LocalApplicationMappingLimits.MAXIMUM_MAPPINGS) {
+                if (currentDatabase.applicationMappingsQueries.countUnique().executeAsOne() > LocalApplicationMappingLimits.MAXIMUM_MAPPINGS) {
                     throw ApplicationMappingCapacityException()
                 }
-                readSnapshot(currentDatabase)
+                readSnapshot(currentDatabase, set)
             }
             LocalApplicationSelectionResult.Success(snapshot)
         } catch (cancellationException: CancellationException) {
@@ -188,39 +218,66 @@ internal class DesktopLocalApplicationMappings(
         return openedDatabase
     }
 
-    private fun readSnapshot(currentDatabase: MacOsApplicationMappingsDatabase): LocalApplicationMappingsSnapshot {
-        val mappings = currentDatabase.applicationMappingsQueries.selectAll { mappingId, displayName, designatedRequirement ->
-            restoreStoredMapping(mappingId, displayName, designatedRequirement)
-        }.executeAsList()
+    private fun readSnapshot(
+        currentDatabase: MacOsApplicationMappingsDatabase,
+        set: ApplicationChoiceSet,
+    ): LocalApplicationMappingsSnapshot {
+        val mappings = currentDatabase.applicationMappingsQueries
+            .selectForSet(set.hex.hexToByteArray(), ::restoreStoredMapping)
+            .executeAsList()
         files.secureDatabaseArtifacts()
 
         return LocalApplicationMappingsSnapshot.restore(mappings) ?: throw CorruptApplicationMappingsException()
     }
+}
 
-    private fun restoreStoredMapping(
-        mappingId: ByteArray,
-        displayName: ByteArray,
-        designatedRequirement: ByteArray,
-    ): LocalApplicationMapping {
-        if (mappingId.size != SHA256_BYTES || designatedRequirement.isEmpty() || designatedRequirement.size > MAXIMUM_REQUIREMENT_BYTES) {
-            corruptApplicationMappings()
-        }
-        if (!mappingId.contentEquals(designatedRequirement.sha256())) {
-            corruptApplicationMappings()
-        }
-        val restoredId = LocalApplicationMappingId.restore(mappingId.toHex()) ?: corruptApplicationMappings()
-        val restoredName = try {
-            displayName.decodeToString(throwOnInvalidSequence = true)
-        } catch (_: Exception) {
-            corruptApplicationMappings()
-        }
+private const val SHA256_BYTES: Int = 32
+private const val MAXIMUM_REQUIREMENT_BYTES: Int = 4_096
 
-        return LocalApplicationMapping.restore(restoredId, restoredName) ?: corruptApplicationMappings()
+private fun restoreStoredMapping(
+    mappingId: ByteArray,
+    displayName: ByteArray,
+    designatedRequirement: ByteArray,
+): LocalApplicationMapping {
+    if (mappingId.size != SHA256_BYTES || designatedRequirement.isEmpty() || designatedRequirement.size > MAXIMUM_REQUIREMENT_BYTES) {
+        corruptApplicationMappings()
+    }
+    if (!mappingId.contentEquals(designatedRequirement.sha256())) {
+        corruptApplicationMappings()
+    }
+    val restoredId = LocalApplicationMappingId.restore(mappingId.toHex()) ?: corruptApplicationMappings()
+    val restoredName = try {
+        displayName.decodeToString(throwOnInvalidSequence = true)
+    } catch (_: Exception) {
+        corruptApplicationMappings()
     }
 
-    private companion object {
-        const val SHA256_BYTES: Int = 32
-        const val MAXIMUM_REQUIREMENT_BYTES: Int = 4_096
+    return LocalApplicationMapping.restore(restoredId, restoredName) ?: corruptApplicationMappings()
+}
+
+/**
+ * The first set's choices with their requirements, which parts running at the pause set upgrade keep. A store
+ * that cannot be read now throws, so the upgrade stays pending; a corrupt one has no choices it could enforce.
+ */
+internal suspend fun DesktopLocalApplicationMappings.keptApplications(): List<KeptApplication> {
+    val mappings = when (val loaded = load(ApplicationChoiceSet.FIRST)) {
+        is LocalApplicationMappingsLoadResult.Success -> {
+            loaded.snapshot.mappings
+        }
+
+        is LocalApplicationMappingsLoadResult.Unavailable -> {
+            loaded.snapshot.mappings
+        }
+
+        is LocalApplicationMappingsLoadResult.Failure -> {
+            check(loaded.reason == LocalApplicationMappingsLoadFailure.CORRUPTION) { "application choices unreadable" }
+            emptyList()
+        }
+    }
+    val requirements = designatedRequirements(mappings.map(LocalApplicationMapping::id))
+    return mappings.zip(requirements).map { (mapping, requirement) ->
+        val name = (mapping.display as? LocalApplicationMappingDisplay.Named)?.value.orEmpty()
+        KeptApplication(mapping.id.canonicalValue.hexToByteArray(), name.encodeToByteArray(), requirement)
     }
 }
 

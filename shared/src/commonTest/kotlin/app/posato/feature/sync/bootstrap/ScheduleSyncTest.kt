@@ -12,6 +12,7 @@ import app.posato.feature.schedules.domain.SchedulePlan
 import app.posato.feature.sync.FakeSyncCryptoProvider
 import app.posato.feature.sync.domain.FakeSyncReplicaStore
 import app.posato.feature.sync.domain.OpenSyncWriterResult
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.RemoteAcceptanceResult
 import app.posato.feature.sync.domain.RemoteTransportReceipt
 import app.posato.feature.sync.domain.ScheduleSyncId
@@ -101,6 +102,23 @@ class ScheduleSyncTest {
             assertEquals(listOf(plan(10).name), writer.projection().schedules.map { it.name })
             assertEquals(emptyList(), store.pending())
             assertEquals(listOf(plan(10)), store.shown().runnable)
+        }
+    }
+
+    @Test
+    fun `given a plan in another set when passes run then it is authored once as kind 17 and keeps its set`() = runTest {
+        withSync("schedule-sync-set.db") { store, writer ->
+            val inSet = plan(11).copy(setId = checkNotNull(PauseSetId.of(testIdentifier(80))))
+            store.save(inSet, workspaceId = null)
+            val sync = ScheduleSync(store) { today }
+
+            sync.pass(writer, workspace) { null }
+            val authoredAfterFirst = writer.projection().audit.size
+            sync.pass(writer, workspace) { null }
+
+            assertEquals(authoredAfterFirst, writer.projection().audit.size)
+            assertEquals(listOf(inSet.setId), writer.projection().schedules.map { it.setId })
+            assertEquals(listOf(inSet), store.shown().runnable)
         }
     }
 

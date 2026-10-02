@@ -109,7 +109,7 @@ internal fun SyncProjection.toSynced(): SyncedSchedules {
 }
 
 private fun SynchronizedSchedule.toPlan(): SchedulePlan {
-    return SchedulePlan(scheduleId.toScheduleId(), name, weekdays, startMinute, endMinute, enabled)
+    return SchedulePlan(scheduleId.toScheduleId(), name, weekdays, startMinute, endMinute, enabled, setId)
 }
 
 private fun ScheduleOccurrenceRef.toKey(): OccurrenceKey {
@@ -123,7 +123,7 @@ private fun OccurrenceKey.toRef(): ScheduleOccurrenceRef? {
 private fun ScheduleIntent.toMutation(): LocalSyncMutation? {
     return when (this) {
         is ScheduleIntent.Put -> plan.id.toSync()?.let { id ->
-            LocalSyncMutation.PutSchedule(id, plan.name, plan.weekdays, plan.startMinute, plan.endMinute, plan.enabled)
+            LocalSyncMutation.PutSchedule(id, plan.name, plan.weekdays, plan.startMinute, plan.endMinute, plan.enabled, plan.setId)
         }
 
         is ScheduleIntent.Remove -> scheduleId.toSync()?.let(LocalSyncMutation::RemoveSchedule)

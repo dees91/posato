@@ -13,6 +13,7 @@ import app.posato.feature.session.domain.SessionIdGenerator
 import app.posato.feature.session.domain.SessionTimeFormat
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.testIdentifier
+import app.posato.feature.targets.data.ApplicationChoiceSet
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
@@ -176,19 +177,26 @@ internal fun sessionOwnerOf(
 internal class FakeSessionMappings(
     var result: LocalApplicationMappingsLoadResult = LocalApplicationMappingsLoadResult.Unavailable(),
 ) : LocalApplicationMappings {
-    override suspend fun load(): LocalApplicationMappingsLoadResult {
+    override suspend fun load(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
         return result
     }
 
-    override suspend fun chooseApplications(): LocalApplicationSelectionResult {
+    override suspend fun chooseApplications(set: ApplicationChoiceSet): LocalApplicationSelectionResult {
         return LocalApplicationSelectionResult.Unavailable
     }
 
-    override suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult {
+    override suspend fun remove(
+        mappingId: LocalApplicationMappingId,
+        set: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
         return LocalApplicationRemovalResult.Unavailable
     }
 
-    override suspend fun clear(): LocalApplicationRemovalResult {
+    override suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult {
+        return LocalApplicationRemovalResult.Unavailable
+    }
+
+    override suspend fun clear(set: ApplicationChoiceSet): LocalApplicationRemovalResult {
         return LocalApplicationRemovalResult.Unavailable
     }
 }

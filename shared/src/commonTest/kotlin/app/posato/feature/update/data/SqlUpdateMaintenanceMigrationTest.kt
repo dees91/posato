@@ -13,20 +13,12 @@ class SqlUpdateMaintenanceMigrationTest {
     @Test
     fun `given a version ten session when migrated then the gate is open and the session survives`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("maintenance-migration.db")
-        val seeding = testDatabase.openDriver()
+        val seeding = testDatabase.openDriverAt(PREVIOUS_VERSION.toLong())
         seeding.executeSql(
             "INSERT INTO local_session(" +
                 "singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, origin) " +
                 "VALUES (1, X'$IDENTIFIER_HEX', $START_MILLIS, $END_MILLIS, 0, 'local')",
         )
-        seeding.executeSql("DROP TABLE local_update_maintenance")
-        seeding.executeSql("DROP TABLE local_schedule")
-        seeding.executeSql("DROP TABLE local_schedule_fact")
-        seeding.executeSql("DROP TABLE local_schedule_expiry")
-        seeding.executeSql("DROP TABLE local_schedule_pin")
-        seeding.executeSql("DROP TABLE sync_schedule_intent")
-        seeding.executeSql("DROP TABLE sync_schedule_seed")
-        seeding.executeSql("PRAGMA user_version = $PREVIOUS_VERSION")
         seeding.close()
 
         val driver = testDatabase.openDriver()

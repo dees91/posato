@@ -121,7 +121,7 @@ final class IosManagedSettingsEnforcer: NSObject, IosEnforcementProvider {
         },
         isCapable: Bool = defaultCapable,
         storedMappings: @escaping () throws -> [StoredApplicationMapping] = {
-            try ApplicationMappingsStore.liveMigrated().load()
+            try ApplicationMappingSets.liveMigrated().loadAllSets()
         }
     ) {
         self.storeFactory = storeFactory

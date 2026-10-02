@@ -8,6 +8,7 @@ import androidx.compose.runtime.setValue
 import app.posato.feature.onboarding.data.LocalSetupResult
 import app.posato.feature.onboarding.data.LocalSetupStore
 import app.posato.feature.onboarding.data.SetupCompletion
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.domain.TargetPolicy
@@ -198,6 +199,7 @@ internal class OnboardingUiState(
         val submission = createWebsiteBatchSubmission(
             input,
             snapshot.policy.domains.map { domain -> domain.canonicalValue },
+            snapshot.domainsOutside(PauseSetId.FIRST),
         )
         if (submission is WebsiteBatchSubmission.TooLong) {
             return WebsiteBatchReceipt(submissionId, saved = false, tooLong = true)

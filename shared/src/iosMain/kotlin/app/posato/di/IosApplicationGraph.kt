@@ -49,8 +49,10 @@ import app.posato.feature.targets.data.IosLocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalPolicySyncStore
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.data.PauseSetPreparation
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
 import app.posato.feature.targets.data.SyncTargetPolicyStore
+import app.posato.feature.targets.data.retainSets
 import dev.zacsweers.metro.AppScope
 import dev.zacsweers.metro.DependencyGraph
 import dev.zacsweers.metro.Named
@@ -68,6 +70,7 @@ internal interface IosApplicationGraph :
     ApplicationGraph,
     IosScheduleBindings {
     val localTargetPolicyStore: LocalTargetPolicyStore
+    val pauseSetPreparation: PauseSetPreparation
     val appleSync: AppleSync
     val appleBootstrap: AppleBootstrap
         get() {
@@ -200,6 +203,7 @@ internal interface IosApplicationGraph :
         schedules: ScheduleSyncStore,
         zone: ScheduleZone,
         clock: SessionClock,
+        applicationMappings: LocalApplicationMappings,
     ): AppleSync {
         val keys = IosBootstrapKeychainAdapter(keychainProvider)
         val crypto = IosSyncCryptoProvider(cryptoProvider)
@@ -226,6 +230,7 @@ internal interface IosApplicationGraph :
             },
             scheduleSync = ScheduleSync(schedules) { zone.localAt(clock.currentEpochMillis()).date },
             backgroundTime = IosSyncBackgroundTime,
+            onSetsRemoved = applicationMappings::retainSets,
         )
     }
 }
@@ -233,6 +238,7 @@ internal interface IosApplicationGraph :
 internal data class IosApplicationRuntime(
     val applicationGraph: ApplicationGraph,
     val syncOperationCore: SyncOperationCore,
+    val pauseSetPreparation: PauseSetPreparation,
 )
 
 internal fun createIosApplicationRuntime(
@@ -288,7 +294,7 @@ private fun buildIosApplicationRuntime(
         notifications,
         schedules,
     )
-    return IosApplicationRuntime(graph, graph.appleSync.core)
+    return IosApplicationRuntime(graph, graph.appleSync.core, graph.pauseSetPreparation)
 }
 
 private const val MILLIS_PER_SECOND = 1_000

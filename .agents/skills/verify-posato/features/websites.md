@@ -62,7 +62,7 @@ Preconditions:
   returns to the original draft.
 - **Persist:** Relaunch without fresh, open Paused items again, and scrollTo
   the saved row. On Mac/Simulator also use
-  `$PC db query -t <target> --sql "select canonical_domain from exact_domain_policy"`.
+  `$PC db query -t <target> --sql "select canonical_domain from local_pause_set_domain"`.
   The database contains domains, never the submitted URL path/query/fragment.
   After a fresh launch or reset, run `first-install-skip.json` first (see
   [First install](./onboarding.md)).

@@ -1,6 +1,10 @@
 package app.posato.feature.targets.data
 
+import app.cash.sqldelight.async.coroutines.awaitAsList
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.SequencedPolicyIntent
@@ -57,6 +61,51 @@ internal class SqlLocalTargetPolicyStore(
         }
     }
 
+    override suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
+        syncWrite: PolicySyncWrite?,
+    ): LocalPolicyResult<LocalTargetPolicyState> {
+        return withContext(databaseDispatcher) {
+            when {
+                expectedRevision < 0 -> {
+                    LocalPolicyResult.Failure(LocalPolicyFailure.INVALID_REVISION)
+                }
+
+                expectedRevision == Long.MAX_VALUE -> {
+                    LocalPolicyResult.Failure(LocalPolicyFailure.REVISION_EXHAUSTED)
+                }
+
+                else -> {
+                    replaceValidSets(database, expectedRevision, sets, syncWrite).also { result ->
+                        if (result is LocalPolicyResult.Success) {
+                            changes.tryEmit(Unit)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    override suspend fun enablePauseSetsOnce(
+        workspaceId: ByteArray,
+        author: suspend () -> Boolean,
+    ): LocalPolicyResult<Boolean> {
+        val recorded = transactResult(databaseDispatcher, database) {
+            scheduleQueries.selectPauseSetsEnabled(workspaceId).awaitAsList().isNotEmpty()
+        }
+        if (recorded !is LocalPolicyResult.Success || recorded.value) {
+            return recorded
+        }
+        if (!author()) {
+            return LocalPolicyResult.Success(false)
+        }
+        return when (val marked = transact(databaseDispatcher, database) { scheduleQueries.insertPauseSetsEnabled(workspaceId) }) {
+            is LocalPolicyResult.Success -> LocalPolicyResult.Success(true)
+            is LocalPolicyResult.Failure -> marked
+        }
+    }
+
     override suspend fun recordIntents(write: PolicySyncWrite): LocalPolicyResult<Unit> {
         return transact(databaseDispatcher, database) {
             insertIntents(write)
@@ -89,8 +138,8 @@ internal class SqlLocalTargetPolicyStore(
 
     override suspend fun replaceWithBase(
         expectedRevision: Long,
-        policy: TargetPolicy,
-        base: TargetPolicy,
+        sets: PauseSets,
+        base: Map<PauseSetId, List<ExactDomain>>,
     ): LocalPolicyResult<LocalTargetPolicyState> {
         return withContext(databaseDispatcher) {
             when {
@@ -103,7 +152,7 @@ internal class SqlLocalTargetPolicyStore(
                 }
 
                 else -> {
-                    replaceValidRevisionWithBase(database, expectedRevision, policy, base).also { result ->
+                    replaceValidRevisionWithBase(database, expectedRevision, sets, base).also { result ->
                         if (result is LocalPolicyResult.Success) {
                             changes.tryEmit(Unit)
                         }
@@ -198,16 +247,41 @@ private suspend fun replaceValidRevision(
     }
 }
 
-private suspend fun replaceValidRevisionWithBase(
+private suspend fun replaceValidSets(
     database: PosatoDatabase,
     expectedRevision: Long,
-    policy: TargetPolicy,
-    base: TargetPolicy,
+    sets: PauseSets,
+    syncWrite: PolicySyncWrite?,
 ): LocalPolicyResult<LocalTargetPolicyState> {
     return try {
         val state = database.transactionWithResult {
             database.advanceRevisionOrThrow(expectedRevision)
-            database.writePolicyRows(policy)
+            database.writeSetRows(sets)
+            if (syncWrite != null) {
+                database.insertIntents(syncWrite)
+            }
+            database.readStateOrThrow()
+        }
+        LocalPolicyResult.Success(state)
+    } catch (expectedCancellation: CancellationException) {
+        throw expectedCancellation
+    } catch (failure: LocalPolicyStoreException) {
+        LocalPolicyResult.Failure(failure.reason)
+    } catch (_: Exception) {
+        LocalPolicyResult.Failure(LocalPolicyFailure.STORAGE_FAILURE)
+    }
+}
+
+private suspend fun replaceValidRevisionWithBase(
+    database: PosatoDatabase,
+    expectedRevision: Long,
+    sets: PauseSets,
+    base: Map<PauseSetId, List<ExactDomain>>,
+): LocalPolicyResult<LocalTargetPolicyState> {
+    return try {
+        val state = database.transactionWithResult {
+            database.advanceRevisionOrThrow(expectedRevision)
+            database.writeSetRows(sets)
             database.writeBaseRows(base)
             database.readStateOrThrow()
         }

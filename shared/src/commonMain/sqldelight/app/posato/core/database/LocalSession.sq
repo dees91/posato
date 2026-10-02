@@ -13,15 +13,49 @@ CREATE TABLE local_session (
     frozen_application_count IS NULL OR
     (typeof(frozen_application_count) = 'integer' AND frozen_application_count >= 0)
   ),
-  origin TEXT NOT NULL DEFAULT 'local' CHECK (typeof(origin) = 'text' AND origin IN ('local', 'adopted'))
+  origin TEXT NOT NULL DEFAULT 'local' CHECK (typeof(origin) = 'text' AND origin IN ('local', 'adopted')),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16)
 );
 
+CREATE TABLE local_retained_domain (
+  part_kind TEXT NOT NULL CHECK (typeof(part_kind) = 'text' AND part_kind IN ('session', 'occurrence')),
+  part_id BLOB NOT NULL CHECK (typeof(part_id) = 'blob' AND length(part_id) = 16),
+  year INTEGER NOT NULL DEFAULT 0 CHECK (typeof(year) = 'integer'),
+  month INTEGER NOT NULL DEFAULT 0 CHECK (typeof(month) = 'integer'),
+  day INTEGER NOT NULL DEFAULT 0 CHECK (typeof(day) = 'integer'),
+  canonical_domain TEXT NOT NULL CHECK (
+    typeof(canonical_domain) = 'text' AND
+    length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
+  ),
+  CHECK (
+    (part_kind = 'session' AND year = 0 AND month = 0 AND day = 0) OR
+    (part_kind = 'occurrence' AND year BETWEEN 2000 AND 2100 AND month BETWEEN 1 AND 12 AND day BETWEEN 1 AND 31)
+  ),
+  PRIMARY KEY (part_kind, part_id, year, month, day, canonical_domain)
+);
+CREATE TABLE local_retained_application (
+  part_kind TEXT NOT NULL CHECK (typeof(part_kind) = 'text' AND part_kind IN ('session', 'occurrence')),
+  part_id BLOB NOT NULL CHECK (typeof(part_id) = 'blob' AND length(part_id) = 16),
+  year INTEGER NOT NULL DEFAULT 0 CHECK (typeof(year) = 'integer'),
+  month INTEGER NOT NULL DEFAULT 0 CHECK (typeof(month) = 'integer'),
+  day INTEGER NOT NULL DEFAULT 0 CHECK (typeof(day) = 'integer'),
+  mapping_id BLOB NOT NULL CHECK (typeof(mapping_id) = 'blob' AND length(mapping_id) = 32),
+  display_name BLOB NOT NULL CHECK (typeof(display_name) = 'blob' AND length(display_name) BETWEEN 1 AND 256),
+  designated_requirement BLOB NOT NULL CHECK (
+    typeof(designated_requirement) = 'blob' AND length(designated_requirement) BETWEEN 1 AND 4096
+  ),
+  CHECK (
+    (part_kind = 'session' AND year = 0 AND month = 0 AND day = 0) OR
+    (part_kind = 'occurrence' AND year BETWEEN 2000 AND 2100 AND month BETWEEN 1 AND 12 AND day BETWEEN 1 AND 31)
+  ),
+  PRIMARY KEY (part_kind, part_id, year, month, day, mapping_id)
+);
 CREATE TABLE local_session_expiry (
   session_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(session_id) = 'blob' AND length(session_id) = 16)
 );
 
 selectSession:
-SELECT session_id, start_epoch_millis, end_epoch_millis, ended_early, frozen_domains, frozen_application_count, origin
+SELECT session_id, start_epoch_millis, end_epoch_millis, ended_early, frozen_domains, frozen_application_count, origin, set_id
 FROM local_session
 WHERE singleton = 1;
 
@@ -31,8 +65,8 @@ FROM local_session_expiry
 WHERE session_id = :session_id;
 
 replaceSession:
-INSERT OR REPLACE INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, frozen_domains, frozen_application_count, origin)
-VALUES (1, :session_id, :start_epoch_millis, :end_epoch_millis, 0, :frozen_domains, :frozen_application_count, :origin);
+INSERT OR REPLACE INTO local_session(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, frozen_domains, frozen_application_count, origin, set_id)
+VALUES (1, :session_id, :start_epoch_millis, :end_epoch_millis, 0, :frozen_domains, :frozen_application_count, :origin, :set_id);
 
 clearFrozenStartSet:
 UPDATE local_session
@@ -62,3 +96,35 @@ WHERE session_id = :session_id;
 
 deleteAllExpiryMarkers:
 DELETE FROM local_session_expiry;
+
+insertRetainedDomain:
+INSERT OR IGNORE INTO local_retained_domain(part_kind, part_id, year, month, day, canonical_domain)
+VALUES (:partKind, :partId, :year, :month, :day, :canonicalDomain);
+
+insertRetainedApplication:
+INSERT OR IGNORE INTO local_retained_application(
+  part_kind, part_id, year, month, day, mapping_id, display_name, designated_requirement
+)
+VALUES (:partKind, :partId, :year, :month, :day, :mappingId, :displayName, :designatedRequirement);
+
+deleteStaleRetainedDomains:
+DELETE FROM local_retained_domain
+WHERE (part_kind = 'session' AND part_id NOT IN (
+    SELECT session_id FROM local_session
+    WHERE ended_early = 0 AND session_id NOT IN (SELECT session_id FROM local_session_expiry)
+  ))
+  OR (part_kind = 'occurrence' AND NOT EXISTS (
+    SELECT 1 FROM local_schedule_pin AS pin
+    WHERE pin.schedule_id = local_retained_domain.part_id AND pin.year = local_retained_domain.year AND pin.month = local_retained_domain.month AND pin.day = local_retained_domain.day
+  ));
+
+deleteStaleRetainedApplications:
+DELETE FROM local_retained_application
+WHERE (part_kind = 'session' AND part_id NOT IN (
+    SELECT session_id FROM local_session
+    WHERE ended_early = 0 AND session_id NOT IN (SELECT session_id FROM local_session_expiry)
+  ))
+  OR (part_kind = 'occurrence' AND NOT EXISTS (
+    SELECT 1 FROM local_schedule_pin AS pin
+    WHERE pin.schedule_id = local_retained_application.part_id AND pin.year = local_retained_application.year AND pin.month = local_retained_application.month AND pin.day = local_retained_application.day
+  ));

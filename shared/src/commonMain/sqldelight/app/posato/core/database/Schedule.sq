@@ -6,6 +6,7 @@ CREATE TABLE local_schedule (
   end_minute INTEGER NOT NULL CHECK (typeof(end_minute) = 'integer' AND end_minute BETWEEN 0 AND 1439),
   enabled INTEGER NOT NULL CHECK (typeof(enabled) = 'integer' AND enabled IN (0, 1)),
   refused INTEGER NOT NULL DEFAULT 0 CHECK (typeof(refused) = 'integer' AND refused IN (0, 1)),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
   CHECK (start_minute <> end_minute)
 );
 
@@ -46,6 +47,7 @@ CREATE TABLE sync_schedule_intent (
   author_year INTEGER CHECK (author_year IS NULL OR (typeof(author_year) = 'integer' AND author_year BETWEEN 2000 AND 2100)),
   author_month INTEGER CHECK (author_month IS NULL OR (typeof(author_month) = 'integer' AND author_month BETWEEN 1 AND 12)),
   author_day INTEGER CHECK (author_day IS NULL OR (typeof(author_day) = 'integer' AND author_day BETWEEN 1 AND 31)),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
   CHECK (
     (
       kind = 'put' AND name IS NOT NULL AND weekdays IS NOT NULL AND start_minute IS NOT NULL AND end_minute IS NOT NULL AND
@@ -63,12 +65,15 @@ CREATE TABLE sync_schedule_intent (
   )
 );
 
+CREATE TABLE sync_pause_sets_enabled (
+  workspace_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16)
+);
 CREATE TABLE sync_schedule_seed (
   workspace_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16)
 );
 
 selectSchedules:
-SELECT schedule_id, name, weekdays, start_minute, end_minute, enabled, refused
+SELECT schedule_id, name, weekdays, start_minute, end_minute, enabled, refused, set_id
 FROM local_schedule
 ORDER BY schedule_id;
 
@@ -76,8 +81,8 @@ countLiveSchedules:
 SELECT count(*) FROM local_schedule WHERE refused = 0;
 
 upsertSchedule:
-INSERT OR REPLACE INTO local_schedule(schedule_id, name, weekdays, start_minute, end_minute, enabled, refused)
-VALUES (:scheduleId, :name, :weekdays, :startMinute, :endMinute, :enabled, :refused);
+INSERT OR REPLACE INTO local_schedule(schedule_id, name, weekdays, start_minute, end_minute, enabled, refused, set_id)
+VALUES (:scheduleId, :name, :weekdays, :startMinute, :endMinute, :enabled, :refused, :setId);
 
 -- Without a shared workspace no cap refuses anything, so refused plans rejoin up to the local cap of 10.
 promoteRefusedSchedules:
@@ -132,18 +137,18 @@ WHERE schedule_id = :scheduleId AND year = :year AND month = :month AND day = :d
 
 selectScheduleIntents:
 SELECT sequence, workspace_id, kind, schedule_id, name, weekdays, start_minute, end_minute, enabled, year, month, day,
-  author_year, author_month, author_day
+  author_year, author_month, author_day, set_id
 FROM sync_schedule_intent
 ORDER BY sequence;
 
 insertScheduleIntent:
 INSERT INTO sync_schedule_intent(
   workspace_id, kind, schedule_id, name, weekdays, start_minute, end_minute, enabled, year, month, day,
-  author_year, author_month, author_day
+  author_year, author_month, author_day, set_id
 )
 VALUES (
   :workspaceId, :kind, :scheduleId, :name, :weekdays, :startMinute, :endMinute, :enabled, :year, :month, :day,
-  :authorYear, :authorMonth, :authorDay
+  :authorYear, :authorMonth, :authorDay, :setId
 );
 
 deleteScheduleIntent:
@@ -163,3 +168,19 @@ DELETE FROM sync_schedule_seed;
 
 deletePinsForSchedule:
 DELETE FROM local_schedule_pin WHERE schedule_id = :scheduleId;
+
+selectPauseSetsEnabled:
+SELECT workspace_id
+FROM sync_pause_sets_enabled
+WHERE workspace_id = :workspaceId;
+
+insertPauseSetsEnabled:
+INSERT OR IGNORE INTO sync_pause_sets_enabled(workspace_id)
+VALUES (:workspaceId);
+
+deleteAllPauseSetsEnabled:
+DELETE FROM sync_pause_sets_enabled;
+
+selectPinsRunningAt:
+SELECT schedule_id, year, month, day FROM local_schedule_pin
+WHERE start_epoch_millis <= :nowEpochMillis AND start_epoch_millis > :nowEpochMillis - 86400000;

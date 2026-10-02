@@ -1,16 +1,34 @@
 package app.posato.feature.targets.domain
 
+import app.posato.feature.sync.domain.PauseSetId
+
+/** A local change waiting to be authored. Each names its pause set; set changes are ordered before their websites. */
 internal sealed interface StoredPolicyIntent {
     data class PresentDomain(
         val domain: ExactDomain,
+        val setId: PauseSetId = PauseSetId.FIRST,
     ) : StoredPolicyIntent
 
     data class RemoveDomain(
         val domain: ExactDomain,
+        val setId: PauseSetId = PauseSetId.FIRST,
     ) : StoredPolicyIntent
 
-    data class PresentApplicationPolicy(
-        val name: ApplicationPolicyName,
+    data class PutSet(
+        val setId: PauseSetId,
+        val name: String,
+    ) : StoredPolicyIntent {
+        override fun toString(): String {
+            return "StoredPolicyIntent.PutSet(redacted)"
+        }
+    }
+
+    data class RemoveSet(
+        val setId: PauseSetId,
+    ) : StoredPolicyIntent
+
+    data class ChooseDefault(
+        val setId: PauseSetId,
     ) : StoredPolicyIntent
 }
 
@@ -57,6 +75,7 @@ internal data class SequencedPolicyIntent(
     }
 }
 
+/** Each live set's websites as the workspace last held them, the base of the three-way merge. */
 internal data class PolicySyncBase(
-    val policy: TargetPolicy,
+    val domains: Map<PauseSetId, List<ExactDomain>>,
 )

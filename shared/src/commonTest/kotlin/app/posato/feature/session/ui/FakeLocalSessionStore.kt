@@ -16,6 +16,7 @@ import app.posato.feature.session.domain.SessionSetupResult
 import app.posato.feature.session.domain.SessionState
 import app.posato.feature.session.domain.SessionSyncWrite
 import app.posato.feature.session.domain.StoredSessionIntent
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 
 internal class FakeLocalSessionStore : LocalSessionSyncStore {
@@ -71,6 +72,7 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
         workspaceId: ByteArray?,
+        setId: PauseSetId,
     ): LocalSessionResult<LocalSessionStatus> {
         startCalls += 1
         startWorkspaces += workspaceId?.copyOf()
@@ -209,6 +211,7 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
         endEpochMillis: Long,
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
+        setId: PauseSetId,
     ): LocalSessionResult<LocalSessionStatus> {
         adoptCalls += 1
         val adopted = try {

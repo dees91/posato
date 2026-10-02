@@ -132,11 +132,17 @@ class IosBootstrapCompositionTest {
 }
 
 private class InertMappingsProvider : IosApplicationMappingsProvider {
-    override fun load(completion: (IosApplicationMappingsResponse) -> Unit) {
+    override fun load(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
         throw UnsupportedOperationException()
     }
 
-    override fun choose(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation {
+    override fun choose(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ): IosApplicationMappingsOperation {
         throw UnsupportedOperationException()
     }
 
@@ -146,12 +152,23 @@ private class InertMappingsProvider : IosApplicationMappingsProvider {
 
     override fun remove(
         identifier: String,
+        set: String,
         completion: (IosApplicationMappingsResponse) -> Unit,
     ) {
         throw UnsupportedOperationException()
     }
 
-    override fun clear(completion: (IosApplicationMappingsResponse) -> Unit) {
+    override fun retainOnly(
+        sets: List<String>,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
+        throw UnsupportedOperationException()
+    }
+
+    override fun clear(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ) {
         throw UnsupportedOperationException()
     }
 

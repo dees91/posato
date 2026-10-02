@@ -15,6 +15,7 @@ import app.posato.feature.session.domain.SessionSetupResult
 import app.posato.feature.session.domain.SessionState
 import app.posato.feature.session.domain.SessionSyncWrite
 import app.posato.feature.session.domain.StoredSessionIntent
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncIdentifier
 import kotlinx.coroutines.CoroutineDispatcher
@@ -68,6 +69,7 @@ internal class SqlLocalSessionStore(
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
         workspaceId: ByteArray?,
+        setId: PauseSetId,
     ): LocalSessionResult<LocalSessionStatus> {
         return withContext(databaseDispatcher) {
             database.localSessionTransact {
@@ -81,7 +83,7 @@ internal class SqlLocalSessionStore(
                         if (evaluation is SessionEvaluation.CommitExpiry) {
                             commitExpiry(evaluation.record, evaluated.originOrThrow())
                         }
-                        startWhenInactive(sessionId, startEpochMillis, endEpochMillis, nowEpochMillis, frozenStartSet, workspaceId)
+                        startWhenInactive(sessionId, startEpochMillis, endEpochMillis, nowEpochMillis, frozenStartSet, workspaceId, setId)
                     }
                 }
             }
@@ -136,11 +138,12 @@ internal class SqlLocalSessionStore(
         endEpochMillis: Long,
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
+        setId: PauseSetId,
     ): LocalSessionResult<LocalSessionStatus> {
         return withContext(databaseDispatcher) {
             database.localSessionTransact {
                 val record = try {
-                    SessionRecord(sessionId, startEpochMillis, endEpochMillis)
+                    SessionRecord(sessionId, startEpochMillis, endEpochMillis, setId)
                 } catch (_: IllegalArgumentException) {
                     return@localSessionTransact LocalSessionResult.Failure(LocalSessionFailure.INVALID_SESSION)
                 }
@@ -158,7 +161,9 @@ internal class SqlLocalSessionStore(
                     frozen_domains = frozenStartSet.toStorageValue(),
                     frozen_application_count = frozenStartSet.applicationCount?.toLong(),
                     origin = SessionOrigin.ADOPTED.storageValue,
+                    set_id = setId.value.copyBytes(),
                 )
+                database.retain(RetainedPart(PART_SESSION, sessionId.value.copyBytes()), frozenStartSet.domains)
                 LocalSessionResult.Success(
                     LocalSessionStatus.Active(
                         record,
@@ -194,6 +199,7 @@ internal class SqlLocalSessionStore(
         nowEpochMillis: Long,
         frozenStartSet: FrozenStartSet,
         workspaceId: ByteArray?,
+        setId: PauseSetId,
     ): LocalSessionResult<LocalSessionStatus> {
         return when (SessionSetup.validateEndTime(endEpochMillis, nowEpochMillis)) {
             is SessionSetupResult.Invalid -> {
@@ -213,16 +219,18 @@ internal class SqlLocalSessionStore(
                         frozen_domains = frozenStartSet.toStorageValue(),
                         frozen_application_count = frozenStartSet.applicationCount?.toLong(),
                         origin = SessionOrigin.LOCAL.storageValue,
+                        set_id = setId.value.copyBytes(),
                     )
+                    database.retain(RetainedPart(PART_SESSION, sessionId.value.copyBytes()), frozenStartSet.domains)
                     if (workspaceId != null) {
                         intents.insertIntent(
                             workspaceId,
-                            StoredSessionIntent.StartSession(sessionId, startEpochMillis, endEpochMillis),
+                            StoredSessionIntent.StartSession(sessionId, startEpochMillis, endEpochMillis, setId),
                         )
                     }
                     LocalSessionResult.Success(
                         LocalSessionStatus.Active(
-                            SessionRecord(sessionId, startEpochMillis, endEpochMillis),
+                            SessionRecord(sessionId, startEpochMillis, endEpochMillis, setId),
                             endEpochMillis - nowEpochMillis,
                             frozenStartSet,
                             SessionOrigin.LOCAL,
@@ -305,7 +313,7 @@ internal suspend fun PosatoDatabase.readStoredLocalSession(): StoredLocalSession
     val row = rows.single()
     val sessionId = SyncIdentifier.fromUuidV4Bytes(row.session_id)?.let(::SessionId) ?: fail(LocalSessionFailure.CORRUPTION)
     val record = try {
-        SessionRecord(sessionId, row.start_epoch_millis, row.end_epoch_millis)
+        SessionRecord(sessionId, row.start_epoch_millis, row.end_epoch_millis, restoreSessionSetId(row.set_id))
     } catch (_: IllegalArgumentException) {
         fail(LocalSessionFailure.CORRUPTION)
     }
@@ -348,4 +356,8 @@ internal fun parseStoredOrigin(value: String): SessionOrigin? {
         SessionOrigin.ADOPTED.storageValue -> SessionOrigin.ADOPTED
         else -> null
     }
+}
+
+private fun restoreSessionSetId(bytes: ByteArray): PauseSetId {
+    return SyncIdentifier.fromExactBytes(bytes)?.let(PauseSetId::of) ?: fail(LocalSessionFailure.CORRUPTION)
 }

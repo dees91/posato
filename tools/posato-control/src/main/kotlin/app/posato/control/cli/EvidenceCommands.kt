@@ -64,7 +64,7 @@ data class DbQueryResult(
 )
 
 class DbQueryCommand : ControlCommand("query", "Run a read-only SQL statement against the policy database and return JSON rows.") {
-    private val sql by option("--sql", help = "SQL to run, e.g. \"select count(*) from exact_domain_policy\".").required()
+    private val sql by option("--sql", help = "SQL to run, e.g. \"select count(*) from local_pause_set_domain\".").required()
     private val database by option("--database", help = "Database file name when the target has several (default: the first).")
 
     override fun execute(session: Session): JsonElement {

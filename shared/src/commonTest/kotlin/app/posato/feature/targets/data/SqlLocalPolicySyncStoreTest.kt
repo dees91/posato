@@ -2,9 +2,11 @@ package app.posato.feature.targets.data
 
 import app.cash.sqldelight.db.SqlDriver
 import app.posato.core.database.PosatoDatabase
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ApplicationPolicyNameResult
 import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.SequencedPolicyIntent
@@ -41,7 +43,6 @@ class SqlLocalPolicySyncStoreTest {
                 intents = listOf(
                     StoredPolicyIntent.RemoveDomain(removed),
                     StoredPolicyIntent.PresentDomain(added),
-                    StoredPolicyIntent.PresentApplicationPolicy(testGroupName()),
                 ),
             )
             val replaced = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replace(0, policy, write))
@@ -107,28 +108,8 @@ class SqlLocalPolicySyncStoreTest {
             val database = PosatoDatabase(driver)
             val store = SqlLocalTargetPolicyStore(database, testDispatcher())
             driver.executeSql(
-                "INSERT INTO sync_policy_intent(workspace_id, kind, canonical_domain, canonical_name) " +
-                    "VALUES (X'000102030405060708090A0B0C0D0E0F', 'domain_present', 'a..b', NULL)",
-            )
-            val result = store.readIntents()
-            assertIs<LocalPolicyResult.Failure>(result)
-            assertEquals(LocalPolicyFailure.CORRUPTION, result.reason)
-        } finally {
-            driver.close()
-            testDatabase.delete()
-        }
-    }
-
-    @Test
-    fun `given a non-canonical name row when reading intents then corruption is reported`() = runTest {
-        val testDatabase = createLocalPolicyTestDatabase("policy-sync-corrupt-name.db")
-        val driver = testDatabase.openDriver()
-        try {
-            val database = PosatoDatabase(driver)
-            val store = SqlLocalTargetPolicyStore(database, testDispatcher())
-            driver.executeSql(
-                "INSERT INTO sync_policy_intent(workspace_id, kind, canonical_domain, canonical_name) " +
-                    "VALUES (X'000102030405060708090A0B0C0D0E0F', 'application_present', NULL, ' Untrimmed ')",
+                "INSERT INTO sync_policy_intent(workspace_id, kind, set_id, canonical_domain, set_name) " +
+                    "VALUES (X'000102030405060708090A0B0C0D0E0F', 'domain_present', zeroblob(16), 'a..b', NULL)",
             )
             val result = store.readIntents()
             assertIs<LocalPolicyResult.Failure>(result)
@@ -161,11 +142,11 @@ class SqlLocalPolicySyncStoreTest {
             seedReplicaState(driver)
             val store = SqlLocalTargetPolicyStore(PosatoDatabase(driver), testDispatcher())
             val policy = testPolicy("applied.example", groupName = "Example group")
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, policy, policy))
-            assertEquals(policy, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.policy)
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, policy.asSets(), policy.asBase()))
+            assertEquals(policy.domains, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.domains?.get(PauseSetId.FIRST))
             val next = testPolicy("next.example")
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(1, next, next))
-            assertEquals(next, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.policy)
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(1, next.asSets(), next.asBase()))
+            assertEquals(next.domains, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.domains?.get(PauseSetId.FIRST))
         } finally {
             driver.close()
             testDatabase.delete()
@@ -179,7 +160,7 @@ class SqlLocalPolicySyncStoreTest {
         try {
             val store = SqlLocalTargetPolicyStore(PosatoDatabase(driver), testDispatcher())
             driver.executeSql("INSERT INTO sync_policy_base(singleton) VALUES (1)")
-            driver.executeSql("INSERT INTO sync_policy_base_domain(canonical_domain) VALUES ('orphan.example')")
+            driver.executeSql("INSERT INTO sync_policy_base_domain(set_id, canonical_domain) VALUES (zeroblob(16), 'orphan.example')")
             val result = store.readBase()
             assertIs<LocalPolicyResult.Failure>(result)
             assertEquals(LocalPolicyFailure.CORRUPTION, result.reason)
@@ -197,13 +178,13 @@ class SqlLocalPolicySyncStoreTest {
             seedReplicaState(driver)
             val store = SqlLocalTargetPolicyStore(PosatoDatabase(driver), testDispatcher())
             val kept = testPolicy("kept.example")
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, kept, kept))
-            val conflicted = store.replaceWithBase(7, testPolicy("lost.example"), testPolicy("lost.example"))
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceWithBase(0, kept.asSets(), kept.asBase()))
+            val conflicted = store.replaceWithBase(7, testPolicy("lost.example").asSets(), testPolicy("lost.example").asBase())
             assertIs<LocalPolicyResult.Failure>(conflicted)
             assertEquals(LocalPolicyFailure.REVISION_CONFLICT, conflicted.reason)
             val current = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.read()).value
             assertEquals(kept, current.policy)
-            assertEquals(kept, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.policy)
+            assertEquals(kept.domains, assertIs<LocalPolicyResult.Success<PolicySyncBase?>>(store.readBase()).value?.domains?.get(PauseSetId.FIRST))
         } finally {
             driver.close()
             testDatabase.delete()
@@ -286,7 +267,7 @@ class SqlLocalPolicySyncStoreTest {
             }
             runCurrent()
             assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(
-                store.replaceWithBase(0, testPolicy("signalled.example"), testPolicy("signalled.example")),
+                store.replaceWithBase(0, testPolicy("signalled.example").asSets(), testPolicy("signalled.example").asBase()),
             )
             runCurrent()
             assertEquals(1, received.size)
@@ -353,4 +334,12 @@ private fun SqlDriver.executeSql(sql: String) {
         sql = sql,
         parameters = 0,
     ).value
+}
+
+private fun TargetPolicy.asSets(): PauseSets {
+    return PauseSets.firstSetOnly(domains)
+}
+
+private fun TargetPolicy.asBase(): Map<PauseSetId, List<ExactDomain>> {
+    return mapOf(PauseSetId.FIRST to domains)
 }

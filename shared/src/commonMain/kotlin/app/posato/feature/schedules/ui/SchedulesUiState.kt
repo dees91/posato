@@ -7,6 +7,7 @@ import app.posato.feature.schedules.domain.ScheduleId
 import app.posato.feature.schedules.domain.ScheduleLimits
 import app.posato.feature.schedules.domain.SchedulePlan
 import app.posato.feature.schedules.domain.SchedulePlanProblem
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.ScheduleWireRules
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
@@ -79,6 +80,7 @@ internal data class ScheduleDraft(
     val endHour: Int = 11,
     val endMinute: Int = 0,
     val enabled: Boolean = true,
+    val setId: PauseSetId = PauseSetId.FIRST,
 ) {
     val startOfDay: Int
         get() {
@@ -112,7 +114,7 @@ internal data class ScheduleDraft(
     }
 
     fun toPlan(id: ScheduleId): SchedulePlan {
-        return SchedulePlan(id, name.trim(), days.fold(0) { mask, day -> mask or day.bit }, startOfDay, endOfDay, enabled)
+        return SchedulePlan(id, name.trim(), days.fold(0) { mask, day -> mask or day.bit }, startOfDay, endOfDay, enabled, setId)
     }
 
     override fun toString(): String {
@@ -132,6 +134,7 @@ internal data class ScheduleDraft(
                 endHour = plan.endMinute / MINUTES_PER_HOUR,
                 endMinute = plan.endMinute % MINUTES_PER_HOUR,
                 enabled = plan.enabled,
+                setId = plan.setId,
             )
         }
     }

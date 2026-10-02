@@ -1,9 +1,14 @@
 package app.posato.feature.targets.data
 
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.domain.ApplicationPolicyName
+import app.posato.feature.targets.domain.ExactDomain
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.PolicySyncBase
 import app.posato.feature.targets.domain.PolicySyncWrite
 import app.posato.feature.targets.domain.SequencedPolicyIntent
 import app.posato.feature.targets.domain.TargetPolicy
+import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -13,6 +18,7 @@ internal enum class LocalPolicyFailure {
     REVISION_EXHAUSTED,
     CORRUPTION,
     STORAGE_FAILURE,
+    CAPACITY,
 }
 
 internal sealed interface LocalPolicyResult<out T> {
@@ -25,22 +31,48 @@ internal sealed interface LocalPolicyResult<out T> {
     ) : LocalPolicyResult<Nothing>
 }
 
+/**
+ * The stored pause sets and the local application group name. [policy] is the first set's websites with that
+ * name, the view every screen edits until sets can be chosen.
+ */
 internal class LocalTargetPolicyState(
     val revision: Long,
-    val policy: TargetPolicy,
+    val sets: PauseSets,
+    val applicationPolicyName: ApplicationPolicyName?,
 ) {
+    constructor(revision: Long, policy: TargetPolicy) : this(
+        revision,
+        PauseSets.firstSetOnly(policy.domains),
+        policy.applicationPolicyName,
+    )
+
+    val policy: TargetPolicy = checkNotNull(
+        (
+            TargetPolicy.fromStoredValues(
+                sets.domainsOf(PauseSetId.FIRST).map(ExactDomain::canonicalValue),
+                applicationPolicyName?.canonicalValue,
+            ) as? TargetPolicyValidationResult.Success
+        )?.policy,
+    )
+
     init {
         require(revision >= 0)
+    }
+
+    /** The websites the other sets hold, which count once toward the one limit shared by every set. */
+    fun domainsOutside(setId: PauseSetId): Set<String> {
+        return sets.sets.filter { set -> set.id != setId }.flatMapTo(mutableSetOf()) { set -> set.domains.map(ExactDomain::canonicalValue) }
     }
 
     override fun equals(other: Any?): Boolean {
         return other is LocalTargetPolicyState &&
             revision == other.revision &&
-            policy == other.policy
+            sets == other.sets &&
+            applicationPolicyName == other.applicationPolicyName
     }
 
     override fun hashCode(): Int {
-        return 31 * revision.hashCode() + policy.hashCode()
+        return 31 * (31 * revision.hashCode() + sets.hashCode()) + applicationPolicyName.hashCode()
     }
 
     override fun toString(): String {
@@ -64,6 +96,21 @@ internal interface LocalTargetPolicyStore {
 }
 
 internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
+    /**
+     * Runs [author] unless this database already authored kind 19 for [workspaceId], and records it once
+     * [author] succeeds, so a replica authors it once per workspace. The result says whether it is recorded.
+     */
+    suspend fun enablePauseSetsOnce(
+        workspaceId: ByteArray,
+        author: suspend () -> Boolean,
+    ): LocalPolicyResult<Boolean>
+
+    suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
+        syncWrite: PolicySyncWrite? = null,
+    ): LocalPolicyResult<LocalTargetPolicyState>
+
     suspend fun recordIntents(write: PolicySyncWrite): LocalPolicyResult<Unit>
 
     suspend fun readIntents(): LocalPolicyResult<List<SequencedPolicyIntent>>
@@ -76,7 +123,7 @@ internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
 
     suspend fun replaceWithBase(
         expectedRevision: Long,
-        policy: TargetPolicy,
-        base: TargetPolicy,
+        sets: PauseSets,
+        base: Map<PauseSetId, List<ExactDomain>>,
     ): LocalPolicyResult<LocalTargetPolicyState>
 }

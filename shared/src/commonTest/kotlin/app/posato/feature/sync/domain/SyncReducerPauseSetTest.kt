@@ -45,7 +45,7 @@ class SyncReducerPauseSetTest {
         assertNull(projection.pauseSets.single().name)
         assertEquals(first, projection.defaultPauseSetId)
         assertEquals(listOf("a.example"), projection.domainsOf(first))
-        assertEquals(listOf(domain("a")), projection.domains)
+        assertEquals(listOf(domain("a")), projection.pauseSetDomains(first))
         assertFalse(projection.pauseSetsEnabled)
     }
 
@@ -219,7 +219,7 @@ class SyncReducerPauseSetTest {
         assertEquals(PauseSetStatus.REMOVED, projection.pauseSetStatus(first))
         assertEquals(SyncAuditOutcome.NO_OP, projection.outcomeOf(operations[13]))
         assertEquals(SyncAuditOutcome.NO_OP, projection.outcomeOf(operations[14]))
-        assertEquals(emptyList(), projection.domains)
+        assertEquals(emptyList(), projection.pauseSetDomains(first))
         assertEquals(emptyList(), projection.domainsOf(first))
         assertEquals(first, projection.schedules.single().setId)
         assertEquals(first, projection.eligibleSessionStarts.single().setId)

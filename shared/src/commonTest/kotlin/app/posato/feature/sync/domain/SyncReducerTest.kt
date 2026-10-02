@@ -23,9 +23,9 @@ class SyncReducerTest {
             listOf(registration, third, testOperation(2, 2, SyncOperationPayload.DomainAbsent(domain))),
         )
 
-        assertEquals(emptyList(), beforeGap.domains)
+        assertEquals(emptyList(), beforeGap.pauseSetDomains(PauseSetId.FIRST))
         assertEquals(SyncAuditOutcome.SEQUENCE_GAP, beforeGap.audit.single { entry -> entry.operationId == third.operationId }.outcome)
-        assertEquals(listOf(domain), afterGap.domains)
+        assertEquals(listOf(domain), afterGap.pauseSetDomains(PauseSetId.FIRST))
     }
 
     @Test
@@ -39,7 +39,7 @@ class SyncReducerTest {
         val forward = SyncReducer.reduce(operations)
         val reverse = SyncReducer.reduce(operations.reversed())
 
-        assertEquals(SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS, forward.domains.size)
+        assertEquals(SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS, forward.pauseSetDomains(PauseSetId.FIRST).size)
         assertEquals(forward, reverse)
         assertEquals(1, forward.audit.count { entry -> entry.outcome == SyncAuditOutcome.DOMAIN_CAPACITY })
     }
@@ -119,8 +119,8 @@ class SyncReducerTest {
 
         val projection = SyncReducer.reduce(operations)
 
-        assertEquals(SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS - 1, projection.domains.size)
-        assertTrue(rejected !in projection.domains)
+        assertEquals(SyncFormatLimits.MAX_SYNCHRONIZED_DOMAINS - 1, projection.pauseSetDomains(PauseSetId.FIRST).size)
+        assertTrue(rejected !in projection.pauseSetDomains(PauseSetId.FIRST))
         assertEquals(1, projection.audit.count { it.outcome == SyncAuditOutcome.DOMAIN_CAPACITY })
     }
 

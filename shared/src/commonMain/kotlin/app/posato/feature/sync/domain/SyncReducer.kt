@@ -67,7 +67,6 @@ internal data class SynchronizedSessionStart(
 }
 
 internal data class SyncProjection(
-    val domains: List<ExactDomain>,
     val applicationPolicyName: ApplicationPolicyName?,
     val eligibleSessionStarts: List<SynchronizedSessionStart>,
     val conflictedSessionIds: Set<SessionId>,
@@ -340,7 +339,6 @@ private class ProjectionAccumulator(
             SynchronizedPauseSet(setId, sets.nameOf(setId), setDomains.getValue(setId).sortedBy(ExactDomain::canonicalValue))
         }
         return SyncProjection(
-            pauseSets.firstOrNull { set -> set.setId == PauseSetId.FIRST }?.domains.orEmpty(),
             applicationPolicyName,
             eligible.sortedBy(SynchronizedSessionStart::order),
             conflicted,

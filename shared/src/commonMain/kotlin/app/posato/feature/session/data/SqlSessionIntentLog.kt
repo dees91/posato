@@ -6,6 +6,7 @@ import app.posato.feature.session.domain.SequencedSessionIntent
 import app.posato.feature.session.domain.SessionRecord
 import app.posato.feature.session.domain.SessionSyncWrite
 import app.posato.feature.session.domain.StoredSessionIntent
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncIdentifier
 import kotlinx.coroutines.CancellationException
@@ -43,6 +44,7 @@ internal class SqlSessionIntentLog(
                         row.session_id,
                         row.start_epoch_millis,
                         row.end_epoch_millis,
+                        row.set_id,
                     ) ?: return@localSessionTransact LocalSessionResult.Failure(LocalSessionFailure.CORRUPTION)
                 }
                 LocalSessionResult.Success(intents)
@@ -80,6 +82,7 @@ internal class SqlSessionIntentLog(
                     sessionId = intent.sessionId.value.copyBytes(),
                     startEpochMillis = intent.startEpochMillis,
                     endEpochMillis = intent.mandatoryEndEpochMillis,
+                    setId = intent.setId.value.copyBytes(),
                 )
             }
 
@@ -90,6 +93,7 @@ internal class SqlSessionIntentLog(
                     sessionId = intent.sessionId.value.copyBytes(),
                     startEpochMillis = null,
                     endEpochMillis = null,
+                    setId = PauseSetId.FIRST.value.copyBytes(),
                 )
             }
         }
@@ -102,8 +106,10 @@ internal class SqlSessionIntentLog(
         sessionIdBytes: ByteArray,
         startEpochMillis: Long?,
         endEpochMillis: Long?,
+        setIdBytes: ByteArray,
     ): SequencedSessionIntent? {
         val sessionId = SyncIdentifier.fromUuidV4Bytes(sessionIdBytes)?.let(::SessionId) ?: return null
+        val setId = SyncIdentifier.fromExactBytes(setIdBytes)?.let(PauseSetId::of) ?: return null
         val intent = when (kind) {
             SESSION_START_KIND -> {
                 val start = startEpochMillis ?: return null
@@ -113,7 +119,7 @@ internal class SqlSessionIntentLog(
                 } catch (_: IllegalArgumentException) {
                     return null
                 }
-                StoredSessionIntent.StartSession(sessionId, start, end)
+                StoredSessionIntent.StartSession(sessionId, start, end, setId)
             }
 
             SESSION_END_KIND -> {
@@ -134,7 +140,7 @@ internal class SqlSessionIntentLog(
 internal suspend fun <T> PosatoDatabase.localSessionTransact(block: suspend () -> LocalSessionResult<T>): LocalSessionResult<T> {
     return try {
         transactionWithResult {
-            block()
+            block().also { sweepRetention() }
         }
     } catch (expectedCancellation: CancellationException) {
         throw expectedCancellation

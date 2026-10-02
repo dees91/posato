@@ -12,6 +12,7 @@ import app.posato.feature.sync.data.useAndClear
 import app.posato.feature.sync.domain.AuthorId
 import app.posato.feature.sync.domain.BundleId
 import app.posato.feature.sync.domain.HybridLogicalClock
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.sync.domain.SyncFormatLimits
 import app.posato.feature.sync.domain.SyncIdentifier
@@ -131,112 +132,6 @@ class AppleSyncConvergenceTest {
             assertEquals(listOf("alpha.example", "beta.example"), localDomains(first))
             assertEquals(localPolicy(first), localPolicy(second))
             assertEquals(localBase(first), localBase(second))
-        } finally {
-            first.close()
-            second.close()
-        }
-    }
-
-    @Test
-    fun `given a group created on one device when the peer syncs then the name converges on both`() = runTest {
-        val dispatcher = StandardTestDispatcher(testScheduler)
-        val mailbox = SharedFakeMailboxPort()
-        val first = AppleSyncTestHarness(dispatcher, "sync-group-first.db", mailboxPort = mailbox, wallClock = SyncWallClock { 100 })
-        val second = AppleSyncTestHarness(
-            dispatcher,
-            "sync-group-second.db",
-            mailboxPort = mailbox,
-            wallClock = SyncWallClock { 200 },
-            cryptoProvider = FakeSyncCryptoProvider(streamSeed = 0x5A),
-        )
-        try {
-            first.establish()
-            second.establish()
-            first.sync.onForeground()
-            second.sync.onForeground()
-            advanceUntilIdle()
-
-            first.recordDomainChanges(testPolicy(), testNamedPolicy("Family"))
-            advanceUntilIdle()
-            second.sync.syncNow()
-            advanceUntilIdle()
-
-            assertEquals("Family", localPolicy(first).applicationPolicyName?.canonicalValue)
-            assertEquals("Family", localPolicy(second).applicationPolicyName?.canonicalValue)
-            assertEquals(localPolicy(first), localPolicy(second))
-        } finally {
-            first.close()
-            second.close()
-        }
-    }
-
-    @Test
-    fun `given a fresh replica with a local default when joining a custom workspace then both keep the custom name`() = runTest {
-        val dispatcher = StandardTestDispatcher(testScheduler)
-        val mailbox = SharedFakeMailboxPort()
-        val first = AppleSyncTestHarness(dispatcher, "sync-custom-first.db", mailboxPort = mailbox, wallClock = SyncWallClock { 100 })
-        val second = AppleSyncTestHarness(
-            dispatcher,
-            "sync-custom-second.db",
-            mailboxPort = mailbox,
-            wallClock = SyncWallClock { 200 },
-            cryptoProvider = FakeSyncCryptoProvider(streamSeed = 0x5A),
-        )
-        try {
-            first.establish()
-            first.sync.onForeground()
-            advanceUntilIdle()
-            first.recordDomainChanges(testPolicy(), testNamedPolicy("Family"))
-            advanceUntilIdle()
-
-            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(second.syncPolicy.replace(0, testNamedPolicy("Applications")))
-            second.establish()
-            second.sync.onForeground()
-            advanceUntilIdle()
-
-            assertEquals("Family", localPolicy(first).applicationPolicyName?.canonicalValue)
-            assertEquals("Family", localPolicy(second).applicationPolicyName?.canonicalValue)
-            assertEquals(0, intentRowCount(second))
-        } finally {
-            first.close()
-            second.close()
-        }
-    }
-
-    @Test
-    fun `given a local rename while the projection holds a name when deciding then the rename stays local per D4`() = runTest {
-        val dispatcher = StandardTestDispatcher(testScheduler)
-        val mailbox = SharedFakeMailboxPort()
-        val first = AppleSyncTestHarness(dispatcher, "sync-rename-first.db", mailboxPort = mailbox, wallClock = SyncWallClock { 100 })
-        val second = AppleSyncTestHarness(
-            dispatcher,
-            "sync-rename-second.db",
-            mailboxPort = mailbox,
-            wallClock = SyncWallClock { 200 },
-            cryptoProvider = FakeSyncCryptoProvider(streamSeed = 0x5A),
-        )
-        try {
-            first.establish()
-            second.establish()
-            first.sync.onForeground()
-            second.sync.onForeground()
-            advanceUntilIdle()
-            first.recordDomainChanges(testPolicy(), testNamedPolicy("Family"))
-            advanceUntilIdle()
-            second.sync.syncNow()
-            advanceUntilIdle()
-            assertEquals("Family", localPolicy(second).applicationPolicyName?.canonicalValue)
-
-            val published = mailbox.saved.size
-            first.recordDomainChanges(testNamedPolicy("Family"), testNamedPolicy("Renamed"))
-            advanceUntilIdle()
-            second.sync.syncNow()
-            advanceUntilIdle()
-
-            assertEquals("Renamed", localPolicy(first).applicationPolicyName?.canonicalValue)
-            assertEquals("Family", localPolicy(second).applicationPolicyName?.canonicalValue)
-            assertEquals(published, mailbox.saved.size)
-            assertEquals(0, intentRowCount(first))
         } finally {
             first.close()
             second.close()
@@ -372,7 +267,7 @@ class AppleSyncConvergenceTest {
             advanceUntilIdle()
 
             val projection = SyncReducer.reduce(first.snapshot().acceptedBundles.values.map { it.operation })
-            assertEquals(emptyList(), projection.domains)
+            assertEquals(emptyList(), projection.pauseSetDomains(PauseSetId.FIRST))
             assertEquals(0, intentRowCount(first))
             assertEquals(SyncStatus.COMPLETED, first.sync.state.value.status)
             assertEquals(localPolicy(second), localPolicy(first))
@@ -425,7 +320,7 @@ class AppleSyncConvergenceTest {
             advanceUntilIdle()
 
             val projection = SyncReducer.reduce(first.snapshot().acceptedBundles.values.map { it.operation })
-            assertEquals(listOf("contested.example"), projection.domains.map { it.canonicalValue })
+            assertEquals(listOf("contested.example"), projection.pauseSetDomains(PauseSetId.FIRST).map { it.canonicalValue })
             assertEquals(0, intentRowCount(first))
             assertEquals(SyncStatus.COMPLETED, first.sync.state.value.status)
             assertEquals(SyncStatus.COMPLETED, second.sync.state.value.status)

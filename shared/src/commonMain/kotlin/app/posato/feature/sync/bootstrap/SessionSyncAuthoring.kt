@@ -75,7 +75,7 @@ internal class SessionSyncAuthoring(
     ): DrainStep {
         val mutation = when (val intent = row.intent) {
             is StoredSessionIntent.StartSession -> {
-                LocalSyncMutation.StartSession(intent.sessionId, intent.startEpochMillis, intent.mandatoryEndEpochMillis)
+                LocalSyncMutation.StartSession(intent.sessionId, intent.startEpochMillis, intent.mandatoryEndEpochMillis, intent.setId)
             }
 
             is StoredSessionIntent.EndSession -> {

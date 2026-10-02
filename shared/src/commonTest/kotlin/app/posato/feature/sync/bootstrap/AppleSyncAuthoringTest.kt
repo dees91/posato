@@ -1,6 +1,9 @@
 package app.posato.feature.sync.bootstrap
 
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.sync.domain.SyncOperationPayload
 import app.posato.feature.sync.mailbox.BundleSaveResult
+import app.posato.feature.sync.testIdentifier
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.SqlLocalTargetPolicyStore
@@ -152,6 +155,29 @@ class AppleSyncAuthoringTest {
     }
 
     @Test
+    fun `given a website saved after the upgrade when synced then it is authored as kind 14 naming the first set`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val harness = AppleSyncTestHarness(dispatcher)
+        try {
+            harness.establish()
+            harness.sync.onForeground()
+            advanceUntilIdle()
+            val local = harness.syncPolicy
+            val initial = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.read()).value
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(local.replace(initial.revision, testPolicy("tagged.example")))
+            advanceUntilIdle()
+
+            val domainPayloads = harness.snapshot().acceptedBundles.values
+                .map { stored -> stored.operation.payload }
+                .filterIsInstance<SyncOperationPayload.DomainPresent>()
+
+            assertEquals(listOf(PauseSetId.FIRST), domainPayloads.map { payload -> payload.setId })
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
     fun `given a present intent for a held domain when draining then the row is skipped without authoring`() = runTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val harness = AppleSyncTestHarness(dispatcher)
@@ -190,6 +216,29 @@ class AppleSyncAuthoringTest {
             assertTrue(harness.snapshot().acceptedBundles.isEmpty())
             assertEquals(0, intentRowCount(harness))
             assertEquals(SyncStatus.COMPLETED, harness.sync.state.value.status)
+        } finally {
+            harness.close()
+        }
+    }
+
+    @Test
+    fun `given a removal for a set this device holds but the workspace does not show live when draining then it is authored`() = runTest {
+        val dispatcher = StandardTestDispatcher(testScheduler)
+        val harness = AppleSyncTestHarness(dispatcher)
+        try {
+            harness.establish()
+            harness.sync.onForeground()
+            advanceUntilIdle()
+            // A refused or not yet received set shows no websites; its removal must still reach history.
+            val hidden = checkNotNull(PauseSetId.of(testIdentifier(77)))
+            recordIntent(harness, StoredPolicyIntent.RemoveDomain(checkNotNull(ExactDomain.restore("kept.example")), hidden))
+            harness.sync.syncNow()
+            advanceUntilIdle()
+
+            val absent = harness.snapshot().acceptedBundles.values
+                .map { stored -> stored.operation.payload }
+                .filterIsInstance<SyncOperationPayload.DomainAbsent>()
+            assertEquals(listOf(hidden), absent.map { payload -> payload.setId })
         } finally {
             harness.close()
         }

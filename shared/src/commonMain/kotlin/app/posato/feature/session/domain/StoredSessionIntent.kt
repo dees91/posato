@@ -1,5 +1,6 @@
 package app.posato.feature.session.domain
 
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 
 internal enum class SessionOrigin {
@@ -12,6 +13,7 @@ internal sealed interface StoredSessionIntent {
         val sessionId: SessionId,
         val startEpochMillis: Long,
         val mandatoryEndEpochMillis: Long,
+        val setId: PauseSetId = PauseSetId.FIRST,
     ) : StoredSessionIntent {
         override fun toString(): String {
             return "StoredSessionIntent.StartSession(redacted)"

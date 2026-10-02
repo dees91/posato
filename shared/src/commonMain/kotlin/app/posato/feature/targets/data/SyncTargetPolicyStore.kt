@@ -74,11 +74,6 @@ internal class SyncTargetPolicyStore(
     ): List<StoredPolicyIntent> {
         val removed = before.domains - after.domains.toSet()
         val added = after.domains - before.domains.toSet()
-        val renamed = after.applicationPolicyName
-            ?.takeIf { name -> name != before.applicationPolicyName }
-            ?.let { name -> StoredPolicyIntent.PresentApplicationPolicy(name) }
-        return removed.map(StoredPolicyIntent::RemoveDomain) +
-            added.map(StoredPolicyIntent::PresentDomain) +
-            listOfNotNull(renamed)
+        return removed.map(StoredPolicyIntent::RemoveDomain) + added.map(StoredPolicyIntent::PresentDomain)
     }
 }

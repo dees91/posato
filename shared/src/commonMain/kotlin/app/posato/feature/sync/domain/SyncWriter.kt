@@ -31,25 +31,43 @@ internal fun interface SyncWallClock {
     fun currentEpochMillis(): Long
 }
 
+/** Every mutation that names a pause set is authored with it (kinds 14, 15, 17 and 18), never as kinds 2, 3, 6 or 8. */
 internal sealed interface LocalSyncMutation {
     data class PresentDomain(
         val domain: ExactDomain,
+        val setId: PauseSetId,
     ) : LocalSyncMutation
 
     data class RemoveDomain(
         val domain: ExactDomain,
+        val setId: PauseSetId,
     ) : LocalSyncMutation
 
-    data class PresentApplicationPolicy(
-        val name: ApplicationPolicyName,
+    /** The writer trims and normalizes [name] to NFC, then refuses a name the wire rules reject. */
+    data class PutPauseSet(
+        val setId: PauseSetId,
+        val name: String,
+    ) : LocalSyncMutation {
+        override fun toString(): String {
+            return "LocalSyncMutation.PutPauseSet(redacted)"
+        }
+    }
+
+    data class RemovePauseSet(
+        val setId: PauseSetId,
     ) : LocalSyncMutation
 
-    data object RemoveApplicationPolicy : LocalSyncMutation
+    data class ChoosePauseSetDefault(
+        val setId: PauseSetId,
+    ) : LocalSyncMutation
+
+    data object EnablePauseSets : LocalSyncMutation
 
     data class StartSession(
         val sessionId: SessionId,
         val startEpochMillis: Long,
         val mandatoryEndEpochMillis: Long,
+        val setId: PauseSetId,
     ) : LocalSyncMutation {
         override fun toString(): String {
             return "LocalSyncMutation.StartSession(redacted)"
@@ -68,6 +86,7 @@ internal sealed interface LocalSyncMutation {
         val startMinute: Int,
         val endMinute: Int,
         val enabled: Boolean,
+        val setId: PauseSetId,
     ) : LocalSyncMutation {
         override fun toString(): String {
             return "LocalSyncMutation.PutSchedule(redacted)"
@@ -640,65 +659,4 @@ internal fun advanceRemoteClock(
     }
 
     return state
-}
-
-internal fun LocalSyncMutation.toPayload(): SyncOperationPayload? {
-    return when (this) {
-        is LocalSyncMutation.PresentDomain -> {
-            SyncOperationPayload.DomainPresent(domain)
-        }
-
-        is LocalSyncMutation.RemoveDomain -> {
-            SyncOperationPayload.DomainAbsent(domain)
-        }
-
-        is LocalSyncMutation.PresentApplicationPolicy -> {
-            SyncOperationPayload.ApplicationPolicyPresent(name)
-        }
-
-        LocalSyncMutation.RemoveApplicationPolicy -> {
-            SyncOperationPayload.ApplicationPolicyAbsent
-        }
-
-        is LocalSyncMutation.StartSession -> {
-            SyncOperationPayload.SessionStart(sessionId, startEpochMillis, mandatoryEndEpochMillis)
-                .takeIf { payload ->
-                    val duration = payload.mandatoryEndEpochMillis - payload.startEpochMillis
-                    payload.startEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS &&
-                        payload.mandatoryEndEpochMillis in 0..SyncFormatLimits.MAX_PHYSICAL_MILLIS &&
-                        duration in 1..SyncFormatLimits.MAX_SESSION_DURATION_MILLIS
-                }
-        }
-
-        is LocalSyncMutation.EndSession -> {
-            SyncOperationPayload.SessionEnd(sessionId)
-        }
-
-        is LocalSyncMutation.PutSchedule -> {
-            val normalized = normalizeApplicationPolicyNameNfc(name.trim())
-            SyncOperationPayload.SchedulePut(scheduleId, normalized, weekdays, startMinute, endMinute, enabled)
-                .takeIf { payload -> scheduleId.value.isUuidV4() && ScheduleWireRules.isValid(payload) }
-        }
-
-        is LocalSyncMutation.RemoveSchedule -> {
-            SyncOperationPayload.ScheduleRemove(scheduleId).takeIf { scheduleId.value.isUuidV4() }
-        }
-
-        is LocalSyncMutation.SkipOccurrence -> {
-            SyncOperationPayload.ScheduleSkip(occurrence)
-                .takeIf { occurrence.isAuthorable(authorLocalDate) }
-        }
-
-        is LocalSyncMutation.EndOccurrence -> {
-            SyncOperationPayload.ScheduleOccurrenceEnd(occurrence)
-                .takeIf { occurrence.isAuthorable(authorLocalDate) }
-        }
-    }
-}
-
-/** A writer never authors a fact for a date that is not real or is more than 400 days after its own local date. */
-private fun ScheduleOccurrenceRef.isAuthorable(authorLocalDate: ScheduleDate): Boolean {
-    return scheduleId.value.isUuidV4() &&
-        ScheduleWireRules.isValidDate(date) &&
-        date.epochDay - authorLocalDate.epochDay <= ScheduleLimits.MAX_FACT_DAYS_AHEAD
 }

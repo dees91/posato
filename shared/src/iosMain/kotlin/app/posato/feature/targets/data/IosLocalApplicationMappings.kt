@@ -50,19 +50,35 @@ interface IosApplicationMappingsObservation {
     fun cancel()
 }
 
+/** Each call names a pause set by its 32-character lowercase hex identifier; the first set is all zeros. */
 interface IosApplicationMappingsProvider {
-    fun load(completion: (IosApplicationMappingsResponse) -> Unit)
+    fun load(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    )
 
-    fun choose(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation
+    fun choose(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    ): IosApplicationMappingsOperation
 
     fun requestAuthorization(completion: (IosApplicationMappingsResponse) -> Unit): IosApplicationMappingsOperation
 
     fun remove(
         identifier: String,
+        set: String,
         completion: (IosApplicationMappingsResponse) -> Unit,
     )
 
-    fun clear(completion: (IosApplicationMappingsResponse) -> Unit)
+    fun clear(
+        set: String,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    )
+
+    fun retainOnly(
+        sets: List<String>,
+        completion: (IosApplicationMappingsResponse) -> Unit,
+    )
 
     fun observeInvalidations(handler: () -> Unit): IosApplicationMappingsObservation
 }
@@ -77,19 +93,19 @@ internal class IosLocalApplicationMappings(
         awaitClose(observation::cancel)
     }
 
-    override suspend fun load(): LocalApplicationMappingsLoadResult {
+    override suspend fun load(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
         return operationMutex.withLock {
             val response = suspendCoroutine<IosApplicationMappingsResponse> { continuation ->
-                provider.load { result -> continuation.resume(result) }
+                provider.load(set.hex) { result -> continuation.resume(result) }
             }
             response.toLoadResult()
         }
     }
 
-    override suspend fun chooseApplications(): LocalApplicationSelectionResult {
+    override suspend fun chooseApplications(set: ApplicationChoiceSet): LocalApplicationSelectionResult {
         return operationMutex.withLock {
             suspendCancellableCoroutine { continuation ->
-                val operation = provider.choose { response ->
+                val operation = provider.choose(set.hex) { response ->
                     if (continuation.isActive) {
                         continuation.resume(response.toSelectionResult())
                     }
@@ -113,19 +129,31 @@ internal class IosLocalApplicationMappings(
         }
     }
 
-    override suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult {
+    override suspend fun remove(
+        mappingId: LocalApplicationMappingId,
+        set: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
         return operationMutex.withLock {
             val response = suspendCoroutine<IosApplicationMappingsResponse> { continuation ->
-                provider.remove(mappingId.canonicalValue) { result -> continuation.resume(result) }
+                provider.remove(mappingId.canonicalValue, set.hex) { result -> continuation.resume(result) }
             }
             response.toRemovalResult()
         }
     }
 
-    override suspend fun clear(): LocalApplicationRemovalResult {
+    override suspend fun clear(set: ApplicationChoiceSet): LocalApplicationRemovalResult {
         return operationMutex.withLock {
             val response = suspendCoroutine<IosApplicationMappingsResponse> { continuation ->
-                provider.clear { result -> continuation.resume(result) }
+                provider.clear(set.hex) { result -> continuation.resume(result) }
+            }
+            response.toRemovalResult()
+        }
+    }
+
+    override suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult {
+        return operationMutex.withLock {
+            val response = suspendCoroutine<IosApplicationMappingsResponse> { continuation ->
+                provider.retainOnly(sets.map(ApplicationChoiceSet::hex)) { result -> continuation.resume(result) }
             }
             response.toRemovalResult()
         }

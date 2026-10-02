@@ -66,34 +66,10 @@ class LocalExactDomainPolicyStoreContractTest {
     @Test
     fun `given a version one database when reopened then migration preserves revision and domains without adding a group`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("migration.db")
-        var driver = testDatabase.openDriver()
+        var driver = testDatabase.openDriverAt(1)
         try {
             driver.executeSql("UPDATE local_policy_metadata SET revision = 7 WHERE singleton = 1")
             driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
-            driver.executeSql("DROP TABLE local_session_expiry")
-            driver.executeSql("DROP TABLE local_session")
-            driver.executeSql("DROP TABLE sync_terminal_expiry")
-            driver.executeSql("DROP TABLE sync_staged_bundle")
-            driver.executeSql("DROP TABLE sync_pending_bundle")
-            driver.executeSql("DROP TABLE sync_accepted_bundle")
-            driver.executeSql("DROP TABLE sync_replica_state")
-            driver.executeSql("DROP TABLE sync_bootstrap_state")
-            driver.executeSql("DROP TABLE application_policy")
-            driver.executeSql("DROP TABLE local_setup_state")
-            driver.executeSql("DROP TABLE sync_policy_intent")
-            driver.executeSql("DROP TABLE sync_policy_base")
-            driver.executeSql("DROP TABLE sync_policy_base_domain")
-            driver.executeSql("DROP TABLE sync_policy_base_application")
-            driver.executeSql("DROP TABLE sync_removed_workspace")
-            driver.executeSql("DROP TABLE sync_session_intent")
-            driver.executeSql("DROP TABLE local_update_maintenance")
-            driver.executeSql("DROP TABLE local_schedule")
-            driver.executeSql("DROP TABLE local_schedule_fact")
-            driver.executeSql("DROP TABLE local_schedule_expiry")
-            driver.executeSql("DROP TABLE local_schedule_pin")
-            driver.executeSql("DROP TABLE sync_schedule_intent")
-            driver.executeSql("DROP TABLE sync_schedule_seed")
-            driver.executeSql("PRAGMA user_version = 1")
             driver.close()
 
             driver = testDatabase.openDriver()
@@ -108,34 +84,11 @@ class LocalExactDomainPolicyStoreContractTest {
     @Test
     fun `given a version two database when reopened then sync storage is added without changing policy`() = runTest {
         val testDatabase = createLocalPolicyTestDatabase("sync-migration.db")
-        var driver = testDatabase.openDriver()
+        var driver = testDatabase.openDriverAt(2)
         try {
             driver.executeSql("UPDATE local_policy_metadata SET revision = 9 WHERE singleton = 1")
             driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES ('stable.example')")
             driver.executeSql("INSERT INTO application_policy(singleton, canonical_name) VALUES (1, 'Stable group')")
-            driver.executeSql("DROP TABLE local_session_expiry")
-            driver.executeSql("DROP TABLE local_session")
-            driver.executeSql("DROP TABLE sync_terminal_expiry")
-            driver.executeSql("DROP TABLE sync_staged_bundle")
-            driver.executeSql("DROP TABLE sync_pending_bundle")
-            driver.executeSql("DROP TABLE sync_accepted_bundle")
-            driver.executeSql("DROP TABLE sync_replica_state")
-            driver.executeSql("DROP TABLE sync_bootstrap_state")
-            driver.executeSql("DROP TABLE local_setup_state")
-            driver.executeSql("DROP TABLE sync_policy_intent")
-            driver.executeSql("DROP TABLE sync_policy_base")
-            driver.executeSql("DROP TABLE sync_policy_base_domain")
-            driver.executeSql("DROP TABLE sync_policy_base_application")
-            driver.executeSql("DROP TABLE sync_removed_workspace")
-            driver.executeSql("DROP TABLE sync_session_intent")
-            driver.executeSql("DROP TABLE local_update_maintenance")
-            driver.executeSql("DROP TABLE local_schedule")
-            driver.executeSql("DROP TABLE local_schedule_fact")
-            driver.executeSql("DROP TABLE local_schedule_expiry")
-            driver.executeSql("DROP TABLE local_schedule_pin")
-            driver.executeSql("DROP TABLE sync_schedule_intent")
-            driver.executeSql("DROP TABLE sync_schedule_seed")
-            driver.executeSql("PRAGMA user_version = 2")
             driver.close()
 
             driver = testDatabase.openDriver()
@@ -192,7 +145,7 @@ class LocalExactDomainPolicyStoreContractTest {
         assertState(store.replace(0, policy), revision = 1, domains = policy.canonicalValues())
 
         assertFails {
-            driver.executeSql("INSERT INTO exact_domain_policy(canonical_domain) VALUES (x'626c6f622e6578616d706c65')")
+            driver.executeSql("INSERT INTO local_pause_set_domain(set_id, canonical_domain) VALUES (zeroblob(16), x'626c6f622e6578616d706c65')")
         }
         assertState(store.read(), revision = 1, domains = policy.canonicalValues())
     }
@@ -219,7 +172,7 @@ class LocalExactDomainPolicyStoreContractTest {
 
         assertFails {
             driver.executeSql(
-                "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('aa.bb' || char(0) || printf('%.*c', 248, 'x'))",
+                "INSERT INTO local_pause_set_domain(set_id, canonical_domain) VALUES (zeroblob(16), 'aa.bb' || char(0) || printf('%.*c', 248, 'x'))",
             )
         }
         assertState(store.read(), revision = 1, domains = policy.canonicalValues())
@@ -232,7 +185,7 @@ class LocalExactDomainPolicyStoreContractTest {
         driver.executeSql(
             """
             CREATE TRIGGER fail_policy_insert
-            BEFORE INSERT ON exact_domain_policy
+            BEFORE INSERT ON local_pause_set_domain
             WHEN NEW.canonical_domain = 'blocked.example'
             BEGIN
               SELECT RAISE(ABORT, 'synthetic insert failure');
@@ -300,7 +253,7 @@ class LocalExactDomainPolicyStoreContractTest {
     fun `given a noncanonical stored domain when reading or replacing then corruption is returned without disclosure`() =
         withStore("invalid-domain.db") { store, driver ->
             driver.executeSql(
-                "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('Private.Example')",
+                "INSERT INTO local_pause_set_domain(set_id, canonical_domain) VALUES (zeroblob(16), 'Private.Example')",
             )
 
             val readFailure = assertFailure(store.read())
@@ -318,7 +271,7 @@ class LocalExactDomainPolicyStoreContractTest {
     @Test
     fun `given a malformed IDNA A-label in storage when read then corruption is returned`() = withStore("invalid-a-label.db") { store, driver ->
         driver.executeSql(
-            "INSERT INTO exact_domain_policy(canonical_domain) VALUES ('xn--0.example')",
+            "INSERT INTO local_pause_set_domain(set_id, canonical_domain) VALUES (zeroblob(16), 'xn--0.example')",
         )
 
         val failure = assertFailure(store.read())
@@ -330,7 +283,7 @@ class LocalExactDomainPolicyStoreContractTest {
         val database = PosatoDatabase(driver)
         database.transaction {
             repeat(ExactDomainPolicyLimits.MAX_DOMAIN_COUNT + 1) { index ->
-                database.localExactDomainPolicyQueries.insertDomain("a$index.example")
+                database.localExactDomainPolicyQueries.insertSetDomain(ByteArray(16), "a$index.example")
             }
         }
 

@@ -1,5 +1,6 @@
 package app.posato.feature.targets.ui
 
+import app.posato.feature.targets.data.ApplicationChoiceSet
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingId
 import app.posato.feature.targets.data.LocalApplicationMappings
@@ -923,7 +924,7 @@ private class FakeApplicationMappings(
     var removeCalls: Int = 0
     var clearCalls: Int = 0
 
-    override suspend fun load(): LocalApplicationMappingsLoadResult {
+    override suspend fun load(set: ApplicationChoiceSet): LocalApplicationMappingsLoadResult {
         val failure = loadFailure
         if (failure != null) {
             return LocalApplicationMappingsLoadResult.Failure(failure)
@@ -931,7 +932,7 @@ private class FakeApplicationMappings(
         return LocalApplicationMappingsLoadResult.Success(snapshot)
     }
 
-    override suspend fun chooseApplications(): LocalApplicationSelectionResult {
+    override suspend fun chooseApplications(set: ApplicationChoiceSet): LocalApplicationSelectionResult {
         return selectionResult.also { result ->
             snapshot = when (result) {
                 is LocalApplicationSelectionResult.Success -> result.snapshot
@@ -941,14 +942,21 @@ private class FakeApplicationMappings(
         }
     }
 
-    override suspend fun remove(mappingId: LocalApplicationMappingId): LocalApplicationRemovalResult {
+    override suspend fun remove(
+        mappingId: LocalApplicationMappingId,
+        set: ApplicationChoiceSet,
+    ): LocalApplicationRemovalResult {
         removeCalls++
         return removalResult.also { result ->
             if (result is LocalApplicationRemovalResult.Success) snapshot = result.snapshot
         }
     }
 
-    override suspend fun clear(): LocalApplicationRemovalResult {
+    override suspend fun retainOnly(sets: Set<ApplicationChoiceSet>): LocalApplicationRemovalResult {
+        return LocalApplicationRemovalResult.Unavailable
+    }
+
+    override suspend fun clear(set: ApplicationChoiceSet): LocalApplicationRemovalResult {
         clearCalls++
         val forced = clearResult
         if (forced != null) {

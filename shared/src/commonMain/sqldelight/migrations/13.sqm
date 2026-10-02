@@ -1,0 +1,244 @@
+CREATE TABLE local_pause_set (
+  set_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  name TEXT CHECK (name IS NULL OR (typeof(name) = 'text' AND length(CAST(name AS BLOB)) BETWEEN 1 AND 80)),
+  refused INTEGER NOT NULL DEFAULT 0 CHECK (typeof(refused) = 'integer' AND refused IN (0, 1))
+);
+
+INSERT INTO local_pause_set(set_id, name, refused) VALUES (zeroblob(16), NULL, 0);
+
+CREATE TABLE local_pause_set_default (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16)
+);
+
+CREATE TABLE local_pause_set_domain (
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  canonical_domain TEXT NOT NULL CHECK (
+    typeof(canonical_domain) = 'text' AND
+    length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
+  ),
+  PRIMARY KEY (set_id, canonical_domain)
+);
+
+INSERT INTO local_pause_set_domain(set_id, canonical_domain)
+SELECT zeroblob(16), canonical_domain FROM exact_domain_policy;
+
+DROP TABLE exact_domain_policy;
+
+CREATE TABLE local_pause_set_upgrade (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
+);
+
+INSERT INTO local_pause_set_upgrade(singleton) VALUES (1);
+
+CREATE TABLE sync_policy_intent_v2 (
+  sequence INTEGER NOT NULL PRIMARY KEY,
+  workspace_id BLOB NOT NULL CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16),
+  kind TEXT NOT NULL CHECK (
+    typeof(kind) = 'text' AND kind IN ('domain_present', 'domain_absent', 'set_put', 'set_remove', 'set_default')
+  ),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  canonical_domain TEXT CHECK (
+    canonical_domain IS NULL OR (
+      typeof(canonical_domain) = 'text' AND
+      length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
+    )
+  ),
+  set_name TEXT CHECK (
+    set_name IS NULL OR (typeof(set_name) = 'text' AND length(CAST(set_name AS BLOB)) BETWEEN 1 AND 80)
+  ),
+  CHECK (
+    (kind IN ('domain_present', 'domain_absent') AND canonical_domain IS NOT NULL AND set_name IS NULL) OR
+    (kind = 'set_put' AND set_name IS NOT NULL AND canonical_domain IS NULL) OR
+    (kind IN ('set_remove', 'set_default') AND set_name IS NULL AND canonical_domain IS NULL)
+  )
+);
+
+INSERT INTO sync_policy_intent_v2(sequence, workspace_id, kind, set_id, canonical_domain, set_name)
+SELECT sequence, workspace_id, kind, zeroblob(16), canonical_domain, NULL
+FROM sync_policy_intent
+WHERE kind IN ('domain_present', 'domain_absent');
+
+DROP TABLE sync_policy_intent;
+
+ALTER TABLE sync_policy_intent_v2 RENAME TO sync_policy_intent;
+
+CREATE TABLE sync_policy_base_domain_v2 (
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  canonical_domain TEXT NOT NULL CHECK (
+    typeof(canonical_domain) = 'text' AND
+    length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
+  ),
+  PRIMARY KEY (set_id, canonical_domain)
+);
+
+INSERT INTO sync_policy_base_domain_v2(set_id, canonical_domain)
+SELECT zeroblob(16), canonical_domain FROM sync_policy_base_domain;
+
+DROP TABLE sync_policy_base_domain;
+
+ALTER TABLE sync_policy_base_domain_v2 RENAME TO sync_policy_base_domain;
+
+CREATE TABLE local_schedule_v2 (
+  schedule_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  name TEXT NOT NULL CHECK (typeof(name) = 'text' AND length(CAST(name AS BLOB)) BETWEEN 1 AND 80),
+  weekdays INTEGER NOT NULL CHECK (typeof(weekdays) = 'integer' AND weekdays BETWEEN 1 AND 127),
+  start_minute INTEGER NOT NULL CHECK (typeof(start_minute) = 'integer' AND start_minute BETWEEN 0 AND 1439),
+  end_minute INTEGER NOT NULL CHECK (typeof(end_minute) = 'integer' AND end_minute BETWEEN 0 AND 1439),
+  enabled INTEGER NOT NULL CHECK (typeof(enabled) = 'integer' AND enabled IN (0, 1)),
+  refused INTEGER NOT NULL DEFAULT 0 CHECK (typeof(refused) = 'integer' AND refused IN (0, 1)),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  CHECK (start_minute <> end_minute)
+);
+
+INSERT INTO local_schedule_v2(schedule_id, name, weekdays, start_minute, end_minute, enabled, refused, set_id)
+SELECT schedule_id, name, weekdays, start_minute, end_minute, enabled, refused, zeroblob(16) FROM local_schedule;
+
+DROP TABLE local_schedule;
+
+ALTER TABLE local_schedule_v2 RENAME TO local_schedule;
+
+CREATE TABLE sync_schedule_intent_v2 (
+  sequence INTEGER NOT NULL PRIMARY KEY,
+  workspace_id BLOB NOT NULL CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16),
+  kind TEXT NOT NULL CHECK (typeof(kind) = 'text' AND kind IN ('put', 'remove', 'skip', 'end')),
+  schedule_id BLOB NOT NULL CHECK (typeof(schedule_id) = 'blob' AND length(schedule_id) = 16),
+  name TEXT CHECK (name IS NULL OR (typeof(name) = 'text' AND length(CAST(name AS BLOB)) BETWEEN 1 AND 80)),
+  weekdays INTEGER CHECK (weekdays IS NULL OR (typeof(weekdays) = 'integer' AND weekdays BETWEEN 1 AND 127)),
+  start_minute INTEGER CHECK (start_minute IS NULL OR (typeof(start_minute) = 'integer' AND start_minute BETWEEN 0 AND 1439)),
+  end_minute INTEGER CHECK (end_minute IS NULL OR (typeof(end_minute) = 'integer' AND end_minute BETWEEN 0 AND 1439)),
+  enabled INTEGER CHECK (enabled IS NULL OR (typeof(enabled) = 'integer' AND enabled IN (0, 1))),
+  year INTEGER CHECK (year IS NULL OR (typeof(year) = 'integer' AND year BETWEEN 2000 AND 2100)),
+  month INTEGER CHECK (month IS NULL OR (typeof(month) = 'integer' AND month BETWEEN 1 AND 12)),
+  day INTEGER CHECK (day IS NULL OR (typeof(day) = 'integer' AND day BETWEEN 1 AND 31)),
+  author_year INTEGER CHECK (author_year IS NULL OR (typeof(author_year) = 'integer' AND author_year BETWEEN 2000 AND 2100)),
+  author_month INTEGER CHECK (author_month IS NULL OR (typeof(author_month) = 'integer' AND author_month BETWEEN 1 AND 12)),
+  author_day INTEGER CHECK (author_day IS NULL OR (typeof(author_day) = 'integer' AND author_day BETWEEN 1 AND 31)),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  CHECK (
+    (
+      kind = 'put' AND name IS NOT NULL AND weekdays IS NOT NULL AND start_minute IS NOT NULL AND end_minute IS NOT NULL AND
+      enabled IS NOT NULL AND start_minute <> end_minute AND year IS NULL AND month IS NULL AND day IS NULL AND
+      author_year IS NULL AND author_month IS NULL AND author_day IS NULL
+    ) OR (
+      kind = 'remove' AND name IS NULL AND weekdays IS NULL AND start_minute IS NULL AND end_minute IS NULL AND
+      enabled IS NULL AND year IS NULL AND month IS NULL AND day IS NULL AND
+      author_year IS NULL AND author_month IS NULL AND author_day IS NULL
+    ) OR (
+      kind IN ('skip', 'end') AND name IS NULL AND weekdays IS NULL AND start_minute IS NULL AND end_minute IS NULL AND
+      enabled IS NULL AND year IS NOT NULL AND month IS NOT NULL AND day IS NOT NULL AND
+      author_year IS NOT NULL AND author_month IS NOT NULL AND author_day IS NOT NULL
+    )
+  )
+);
+
+INSERT INTO sync_schedule_intent_v2(sequence, workspace_id, kind, schedule_id, name, weekdays, start_minute, end_minute, enabled, year, month, day, author_year, author_month, author_day, set_id)
+SELECT sequence, workspace_id, kind, schedule_id, name, weekdays, start_minute, end_minute, enabled, year, month, day, author_year, author_month, author_day, zeroblob(16) FROM sync_schedule_intent;
+
+DROP TABLE sync_schedule_intent;
+
+ALTER TABLE sync_schedule_intent_v2 RENAME TO sync_schedule_intent;
+
+CREATE TABLE sync_session_intent_v2 (
+  sequence INTEGER NOT NULL PRIMARY KEY,
+  workspace_id BLOB NOT NULL CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16),
+  kind TEXT NOT NULL CHECK (
+    typeof(kind) = 'text' AND kind IN ('session_start', 'session_end')
+  ),
+  session_id BLOB NOT NULL CHECK (typeof(session_id) = 'blob' AND length(session_id) = 16),
+  start_epoch_millis INTEGER CHECK (
+    start_epoch_millis IS NULL OR (
+      typeof(start_epoch_millis) = 'integer' AND start_epoch_millis BETWEEN 0 AND 4102444800000
+    )
+  ),
+  end_epoch_millis INTEGER CHECK (
+    end_epoch_millis IS NULL OR (
+      typeof(end_epoch_millis) = 'integer' AND end_epoch_millis BETWEEN 0 AND 4102444800000
+    )
+  ),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16),
+  CHECK (
+    (
+      kind = 'session_start' AND
+      start_epoch_millis IS NOT NULL AND
+      end_epoch_millis IS NOT NULL AND
+      end_epoch_millis > start_epoch_millis
+    ) OR (
+      kind = 'session_end' AND
+      start_epoch_millis IS NULL AND
+      end_epoch_millis IS NULL
+    )
+  )
+);
+
+INSERT INTO sync_session_intent_v2(sequence, workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis, set_id)
+SELECT sequence, workspace_id, kind, session_id, start_epoch_millis, end_epoch_millis, zeroblob(16) FROM sync_session_intent;
+
+DROP TABLE sync_session_intent;
+
+ALTER TABLE sync_session_intent_v2 RENAME TO sync_session_intent;
+
+CREATE TABLE local_session_v2 (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1),
+  session_id BLOB NOT NULL CHECK (typeof(session_id) = 'blob' AND length(session_id) = 16),
+  start_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(start_epoch_millis) = 'integer' AND start_epoch_millis BETWEEN 0 AND 4102444800000
+  ),
+  end_epoch_millis INTEGER NOT NULL CHECK (
+    typeof(end_epoch_millis) = 'integer' AND end_epoch_millis BETWEEN 0 AND 4102444800000
+  ),
+  ended_early INTEGER NOT NULL CHECK (typeof(ended_early) = 'integer' AND ended_early IN (0, 1)),
+  frozen_domains TEXT CHECK (frozen_domains IS NULL OR typeof(frozen_domains) = 'text'),
+  frozen_application_count INTEGER CHECK (
+    frozen_application_count IS NULL OR
+    (typeof(frozen_application_count) = 'integer' AND frozen_application_count >= 0)
+  ),
+  origin TEXT NOT NULL DEFAULT 'local' CHECK (typeof(origin) = 'text' AND origin IN ('local', 'adopted')),
+  set_id BLOB NOT NULL CHECK (typeof(set_id) = 'blob' AND length(set_id) = 16)
+);
+
+INSERT INTO local_session_v2(singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, frozen_domains, frozen_application_count, origin, set_id)
+SELECT singleton, session_id, start_epoch_millis, end_epoch_millis, ended_early, frozen_domains, frozen_application_count, origin, zeroblob(16) FROM local_session;
+
+DROP TABLE local_session;
+
+ALTER TABLE local_session_v2 RENAME TO local_session;
+
+CREATE TABLE sync_pause_sets_enabled (
+  workspace_id BLOB NOT NULL PRIMARY KEY CHECK (typeof(workspace_id) = 'blob' AND length(workspace_id) = 16)
+);
+
+CREATE TABLE local_retained_domain (
+  part_kind TEXT NOT NULL CHECK (typeof(part_kind) = 'text' AND part_kind IN ('session', 'occurrence')),
+  part_id BLOB NOT NULL CHECK (typeof(part_id) = 'blob' AND length(part_id) = 16),
+  year INTEGER NOT NULL DEFAULT 0 CHECK (typeof(year) = 'integer'),
+  month INTEGER NOT NULL DEFAULT 0 CHECK (typeof(month) = 'integer'),
+  day INTEGER NOT NULL DEFAULT 0 CHECK (typeof(day) = 'integer'),
+  canonical_domain TEXT NOT NULL CHECK (
+    typeof(canonical_domain) = 'text' AND
+    length(CAST(canonical_domain AS BLOB)) BETWEEN 3 AND 253
+  ),
+  CHECK (
+    (part_kind = 'session' AND year = 0 AND month = 0 AND day = 0) OR
+    (part_kind = 'occurrence' AND year BETWEEN 2000 AND 2100 AND month BETWEEN 1 AND 12 AND day BETWEEN 1 AND 31)
+  ),
+  PRIMARY KEY (part_kind, part_id, year, month, day, canonical_domain)
+);
+
+CREATE TABLE local_retained_application (
+  part_kind TEXT NOT NULL CHECK (typeof(part_kind) = 'text' AND part_kind IN ('session', 'occurrence')),
+  part_id BLOB NOT NULL CHECK (typeof(part_id) = 'blob' AND length(part_id) = 16),
+  year INTEGER NOT NULL DEFAULT 0 CHECK (typeof(year) = 'integer'),
+  month INTEGER NOT NULL DEFAULT 0 CHECK (typeof(month) = 'integer'),
+  day INTEGER NOT NULL DEFAULT 0 CHECK (typeof(day) = 'integer'),
+  mapping_id BLOB NOT NULL CHECK (typeof(mapping_id) = 'blob' AND length(mapping_id) = 32),
+  display_name BLOB NOT NULL CHECK (typeof(display_name) = 'blob' AND length(display_name) BETWEEN 1 AND 256),
+  designated_requirement BLOB NOT NULL CHECK (
+    typeof(designated_requirement) = 'blob' AND length(designated_requirement) BETWEEN 1 AND 4096
+  ),
+  CHECK (
+    (part_kind = 'session' AND year = 0 AND month = 0 AND day = 0) OR
+    (part_kind = 'occurrence' AND year BETWEEN 2000 AND 2100 AND month BETWEEN 1 AND 12 AND day BETWEEN 1 AND 31)
+  ),
+  PRIMARY KEY (part_kind, part_id, year, month, day, mapping_id)
+);

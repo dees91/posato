@@ -122,6 +122,7 @@ internal class SessionProjectionReconciler(
                 start.mandatoryEndEpochMillis,
                 nowEpochMillis,
                 captureFrozen(),
+                start.setId,
             )
         ) {
             is LocalSessionResult.Failure -> SessionReconcileResult.Halted(adopted.reason.toSyncStatus())

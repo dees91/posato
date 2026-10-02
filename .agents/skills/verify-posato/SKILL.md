@@ -302,7 +302,7 @@ Proof standard for a feature:
 2. Capture the action and the resulting state: a `snapshot` or `wait` that
    names the new element, plus a `screenshot` whose content shows `Paused
    items` and the changed row.
-3. Verify the side effect: `$PC db query -t <desktop|sim> --sql "select canonical_domain from exact_domain_policy"`
+3. Verify the side effect: `$PC db query -t <desktop|sim> --sql "select canonical_domain from local_pause_set_domain"`
    (websites) or `"select canonical_name from application_policy"` (group).
    The device database is not readable; use `find -t device --text <value>`
    after a relaunch instead.

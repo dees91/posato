@@ -45,13 +45,13 @@ class SyncMailboxWriterTest {
             SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
         ).writer
         try {
-            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))))
             val published = writer.pendingBundles.first()
             assertTrue(writer.acknowledgePublication(published))
             assertEquals(1, writer.pendingBundles.size)
             assertEquals(2, store.current.acceptedBundles.size)
             assertTrue(writer.commitTransportProgress(testTransportProgress(1)))
-            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))))
             assertEquals(testTransportProgress(1), writer.transportProgress)
         } finally {
             writer.close()
@@ -103,7 +103,7 @@ class SyncWriterOpenTest {
             assertEquals(OpenSyncWriterFailure.ALREADY_OPEN, assertIs<OpenSyncWriterResult.Failure>(result).reason)
             assertFalse(activeKey.isClosed)
             assertIs<LocalMutationResult.Success>(
-                writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("alias.example")))),
+                writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("alias.example")), PauseSetId.FIRST)),
             )
         } finally {
             writer.close()
@@ -168,7 +168,7 @@ class SyncWriterCancellationTest {
         val writer = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, activeTransportKey)).writer
         val mutationJob = launch {
             writer.mutate(
-                LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("close.example"))),
+                LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("close.example")), PauseSetId.FIRST),
             )
         }
         mutationCommitted.await()
@@ -223,14 +223,14 @@ class SyncWriterCancellationTest {
         val before = store.current
 
         assertFailsWith<CancellationException> {
-            writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)
+            writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77))))
         }
 
         assertEquals(before, store.current)
         assertEquals(1, provider.signingKeyCloseCount)
         assertEquals(
             LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
-            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77))))).reason,
         )
     }
 
@@ -249,7 +249,7 @@ class SyncWriterCancellationTest {
             SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
         ).writer
         val mutationJob = launch {
-            writer.mutate(LocalSyncMutation.PresentDomain(domain))
+            writer.mutate(LocalSyncMutation.PresentDomain(domain, PauseSetId.FIRST))
         }
         commitCompleted.await()
 
@@ -257,11 +257,11 @@ class SyncWriterCancellationTest {
         mutationJob.join()
 
         assertTrue(mutationJob.isCancelled)
-        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(listOf(domain), writer.projection().pauseSetDomains(PauseSetId.FIRST))
         assertEquals(2, writer.pendingBundles.size)
         assertEquals(
             LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
-            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77))))).reason,
         )
     }
 
@@ -292,7 +292,7 @@ class SyncWriterCancellationTest {
         acceptanceJob.join()
 
         assertTrue(acceptanceJob.isCancelled)
-        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(listOf(domain), writer.projection().pauseSetDomains(PauseSetId.FIRST))
         assertIs<RemoteAcceptanceResult.Duplicate>(
             writer.acceptRemote(bundle.copyBytes(), RemoteTransportReceipt(null, false)),
         )
@@ -491,13 +491,13 @@ class SyncWriterTest {
         try {
             assertEquals(
                 LocalMutationFailure.CRYPTOGRAPHY_FAILURE,
-                assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+                assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77))))).reason,
             )
             assertEquals(0, sealCallCount)
             assertEquals(1, delegate.signingKeyCloseCount)
             assertEquals(
                 LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
-                assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+                assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77))))).reason,
             )
         } finally {
             writer.close()
@@ -559,7 +559,7 @@ class SyncWriterTest {
         val opened = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey()))
 
         val result = assertIs<LocalMutationResult.Success>(
-            opened.writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("stable.example")))),
+            opened.writer.mutate(LocalSyncMutation.PresentDomain(checkNotNull(ExactDomain.restore("stable.example")), PauseSetId.FIRST)),
         )
 
         assertEquals(2, result.pendingBundles.size)
@@ -571,11 +571,12 @@ class SyncWriterTest {
     @Test
     fun `given an invalid session mutation when retried then the writer remains usable`() = runTest {
         val invalidSessions = listOf(
-            LocalSyncMutation.StartSession(SessionId(testIdentifier(20)), 100, 100),
+            LocalSyncMutation.StartSession(SessionId(testIdentifier(20)), 100, 100, PauseSetId.FIRST),
             LocalSyncMutation.StartSession(
                 SessionId(testIdentifier(21)),
                 100,
                 100 + SyncFormatLimits.MAX_SESSION_DURATION_MILLIS + 1,
+                PauseSetId.FIRST,
             ),
         )
 
@@ -591,7 +592,7 @@ class SyncWriterTest {
 
             assertEquals(LocalMutationFailure.INVALID_MUTATION, invalidResult.reason)
             assertEquals(before, store.current)
-            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+            assertIs<LocalMutationResult.Success>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))))
         }
     }
 
@@ -615,7 +616,7 @@ class SyncWriterTest {
             val opened = assertIs<OpenSyncWriterResult.Success>(core.open(testContext, transportKey()))
 
             val result = assertIs<LocalMutationResult.Failure>(
-                opened.writer.mutate(LocalSyncMutation.RemoveApplicationPolicy),
+                opened.writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))),
             )
 
             assertEquals(LocalMutationFailure.HLC_EXHAUSTED, result.reason)
@@ -656,7 +657,7 @@ class SyncWriterTest {
             ).writer
 
             val result = assertIs<LocalMutationResult.Failure>(
-                writer.mutate(LocalSyncMutation.RemoveApplicationPolicy),
+                writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))),
             )
 
             assertEquals(expectedFailure, result.reason, mode.name)
@@ -764,7 +765,7 @@ class SyncWriterTest {
         )
 
         assertIs<RemoteAcceptanceResult.Accepted>(result)
-        assertEquals(listOf(domain), writer.projection().domains)
+        assertEquals(listOf(domain), writer.projection().pauseSetDomains(PauseSetId.FIRST))
         assertEquals(emptyMap(), store.current.stagedBundles)
         assertEquals(testTransportProgress(2), store.current.transportProgress)
     }
@@ -776,7 +777,7 @@ class SyncWriterTest {
             SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
         ).writer
 
-        val result = writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)
+        val result = writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77))))
 
         assertIs<LocalMutationResult.Success>(result)
         assertEquals(2, store.current.pendingBundles.size)
@@ -789,12 +790,12 @@ class SyncWriterTest {
             SyncOperationCore(store, FakeSyncCryptoProvider(), SyncWallClock { 100 }).open(testContext, transportKey()),
         ).writer
 
-        val result = assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy))
+        val result = assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))))
 
         assertEquals(LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN, result.reason)
         assertEquals(
             LocalMutationFailure.LOCAL_COMMIT_UNCERTAIN,
-            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.RemoveApplicationPolicy)).reason,
+            assertIs<LocalMutationResult.Failure>(writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77))))).reason,
         )
     }
 
@@ -1031,7 +1032,7 @@ class SyncWriterTest {
                 RemoteTransportReceipt(null, false),
             ),
         )
-        assertEquals(emptyList(), writer.projection().domains)
+        assertEquals(emptyList(), writer.projection().pauseSetDomains(PauseSetId.FIRST))
     }
 
     @Test
@@ -1092,7 +1093,7 @@ class SyncWriterTest {
                 assertEquals(
                     LocalMutationFailure.HLC_EXHAUSTED,
                     assertIs<LocalMutationResult.Failure>(
-                        writer.mutate(LocalSyncMutation.RemoveApplicationPolicy),
+                        writer.mutate(LocalSyncMutation.EndSession(SessionId(testIdentifier(77)))),
                     ).reason,
                 )
                 assertEquals(terminalSnapshot, store.current)

@@ -4,6 +4,9 @@ import app.posato.feature.session.data.SessionExchangeObserver
 import app.posato.feature.session.data.SessionSyncTriggers
 import app.posato.feature.session.data.SessionWorkspaceCapture
 import app.posato.feature.sync.data.SyncCryptoProvider
+import app.posato.feature.sync.domain.LocalMutationResult
+import app.posato.feature.sync.domain.LocalSyncMutation
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SyncOperationCore
 import app.posato.feature.sync.domain.SyncWriter
 import app.posato.feature.sync.mailbox.MailboxPort
@@ -62,9 +65,11 @@ internal class AppleSync(
     private val onWorkspaceRemoved: suspend () -> Unit = {},
     private val scheduleSync: ScheduleSync? = null,
     private val backgroundTime: SyncBackgroundTime = SyncBackgroundTime.None,
+    /** Keeps this device's app choices to the surviving sets when a received change removed others. */
+    onSetsRemoved: suspend (Set<PauseSetId>) -> Unit = {},
 ) {
     internal val bootstrap = AppleBootstrap(coordinator, backgroundDispatcher)
-    private val reconciler = PolicyReconciler(policySync)
+    private val reconciler = PolicyReconciler(policySync, onSetsRemoved)
     private val scope = CoroutineScope(SupervisorJob() + backgroundDispatcher)
     private val opportunities = Channel<Unit>(Channel.CONFLATED)
     private val writers = AppleSyncWriter(coordinator, core, ::publish)
@@ -247,7 +252,7 @@ internal class AppleSync(
         // A policy-capacity failure later in this pass must not suppress an accepted
         // session end, which is committed and cleared inside the session phase.
         val workspace = checkNotNull(check.workspace)
-        val read = readBaseOrHalt(policySync, ::publish)
+        val read = if (enablePauseSetsOrHalt(policySync, workspace, active, ::publish)) readBaseOrHalt(policySync, ::publish) else BaseRead.Halted
         if (read is BaseRead.Ready && exchangeLegsOrHalt(read.base, authoring, exchange, workspace, active, ::publish) {
                 sessionObserver?.onReplicaSnapshot(active.sessionSnapshot)
             }
@@ -279,9 +284,8 @@ internal class AppleSync(
         if (!seedAndDrainOrHalt(base, reconciler, authoring, workspace, writer, ::publish)) {
             return
         }
-        val group = reconciler.decideGroup(writer, writer.projection())
-        if (group is GroupOutcome.Failed) {
-            publish(group.status)
+        // Schedules left a removed set in the schedule phase, so the removal follows their moves.
+        if (!authoring.drain(writer, setRemovals = true)) {
             return
         }
         val republished = exchange.publishPending(workspace, writer)
@@ -289,9 +293,8 @@ internal class AppleSync(
             publish(republished)
             return
         }
-        // A name authored by decideGroup is published above, so apply reads a
-        // fresh projection; otherwise the base would lag the authored name and
-        // a later local rename would be clobbered as a remote change (D4).
+        // What the drain authored is published above, so apply reads a fresh projection and the
+        // base never lags a local change that would then look remote.
         mutableState.publishOutcome(reconciler.apply(writer.projection(), base))
     }
 
@@ -360,6 +363,22 @@ private suspend fun exchangeLegsOrHalt(
     return consumed == SyncStatus.COMPLETED
 }
 
+/** A migrated replica marks the workspace once, so devices still on 1.2 stop receiving now rather than at a later edit. */
+private suspend fun enablePauseSetsOrHalt(
+    policies: LocalPolicySyncStore,
+    workspace: EstablishedWorkspace,
+    writer: SyncWriter,
+    publish: (SyncStatus) -> Unit,
+): Boolean {
+    val result = policies.enablePauseSetsOnce(workspace.context.workspaceId.value.copyBytes()) {
+        writer.mutate(LocalSyncMutation.EnablePauseSets) is LocalMutationResult.Success
+    }
+    return when (result) {
+        is LocalPolicyResult.Success -> result.value.also { recorded -> if (!recorded) publish(SyncStatus.ACTION_REQUIRED) }
+        is LocalPolicyResult.Failure -> false.also { publish(result.reason.toSyncStatus()) }
+    }
+}
+
 private suspend fun seedAndDrainOrHalt(
     base: PolicySyncBase?,
     reconciler: PolicyReconciler,
@@ -371,7 +390,7 @@ private suspend fun seedAndDrainOrHalt(
     if (base != null) {
         return true
     }
-    val seeded = reconciler.seedLocalExtras(workspace.context.workspaceId.value.copyBytes())
+    val seeded = reconciler.seedLocalExtras(workspace.context.workspaceId.value.copyBytes(), writer.projection())
     if (seeded is LocalPolicyResult.Failure) {
         publish(seeded.reason.toSyncStatus())
         return false
@@ -393,7 +412,7 @@ private fun MutableStateFlow<AppleSyncState>.publishOutcome(outcome: ReconcileOu
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.LOCAL_CAPACITY) }
         }
 
-        ReconcileOutcome.Corrupt -> {
+        ReconcileOutcome.Corrupt, ReconcileOutcome.RefusedSetCapacity -> {
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = null) }
         }
 
