@@ -10,8 +10,8 @@ or iPhone, now or on a schedule, within the [limits](#limits) below.
 </p>
 
 Watch the [full 53-second walkthrough](https://posato.app/media/walkthrough.mp4),
-which adds choosing apps on the Mac and the iPhone, ending a session early,
-and a schedule whose pause starts on its own.
+which adds opening a pause set, choosing apps on the Mac and the iPhone,
+ending a session early, and a schedule whose pause starts on its own.
 
 [Quick start](#quick-start) · [How it works](#how-it-works) ·
 [Limits](#limits) · [Privacy](#privacy) · [Documentation](#project-documentation)
