@@ -1,0 +1,308 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": true
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {
+      "name": "ready",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "list",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "iphone-wording",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Apps on this iPhone"
+      }
+    },
+    {
+      "name": "list-before-settle",
+      "action": "sleep",
+      "seconds": 1
+    },
+    {
+      "name": "list-before",
+      "action": "screenshot"
+    },
+    {
+      "name": "new-set",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Work",
+      "clear": true
+    },
+    {
+      "name": "save",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "set-open",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "website",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "work.example",
+      "clear": true,
+      "submit": true
+    },
+    {
+      "name": "done",
+      "action": "tap",
+      "query": {
+        "text": "Done",
+        "role": "button"
+      }
+    },
+    {
+      "name": "set-screen-settle",
+      "action": "sleep",
+      "seconds": 1
+    },
+    {
+      "name": "set-screen",
+      "action": "screenshot"
+    },
+    {
+      "name": "back",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Work",
+        "role": "button"
+      }
+    },
+    {
+      "name": "list-two-settle",
+      "action": "sleep",
+      "seconds": 1
+    },
+    {
+      "name": "list-two",
+      "action": "screenshot"
+    },
+    {
+      "name": "session",
+      "action": "tap",
+      "query": {
+        "text": "Session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "start-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Start a session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "start",
+      "action": "tap",
+      "query": {
+        "text": "Start a session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "setup",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "YOUR NEXT PAUSE"
+      }
+    },
+    {
+      "name": "choose",
+      "action": "tap",
+      "query": {
+        "textContains": "Pause set,",
+        "role": "button"
+      }
+    },
+    {
+      "name": "pick-work",
+      "action": "tap",
+      "query": {
+        "textContains": "Work, ",
+        "role": "button"
+      }
+    },
+    {
+      "name": "chosen",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Pause set, Work",
+        "role": "button"
+      }
+    },
+    {
+      "name": "review-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Review session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "review",
+      "action": "tap",
+      "query": {
+        "text": "Review session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "review-set",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Set: Work"
+      }
+    },
+    {
+      "name": "review-work-settle",
+      "action": "sleep",
+      "seconds": 1
+    },
+    {
+      "name": "review-work",
+      "action": "screenshot"
+    },
+    {
+      "name": "change-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Change duration",
+        "role": "button"
+      }
+    },
+    {
+      "name": "change",
+      "action": "tap",
+      "query": {
+        "text": "Change duration",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cancel-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Cancel",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cancel",
+      "action": "tap",
+      "query": {
+        "text": "Cancel",
+        "role": "button"
+      }
+    },
+    {
+      "name": "sets-again",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "work-menu",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Work",
+        "role": "button"
+      }
+    },
+    {
+      "name": "delete",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "confirm-delete",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "work-gone",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "textContains": "Work",
+        "role": "button"
+      }
+    }
+  ]
+}

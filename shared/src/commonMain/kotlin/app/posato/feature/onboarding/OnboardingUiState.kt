@@ -11,6 +11,7 @@ import app.posato.feature.onboarding.data.SetupCompletion
 import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.LocalPolicyResult
 import app.posato.feature.targets.data.LocalTargetPolicyStore
+import app.posato.feature.targets.domain.ExactDomain
 import app.posato.feature.targets.domain.TargetPolicy
 import app.posato.feature.targets.domain.TargetPolicyValidationResult
 import app.posato.feature.targets.ui.WebsiteBatchReceipt
@@ -196,31 +197,22 @@ internal class OnboardingUiState(
             is LocalPolicyResult.Success -> read.value
             is LocalPolicyResult.Failure -> return WebsiteBatchReceipt(submissionId, saved = false)
         }
-        val submission = createWebsiteBatchSubmission(
-            input,
-            snapshot.policy.domains.map { domain -> domain.canonicalValue },
-            snapshot.domainsOutside(PauseSetId.FIRST),
-        )
+        val target = snapshot.sets.resolvedDefault() ?: return WebsiteBatchReceipt(submissionId, saved = false)
+        val held = snapshot.sets.domainsOf(target)
+        val submission = createWebsiteBatchSubmission(input, held.map { domain -> domain.canonicalValue }, snapshot.domainsOutside(target))
         if (submission is WebsiteBatchSubmission.TooLong) {
             return WebsiteBatchReceipt(submissionId, saved = false, tooLong = true)
         }
         val ready = submission as WebsiteBatchSubmission.Ready
         if (ready.addedCount == 0) {
-            savedWebsites = snapshot.policy.domains.size
+            savedWebsites = held.size
             return ready.toReceipt(submissionId, saved = true)
         }
-        val policy = when (
-            val validated = TargetPolicy.fromStoredValues(
-                ready.canonicalDomains,
-                snapshot.policy.applicationPolicyName?.canonicalValue,
-            )
-        ) {
-            is TargetPolicyValidationResult.Success -> validated.policy
-            is TargetPolicyValidationResult.Failure -> return WebsiteBatchReceipt(submissionId, saved = false)
-        }
-        return when (val replaced = policyStore.replace(snapshot.revision, policy)) {
+        val domains = ready.canonicalDomains.map { value -> ExactDomain.restore(value) ?: return WebsiteBatchReceipt(submissionId, saved = false) }
+        val sets = snapshot.sets.withDomains(target, domains) ?: return WebsiteBatchReceipt(submissionId, saved = false)
+        return when (val replaced = policyStore.replaceSets(snapshot.revision, sets)) {
             is LocalPolicyResult.Success -> {
-                savedWebsites = replaced.value.policy.domains.size
+                savedWebsites = replaced.value.sets.domainsOf(target).size
                 ready.toReceipt(submissionId, saved = true)
             }
 

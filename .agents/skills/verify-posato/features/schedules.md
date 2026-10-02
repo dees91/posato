@@ -54,7 +54,7 @@ seconds rather than waiting; This Mac is ready. can take five minutes.
 ## Automatic starts on a Mac
 
 Start from a set-up Mac (the unified setup records the consent) with
-`example.com` in Paused items.
+`example.com` in Pause sets.
 
 1. Read the guest clock with `$PC vm exec --line primary --script "date +'%s %z'"`
    and add a schedule that starts two to three minutes later: today's weekday

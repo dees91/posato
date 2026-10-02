@@ -65,18 +65,18 @@ internal object SessionReviewDerivation {
         access: LocalApplicationMappingsAccess?,
     ): SessionReview {
         val domains = policy.domains.map { domain -> domain.canonicalValue }.toPersistentList()
-        val effectiveApplications = if (policy.applicationPolicyName != null) selectedMappingCount ?: 0 else 0
+        val effectiveApplications = selectedMappingCount ?: 0
         val effectiveCount = domains.size + effectiveApplications
         val actionRequired = when {
             effectiveCount == 0 -> {
                 SessionActionRequired.NO_EFFECTIVE_ITEMS
             }
 
-            policy.applicationPolicyName != null && selectedMappingCount == 0 && access == LocalApplicationMappingsAccess.READY -> {
+            selectedMappingCount == 0 && access == LocalApplicationMappingsAccess.READY -> {
                 SessionActionRequired.MAPPINGS_NOT_CHOSEN
             }
 
-            policy.applicationPolicyName != null && selectedMappingCount == 0 && access != null -> {
+            selectedMappingCount == 0 && access != null -> {
                 SessionActionRequired.ACCESS_REQUIRED
             }
 

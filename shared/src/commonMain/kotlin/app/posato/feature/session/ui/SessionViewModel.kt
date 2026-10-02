@@ -13,6 +13,7 @@ import app.posato.feature.session.domain.SessionSetup
 import app.posato.feature.session.domain.SessionSetupFailure
 import app.posato.feature.session.domain.SessionSetupResult
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionId
 import app.posato.feature.targets.data.LocalApplicationMappings
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadFailure
@@ -53,6 +54,9 @@ internal class SessionViewModel(
     private val confirmingSession = MutableStateFlow<SessionId?>(null)
     private val ownerStatuses: Flow<Unit> = owner.status.transform { status ->
         sessionLoad.update { SessionLoadState(status = status) }
+        if (shownSetIdOf(sessionLoad.value, setupDraft.value) != targetsState.value.setId) {
+            targetsRefreshRequests.tryEmit(Unit)
+        }
         emit(Unit)
     }
     private val ticker = observeSessionTicks(clock)
@@ -61,7 +65,7 @@ internal class SessionViewModel(
         policyStore.policyChanges,
     ).transform {
         emit(Unit)
-        targetsState.update { loadSessionTargets(policyStore, applicationMappings) }
+        targetsState.update { loadSessionTargets(policyStore, applicationMappings, shownSetIdOf(sessionLoad.value, setupDraft.value)) }
     }
 
     val uiState: StateFlow<SessionUiState> = combine(
@@ -105,14 +109,13 @@ internal class SessionViewModel(
             setupDraft.update { draft -> draft.copy(isSettingUp = true, failure = null) }
         } else {
             setupDraft.update { SessionSetupDraft() }
+            targetsRefreshRequests.tryEmit(Unit)
         }
     }
 
-    fun adjustDuration(deltaMinutes: Int) {
-        setupDraft.update { draft ->
-            val adjusted = (draft.durationMinutes + deltaMinutes).coerceIn(SessionLimits.MIN_DURATION_MINUTES, SessionLimits.MAX_DURATION_MINUTES)
-            draft.copy(durationMinutes = adjusted, failure = null)
-        }
+    fun choosePauseSet(setId: PauseSetId) {
+        setupDraft.update { draft -> draft.copy(setId = setId) }
+        targetsRefreshRequests.tryEmit(Unit)
     }
 
     fun setDurationMinutes(minutes: Int) {
@@ -196,12 +199,13 @@ internal class SessionViewModel(
         command.update { SessionCommand.STARTING }
         viewModelScope.launch {
             try {
-                val targets = loadSessionTargets(policyStore, applicationMappings)
+                val targets = loadSessionTargets(policyStore, applicationMappings, draft.setId)
                 targetsState.update { targets }
-                if (isStartBlocked(targets)) {
+                val setId = targets.setId
+                if (setId == null || isStartBlocked(targets)) {
                     return@launch
                 }
-                when (val result = owner.startSession(sessionIds.create(), now, end, targets.toFrozenStartSet())) {
+                when (val result = owner.startSession(sessionIds.create(), now, end, targets.toFrozenStartSet(), setId)) {
                     is LocalSessionResult.Success -> {
                         sessionLoad.update { SessionLoadState(status = result.value) }
                         setupDraft.update { SessionSetupDraft() }
@@ -297,6 +301,14 @@ internal class SessionViewModel(
     fun retryEnforcement() {
         owner.retry()
     }
+}
+
+/** The set the screen shows: a running session's own set, else the one being chosen, else the default. */
+private fun shownSetIdOf(
+    load: SessionLoadState,
+    draft: SessionSetupDraft,
+): PauseSetId? {
+    return (load.status as? Active)?.record?.setId ?: draft.setId
 }
 
 private fun CoroutineScope.refreshSession(

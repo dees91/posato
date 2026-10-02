@@ -4,7 +4,7 @@
   "defaults": { "timeoutSeconds": 30 },
   "onFailure": { "screenshot": true, "snapshot": true },
   "steps": [
-    { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Paused items", "role": "button" } },
+    { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Pause sets", "role": "button" } },
     { "name": "home-inactive", "action": "waitFor", "state": "exists", "query": { "text": "NO SESSION ACTIVE" } },
     { "name": "begin-setup", "action": "tap", "query": { "text": "Start a session", "role": "button" } },
     { "name": "setup-open", "action": "waitFor", "state": "exists", "query": { "text": "YOUR NEXT PAUSE" } },

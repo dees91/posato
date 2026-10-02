@@ -43,6 +43,7 @@ internal enum class SyncAttentionReason {
     LOCAL_CAPACITY,
     SHARED_CAPACITY,
     SCHEDULE_CAPACITY,
+    SET_CAPACITY,
 }
 
 internal data class AppleSyncState(
@@ -51,6 +52,8 @@ internal data class AppleSyncState(
     val joinPending: Boolean = false,
     val checkingJoin: Boolean = false,
     val reason: SyncAttentionReason? = null,
+    /** The sets the workspace removed, as of the last exchange, so a schedule naming one can say so. */
+    val removedPauseSets: Set<PauseSetId> = emptySet(),
 )
 
 internal class AppleSync(
@@ -295,7 +298,9 @@ internal class AppleSync(
         }
         // What the drain authored is published above, so apply reads a fresh projection and the
         // base never lags a local change that would then look remote.
-        mutableState.publishOutcome(reconciler.apply(writer.projection(), base))
+        val projection = writer.projection()
+        mutableState.update { state -> state.copy(removedPauseSets = projection.removedPauseSetIds) }
+        mutableState.publishOutcome(reconciler.apply(projection, base))
     }
 
     private fun publish(status: SyncStatus) {
@@ -412,7 +417,11 @@ private fun MutableStateFlow<AppleSyncState>.publishOutcome(outcome: ReconcileOu
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.LOCAL_CAPACITY) }
         }
 
-        ReconcileOutcome.Corrupt, ReconcileOutcome.RefusedSetCapacity -> {
+        ReconcileOutcome.RefusedSetCapacity -> {
+            update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = SyncAttentionReason.SET_CAPACITY) }
+        }
+
+        ReconcileOutcome.Corrupt -> {
             update { it.copy(status = SyncStatus.ACTION_REQUIRED, reason = null) }
         }
 

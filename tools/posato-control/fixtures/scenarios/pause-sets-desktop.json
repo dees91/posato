@@ -1,0 +1,1046 @@
+{
+  "version": 1,
+  "launch": {
+    "terminateExisting": false
+  },
+  "defaults": {
+    "timeoutSeconds": 30
+  },
+  "onFailure": {
+    "screenshot": true,
+    "snapshot": true
+  },
+  "steps": [
+    {
+      "name": "ready",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-pause-sets",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "list-ready",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "update-notice",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Update Posato on your other devices"
+      }
+    },
+    {
+      "name": "list-first-visit",
+      "action": "screenshot"
+    },
+    {
+      "name": "list-first-visit",
+      "action": "snapshot"
+    },
+    {
+      "name": "new-set",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-work",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Work",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-work",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "work-open",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "work-website",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "work.example",
+      "clear": true,
+      "submit": true
+    },
+    {
+      "name": "work-done",
+      "action": "tap",
+      "query": {
+        "text": "Done",
+        "role": "button"
+      }
+    },
+    {
+      "name": "work-website-saved",
+      "action": "scrollTo",
+      "query": {
+        "textContains": "work.example",
+        "role": "text",
+        "within": {
+          "text": "Saved websites",
+          "role": "group"
+        }
+      }
+    },
+    {
+      "name": "set-screen-work",
+      "action": "screenshot"
+    },
+    {
+      "name": "back-to-list",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "work-listed",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Work",
+        "role": "button"
+      }
+    },
+    {
+      "name": "work-menu",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Work",
+        "role": "button"
+      }
+    },
+    {
+      "name": "make-work-default",
+      "action": "tap",
+      "query": {
+        "text": "Make default",
+        "role": "button"
+      }
+    },
+    {
+      "name": "first-deletable-caption-moved",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Make another set the default"
+      }
+    },
+    {
+      "name": "work-menu-rename",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Work",
+        "role": "button"
+      }
+    },
+    {
+      "name": "rename",
+      "action": "tap",
+      "query": {
+        "text": "Rename",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-office",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Office",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-office",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "office-listed",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Office",
+        "role": "button"
+      }
+    },
+    {
+      "name": "list-office-default",
+      "action": "screenshot"
+    },
+    {
+      "name": "open-schedules",
+      "action": "tap",
+      "query": {
+        "text": "Schedules",
+        "role": "button"
+      }
+    },
+    {
+      "name": "add-schedule",
+      "action": "tap",
+      "query": {
+        "text": "Add schedule",
+        "role": "button"
+      }
+    },
+    {
+      "name": "editor-ready",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "role": "textField"
+      }
+    },
+    {
+      "name": "schedule-name",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Focus",
+      "clear": true,
+      "submit": true
+    },
+    {
+      "name": "default-preselected",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Office",
+        "role": "button"
+      }
+    },
+    {
+      "name": "schedule-editor-default-set",
+      "action": "screenshot"
+    },
+    {
+      "name": "off-reveal",
+      "action": "scrollTo",
+      "query": {
+        "textContains": "Schedule on,",
+        "role": "button"
+      }
+    },
+    {
+      "name": "turn-off",
+      "action": "tap",
+      "query": {
+        "textContains": "Schedule on,",
+        "role": "button"
+      }
+    },
+    {
+      "name": "save-reveal",
+      "action": "scrollTo",
+      "query": {
+        "text": "Save schedule",
+        "role": "button"
+      }
+    },
+    {
+      "name": "save-schedule",
+      "action": "tap",
+      "query": {
+        "text": "Save schedule",
+        "role": "button"
+      }
+    },
+    {
+      "name": "schedule-row-set",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set: Office"
+      }
+    },
+    {
+      "name": "schedule-row-set",
+      "action": "screenshot"
+    },
+    {
+      "name": "open-session",
+      "action": "tap",
+      "query": {
+        "text": "Session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "begin-setup",
+      "action": "tap",
+      "query": {
+        "text": "Start a session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "setup-open",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "YOUR NEXT PAUSE"
+      }
+    },
+    {
+      "name": "setup-default-set",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Pause set, Office",
+        "role": "button"
+      }
+    },
+    {
+      "name": "choose-set",
+      "action": "tap",
+      "query": {
+        "textContains": "Pause set,",
+        "role": "button"
+      }
+    },
+    {
+      "name": "pick-my-set",
+      "action": "tap",
+      "query": {
+        "textContains": "My set, ",
+        "role": "button"
+      }
+    },
+    {
+      "name": "setup-my-set",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Pause set, My set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "choose-set-again",
+      "action": "tap",
+      "query": {
+        "textContains": "Pause set,",
+        "role": "button"
+      }
+    },
+    {
+      "name": "pick-office",
+      "action": "tap",
+      "query": {
+        "textContains": "Office (default),",
+        "role": "button"
+      }
+    },
+    {
+      "name": "continue-review",
+      "action": "tap",
+      "query": {
+        "text": "Review session",
+        "role": "button"
+      }
+    },
+    {
+      "name": "review-set",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Set: Office"
+      }
+    },
+    {
+      "name": "review-office",
+      "action": "screenshot"
+    },
+    {
+      "name": "review-office",
+      "action": "snapshot"
+    },
+    {
+      "name": "change-duration",
+      "action": "tap",
+      "query": {
+        "text": "Change duration",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cancel-setup",
+      "action": "tap",
+      "query": {
+        "text": "Cancel",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-to-pause-sets",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "my-set-menu",
+      "action": "tap",
+      "query": {
+        "text": "More actions for My set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "make-first-default",
+      "action": "tap",
+      "query": {
+        "text": "Make default",
+        "role": "button"
+      }
+    },
+    {
+      "name": "office-deletable",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Used by Focus"
+      }
+    },
+    {
+      "name": "office-menu",
+      "action": "tap",
+      "query": {
+        "text": "More actions for Office",
+        "role": "button"
+      }
+    },
+    {
+      "name": "delete-office",
+      "action": "tap",
+      "query": {
+        "text": "Delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "delete-dialog",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "These schedules use it: Focus"
+      }
+    },
+    {
+      "name": "delete-change-their-set",
+      "action": "screenshot"
+    },
+    {
+      "name": "change-and-delete",
+      "action": "tap",
+      "query": {
+        "text": "Change their set and delete",
+        "role": "button"
+      }
+    },
+    {
+      "name": "office-gone",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "textContains": "Office",
+        "role": "button"
+      }
+    },
+    {
+      "name": "schedules-after-delete",
+      "action": "tap",
+      "query": {
+        "text": "Schedules",
+        "role": "button"
+      }
+    },
+    {
+      "name": "schedule-moved",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set: My set"
+      }
+    },
+    {
+      "name": "schedule-moved",
+      "action": "screenshot"
+    },
+    {
+      "name": "pause-sets-for-cap",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-2",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-2",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 2",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-2",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-2",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-2",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-2",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 2",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-3",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-3",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 3",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-3",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-3",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-3",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-3",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 3",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-4",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-4",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 4",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-4",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-4",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-4",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-4",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 4",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-5",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-5",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 5",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-5",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-5",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-5",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-5",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 5",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-6",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-6",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 6",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-6",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-6",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-6",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-6",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 6",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-7",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-7",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 7",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-7",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-7",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-7",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-7",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 7",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-8",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-8",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 8",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-8",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-8",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-8",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-8",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 8",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-9",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-9",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 9",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-9",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-9",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-9",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-9",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 9",
+        "role": "button"
+      }
+    },
+    {
+      "name": "new-10",
+      "action": "tap",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "name-10",
+      "action": "type",
+      "query": {
+        "role": "textField"
+      },
+      "text": "Set 10",
+      "clear": true,
+      "submit": false
+    },
+    {
+      "name": "save-10",
+      "action": "tap",
+      "query": {
+        "text": "Save",
+        "role": "button"
+      }
+    },
+    {
+      "name": "open-10",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "back-10",
+      "action": "tap",
+      "query": {
+        "text": "Back to pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "listed-10",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "Set 10",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cap-caption",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "You can have up to 10 pause sets."
+      }
+    },
+    {
+      "name": "new-set-disabled",
+      "action": "assert",
+      "state": "disabled",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "cap-reached",
+      "action": "screenshot"
+    },
+    {
+      "name": "relaunch",
+      "action": "relaunch"
+    },
+    {
+      "name": "reopen-pause-sets",
+      "action": "tap",
+      "query": {
+        "text": "Pause sets",
+        "role": "button"
+      }
+    },
+    {
+      "name": "list-again",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "New set",
+        "role": "button"
+      }
+    },
+    {
+      "name": "notice-once",
+      "action": "waitFor",
+      "state": "absent",
+      "query": {
+        "textContains": "Update Posato on your other devices"
+      }
+    },
+    {
+      "name": "list-after-relaunch",
+      "action": "screenshot"
+    }
+  ]
+}

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -65,8 +66,7 @@ internal fun SessionOverviewContent(
     val scheduledRestricts = scheduled?.restricts == true
     val active = state.status is LocalSessionStatus.Active || scheduledRestricts
     val needsMacSetup = macSetup?.needsSetup() == true
-    val hasItems = state.displayDomains().isNotEmpty() ||
-        (state.review.applicationGroupName != null && (state.displayApplicationCount() ?: 0) > 0)
+    val hasItems = state.hasPausableItems()
     var macSetupExpanded by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section)) {
         SessionHero(layout, overviewDescription(active, scheduledRestricts, needsMacSetup, hasItems), active, scheduledRestricts)
@@ -79,6 +79,7 @@ internal fun SessionOverviewContent(
             ScheduledPauseRunning(scheduled, onEndSchedule)
         } else if (active) {
             PosatoEndTime("Until ${state.formattedActiveEnd.orEmpty()}", supportingText = state.remainingMillis?.let { remainingText(it) })
+            state.setName?.let { name -> PosatoCaption("Set: $name") }
             PosatoButton(onEnd, style = PosatoButtonStyle.Quiet, enabled = state.canRequestEarlyEnd()) { Text("End session early") }
         } else {
             SessionEndedCaption(state)
@@ -276,19 +277,43 @@ internal fun SessionReviewContent(
                 Modifier.fillMaxWidth(),
                 "${state.durationMinutes} minutes · you stay in control",
             )
-            state.review.actionRequired?.let { required ->
-                PosatoNotice(tone = PosatoTone.Caution, actionContent = {
-                    PosatoButton(if (required == SessionActionRequired.MAPPINGS_LOAD_FAILED) onRetry else onItems) {
-                        Text(if (required == SessionActionRequired.MAPPINGS_LOAD_FAILED) "Retry" else "Review paused items")
-                    }
-                }) { Text(stringResource(required.actionMessage())) }
-            }
+            state.setName?.let { name -> Text("Set: $name", style = MaterialTheme.typography.titleMedium) }
+            state.review.actionRequired?.let { required -> SessionReadinessNotice(required, onRetry, onEditItems) }
             PosatoActionRow {
-                PosatoButton(onStart, enabled = state.canStart()) { Text(if (state.isStarting) "Starting…" else "Start this pause") }
+                if (state.review.actionRequired == SessionActionRequired.NO_EFFECTIVE_ITEMS) {
+                    PosatoButton(onItems) { Text("Add websites or apps") }
+                } else {
+                    PosatoButton(onStart, enabled = state.canStart()) { Text(if (state.isStarting) "Starting…" else "Start this pause") }
+                }
                 PosatoButton(onChangeDuration, style = PosatoButtonStyle.Quiet, enabled = !state.isStarting) { Text("Change duration") }
             }
             SessionSelectionSummary(state, deviceLabel, onEditItems)
             PosatoCaption("This starts the session and applies the chosen restrictions on this device.")
         }
     }
+}
+
+@Composable
+private fun SessionReadinessNotice(
+    required: SessionActionRequired,
+    onRetry: () -> Unit,
+    onEditItems: (TargetsCategory) -> Unit,
+) {
+    val noun = remember { platformDevice().noun }
+    PosatoNotice(tone = PosatoTone.Caution, actionContent = {
+        when (required) {
+            SessionActionRequired.MAPPINGS_LOAD_FAILED -> {
+                PosatoButton(onRetry) { Text("Retry") }
+            }
+
+            SessionActionRequired.MAPPINGS_NOT_CHOSEN, SessionActionRequired.ACCESS_REQUIRED -> {
+                PosatoButton(
+                    { onEditItems(TargetsCategory.APPLICATIONS) },
+                    style = PosatoButtonStyle.Quiet,
+                ) { Text("Choose apps") }
+            }
+
+            SessionActionRequired.NO_EFFECTIVE_ITEMS -> {}
+        }
+    }) { Text(stringResource(required.actionMessage(), noun)) }
 }

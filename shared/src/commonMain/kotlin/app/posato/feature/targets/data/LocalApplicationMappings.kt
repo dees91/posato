@@ -1,5 +1,6 @@
 package app.posato.feature.targets.data
 
+import app.posato.feature.sync.domain.PauseSetId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlin.jvm.JvmInline
@@ -302,3 +303,12 @@ private val applicationMappingComparator = Comparator<LocalApplicationMapping> {
 private fun Char.isApplicationMappingControlCharacter(): Boolean {
     return this in '\u0000'..'\u001F' || this in '\u007F'..'\u009F'
 }
+
+/** The app choices that belong to this pause set. */
+internal fun PauseSetId.choiceSet(): ApplicationChoiceSet {
+    val hex = value.copyBytes().joinToString("") { byte -> (byte.toInt() and BYTE_MASK).toString(HEX_RADIX).padStart(2, '0') }
+    return checkNotNull(ApplicationChoiceSet.restore(hex))
+}
+
+private const val BYTE_MASK: Int = 0xFF
+private const val HEX_RADIX: Int = 16

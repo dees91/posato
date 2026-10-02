@@ -14,8 +14,13 @@ import app.posato.feature.schedules.domain.ScheduleIdGenerator
 import app.posato.feature.schedules.domain.ScheduleZone
 import app.posato.feature.session.domain.SessionClock
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.ui.PauseSetRow
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 
 /**
@@ -31,7 +36,9 @@ internal class SchedulesHolder(
     private val ids: ScheduleIdGenerator,
     private val scope: CoroutineScope,
     private val linked: () -> Boolean = { false },
+    private val removedSets: () -> Set<PauseSetId> = { emptySet() },
     private val onSaved: suspend () -> Unit = {},
+    private val pauseSets: PauseSetSource = PauseSetSource(),
 ) {
     var state by mutableStateOf(SchedulesUiState())
         private set
@@ -40,12 +47,13 @@ internal class SchedulesHolder(
     /** Keeps the rows current while the destination is shown. */
     suspend fun run() {
         refresh()
-        store.changes.collect { refresh() }
+        merge(store.changes, pauseSets.changes).collect { refresh() }
     }
 
     fun openEditor(row: ScheduleRowModel?) {
         val plan = row?.let { selected -> snapshot.schedules.firstOrNull { it.plan.id == selected.id }?.plan }
-        state = state.copy(editor = plan?.let(ScheduleDraft::of) ?: ScheduleDraft(), editorError = null)
+        val fresh = ScheduleDraft(setId = state.pauseSets.firstOrNull { set -> set.isDefault }?.id ?: PauseSetId.FIRST)
+        state = state.copy(editor = plan?.let(ScheduleDraft::of) ?: fresh, editorError = null)
     }
 
     fun updateDraft(draft: ScheduleDraft) {
@@ -117,8 +125,15 @@ internal class SchedulesHolder(
         changed?.let { state = state.copy(changeFailed = it is ScheduleResult.Failure) }
         val read = store.read() as? ScheduleResult.Success ?: return
         snapshot = read.value
-        val rows = buildScheduleRows(snapshot, clock.currentEpochMillis(), zone, timeFormat)
-        state = state.copy(loaded = true, schedules = rows.toPersistentList(), showUpdateNote = linked() && rows.isEmpty())
+        val sets = pauseSets.load()
+        val context = ScheduleSetContext(sets, linked(), pauseSets.deviceNoun, removedSets())
+        val rows = buildScheduleRows(snapshot, clock.currentEpochMillis(), zone, timeFormat, context)
+        state = state.copy(
+            loaded = true,
+            schedules = rows.toPersistentList(),
+            showUpdateNote = linked() && rows.isEmpty(),
+            pauseSets = sets.filterNot(PauseSetRow::refused).toPersistentList(),
+        )
     }
 }
 
@@ -129,3 +144,10 @@ private fun ScheduleStoreFailure.toEditorError(): ScheduleEditorError {
         ScheduleStoreFailure.STORAGE_FAILURE, ScheduleStoreFailure.WORKSPACE_UNKNOWN -> ScheduleEditorError.NOT_SAVED
     }
 }
+
+/** Where the Schedules destination reads the pause sets a schedule can use, and when they change. */
+internal class PauseSetSource(
+    val changes: Flow<Unit> = emptyFlow(),
+    val deviceNoun: String = "device",
+    val load: suspend () -> List<PauseSetRow> = { emptyList() },
+)

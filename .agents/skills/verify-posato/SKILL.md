@@ -7,10 +7,10 @@ description: "Drive the real Posato macOS desktop app and iOS app (Simulator or 
 
 Posato is a Kotlin Multiplatform app with three destinations on two hosts, a
 Compose Desktop macOS app and a Compose iOS app: `Session` (the screen shown
-after every launch), `Paused items` (websites and the application group), and
-`Schedules` (UI shells with saving and execution inactive).
+after every launch), `Pause sets` (a list of sets, each with its own websites
+and this device's apps), and `Schedules`.
 iPhone and iPad portrait use bottom navigation; macOS and iPad landscape use a
-sidebar, with the buttons `Session`, `Paused items` and `Schedules`; the choice is not
+sidebar, with the buttons `Session`, `Pause sets` and `Schedules`; the choice is not
 remembered across a relaunch.
 The nested `Websites` / `Apps` tabs include counts in their accessibility labels.
 The native prototype is a frozen reference, not the application under test. There is no web UI, no HTTP API, and no debug menu. The only
@@ -106,7 +106,7 @@ $PC devices boot --device-type "iPhone 17"
 $PC build -t sim --driver          # app + XCUITest driver, DerivedData under build/verification/
 $PC install -t sim
 $PC launch -t sim --fresh          # --fresh deletes the app's data on that simulator first
-$PC wait -t sim --for exists --text "Paused items" --role button --timeout-seconds 30
+$PC wait -t sim --for exists --text "Pause sets" --role button --timeout-seconds 30
 ```
 
 Desktop, always in a Tart VM (the golden VM's `tart-guest-agent` holds
@@ -116,7 +116,7 @@ Accessibility and Screen Recording):
 $PC build -t desktop               # on the host: staged Posato.app, signed with posato.macos.signingIdentity
 $PC vm create --line primary       # disposable clone with the package; `vm sync` after a later build
 $PC launch -t desktop --vm primary --capture-logs
-$PC wait -t desktop --vm primary --for exists --text "Paused items" --role button --timeout-seconds 30
+$PC wait -t desktop --vm primary --for exists --text "Pause sets" --role button --timeout-seconds 30
 ```
 
 Connected iPhone (needs `posato.apple.developmentTeam` in the ignored
@@ -126,23 +126,26 @@ Connected iPhone (needs `posato.apple.developmentTeam` in the ignored
 $PC build -t device --driver
 $PC install -t device
 $PC launch -t device
-$PC wait -t device --for exists --text "Paused items" --role button --timeout-seconds 30
+$PC wait -t device --for exists --text "Pause sets" --role button --timeout-seconds 30
 ```
 
-Ready means the `wait` above returns `ok: true`; the `Paused items` button is
+Ready means the `wait` above returns `ok: true`; the `Pause sets` button is
 present in every session state without the software keyboard. It is hidden
 while the keyboard is open; `Done` clears focus and restores navigation. Before any Websites or Applications recipe, switch destination:
 
 ```shell
-$PC tap  -t <target> --text "Paused items" --role button
+$PC tap  -t <target> --text "Pause sets" --role button
+$PC tap  -t <target> --text-contains "My set" --role button
 $PC wait -t <target> --for exists --text "Search" --timeout-seconds 30
 ```
 
-Every `launch` and scenario `relaunch` returns to `Session`, so repeat the
-switch after each one. A fresh database shows the first-install flow instead:
+`Pause sets` opens the list; the set's row opens its Websites and Apps, and
+the destination keeps that set open until `Back to pause sets`. Every
+`launch` and scenario `relaunch` returns to `Session` with the list closed, so
+repeat both taps after each one. A fresh database shows the first-install flow instead:
 run `first-install-skip.json` after every `--fresh` launch or `reset` before
 any older recipe (see [First install](./features/onboarding.md)), then wait
-for `Paused items`. Teardown is `$PC terminate -t <target>` followed by
+for `Pause sets`. Teardown is `$PC terminate -t <target>` followed by
 `$PC cleanup -t <target>`.
 
 Isolation: one instance per target. The tool tracks what it launched in
@@ -336,7 +339,7 @@ xcodebuild test-without-building -project iosApp/iosApp.xcodeproj -scheme iosApp
 
 Split the build from the run and keep the output line-buffered, otherwise a
 hung device run looks identical to a slow one. After a native packaging
-change the only driver check is the launch smoke above (`Paused items`
+change the only driver check is the launch smoke above (`Pause sets`
 readiness on the desktop). The `Sync with iCloud` action has its own
 feature file, and it drives a real iCloud account, so read
 [Sync with iCloud](./features/sync.md) before pressing it.
@@ -391,7 +394,7 @@ so the developer's local data is unchanged.
   items`, submits with Return, asserts the row, captures a screenshot and a
   snapshot).
 - `tools/posato-control/fixtures/scenarios/remove-website.json` switches to
-  `Paused items` in the running app, removes that row, and waits for it to
+  `Pause sets` in the running app, removes that row, and waits for it to
   disappear.
 - `add-website-desktop.json` and `remove-website-desktop.json` use the same
   user controls on Mac, with real `scrollTo` before row interaction.

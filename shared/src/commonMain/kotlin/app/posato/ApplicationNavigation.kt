@@ -83,7 +83,7 @@ internal fun ApplicationNavigation(
                 onClick = { onSelect(ApplicationDestination.TARGETS) },
                 iconContent = { PosatoIcon(PosatoIcons.Items, null, Modifier.size(PosatoSize.LargeIcon)) },
                 modifier = Modifier.weight(1f),
-            ) { Text("Paused items") }
+            ) { Text("Pause sets") }
             PosatoBottomNavigationItem(
                 modifier = Modifier.weight(1f),
                 selected = destination == ApplicationDestination.SCHEDULES,
@@ -108,7 +108,7 @@ internal fun ApplicationNavigation(
                     onClick = { onSelect(ApplicationDestination.TARGETS) },
                     iconContent = { PosatoIcon(PosatoIcons.Items, null) },
                     modifier = Modifier.fillMaxWidth(),
-                ) { Text("Paused items") }
+                ) { Text("Pause sets") }
                 PosatoSidebarNavigationItem(
                     modifier = Modifier.fillMaxWidth(),
                     selected = destination == ApplicationDestination.SCHEDULES && !showingInformation,

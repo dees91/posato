@@ -44,7 +44,7 @@ that seeds completion opens on Session without the flow.
 Preconditions:
 
 - Run `first-install-skip.json` after every `--fresh` launch or `reset`
-  before any older recipe; without it the `Paused items` readiness wait
+  before any older recipe; without it the `Pause sets` readiness wait
   cannot pass on a fresh database.
 - Reserve `example.com` for the full fixture; start with no bootstrap row
   (`db query -t <desktop|sim> --sql "select count(*) from sync_bootstrap_state"`
@@ -94,7 +94,7 @@ Preconditions:
   setup and a persistent notice. Finish setup opens the existing helper controls;
   menu Start must reach the same route. Expand This Mac there. Check Mac setup or Enable on this Mac
   reads the real result; only Ready admits the duration form. Back to Session
-  does not start a session. Paused items and Schedules remain reachable.
+  does not start a session. Pause sets and Schedules remain reachable.
 - **Mac permission:** during the flow before Enable on this Mac, `pgrep -f
   PosatoMacOSHelper` is empty. Expand Blocking settings, then press Enable on this Mac on an approved Mac
   and expect the enabling caption immediately, then the enabled state. **Not
@@ -113,7 +113,7 @@ Preconditions:
 
 ## Gotchas
 
-- The flow has no navigation chrome; do not wait for `Paused items` until
+- The flow has no navigation chrome; do not wait for `Pause sets` until
   Go to Session is pressed.
 - A joining device whose workspace already holds a website shows only
   Continue at the website step, not Not now; the summary then counts the

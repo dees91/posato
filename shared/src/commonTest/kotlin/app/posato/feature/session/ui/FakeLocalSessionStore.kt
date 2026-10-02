@@ -89,7 +89,7 @@ internal class FakeLocalSessionStore : LocalSessionSyncStore {
             }
 
             else -> {
-                record = SessionRecord(sessionId, startEpochMillis, endEpochMillis)
+                record = SessionRecord(sessionId, startEpochMillis, endEpochMillis, setId)
                 this.frozenStartSet = frozenStartSet
                 endedEarly = false
                 expiryMarked = false

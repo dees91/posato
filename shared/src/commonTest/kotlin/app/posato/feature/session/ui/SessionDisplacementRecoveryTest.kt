@@ -45,7 +45,7 @@ class SessionDisplacementRecoveryTest {
                     return ExpiryDisplacement(ExpiryDisplacementOutcome.FAILED, null)
                 }
             }
-            val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, ::targets, FakeSessionSyncTriggers())
+            val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, { targets() }, FakeSessionSyncTriggers())
             try {
                 owner.startSession(CURRENT, NOW, END, FROZEN)
                 runCurrent()
@@ -77,7 +77,7 @@ class SessionDisplacementRecoveryTest {
         }
         val port = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
         port.displacedSessionId = OLD.reconciliationId()
-        var owner = SessionTransitionOwner(dispatcher, failed, FakeSessionClock(NOW), port, ::targets, FakeSessionSyncTriggers())
+        var owner = SessionTransitionOwner(dispatcher, failed, FakeSessionClock(NOW), port, { targets() }, FakeSessionSyncTriggers())
         try {
             owner.startSession(CURRENT, NOW, END, FROZEN)
             runCurrent()
@@ -87,7 +87,7 @@ class SessionDisplacementRecoveryTest {
             driver.close()
             driver = database.openDriver()
             sql = SqlLocalSessionStore(PosatoDatabase(driver), dispatcher)
-            owner = SessionTransitionOwner(dispatcher, sql, FakeSessionClock(NOW), port, ::targets, FakeSessionSyncTriggers())
+            owner = SessionTransitionOwner(dispatcher, sql, FakeSessionClock(NOW), port, { targets() }, FakeSessionSyncTriggers())
             owner.settle(assertIs<LocalSessionResult.Success<LocalSessionStatus>>(sql.read(NOW)).value)
             runCurrent()
             assertTrue(OLD in assertIs<LocalSessionResult.Success<Set<SessionId>>>(sql.retainedExpiryMarkers()).value)
@@ -110,7 +110,7 @@ class SessionDisplacementRecoveryTest {
         val dispatcher = StandardTestDispatcher(testScheduler)
         val store = FakeLocalSessionStore()
         val port = FakeEnforcementPort(statusOutcome = EnforcementOutcome.CLEARED)
-        val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, ::targets, FakeSessionSyncTriggers())
+        val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, { targets() }, FakeSessionSyncTriggers())
         try {
             owner.startSession(CURRENT, NOW, END, FROZEN)
             runCurrent()

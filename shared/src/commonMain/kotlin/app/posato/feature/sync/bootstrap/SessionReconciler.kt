@@ -9,6 +9,7 @@ import app.posato.feature.session.domain.SessionEndKind
 import app.posato.feature.session.domain.SessionOrigin
 import app.posato.feature.session.domain.SessionSyncWrite
 import app.posato.feature.session.domain.StoredSessionIntent
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.SessionCandidate
 import app.posato.feature.sync.domain.SessionConclusionKind
 import app.posato.feature.sync.domain.SessionId
@@ -37,7 +38,7 @@ internal class SessionReconciler(
         workspace: EstablishedWorkspace,
         nowEpochMillis: Long,
         authoring: SessionSyncAuthoring,
-        captureFrozen: suspend () -> FrozenStartSet,
+        captureFrozen: suspend (PauseSetId) -> FrozenStartSet,
     ): SessionReconcileResult {
         val status = when (val read = sessions.read(nowEpochMillis)) {
             is LocalSessionResult.Failure -> return SessionReconcileResult.Halted(read.reason.toSyncStatus())

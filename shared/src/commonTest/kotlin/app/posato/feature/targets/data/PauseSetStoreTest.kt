@@ -42,6 +42,20 @@ class PauseSetStoreTest {
     }
 
     @Test
+    fun `given the first set deleted when the application group is named then the name is saved and the sets are kept`() = runTest {
+        withStore("pause-sets-group-without-first.db") { store, _ ->
+            val onlyWork = checkNotNull(PauseSets.of(listOf(LocalPauseSet(work, "Work", domains("b"))), work))
+            assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replaceSets(0, onlyWork))
+            val named = checkNotNull((TargetPolicy.fromStoredValues(emptyList(), "Applications") as? TargetPolicyValidationResult.Success)?.policy)
+
+            val replaced = assertIs<LocalPolicyResult.Success<LocalTargetPolicyState>>(store.replace(1, named))
+
+            assertEquals("Applications", replaced.value.applicationPolicyName?.canonicalValue)
+            assertEquals(onlyWork, replaced.value.sets)
+        }
+    }
+
+    @Test
     fun `given stored sets when read then the limit counts unique websites across sets`() = runTest {
         withStore("pause-sets-unique.db") { store, driver ->
             driver.executeSql("INSERT INTO local_pause_set(set_id, name, refused) VALUES (X'${work.hex()}', 'Work', 0)")

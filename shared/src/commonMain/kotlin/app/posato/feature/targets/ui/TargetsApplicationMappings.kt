@@ -31,7 +31,7 @@ internal fun TargetsViewModel.chooseApplications() {
     }
     viewModelScope.launch {
         try {
-            when (val result = applicationMappings.chooseApplications()) {
+            when (val result = applicationMappings.chooseApplications(choiceSet)) {
                 is LocalApplicationSelectionResult.Success -> {
                     applicationMappingsState.update { state -> state.copy(snapshot = result.snapshot, failure = null, mutation = null) }
                     if (result.snapshot.mappings.isNotEmpty()) {
@@ -84,7 +84,7 @@ internal fun TargetsViewModel.removeApplicationMapping(mappingId: LocalApplicati
     }
     viewModelScope.launch {
         try {
-            when (val result = applicationMappings.remove(mappingId)) {
+            when (val result = applicationMappings.remove(mappingId, choiceSet)) {
                 is LocalApplicationRemovalResult.Success -> applicationMappingsState.update { state ->
                     state.copy(snapshot = result.snapshot, failure = null)
                 }
@@ -129,7 +129,7 @@ internal fun TargetsViewModel.clearApplicationMappings() {
     }
     viewModelScope.launch {
         try {
-            val result = applicationMappings.clear()
+            val result = applicationMappings.clear(choiceSet)
             if (clearingCorruption && result is LocalApplicationRemovalResult.Failure) {
                 applicationMappingsState.update { state ->
                     state.copy(failure = ApplicationMappingFailure.CORRUPTED_CLEAR_FAILED)
@@ -181,7 +181,7 @@ internal fun TargetsViewModel.observeApplicationMappingReads(): Flow<Unit> {
     ).transform {
         applicationMappingsState.update { state -> state.copy(isLoading = true, failure = null) }
         emit(Unit)
-        when (val result = applicationMappings.load()) {
+        when (val result = applicationMappings.load(choiceSet)) {
             is LocalApplicationMappingsLoadResult.Success -> {
                 applicationMappingsState.update { state ->
                     ApplicationMappingsState(

@@ -52,6 +52,7 @@ internal data class TargetsUiState(
     val applicationMappingsAccess: LocalApplicationMappingsAccess? = null,
     val isLoading: Boolean = true,
     val hasLoaded: Boolean = false,
+    val setMissing: Boolean = false,
 ) {
     val isSaving: Boolean
         get() = savingMutation != null
@@ -70,6 +71,9 @@ internal data class TargetsUiState(
 }
 
 internal fun TargetsUiState.canChooseApplications(): Boolean {
+    if (setMissing) {
+        return false
+    }
     val canRequestSelection = applicationMappingsAccess == LocalApplicationMappingsAccess.READY ||
         applicationMappingsAccess == LocalApplicationMappingsAccess.AUTHORIZATION_REQUIRED
 

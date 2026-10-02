@@ -242,3 +242,7 @@ CREATE TABLE local_retained_application (
   ),
   PRIMARY KEY (part_kind, part_id, year, month, day, mapping_id)
 );
+
+CREATE TABLE local_pause_set_notice (
+  singleton INTEGER NOT NULL PRIMARY KEY CHECK (singleton = 1)
+);

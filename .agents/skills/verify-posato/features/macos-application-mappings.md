@@ -16,7 +16,7 @@ are provisioned; any operating-system consent still belongs to the maintainer.
 
 ## How to get to it (user POV)
 
-- Open the desktop app and tap `Paused items` in the sidebar, then select Apps; the application list shows `Make room beyond the browser.` and
+- Open the desktop app and tap `Pause sets` in the sidebar, open the set (`My set` by default), then select Apps; the application list shows `Make room beyond the browser.` and
   the `Choose apps` button, or the list of chosen applications with
   an ellipsis menu for each application.
 - On iOS the same section has its own picker; see

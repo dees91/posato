@@ -11,10 +11,13 @@ import app.posato.feature.session.domain.SessionReview
 import app.posato.feature.session.domain.SessionReviewDerivation
 import app.posato.feature.session.domain.SessionSetupFailure
 import app.posato.feature.session.domain.SessionTimeFormat
+import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.targets.data.LocalApplicationMapping
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
+import app.posato.feature.targets.domain.PauseSets
 import app.posato.feature.targets.domain.TargetPolicy
+import app.posato.feature.targets.ui.PauseSetRow
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toPersistentList
@@ -45,6 +48,9 @@ internal data class SessionUiState(
     val enforcement: EnforcementState = EnforcementState.Inactive,
     val enforced: EnforcedSet = EnforcedSet(),
     val enforcementBusy: Boolean = false,
+    val setId: PauseSetId? = null,
+    val setName: String? = null,
+    val pauseSets: PersistentList<PauseSetRow> = persistentListOf(),
 ) {
     override fun toString(): String {
         return "SessionUiState(redacted)"
@@ -105,11 +111,16 @@ internal data class SessionSetupDraft(
     val isSettingUp: Boolean = false,
     val isReviewing: Boolean = false,
     val resolvedReviewEnd: Long? = null,
+    val setId: PauseSetId? = null,
 )
 
 internal data class SessionTargetsState(
     val policy: TargetPolicy? = null,
     val mappings: LocalApplicationMappingsLoadResult? = null,
+    val setId: PauseSetId? = null,
+    val sets: PauseSets? = null,
+    /** How many apps each set has chosen on this device; null where the choices could not be read. */
+    val applicationCounts: Map<PauseSetId, Int?> = emptyMap(),
 ) {
     override fun toString(): String {
         return "SessionTargetsState(redacted)"
@@ -173,6 +184,9 @@ internal fun createSessionUiState(
         enforcement = enforcementView.state,
         enforced = enforcementView.enforced,
         enforcementBusy = enforcementView.busy,
+        setId = targets.partSet(active),
+        setName = targets.nameOf(targets.partSet(active)),
+        pauseSets = targets.sets.choices(targets.applicationCounts),
     )
 }
 

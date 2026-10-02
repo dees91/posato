@@ -20,6 +20,7 @@ import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
+import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNotice
@@ -30,6 +31,8 @@ import app.posato.core.designsystem.PosatoSpace
 import app.posato.core.designsystem.PosatoTextField
 import app.posato.core.designsystem.PosatoToggleButton
 import app.posato.core.designsystem.PosatoTone
+import app.posato.feature.targets.ui.PauseSetChoiceDialog
+import app.posato.feature.targets.ui.PauseSetRow
 import kotlinx.collections.immutable.toPersistentSet
 
 @Composable
@@ -54,6 +57,7 @@ internal fun ScheduleEditor(
         }, style = PosatoButtonStyle.Quiet) { Text("Back to schedules") }
         PosatoHeading(if (draft.id == null) "Make room, regularly." else "Edit schedule", eyebrow = "SCHEDULE", layout = layout)
         PosatoTextField(state = name, label = "Schedule name", placeholder = "Morning focus", onSubmit = { focus.clearFocus() })
+        ScheduleSetRow(draft, state.pauseSets, actions.onUpdateDraft)
         ScheduleDays(draft, actions)
         PosatoActionRow {
             PosatoButton(onClick = {
@@ -143,5 +147,27 @@ private fun ScheduleTimeEditor(
             )
         }
         PosatoButton(onClick = onDone, style = PosatoButtonStyle.Secondary) { Text("Done") }
+    }
+}
+
+/** The schedule's set below its name: tapping it opens the set choice with the current set marked. */
+@Composable
+private fun ScheduleSetRow(
+    draft: ScheduleDraft,
+    sets: List<PauseSetRow>,
+    onUpdateDraft: (ScheduleDraft) -> Unit,
+) {
+    var choosing by remember { mutableStateOf(false) }
+    PosatoDisclosureRow(
+        onClick = { choosing = true },
+        headlineContent = { Text("Pause set") },
+        supportingContent = { PosatoCaption(sets.firstOrNull { set -> set.id == draft.setId }?.name ?: "Choose a set") },
+        onClickLabel = "Choose a pause set",
+    )
+    if (choosing) {
+        PauseSetChoiceDialog(sets, draft.setId, onDismiss = { choosing = false }) { id ->
+            choosing = false
+            onUpdateDraft(draft.copy(setId = id))
+        }
     }
 }

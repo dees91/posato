@@ -37,7 +37,7 @@ class SessionOwnerCompletionTest {
             val dispatcher = StandardTestDispatcher(testScheduler)
             val store = FakeLocalSessionStore()
             val port = FakeEnforcementPort(reapplyRequiresPrompt = requiresPrompt)
-            val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, ::targets, FakeSessionSyncTriggers())
+            val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, { targets() }, FakeSessionSyncTriggers())
             try {
                 owner.startSession(OLD, NOW, END, FROZEN)
                 runCurrent()
@@ -80,7 +80,7 @@ class SessionOwnerCompletionTest {
             driver = database.openDriver()
             store = SqlLocalSessionStore(PosatoDatabase(driver), dispatcher)
             val port = FakeEnforcementPort(clearOutcome = outcome, statusOutcome = EnforcementOutcome.APPLIED)
-            val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW + 1), port, ::targets, FakeSessionSyncTriggers())
+            val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW + 1), port, { targets() }, FakeSessionSyncTriggers())
             try {
                 owner.refresh()
                 runCurrent()
@@ -119,7 +119,7 @@ class SessionOwnerCompletionTest {
                 return delegate.apply(request)
             }
         }
-        val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, ::targets, FakeSessionSyncTriggers())
+        val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, { targets() }, FakeSessionSyncTriggers())
         try {
             owner.startSession(CURRENT, NOW, END, FROZEN)
             runCurrent()
@@ -152,7 +152,7 @@ class SessionOwnerCompletionTest {
                 return delegate.apply(request)
             }
         }
-        val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, ::targets, FakeSessionSyncTriggers())
+        val owner = SessionTransitionOwner(dispatcher, store, FakeSessionClock(NOW), port, { targets() }, FakeSessionSyncTriggers())
         try {
             owner.startSession(OLD, NOW, END, FROZEN)
             val ended = assertIs<LocalSessionResult.Success<LocalSessionStatus>>(delegateStore.endEarly(NOW)).value

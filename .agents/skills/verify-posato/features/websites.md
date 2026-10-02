@@ -23,7 +23,7 @@ devices joined to one workspace (see Sync with iCloud).
 
 ## How to get to it (user POV)
 
-- Choose Paused items in the iOS bottom navigation or macOS sidebar.
+- Choose Pause sets in the iOS bottom navigation or macOS sidebar, then open a set.
 - Websites is initially selected. Add websites is the primary field, with Add
   inside it; Return submits, Shift-Return inserts a line break on desktop.
 - Search temporarily replaces the add field; Back to adding restores its draft.
@@ -33,7 +33,7 @@ devices joined to one workspace (see Sync with iCloud).
 
 Preconditions:
 
-- Launch through the CLI, require doctor to pass, open Paused items, and wait
+- Launch through the CLI, require doctor to pass, open Pause sets and the set, and wait
   for Search. Select `--text-contains Websites --role button` if Apps is open.
 - Reserve `example.com`, `example.org`, and `design-proof-01.example` through
   `design-proof-50.example` for the matching fixture; do not remove pre-existing
@@ -60,7 +60,7 @@ Preconditions:
   `$PC type -t <target> --role textField --input example --clear`.
   Capture the filtered list; `$PC tap -t <target> --text "Back to adding" --role button`
   returns to the original draft.
-- **Persist:** Relaunch without fresh, open Paused items again, and scrollTo
+- **Persist:** Relaunch without fresh, open Pause sets and the set again, and scrollTo
   the saved row. On Mac/Simulator also use
   `$PC db query -t <target> --sql "select canonical_domain from local_pause_set_domain"`.
   The database contains domains, never the submitted URL path/query/fragment.

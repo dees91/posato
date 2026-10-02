@@ -27,6 +27,6 @@
     {"name":"summary-shot","action":"screenshot"},
     {"name":"summary-tree","action":"snapshot"},
     {"name":"summary-open-session","action":"tap","query":{"text":"Go to Session","role":"button"}},
-    {"name":"session-ready","action":"waitFor","state":"exists","query":{"text":"Paused items","role":"button"}}
+    {"name":"session-ready","action":"waitFor","state":"exists","query":{"text":"Pause sets","role":"button"}}
   ]
 }

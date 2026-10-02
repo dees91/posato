@@ -18,6 +18,6 @@
     {"name":"website-skip","action":"tap","query":{"text":"Not now","role":"button"}},
     {"name":"summary-ready","action":"waitFor","state":"exists","query":{"text":"Go to Session","role":"button"}},
     {"name":"summary-open-session","action":"tap","query":{"text":"Go to Session","role":"button"}},
-    {"name":"session-ready","action":"waitFor","state":"exists","query":{"text":"Paused items","role":"button"}}
+    {"name":"session-ready","action":"waitFor","state":"exists","query":{"text":"Pause sets","role":"button"}}
   ]
 }

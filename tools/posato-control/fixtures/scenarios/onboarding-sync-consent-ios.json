@@ -182,7 +182,7 @@
       "action": "waitFor",
       "state": "exists",
       "query": {
-        "text": "Paused items",
+        "text": "Pause sets",
         "role": "button"
       },
       "timeoutSeconds": 30

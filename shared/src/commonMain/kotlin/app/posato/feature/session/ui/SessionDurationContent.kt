@@ -7,12 +7,17 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import app.posato.core.designsystem.PosatoActionRow
 import app.posato.core.designsystem.PosatoButton
 import app.posato.core.designsystem.PosatoButtonStyle
 import app.posato.core.designsystem.PosatoCaption
 import app.posato.core.designsystem.PosatoChoiceGroup
+import app.posato.core.designsystem.PosatoDisclosureRow
 import app.posato.core.designsystem.PosatoHeading
 import app.posato.core.designsystem.PosatoLayout
 import app.posato.core.designsystem.PosatoNavigationItem
@@ -20,6 +25,8 @@ import app.posato.core.designsystem.PosatoNumberWheel
 import app.posato.core.designsystem.PosatoSize
 import app.posato.core.designsystem.PosatoSpace
 import app.posato.feature.session.domain.SessionLimits
+import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.ui.PauseSetChoiceDialog
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -29,14 +36,22 @@ internal fun SessionDurationContent(
     onSetDuration: (Int) -> Unit,
     onReview: () -> Unit,
     onCancel: () -> Unit,
+    onChoosePauseSet: (PauseSetId) -> Unit = {},
 ) {
     val duration = SessionDurationParts(state.durationMinutes)
+    var choosing by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(PosatoSpace.Large)) {
         PosatoHeading(
             "How much space\ndo you need?",
             eyebrow = "YOUR NEXT PAUSE",
             layout = layout,
             description = "Choose a quick pause, or make it your own.",
+        )
+        PosatoDisclosureRow(
+            onClick = { choosing = true },
+            headlineContent = { Text("Pause set") },
+            supportingContent = { PosatoCaption(state.setName ?: "No pause set") },
+            onClickLabel = "Choose a pause set",
         )
         PosatoChoiceGroup {
             DurationPresets.forEach { preset ->
@@ -55,6 +70,12 @@ internal fun SessionDurationContent(
         PosatoActionRow {
             PosatoButton(onReview) { Text("Review session") }
             PosatoButton(onCancel, style = PosatoButtonStyle.Quiet) { Text("Cancel") }
+        }
+    }
+    if (choosing) {
+        PauseSetChoiceDialog(state.pauseSets, state.setId, onDismiss = { choosing = false }) { id ->
+            choosing = false
+            onChoosePauseSet(id)
         }
     }
 }

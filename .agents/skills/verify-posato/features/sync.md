@@ -96,7 +96,7 @@ profile, companion, development team, and device. The Simulator proves only
 local behavior and truthful degradation without its own iCloud account.
 
 The rows start collapsed when Session is recreated, including after a relaunch
-or a return from Paused items. Expand iCloud again before addressing its
+or a return from Pause sets. Expand iCloud again before addressing its
 buttons. Snapshot-verify the expansion first: tapping an already-expanded
 header collapses it again. On a compact iPhone (13 mini and similar), the
 expanded actions sit below the tab bar. `waitFor` does not scroll. After
@@ -135,11 +135,11 @@ during `MVP-001`.
    attempt and restores the explicit consent action. Completion is **This device
    completed its latest sync
    attempt. Other devices may still need to sync.**
-4. Through Paused items, add a reserved synthetic domain on one device. Return
+4. Through Pause sets, add a reserved synthetic domain on one device. Return
    to Session and wait for completion. Press **Sync now** on the other device.
    Repeat in the reverse direction. Both devices must converge to the union
    of their websites: after each **Sync now**, the peer shows the new domain
-   in Paused items and the read-only queries below agree on both devices.
+   in Pause sets and the read-only queries below agree on both devices.
    On Mac, compare counts before and after each step using the read-only
    queries below; registrations are also bundles, so establish the baseline
    before adding the domain. A repeat exchange must not add accepted entries.
@@ -231,7 +231,7 @@ that label too, so scope the selector to the iCloud content when necessary.
   account/anchor loss, candidate recovery, and storage/cancellation outcomes
   are covered by unit tests; do not manufacture them in a live database.
 - Complete permissions through their existing routes and select local apps
-  in Paused items. After exchange settles, compare Mac pending/accepted counts
+  in Pause sets. After exchange settles, compare Mac pending/accepted counts
   before and after selection, with no domain edit. Synced items remain
   invisible until SYNC-011; picker selections remain local.
 - If delivery is immediate, label physical waiting **not observed**. Unit

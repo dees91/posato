@@ -92,12 +92,5 @@ public class PauseSetPreparation internal constructor(
 
 /** Keeps this device's app choices for [sets] only, such as after another device removed a set. */
 internal suspend fun LocalApplicationMappings.retainSets(sets: Set<app.posato.feature.sync.domain.PauseSetId>) {
-    retainOnly(sets.mapNotNullTo(mutableSetOf()) { id -> ApplicationChoiceSet.restore(id.hex()) })
+    retainOnly(sets.mapNotNullTo(mutableSetOf()) { id -> id.choiceSet() })
 }
-
-private fun app.posato.feature.sync.domain.PauseSetId.hex(): String {
-    return value.copyBytes().joinToString("") { byte -> (byte.toInt() and BYTE_MASK).toString(HEX_RADIX).padStart(2, '0') }
-}
-
-private const val BYTE_MASK: Int = 0xFF
-private const val HEX_RADIX: Int = 16

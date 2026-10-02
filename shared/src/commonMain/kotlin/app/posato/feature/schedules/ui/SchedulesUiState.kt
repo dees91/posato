@@ -11,6 +11,7 @@ import app.posato.feature.sync.domain.PauseSetId
 import app.posato.feature.sync.domain.ScheduleWireRules
 import app.posato.feature.targets.data.LocalApplicationMappingsAccess
 import app.posato.feature.targets.data.LocalApplicationMappingsLoadResult
+import app.posato.feature.targets.ui.PauseSetRow
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.persistentListOf
@@ -48,6 +49,8 @@ internal data class ScheduleRowModel(
     val nextRunLabel: String?,
     val skippedLabel: String?,
     val canSkip: Boolean,
+    val setLabel: String? = null,
+    val setProblem: String? = null,
 ) {
     override fun toString(): String {
         return "ScheduleRowModel(redacted)"
@@ -151,6 +154,7 @@ internal data class SchedulesUiState(
     val showingSetup: Boolean = false,
     val showUpdateNote: Boolean = false,
     val changeFailed: Boolean = false,
+    val pauseSets: ImmutableList<PauseSetRow> = persistentListOf(),
 ) {
     val atCapacity: Boolean
         get() {

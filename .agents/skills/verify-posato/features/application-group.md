@@ -18,7 +18,7 @@ The UI focuses on choosing applications, not naming or managing group metadata.
 
 ## How to get to it (user POV)
 
-- Open Paused items, select Apps, and choose apps using the native picker.
+- Open Pause sets and a set, select Apps, and choose apps using the native picker.
 - Successful nonempty selection activates the group automatically.
 - If the selection saved but its group did not, read the inline notice and
   use Enable selected apps after resolving any policy conflict.
@@ -33,7 +33,7 @@ Preconditions:
 - Record existing names and choices. Do not delete a user's group to manufacture
   an empty state. Test fixtures cover deterministic failures and conflicts.
 
-- **Open:** `$PC tap -t <target> --text "Paused items" --role button`, then
+- **Open:** `$PC tap -t <target> --text "Pause sets" --role button`, `$PC tap -t <target> --text-contains "My set" --role button`, then
   `$PC tap -t <target> --text-contains Apps --role button`.
 - **Choose:** `$PC tap -t <target> --text "Choose apps" --role button`.
   Follow the platform mapping recipe to make a real nonempty selection.

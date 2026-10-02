@@ -59,6 +59,19 @@ internal class LocalTargetPolicyState(
         require(revision >= 0)
     }
 
+    /** [setId]'s websites with the application group name, or null when this device has no such set. */
+    fun policyOf(setId: PauseSetId): TargetPolicy? {
+        if (sets.sets.none { set -> set.id == setId }) {
+            return null
+        }
+        return (
+            TargetPolicy.fromStoredValues(
+                sets.domainsOf(setId).map(ExactDomain::canonicalValue),
+                applicationPolicyName?.canonicalValue,
+            ) as? TargetPolicyValidationResult.Success
+        )?.policy
+    }
+
     /** The websites the other sets hold, which count once toward the one limit shared by every set. */
     fun domainsOutside(setId: PauseSetId): Set<String> {
         return sets.sets.filter { set -> set.id != setId }.flatMapTo(mutableSetOf()) { set -> set.domains.map(ExactDomain::canonicalValue) }
@@ -93,6 +106,12 @@ internal interface LocalTargetPolicyStore {
         policy: TargetPolicy,
         syncWrite: PolicySyncWrite? = null,
     ): LocalPolicyResult<LocalTargetPolicyState>
+
+    suspend fun replaceSets(
+        expectedRevision: Long,
+        sets: PauseSets,
+        syncWrite: PolicySyncWrite? = null,
+    ): LocalPolicyResult<LocalTargetPolicyState>
 }
 
 internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
@@ -104,12 +123,6 @@ internal interface LocalPolicySyncStore : LocalTargetPolicyStore {
         workspaceId: ByteArray,
         author: suspend () -> Boolean,
     ): LocalPolicyResult<Boolean>
-
-    suspend fun replaceSets(
-        expectedRevision: Long,
-        sets: PauseSets,
-        syncWrite: PolicySyncWrite? = null,
-    ): LocalPolicyResult<LocalTargetPolicyState>
 
     suspend fun recordIntents(write: PolicySyncWrite): LocalPolicyResult<Unit>
 

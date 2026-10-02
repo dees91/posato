@@ -29,11 +29,16 @@ internal suspend fun PosatoDatabase.advanceRevisionOrThrow(expectedRevision: Lon
     }
 }
 
-/** Replaces the first set's websites and the local group name; the other sets must still fit the unique limit. */
+/**
+ * Replaces the first set's websites and the local group name; the other sets must still fit the unique limit.
+ * Once the first set is deleted only the name changes, so naming the group never needs that set.
+ */
 internal suspend fun PosatoDatabase.writePolicyRows(policy: TargetPolicy) {
     val current = readStateOrThrow().sets
-    val sets = current.withDomains(PauseSetId.FIRST, policy.domains) ?: fail(LocalPolicyFailure.CAPACITY)
-    writeSetRows(sets)
+    val firstSetDeleted = current.sets.none { set -> set.id == PauseSetId.FIRST }
+    if (!(firstSetDeleted && policy.domains.isEmpty())) {
+        writeSetRows(current.withDomains(PauseSetId.FIRST, policy.domains) ?: fail(LocalPolicyFailure.CAPACITY))
+    }
     writeApplicationPolicyName(policy.applicationPolicyName)
 }
 
@@ -52,8 +57,12 @@ internal suspend fun PosatoDatabase.writeBaseRows(base: Map<PauseSetId, List<Exa
     }
 }
 
+/** Records [write]'s intents; a set removal first drops that set's queued changes, which it makes moot. */
 internal suspend fun PosatoDatabase.insertIntents(write: PolicySyncWrite) {
     write.intents.forEach { intent ->
+        if (intent is StoredPolicyIntent.RemoveSet) {
+            syncLocalPolicyQueries.deleteIntentsOfSet(intent.setId.value.copyBytes())
+        }
         val (kind, domain, name) = when (intent) {
             is StoredPolicyIntent.PresentDomain -> Triple(INTENT_DOMAIN_PRESENT, intent.domain.canonicalValue, null)
             is StoredPolicyIntent.RemoveDomain -> Triple(INTENT_DOMAIN_ABSENT, intent.domain.canonicalValue, null)

@@ -3,10 +3,14 @@ package app.posato.feature.targets.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.posato.feature.sync.domain.PauseSetId
+import app.posato.feature.targets.data.ApplicationChoiceSet
 import app.posato.feature.targets.data.LocalApplicationMappings
+import app.posato.feature.targets.data.LocalPolicyFailure
 import app.posato.feature.targets.data.LocalPolicyResult
+import app.posato.feature.targets.data.LocalTargetPolicyState
 import app.posato.feature.targets.data.LocalTargetPolicyStore
 import app.posato.feature.targets.data.UnavailableLocalApplicationMappings
+import app.posato.feature.targets.data.choiceSet
 import app.posato.feature.targets.domain.ApplicationPolicyName
 import app.posato.feature.targets.domain.ApplicationPolicyNameResult
 import app.posato.feature.targets.domain.TargetPolicy
@@ -26,10 +30,13 @@ import kotlinx.coroutines.flow.transform
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+/** One pause set's websites and this device's apps for it; [setId] is the set the screen edits. */
 internal class TargetsViewModel(
     private val store: LocalTargetPolicyStore,
     internal val applicationMappings: LocalApplicationMappings = UnavailableLocalApplicationMappings,
+    private val setId: PauseSetId = PauseSetId.FIRST,
 ) : ViewModel() {
+    internal val choiceSet: ApplicationChoiceSet = setId.choiceSet()
     private val refreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     internal val applicationMappingRefreshRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     private val policyState = MutableStateFlow(TargetsPolicyState(isLoading = true))
@@ -42,7 +49,7 @@ internal class TargetsViewModel(
         emit(Unit)
         when (val result = store.read()) {
             is LocalPolicyResult.Success -> {
-                domainEditorState.reconcileDomainEditorWith(result.value)
+                domainEditorState.reconcileDomainEditorWith(result.value, setId)
                 applicationEditorState.reconcileApplicationEditorWith(result.value)
                 policyState.update { TargetsPolicyState(snapshot = result.value) }
             }
@@ -57,7 +64,7 @@ internal class TargetsViewModel(
     private val policySignalLifecycle: Flow<Unit> = store.policyChanges.transform {
         when (val result = store.read()) {
             is LocalPolicyResult.Success -> {
-                domainEditorState.reconcileDomainEditorWith(result.value)
+                domainEditorState.reconcileDomainEditorWith(result.value, setId)
                 applicationEditorState.reconcileApplicationEditorWith(result.value)
                 policyState.update { TargetsPolicyState(snapshot = result.value) }
             }
@@ -86,6 +93,7 @@ internal class TargetsViewModel(
     }
     internal val currentState: TargetsUiState
         get() = createUiState(
+            setId,
             policyState.value,
             domainEditorState.value,
             applicationEditorState.value,
@@ -101,6 +109,7 @@ internal class TargetsViewModel(
         policySignalLifecycle,
     ) { presentation, currentApplicationMappingsState, _, _, _ ->
         createUiState(
+            setId,
             presentation.policyState,
             presentation.domainEditorState,
             presentation.applicationEditorState,
@@ -166,7 +175,7 @@ internal class TargetsViewModel(
             val submission = createWebsiteBatchSubmission(
                 input,
                 state.domains,
-                policyState.value.snapshot?.domainsOutside(PauseSetId.FIRST).orEmpty(),
+                policyState.value.snapshot?.domainsOutside(setId).orEmpty(),
             )
         ) {
             WebsiteBatchSubmission.TooLong -> {
@@ -246,7 +255,10 @@ internal class TargetsViewModel(
         preserveDomainEditor: Boolean = false,
         onCompleted: (Boolean) -> Unit = {},
     ) {
-        val policy = when (val result = TargetPolicy.fromStoredValues(canonicalDomains, applicationPolicyName)) {
+        val snapshot = policyState.value.snapshot
+        val firstSetDomains = snapshot?.policy?.domains?.map { domain -> domain.canonicalValue }.orEmpty()
+        val policyDomains = if (mutation == TargetMutation.DOMAIN) canonicalDomains else firstSetDomains
+        val policy = when (val result = TargetPolicy.fromStoredValues(policyDomains, applicationPolicyName)) {
             is TargetPolicyValidationResult.Success -> {
                 result.policy
             }
@@ -271,7 +283,7 @@ internal class TargetsViewModel(
         viewModelScope.launch {
             var saved = false
             try {
-                when (val result = store.replace(expectedRevision, policy)) {
+                when (val result = writePolicy(store, expectedRevision, snapshot, policy, mutation, setId)) {
                     is LocalPolicyResult.Success -> {
                         policyState.update { TargetsPolicyState(snapshot = result.value) }
                         when (mutation) {
@@ -296,6 +308,25 @@ internal class TargetsViewModel(
             }
         }
     }
+}
+
+/**
+ * A website change replaces only this set's websites; the application group name stays with the first set,
+ * where it has always lived.
+ */
+private suspend fun writePolicy(
+    store: LocalTargetPolicyStore,
+    expectedRevision: Long,
+    snapshot: LocalTargetPolicyState?,
+    policy: TargetPolicy,
+    mutation: TargetMutation,
+    setId: PauseSetId,
+): LocalPolicyResult<LocalTargetPolicyState> {
+    if (mutation == TargetMutation.APPLICATION_POLICY) {
+        return store.replace(expectedRevision, policy)
+    }
+    val sets = snapshot?.sets?.withDomains(setId, policy.domains) ?: return LocalPolicyResult.Failure(LocalPolicyFailure.CAPACITY)
+    return store.replaceSets(expectedRevision, sets)
 }
 
 private data class TargetsPolicyPresentationState(
