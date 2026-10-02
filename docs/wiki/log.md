@@ -2451,3 +2451,11 @@ to scope, feasibility, or delivery.
   heading for 1.4 seconds; the active state arrives at 5.6 seconds.
 - Captures have a 36-pixel inset and more separation from their headings.
   The opening composition sits lower to reduce unused space below it.
+
+## [2026-10-02] experiment | Explain private cross-device sync in the hero
+
+- Extended the homepage film to 24 seconds with existing Mac and iPhone
+  website captures and a separate privacy scene. Copy describes shared websites,
+  sessions and schedules through iCloud, on-device encryption, private iCloud
+  storage, and the absence of a Posato account or server, following PRIVACY.md.
+  Paired captures illustrate the feature without demonstrating delivery latency.

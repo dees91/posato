@@ -85,7 +85,7 @@ Names are the files in `public/`; provenance is in `README.md`.
 
 ## Local bolder proposal (2026-10-01)
 
-`BolderHero` is a separate 390-frame, 13-second website experiment. It uses
+`BolderHero` is a separate 720-frame, 24-second website experiment. It uses
 real Mac captures, the existing palette and open-interval mark, large editorial
 crops, a deliberate Start click, and a long quiet active-state hold.
 
@@ -95,12 +95,15 @@ crops, a deliberate Start click, and a long quiet active-state hold.
 | 72–114 | Brief duration selection under "Start your pause."; time remains only in the UI |
 | 114–168 | Review and Start; the heading holds steady, click at frame 156 |
 | 168–300 | Restrictions active, end time and early-end action; shared crop settles |
-| 300–390 | "A little space. For what matters." and the open-interval mark |
+| 300–450 | Mac and iPhone website captures; "Your devices. Connected." |
+| 450–630 | "Your iCloud. Your data."; on-device encryption and private iCloud storage |
+| 630–720 | "A little space. For what matters." and the open-interval mark |
 
 This quick proposal uses the existing active-session capture in place of the
 proposed browser-blocking shot. It demonstrates the reported application state,
-not a newly recorded enforcement attempt. It makes no cross-device activation
-claim. The existing Hero, walkthrough, README GIF and social image are unchanged.
+not a newly recorded enforcement attempt. The paired website captures illustrate shared choices, not measured delivery
+latency or simultaneous activation. Sync is optional and best effort; device-local
+app selections are not presented as shared. Privacy copy follows `PRIVACY.md`. The existing Hero, walkthrough, README GIF and social image are unchanged.
 The poster uses frame 240. Reproduce the proposal with `npm run render:bolder`.
 Adjacent captures share an animated crop with 20-frame eased masked transitions.
 Headings preserve their line breaks and fade out before the next text enters.

@@ -1,4 +1,5 @@
 import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } from "remotion";
+import { SyncPrivacy } from "./SyncPrivacy";
 import { Pointer } from "./components/Pointer";
 import { Wordmark } from "./components/Wordmark";
 import { BOLDER_HERO, MAC_TARGETS } from "./storyboard";
@@ -31,7 +32,7 @@ const BolderFrame = ({ frame }: { readonly frame: number }) => {
   return (
     <AbsoluteFill style={{ backgroundColor: colors.canvas, color: colors.text, fontFamily: fonts.sans, overflow: "hidden" }}>
       <div style={{ position: "absolute", left: 110, top: 80 }}><Wordmark size={38} /></div>
-      <AbsoluteFill style={{ opacity: 1 - closing, scale: 1 - closing * 0.04 }}>
+      <AbsoluteFill style={{ opacity: frame >= story.sync.start + 24 ? 0 : 1 - closing, scale: 1 - closing * 0.04 }}>
         <div style={{ position: "absolute", left: 110, top: titleTop, fontSize: titleSize, lineHeight: 1.04, fontWeight: 600, letterSpacing: "-0.04em", color: captionColor, whiteSpace: "pre", width: 1380 }}>
           {index > 0 && !sameHeadline && progress < 1 ? (
             <div style={{ position: "absolute", opacity: Math.max(0, 1 - progress * 2), translate: `0 ${-20 * progress}px` }}>{previous.headline}</div>
@@ -87,6 +88,7 @@ export const BolderHero = () => {
   return (
     <AbsoluteFill>
       <BolderFrame frame={frame} />
+      {frame >= story.sync.start && frame < story.close.start + 24 ? <SyncPrivacy frame={frame} /> : null}
       {loop > 0 ? <AbsoluteFill style={{ clipPath: `inset(0 ${(1 - loop) * 100}% 0 0)` }}><BolderFrame frame={0} /></AbsoluteFill> : null}
     </AbsoluteFill>
   );

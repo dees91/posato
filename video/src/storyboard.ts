@@ -375,7 +375,7 @@ export function sceneAssets(scene: StoryScene): string[] {
 
 // Local website concept. The original Hero and Walkthrough remain reproducible.
 export const BOLDER_HERO = {
-  frames: 390,
+  frames: 720,
   posterFrame: 240,
   transitionFrames: 20,
   closeTransitionFrames: 28,
@@ -384,5 +384,7 @@ export const BOLDER_HERO = {
   duration: { start: 72, end: 114, capture: "mac-duration-45.png", headline: "Start your pause.", crop: [300, 80], pose: [250, 320, 1100, 600, 1.1], title: [150, 96] },
   start: { start: 114, end: 168, capture: "mac-review-45.png", headline: "Start your pause.", crop: [300, 150], pose: [250, 320, 1100, 600, 1.1], title: [150, 96], click: 156 },
   active: { start: 168, end: 300, capture: "mac-active-45.png", headline: "A little space.", crop: [300, 40], pose: [250, 320, 1100, 560, 1.1], title: [150, 96] },
-  close: { start: 300, end: 390, headline: "A little space.\nFor what matters." },
+  sync: { start: 300, end: 450, headline: "Your devices.\nConnected." },
+  privacy: { start: 450, end: 630, headline: "Your iCloud.\nYour data." },
+  close: { start: 630, end: 720, headline: "A little space.\nFor what matters." },
 } as const;
