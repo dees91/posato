@@ -47,8 +47,9 @@ blocked, how often you open apps, usage scores, or any other activity record.
 iCloud sync is optional and off until you choose **Sync with iCloud**.
 
 - Your pause sets (their names, their websites, and which is the default),
-  session start and end, and your schedules, including skipped and ended
-  scheduled pauses, are encrypted on
+  in changes from before Posato 1.3 the shared app group name, session start
+  and end, and your schedules, including skipped and ended scheduled pauses,
+  are encrypted on
   your device before they are stored in the private CloudKit
   database of your own iCloud account. Posato's developer cannot read or access
   them.

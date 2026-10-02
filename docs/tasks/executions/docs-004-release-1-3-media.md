@@ -1,7 +1,7 @@
 # Execution: `DOCS-004`
 
 - **Brief:** [Prepare the public packaging for Posato 1.3](../specifications/docs-004-release-1-3-media.md)
-- **Status:** `active`
+- **Status:** `ready for review`; merges with the 1.3 release go
 - **Review tier:** `standard`
 - **Implementer:** Claude
 - **Branch:** `docs/docs-004-release-1-3-media`
@@ -71,6 +71,9 @@ Product defects observed while capturing; this row changes no product code.
 - Fix or accept finding 1 before App Review; the store screenshots avoid the
   crashing path.
 - Set the `PRIVACY.md` effective date to the publication date.
+- Known artefact: the walkthrough frame `mac-scheduled-active` shows the
+  counts of finding 3 ("2 websites, 1 application" for the set Evening);
+  recapture it once finding 3 is fixed, or accept it.
 - The maintainer accepts the `PRIVACY.md` edits, the screenshots, and the
   subtitle.
 
@@ -84,7 +87,7 @@ For `RELEASE-005` to paste into the release.
 >
 > ## New
 >
-> - **Pause sets.** Keep websites and apps in named sets, such as one for work and one for evenings, and choose a set for each session or schedule. One set is the default, and your current choices become your first set. When pauses overlap, Posato pauses everything in their sets, and each item stays paused until the last pause that includes it ends. App choices stay on each device; set names and websites sync with iCloud.
+> - **Pause sets.** Keep websites and apps in named sets, such as one for work and one for evenings, and choose a set for each session or schedule. One set is the default, and your current choices become your first set. When pauses overlap, Posato pauses everything in their sets, within each device's limits, and each item stays paused until the last pause that includes it ends. On iPhone a pause covers up to 50 apps. App choices stay on each device; set names and websites sync with iCloud.
 > - **Intel Macs and macOS 13.** Posato for Mac now runs on macOS 13 Ventura or later, on Apple silicon and on Intel Macs. The Intel build was checked under Rosetta in a virtual machine, not on Intel hardware.
 > - **Go back with a gesture.** Swipe from the left edge on iPhone and iPad. On the Mac, swipe with two fingers on the trackpad or press Command-[.
 >
@@ -92,11 +95,10 @@ For `RELEASE-005` to paste into the release.
 >
 > - **Mac:** the pause page appears again in Chrome and Safari once you let Posato control the browser.
 > - **Mac:** connections to `localhost`, `127.0.0.1`, and `::1` keep working during a pause, so local tools are not blocked.
-> - **Mac:** if the network service Posato set up disappears during a pause, Posato says restrictions need attention instead of reporting them active, and the next pause applies again.
+> - **Mac:** if the network service that holds Posato's proxy settings disappears during a pause, Posato says restrictions need attention instead of reporting them active, and the next pause applies again.
 > - **Mac:** the background helper no longer keeps a processor core busy during a pause.
 > - A session you start or end on your iPhone reaches your other devices without **Sync now**.
 > - A schedule you change follows its new times on every device, also after it ended earlier that day.
-> - **iPhone:** the largest pause sets now fit the schedules that start while Posato is closed.
 >
 > ## Update all your devices
 >
@@ -110,6 +112,19 @@ For `RELEASE-005` to paste into the release.
 >
 > - macOS 13 or later on Apple silicon or Intel; iOS 18 or later from the [App Store](https://apps.apple.com/app/posato/id6812237585).
 > - Both DMGs are signed with Developer ID and notarized by Apple. `SHA256SUMS` lists their checksums; `appcast.xml` (Apple silicon) and `appcast-intel.xml` (Intel) are the signed update feeds that Posato reads.
+
+## Review
+
+- **Completed-change review:** `changes-required`, two Required findings,
+  both fixed. The site's Availability and the limits page still described
+  1.2 (now 1.3, both DMGs, macOS 13, and the Rosetta-only Intel check, with
+  the 1.3 sync rule on the limits page); and a release-notes fix described
+  a version-2 table defect that never shipped (dropped).
+- **Recommended, taken:** "within each device's limits" in every overlap
+  sentence and the 50-app iPhone cap in the release notes; the `MACOS-020`
+  wording; the pre-1.3 shared app group name in the `PRIVACY.md` iCloud list;
+  the `mac-scheduled-active` counts named as a gate above. **Optional, taken:**
+  "pause sets" in the demo alt texts.
 
 ## Checks
 
