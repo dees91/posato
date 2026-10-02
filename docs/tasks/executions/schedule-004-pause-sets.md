@@ -1,7 +1,7 @@
 # Execution: `SCHEDULE-004`
 
 - **Brief:** [Deliver pause sets on Mac and iPhone](../specifications/schedule-004-pause-sets.md)
-- **Status:** `active` (slices 1-5 implemented; AC-04 run pending); **Updated:** 2026-10-02
+- **Status:** `done` (slices 1-5 and AC-01..AC-04); **Updated:** 2026-10-02
 - **Review tier:** `high-risk`; **Implementer:** Claude; **Reviewer:** independent agent
 - **Branch:** `feat/schedule-004-pause-sets` (slice 1); later slices stack on it
 
@@ -92,8 +92,9 @@ stack merges only after slice 5 (`user-confirmed` 2026-09-30).
   release, add at once, removals kept (also on the peer and across a
   relaunch), 10-set cap on both, local-only link merge, offline start.
   Over 1,024: removed items stayed paused and additions waited.
-- **AC-04:** blocked: no device could link or remove a workspace after the
-  1,024 run (see Blockers); the set and schedule were made on a fresh VM.
+- **AC-04:** checked by the maintainer (`user-confirmed` 2026-10-02): a set
+  made on the Mac started with its websites on the iPhone through a
+  schedule. The unattended run was blocked by the test account's CloudKit.
 
 ## Blockers and accepted risks
 
@@ -107,12 +108,13 @@ stack merges only after slice 5 (`user-confirmed` 2026-09-30).
 - **CloudKit delivery** (observed): 6-10 min between Tart VMs late on
   2026-10-01; after the 1,024 run Remove workspace failed on the iPhone for
   hours, and a fresh Tart VM could not establish a workspace
-  (`Sync did not finish`) on 2026-10-02 01:00; AC-04 waits for a clean
-  CloudKit container for the test account.
-- **Offline checks:** `vm network --state off` disables every service, so
-  a Mac cannot enforce at all; an offline run keeps the service with an
-  unroutable address.
+  (`Sync did not finish`) on 2026-10-02 01:00. The test iPhone is still
+  linked to that workspace; its CloudKit zones need cleaning before the next
+  linked run.
+- **Offline checks:** `vm network --state off` leaves a Mac nothing to
+  enforce through; offline runs keep the service, unroutable.
 
 ## Final
 
-- **Status:** `active`; **Outcome:** pending
+- **Status:** `done`; **Outcome:** ready for review; the stack (#119, #123,
+  #124, #125) merges together with the maintainer.
