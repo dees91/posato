@@ -2,10 +2,10 @@ import { AbsoluteFill, Easing, Img, interpolate, staticFile, useCurrentFrame } f
 import { SyncPrivacy } from "./SyncPrivacy";
 import { Pointer } from "./components/Pointer";
 import { Wordmark } from "./components/Wordmark";
-import { BOLDER_HERO, MAC_TARGETS } from "./storyboard";
+import { HERO, MAC_TARGETS } from "./storyboard";
 import { colors, fonts } from "./theme";
 
-const story = BOLDER_HERO;
+const story = HERO;
 const shots = [story.choice, story.duration, story.start, story.active] as const;
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 const cropPadding = 36;
@@ -13,7 +13,7 @@ const ease = Easing.bezier(0.65, 0, 0.35, 1);
 const mix = (from: number, to: number, progress: number) => from + (to - from) * progress;
 
 /** A shared crop moves between real captures, preserving the source UI. */
-const BolderFrame = ({ frame }: { readonly frame: number }) => {
+const HeroFrame = ({ frame }: { readonly frame: number }) => {
   let index = 0;
   shots.forEach((shot, candidate) => { if (frame >= shot.start) index = candidate; });
   const current = shots[index];
@@ -82,14 +82,14 @@ const BolderFrame = ({ frame }: { readonly frame: number }) => {
   );
 };
 
-export const BolderHero = () => {
+export const Hero = () => {
   const frame = useCurrentFrame();
   const loop = interpolate(frame, [story.frames - story.loopTransitionFrames, story.frames - 1], [0, 1], { ...clamp, easing: ease });
   return (
     <AbsoluteFill>
-      <BolderFrame frame={frame} />
+      <HeroFrame frame={frame} />
       {frame >= story.sync.start && frame < story.close.start + 24 ? <SyncPrivacy frame={frame} /> : null}
-      {loop > 0 ? <AbsoluteFill style={{ clipPath: `inset(0 ${(1 - loop) * 100}% 0 0)` }}><BolderFrame frame={0} /></AbsoluteFill> : null}
+      {loop > 0 ? <AbsoluteFill style={{ clipPath: `inset(0 ${(1 - loop) * 100}% 0 0)` }}><HeroFrame frame={0} /></AbsoluteFill> : null}
     </AbsoluteFill>
   );
 };

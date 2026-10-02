@@ -1,7 +1,7 @@
 import { AbsoluteFill, Sequence } from "remotion";
 import { ActionScene } from "./scenes/ActionScene";
 import { TitleScene } from "./scenes/TitleScene";
-import { HERO, sceneDuration, WALKTHROUGH, type StoryScene } from "./storyboard";
+import { sceneDuration, WALKTHROUGH, type StoryScene } from "./storyboard";
 import { colors } from "./theme";
 
 const Story: React.FC<{ readonly scenes: readonly StoryScene[] }> = ({ scenes }) => (
@@ -14,5 +14,4 @@ const Story: React.FC<{ readonly scenes: readonly StoryScene[] }> = ({ scenes })
   </AbsoluteFill>
 );
 
-export const Hero: React.FC = () => <Story scenes={HERO} />;
 export const Walkthrough: React.FC = () => <Story scenes={WALKTHROUGH} />;

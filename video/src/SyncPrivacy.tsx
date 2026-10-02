@@ -1,14 +1,14 @@
 import { AbsoluteFill, Easing, Img, interpolate, staticFile } from "remotion";
 import { DeviceFrame } from "./components/DeviceFrame";
 import { Wordmark } from "./components/Wordmark";
-import { BOLDER_HERO } from "./storyboard";
+import { HERO } from "./storyboard";
 import { colors, fonts } from "./theme";
 
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
 /** Existing captures illustrate shared choices, without simulating delivery speed. */
 export const SyncPrivacy = ({ frame }: { readonly frame: number }) => {
-  const story = BOLDER_HERO;
+  const story = HERO;
   const enter = interpolate(frame, [story.sync.start, story.sync.start + 24], [0, 1], { ...clamp, easing: Easing.bezier(0.16, 1, 0.3, 1) });
   const privacy = interpolate(frame, [story.privacy.start, story.privacy.start + 24], [0, 1], { ...clamp, easing: Easing.bezier(0.65, 0, 0.35, 1) });
   const leave = interpolate(frame, [story.close.start, story.close.start + 24], [1, 0], clamp);

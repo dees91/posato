@@ -204,16 +204,6 @@ code {
   font-size: 0.9em;
 }
 
-.eyebrow {
-  margin: 0 0 1rem;
-  color: var(--primary);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1.6;
-  letter-spacing: 0.075rem;
-  text-transform: uppercase;
-}
-
 .muted {
   color: var(--muted);
 }
@@ -232,20 +222,13 @@ code {
 /* Product page */
 .hero {
   display: grid;
-  gap: 2rem;
-  padding-block: 2rem 1rem;
+  gap: 3rem;
+  padding-block: 3.5rem 5rem;
 }
 
-.hero h1 {
-  font-size: 2.5rem;
-  line-height: 1.15;
-  letter-spacing: -0.1125rem;
-}
-
-/* The demo already draws device bezels, so the hero panel is a plain outlined surface. */
+/* The demo already draws device bezels, so the hero panel is a plain surface. */
 .hero-demo {
   overflow: hidden;
-  border: 1px solid var(--outline);
   border-radius: 0.875rem;
   background: #141b17;
   aspect-ratio: 16 / 10;
@@ -284,8 +267,149 @@ code {
 .shots {
   display: flex;
   align-items: flex-end;
-  gap: 1.5rem;
   margin: 1.5rem 0 1rem;
+}
+
+main:has(> .hero) {
+  padding-top: 0;
+}
+
+.hero-copy {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  align-items: center;
+  gap: 3rem;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: clamp(3.5rem, 6.7vw, 6rem);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  text-wrap: initial;
+}
+
+.hero h1 span {
+  color: var(--primary);
+}
+
+.hero .lead {
+  color: var(--ink);
+  font-size: 1.125rem;
+}
+
+.hero-details > .muted {
+  max-width: 34ch;
+}
+
+.download {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.download a {
+  display: inline-flex;
+  border-radius: 0.5rem;
+  align-items: center;
+  min-width: 0;
+  min-height: 2.75rem;
+}
+
+.download img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.download a:hover {
+  outline: 1px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.platforms {
+  margin: 1rem 0 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.hero-video:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -4px;
+}
+
+.step:has(.shots) {
+  display: grid;
+  grid-template-columns: 1fr 1.65fr;
+  align-items: center;
+  gap: 2.5rem 4rem;
+  padding-block: 5rem;
+}
+
+main > section h2 {
+  margin-top: 0;
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.shots {
+  margin: 0;
+  gap: 1rem;
+}
+
+.step > .muted {
+  grid-column: 2;
+  margin: -1rem 0 0;
+  font-size: 0.875rem;
+}
+
+.step[aria-labelledby="sync"] {
+  display: grid;
+  grid-template-columns: 1fr 1.65fr;
+  gap: 4rem;
+  padding-block: 4rem;
+  border-bottom: 1px solid var(--outline-variant);
+}
+
+section[aria-labelledby="limits"] {
+  max-width: 52rem;
+  margin: 4rem auto;
+}
+
+section[aria-labelledby="limits"] .prose {
+  max-width: none;
+}
+
+.privacy-section {
+  display: grid;
+  grid-template-columns: 1fr 1.65fr;
+  gap: 4rem;
+  padding: 3rem;
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: 0.875rem;
+}
+
+.privacy-section a {
+  color: inherit;
+}
+
+.privacy-section a:focus-visible {
+  outline-color: currentColor;
+}
+
+.privacy-section p {
+  margin-bottom: 0;
+}
+
+/* The section swaps the page colours, so selection swaps them back. */
+.privacy-section ::selection {
+  color: var(--ink);
+  background: var(--surface);
 }
 
 /* Device frames: generic CSS bezels whose sizes scale with each frame's width. */
@@ -326,14 +450,97 @@ code {
 
 .note {
   margin: 3rem 0 0;
-  padding: 1.25rem 1.5rem;
-  border-radius: 0.875rem;
-  background: var(--container);
+  border-top: 1px solid var(--outline-variant);
+  padding: 2.5rem 0 0;
 }
 
 .note p:last-child,
 .note ul:last-child {
   margin-bottom: 0;
+}
+
+@media (max-width: 1000px) {
+  .hero-copy {
+    grid-template-columns: 1.1fr 1fr;
+    gap: 2rem;
+  }
+
+  .step:has(.shots),
+  .step[aria-labelledby="sync"],
+  .privacy-section {
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 700px) {
+  .hero {
+    padding-block: 1.5rem 3rem;
+    gap: 1rem;
+  }
+
+  /* Lift the poster under the lead so a small phone's first screen shows the product. */
+  .hero-copy,
+  .hero-details {
+    display: contents;
+  }
+
+  .hero-details > * {
+    order: 2;
+    margin: 0;
+  }
+
+  .hero-details > .lead {
+    order: 0;
+  }
+
+  .hero-demo {
+    order: 1;
+    margin-block-end: 0.5rem;
+  }
+
+  .step:has(.shots),
+  .step[aria-labelledby="sync"],
+  .privacy-section {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 11.8vw, 5rem);
+    max-width: 12ch;
+  }
+
+  .hero .lead {
+    font-size: 1rem;
+  }
+
+  .hero-details > .muted {
+    max-width: none;
+    font-size: 0.875rem;
+  }
+
+  .hero-demo,
+  .hero-poster {
+    display: block;
+  }
+
+  .hero-video {
+    display: none;
+  }
+
+  .step:has(.shots),
+  .step[aria-labelledby="sync"] {
+    padding-block: 3rem;
+  }
+
+  .step > .muted {
+    grid-column: 1;
+    margin: 0;
+  }
+
+  .privacy-section {
+    padding: 2rem 1.5rem;
+  }
 }
 
 .site-footer {
@@ -349,8 +556,7 @@ code {
 }
 
 @media (max-width: 600px) {
-  h1,
-  .hero h1 {
+  h1 {
     font-size: 1.875rem;
     line-height: 1.2;
     letter-spacing: -0.0625rem;
@@ -359,19 +565,6 @@ code {
   h2 {
     margin-top: 2.5rem;
     font-size: 1.375rem;
-  }
-
-  .hero {
-    gap: 1.5rem;
-    padding-top: 1rem;
-  }
-
-  .hero-demo {
-    display: none;
-  }
-
-  .shots {
-    gap: 0.75rem;
   }
 }
 
@@ -382,23 +575,6 @@ code {
 }
 
 .github-mark {
-  display: block;
-}
-
-.download {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-
-.download a {
-  display: inline-block;
-  border-radius: 0.5rem;
-}
-
-.download img {
   display: block;
 }
 

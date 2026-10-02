@@ -21,7 +21,7 @@ for file in "${hero}" "${walkthrough}" "${attachment}" "${gif}" "${web}" "${post
   test -f "${file}" || { echo "Missing ${file}" >&2; exit 1; }
 done
 
-hero_frames="$(cd "${video_dir}" && node --import tsx -e 'import("./src/storyboard.ts").then((m) => console.log(m.totalFrames(m.HERO)))')"
+hero_frames="$(cd "${video_dir}" && node --import tsx -e 'import("./src/storyboard.ts").then((m) => console.log(m.HERO.frames))')"
 walkthrough_frames="$(cd "${video_dir}" && node --import tsx -e 'import("./src/storyboard.ts").then((m) => console.log(m.totalFrames(m.WALKTHROUGH)))')"
 hero_seconds="$(printf '%d.000000' $((hero_frames / 30)))"
 
@@ -45,11 +45,11 @@ test "$(duration "${gif}")" = "${hero_seconds}" || { echo "Unexpected GIF durati
 (( $(size "${gif}") <= 10 * mib )) || { echo "GIF exceeds 10 MiB" >&2; exit 1; }
 loop_extension="$(xxd -p "${gif}" | tr -d '\n' | grep -Eo '21ff0b4e45545343415045322e300301[0-9a-f]{4}00' | head -1)"
 test "${loop_extension}" = "21ff0b4e45545343415045322e300301000000" || { echo "GIF does not declare an infinite loop" >&2; exit 1; }
-seam="$(ffmpeg -v error -i "${gif}" -vf "select='eq(n,0)+eq(n,$((hero_frames / 2 - 1)))+eq(n,$((hero_frames * 2 / 5 - 1)))',signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-" -f null - 2>/dev/null | grep -o 'YAVG=[0-9.]*' | cut -d= -f2)"
-for value in ${seam}; do
-  # Limited-range luma of the #141B17 canvas is 37; the GIF palette lands within a few steps.
-  awk -v v="${value}" 'BEGIN { exit !(v <= 45) }' || { echo "GIF loop seam is not near the canvas: YAVG ${value}" >&2; exit 1; }
-done
+# The hero wipes back to its first frame, so the GIF's first and last frames must match in luma.
+gif_frames="${gif_meta##*x}"
+seam="$(ffmpeg -v error -i "${gif}" -vf "select='eq(n,0)+eq(n,$((gif_frames - 1)))',signalstats,metadata=print:key=lavfi.signalstats.YAVG:file=-" -f null - 2>/dev/null | grep -o 'YAVG=[0-9.]*' | cut -d= -f2 | tr '\n' ' ')"
+read -r seam_first seam_last <<<"${seam}"
+awk -v a="${seam_first}" -v b="${seam_last}" 'BEGIN { d = a - b; if (d < 0) d = -d; exit !(d <= 2) }' || { echo "GIF loop seam does not return to the first frame: YAVG ${seam}" >&2; exit 1; }
 
 test "$(codec "${web}")" = "h264,yuv420p" || { echo "Web MP4 must be h264 yuv420p: $(codec "${web}")" >&2; exit 1; }
 test "$(types "${web}")" = "video" || { echo "Web MP4 must be silent" >&2; exit 1; }

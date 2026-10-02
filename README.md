@@ -6,12 +6,12 @@ Posato blocks the websites and apps you choose for a timed pause on your Mac
 or iPhone, now or on a schedule, within the [limits](#limits) below.
 
 <p align="center">
-  <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites and apps to pause on a Mac and an iPhone, set a duration, start a session, and add a weekday schedule">
+  <img src=".github/assets/demo.gif" width="864" alt="Posato demo: choose websites, pick 45 minutes, start a pause on a Mac, and optionally sync websites, sessions, and schedules with iPhone, encrypted on your device and stored in your private iCloud database">
 </p>
 
 Watch the [full 53-second walkthrough](https://posato.app/media/walkthrough.mp4),
-which adds the Mac app picker, ending a session early, and a scheduled pause
-that starts on its own.
+which adds choosing apps on the Mac and the iPhone, ending a session early,
+and a schedule whose pause starts on its own.
 
 [Quick start](#quick-start) · [How it works](#how-it-works) ·
 [Limits](#limits) · [Privacy](#privacy) · [Documentation](#project-documentation)

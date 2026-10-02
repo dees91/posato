@@ -1,7 +1,6 @@
 ---
 import { Image } from "astro:assets";
 import Base from "../layouts/Base.astro";
-import "../styles/bolder.css";
 import iphoneDuration from "../../../video/public/iphone-duration-45.png";
 import iphoneSchedules from "../../../video/public/iphone-schedules.png";
 import iphoneWebsites from "../../../video/public/iphone-websites.png";
@@ -10,7 +9,7 @@ import macSchedules from "../../../video/public/mac-schedules.png";
 import macWebsites from "../../../video/public/mac-websites.png";
 ---
 
-<Base pageClass="bolder" description="Posato blocks the websites and apps you choose for a timed pause on your Mac or iPhone, now or on a schedule. No Posato account, no analytics, and no Posato-operated server.">
+<Base description="Posato blocks the websites and apps you choose for a timed pause on your Mac or iPhone, now or on a schedule. No Posato account, no analytics, and no Posato-operated server.">
   <section class="hero">
     <div class="hero-copy">
       <h1>A little space.<br /><span>For what matters.</span></h1>
@@ -38,14 +37,14 @@ import macWebsites from "../../../video/public/mac-websites.png";
         preload="metadata"
         width="1600"
         height="1000"
-        poster="/media/hero-bolder-poster.jpg"
-        aria-label="Posato demo: choose websites, pick 45 minutes, start a pause on a Mac, and optionally keep choices in sync with iPhone through your private, encrypted iCloud"
+        poster="/media/hero-poster.jpg"
+        aria-label="Posato demo: choose websites, pick 45 minutes, start a pause on a Mac, and optionally sync websites, sessions, and schedules with iPhone, encrypted on your device and stored in your private iCloud database"
       >
-        <source src="/media/hero-bolder.mp4" type="video/mp4" media="(min-width: 701px)" />
+        <source src="/media/hero.mp4" type="video/mp4" media="(min-width: 701px)" />
       </video>
       <img
         class="hero-poster"
-        src="/media/hero-bolder-poster.jpg"
+        src="/media/hero-poster.jpg"
         width="1600"
         height="1000"
         alt="Posato on a Mac reporting restrictions active, with the session end time and an option to end early"
