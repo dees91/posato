@@ -171,7 +171,8 @@ not evidence that a test should be deleted.
 Record only checks actually applicable and run; do not enumerate irrelevant
 categories as `N/A`.
 
-Run focused tests for each correction and the complete `./gradlew quality`
+Run focused tests and `./gradlew qualityLint` (formatting and static analysis
+only, about a minute) for each correction, and the complete `./gradlew quality`
 once after the last correction before pushing. Use `--rerun-tasks` only after
 a build-configuration change.
 
@@ -260,7 +261,8 @@ required-hosted-check policies. Restoration needs an explicit maintainer
 decision; there is no automatic-restoration date.
 
 Before merging, require successful local `./gradlew quality` after the last
-correction, the selected review tier, and applicable native/device verification.
+correction, on the branch rebased onto the current `main` (for a stack, on its
+tip), the selected review tier, and applicable native/device verification.
 Record the tested revision and result in the PR and confirm that it still
 represents the change being merged. Follow the local verification rules above
 after later corrections. See the [local checklist](README.md#local-quality-and-merge-check).
