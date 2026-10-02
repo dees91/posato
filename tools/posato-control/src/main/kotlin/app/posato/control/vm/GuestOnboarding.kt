@@ -33,6 +33,7 @@ class GuestOnboarding(
         val split = recipe.steps.indexOfFirst { it.name == SETUP_READY }
         val done = recipe.steps.indexOfFirst { it.name == SETUP_DONE }
         if (split < 0 || done < 0) throw ControlException(ErrorCode.COMMAND_FAILED, "The onboarding recipe lacks $SETUP_READY or $SETUP_DONE.")
+        VmLifecycle(context).requireRunning(line)
         guest(line, listOf("launch", "-t", "desktop"))
         guestScenario(line, recipe.copy(steps = recipe.steps.subList(0, split + 1)))
         guest(line, listOf("tap", "-t", "desktop", "--text", SET_UP, "--role", "button"))
@@ -80,7 +81,9 @@ class GuestOnboarding(
         return try {
             action()
             true
-        } catch (_: ControlException) {
+        } catch (exception: ControlException) {
+            // A missing Keychain secret or a broken VNC session is not a prompt that went away.
+            if (exception.code != ErrorCode.ELEMENT_NOT_FOUND && exception.code != ErrorCode.WAIT_TIMEOUT) throw exception
             false
         }
     }

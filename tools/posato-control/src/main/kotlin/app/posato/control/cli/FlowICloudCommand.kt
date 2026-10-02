@@ -23,6 +23,8 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
     private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the outcome.").long().default(DEFAULT_TIMEOUT_SECONDS)
 
     override fun execute(session: Session): JsonElement {
+        // Verified only in Tart guests: on a compact iPhone the expanded row's actions can sit off screen.
+        requireDesktopInVirtualMachine(session)
         val backend = session.backend()
         val deadline = System.currentTimeMillis() + timeoutSeconds * MILLIS_PER_SECOND
         val presses = if (action == LINK) link(backend, deadline) else remove(backend, deadline)
@@ -37,14 +39,14 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         deadline: Long,
     ): Int {
         expand(backend)
-        if (LINKED in FlowSteps.labels(backend)) return 0
+        if (linked(FlowSteps.labels(backend))) return 0
         FlowSteps.run(backend, listOf(FlowSteps.reveal(button(SYNC_WITH_ICLOUD)), FlowSteps.tap(button(SYNC_WITH_ICLOUD))))
         var presses = 1
         while (System.currentTimeMillis() < deadline) {
             Thread.sleep(POLL_MILLIS)
             val labels = FlowSteps.labels(backend)
             when {
-                labels.any { it.contains(COMPLETED) } -> {
+                linked(labels) -> {
                     return presses
                 }
 
@@ -110,6 +112,9 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         }
     }
 
+    /** Linked: the row offers Sync now or Remove workspace, whatever the latest attempt reported. */
+    private fun linked(labels: List<String>): Boolean = labels.any { it.contains(COMPLETED) } || SYNC_NOW in labels || REMOVE_WORKSPACE in labels
+
     private fun button(text: String) = Query(text = text, role = FlowSteps.ROLE_BUTTON)
 
     private fun timedOut(what: String) = ControlException(
@@ -126,7 +131,6 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         const val CHECK_AGAIN = "Check again"
         const val REMOVE_WORKSPACE = "Remove workspace"
         const val COMPLETED = "completed its latest sync attempt"
-        const val LINKED = "iCloud, Latest sync attempt completed"
         const val SYNCING = "Syncing"
         const val DEFAULT_TIMEOUT_SECONDS = 300L
         const val POLL_MILLIS = 15_000L

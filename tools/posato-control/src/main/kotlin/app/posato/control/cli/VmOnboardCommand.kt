@@ -10,7 +10,10 @@ import kotlinx.serialization.json.JsonElement
 class VmOnboardCommand :
     ControlCommand("onboard", "Launch the package in a clone and finish first-run onboarding with the helper, answering its prompts.") {
     private val lineOption by option("--line", help = "VM line: primary, peer, legacy, or ventura.").default(VmLine.PRIMARY.id)
-    private val timeoutSeconds by option("--timeout-seconds", help = "How long setup may take.").long().default(DEFAULT_TIMEOUT_SECONDS)
+    private val timeoutSeconds by option(
+        "--timeout-seconds",
+        help = "How long each setup attempt may take to report ready.",
+    ).long().default(DEFAULT_TIMEOUT_SECONDS)
 
     override fun execute(session: Session): JsonElement = GuestOnboarding(session.context).run(
         VmLine.parse(lineOption),

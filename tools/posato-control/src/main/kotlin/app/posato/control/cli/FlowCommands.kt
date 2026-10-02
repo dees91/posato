@@ -45,10 +45,14 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
         }
         steps += listOf(
             FlowSteps.button("Back to pause sets"),
-            FlowSteps.waitFor(Query(textContains = "$name,", role = FlowSteps.ROLE_BUTTON)),
             FlowSteps.screenshot("set-created"),
         )
-        FlowSteps.run(session.backend(), steps)
+        val backend = session.backend()
+        FlowSteps.run(backend, steps)
+        // A set named "Deep Work" also contains "Work,"; the new row must start with the name.
+        if (FlowSteps.labels(backend).none { label -> label.startsWith("$name,") }) {
+            throw ControlException(ErrorCode.ASSERTION_FAILED, "Pause sets shows no set named $name.")
+        }
         return buildJsonObject {
             put("name", name)
             putJsonArray("websites") { websites.forEach(::add) }
@@ -66,19 +70,21 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
     private val minutes by option("--minutes", help = "Length, 5 to 60 minutes.").int().default(DEFAULT_MINUTES)
 
     override fun execute(session: Session): JsonElement {
-        if (minutes !in MIN_MINUTES..MAX_MINUTES) throw ControlException(ErrorCode.USAGE, "--minutes is 5 to 60.")
+        if (minutes !in MIN_MINUTES..MAX_MINUTES) throw ControlException(ErrorCode.USAGE, "--minutes is 5 to 59, or the 60-minute preset.")
         val steps = mutableListOf(
             FlowSteps.button("Session"),
             FlowSteps.button("Start a session"),
             FlowSteps.waitFor(Query(text = "YOUR NEXT PAUSE")),
         )
         set?.let { chosen -> steps += chooseSet(chosen) }
-        steps += minuteSteps(minutes - DEFAULT_MINUTES)
+        steps += if (minutes in PRESETS) listOf(FlowSteps.button("$minutes min")) else minuteSteps(minutes - DEFAULT_MINUTES)
         val review = Query(text = "Review session", role = FlowSteps.ROLE_BUTTON)
         val begin = Query(text = "Start this pause", role = FlowSteps.ROLE_BUTTON)
         steps += listOf(
             FlowSteps.reveal(review),
             FlowSteps.tap(review),
+            // A dropped wheel tap would start a session of another length: Review must show the asked one.
+            FlowSteps.waitFor(Query(textContains = "$minutes minutes ·")),
             FlowSteps.reveal(begin),
             FlowSteps.tap(begin),
             FlowSteps.waitFor(Query(text = "End session early", role = FlowSteps.ROLE_BUTTON), timeoutSeconds = START_SECONDS),
@@ -102,6 +108,7 @@ class FlowSessionCommand : ControlCommand("session", "Start a manual session wit
         const val DEFAULT_MINUTES = 25
         const val MIN_MINUTES = 5
         const val MAX_MINUTES = 60
+        val PRESETS = setOf(25, 45, 60)
         const val START_SECONDS = 90.0
         const val TAP_GAP_SECONDS = 0.3
     }
