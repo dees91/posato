@@ -63,13 +63,17 @@ private fun CanonicalWriter.writeSchedulePut(payload: SyncOperationPayload.Sched
         return false
     }
     writeByte(SCHEDULE_PUT_TAG)
+    writeSchedulePutBody(payload)
+    return true
+}
+
+internal fun CanonicalWriter.writeSchedulePutBody(payload: SyncOperationPayload.SchedulePut) {
     writeOwnedBytes(payload.scheduleId.value.copyBytes())
     writeString(payload.name)
     writeByte(payload.weekdays)
     writeU16(payload.startMinute)
     writeU16(payload.endMinute)
     writeByte(if (payload.enabled) 1 else 0)
-    return true
 }
 
 private fun CanonicalWriter.writeOccurrence(
@@ -87,7 +91,7 @@ private fun CanonicalWriter.writeOccurrence(
     return true
 }
 
-private fun CanonicalReader.readSchedulePut(): SyncOperationPayload.SchedulePut? {
+internal fun CanonicalReader.readSchedulePut(): SyncOperationPayload.SchedulePut? {
     val scheduleId = readUuidIdentifier()?.let(::ScheduleSyncId)
     val name = readCanonicalString()
     val weekdays = readByte()

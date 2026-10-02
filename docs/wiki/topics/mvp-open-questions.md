@@ -1051,6 +1051,15 @@ below. This queue retains idea provenance without expanding the original MVP.
     is the accepted product line in `DESIGN.md` and appears in the site title
     and hero, the README, and the App Store subtitle, so changing it revises
     `DESIGN.md`. Owner: backlog row `WEB-002`.
+25. **An unblocked moment when the Mac helper takes a new configuration.**
+    `observed` (2026-09-30, `SCHEDULE-004` measurement in a Tart VM): a
+    change during a running pause is a helper clear followed by an apply,
+    and each left the system proxy off for about 0.2-0.25 s, long enough
+    for a blocked page to load. Changes coalesce to about one a minute;
+    release 1.2 already has it, and pause sets make it more frequent.
+    `user-confirmed` (2026-09-30): accepted for 1.3 as an internal known
+    limit; an atomic replacement in the helper needs an ADR 0004
+    amendment. Owner: backlog row `MACOS-025`.
 
 ## Later platform questions
 

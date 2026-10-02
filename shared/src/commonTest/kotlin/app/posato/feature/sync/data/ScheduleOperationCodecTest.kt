@@ -175,7 +175,7 @@ class ScheduleOperationCodecTest {
 
     @Test
     fun `given mandatory kinds outside the known set when decoded then they are still rejected`() {
-        listOf(0, 12, 99, 127).forEach { kind ->
+        listOf(0, 20, 99, 127).forEach { kind ->
             assertNull(SyncOperationCodec.decode(header(51, 2) + byteArrayOf(kind.toByte()) + identifier(70)), "kind $kind")
         }
     }
@@ -207,7 +207,7 @@ class ScheduleOperationCodecTest {
 }
 
 /** "PSO1", format 1, the five identifiers, the test key, then sequence and clock as `testOperation` sets them. */
-private fun header(
+internal fun header(
     id: Int,
     sequence: Long,
     author: Int = 10,
@@ -216,7 +216,7 @@ private fun header(
         ByteArray(SyncFormatLimits.PUBLIC_KEY_BYTES) { 7 } + u64(sequence) + u64(sequence) + u16(0)
 }
 
-private fun identifier(value: Int): ByteArray {
+internal fun identifier(value: Int): ByteArray {
     val bytes = ByteArray(SyncFormatLimits.IDENTIFIER_BYTES)
     bytes[6] = 0x40
     bytes[8] = 0x80.toByte()
@@ -227,10 +227,10 @@ private fun identifier(value: Int): ByteArray {
     return bytes
 }
 
-private fun u16(value: Int): ByteArray {
+internal fun u16(value: Int): ByteArray {
     return byteArrayOf((value ushr 8).toByte(), value.toByte())
 }
 
-private fun u64(value: Long): ByteArray {
+internal fun u64(value: Long): ByteArray {
     return ByteArray(8) { index -> (value ushr ((7 - index) * 8)).toByte() }
 }

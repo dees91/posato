@@ -61,12 +61,19 @@ occurrence. Each part uses one set.
   relaunch, and forgets it when the part stops for any reason. It is not
   synchronized: a device that never paused an item for a part does not
   start pausing it after its removal. A part that is running when the
-  device upgrades keeps what it paused at that moment.
+  device upgrades keeps the first set's items at that moment
+  (`user-confirmed` 2026-09-30: a 1.2 session's start-time list is not
+  kept, so an item removed during that session may be released then).
 - **Device limits.** Everything all running parts pause together,
-  including what they keep, must fit the device's limits (1,024 websites on
-  the Mac, and the app limit on each device). An edit or a new part that
-  would go beyond them pauses none of its new items and says they are not
-  paused yet; what is already paused stays.
+  including what they keep, must fit the device's limits: 1,024 websites
+  and 64 apps on the Mac; on iPhone and iPad 50 web domains, which is 25
+  websites with their `www` counterparts, and 50 apps (see Execution,
+  iPhone). An edit that would go beyond them pauses none of its new items
+  and says they are not paused yet; what is already paused stays.
+  `user-confirmed` (2026-09-30): a new part pauses as many of its new
+  items as still fit and says how many are not paused; it never leaves
+  the whole website filter off. Websites are taken in alphabetical order
+  (`inferred`: a fixed order every device computes alike).
 - **Overlap** (`user-confirmed` 2026-09-29). A manual session and scheduled
   occurrences with different sets pause the union of their sets, as
   overlapping schedules do. When one part ends, only items no remaining part
@@ -137,7 +144,10 @@ received yet.
   upgrades from 1.2, after the first set was deleted on another device
   loses its old websites and app choices from that set. No extra rule
   covers this. It is recorded only in internal documents, not in the
-  README, on `posato.app`, or on the limits page.
+  README, on `posato.app`, or on the limits page. Likewise
+  (`user-confirmed` 2026-09-30), a device that creates a new workspace
+  does not publish its first set's name or its default at first link, so
+  they return to "My set" and the first set.
 
 ### Synchronized operations (ADR 0006 amendment)
 
@@ -198,14 +208,16 @@ and changes from a device that has not updated yet still apply.
   a version-2 table exists, an unreadable one clears as today and never
   falls back to version 1.
 - The manual session keeps its own named store and the schedules share
-  theirs; iOS combines named stores. `hypothesis`: the system union of the
-  two stores is the most restrictive of both; `SCHEDULE-004` verifies it on
-  the test iPhone with different sets in each.
-- App choices move from one file to one file per set, with the existing
-  64-token ceiling applying to unique tokens across sets on the device.
-  `open`: whether a union that large fits the system shield limit, and
-  the website limit of the web content filter; `SCHEDULE-004` measures
-  both before choosing lower caps.
+  theirs. `observed` (2026-09-30, test iPhone): named stores compose, and
+  the web filter's 50-domain bound counts their union; past it iOS drops
+  the whole website filter, so nothing is blocked (wiki
+  `ios-enforcement`). Release 1.2 has this defect for more than 25
+  websites; `user-confirmed` (2026-09-30): it is fixed in 1.3 by this
+  row, not in a 1.2 patch.
+- App choices move from one file to one file per set. `user-confirmed`
+  (2026-09-30): the ceiling drops from 64 to 50 tokens, Apple's
+  documented shield bound (`source-claim`, not measured), counted over
+  unique tokens across sets on the device.
 
 ### Mac
 
@@ -216,9 +228,10 @@ and changes from a device that has not updated yet still apply.
   retained items, and the latest end. A part ending recomposes it.
 - `observed`: a change is a helper clear followed by an apply, inside one
   app lock. Sets make such changes more frequent (additions, part ends).
-  `open`: whether the helper leaves a measurable unblocked moment between
-  the two; `SCHEDULE-004` measures it in a Tart VM, and a gap becomes an
-  ADR 0004 question rather than a silent change.
+  `observed` (2026-09-30, Tart VM): each clear and apply left the proxy
+  off for about 0.2-0.25 s, and a blocked page loaded in that moment.
+  `user-confirmed` (2026-09-30): accepted for 1.3 as an internal known
+  limit; the atomic replacement is backlog row `MACOS-025`.
 - App choices gain a set column in the Mac's app-choice database; the
   existing rows move to the first set.
 
@@ -262,9 +275,10 @@ Slices, stacked, each proven before the next:
 2. **Migration and storage.** SQLDelight migration 13 (sets, per-part
    retention), the Mac app-choice migration, the iPhone per-set app files,
    retention for parts running at migration, and kind 19 on first open in a
-   linked workspace. Migration tests seeded from databases that a released
-   1.2 build produced with synthetic content in a Tart VM or on the test
-   iPhone, including a running session and schedule pins.
+   linked workspace. Migration tests from earlier schemas built from
+   tracked history with synthetic rows, including a running session and
+   schedule pins (`user-confirmed` 2026-09-30; supersedes seeding from
+   1.2-produced databases).
 3. **Pause sets UI.** The destination, set editor, Make default, Delete
    with **Change their set**, the set choice in Session and the schedule
    editor, readiness copy, and the 10-set cap. Proven by E2E.

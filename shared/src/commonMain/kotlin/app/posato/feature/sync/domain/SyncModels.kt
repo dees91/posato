@@ -27,6 +27,7 @@ internal object SyncFormatLimits {
     const val MAX_LOGICAL_COUNTER: Int = 65_535
     const val MAX_SESSION_DURATION_MILLIS: Long = 86_400_000L
     const val MAX_SYNCHRONIZED_SCHEDULES: Int = ScheduleLimits.MAX_SCHEDULES
+    const val MAX_PAUSE_SETS: Int = 10
     val OPTIONAL_KINDS: IntRange = 128..255
 }
 
@@ -189,12 +190,16 @@ internal class PublicSigningKey private constructor(
 internal sealed interface SyncOperationPayload {
     data object AuthorRegister : SyncOperationPayload
 
+    /** Kind 2 without a set, which means the first set; kind 14 with one. */
     data class DomainPresent(
         val domain: ExactDomain,
+        val setId: PauseSetId? = null,
     ) : SyncOperationPayload
 
+    /** Kind 3 without a set, which means the first set; kind 15 with one. */
     data class DomainAbsent(
         val domain: ExactDomain,
+        val setId: PauseSetId? = null,
     ) : SyncOperationPayload
 
     data class ApplicationPolicyPresent(
@@ -203,10 +208,12 @@ internal sealed interface SyncOperationPayload {
 
     data object ApplicationPolicyAbsent : SyncOperationPayload
 
+    /** Kind 6 without a set, which means the first set; kind 18 with one. */
     data class SessionStart(
         val sessionId: SessionId,
         val startEpochMillis: Long,
         val mandatoryEndEpochMillis: Long,
+        val setId: PauseSetId? = null,
     ) : SyncOperationPayload {
         override fun toString(): String {
             return "SyncOperationPayload.SessionStart(redacted)"
@@ -217,7 +224,10 @@ internal sealed interface SyncOperationPayload {
         val sessionId: SessionId,
     ) : SyncOperationPayload
 
-    /** Kind 8: the whole schedule; the greatest total-order put per identifier wins unless it is removed. */
+    /**
+     * Kind 8 without a set, which means the first set; kind 17 with one. The whole schedule; the greatest
+     * total-order put of either kind per identifier wins unless it is removed.
+     */
     data class SchedulePut(
         val scheduleId: ScheduleSyncId,
         val name: String,
@@ -225,6 +235,7 @@ internal sealed interface SyncOperationPayload {
         val startMinute: Int,
         val endMinute: Int,
         val enabled: Boolean,
+        val setId: PauseSetId? = null,
     ) : SyncOperationPayload {
         override fun toString(): String {
             return "SyncOperationPayload.SchedulePut(redacted)"
@@ -253,6 +264,29 @@ internal sealed interface SyncOperationPayload {
             return "SyncOperationPayload.ScheduleOccurrenceEnd(redacted)"
         }
     }
+
+    /** Kind 12: names a set; the greatest total-order put names it unless the set is removed. */
+    data class PauseSetPut(
+        val setId: PauseSetId,
+        val name: String,
+    ) : SyncOperationPayload {
+        override fun toString(): String {
+            return "SyncOperationPayload.PauseSetPut(redacted)"
+        }
+    }
+
+    /** Kind 13: permanently removes the set, whatever the order. */
+    data class PauseSetRemove(
+        val setId: PauseSetId,
+    ) : SyncOperationPayload
+
+    /** Kind 16: the greatest total-order choice is the default. */
+    data class PauseSetDefault(
+        val setId: PauseSetId,
+    ) : SyncOperationPayload
+
+    /** Kind 19: marks the workspace as migrated to pause sets. */
+    data object PauseSetsEnabled : SyncOperationPayload
 
     /**
      * Kinds 128-255 are optional extensions: accepted, retained and ignored in projection. Decoding stays
@@ -290,6 +324,20 @@ internal value class ScheduleSyncId(
         get() {
             return value.copyBytes().joinToString("") { byte -> (byte.toInt() and 0xFF).toString(16).padStart(2, '0') }
         }
+}
+
+/** A pause set: a UUIDv4, or the all-zero first set that existing history already refers to. */
+@JvmInline
+internal value class PauseSetId private constructor(
+    val value: SyncIdentifier,
+) {
+    companion object {
+        val FIRST: PauseSetId = PauseSetId(SyncIdentifier.zero())
+
+        fun of(value: SyncIdentifier): PauseSetId? {
+            return if (value.isZero() || value.isUuidV4()) PauseSetId(value) else null
+        }
+    }
 }
 
 /** One occurrence as it travels in kinds 10 and 11: the schedule and the local date it starts. */

@@ -1,6 +1,7 @@
 package app.posato.feature.sync.data
 
 import app.posato.feature.sync.domain.SyncAuditOutcome
+import app.posato.feature.sync.domain.SyncIdentifier
 import app.posato.feature.sync.domain.SyncProjection
 
 internal fun SyncProjection.canonicalDigest(cryptoProvider: SyncCryptoProvider): ImmutableBytes? {
@@ -15,14 +16,7 @@ internal fun SyncProjection.canonicalDigest(cryptoProvider: SyncCryptoProvider):
             writer.writeByte(1)
             writer.writeCanonicalString(applicationPolicyName.canonicalValue)
         }
-        writer.writeU32(eligibleSessionStarts.size.toLong())
-        eligibleSessionStarts.forEach { start ->
-            writer.writeOwnedBytes(start.operationId.value.copyBytes())
-            writer.writeOwnedBytes(start.sessionId.value.copyBytes())
-            writer.writeLong(start.startEpochMillis)
-            writer.writeLong(start.mandatoryEndEpochMillis)
-            writer.writeByte(if (start.isEnded) 1 else 0)
-        }
+        writer.writeSessionStarts(this)
         writer.writeU32(conflictedSessionIds.size.toLong())
         conflictedSessionIds.sortedBy { sessionId -> sessionId.value }.forEach { sessionId ->
             writer.writeOwnedBytes(sessionId.value.copyBytes())
@@ -38,6 +32,7 @@ internal fun SyncProjection.canonicalDigest(cryptoProvider: SyncCryptoProvider):
             writer.writeU16(schedule.startMinute)
             writer.writeU16(schedule.endMinute)
             writer.writeByte(if (schedule.enabled) 1 else 0)
+            writer.writeOwnedBytes(schedule.setId.value.copyBytes())
         }
         writer.writeU32(removedScheduleIds.size.toLong())
         removedScheduleIds.sortedBy { id -> id.value }.forEach { id -> writer.writeOwnedBytes(id.value.copyBytes()) }
@@ -50,6 +45,7 @@ internal fun SyncProjection.canonicalDigest(cryptoProvider: SyncCryptoProvider):
                 writer.writeByte(fact.date.day)
             }
         }
+        writer.writePauseSets(this)
         writer.writeU32(audit.size.toLong())
         audit.forEach { entry ->
             writer.writeOwnedBytes(entry.operationId.value.copyBytes())
@@ -61,6 +57,36 @@ internal fun SyncProjection.canonicalDigest(cryptoProvider: SyncCryptoProvider):
     } finally {
         writer.clear()
     }
+}
+
+private fun CanonicalWriter.writeSessionStarts(projection: SyncProjection) {
+    writeU32(projection.eligibleSessionStarts.size.toLong())
+    projection.eligibleSessionStarts.forEach { start ->
+        writeOwnedBytes(start.operationId.value.copyBytes())
+        writeOwnedBytes(start.sessionId.value.copyBytes())
+        writeLong(start.startEpochMillis)
+        writeLong(start.mandatoryEndEpochMillis)
+        writeByte(if (start.isEnded) 1 else 0)
+        writeOwnedBytes(start.setId.value.copyBytes())
+    }
+}
+
+private fun CanonicalWriter.writePauseSets(projection: SyncProjection) {
+    writeU32(projection.pauseSets.size.toLong())
+    projection.pauseSets.forEach { set ->
+        writeOwnedBytes(set.setId.value.copyBytes())
+        writeByte(if (set.name == null) 0 else 1)
+        set.name?.let(::writeCanonicalString)
+        writeU32(set.domains.size.toLong())
+        set.domains.forEach { domain -> writeCanonicalString(domain.canonicalValue) }
+    }
+    listOf(projection.removedPauseSetIds, projection.refusedPauseSetIds).forEach { ids ->
+        writeU32(ids.size.toLong())
+        ids.sortedBy { id -> id.value }.forEach { id -> writeOwnedBytes(id.value.copyBytes()) }
+    }
+    writeByte(if (projection.defaultPauseSetId == null) 0 else 1)
+    writeOwnedBytes((projection.defaultPauseSetId?.value ?: SyncIdentifier.zero()).copyBytes())
+    writeByte(if (projection.pauseSetsEnabled) 1 else 0)
 }
 
 private fun CanonicalWriter.writeCanonicalString(value: String) {
@@ -79,6 +105,7 @@ private fun SyncAuditOutcome.formatTag(): Int {
         SyncAuditOutcome.SEQUENCE_GAP -> SEQUENCE_GAP_TAG
         SyncAuditOutcome.SESSION_CONFLICT -> SESSION_CONFLICT_TAG
         SyncAuditOutcome.SCHEDULE_CAPACITY -> SCHEDULE_CAPACITY_TAG
+        SyncAuditOutcome.SET_CAPACITY -> SET_CAPACITY_TAG
     }
 }
 
@@ -89,3 +116,4 @@ private const val DOMAIN_CAPACITY_TAG = 4
 private const val SEQUENCE_GAP_TAG = 5
 private const val SESSION_CONFLICT_TAG = 6
 private const val SCHEDULE_CAPACITY_TAG = 7
+private const val SET_CAPACITY_TAG = 8
