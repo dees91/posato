@@ -105,7 +105,7 @@ internal fun AboutScreen(
             verticalArrangement = Arrangement.spacedBy(PosatoSpace.Section),
         ) {
             PosatoCaption(version?.let { "Version $it" } ?: "Version unavailable")
-            PosatoBody("Pause. Then choose.")
+            PosatoBody("A little space. For what matters.")
             PosatoBody("Posato helps you step away from selected websites and apps for a while. A quiet pause between impulse and action.")
             PosatoBody("Open source. No Posato account, analytics, or Posato-operated server.")
             notificationsContent?.invoke()
