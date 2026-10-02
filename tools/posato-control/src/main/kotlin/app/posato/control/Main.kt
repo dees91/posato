@@ -13,6 +13,11 @@ import app.posato.control.cli.DevicesListCommand
 import app.posato.control.cli.DevicesShutdownCommand
 import app.posato.control.cli.DoctorCommand
 import app.posato.control.cli.FindCommand
+import app.posato.control.cli.FlowCommand
+import app.posato.control.cli.FlowICloudCommand
+import app.posato.control.cli.FlowScheduleAddCommand
+import app.posato.control.cli.FlowSessionCommand
+import app.posato.control.cli.FlowSetCommand
 import app.posato.control.cli.InstallCommand
 import app.posato.control.cli.LaunchCommand
 import app.posato.control.cli.LogsCommand
@@ -44,6 +49,7 @@ import app.posato.control.cli.VmICloudCommand
 import app.posato.control.cli.VmInstallCommand
 import app.posato.control.cli.VmKillCommand
 import app.posato.control.cli.VmNetworkCommand
+import app.posato.control.cli.VmOnboardCommand
 import app.posato.control.cli.VmPressCommand
 import app.posato.control.cli.VmPromptCommand
 import app.posato.control.cli.VmPushCommand
@@ -108,6 +114,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
     SwipeBackCommand(),
     ResourcesCommand(),
     UpdateConsentCommand(),
+    FlowCommand().subcommands(FlowScheduleAddCommand(), FlowSetCommand(), FlowSessionCommand(), FlowICloudCommand()),
     VmCommand().subcommands(
         VmCreateCommand(),
         VmSyncCommand(),
@@ -131,6 +138,7 @@ fun buildCommand(): PosatoControl = PosatoControl().subcommands(
         VmPushCommand(),
         VmKillCommand(),
         VmDialogsCommand(),
+        VmOnboardCommand(),
     ),
 )
 
