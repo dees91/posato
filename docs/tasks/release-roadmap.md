@@ -3,7 +3,7 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 17 (amended 2026-10-04: release 1.3 defects found in packaging)
+- **Revision:** 17 (amended 2026-10-04: release 1.3 defects found in packaging; backlog addition `MACOS-026`)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
 - **Last amended:** 2026-10-04
@@ -113,6 +113,9 @@
   captures found: an iOS crash when leaving a pause set and then switching
   destinations, and Session copy and counts that still describe the former
   single item list. `DOCS-004` and `RELEASE-005` wait for them.
+  The 2026-10-04 backlog addition `MACOS-026` (idea 27, `user-confirmed`,
+  from the `RELEASE-005` retro) changes no release; the maintainer wants it
+  considered first when release 1.4 is composed.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -364,6 +367,7 @@ The idea numbers refer to the wiki idea queue.
 | `TARGETS-008` | Decide a quick way to share saved websites with a device on a different Apple Account, such as AirDrop of a `TARGETS-007` file or a QR code: privacy, one-time or ongoing sharing, and the relation to `SYNC-018`; end with a product decision. Preliminary. | Target management | Idea 15 | A product decision on sharing beyond one Apple Account |
 | `MACOS-025` | Let the macOS helper take a new configuration during a running pause without clearing it first, so no browser request passes between the clear and the apply: amend ADR 0004 with an atomic replacement over the existing grant, with its own security review, and prove it with the `SCHEDULE-004` probe that saw a 0.2-0.25 s gap. | Sessions and enforcement | Idea 25; `SCHEDULE-004` measurement | A planning checkpoint; the accepted 1.3 known limit makes it non-urgent |
 | `QUALITY-012` | Decide a development-only time control for verification, such as a clock offset or shortened schedule and session minimums behind a launch argument that release builds ignore, so scheduled and synchronized acceptance runs take minutes instead of hours; define what such runs still prove and what stays on real time. | Verification | Idea 26; `SCHEDULE-004` retro | A maintainer decision on a test seam in product code and its safety in release builds |
+| `MACOS-026` | Let an in-app update replace Posato on the Mac without asking "Quit Posato?": the updater's quit request skips the confirmation that a person's quit gets, while a person's quit still asks. Verify a candidate-channel update from a build with the change to the next. | Sessions and enforcement | Idea 27; `RELEASE-005` retro | Release 1.4 composition; an update between two candidate builds proves it, because the first release with the change still asks when it is replaced |
 
 ## Coverage matrix
 
