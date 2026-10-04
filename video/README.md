@@ -33,6 +33,12 @@ resolve a different font. Package versions are exact and locked by
 `package-lock.json`. For interactive editing and target calibration run
 `npm run dev -- --no-open` and open the printed local URL.
 
+After new captures or crop changes, run `npm run compare:hero` before
+`npm run media` and look at `out/hero-compare/hero-compare.png`: it places each
+key hero frame of the published hero (`origin/main`, or a revision passed after
+`--`) beside the same frame rendered from this tree. A new row in a capture
+moves every crop taken from it, and nothing else reports that.
+
 Outputs:
 
 - `../.github/assets/demo.gif`: 960 x 600, 15 fps, 24 seconds, infinite loop, 1,620,233 bytes.
