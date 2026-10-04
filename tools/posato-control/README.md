@@ -413,7 +413,13 @@ test Apple Account, and Keychain items is in
 
 - `vm create` refuses while the line's golden VM runs (a golden VM and its
   clone share a provisioning identity, and running both re-identifies one) or
-  when two guests already run. The VNC address, which carries the session
+  when two guests already run. Clone names are shared by every worktree on the
+  machine, so `vm create` records the creating worktree, run, time, and
+  process in `posato-owner.json` inside the clone's Tart directory, which
+  `vm destroy` (or `tart delete`) removes with the clone. A refusal over an
+  existing or running clone names that owner and whether its worktree and
+  process still exist; pick a free line or ask its session, and destroy only
+  a clone your worktree created. The VNC address, which carries the session
   password, stays in an owner-only file under `build/verification/vm/<line>/`
   and is deleted by `vm destroy`.
 - `vm prompt` locates dialogs by text recognition on the framebuffer and types
