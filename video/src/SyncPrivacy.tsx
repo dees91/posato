@@ -19,7 +19,7 @@ export const SyncPrivacy = ({ frame }: { readonly frame: number }) => {
       <div style={{ position: "absolute", left: 110, top: 420, fontSize: 28, color: colors.muted }}>Mac</div>
       <div style={{ position: "absolute", left: 110, top: 475, width: 900, height: 330, backgroundColor: colors.surface, borderRadius: 14, overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 36, overflow: "hidden" }}>
-          <Img src={staticFile("mac-websites.png")} style={{ position: "absolute", width: 1463, maxWidth: "none", left: -377, top: -345 }} />
+          <Img src={staticFile("mac-websites.png")} style={{ position: "absolute", width: 1463, maxWidth: "none", left: -377, top: -423 }} />
         </div>
       </div>
       <div style={{ position: "absolute", left: 1170, top: 170, fontSize: 28, color: colors.muted }}>iPhone</div>

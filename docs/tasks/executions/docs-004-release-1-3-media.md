@@ -42,6 +42,18 @@
   the hero's first crop moved down to the set's website list. `npm run media`
   passed `verify`: GIF 1,620,233 bytes, site hero 497,081 bytes, walkthrough
   2,945,899 bytes, stills and social preview within budget.
+- **Hero framing** (maintainer request, 2026-10-03): the hero again frames
+  each state as the `WEB-002` experiment did. The website list starts at its
+  "2 websites" heading again (crop 328, 368), the session states keep the
+  whole duration picker and end the review at its last item despite the new
+  **Pause set** and **Set:** rows (scale 1.05, taller frames), and the sync
+  scene's Mac crop moved down by the same 68 pixels the set screen added.
+- **Recaptured after the fixes** (2026-10-04): the Mac session states,
+  `mac-scheduled-active`, `iphone-duration-45`, and `iphone-active-45`, on
+  the `NAV-002` and `SESSION-006` build from #132. `mac-session-inactive`
+  is kept, because the new one showed the previous run's "The session ended
+  early." `npm run media` passed `verify` again: GIF 1,588,658 bytes, site
+  hero 510,767 bytes, walkthrough 2,957,373 bytes.
 - **Store screenshots.** Both sets recaptured on the iPhone 17 Pro Max and
   iPad Pro 13-inch (M5) Simulators from a 1.3.0 build (`Version.xcconfig`
   bumped only for the build and restored).
@@ -49,6 +61,8 @@
 ## Findings for the maintainer
 
 Product defects observed while capturing; this row changes no product code.
+All three are fixed in #132 (`NAV-002` for finding 1, `SESSION-006` for
+findings 2 and 3), which merges before this PR.
 
 1. **iOS crash, release blocker (`observed`, 3 of 4 tries on the iPhone 17
    Pro Max and iPad Pro 13-inch Simulators).** Pause sets → open a set →
@@ -68,14 +82,12 @@ Product defects observed while capturing; this row changes no product code.
 
 ## Publication gates for `RELEASE-005`
 
-- Fix or accept finding 1 before App Review; the store screenshots avoid the
-  crashing path.
+- #132 merges before this PR, because the recaptured frames show its
+  behavior.
 - Set the `PRIVACY.md` effective date to the publication date.
-- Known artefact: the walkthrough frame `mac-scheduled-active` shows the
-  counts of finding 3 ("2 websites, 1 application" for the set Evening);
-  recapture it once finding 3 is fixed, or accept it.
-- The maintainer accepts the `PRIVACY.md` edits, the screenshots, and the
-  subtitle.
+- The maintainer accepted the `PRIVACY.md` edits (`user-confirmed`,
+  2026-10-03) and the subtitle (2026-10-02); the screenshots and media await
+  acceptance.
 
 ## GitHub release notes for 1.3.0
 
@@ -133,6 +145,10 @@ For `RELEASE-005` to paste into the release.
 - Mac captures: Tart `primary` clone, runs `20261002-1619*` to
   `20261002-1627*`; the clone was destroyed.
 - iPhone captures: test iPhone, runs `20261002-1634*` to `20261002-1648*`.
+- Recaptures on the #132 build (2026-10-04): Mac in the Tart `primary`
+  clone, runs `20261004-130407-c8f2` and `20261004-1313*`; test iPhone,
+  runs `20261004-131427-2eee` and `20261004-131523-01bf`. Each new hero
+  state was compared with the `WEB-002` hero frame by frame.
 - Store screenshots: 1320 x 2868 and 2064 x 2752 RGB PNGs without alpha.
 - `website/`: `npm ci`, `npm run build`; no horizontal scroll at 390 and
   1440 pixels wide.
