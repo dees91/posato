@@ -34,7 +34,7 @@ Preconditions:
 
 - **Prepare the previous release:** download its image with
   `gh release download v<previous> --pattern '*.dmg' --dir <scratch>`, then
-  `$PC build -t desktop`, `$PC vm create --line primary`, and
+  `$PC vm create --line primary` (a notarized DMG needs no staged package) and
   `$PC vm install --line primary --dmg <scratch>/Posato-<previous>.dmg`.
   `$PC launch -t desktop --vm primary` opens it. Complete that release's own
   first-run flow: its labels can differ from the current fixtures, so read

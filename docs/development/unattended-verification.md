@@ -203,7 +203,7 @@ $PC run -t desktop --vm primary --scenario tools/posato-control/fixtures/scenari
 $PC vm destroy --line primary
 ```
 
-Desktop commands take `--vm primary|peer|legacy` and run inside the guest; their
+Desktop commands take `--vm primary|peer|legacy|ventura` and run inside the guest; their
 evidence is copied to `build/verification/runs/<run>/guest/`. The
 `verify-posato` skill lists the recipes, the prompts each one raises, and the
 recovery steps for iCloud dialogs.
