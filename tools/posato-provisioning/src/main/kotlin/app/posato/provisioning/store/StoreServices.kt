@@ -1,5 +1,6 @@
 package app.posato.provisioning.store
 
+import app.posato.provisioning.asc.AppInfoClient
 import app.posato.provisioning.asc.OPEN_SUBMISSION_STATES
 import app.posato.provisioning.asc.ReviewClient
 import app.posato.provisioning.asc.ScreenshotClient
@@ -37,6 +38,7 @@ class StoreServices(
     val review: ReviewClient,
     val replacement: ScreenshotReplacement,
     val pause: Sleeper,
+    val appInfo: AppInfoClient,
 )
 
 /** One review submission with its items, which say which versions (or other material) it carries. */

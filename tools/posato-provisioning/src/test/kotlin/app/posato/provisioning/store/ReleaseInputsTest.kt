@@ -85,6 +85,15 @@ class ReleaseInputsTest {
     }
 
     @Test
+    fun `trims the subtitle and refuses an empty one or one over App Store Connect's 30 characters`() {
+        assertEquals("Space for what matters.", StoreSubtitle.input(" Space for what matters. "))
+        assertEquals("a".repeat(30), StoreSubtitle.input("a".repeat(30)))
+
+        assertEquals(ErrorCode.RELEASE_INPUT_INVALID, assertFailsWith<ProvisioningException> { StoreSubtitle.input(" ") }.code)
+        assertEquals(ErrorCode.RELEASE_INPUT_INVALID, assertFailsWith<ProvisioningException> { StoreSubtitle.input("a".repeat(31)) }.code)
+    }
+
+    @Test
     fun `accepts only a three-part marketing version`() {
         assertEquals("1.2.0", ReleaseInputs.version("1.2.0"))
         assertFailsWith<ProvisioningException> { ReleaseInputs.version("1.2") }

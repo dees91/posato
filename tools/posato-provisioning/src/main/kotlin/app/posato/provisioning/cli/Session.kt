@@ -1,5 +1,6 @@
 package app.posato.provisioning.cli
 
+import app.posato.provisioning.asc.AppInfoClient
 import app.posato.provisioning.asc.AscClient
 import app.posato.provisioning.asc.AscHttp
 import app.posato.provisioning.asc.JdkUploadTransport
@@ -77,6 +78,7 @@ class Session(
             review = ReviewClient(http),
             replacement = ScreenshotReplacement(screenshots, ScreenshotUploader(JdkUploadTransport(), transcript), clock, sleeper),
             pause = sleeper,
+            appInfo = AppInfoClient(http),
         )
     }
 
