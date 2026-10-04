@@ -6,6 +6,7 @@ import app.posato.control.core.ErrorCode
 import app.posato.control.model.Query
 import app.posato.control.model.States
 import app.posato.control.model.Step
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -24,17 +25,27 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
     private val end by option("--end", help = "End time, HH:MM.").required()
     private val set by option("--set", help = "Pause set to choose; the default set when omitted.")
     private val off by option("--off", help = "Save the schedule turned off, so it cannot start during the run.").flag()
+    private val days by option(
+        "--days",
+        help = "Days to run on: every (the default, so a run on any day starts), weekdays, or mon,tue,...,sun.",
+    ).default("every")
 
     override fun execute(session: Session): JsonElement {
         val backend = session.backend()
         val startTime = WheelTime.parse(start)
         val endTime = WheelTime.parse(end)
-        FlowSteps.run(backend, openEditor())
+        val chosenDays = ScheduleDays.parse(days)
+        FlowSteps.run(backend, openEditor() + chooseDays(chosenDays))
         setTime(backend, WheelKind.START, startTime)
         setTime(backend, WheelKind.END, endTime)
         FlowSteps.run(backend, save())
+        val row = "$name, ${ScheduleDays.summary(chosenDays)} "
+        if (FlowSteps.labels(backend).none { label -> label.startsWith(row) }) {
+            throw ControlException(ErrorCode.ASSERTION_FAILED, "No saved schedule row starts with '$row'.")
+        }
         return buildJsonObject {
             put("name", name)
+            put("days", ScheduleDays.summary(chosenDays))
             put("start", startTime.text)
             put("end", endTime.text)
             set?.let { put("set", it) }
@@ -53,6 +64,11 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         )
         set?.let { chosen -> steps += chooseSet(chosen) }
         return steps
+    }
+
+    private fun chooseDays(chosen: List<String>): List<Step> = ScheduleDays.toggles(chosen).flatMap { day ->
+        val button = Query(text = day, role = FlowSteps.ROLE_BUTTON)
+        listOf(FlowSteps.reveal(button), FlowSteps.tap(button))
     }
 
     private fun save(): List<Step> {
@@ -172,4 +188,33 @@ internal enum class WheelKind(
         const val WHEEL_SETTLE_SECONDS = 1.5
         const val TAP_GAP_SECONDS = 0.3
     }
+}
+
+/**
+ * The days a verification schedule runs on. The editor starts a new plan on weekdays, so a run presses only the days
+ * that differ, and the Schedules row then lists the chosen days by their short names.
+ */
+internal object ScheduleDays {
+    val ALL = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+    private val EDITOR_DEFAULT = ALL.take(5)
+    private const val SHORT_LENGTH = 3
+
+    fun parse(value: String): List<String> {
+        val chosen = when (value.trim().lowercase()) {
+            "every" -> ALL
+
+            "weekdays" -> EDITOR_DEFAULT
+
+            else -> value.split(',').map { it.trim().lowercase() }.filter { it.isNotEmpty() }.map { name ->
+                ALL.firstOrNull { day -> day.take(SHORT_LENGTH).lowercase() == name }
+                    ?: throw ControlException(ErrorCode.USAGE, "Unknown day '$name'; use every, weekdays, or mon,tue,...,sun.")
+            }
+        }
+        if (chosen.isEmpty()) throw ControlException(ErrorCode.USAGE, "--days names no day; use every, weekdays, or mon,tue,...,sun.")
+        return ALL.filter { day -> day in chosen }
+    }
+
+    fun toggles(target: List<String>): List<String> = ALL.filter { day -> (day in target) != (day in EDITOR_DEFAULT) }
+
+    fun summary(target: List<String>): String = target.joinToString(", ") { day -> day.take(SHORT_LENGTH) }
 }
