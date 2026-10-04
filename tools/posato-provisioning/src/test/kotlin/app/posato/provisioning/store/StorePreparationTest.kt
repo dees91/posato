@@ -112,6 +112,70 @@ class StorePreparationTest {
         assertEquals(setOf("whatsNew"), onlyWhatsNew.keys)
     }
 
+    /** A matching version, so a subtitle test sees only the app information requests. */
+    private fun subtitleRoutes(
+        appInfos: String,
+        subtitle: String,
+    ) = mapOf(
+        "GET apps" to listOf(APPS),
+        "GET builds" to listOf(StoreFixtures.builds()),
+        "GET apps/APP/appStoreVersions" to listOf(StoreFixtures.version(releaseType = "MANUAL")),
+        "GET appStoreVersions/VER/build" to listOf(ATTACHED_BUILD),
+        "GET appStoreVersions/VER/appStoreVersionLocalizations" to listOf(StoreFixtures.localizations("New things.")),
+        "GET apps/APP/appInfos" to listOf(appInfos),
+        "GET appInfos/NEXT/appInfoLocalizations" to listOf(
+            list(
+                """{"id":"FR","attributes":{"locale":"fr-FR","subtitle":"Autre"}}""",
+                """{"id":"INFO-LOC","attributes":{"locale":"en-US","subtitle":"$subtitle"}}""",
+            ),
+        ),
+        "PATCH appInfoLocalizations/INFO-LOC" to listOf("""{"data":{"id":"INFO-LOC"}}"""),
+    )
+
+    private val liveAndNextInfo = list(
+        """{"id":"LIVE","attributes":{"state":"READY_FOR_DISTRIBUTION"}}""",
+        """{"id":"NEXT","attributes":{"state":"PREPARE_FOR_SUBMISSION"}}""",
+    )
+
+    private val subtitled = PrepareRequest("1.2.0", 5, "New things.", ReleaseType.MANUAL, screenshots = null, subtitle = "Space for what matters.")
+
+    @Test
+    fun `sets the subtitle on the editable app information and leaves the live one alone`() {
+        val harness = StoreHarness(subtitleRoutes(liveAndNextInfo, "Pause. Then choose."))
+
+        val result = StorePreparation(harness.services).prepare(subtitled)
+
+        assertEquals("updated", result.text("subtitle"))
+        assertEquals(listOf("PATCH appInfoLocalizations/INFO-LOC"), harness.executor.writes.map { "${it.method} ${it.path}" })
+        val patch = harness.executor.write("PATCH appInfoLocalizations/INFO-LOC").data()
+        assertEquals("appInfoLocalizations", patch.text("type"))
+        assertEquals("INFO-LOC", patch.text("id"))
+        assertEquals(setOf("subtitle"), patch["attributes"]!!.jsonObject.keys)
+        assertEquals("Space for what matters.", patch["attributes"]!!.jsonObject.text("subtitle"))
+    }
+
+    @Test
+    fun `leaves a matching subtitle alone and reads no app information without one`() {
+        val matching = StoreHarness(subtitleRoutes(liveAndNextInfo, "Space for what matters."))
+        assertEquals("unchanged", StorePreparation(matching.services).prepare(subtitled).text("subtitle"))
+        assertTrue(matching.executor.writes.isEmpty())
+
+        val without = StoreHarness(subtitleRoutes(liveAndNextInfo, "Pause. Then choose."))
+        val result = StorePreparation(without.services).prepare(request)
+        assertEquals(null, result.text("subtitle"))
+        assertTrue(without.executor.requests.none { it.path.startsWith("apps/APP/appInfos") })
+    }
+
+    @Test
+    fun `refuses to change the subtitle when no app information is editable`() {
+        val harness = StoreHarness(subtitleRoutes(list("""{"id":"LIVE","attributes":{"state":"READY_FOR_DISTRIBUTION"}}"""), "Old."))
+
+        val failure = assertFailsWith<ProvisioningException> { StorePreparation(harness.services).prepare(subtitled) }
+
+        assertEquals(ErrorCode.VERSION_NOT_EDITABLE, failure.code)
+        assertTrue(harness.executor.writes.isEmpty())
+    }
+
     @Test
     fun `changes only the release type of an existing version`() {
         val harness = StoreHarness(

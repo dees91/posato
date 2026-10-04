@@ -34,6 +34,7 @@ class PrepareRequest(
     val screenshots: Map<ScreenshotSlot, List<ScreenshotFile>>?,
     val description: String? = null,
     val renameFrom: String? = null,
+    val subtitle: String? = null,
 )
 
 /** The version a run works on, or `null` when it is to be created, and how the run came to hold it. */
@@ -78,6 +79,7 @@ class StorePreparation(
         }
         val localization = StoreLookups.localization(store, version.id)
         val texts = updateTexts(store, localization, request)
+        val subtitle = request.subtitle?.let { text -> StoreSubtitle.update(services.appInfo, app.id, text) }
         val screenshots = request.screenshots?.let { sets -> replaceScreenshots(localization.id, sets) }
         return buildJsonObject {
             put("version", request.version)
@@ -85,6 +87,7 @@ class StorePreparation(
             put("releaseType", releaseType)
             put("build", buildOutcome)
             texts.forEach { (key, outcome) -> put(key, outcome) }
+            subtitle?.let { outcome -> put("subtitle", outcome) }
             put("screenshots", screenshots ?: buildJsonArray { })
         }
     }

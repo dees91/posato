@@ -1,0 +1,11 @@
+Posato 1.3
+
+Pause sets: keep websites and apps in named sets, such as one for work and one for evenings, and choose a set for each session or schedule. Your current choices become your first set. When pauses overlap, Posato pauses everything in their sets, within each device's limits, and each item stays paused until the last pause that includes it ends.
+
+Intel Macs: Posato for Mac now runs on macOS 13 Ventura or later, on Apple silicon and on Intel Macs. The Intel build was checked under Rosetta in a virtual machine, not on Intel hardware.
+
+Go back with a gesture: swipe with two fingers on the trackpad or press Command-[.
+
+Fixes: the pause page appears again in Chrome and Safari once you let Posato control the browser; connections to localhost keep working during a pause; Posato reports when restrictions need attention after a network service disappears; the background helper no longer keeps a processor core busy during a pause.
+
+If you use Posato on more than one device, update all of them. Devices on an earlier version stop syncing until they update.

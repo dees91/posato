@@ -14,6 +14,34 @@ data class AppResource(
     val attributes: AppAttributes = AppAttributes(),
 )
 
+/** The app information that carries the subtitle; a new App Store version brings its own editable copy. */
+@Serializable
+data class AppInfoAttributes(
+    val state: String? = null,
+    val appStoreState: String? = null,
+)
+
+@Serializable
+data class AppInfoResource(
+    val id: String,
+    val attributes: AppInfoAttributes = AppInfoAttributes(),
+) {
+    /** `state` replaced the deprecated `appStoreState`; either may be the only one a response carries. */
+    val currentState: String? get() = attributes.state ?: attributes.appStoreState
+}
+
+@Serializable
+data class AppInfoLocalizationAttributes(
+    val locale: String? = null,
+    val subtitle: String? = null,
+)
+
+@Serializable
+data class AppInfoLocalizationResource(
+    val id: String,
+    val attributes: AppInfoLocalizationAttributes = AppInfoLocalizationAttributes(),
+)
+
 @Serializable
 data class AppStoreVersionAttributes(
     val platform: String? = null,

@@ -6,6 +6,7 @@ import app.posato.provisioning.store.ReleaseType
 import app.posato.provisioning.store.StorePreparation
 import app.posato.provisioning.store.StoreStatus
 import app.posato.provisioning.store.StoreSubmission
+import app.posato.provisioning.store.StoreSubtitle
 import app.posato.provisioning.store.StoreWithdrawal
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.core.Context
@@ -46,7 +47,7 @@ class StorePrepareCommand :
     ProvisioningCommand(
         "prepare",
         "Creates the iOS App Store version when absent, sets its release type and en-US What's New, attaches a VALID " +
-            "build, and optionally sets the en-US description and replaces the iPhone 6.9-inch and iPad 13-inch " +
+            "build, and optionally sets the en-US description and subtitle and replaces the iPhone 6.9-inch and iPad 13-inch " +
             "screenshot sets. With --rename-from, renames the app's one unreleased version instead of creating one. " +
             "Changes only what differs.",
     ) {
@@ -64,6 +65,10 @@ class StorePrepareCommand :
         "--screenshots",
         help = "A directory with iphone-6.9/*.png and ipad-13/*.png; each set is replaced in file-name order.",
     )
+    private val subtitle by option(
+        "--subtitle",
+        help = "The en-US subtitle, at most 30 characters; it is set in the App Information this version can still change.",
+    )
     private val renameFrom by option(
         "--rename-from",
         help = "When --version does not exist, rename this editable version to it, provided it is the only unreleased one.",
@@ -78,6 +83,7 @@ class StorePrepareCommand :
             screenshots = screenshots?.let { directory -> ReleaseInputs.screenshots(Path.of(directory)) },
             description = description?.let { file -> ReleaseInputs.description(Path.of(file)) },
             renameFrom = renameFrom?.let(ReleaseInputs::version),
+            subtitle = subtitle?.let(StoreSubtitle::input),
         )
         return StorePreparation(session.storeServices()).prepare(request)
     }

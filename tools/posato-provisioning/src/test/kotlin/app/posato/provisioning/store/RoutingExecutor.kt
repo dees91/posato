@@ -1,5 +1,6 @@
 package app.posato.provisioning.store
 
+import app.posato.provisioning.asc.AppInfoClient
 import app.posato.provisioning.asc.AscRequest
 import app.posato.provisioning.asc.AscRequestExecutor
 import app.posato.provisioning.asc.AscResponse
@@ -79,6 +80,7 @@ class StoreHarness(
         review = ReviewClient(executor),
         replacement = ScreenshotReplacement(screenshots, ScreenshotUploader(transport, Transcript { }), clock, sleeper),
         pause = sleeper,
+        appInfo = AppInfoClient(executor),
     )
 }
 
