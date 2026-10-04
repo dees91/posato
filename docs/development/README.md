@@ -41,6 +41,8 @@ Clone the repository, then run:
 git clone https://github.com/dees91/posato.git
 cd posato
 ./gradlew :desktopApp:run      # run the macOS app
+./gradlew qualityLint          # formatting and static analysis only, before a commit
+./gradlew iosSwiftTest         # native iOS Swift tests on a throwaway Simulator
 ./gradlew quality              # formatting, analysis, tests, and packaging checks
 ```
 
@@ -205,8 +207,21 @@ Before marking a pull request ready:
    together, as a method that crossed its length limit did after
    `SCHEDULE-004` met `MACOS-015`. Resolve failures rather than treating
    disabled CI as a waiver. Between corrections, `./gradlew qualityLint` runs
-   only formatting and static analysis, so most findings appear before the
-   full gate.
+   only formatting and static analysis, including swift-format and SwiftLint
+   for the native helper and companion, so most findings appear before the
+   full gate. Fix Swift formatting in place from the module directory with
+   the paths its `swiftFormatCheck` lints, for example in `macosHelper/` or
+   `macosSyncCompanion/`:
+
+   ```shell
+   xcrun swift format format --in-place --recursive Package.swift Sources Tests
+   ```
+
+   In `tools/posato-control/` the paths are `native`,
+   `ios-driver/PosatoDriverHost`, and `ios-driver/PosatoDriverUITests`.
+   Never pipe a gate's output in a way that drops its exit code: write it to
+   a file with `./gradlew quality > quality.log 2>&1; echo $?`, or run
+   `set -o pipefail` before piping it.
 2. Complete the task's required review and applicable native/device verification.
 3. Record the tested revision and result in the PR. Rerun affected checks
    after subsequent changes, following the quality contract.
