@@ -38,11 +38,10 @@ class FlowScheduleAddCommand : ControlCommand("schedule", "Add a schedule throug
         FlowSteps.run(backend, openEditor() + chooseDays(chosenDays))
         setTime(backend, WheelKind.START, startTime)
         setTime(backend, WheelKind.END, endTime)
-        FlowSteps.run(backend, save())
-        val row = "$name, ${ScheduleDays.summary(chosenDays)} "
-        if (FlowSteps.labels(backend).none { label -> label.startsWith(row) }) {
-            throw ControlException(ErrorCode.ASSERTION_FAILED, "No saved schedule row starts with '$row'.")
-        }
+        // The list reloads after the editor closes and may hold the new row below the fold, so the row is revealed
+        // and waited for rather than read from one snapshot.
+        val row = Query(textContains = "$name, ${ScheduleDays.summary(chosenDays)} ", role = FlowSteps.ROLE_BUTTON)
+        FlowSteps.run(backend, save() + listOf(FlowSteps.reveal(row), FlowSteps.waitFor(row)))
         return buildJsonObject {
             put("name", name)
             put("days", ScheduleDays.summary(chosenDays))

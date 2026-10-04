@@ -69,7 +69,7 @@ object GuestRelay {
         }
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
-        if (forwarded.firstOrNull() == "launch" && "--adopt" !in forwarded) lifecycle.requireCurrentPackage(line)
+        if (startsPackage(forwarded)) lifecycle.requireCurrentPackage(line)
         val tart = Tart(context)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         val script = "export PATH=${shellQuote(Tart.GUEST_JDK_BIN)}:\$PATH; cd ~/posato-run && " +
@@ -96,6 +96,23 @@ object GuestRelay {
         print(envelope)
         System.err.print(output.stderr)
         return output.exitCode
+    }
+
+    /**
+     * Whether a command may start the development package in the guest: a launch, a scenario unless its launch is
+     * skipped, and the flows, which launch Posato when it is not running.
+     */
+    private fun startsPackage(forwarded: List<String>): Boolean = when (forwarded.firstOrNull()) {
+        "launch" -> "--adopt" !in forwarded
+        "flow" -> true
+        "run" -> !skipsLaunch(forwarded)
+        else -> false
+    }
+
+    private fun skipsLaunch(forwarded: List<String>): Boolean {
+        val file = forwarded.getOrNull(forwarded.indexOf("--scenario") + 1)?.takeIf { "--scenario" in forwarded && it != STANDARD_INPUT }
+            ?: return false
+        return Regex(""""skip"\s*:\s*true""").containsMatchIn(Files.readString(Path.of(file)))
     }
 
     private const val RELAY_TIMEOUT_MINUTES = 30L

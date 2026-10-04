@@ -1091,9 +1091,10 @@ below. This queue retains idea provenance without expanding the original MVP.
     `observed` (2026-10-04, `RELEASE-005`): when 1.2.0 installed 1.3.0
     through **Install and Relaunch**, Posato asked "Quit Posato?" because
     the updater's quit request takes the same path as a person's quit
-    (`ResidentWindow`, `onQuitRequest`). The update waits until someone
-    presses **Quit**. 1.3 has the same path, so the update to 1.4 will ask
-    too. `user-confirmed` (2026-10-04): a backlog row, first in line for
+    (`ResidentWindow`, `onQuitRequest`). It asks only while a pause runs or a
+    schedule is on (`quitPromptFor`), and then the update waits until someone
+    presses **Quit**. 1.3 has the same path, so the update to 1.4 will ask in
+    those states too. `user-confirmed` (2026-10-04): a backlog row, first in line for
     release 1.4. Owner: backlog row `MACOS-026`.
 
 ## Later platform questions

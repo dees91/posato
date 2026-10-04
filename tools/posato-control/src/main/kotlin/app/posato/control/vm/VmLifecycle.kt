@@ -78,6 +78,8 @@ class VmLifecycle(
         val candidateInstalled = candidate.installed(line)
         // A notarized candidate installed later needs only the driver, so a clone may start without a staged package.
         val copyPackage = !candidateInstalled && layout.stagedDesktopApplication.exists()
+        // Hashed before the copy, so a build that runs meanwhile cannot stamp another package than the one copied.
+        val fingerprint = if (copyPackage) packageFingerprint(layout.stagedDesktopApplication) else null
         val driver = listOf(
             "settings.gradle.kts",
             "tools/posato-control/build/install",
@@ -91,24 +93,27 @@ class VmLifecycle(
             line.cloneName,
             "tar -C ${shellQuote(layout.root.toString())} -cf - " + paths.joinToString(" ") { shellQuote(it) },
             "rm -rf $GUEST_ROOT/tools $GUEST_ROOT/desktopApp && mkdir -p $GUEST_ROOT && tar -C $GUEST_ROOT -xf -",
-            "Copying the package and driver into ${line.cloneName}",
+            if (copyPackage) "Copying the package and driver into ${line.cloneName}" else "Copying the driver into ${line.cloneName}",
         )
-        val stamp = vmDirectory(context, line).resolve(SYNCED_PACKAGE_STAMP)
-        if (copyPackage) {
-            Files.createDirectories(stamp.parent)
-            Files.writeString(stamp, packageFingerprint(layout.stagedDesktopApplication))
-        } else {
-            Files.deleteIfExists(stamp)
-        }
+        val stamp = "\"$GUEST_ROOT/$GUEST_PACKAGE_STAMP\""
+        val record = if (fingerprint != null) "mkdir -p \"$GUEST_ROOT/build/verification\" && printf %s $fingerprint > $stamp" else "rm -f $stamp"
+        tart.exec(line.cloneName, record).requireSuccess(ErrorCode.VM_UNAVAILABLE, "Recording the synced package in ${line.cloneName}")
         if (candidateInstalled) GuestRegistrations(context).requireSingleBundle(line)
     }
 
-    /** Stops a development launch when the host staged a package the guest has not received yet. */
+    /**
+     * Stops a command that starts the development package when the host staged a package the guest has not received
+     * yet. An installed candidate is what such a guest launches, so it needs no check.
+     */
     fun requireCurrentPackage(line: VmLine) {
         val staged = context.layout.stagedDesktopApplication.takeIf { it.exists() } ?: return
-        if (CandidateInstall(context).installed(line)) return
-        val stamp = vmDirectory(context, line).resolve(SYNCED_PACKAGE_STAMP)
-        refuseOutdatedPackage(stamp.takeIf { it.exists() }?.readText()?.trim(), packageFingerprint(staged), line)
+        val read = "if test -f \"$GUEST_ROOT/${CandidateInstall.MARKER}\"; then echo candidate; " +
+            "else cat \"$GUEST_ROOT/$GUEST_PACKAGE_STAMP\" 2>/dev/null; fi"
+        val guest = tart.exec(line.cloneName, read)
+            .requireSuccess(ErrorCode.VM_UNAVAILABLE, "Reading the synced package in ${line.cloneName}")
+            .stdout.trim()
+        if (guest == "candidate") return
+        refuseOutdatedPackage(guest.ifEmpty { null }, packageFingerprint(staged), line)
     }
 
     /**

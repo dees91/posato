@@ -72,9 +72,11 @@ format, for iCloud re-verification:
    `posato-control doctor -t desktop --request-permissions` in the guest once,
    then switch both rows on in System Settings.
 8. Install Google Chrome in the primary golden VM, for the pause page in a
-   second browser: download the stable DMG in the guest with `curl`, copy the
-   app to `/Applications`, open it once, and choose a search engine, so the
-   chooser does not cover the first page of a run. To add it to an existing
+   second browser: download
+   `https://dl.google.com/chrome/mac/universal/stable/GGRO/googlechrome.dmg`
+   in the guest with `curl`, copy the app to `/Applications`, open it once,
+   choose a search engine, and decline the default-browser and sign-in
+   offers, so nothing covers the first page of a run. To add it to an existing
    golden VM, boot it under the clone's name (`tart rename`, `vm boot`) as
    for an iCloud repair.
 9. Clean the golden VM before shutting it down: quit System Settings, Chrome,

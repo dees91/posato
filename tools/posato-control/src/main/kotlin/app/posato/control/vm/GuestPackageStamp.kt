@@ -8,8 +8,11 @@ import java.security.MessageDigest
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.relativeTo
 
-/** The file in a line's host directory that names the package fingerprint the last `vm sync` copied. */
-internal const val SYNCED_PACKAGE_STAMP = "synced-package.sha256"
+/**
+ * The file in the guest that names the fingerprint of the package the last `vm sync` copied there. It lives in the
+ * guest because every worktree shares a line's clone.
+ */
+internal const val GUEST_PACKAGE_STAMP = "build/verification/package.sha256"
 
 /** A SHA-256 over every file of a staged package, its relative path and contents, so any rebuild changes it. */
 internal fun packageFingerprint(app: Path): String {

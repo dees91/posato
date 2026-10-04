@@ -8,8 +8,8 @@ import kotlin.test.assertFailsWith
 
 /**
  * A verification schedule must run on the day of the run; the editor starts a new plan on weekdays only, so a weekend
- * run silently saved a plan that never started. These cases pin which day buttons a run presses and what it expects the
- * saved row to list.
+ * run silently saved a plan that never started. These cases pin which day buttons a run presses; the saved row itself is checked
+ * against the running app.
  */
 class ScheduleDaysTest {
     @Test
@@ -30,11 +30,5 @@ class ScheduleDaysTest {
         assertEquals(listOf("Saturday", "Sunday"), ScheduleDays.toggles(ScheduleDays.ALL))
         assertEquals(emptyList(), ScheduleDays.toggles(ScheduleDays.parse("weekdays")))
         assertEquals(listOf("Tuesday", "Wednesday", "Thursday", "Friday", "Sunday"), ScheduleDays.toggles(ScheduleDays.parse("mon,sun")))
-    }
-
-    @Test
-    fun `expects the saved row to list the days as the Schedules screen does`() {
-        assertEquals("Mon, Tue, Wed, Thu, Fri, Sat, Sun", ScheduleDays.summary(ScheduleDays.ALL))
-        assertEquals("Mon, Sun", ScheduleDays.summary(ScheduleDays.parse("sun,mon")))
     }
 }
