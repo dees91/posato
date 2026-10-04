@@ -106,7 +106,12 @@ object GuestRelay {
 
 /** Commands that run a single-step scenario, which launches Posato when no tracked instance is running. */
 private val ELEMENT_COMMANDS = setOf("tap", "type", "press", "wait", "update-consent")
-private val QUERY_OPTIONS = listOf("--id", "--text", "--text-contains", "--role", "--path")
+
+/** Commands that skip the scenario for a selected process without an element query. */
+private val PROCESS_ONLY_COMMANDS = setOf("type", "wait")
+
+/** The options that make `QueryOptions.toQuery()` nonempty; the role options alone only qualify an anchor. */
+private val QUERY_OPTIONS = listOf("--id", "--text", "--text-contains", "--role", "--index", "--path", "--within-text", "--near-text")
 
 /**
  * Whether a command may start the development package in the guest: a launch, a scenario unless its own
@@ -116,15 +121,21 @@ private val QUERY_OPTIONS = listOf("--id", "--text", "--text-contains", "--role"
 internal fun startsPackage(
     forwarded: List<String>,
     scenario: String?
-): Boolean = when (forwarded.firstOrNull()) {
+): Boolean = when (val command = forwarded.firstOrNull()) {
     "launch" -> "--adopt" !in forwarded
     "flow" -> true
     "run" -> scenario == null || !skipsLaunch(scenario)
-    in ELEMENT_COMMANDS -> !(forwarded.hasOption("--process") && QUERY_OPTIONS.none { forwarded.hasOption(it) })
+    in ELEMENT_COMMANDS -> !(command in PROCESS_ONLY_COMMANDS && forwarded.selectsProcess() && QUERY_OPTIONS.none { forwarded.hasOption(it) })
     else -> false
 }
 
 private fun List<String>.hasOption(name: String): Boolean = any { it == name || it.startsWith("$name=") }
+
+/** Mirrors `ProcessOptions.selector()`, which ignores a blank value. */
+private fun List<String>.selectsProcess(): Boolean = withIndex().any { (index, word) ->
+    val value = if (word == "--process") getOrNull(index + 1) else word.removePrefix("--process=").takeIf { it != word }
+    !value.isNullOrBlank()
+}
 
 /** An unreadable scenario counts as launching; the guest then reports why it is invalid. */
 private fun skipsLaunch(scenario: String): Boolean = try {

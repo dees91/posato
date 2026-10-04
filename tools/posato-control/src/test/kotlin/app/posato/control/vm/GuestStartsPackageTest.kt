@@ -16,6 +16,18 @@ class GuestStartsPackageTest {
             assertTrue(startsPackage(listOf(command, "-t", "desktop", "--text", "Start"), scenario = null), command)
         }
         assertTrue(startsPackage(listOf("tap", "-t", "desktop", "--process", "PosatoMacOSHelper", "--id", "x"), scenario = null))
+        assertTrue(startsPackage(listOf("press", "-t", "desktop", "--process", "PosatoMacOSHelper", "--key", "return"), scenario = null))
+    }
+
+    @Test
+    fun `any option that builds an element query keeps a process-targeted type or wait guarded`() {
+        listOf("--index" to "0", "--within-text" to "Password", "--near-text" to "Name", "--path" to "0/1").forEach { (option, value) ->
+            val wait = listOf("wait", "-t", "desktop", "--process", "Safari", option, value, "--for", "exists")
+            val type = listOf("type", "-t", "desktop", "--process", "Safari", "$option=$value", "--input", "a")
+            assertTrue(startsPackage(wait, scenario = null), option)
+            assertTrue(startsPackage(type, scenario = null), option)
+        }
+        assertTrue(startsPackage(listOf("type", "-t", "desktop", "--process", " ", "--input", "a"), scenario = null))
     }
 
     @Test
