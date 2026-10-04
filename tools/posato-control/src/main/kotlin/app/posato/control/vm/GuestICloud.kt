@@ -25,12 +25,41 @@ internal fun iCloudKeychainState(lines: List<RecognizedLine>): ICloudKeychainSta
     else -> ICloudKeychainState.UNKNOWN
 }
 
-/** The next dialog [GuestICloud.resume] answers, or null while the guest is still working or done. */
+/**
+ * The next dialog [GuestICloud.resume] answers, or null while the guest is still working or done. A picker-bypass
+ * request covers the screen and the connect alert covers the account password sheet, so each is answered before
+ * anything under it.
+ */
 internal fun pendingICloudPrompt(lines: List<RecognizedLine>): GuestPrompt? = when {
+    lines.any { it.shows(PICKER_BYPASS_QUESTION) } -> GuestPrompt.PICKER_BYPASS
+    lines.any { it.shows(ICLOUD_CONNECT_ALERT) } -> GuestPrompt.ICLOUD_LATER
     lines.any { it.shows(ACCOUNT_REQUEST) } -> GuestPrompt.ACCOUNT_PASSWORD
     lines.any { it.shows(MAC_PASSWORD_REQUEST) } -> GuestPrompt.MAC_PASSWORD
     lines.any { it.shows(DEVICE_PASSCODE_REQUEST) } -> GuestPrompt.DEVICE_PASSCODE
     else -> null
+}
+
+/**
+ * The refusal for a keychain that cannot deliver the workspace key, or null when it may: a paused keychain or a
+ * signed-out guest. An unknown state is let through, since the reading itself can fail.
+ */
+internal fun keychainRefusal(
+    line: VmLine,
+    state: ICloudKeychainState
+): ControlException? = when (state) {
+    ICloudKeychainState.SIGNED_OUT -> ControlException(
+        ErrorCode.ICLOUD_KEYCHAIN_PAUSED,
+        "${line.cloneName} is not signed in to an Apple Account, so iCloud Keychain cannot sync.",
+        "Sign the golden VM in to the test account as described in docs/development/unattended-verification.md.",
+    )
+
+    ICloudKeychainState.PAUSED -> ControlException(
+        ErrorCode.ICLOUD_KEYCHAIN_PAUSED,
+        "iCloud Keychain is paused in ${line.cloneName} (\"Some iCloud Data Isn't Syncing\"); workspace keys will not arrive.",
+        "Run `posato-control vm icloud --line ${line.id} --resume`, then repair the golden VM the same way.",
+    )
+
+    ICloudKeychainState.SYNCING, ICloudKeychainState.UNKNOWN -> null
 }
 
 /**
@@ -48,7 +77,7 @@ class GuestICloud(
         timeoutMs: Long
     ): ICloudKeychainState {
         val screen = openSettings(line, timeoutMs)
-        val state = readState(screen, timeoutMs)
+        val state = readState(line, screen, timeoutMs)
         quitSettings(line)
         return state
     }
@@ -59,13 +88,13 @@ class GuestICloud(
         timeoutMs: Long
     ): ICloudKeychainState {
         val screen = openSettings(line, timeoutMs)
-        if (readState(screen, timeoutMs) != ICloudKeychainState.PAUSED) {
+        if (readState(line, screen, timeoutMs) != ICloudKeychainState.PAUSED) {
             quitSettings(line)
             return check(line, timeoutMs)
         }
         val prompts = VmPrompts(context)
-        prompts.click(line, NOTICE_ROW, exact = false, index = 0, timeoutMs = timeoutMs)
-        prompts.click(line, RESUME_BUTTON, exact = true, index = 0, timeoutMs = timeoutMs)
+        click(line, screen, NOTICE_ROW, exact = false, timeoutMs = timeoutMs)
+        click(line, screen, RESUME_BUTTON, exact = true, timeoutMs = timeoutMs)
         val deadline = System.currentTimeMillis() + timeoutMs
         while (true) {
             val lines = screen.read()
@@ -93,13 +122,19 @@ class GuestICloud(
      * that shows the notice wins.
      */
     private fun readState(
+        line: VmLine,
         screen: GuestScreen,
         timeoutMs: Long
     ): ICloudKeychainState {
         val deadline = System.currentTimeMillis() + timeoutMs
         var previous: ICloudKeychainState? = null
         while (true) {
-            val state = iCloudKeychainState(screen.read())
+            val lines = screen.read()
+            if (pendingICloudPrompt(lines) == GuestPrompt.PICKER_BYPASS) {
+                VmPrompts(context).answer(line, GuestPrompt.PICKER_BYPASS, timeoutMs)
+                continue
+            }
+            val state = iCloudKeychainState(lines)
             val settled = state == previous && state != ICloudKeychainState.UNKNOWN
             if (state == ICloudKeychainState.PAUSED || settled || System.currentTimeMillis() >= deadline) return state
             previous = state
@@ -114,8 +149,49 @@ class GuestICloud(
         tart.exec(line.cloneName, "/usr/bin/open -b $SETTINGS_BUNDLE")
             .requireSuccess(ErrorCode.COMMAND_FAILED, "Opening System Settings in ${line.cloneName}")
         val screen = guestScreen(context, line)
-        screen.waitFor(ACCOUNT_ROW, timeoutMs)
+        await(line, screen, ACCOUNT_ROW, exact = false, timeoutMs = timeoutMs)
         return screen
+    }
+
+    private fun click(
+        line: VmLine,
+        screen: GuestScreen,
+        text: String,
+        exact: Boolean,
+        timeoutMs: Long
+    ) {
+        val match = await(line, screen, text, exact, timeoutMs).first()
+        screen.session { client -> client.click(match.centerX, match.centerY) }
+    }
+
+    /**
+     * Waits for [text] as [GuestScreen.waitFor] does, answering a picker-bypass request first whenever one covers the
+     * screen: macOS 26 raises it after screen captures, and the text under it never appears until it is gone.
+     */
+    private fun await(
+        line: VmLine,
+        screen: GuestScreen,
+        text: String,
+        exact: Boolean,
+        timeoutMs: Long
+    ): List<RecognizedLine> {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        while (true) {
+            val lines = screen.read()
+            val matches = lines.filter { it.matches(text, exact) }
+            when {
+                pendingICloudPrompt(lines) == GuestPrompt.PICKER_BYPASS -> VmPrompts(context).answer(line, GuestPrompt.PICKER_BYPASS, timeoutMs)
+
+                matches.isNotEmpty() -> return matches
+
+                System.currentTimeMillis() >= deadline -> throw ControlException(
+                    ErrorCode.WAIT_TIMEOUT,
+                    "No text '$text' appeared on the guest screen within ${timeoutMs / MILLIS_PER_SECOND} s.",
+                )
+
+                else -> Thread.sleep(POLL_MS)
+            }
+        }
     }
 
     /** Quits System Settings and waits for it to exit, so that a following check opens a fresh window. */
@@ -132,6 +208,7 @@ class GuestICloud(
         const val RESUME_BUTTON = "Resume Data Sync"
         const val POLL_MS = 2_000L
         const val QUIT_TIMEOUT_MS = 20_000L
+        const val MILLIS_PER_SECOND = 1_000L
     }
 }
 

@@ -4,6 +4,7 @@ import app.posato.control.backend.Backend
 import app.posato.control.core.ControlException
 import app.posato.control.core.ErrorCode
 import app.posato.control.model.Query
+import app.posato.control.vm.ICLOUD_FLOW_TIMEOUT_SECONDS
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
@@ -20,7 +21,7 @@ import kotlinx.serialization.json.put
  */
 class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iCloud workspace, or remove the workspace, and wait for the outcome.") {
     private val action by argument(help = "link | remove").choice(LINK, REMOVE)
-    private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the outcome.").long().default(DEFAULT_TIMEOUT_SECONDS)
+    private val timeoutSeconds by option("--timeout-seconds", help = "How long to wait for the outcome.").long().default(ICLOUD_FLOW_TIMEOUT_SECONDS)
 
     override fun execute(session: Session): JsonElement {
         // Verified only in Tart guests: on a compact iPhone the expanded row's actions can sit off screen.
@@ -122,7 +123,6 @@ class FlowICloudCommand : ControlCommand("icloud", "Link this device to the iClo
         const val REMOVE_WORKSPACE = "Remove workspace"
         const val COMPLETED = "completed its latest sync attempt"
         const val SYNCING = "Syncing"
-        const val DEFAULT_TIMEOUT_SECONDS = 300L
         const val POLL_MILLIS = 15_000L
         const val DIALOG_SECONDS = 2.0
         const val MILLIS_PER_SECOND = 1_000L

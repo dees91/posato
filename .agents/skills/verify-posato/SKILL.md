@@ -55,8 +55,8 @@ never from the Apple Developer portal. With the one-time setup in
   `admin` (SecurityAgent at session start and Resume restrictions),
   `background` (helper approval in Login Items), `toggle --row <text>` (privacy
   panes), `picker-bypass` (macOS 26 after screen captures), `gatekeeper`,
-  `account-password`, `mac-password`, and `device-passcode` (iCloud
-  recovery). `$PC vm dialogs --line <line>` names each open system dialog
+  `icloud-later`, `account-password`, `mac-password`, and `device-passcode`
+  (iCloud recovery). `$PC vm dialogs --line <line>` names each open system dialog
   by its owning process; check it before answering `admin`, because a
   Background Items notice also says "allow this". Read an unexpected dialog's
   text with `$PC vm text --line <line>` and

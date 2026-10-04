@@ -75,12 +75,17 @@ own golden VM line, and address them with `--vm primary|peer`.
   the key, link the peer (it can read that key), press **Remove workspace**
   on the peer and confirm, press **Check again** on the primary until **Sync
   with iCloud** returns, establish there, and then let the peer join.
-- Check `iCloudKeychain` in the `vm create` result before any iCloud step. A
-  `paused` keychain never delivers the workspace key; run
-  `vm icloud --line <line> --resume` and repair the golden VM the same way
-  (`docs/development/unattended-verification.md`). "This Mac can't connect to
-  iCloud" (Apple Account Settings, second click) is answered with
-  `vm prompt account-password`. The key then arrives without another press.
+- A `paused` keychain never delivers the workspace key, and a later sign-in
+  can pause a clone's keychain after `vm create` reported it `syncing`.
+  `flow icloud` with `--vm` therefore checks the keychain before the flow and
+  whenever two minutes pass without an outcome, runs Resume Data Sync when it
+  is paused, and reports `iCloudKeychain` and `iCloudResumed`; it stops with
+  `ICLOUD_KEYCHAIN_PAUSED` and the next command when the resume fails. Repair
+  the golden VM the same way (`docs/development/unattended-verification.md`).
+  Resume Data Sync can raise "This Mac can't connect to iCloud" over its
+  password sheet; `vm icloud --resume` presses Later and answers the sheet
+  (`vm prompt icloud-later`, then `account-password`, by hand). The key then
+  arrives without another press.
 - Development builds use CloudKit's Development environment, where a change
   reaches the other device 1 to 10 minutes after its exchange. Poll the
   receiver (`db query` for the expected row, or the Session summary) for up
