@@ -36,7 +36,10 @@ class GuestOnboarding(
         if (split < 0 || done < 0 || final <= done) {
             throw ControlException(ErrorCode.COMMAND_FAILED, "The onboarding recipe lacks $SETUP_READY, $SETUP_DONE or $NO_FINISH_SETUP.")
         }
-        VmLifecycle(context).requireRunning(line)
+        VmLifecycle(context).run {
+            requireRunning(line)
+            requireCurrentPackage(line)
+        }
         guest(line, listOf("launch", "-t", "desktop"))
         guestScenario(line, recipe.copy(steps = recipe.steps.subList(0, split + 1)))
         guest(line, listOf("tap", "-t", "desktop", "--text", SET_UP, "--role", "button"))

@@ -66,8 +66,9 @@ class VmLifecycle(
     }
 
     /**
-     * Copies the staged package, the driver distribution, fixtures, and the prebuilt bridge into the guest. Once a
-     * candidate is installed, only the driver travels, and LaunchServices must still know no other Posato bundle.
+     * Copies the driver distribution, fixtures, the prebuilt bridge, and the staged package when there is one into the
+     * guest, and stamps which package it copied. Once a candidate is installed, only the driver travels, and
+     * LaunchServices must still know no other Posato bundle.
      */
     fun sync(line: VmLine) {
         requireRunning(line)
@@ -75,9 +76,10 @@ class VmLifecycle(
         val layout = context.layout
         val candidate = CandidateInstall(context)
         val candidateInstalled = candidate.installed(line)
-        if (!candidateInstalled && !layout.stagedDesktopApplication.exists()) {
-            throw ControlException(ErrorCode.APP_NOT_STAGED, "No staged desktop package.", "Run `posato-control build -t desktop` first.")
-        }
+        // A notarized candidate installed later needs only the driver, so a clone may start without a staged package.
+        val copyPackage = !candidateInstalled && layout.stagedDesktopApplication.exists()
+        // Hashed before the copy, so a build that runs meanwhile cannot stamp another package than the one copied.
+        val fingerprint = if (copyPackage) packageFingerprint(layout.stagedDesktopApplication) else null
         val driver = listOf(
             "settings.gradle.kts",
             "tools/posato-control/build/install",
@@ -86,14 +88,32 @@ class VmLifecycle(
             layout.relativize(layout.accessibilityBridgeBinary),
             layout.relativize(layout.accessibilityBridgeCommand),
         )
-        val paths = if (candidateInstalled) driver else driver + layout.relativize(layout.stagedDesktopApplication)
+        val paths = if (copyPackage) driver + layout.relativize(layout.stagedDesktopApplication) else driver
         tart.pipe(
             line.cloneName,
             "tar -C ${shellQuote(layout.root.toString())} -cf - " + paths.joinToString(" ") { shellQuote(it) },
             "rm -rf $GUEST_ROOT/tools $GUEST_ROOT/desktopApp && mkdir -p $GUEST_ROOT && tar -C $GUEST_ROOT -xf -",
-            "Copying the package and driver into ${line.cloneName}",
+            if (copyPackage) "Copying the package and driver into ${line.cloneName}" else "Copying the driver into ${line.cloneName}",
         )
+        val stamp = "\"$GUEST_ROOT/$GUEST_PACKAGE_STAMP\""
+        val record = if (fingerprint != null) "mkdir -p \"$GUEST_ROOT/build/verification\" && printf %s $fingerprint > $stamp" else "rm -f $stamp"
+        tart.exec(line.cloneName, record).requireSuccess(ErrorCode.VM_UNAVAILABLE, "Recording the synced package in ${line.cloneName}")
         if (candidateInstalled) GuestRegistrations(context).requireSingleBundle(line)
+    }
+
+    /**
+     * Stops a command that starts the development package when the host staged a package the guest has not received
+     * yet. An installed candidate is what such a guest launches, so it needs no check.
+     */
+    fun requireCurrentPackage(line: VmLine) {
+        val staged = context.layout.stagedDesktopApplication.takeIf { it.exists() } ?: return
+        val read = "if test -f \"$GUEST_ROOT/${CandidateInstall.MARKER}\"; then echo candidate; " +
+            "else cat \"$GUEST_ROOT/$GUEST_PACKAGE_STAMP\" 2>/dev/null; fi"
+        val guest = tart.exec(line.cloneName, read)
+            .requireSuccess(ErrorCode.VM_UNAVAILABLE, "Reading the synced package in ${line.cloneName}")
+            .stdout.trim()
+        if (guest == "candidate") return
+        refuseOutdatedPackage(guest.ifEmpty { null }, packageFingerprint(staged), line)
     }
 
     /**

@@ -247,8 +247,10 @@ class CandidateInstall(
         script: String
     ): ProcessOutput = tart.exec(line.cloneName, script)
 
-    private companion object {
-        const val GUEST_CANDIDATES = "$GUEST_ROOT/candidates"
+    internal companion object {
+        private const val GUEST_CANDIDATES = "$GUEST_ROOT/candidates"
+
+        /** The guest file that names an installed candidate; while it exists, the guest launches that candidate. */
         const val MARKER = "build/verification/desktop-application"
         const val INSTALLED_EXECUTABLE = "$INSTALLED_APPLICATION/Contents/MacOS/Posato"
         const val BUNDLE_IDENTIFIER = "CFBundleIdentifier"

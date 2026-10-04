@@ -71,8 +71,16 @@ format, for iCloud re-verification:
 7. Grant Accessibility and Screen Recording to `tart-guest-agent`: run
    `posato-control doctor -t desktop --request-permissions` in the guest once,
    then switch both rows on in System Settings.
-8. Clean the golden VM before shutting it down: quit System Settings and
-   Terminal so they do not reopen at login.
+8. Install Google Chrome in the primary golden VM, for the pause page in a
+   second browser: download
+   `https://dl.google.com/chrome/mac/universal/stable/GGRO/googlechrome.dmg`
+   in the guest with `curl`, copy the app to `/Applications`, open it once,
+   choose a search engine, and decline the default-browser and sign-in
+   offers, so nothing covers the first page of a run. To add it to an existing
+   golden VM, boot it under the clone's name (`tart rename`, `vm boot`) as
+   for an iCloud repair.
+9. Clean the golden VM before shutting it down: quit System Settings, Chrome,
+   and Terminal so they do not reopen at login.
 
 Create the peer golden VM the same way, from its own IPSW or as a clone of
 the primary golden VM taken before step 6, and give it its own sign-in and
@@ -164,6 +172,7 @@ Add to the ignored `local.properties`:
 posato.vm.primaryGolden=<primary-golden>
 posato.vm.peerGolden=<peer-golden>
 posato.vm.legacyGolden=<legacy-golden>
+posato.vm.venturaGolden=<ventura-golden>
 posato.vm.adminKeychainService=<vm-admin-item>
 posato.vm.adminKeychainAccount=<guest-user>
 posato.vm.accountKeychainService=<apple-account-item>
@@ -203,5 +212,5 @@ recovery steps for iCloud dialogs.
 
 After a macOS update in a golden VM, or a new `tart-guest-agent` binary,
 re-grant the two privacy approvals (step 7), sign in again if macOS asks, and
-clean up before shutting down (step 8). A new golden VM needs a new device
+clean up before shutting down (step 9). A new golden VM needs a new device
 registration.

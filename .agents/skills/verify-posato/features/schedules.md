@@ -92,6 +92,9 @@ Start from a set-up Mac (the unified setup records the consent) with
   the Calculator and Safari checks in a scenario with `launch.skip: true`;
   any other scenario starts Posato first. A scenario `terminate` step closes
   a Posato this tool launched.
+- `flow schedule` saves every day unless `--days` says otherwise; a
+  hand-written scenario must press the run's weekday, because the editor
+  proposes weekdays only and a weekend run would never start.
 - Add schedules with `flow schedule`; the time wheels drop a tap now and
   then, and the command reads the label and corrects in rounds. A hand-written
   scenario must assert the `Starts HH:MM` label before saving. The 1.2 editor
