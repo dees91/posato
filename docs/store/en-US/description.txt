@@ -1,18 +1,22 @@
-Choose the websites and apps you want to step away from, then start a pause on your iPhone or plan pauses ahead with a schedule. Give yourself time to read, work, or be somewhere else.
+Choose the websites and apps you want to step away from, keep them in pause sets, then start a pause on your iPhone or plan pauses ahead with a schedule. Give yourself time to read, work, or be somewhere else.
 
 PAUSE ON YOUR TERMS
 
-Set a duration from 5 minutes to 24 hours. Posato uses Apple's Screen Time controls to pause your choices for that session. You can deliberately end it early or remove Posato at any time. The pause gives you a moment to reconsider before opening something out of habit.
+Pick a pause set and a duration from 5 minutes to 24 hours. Posato uses Apple's Screen Time controls to pause that set for the session. You can deliberately end it early or remove Posato at any time. The pause gives you a moment to reconsider before opening something out of habit.
+
+PAUSE SETS
+
+Keep a set for each kind of pause, such as one for work and one for evenings. Each set has its own websites and apps, and one is the default. When pauses overlap, Posato pauses everything in their sets, within each device's limits, until the last one that includes an item ends.
 
 SCHEDULES
 
-Plan recurring pauses by weekday and time, such as weekday mornings or every evening. A schedule starts and ends on its own, even when Posato is closed. Skip the next one or end one early when plans change. Posato can tell you when a pause ends or when one starts on another device.
+Plan recurring pauses by weekday and time, each with its own pause set, such as weekday mornings or every evening. A schedule starts and ends on its own, even when Posato is closed. Skip the next one or end one early when plans change. Posato can tell you when a pause ends or when one starts on another device.
 
 OPTIONAL ICLOUD SYNC
 
-Link your iPhone and Mac through your Apple Account to sync website choices, sessions, and schedules. App choices stay on each device. Changes are encrypted on your device before they reach your private iCloud database.
+Link your iPhone and Mac through your Apple Account to sync pause sets with their websites, sessions, and schedules. App choices stay on each device. Changes are encrypted on your device before they reach your private iCloud database.
 
-Sync can be delayed or fail to arrive, and Posato cannot wake a sleeping device. The Mac app is a separate download. After a one-time setup there, pauses and schedules start without asking for your password each time.
+Sync can be delayed or fail to arrive, and Posato cannot wake a sleeping device. The Mac app is a separate download for Apple silicon and Intel Macs. After a one-time setup there, pauses and schedules start without asking for your password each time.
 
 NO POSATO ACCOUNT
 
@@ -20,4 +24,4 @@ No analytics, usage scores, streaks, or Posato-operated server. Your choices sta
 
 BEFORE YOU START
 
-Screen Time permission is required on iPhone. The system may keep restrictions in place after a pause ends. For sessions shorter than 15 minutes, keep Posato open at the end or open it again to clear them. If you use Posato on more than one device, update all of them to keep them in sync.
+Screen Time permission is required on iPhone. The system may keep restrictions in place after a pause ends. For sessions shorter than 15 minutes, keep Posato open at the end or open it again to clear them. If you use Posato on more than one device, update all of them: devices on an earlier version stop syncing until they update.

@@ -2451,3 +2451,16 @@ to scope, feasibility, or delivery.
 - Session no longer shows the default set's counts while only a scheduled
   pause restricts, and the remaining **Paused items** copy now names pause
   sets.
+
+## [2026-10-02] release | DOCS-004: Posato 1.3 public packaging prepared
+
+- `observed`: the showcase, README, `posato.app`, store text, and both store
+  screenshot sets now show pause sets, Intel Macs on macOS 13, and the 1.3
+  update rule; `PRIVACY.md` carries the pause set edits. The App Store
+  subtitle is "Space for what matters." (`user-confirmed`), because the
+  product line exceeds the 30-character limit.
+- `observed`: an iOS crash on Pause sets, a set, **Back to pause sets**, then
+  **Schedules** (`IllegalStateException` from `androidx.navigationevent`,
+  3 of 4 tries on Simulators), stale **Paused items** copy on an active
+  session, and default-set counts during a scheduled pause; the `DOCS-004`
+  record lists them as findings for `RELEASE-005`.
