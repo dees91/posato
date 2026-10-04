@@ -33,6 +33,10 @@ Prerequisites that `doctor` reports:
   window without them; `doctor --request-permissions` triggers the prompts.
 - An Apple development team for the physical iPhone, stored only in the
   ignored `local.properties` file.
+- At least 20 GB free on the volumes holding the checkout and Tart's VMs
+  (`host.diskSpace`, a warning). A run's clones, desktop build, and
+  `./gradlew quality` spend it, so `vm create` refuses below it with
+  `DISK_SPACE_LOW`; the hint names what regenerates and may be deleted.
 
 ### Local configuration
 
@@ -103,7 +107,7 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors and a command group such as `vm` without its subcommand: the envelope carries clikt's message and the usage text goes to standard error) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DISK_SPACE_LOW`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |

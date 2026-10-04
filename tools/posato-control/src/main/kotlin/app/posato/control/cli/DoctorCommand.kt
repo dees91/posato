@@ -10,6 +10,10 @@ import app.posato.control.desktop.AxBridge
 import app.posato.control.model.DoctorCheck
 import app.posato.control.model.DoctorReport
 import app.posato.control.model.Severity
+import app.posato.control.vm.DISK_SPACE_HINT
+import app.posato.control.vm.MIN_FREE_DISK_BYTES
+import app.posato.control.vm.gigabytes
+import app.posato.control.vm.lowestFreeSpace
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import kotlinx.serialization.json.JsonElement
@@ -41,7 +45,19 @@ class DoctorCommand :
     private fun toolchain(session: Session): List<DoctorCheck> = if (runsInVirtualMachine()) {
         listOf(sqliteCheck())
     } else {
-        buildToolchain(session)
+        buildToolchain(session) + diskSpaceCheck(session)
+    }
+
+    /** A host that runs out of space breaks a build or a clone midway, long after this check could have said so. */
+    private fun diskSpaceCheck(session: Session): DoctorCheck {
+        val free = lowestFreeSpace(session.layout.root)
+        val detail = "${gigabytes(free.bytes)} free on the volume holding ${free.path}."
+        return if (free.bytes >= MIN_FREE_DISK_BYTES) {
+            DoctorCheck.pass("host.diskSpace", detail)
+        } else {
+            val needed = "A run needs at least ${gigabytes(MIN_FREE_DISK_BYTES)}; `vm create` refuses below it."
+            DoctorCheck.fail("host.diskSpace", "$detail $needed", DISK_SPACE_HINT, Severity.WARN)
+        }
     }
 
     private fun sqliteCheck(): DoctorCheck = if (java.io.File("/usr/bin/sqlite3").exists()) {

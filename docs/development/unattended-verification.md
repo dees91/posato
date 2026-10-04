@@ -17,7 +17,9 @@ login Keychain.
 
 ## What you need
 
-- An Apple silicon Mac on macOS 15 or later with about 80 GB free disk.
+- An Apple silicon Mac on macOS 15 or later with about 80 GB free disk, and
+  at least 20 GB still free once the golden VMs exist: `doctor` reports it as
+  `host.diskSpace`, and `vm create` refuses below it.
 - An Apple Developer Program membership, and the App Store Connect team key
   described in [Apple development provisioning](apple-provisioning.md).
 - A dedicated test Apple Account with two-factor authentication. Use an

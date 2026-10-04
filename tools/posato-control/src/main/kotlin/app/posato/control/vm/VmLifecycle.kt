@@ -47,6 +47,7 @@ class VmLifecycle(
 
     fun create(line: VmLine): JsonObject {
         val golden = context.configuration.require(line.goldenKey, ErrorCode.VM_UNAVAILABLE, "Creating the ${line.id} VM")
+        refuseLowDisk(lowestFreeSpace(context.layout.root))
         refuseClone(tart.list(), golden, line.cloneName) { name -> describeCloneOwner(name, readCloneOwner(name), context.layout.root) }
         val jdk = hostJdk(context)
         tart.clone(golden, line.cloneName)
