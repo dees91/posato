@@ -2476,3 +2476,19 @@ to scope, feasibility, or delivery.
 - `user-confirmed`: if a rollback makes 1.2.0 latest again, the Intel feed
   answers 404 until a fixed release, an accepted exception while no Intel
   installation exists.
+
+## [2026-10-04] retro | Release 1.3 retro fixes
+
+- `observed` in `RELEASE-005`: `flow schedule` saved weekday plans that
+  never started on a Sunday run; a host rebuild reached a Tart guest only
+  through `vm sync`, so a launch ran the previous build; `vm create` without
+  a staged package left a clone without the driver; `observe` left its result
+  only in the transcript; Chrome and the `ventura` key had to be added by
+  hand; the hero crops drifted when the captures gained rows.
+- `posato-control` now saves flow schedules on every day unless `--days`
+  says otherwise, starts clones without a package, refuses an outdated
+  package with `PACKAGE_OUTDATED`, and keeps each guest envelope; the
+  primary golden VM carries Chrome; `npm run compare:hero` shows the hero's
+  key frames beside the published ones.
+- `user-confirmed`: the quit question during an in-app update becomes
+  backlog row `MACOS-026` (idea 27), first in line for 1.4.
