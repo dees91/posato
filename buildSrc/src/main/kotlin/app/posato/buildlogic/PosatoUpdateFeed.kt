@@ -5,6 +5,7 @@ import org.w3c.dom.Element
 import org.xml.sax.ErrorHandler
 import org.xml.sax.SAXParseException
 import java.io.ByteArrayInputStream
+import java.io.File
 import java.security.KeyFactory
 import java.security.Signature
 import java.security.spec.X509EncodedKeySpec
@@ -91,6 +92,40 @@ object PosatoUpdateFeed {
             throw GradleException("A candidate feed needs -PposatoMacOsUpdateDownloadPrefix=<HTTPS or loopback URL ending in />.")
         }
         return prefix
+    }
+
+    /** The channel a feed is generated for: release or candidate. */
+    fun feedChannel(value: String?): UpdateChannel {
+        return UpdateChannel.entries.firstOrNull { it.propertyValue == value }
+            ?: throw GradleException("Generating an update feed needs -PposatoMacOsUpdateChannel=release or candidate.")
+    }
+
+    /** The existing plain-text notes a feed embeds. */
+    fun releaseNotes(notes: File?): File {
+        if (notes == null) throw GradleException("An update feed needs -PposatoMacOsReleaseNotes=<plain-text .txt file>.")
+        if (notes.extension != "txt") throw GradleException("Release notes must be a plain-text .txt file.")
+        if (!notes.isFile) throw GradleException("The release notes file ${notes.name} does not exist.")
+        return notes
+    }
+
+    /**
+     * Checks every property a feed generation reads, so that a missing or malformed one fails while Gradle plans
+     * the build instead of after the build and notarization the feed follows. Returns the channel's property value.
+     */
+    fun requireFeedProperties(
+        channel: String?,
+        releaseNotes: File?,
+        downloadPrefix: String?,
+        previousBuildNumber: String?,
+    ): String {
+        val updateChannel = feedChannel(channel)
+        releaseNotes(releaseNotes)
+        if (updateChannel == UpdateChannel.CANDIDATE) candidateDownloadPrefix(downloadPrefix)
+        val previous = previousBuildNumber?.takeIf(String::isNotBlank)
+        if (previous != null && !buildNumberValue.matches(previous)) {
+            throw GradleException("posatoMacOsPreviousBuildNumber must be a positive integer.")
+        }
+        return updateChannel.propertyValue
     }
 
     fun readsStableFeed(feedUrl: String): Boolean = feedUrl.lowercase().startsWith(STABLE_RELEASES_PREFIX)
