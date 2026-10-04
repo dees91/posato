@@ -5,6 +5,7 @@
 - **Dependencies:** `<task IDs or none>`
 - **Integration group:** `<pull request or manual gate>`
 - **Authority:** `<roadmap or explicit maintainer authorization>`
+- **Record:** `<../executions/ link with this file's name>`
 
 ## Outcome
 
