@@ -68,6 +68,7 @@ object GuestRelay {
         }
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
+        if (forwarded.firstOrNull() == "launch" && "--adopt" !in forwarded) lifecycle.requireCurrentPackage(line)
         val tart = Tart(context)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
         val script = "export PATH=${shellQuote(Tart.GUEST_JDK_BIN)}:\$PATH; cd ~/posato-run && " +

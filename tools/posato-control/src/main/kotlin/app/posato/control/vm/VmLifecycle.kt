@@ -66,8 +66,9 @@ class VmLifecycle(
     }
 
     /**
-     * Copies the staged package, the driver distribution, fixtures, and the prebuilt bridge into the guest. Once a
-     * candidate is installed, only the driver travels, and LaunchServices must still know no other Posato bundle.
+     * Copies the driver distribution, fixtures, the prebuilt bridge, and the staged package when there is one into the
+     * guest, and stamps which package it copied. Once a candidate is installed, only the driver travels, and
+     * LaunchServices must still know no other Posato bundle.
      */
     fun sync(line: VmLine) {
         requireRunning(line)
@@ -75,9 +76,8 @@ class VmLifecycle(
         val layout = context.layout
         val candidate = CandidateInstall(context)
         val candidateInstalled = candidate.installed(line)
-        if (!candidateInstalled && !layout.stagedDesktopApplication.exists()) {
-            throw ControlException(ErrorCode.APP_NOT_STAGED, "No staged desktop package.", "Run `posato-control build -t desktop` first.")
-        }
+        // A notarized candidate installed later needs only the driver, so a clone may start without a staged package.
+        val copyPackage = !candidateInstalled && layout.stagedDesktopApplication.exists()
         val driver = listOf(
             "settings.gradle.kts",
             "tools/posato-control/build/install",
@@ -86,14 +86,29 @@ class VmLifecycle(
             layout.relativize(layout.accessibilityBridgeBinary),
             layout.relativize(layout.accessibilityBridgeCommand),
         )
-        val paths = if (candidateInstalled) driver else driver + layout.relativize(layout.stagedDesktopApplication)
+        val paths = if (copyPackage) driver + layout.relativize(layout.stagedDesktopApplication) else driver
         tart.pipe(
             line.cloneName,
             "tar -C ${shellQuote(layout.root.toString())} -cf - " + paths.joinToString(" ") { shellQuote(it) },
             "rm -rf $GUEST_ROOT/tools $GUEST_ROOT/desktopApp && mkdir -p $GUEST_ROOT && tar -C $GUEST_ROOT -xf -",
             "Copying the package and driver into ${line.cloneName}",
         )
+        val stamp = vmDirectory(context, line).resolve(SYNCED_PACKAGE_STAMP)
+        if (copyPackage) {
+            Files.createDirectories(stamp.parent)
+            Files.writeString(stamp, packageFingerprint(layout.stagedDesktopApplication))
+        } else {
+            Files.deleteIfExists(stamp)
+        }
         if (candidateInstalled) GuestRegistrations(context).requireSingleBundle(line)
+    }
+
+    /** Stops a development launch when the host staged a package the guest has not received yet. */
+    fun requireCurrentPackage(line: VmLine) {
+        val staged = context.layout.stagedDesktopApplication.takeIf { it.exists() } ?: return
+        if (CandidateInstall(context).installed(line)) return
+        val stamp = vmDirectory(context, line).resolve(SYNCED_PACKAGE_STAMP)
+        refuseOutdatedPackage(stamp.takeIf { it.exists() }?.readText()?.trim(), packageFingerprint(staged), line)
     }
 
     /**

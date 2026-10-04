@@ -101,7 +101,7 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors, which print the same envelope) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |
@@ -179,7 +179,7 @@ grants a permission.
 | `flow set --name N [--website D]...` | desktop in a VM, simulator, device | Create a pause set with websites from Pause sets and return to the list. |
 | `flow session [--set S] [--minutes 5-59\|60]` | desktop in a VM, simulator, device | Start a manual session from Session setup: choose the set, tap the 25, 45, or 60-minute preset or step the minutes from 25, check that Review shows that length, and wait for **End session early**. |
 | `flow icloud link\|remove [--timeout-seconds N]` | desktop in a VM | Link to the iCloud workspace, pressing **Check again** while the key is awaited, or remove the workspace, pressing the confirmation's own button and again after a removal that did not finish. The state is read from the row's buttons, not its sentence. |
-| `vm create\|sync\|destroy [--line primary\|peer\|legacy\|ventura]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the staged package and driver onto its disk; recopy; shut down from inside and delete. `create` also reports `iCloudKeychain` and, when the clone's keychain was paused, resumes it and reports `iCloudResumed: true` once it syncs again, or `iCloudResumeError` when the resume failed (a later clone can pause it again, so resume every clone once all have booted); `destroy` refuses a running guest whose database shows a linked iCloud workspace (`WORKSPACE_LINKED`) unless `--keep-workspace`; a stopped guest or an unreadable database is not checked. See [Tart VMs](#tart-vms). |
+| `vm create\|sync\|destroy [--line primary\|peer\|legacy\|ventura]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the driver and, when one is staged, the development package onto its disk, so a clone for a notarized candidate needs no build; recopy; shut down from inside and delete. `create` also reports `iCloudKeychain` and, when the clone's keychain was paused, resumes it and reports `iCloudResumed: true` once it syncs again, or `iCloudResumeError` when the resume failed (a later clone can pause it again, so resume every clone once all have booted); `destroy` refuses a running guest whose database shows a linked iCloud workspace (`WORKSPACE_LINKED`) unless `--keep-workspace`; a stopped guest or an unreadable database is not checked. See [Tart VMs](#tart-vms). |
 | `vm icloud [--line] [--resume]` | desktop in a VM | Read iCloud Keychain's state from System Settings (`syncing`, `unknown`; exit 3 `ICLOUD_KEYCHAIN_PAUSED` when paused or signed out); `--resume` runs Resume Data Sync and answers its dialogs. |
 | `vm dialogs [--line]` | desktop in a VM | List the open system dialogs by the process that owns each window, which recognized text cannot tell apart: `admin` (SecurityAgent), `gatekeeper`, `system-alert`, `accessibility`, and `notification` banners. Check it before answering an administrator prompt; a Background Items notice also says "allow this". |
 | `vm onboard [--line] [--timeout-seconds N]` | desktop in a VM (host command) | Launch the package in a fresh clone and finish first-run onboarding with the helper: runs `mac-unified-onboarding-desktop.json` in the guest and answers the Login Items and administrator prompts over VNC until the window reports **This Mac is ready.**, then finishes a background approval the overview still asks for. About 1.5 minutes. |
@@ -398,7 +398,8 @@ host forwards it to the guest's own copy of the driver through `tart exec`,
 which runs in the logged-in user's Aqua session, sends a scenario file (or,
 for `--scenario -`, the host's own standard input) on standard input, and copies the guest's run directory to
 `build/verification/runs/<run>/guest/`. `build` stays on the host; follow it
-with `vm sync`. The one-time setup of the golden VMs, device registration,
+with `vm sync`. A development `launch` refuses with `PACKAGE_OUTDATED` when the host staged another package than the
+one the last `vm sync` copied. The one-time setup of the golden VMs, device registration,
 test Apple Account, and Keychain items is in
 [the unattended verification guide](../../docs/development/unattended-verification.md).
 
