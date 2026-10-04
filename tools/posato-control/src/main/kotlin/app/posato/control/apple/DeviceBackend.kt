@@ -37,12 +37,12 @@ class DeviceSession(
         resolved?.let { return it }
         val preference = explicitUdid ?: context.configuration.value(ConfigurationKey.DEVICE)
         val devices = devicectl.listDevices()
-        val chosen = select(preference, devices) ?: throw missingDevice(preference)
+        val chosen = select(preference, devices) ?: throw missingDevice(preference, devices)
         if (!chosen.connected) {
             throw ControlException(
                 ErrorCode.NO_CONNECTED_DEVICE,
-                "The device '${chosen.name}' is paired but not connected.",
-                "Connect and unlock the iPhone.",
+                "The device '${chosen.name}' is ${if (chosen.wired) "paired but not connected" else NETWORK_ONLY}.",
+                CONNECT_HINT,
             )
         }
         return chosen.udid.also { resolved = it }
@@ -54,14 +54,31 @@ class DeviceSession(
     ): PhysicalDevice? =
         if (preference != null) devices.firstOrNull { it.udid == preference || it.name == preference } else devices.firstOrNull { it.connected }
 
-    private fun missingDevice(preference: String?): ControlException = if (preference != null) {
-        ControlException(ErrorCode.NO_CONNECTED_DEVICE, "No paired device matches '$preference'.", "Run `posato-control devices list`.")
-    } else {
-        ControlException(ErrorCode.NO_CONNECTED_DEVICE, "No iPhone is connected.", "Connect and unlock the iPhone, then trust this Mac.")
+    private fun missingDevice(
+        preference: String?,
+        devices: List<PhysicalDevice>
+    ): ControlException {
+        if (preference != null) {
+            return ControlException(ErrorCode.NO_CONNECTED_DEVICE, "No paired device matches '$preference'.", "Run `posato-control devices list`.")
+        }
+        val networkOnly = networkOnlyDevices(devices)
+        return if (networkOnly.isEmpty()) {
+            ControlException(ErrorCode.NO_CONNECTED_DEVICE, "No iPhone is connected.", "Connect and unlock the iPhone, then trust this Mac.")
+        } else {
+            ControlException(ErrorCode.NO_CONNECTED_DEVICE, "No iPhone is connected: ${describeNetworkOnly(networkOnly)}.", CONNECT_HINT)
+        }
     }
 
     fun isInstalled(udid: String): Boolean = devicectl.installedBundles(udid).contains(IOS_BUNDLE_ID)
 }
+
+private const val NETWORK_ONLY = "paired over the network only; posato-control needs a cable"
+private const val CONNECT_HINT = "Connect the iPhone to this Mac with a cable, unlock it, and trust this Mac if it asks."
+
+/** Paired devices that devicectl reaches only over the network, which the driver cannot use. */
+private fun networkOnlyDevices(devices: List<PhysicalDevice>): List<PhysicalDevice> = devices.filter { it.paired && !it.wired && !it.connected }
+
+private fun describeNetworkOnly(devices: List<PhysicalDevice>): String = devices.joinToString("; ") { device -> "'${device.name}' is $NETWORK_ONLY" }
 
 class DeviceLifecycle(
     private val context: RunContext,
@@ -356,7 +373,9 @@ private class DeviceDoctor(
         devices: List<PhysicalDevice>,
         connected: List<PhysicalDevice>
     ): DoctorCheck = if (connected.isEmpty()) {
-        DoctorCheck.fail("device.connected", "No iPhone is connected (${devices.size} paired).", "Connect and unlock the iPhone.", Severity.WARN)
+        val networkOnly = networkOnlyDevices(devices)
+        val reason = if (networkOnly.isEmpty()) "" else ": ${describeNetworkOnly(networkOnly)}"
+        DoctorCheck.fail("device.connected", "No iPhone is connected (${devices.size} paired)$reason.", CONNECT_HINT, Severity.WARN)
     } else {
         val device = connected.first()
         DoctorCheck.pass("device.connected", "Connected: ${device.model ?: "iPhone"} on iOS ${device.osVersion ?: "?"}.")
