@@ -2464,3 +2464,15 @@ to scope, feasibility, or delivery.
   3 of 4 tries on Simulators), stale **Paused items** copy on an active
   session, and default-set counts during a scheduled pause; the `DOCS-004`
   record lists them as findings for `RELEASE-005`.
+
+## [2026-10-04] release | RELEASE-005: Posato 1.3.0 candidates verified
+
+- `observed`: the notarized arm64 and x86-64 builds 1.3.0 (28) and iOS
+  1.3.0 (6) from one revision passed the release checks. The arm64 build
+  ran setup, pause sets, the browser pause page, schedules, and the upgrade
+  from 1.2.0 on macOS 26 and 15. The x86-64 build refused to run under
+  Rosetta, and its verification twin ran setup, a pause, and a schedule on
+  macOS 13. The iPhone upgrade from 1.2 kept blocking with Posato closed.
+- `user-confirmed`: if a rollback makes 1.2.0 latest again, the Intel feed
+  answers 404 until a fixed release, an accepted exception while no Intel
+  installation exists.
