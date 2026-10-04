@@ -44,16 +44,19 @@
   2,945,899 bytes, stills and social preview within budget.
 - **Hero framing** (maintainer request, 2026-10-03): the hero again frames
   each state as the `WEB-002` experiment did. The website list starts at its
-  "2 websites" heading again (crop 328, 368), the session states keep the
-  whole duration picker and end the review at its last item despite the new
-  **Pause set** and **Set:** rows (scale 1.05, taller frames), and the sync
-  scene's Mac crop moved down by the same 68 pixels the set screen added.
+  "2 websites" heading again (crop 328, 368). The session states show as
+  much of the duration picker as the experiment did, end the review at its
+  last item, and end the active state at **End session early**, despite the
+  new **Pause set** and **Set:** rows. For that, the frames start where the
+  experiment's did and the captures are drawn at scale 1.0 instead of 1.1.
+  The sync scene's Mac crop moved down by the same 68 pixels that the set
+  screen added.
 - **Recaptured after the fixes** (2026-10-04): the Mac session states,
   `mac-scheduled-active`, `iphone-duration-45`, and `iphone-active-45`, on
   the `NAV-002` and `SESSION-006` build from #132. `mac-session-inactive`
   is kept, because the new one showed the previous run's "The session ended
-  early." `npm run media` passed `verify` again: GIF 1,588,658 bytes, site
-  hero 510,767 bytes, walkthrough 2,957,373 bytes.
+  early." `npm run media` passed `verify` again: GIF 1,516,955 bytes, site
+  hero 520,032 bytes, walkthrough 2,951,590 bytes.
 - **Store screenshots.** Both sets recaptured on the iPhone 17 Pro Max and
   iPad Pro 13-inch (M5) Simulators from a 1.3.0 build (`Version.xcconfig`
   bumped only for the build and restored).
@@ -138,6 +141,13 @@ For `RELEASE-005` to paste into the release.
   the `mac-scheduled-active` counts named as a gate above. **Optional, taken:**
   "pause sets" in the demo alt texts.
 
+- **Review of the framing correction:** one Required finding, fixed: the
+  active state and the poster ended on a sliver of the next caption line.
+  Recommended, taken: a wider bottom margin and no card edge across the
+  incoming headline (both by starting the frames where the experiment did),
+  and the record's wording above. Optional, not taken: the Mac and iPhone
+  captures end one minute apart (1:58 PM and 13:59).
+
 ## Checks
 
 - `video/`: `npm ci`, `npm run check` (6 storyboard tests), `npm run media`
@@ -147,8 +157,9 @@ For `RELEASE-005` to paste into the release.
 - iPhone captures: test iPhone, runs `20261002-1634*` to `20261002-1648*`.
 - Recaptures on the #132 build (2026-10-04): Mac in the Tart `primary`
   clone, runs `20261004-130407-c8f2` and `20261004-1313*`; test iPhone,
-  runs `20261004-131427-2eee` and `20261004-131523-01bf`. Each new hero
-  state was compared with the `WEB-002` hero frame by frame.
+  runs `20261004-131427-2eee` and `20261004-131523-01bf`. Each hero state,
+  the poster, and the transition into the session states were compared with
+  the `WEB-002` hero.
 - Store screenshots: 1320 x 2868 and 2064 x 2752 RGB PNGs without alpha.
 - `website/`: `npm ci`, `npm run build`; no horizontal scroll at 390 and
   1440 pixels wide.
