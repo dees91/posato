@@ -3,10 +3,10 @@
 ## Status and authority
 
 - **Status:** Accepted
-- **Revision:** 16 (amended 2026-10-02: release 1.3 scope before packaging)
+- **Revision:** 17 (amended 2026-10-04: release 1.3 defects found in packaging)
 - **Prepared:** 2026-09-18
 - **Accepted:** 2026-09-18
-- **Last amended:** 2026-10-02
+- **Last amended:** 2026-10-04
 - **Accepted by:** Project maintainer
 - **Provenance:** `user-confirmed`; the maintainer accepted the three-release
   composition, the document form, and revision 1 on 2026-09-18. Revision 2
@@ -108,6 +108,11 @@
   #114 are closed and kept as material to reuse.
   The 2026-10-02 backlog addition `QUALITY-012` (idea 26, `user-confirmed`,
   from the `SCHEDULE-004` retro) changes no release.
+  Revision 17 adds `NAV-002` and `SESSION-006` to release 1.3
+  (`user-confirmed`, 2026-10-03). Both are defects that the `DOCS-004`
+  captures found: an iOS crash when leaving a pause set and then switching
+  destinations, and Session copy and counts that still describe the former
+  single item list. `DOCS-004` and `RELEASE-005` wait for them.
 
 This roadmap plans the releases that follow Posato 1.0.0. It retains
 outcomes, ordering, direct dependencies, waves, and integration groups for
@@ -305,6 +310,9 @@ Ordering across the waves:
   (`user-confirmed`, 2026-09-30). No physical Intel Mac is used.
 - `WEB-002` and `SCHEDULE-006` precede `DOCS-004`, which packages the new
   product line, site, and media.
+- `NAV-002` and `SESSION-006` were found while `DOCS-004` recaptured the
+  showcase. They precede it because the corrected Session appears in its
+  media.
 
 | Task | Outcome | Epic | Class | Wave | Direct dependencies | Integration group |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -320,8 +328,10 @@ Ordering across the waves:
 | `SCHEDULE-004` | Deliver reusable named pause sets on Mac and iPhone under the accepted scope: one set per manual session or schedule, a default for new starts and plans, migration of existing targets and schedules, union of overlapping sets, synchronized definitions and websites, and per-set device-local application choices. Verify migration, actual blocking and unblocking, overlap, offline execution, and cross-device convergence. High-risk. | Target management | delivery | R1.3/W3 | `SCHEDULE-003`, `NAV-001` | PR-PAUSE-SET-DELIVERY |
 | `WEB-002` | Make the first screen of `posato.app` show at a glance what Posato does, especially on a phone, and replace the product line **Pause. Then choose.** with a stronger one wherever it appears (`DESIGN.md`, the site title and hero, the README, and the App Store subtitle). Continue from the homepage experiment in PR #126 (a bolder layout, an animated hero with a static poster on phones and for reduced motion, and the provisional line "A little space. For what matters."), with the maintainer choosing the final line and layout, the clarity review, and no em dash in public copy. | Release readiness | delivery | R1.3/W4 | None | PR-WEB-HOMEPAGE |
 | `SCHEDULE-006` | Keep the iPhone version-2 schedule table within its storage bound for every supported configuration, including 1,024 long websites shared by ten sets, and report a failed publication instead of silently keeping the previous table: the minimal change, with no new limits. | Schedules | delivery | R1.3/W4 | `SCHEDULE-004` | PR-SCHEDULE-TABLE-BOUND |
-| `DOCS-004` | Prepare the public packaging for 1.3 without publishing it: recapture the showcase with pause sets and render the media again; describe 1.3, pause sets, and Intel support in the README and on `posato.app` with the new product line and homepage from `WEB-002`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.3/W5 | `SCHEDULE-004`, `MACOS-015`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `WEB-002`, `SCHEDULE-006` | PR-RELEASE-1-3-MEDIA |
-| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for arm64 and x86-64 through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.3/W6 | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `MACOS-015`, `NAV-001`, `SCHEDULE-004`, `SCHEDULE-006`, `WEB-002`, `DOCS-004` | PR-RELEASE-1-3 |
+| `NAV-002` | Stop the iOS crash after leaving a pause set's screen and then switching destinations: a stack nested in a screen that Navigation 3 already removed must not dispose its back dispatcher a second time. Keep system back, the edge swipe, and the Back buttons working on iPhone, iPad, and the Mac. | Platform coverage | delivery | R1.3/W4 | `NAV-001`, `SCHEDULE-004` | PR-RELEASE-1-3-FIXES |
+| `SESSION-006` | Make Session describe pause sets: replace the remaining **Paused items** copy with **Pause sets**, explain a running session's frozen counts in terms of its set, and stop showing the default set's counts while only a scheduled pause restricts, where each running part names its own set. | Sessions and enforcement | delivery | R1.3/W4 | `SCHEDULE-004` | PR-RELEASE-1-3-FIXES |
+| `DOCS-004` | Prepare the public packaging for 1.3 without publishing it: recapture the showcase with pause sets and render the media again; describe 1.3, pause sets, and Intel support in the README and on `posato.app` with the new product line and homepage from `WEB-002`; update the App Store description, What's New, and iPhone and iPad screenshots; and draft the GitHub release notes. | Release readiness | delivery | R1.3/W5 | `SCHEDULE-004`, `MACOS-015`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `WEB-002`, `SCHEDULE-006`, `NAV-002`, `SESSION-006` | PR-RELEASE-1-3-MEDIA |
+| `RELEASE-005` | Verify the 1.3.0 candidates, publish the macOS release for arm64 and x86-64 through the `MACOS-011` update path and GitHub Releases, and submit the iOS build to App Review. | Release readiness | delivery | R1.3/W6 | `MACOS-022`, `SCHEDULE-005`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `MACOS-015`, `NAV-001`, `SCHEDULE-004`, `SCHEDULE-006`, `NAV-002`, `SESSION-006`, `WEB-002`, `DOCS-004` | PR-RELEASE-1-3 |
 
 ## Backlog
 
@@ -370,7 +380,7 @@ The idea numbers refer to the wiki idea queue.
 | iPhone session kept across a relaunch | `IOS-006` | Repeated fast and slow relaunches on the test iPhone with restrictions observed after each |
 | Public packaging for 1.2 | `DOCS-003` | Media rendered within budget from recorded captures, README and site built, store text and screenshots ready for upload |
 | System back gestures | `NAV-001` | Test-iPhone and iPad edge-swipe back and Mac keyboard and trackpad back in Tart, with the explicit **Back** actions kept |
-| Reported enforcement, schedule, and publication defects | `MACOS-022`, `SCHEDULE-005`, `SCHEDULE-006`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024` | Tart and test-iPhone runs that reproduce each defect before the fix and show the corrected behavior after it |
+| Reported enforcement, schedule, and publication defects | `MACOS-022`, `SCHEDULE-005`, `SCHEDULE-006`, `SYNC-020`, `MACOS-020`, `MACOS-021`, `MACOS-024`, `NAV-002`, `SESSION-006` | Tart and test-iPhone runs that reproduce each defect before the fix and show the corrected behavior after it |
 | New homepage and product line | `WEB-002` | The chosen line in `DESIGN.md`, the site, README, and App Store subtitle; the site built and checked on a phone and a wide screen |
 | Public packaging for 1.3 | `DOCS-004` | Media rendered from recorded captures, README and site built, store text and screenshots ready for upload |
 | Reusable pause sets for manual sessions and schedules | `SCHEDULE-003`, `SCHEDULE-004` | Accepted remaining decisions; Mac VM and test-iPhone proof of migration, per-set selections, overlap, blocking and release, offline execution, and synchronized definitions with local app choices |
