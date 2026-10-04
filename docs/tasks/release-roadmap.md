@@ -194,6 +194,9 @@ governs how a new idea becomes a row.
    release's table with its wave; the backlog table keeps no copy.
 5. Rows dropped by the maintainer are deleted from the tables and named in the
    revision prose, so the tables show only live work.
+6. Each release ends with a `RELEASE` row that follows
+   [`releasing.md`](../development/releasing.md); its brief names only the
+   differences.
 
 ## GitHub Projects mirror
 
