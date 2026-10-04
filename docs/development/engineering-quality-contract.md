@@ -260,18 +260,21 @@ from `main`. This supersedes the earlier automatic, paused, manual-only, and
 required-hosted-check policies. Restoration needs an explicit maintainer
 decision; there is no automatic-restoration date.
 
-Before merging, require successful local `./gradlew quality` after the last
-correction, on the branch rebased onto the current `main` (for a stack, on its
-tip), the selected review tier, and applicable native/device verification.
-Record the tested revision and result in the PR and confirm that it still
-represents the change being merged. Follow the local verification rules above
-after later corrections. See the [local checklist](README.md#local-quality-and-merge-check).
+Before a pull request is marked ready, require successful local
+`./gradlew quality` after the last correction, on the branch rebased onto the
+current `main` (for a stack, on its tip), the selected review tier, and
+applicable native/device verification. Record the tested revision and result
+in the PR. Follow the local verification rules above after later corrections.
+`user-confirmed` (2026-10-04): the merging session reruns `quality` only when
+its own rebase changed code. See the
+[local checklist](README.md#local-quality-and-merge-check).
 
 Keep `main` protected by a PR requirement with zero mandatory approving reviews,
 administrator enforcement, no bypass allowances, and force-push/deletion
 restrictions. Required status checks and their strict up-to-date setting are
-removed. GitHub cannot enforce local quality results; the maintainer or merging
-agent owns that procedural gate. Administrators can still edit protection itself.
+removed. GitHub cannot enforce local quality results; the implementing and
+merging sessions own that procedural gate. Administrators can still edit
+protection itself.
 Disabled CI does not waive local failures or the independent-review process.
 
 ## Definition of Done
