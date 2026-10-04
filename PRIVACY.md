@@ -1,6 +1,6 @@
 # Posato Privacy Policy
 
-Effective September 28, 2026.
+Effective October 4, 2026.
 
 Posato does not send your pause sets, website list, app choices, sessions, or
 iCloud workspace data to its developer. There is no Posato account, no analytics,
