@@ -15,7 +15,8 @@ import java.time.Duration
 /**
  * Runs a desktop command inside a Tart guest: `posato-control <command> -t desktop --vm primary ...` becomes the same
  * command for the guest's own driver through `tart exec`, which runs in the logged-in user's Aqua session. The
- * guest's run directory is copied back to `<run>/guest/` and the envelope's paths are rewritten to point there.
+ * guest's run directory is copied back to `<run>/guest/`, the envelope's paths are rewritten to point there, and the
+ * envelope is kept there as `envelope.json`.
  */
 object GuestRelay {
     private const val OPTION = "--vm"
@@ -89,7 +90,10 @@ object GuestRelay {
             "tar -C ${shellQuote(hostRun.toString())} -xf -",
             "Copying the guest run directory",
         )
-        print(relocateGuestPaths(output.stdout, runId))
+        val envelope = relocateGuestPaths(output.stdout, runId)
+        // The envelope is the evidence of commands such as observe, which write nothing else into their run directory.
+        if (envelope.isNotBlank()) Files.writeString(hostRun.resolve("envelope.json"), envelope)
+        print(envelope)
         System.err.print(output.stderr)
         return output.exitCode
     }

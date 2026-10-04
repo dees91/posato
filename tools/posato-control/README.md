@@ -397,7 +397,8 @@ and its feature map for exact setup, native picker limits, and cleanup.
 host forwards it to the guest's own copy of the driver through `tart exec`,
 which runs in the logged-in user's Aqua session, sends a scenario file (or,
 for `--scenario -`, the host's own standard input) on standard input, and copies the guest's run directory to
-`build/verification/runs/<run>/guest/`. `build` stays on the host; follow it
+`build/verification/runs/<run>/guest/`, together with the command's envelope as `envelope.json`, the evidence of
+commands such as `observe` that write no other file. `build` stays on the host; follow it
 with `vm sync`. A development `launch` refuses with `PACKAGE_OUTDATED` when the host staged another package than the
 one the last `vm sync` copied. The one-time setup of the golden VMs, device registration,
 test Apple Account, and Keychain items is in
