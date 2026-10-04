@@ -399,8 +399,9 @@ which runs in the logged-in user's Aqua session, sends a scenario file (or,
 for `--scenario -`, the host's own standard input) on standard input, and copies the guest's run directory to
 `build/verification/runs/<run>/guest/`, together with the command's envelope as `envelope.json`, the evidence of
 commands such as `observe` that write no other file. `build` stays on the host; follow it
-with `vm sync`. A command that starts the development package (`launch`, `run` unless its scenario skips the launch,
-`flow`, and `vm onboard`) refuses with `PACKAGE_OUTDATED` when the host staged another package than the one the
+with `vm sync`. A command that starts the development package (`launch`, `run` unless its scenario sets `launch.skip`,
+`flow`, `vm onboard`, and `tap`, `type`, `press`, `wait`, and `update-consent`, which launch Posato when it is not
+running; `type` and `wait` with `--process` and no element query are exempt) refuses with `PACKAGE_OUTDATED` when the host staged another package than the one the
 last `vm sync` copied; the guest records that package, because every worktree shares a line's clone. The one-time setup of the golden VMs, device registration,
 test Apple Account, and Keychain items is in
 [the unattended verification guide](../../docs/development/unattended-verification.md).

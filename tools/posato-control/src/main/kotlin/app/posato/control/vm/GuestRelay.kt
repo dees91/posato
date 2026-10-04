@@ -8,6 +8,8 @@ import app.posato.control.core.RepoLayout
 import app.posato.control.core.RunContext
 import app.posato.control.model.Envelope
 import app.posato.control.model.ErrorPayload
+import app.posato.control.model.Scenario
+import kotlinx.serialization.SerializationException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Duration
@@ -69,16 +71,17 @@ object GuestRelay {
         }
         val lifecycle = VmLifecycle(context)
         lifecycle.requireRunning(line)
-        if (startsPackage(forwarded)) lifecycle.requireCurrentPackage(line)
-        val tart = Tart(context)
         val (arguments, scenario) = scenarioOverStdin(forwarded)
-        val script = "export PATH=${shellQuote(Tart.GUEST_JDK_BIN)}:\$PATH; cd ~/posato-run && " +
-            "tools/posato-control/build/install/posato-control/bin/posato-control " + arguments.joinToString(" ") { shellQuote(it) }
+        // Read once from either source, so the guard decides on the same text that the guest runs.
         val stdin = when (scenario) {
             null -> null
             STANDARD_INPUT -> System.`in`.readBytes().decodeToString()
             else -> Files.readString(Path.of(scenario))
         }
+        if (startsPackage(forwarded, stdin)) lifecycle.requireCurrentPackage(line)
+        val tart = Tart(context)
+        val script = "export PATH=${shellQuote(Tart.GUEST_JDK_BIN)}:\$PATH; cd ~/posato-run && " +
+            "tools/posato-control/build/install/posato-control/bin/posato-control " + arguments.joinToString(" ") { shellQuote(it) }
         val output = tart.exec(line.cloneName, script, stdin = stdin, timeout = Duration.ofMinutes(RELAY_TIMEOUT_MINUTES))
         val hostRun = context.layout.runsDirectory.resolve(runId).resolve("guest")
         Files.createDirectories(hostRun)
@@ -98,22 +101,34 @@ object GuestRelay {
         return output.exitCode
     }
 
-    /**
-     * Whether a command may start the development package in the guest: a launch, a scenario unless its launch is
-     * skipped, and the flows, which launch Posato when it is not running.
-     */
-    private fun startsPackage(forwarded: List<String>): Boolean = when (forwarded.firstOrNull()) {
-        "launch" -> "--adopt" !in forwarded
-        "flow" -> true
-        "run" -> !skipsLaunch(forwarded)
-        else -> false
-    }
-
-    private fun skipsLaunch(forwarded: List<String>): Boolean {
-        val file = forwarded.getOrNull(forwarded.indexOf("--scenario") + 1)?.takeIf { "--scenario" in forwarded && it != STANDARD_INPUT }
-            ?: return false
-        return Regex(""""skip"\s*:\s*true""").containsMatchIn(Files.readString(Path.of(file)))
-    }
-
     private const val RELAY_TIMEOUT_MINUTES = 30L
+}
+
+/** Commands that run a single-step scenario, which launches Posato when no tracked instance is running. */
+private val ELEMENT_COMMANDS = setOf("tap", "type", "press", "wait", "update-consent")
+private val QUERY_OPTIONS = listOf("--id", "--text", "--text-contains", "--role", "--path")
+
+/**
+ * Whether a command may start the development package in the guest: a launch, a scenario unless its own
+ * `launch.skip` is set, the flows, and the element commands. Typing into or waiting on another process without an
+ * element query never runs a scenario, so it leaves Posato alone.
+ */
+internal fun startsPackage(
+    forwarded: List<String>,
+    scenario: String?
+): Boolean = when (forwarded.firstOrNull()) {
+    "launch" -> "--adopt" !in forwarded
+    "flow" -> true
+    "run" -> scenario == null || !skipsLaunch(scenario)
+    in ELEMENT_COMMANDS -> !(forwarded.hasOption("--process") && QUERY_OPTIONS.none { forwarded.hasOption(it) })
+    else -> false
+}
+
+private fun List<String>.hasOption(name: String): Boolean = any { it == name || it.startsWith("$name=") }
+
+/** An unreadable scenario counts as launching; the guest then reports why it is invalid. */
+private fun skipsLaunch(scenario: String): Boolean = try {
+    ControlJson.lenient.decodeFromString(Scenario.serializer(), scenario).launch.skip
+} catch (_: SerializationException) {
+    false
 }
