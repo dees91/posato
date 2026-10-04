@@ -72,7 +72,9 @@ restages an ad-hoc package and silently removes the application picker. Rerun
 Every command takes `--target/-t desktop|simulator|device` (`sim` is an
 alias) plus the common options `--udid`, `--run-id`, `--artifacts`,
 `--timeout`, `--human`, and `--verbose`. Options go after the command name:
-`posato-control launch -t desktop --vm primary`.
+`posato-control launch -t desktop --vm primary`. `--human` prints plain text
+instead of the envelope and ends with the outcome, `ok (<ms> ms)` or
+`error <CODE>: <message>`, so `| tail -1` shows it.
 
 The desktop target never drives the application on the host Mac, whose
 installed Posato is the maintainer's real copy: outside a virtual machine
@@ -101,7 +103,7 @@ On failure `ok` is `false` and `error` carries `code`, `message`, and a
 | 0 | success | |
 | 1 | the command failed | `COMMAND_FAILED`, `DRIVER_FAILED` |
 | 2 | usage | `USAGE` (also argument parsing errors and a command group such as `vm` without its subcommand: the envelope carries clikt's message and the usage text goes to standard error) |
-| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `REFUSED_WITHOUT_CONFIRMATION` |
+| 3 | precondition, permission, or refusal | `TCC_ACCESSIBILITY_DENIED`, `TCC_SCREEN_RECORDING_DENIED`, `NO_BOOTED_SIMULATOR`, `NO_CONNECTED_DEVICE`, `DEVICE_AUTOMATION_LOCKED`, `VM_UNAVAILABLE`, `DESKTOP_HOST_REFUSED`, `DEVELOPMENT_TEAM_MISSING`, `APP_NOT_STAGED`, `PACKAGE_OUTDATED`, `APP_NOT_INSTALLED`, `APP_NOT_RUNNING`, `PROCESS_NOT_ALLOWED`, `PROCESS_NOT_INSPECTABLE`, `ALREADY_RUNNING`, `ALREADY_EXISTS`, `REFUSED_WITHOUT_CONFIRMATION` |
 | 4 | element or expectation | `ELEMENT_NOT_FOUND`, `ELEMENT_AMBIGUOUS`, `WAIT_TIMEOUT`, `ASSERTION_FAILED`, `SCENARIO_INVALID` |
 | 5 | build or install | `BUILD_FAILED`, `INSTALL_FAILED` |
 | 6 | unsupported on this target | `UNSUPPORTED_ON_TARGET` |
@@ -176,7 +178,7 @@ grants a permission.
 | `resources [--seconds N]` | desktop in a VM | Samples the application and its helper for N seconds (default 600): physical footprint, CPU seconds used, and idle wakeups per second from `top`. |
 | `update-consent --answer allow\|deny [--timeout-seconds N]` | desktop in a VM | Answer a release build's modal "Check for updates automatically?" alert, which appears once setup completes and on the first open of a replaced install and blocks every click behind it. Waits up to N seconds (default 10) and reports `answered: false` when no alert appears. |
 | `flow schedule --name N --start HH:MM --end HH:MM [--set S] [--days every\|weekdays\|mon,...,sun] [--off]` | desktop in a VM, simulator, device | Add a schedule through the editor. Each time is set in rounds that read the editor's `Starts`/`Ends` label and step only the remaining difference, since the wheels drop a tap now and then; it fails with `ASSERTION_FAILED` when a time does not settle. `--off` saves it turned off, so a due schedule does not start during the run. `--days` defaults to every day, so a run on any day starts; the editor itself proposes weekdays. The saved row must list the chosen days. |
-| `flow set --name N [--website D]...` | desktop in a VM, simulator, device | Create a pause set with websites from Pause sets and return to the list. |
+| `flow set --name N [--website D]...` | desktop in a VM, simulator, device | Create a pause set with websites from Pause sets and return to the list. Posato accepts two sets with one name, so the command refuses with `ALREADY_EXISTS` when the list already shows a set of that name; a rerun never adds a duplicate. |
 | `flow session [--set S] [--minutes 5-59\|60]` | desktop in a VM, simulator, device | Start a manual session from Session setup: choose the set, tap the 25, 45, or 60-minute preset or step the minutes from 25, check that Review shows that length, and wait for **End session early**. |
 | `flow icloud link\|remove [--timeout-seconds N]` | desktop in a VM | Link to the iCloud workspace, pressing **Check again** while the key is awaited, or remove the workspace, pressing the confirmation's own button and again after a removal that did not finish. The state is read from the row's buttons, not its sentence. |
 | `vm create\|sync\|destroy [--line primary\|peer\|legacy\|ventura]` | desktop in a VM | Clone the line's golden Tart VM, boot it headless, and copy the driver and, when one is staged, the development package onto its disk, so a clone for a notarized candidate needs no build; recopy; shut down from inside and delete. `create` also reports `iCloudKeychain` and, when the clone's keychain was paused, resumes it and reports `iCloudResumed: true` once it syncs again, or `iCloudResumeError` when the resume failed (a later clone can pause it again, so resume every clone once all have booted); `destroy` refuses a running guest whose database shows a linked iCloud workspace (`WORKSPACE_LINKED`) unless `--keep-workspace`; a stopped guest or an unreadable database is not checked. See [Tart VMs](#tart-vms). |

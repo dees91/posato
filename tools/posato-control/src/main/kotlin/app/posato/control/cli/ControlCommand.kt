@@ -82,13 +82,14 @@ abstract class ControlCommand(
         human: Boolean
     ) {
         if (human) {
-            echo(if (envelope.ok) "ok (${envelope.durationMs} ms)" else "error ${envelope.error?.code}: ${envelope.error?.message}")
-            envelope.error?.hint?.let { echo("hint: $it") }
             envelope.result?.let { result ->
                 val text = (result as? JsonPrimitive)?.takeIf { it.isString }?.content
                 echo(text ?: ControlJson.pretty.encodeToString(JsonElement.serializer(), result))
             }
             envelope.artifacts.forEach { echo("artifact: $it") }
+            envelope.error?.hint?.let { echo("hint: $it") }
+            // The outcome comes last, where `| tail` shows it after a long result.
+            echo(if (envelope.ok) "ok (${envelope.durationMs} ms)" else "error ${envelope.error?.code}: ${envelope.error?.message}")
         } else {
             echo(ControlJson.pretty.encodeToString(Envelope.serializer(), envelope))
         }

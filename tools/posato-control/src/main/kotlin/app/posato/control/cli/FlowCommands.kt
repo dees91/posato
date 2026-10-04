@@ -30,9 +30,24 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
     private val websites by option("--website", help = "A website to add; repeat for more.").multiple()
 
     override fun execute(session: Session): JsonElement {
+        val backend = session.backend()
+        FlowSteps.run(
+            backend,
+            listOf(
+                FlowSteps.button("Pause sets"),
+                FlowSteps.button("Back to pause sets", optional = true, timeoutSeconds = SHORT_SECONDS),
+                FlowSteps.waitFor(Query(text = "New set", role = FlowSteps.ROLE_BUTTON)),
+            ),
+        )
+        // Posato accepts a second set with the same name, so a rerun would leave two rows the later steps cannot tell apart.
+        if (hasSetNamed(FlowSteps.labels(backend))) {
+            throw ControlException(
+                ErrorCode.ALREADY_EXISTS,
+                "Pause sets already lists a set named $name.",
+                "Choose another --name, or remove the existing set first.",
+            )
+        }
         val steps = mutableListOf(
-            FlowSteps.button("Pause sets"),
-            FlowSteps.button("Back to pause sets", optional = true, timeoutSeconds = SHORT_SECONDS),
             FlowSteps.button("New set"),
             FlowSteps.typeInto(name, submit = false),
             FlowSteps.button("Save"),
@@ -47,16 +62,19 @@ class FlowSetCommand : ControlCommand("set", "Create a pause set with a name and
             FlowSteps.button("Back to pause sets"),
             FlowSteps.screenshot("set-created"),
         )
-        val backend = session.backend()
         FlowSteps.run(backend, steps)
-        // A set named "Deep Work" also contains "Work,"; the new row must start with the name.
-        if (FlowSteps.labels(backend).none { label -> label.startsWith("$name,") }) {
+        if (!hasSetNamed(FlowSteps.labels(backend))) {
             throw ControlException(ErrorCode.ASSERTION_FAILED, "Pause sets shows no set named $name.")
         }
         return buildJsonObject {
             put("name", name)
             putJsonArray("websites") { websites.forEach(::add) }
         }
+    }
+
+    /** A set named "Deep Work" also contains "Work,", so a row must start with the name. */
+    private fun hasSetNamed(labels: List<String>): Boolean {
+        return labels.any { label -> label.startsWith("$name,") }
     }
 
     private companion object {
