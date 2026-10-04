@@ -89,8 +89,11 @@ internal fun SessionOverviewContent(
             macSetup?.takeIf { it.offerVisible }?.let { SessionSetupOffer(it, macActions, onSetup) }
         }
         NotPausedYetNotice(pauseNotice.takeIf { active })
-        FrozenSetCaption(state)
-        SessionSelectionSummary(state, deviceLabel, onEditItems)
+        // The summary describes this device's default set or a session's set; a running schedule's parts name their own sets.
+        if (!scheduledRestricts || state.status is LocalSessionStatus.Active) {
+            FrozenSetCaption(state)
+            SessionSelectionSummary(state, deviceLabel, onEditItems)
+        }
         PosatoCaption("Saved on this device. Restrictions apply only during a pause you start or a schedule you set.")
         SyncSection(syncState)
         macSetup?.let { presentation ->
@@ -235,9 +238,9 @@ private fun FrozenSetCaption(state: SessionUiState) {
     }
     PosatoCaption(
         if (state.showsPersistedStartSet()) {
-            "These counts stay as they were at session start. The actions below edit current Paused items, which restrictions follow."
+            "These counts stay as they were at session start. Added items pause now. Removed items stay paused until this session ends."
         } else {
-            "Showing your current Paused items."
+            "Showing the items in this pause's set."
         },
     )
 }

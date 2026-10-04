@@ -116,7 +116,7 @@ private fun PosatoBottomNavigationPreview() {
                 selected = false,
                 onClick = {},
                 iconContent = { PosatoIcon(PosatoIcons.Items, null) },
-            ) { Text("Paused items") }
+            ) { Text("Pause sets") }
         }
     }
 }
@@ -126,7 +126,7 @@ private fun PosatoBottomNavigationPreview() {
 private fun PosatoSidebarNavigationPreview() {
     PosatoComponentPreview {
         PosatoSidebarNavigationItem(selected = true, onClick = {}, iconContent = { PosatoIcon(PosatoIcons.Pause, null) }) { Text("Session") }
-        PosatoSidebarNavigationItem(selected = false, onClick = {}, iconContent = { PosatoIcon(PosatoIcons.Items, null) }) { Text("Paused items") }
+        PosatoSidebarNavigationItem(selected = false, onClick = {}, iconContent = { PosatoIcon(PosatoIcons.Items, null) }) { Text("Pause sets") }
         PosatoSidebarNavigationItem(
             selected = false,
             onClick = {},

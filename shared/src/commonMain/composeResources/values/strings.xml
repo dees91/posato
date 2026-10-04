@@ -54,7 +54,7 @@
     <string name="operation_error_load">Saved paused items could not be loaded. Nothing was changed.</string>
     <string name="operation_error_save">This change could not be saved. Your previous paused items are still active.</string>
     <string name="operation_error_title">Needs your attention</string>
-    <string name="operation_error_update">Paused items changed before this update finished. Reload them, then try again.</string>
+    <string name="operation_error_update">This pause set changed before this update finished. Reload it, then try again.</string>
     <string name="paused_items_description">Choose the websites and application group where you want a quiet pause before access.</string>
     <string name="paused_items_title">Paused items</string>
     <string name="product_name">Posato</string>
@@ -118,7 +118,7 @@
     <string name="sync_action_required_local_capacity">Sync needs attention. Your devices together hold more than 1,024 websites. Remove websites on either device, then choose Sync now.</string>
     <string name="sync_action_required_set_capacity">Sync needs attention. Your devices together have more than 10 pause sets, so one could not be shared. Delete a set on any device; the waiting one then syncs by itself.</string>
     <string name="sync_action_required_schedule_capacity">Sync needs attention. Your devices together have more than 10 schedules, so one could not be shared. Delete a schedule on any device; the waiting one then syncs by itself.</string>
-    <string name="sync_action_required_shared_capacity">Sync needs attention. The shared workspace holds more websites than it can keep. Remove websites on any device, then choose Sync now. Compare Paused items on both devices and add anything missing again.</string>
+    <string name="sync_action_required_shared_capacity">Sync needs attention. The shared workspace holds more websites than it can keep. Remove websites on any device, then choose Sync now. Compare your pause sets on both devices and add anything missing again.</string>
     <string name="session_icloud_linking">Linking combines the pause sets and websites saved on your devices and shares an active session. App choices stay on each device.</string>
     <string name="onboarding_icloud_linking_websites">Linking combines the pause sets and websites saved on your devices and shares an active session. App choices stay on each device.</string>
     <string name="sync_remove_workspace">Remove workspace</string>
@@ -145,7 +145,7 @@ For what matters.</string>
     <string name="onboarding_permission_title">Make room on this device.</string>
     <string name="onboarding_permission_ios_body">Screen Time access lets Posato pause the websites and apps you choose on this %1$s.</string>
     <string name="onboarding_permission_ios_action">Allow Screen Time access</string>
-    <string name="onboarding_permission_check_failed">Access could not be checked. You can allow it later from Paused items.</string>
+    <string name="onboarding_permission_check_failed">Access could not be checked. You can allow it later from Pause sets.</string>
     <string name="onboarding_permission_mac_action">Enable on this Mac</string>
     <string name="onboarding_permission_mac_unavailable">The helper could not be checked or enabled. Check again.</string>
     <string name="onboarding_permission_mac_approval">The helper needs background approval. Open System Settings, allow Posato, then check again.</string>
@@ -177,9 +177,9 @@ For what matters.</string>
     <string name="onboarding_permission_required">Allow Screen Time access before pausing websites or apps.</string>
     <string name="onboarding_permission_denied">Screen Time access is off for Posato. You can change this in Settings.</string>
     <string name="onboarding_summary_body">Your choices are saved. Choose a duration on the Session screen when you want to begin.</string>
-    <string name="onboarding_summary_empty_body">Start by adding a website or choosing apps in Paused items.</string>
+    <string name="onboarding_summary_empty_body">Start by adding a website or choosing apps in Pause sets.</string>
     <string name="onboarding_summary_scope">You can change your choices at any time.</string>
-    <string name="onboarding_summary_access_note">Allow Screen Time access in Paused items before pausing websites or apps.</string>
+    <string name="onboarding_summary_access_note">Allow Screen Time access in Pause sets before pausing websites or apps.</string>
     <string name="onboarding_summary_helper_note">Website pauses are unavailable until Mac setup is complete.</string>
     <string name="mac_setup_title">This Mac</string>
     <string name="mac_setup_unchecked">Website pause setup not checked</string>

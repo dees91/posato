@@ -2439,3 +2439,15 @@ to scope, feasibility, or delivery.
   replaces the old `Hero` composition as the site video and the README GIF.
   It shows the reported active state, not a recorded blocking attempt, and
   its paired captures do not demonstrate delivery latency.
+
+## [2026-10-04] fix | Nested stack crash and pause set wording (NAV-002, SESSION-006)
+
+- `observed`: on iOS, leaving a pause set's screen and then switching
+  destinations crashed Posato. Navigation 3 discards a removed screen's
+  content in a later recomposition, after the enclosing stack's back
+  dispatcher was disposed with its children, so the nested stack's
+  dispatcher was disposed twice and threw. `PosatoNavStack` now skips that
+  second disposal; the pinned libraries are unchanged.
+- Session no longer shows the default set's counts while only a scheduled
+  pause restricts, and the remaining **Paused items** copy now names pause
+  sets.

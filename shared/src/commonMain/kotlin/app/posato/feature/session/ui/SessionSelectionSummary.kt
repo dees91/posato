@@ -136,9 +136,9 @@ private fun SessionSelectionPanel(
         if (state.showsPersistedStartSet()) {
             PosatoCaption(
                 if (category == TargetsCategory.WEBSITES) {
-                    "These websites were selected at session start. The action below edits current Paused items."
+                    "These websites were selected at session start. The action below edits this pause's set."
                 } else {
-                    "These apps are in current Paused items. The Session summary keeps the count from session start."
+                    "These apps are in this pause's set now. The Session summary keeps the count from session start."
                 },
             )
         }
@@ -176,7 +176,7 @@ private fun SessionSelectionPanelList(
         }
         val opaqueCount = state.applicationMappings.count { it.display is LocalApplicationMappingDisplay.Opaque }
         if (category == TargetsCategory.APPLICATIONS && opaqueCount > 0) {
-            PosatoCaption("$opaqueCount applications selected privately. Review them in the system picker from Paused items.")
+            PosatoCaption("$opaqueCount applications selected privately. Review them in the system picker from Pause sets.")
         }
         val visible = if (category == TargetsCategory.WEBSITES) {
             values.filter { it.contains(search.text.toString().trim(), ignoreCase = true) }
