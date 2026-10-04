@@ -13,6 +13,8 @@ import app.posato.control.model.Scenario
 import app.posato.control.model.SnapshotNode
 import app.posato.control.model.States
 import app.posato.control.model.Step
+import app.posato.control.model.StepError
+import app.posato.control.model.StepResult
 import app.posato.control.scenario.QueryMatcher
 import com.github.ajalt.clikt.parameters.groups.provideDelegate
 import com.github.ajalt.clikt.parameters.options.default
@@ -174,16 +176,40 @@ class RunCommand : ControlCommand("run", "Run a JSON scenario file (or - for std
         val text = if (scenario == "-") generateSequence(::readlnOrNull).joinToString("\n") else Files.readString(Path.of(scenario))
         val result = session.backend().runScenario(parseScenario(text))
         if (!result.ok) {
-            session.context.log(ControlJson.pretty.encodeToString(RunResult.serializer(), result))
-            val error = result.steps.firstOrNull { !it.ok }?.error ?: result.error
+            val report = ControlJson.pretty.encodeToString(RunResult.serializer(), result)
+            session.context.log(report)
+            // A failed command carries no result, so the step results go to a file that the hint names.
+            val reportFile = session.context.recordArtifact(session.context.artifactPath(RESULT_FILE))
+            Files.writeString(reportFile, report)
+            val failed = result.steps.firstOrNull { !it.ok }
+            val error = failed?.error ?: result.error
             val code = ErrorCode.entries.firstOrNull { it.name == error?.code } ?: ErrorCode.COMMAND_FAILED
-            throw ControlException(
-                code,
-                error?.message ?: "The scenario failed.",
-                "Inspect the step results and failure artifacts in the run directory.",
-            )
+            throw ControlException(code, failureMessage(failed, error), failureHint(session.context.layout.relativize(reportFile), failed))
         }
         return runResultElement(result)
+    }
+
+    private fun failureMessage(
+        failed: StepResult?,
+        error: StepError?
+    ): String {
+        val reason = error?.message ?: "no reason given"
+        if (failed == null) return "The scenario failed before a step reported: $reason"
+        val step = failed.name?.let { name -> "\"$name\" (${failed.action})" } ?: failed.action
+        return "Step ${failed.index} $step failed: $reason"
+    }
+
+    private fun failureHint(
+        reportPath: String,
+        failed: StepResult?
+    ): String {
+        val evidence = failed?.artifacts.orEmpty()
+        val stepEvidence = if (evidence.isEmpty()) "" else " The failed step's evidence: ${evidence.joinToString(", ")}."
+        return "Every step's result is in $reportPath; step indexes start at 0.$stepEvidence"
+    }
+
+    private companion object {
+        const val RESULT_FILE = "run-result.json"
     }
 }
 

@@ -367,7 +367,10 @@ hardcoded screen positions. Read-only find/wait/snapshot do not scroll.
 `launch.fresh` resets application state, so the app opens on the first-install
 flow instead of `Session`. `terminateExisting: true` (the
 scenario default) restarts the app; false reuses it. A failed step records
-`failure-<index>-screenshot.png` and `failure-<index>-snapshot.json`.
+`failure-<index>-screenshot.png` and `failure-<index>-snapshot.json`. A failed
+`run` names the step in its error message by its 0-based index, name, and
+action, writes every step's result to `run-result.json` in the run directory,
+and names that file and the step's evidence in the hint.
 
 Canonical scenarios in `fixtures/scenarios/`:
 
@@ -465,6 +468,11 @@ tracks the new process.
 - `build/verification/runs/<run-id>/` holds screenshots, snapshots, logs,
   driver result bundles, and reset backups. `build/verification/latest`
   points at the newest run that produced artifacts.
+- `run-result.json` in the run directory holds each step's result (`index`,
+  `name`, `action`, `ok`, `error`, `artifacts`) of a failed `run`. On iOS
+  every driver invocation also leaves `driver/DEVICE-<n>/result.json`
+  (`SIMULATOR-<n>` on the Simulator), the driver's own step results, next to
+  that invocation's `.xcodebuild.log`.
 - `build/verification/state.json` tracks the processes this tool started;
   `terminate` and `cleanup` only touch those.
 - `build/verification/transcript.log` records every helper command per run
