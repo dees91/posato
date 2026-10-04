@@ -144,6 +144,16 @@ or Required. Taken: the failure hint now says that earlier steps of the run
 may already have been written and a rerun is safe; the evidence of the
 subtitle is a rerun reporting `unchanged`.
 
+## Completed-change review
+
+`changes-required` with two Required findings, both closed: the macOS
+`observe` evidence is now archived with the transcript, and the manual
+pause on R's iPhone build ran. Taken from Recommended: the migrated Mac
+schedule's own start is observed on the `peer` clone at the publication
+sitting. Noted: the Intel verification DMG is deleted after publication; the
+feed notes keep "on Apple silicon" from macOS 13 under the recorded ADR 0003
+exception.
+
 ## Result
 
 - **Revision R** = `3090752bf064a036438894dae06bb2951a322555` (version 1.3.0
@@ -164,7 +174,8 @@ subtitle is a rerun reporting `unchanged`.
   - Consumed macOS build number: 28 (both architectures).
 - **x86-64 verification candidate** from a second clean clone of R:
   candidate channel, Rosetta switch, loopback test feed, a throwaway key that
-  was never stored; notarized; SHA-256
+  was never stored; its Info.plist also allows loopback networking for that
+  feed; notarized; SHA-256
   `cc151e5ad976ce05cc9c002f0cb28588da4237e1705d9c2e857b767bf091c274`;
   never published.
 - **iOS 1.3.0 (6)** archived from the clean clone, exported, inspected,
@@ -180,7 +191,10 @@ subtitle is a rerun reporting `unchanged`.
 
 Run directories are under the release worktree's ignored
 `build/verification/runs/`; copies of the key screenshots are in
-`build/verification/release-005/`.
+`build/verification/release-005/`. The macOS `observe` results are the exit
+codes recorded under each run id in the driver transcript, archived as
+`build/verification/release-005/transcript-2026-10-04.log`; those run
+directories hold no files of their own.
 
 | Check | Target | Result |
 | --- | --- | --- |
@@ -194,11 +208,12 @@ Run directories are under the release worktree's ignored
 | Intel release DMG | macOS 13.6 `ventura`, Rosetta | pass: Gatekeeper accepted the install; "This version is for Intel Macs" with Quit and Download; after Quit no process, launchd job, daemon, or data |
 | Intel verification candidate | `ventura` | pass: x86-64 under Rosetta, setup ready, a manual pause blocked (`outcome: paused`), a schedule started and blocked |
 | Upgrade from 1.2 without opening | test iPhone, iOS 26 | pass: a `v1.2.0` development build with consent, Calculator, two websites, and overlapping schedules Early 14:47-15:02 and Late 14:50-15:10; R installed and not opened: Calculator shielded and "Website Not Allowed" during Early (`rel005-iphone-upgrade-early`) and still after Early ended (`rel005-iphone-upgrade-late`); opened afterwards: one default set "My set" with 2 websites and 1 app, used by both schedules |
+| Manual pause on R | test iPhone | pass: Calculator shielded and "Website Not Allowed" (`rel005-iphone-manual`); after End early both usable again, Safari after more than 20 s (`rel005-iphone-manual-after2`) |
 | `NAV-002` path and edge swipe on R | test iPhone | pass: 5 of 5, the swipe returned from a set and the editor, one app process throughout |
 | Linked pair | - | not repeated (maintainer decision) |
 
 - **Driver notes:** `flow schedule` saves weekdays only, so Sunday was added
-  in the editor; a 1.2 setup in a fresh clone can need `vm prompt toggle
+  in the editor (follow-up: a `--days` option in `posato-control`); a 1.2 setup in a fresh clone can need `vm prompt toggle
   --row PosatoMacOSHelper`; the Intel guest needs `posato.vm.venturaGolden`
   in `local.properties`.
 
