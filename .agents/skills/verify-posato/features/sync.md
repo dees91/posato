@@ -81,6 +81,19 @@ own golden VM line, and address them with `--vm primary|peer`.
   (`docs/development/unattended-verification.md`). "This Mac can't connect to
   iCloud" (Apple Account Settings, second click) is answered with
   `vm prompt account-password`. The key then arrives without another press.
+- Development builds use CloudKit's Development environment, where a change
+  reaches the other device 1 to 10 minutes after its exchange. Poll the
+  receiver (`db query` for the expected row, or the Session summary) for up
+  to 12 minutes before calling it lost, and schedule an offline-start check
+  at least 15 minutes ahead.
+- **Reset the Development zone** when **Remove workspace** keeps ending in
+  "Sync did not finish" (a test that left hundreds of records) or a fresh
+  clone cannot link. This is a maintainer action in the CloudKit Console,
+  so ask for it as a checklist: sign in with the developer team account,
+  open container `iCloud.app.posato.sync`, environment **Development**,
+  **Records**, **Private Database**; at "Act as iCloud Account" sign in with
+  the test Apple Account; select zone `PosatoSyncV1` and **Delete Zone**.
+  Then reinstall the test iPhone, which still names the deleted workspace.
 - A session started on the primary reaches the peer at the peer's next
   exchange (`menu --open` starts one, as does **Sync now**); the peer shows
   Resume restrictions and needs its own `vm prompt admin`.

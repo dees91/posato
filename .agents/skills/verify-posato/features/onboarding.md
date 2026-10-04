@@ -51,6 +51,12 @@ Preconditions:
   returns 0) and no `PosatoMacOSHelper` process (`pgrep -f PosatoMacOSHelper`
   is empty) before the permission step on Mac.
 
+- **Mac in a VM:** `$PC vm onboard --line <line>` takes a fresh clone of the
+  development package through the flow, helper approval and administrator
+  prompt included, until **This Mac is ready.** Drive the flow by hand only to
+  prove a step of it, or for a release (1.2 and earlier) whose screens
+  `vm onboard` does not know: answer `vm prompt background`, then
+  `vm prompt toggle --row PosatoMacOSHelper`, then `vm prompt admin`.
 - **Full flow:** `$PC run -t sim --scenario tools/posato-control/fixtures/scenarios/first-install.json`.
   It declines iCloud, takes the unavailable permission answer, adds
   `example.com`, waits for `1 website saved` on the summary, captures a screenshot
@@ -125,5 +131,9 @@ Preconditions:
   peer's workspace; only creator/from-empty recipes clear it first.
 - Typing the website needs the desktop window frontmost; keep the Mac
   unlocked and avoid competing foreground automation during input.
+- During Mac setup, `vm dialogs` lists the App Background Activity request
+  as a `notification`; answer it with `vm prompt background`.
+- System Settings left in front after a prompt takes keyboard shortcuts such
+  as Command-[; quit it before `vm press`.
 - The desktop shares the developer's real databases; restore them from the
   run's `backup/desktop/` directory after any `--fresh` or `reset`.

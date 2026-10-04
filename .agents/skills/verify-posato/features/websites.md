@@ -78,7 +78,9 @@ Preconditions:
   Back to adding clear it. Do not relaunch just to hide the keyboard.
 - Batch limits are 65,536 UTF-16 code units overall, 1,024 per trimmed entry,
   and 1,024 unique stored domains. Credentials, unsupported schemes, IPs,
-  wildcards, invalid hosts, and capacity overflow are rejected.
+  wildcards, invalid hosts, and capacity overflow are rejected. To reach the
+  domain limit on the Mac, type about 100 domains per `type` call: a desktop
+  step that runs longer than 120 s fails with "posato-ax-bridge did not finish".
 - Duplicate entries are acknowledged, not added again. Empty separators are
   ignored; empty input does not submit.
 - Failed or conflicting writes must not clear the draft. Reload after a

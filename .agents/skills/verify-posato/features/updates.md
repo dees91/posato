@@ -58,6 +58,22 @@ Preconditions:
   `db query` still lists `example.com`; This Mac shows the helper enabled, or
   **Set up Posato** when the new release needs setup again. A pause started
   after the update blocks `example.com` (`observe --expect blocked`).
+- **Upgrade from the previous release's development build** (a migration
+  or a stored-state change, without notarized candidates): check out the tag
+  in its own worktree (`git worktree add --detach ../posato-v<previous> v<previous>`,
+  then copy `local.properties`) and build there with that tag's own
+  `posato-control`.
+  - Mac: `$PC build -t desktop` in the tag worktree, then copy its package
+    into this worktree's staging with `ditto` (path
+    `desktopApp/build/compose/binaries/main/development-package/Posato.app`),
+    `vm create`, onboard by hand (see [First install](./onboarding.md)), and
+    create the state to migrate. Then `$PC build -t desktop` here,
+    `vm sync`, and `launch` opens the upgraded database.
+  - iPhone: `reset -t device --yes` and `install`, `launch` from the tag
+    worktree, create the state with that release's labels, then `terminate`.
+    `build -t device` and `install -t device` here install over it and keep
+    the data. A scenario with `"launch": {"skip": true}` checks what the
+    closed application leaves in force before the first launch.
 - **Answering dialogs:** `$PC vm dialogs --line primary` names each open
   system dialog by its owning process. Answer `admin` with
   `vm prompt admin`, `gatekeeper` with `vm prompt gatekeeper`, and helper

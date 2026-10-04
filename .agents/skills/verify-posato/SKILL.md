@@ -119,6 +119,23 @@ $PC launch -t desktop --vm primary --capture-logs
 $PC wait -t desktop --vm primary --for exists --text "Pause sets" --role button --timeout-seconds 30
 ```
 
+Shortcuts replace the hand-driven setup; reach for them first (rows in the
+driver README):
+
+- `vm onboard --line <line>` finishes first-run onboarding in a fresh clone,
+  helper and prompts included, in about 1.5 minutes. Release 1.2 and earlier
+  need the manual route in [First install](./features/onboarding.md).
+- `flow set`, `flow session`, `flow schedule`, and `flow icloud link|remove`
+  each create a pause set, start a session, add a schedule, or link or remove
+  iCloud in one command.
+- After every host `build -t desktop`, run `vm sync --line <line>` before the
+  next `launch`; a clone keeps the package it was given (`PACKAGE_OUTDATED`).
+- `./gradlew qualityLint` between commits; `./gradlew quality` before ready.
+
+Clone names are machine-wide: every worktree and session shares
+`posato-run-<line>`. When `vm create` reports that the clone already exists,
+pick a free line or wait for its owner; destroy only a clone you created.
+
 Connected iPhone (needs `posato.apple.developmentTeam` in the ignored
 `local.properties`; keep the phone unlocked):
 
@@ -168,7 +185,9 @@ Require `ok: true` with no `error`-severity check. Blocking checks:
 `desktop.accessibility` and `desktop.screenRecording` (desktop driving is
 impossible without them), `device.team` and `device.connected` (device),
 `simulator.booted` and `simulator.installed` (simulator). `status -t <target>`
-confirms the tracked process is the one you launched.
+confirms the tracked process is the one you launched. Judge the iPhone by
+`device.connected` alone: `devicectl` also lists a wired phone whose tunnel
+went idle as "available (paired)", and the driver wakes it.
 
 `doctor` is also the one-time provisioning gate. Every check carries a `state`
 and one remedy:
@@ -311,6 +330,10 @@ Proof standard for a feature:
    after a relaunch instead.
 4. Restore the state you changed (remove the row you added) and confirm the
    restoration the same way.
+5. Verify a committed head with a clean tree, then post one line in the pull
+   request: `Verified <sha> on <target>: <scenario or command> -> <result>, run <run-id>`.
+   Verify and post again after any later application change; reviewers block
+   a merge on evidence that does not name the head.
 
 Report an unreachable path with the exact command and the failing check
 (`TCC_ACCESSIBILITY_DENIED`, `NO_CONNECTED_DEVICE`, `DEVELOPMENT_TEAM_MISSING`).
@@ -419,7 +442,10 @@ so the developer's local data is unchanged.
   between them in a VM.
 - `screen-time-consent.json` grants Screen Time access on the test iPhone through the
   system sheets and the passcode keypad, reading the passcode from the Keychain item in
-  `local.properties`.
+  `local.properties`. It starts on the onboarding screen that shows **Allow Screen Time
+  access**; after onboarding the request comes from **Choose apps**, so replace the
+  first step's query with that button. The passcode step is optional, because Face ID
+  can approve without the keypad.
 - `onboarding-sync-consent-ios.json` takes a fresh iPhone install through iCloud consent,
   Screen Time consent (the same steps in one run), and the remaining onboarding;
   `choose-app-ios.json` picks Calculator in the picker; `observe-blocking-ios.json` and

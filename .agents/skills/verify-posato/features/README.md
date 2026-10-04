@@ -103,7 +103,10 @@ handles, required state, commands, and observable proof.
   iCloud outcome.
 
 - [Updates on Mac](./updates.md) covers the update-consent alert, preparing
-  the previous release in a clone, and the in-app update to the current one.
+  the previous release in a clone, the in-app update to the current one, and
+  upgrading the previous release's development build on Mac and iPhone.
+- [Back navigation](./navigation.md) covers explicit Back, Command-[ and
+  Escape, the Mac trackpad swipe, and the iOS edge swipe.
 - [About Posato and licenses](./licenses.md) covers the installed version,
   three offline legal documents, full-text
   scrolling, and return to the preceding primary destination on both hosts.
