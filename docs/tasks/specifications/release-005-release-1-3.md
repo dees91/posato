@@ -39,11 +39,11 @@ Review.
   cannot do.
 - **Version.** `MARKETING_VERSION = 1.3.0` for both applications. macOS
   build 28 for both architectures: the published stable feed holds 27, and
-  no build at or above 28 was signed with the release key (the `MACOS-015`
-  candidates 9001 to 9003 ran only in destroyed VM clones). iOS build 6
+  no installation that reads the stable feeds holds a build of 28 or more
+  (the `MACOS-015` candidates 9001 to 9003 ran only in destroyed VM clones). iOS build 6
   (`store status`: next free).
 - **Intel.** The x86-64 release build refuses to open under Rosetta, so its
-  function is verified on a verification build of R made with
+  function is verified on a notarized candidate-channel build of R made with
   `-PposatoMacOsAllowRosetta=true` in the `ventura` guest, and the release
   DMG itself through its package checks, Gatekeeper, and the refusal.
 - **Update path.** A 1.2.0 installation must find 1.3.0 on the stable feed,
@@ -92,5 +92,6 @@ Review.
 ## Decisions or blockers
 
 - **Blocker (maintainer):** the Keychain prompts during signing.
-- **Open:** the App Store subtitle "Space for what matters." is set in App
-  Information, which `store prepare` does not change.
+- **Decided (2026-10-04):** `store prepare --subtitle` sets the App Store
+  subtitle "Space for what matters."; the other decisions are in the
+  execution record.

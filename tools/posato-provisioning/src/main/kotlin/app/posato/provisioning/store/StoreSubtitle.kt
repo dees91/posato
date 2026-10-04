@@ -34,7 +34,8 @@ object StoreSubtitle {
             ?: throw ProvisioningException(
                 ErrorCode.VERSION_NOT_EDITABLE,
                 "The app has no editable App Information, so the subtitle cannot change now.",
-                "The subtitle changes with an App Store version that is still being prepared; `store status` shows the versions.",
+                "Earlier steps of this run may already be written; a rerun is safe. The subtitle changes with an App Store version " +
+                    "that is still being prepared; `store status` shows the versions.",
             )
         val localization = appInfo.localizations(info.id).firstOrNull { resource -> resource.attributes.locale == STORE_LOCALE }
             ?: throw ProvisioningException(
