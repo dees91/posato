@@ -89,8 +89,11 @@ findings 2 and 3), which merges before this PR.
   behavior.
 - Set the `PRIVACY.md` effective date to the publication date.
 - The maintainer accepted the `PRIVACY.md` edits (`user-confirmed`,
-  2026-10-03) and the subtitle (2026-10-02); the screenshots and media await
-  acceptance.
+  2026-10-03), the subtitle (2026-10-02), and the screenshots and media,
+  including the hero's session states at scale 1.0 and the one-minute gap
+  between the Mac and iPhone end times (`user-confirmed`, 2026-10-04).
+- This PR merges with the release go for `RELEASE-005`, after #132, because
+  merging it deploys `posato.app` (`user-confirmed`, 2026-10-04).
 
 ## GitHub release notes for 1.3.0
 
