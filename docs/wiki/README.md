@@ -31,6 +31,9 @@ directory under `docs/` and referenced back from the wiki.
 - `log.md` is append-only and records ingests, corrections, decisions,
   material synthesis updates, and concise outcomes for substantive lightweight
   changes.
+  `.gitattributes` merges it with Git's union driver, so parallel branches
+  that each append an entry rebase without a conflict; start every entry with
+  a blank line and its heading.
 - `sources/` records provenance and scope.
 - `topics/` records maintained knowledge.
 
