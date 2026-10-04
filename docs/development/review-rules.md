@@ -24,3 +24,23 @@ follow the process in [`AGENTS.md`](../../AGENTS.md#code-review) and the
   last in-memory copy (`R-05`), and per-type `toString()` redaction reports
   for a family already covered by the enumerated redaction test. Reply with
   the rule reference.
+- Application changes need the verification line from the
+  [verify-posato Evidence steps](../../.agents/skills/verify-posato/SKILL.md#evidence)
+  at the reviewed head, or a named blocker. Documentation-only changes need
+  none.
+
+## What to read
+
+`AGENTS.md` is already in context, and `CLAUDE.md` only imports it. Read as
+far as the diff needs, in this order:
+
+1. the diff and this file;
+2. for a recorded task, its brief under `docs/tasks/specifications/` and the
+   execution record with the same file name under `docs/tasks/executions/`;
+3. the sections of the
+   [engineering quality contract](engineering-quality-contract.md) that the
+   diff touches;
+4. `DESIGN.md` only for interface or public-copy changes, the wiki only for
+   a changed wiki page or a reusable conclusion, and a
+   [verify-posato feature page](../../.agents/skills/verify-posato/features/README.md)
+   only for the behavior under review.
