@@ -568,3 +568,9 @@ of every driver run is kept next to its result bundle in the run directory.
 Unit tests cover the query matcher, the scenario runner, the JSON contracts,
 and local configuration parsing against synthetic fixtures. End-to-end checks
 run the sequences above against the real applications.
+
+After changing how the iOS driver taps, types, or swipes, run
+`fixtures/scenarios/driver-settle-ios.json` on the Simulator a few times, at
+the default and the largest text size. It acts right after each push, scroll,
+and keyboard change without a wait. Without the wait for a still element
+before a tap, about one run in four loses the back tap during a push.
