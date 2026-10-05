@@ -207,10 +207,11 @@ Before marking a pull request ready:
    together, as a method that crossed its length limit did after
    `SCHEDULE-004` met `MACOS-015`. Resolve failures rather than treating
    disabled CI as a waiver. Between corrections, `./gradlew qualityLint` runs
-   only formatting and static analysis, including swift-format and SwiftLint
-   for the native helper and companion, so most findings appear before the
-   full gate. Fix Swift formatting in place from the module directory with
-   the paths its `swiftFormatCheck` lints, for example in `macosHelper/` or
+   only formatting and static analysis: ktlint and Detekt for every Gradle
+   module, the prototypes included, and swift-format and SwiftLint for the
+   native helper and companion, so most findings appear before the full
+   gate. Fix Swift formatting in place from the module directory with the
+   paths its `swiftFormatCheck` lints, for example in `macosHelper/` or
    `macosSyncCompanion/`:
 
    ```shell

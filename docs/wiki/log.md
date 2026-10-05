@@ -2516,3 +2516,10 @@ to scope, feasibility, or delivery.
 - `user-confirmed` (2026-10-04): the implementing session runs `quality` on
   the rebased tip before ready, and the merging session reruns it only when
   its own rebase changed code.
+
+## [2026-10-05] tooling | qualityLint covers every Detekt and ktlint run
+
+- `observed`: `qualityLint` now runs Detekt and ktlint for the prototypes,
+  the native helper, and the companion, the last static checks that only
+  `quality` ran, so a prototype Detekt finding fails it in seconds instead of
+  the full gate; it still builds no app and runs no tests.
