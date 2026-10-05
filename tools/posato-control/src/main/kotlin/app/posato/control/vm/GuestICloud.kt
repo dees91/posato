@@ -76,10 +76,9 @@ class GuestICloud(
         line: VmLine,
         timeoutMs: Long
     ): ICloudKeychainState {
-        val screen = openSettings(line, timeoutMs)
-        val state = readState(line, screen, timeoutMs)
-        quitSettings(line)
-        return state
+        return inSettings(line) {
+            readState(line, openSettings(line, timeoutMs), timeoutMs)
+        }
     }
 
     /** Resumes a paused keychain, answering the account, Mac password, and passcode dialogs; returns the final state. */
@@ -87,11 +86,18 @@ class GuestICloud(
         line: VmLine,
         timeoutMs: Long
     ): ICloudKeychainState {
-        val screen = openSettings(line, timeoutMs)
-        if (readState(line, screen, timeoutMs) != ICloudKeychainState.PAUSED) {
-            quitSettings(line)
-            return check(line, timeoutMs)
+        inSettings(line) {
+            val screen = openSettings(line, timeoutMs)
+            if (readState(line, screen, timeoutMs) == ICloudKeychainState.PAUSED) resumeDataSync(line, screen, timeoutMs)
         }
+        return check(line, timeoutMs)
+    }
+
+    private fun resumeDataSync(
+        line: VmLine,
+        screen: GuestScreen,
+        timeoutMs: Long
+    ) {
         val prompts = VmPrompts(context)
         click(line, screen, NOTICE_ROW, exact = false, timeoutMs = timeoutMs)
         click(line, screen, RESUME_BUTTON, exact = true, timeoutMs = timeoutMs)
@@ -102,7 +108,7 @@ class GuestICloud(
             when {
                 prompt != null -> prompts.answer(line, prompt, timeoutMs)
 
-                lines.none { it.shows(PAUSED_NOTICE) } -> break
+                lines.none { it.shows(PAUSED_NOTICE) } -> return
 
                 System.currentTimeMillis() >= deadline -> throw ControlException(
                     ErrorCode.WAIT_TIMEOUT,
@@ -112,8 +118,21 @@ class GuestICloud(
             }
             Thread.sleep(POLL_MS)
         }
-        quitSettings(line)
-        return check(line, timeoutMs)
+    }
+
+    /**
+     * Runs [block] with System Settings and quits it afterwards, also when a step times out: a window left in front
+     * covers the application that the next command drives.
+     */
+    private fun <T> inSettings(
+        line: VmLine,
+        block: () -> T
+    ): T {
+        try {
+            return block()
+        } finally {
+            quitSettings(line)
+        }
     }
 
     /**
