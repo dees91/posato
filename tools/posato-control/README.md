@@ -165,7 +165,7 @@ grants a permission.
 | `terminate` | all | Stops only the instance this tool started or adopted, on the simulator or device it was launched on; it does nothing when nothing is tracked. |
 | `status` | all | Installed, running, pid, app path, container path, signing mode. |
 | `screenshot [--name n] [--out file]` | all | Desktop window capture, `simctl io screenshot`, or a driver screenshot on the device. |
-| `snapshot [--format json\|text] [--labels] [--max-depth n] [query]` | all | Unified accessibility tree. `--format text` prints an outline with roles, labels, and desktop paths; `--labels` lists only the elements a query can name, one line each, without paths or layout, the cheapest way to see what is on screen. |
+| `snapshot [--format json\|text] [--labels] [--max-depth n] [query]` | all | Unified accessibility tree. `--format text` prints an outline with roles, labels, and desktop paths; `--labels` lists only the elements with an id, a label, or a placeholder, one line each, without paths or layout, the cheapest way to see what is on screen. |
 | `find <query>` | all | Matching elements; never changes application state (on iOS it starts the app when it is not running). |
 | `tap <query>` | all | Presses a button or taps an element. |
 | `type <query> --input TEXT [--clear] [--submit]` | all | Types into a text field. |
@@ -420,8 +420,9 @@ with `vm sync`. A command that starts the development package (`launch`, `run` u
 `flow`, `vm onboard`, and `tap`, `type`, `press`, `wait`, and `update-consent`, which launch Posato when it is not
 running; `type` and `wait` with `--process` and no element query are exempt) refuses with `PACKAGE_OUTDATED` when the host staged another package than the one the
 last `vm sync` copied; the guest records that package, because every worktree shares a line's clone. Every `--vm`
-command and `vm onboard` also refuse with `TOOL_OUTDATED` when the guest's driver (distribution, fixtures, and bridge) is
-not the one this worktree would sync, so a rebuilt `installDist` or an edited fixture needs `vm sync` before it applies. The one-time setup of the golden VMs, device registration,
+command and `vm onboard` also refuse with `TOOL_OUTDATED` when the guest's driver (distribution and bridge) is
+not the one this worktree would sync, so a rebuilt `installDist` needs `vm sync` before it applies; a scenario travels over
+standard input, so an edited fixture needs none. The one-time setup of the golden VMs, device registration,
 test Apple Account, and Keychain items is in
 [the unattended verification guide](../../docs/development/unattended-verification.md).
 

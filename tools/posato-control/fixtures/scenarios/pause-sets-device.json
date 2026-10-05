@@ -38,6 +38,15 @@
       }
     },
     {
+      "name": "rows-loaded",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "textContains": "My set, ",
+        "role": "button"
+      }
+    },
+    {
       "name": "no-leftover-work",
       "action": "precondition",
       "state": "absent",

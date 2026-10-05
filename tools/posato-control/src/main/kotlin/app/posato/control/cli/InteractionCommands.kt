@@ -58,7 +58,10 @@ class SnapshotCommand : ControlCommand("snapshot", "Dump the accessibility tree 
     private val process by ProcessOptions()
     private val maxDepth by option("--max-depth", help = "Limit the tree depth.").int()
     private val format by option("--format", help = "json or text").default("json")
-    private val labels by option("--labels", help = "List only the elements a query can name, one per line, without paths or layout.").flag()
+    private val labels by option(
+        "--labels",
+        help = "List only the elements with an id, label, or placeholder, one per line, without paths or layout.",
+    ).flag()
 
     override fun execute(session: Session): JsonElement {
         val node = session.backend(process.selector()).snapshot(query.toQuery(), maxDepth)

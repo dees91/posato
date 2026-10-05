@@ -86,11 +86,16 @@ internal fun refuseOutdatedTooling(
 }
 
 /** The files `vm sync` copies as the guest's driver, relative to the repository root. */
-internal fun driverPaths(layout: RepoLayout): List<String> = listOf(
-    "settings.gradle.kts",
+internal fun driverPaths(layout: RepoLayout): List<String> = listOf("settings.gradle.kts", "tools/posato-control/fixtures") +
+    executedDriverPaths(layout)
+
+/**
+ * The part of the driver that runs in the guest and so goes into its fingerprint. The host sends scenarios, the
+ * onboarding recipe included, over standard input, so an edited fixture applies without a sync.
+ */
+internal fun executedDriverPaths(layout: RepoLayout): List<String> = listOf(
     "tools/posato-control/build/install",
     "tools/posato-control/native",
-    "tools/posato-control/fixtures",
     layout.relativize(layout.accessibilityBridgeBinary),
     layout.relativize(layout.accessibilityBridgeCommand),
 )
@@ -100,10 +105,11 @@ internal fun requireCurrentTooling(
     context: RunContext,
     line: VmLine,
 ) {
-    val guest = Tart(context).exec(line.cloneName, "cat \"$GUEST_ROOT/$GUEST_TOOLING_STAMP\" 2>/dev/null")
+    // A missing stamp reads as empty, so a guest synced before stamps existed counts as outdated.
+    val guest = Tart(context).exec(line.cloneName, "cat \"$GUEST_ROOT/$GUEST_TOOLING_STAMP\" 2>/dev/null || true")
         .requireSuccess(ErrorCode.VM_UNAVAILABLE, "Reading the synced driver in ${line.cloneName}")
         .stdout.trim()
-    refuseOutdatedTooling(guest.ifEmpty { null }, toolingFingerprint(context.layout.root, driverPaths(context.layout)), line)
+    refuseOutdatedTooling(guest.ifEmpty { null }, toolingFingerprint(context.layout.root, executedDriverPaths(context.layout)), line)
 }
 
 private class DigestSink(

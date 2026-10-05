@@ -49,7 +49,7 @@ data class SnapshotNode(
     }
 
     /**
-     * One line per element that a query can name (an id, a label, or a placeholder), with a text field's contents,
+     * One line per element with an id, a label, or a placeholder, with a text field's contents,
      * in tree order and without paths or layout: the short list of what is on screen.
      */
     fun labels(): String = flatten()

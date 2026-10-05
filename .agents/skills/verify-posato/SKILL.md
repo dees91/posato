@@ -128,10 +128,10 @@ driver README):
 - `flow set`, `flow session`, `flow schedule`, and `flow icloud link|remove`
   each create a pause set, start a session, add a schedule, or link or remove
   iCloud in one command.
-- After every host `build -t desktop`, `installDist` of the driver, or fixture
-  edit, run `vm sync --line <line>` before the next `--vm` command; a clone
-  keeps the package (`PACKAGE_OUTDATED`) and the driver (`TOOL_OUTDATED`) it
-  was given.
+- After every host `build -t desktop` or `installDist` of the driver, run
+  `vm sync --line <line>` before the next `--vm` command; a clone keeps the
+  package (`PACKAGE_OUTDATED`) and the driver (`TOOL_OUTDATED`) it was given.
+  Scenarios travel over standard input, so a fixture edit needs no sync.
 - `./gradlew qualityLint` between commits; `./gradlew quality` before ready.
 
 Clone names are machine-wide: every worktree and session shares

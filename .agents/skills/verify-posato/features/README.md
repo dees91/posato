@@ -43,7 +43,7 @@ fresh clone or `launch --fresh`.
 | `session-expiry*` | no active session, `example.com` saved | nothing; it removes `example.com` | none |
 | `add-website*` | no `example.com` | `example.com` | `remove-website*.json` |
 | `website-batch-list*` | no `design-proof-*.example` rows | 50 `design-proof-*.example` rows | `website-batch-list-cleanup*.json` |
-| `pause-sets-desktop` | a linked workspace (`flow icloud link`) that never opened Pause sets, only My set, no `Focus` schedule | nothing; it deletes its sets and schedule | none |
+| `pause-sets-desktop` | a linked workspace (`flow icloud link`) that never opened Pause sets, only My set, no schedules | the one-time notice used up; it deletes its sets and schedule | a freshly linked clone before a rerun |
 | `pause-sets-device` | no `Work` set | nothing; it deletes `Work` | none |
 
 An interrupted run leaves whatever it created so far; remove those rows by

@@ -29,23 +29,13 @@
       }
     },
     {
-      "name": "schedules-ready",
-      "action": "waitFor",
+      "name": "no-schedules",
+      "action": "precondition",
       "state": "exists",
       "query": {
-        "text": "Add schedule",
-        "role": "button"
-      }
-    },
-    {
-      "name": "no-leftover-focus",
-      "action": "precondition",
-      "state": "absent",
-      "query": {
-        "text": "Actions for Focus",
-        "role": "button"
+        "text": "Make time for a regular pause."
       },
-      "text": "Delete the sets and the Focus schedule an earlier run left behind, or start from a fresh clone."
+      "text": "Delete the schedules an earlier run left behind, such as Focus, or start from a fresh clone."
     },
     {
       "name": "open-pause-sets",
@@ -65,6 +55,15 @@
       }
     },
     {
+      "name": "rows-loaded",
+      "action": "waitFor",
+      "state": "exists",
+      "query": {
+        "text": "More actions for My set",
+        "role": "button"
+      }
+    },
+    {
       "name": "no-leftover-office",
       "action": "precondition",
       "state": "absent",
@@ -75,11 +74,11 @@
       "text": "Delete the sets and the Focus schedule an earlier run left behind, or start from a fresh clone."
     },
     {
-      "name": "no-leftover-set-2",
+      "name": "no-leftover-numbered-set",
       "action": "precondition",
       "state": "absent",
       "query": {
-        "textContains": "Set 2",
+        "textContains": "More actions for Set ",
         "role": "button"
       },
       "text": "Delete the sets and the Focus schedule an earlier run left behind, or start from a fresh clone."

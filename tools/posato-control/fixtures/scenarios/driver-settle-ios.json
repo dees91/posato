@@ -5,7 +5,6 @@
   "onFailure": { "screenshot": true, "snapshot": true },
   "steps": [
     { "name": "ready", "action": "waitFor", "state": "exists", "query": { "text": "Pause sets", "role": "button" } },
-    { "name": "no-probe", "action": "precondition", "state": "absent", "query": { "textContains": "settle-probe" }, "text": "Remove settle-probe.example from My set first." },
     { "name": "open-pause-sets", "action": "tap", "query": { "text": "Pause sets", "role": "button" } },
     { "name": "push-set", "action": "tap", "query": { "textContains": "My set", "role": "button" } },
     { "name": "type-while-pushing", "action": "type", "query": { "role": "textField" }, "text": "settle-probe.example", "submit": true },

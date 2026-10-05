@@ -86,12 +86,14 @@ class VmLifecycle(
         // Hashed before the copy, so a build that runs meanwhile cannot stamp another package than the one copied.
         val fingerprint = if (copyPackage) packageFingerprint(layout.stagedDesktopApplication) else null
         val driver = driverPaths(layout)
-        val tooling = toolingFingerprint(layout.root, driver)
+        val tooling = toolingFingerprint(layout.root, executedDriverPaths(layout))
         val paths = if (copyPackage) driver + layout.relativize(layout.stagedDesktopApplication) else driver
         tart.pipe(
             line.cloneName,
             "tar -C ${shellQuote(layout.root.toString())} -cf - " + paths.joinToString(" ") { shellQuote(it) },
-            "rm -rf $GUEST_ROOT/tools $GUEST_ROOT/desktopApp && mkdir -p $GUEST_ROOT && tar -C $GUEST_ROOT -xf -",
+            // The old stamp goes first, so a copy that fails midway leaves a guest that reads as outdated.
+            "rm -f \"$GUEST_ROOT/$GUEST_TOOLING_STAMP\" && rm -rf $GUEST_ROOT/tools $GUEST_ROOT/desktopApp && " +
+                "mkdir -p $GUEST_ROOT && tar -C $GUEST_ROOT -xf -",
             if (copyPackage) "Copying the package and driver into ${line.cloneName}" else "Copying the driver into ${line.cloneName}",
         )
         val stamp = "\"$GUEST_ROOT/$GUEST_PACKAGE_STAMP\""
@@ -108,7 +110,7 @@ class VmLifecycle(
     fun requireCurrentPackage(line: VmLine) {
         val staged = context.layout.stagedDesktopApplication.takeIf { it.exists() } ?: return
         val read = "if test -f \"$GUEST_ROOT/${CandidateInstall.MARKER}\"; then echo candidate; " +
-            "else cat \"$GUEST_ROOT/$GUEST_PACKAGE_STAMP\" 2>/dev/null; fi"
+            "else cat \"$GUEST_ROOT/$GUEST_PACKAGE_STAMP\" 2>/dev/null || true; fi"
         val guest = tart.exec(line.cloneName, read)
             .requireSuccess(ErrorCode.VM_UNAVAILABLE, "Reading the synced package in ${line.cloneName}")
             .stdout.trim()
