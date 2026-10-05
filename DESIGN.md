@@ -900,8 +900,9 @@ the **Sync with iCloud** sentence above. Planned Polish term: "zestaw".
   system alert with a text field, presented again after a refused name. A new set opens on
   its Websites tab. The first set shows as "My set" until renamed.
 - **Delete.** A destructive confirmation names the set. When schedules use
-  it, the dialog lists them and offers **Change their set**, a set choice,
-  then deletes; while a running pause uses it, Delete is disabled with "You
+  it, the dialog lists them and offers **Move to <set> and delete** for each
+  other set (`DESIGN-004`; before it, **Change their set** and a set choice);
+  while a running pause uses it, Delete is disabled with "You
   can delete this set after the pause ends." The default set offers no
   Delete; its caption says "Make another set the default to delete this
   one."

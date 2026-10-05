@@ -115,7 +115,7 @@ handles, required state, commands, and observable proof.
 ## Features
 
 - [Pause sets](./pause-sets.md) covers the set list, creating, renaming,
-  choosing the default, deleting with Change their set, and the set choice in
+  choosing the default, deleting with Move to <set> and delete, and the set choice in
   Session and schedules.
 - [Schedules](./schedules.md) covers adding, validating, skipping, editing,
   turning off, deleting and persisting schedules, device readiness and sync.
